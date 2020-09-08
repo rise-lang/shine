@@ -10,29 +10,13 @@ import util.gen
 
 class simpleHisto extends shine.test_util.TestsWithExecutor {
 
-  private def isT(N: NatIdentifier) = ArrayType(N, NatType)
+  private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
   private def histosT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
 
   val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
 
   test("Simple Histogram Test") {
-
-    /*def incrementBin(
-      numBins: Int,
-      input: Expr,
-      hist: Identifier,
-      binCounter: Int = 0
-    ): Expr = {
-      // If (primitive):
-      // exp[t, read] -> exp[bool, read] ->
-      //  (exp[t, read] -> exp[s, write]) ->
-      //  (exp[t, read] -> exp[s, write]) -> exp[s, write]
-
-      //If(input, (input == l(binCounter)),
-      // Set(hist, idx(binCounter, numBins), (idx(a, lidx(binCounter, n)))),
-      // incrementBin(numBins, input, hist, ++binCounter))
-    }*/
 
     val reduceHistos = implN(n => implN(numBins => fun(histosT(n, numBins))(histos =>
       histos |> // n.numBins.int
@@ -50,35 +34,18 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
         mapSeq(id)
     )))
 
-    val simpleHistoTest = nFun(n => nFun(numBins => nFun(chunkSize => fun(isT(n))(is =>
+    val simpleHistoTest = nFun(n => nFun(numBins => nFun(chunkSize => fun(isT(n, numBins))(is =>
       is |> // n.NatType
       split(chunkSize) |> // n/chunkSize.chunkSize.NatType
       mapGlobal(
         fun(chunk =>
           reduceByIndexSeq(AddressSpace.Global)(add)(
-            generate(fun(IndexType(numBins))(_ => l(0)))
+            generate(fun(IndexType(numBins))(_ => l(0))) |>
+              mapSeq(id)
           )(chunk)(
             generate(fun(IndexType(chunkSize))(_ => l(1)))
           )
         ) >> mapSeq(id)
-
-        /*oclReduceSeq(AddressSpace.Global)(
-          fun(histo => // numBins.int
-            fun(i => // nat
-              histo |>
-                setVal(lidx(n, numBins), l(5)) |>
-                mapSeq(id)
-              //mapSeq(fun(histo => histo + l(1))) // int
-              // if (i == 0) set(a, lidx(0, numBins), a[lidx(0, numBins)]+1)) else
-              //   if (i == 1) set(a, lidx(1, numBins), a[lidx(1, numBins)]+1)) else
-              //     if (i == 2) set(a, lidx(2, numBins), a[lidx(2, numBins)]+1))
-            )
-          )
-        )(
-          generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-          mapSeq(id) // numBins.int
-        ) >> mapSeq(id)*/
-
       ) |> // n/chunkSize.numBins.int
       toGlobal |>
       // reduce all subhistograms
@@ -87,47 +54,4 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
 
     gen.OpenCLKernel(simpleHistoTest)
   }
-
-  /* Deprecated, will be removed later
-  test("Simplest Histogramm Test") {
-    val numBins: Nat = 4
-
-    val simplestHistoTest = nFun(n => fun(isT(n))(is =>
-      is |>
-      mapGlobal(
-        fun(i =>
-          generate(fun(IndexType(numBins))(_ => l(0))) |>
-          mapSeq(fun(x => x + i)) // test function, to replace with reduce by index operation
-        )
-      )
-    ))
-
-    gen.OpenCLKernel(simplestHistoTest)
-  }
-
-  test("Old Histogramm Test") {
-    val numBins: Nat = 4
-
-    val oldHistoTest = nFun(n => nFun(chunkSize => fun(isT(n))(is =>
-      is |>
-        split(chunkSize) |>
-        mapGlobal(
-          fun(chunk =>
-            generate(fun(IndexType(numBins))(_ => l(0))) |>
-              mapSeq(fun(x => x)) |>
-              toPrivate |>
-              fun(histo =>
-                chunk |>
-                mapSeq(fun(element =>
-                  // test function, to replace with reduce by index operation
-                  histo |>
-                  mapSeq(fun(bin => bin + element))
-              )
-          )
-        )
-      ) >> toGlobal >> mapSeq(mapSeq(fun(x => x)))
-    ))))
-
-    gen.OpenCLKernel(oldHistoTest)
-  } */
 }
