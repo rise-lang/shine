@@ -12,8 +12,8 @@ object parse {
    */
     def apply(tokenList: List[Token]): r.Expr = {
       val parseState: ParseState = (tokenList, Nil)
-      val shineLambda = parseLambda(parseState)
-
+  //TODO use:    val shineLambda = parseLambda(parseState)
+      r.Identifier("placeholder")()
     }
   //
   //    def checkBracesNumber(tokenList: List[Token]): Unit = {
@@ -41,11 +41,8 @@ object parse {
   //    }
 
   sealed trait SyntaxElement
-
   final case class SExpr(expr: r.Expr) extends SyntaxElement
-
   final case class SType(t: r.types.Type) extends SyntaxElement
-  final case class SPrim(prim: r.Primitive) extends SyntaxElement
 
   type ParseState = (List[Token], List[SyntaxElement])
 
@@ -138,7 +135,7 @@ object parse {
   the syntax-Tree has on top an Lambda-Expression
    */
   def parseLambda(parseState: ParseState): Option[ParseState] = {
-    val p =
+    val ps =
       Some(parseState) |>
         parseBackslash |>
         parseIdent |>
@@ -146,41 +143,38 @@ object parse {
         parseArrow |>
         parseExpression
 
-    //      if ( parsedExprs is with type) { } else {}
-    p match {
-      case Some(pState) => {
-        val (tokens, parsedExprs) = parseState
-        val expr :: maybeTypeOrIdent  :: restExprs= parsedExprs
-        val e: r.Expr = expr match {
-          case SExpr(expr) => expr
-          case SPrim(prim) => prim
-          case SType(t) => throw new Exception("not type expected")
-        }
-        maybeTypeOrIdent match {
-          case SType(t) => {
-              val ident :: rExpr = restExprs
-              ident match {
-                case SExpr(r.Identifier(a)) => Some(tokens, SExpr(Lambda(r.Identifier(a)(), e)(t))::rExpr)
-                case _ => None
-              }
-          }
-          case SExpr(r.Identifier(a)) => Some(tokens, SExpr(Lambda(r.Identifier(a)(), e)()):: restExprs)
-          case _ => None
-        }
-      }
-      case None => None
-    }
+    val synElemList = ps.get._2
+    val (expr, synElemListExpr) = (synElemList.head match {
+      case SExpr(e) => e
+      case _ => ???
+    }, synElemList.tail)
 
+    val (maybeTypedIdent, synElemListMaybeTIdent) =
+      synElemListExpr.head match {
+        case SType(t) =>
+          synElemListExpr.tail.head match {
+            case SExpr(i) => (i.setType(t), synElemList.tail.tail)
+            case _ => ???
+          }
+        case SExpr(i) => (i, synElemList.tail)
+      }
+
+    val lambda = Lambda(maybeTypedIdent.asInstanceOf[r.Identifier], expr)()
+
+    Some((ps.get._1, SExpr(lambda) :: synElemListMaybeTIdent))
   }
 
   //_________________________________________________________Lambda
   //_________________________________________________________Expres
 
   def parseExpression(parseState: ParseState): Option[ParseState] = {
-    Some(parseState) || parseLambda || parseApp || parseBinOperatorAnnotation || parseUnOperatorAnnotation || parseBracesAnnotation || parseIdent || parseNumber
+    //FIXME parseState always true
+    Some(parseState) || parseLambda || parseApp ||
+      parseBinOperatorApp || parseUnOp ||
+      parseBracesExpr || parseIdent || parseNumber
   }
 
-  def parseBracesAnnotation(parseState: ParseState): Option[ParseState] = {
+  def parseBracesExpr(parseState: ParseState): Option[ParseState] = {
     val p =
       Some(parseState)  |>
         parseLeftBrace  |>
@@ -194,7 +188,8 @@ object parse {
     }
   }
 
-  def parseBinOperatorAnnotation(parseState: ParseState): Option[ParseState] = {
+  //  1 + 2 * 3 = mul (add 1 2) 3 = App(App(mul, App(App(add, 1), 2)), 3)
+  def parseBinOperatorApp(parseState: ParseState): Option[ParseState] = {
     val p =
       Some(parseState)  |>
         parseExpression |>
@@ -207,16 +202,17 @@ object parse {
     }
     val expr2 :: binOp  :: expr1 :: restExpr= parsedExprs
 
-    expr2 match {
-      case SExpr(e2) => expr1 match {
-        case SExpr(e1) =>  binOp match { //Todo: I want to create a Tree but I have problems to create a Tree for BinaryOperators SExpr(BinaryExpr(e1, prim, e2))
-          case SPrim(prim) => Some((tokens, SExpr(r.substitute.exprInExpr(e1, prim, e2))  :: restExpr)) //Todo: What is r.substitute.exprInExpr(e1, prim, e2) ?
-          case _ => None
-        }
-        case _ => None
-      }
-      case _ => None
-    }
+//    expr2 match {
+//      case SExpr(e2) => expr1 match {
+//        case SExpr(e1) =>  binOp match { //Todo: I want to create a Tree but I have problems to create a Tree for BinaryOperators SExpr(BinaryExpr(e1, prim, e2))
+//          case SPrim(prim) => Some((tokens, SExpr(r.substitute.exprInExpr(e1, prim, e2))  :: restExpr)) //Todo: What is r.substitute.exprInExpr(e1, prim, e2) ?
+//          case _ => None
+//        }
+//        case _ => None
+//      }
+//      case _ => None
+//    }
+    ???
   }
 
   def parseApp(parseState: ParseState): Option[ParseState] = {
@@ -227,7 +223,7 @@ object parse {
 
     val (tokens, parsedExprs): ParseState = p match {
       case Some(parseState) => parseState
-      case None => None
+      case None => return None
     }
     val expr2 :: expr1 :: restExpr= parsedExprs
 
@@ -240,38 +236,41 @@ object parse {
     }
   }
 
-  def parseUnOperatorAnnotation(parseState: ParseState): Option[ParseState] = {
-    val (tokens, parsedSynElems) = parseState
-    val nextToken :: restTokens = tokens
+  //TODO maybe remove
+  def parseUnOperatorApp(parseState: ParseState): Option[ParseState] = {
+    // TODO use:
+//    val (tokens, parsedSynElems) = parseState
+//    val nextToken :: restTokens = tokens
 
-    val p = nextToken match {
-      case UnOp(un, _) => un match {
-        case OpType.UnaryOpType.NEG => Some((restTokens, SPrim(r.primitives.Neg()()) :: parsedSynElems))
-        case OpType.UnaryOpType.NOT => Some((restTokens, SPrim(r.primitives.Not()()) :: parsedSynElems))
-      }
-      case _ => None
-    }
+//    val p = nextToken match {
+//      case UnOp(un, _) => un match {
+//        case OpType.UnaryOpType.NEG => Some((restTokens, SPrim(r.primitives.Neg()()) :: parsedSynElems))
+//        case OpType.UnaryOpType.NOT => Some((restTokens, SPrim(r.primitives.Not()()) :: parsedSynElems))
+//      }
+//      case _ => None
+//    }
 
 
-    val (tokens, parsedExprs):ParseState = p match {
-      case Some(parseState) => parseState
-      case None => None
-    }
-    val expr :: unOp :: restExpr= parsedExprs
-
-    val e = expr match {
-      case SExpr(e) =>  unOp match {
-          case SPrim(r.primitives.Neg()) => SExpr(r.TypedDSL.neg(e))
-          case SPrim(r.primitives.Not()) => SExpr(r.DSL.not(e))
-          case _ => None
-        }
-      case _ => None
-    }
-
-    e match {
-      case SExpr(ex) => Some((tokens, ex:: restExpr))
-      case _ => None
-    }
+//    val (tokens, parsedExprs):ParseState = p match {
+//      case Some(parseState) => parseState
+//      case None => None
+//    }
+//    val expr :: unOp :: restExpr= parsedExprs
+//
+//    val e = expr match {
+//      case SExpr(e) =>  unOp match {
+//          case SPrim(r.primitives.Neg()) => SExpr(r.TypedDSL.neg(e))
+//          case SPrim(r.primitives.Not()) => SExpr(r.DSL.not(e))
+//          case _ => None
+//        }
+//      case _ => None
+//    }
+//
+//    e match {
+//      case SExpr(ex) => Some((tokens, ex:: restExpr))
+//      case _ => None
+//    }
+    ???
   }
 
   def parseNumber(parseState: ParseState): Option[ParseState] = {
@@ -298,14 +297,19 @@ object parse {
 
     nextToken match {
       case BinOp(op, _) => op match {
-        case OpType.BinOpType.ADD => Some((restTokens, SPrim(r.primitives.Add()()) :: parsedSynElems))  //Todo: Or r.DSL.add ?
-        case OpType.BinOpType.DIV => Some((restTokens, SPrim(r.primitives.Div()()) :: parsedSynElems))
-        case OpType.BinOpType.EQ => Some((restTokens, SPrim(r.primitives.Equal()()) :: parsedSynElems))
-        case OpType.BinOpType.GT => Some((restTokens, SPrim(r.primitives.Gt()()) :: parsedSynElems))
-        case OpType.BinOpType.LT => Some((restTokens, SPrim(r.primitives.Lt()()) :: parsedSynElems))
-        case OpType.BinOpType.MOD => Some((restTokens, SPrim(r.primitives.Mod()()) :: parsedSynElems))
-        case OpType.BinOpType.MUL => Some((restTokens, SPrim(r.primitives.Mul()()) :: parsedSynElems))
-        case OpType.BinOpType.SUB => Some((restTokens, SPrim(r.primitives.Sub()()) :: parsedSynElems))
+        case OpType.BinOpType.ADD =>
+          Some((restTokens, SExpr(r.primitives.Add()()) :: parsedSynElems))  //Todo: Or r.DSL.add ?
+        case OpType.BinOpType.DIV =>
+          Some((restTokens, SExpr(r.primitives.Div()()) :: parsedSynElems))
+        case OpType.BinOpType.EQ =>
+          Some((restTokens, SExpr(r.primitives.Equal()()) :: parsedSynElems))
+        case OpType.BinOpType.GT =>
+          Some((restTokens, SExpr(r.primitives.Gt()()) :: parsedSynElems))
+        case OpType.BinOpType.LT =>
+          Some((restTokens, SExpr(r.primitives.Lt()()) :: parsedSynElems))
+        case OpType.BinOpType.MOD => Some((restTokens, SExpr(r.primitives.Mod()()) :: parsedSynElems))
+        case OpType.BinOpType.MUL => Some((restTokens, SExpr(r.primitives.Mul()()) :: parsedSynElems))
+        case OpType.BinOpType.SUB => Some((restTokens, SExpr(r.primitives.Sub()()) :: parsedSynElems))
       }
       case _ => None
     }
