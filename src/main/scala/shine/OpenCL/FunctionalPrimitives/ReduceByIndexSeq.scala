@@ -23,8 +23,8 @@ final case class ReduceByIndexSeq(
                                 ) extends ExpPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
-  hist :: expT(k`.`dt, read)
-  is :: expT(k`.`NatType, read)
+  hist :: expT(k`.`dt, write)
+  is :: expT(n`.`IndexType(k), read)
   xs :: expT(n`.`dt, read)
   override val t: ExpType = expT(k`.`dt, read)
 
@@ -53,13 +53,12 @@ final case class ReduceByIndexSeq(
     import TranslationToImperative._
 
     con(xs)(λ(expT(n`.`dt, read))(X =>
-      con(is)(λ(expT(n`.`NatType, read))(I =>
-        con(hist)(λ(expT(k`.`dt, read))(H =>
+      con(is)(λ(expT(n`.`IndexType(k), read))(I =>
       ReduceByIndexSeqI(n, k, histAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
             λ(accT(dt))(o => acc( f(x)(y) )( o )))),
-        H, I, X, C)(context)))))))
+        hist, I, X, C)(context)))))
   }
 
   override def xmlPrinter: Elem =

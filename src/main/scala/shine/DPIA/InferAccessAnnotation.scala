@@ -466,12 +466,12 @@ private class InferAccessAnnotation {
       case roclp.ReduceByIndexSeq() => p.t match {
         case rtdsl.aFunT(a,
           ((t: rt.DataType) ->: (_: rt.DataType) ->: (_: rt.DataType)) ->:
-            rt.ArrayType(k, _) ->: rt.ArrayType(n, rt.NatType) ->: rt.ArrayType(_, _) ->: rt.ArrayType(_, _)) =>
+            rt.ArrayType(k, _) ->: rt.ArrayType(n, rt.IndexType(_)) ->: rt.ArrayType(_, _) ->: rt.ArrayType(_, _)) =>
 
           aFunT(a,
             (expT(t, read) ->: expT(t, read) ->: expT(t, write)) ->:
-              expT(rt.ArrayType(k, t), read) ->:
-                expT(rt.ArrayType(n, rt.NatType), read) ->:
+              expT(rt.ArrayType(k, t), write) ->:
+                expT(rt.ArrayType(n, rt.IndexType(k)), read) ->:
                   expT(rt.ArrayType(n, t), read) ->:
                     expT(rt.ArrayType(k, t), read))
         case _ => error()
