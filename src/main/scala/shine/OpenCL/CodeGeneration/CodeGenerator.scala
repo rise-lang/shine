@@ -14,7 +14,7 @@ import shine.DPIA.Semantics.OperationalSemantics.VectorData
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.BuiltInFunctionCall
-import shine.OpenCL.FunctionalPrimitives.{OpenCLFunction, SetVal}
+import shine.OpenCL.FunctionalPrimitives.OpenCLFunction
 import shine.OpenCL.ImperativePrimitives._
 import shine._
 
@@ -214,8 +214,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         => exp(e, env, CIntExpr(i / stride) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
-
-      case SetVal(_, _, e, i, x) => OpenCLCodeGen.codeGenSetVal(e, i, x, env, path, cont)
 
       case _ => super.exp(phrase, env, path, cont)
     }
@@ -472,31 +470,5 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           typ(VectorType(n, dt)).asInstanceOf[OpenCL.AST.VectorType], elements))
       }
     }
-
-    def codeGenSetVal(e: Phrase[ExpType],
-                      i: Phrase[ExpType],
-                      x: Phrase[ExpType],
-                      env: Environment,
-                      ps: Path,
-                      cont: Expr => Stmt): Stmt = {
-        exp(e, env, CIntExpr(OperationalSemantics.evalIndexExp(i)) :: Nil, target =>
-          exp(x, env, Nil, value =>
-            C.AST.ExprStmt(C.AST.Assignment(target, value))
-          )
-        )
-    }
-
-    //{
-      /*exp(i, env, Nil, {
-        case C.AST.DeclRef(name) => exp(e, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
-        case C.AST.ArithmeticExpr(ae) => exp(e, env, CIntExpr(ae) :: ps, cont)
-        case cExpr:C.AST.Expr =>
-          val arithVar = NamedVar(freshName("idx"))
-          C.AST.Block(immutable.Seq(
-            C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
-            exp(e, env, CIntExpr(arithVar) :: ps, cont)
-          ))
-      })
-    }*/
   }
 }
