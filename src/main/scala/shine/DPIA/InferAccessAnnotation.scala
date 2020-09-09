@@ -470,6 +470,19 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
+      case roclp.OclSegmentedReduce() => p.t match {
+        case rtdsl.aFunT(a,
+        ((t: rt.DataType) ->: (_: rt.DataType) ->: (_: rt.DataType)) ->:
+          rt.ArrayType(k, _) ->: rt.ArrayType(n, rt.PairType(rt.IndexType(_), _)) ->: rt.ArrayType(_, _)) =>
+
+          aFunT(a,
+            (expT(t, read) ->: expT(t, read) ->: expT(t, write)) ->:
+              expT(rt.ArrayType(k, t), write) ->:
+                expT(rt.ArrayType(n, rt.PairType(rt.IndexType(k), t)), read) ->:
+                    expT(rt.ArrayType(k, t), read))
+        case _ => error()
+      }
+
       case r.ForeignFunction(_) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case dt: rt.DataType =>
