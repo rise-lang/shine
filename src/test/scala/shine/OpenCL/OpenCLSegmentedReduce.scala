@@ -16,11 +16,13 @@ class OpenCLSegmentedReduce extends shine.test_util.Tests {
 
     val oclSegmentedReduceTest = nFun(n => nFun(k => fun(xsT(k))(hist => fun(isT(n, k))(is => fun(xsT(n))(xs =>
       zip(is)(xs) |>
-      oclSegmentedReduce(rise.core.types.AddressSpace.Global)(add)(
-        hist |>
-          mapSeq(fun(x => x))
-      ) |>
-        mapSeq(fun(x => x))
+        split(1024) |>
+        mapWorkGroup(
+          oclSegmentedReduce(rise.core.types.AddressSpace.Local)(add)(
+            hist |>
+              mapLocal(fun(x => x))
+          ) >> mapSeq(fun(x => x))
+        )
     )))))
 
     gen.OpenCLKernel(oclSegmentedReduceTest)
