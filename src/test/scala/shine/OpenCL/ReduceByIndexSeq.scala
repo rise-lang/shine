@@ -15,7 +15,10 @@ class ReduceByIndexSeq extends shine.test_util.Tests {
   test("Reduce By Index Seq Test") {
 
     val reduceByIndexSeqTest = nFun(n => nFun(k => fun(xsT(k))(hist => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-      reduceByIndexSeq(rise.core.types.AddressSpace.Global)(add)(hist |> mapSeq(fun(x => x)))(is)(xs) |>
+      reduceByIndexSeq(rise.core.types.AddressSpace.Global)(add)(
+        hist |>
+          mapSeq(fun(x => x))
+      )(is)(xs) |>
         mapSeq(fun(x => x))
     )))))
 

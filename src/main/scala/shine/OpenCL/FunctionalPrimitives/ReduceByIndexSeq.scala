@@ -7,20 +7,19 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.OpenCL.IntermediatePrimitives.{ReduceByIndexSeqI}
+import shine.OpenCL.IntermediatePrimitives.ReduceByIndexSeqI
 
 import scala.xml.Elem
 
-final case class ReduceByIndexSeq(
-                                  n: Nat,
+final case class ReduceByIndexSeq(n: Nat,
                                   k: Nat,
                                   histAddrSpace: shine.DPIA.Types.AddressSpace,
                                   dt: DataType,
                                   f: Phrase[ExpType ->: ExpType ->: ExpType],
                                   hist: Phrase[ExpType],
                                   is: Phrase[ExpType],
-                                  xs: Phrase[ExpType],
-                                ) extends ExpPrimitive {
+                                  xs: Phrase[ExpType]
+                                 ) extends ExpPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
   hist :: expT(k`.`dt, write)
@@ -54,11 +53,11 @@ final case class ReduceByIndexSeq(
 
     con(xs)(λ(expT(n`.`dt, read))(X =>
       con(is)(λ(expT(n`.`IndexType(k), read))(I =>
-      ReduceByIndexSeqI(n, k, histAddrSpace, dt,
-        λ(expT(dt, read))(x =>
-          λ(expT(dt, read))(y =>
-            λ(accT(dt))(o => acc( f(x)(y) )( o )))),
-        hist, I, X, C)(context)))))
+        ReduceByIndexSeqI(n, k, histAddrSpace, dt,
+          λ(expT(dt, read))(x =>
+            λ(expT(dt, read))(y =>
+              λ(accT(dt))(o => acc( f(x)(y) )( o )))),
+          hist, I, X, C)(context)))))
   }
 
   override def xmlPrinter: Elem =
@@ -71,7 +70,7 @@ final case class ReduceByIndexSeq(
       <hist type={ToString(ExpType(ArrayType(k, dt), read))}>
         {Phrases.xmlPrinter(hist)}
       </hist>
-      <is type={ToString(ExpType(ArrayType(n, NatType), read))}>
+      <is type={ToString(ExpType(ArrayType(n, IndexType(k)), read))}>
         {Phrases.xmlPrinter(is)}
       </is>
       <xs type={ToString(ExpType(ArrayType(n, dt), read))}>
