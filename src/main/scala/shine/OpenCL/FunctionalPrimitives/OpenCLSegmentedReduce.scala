@@ -23,7 +23,7 @@ final case class OpenCLSegmentedReduce(
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
   init :: expT(k`.`dt, write)
-  array :: expT(n`.`PairType(IndexType(k), dt), write)
+  array :: expT(n`.`PairType(IndexType(k), dt), read)
   override val t: ExpType = expT(k`.`dt, read)
 
   override def visitAndRebuild(
@@ -48,12 +48,12 @@ final case class OpenCLSegmentedReduce(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    //con(array)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
+    con(array)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
         OpenCLSegmentedReduceI(n, k, initAddrSpace, dt,
           λ(expT(dt, read))(x =>
             λ(expT(dt, read))(y =>
               λ(accT(dt))(o => acc( f(x)(y) )( o )))),
-          init, array, C)(context)
+          init, X, C)(context)))
   }
 
   override def xmlPrinter: Elem =
@@ -63,10 +63,10 @@ final case class OpenCLSegmentedReduce(
         ExpType(dt, read) ->: (ExpType(dt, read) ->: ExpType(dt, write)))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <init type={ToString(ExpType(ArrayType(k, dt), write))}>
+      <init type={ToString(ExpType(ArrayType(k, dt), read))}>
         {Phrases.xmlPrinter(init)}
       </init>
-      <array type={ToString(ExpType(ArrayType(n, PairType(IndexType(k), dt)), write))}>
+      <array type={ToString(ExpType(ArrayType(n, PairType(IndexType(k), dt)), read))}>
         {Phrases.xmlPrinter(array)}
       </array>
     </reduce>.copy(label = {

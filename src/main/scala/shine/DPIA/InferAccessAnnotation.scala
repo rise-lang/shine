@@ -478,7 +478,7 @@ private class InferAccessAnnotation {
           aFunT(a,
             (expT(t, read) ->: expT(t, read) ->: expT(t, write)) ->:
               expT(rt.ArrayType(k, t), write) ->:
-                expT(rt.ArrayType(n, rt.PairType(rt.IndexType(k), t)), write) ->:
+                expT(rt.ArrayType(n, rt.PairType(rt.IndexType(k), t)), read) ->:
                     expT(rt.ArrayType(k, t), read))
         case _ => error()
       }

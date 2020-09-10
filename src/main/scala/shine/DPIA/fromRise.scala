@@ -641,13 +641,13 @@ object fromRise {
       aFunT(a,
         (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
           expT(ArrayType(k, _), `write`) ->:
-            expT(ArrayType(n, PairType(IndexType(_), _)), `write`) ->:
+            expT(ArrayType(n, PairType(IndexType(_), _)), `read`) ->:
                 expT(ArrayType(_, _), `read`))) =>
         depFun[AddressSpaceKind](a)(
           fun[ExpType ->: ExpType ->: ExpType](
             expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
               fun[ExpType](expT(k`.`t, write), i =>
-                fun[ExpType](expT(n`.`PairType(IndexType(k), t), write), e =>
+                fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
                   OpenCLSegmentedReduce(n, k, a, t, f, i, e)))))
 
       case (core.Reduce(), _) =>
