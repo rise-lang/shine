@@ -28,6 +28,7 @@ object ReduceByIndexSeqI {
 
           `for`(n, j =>
             `new` (AddressSpace.Private) (IndexType(k), i =>
+              //TODO: acc(i.rd)(i.wr) doesn't work either, possibly connected to problem below?
               acc(is `@` j)(i.wr) `;`
                 //TODO: Using i as an index here always throws an key not found error
                 //      (=> 3 global memory accesses needed instead of 1)
