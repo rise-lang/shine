@@ -949,6 +949,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case GT => C.AST.BinaryOperator.>
         case LT => C.AST.BinaryOperator.<
         case EQ => C.AST.BinaryOperator.==
+        case NEQ => C.AST.BinaryOperator.!=
       }
     }
 
