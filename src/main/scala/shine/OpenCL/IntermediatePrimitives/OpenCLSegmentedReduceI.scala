@@ -4,14 +4,12 @@ import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}
 import shine.DPIA.FunctionalPrimitives.{IndexAsNat, NatAsIndex, Split}
-import shine.DPIA.ImperativePrimitives.{PairAcc1, PairAcc2, SplitAcc}
+import shine.DPIA.ImperativePrimitives.PairAcc2
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType.idx
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.{AdjustArraySizesForAllocations, get_local_id}
-import shine.OpenCL.DSL.{barrier, _}
-import shine.OpenCL.ImperativePrimitives.ParForLocal
+import shine.OpenCL.AdjustArraySizesForAllocations
+import shine.OpenCL.DSL._
 
 object OpenCLSegmentedReduceI {
   def apply(n: Nat,
