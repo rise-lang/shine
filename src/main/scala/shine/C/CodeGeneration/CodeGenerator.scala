@@ -1057,9 +1057,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          case Log(b, x) =>
            genNat(b, env, b =>
              genNat(x, env, x =>
-               cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
-                 AST.Cast(AST.Type.float, x))
-               )))
+               b match {
+                 case C.AST.Literal(d) =>
+                   cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + d), immutable.Seq(
+                     AST.Cast(AST.Type.float, x))
+                   )))
+
+                 //TODO: Is the other case even needed?
+                 case _ =>
+                   cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
+                     AST.Cast(AST.Type.float, x))
+                   )))
+               }
+
              )
            )
 
