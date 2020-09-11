@@ -3,7 +3,7 @@ package shine.OpenCL.IntermediatePrimitives
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}
-import shine.DPIA.FunctionalPrimitives.{NatAsIndex, Split}
+import shine.DPIA.FunctionalPrimitives.{IndexAsNat, NatAsIndex, Split}
 import shine.DPIA.ImperativePrimitives.{PairAcc1, PairAcc2, SplitAcc}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType.idx
@@ -25,51 +25,65 @@ object OpenCLSegmentedReduceI {
            (implicit context: TranslationContext): Phrase[CommType] = {
     val pt = PairType(IndexType(k), dt)
     val m: Nat = 32
+    val o: Nat = n/m
 
     val adj = AdjustArraySizesForAllocations(init, ArrayType(k, dt), addrSpace)
 
     comment("oclSegmentedReduce") `;`
-    // Copy hist to addrSpace with all local threads
+    // Initialize final output array g_output
     `new` (addrSpace) (adj.dt, g_output =>
       acc(init)(adj.accF(g_output.wr)) `;`
 
-        `new` (addrSpace) (ArrayType(m, pt), s_data =>
-          `new` (AddressSpace.Private) (pt, current_element =>
-            MapLocalI(0)(m, pt, pt,
+        // Declare temporary output array s_data
+        `new` (addrSpace) (ArrayType(o, pt), s_data =>
+          // Declare private variable for the reduction of the current segment
+          `new` (AddressSpace.Private) (pt, current_reduction =>
+
+            // Process all m (n/m)-sized chunks
+            MapLocalI(0)(o, pt, pt,
               λ(expT(ArrayType(m, pt), read))(x => λ(accT(pt))(a =>
-                acc(x `@` NatAsIndex(m, Natural(0)))(a)
-              )),
-              Split(m, m, read, pt, in),
+
+                // Process first element x[0]
+                acc(x `@` NatAsIndex(m, Natural(0)))(current_reduction.wr) `;`
+                  // Declare private variable for the element of the current for-loop iteration
+                  `new` (AddressSpace.Private) (pt, current_element =>
+
+                    // Loop over the remaining (m - 1) elements
+                    `for`(m - 1, i =>
+                      // Save current element (x[i + 1]) in current_element
+                      acc(x `@` NatAsIndex(m, IndexAsNat(m - 1, i) + Natural(1)))(current_element.wr) `;`
+
+                       // If segment of current_reduction != segment of current_element
+                        (`if` (fst(current_reduction.rd) `!:=` fst(current_element.rd))
+
+                          // FIXME: Doesn't work for multiple commands (second command out of if-brackets)
+                         `then` (
+                            // => end of current segment reached
+                            // Write current_reduction.value into g_output[current_reduction.key]
+                            f(g_output.rd `@` fst(current_reduction.rd))
+                             (snd(current_reduction.rd))
+                             (g_output.wr `@` fst(current_reduction.rd)) `;`
+
+                            // and assign current_element to current_reduction
+                            (current_reduction.wr :=| pt | current_element.rd)
+                          )
+
+                        // Accumulate the value of current_element into the value of current_reduction
+                        `else` f(snd(current_reduction.rd))
+                                (snd(current_element.rd))
+                                (PairAcc2(IndexType(k), dt, current_reduction.wr)))
+                      ) `;`
+
+                    //TODO: This command works but acc(current_element.rd)(a) doesn't.
+                    // Apparently this happens because the variable suffix rd isn't processed inside of acc.
+                    (a :=| pt | current_reduction.rd)
+
+              ))),
+              Split(m, o, read, pt, in),
               s_data.wr)
 
-        /*// Copy in (is x xs) to addrSpace with all local threads
-        `new` (addrSpace) (adj2.dt, s_data =>
-          MapLocalI(0)(n, pt, pt,
-            λ(expT(pt, read))(x => λ(accT(pt))(a => acc(x)(a))),
-            in, s_data.wr)
-
-
-          ParForLocal(0)(n, pt, s_data.wr,
-            λ(expT(idx(n), read))(i => λ(accT(pt))(a =>
-              acc(fst(in `@` i))(PairAcc1(IndexType(k), dt, a)) `;`
-                acc(snd(in `@` i))(PairAcc2(IndexType(k), dt, a))))) `;`
-            barrier()
-
-            /*ParForLocal(0)(32, pt, s_data.wr,
-              λ(expT(idx(n), read))(i => λ(accT(pt))(a =>
-              )*/
-
-
-          `new` (AddressSpace.Private) (NatType, lid =>
-            acc(Natural(get_local_id(0)))(lid.wr) `;`
-              `new` (AddressSpace.Private) (dt, current_red =>
-                `new` (AddressSpace.Private) (IndexType(k), current_owner =>
-                  `if` (lid.rd `<` Natural(32))
-                  `then` acc(Natural(1))(current_red.wr)
-                  `else` acc(Natural(0))(current_red.wr)
-          ))) `;`*/
-
           )) `;`
+
           out(adj.exprF(g_output.rd))
       )
   }
