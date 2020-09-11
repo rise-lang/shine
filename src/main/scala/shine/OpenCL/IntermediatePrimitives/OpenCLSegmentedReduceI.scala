@@ -37,7 +37,7 @@ object OpenCLSegmentedReduceI {
           // Declare private variable for the reduction of the current segment
           `new` (AddressSpace.Private) (pt, current_reduction =>
 
-            // Process all m (n/m)-sized chunks
+            // Process all m (n/m)-sized chunks in parallel
             MapLocalI(0)(o, pt, pt,
               λ(expT(ArrayType(m, pt), read))(x => λ(accT(pt))(a =>
 
@@ -54,8 +54,8 @@ object OpenCLSegmentedReduceI {
                        // If segment of current_reduction != segment of current_element
                         (`if` (fst(current_reduction.rd) `!:=` fst(current_element.rd))
 
-                          // FIXME: Doesn't work for multiple commands (second command out of if-brackets)
                          `then` (
+                            //`new` (AddressSpace.Private) (IndexType(k), index =>
                             // => end of current segment reached
                             // Write current_reduction.value into g_output[current_reduction.key]
                             f(g_output.rd `@` fst(current_reduction.rd))

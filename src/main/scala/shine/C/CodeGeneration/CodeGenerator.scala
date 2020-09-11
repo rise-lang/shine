@@ -120,7 +120,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     visitAndGenerateNat(phrase match {
       case Phrases.IfThenElse(cond, thenP, elseP) =>
         exp(cond, env, Nil, cond =>
-          C.AST.IfThenElse(cond, cmd(thenP, env), Some(cmd(elseP, env))))
+          C.AST.IfThenElse(cond,
+            C.AST.Block(immutable.Seq(cmd(thenP, env))),
+            Some(C.AST.Block(immutable.Seq(cmd(elseP, env))))))
 
       case i: Identifier[CommType] => env.commEnv(i)
 
