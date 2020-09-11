@@ -1,15 +1,19 @@
 package shine.OpenCL.IntermediatePrimitives
 
+import arithexpr.arithmetic.ArithExpr.{intToCst, simplifyImplicitly}
+import arithexpr.arithmetic.Log
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}
 import shine.DPIA.FunctionalPrimitives.{IndexAsNat, NatAsIndex, Split}
 import shine.DPIA.ImperativePrimitives.PairAcc2
 import shine.DPIA.Phrases._
+import shine.DPIA.Types.DataType.idx
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
+import shine.OpenCL.ImperativePrimitives.ParForLocal
 
 object OpenCLSegmentedReduceI {
   def apply(n: Nat,
@@ -24,6 +28,7 @@ object OpenCLSegmentedReduceI {
     val pt = PairType(IndexType(k), dt)
     val m: Nat = 32
     val o: Nat = n/m
+    val tree_loops: Nat = Log(2, o)
 
     val adj = AdjustArraySizesForAllocations(init, ArrayType(k, dt), addrSpace)
 
@@ -34,6 +39,11 @@ object OpenCLSegmentedReduceI {
 
         // Declare temporary output array s_data
         `new` (addrSpace) (ArrayType(o, pt), s_data =>
+
+          // ********************************************************************
+          // First Reduction: Every local thread reduces m elements sequentially.
+          // ********************************************************************
+
           // Declare private variable for the reduction of the current segment
           `new` (AddressSpace.Private) (pt, current_reduction =>
 
@@ -55,7 +65,6 @@ object OpenCLSegmentedReduceI {
                         (`if` (fst(current_reduction.rd) `!:=` fst(current_element.rd))
 
                          `then` (
-                            //`new` (AddressSpace.Private) (IndexType(k), index =>
                             // => end of current segment reached
                             // Write current_reduction.value into g_output[current_reduction.key]
                             f(g_output.rd `@` fst(current_reduction.rd))
@@ -80,9 +89,28 @@ object OpenCLSegmentedReduceI {
               Split(m, o, read, pt, in),
               s_data.wr)
 
-          )) `;`
+          ) `;`
 
-          out(adj.exprF(g_output.rd))
+          // ******************************************************************************************************
+          // Second reduction: Reduce the remaining reduction elements of every thread with a tree-based algorithm.
+          //                   (n / m in total, saved in the array s_data)
+          // ******************************************************************************************************
+
+            `for`(tree_loops, i =>
+              ParForLocal(0)(o, pt, s_data.wr,
+                λ(expT(idx(o), read))(j => λ(accT(pt))(a =>
+                  //TODO: Maybe add a right shift operator?
+                  `if` (IndexAsNat(o, j) `<` (Natural(o) / (Natural(2) * (Natural(1) + IndexAsNat(tree_loops, i)))))
+                  `then` comment("then")
+                  `else` comment("else")
+              ))) `;`
+
+                barrier()
+            )
+
+        ) `;`
+
+        out(adj.exprF(g_output.rd))
       )
   }
 }
