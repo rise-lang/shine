@@ -39,7 +39,7 @@ object SlideSeqIValues {
           k(rs.rd) `;`
           // rotate
           MapSeqI(size - 1, dt1, dt2, load,
-            Drop(1, size - 1, read, dt1, rs.rd),
+            Drop(1, size - 1, dt1, rs.rd),
             TakeAcc(size - 1, 1, dt2, rs.wr), unroll = true)
         ),
       arithexpr.arithmetic.RangeAdd(0, n, 1)))

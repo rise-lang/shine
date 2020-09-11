@@ -11,9 +11,9 @@ import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.rise.Rise
-import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.algorithmic._
 import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.alternative._
 import elevate.util.makeClosed
 
 class separableConvolution2DRewrite extends shine.test_util.Tests {
@@ -32,6 +32,8 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
   private val Dh = toTDSL(dot)(weightsH)
   private val Dv = toTDSL(dot)(weightsV)
 
+  private val BENF = elevate.rise.strategies.normalForm.BENF()(alternative.RiseTraversable)
+
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
@@ -47,7 +49,8 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
 
   private def assert_ben_eq(a: Expr, b: Expr): Unit =
     if (!ben_eq(a, b)) {
-      throw new Exception(s"expected structural equality:\n$a\n$b")
+      throw new Exception(s"expected structural equality:\n" +
+        s"Got:\n${BENF(a).get}\nExpected:\n${BENF(b).get}")
     }
 
   private def rewrite_steps(a: Expr, steps: Seq[(Strategy[Rise], Expr)]): Unit = {
@@ -63,7 +66,7 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
 
   test("base to factorise") {
     rewrite_steps(toTDSL(base)(weights2d), Seq(
-      oncetd(separateDot) -> toTDSL(factorised)(weightsV)(weightsH)
+      topDown(separateDot) -> toTDSL(factorised)(weightsV)(weightsH)
     ))
   }
 
@@ -71,23 +74,23 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
     rewrite_steps(toTDSL(base)(weights2d), Seq(
       idS
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => toTDSL(dot)(join(weights2d))(join(nbh)))))),
-      oncetd(separateDotT)
+      topDown(separateDotT)
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      oncetd(`*f >> S -> S >> **f`)
+      topDown(`*f >> S -> S >> **f`)
         -> (P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      oncetd(mapFusion)
+      topDown(mapFusion)
         -> (P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
-      oncetd(mapFusion)
+      topDown(mapFusion)
         -> (P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
-      oncetd(`*S >> T -> T >> S >> *T`)
+      topDown(`*S >> T -> T >> S >> *T`)
         -> (P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
-      oncetd(mapFusion)
+      topDown(mapFusion)
         -> (P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
-      oncetd(`T >> T -> `)
+      topDown(`T >> T -> `)
         -> (P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
       skip(1)(mapFirstFission)
         -> (P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
-      oncetd(`S >> **f -> *f >> S`)
+      topDown(`S >> **f -> *f >> S`)
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       idS
         -> toTDSL(scanline)(weightsV)(weightsH)
@@ -98,7 +101,7 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
     rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
       idS
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
-      repeatNTimes(2, oncetd(mapFirstFission))
+      repeatNTimes(2, topDown(mapFirstFission))
         -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
       skip(1)(mapFusion)
         -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),
@@ -111,33 +114,34 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
 
   test("base to baseSeq") {
     rewrite_steps(toTDSL(base)(weights2d), Seq(
-      (oncetd(lowering.reduceSeqUnroll) `;`
-        repeatNTimes(2, oncetd(lowering.mapSeq)))
+      (topDown(lowering.reduceSeqUnroll) `;`
+        repeatNTimes(2, topDown(lowering.mapSeq)))
         -> toTDSL(baseSeq)(weights2d)
     ))
   }
 
   test("factorised to factorisedSeq") {
     rewrite_steps(toTDSL(factorised)(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
-        repeatNTimes(2, oncetd(lowering.mapSeq)))
+      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2, topDown(lowering.mapSeq)))
         -> toTDSL(factorisedSeq)(weightsV)(weightsH)
     ))
   }
 
   test("separated to separatedSeq") {
     rewrite_steps(toTDSL(separated)(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
-        repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
-        repeatNTimes(2, skip(1)(lowering.mapSeq)))
+      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2, topDown(lowering.mapSeq)) `;`
+        repeatNTimes(2, skip(1)(lowering.mapSeq)) `;`
+        body(argument(lowering.toMemAfterMapSeq)))
         -> toTDSL(separatedSeq)(weightsV)(weightsH)
     ))
   }
 
   test("scanline to scanlineSeq") {
     rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
-        repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
+      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2, topDown(lowering.mapSeq)) `;`
         skip(1)(lowering.mapSeq))
         -> toTDSL(scanlineSeq)(weightsV)(weightsH)
     ))
@@ -145,10 +149,10 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
 
   test("scanline to regRotSeq") {
     rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
-        oncetd(lowering.mapSeq) `;`
-        oncetd(lowering.rotateValues(idE)) `;`
-        oncetd(lowering.iterateStream))
+      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
+        topDown(lowering.mapSeq) `;`
+        topDown(lowering.rotateValues(idE)) `;`
+        topDown(lowering.iterateStream))
         -> toTDSL(regRotSeq)(weightsV)(weightsH)
     ))
   }

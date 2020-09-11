@@ -2,7 +2,7 @@ package shine.OpenCL.CodeGeneration
 
 import shine.C.AST.ParamDecl
 import shine.DPIA.DSL._
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
@@ -70,7 +70,7 @@ object AdaptKernelParameters {
   private case class Visitor(scalarParamsInGlobalOrLocalMemory: Set[String])
     extends VisitAndRebuild.Visitor
   {
-    val zero: AsIndex = AsIndex(1, Natural(0))
+    val zero: NatAsIndex = NatAsIndex(1, Natural(0))
 
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {

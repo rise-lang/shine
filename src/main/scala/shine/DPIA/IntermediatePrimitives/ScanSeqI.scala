@@ -1,6 +1,7 @@
 package shine.DPIA.IntermediatePrimitives
 
 import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -16,11 +17,13 @@ object ScanSeqI {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
-    `new`(dt2, acc =>
-      (acc.wr :=| dt2 | init) `;`
+    comment("scanSeq")`;`
+    `new`(dt2, accumulator =>
+      acc(init)(accumulator.wr) `;`
         `for`(n, i =>
-          f(in `@` i)(acc.rd)(acc.wr) `;`
-            ((out `@` i) :=| dt2 | acc.rd)
+          f(in `@` i)(accumulator.rd)(accumulator.wr) `;`
+            //FIXME remove general assignment
+            ((out `@` i) :=| dt2 | accumulator.rd)
         )
     )
   }

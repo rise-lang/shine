@@ -6,9 +6,8 @@ import elevate.core.strategies.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement.liftReduce
 import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.default._
 import elevate.rise.rules.{inferRise, lowering}
-import elevate.rise.strategies.normalForm._
-import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel, _}
 import elevate.rise.strategies.traversal._
 import elevate.util._
 import rise.core.TypedDSL._
@@ -26,6 +25,16 @@ class algorithmic extends shine.test_util.Tests {
   // T: transpose
   // S: slide/split
   // J: join
+
+  def loopInterchange = elevate.rise.strategies.tiling.loopInterchange(default.RiseTraversable)
+  def loopInterchangeAtLevel = elevate.rise.strategies.tiling.loopInterchangeAtLevel(default.RiseTraversable)
+  def tileND = elevate.rise.strategies.tiling.tileND(default.RiseTraversable)
+  def tileNDList = elevate.rise.strategies.tiling.tileNDList(default.RiseTraversable)
+
+  def DFNF = elevate.rise.strategies.normalForm.DFNF()(default.RiseTraversable)
+  def RNF = elevate.rise.strategies.normalForm.RNF()(default.RiseTraversable)
+  def CNF = elevate.rise.strategies.normalForm.CNF()(default.RiseTraversable)
+  def BENF = elevate.rise.strategies.normalForm.BENF()(default.RiseTraversable)
 
   // Loop Interchange
 
@@ -46,7 +55,7 @@ class algorithmic extends shine.test_util.Tests {
     ))
 
     assert(betaEtaEquals(
-      body(body(fmap(loopInterchange) `;` LCNF `;` RNF))(input),
+      body(body(fmap(loopInterchange) `;` DFNF `;` RNF))(input),
       gold
     ))
   }
@@ -69,10 +78,10 @@ class algorithmic extends shine.test_util.Tests {
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: f32)(_ => l(0.0f)))) $ transpose(i))))
 
-    val rewrite = body(body(body(function(liftReduce))))(LCNF(mapReduce)).get
+    val rewrite = body(body(body(function(liftReduce))))(DFNF(mapReduce)).get
 
-    val typedGold = LCNF(reduceMap)
-    val typedRewrite = LCNF(rewrite)
+    val typedGold = DFNF(reduceMap)
+    val typedRewrite = DFNF(rewrite)
 
     assert(typedRewrite == typedGold)
   }
@@ -130,7 +139,7 @@ class algorithmic extends shine.test_util.Tests {
 
     infer(goldMKNVersion1)
     val typedGold = infer(goldMKNAlternative)
-    val loopMKN = (oncetd(liftReduce) `;` LCNF `;` oncetd(removeTransposePair)).apply(mm).get
+    val loopMKN = (topDown(liftReduce) `;` DFNF `;` topDown(removeTransposePair)).apply(mm).get
     val typedRewrite = infer(loopMKN)
 
     assert(typedRewrite == typedGold)
@@ -234,7 +243,7 @@ class algorithmic extends shine.test_util.Tests {
     infer(goldKMNAlternative)
     infer(goldKMNAlternative2)
 
-    val loopKMN: Rise = (oncetd(liftReduce)).apply(infer(mmMKN)).get
+    val loopKMN: Rise = (topDown(liftReduce)).apply(infer(mmMKN)).get
 
     infer(loopKMN)
     assert(goldKMNAlternative2 == loopKMN)
@@ -272,7 +281,7 @@ class algorithmic extends shine.test_util.Tests {
     val K = NatIdentifier("K")
 
     val mm: Rise =
-      LCNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      DFNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
           map(fun(ak =>
@@ -285,7 +294,7 @@ class algorithmic extends shine.test_util.Tests {
     // sanity check
     assert(mm == typedMM)
 
-    val tile = body(body(body(body(body(tileND(2)(32)))))) `;` LCNF
+    val tile = body(body(body(body(body(tileND(2)(32)))))) `;` DFNF
 
     val untyped = tile.apply(mm).get
     val typed = tile.apply(typedMM).get
@@ -294,14 +303,14 @@ class algorithmic extends shine.test_util.Tests {
     infer(typed)
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
-    val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
+    val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
     println(gen.CProgram(infer(lower(typedUntyped).get)).code)
     assert(untyped == typed)
 
     /// TILE + REORDER
 
-    val tileReorder = body(body(body(body(body(tileNDList(List(16,32))))))) `;` LCNF `;`
-      inferRise `;` oncetd(liftReduce) `;` inferRise `;` oncetd(liftReduce)
+    val tileReorder = body(body(body(body(body(tileNDList(List(16,32))))))) `;` DFNF `;`
+      inferRise `;` topDown(liftReduce) `;` inferRise `;` topDown(liftReduce)
 
     val reorder = tileReorder(mm).get
 
@@ -415,7 +424,7 @@ class algorithmic extends shine.test_util.Tests {
       )))
     */
 
-    val tiled = oncetd(tileND(2)(16)).apply(mm)
+    val tiled = topDown(tileND(2)(16)).apply(mm)
     infer(tiled)
   }
 

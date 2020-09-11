@@ -7,12 +7,12 @@ import rise.core.types._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import elevate.core._
-import elevate.core.strategies.basic._
-import elevate.core.strategies.traversal._
 import elevate.rise.Rise
 import elevate.rise.rules._
-import elevate.rise.strategies.normalForm._
-import elevate.rise.rules.traversal._
+import elevate.core.strategies.basic._
+import elevate.core.strategies.traversal._
+import elevate.rise.rules.traversal.alternative
+import elevate.rise.rules.traversal.alternative._
 
 class cameraPipeCheck extends shine.test_util.TestsWithExecutor {
   val H = 99
@@ -93,6 +93,9 @@ void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
 }
 """
 
+  val DFNF = elevate.rise.strategies.normalForm.DFNF()(alternative.RiseTraversable)
+  val CNF = elevate.rise.strategies.normalForm.CNF()(alternative.RiseTraversable)
+
   def check(
     lowered: Rise, callCFun: String => String,
     inputSize: Int, inputCty: String, inputPath: String,
@@ -153,8 +156,8 @@ int main(int argc, char** argv) {
   test("hot pixel suppression passes checks") {
     val typed = printTime("infer", infer(hot_pixel_suppression))
     println(s"hot pixel suppression: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(2, oncetd(lowering.mapSeq))
+    val lower: Strategy[Rise] = DFNF `;` CNF `;`
+      repeatNTimes(2, topDown(lowering.mapSeq))
     val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     check(
@@ -235,9 +238,9 @@ int main(int argc, char** argv) {
       )))))
     ))
     println(s"color correction: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
-      oncetd(lowering.mapSeqUnroll)
+    val lower: Strategy[Rise] = DFNF `;` CNF `;`
+      repeatNTimes(2, topDown(lowering.mapSeq)) `;`
+      topDown(lowering.mapSeqUnroll)
     val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     // TODO: investigate output difference of 1
@@ -259,8 +262,8 @@ int main(int argc, char** argv) {
   test("apply curve passes checks") {
     val typed = printTime("infer", infer(apply_curve))
     println(s"apply curve: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(3, oncetd(lowering.mapSeq))
+    val lower: Strategy[Rise] = DFNF `;` CNF `;`
+      repeatNTimes(3, topDown(lowering.mapSeq))
     val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     check(

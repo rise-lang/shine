@@ -1,6 +1,8 @@
 package apps
 
-import shine.DPIA.Types.{read, write, ExpType}
+import elevate.rise.rules.traversal.default
+import shine.DPIA.Types.{ExpType, read, write}
+import shine.DPIA.Types.TypeCheck._
 import rise.core.DSL._
 import rise.core.types._
 import rise.core.HighLevelConstructs.reorderWithStride
@@ -15,7 +17,7 @@ class dot extends shine.test_util.Tests {
   private val add = fun(a => fun(x => a + x))
 
   private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-    zip(xs)(ys) |> mapSeq(mulT) |> reduceSeq(add)(l(0.0f))
+    zip(xs)(ys) |> toMemFun(mapSeq(mulT)) |> reduceSeq(add)(l(0.0f))
   )))
 
   test("Simple dot product type inference works") {
@@ -33,15 +35,12 @@ class dot extends shine.test_util.Tests {
     import shine.DPIA.Types.f32
     import shine.DPIA.Types.DataType._
     import shine.DPIA._
-    val phrase = shine.DPIA.fromRise(infer(simpleDotProduct))
+    val phrase = shine.DPIA.fromRise(infer(simpleDotProduct))(default.RiseTraversable)
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32
-    assertResult(
-      N ->: (expT(N`.`dt, read) ->: expT(N`.`dt, read) ->: expT(dt, write))
-    ) {
-      phrase.t
-    }
+    assert(phrase.t `<=`
+      N ->: (expT(N`.`dt, read) ->: expT(N`.`dt, read) ->: expT(dt, write)))
   }
 
   // C
@@ -51,7 +50,7 @@ class dot extends shine.test_util.Tests {
 
   // OpenMP
   test("Dot product CPU vector 1 compiles to syntactically correct OpenMP") {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val dotCPUVector1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(asVectorAligned(4)(xs))(asVectorAligned(4)(ys))
@@ -67,8 +66,9 @@ class dot extends shine.test_util.Tests {
     gen.OpenMPProgram(dotCPUVector1)
   }
 
-  test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
-    import rise.OpenMP.DSL._
+  test("Intel derived no warp dot product 1 compiles to" +
+    "syntactically correct OpenMP") {
+    import rise.openMP.DSL._
 
     val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4))
@@ -85,7 +85,7 @@ class dot extends shine.test_util.Tests {
   }
 
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs)(ys) |>
@@ -102,7 +102,7 @@ class dot extends shine.test_util.Tests {
   }
 
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val dotCPU2 = nFun(n => fun(xsT(n))(in =>
       in |>
@@ -119,9 +119,10 @@ class dot extends shine.test_util.Tests {
   }
 
   { // OpenCL
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
-    test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
+    test("Intel derived no warp dot product 1 compiles to" +
+      "syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
         split(8192) |>

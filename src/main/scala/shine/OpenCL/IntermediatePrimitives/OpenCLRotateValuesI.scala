@@ -35,7 +35,7 @@ object OpenCLRotateValuesI {
           k(rs.rd) `;`
           // rotate
           MapSeqI(size - 1, dt, dt, write_dt,
-            Drop(1, size - 1, read, dt, rs.rd),
+            Drop(1, size - 1, dt, rs.rd),
             TakeAcc(size - 1, 1, dt, rs.wr), unroll = true)
         ),
       arithexpr.arithmetic.RangeAdd(0, n, 1)))

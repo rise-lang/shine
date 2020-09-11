@@ -24,7 +24,7 @@ class scal extends shine.test_util.Tests {
 
   // OpenMP
   test("scalIntel compiles to syntactically correct OpenMP") {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val scalIntel = nFun(n => fun(n`.`f32)(input => fun(f32)(alpha =>
       input |>
@@ -43,7 +43,7 @@ class scal extends shine.test_util.Tests {
   }
 
   test("scalIntel2 compiles to syntactically correct OpenMP") {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val scalIntel2 = nFun(n => fun(n`.`f32)(input => fun(f32)(alpha =>
       input |>
@@ -60,7 +60,7 @@ class scal extends shine.test_util.Tests {
 
   // OpenCL
   {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val scalWgLcl = (fst: Nat, snd: Nat) =>
       nFun(n => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>

@@ -100,7 +100,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
       case ForeignFunction(f, inTs, outT, args) =>
         OpenMPCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
-      case AsVectorAligned(n, _, dt, e) => path match {
+      case AsVectorAligned(n, _, _, dt, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
           exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
 
@@ -113,9 +113,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           })
         case _ =>           error(s"Expected path to be not empty")
       }
-      case AsScalar(_, m, _, e) => path match {
-        case (i: CIntExpr) :: ps => exp(e, env, CIntExpr(i / m) :: ps, cont)
-        case _ => error(s"Expected path to be not empty")
+      case AsScalar(_, m, _, _, e) => path match {
+        case (i: CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
+        case _ =>           error(s"Expected path to be not empty")
       }
       // TODO: this has to be refactored
       case VectorFromScalar(n, st, e) => path match {

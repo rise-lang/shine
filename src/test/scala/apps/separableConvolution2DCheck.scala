@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
 
   // FIXME: got broken
   test("compiling OpenCL private arrays should unroll loops") {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))

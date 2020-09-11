@@ -1,12 +1,13 @@
 package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
-import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
+import shine.DPIA.Types.TypeCheck._
 import shine.DPIA._
 
 sealed trait Phrase[T <: PhraseType] {
@@ -30,8 +31,13 @@ final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1
 final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2], arg: Phrase[T1])
   extends Phrase[T2] {
 
-  TypeCheck.check(fun.t.inT, arg.t) // FIXME: redundant with type checking
-  override val t: T2 = fun.t.outT
+  override val t: T2 = {
+    assert(arg.t `<=` fun.t.inT,
+      s"Expected `${arg.t}' to be compatible with `${fun.t.inT}'\n" +
+        s"when applying:\n`$arg'\nto:\n`$fun'")
+    fun.t.outT
+  }
+
   override def toString: String = s"($fun $arg)"
 }
 
@@ -86,8 +92,6 @@ final case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]
 final case class IfThenElse[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T])
   extends Phrase[T] {
 
-  // FIXME: redundant with type checking
-  TypeCheck.check(thenP.t, elseP.t)
   override val t: T = thenP.t
 }
 
@@ -234,7 +238,7 @@ object Phrase {
       p match {
         case Natural(n) => TransientNat(n)
         //TODO can we use our knowledge of n somehow?
-        case AsIndex(n, e) => transientNatFromExpr(e)
+        case NatAsIndex(n, e) => transientNatFromExpr(e)
         case IndexAsNat(_, e) => transientNatFromExpr(e)
         case UnaryOp(op, e) =>
           transientNatFromExpr(e).map(unOpToNat(op, _))

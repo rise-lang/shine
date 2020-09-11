@@ -10,8 +10,8 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class Array(dt: DataType,
-                       elements: Vector[Phrase[ExpType]])
+final case class MakeArray(dt: DataType,
+                           elements: Vector[Phrase[ExpType]])
   extends ExpPrimitive {
 
   override val t: ExpType = expT({elements.length : Nat}`.`dt, read)
@@ -25,7 +25,7 @@ final case class Array(dt: DataType,
     </array>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Array(fun.data(dt), elements.map(VisitAndRebuild(_, fun)))
+    MakeArray(fun.data(dt), elements.map(VisitAndRebuild(_, fun)))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 
@@ -43,7 +43,7 @@ final case class Array(dt: DataType,
         case xf +: func => con(xf)(fun(expT(dt, read))(xi =>
           rec(func, imp :+ xi)
         ))
-        case _ => C(Array(dt, imp))
+        case _ => C(MakeArray(dt, imp))
       }
     }
 

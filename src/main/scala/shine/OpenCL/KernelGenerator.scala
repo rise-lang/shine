@@ -63,10 +63,10 @@ object KernelGenerator {
     adaptKernelParameters(p, outParam, inputParams, intermediateAllocations, gen) |> {
       case (p, outParam, inputParams, intermediateAllocations, kernelParams) =>
 
-      val identMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
+      val identMap: Predef.Map[Identifier[_ <: BasePhraseType], DeclRef] =
         (outParam +: inputParams).map( p => p -> C.AST.DeclRef(p.name) ).toMap
 
-      val intermediateIdentMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
+      val intermediateIdentMap: Predef.Map[Identifier[_ <: BasePhraseType], DeclRef] =
           intermediateAllocations.flatMap( p =>
             Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
                 Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap

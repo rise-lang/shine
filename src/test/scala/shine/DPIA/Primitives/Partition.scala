@@ -4,8 +4,9 @@ import benchmarks.core.SimpleRunOpenCLProgram
 import shine.DPIA
 import shine.DPIA.Nat
 import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import util.{SyntaxChecker, TimeSpan, Time}
+import util.{SyntaxChecker, Time, TimeSpan}
 import arithexpr.arithmetic._
+import elevate.rise.rules.traversal.default
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core._
@@ -24,7 +25,7 @@ class Partition extends shine.test_util.Tests {
 
     println("\n" + slideExample + "\n")
 
-    val p = shine.C.ProgramGenerator.makeCode(DPIA.fromRise(infer(slideExample)))
+    val p = shine.C.ProgramGenerator.makeCode(DPIA.fromRise(infer(slideExample))(default.RiseTraversable))
     val code = p.code
     SyntaxChecker(code)
   }

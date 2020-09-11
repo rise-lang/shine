@@ -1,5 +1,6 @@
 package shine.DPIA.FunctionalPrimitives
 
+
 import arithexpr.arithmetic.SimplifiedExpr
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
@@ -28,8 +29,7 @@ final case class SlideSeq(
   dt2: DataType,
   load: Phrase[ExpType ->: ExpType],
   input: Phrase[ExpType]
-) extends ExpPrimitive
-{
+) extends ExpPrimitive {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
   load :: expT(dt1, read) ->: expT(dt2, write)
@@ -43,7 +43,7 @@ final case class SlideSeq(
   }
 
   override def eval(s: Store): Data = {
-    Slide(n, sz, sp, dt2, Map(inputSize, dt1, dt2, load, input)).eval(s)
+    Slide(n, sz, sp, dt2, Map(inputSize, dt1, dt2, read, load, input)).eval(s)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])(

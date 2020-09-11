@@ -35,8 +35,8 @@ object SlideSeqIIndices {
               CycleAcc(size - 1 + n, size, dt2, bufWr)) `@` i)
           )) `;`
           // use neighborhood
-          k(Take(size, n - i - size, read, dt2,
-            Drop(i, n - i, read, dt2, Cycle(n, size, dt2, bufRd)))
+          k(Take(size, n - i - size, dt2,
+            Drop(i, n - i, dt2, Cycle(n, size, dt2, bufRd)))
           )
         ),
         arithexpr.arithmetic.RangeAdd(0, n, 1)
@@ -51,7 +51,7 @@ object SlideSeqIIndices {
       case PairType(a, b) =>
         allocGen(a, (wa, ra) => allocGen(b, (wb, rb) =>
           C(UnzipAcc(size, a, b, PairAcc(size`.`a, size`.`b, wa, wb)),
-            Zip(size, a, b, ra, rb))
+            Zip(size, a, b, `read`, ra, rb))
         ))
       case _ =>
         `new`(size`.`dt, buffer => C(buffer.wr, buffer.rd))

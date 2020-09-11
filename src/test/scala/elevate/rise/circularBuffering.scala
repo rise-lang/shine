@@ -8,7 +8,8 @@ import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.rise.rules._
-import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.alternative
+import elevate.rise.rules.traversal.alternative._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
 import elevate.rise.strategies.predicate._
@@ -44,11 +45,11 @@ class circularBuffering extends shine.test_util.Tests {
       )) >> mapSeqUnroll(mapSeq(fun(x => x)))
 
   val buffered: Rise =
-    slide(3)(1) >> mapSeq(sumSeq) >> let(fun(x =>
+    slide(3)(1) >> mapSeq(sumSeq) >> toMem >> letf(x =>
       makeArray(2)(
         x |> slide(2)(1) >> map(sumSeq) >> drop(1) >> dropLast(1),
         x |> slide(4)(1) >> map(sumSeq)
-      )) >> mapSeqUnroll(mapSeq(fun(x => x))))
+      )) >> mapSeqUnroll(mapSeq(fun(x => x)))
 
   val circBuf: Rise =
     slide(3)(1) >> map(sumSeq) >>
@@ -114,7 +115,7 @@ class circularBuffering extends shine.test_util.Tests {
   }
 
   private val id = fun(x => x)
-  private val norm = normalize.apply(gentleBetaReduction)
+  private val norm = normalize(alternative.RiseTraversable).apply(gentleBetaReduction())
 
   private def rewriteSteps(a: Rise, steps: Seq[(Strategy[Rise], Rise)]): Unit = {
     steps.foldLeft[Rise](norm(infer(a)).get)({ case (e, (s, expected)) =>
@@ -122,7 +123,7 @@ class circularBuffering extends shine.test_util.Tests {
       val nuExpect = norm(infer(expected)).get
       if (!openEquality(result, nuExpect)) {
         throw new Exception(
-          s"expected structural equality:\n$result\n\n$nuExpect")
+          s"expected structural equality.\nGot:\n$result\nExpected:\n$nuExpect")
       }
       result
     })
@@ -130,7 +131,7 @@ class circularBuffering extends shine.test_util.Tests {
 
   test("highLevel to circBuf") {
     rewriteSteps(highLevel, Seq(
-      (oncetd(dropBeforeMap) `;` oncetd(takeBeforeMap))
+      (topDown(dropBeforeMap)`;` topDown(takeBeforeMap))
       -> (
         slide(3)(1) >> map(sum) >> fun(x =>
         makeArray(2)(
@@ -138,7 +139,7 @@ class circularBuffering extends shine.test_util.Tests {
           x |> slide(4)(1) >> map(sum)
         ))
       ),
-      (oncetd(dropInSlide) `;` oncetd(takeBeforeMap) `;` oncetd(takeInSlide))
+      (topDown(dropInSlide) `;` topDown(takeBeforeMap) `;` topDown(takeInSlide))
       -> (
       slide(3)(1) >> map(sum) >> fun(x =>
         makeArray(2)(
@@ -154,7 +155,7 @@ class circularBuffering extends shine.test_util.Tests {
           x |> slide(4)(1) >> map(sum)
         ))
       ),
-      oncetd(mapOutsideMakeArray)
+      topDown(mapOutsideMakeArray)
       -> (
       slide(3)(1) >> map(sum) >> slide(4)(1) >> map(fun(x =>
         makeArray(2)(
@@ -163,11 +164,11 @@ class circularBuffering extends shine.test_util.Tests {
         ))) >> transpose
       ),
       (normalize.apply(lowering.reduceSeq) `;`
-        oncetd(dropBeforeTake) `;`
-        oncetd(isApply `;` one(isApply `;` one(isMakeArray)) `;`
+        topDown(dropBeforeTake) `;`
+        topDown(isApply `;` one(isApply `;` one(isMakeArray)) `;`
           lowering.mapSeqUnrollWrite) `;`
-        oncetd(lowering.circularBuffer(id)) `;`
-        oncetd(lowering.iterateStream))
+        topDown(lowering.circularBuffer(id)) `;`
+        topDown(lowering.iterateStream))
       -> circBuf,
     ))
   }

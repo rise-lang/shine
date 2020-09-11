@@ -14,6 +14,7 @@ lazy val shine = (project in file("."))
       "-Xfatal-warnings",
       "-Xlint",
       "-Xmax-classfile-name", "100",
+      "-Ypatmat-exhaust-depth", "60",
       "-unchecked",
       "-deprecation",
       "-feature",

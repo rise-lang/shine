@@ -4,7 +4,7 @@ import shine.OpenCL._
 import rise.core._
 import rise.core.DSL._
 import rise.core.types._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import util.gen
 
 import scala.language.{postfixOps, reflectiveCalls}
