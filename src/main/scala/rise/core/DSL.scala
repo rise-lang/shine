@@ -188,6 +188,9 @@ object DSL {
     def apply(in: Expr => Expr): Expr = {
       fun(e => primitives.Let()().apply(e).apply(fun(in)))
     }
+    def apply(in: Expr): Expr = {
+      fun(e => primitives.Let()().apply(e).apply(in))
+    }
   }
 
   // noinspection DuplicatedCode
