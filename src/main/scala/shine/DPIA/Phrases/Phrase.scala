@@ -372,7 +372,7 @@ abstract class ExpPrimitive extends Primitive[ExpType] {
 
   def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
                        (implicit context: TranslationContext): Phrase[CommType] =
-    TranslationToImperative.translateArrayToStream(this, C)
+    Compilation.TranslationToImperative.translateArrayToStream(this, C)
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType]

@@ -108,7 +108,7 @@ object FlagPrivateArrayLoops {
           case i: Identifier[_] =>
             idents += i.name
             return Stop(p) // do not visit the type
-          case shine.DPIA.FunctionalPrimitives.AsIndex(_, p) =>
+          case shine.DPIA.FunctionalPrimitives.NatAsIndex(_, p) =>
             return Continue(p, this)
           case _ =>
         }

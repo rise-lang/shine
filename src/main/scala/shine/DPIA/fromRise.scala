@@ -110,7 +110,7 @@ object fromRise {
     import shine.OpenMP.FunctionalPrimitives._
     import shine.DPIA.Types.MatchingDSL._
 
-    (p, t) match {
+    (p, t: @unchecked) match {
       case (core.PrintType(msg), expT(dt: DataType, w) ->: _) =>
         fun[ExpType](expT(dt, w), e => PrintType(msg, dt, w, e))
 

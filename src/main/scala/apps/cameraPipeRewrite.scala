@@ -6,6 +6,7 @@ import rise.core.TypedDSL._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
+import elevate.rise.rules.traversal.alternative._
 import elevate.core.strategies.predicate._
 import elevate.rise._
 import elevate.rise.rules._
@@ -46,7 +47,7 @@ object cameraPipeRewrite {
 
   def takeDropTowardsInput: Strategy[Rise] = {
     normalize.apply(
-      gentleBetaReduction <+ etaReduction <+
+      gentleBetaReduction() <+ etaReduction() <+
       takeAll <+ dropNothing <+
       mapFusion <+ mapIdentity <+
       takeBeforeMap <+ dropBeforeMap <+
@@ -60,7 +61,7 @@ object cameraPipeRewrite {
   def debugS(msg: String) =
     elevate.core.strategies.debug.debug[Rise](msg)
   def printS(msg: String) =
-    elevate.core.strategies.debug.print[Rise](msg)
+    elevate.core.strategies.debug.echo[Rise](msg)
   private val idS = elevate.core.strategies.basic.id[Rise]()
 
   type Traversal = Strategy[Rise] => Strategy[Rise]
@@ -293,20 +294,20 @@ object cameraPipeRewrite {
   }
 
   def stronglyReducedForm: Strategy[Rise] = normalize.apply(
-    betaReduction <+ etaReduction <+
+    betaReduction <+ etaReduction() <+
     removeTransposePair <+ mapFusion <+
     idxReduction <+ fstReduction <+ sndReduction
   )
 
   def gentlyReducedForm: Strategy[Rise] = normalize.apply(
-    gentleBetaReduction <+ etaReduction <+
+    gentleBetaReduction() <+ etaReduction() <+
     removeTransposePair <+ mapFusion <+
     idxReduction <+ fstReduction <+ sndReduction
   )
 
   def demosaicCircularBuffers: Strategy[Rise] = {
     rewriteSteps(Seq(
-      normalize.apply(gentleBetaReduction),
+      normalize.apply(gentleBetaReduction()),
 
       takeDropTowardsInput,
 
@@ -314,13 +315,13 @@ object cameraPipeRewrite {
       body(body(body(
         function(body(function(body(
           // generate/select 3x2
-          repeatNTimes(6, oncetd(function(isEqualTo(DSL.generate)) `;`
-            oncetd(one(unifyMapOutsideGenerateSelect))
+          repeatNTimes(6, topDown(function(isEqualTo(DSL.generate)) `;`
+            topDown(one(unifyMapOutsideGenerateSelect))
           )) `;`
           gentlyReducedForm `;`
           // generate/select 3x2
           repeatNTimes(3,
-            oncetd(unifyMapOutsideGenerateSelect)
+            topDown(unifyMapOutsideGenerateSelect)
           ) `;`
           gentlyReducedForm `;`
           // makeArray
@@ -338,7 +339,7 @@ object cameraPipeRewrite {
             argument(argument(
               function(function(lowering.iterateStream)) `;`
                 argument(argument(argument(argument(argument(
-                  repeatNTimes(2, oncetd(
+                  repeatNTimes(2, topDown(
                     lowering.circularBuffer(mapSeq(fun(x => x)))
                   ))
                 ))))) `;`
@@ -371,7 +372,7 @@ object cameraPipeRewrite {
 
   def precomputeSharpenStrengthX32: Strategy[Rise] = {
     // |> toMem() |> let(fun(strength_x32 =>
-    normalize.apply(gentleBetaReduction) `;`
+    normalize.apply(gentleBetaReduction()) `;`
     afterTopLevel(
       function(argument( // sharpen
         ???
@@ -395,7 +396,7 @@ object cameraPipeRewrite {
   }
 
   def precomputeColorCorrectionMatrix: Strategy[Rise] = {
-    normalize.apply(gentleBetaReduction) `;`
+    normalize.apply(gentleBetaReduction()) `;`
     afterTopLevel(
       argument(argument({
         case expr @ App(Lambda(x, color_correct), matrix) =>
@@ -403,17 +404,17 @@ object cameraPipeRewrite {
             mapSeq(mapSeq(fun(x => x)), matrix)) :: expr.t)
         case _ => Failure(precomputeColorCorrectionMatrix)
       })) `;`
-      repeat(oncetd(letHoist))
+      repeat(topDown(letHoist))
     )
   }
 
   def precomputeCurve: Strategy[Rise] = {
     // TODO: apply_curve curve:
     // |> mapSeq(fun(x => x)) |> let(fun(curve =>
-    normalize.apply(gentleBetaReduction) `;`
+    normalize.apply(gentleBetaReduction()) `;`
     afterTopLevel(
       argument(function(argument(
-        oncetd(
+        topDown(
           function(function(isEqualTo(primitives.Idx()()))) `;`
           argument(function(isEqualTo(primitives.Generate()()))) `;`
           argument({ curve =>
@@ -422,7 +423,7 @@ object cameraPipeRewrite {
           })
         )
       ))) `;`
-      repeat(oncetd(letHoist)) // TODO: not hoisted far enough
+      repeat(topDown(letHoist)) // TODO: not hoisted far enough
     )
   }
 
@@ -439,13 +440,13 @@ object cameraPipeRewrite {
             function(body(
               function(body(
                 // generate/select 3x2
-                repeatNTimes(6, oncetd(function(isEqualTo(DSL.generate)) `;`
-                  oncetd(one(unifyMapOutsideGenerateSelect))
+                repeatNTimes(6, topDown(function(isEqualTo(DSL.generate)) `;`
+                  topDown(one(unifyMapOutsideGenerateSelect))
                 )) `;`
                 gentlyReducedForm `;`
                 // generate/select 3x2
                 repeatNTimes(3,
-                  oncetd(unifyMapOutsideGenerateSelect)
+                  topDown(unifyMapOutsideGenerateSelect)
                 ) `;`
                 gentlyReducedForm `;`
                 // makeArray

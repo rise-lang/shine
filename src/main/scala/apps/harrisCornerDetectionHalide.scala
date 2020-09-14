@@ -170,7 +170,9 @@ object harrisCornerDetectionHalide {
   }
 
   object omp { // and plain C
-    val harrisSeqWrite: Expr = gen.harrisSeqWrite(let)
+    private val letStack = fun(k => fun(x => x |> letf(k)))
+
+    val harrisSeqWrite: Expr = gen.harrisSeqWrite(letStack)
 
     private val circularBuffer: Expr = DSL.circularBuffer
 
@@ -188,9 +190,9 @@ object harrisCornerDetectionHalide {
   }
 
   object ocl {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
-    private val letGlobal = fun(k => fun(x => toGlobal(x) |> let(k)))
+    private val letGlobal = fun(k => fun(x => toGlobal(x) |> letf(k)))
 
     val harrisSeqWrite: Expr = gen.harrisSeqWrite(letGlobal)
 
@@ -216,7 +218,7 @@ object harrisCornerDetectionHalide {
         transpose >> map(transpose) >> // H.W+2.3.<v>f
         map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
         mapSeq(write1DSeq >> asScalar >> padEmpty(2)) >>
-        toGlobal >> let( // H.(W+2)v.f
+        toGlobal >> letf( // H.(W+2)v.f
         slide(3)(1) >> mapSeq( // 3.(W+2)v.f
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
           mapSeq(fun(nbh => makeArray(2)(
@@ -224,7 +226,7 @@ object harrisCornerDetectionHalide {
             dotWeightsVec(join(sobelYWeights2d), join(nbh))
           ) |> mapSeqUnroll(id))) >> transpose >>
           map(asScalar >> padEmpty(2)) // 2.Wv.f
-        ) >> toGlobal >> let( // H.2.Wv.f
+        ) >> toGlobal >> letf( // H.2.Wv.f
         slide(3)(1) >> mapSeq( // 3.2.Wv.f
           map(map(slideVectors(v) >> slide(3)(v))) >> // 3.2.W.3.<v>f
           map(transpose) >> transpose >> map(map(transpose)) >> // W.3.3.2.<v>f
@@ -236,9 +238,9 @@ object harrisCornerDetectionHalide {
             ixiy |> map(map(fun(p => (p `@` lidx(1, 2)) * (p `@` lidx(1, 2)))))
             |> fun(iyy =>
             // ^ 3.3.<v>f
-            ixx |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> let(fun(sxx =>
-            ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> let(fun(sxy =>
-            iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> let(fun(syy =>
+            ixx |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(sxx =>
+            ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(sxy =>
+            iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(syy =>
               // ^ <v>f
               coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
             )))))))))
@@ -258,10 +260,10 @@ object harrisCornerDetectionHalide {
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
           mapSeq(fun(nbh =>
             join(nbh) |> mapSeqUnroll(id) |> toPrivate |>
-            let(fun(jnbh => pair(
+            letf(jnbh => pair(
               dotWeightsVec(join(sobelXWeights2d))(jnbh),
               dotWeightsVec(join(sobelYWeights2d))(jnbh)
-            )))
+            ))
           )) >> unzip >> // (W.<v>f x W.<v>f)
           mapFst(asScalar >> padEmpty(2)) >> mapSnd(asScalar >> padEmpty(2))
         ) >> // H.3.(W.f x W.f)
@@ -271,18 +273,18 @@ object harrisCornerDetectionHalide {
             snd(p) |> slideVectors(v) >> slide(3)(v)
           ))) >> transpose >> // W.3.3.(<v>f x <v>f)
           mapSeq(mapSeqUnroll(mapSeqUnroll(id)) >> toPrivate >>
-            let(fun(ixiy =>
+            letf(ixiy =>
             ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
             ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
             ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
             // ^ 3.3.<v>f
-            ixx |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> let(fun(sxx =>
-            ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> let(fun(sxy =>
-            iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> let(fun(syy =>
+            ixx |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(sxx =>
+            ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(sxy =>
+            iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(syy =>
             // ^ <v>f
             coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
-            )))))))))
-          ))) >> asScalar // W.f
+            ))))))
+          )) >> asScalar // W.f
         )
       )))
 
@@ -301,10 +303,10 @@ object harrisCornerDetectionHalide {
           mapSeq(fun(nbh =>
             nbh |> mapSeqUnroll(mapSeqUnroll(id)) |> toPrivate |>
             map(shuffle(v)) >> join >>
-            let(fun(jnbh => pair(
+            letf(jnbh => pair(
               dotWeightsVec(join(sobelXWeights2d), jnbh),
               dotWeightsVec(join(sobelYWeights2d), jnbh)
-            )))
+            ))
           )) >> unzip >>
           mapFst(padEmpty(1)) >> mapSnd(padEmpty(1))
         ) >>
@@ -315,17 +317,17 @@ object harrisCornerDetectionHalide {
           mapSeq(mapSeqUnroll(mapSeqUnroll(id)) >> toPrivate >>
             map(unzip >> fun(p =>
               zip(shuffle(v)(fst(p)), shuffle(v)(snd(p)))
-            )) >> let(fun(ixiy =>
+            )) >> letf(ixiy =>
             ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
             ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
             ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
             // ^ 3.3.<v>f
-            sumVec(join(ixx)) |> toPrivate >> let(fun(sxx =>
-            sumVec(join(ixy)) |> toPrivate >> let(fun(sxy =>
-            sumVec(join(iyy)) |> toPrivate >> let(fun(syy =>
+            sumVec(join(ixx)) |> toPrivate >> letf(sxx =>
+            sumVec(join(ixy)) |> toPrivate >> letf(sxy =>
+            sumVec(join(iyy)) |> toPrivate >> letf(syy =>
             coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
-            )))))))))
-          ))) >> asScalar
+            ))))))
+          )) >> asScalar
         )
       )))
 
@@ -360,12 +362,12 @@ object harrisCornerDetectionHalide {
           registerRotation(2)(mapSeqUnroll(id)) >> // W.2.3.<v>f
           iterateStream(transpose >> // 3.2<v>f
             mapSeqUnroll(shuffle(v) >> sumVec) >> // 3.<v>f
-            toPrivate >> let(fun(sxys => {
+            toPrivate >> letf(sxys => {
               val sxx = sxys `@` lidx(0, 3)
               val sxy = sxys `@` lidx(1, 3)
               val syy = sxys `@` lidx(2, 3)
               coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
-            }))
+            })
           ) >> asScalar
         )
       )))

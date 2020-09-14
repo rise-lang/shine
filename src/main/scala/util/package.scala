@@ -75,12 +75,15 @@ package object util {
   }
 
   def dotPrintTmp(name: String, e: rise.core.Expr): Unit = {
-    val generateDot = (e: rise.core.Expr) => {
-      rise.core.dotPrinter.generateDotString(e,
-        printTypes = false,
-        inlineLambdaIdentifier = true,
-        applyNodes = false)
-    }
-    rise.core.dotPrinter.exprToDot("/tmp", name, e, generateDot)
+    import scala.language.postfixOps
+    import scala.sys.process._
+
+    val path = "/tmp"
+    val dotString = rise.core.dotPrinter.generateDotString(e,
+      printTypes = false,
+      inlineLambdaIdentifier = true,
+      applyNodes = false)
+    writeToPath(s"$path/$name.dot", dotString)
+    s"dot -Tsvg $path/$name.dot -o $path/$name.svg" !!
   }
 }

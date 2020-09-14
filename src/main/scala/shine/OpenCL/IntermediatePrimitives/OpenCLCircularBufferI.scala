@@ -40,7 +40,7 @@ object OpenCLCircularBufferI {
               CycleAcc(size - 1 + n, alloc, dt2, bufWr)) `@` i)
           )) `;`
           // use neighborhood
-          k(Drop(i, size, read, dt2,
+          k(Drop(i, size, dt2,
             Cycle(i + size, alloc, dt2, bufRd)))
         ),
         arithexpr.arithmetic.RangeAdd(0, n, 1)
@@ -55,7 +55,7 @@ object OpenCLCircularBufferI {
       case PairType(a, b) =>
         allocGen(a, (wa, ra) => allocGen(b, (wb, rb) =>
           C(UnzipAcc(alloc, a, b, PairAcc(alloc`.`a, alloc`.`b, wa, wb)),
-            Zip(alloc, a, b, ra, rb))
+            Zip(alloc, a, b, read, ra, rb))
         ))
       case _ =>
         shine.OpenCL.DSL.`new`(a)(alloc`.`dt, buffer => C(buffer.wr, buffer.rd))

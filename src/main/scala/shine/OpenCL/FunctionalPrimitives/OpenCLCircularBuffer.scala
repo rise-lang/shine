@@ -37,7 +37,7 @@ final case class OpenCLCircularBuffer(
 
   override def eval(s: Store): Data = {
     import shine.DPIA.FunctionalPrimitives._
-    Slide(n, sz, 1, dt2, Map(inputSize, dt1, dt2, load, input)).eval(s)
+    Slide(n, sz, 1, dt2, Map(inputSize, dt1, dt2, read, load, input)).eval(s)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
