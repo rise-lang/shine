@@ -1,11 +1,11 @@
 package shine.OpenCL.IntermediatePrimitives
 
 import arithexpr.arithmetic.ArithExpr.{intToCst, simplifyImplicitly}
-import arithexpr.arithmetic.Log
+import arithexpr.arithmetic.{Log, Pow}
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}
-import shine.DPIA.FunctionalPrimitives.{IndexAsNat, NatAsIndex, Split}
+import shine.DPIA.FunctionalPrimitives.{Cast, IndexAsNat, NatAsIndex, Split}
 import shine.DPIA.ImperativePrimitives.PairAcc2
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType.idx
@@ -47,9 +47,11 @@ object OpenCLSegmentedReduceI {
           // Declare private variable for the reduction of the current segment
           `new` (AddressSpace.Private) (pt, current_reduction =>
 
-            // Process all m (n/m)-sized chunks in parallel
+            // Process all m (n/m)-sized chunks in parallel with all local threads
             MapLocalI(0)(o, pt, pt,
               λ(expT(ArrayType(m, pt), read))(x => λ(accT(pt))(a =>
+
+                //TODO: Maybe add padding to avoid bank conflicts
 
                 // Process first element x[0]
                 acc(x `@` NatAsIndex(m, Natural(0)))(current_reduction.wr) `;`
@@ -91,25 +93,104 @@ object OpenCLSegmentedReduceI {
 
           ) `;`
 
+          // TODO: You could replace a second reduction by using atomic operations at the end of the first reduction.
+
           // ******************************************************************************************************
           // Second reduction: Reduce the remaining reduction elements of every thread with a tree-based algorithm.
           //                   (n / m in total, saved in the array s_data)
           // ******************************************************************************************************
 
-            `for`(tree_loops, i =>
-              ParForLocal(0)(o, pt, s_data.wr,
-                λ(expT(idx(o), read))(j => λ(accT(pt))(a =>
-                  //TODO: Maybe add a right shift operator?
-                  `if` (IndexAsNat(o, j) `<` (Natural(o) / (Natural(2) * (Natural(1) + IndexAsNat(tree_loops, i)))))
-                  `then` comment("then")
-                  `else` comment("else")
-              ))) `;`
+            // Declare private variables for left and right elements of the current tree iteration plus their indices,
+            // and a private variable for the stride for the tree-based access pattern.
+            `new` (AddressSpace.Private) (pt, left_element =>
+              `new` (AddressSpace.Private) (pt, right_element =>
+                `new` (AddressSpace.Private) (int, left_index =>
+                  `new` (AddressSpace.Private) (int, right_index =>
+                    `new` (AddressSpace.Private) (int, stride =>
 
-                barrier()
-            )
+                  // Initialize stride with 1
+                  acc(Literal(1))(stride.wr) `;`
+
+                  // Loop Log(2, n / m) times
+                  `for`(tree_loops, i =>
+
+                    // Process o elements with all local threads.
+                    // This always leads to inactive threads but is necessary because the loop iteration count
+                    // must be equal to the size of the output array s_data (which size is o).
+                    // Note that the variable a isn't used here because you don't want to access s_data in a sequential
+                    // but tree-based approach, so you never use the expression a = s_data[lid].
+                    ParForLocal(0)(o, pt, s_data.wr,
+                      λ(expT(idx(o), read))(lid => λ(accT(pt))(a =>
+
+                        //TODO: Maybe add a left and right shift operator?
+
+                        // Make sure that only the first o / (2 * (i + 1)) threads are active in each iteration.
+                        `if` (IndexAsNat(o, lid) `<`
+                              (Natural(o) / (Natural(2) * (Natural(1) + IndexAsNat(tree_loops, i)))))
+
+                        `then` (
+
+                          //TODO: Maybe add padding to avoid bank conflicts
+
+                          //FIXME: Reading a NatType or IndexType in an assignment always leads to the error message
+                          //       that the key can't be found in the environment. Therefore stride, left_index and
+                          //       right_index are ints here and are later casted to NatTypes.
+
+                          // Calculate the index of the left_element of this iteration (2 * stride * local_id)
+                          (left_index.wr :=| int |
+                            (Literal(2) * stride.rd * Cast(NatType, int, IndexAsNat(o, lid)))) `;`
+
+                          // Calculate the index of the right_element of this iteration (left_index + stride)
+                          (right_index.wr :=| int | (left_index.rd + stride.rd)) `;`
+
+                          //FIXME: Simply using a NatType variable inside NatAsIndex always leads to a key not found
+                          //       error message (e.g. (s_data.rd `@` NatAsIndex(o, left_index.rd)), assuming
+                          //       left_index is a NatType here). Strangely enough, using something like
+                          //       Natural(1) * left_index.rd (again assuming left_index is a NatType) or in this case
+                          //       Cast(int, NatType, left_index.rd) with left_index as an int won't throw an error.
+
+                          // Save the left and right element in their private variables
+                          (left_element.wr :=| pt |
+                            (s_data.rd `@` NatAsIndex(o, Cast(int, NatType, left_index.rd)))) `;`
+                          (right_element.wr :=| pt |
+                            (s_data.rd `@` NatAsIndex(o, Cast(int, NatType, right_index.rd)))) `;`
+
+                            // If segment of left_element != segment of right_element
+                            (`if`(fst(left_element.rd) `!:=` fst(right_element.rd))
+
+                             // Write right_element.value into g_output[right_element.key]
+                             `then` f(g_output.rd `@` fst(right_element.rd))
+                                     (snd(right_element.rd))
+                                     (g_output.wr `@` fst(right_element.rd))
+
+                             // Accumulate the value of right_element into the value of left_element
+                             `else` f(snd(left_element.rd))
+                                     (snd(right_element.rd))
+                                     (PairAcc2(IndexType(k), dt, left_element.wr))
+                            )
+                        )
+
+                        // Inactive threads do nothing.
+                        `else` comment("do nothing"))
+
+                    )) `;`
+
+                    // Multiply the stride by 2
+                    (stride.wr :=| int | Literal(2) * stride.rd) `;`
+
+                    // Synchronize all local threads after each iteration.
+                    barrier()
+                )))))) `;`
+
+          // After the for-loop is finished the final reduced element is still saved in s_data[0],
+          // so it still needs to be accumulated into g_output[s_data[0].key].
+          f(g_output.rd `@` fst(s_data.rd `@` NatAsIndex(o, Natural(0))))
+           (snd(s_data.rd `@` NatAsIndex(o, Natural(0))))
+           (g_output.wr `@` fst(s_data.rd `@` NatAsIndex(o, Natural(0))))
 
         ) `;`
 
+        // Final result of the reduction of this workgroup is inside g_output.
         out(adj.exprF(g_output.rd))
       )
   }
