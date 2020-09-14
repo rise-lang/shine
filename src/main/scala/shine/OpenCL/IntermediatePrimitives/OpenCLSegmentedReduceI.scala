@@ -116,9 +116,9 @@ object OpenCLSegmentedReduceI {
 
                     // Process o elements with all local threads.
                     // This always leads to inactive threads but is necessary because the loop iteration count
-                    // must be equal to the size of the output array s_data (which size is o).
+                    // must be equal to the size of the output array s_data (whose size is o).
                     // Note that the variable a isn't used here because you don't want to access s_data in a sequential
-                    // but tree-based approach, so you never use the expression a = s_data[lid].
+                    // but tree-based way, so you never use the expression a = s_data[lid].
                     ParForLocal(0)(o, pt, s_data.wr,
                       λ(expT(idx(o), read))(lid => λ(accT(pt))(a =>
 
@@ -136,11 +136,11 @@ object OpenCLSegmentedReduceI {
                           //       that the key can't be found in the environment. Therefore stride, left_index and
                           //       right_index are ints here and are later casted to NatTypes.
 
-                          // Calculate the index of the left_element of this iteration (2 * stride * local_id)
+                          // Calculate the index of the left_element of the current iteration (2 * stride * local_id)
                           (left_index.wr :=| int |
                             (Literal(2) * stride.rd * Cast(NatType, int, IndexAsNat(o, lid)))) `;`
 
-                          // Calculate the index of the right_element of this iteration (left_index + stride)
+                          // Calculate the index of the right_element of the current iteration (left_index + stride)
                           (right_index.wr :=| int | (left_index.rd + stride.rd)) `;`
 
                           //FIXME: Simply using a NatType variable inside NatAsIndex always leads to a key not found
@@ -158,15 +158,15 @@ object OpenCLSegmentedReduceI {
                             // If segment of left_element != segment of right_element
                             (`if`(fst(left_element.rd) `!:=` fst(right_element.rd))
 
-                             // Write right_element.value into g_output[right_element.key]
-                             `then` f(g_output.rd `@` fst(right_element.rd))
-                                     (snd(right_element.rd))
-                                     (g_output.wr `@` fst(right_element.rd))
+                             // Write left_element.value into g_output[left_element.key]
+                             `then` f(g_output.rd `@` fst(left_element.rd))
+                                     (snd(left_element.rd))
+                                     (g_output.wr `@` fst(left_element.rd))
 
-                             // Accumulate the value of right_element into the value of left_element
-                             `else` f(snd(left_element.rd))
-                                     (snd(right_element.rd))
-                                     (PairAcc2(IndexType(k), dt, left_element.wr))
+                             // Accumulate the value of left_element into the value of right_element
+                             `else` f(snd(right_element.rd))
+                                     (snd(left_element.rd))
+                                     (PairAcc2(IndexType(k), dt, right_element.wr))
                             )
                         )
 
@@ -182,11 +182,11 @@ object OpenCLSegmentedReduceI {
                     barrier()
                 )))))) `;`
 
-          // After the for-loop is finished the final reduced element is still saved in s_data[0],
-          // so it still needs to be accumulated into g_output[s_data[0].key].
-          f(g_output.rd `@` fst(s_data.rd `@` NatAsIndex(o, Natural(0))))
-           (snd(s_data.rd `@` NatAsIndex(o, Natural(0))))
-           (g_output.wr `@` fst(s_data.rd `@` NatAsIndex(o, Natural(0))))
+          // After the for-loop is finished the final reduced element is still saved in s_data[o - 1],
+          // so it still needs to be accumulated into g_output[s_data[o - 1].key].
+          f(g_output.rd `@` fst(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
+           (snd(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
+           (g_output.wr `@` fst(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
 
         ) `;`
 

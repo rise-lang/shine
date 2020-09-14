@@ -30,7 +30,7 @@ object ReduceByIndexSeqI {
             `new` (AddressSpace.Private) (IndexType(k), i =>
               acc(is `@` j)(i.wr) `;`
                 //TODO: Using i as an index here always throws an key not found error
-                //      (=> 3 global memory accesses needed instead of 1)
+                //      (=> 2 global memory accesses needed instead of 1)
                 f(adj.exprF(accumulator.rd) `@` (is `@` j))
                  (xs `@` j)
                  (adj.accF(accumulator.wr) `@` (is `@` j))
