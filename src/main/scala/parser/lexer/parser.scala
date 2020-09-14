@@ -2,6 +2,7 @@ package parser.lexer
 
 import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
+import util.Execute.Exception
 
 object parse {
 
@@ -9,9 +10,11 @@ object parse {
    * Precondition: Only valid Tokens in tokenList.
    */
     def apply(tokenList: List[Token]): r.Expr = {
-      //val parseState: ParseState = (tokenList, Nil)
-  //TODO use:    val shineLambda = parseLambda(parseState)
-      r.Identifier("placeholder")()
+      val parseState: ParseState = (tokenList, Nil)
+      val shineLambda:r.Expr = parseTopLevelLambda(parseState)
+      println("parse: "+ shineLambda)
+      shineLambda
+      //r.Identifier("placeholder")()
     }
   //
   //    def checkBracesNumber(tokenList: List[Token]): Unit = {
@@ -46,15 +49,23 @@ object parse {
 
   implicit class ParseStatePipe(val ps: Option[ParseState]) extends AnyVal {
     def |>(f: ParseState => Option[ParseState]): Option[ParseState] = {
-      f(ps.get)
+      println("yuhu")
+      ps match {
+        case Some(p) => f(p)
+        case None => None
+      }
     }
   }
 
   implicit class ParseStateElse(val ps: Option[ParseState]) extends AnyVal {
     def ||(f: ParseState => Option[ParseState]): Option[ParseState] = {
-      f(ps.get) match {
-        case None => ps
-        case Some(ps) => Some(ps)
+      println("hi")
+      ps match {
+        case Some(p) => f(p) match {
+          case None => ps
+          case Some(par) => Some(par)
+        }
+        case None => None
       }
     }
   }
@@ -67,6 +78,9 @@ object parse {
 
   def parseBackslash(parseState: ParseState): Option[ParseState] = {
     val (tokens, parsedExprs) = parseState
+    if(tokens.isEmpty){
+      return None
+    }
     val nextToken :: restTokens = tokens
 
     nextToken match {
@@ -78,7 +92,11 @@ object parse {
   }
 
   def parseIdent(parseState: ParseState): Option[ParseState] = {
+    println("parseIdent: " + parseState)
     val (tokens, parsedSynElems) = parseState
+    if(tokens.isEmpty){
+      return None
+    }
     val nextToken :: restTokens = tokens
 
     nextToken match {
@@ -116,6 +134,34 @@ object parse {
     }
   }
 
+  def parseTypeAnnotation(parseState: ParseState): Option[ParseState] = {
+    val (tokens, parsedSynElems) = parseState
+    val colonToken :: typeToken :: restTokens = tokens
+
+    colonToken match {
+      case Colon(_) => {
+        //if a type Annotation exist, we set the type new of the Identifier
+        typeToken match {
+          case Type(typ, _) => {
+            val t: Option[rt.Type] = typ match {
+              case ShortTyp() => Some(rt.i8)
+              case IntTyp() => Some(rt.i32)
+              case FloatTyp() => Some(rt.f32)
+              case DoubleType() => Some(rt.f64)
+              case _ => None
+            }
+            t match {
+              case Some(t) => Some((restTokens, SType(t) :: parsedSynElems))
+              case None => None
+            }
+          }
+          case _ => None
+        }
+      }
+      case _ => None
+    }
+  }
+
   def parseArrow(parseState: ParseState): Option[ParseState] = {
     val (tokens, parsedExprs) = parseState
     val nextToken :: restTokens = tokens
@@ -129,10 +175,58 @@ object parse {
   }
 
   /*
+  top level Lambda expects that the type of the Identifier is defined!
+
+  only use as top level!
+   */
+  def parseTopLevelLambda(parseState: ParseState): r.Expr = {
+    require(parseState._2.isEmpty, "parseState is not empty, but nothing should be in it yet")
+    val ps =
+      Some(parseState)      |>
+        parseBackslash      |>
+        parseIdent          |>
+        parseTypeAnnotation |>
+        parseArrow          |>
+        parseExpression
+
+    println("durchgelaufen: "+ ps)
+
+    require(ps.get._1.isEmpty, "Everything should be computed!")
+    require(ps.get._2.length == 3, "it should now have exactly 3 Exprs: Identifier, Type of the Identifier and the expression")
+
+
+    val synElemList = ps.get._2
+    val (expr, synElemListExpr) = (synElemList.head match {
+      case SExpr(e) => e
+      case _ => ???
+    }, synElemList.tail)
+
+    val (typedIdent, synElemListTIdent) =
+      synElemListExpr.head match {
+        case SType(t) =>
+          synElemListExpr.tail.head match {
+            case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
+            case _ => ???
+          }
+        case SExpr(i) => ???
+      }
+
+    require(synElemListTIdent.isEmpty, "the List has to be empty!")
+
+    val lambda = Lambda(typedIdent.asInstanceOf[r.Identifier], expr)()
+    println("lambda durchgelaufen: " + lambda)
+    lambda
+  }
+  /*
   is the whole Syntax-Tree.
   the syntax-Tree has on top an Lambda-Expression
    */
   def parseLambda(parseState: ParseState): Option[ParseState] = {
+    if(parseState._1.isEmpty){
+      println("Abbruch; parseLambda: "+ parseState)
+      return Some(parseState)
+    }
+    println("parseLambda: " +parseState)
     val ps =
       Some(parseState) |>
         parseBackslash |>
@@ -141,7 +235,10 @@ object parse {
         parseArrow |>
         parseExpression
 
-    val synElemList = ps.get._2
+    val synElemList:List[SyntaxElement] = ps match {
+      case Some(a) => a._2
+      case None => return None
+    }
     val (expr, synElemListExpr) = (synElemList.head match {
       case SExpr(e) => e
       case _ => ???
@@ -151,7 +248,7 @@ object parse {
       synElemListExpr.head match {
         case SType(t) =>
           synElemListExpr.tail.head match {
-            case SExpr(i) => (i.setType(t), synElemList.tail.tail)
+            case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
             case _ => ???
           }
         case SExpr(i) => (i, synElemList.tail)
@@ -166,13 +263,23 @@ object parse {
   //_________________________________________________________Expres
 
   def parseExpression(parseState: ParseState): Option[ParseState] = {
+    if(parseState._1.isEmpty){
+      println("Abbruch; parseExpression: "+ parseState)
+      return Some(parseState)
+    }
+    println("parseExpression: " + parseState)
     //FIXME parseState always true
-    Some(parseState) || parseLambda || parseApp ||
+    Some(parseState) || parseIdent ||
+      parseLambda || parseApp ||
       parseBinOperatorApp || parseUnOperatorApp ||
-      parseBracesExpr || parseIdent || parseNumber
+      parseBracesExpr  || parseNumber
   }
 
   def parseBracesExpr(parseState: ParseState): Option[ParseState] = {
+    if(parseState._1.isEmpty){
+      println("Abbruch; parseBracesExpr: "+ parseState)
+      return Some(parseState)
+    }
     val p =
       Some(parseState)  |>
         parseLeftBrace  |>
@@ -188,32 +295,39 @@ object parse {
 
   //  1 + 2 * 3 = mul (add 1 2) 3 = App(App(mul, App(App(add, 1), 2)), 3)
   def parseBinOperatorApp(parseState: ParseState): Option[ParseState] = {
+    if(parseState._1.isEmpty){
+      println("Abbruch; parseBinOperatorApp: "+ parseState)
+      return Some(parseState)
+    }
     val p =
       Some(parseState)  |>
         parseExpression |>
         parseBinOperator |>
         parseExpression
 
-    val (tokens, parsedExprs) = p match {
+    val (tokens, parsedExprs):(List[Token], List[SyntaxElement]) = p match {
       case Some(parseState) => parseState
-      case None => None
+      case None => return None //Todo: how can I do that whitout this ugly return?
     }
     val expr2 :: binOp  :: expr1 :: restExpr= parsedExprs
 
-//    expr2 match {
-//      case SExpr(e2) => expr1 match {
-//        case SExpr(e1) =>  binOp match { //Todo: I want to create a Tree but I have problems to create a Tree for BinaryOperators SExpr(BinaryExpr(e1, prim, e2))
-//          case SPrim(prim) => Some((tokens, SExpr(r.substitute.exprInExpr(e1, prim, e2))  :: restExpr)) //Todo: What is r.substitute.exprInExpr(e1, prim, e2) ?
-//          case _ => None
-//        }
-//        case _ => None
-//      }
-//      case _ => None
-//    }
-    ???
+    expr2 match {
+      case SExpr(e2) => expr1 match {
+        case SExpr(e1) =>  binOp match { //TODO: now it only calculates from right to left, but normaly is * before +
+          case SExpr(op) => Some((tokens, SExpr(r.App(r.App(op, e2)(), e1)())  :: restExpr))
+          case _ => None
+        }
+        case _ => None
+      }
+      case _ => None
+    }
   }
 
   def parseApp(parseState: ParseState): Option[ParseState] = {
+    if(parseState._1.isEmpty){
+      println("Abbruch; parseApp: "+ parseState)
+      return Some(parseState)
+    }
     val p =
       Some(parseState)  |>
         parseExpression |>
@@ -234,45 +348,57 @@ object parse {
     }
   }
 
-  //TODO maybe remove
   def parseUnOperatorApp(parseState: ParseState): Option[ParseState] = {
-    // TODO use:
-//    val (tokens, parsedSynElems) = parseState
-//    val nextToken :: restTokens = tokens
+    if(parseState._1.isEmpty){
+      println("Abbruch; parseUnOperatorApp: "+ parseState)
+      return Some(parseState)
+    }
+    val p =
+    Some(parseState)    |>
+      parseUnOperator   |>
+      parseExpression
 
-//    val p = nextToken match {
-//      case UnOp(un, _) => un match {
-//        case OpType.UnaryOpType.NEG => Some((restTokens, SPrim(r.primitives.Neg()()) :: parsedSynElems))
-//        case OpType.UnaryOpType.NOT => Some((restTokens, SPrim(r.primitives.Not()()) :: parsedSynElems))
-//      }
-//      case _ => None
-//    }
+    val (tokens, parsedExprs): ParseState = p match {
+      case Some(parseState) => parseState
+      case None => return None
+    }
+    val unop :: expr:: restExpr= parsedExprs
 
+    unop match {
+      case SExpr(op) => {
+        op match {
+          case r.primitives.Neg() =>
+          case r.primitives.Not() =>
+          case _ => throw Exception("this should not be happening, because parseUnOperator has to be parsed an operator!")
+        }
+        expr match {
+          case SExpr(e) =>  Some((tokens, SExpr(r.App(op, e)())  :: restExpr))
+          case _ => None
+        }
+      }
+      case _ => None
+    }
+  }
 
-//    val (tokens, parsedExprs):ParseState = p match {
-//      case Some(parseState) => parseState
-//      case None => None
-//    }
-//    val expr :: unOp :: restExpr= parsedExprs
-//
-//    val e = expr match {
-//      case SExpr(e) =>  unOp match {
-//          case SPrim(r.primitives.Neg()) => SExpr(r.TypedDSL.neg(e))
-//          case SPrim(r.primitives.Not()) => SExpr(r.DSL.not(e))
-//          case _ => None
-//        }
-//      case _ => None
-//    }
-//
-//    e match {
-//      case SExpr(ex) => Some((tokens, ex:: restExpr))
-//      case _ => None
-//    }
-    ???
+  def parseUnOperator(parseState: ParseState): Option[ParseState] = {
+
+    val nextToken :: restTokens = parseState._1
+
+    val p = nextToken match {
+      case UnOp(un, _) => un match {
+        case OpType.UnaryOpType.NEG => Some((restTokens, SExpr(r.primitives.Neg()()) :: parseState._2))
+        case OpType.UnaryOpType.NOT => Some((restTokens, SExpr(r.primitives.Not()()) :: parseState._2))
+      }
+      case _ => None
+    }
+    p
   }
 
   def parseNumber(parseState: ParseState): Option[ParseState] = {
     val (tokens, parsedSynElems) = parseState
+    if(tokens.isEmpty){
+      return None
+    }
     val nextToken :: restTokens = tokens
 
     nextToken match {
