@@ -26,7 +26,7 @@ final case class OpenCLCircularBuffer(
 
   load :: expT(dt1, read) ->: expT(dt2, write)
   input :: expT(inputSize`.`dt1, read)
-  override val t: ExpType = expT(n`.`(sz`.`dt2), write)
+  override val t: ExpType = expT(n`.`(sz`.`dt2), read)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLCircularBuffer(v.addressSpace(a), v.nat(n), v.nat(alloc), v.nat(sz),

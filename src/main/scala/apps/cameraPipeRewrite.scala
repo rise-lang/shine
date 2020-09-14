@@ -362,7 +362,7 @@ object cameraPipeRewrite {
 
   def letContinuation(s: Strategy[Rise]): Strategy[Rise] =
     function(function(isEqualTo(primitives.Let()()))) `;`
-    function(argument(s))
+    argument(s)
 
   def afterTopLevel(s: Strategy[Rise]): Strategy[Rise] = p => {
     (body(afterTopLevel(s)) <+
@@ -371,7 +371,7 @@ object cameraPipeRewrite {
   }
 
   def precomputeSharpenStrengthX32: Strategy[Rise] = {
-    // |> toMem() |> let(fun(strength_x32 =>
+    // |> toMem() |> letf(fun(strength_x32 =>
     normalize.apply(gentleBetaReduction()) `;`
     afterTopLevel(
       function(argument( // sharpen
@@ -381,17 +381,17 @@ object cameraPipeRewrite {
   }
 
   def letHoist: Strategy[Rise] = {
-    case expr @ App(f, App(App(primitives.Let(), Lambda(x, b)), v)) =>
-      Success(let(lambda(untyped(x), typed(f)(b)), v) :: expr.t)
+    case expr @ App(f, App(App(primitives.Let(), v), Lambda(x, b))) =>
+      Success(letf(lambda(untyped(x), typed(f)(b)), v) :: expr.t)
     // TODO: normal form / non-map specific?
     case expr @ App(App(primitives.Map(), Lambda(y,
-      App(App(primitives.Let(), Lambda(x, b)), v)
+      App(App(primitives.Let(), v), Lambda(x, b))
     )), in) if !contains[Rise](y).apply(v) =>
-      Success(let(lambda(untyped(x), map(lambda(untyped(y), b), in)), v) :: expr.t)
+      Success(letf(lambda(untyped(x), map(lambda(untyped(y), b), in)), v) :: expr.t)
     case expr @ App(primitives.Map(), Lambda(y,
-      App(App(primitives.Let(), Lambda(x, b)), v)
+      App(App(primitives.Let(), v), Lambda(x, b))
     )) if !contains[Rise](y).apply(v) =>
-      Success(fun(in => let(lambda(untyped(x), map(lambda(untyped(y), b), in)), v)) :: expr.t)
+      Success(fun(in => letf(lambda(untyped(x), map(lambda(untyped(y), b), in)), v)) :: expr.t)
     case _ => Failure(letHoist)
   }
 
@@ -400,17 +400,17 @@ object cameraPipeRewrite {
     afterTopLevel(
       argument(argument({
         case expr @ App(Lambda(x, color_correct), matrix) =>
-          Success(let(lambda(toTDSL(x), color_correct),
+          Success(letf(lambda(toTDSL(x), color_correct),
             mapSeq(mapSeq(fun(x => x)), matrix)) :: expr.t)
         case _ => Failure(precomputeColorCorrectionMatrix)
       })) `;`
-      repeat(topDown(letHoist))
+      normalize.apply(gentleBetaReduction() <+ letHoist)
     )
   }
 
   def precomputeCurve: Strategy[Rise] = {
     // TODO: apply_curve curve:
-    // |> mapSeq(fun(x => x)) |> let(fun(curve =>
+    // |> mapSeq(fun(x => x)) |> letf(fun(curve =>
     normalize.apply(gentleBetaReduction()) `;`
     afterTopLevel(
       argument(function(argument(
@@ -418,7 +418,7 @@ object cameraPipeRewrite {
           function(function(isEqualTo(primitives.Idx()()))) `;`
           argument(function(isEqualTo(primitives.Generate()()))) `;`
           argument({ curve =>
-            Success(let(fun(x => x),
+            Success(letf(fun(x => x),
               mapSeq(fun(x => x), curve)) :: curve.t)
           })
         )

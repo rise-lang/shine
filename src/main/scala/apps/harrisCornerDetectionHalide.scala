@@ -138,8 +138,10 @@ object harrisCornerDetectionHalide {
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         transpose >> map(transpose) >>
-        map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
-        circularBuffer(3)(3)(write1DSeq) >>
+        // map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
+        circularBuffer(3)(3)(
+          map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f)))) >>
+          write1DSeq) >>
         circularBuffer(3)(3)(
           map(slide(3)(1)) >> transpose >>
           map(fun(nbh => pair(
@@ -170,7 +172,7 @@ object harrisCornerDetectionHalide {
   }
 
   object omp { // and plain C
-    private val letStack = fun(k => fun(x => x |> letf(k)))
+    private val letStack = fun(k => fun(x => toMem(x) |> letf(k)))
 
     val harrisSeqWrite: Expr = gen.harrisSeqWrite(letStack)
 
@@ -216,8 +218,11 @@ object harrisCornerDetectionHalide {
       )(input => input |>
         map(map(asVectorAligned(v))) >>
         transpose >> map(transpose) >> // H.W+2.3.<v>f
-        map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
-        mapSeq(write1DSeq >> asScalar >> padEmpty(2)) >>
+        // map() >>
+        mapSeq(
+          map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f)))) >>
+          write1DSeq >> asScalar >> padEmpty(2)
+        ) >>
         toGlobal >> letf( // H.(W+2)v.f
         slide(3)(1) >> mapSeq( // 3.(W+2)v.f
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
@@ -254,8 +259,10 @@ object harrisCornerDetectionHalide {
       )(input => input |>
         map(map(asVectorAligned(v))) >>
         transpose >> map(transpose) >> // H.W.3.<v>f
-        map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
-        circularBuffer(bLines)(3)(write1DSeq >> asScalar >> padEmpty(2)) >>
+        circularBuffer(bLines)(3)(
+          map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f)))) >>
+          write1DSeq >> asScalar >> padEmpty(2)
+        ) >>
         circularBuffer(bLines)(3)( // 3.W.f
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
           mapSeq(fun(nbh =>

@@ -73,7 +73,7 @@ final case class MapSnd(w: AccessType,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    val x = Identifier(freshName("fede_x"), ExpType(dt2, read))
+    val x = Identifier(freshName("fede_x"), ExpType(dt2, write))
 
     val otype = AccType(dt3)
     val o = Identifier(freshName("fede_o"), otype)

@@ -192,9 +192,9 @@ class circularBuffering extends shine.test_util.Tests {
     slide(2)(1) >> mapSeq(sumSeq)
 
   val circBufChain: Rise =
-    slide(4)(1) >> map(sumSeq) >>
-    circularBuffer(3)(3)(id) >> mapStream(sumSeq) >>
-    circularBuffer(2)(2)(id) >> iterateStream(sumSeq)
+    slide(4)(1) >> // map(sumSeq) >>
+    circularBuffer(3)(3)(sumSeq) >> // mapStream(sumSeq) >>
+    circularBuffer(2)(2)(sumSeq) >> iterateStream(sumSeq)
 
   test("example chain outputs are consistent") {
     val inlinedP = gen.CProgram(wrapExprChain(inlinedChain), "inlined")

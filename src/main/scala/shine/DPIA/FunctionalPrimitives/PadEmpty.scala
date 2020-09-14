@@ -18,8 +18,8 @@ final case class PadEmpty(
   array: Phrase[ExpType]
 ) extends ExpPrimitive {
 
-  array :: expT(n`.`dt, read)
-  override val t: ExpType = expT({n + r}`.`dt, read)
+  array :: expT(n`.`dt, write)
+  override val t: ExpType = expT({n + r}`.`dt, write)
 
   override def eval(s: Store): Data = ???
 

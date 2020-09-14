@@ -69,7 +69,7 @@ object harrisCornerDetectionHalideRewrite {
       subexpressionElimination(find) `;` {
         // TODO: use rewrite rules
         case rise.core.App(f, v) =>
-          Success(writeUnrolled(v.t)(v) |> toPrivate |> let(f))
+          Success(writeUnrolled(v.t)(v) |> toPrivate |> letf(f))
         case _ => ???
       } `;` reducedFusedForm
 

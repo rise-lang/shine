@@ -140,7 +140,7 @@ object fromRise {
       case (core.MapStream(),
         ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
-          expT(ArrayType(_, _), `write`) ) =>
+          expT(ArrayType(_, _), `read`) ) =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
             MapStream(n, s, t, f, e)))
@@ -390,9 +390,9 @@ object fromRise {
 
       case (core.PadEmpty(),
         nFunT(r,
-          expT(ArrayType(n, t), `read`) ->: _)) =>
+          expT(ArrayType(n, t), `write`) ->: _)) =>
         depFun[NatKind](r)(
-          fun[ExpType](expT(n`.`t, read), e =>
+          fun[ExpType](expT(n`.`t, `write`), e =>
             PadEmpty(n, r, t, e)))
 
       case (core.PadClamp(),
