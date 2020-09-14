@@ -2,8 +2,6 @@ package parser.lexer
 
 import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
-import shine.C.AST.DefaultImplementations.BinaryExpr
-import shine.C.AST.UnaryExpr
 
 object parse {
 
@@ -11,7 +9,7 @@ object parse {
    * Precondition: Only valid Tokens in tokenList.
    */
     def apply(tokenList: List[Token]): r.Expr = {
-      val parseState: ParseState = (tokenList, Nil)
+      //val parseState: ParseState = (tokenList, Nil)
   //TODO use:    val shineLambda = parseLambda(parseState)
       r.Identifier("placeholder")()
     }
@@ -170,7 +168,7 @@ object parse {
   def parseExpression(parseState: ParseState): Option[ParseState] = {
     //FIXME parseState always true
     Some(parseState) || parseLambda || parseApp ||
-      parseBinOperatorApp || parseUnOp ||
+      parseBinOperatorApp || parseUnOperatorApp ||
       parseBracesExpr || parseIdent || parseNumber
   }
 
