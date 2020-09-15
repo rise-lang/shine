@@ -436,6 +436,7 @@ object TypedDSL {
   def iterate: TDSL[Iterate] = toTDSL(primitives.Iterate()())
   def join: TDSL[Join] = toTDSL(primitives.Join()())
   def let: TDSL[Let] = toTDSL(primitives.Let()())
+  def letf: TDSL[Expr] = fun(k => fun(x => let(x)(k)))
   def map: TDSL[Map] = toTDSL(primitives.Map()())
   def mapFst: TDSL[MapFst] = toTDSL(primitives.MapFst()())
   def mapSnd: TDSL[MapSnd] = toTDSL(primitives.MapSnd()())
