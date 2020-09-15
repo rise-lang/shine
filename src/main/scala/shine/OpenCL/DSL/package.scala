@@ -56,4 +56,12 @@ package object DSL {
   object barrier {
     def apply(local: Boolean = true, global: Boolean = true) = Barrier(local, global)
   }
+
+  object atomicOperation {
+    def apply(dt: DataType,
+              f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
+              dst: Phrase[AccType],
+              src: Phrase[ExpType]) =
+      AtomicOperation(dt, f, dst, src)
+  }
 }

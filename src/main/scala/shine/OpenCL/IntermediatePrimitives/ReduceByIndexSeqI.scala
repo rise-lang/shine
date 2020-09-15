@@ -3,6 +3,7 @@ package shine.OpenCL.IntermediatePrimitives
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -25,6 +26,10 @@ object ReduceByIndexSeqI {
     comment("reduceByIndexSeq") `;`
       `new` (histAddrSpace) (adj.dt, accumulator =>
         acc(hist)(adj.accF(accumulator.wr)) `;`
+
+          atomicOperation(dt, f,
+            adj.accF(accumulator.wr) `@` NatAsIndex(k, Natural(2)),
+            Literal(1)) `;`
 
           `for`(n, j =>
             `new` (AddressSpace.Private) (IndexType(k), i =>

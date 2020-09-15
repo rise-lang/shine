@@ -97,7 +97,7 @@ object OpenCLSegmentedReduceI {
 
           // ******************************************************************************************************
           // Second reduction: Reduce the remaining reduction elements of every thread with a tree-based algorithm.
-          //                   (n / m in total, saved in the array s_data)
+          //                   (o = n / m in total, saved in the array s_data)
           // ******************************************************************************************************
 
             // Declare private variables for left and right elements of the current tree iteration plus their indices,
