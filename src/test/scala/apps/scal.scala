@@ -1,6 +1,5 @@
 package apps
 
-import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._

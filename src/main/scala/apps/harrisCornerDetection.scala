@@ -84,9 +84,8 @@ object harrisCornerDetection {
         makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclRotateValues(AddressSpace.Private)(3)
-      (mapSeqUnroll(id))
-      >> mapStream(
+      oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >>
+      iterateStream(
         transpose >> map(shuffle) >>
         zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
         // TODO: this triggers an extra copy
@@ -126,9 +125,8 @@ object harrisCornerDetection {
     slide(3)(1) |> mapGlobal(
       transpose >> map(transpose) >>
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
-      oclRotateValues(AddressSpace.Private)(3)
-      (mapSeqUnroll(id)) >>
-      mapStream(
+      oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >>
+      iterateStream(
         transpose >> map(shuffle) >>
         toPrivateFun(mapSeqUnroll(
           C2D.weightsSeqVecUnroll(C2D.binomialWeightsH)
@@ -156,9 +154,8 @@ object harrisCornerDetection {
         makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclRotateValues(AddressSpace.Private)(3)
-      (mapSeqUnroll(id)) >>
-      mapStream(
+      oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >>
+      iterateStream(
         transpose >> map(shuffle) >>
         zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
         mapSeqUnroll(fun(hWsNbh =>
@@ -186,9 +183,8 @@ object harrisCornerDetection {
     slide(3)(1) |> mapGlobal(
     transpose >> map(transpose) >>
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
-      oclRotateValues(AddressSpace.Private)(3)
-      (mapSeqUnroll(id)) >>
-      mapStream(
+      oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >>
+      iterateStream(
         transpose >> map(shuffle) >>
         toPrivateFun(mapSeqUnroll(
           C2D.weightsSeqVecUnroll(C2D.binomialWeightsH)

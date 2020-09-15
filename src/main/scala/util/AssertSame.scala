@@ -12,7 +12,7 @@ object AssertSame {
     def apply(a: Float, b: Float, msg: String): Unit = {
       val d = Math.abs(a - b)
       val dMax = 0.001
-      assert(d < dMax, s"$msg (difference of $d)")
+      assert(d < dMax, s"$msg (difference of $d between $a and $b)")
     }
   }
   implicit def array[T](implicit sameElem: AssertSame[T]): AssertSame[Array[T]] = new AssertSame[Array[T]] {

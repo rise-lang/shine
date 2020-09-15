@@ -7,7 +7,7 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class RecordAcc(dt1: DataType,
+final case class PairAcc(dt1: DataType,
                            dt2: DataType,
                            fst: Phrase[AccType],
                            snd: Phrase[AccType])
@@ -20,7 +20,7 @@ final case class RecordAcc(dt1: DataType,
   override def eval(s: Store): AccIdentifier = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] =
-    RecordAcc(fun.data(dt1), fun.data(dt2), VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
+    PairAcc(fun.data(dt1), fun.data(dt2), VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
 
 
   override def xmlPrinter: Elem =
