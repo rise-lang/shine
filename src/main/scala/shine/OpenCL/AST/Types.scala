@@ -10,7 +10,8 @@ case class VectorType(n: Nat,
                       override val const: Boolean = false)
   extends BasicType(s"${elemType.name}$n")
 
-case class PointerType(a: AddressSpace, override val valueType: Type, override val const: Boolean = false)
+case class PointerType(a: AddressSpace, override val valueType: Type,
+                       override val const: Boolean = false, override val volatile: Boolean = false)
   extends C.AST.PointerType(valueType, const) {
   override def print: String = s"$a ${valueType.print} *"
 }

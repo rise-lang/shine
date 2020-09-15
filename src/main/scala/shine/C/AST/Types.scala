@@ -3,11 +3,13 @@ package shine.C.AST
 import arithexpr.arithmetic._
 import shine.C
 
-sealed abstract class Type(val const: Boolean) {
+sealed abstract class Type(val const: Boolean, val volatile: Boolean = false) {
   def print: String
 
   override def toString: String = {
-    if (const) { "const " } else { "" } + print
+    if (const) { "const " } else { "" } + {
+      if (volatile) { "volatile " } else { "" }
+    } + print
   }
 }
 
@@ -21,7 +23,8 @@ abstract class StructType(val name: String, val fields: Seq[(Type, String)], ove
 }
 
 // TODO: enforce flatness ???
-abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr], override val const: Boolean = false) extends Type(const) {
+abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr],
+                         override val const: Boolean = false, override val volatile: Boolean = false) extends Type(const, volatile) {
   override def print: String = elemType.print + "[" + (size match {
     case Some(n) => s"$n"
     case None => ""
@@ -117,7 +120,7 @@ object Type {
   def getLength(t: Type): ArithExpr = {
     t match {
       case _: BasicType => Cst(1)
-      case ArrayType(_, ae, _) if ae.isDefined => ae.get
+      case ArrayType(_, ae, _, _) if ae.isDefined => ae.get
       case _ => ???
     }
   }
@@ -148,8 +151,9 @@ object StructType {
 }
 
 object ArrayType {
-  def apply(elemType: Type, size: Option[ArithExpr], const: Boolean = false): ArrayType = DefaultTypeImplementations.ArrayType(elemType, size, const)
-  def unapply(arg: ArrayType): Option[(Type, Option[ArithExpr], Boolean)] = Some((arg.elemType, arg.size, arg.const))
+  def apply(elemType: Type, size: Option[ArithExpr],
+            const: Boolean = false, volatile: Boolean = false): ArrayType = DefaultTypeImplementations.ArrayType(elemType, size, const, volatile)
+  def unapply(arg: ArrayType): Option[(Type, Option[ArithExpr], Boolean, Boolean)] = Some((arg.elemType, arg.size, arg.const, arg.volatile))
 }
 
 object PointerType {
@@ -171,8 +175,9 @@ object DefaultTypeImplementations {
 
   case class ArrayType(override val elemType: Type,
                        override val size: Option[ArithExpr],
-                       override val const: Boolean = false)
-    extends C.AST.ArrayType(elemType, size, const)
+                       override val const: Boolean = false,
+                       override val volatile: Boolean = false)
+    extends C.AST.ArrayType(elemType, size, const, volatile)
 
   case class PointerType(override val valueType: Type, override val const: Boolean = false)
     extends C.AST.PointerType(valueType, const)

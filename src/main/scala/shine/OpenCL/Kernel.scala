@@ -237,7 +237,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       Try(cleanSize.evalLong) match {
         case Success(actualSize) =>
           arg.parameter.t match {
-            case OpenCL.AST.PointerType(a, _, _) => a match {
+            case OpenCL.AST.PointerType(a, _, _, _) => a match {
               case AddressSpace.Private => throw new Exception ("'Private memory' is an invalid memory for opencl parameter")
               case AddressSpace.Local => createLocalArg(actualSize)
               case AddressSpace.Global =>  createGlobalArg(actualSize)

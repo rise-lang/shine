@@ -51,14 +51,17 @@ object AdaptKernelParameters {
               // remember scalar parameters in global or local memory and change their type to pointers
               scalarParamsInGlobalOrLocalMemory.add(paramDecl.name)
               ParamDecl(paramDecl.name,
-                OpenCL.AST.PointerType(aSpace, paramDecl.t, const = inputParams.map(_.name).contains(paramDecl.name)))
+                OpenCL.AST.PointerType(aSpace, paramDecl.t,
+                  const = inputParams.map(_.name).contains(paramDecl.name),
+                  paramDecl.t.volatile))
             case _ => paramDecl
           }
         case at: C.AST.ArrayType =>
           // turn array types into flat pointers
           ParamDecl(paramDecl.name, OpenCL.AST.PointerType(aSpace, at.getBaseType,
             // ... and make input parameters const
-            const = inputParams.map(_.name).contains(paramDecl.name)))
+            const = inputParams.map(_.name).contains(paramDecl.name),
+            paramDecl.t.volatile))
 
         case _ => paramDecl
       }
