@@ -6,7 +6,9 @@ import util.Execute.Exception
 
 object parse {
 
-
+  //Todo: throwException in ParseError is not used and RuntimeException is not so good as normal Exception,
+  // because no checking is needed:
+  // https://stackoverflow.com/questions/19857008/extending-exception-runtimeexception-in-java
   abstract sealed class ParseErrorOrState() extends RuntimeException
 
   abstract sealed class ParseEnd() extends ParseErrorOrState()
@@ -99,7 +101,7 @@ object parse {
 
   implicit class ParseStatePipe(val ps: Either[   ParseErrorOrState,ParseState]) extends AnyVal {
     def |>(f: ParseState => Either[   ParseErrorOrState,ParseState]): Either[   ParseErrorOrState,ParseState] = {
-      println("yuhu")
+      println("|> : " + ps)
       ps match {
         case Right(p) => f(p)
         case Left(e) => Left(e)
@@ -109,7 +111,7 @@ object parse {
 
   implicit class ParseStateElse(val ps: Either[   ParseErrorOrState,ParseState]) extends AnyVal {
     def ||(f: ParseState => Either[   ParseErrorOrState,ParseState]): Either[   ParseErrorOrState,ParseState] = {
-      println("hi")
+      println("|| : " + ps)
       ps match {
         case Right(p) => f(p) match {
           case Left(_) => ps
@@ -135,7 +137,10 @@ object parse {
 
     nextToken match {
       case Backslash(_) =>
-      case tok => Left(BacklashWasExpected(tok))
+      case tok => {
+        println("failed parseBacklash: "+ parseState)
+        return Left(BacklashWasExpected(tok))
+      }
     }
 
     Right((restTokens, parsedExprs))
@@ -281,13 +286,20 @@ object parse {
       return Right(parseState)
     }
     println("parseLambda: " +parseState)
-    val ps =
+    val psOld =
       Right(parseState) |>
         parseBackslash |>
         parseIdent |>
         parseMaybeTypeAnnotation |>
-        parseArrow |>
-        parseExpression
+        parseArrow
+
+        val ps = psOld match {
+          case Right(p) => parseExpression(p)
+          case Left(e) => {
+            println("endLambda: "+ e)
+            return Left(e)
+          }
+        }
 
     val (toks, synElemList) = ps match {
       case Right(a) => (a._1,a._2)
@@ -378,6 +390,7 @@ object parse {
   }
 
   def parseApp(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+    println("parseApp: " + parseState)
     if(parseState._1.isEmpty){
       println("Abbruch; parseApp: "+ parseState)
       return Right(parseState)
