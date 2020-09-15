@@ -74,16 +74,19 @@ package object util {
     case _ =>
   }
 
-  def dotPrintTmp(name: String, e: rise.core.Expr): Unit = {
+  def dotPrintTmp(prefix: String, e: rise.core.Expr): Unit = {
     import scala.language.postfixOps
     import scala.sys.process._
 
-    val path = "/tmp"
     val dotString = rise.core.dotPrinter.generateDotString(e,
       printTypes = false,
       inlineLambdaIdentifier = true,
       applyNodes = false)
-    writeToPath(s"$path/$name.dot", dotString)
-    s"dot -Tsvg $path/$name.dot -o $path/$name.svg" !!
+    val dotFile = File.createTempFile(prefix, ".dot")
+    writeToFile(dotFile, dotString)
+    val dotPath = dotFile.getPath()
+    val svgPath = dotPath.replace(".dot", ".svg")
+    (s"dot -Tsvg $dotPath -o $svgPath" !!)
+    println(s"wrote $dotPath.svg and .dot")
   }
 }
