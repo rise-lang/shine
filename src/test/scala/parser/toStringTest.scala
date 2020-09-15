@@ -1,5 +1,4 @@
 package parser
-import parser.lexer.{ArrayType, BoolType, DataK, DoubleType, FileReader, FloatTyp, FunctionTyp, GenericsTyp, Identifier, IndexType, Location, Nat, Span, TupleType}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 

@@ -1,4 +1,4 @@
-package parser.lexer
+package parser
 
 abstract sealed class SyntacticError (
   pos: Int,

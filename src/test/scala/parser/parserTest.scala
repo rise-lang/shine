@@ -1,23 +1,23 @@
 package parser
 import org.scalatest.flatspec.AnyFlatSpec
+import parser.parse.HereIsATypeAnnotationExpected
 //import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
-import parser.lexer.{FileReader, RecognizeLexeme, parse}
 import rise.{core => r}
 import util.Execute.Exception
 
 
 class parserTest extends  AnyFlatSpec {
 
-//  "parser" should "not be able to parse 'Identity.rise'" in {
-//    val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/identity.rise"
-//    val file: FileReader = new FileReader(fileName)
-//    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-//    val thrown = intercept[Exception] {
-//      parse(lexer.tokens)
-//    }
-//    thrown should equal(Exception(""))
-//  }
+  "parser" should "not be able to parse 'Identity.rise'" in {
+    val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/identity.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val thrown = intercept[HereIsATypeAnnotationExpected] {
+      parse(lexer.tokens)
+    }
+    thrown.getMessage should equal("")
+  }
 
   "parser" should "be able to parse 'longIdentityWithI32.rise'" in {
     val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/longIdentityWithI32.rise"

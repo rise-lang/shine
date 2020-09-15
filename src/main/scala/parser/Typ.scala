@@ -1,5 +1,4 @@
-package parser.lexer
-
+package parser
 
 /*
 nat is a natural number

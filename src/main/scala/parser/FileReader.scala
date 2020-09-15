@@ -1,4 +1,4 @@
-package parser.lexer
+package parser
 
 import java.io.{File, FileInputStream, FileNotFoundException}
 

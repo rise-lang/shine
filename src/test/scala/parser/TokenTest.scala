@@ -1,7 +1,5 @@
 package parser
 
-import parser.lexer.AddrSpaceType
-import parser.lexer.{AddrSpaceType, BinOp, FileReader, Location, OpType, Span}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.flatspec.AnyFlatSpec
 class matchesToken extends  AnyFlatSpec {
