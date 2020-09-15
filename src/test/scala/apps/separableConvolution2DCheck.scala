@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
     " / ".r.findAllIn(code).length shouldBe 0
   }
 
-  // FIXME: got broken
+  // FIXME: code generation cannot evaluate index literal
   ignore("compiling OpenCL private arrays should unroll loops") {
     import rise.openCL.DSL._
 
