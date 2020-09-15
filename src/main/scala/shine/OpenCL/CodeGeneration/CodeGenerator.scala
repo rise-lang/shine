@@ -75,8 +75,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case Barrier(localMemFence, globalMemFence) =>
         OpenCL.AST.Barrier(localMemFence, globalMemFence)
 
-      case AtomicOperation(dt, f, dst, src) =>
-        OpenCLCodeGen.codeGenAtomicOperation(dt, f, dst, src, env)
+      case AtomicOperation(_, f, dst, src) =>
+        OpenCLCodeGen.codeGenAtomicOperation(f, dst, src, env)
 
       case _: NewDoubleBuffer =>
         throw new Exception("NewDoubleBuffer without address space" +
@@ -474,12 +474,19 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
     }
 
-    def codeGenAtomicOperation(dt: DataType,
-                               f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
+    def codeGenAtomicOperation(f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
                                dst: Phrase[AccType],
                                src: Phrase[ExpType],
                                env: Environment): Stmt = {
-      C.AST.Comment("Atomic Operation")
+      val atomicAdd = "atomic_add"
+
+      acc(dst, env, Nil, a => {
+        val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, a)
+
+        exp(src, env, Nil, e =>
+          C.AST.ExprStmt(
+            C.AST.FunCall(C.AST.DeclRef(atomicAdd), List(ptr, e))))
+      })
     }
   }
 }
