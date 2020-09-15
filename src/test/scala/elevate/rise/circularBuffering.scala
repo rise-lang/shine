@@ -290,9 +290,9 @@ class circularBuffering extends shine.test_util.Tests {
          |${circBufP.code}
          |
          |int main(int argc, char** argv) {
-         |  float input[$N+2 * $M+2];
+         |  float input[${N+2} * ${M+2}];
          |
-         |  for (int i = 0; i < $N+2 * $M+2; i++) {
+         |  for (int i = 0; i < ${N+2} * ${M+2}; i++) {
          |    input[i] = (2 * i + 133) % 19;
          |  }
          |
