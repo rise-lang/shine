@@ -255,12 +255,12 @@ object substitute {
     }
   }
 
-  def n2nsInNat(subs:Map[NatToNatIdentifier, NatToNat], in:Nat):Nat =
+  def n2nsInNat(subs: Map[NatToNatIdentifier, NatToNat], in: Nat): Nat =
     in.visitAndRebuild({
-      case NatToNatApply(f:NatToNatIdentifier, n) =>
+      case NatToNatApply(f: NatToNatIdentifier, n) =>
         subs.get(f).map({
           case NatToNatLambda(x, body) => substitute.natInNat(n, x, body)
-          case id:NatToNatIdentifier => NatToNatApply(id, n)
+          case id: NatToNatIdentifier => NatToNatApply(id, n)
         }).getOrElse(in)
       case x => x
     })

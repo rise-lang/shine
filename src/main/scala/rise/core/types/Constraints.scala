@@ -379,7 +379,7 @@ object Constraint {
         } else if (!j.isExplicit) {
           Solution.subs(j, i)
         } else {
-          error(s"cannot unify $i and $j, they are both bound")
+          error(s"cannot unify $i and $j")
         }
       case fx: NatToNatApply => unifyApply(fx, i)
       case _ if !ArithExpr.contains(n, i) && (!i.isExplicit) =>
@@ -422,7 +422,18 @@ object Constraint {
   }
 
   object natToNat {
-    def unify(f1:NatToNat, f2:NatToNat):Solution = Solution()
+    def unify(f1: NatToNat, f2: NatToNat)(implicit trace: Seq[Constraint]): Solution = f1 match {
+      case id1: NatToNatIdentifier => Solution.subs(id1, f2)
+      case NatToNatLambda(x1, body1) => f2 match {
+        case id2: NatToNatIdentifier => Solution.subs(id2, f1)
+        case NatToNatLambda(x2, body2) =>
+          val n = NatIdentifier(freshName("n"))
+          nat.unify(
+            substitute.natInNat(n, `for` = x1, body1),
+            substitute.natInNat(n, `for`=x2, body2)
+          )
+      }
+    }
   }
 
   object natCollection {
