@@ -45,18 +45,19 @@ object parse {
 //    override def toString = "A Type is expected but " + token + " is not a Type"
 //  }
   final case class TokenListIsEmpty() extends ParseEnd() //Todo: Better name for the classes which are clearly only for States in the parsing process
-  final case class BacklashWasExpected(token:Token) extends ParseError(token) //Todo: this is not correct, because this class is only used as a State!
-  final case class IdentifierWasExpected(token:Token) extends ParseError(token)
+  final case class BacklashWasExpected(token:Token) extends ParseEnd()
+  final case class IdentifierWasExpected(token:Token) extends ParseEnd()
   final case class NotAnAcceptedType(typeK:TypeKind) extends ParseEnd()
   final case class typeAnnotationNotCorrect(token:Token) extends ParseError(token)
   final case class HereIsATypeAnnotationExpected(token:Token) extends ParseError(token)
-  final case class ArrowWasExpected(token:Token) extends ParseError(token)
+  final case class ArrowWasExpected(token:Token) extends ParseEnd()
   final case class AnExpressionAndNotATypeWasExpected(typ:rt.Type) extends ParseEnd()
-  final case class UnaryOperatorWasExpected(token:Token) extends ParseError(token)
-  final case class notAnAcceptedIntegerOrFloatType(token:Token) extends ParseError(token)
-  final case class BinaryOperatorWasExpected(token:Token) extends ParseError(token)
-  final case class LBraceWasExpected(token:Token) extends ParseError(token)
-  final case class RBraceWasExpected(token:Token) extends ParseError(token)
+  final case class UnaryOperatorWasExpected(token:Token) extends ParseEnd()
+  final case class notAnAcceptedIntegerOrFloatType(token:Token) extends ParseEnd()
+  final case class BinaryOperatorWasExpected(token:Token) extends ParseEnd()
+  final case class LBraceWasExpected(token:Token) extends ParseEnd()
+  final case class RBraceWasExpected(token:Token) extends ParseEnd()
+  final case class NoBinaryOperator() extends ParseEnd()
 
   /*
    * Precondition: Only valid Tokens in tokenList.
@@ -109,16 +110,31 @@ object parse {
     }
   }
 
-  implicit class ParseStateElse(val ps: Either[   ParseErrorOrState,ParseState]) extends AnyVal {
-    def ||(f: ParseState => Either[   ParseErrorOrState,ParseState]): Either[   ParseErrorOrState,ParseState] = {
+  implicit class ParseStateElse(val a : (Either[   ParseErrorOrState,ParseState], Boolean)) extends AnyVal {
+    def ||(f: ParseState => Either[ParseErrorOrState, ParseState]): (Either[ParseErrorOrState, ParseState], Boolean) = {
+      val (ps, b) = a
       println("|| : " + ps)
-      ps match {
-        case Right(p) => f(p) match {
-          case Left(_) => ps
-          case Right(par) => Right(par)
+      b match {
+        case true => (ps, true)
+        case false => ps match {
+          case Right(p) => f(p) match {
+            case Right(pa) => (Right(pa), true)
+            case Left(e) => e match {
+              case e: ParseError => (Left(e), true)
+              case e => (ps, false)
+            }
+          }
+          case Left(e) => (Left(e), false)
         }
-        case Left(e) => Left(e)
       }
+      //      ps match {
+      //        case Right(p) => f(p) match {
+      //          case Left(_) => ps
+      //          case Right(par) => Right(par)
+      //        }
+      //        case Left(e) => Left(e)
+      //      }
+      //    }
     }
   }
 
@@ -254,8 +270,7 @@ object parse {
       case Right(p) => p
     }
     require(ps._1.isEmpty, "Everything should be computed!")
-    require(ps._2.length == 3, "it should now have exactly 3 Exprs: Identifier, Type of the Identifier and the expression")
-
+//    require(ps._2.length == 3, "it should now have exactly 3 Exprs: Identifier, Type of the Identifier and the expression")
 
     val synElemList = ps._2
     val (expr, synElemListExpr) = (synElemList.head match {
@@ -270,7 +285,10 @@ object parse {
             case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
             case _ => ???
           }
-        case SExpr(i) => ???
+        case SExpr(i) => {
+          println(i)
+          ???
+        }
       }
 
     require(synElemListTIdent.isEmpty, "the List has to be empty!")
@@ -338,8 +356,10 @@ object parse {
     }
     println("parseExpression: " + parseState)
     //FIXME parseState always true
-    Right(parseState) || parseIdent || parseNumber ||
+    (
+    (Right(parseState), false) || parseIdent || parseNumber ||
       parseUnOperatorApp || parseBracesExpr
+      )._1
   }
 
   def parseExpression(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
@@ -349,10 +369,13 @@ object parse {
     }
     println("parseExpression: " + parseState)
     //FIXME parseState always true
-    Right(parseState) || parseIdent || parseNumber ||
-      parseUnOperatorApp || parseBracesExpr  ||
-      parseBinOperatorApp || parseLambda // || parseApp //Todo: parseApp creates an endless loop because an expression
-                                                          //Todo: creates two expression and so on...
+    (
+      (Right(parseState), false) ||
+        parseUnOperatorApp || parseBracesExpr  ||
+        parseBinOperatorApp || parseLambda || // || parseApp //Todo: parseApp creates an endless loop because an expression
+                                                            //Todo: creates two expression and so on...
+        parseIdent || parseNumber
+      )._1
   }
 
   def parseBracesExpr(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
@@ -379,13 +402,13 @@ object parse {
     println("parseBinOperatorApp: "+ parseState)
     if(parseState._1.isEmpty || !parseState._1.exists(t => t.isInstanceOf[BinOp])){
       println("Abbruch; parseBinOperatorApp: "+ parseState)
-      return Right(parseState)
+      return Left(NoBinaryOperator())
     }
     val p =
       Right(parseState)  |>
         parseExpressionSimplified |>
         parseBinOperator |>
-        parseExpressionSimplified
+        parseExpression
 
     val (tokens, parsedExprs):(List[Token], List[SyntaxElement]) = p match {
       case Right(parseState) => parseState
@@ -415,7 +438,7 @@ object parse {
     val p =
       Right(parseState)  |>
         parseExpressionSimplified |>
-        parseExpressionSimplified
+        parseExpression
 
     val (tokens, parsedExprs): ParseState = p match {
       case Right(parseState) => parseState
@@ -438,11 +461,12 @@ object parse {
       println("Abbruch; parseUnOperatorApp: "+ parseState)
       return Right(parseState)
     }
-    val p =
+    val p = {
     Right(parseState)    |>
       parseUnOperator   |>
-      parseExpressionSimplified
-
+      parseExpression
+    }
+    println("parseUnOperatorApp durchlaufen: " + p)
     val (tokens, parsedExprs): ParseState = p match {
       case Right(parseState) => parseState
       case Left(e) => return Left(e)
@@ -478,7 +502,10 @@ object parse {
         case OpType.UnaryOpType.NEG => Right((restTokens, SExpr(r.primitives.Neg()()) :: parseState._2))
         case OpType.UnaryOpType.NOT => Right((restTokens, SExpr(r.primitives.Not()()) :: parseState._2))
       }
-      case tok => Left(UnaryOperatorWasExpected(tok))
+      case tok => {
+        println("UnaryOperatorWasExpected: "+ tok + ": " + restTokens)
+        Left(UnaryOperatorWasExpected(tok))
+      }
     }
     p
   }
