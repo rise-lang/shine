@@ -144,21 +144,22 @@ class tvmGemm extends test_util.Tests {
 
   /// UTILS ////////////////////////////////////////////////////////////////////
 
-//  val kernelsFolder: String = "/home/artifact/kernels"
-//  val plotsFolder: String = "/home/artifact/results/fig10/steps"
-
   def run(version: String,
           strategy: Strategy[Rise],
           openMP: Boolean // generate C or OpenMP code?
          ): Unit = {
 
-//    def toFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
-//      import java.io._
-//      val w =new PrintWriter(new File(s"$path/$name$ending"))
-//      w.write(content)
-//      w.flush()
-//      w.close()
-//    }
+    val generateFiles = false
+    val kernelsFolder: String = "/home/artifact/kernels"
+    val plotsFolder: String = "/home/artifact/results/fig10/steps"
+
+    def writeToFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
+      import java.io._
+      val w =new PrintWriter(new File(s"$path/$name$ending"))
+      w.write(content)
+      w.flush()
+      w.close()
+    }
 
     def currentTimeSec: Long = System.currentTimeMillis / 1000
 
@@ -171,9 +172,11 @@ class tvmGemm extends test_util.Tests {
     val rewritten = strategy(mm)
     val time1 = currentTimeSec
     println(s"[$versionUC] rewrite time: ${time1 - time0}s")
-//    val steps = Success.rewriteCount
-//    println(s"[$versionUC] required rewrite steps: $steps\n")
-//    toFile(plotsFolder, version, s"$version,$steps", ".csv")
+    if (generateFiles) {
+      val steps = Success.rewriteCount
+      println(s"[$versionUC] required rewrite steps: $steps\n")
+      writeToFile(plotsFolder, version, s"$version,$steps", ".csv")
+    }
 
     // generate the C code
     val time2 = currentTimeSec
@@ -187,7 +190,9 @@ class tvmGemm extends test_util.Tests {
     println(s"Program:\n${program}")
 
     // store the C code
-//    println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
-//    toFile(kernelsFolder, version, program)
+    if (generateFiles) {
+      println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
+      writeToFile(kernelsFolder, version, program)
+    }
   }
 }
