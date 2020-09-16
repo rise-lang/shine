@@ -434,7 +434,7 @@ object parse {
 
   def parseUnOperatorApp(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
     println("parseUnOperatorApp: "+ parseState)
-    if(parseState._1.isEmpty || !parseState._1.exists(t => t.isInstanceOf[BinOp])){
+    if(parseState._1.isEmpty){
       println("Abbruch; parseUnOperatorApp: "+ parseState)
       return Right(parseState)
     }
@@ -447,14 +447,18 @@ object parse {
       case Right(parseState) => parseState
       case Left(e) => return Left(e)
     }
-    val unop :: expr:: restExpr= parsedExprs
+    val expr :: unop :: restExpr= parsedExprs
 
     unop match {
       case SExpr(op) => {
         op match {
           case r.primitives.Neg() =>
           case r.primitives.Not() =>
-          case _ => throw Exception("this should not be happening, because parseUnOperator has to be parsed an operator!")
+          case r.primitives.Sub() => throw Exception("Not and Sub got switched!")
+          case a => {
+            println("the Primitive '"+ a + "' is not expected!")
+            throw Exception(a + " this should not be happening, because parseUnOperator has to be parsed an operator!")
+          }
         }
         expr match {
           case SExpr(e) =>  Right((tokens, SExpr(r.App(op, e)())  :: restExpr))

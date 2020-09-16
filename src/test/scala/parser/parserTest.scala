@@ -47,4 +47,17 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "be able to parse 'negation.rise'" in {
+    val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/negation.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val ex: r.Expr = parse(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.Identifier("y"))) => true
+      case r.Lambda(x,e) => throw Exception("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => throw Exception("not a lambda: "+ a)
+    }
+  }
+
 }
