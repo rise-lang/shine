@@ -246,6 +246,14 @@ object traversal {
               case DepArrayType(n, fdt) =>
                 DepArrayType(v.visitNat(n).value, v.visitN2D(fdt).value)
               case PairType(p1, p2) => PairType(data(p1, v), data(p2, v))
+              case pair@DepPairType(x, e) =>
+                  x match {
+                    case n: NatIdentifier =>
+                      val n2 = visit.visitNat(n).value
+                        .asInstanceOf[NatIdentifier]
+                      DepPairType[NatKind](n2, data(e, v))
+                    case _ => DepPairType(x, data(e,v))(pair.kindName)
+                  }
               case NatType          => NatType
               case s: ScalarType    => s
               case IndexType(n)     => IndexType(v.visitNat(n).value)
@@ -266,6 +274,9 @@ object traversal {
 
       def chainDT[A, DT <: DataType](a: Result[A], dt: DT): Result[(A, DT)] =
         chain(a, dt, data(dt, _))
+
+      def chainN[A](a: Result[A], n: Nat): Result[(A, Nat)] =
+        chain(a, n, v => v.visitNat(n))
 
       def apply[T <: Type](ty: T, visit: Visitor): Result[T] = {
         visit.visitType(ty) match {
@@ -316,6 +327,17 @@ object traversal {
               case IndexType(n)  => v.visitNat(n).map(IndexType)
               case VectorType(n, e) =>
                 chainDT(v.visitNat(n), e).map(r => VectorType(r._1, r._2))
+              case DepPairType(x, t) => x match {
+                case n: NatIdentifier =>
+                  chainT(v.visitNat(n), t).map(r =>
+                    DepPairType[NatKind]((r._1: @unchecked) match {
+                      case n: NamedVar =>
+                        NatIdentifier(n.name, n.range, isExplicit = true)
+                    }, r._2))
+              }
+              case NatToDataApply(nat2Data, n) =>
+                chainN(v.visitN2D(nat2Data), n)
+                  .map(r => NatToDataApply(r._1, r._2))
             }).asInstanceOf[Result[DT]]
         }
       }

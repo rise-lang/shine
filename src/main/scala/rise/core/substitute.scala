@@ -240,4 +240,38 @@ object substitute {
   ): NatToData = {
     if (in == `for`) n2d else in
   }
+
+  def n2nsInN2n(
+                 subs: Map[NatToNatIdentifier, NatToNat],
+                 in: NatToNat
+               ): NatToNat = {
+    in match {
+      case i: NatToNatIdentifier =>
+        subs.get(i) match {
+          case Some(n2d) => n2d
+          case None      => i
+        }
+      case n2d => n2d
+    }
+  }
+
+  def n2nsInNat(subs: Map[NatToNatIdentifier, NatToNat], in: Nat): Nat =
+    in.visitAndRebuild({
+      case NatToNatApply(f: NatToNatIdentifier, n) =>
+        subs.get(f).map({
+          case NatToNatLambda(x, body) => substitute.natInNat(n, x, body)
+          case id: NatToNatIdentifier => NatToNatApply(id, n)
+        }).getOrElse(in)
+      case x => x
+    })
+
+  def natCollectionInNatCollection(
+      subs: Map[NatCollectionIdentifier, NatCollection],
+      in: NatCollection): NatCollection = {
+    in match {
+      case ident: NatCollectionIdentifier=>
+        subs(ident)
+      case _ => throw new Exception("No idea how to substitute")
+    }
+  }
 }

@@ -283,6 +283,20 @@ object primitives {
       implDT(s => implDT(t => s ->: t ->: PairType(s, t)))
   }
 
+  @primitive case class DPair()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type =
+      implN2DT(fdt => nFunT(n => fdt(n) ->: n2dPairT(fdt(_))))
+  }
+
+  @primitive case class DMatch()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type =
+      implN2DT(ft => implDT(tOut =>
+        n2dPairT(ft(_)) ->: nFunT(m => ft(m) ->: tOut) ->: tOut
+      ))
+  }
+
   @primitive case class Reduce()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =

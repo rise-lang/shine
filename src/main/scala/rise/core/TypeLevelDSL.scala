@@ -1,6 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.{Cst, RangeAdd}
+import rise.core.TypedDSL.TDSL
 import rise.core.types._
 
 // scalastyle:off multiple.string.literals
@@ -16,14 +17,14 @@ object TypeLevelDSL {
   // type level lambdas
   object n2dtFun {
     def apply(f: NatIdentifier => DataType): NatToDataLambda = {
-      val x = NatIdentifier(freshName("n2dt"), isExplicit = true)
+      val x = NatIdentifier(freshName("n"), isExplicit = true)
       NatToDataLambda(x, f(x))
     }
 
     def apply(
         r: arithexpr.arithmetic.Range
     )(f: NatIdentifier => DataType): NatToDataLambda = {
-      val x = NatIdentifier(freshName("n2dt"), r, isExplicit = true)
+      val x = NatIdentifier(freshName("n"), r, isExplicit = true)
       NatToDataLambda(x, f(x))
     }
 
@@ -123,6 +124,21 @@ object TypeLevelDSL {
     }
   }
 
+  // dependent pairs
+  object  n2dPairT {
+    def apply(f: NatIdentifier => DataType): Type = {
+      val x = NatIdentifier(freshName("n"), isExplicit = true)
+      DepPairType[NatKind](x, f(x))
+    }
+  }
+
+  object nats2dPairT {
+    def apply(f: NatCollectionIdentifier => DataType): Type = {
+      val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
+      DepPairType[NatCollectionKind](x, f(x))
+    }
+  }
+
   // types with implicit type parameters
   def implN[A](f: NatIdentifier => A): A = {
     f(NatIdentifier(freshName("n")))
@@ -153,6 +169,10 @@ object TypeLevelDSL {
 
   def implA[A](f: AddressSpaceIdentifier => A): A = {
     f(AddressSpaceIdentifier(freshName("w")))
+  }
+
+  def implNatColl[A](f: NatCollectionIdentifier => A): A = {
+    f(NatCollectionIdentifier(freshName("ns")))
   }
 
   def freshTypeIdentifier: Type = implT(identity)
@@ -194,5 +214,18 @@ object TypeLevelDSL {
       ArrayTypeConstructorHelper(Seq(Cst(n), m))
     @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
   }
+
+  implicit final class DepArrayTypeConstructors(private val n: Nat)
+    extends AnyVal {
+    @inline def `..`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
+  }
+
+  implicit final class NatCollectionConstructors(private val e: TDSL[Expr])
+    extends AnyVal {
+    @inline def `#`(nats: Nat*): Nat = {
+      NatCollectionFromArray(e)(nats: _*)
+    }
+  }
+
 }
 // scalastyle:on multiple.string.literals

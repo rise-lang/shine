@@ -48,9 +48,9 @@ object NatIdentifier {
 
 final class NatToNatApply(val f: NatToNat, val n: Nat)
   extends ArithExprFunctionCall(s"$f($n)") {
-  override def visitAndRebuild(f: Nat => Nat): Nat = this
+  override def visitAndRebuild(f: Nat => Nat): Nat = f(NatToNatApply(this.f, f(n)))
   override def substitute(subs: collection.Map[ArithExpr, ArithExpr]
-                         ): Option[ArithExpr] = ???
+                         ): Option[ArithExpr] = Some(NatToNatApply(f, subs.getOrElse(n, n)))
 
   override lazy val toString: String = s"$f($n)"
 

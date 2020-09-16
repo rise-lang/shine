@@ -1,14 +1,13 @@
 package rise.core
 
-import rise.core.types._
-import rise.core.types.infer._
-import rise.core.semantics._
-import rise.core.primitives._
-import rise.core.traversal.{Continue, Result, Stop}
 import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.core.semantics._
+import rise.core.traversal.{Continue, Result, Stop}
+import rise.core.types._
+import rise.core.types.InferenceException.error
 
 import scala.collection.mutable
-
 import scala.language.implicitConversions
 
 // scalastyle:off number.of.methods
@@ -16,7 +15,14 @@ object TypedDSL {
 
   implicit class TrivialSolutionConcat(a: Solution) {
     def <>(b: Solution): Solution =
-      new Solution(a.ts ++ b.ts, a.ns ++ b.ns, a.as ++ b.as, a.n2ds ++ b.n2ds)
+      new Solution(
+        a.ts ++ b.ts,
+        a.ns ++ b.ns,
+        a.as ++ b.as,
+        a.n2ds ++ b.n2ds,
+        a.n2ns ++ b.n2ns,
+        a.natColls ++ b.natColls
+      )
   }
 
   final case class Opaque(e: Expr, ftvSubs: Solution = Solution())(
@@ -43,8 +49,13 @@ object TypedDSL {
         ),
         ftvSubs.n2ds.mapValues(n2d =>
           n2d.asInstanceOf[NatToDataIdentifier].asExplicit
-        )
-      )(t)
+        ),
+        ftvSubs.n2ns.mapValues(n2n =>
+          n2n.asInstanceOf[NatToNatIdentifier].asExplicit
+        ),
+        ftvSubs.natColls.mapValues(natColl =>
+          natColl.asInstanceOf[NatCollectionIdentifier].asExplicit
+      ))(t)
 
     def getFTVSubs(t: Type): Solution = {
       import scala.collection.immutable.Map
@@ -52,26 +63,30 @@ object TypedDSL {
           Map[Type, Type],
           Map[NatIdentifier, Nat],
           Map[AddressSpaceIdentifier, AddressSpace],
-          Map[NatToDataIdentifier, NatToData]
-      ) = (Map(), Map(), Map(), Map())
+          Map[NatToDataIdentifier, NatToData],
+          Map[NatToNatIdentifier, NatToNat],
+          Map[NatCollectionIdentifier, NatCollection]
+      ) = (Map(), Map(), Map(), Map(), Map(), Map())
       val ftvs = TopLevel.getFTVs(t)
       val subs = ftvs.foldLeft(emptySubs)((subs, ftv) =>
         subs match {
-          case (ts, ns, as, n2ds) =>
+          case (ts, ns, as, n2ds, n2ns, natColls) =>
             ftv match {
               case _: TypeIdentifier =>
                 throw TypeException("TypeIdentifier cannot be frozen")
-              case i: DataTypeIdentifier => (ts ++ Map(i -> i), ns, as, n2ds)
-              case i: NatIdentifier      => (ts, ns ++ Map(i -> i), as, n2ds)
+              case i: DataTypeIdentifier => (ts ++ Map(i -> i), ns, as, n2ds, n2ns, natColls)
+              case i: NatIdentifier      => (ts, ns ++ Map(i -> i), as, n2ds,  n2ns, natColls)
               case i: AddressSpaceIdentifier =>
-                (ts, ns, as ++ Map(i -> i), n2ds)
-              case i: NatToDataIdentifier => (ts, ns, as, n2ds ++ Map(i -> i))
+                (ts, ns, as ++ Map(i -> i), n2ds,  n2ns, natColls)
+              case i: NatToDataIdentifier => (ts, ns, as, n2ds ++ Map(i -> i), n2ns,  natColls)
+              case i: NatToNatIdentifier => (ts, ns, as, n2ds, n2ns ++ Map(i -> i),  natColls)
+              case i: NatCollectionIdentifier => (ts, ns, as, n2ds,  n2ns, natColls ++ Map(i -> i))
               case i =>
                 throw TypeException(s"${i.getClass} is not supported yet")
             }
         }
       )
-      new Solution(subs._1, subs._2, subs._3, subs._4)
+      new Solution(subs._1, subs._2, subs._3, subs._4, subs._5, subs._6)
     }
   }
 
@@ -94,29 +109,35 @@ object TypedDSL {
           Map[Type, Type],
           Map[NatIdentifier, Nat],
           Map[AddressSpaceIdentifier, AddressSpace],
-          Map[NatToDataIdentifier, NatToData]
-      ) = (Map(), Map(), Map(), Map())
+          Map[NatToDataIdentifier, NatToData],
+          Map[NatToNatIdentifier, NatToNat],
+          Map[NatCollectionIdentifier, NatCollection]
+      ) = (Map(), Map(), Map(), Map(), Map(), Map())
       val ftvs = getFTVs(t)
       val subs = ftvs.foldLeft(emptySubs)((subs, ftv) =>
         subs match {
-          case (ts, ns, as, n2ds) =>
+          case (ts, ns, as, n2ds, n2ns, natColls) =>
             ftv match {
               case i: TypeIdentifier =>
-                (ts ++ Map(i -> implT(identity)), ns, as, n2ds)
+                (ts ++ Map(i -> implT(identity)), ns, as, n2ds, n2ns, natColls)
               case i: DataTypeIdentifier =>
-                (ts ++ Map(i -> implDT(identity)), ns, as, n2ds)
+                (ts ++ Map(i -> implDT(identity)), ns, as, n2ds, n2ns,  natColls)
               case i: NatIdentifier =>
-                (ts, ns ++ Map(i -> implN(identity)), as, n2ds)
+                (ts, ns ++ Map(i -> implN(identity)), as, n2ds, n2ns,  natColls)
               case i: AddressSpaceIdentifier =>
-                (ts, ns, as ++ Map(i -> implA(identity)), n2ds)
+                (ts, ns, as ++ Map(i -> implA(identity)), n2ds, n2ns,  natColls)
               case i: NatToDataIdentifier =>
-                (ts, ns, as, n2ds ++ Map(i -> implN2DT(identity)))
+                (ts, ns, as, n2ds ++ Map(i -> implN2DT(identity)), n2ns,  natColls)
+              case i: NatToNatIdentifier =>
+                (ts, ns, as, n2ds, n2ns ++ Map(i -> implN2N(identity)), natColls)
+              case i: NatCollectionIdentifier =>
+                (ts, ns, as, n2ds,  n2ns, natColls ++ Map(i -> implNatColl(identity)))
               case i =>
                 throw TypeException(s"${i.getClass} is not supported yet")
             }
         }
       )
-      new Solution(subs._1, subs._2, subs._3, subs._4)
+      new Solution(subs._1, subs._2, subs._3, subs._4, subs._5, subs._6)
     }
 
     def getFTVs(t: Type): Seq[Kind.Identifier] = {
@@ -303,6 +324,9 @@ object TypedDSL {
       override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
         Stop(sol(a))
       override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
+
+      override def visitN2N(n2n: NatToNat): Result[NatToNat] =
+        Stop(sol(n2n))
     }
 
     def constrainTypes(
@@ -393,17 +417,18 @@ object TypedDSL {
     def infer(e: Expr): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-      val solution = solve(constraints, Seq()) match {
-        case Solution(ts, ns, as, n2ds) =>
+      val solution = Constraint.solve(constraints, Seq()) match {
+        case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
           Solution(
             ts.mapValues(t => ftvSubs(t)),
             ns.mapValues(n => ftvSubs(n)),
             as.mapValues(a => ftvSubs(a)),
-            n2ds.mapValues(n2d => ftvSubs(n2d))
+            n2ds.mapValues(n2d => ftvSubs(n2d)),
+            n2ns.mapValues(n2n => ftvSubs(n2n)),
+            natColls.mapValues(ftvSubs(_))
           )
       }
-      val r = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
-      r
+      traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
     }
   }
 
@@ -467,7 +492,8 @@ object TypedDSL {
   def select: TDSL[Select] = toTDSL(primitives.Select()())
   def unzip: TDSL[Unzip] = toTDSL(primitives.Unzip()())
   def zip: TDSL[Zip] = toTDSL(primitives.Zip()())
-
+  def dpair: TDSL[DPair] = toTDSL(primitives.DPair()())
+  def dmatch: TDSL[DMatch] = toTDSL(primitives.DMatch()())
   def store(cont: TDSL[Expr] => TDSL[Expr]): TDSL[Expr] =
     fun(e => let(toMem(e))(fun(cont)))
   def store(how: TDSL[Expr])
@@ -475,7 +501,6 @@ object TypedDSL {
     fun(e => let(toMem(how(e)))(fun(in)))
   def store2(how: TDSL[Expr]): TDSL[Expr] =
     fun(e => let(toMem(how(e)))(fun(x => x)))
-
   def neg: TDSL[Neg] = toTDSL(primitives.Neg()())
   def add: TDSL[Add] = toTDSL(primitives.Add()())
   def sub: TDSL[Sub] = toTDSL(primitives.Sub()())
