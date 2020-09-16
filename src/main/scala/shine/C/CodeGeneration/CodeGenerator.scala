@@ -522,7 +522,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _: shine.DPIA.Types.IndexType => C.AST.Type.int
         case _: shine.DPIA.Types.VectorType =>throw new Exception("Vector types in C are not supported")
       }
-      //TODO: Figure out how to hand over the volatile boolean from DPIA to AST
+
       case a: shine.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
       case a: shine.DPIA.Types.DepArrayType =>
         a.elemFType match {

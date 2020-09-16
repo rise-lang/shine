@@ -3,6 +3,8 @@ package shine.C.AST
 import arithexpr.arithmetic._
 import shine.C
 
+//TODO: As it turned out, the volatile keyword doesn't seem to be necessary for atomic operations in OpenCL,
+//      so perhaps this should be reverted.
 sealed abstract class Type(val const: Boolean, val volatile: Boolean = false) {
   def print: String
 
