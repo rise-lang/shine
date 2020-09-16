@@ -461,6 +461,7 @@ object TypedDSL {
   def iterate: TDSL[Iterate] = toTDSL(primitives.Iterate()())
   def join: TDSL[Join] = toTDSL(primitives.Join()())
   def let: TDSL[Let] = toTDSL(primitives.Let()())
+  def letf: TDSL[Expr] = fun(k => fun(x => let(x)(k)))
   def map: TDSL[Map] = toTDSL(primitives.Map()())
   def mapFst: TDSL[MapFst] = toTDSL(primitives.MapFst()())
   def mapSnd: TDSL[MapSnd] = toTDSL(primitives.MapSnd()())
@@ -491,10 +492,15 @@ object TypedDSL {
   def select: TDSL[Select] = toTDSL(primitives.Select()())
   def unzip: TDSL[Unzip] = toTDSL(primitives.Unzip()())
   def zip: TDSL[Zip] = toTDSL(primitives.Zip()())
-
   def dpair: TDSL[DPair] = toTDSL(primitives.DPair()())
   def dmatch: TDSL[DMatch] = toTDSL(primitives.DMatch()())
-
+  def store(cont: TDSL[Expr] => TDSL[Expr]): TDSL[Expr] =
+    fun(e => let(toMem(e))(fun(cont)))
+  def store(how: TDSL[Expr])
+           (in: TDSL[Expr] => TDSL[Expr]): TDSL[Expr] =
+    fun(e => let(toMem(how(e)))(fun(in)))
+  def store2(how: TDSL[Expr]): TDSL[Expr] =
+    fun(e => let(toMem(how(e)))(fun(x => x)))
   def neg: TDSL[Neg] = toTDSL(primitives.Neg()())
   def add: TDSL[Add] = toTDSL(primitives.Add()())
   def sub: TDSL[Sub] = toTDSL(primitives.Sub()())
