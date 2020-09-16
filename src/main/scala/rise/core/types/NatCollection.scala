@@ -44,6 +44,12 @@ final case class NatCollectionIdentifier(
   override def hashCode(): Int = this.name.hashCode()
 }
 
+/**
+  * Represents an n-dimensional array of natural number, which is indexable at the
+  * type level with the # operator, but whose value is runtime dependent.
+  * It's implemented as a wrapper around the expression which computes the runtime
+  * value as an array of a suitable element type (say, natType)
+  * */
 final case class NatCollectionFromArray(expr: Expr)
     extends NatCollection {
   override def toString: String = expr.toString
