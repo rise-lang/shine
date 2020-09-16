@@ -468,6 +468,14 @@ object TypedDSL {
   def unzip: TDSL[Unzip] = toTDSL(primitives.Unzip()())
   def zip: TDSL[Zip] = toTDSL(primitives.Zip()())
 
+  def store(cont: TDSL[Expr] => TDSL[Expr]): TDSL[Expr] =
+    fun(e => let(toMem(e))(fun(cont)))
+  def store(how: TDSL[Expr])
+           (in: TDSL[Expr] => TDSL[Expr]): TDSL[Expr] =
+    fun(e => let(toMem(how(e)))(fun(in)))
+  def store2(how: TDSL[Expr]): TDSL[Expr] =
+    fun(e => let(toMem(how(e)))(fun(x => x)))
+
   def neg: TDSL[Neg] = toTDSL(primitives.Neg()())
   def add: TDSL[Add] = toTDSL(primitives.Add()())
   def sub: TDSL[Sub] = toTDSL(primitives.Sub()())
