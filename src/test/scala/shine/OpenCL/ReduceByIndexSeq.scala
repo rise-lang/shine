@@ -10,7 +10,7 @@ class ReduceByIndexSeq extends shine.test_util.Tests {
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
 
-  val add = fun(x => fun(a => x + a))
+  private val add = fun(x => fun(a => x - a))
 
   test("Reduce By Index Seq Test") {
 

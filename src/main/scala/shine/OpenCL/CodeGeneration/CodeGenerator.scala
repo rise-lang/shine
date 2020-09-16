@@ -75,8 +75,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case Barrier(localMemFence, globalMemFence) =>
         OpenCL.AST.Barrier(localMemFence, globalMemFence)
 
-      case AtomicOperation(_, f, dst, src) =>
-        OpenCLCodeGen.codeGenAtomicOperation(f, dst, src, env)
+      case AtomicBinOp(_, f, dst, src) =>
+        OpenCLCodeGen.codeGenAtomicBinOp(f, dst, src, env)
 
       case _: NewDoubleBuffer =>
         throw new Exception("NewDoubleBuffer without address space" +
@@ -474,19 +474,54 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
     }
 
-    def codeGenAtomicOperation(f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
-                               dst: Phrase[AccType],
-                               src: Phrase[ExpType],
-                               env: Environment): Stmt = {
-      val atomicAdd = "atomic_add"
+    def codeGenAtomicBinOp(f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
+                           dst: Phrase[AccType],
+                           src: Phrase[ExpType],
+                           env: Environment): Stmt = {
+      dst.t.dataType match {
+        // Every atomic operation only works on int pointers (except xchg and cmpxchg).
+        // Therefore you can only use these atomic operations on DPIA types that will
+        // be translated to ints in the generated code.
+        case shine.DPIA.Types.int |
+             shine.DPIA.Types.NatType |
+             shine.DPIA.Types.bool |
+             shine.DPIA.Types.IndexType(_) =>
 
+          f match {
+            case Lambda(_, Lambda(_, Lambda(_, Assign(_, _, BinOp(op, _, _))))) =>
+              op match {
+                case Operators.Binary.ADD => codeGenAtomicBinOpDirect("atomic_add", dst, src, env)
+                case Operators.Binary.SUB => codeGenAtomicBinOpDirect("atomic_sub", dst, src, env)
+
+                //TODO: Min, Max, And, Or and Xor would also be supported but are not implemented as an operator yet.
+
+                case _ => codeGenAtomicBinOpWorkaround(f, dst, src, env)
+              }
+            case _ => codeGenAtomicBinOpWorkaround(f, dst, src, env)
+          }
+
+        case _ => codeGenAtomicBinOpWorkaround(f, dst, src, env)
+      }
+    }
+
+    def codeGenAtomicBinOpDirect(operation: String,
+                                 dst: Phrase[AccType],
+                                 src: Phrase[ExpType],
+                                 env: Environment): Stmt = {
       acc(dst, env, Nil, a => {
         val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, a)
 
         exp(src, env, Nil, e =>
           C.AST.ExprStmt(
-            C.AST.FunCall(C.AST.DeclRef(atomicAdd), List(ptr, e))))
+            C.AST.FunCall(C.AST.DeclRef(operation), List(ptr, e))))
       })
+    }
+
+    def codeGenAtomicBinOpWorkaround(f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
+                                       dst: Phrase[AccType],
+                                       src: Phrase[ExpType],
+                                       env: Environment): Stmt = {
+      C.AST.Comment("Not implemented yet")
     }
   }
 }
