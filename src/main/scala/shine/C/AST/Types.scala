@@ -13,7 +13,8 @@ sealed abstract class Type(val const: Boolean, val volatile: Boolean = false) {
   }
 }
 
-abstract class BasicType(val name: String, override val const: Boolean = false) extends Type(const) {
+abstract class BasicType(val name: String, override val const: Boolean = false,
+                         override val volatile: Boolean = false) extends Type(const, volatile) {
   override def print: String = name
 }
 
@@ -23,8 +24,8 @@ abstract class StructType(val name: String, val fields: Seq[(Type, String)], ove
 }
 
 // TODO: enforce flatness ???
-abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr],
-                         override val const: Boolean = false, override val volatile: Boolean = false) extends Type(const, volatile) {
+abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr], override val const: Boolean = false,
+                         override val volatile: Boolean = false) extends Type(const, volatile) {
   override def print: String = elemType.print + "[" + (size match {
     case Some(n) => s"$n"
     case None => ""
@@ -141,8 +142,9 @@ object Type {
 }
 
 object BasicType {
-  def apply(name: String, const: Boolean = false): BasicType = DefaultTypeImplementations.BasicType(name, const)
-  def unapply(arg: BasicType): Option[(String, Boolean)] = Some((arg.name, arg.const))
+  def apply(name: String, const: Boolean = false,
+            volatile: Boolean = false): BasicType = DefaultTypeImplementations.BasicType(name, const, volatile)
+  def unapply(arg: BasicType): Option[(String, Boolean, Boolean)] = Some((arg.name, arg.const, arg.volatile))
 }
 
 object StructType {
@@ -151,8 +153,8 @@ object StructType {
 }
 
 object ArrayType {
-  def apply(elemType: Type, size: Option[ArithExpr],
-            const: Boolean = false, volatile: Boolean = false): ArrayType = DefaultTypeImplementations.ArrayType(elemType, size, const, volatile)
+  def apply(elemType: Type, size: Option[ArithExpr], const: Boolean = false,
+            volatile: Boolean = false): ArrayType = DefaultTypeImplementations.ArrayType(elemType, size, const, volatile)
   def unapply(arg: ArrayType): Option[(Type, Option[ArithExpr], Boolean, Boolean)] = Some((arg.elemType, arg.size, arg.const, arg.volatile))
 }
 
@@ -167,8 +169,9 @@ object UnionType {
 }
 
 object DefaultTypeImplementations {
-  case class BasicType(override val name: String, override val const: Boolean = false)
-    extends C.AST.BasicType(name, const)
+  case class BasicType(override val name: String, override val const: Boolean = false,
+                       override val volatile: Boolean = false)
+    extends C.AST.BasicType(name, const, volatile)
 
   case class StructType(override val name: String, override val fields: Seq[(Type, String)], override val const: Boolean = false)
     extends C.AST.StructType(name, fields, const)

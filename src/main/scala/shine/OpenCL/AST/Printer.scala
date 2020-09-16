@@ -61,6 +61,7 @@ class Printer extends shine.C.AST.CPrinter {
   }
 
   private def printParamDecl(p: ParamDecl): Unit = {
+    if (p.t.volatile) print("volatile ")
     if (p.t.const) print("const ")
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
@@ -73,14 +74,13 @@ class Printer extends shine.C.AST.CPrinter {
 //          case Some(s) => s
 //        }
 //        print(s"$addr${a.getBaseType} ${p.name}[$size]")
-      case pt: OpenCL.AST.PointerType =>
-        if (pt.volatile) print("volatile ")
-        print(s"${toString(pt.a)} ${pt.valueType}* restrict ${p.name}")
+      case pt: OpenCL.AST.PointerType => print(s"${toString(pt.a)} ${pt.valueType}* restrict ${p.name}")
       case _: shine.C.AST.PointerType => throw new Exception("Pointer without address space unsupported in OpenCL")
     }
   }
 
   private def printVarDecl(v: VarDecl): Unit = {
+    if (v.t.volatile) print("volatile ")
     if (v.addressSpace != AddressSpace.Private) print(s"${v.addressSpace} ")
     if (v.t.const) print("const ")
     v.t match {
