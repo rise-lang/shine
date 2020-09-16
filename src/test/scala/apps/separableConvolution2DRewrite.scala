@@ -2,7 +2,6 @@ package apps
 
 import separableConvolution2D._
 import rise.core._
-import rise.core.primitives._
 import rise.core.TypedDSL._
 import rise.core.HighLevelConstructs._
 import elevate.core._
@@ -42,21 +41,11 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
     makeClosed(uab)._1 == makeClosed(nb)._1
   }
 
-  private val separateDot: Strategy[Rise] = {
-    case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), App(Join(), w)), App(Join(), nbh))))
-      if ben_eq(rf, add :: rf.t) && init == toExpr(l(0.0f)) && ben_eq(mf, toTDSL(mulT) :: mf.t) && w == weights2d
-    =>
-      Success(typed(nbh) |> map(toTDSL(dot)(weightsH)) |> toTDSL(dot)(weightsV))
-    case _ => Failure(separateDot)
-  }
+  private val separateDot: Strategy[Rise] =
+    separateDotHV(weights2d, weightsH, weightsV)
 
-  private val separateDotT: Strategy[Rise] = {
-    case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), App(Join(), w)), App(Join(), nbh))))
-      if ben_eq(rf, add :: rf.t) && init == toExpr(l(0.0f)) && ben_eq(mf, toTDSL(mulT) :: mf.t) && w == weights2d
-    =>
-      Success(typed(nbh) |> transpose |> map(toTDSL(dot)(weightsV)) |> toTDSL(dot)(weightsH))
-    case _ => Failure(separateDotT)
-  }
+  private val separateDotT: Strategy[Rise] =
+    separateDotVH(weights2d, weightsV, weightsH)
 
   private def assert_ben_eq(a: Expr, b: Expr): Unit =
     if (!ben_eq(a, b)) {
@@ -163,7 +152,7 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
       (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
         topDown(lowering.mapSeq) `;`
         topDown(lowering.rotateValues(idE)) `;`
-        topDown(lowering.mapStream))
+        topDown(lowering.iterateStream))
         -> toTDSL(regRotSeq)(weightsV)(weightsH)
     ))
   }

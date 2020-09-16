@@ -34,4 +34,4 @@ Prerequisits: Java 8+ SDK, `git`
 #### Configuring IntelliJ
 4. Download IDEA IntelliJ (http://www.jetbrains.com/idea/) and choose to install the Scala Plugin during setup.
 5. Launch IntelliJ. From the menu choose `File` -> `Open...`. Then, select `$SHINE_ROOT` and press `OK`.
-6. From the menu bar choose `Run` -> `Edit Configurations...`. Under `Templates` choose `ScalaTest` and add the following line to `VM parameters`: `-Djava.library.path=lib/executor/lib/Executor/build -Xss20m` (this will tell IntelliJ where to find the Executor library and use 20MB of thread stack size which is needed for arithmetic simplifactions sometimes).
+6. From the menu bar choose `Run` -> `Edit Configurations...`. Under `Templates` choose `ScalaTest` and add the following line to `VM parameters`: `-Djava.library.path=lib/executor/lib/Executor/build -Xss26m` (this will tell IntelliJ where to find the Executor library and use 26MB of thread stack size which is needed for arithmetic simplifactions sometimes).

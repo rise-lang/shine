@@ -3,7 +3,7 @@ package shine.OpenCL.CodeGeneration
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.{BasicType, Decl}
-import shine.C.CodeGeneration.CodeGenerator.{CIntExpr, FstMember, SndMember}
+import shine.C.CodeGeneration.CodeGenerator.CIntExpr
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
@@ -116,19 +116,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
-      case RecordAcc(_, _, fst, snd) => path match {
-        case FstMember :: ps => acc(fst, env, ps, cont)
-        case SndMember :: ps => acc(snd, env, ps, cont)
-        case Nil =>
-          // FIXME: hacky
-          acc(fst, env, Nil, { case C.AST.StructMemberAccess(a1, _) =>
-            acc(snd, env, Nil, { case C.AST.StructMemberAccess(a2, _) =>
-              assert(a1 == a2)
-              cont(a1)
-            })})
-        case _ => error(s"did not expect $path")
-      }
-
       case _ => super.acc(phrase, env, path, cont)
     }
   }
@@ -230,8 +217,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                               path: Path,
                               env: Environment): Expr = {
     (path, dt) match {
-      case ((i: CIntExpr) :: _, _: VectorType) =>
-        OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(i))
+      case (CIntExpr(Cst(i)) :: _, _: VectorType) =>
+        OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(Cst(i)))
+      case (CIntExpr(i) :: _, _: VectorType) =>
+        error(s"expected constant access to vector elements, found $i")
       case _ => super.generateAccess(dt, expr, path, env)
     }
   }

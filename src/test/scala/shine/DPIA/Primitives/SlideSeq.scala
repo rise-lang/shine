@@ -38,16 +38,21 @@ int main(int argc, char** argv) {
     Execute(testCode)
   }
 
-  test("3 point sum value rotation: generated C code gives the expected result") {
-    check3pSum(nFun(n => fun(ArrayType(n, int))(a =>
-      a |> rotateValues(3)(fun(x => x)) >> mapStream(reduceSeq(add)(l(0)))
+  test("3 point sum value rotation:"
+    + " generated C code gives the expected result"
+  ) {
+    check3pSum(nFun(n => fun(ArrayType(n, int))(a => a |>
+      rotateValues(3)(fun(x => x)) >>
+      iterateStream(reduceSeq(add)(l(0)))
     )))
   }
 
-  test("3 point sum index rotation: generated C code gives the expected result") {
-    val alloc = 0 // currently ignored
-    check3pSum(nFun(n => fun(ArrayType(n, int))(a =>
-      a |> circularBuffer(alloc)(3)(fun(x => x)) >> mapStream(reduceSeq(add)(l(0)))
+  test("3 point sum index rotation:"
+    + " generated C code gives the expected result"
+  ) {
+    check3pSum(nFun(n => fun(ArrayType(n, int))(a => a |>
+      circularBuffer(3)(3)(fun(x => x)) >>
+      iterateStream(reduceSeq(add)(l(0)))
     )))
   }
 }

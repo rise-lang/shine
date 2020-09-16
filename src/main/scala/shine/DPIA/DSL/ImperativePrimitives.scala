@@ -56,10 +56,10 @@ object `for` {
 
 object forNat {
   def apply(
-             n: Nat,
-             f: NatIdentifier => Phrase[CommType],
-             unroll: Boolean = false
-           ): ForNat = {
+    n: Nat,
+    f: NatIdentifier => Phrase[CommType],
+    unroll: Boolean = false
+  ): ForNat = {
     import arithexpr.arithmetic.RangeAdd
     ForNat(n, nFun(i => f(i), RangeAdd(0, n, 1)), unroll)
   }
@@ -67,10 +67,10 @@ object forNat {
 
 object streamNext {
   def apply(
-             next: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType]],
-             i: Nat,
-             f: Phrase[ExpType ->: CommType]
-           ): Phrase[CommType] = {
+    next: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType]],
+    i: Nat,
+    f: Phrase[ExpType ->: CommType]
+  ): Phrase[CommType] = {
     Phrases.Apply(
       Phrases.DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next, i),
       f

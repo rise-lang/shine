@@ -110,7 +110,7 @@ object fromRise {
     import shine.OpenMP.FunctionalPrimitives._
     import shine.DPIA.Types.MatchingDSL._
 
-    (p, t) match {
+    (p, t: @unchecked) match {
       case (core.PrintType(msg), expT(dt: DataType, w) ->: _) =>
         fun[ExpType](expT(dt, w), e => PrintType(msg, dt, w, e))
 
@@ -140,10 +140,18 @@ object fromRise {
       case (core.MapStream(),
         ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
-          expT(ArrayType(_, _), `write`) ) =>
+          expT(ArrayType(_, _), `read`) ) =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
             MapStream(n, s, t, f, e)))
+
+      case (core.IterateStream(),
+        ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`) ) =>
+        fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+          fun[ExpType](expT(n`.`s, read), e =>
+            IterateStream(n, s, t, f, e)))
 
       case (core.MapSeqUnroll(),
         ( expT(s, `read`) ->: expT(t, `write`) ) ->:
@@ -293,7 +301,7 @@ object fromRise {
               expT(s, read) ->: expT(t, write), load =>
                 fun[ExpType](expT(insz`.`s, read), e =>
                   // TODO: alloc
-                  SlideSeq(SlideSeq.Indices, n, sz, 1, s, load, e)))))
+                  SlideSeq(SlideSeq.Indices, n, sz, 1, s, t, load, e)))))
 
       case (core.RotateValues(),
         nFunT(sz,
@@ -304,7 +312,7 @@ object fromRise {
           fun[ExpType ->: ExpType](
             expT(s, read) ->: expT(s, write), wr =>
               fun[ExpType](expT(insz`.`s, read), e =>
-                SlideSeq(SlideSeq.Values, n, sz, 1, s, wr, e))))
+                SlideSeq(SlideSeq.Values, n, sz, 1, s, s, wr, e))))
 
       case (ocl.OclCircularBuffer(),
         aFunT(a, nFunT(alloc, nFunT(sz,
@@ -317,8 +325,7 @@ object fromRise {
               fun[ExpType ->: ExpType](
                 expT(s, read) ->: expT(t, write), load =>
                   fun[ExpType](expT(insz`.`s, read), e =>
-                    OpenCLSlideSeq(OpenCLSlideSeq.Indices,
-                      a, n, alloc, sz, s, load, e))))))
+                    OpenCLCircularBuffer(a, n, alloc, sz, s, t, load, e))))))
 
       case (ocl.OclRotateValues(),
         aFunT(a, nFunT(sz,
@@ -330,8 +337,7 @@ object fromRise {
               fun[ExpType ->: ExpType](
                 expT(t, read) ->: expT(t, write), write_t =>
                   fun[ExpType](expT(insz`.`t, read), e =>
-                    OpenCLSlideSeq(OpenCLSlideSeq.Values,
-                      a, n, sz, 1, t, write_t, e)))))
+                    OpenCLRotateValues(a, n, sz, t, write_t, e)))))
 
       case (core.Reorder(),
         (expT(IndexType(n), `read`) ->: expT(IndexType(_), `read`)) ->:
@@ -381,6 +387,13 @@ object fromRise {
             fun[ExpType](expT(t, read), cst =>
               fun[ExpType](expT(n`.`t, read), e =>
                 Pad(n, l, q, t, cst, e)))))
+
+      case (core.PadEmpty(),
+        nFunT(r,
+          expT(ArrayType(n, t), `write`) ->: _)) =>
+        depFun[NatKind](r)(
+          fun[ExpType](expT(n`.`t, `write`), e =>
+            PadEmpty(n, r, t, e)))
 
       case (core.PadClamp(),
         nFunT(l, nFunT(q,
