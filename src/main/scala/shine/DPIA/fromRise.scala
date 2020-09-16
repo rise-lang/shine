@@ -222,7 +222,7 @@ object fromRise {
           expT(t, read) ->: expT(s, read) ->: expT(t, write), f =>
             fun[ExpType](expT(t, write), i =>
               fun[ExpType](expT(n`.`s, read), e =>
-                ReduceSeqUnroll(n, t, s, f, i, e))))
+                ReduceSeqUnroll(n, s, t, f, i, e))))
 
       case (ocl.OclReduceSeq(),
         aFunT(a,

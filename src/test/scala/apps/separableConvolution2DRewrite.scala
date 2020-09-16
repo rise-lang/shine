@@ -156,8 +156,4 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
         -> toTDSL(regRotSeq)(weightsV)(weightsH)
     ))
   }
-
-  // TODO
-  // test("scanline to regRotPar") {
-  // }
 }

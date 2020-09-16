@@ -45,7 +45,7 @@ class dot extends shine.test_util.Tests {
 
   // C
   test("Simple dot product compiles to syntactically correct C") {
-    gen.CProgram(simpleDotProduct)
+    println(gen.CProgram(simpleDotProduct).code)
   }
 
   // OpenMP

@@ -1,7 +1,7 @@
 package shine.DPIA
 
 import rise.{core => r}
-import rise.core.{types => rt, TypeLevelDSL => rtdsl}
+import rise.core.{TypeLevelDSL => rtdsl, types => rt}
 import rise.core.TypeLevelDSL.->:
 import rise.core.{primitives => rp}
 import rise.openMP.{primitives => rompp}
@@ -9,9 +9,11 @@ import rise.openCL.{primitives => roclp}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
+import util.Execute.Exception
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 object inferAccess {
   def apply(e: r.Expr): MutableIdentityHashMap[r.Expr, PhraseType] =
@@ -166,7 +168,12 @@ private class InferAccessAnnotation {
     val eSubstFType =
       eSubst(fType).asInstanceOf[FunType[_ <: PhraseType, _ <: PhraseType]]
 
-    val subst = subUnifyPhraseType(eType, eSubstFType.inT)
+    val subst = subUnifyPhraseType(eType, eSubstFType.inT) match {
+      case Success(subst) => subst
+      case Failure(exception) =>
+        error(s"Failure when inferring access annotations for application:\n" +
+          s"$app\nwith context:\n$ctx\n${exception.getMessage}")
+    }
     val appType = subst(eSubstFType.outT)
     val resSubst = subst(eSubst(fSubst))
     ptAnnotationMap update(app, appType)
@@ -552,22 +559,23 @@ private class InferAccessAnnotation {
   private def subUnifyPhraseType(
     less: PhraseType,
     larger: PhraseType,
-  ): Subst = (less, larger) match {
+  ): Try[Subst] = (less, larger) match {
     case (le@ExpType(ldt, la), re@ExpType(rdt, ra)) if ldt == rdt =>
       (la, ra) match {
-        case (li: AccessTypeIdentifier, _) => Subst() + (li, ra)
-        case (_, ri: AccessTypeIdentifier) => Subst() + (ri, la)
-        case _ => if (le `<=` re) Subst()
-                  else error(s"Cannot subunify $less <: $larger.")
+        case (li: AccessTypeIdentifier, _) => Try(Subst() + (li, ra))
+        case (_, ri: AccessTypeIdentifier) => Try(Subst() + (ri, la))
+        case _ => if (le `<=` re) Try(Subst())
+                  else Try(error(s"Cannot subunify $less <: $larger."))
       }
     case (FunType(lin, lout), FunType(rin, rout)) =>
-      val argSubst = subUnifyPhraseType(rin, lin)
-      val outSubst = subUnifyPhraseType(argSubst(lout), argSubst(rout))
-      val resSubst = outSubst(argSubst)
-      resSubst
+      subUnifyPhraseType(rin, lin).flatMap(argSubst =>
+        subUnifyPhraseType(argSubst(lout), argSubst(rout)).flatMap(outSubst =>
+          Success(outSubst(argSubst))
+        )
+      )
     case (DepFunType(lx, la), DepFunType(rx, ra)) if lx == rx =>
       subUnifyPhraseType(la, ra)
-    case _ => error(s"Cannot subunify $less and $larger.")
+    case _ => Try(error(s"Cannot subunify $less and $larger."))
   }
 
   def `type`(ty: rt.Type): PhraseType = ty match {
