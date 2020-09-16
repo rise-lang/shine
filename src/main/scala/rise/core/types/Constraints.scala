@@ -439,7 +439,7 @@ object Constraint {
   object natCollection {
     def unifyIdent(i: NatCollectionIdentifier, n: NatCollection)(
         implicit trace: Seq[Constraint]
-      ):Solution = n match {
+      ): Solution = n match {
       case j: NatCollectionIdentifier =>
         if (i == j) {
           Solution()
