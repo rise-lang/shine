@@ -194,6 +194,7 @@ object parse {
               case IntTyp() => Right(rt.i32)
               case FloatTyp() => Right(rt.f32)
               case DoubleType() => Right(rt.f64)
+              case BoolType() => Right(rt.bool)
               case notAtype => Left(NotAnAcceptedType(notAtype))
             }
             t match {
@@ -216,12 +217,13 @@ object parse {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => {
+          case Type(typ, _) => { //Todo: Here and in parseMaybeTypeAnnotation is this same match!
             val t: Either[   ParseErrorOrState, rt.Type] = typ match {
               case ShortTyp() => Right(rt.i8)
               case IntTyp() => Right(rt.i32)
               case FloatTyp() => Right(rt.f32)
               case DoubleType() => Right(rt.f64)
+              case BoolType() => Right(rt.bool)
               case notAtype => Left(NotAnAcceptedType(notAtype))
             }
             t match {
@@ -338,11 +340,11 @@ object parse {
             case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
             case _ => ???
           }
-        case SExpr(i) => (i, synElemList.tail)
+        case SExpr(i) => (i, synElemListExpr.tail)
       }
 
     val lambda = Lambda(maybeTypedIdent.asInstanceOf[r.Identifier], expr)()
-
+    println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
     Right((toks, SExpr(lambda) :: synElemListMaybeTIdent))
   }
 
@@ -372,7 +374,7 @@ object parse {
     (
       (Right(parseState), false) ||
         parseUnOperatorApp || parseBracesExpr  ||
-        parseBinOperatorApp || parseLambda || // || parseApp //Todo: parseApp creates an endless loop because an expression
+        parseBinOperatorApp || parseLambda || // parseApp || //Todo: parseApp creates an endless loop because an expression
                                                             //Todo: creates two expression and so on...
         parseIdent || parseNumber
       )._1
@@ -431,7 +433,7 @@ object parse {
   def parseApp(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
     println("parseApp: " + parseState)
     //TODO: Here endless loop because Expression is everything!!!
-    if(parseState._1.isEmpty){
+    if(parseState._1.length < 2){
       println("Abbruch; parseApp: "+ parseState)
       return Right(parseState)
     }//TODO: Here endless loop because Expression is everything!!!
