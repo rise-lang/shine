@@ -2,7 +2,7 @@ package shine.OpenCL.CodeGeneration
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
-import shine.C.AST.{BasicType, Decl}
+import shine.C.AST.{BasicType, Block, Decl, DeclRef, DeclStmt, UnionTypeDecl, VarDecl}
 import shine.C.CodeGeneration.CodeGenerator.{CIntExpr, FstMember, SndMember}
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
@@ -479,7 +479,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                            src: Phrase[ExpType],
                            env: Environment): Stmt = {
       dst.t.dataType match {
-        // Every atomic operation only works on int pointers (except xchg and cmpxchg).
+        // Every atomic operation only works on int pointers (except xchg).
         // Therefore you can only use these atomic operations on DPIA types that will
         // be translated to ints in the generated code.
         case shine.DPIA.Types.int |
@@ -508,20 +508,48 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                                  dst: Phrase[AccType],
                                  src: Phrase[ExpType],
                                  env: Environment): Stmt = {
-      acc(dst, env, Nil, a => {
-        val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, a)
+      acc(dst, env, Nil, a =>
+        exp(src, env, Nil, e => {
+          val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, a)
 
-        exp(src, env, Nil, e =>
-          C.AST.ExprStmt(
-            C.AST.FunCall(C.AST.DeclRef(operation), List(ptr, e))))
-      })
+            C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(operation), List(ptr, e)))
+        }))
     }
 
     def codeGenAtomicBinOpWorkaround(f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
-                                       dst: Phrase[AccType],
-                                       src: Phrase[ExpType],
-                                       env: Environment): Stmt = {
-      C.AST.Comment("Not implemented yet")
+                                     dst: Phrase[AccType],
+                                     src: Phrase[ExpType],
+                                     env: Environment): Stmt = {
+      val current = DeclRef("current")
+      val next = DeclRef("next")
+      val expected = DeclRef("expected")
+      val u32 = DeclRef("u32")
+      val f32 = DeclRef("f32")
+
+      val fields = List(VarDecl(u32.name, C.AST.Type.uint),
+                        VarDecl(f32.name, C.AST.Type.float))
+
+      acc(dst, env, Nil, a =>
+        exp(src, env, Nil, e => {
+          val current_u32 = C.AST.StructMemberAccess(current, u32)
+          val current_f32 = C.AST.StructMemberAccess(current, f32)
+          val next_u32 = C.AST.StructMemberAccess(next, u32)
+          val next_f32 = C.AST.StructMemberAccess(next, f32)
+          val expected_u32 = C.AST.StructMemberAccess(expected, u32)
+          val expected_f32 = C.AST.StructMemberAccess(expected, f32)
+
+          val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, a)
+
+          Block(immutable.Seq(
+            DeclStmt(UnionTypeDecl(current.name, fields, List(next.name, expected.name))),
+
+            C.AST.ExprStmt(C.AST.Assignment(current_f32, a)),
+
+            C.AST.DoWhileLoop(C.AST.BinaryExpr(current_u32, C.AST.BinaryOperator.!=, expected_u32),
+              C.AST.Comment("WIP")
+            )
+          ))
+        }))
     }
   }
 }
