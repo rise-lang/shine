@@ -89,6 +89,7 @@ class CPrinter extends Printer {
     case b: Block => printBlock(b)
     case f: ForLoop => printForLoop(f)
     case w: WhileLoop => printWhileLoop(w)
+    case l: DoWhileLoop => printDoWhileLoop(l)
     case i: IfThenElse => printIfThenElse(i)
     case g: GOTO => printGOTO(g)
     case b: Break => printBreak(b)
@@ -217,6 +218,15 @@ class CPrinter extends Printer {
     printExpr(w.cond)
     print(") ")
     printStmt(w.body)
+  }
+
+  private def printDoWhileLoop(w: DoWhileLoop): Unit = {
+    println("do {")
+    printStmt(w.body)
+    println("")
+    print("} while (")
+    printExpr(w.cond)
+    print(");")
   }
 
   private def printIfThenElse(i: IfThenElse): Unit = {

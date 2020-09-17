@@ -84,6 +84,8 @@ abstract class ForLoop(val init: DeclStmt, val cond: Expr, val increment: Expr, 
 
 abstract class WhileLoop(val cond: Expr, val body: Stmt) extends Stmt
 
+abstract class DoWhileLoop(val cond: Expr, val body: Stmt) extends Stmt
+
 abstract class IfThenElse(val cond: Expr, val trueBody: Stmt, val falseBody: Option[Stmt]) extends Stmt
 
 abstract class GOTO(val label: String) extends Stmt
@@ -251,6 +253,11 @@ object ForLoop {
 object WhileLoop {
   def apply(cond: Expr, body: Stmt): WhileLoop = DefaultImplementations.WhileLoop(cond, body)
   def unapply(arg: WhileLoop): Option[(Expr, Stmt)] = Some((arg.cond, arg.body))
+}
+
+object DoWhileLoop {
+  def apply(cond: Expr, body: Stmt): DoWhileLoop = DefaultImplementations.DoWhileLoop(cond, body)
+  def unapply(arg: DoWhileLoop): Option[(Expr, Stmt)] = Some((arg.cond, arg.body))
 }
 
 object IfThenElse {
@@ -474,6 +481,16 @@ object DefaultImplementations {
 
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt =
       VisitAndGenerateStmt(cond, v, condE => WhileLoop(condE, VisitAndGenerateStmt(body, v)))
+  }
+
+  case class DoWhileLoop(override val cond: Expr, override val body: Stmt)
+    extends C.AST.DoWhileLoop(cond, body)
+  {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor):
+    DoWhileLoop = DoWhileLoop(VisitAndRebuild(cond, v), VisitAndRebuild(body, v))
+
+    override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt =
+      VisitAndGenerateStmt(cond, v, condE => DoWhileLoop(condE, VisitAndGenerateStmt(body, v)))
   }
 
   case class IfThenElse(override val cond: Expr,
