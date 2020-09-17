@@ -6,7 +6,6 @@ lazy val commonSettings = Seq(
     "-Xfatal-warnings",
     "-Xlint",
     "-Xmax-classfile-name", "100",
-    "-Ypatmat-exhaust-depth", "60",
     "-unchecked",
     "-deprecation",
     "-feature",

@@ -263,7 +263,7 @@ object algorithmic {
     matchExpectedMakeArray(expr) match {
       case Some(e) => Success(
         app(transpose, map(fun(x => transformMakeArray(expr, x)))(e))
-          :: e.t)
+          :: expr.t)
       case None => Failure(mapOutsideMakeArray)
     }
   }

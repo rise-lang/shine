@@ -52,7 +52,7 @@ class tvmGemm extends test_util.Tests {
     fuseReduceMap `@` topDown[Rise]
 
   test("baseline") {
-    run("baseline", baseline `;` lowerToC, openMP = false)
+    run("baseline",  baseline `;` lowerToC, openMP = false)
   }
 
   // -- BLOCKING ---------------------------------------------------------------

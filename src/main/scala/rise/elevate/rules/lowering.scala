@@ -64,8 +64,8 @@ object lowering {
   // Specialized Lowering
 
   @rule def mapSeqCompute()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
-    case App(Map(), f) if containsComputation()(ev)(f) && not(isMappingZip)(f) =>
-      Success(TypedDSL.mapSeq(f))
+    case e@App(Map(), f) if containsComputation()(ev)(f) && not(isMappingZip)(f) =>
+      Success(TypedDSL.mapSeq(f) :: e.t)
   }
 
   @rule def isMappingZip: Strategy[Rise] = {
