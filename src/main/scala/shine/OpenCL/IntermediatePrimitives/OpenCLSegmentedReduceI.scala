@@ -11,7 +11,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType.idx
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.AdjustArraySizesForAllocations
+import shine.OpenCL.{AdjustArraySizesForAllocations, get_local_id}
 import shine.OpenCL.DSL._
 import shine.OpenCL.ImperativePrimitives.ParForLocal
 
@@ -87,13 +87,16 @@ object OpenCLSegmentedReduceI {
                     // Apparently this happens because the variable suffix rd isn't processed inside of acc.
                     (a :=| pt | current_reduction.rd)
 
+                    // Atomic alternative:
+                    // atomicBinOp(dt, f, g_output.wr `@` fst(current_reduction.rd), snd(current_reduction.rd)))
+
+
               ))),
               Split(m, o, read, pt, in),
               s_data.wr)
 
           ) `;`
 
-          // TODO: You could replace a second reduction by using atomic operations at the end of the first reduction.
 
           // ******************************************************************************************************
           // Second reduction: Reduce the remaining reduction elements of every thread with a tree-based algorithm.
@@ -126,7 +129,7 @@ object OpenCLSegmentedReduceI {
 
                         // Make sure that only the first o / (2 * (i + 1)) threads are active in each iteration.
                         `if` (IndexAsNat(o, lid) `<`
-                              (Natural(o) / (Natural(2) * (Natural(1) + IndexAsNat(tree_loops, i)))))
+                              (Natural(o) / (Natural(2) * Cast(int, NatType, stride.rd))))
 
                         `then` (
 
@@ -136,9 +139,10 @@ object OpenCLSegmentedReduceI {
                           //       that the key can't be found in the environment. Therefore stride, left_index and
                           //       right_index are ints here and are later casted to NatTypes.
 
-                          // Calculate the index of the left_element of the current iteration (2 * stride * local_id)
+                          // Calculate the index of the left_element of the current iteration (2 * lid * stride + (stride - 1)))
                           (left_index.wr :=| int |
-                            (Literal(2) * stride.rd * Cast(NatType, int, IndexAsNat(o, lid)))) `;`
+                            (Literal(2) * stride.rd * Cast(NatType, int, IndexAsNat(o, lid)) +
+                              stride.rd - Literal(1))) `;`
 
                           // Calculate the index of the right_element of the current iteration (left_index + stride)
                           (right_index.wr :=| int | (left_index.rd + stride.rd)) `;`
@@ -164,9 +168,10 @@ object OpenCLSegmentedReduceI {
                                      (g_output.wr `@` fst(left_element.rd))
 
                              // Accumulate the value of left_element into the value of right_element
-                             `else` f(snd(right_element.rd))
+                             `else` f(snd(s_data.rd `@` NatAsIndex(o, Cast(int, NatType, right_index.rd))))
                                      (snd(left_element.rd))
-                                     (PairAcc2(IndexType(k), dt, right_element.wr))
+                                     (PairAcc2(IndexType(k), dt,
+                                       s_data.wr `@` NatAsIndex(o, Cast(int, NatType, right_index.rd))))
                             )
                         )
 
@@ -184,9 +189,11 @@ object OpenCLSegmentedReduceI {
 
           // After the for-loop is finished the final reduced element is still saved in s_data[o - 1],
           // so it still needs to be accumulated into g_output[s_data[o - 1].key].
-          f(g_output.rd `@` fst(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
-           (snd(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
-           (g_output.wr `@` fst(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
+          (`if` (Natural(get_local_id(0)) `=:=` Natural(0))
+           `then` f(g_output.rd `@` fst(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
+                  (snd(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
+                  (g_output.wr `@` fst(s_data.rd `@` NatAsIndex(o, Natural(o - 1))))
+           `else` comment("do nothing"))
 
         ) `;`
 
