@@ -77,6 +77,7 @@ object Type {
   val uconst_char = BasicType("unsigned char", const = true)
 
   val int = BasicType("int")
+  val uint = BasicType("unsigned int")
   val const_int = BasicType("int", const = true)
 
   val u8 = BasicType("uint8_t")
