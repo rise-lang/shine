@@ -20,6 +20,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val riseAndShine = (project in file("."))
+  .aggregate(executor)
   .dependsOn(macros, arithExpr, executor, elevate)
   .settings(
     name          := "riseAndShine",
