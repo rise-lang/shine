@@ -1,21 +1,21 @@
-package elevate.rise
+package rise.elevate
 
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.movement.liftReduce
-import elevate.rise.rules.traversal._
-import elevate.rise.rules.traversal.default._
-import elevate.rise.rules.{inferRise, lowering}
-import elevate.rise.strategies.traversal._
-import elevate.util._
-import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
+import rise.core.TypedDSL._
 import rise.core._
 import rise.core.types._
+import rise.elevate.rules.algorithmic._
+import rise.elevate.rules.movement.liftReduce
+import rise.elevate.rules.traversal._
+import rise.elevate.rules.traversal.default._
+import rise.elevate.rules.{inferRise, lowering}
+import rise.elevate.strategies.traversal._
+import rise.elevate.util._
 
-import util.gen
+import _root_.util.gen
 
 class algorithmic extends shine.test_util.Tests {
 
@@ -26,21 +26,21 @@ class algorithmic extends shine.test_util.Tests {
   // S: slide/split
   // J: join
 
-  def loopInterchange = elevate.rise.strategies.tiling.loopInterchange(default.RiseTraversable)
-  def loopInterchangeAtLevel = elevate.rise.strategies.tiling.loopInterchangeAtLevel(default.RiseTraversable)
-  def tileND = elevate.rise.strategies.tiling.tileND(default.RiseTraversable)
-  def tileNDList = elevate.rise.strategies.tiling.tileNDList(default.RiseTraversable)
+  def loopInterchange = rise.elevate.strategies.tiling.loopInterchange(default.RiseTraversable)
+  def loopInterchangeAtLevel = rise.elevate.strategies.tiling.loopInterchangeAtLevel(default.RiseTraversable)
+  def tileND = rise.elevate.strategies.tiling.tileND(default.RiseTraversable)
+  def tileNDList = rise.elevate.strategies.tiling.tileNDList(default.RiseTraversable)
 
-  def DFNF = elevate.rise.strategies.normalForm.DFNF()(default.RiseTraversable)
-  def RNF = elevate.rise.strategies.normalForm.RNF()(default.RiseTraversable)
-  def CNF = elevate.rise.strategies.normalForm.CNF()(default.RiseTraversable)
-  def BENF = elevate.rise.strategies.normalForm.BENF()(default.RiseTraversable)
+  def DFNF = rise.elevate.strategies.normalForm.DFNF()(default.RiseTraversable)
+  def RNF = rise.elevate.strategies.normalForm.RNF()(default.RiseTraversable)
+  def CNF = rise.elevate.strategies.normalForm.CNF()(default.RiseTraversable)
+  def BENF = rise.elevate.strategies.normalForm.BENF()(default.RiseTraversable)
 
   // Loop Interchange
 
   test("simple loop interchange") {
     assert(betaEtaEquals(
-      body(body(loopInterchange))(λ(i => λ(f => **!(f) $ i))),
+      body(body(loopInterchange))(λ(i => λ(f => **!(f) $ i))).get,
       λ(i => λ(f => (T o **(f) o T) $ i))
     ))
   }
@@ -50,12 +50,12 @@ class algorithmic extends shine.test_util.Tests {
     val gold = λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
 
     assert(betaEtaEquals(
-      body(body(loopInterchangeAtLevel(1)))(input),
+      body(body(loopInterchangeAtLevel(1)))(input).get,
       gold
     ))
 
     assert(betaEtaEquals(
-      body(body(fmap(loopInterchange) `;` DFNF `;` RNF))(input),
+      body(body(fmap(loopInterchange) `;` DFNF `;` RNF))(input).get,
       gold
     ))
   }
@@ -78,7 +78,7 @@ class algorithmic extends shine.test_util.Tests {
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: f32)(_ => l(0.0f)))) $ transpose(i))))
 
-    val rewrite = body(body(body(function(liftReduce))))(DFNF(mapReduce)).get
+    val rewrite = body(body(body(function(liftReduce))))(DFNF(mapReduce).get).get
 
     val typedGold = DFNF(reduceMap)
     val typedRewrite = DFNF(rewrite)
@@ -425,7 +425,7 @@ class algorithmic extends shine.test_util.Tests {
     */
 
     val tiled = topDown(tileND(2)(16)).apply(mm)
-    infer(tiled)
+    infer(tiled.get)
   }
 
   test("reduce rows") {

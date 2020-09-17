@@ -1,6 +1,6 @@
 package rise.core
 
-import elevate.util._
+import rise.elevate.util._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types.f32

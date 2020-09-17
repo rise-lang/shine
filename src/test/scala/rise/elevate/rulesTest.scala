@@ -1,9 +1,9 @@
-package elevate.rise
+package rise.elevate
 
 import elevate.core._
-import elevate.rise.rules._
-import elevate.rise.rules.traversal._
 import rise.core.TypedDSL._
+import rise.elevate.rules._
+import rise.elevate.rules.traversal._
 
 class rulesTest extends shine.test_util.Tests {
   def rewriteStep(a: Rise, s: Strategy[Rise], b: Rise): Unit = {

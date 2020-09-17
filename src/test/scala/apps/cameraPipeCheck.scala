@@ -7,12 +7,12 @@ import rise.core.types._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import elevate.core._
-import elevate.rise.Rise
-import elevate.rise.rules._
+import rise.elevate.Rise
+import rise.elevate.rules._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.rules.traversal.alternative
-import elevate.rise.rules.traversal.alternative._
+import rise.elevate.rules.traversal.alternative
+import rise.elevate.rules.traversal.alternative._
 
 class cameraPipeCheck extends shine.test_util.TestsWithExecutor {
   val H = 99
@@ -93,8 +93,8 @@ void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
 }
 """
 
-  val DFNF = elevate.rise.strategies.normalForm.DFNF()(alternative.RiseTraversable)
-  val CNF = elevate.rise.strategies.normalForm.CNF()(alternative.RiseTraversable)
+  val DFNF = rise.elevate.strategies.normalForm.DFNF()(alternative.RiseTraversable)
+  val CNF = rise.elevate.strategies.normalForm.CNF()(alternative.RiseTraversable)
 
   def check(
     lowered: Rise, callCFun: String => String,
@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
     val typed = printTime("infer", infer(hot_pixel_suppression))
     println(s"hot pixel suppression: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
-      repeatNTimes(2, topDown(lowering.mapSeq))
+      repeatNTimes(2)(topDown(lowering.mapSeq))
     val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     check(
@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
     ))))
     println(s"demosaic: ${typed.t}")
     // TODO
-    val lower: Strategy[Rise] = strategies.basic.id()
+    val lower: Strategy[Rise] = strategies.basic.id
     val lowered = printTime("lower", lower(typed).get)
     checkDemosaic(lowered)
   }
@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
     ))))
     println(s"demosaic: ${typed.t}")
     // TODO
-    val lower: Strategy[Rise] = strategies.basic.id()
+    val lower: Strategy[Rise] = strategies.basic.id
     val lowered = printTime("lower", lower(typed).get)
     checkDemosaic(lowered)
   }
@@ -225,7 +225,7 @@ int main(int argc, char** argv) {
   test("demosaic passes checks with circular buffers") {
     checkDemosaic(cameraPipeRewrite.demosaicCircularBuffers(
       printTime("infer", infer(cameraPipe.demosaic))
-    ))
+    ).get)
   }
 
   test("color correction passes checks") {
@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
     ))
     println(s"color correction: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
-      repeatNTimes(2, topDown(lowering.mapSeq)) `;`
+      repeatNTimes(2)(topDown(lowering.mapSeq)) `;`
       topDown(lowering.mapSeqUnroll)
     val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
@@ -263,7 +263,7 @@ int main(int argc, char** argv) {
     val typed = printTime("infer", infer(apply_curve))
     println(s"apply curve: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
-      repeatNTimes(3, topDown(lowering.mapSeq))
+      repeatNTimes(3)(topDown(lowering.mapSeq))
     val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     check(
@@ -284,7 +284,7 @@ ${fName}(output, ${2*H + 2}, ${2*W + 2},
       sharpen(h)(w)(input)(strength) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
     )))))
     println(s"sharpen: ${typed.t}")
-    val lower: Strategy[Rise] = strategies.basic.id()
+    val lower: Strategy[Rise] = strategies.basic.id
     val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     check(

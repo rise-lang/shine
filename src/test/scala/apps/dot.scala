@@ -1,6 +1,6 @@
 package apps
 
-import elevate.rise.rules.traversal.default
+import rise.elevate.rules.traversal.default
 import shine.DPIA.Types.{ExpType, read, write}
 import shine.DPIA.Types.TypeCheck._
 import rise.core.DSL._

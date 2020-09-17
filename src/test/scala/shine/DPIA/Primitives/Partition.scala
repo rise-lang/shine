@@ -6,7 +6,7 @@ import shine.DPIA.Nat
 import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{SyntaxChecker, Time, TimeSpan}
 import arithexpr.arithmetic._
-import elevate.rise.rules.traversal.default
+import rise.elevate.rules.traversal.default
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core._

@@ -6,16 +6,16 @@ import rise.core.TypedDSL._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.rules.traversal.alternative._
+import rise.elevate.rules.traversal.alternative._
 import elevate.core.strategies.predicate._
-import elevate.rise._
-import elevate.rise.rules._
-import elevate.rise.rules.movement._
-import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.traversal._
+import rise.elevate._
+import rise.elevate.rules._
+import rise.elevate.rules.movement._
+import rise.elevate.rules.algorithmic._
+import rise.elevate.rules.traversal._
 
 object cameraPipeRewrite {
-  private def rewriteSteps(steps: Seq[Strategy[Rise]]): Strategy[Rise] = a => {
+  private def rewriteSteps(steps: scala.collection.Seq[Strategy[Rise]]): Strategy[Rise] = a => {
     var nRewrite = 0
     steps.foldLeft[RewriteResult[Rise]](Success(a))({ case (r, s) =>
       r.flatMapSuccess { e =>
@@ -62,7 +62,7 @@ object cameraPipeRewrite {
     elevate.core.strategies.debug.debug[Rise](msg)
   def printS(msg: String) =
     elevate.core.strategies.debug.echo[Rise](msg)
-  private val idS = elevate.core.strategies.basic.id[Rise]()
+  private val idS = elevate.core.strategies.basic.id[Rise]
 
   type Traversal = Strategy[Rise] => Strategy[Rise]
 
@@ -241,15 +241,15 @@ object cameraPipeRewrite {
     r
   }
 
-  def unifyMapInputs(toMaps: Seq[Traversal]): Strategy[Rise] = p => {
-    var ps = Seq[Rise]()
+  def unifyMapInputs(toMaps: scala.collection.Seq[Traversal]): Strategy[Rise] = p => {
+    var ps = scala.collection.Seq[Rise]()
     val normalized = toMaps.foldLeft[RewriteResult[Rise]](Success(p)) {
       case (r, toMap) => r.flatMapSuccess(toMap(
         argument(normalizeInput) `;` repeat(mapFusion) `;`
         argument { e => ps = ps :+ e; Success(e) }
       ))
     }
-    var leftPs = Seq[Rise]()
+    var leftPs = scala.collection.Seq[Rise]()
     toMaps.foldLeft(normalized) {
       case (r, toMap) => r.flatMapSuccess { p =>
         toMap(ps match {
@@ -276,15 +276,15 @@ object cameraPipeRewrite {
     function(isEqualTo(DSL.generate)) `;`
     argument(body(
       function(function(function(isEqualTo(DSL.select)))) `;`
-      unifyMapInputs(Seq(argument, s => function(argument(s))))
-    )) `;` mapOutsideGenerateSelect `;`
+      unifyMapInputs(scala.collection.Seq(argument, s => function(argument(s))))
+    )) `;` mapOutsideGenerateSelect() `;`
     argument(argument(normalizeInput) `;` repeat(mapFusion))
   }
 
   def unifyMapOutsideMakeArray: Strategy[Rise] = {
     // TODO: can work for arbitrary size arrays
     function(function(function(isEqualTo(DSL.makeArray(3))))) `;`
-    unifyMapInputs(Seq(
+    unifyMapInputs(scala.collection.Seq(
       argument,
       s => function(argument(s)),
       s => function(function(argument(s)))
@@ -306,7 +306,7 @@ object cameraPipeRewrite {
   )
 
   def demosaicCircularBuffers: Strategy[Rise] = {
-    rewriteSteps(Seq(
+    rewriteSteps(scala.collection.Seq(
       normalize.apply(gentleBetaReduction()),
 
       takeDropTowardsInput,
@@ -315,12 +315,12 @@ object cameraPipeRewrite {
       body(body(body(
         function(body(function(body(
           // generate/select 3x2
-          repeatNTimes(6, topDown(function(isEqualTo(DSL.generate)) `;`
+          repeatNTimes(6)(topDown(function(isEqualTo(DSL.generate)) `;`
             topDown(one(unifyMapOutsideGenerateSelect))
           )) `;`
           gentlyReducedForm `;`
           // generate/select 3x2
-          repeatNTimes(3,
+          repeatNTimes(3)(
             topDown(unifyMapOutsideGenerateSelect)
           ) `;`
           gentlyReducedForm `;`
@@ -339,7 +339,7 @@ object cameraPipeRewrite {
             argument(argument(
               function(function(lowering.iterateStream)) `;`
                 argument(argument(argument(argument(argument(
-                  repeatNTimes(2, topDown(
+                  repeatNTimes(2)(topDown(
                     lowering.circularBuffer(mapSeq(fun(x => x)))
                   ))
                 ))))) `;`
@@ -428,7 +428,7 @@ object cameraPipeRewrite {
   }
 
   def circularBuffers: Strategy[Rise] = {
-    rewriteSteps(Seq(
+    rewriteSteps(scala.collection.Seq(
       precomputeColorCorrectionMatrix,
       precomputeCurve,
       takeDropTowardsInput,
@@ -440,12 +440,12 @@ object cameraPipeRewrite {
             function(body(
               function(body(
                 // generate/select 3x2
-                repeatNTimes(6, topDown(function(isEqualTo(DSL.generate)) `;`
+                repeatNTimes(6)(topDown(function(isEqualTo(DSL.generate)) `;`
                   topDown(one(unifyMapOutsideGenerateSelect))
                 )) `;`
                 gentlyReducedForm `;`
                 // generate/select 3x2
-                repeatNTimes(3,
+                repeatNTimes(3)(
                   topDown(unifyMapOutsideGenerateSelect)
                 ) `;`
                 gentlyReducedForm `;`

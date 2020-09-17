@@ -1,4 +1,4 @@
-package elevate.rise
+package rise.elevate
 
 import elevate.core._
 import elevate.core.strategies.basic._
@@ -6,21 +6,22 @@ import elevate.core.strategies.basic._
 //import rise.core.IsClosedForm
 import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
-import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.lowering._
-import elevate.rise.rules.traversal._
-import elevate.rise.rules.traversal.default._
-import elevate.rise.strategies.algorithmic.reorder
-import elevate.rise.strategies.lowering._
-import elevate.rise.strategies.normalForm._
-import elevate.rise.strategies.predicate._
-import elevate.rise.strategies.tiling._
-import elevate.rise.strategies.traversal
-import elevate.rise.strategies.traversal._
 import rise.core.TypedDSL._
 import rise.core.types._
+import rise.elevate.rules.algorithmic._
+import rise.elevate.rules.lowering._
+import rise.elevate.rules.traversal._
+import rise.elevate.rules.traversal.default._
+import rise.elevate.strategies.algorithmic.reorder
+import rise.elevate.strategies.lowering._
+import rise.elevate.strategies.normalForm._
+import rise.elevate.strategies.predicate._
+import rise.elevate.strategies.tiling._
+import rise.elevate.strategies.traversal
+import rise.elevate.strategies.traversal._
 import shine.test_util
-import util.gen
+
+import _root_.util.gen
 
 // scalastyle:off
 class tvmGemm extends test_util.Tests {
@@ -98,8 +99,8 @@ class tvmGemm extends test_util.Tests {
   val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
   val permuteB: Strategy[Rise] =
       splitJoin2(32) `;` DFNF() `;` argument(idAfter) `;`
-      topDown(liftId) `;` topDown(createTransposePair) `;` RNF() `;`
-      argument(argument(idAfter)) `;` normalize.apply(liftId) `;`
+      topDown(liftId()) `;` topDown(createTransposePair) `;` RNF() `;`
+      argument(argument(idAfter)) `;` normalize.apply(liftId()) `;`
       topDown(idToCopy)
 
   val packB: Strategy[Rise] =
@@ -181,9 +182,9 @@ class tvmGemm extends test_util.Tests {
     // generate the C code
     val time2 = currentTimeSec
     val program = if(openMP) {
-      gen.OpenMPProgram(rewritten, version).code
+      gen.OpenMPProgram(rewritten.get, version).code
     } else {
-      gen.CProgram(rewritten, version).code
+      gen.CProgram(rewritten.get, version).code
     }
     val time3 = currentTimeSec
     println(s"[$versionUC] codegen time: ${time3 - time2}s")

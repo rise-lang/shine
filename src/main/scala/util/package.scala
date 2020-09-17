@@ -68,7 +68,7 @@ package object util {
 
   def dotPrintTmp(
     name: String,
-    r: elevate.core.RewriteResult[elevate.rise.Rise]
+    r: elevate.core.RewriteResult[rise.elevate.Rise]
   ): Unit = r match {
     case elevate.core.Success(p) => dotPrintTmp(name, p)
     case _ =>

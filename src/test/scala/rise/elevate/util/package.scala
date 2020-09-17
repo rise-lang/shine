@@ -1,7 +1,6 @@
-package elevate
+package rise.elevate
 
-import elevate.rise._
-import elevate.rise.strategies.normalForm.BENF
+import rise.elevate.strategies.normalForm.BENF
 import _root_.rise.core.primitives._
 import _root_.rise.core._
 import _root_.rise.core.types._
@@ -17,7 +16,6 @@ package object util {
   val tileSize = 4
 
   def makeClosed(e: Rise): (Rise, Int) = {
-    import _root_.rise.core.types.infer._
     import scala.collection.immutable.Map
     val emptySubs: (Map[Type, Type],
       Map[NatIdentifier, Nat],
@@ -48,7 +46,7 @@ package object util {
         case i => throw TypeException(s"${i.getClass} is not supported yet")
       }
     })
-    (new Solution(ts, ns, as, n2ds)(expr), ts.size + ns.size + as.size + n2ds.size)
+    (new Solution(ts, ns, as, n2ds, Map.empty, Map.empty)(expr), ts.size + ns.size + as.size + n2ds.size)
   }
 
   // notation

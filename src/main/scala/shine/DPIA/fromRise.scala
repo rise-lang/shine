@@ -2,8 +2,8 @@ package shine.DPIA
 
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
-import elevate.rise.Rise
-import elevate.rise.rules._
+import rise.elevate.Rise
+import rise.elevate.rules._
 import rise.core.{semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._

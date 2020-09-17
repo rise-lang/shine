@@ -9,7 +9,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs.reorderWithStride
 import util.{gen, SyntaxChecker}
 
-import elevate.rise.rules.traversal.default._
+import rise.elevate.rules.traversal.default._
 
 import scala.util.Random
 

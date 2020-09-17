@@ -1,22 +1,21 @@
-package elevate.rise
+package rise.elevate
 
-import rise.core.types._
-import rise.core.DSL._
-import rise.core.TypeLevelDSL._
-import rise.core.HighLevelConstructs.dropLast
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.rules._
-import elevate.rise.rules.traversal.alternative
-import elevate.rise.rules.traversal.alternative._
-import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.movement._
-import elevate.rise.strategies.predicate._
-import elevate.rise.rules.lowering
-
-import util.gen
-import elevate.util.makeClosed
+import rise.core.DSL._
+import rise.core.HighLevelConstructs.dropLast
+import rise.core.TypeLevelDSL._
+import rise.core.types._
+import rise.elevate.rules.algorithmic._
+import rise.elevate.rules.{lowering, _}
+import rise.elevate.rules.movement._
+import rise.elevate.rules.traversal.alternative
+import rise.elevate.rules.traversal.alternative._
+import rise.elevate.strategies.predicate._
+import rise.elevate.util.makeClosed
+import _root_.util.Execute
+import _root_.util.gen
 
 class circularBuffering extends shine.test_util.Tests {
   private val sum = reduce(add)(l(0.0f))
@@ -105,7 +104,7 @@ class circularBuffering extends shine.test_util.Tests {
          |  return 0;
          |}
          |""".stripMargin
-    util.Execute(testCode)
+    Execute(testCode)
   }
 
   private def openEquality(typedA: Rise, b: Rise): Boolean = {
@@ -117,7 +116,7 @@ class circularBuffering extends shine.test_util.Tests {
   private val id = fun(x => x)
   private val norm = normalize(alternative.RiseTraversable).apply(gentleBetaReduction())
 
-  private def rewriteSteps(a: Rise, steps: Seq[(Strategy[Rise], Rise)]): Unit = {
+  private def rewriteSteps(a: Rise, steps: scala.collection.Seq[(Strategy[Rise], Rise)]): Unit = {
     steps.foldLeft[Rise](norm(infer(a)).get)({ case (e, (s, expected)) =>
       val result = (s `;` norm)(e).get
       val nuExpect = norm(infer(expected)).get
@@ -130,7 +129,7 @@ class circularBuffering extends shine.test_util.Tests {
   }
 
   test("highLevel to circBuf") {
-    rewriteSteps(highLevel, Seq(
+    rewriteSteps(highLevel, scala.collection.Seq(
       (topDown(dropBeforeMap)`;` topDown(takeBeforeMap))
       -> (
         slide(3)(1) >> map(sum) >> fun(x =>
@@ -232,7 +231,7 @@ class circularBuffering extends shine.test_util.Tests {
          |  return 0;
          |}
          |""".stripMargin
-    util.Execute(testCode)
+    Execute(testCode)
   }
 
   def wrapExprTogether(e: Rise): Rise = {
@@ -313,6 +312,6 @@ class circularBuffering extends shine.test_util.Tests {
          |  return 0;
          |}
          |""".stripMargin
-    util.Execute(testCode)
+    Execute(testCode)
   }
 }

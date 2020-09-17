@@ -1,31 +1,32 @@
-package elevate.rise
+package rise.elevate
 
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.core.{RewriteResult, Strategy}
-import elevate.rise.rules._
-import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.traversal._
-import elevate.rise.rules.traversal.default._
-import elevate.rise.strategies.traversal._
-import elevate.util._
 import rise.core.TypeLevelDSL._
 import rise.core.TypedDSL._
 import rise.core._
 import rise.core.types.{ArrayType, NatKind, f32, infer, _}
-import util.gen
+import rise.elevate.rules._
+import rise.elevate.rules.algorithmic._
+import rise.elevate.rules.traversal._
+import rise.elevate.rules.traversal.default._
+import rise.elevate.strategies.traversal._
+import rise.elevate.util._
+
+import _root_.util.gen
 
 import scala.language.implicitConversions
 
 class tiling extends shine.test_util.Tests {
 
-  val BENF = elevate.rise.strategies.normalForm.BENF()(default.RiseTraversable)
-  val DFNF = elevate.rise.strategies.normalForm.DFNF()(default.RiseTraversable)
-  val CNF = elevate.rise.strategies.normalForm.CNF()(default.RiseTraversable)
-  val RNF = elevate.rise.strategies.normalForm.RNF()(default.RiseTraversable)
+  val BENF = rise.elevate.strategies.normalForm.BENF()(default.RiseTraversable)
+  val DFNF = rise.elevate.strategies.normalForm.DFNF()(default.RiseTraversable)
+  val CNF = rise.elevate.strategies.normalForm.CNF()(default.RiseTraversable)
+  val RNF = rise.elevate.strategies.normalForm.RNF()(default.RiseTraversable)
 
-  def tileND = elevate.rise.strategies.tiling.tileND(default.RiseTraversable)
-  def tileNDList = elevate.rise.strategies.tiling.tileNDList(default.RiseTraversable)
+  def tileND = rise.elevate.strategies.tiling.tileND(default.RiseTraversable)
+  def tileNDList = rise.elevate.strategies.tiling.tileNDList(default.RiseTraversable)
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
@@ -258,7 +259,7 @@ class tiling extends shine.test_util.Tests {
   // ... but mapAcceptorTranslation for split is missing
   val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
 
-  val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
+  val identity = dtFun(t => foreignFun("identity", scala.collection.Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(f32)
 
   test("codegen 1D tiles") {

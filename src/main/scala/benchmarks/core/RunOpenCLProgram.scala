@@ -1,6 +1,6 @@
 package benchmarks.core
 
-import elevate.rise.rules.traversal.default.RiseTraversable
+import rise.elevate.rules.traversal.default.RiseTraversable
 import shine.DPIA
 import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import rise.core.Expr
