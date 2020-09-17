@@ -7,7 +7,7 @@ import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 
-class fmap extends elevate.test_util.Tests {
+class fmap extends test_util.Tests {
 
   val fmapRNF = rise.elevate.strategies.traversal.fmapRNF(RiseTraversable)
 

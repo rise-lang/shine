@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 
-class structuralEquality extends rise.testUtil.Tests {
+class structuralEquality extends test_util.Tests {
   test("identity") {
     assert(fun(x => x) == fun(y => y))
   }

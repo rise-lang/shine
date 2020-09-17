@@ -8,7 +8,7 @@ import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.halide._
 
-class halide extends elevate.test_util.Tests {
+class halide extends test_util.Tests {
 
   private val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
 

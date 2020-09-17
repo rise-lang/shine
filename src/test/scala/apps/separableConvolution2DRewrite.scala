@@ -16,7 +16,7 @@ import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.alternative._
 import rise.elevate.util.makeClosed
 
-class separableConvolution2DRewrite extends shine.test_util.Tests {
+class separableConvolution2DRewrite extends test_util.Tests {
   private val idE: Expr = fun(x => x)
   private val idS: Strategy[Rise] = strategies.basic.id
 

@@ -4,7 +4,7 @@ import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 
-class dependentTypes extends rise.testUtil.Tests {
+class dependentTypes extends test_util.Tests {
   test("Infer int addition type") {
     val e =
       nFun(n =>

@@ -1,5 +1,3 @@
-package shine
-
 import com.github.ghik.silencer.silent
 import opencl.executor.Executor
 import org.scalatest.BeforeAndAfter

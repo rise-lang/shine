@@ -6,7 +6,7 @@ import rise.core._
 import util.gen
 
 class harrisCornerDetectionHalideCheck
-  extends shine.test_util.TestsWithExecutor
+  extends test_util.TestsWithExecutor
 {
   test("harris typechecks") {
     val typed = util.printTime("infer", types.infer(harris(1, 1)))

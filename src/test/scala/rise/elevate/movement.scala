@@ -10,7 +10,7 @@ import rise.core.TypeLevelDSL._
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.default._
 
-class movement extends elevate.test_util.Tests {
+class movement extends test_util.Tests {
 
   // transpose
 

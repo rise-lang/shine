@@ -15,7 +15,7 @@ import rise.core.types._
 import scala.util.Random
 
 
-class Partition extends shine.test_util.Tests {
+class Partition extends test_util.Tests {
   ignore("Simple partition into a triangle C") {
     val lenF = n2nFun((i: NatIdentifier) => i + 1)
 

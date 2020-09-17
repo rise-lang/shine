@@ -17,7 +17,7 @@ import rise.elevate.util.makeClosed
 import _root_.util.Execute
 import _root_.util.gen
 
-class circularBuffering extends shine.test_util.Tests {
+class circularBuffering extends test_util.Tests {
   private val sum = reduce(add)(l(0.0f))
   private val sumSeq = reduceSeq(add)(l(0.0f))
 

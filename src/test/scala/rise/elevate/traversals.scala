@@ -15,7 +15,7 @@ import rise.elevate.rules.traversal.{argument, argumentOf, body, function}
 import rise.elevate.strategies.util._
 
 
-class traversals extends elevate.test_util.Tests {
+class traversals extends test_util.Tests {
 
   def tileND = rise.elevate.strategies.tiling.tileND(RiseTraversable)
   val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)

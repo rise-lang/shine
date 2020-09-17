@@ -19,7 +19,6 @@ import rise.elevate.strategies.predicate._
 import rise.elevate.strategies.tiling._
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
-import shine.test_util
 
 import _root_.util.gen
 

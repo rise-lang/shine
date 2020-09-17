@@ -4,7 +4,7 @@ import acoustic3D._
 import shine.OpenCL._
 import util.{Time, TimeSpan, gen}
 
-class Acoustic3D extends shine.test_util.TestsWithExecutor {
+class Acoustic3D extends test_util.TestsWithExecutor {
   private val N = 128
   private val M = 64
   private val O = 32

@@ -7,7 +7,7 @@ import rise.core.HighLevelConstructs.padClamp2D
 
 import util.gen
 
-class Pad extends shine.test_util.Tests {
+class Pad extends test_util.Tests {
   private val id = fun(x => x)
 
   test("Simple C constant pad input and copy") {

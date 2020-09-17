@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.types._
 import util.{Execute, gen}
 
-class SlideSeq extends shine.test_util.Tests {
+class SlideSeq extends test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
   def check3pSum(e: rise.core.Expr): Unit = {

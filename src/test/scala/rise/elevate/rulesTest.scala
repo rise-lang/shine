@@ -5,7 +5,7 @@ import rise.core.TypedDSL._
 import rise.elevate.rules._
 import rise.elevate.rules.traversal._
 
-class rulesTest extends shine.test_util.Tests {
+class rulesTest extends test_util.Tests {
   def rewriteStep(a: Rise, s: Strategy[Rise], b: Rise): Unit = {
     assert(s(a).get == b)
   }

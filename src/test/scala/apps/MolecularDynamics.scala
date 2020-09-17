@@ -3,7 +3,7 @@ package apps
 import molecularDynamics._
 import util.gen
 
-class MolecularDynamics extends shine.test_util.TestsWithExecutor {
+class MolecularDynamics extends test_util.TestsWithExecutor {
   private val N = 1024
   private val M = 128
 

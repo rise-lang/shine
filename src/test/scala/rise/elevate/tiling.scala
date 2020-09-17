@@ -18,7 +18,7 @@ import _root_.util.gen
 
 import scala.language.implicitConversions
 
-class tiling extends shine.test_util.Tests {
+class tiling extends test_util.Tests {
 
   val BENF = rise.elevate.strategies.normalForm.BENF()(default.RiseTraversable)
   val DFNF = rise.elevate.strategies.normalForm.DFNF()(default.RiseTraversable)

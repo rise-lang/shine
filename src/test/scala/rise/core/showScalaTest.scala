@@ -4,7 +4,7 @@ import rise.core.types._
 import rise.core.DSL._
 import rise.openCL.DSL._
 
-class showScalaTest extends rise.testUtil.Tests {
+class showScalaTest extends test_util.Tests {
   def prefixImports(code: String): String =
     s"""
       |import rise.core._

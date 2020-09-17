@@ -11,7 +11,7 @@ import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.algorithmic.{mapFirstFission, mapFullFission}
 
 
-class fissionFusion extends elevate.test_util.Tests {
+class fissionFusion extends test_util.Tests {
 
   val BENF = rise.elevate.strategies.normalForm.BENF()(RiseTraversable)
 

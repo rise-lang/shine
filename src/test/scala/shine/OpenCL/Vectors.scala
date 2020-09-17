@@ -5,7 +5,7 @@ import rise.core.types._
 import rise.openCL.DSL._
 import util.gen
 
-class Vectors extends shine.test_util.Tests {
+class Vectors extends test_util.Tests {
   val vs = 4
   val id = fun(x => x)
 

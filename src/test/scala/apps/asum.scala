@@ -14,7 +14,7 @@ import rise.elevate.rules.traversal.default._
 import scala.util.Random
 
 //noinspection TypeAnnotation
-class asum extends shine.test_util.TestsWithExecutor {
+class asum extends test_util.TestsWithExecutor {
 
   def inputT(n: NatIdentifier) = ArrayType(n, f32)
   val abs =

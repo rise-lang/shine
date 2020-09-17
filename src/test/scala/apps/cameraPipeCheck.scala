@@ -14,7 +14,7 @@ import elevate.core.strategies.traversal._
 import rise.elevate.rules.traversal.alternative
 import rise.elevate.rules.traversal.alternative._
 
-class cameraPipeCheck extends shine.test_util.TestsWithExecutor {
+class cameraPipeCheck extends test_util.TestsWithExecutor {
   val H = 99
   val W = 146
 

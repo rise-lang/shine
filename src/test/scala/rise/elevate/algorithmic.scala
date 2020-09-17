@@ -17,7 +17,7 @@ import rise.elevate.util._
 
 import _root_.util.gen
 
-class algorithmic extends shine.test_util.Tests {
+class algorithmic extends test_util.Tests {
 
   // - Notation -
   // x >> y: piping operator, x then y
