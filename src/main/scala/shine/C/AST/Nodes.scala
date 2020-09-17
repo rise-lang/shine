@@ -61,6 +61,10 @@ abstract class TypedefDecl(val t: Type, override val name: String) extends Decl(
 abstract class StructTypeDecl(override val name: String,
                               val fields: Seq[VarDecl]) extends Decl(name)
 
+abstract class UnionTypeDecl(override val name: String,
+                             val fields: Seq[VarDecl],
+                             val addlDecl: Seq[String] = Nil) extends Decl(name)
+
 
 abstract class Stmt extends Node {
   def visitAndGenerateStmt(v:VisitAndGenerateStmt.Visitor):Stmt
@@ -221,6 +225,12 @@ object TypedefDecl {
 object StructTypeDecl {
   def apply(name: String, fields: Seq[VarDecl]): StructTypeDecl = DefaultImplementations.StructTypeDecl(name, fields)
   def unapply(arg: StructTypeDecl): Option[(String, Seq[VarDecl])] = Some((arg.name, arg.fields))
+}
+
+object UnionTypeDecl {
+  def apply(name: String, fields: Seq[VarDecl],
+            addlDecl: Seq[String] = Nil): UnionTypeDecl = DefaultImplementations.UnionTypeDecl(name, fields, addlDecl)
+  def unapply(arg: UnionTypeDecl): Option[(String, Seq[VarDecl], Seq[String])] = Some((arg.name, arg.fields, arg.addlDecl))
 }
 
 object Block {
@@ -399,6 +409,15 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): StructTypeDecl =
       StructTypeDecl(name, fields.map(VisitAndRebuild(_, v)))
+  }
+
+  case class UnionTypeDecl(override val name: String,
+                           override val fields: Seq[C.AST.VarDecl],
+                           override val addlDecl: Seq[String] = Nil)
+    extends C.AST.UnionTypeDecl(name, fields, addlDecl)
+  {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): UnionTypeDecl =
+      UnionTypeDecl(name, fields.map(VisitAndRebuild(_, v)), addlDecl)
   }
 
   case class Block(override val body: Seq[Stmt] = Seq())

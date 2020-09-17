@@ -65,6 +65,7 @@ class CPrinter extends Printer {
     case l: LabelDecl => printLabelDecl(l)
     case t: TypedefDecl => printTypedefDecl(t)
     case s: StructTypeDecl => printStructTypeDecl(s)
+    case u: UnionTypeDecl => printUnionTypeDecl(u)
   }
 
   override def printExpr(e: Expr): Unit = e match {
@@ -119,7 +120,7 @@ class CPrinter extends Printer {
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")
-      case _: UnionType => ???
+      case _: UnionType => print(s"${v.name}")
       case a: ArrayType =>
         // float name[s];
         print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
@@ -165,6 +166,21 @@ class CPrinter extends Printer {
       println("")
     })
     println("};")
+  }
+
+  private def printUnionTypeDecl(decl: UnionTypeDecl): Unit = {
+    println("union {")
+    decl.fields.foreach(field => {
+      print("  ")
+      printDeclStmt(DeclStmt(field))
+      println("")
+    })
+    print("} ")
+    print(decl.name)
+    decl.addlDecl.foreach(name => {
+      print(", ")
+      print(name)
+    })
   }
 
   // Smts
