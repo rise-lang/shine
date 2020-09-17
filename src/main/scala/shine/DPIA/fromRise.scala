@@ -1,9 +1,10 @@
 package shine.DPIA
 
+import com.github.ghik.silencer.silent
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
-import elevate.rise.Rise
-import elevate.rise.rules._
+import rise.elevate.Rise
+import rise.elevate.rules._
 import rise.core.{semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
@@ -14,7 +15,7 @@ import shine.DPIA.Types._
 object fromRise {
   def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
     if (!r.IsClosedForm(expr)) {
-      throw new Exception(s"expression is not in closed form: $expr")
+      throw new Exception(s"expression is not in closed form: $expr\n\n with type ${expr.t}")
     }
     val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
     val rwMap = inferAccess(bnfExpr)
@@ -102,6 +103,7 @@ object fromRise {
     }
   }
 
+  @silent("unreach")
   private def primitive(p: r.Primitive,
                         t: PhraseType): Phrase[_ <: PhraseType] = {
     import rise.openCL.{primitives => ocl}
@@ -110,8 +112,8 @@ object fromRise {
     import shine.OpenMP.FunctionalPrimitives._
     import shine.DPIA.Types.MatchingDSL._
 
-    (p, t: @unchecked) match {
-      case (core.PrintType(msg), expT(dt: DataType, w) ->: _) =>
+    ((p, t): @unchecked) match {
+      case (core.PrintType(msg), expT(dt: DataType, w) ->: _)  =>
         fun[ExpType](expT(dt, w), e => PrintType(msg, dt, w, e))
 
       case (core.NatAsIndex(),

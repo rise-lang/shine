@@ -6,7 +6,7 @@ import rise.core._
 import util.gen
 
 class harrisCornerDetectionHalideCheck
-  extends shine.test_util.TestsWithExecutor
+  extends test_util.TestsWithExecutor
 {
   test("harris typechecks") {
     val typed = util.printTime("infer", types.infer(harris(1, 1)))
@@ -23,7 +23,7 @@ class harrisCornerDetectionHalideCheck
   assert(Ho % strip == 0)
 
   def lowerOMP(e: Expr): Expr =
-    rewrite.unrollDots(util.printTime("infer", types.infer(e)))
+    rewrite.unrollDots(util.printTime("infer", types.infer(e))).get
 
   def checkOMP(lowered: Expr): Unit = {
     val dumbLowering = lowerOMP(omp.harrisSeqWrite)
@@ -82,7 +82,7 @@ class harrisCornerDetectionHalideCheck
   import shine.OpenCL._
 
   def lowerOCL(e: Expr): Expr =
-    rewrite.ocl.unrollDots(util.printTime("infer", types.infer(e)))
+    rewrite.ocl.unrollDots(util.printTime("infer", types.infer(e))).get
 
   def checkOCL(lowered: Expr, ls: LocalSize, gs: GlobalSize): Unit = {
     assert(lowered.t == types.infer(harris(1, 1)).t)
@@ -185,13 +185,13 @@ class harrisCornerDetectionHalideCheck
 
   test("harrisBuffered rewrite generates valid OpenCL") {
     val typed = util.printTime("infer", types.infer(harris(1, 1)))
-    val lowered = rewrite.ocl.harrisBuffered(typed)
+    val lowered = rewrite.ocl.harrisBuffered(typed).get
     checkOCL(lowered, LocalSize(1), GlobalSize(1))
   }
 
   test("harrisBufferedSplitPar rewrite generates valid OpenCL") {
     val typed = util.printTime("infer", types.infer(harris(strip, 1)))
-    val lowered = rewrite.ocl.harrisBufferedSplitPar(strip)(typed)
+    val lowered = rewrite.ocl.harrisBufferedSplitPar(strip)(typed).get
     checkOCL(lowered, LocalSize(1), GlobalSize(Ho / strip))
   }
 
@@ -200,11 +200,11 @@ class harrisCornerDetectionHalideCheck
     val typed = util.printTime("infer", types.infer(harris(strip, 8)))
 
     val lowered4 =
-      rewrite.ocl.harrisBufferedVecUnalignedSplitPar(4, strip)(typed)
+      rewrite.ocl.harrisBufferedVecUnalignedSplitPar(4, strip)(typed).get
     checkOCL(lowered4, LocalSize(1), GlobalSize(Ho / strip))
 
     val lowered8 =
-      rewrite.ocl.harrisBufferedVecUnalignedSplitPar(8, strip)(typed)
+      rewrite.ocl.harrisBufferedVecUnalignedSplitPar(8, strip)(typed).get
     checkOCL(lowered8, LocalSize(1), GlobalSize(Ho / strip))
   }
 
@@ -213,11 +213,11 @@ class harrisCornerDetectionHalideCheck
     val typed = util.printTime("infer", types.infer(harris(strip, 8)))
 
     val lowered4 =
-      rewrite.ocl.harrisBufferedVecAlignedSplitPar(4, strip)(typed)
+      rewrite.ocl.harrisBufferedVecAlignedSplitPar(4, strip)(typed).get
     checkOCL(lowered4, LocalSize(1), GlobalSize(Ho / strip))
 
     val lowered8 =
-      rewrite.ocl.harrisBufferedVecAlignedSplitPar(8, strip)(typed)
+      rewrite.ocl.harrisBufferedVecAlignedSplitPar(8, strip)(typed).get
     checkOCL(lowered8, LocalSize(1), GlobalSize(Ho / strip))
   }
 
@@ -226,11 +226,11 @@ class harrisCornerDetectionHalideCheck
     val typed = util.printTime("infer", types.infer(harris(strip, 8)))
 
     val lowered4 =
-      rewrite.ocl.harrisBufferedRegRotVecAlignedSplitPar(4, strip)(typed)
+      rewrite.ocl.harrisBufferedRegRotVecAlignedSplitPar(4, strip)(typed).get
     checkOCL(lowered4, LocalSize(1), GlobalSize(Ho / strip))
 
     val lowered8 =
-      rewrite.ocl.harrisBufferedRegRotVecAlignedSplitPar(8, strip)(typed)
+      rewrite.ocl.harrisBufferedRegRotVecAlignedSplitPar(8, strip)(typed).get
     checkOCL(lowered8, LocalSize(1), GlobalSize(Ho / strip))
   }
 }

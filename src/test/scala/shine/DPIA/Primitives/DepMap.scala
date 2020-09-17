@@ -5,7 +5,7 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 
-class DepMap extends shine.test_util.Tests {
+class DepMap extends test_util.Tests {
   ignore("Simple triangle depMap example should generate syntactic valid C code with two for loop") {
     val e =
       nFun(n => fun(DepArrayType(n, n2dtFun(i => (i+1)`.`f32)) ->: DepArrayType(n, n2dtFun(i => (i+1)`.`f32)))(xs =>

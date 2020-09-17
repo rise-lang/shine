@@ -5,7 +5,7 @@ import rise.core.TypedDSL._
 import rise.core.types._
 import util.gen
 
-class Store extends shine.test_util.Tests {
+class Store extends test_util.Tests {
 
   test("scalar values") {
     def plusNum(n: Int, code: String): Unit = {

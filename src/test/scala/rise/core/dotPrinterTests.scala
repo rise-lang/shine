@@ -1,11 +1,11 @@
 package rise.core
 
-import elevate.util._
+import rise.elevate.util._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types.f32
 
-class dotPrinterTests extends shine.test_util.Tests {
+class dotPrinterTests extends test_util.Tests {
 
   def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
     import java.io._

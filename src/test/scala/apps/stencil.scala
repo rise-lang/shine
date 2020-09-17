@@ -14,7 +14,7 @@ import rise.core.HighLevelConstructs._
 
 import scala.util.Random
 
-class stencil extends shine.test_util.Tests {
+class stencil extends test_util.Tests {
 
   private case class StencilResult(
     inputSize: Int,

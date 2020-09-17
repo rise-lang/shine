@@ -1,6 +1,6 @@
 package apps
 
-import elevate.rise.rules.traversal.default
+import rise.elevate.rules.traversal.default
 import shine.DPIA.Types.{ExpType, read, write}
 import shine.DPIA.Types.TypeCheck._
 import rise.core.DSL._
@@ -8,7 +8,7 @@ import rise.core.types._
 import rise.core.HighLevelConstructs.reorderWithStride
 import util.gen
 
-class dot extends shine.test_util.Tests {
+class dot extends test_util.Tests {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, f32)
   private def ysT(N: NatIdentifier) = ArrayType(N, f32)

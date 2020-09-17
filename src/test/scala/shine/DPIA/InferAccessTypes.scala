@@ -5,7 +5,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.{types => rt}
 import shine.DPIA.Types._
 
-class InferAccessTypes extends shine.test_util.Tests {
+class InferAccessTypes extends test_util.Tests {
 
   ignore("(read -> read) is inferred for id over float.") {
     //TODO decide whether an expression should be typing if it doesn't output

@@ -8,7 +8,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
 import util.gen
 
-class separableConvolution2DCheck extends shine.test_util.Tests {
+class separableConvolution2DCheck extends test_util.Tests {
   private def wrapExpr(e: Expr): Expr = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3 for one scalar sliding window

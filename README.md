@@ -1,6 +1,5 @@
 ### Overview
-This repository contains an implementation of the Shine compiler for the RISE language
-which is used as the main compiler of the RISE project (https://rise-lang.org/).
+This repository contains an implementation of the RISE language and its Shine compiler (https://rise-lang.org/).
 
 The source code for the compiler is organised into sub-packages of the `shine` package.
 

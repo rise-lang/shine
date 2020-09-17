@@ -6,12 +6,12 @@
  </check>
  <check level="warning" class="org.scalastyle.file.FileLineLengthChecker" enabled="true">
   <parameters>
-   <parameter name="maxLineLength"><![CDATA[80]]></parameter>
+   <parameter name="maxLineLength"><![CDATA[100]]></parameter>
    <parameter name="tabSize"><![CDATA[2]]></parameter>
   </parameters>
  </check>
  <check level="error" class="org.scalastyle.file.FileTabChecker" enabled="true"/>
- <check enabled="true" class="org.scalastyle.file.IndentationChecker" level="warning">
+ <check level="warning" class="org.scalastyle.file.IndentationChecker" enabled="false">
   <parameters>
    <parameter name="tabSize">2</parameter>
    <parameter name="methodParamIndentSize">2</parameter>
@@ -78,7 +78,7 @@
    <parameter name="maxLength"><![CDATA[100]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.MethodNamesChecker" enabled="true">
+ <check level="warning" class="org.scalastyle.scalariform.MethodNamesChecker" enabled="false">
   <parameters>
    <parameter name="regex"><![CDATA[^[a-z]([A-Za-z0-9]*|(_?[a-z0-9])*)$]]></parameter>
   </parameters>
