@@ -79,24 +79,25 @@ object Constraint {
             DepFunType(nb: NatIdentifier, tb)
             ) =>
             val n = NatIdentifier(freshName("n"), isExplicit = true)
-            val (nTa, nTaSub) = dependence.explicitlyDependent(
-              substitute.natInType(n, `for`=na, ta), n
-            )
-            val (nTb, nTbSub) = dependence.explicitlyDependent(
-              substitute.natInType(n, `for`= nb, tb), n
-            )
+//            val (nTa, nTaSub) = dependence.explicitlyDependent(
+//              substitute.natInType(n, `for`=na, ta), n
+//            )
+//            val (nTb, nTbSub) = dependence.explicitlyDependent(
+//              substitute.natInType(n, `for`= nb, tb), n
+//            )
             /** Note(federico): I am not 100% sure it is necessary to propagate nTaSub/nTbSub
              * (the explicit-dependence substitutions) upwards.
              * It seems to me it might be necessary, but I have no evidence of it.
              * In any case, this should be safe to do
              */
-            nTaSub ++ nTbSub ++ decomposed(
-              Seq(
-                NatConstraint(n, na.asImplicit),
-                NatConstraint(n, nb.asImplicit),
-                TypeConstraint(nTa, nTb)
+//            nTaSub ++ nTbSub ++
+              decomposed(
+                Seq(
+                  NatConstraint(n, na.asImplicit),
+                  NatConstraint(n, nb.asImplicit),
+                  TypeConstraint(ta, tb)
+                )
               )
-            )
           case (
             DepFunType(dta: DataTypeIdentifier, ta),
             DepFunType(dtb: DataTypeIdentifier, tb)

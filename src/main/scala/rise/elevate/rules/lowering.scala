@@ -55,9 +55,10 @@ object lowering {
     case e@Reduce() => Success(TypedDSL.reduceSeq :: e.t)
   }
 
-  // todo shall we allow lowering from an already lowered reduceSeq?
+  // TODO shall we allow lowering from an already lowered reduceSeq?
   @rule def reduceSeqUnroll: Strategy[Rise] = {
-    case e@ReduceX() => Success(TypedDSL.reduceSeqUnroll :: e.t)
+    case e@Reduce() => Success(TypedDSL.reduceSeqUnroll :: e.t)
+    case e@ReduceSeq() => Success(TypedDSL.reduceSeqUnroll :: e.t)
   }
 
   // Specialized Lowering
@@ -279,8 +280,10 @@ object lowering {
     import rise.openCL.TypedDSL
     import rise.openCL.primitives._
 
+    // TODO shall we allow lowering from an already lowered reduceSeq?
     @rule def reduceSeqUnroll(a: AddressSpace): Strategy[Rise] = {
-      case e@ReduceX() => Success(TypedDSL.oclReduceSeqUnroll(a) :: e.t)
+      case e@Reduce() => Success(TypedDSL.oclReduceSeqUnroll(a) :: e.t)
+      case e@ReduceSeq() => Success(TypedDSL.oclReduceSeqUnroll(a) :: e.t)
     }
 
     @rule def circularBuffer(a: AddressSpace): Strategy[Rise] = {

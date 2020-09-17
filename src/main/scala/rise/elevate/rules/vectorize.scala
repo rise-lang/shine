@@ -32,6 +32,7 @@ object vectorize {
     // FIXME: m + n hack
     case ArrayType(m, _: ScalarType) if (m + n) % n == (0: Nat) =>
       Success(asScalar(asVectorAligned(n)(e)) :: e.t)
+    case _ => Failure(alignedAfter(n))
   }
 
   // asScalar >> asVector -> _

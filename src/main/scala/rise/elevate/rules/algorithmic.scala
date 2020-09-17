@@ -196,12 +196,14 @@ object algorithmic {
   @rule def zipFstAfter(f: Rise): Strategy[Rise] = s => (f.t, s.t) match {
     case (ArrayType(n, _), ArrayType(m, _)) if n == m =>
       Success(map(snd, zip(f, s)) :: s.t)
+    case _ => Failure(zipFstAfter(f))
   }
 
   // f -> map fst (zip f s)
   @rule def zipSndAfter(s: Rise): Strategy[Rise] = f => (f.t, s.t) match {
     case (ArrayType(n, _), ArrayType(m, _)) if n == m =>
       Success(map(fst, zip(f, s)) :: f.t)
+    case _ => Failure(zipSndAfter(s))
   }
 
   // J >> drop d -> drop (d / m) >> J >> drop (d % m)
@@ -260,7 +262,7 @@ object algorithmic {
 
     matchExpectedMakeArray(expr) match {
       case Some(e) => Success(
-        app(transpose, map(fun(x => transformMakeArray(e, x)))(e))
+        app(transpose, map(fun(x => transformMakeArray(expr, x)))(e))
           :: e.t)
       case None => Failure(mapOutsideMakeArray)
     }
