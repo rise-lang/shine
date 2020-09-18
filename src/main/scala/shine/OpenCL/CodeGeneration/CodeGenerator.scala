@@ -2,7 +2,8 @@ package shine.OpenCL.CodeGeneration
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
-import shine.C.AST.{BasicType, Block, Decl, DeclRef, DeclStmt, UnionTypeDecl, VarDecl}
+import shine.C.AST.DefaultTypeImplementations.PointerType
+import shine.C.AST.{BasicType, BinaryExpr, Block, Decl, DeclRef, DeclStmt, UnionTypeDecl, VarDecl}
 import shine.C.CodeGeneration.CodeGenerator.{CIntExpr, FstMember, SndMember}
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
@@ -19,6 +20,7 @@ import shine.OpenCL.ImperativePrimitives._
 import shine._
 
 import scala.collection.{immutable, mutable}
+import scala.language.implicitConversions
 
 object CodeGenerator {
   def apply(): CodeGenerator =
@@ -75,8 +77,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case Barrier(localMemFence, globalMemFence) =>
         OpenCL.AST.Barrier(localMemFence, globalMemFence)
 
-      case AtomicBinOp(_, f, dst, src) =>
-        OpenCLCodeGen.codeGenAtomicBinOp(f, dst, src, env)
+      case AtomicBinOp(dt, f, dst, src) =>
+        OpenCLCodeGen.codeGenAtomicBinOp(dt, f, dst, src, env)
 
       case _: NewDoubleBuffer =>
         throw new Exception("NewDoubleBuffer without address space" +
@@ -474,33 +476,38 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
     }
 
-    def codeGenAtomicBinOp(f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
+    def codeGenAtomicBinOp(dt: DataType,
+                           f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
                            dst: Phrase[AccType],
                            src: Phrase[ExpType],
                            env: Environment): Stmt = {
-      dst.t.dataType match {
-        // Every atomic operation only works on int pointers (except xchg).
-        // Therefore you can only use these atomic operations on DPIA types that will
-        // be translated to ints in the generated code.
-        case shine.DPIA.Types.int |
-             shine.DPIA.Types.NatType |
-             shine.DPIA.Types.bool |
-             shine.DPIA.Types.IndexType(_) =>
+      f match {
+        case Lambda(_, Lambda(_, Lambda(_, Assign(_, _, BinOp(op, _, _))))) =>
+          dst.t.dataType match {
+            // Every atomic operation only works on int pointers (except xchg).
+            // Therefore you can only use these atomic operations on DPIA types that will
+            // be translated to ints in the generated code.
+            case shine.DPIA.Types.int |
+                 shine.DPIA.Types.NatType |
+                 shine.DPIA.Types.bool |
+                 shine.DPIA.Types.IndexType(_) =>
 
-          f match {
-            case Lambda(_, Lambda(_, Lambda(_, Assign(_, _, BinOp(op, _, _))))) =>
               op match {
-                case Operators.Binary.ADD => codeGenAtomicBinOpDirect("atomic_add", dst, src, env)
-                case Operators.Binary.SUB => codeGenAtomicBinOpDirect("atomic_sub", dst, src, env)
+                case Operators.Binary.ADD  =>
+                  codeGenAtomicBinOpDirect("atomic_add", dst, src, env)
+
+                case Operators.Binary.SUB =>
+                  codeGenAtomicBinOpDirect("atomic_sub", dst, src, env)
 
                 //TODO: Min, Max, And, Or and Xor would also be supported but are not implemented as an operator yet.
 
-                case _ => codeGenAtomicBinOpWorkaround(f, dst, src, env)
+                case _ => codeGenAtomicBinOpWorkaround(dt, op, dst, src, env)
               }
-            case _ => codeGenAtomicBinOpWorkaround(f, dst, src, env)
+
+            case _ => codeGenAtomicBinOpWorkaround(dt, op, dst, src, env)
           }
 
-        case _ => codeGenAtomicBinOpWorkaround(f, dst, src, env)
+        case _ => error("f must be a function with a binary operator.")
       }
     }
 
@@ -512,44 +519,70 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         exp(src, env, Nil, e => {
           val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, a)
 
-            C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(operation), List(ptr, e)))
+          C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(operation), List(ptr, e)))
         }))
     }
 
-    def codeGenAtomicBinOpWorkaround(f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
+    def codeGenAtomicBinOpWorkaround(dt: DataType,
+                                     op: Operators.Binary.Value,
                                      dst: Phrase[AccType],
                                      src: Phrase[ExpType],
                                      env: Environment): Stmt = {
       val current = DeclRef("current")
       val next = DeclRef("next")
       val expected = DeclRef("expected")
-      val u32 = DeclRef("u32")
-      val f32 = DeclRef("f32")
+      val u32 = DeclRef(freshName("u32_"))
+      val t = DeclRef(freshName(dt.toString + "_"))
 
       val fields = List(VarDecl(u32.name, C.AST.Type.uint),
-                        VarDecl(f32.name, C.AST.Type.float))
+                        VarDecl(t.name, typ(dt)))
 
       acc(dst, env, Nil, a =>
         exp(src, env, Nil, e => {
           val current_u32 = C.AST.StructMemberAccess(current, u32)
-          val current_f32 = C.AST.StructMemberAccess(current, f32)
+          val current_t = C.AST.StructMemberAccess(current, t)
           val next_u32 = C.AST.StructMemberAccess(next, u32)
-          val next_f32 = C.AST.StructMemberAccess(next, f32)
+          val next_t = C.AST.StructMemberAccess(next, t)
           val expected_u32 = C.AST.StructMemberAccess(expected, u32)
-          val expected_f32 = C.AST.StructMemberAccess(expected, f32)
+          val expected_t = C.AST.StructMemberAccess(expected, t)
 
-          val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, a)
+          val ptr = C.AST.Cast(
+                      OpenCL.AST.PointerType(shine.OpenCL.AddressSpace.Global, C.AST.Type.uint, volatile = true),
+                      C.AST.UnaryExpr(C.AST.UnaryOperator.&, a)
+                    )
 
           Block(immutable.Seq(
+            C.AST.Comment("Atomic operation"),
             DeclStmt(UnionTypeDecl(current.name, fields, List(next.name, expected.name))),
 
-            C.AST.ExprStmt(C.AST.Assignment(current_f32, a)),
+            C.AST.ExprStmt(C.AST.Assignment(current_t, a)),
 
             C.AST.DoWhileLoop(C.AST.BinaryExpr(current_u32, C.AST.BinaryOperator.!=, expected_u32),
-              C.AST.Comment("WIP")
+              Block(immutable.Seq(
+                C.AST.ExprStmt(C.AST.Assignment(expected_t, current_t)),
+                C.AST.ExprStmt(C.AST.Assignment(next_t, BinaryExpr(expected_t, op, e))),
+                C.AST.ExprStmt(C.AST.Assignment(
+                  current_u32,
+                  C.AST.FunCall(C.AST.DeclRef("atomic_cmpxchg"), List(ptr, expected_u32, next_u32))))
+              ))
             )
           ))
         }))
+    }
+
+    protected implicit def convertBinaryOp(op: Operators.Binary.Value): shine.C.AST.BinaryOperator.Value = {
+      import Operators.Binary._
+      op match {
+        case ADD => C.AST.BinaryOperator.+
+        case SUB => C.AST.BinaryOperator.-
+        case MUL => C.AST.BinaryOperator.*
+        case DIV => C.AST.BinaryOperator./
+        case MOD => C.AST.BinaryOperator.%
+        case GT => C.AST.BinaryOperator.>
+        case LT => C.AST.BinaryOperator.<
+        case EQ => C.AST.BinaryOperator.==
+        case NEQ => C.AST.BinaryOperator.!=
+      }
     }
   }
 }

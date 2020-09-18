@@ -29,7 +29,7 @@ object ReduceByIndexSeqI {
 
           atomicBinOp(dt, f,
             adj.accF(accumulator.wr) `@` NatAsIndex(k, Natural(2)),
-            Literal(1)) `;`
+            Literal(2)) `;`
 
           `for`(n, j =>
             `new` (AddressSpace.Private) (IndexType(k), i =>

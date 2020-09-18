@@ -221,10 +221,9 @@ class CPrinter extends Printer {
   }
 
   private def printDoWhileLoop(w: DoWhileLoop): Unit = {
-    println("do {")
-    printStmt(w.body)
-    println("")
-    print("} while (")
+    print("do ")
+    printBlock(w.body)
+    print("while (")
     printExpr(w.cond)
     print(");")
   }
