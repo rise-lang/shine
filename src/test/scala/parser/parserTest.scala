@@ -4,14 +4,17 @@ import parser.parse.HereIsATypeAnnotationExpected
 //import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
 import rise.{core => r}
+import rise.core.{types => rt}
 import util.Execute.Exception
 import rise.core.{semantics => rS}
 
 
 class parserTest extends  AnyFlatSpec {
+  val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
+
 
   "parser" should "not be able to parse 'Identity.rise'" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/identity.rise"
+    val fileName: String = testFilePath + "identity.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val thrown = intercept[HereIsATypeAnnotationExpected] {
@@ -130,8 +133,8 @@ class parserTest extends  AnyFlatSpec {
 
   "parser" should "be able to parse 'lessComplexInOneLineWithType.rise'" in {
     val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/lessComplexInOneLineWithType.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val file: FileReader = FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
     val ex: r.Expr = parse(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
@@ -145,14 +148,19 @@ class parserTest extends  AnyFlatSpec {
   }
 
   "parser" should "be able to parse 'littleComplexLine.rise'" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/littleComplexLine.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val fileName: String = testFilePath + "littleComplexLine.rise"
+    val file: FileReader = FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
     val ex: r.Expr = parse(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Add(), r.Literal(rS.IntData(42))), r.App(r.App(r.primitives.Mul(), r.Identifier("y")), r.Identifier("x")))))) => true
-      case r.Lambda(x,e) => throw Exception("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case r.Lambda(x@r.Identifier("x"),
+             r.Lambda(r.Identifier("y"),
+               r.App(r.primitives.Neg(),
+                     r.App(r.App(r.primitives.Add(), r.Literal(rS.IntData(42))),
+                           r.App(r.App(r.primitives.Mul(), r.Identifier("y")), r.Identifier("x")))
+               ))) if x.t == rt.i32 => true
+      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => throw Exception("not a lambda: "+ a)
     }
   }
