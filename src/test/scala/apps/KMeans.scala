@@ -8,9 +8,7 @@ class KMeans extends test_util.TestsWithExecutor {
   private val C = 5
   private val F = 34
 
-  // FIXME: generated code is incorrect
-  // related to pair assignment in the TranslationContext
-  ignore("kmeans versions produce same results") {
+  test("kmeans versions produce same results") {
     val random = new scala.util.Random()
     val features = Array.fill(F, P)(random.nextFloat)
     val clusters = Array.fill(C, F)(random.nextFloat)

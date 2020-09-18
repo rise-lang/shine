@@ -190,21 +190,20 @@ class dot extends test_util.Tests {
       gen.OpenCLKernel(dotProduct1)
     }
 
-    // FIXME: SyntaxChecker fails
-    ignore("Dot product 2 compiles to syntactically correct OpenCL") {
+    test("Dot product 2 compiles to syntactically correct OpenCL") {
       val dotProduct2 = nFun(n => fun(xsT(n))(in =>
         in |>
         split(128) |>
         mapWorkGroup(
           split(2) >>
-          toLocal(
+          toLocalFun(
             mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
           ) >>
-          iterate(6)(nFun(_ =>
-            split(2) >> toLocal(
-              mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
-            )
-          ))
+          toLocalFun(
+            oclIterate(AddressSpace.Local)(6)(nFun(_ =>
+              split(2) >> mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+            ))
+          ) >> mapLocal(fun(x => x))
         ) |> join
       ))
 
