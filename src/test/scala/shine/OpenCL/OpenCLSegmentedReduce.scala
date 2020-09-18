@@ -17,57 +17,39 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
   def id: Expr = fun(x => x)
 
   val n = 8192
-  val k = 7
-  val values: Array[Int] = Array.fill(n)(0)
-  val indices: Array[Int] = Array.fill(n)(0)
+  val k = 10
+  val values = new Array[Int](n)
+  val indices = new Array[Int](n)
+  val bins = new Array[Int](k)
+  val result = new Array[Int](k)
 
-  val bins: Array[Int] = Array(600, 635, 1928, 1282, 0, 2277, 1470)
-  val result: Array[Int] = Array.fill(k)(0)
+  private var counter = n
 
-  private var counter = bins(0)
+  val r = new scala.util.Random
 
-  for(i <- 0 until bins(0)) {
-    values(i) = i + 1
+  for(i <- 0 until k - 1) {
+    bins(i) = r.nextInt(counter + 1)
+    counter = counter - bins(i)
   }
 
-  for(i <- 0 until bins(1)) {
-    indices(counter + i) = 1
-    values(counter + i) = i + 1
+  bins(k - 1) = counter
+
+  println("")
+  println("bins:")
+  for(i <- 0 until k) {
+    print(bins(i) + " ")
   }
+  println("")
 
-  counter = counter + bins(1)
+  counter = 0
 
-  for(i <- 0 until bins(2)) {
-    indices(counter + i) = 2
-    values(counter + i) = i + 1
-  }
+  for(i <- 0 until k) {
+    for(j <- 0 until bins(i)) {
+      indices(counter + j) = i
+      values(counter + j) = j + 1
+    }
 
-  counter = counter + bins(2)
-
-  for(i <- 0 until bins(3)) {
-    indices(counter + i) = 3
-    values(counter + i) = i + 1
-  }
-
-  counter = counter + bins(3)
-
-  for(i <- 0 until bins(4)) {
-    indices(counter + i) = 4
-    values(counter + i) = i + 1
-  }
-
-  counter = counter + bins(4)
-
-  for(i <- 0 until bins(5)) {
-    indices(counter + i) = 5
-    values(counter + i) = i + 1
-  }
-
-  counter = counter + bins(5)
-
-  for(i <- 0 until bins(6)) {
-    indices(counter + i) = 6
-    values(counter + i) = i + 1
+    counter = counter + bins(i)
   }
 
 

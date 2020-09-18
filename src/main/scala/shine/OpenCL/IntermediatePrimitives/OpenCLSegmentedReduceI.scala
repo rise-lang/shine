@@ -197,6 +197,8 @@ object OpenCLSegmentedReduceI {
 
         ) `;`
 
+        barrier() `;`
+
         // Final result of the reduction of this workgroup is inside g_output.
         out(adj.exprF(g_output.rd))
       )
