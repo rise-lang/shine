@@ -65,7 +65,7 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
       reduceHistos
     ))))
 
-    val output = runKernel(reduceByIndexSeqTest)(LocalSize(1), GlobalSize(1))(n, k, indices, values)
+    val output = runKernel(reduceByIndexSeqTest)(LocalSize(50), GlobalSize(50))(n, k, indices, values)
 
     println("\nResult: ")
     print(output.deep.mkString(" "))

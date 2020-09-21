@@ -84,7 +84,7 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
         reduceHistos
     ))))
 
-    val output = runKernel(oclSegmentedReduceTest)(LocalSize(32), GlobalSize(32))(n, k, indices, values)
+    val output = runKernel(oclSegmentedReduceTest)(LocalSize(32), GlobalSize(256))(n, k, indices, values)
 
     println("\nResult: ")
     print(output.deep.mkString(" "))

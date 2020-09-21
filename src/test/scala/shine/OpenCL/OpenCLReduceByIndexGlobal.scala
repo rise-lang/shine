@@ -42,7 +42,7 @@ class OpenCLReduceByIndexGlobal extends shine.test_util.TestsWithExecutor {
         mapSeq(id)
     ))))
 
-    val output = runKernel(reduceByIndexGlobalTest)(LocalSize(1), GlobalSize(1))(n, k, indices, values)
+    val output = runKernel(reduceByIndexGlobalTest)(LocalSize(1000), GlobalSize(1000))(n, k, indices, values)
 
     println("\nResult: ")
     print(output.deep.mkString(" "))
