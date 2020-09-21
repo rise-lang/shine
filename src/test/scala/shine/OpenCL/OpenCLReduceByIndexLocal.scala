@@ -57,9 +57,9 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
         mapWorkGroup(
           oclReduceByIndexLocal(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
-              mapSeq(id)
+              mapLocal(id)
           ) >>
-          mapSeq(id)
+          mapLocal(id)
         ) |>
         toGlobal |>
         reduceHistos

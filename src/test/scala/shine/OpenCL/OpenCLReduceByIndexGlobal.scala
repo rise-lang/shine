@@ -36,10 +36,12 @@ class OpenCLReduceByIndexGlobal extends shine.test_util.TestsWithExecutor {
     val reduceByIndexGlobalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
       zip(is)(xs) |>
         oclReduceByIndexGlobal(rise.core.types.AddressSpace.Global)(add)(
+          //TODO: Data races can occur if you either use mapGlobal here or if you use mapLocal
+          //      and start multiple workgroups as you can't synchronize globally.
           generate(fun(IndexType(k))(_ => l(0))) |>
-            mapSeq(id)
+            mapLocal(id)
         ) |>
-        mapSeq(id)
+        mapGlobal(id)
     ))))
 
     val output = runKernel(reduceByIndexGlobalTest)(LocalSize(1000), GlobalSize(1000))(n, k, indices, values)
