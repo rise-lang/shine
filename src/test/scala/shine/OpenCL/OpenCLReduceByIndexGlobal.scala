@@ -2,16 +2,14 @@ package shine.OpenCL
 
 import rise.core.DSL._
 import rise.core.Expr
-import rise.core.TypeLevelDSL.implN
 import rise.core.types._
 import rise.openCL.DSL._
 import util.gen
 
-class OpenCLReduceByIndexPar extends shine.test_util.TestsWithExecutor {
+class OpenCLReduceByIndexGlobal extends shine.test_util.TestsWithExecutor {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
-  private def histosT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
 
   private val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
@@ -37,7 +35,7 @@ class OpenCLReduceByIndexPar extends shine.test_util.TestsWithExecutor {
 
     val reduceByIndexGlobalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
       zip(is)(xs) |>
-        oclReduceByIndexPar(rise.core.types.AddressSpace.Global)(add)(
+        oclReduceByIndexGlobal(rise.core.types.AddressSpace.Global)(add)(
           generate(fun(IndexType(k))(_ => l(0))) |>
             mapSeq(id)
         ) |>
@@ -60,11 +58,11 @@ class OpenCLReduceByIndexPar extends shine.test_util.TestsWithExecutor {
   def runKernel(kernel: Expr)(
     localSize: LocalSize,
     globalSize: GlobalSize)(
-                 n: Int,
-                 k: Int,
-                 indices: Array[Int],
-                 values: Array[Int]
-               ): Array[Int] = {
+    n: Int,
+    k: Int,
+    indices: Array[Int],
+    values: Array[Int]
+  ): Array[Int] = {
     val runKernel = gen
       .OpenCLKernel(kernel)
       .as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Int]`)=>` Array[Int]]
