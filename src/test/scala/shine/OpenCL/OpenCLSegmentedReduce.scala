@@ -75,7 +75,6 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
       zip(is)(xs) |>
         split(1024) |>
         mapWorkGroup(
-          mapLocal(id) >> toLocal >>
           oclSegmentedReduce(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id)

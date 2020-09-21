@@ -27,9 +27,9 @@ object ReduceByIndexSeqI {
       `new` (histAddrSpace) (adj.dt, accumulator =>
         acc(hist)(adj.accF(accumulator.wr)) `;`
 
-          atomicBinOp(dt, f,
-            adj.accF(accumulator.wr) `@` NatAsIndex(k, Natural(2)),
-            Literal(2)) `;`
+          //atomicBinOp(dt, f,
+          //  adj.accF(accumulator.wr) `@` NatAsIndex(k, Natural(2)),
+          //  Literal(2)) `;`
 
           `for`(n, j =>
             `new` (AddressSpace.Private) (IndexType(k), i =>

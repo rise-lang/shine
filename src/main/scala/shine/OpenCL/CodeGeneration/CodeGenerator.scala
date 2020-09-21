@@ -2,7 +2,6 @@ package shine.OpenCL.CodeGeneration
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
-import shine.C.AST.DefaultTypeImplementations.PointerType
 import shine.C.AST.{BasicType, BinaryExpr, Block, Decl, DeclRef, DeclStmt, UnionTypeDecl, VarDecl}
 import shine.C.CodeGeneration.CodeGenerator.{CIntExpr, FstMember, SndMember}
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
