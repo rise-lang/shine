@@ -40,6 +40,8 @@ object OpenCLReduceByIndexGlobalI {
               )))
           ) `;`
 
+          barrier() `;`
+
           out(adj.exprF(accumulator.rd))
       )
   }
