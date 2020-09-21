@@ -33,39 +33,18 @@ class OpenCLReduceByIndexPar extends shine.test_util.TestsWithExecutor {
     result(index) = result(index) + i
   }
 
-  test("Reduce By Index Par Test (with single histogram)") {
+  test("Reduce By Index Global Test (Single Histogram)") {
 
-    val reduceHistos = implN(n => implN(numBins => fun(histosT(n, numBins))(histos =>
-      histos |> // n.numBins.int
-        oclReduceSeq(rise.core.types.AddressSpace.Global)(
-          fun(acc_histo => // numBins.int
-            fun(cur_histo => // numBins.int
-              zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapGlobal(fun(x => fst(x) + snd(x)))
-            )
-          )
-        )(
-          generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-            mapSeq(id) //numBins.int
+    val reduceByIndexGlobalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
+      zip(is)(xs) |>
+        oclReduceByIndexPar(rise.core.types.AddressSpace.Global)(add)(
+          generate(fun(IndexType(k))(_ => l(0))) |>
+            mapSeq(id)
         ) |>
         mapSeq(id)
-    )))
-
-    val reduceByIndexParSingleTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-      zip(is)(xs) |>
-        split(50) |>
-        mapGlobal(
-          oclReduceByIndexPar(rise.core.types.AddressSpace.Global)(add)(
-            generate(fun(IndexType(k))(_ => l(0))) |>
-              mapSeq(id)
-          ) >>
-          mapSeq(id)
-        ) |>
-        toGlobal |>
-        reduceHistos
     ))))
 
-    val output = runKernel(reduceByIndexParSingleTest)(LocalSize(1), GlobalSize(1))(n, k, indices, values)
+    val output = runKernel(reduceByIndexGlobalTest)(LocalSize(1), GlobalSize(1))(n, k, indices, values)
 
     println("\nResult: ")
     print(output.deep.mkString(" "))

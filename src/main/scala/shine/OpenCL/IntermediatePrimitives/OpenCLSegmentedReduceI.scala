@@ -84,7 +84,7 @@ object OpenCLSegmentedReduceI {
                       ) `;`
 
                     //TODO: This command works but acc(current_element.rd)(a) doesn't.
-                    // Apparently this happens because the variable suffix rd isn't processed inside of acc.
+                    //      Apparently this happens because the variable suffix rd isn't processed inside of acc.
                     (a :=| pt | current_reduction.rd)
 
                     // Atomic alternative:
