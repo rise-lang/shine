@@ -1,5 +1,6 @@
 package benchmarks.core
 
+import rise.elevate.rules.traversal.default.RiseTraversable
 import shine.DPIA
 import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import rise.core.Expr
@@ -24,7 +25,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelWithSizes = {
-    val kernel = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromRise(infer(this.expr)), "KERNEL")
+    val kernel = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromRise(infer(this.expr))(RiseTraversable), "KERNEL")
 
     if(verbose) {
       println(kernel.code)

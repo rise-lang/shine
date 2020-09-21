@@ -4,7 +4,7 @@ import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 
 object molecularDynamics {
   private val mdCompute = foreignFun("updateF",
@@ -39,12 +39,13 @@ object molecularDynamics {
       split(128) |>
       mapWorkGroup(
         mapLocal(fun(p =>
-          toPrivate(p._1) |> let(fun(particle =>
+          let (toPrivate(p._1))
+          be (particle =>
             gather(p._2)(particles) |>
             oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
               mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
             )))(vectorFromScalar(l(0.0f)))
-          ))
+          )
         ))
       ) |> join
   )))

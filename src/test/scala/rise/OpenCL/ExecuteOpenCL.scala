@@ -4,12 +4,12 @@ import shine.OpenCL._
 import rise.core._
 import rise.core.DSL._
 import rise.core.types._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import util.gen
 
 import scala.language.{postfixOps, reflectiveCalls}
 
-class ExecuteOpenCL extends shine.test_util.TestsWithExecutor {
+class ExecuteOpenCL extends test_util.TestsWithExecutor {
   test("Running a simple kernel with generic input size") {
     val f: Expr = nFun(n => fun(ArrayType(n, int))(
       xs => xs |> mapSeq(fun(x => x + l(1)))))

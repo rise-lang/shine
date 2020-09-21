@@ -1,12 +1,11 @@
 package shine.DPIA.Types
 
-import shine.DPIA.Phrases._
 import shine.DPIA._
+import shine.DPIA.Phrases._
 
 class TypeException(msg: String) extends Exception(msg)
 
 object TypeCheck {
-
   def apply[T <: PhraseType](phrase: Phrase[T]): Unit = {
     phrase match {
       case Identifier(_, _) =>
@@ -16,7 +15,7 @@ object TypeCheck {
       case Apply(p, q) =>
         TypeCheck(p)
         TypeCheck(q)
-        check(p.t.inT, q.t)
+        errorIfNotEqOrSubtype(q.t, p.t.inT)
 
       case DepLambda(_, p) => TypeCheck(p)
 
@@ -35,7 +34,9 @@ object TypeCheck {
         TypeCheck(thenP)
         TypeCheck(elseP)
         check(cond.t, expT(int, read) | expT(bool, read))
-        check(thenP.t, elseP.t)
+        //This is more restrictive than it has to be.
+        //We could also allow: thenP <= elseP || elseP <= thenP.
+        errorIfNotEq(thenP.t, elseP.t)
 
       case Literal(_) =>
 
@@ -55,7 +56,8 @@ object TypeCheck {
           case (ExpType(dt1, `read`), ExpType(dt2, `read`))
             if dt1.isInstanceOf[BasicType] && dt2.isInstanceOf[BasicType] =>
               if (lhs.t != rhs.t) {
-                error(s"${lhs.t} and ${rhs.t}", expected = "them to match")
+                error(found = s"${lhs.t} and ${rhs.t}",
+                  expected = "them to match")
               }
           case (x1, x2) =>
             error(s"$x1 $op $x2", s"exp[b] $op exp[b]")
@@ -65,28 +67,65 @@ object TypeCheck {
     }
   }
 
-  def error(found: String, expected: String): Nothing = {
-    throw new TypeException(s"Type error: found $found expected $expected")
+  def errorIfNotEq(sub: PhraseType, pt: PhraseType): Unit = {
+    if (!(sub == pt))
+      throw new TypeException(
+        s"Type error: found $sub, expected $pt")
   }
 
-  def error(found: PhraseType, expected: PhraseType): Nothing = {
-    error(ToString(found), ToString(expected))
-  }
-
-  def check(found: PhraseType, expected: PhraseType): Unit = {
-    if (found != expected) {
-      error(found, expected)
-    }
+  def errorIfNotEqOrSubtype(sub: PhraseType, pt: PhraseType): Unit = {
+    if (!(sub `<=` pt))
+      throw new TypeException(
+        s"Type error: found $sub which is not a subtype of expected $pt")
   }
 
   def check(found: PhraseType, test: PhraseType => Unit): Unit = {
     test(found)
   }
 
-  implicit class InferenceHelper[T <: PhraseType](p: Phrase[T]) {
-    def checkType(pt: PhraseType): Unit = {
-      TypeCheck(p)
-      check(p.t, pt)
+  implicit class AtLeastOneEqCheckHelper(p1: PhraseType) {
+    def |(p2: PhraseType): PhraseType => Unit = (p: PhraseType) => {
+      if (!(p == p1 || p == p2))
+        throw new TypeException(
+          s"Type error: found $p, expected $p1 or $p2")
     }
+  }
+
+  implicit class EqOrSubtypeCheckHelper[T <: PhraseType](p: Phrase[T]) {
+    def checkTypeEqOrSubtype(pt: PhraseType): Boolean = {
+      TypeCheck(p)
+      p.t `<=` pt
+    }
+  }
+
+  implicit class SubTypeCheckHelper(subType: PhraseType) {
+    def `<=`(superType: PhraseType): Boolean = {
+      subtypeCheck(subType, superType)
+    }
+  }
+
+  private def subtypeCheck(
+    subType: PhraseType,
+    superType: PhraseType
+  ): Boolean = {
+    if (subType == superType) return true
+
+    (subType, superType) match {
+      case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, _))
+        if bSub == bSuper =>
+          accessSub == read && notContainingArrayType(bSub)
+      case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
+        subtypeCheck(superInT, subInT) && subtypeCheck(subOutT,  superOutT)
+      case (DepFunType(subInT, subOutT), DepFunType(superInT, superOutT)) =>
+        subInT == superInT && subtypeCheck(subOutT, superOutT)
+      case _ => false
+    }
+  }
+
+  def notContainingArrayType(composed: DataType): Boolean = composed match {
+      case _: BasicType => true
+      case PairType(first, second) =>
+        notContainingArrayType(first) && notContainingArrayType(second)
+      case _ => false
   }
 }

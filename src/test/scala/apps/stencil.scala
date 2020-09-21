@@ -4,7 +4,7 @@ import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
 import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{gen, Display, TimeSpan}
 import util.Time.ms
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import arithexpr.arithmetic.SteppedCase
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
@@ -14,7 +14,7 @@ import rise.core.HighLevelConstructs._
 
 import scala.util.Random
 
-class stencil extends shine.test_util.Tests {
+class stencil extends test_util.Tests {
 
   private case class StencilResult(
     inputSize: Int,

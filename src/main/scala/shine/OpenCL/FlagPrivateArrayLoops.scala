@@ -28,6 +28,9 @@ object FlagPrivateArrayLoops {
       extends VisitAndRebuild.Visitor
     {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
+        // FIXME: we would like this primitive to be eliminated before this pass?
+        case shine.DPIA.ImperativePrimitives.MapRead(_, _, _, f, in) =>
+          Stop(p)
         case OpenCLNew(AddressSpace.Private, _, Lambda(i: Identifier[_], _)) =>
           Continue(p, this.copy(privMemIdents = privMemIdents + i))
         case Idx(_, _, i, _) =>
@@ -102,7 +105,11 @@ object FlagPrivateArrayLoops {
 
       override def phrase[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
-          case i: Identifier[_] => idents += i.name
+          case i: Identifier[_] =>
+            idents += i.name
+            return Stop(p) // do not visit the type
+          case shine.DPIA.FunctionalPrimitives.NatAsIndex(_, p) =>
+            return Continue(p, this)
           case _ =>
         }
         Continue(p, this)

@@ -7,7 +7,7 @@ import util.gen
 import rise.core.HighLevelConstructs.reorderWithStride
 
 //noinspection TypeAnnotation
-class gemv extends shine.test_util.Tests {
+class gemv extends test_util.Tests {
 
   // we can use implicit type parameters and type annotations to specify the function type of mult
   val mult = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))
@@ -18,19 +18,19 @@ class gemv extends shine.test_util.Tests {
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
   )
   val dot = fun(xs => fun(ys =>
-    zip(xs, ys) |> mapSeq(mult) |> reduceSeq(add, l(0.0f))
+    zip(xs, ys) |> toMemFun(mapSeq(mult)) |> reduceSeq(add, l(0.0f))
   ))
 
   val high_level = nFun((n, m) => fun(
     (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
-    zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta)) |>
+    toMem(zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta))) |>
       mapSeq(fun(x => x._1 + x._2))
   ))
 
   object ocl {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val fullMatrixVectorFusedOpenCL = nFun((n, m) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
@@ -85,7 +85,7 @@ class gemv extends shine.test_util.Tests {
   }
 
   object omp {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val fullMatrixVectorFusedOpenMP = nFun((n, m) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
@@ -95,7 +95,7 @@ class gemv extends shine.test_util.Tests {
       mapPar(fun(t =>
         zip(xs, t._1) |>
         split(n) |>
-        mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f))) |>
+        toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f)))) |>
         mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
       )) |>
       join

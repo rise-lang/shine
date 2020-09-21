@@ -3,7 +3,7 @@ package exploration.explorationUtil
 import elevate.heuristic_search.Heuristic
 import elevate.heuristic_search.heuristics.Random
 import elevate.heuristic_search.heuristic.IterativeImprovement
-import elevate.rise.{Rise}
+import rise.elevate.Rise
 
 import scala.io._
 import play.api.libs.json._

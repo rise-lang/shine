@@ -54,12 +54,8 @@ object cameraPipe {
     abs_diff(x `@` lidx(0, 2), x `@` lidx(1, 2))
   ))
 
+  // assumptions: newBeg >= beg, newEnd <= end, newEnd >= newBeg
   def slice(beg: Nat, end: Nat, newBeg: Nat, newEnd: Nat): Expr = {
-    /* if (newBeg < beg || end < newEnd) {
-      throw new Exception("slice out of bounds")
-    } */
-    // if (newBeg > beg)
-    // if (end > newEnd)
     drop(newBeg - beg) >> take(newEnd - newBeg)
   }
 
@@ -105,18 +101,32 @@ object cameraPipe {
     )
   }
 
+  def interleaveX: Expr = implDT(dt => implN(h => implN(w => fun(
+    (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: (h`.`(2*w)`.`dt)
+  )((a, b) =>
+    generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
+    transpose >> map(transpose >> join)
+  ))))
+
+  def interleaveY: Expr = implDT(dt => implN(h => implN(w => fun(
+    (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: ((2*h)`.`w`.`dt)
+  )((a, b) =>
+    generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
+    transpose >> join
+  ))))
+
   val demosaic: Expr = nFun(h => nFun(w => fun(
-    (4`.`h`.`w`.`i16) ->: (3`.`(2*h - 4)`.`(2*w - 4)`.`i16)
+    (4`.`(h+2)`.`(w+2)`.`i16) ->: (3`.`(2*h)`.`(2*w)`.`i16)
   )(deinterleaved => {
     // x_y = the value of channel x at a site in the input of channel y
     // gb = green sites in the blue rows
     // gr = green sites in the red rows
     // | gr r |    | r_gr r_r |   | g_gr g_r |   | b_gr b_r |
     // | b gb | -> | r_b r_gb | , | g_b g_gb | , | b_b b_gb |
-    val g_gr = Image(0, w, 0, h, deinterleaved `@` lidx(0, 4))
-    val r_r = Image(0, w, 0, h, deinterleaved `@` lidx(1, 4))
-    val b_b = Image(0, w, 0, h, deinterleaved `@` lidx(2, 4))
-    val g_gb = Image(0, w, 0, h, deinterleaved `@` lidx(3, 4))
+    val g_gr = Image(0, w+2, 0, h+2, deinterleaved `@` lidx(0, 4))
+    val r_r = Image(0, w+2, 0, h+2, deinterleaved `@` lidx(1, 4))
+    val b_b = Image(0, w+2, 0, h+2, deinterleaved `@` lidx(2, 4))
+    val g_gb = Image(0, w+2, 0, h+2, deinterleaved `@` lidx(3, 4))
 
     // first calculate green at the red and blue sites
 
@@ -141,14 +151,14 @@ object cameraPipe {
     letImage(interpolate(stencilCollect(Seq((1, 0), (0, 0)), g_gr)), gh_r =>
     letImage(pointAbsDiff(stencilCollect(Seq((1, 0), (0, 0)), g_gr)), ghd_r =>
 
-    letImage(select_interpolation(gv_r, gvd_r, gh_r, ghd_r), g_r =>
+    letImage(select_interpolation(gh_r, ghd_r, gv_r, gvd_r), g_r =>
 
     letImage(interpolate(stencilCollect(Seq((0, 1), (0, 0)), g_gr)), gv_b =>
     letImage(pointAbsDiff(stencilCollect(Seq((0, 1), (0, 0)), g_gr)), gvd_b =>
     letImage(interpolate(stencilCollect(Seq((-1, 0), (0, 0)), g_gb)), gh_b =>
     letImage(pointAbsDiff(stencilCollect(Seq((-1, 0), (0, 0)), g_gb)), ghd_b =>
 
-    letImage(select_interpolation(gv_b, gvd_b, gh_b, ghd_b), g_b =>
+    letImage(select_interpolation(gh_b, ghd_b, gv_b, gvd_b), g_b =>
 
     // next interpolate red at gr by first interpolating,
     // then correcting using the error green would have had if we had
@@ -219,34 +229,26 @@ object cameraPipe {
         b_gr, b_r, b_b, b_gb
       ))
       makeArray(3)(
-        makeArray(2)(
-          makeArray(2)(r_gr_o.expr, r_r_o.expr),
-          makeArray(2)(r_b_o.expr, r_gb_o.expr)), // r
-        makeArray(2)(
-          makeArray(2)(g_gr_o.expr, g_r_o.expr),
-          makeArray(2)(g_b_o.expr, g_gb_o.expr)), // g
-        makeArray(2)(
-          makeArray(2)(b_gr_o.expr, b_r_o.expr),
-          makeArray(2)(b_b_o.expr, b_gb_o.expr))  // b
-      ) /* 3.2.2.H.W.f */ |>
-        // -- TODO: remove
-        mapSeqUnroll(mapSeqUnroll(mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))))) >>
-        // --
-        map(map( // 2.H.W.f
-          transpose >> map(transpose >> join) // H.(W * 2).f
-        ) // 2.H.(W * 2).f
-          >> transpose >> join // (H * 2).(W * 2).f
-      )
+        interleaveY(
+          interleaveX(r_gr_o.expr, r_r_o.expr),
+          interleaveX(r_b_o.expr, r_gb_o.expr)), // r
+        interleaveY(
+          interleaveX(g_gr_o.expr, g_r_o.expr),
+          interleaveX(g_b_o.expr, g_gb_o.expr)), // g
+        interleaveY(
+          interleaveX(b_gr_o.expr, b_r_o.expr),
+          interleaveX(b_b_o.expr, b_gb_o.expr))  // b
+      ) // 3.(2*H).(2*W).f
     }))))))))))))))))))))))))
   })))
 
   val hot_pixel_suppression: Expr = nFun(h => nFun(w => fun(
-    (h`.`w`.`i16) ->: ((h-4)`.`(w-4)`.`i16)
+    ((h+4)`.`(w+4)`.`i16) ->: (h`.`w`.`i16)
   )(input =>
     mapImage(
       stencilCollect(
         Seq((-2, 0), (2, 0), (0, 0), (0, -2), (0, 2)),
-        Image(0, w, 0, h, input)),
+        Image(0, w+4, 0, h+4, input)),
       fun(5`.`i16)(nbh => clamp(i16)(nbh `@` lidx(2, 5), li16(0),
         max(max(nbh `@` lidx(0, 5), nbh `@` lidx(1, 5)),
           max(nbh `@` lidx(3, 5), nbh `@` lidx(4, 5)))
@@ -349,7 +351,7 @@ object cameraPipe {
   )))
 
   val sharpen: Expr = nFun(h => nFun(w => fun(
-    (3`.`h`.`w`.`u8) ->: f32 ->: (3`.`(h-2)`.`(w-2)`.`u8)
+    (3`.`(h+2)`.`(w+2)`.`u8) ->: f32 ->: (3`.`h`.`w`.`u8)
   )((input, strength) => {
     // convert sharpening strength to 2.5 fixed point.
     // this allows sharpening in the range [0, 4].
@@ -358,7 +360,7 @@ object cameraPipe {
     )
     u8_sat(f32)(strength * l(32.0f)) |> fun(strength_x32 =>
       input |> map(fun(plane_ => {
-        val plane = Image(0, w, 0, h, plane_)
+        val plane = Image(0, w+2, 0, h+2, plane_)
         letImage(mapImage(
           stencilCollect(Seq((0, -1), (0, 0), (0, 1)), plane),
           blur121(u8)(u16)),
@@ -380,33 +382,71 @@ object cameraPipe {
     )
   })))
 
-  // TODO: Halide reference is casting and shifting the input
-  // val shift = ??? >> map(map(fun(p => cast(p) :: i16)))
-  // camera_pipe:
+  // TODO? Halide reference in/out:
   // (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
 
-  val camera_pipe: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
-    ((2*(h+2))`.`(2*(w+2))`.`i16) ->:
-    (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->: (
-      f32 ->: f32 ->: int ->: int ->:
-      f32 ->:
-      (3`.`(2*(h-3))`.`(2*(w-3))`.`u8))
-  )((input, matrix_3200, matrix_7000, color_temp) =>
-    fun(
-      f32 ->: f32 ->: int ->: int ->: f32 ->: (3`.`(2*(h-3))`.`(2*(w-3))`.`u8)
-    )((gamma, contrast, blackLevel, whiteLevel, sharpen_strength) =>
+  val shift: Expr = nFun(h => nFun(w => fun(
+    ((h+36)`.`(w+20)`.`u16) ->: (h`.`w`.`i16)
+  )(input => input |>
+    // shift things inwards to give us enough padding on the
+    // boundaries so that we don't need to check bounds. We're going
+    // to make a 2560x1920 output image, just like the FCam pipe,
+    // so shift by 16, 12.
+    map(drop(16 - 6) >> take(w)) >>
+    drop(12 - 6) >> take(h) >>
+    // We also convert it to be signed, so we can deal with
+    // values that fall below 0 during processing.
+    map(map(fun(p => cast(p) :: i16)))
+  )))
+
+  val camera_pipe: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm =>
+    fun((2*(h+6)+36)`.`(2*(w+6)+20)`.`u16)(input =>
+    fun(hm`.`wm`.`f32)(matrix_3200 =>
+    fun(hm`.`wm`.`f32)(matrix_7000 =>
+    fun(f32)(color_temp =>
+    fun(f32)(gamma =>
+    fun(f32)(contrast =>
+    fun(int)(blackLevel =>
+    fun(int)(whiteLevel =>
+    fun(f32 ->: (3`.`(2*h)`.`(2*w)`.`u8))(
+      sharpen_strength =>
       input |>
-      hot_pixel_suppression(2*(h+2))(2*(w+2)) >>
-      deinterleave(h)(w) >>
-      demosaic(h)(w) >>
-      fun(x => color_correct(2*(h-2))(2*(w-2))(hm)(wm)(x)
+      shift(2*(h+6))(2*(w+6)) >>
+      hot_pixel_suppression(2*(h+4))(2*(w+4)) >>
+      deinterleave(h+4)(w+4) >>
+      // TODO: reorder and store with elevate
+      // transpose >> map(transpose) >>
+      // mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      // map(transpose) >> transpose >>
+      demosaic(h+2)(w+2) >>
+      // TODO: reorder and store with elevate
+      // transpose >> map(transpose) >>
+      // split(2) >> mapPar(mapSeqUnroll(
+      //  mapSeq(mapSeqUnroll(fun(x => x)))
+      // )) >> join >> map(transpose) >> transpose >>
+      // --
+      map(implN(w => map(drop(1) >> take(w))) >>
+        implN(h => drop(1) >> take(h))) >>
+      fun(x => color_correct(2*h+2)(2*w+2)(hm)(wm)(x)
         (matrix_3200)(matrix_7000)(color_temp)) >>
-      mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
-      fun(x => apply_curve(2*(h-2))(2*(w-2))(x)
+      // TODO: reorder and store with elevate
+      // transpose >> map(transpose) >>
+      // mapPar(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      // map(transpose) >> transpose >>
+      // --
+      fun(x => apply_curve(2*h+2)(2*w+2)(x)
         (gamma)(contrast)(blackLevel)(whiteLevel)) >>
-      mapSeq(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
-      fun(x => sharpen(2*(h-2))(2*(w-2))(x)(sharpen_strength)) >>
-      mapSeq(mapSeq(mapSeq(fun(x => x))))
-    )
-  )))))
+      // TODO: reorder and store with elevate
+      // transpose >> map(transpose) >>
+      // mapPar(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      // map(transpose) >> transpose >>
+      // --
+      fun(x => sharpen(2*h)(2*w)(x)(sharpen_strength)) // >>
+      // TODO: reorder and store with elevate
+      // transpose >> map(transpose) >>
+      // mapPar(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      // map(transpose) >> transpose
+      // --
+    )))))))))
+  ))))
 }

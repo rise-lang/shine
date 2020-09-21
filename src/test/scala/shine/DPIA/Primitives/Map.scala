@@ -5,7 +5,7 @@ import rise.core.types._
 import rise.core.DSL.mapSeq
 import util.gen
 
-class Map extends shine.test_util.Tests {
+class Map extends test_util.Tests {
   test("Simple 1D map example should generate syntactic valid C code with one for loop") {
     val e =
       nFun(n => fun(ArrayType(n, f32))(xs =>

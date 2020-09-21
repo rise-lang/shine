@@ -2,10 +2,10 @@ package shine.OpenCL
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import util.gen
 
-class Vectors extends shine.test_util.Tests {
+class Vectors extends test_util.Tests {
   val vs = 4
   val id = fun(x => x)
 

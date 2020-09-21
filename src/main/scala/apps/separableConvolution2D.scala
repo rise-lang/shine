@@ -5,14 +5,13 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.semantics._
-import rise.core.primitives._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import rise.core.HighLevelConstructs._
 
 object separableConvolution2D {
-  private def weights2d(scale: Float, ws: Seq[Seq[Int]]): Expr =
+  def weights2d(scale: Float, ws: Seq[Seq[Int]]): Expr =
     larr(ws.map(r => ArrayData(r.map(x => FloatData(x * scale)))))
-  private def weights1d(scale: Float, ws: Seq[Int]): Expr =
+  def weights1d(scale: Float, ws: Seq[Int]): Expr =
     larr(ws.map(x => FloatData(x * scale)))
 
   // Binomial filter, convolution is separable:
@@ -86,6 +85,11 @@ object separableConvolution2D {
     padClamp2D(1) >> slide2D(3, 1) >>
       mapSeq(mapSeq(fun(nbh => dotSeqUnroll(join(weights2d))(join(nbh)))))
   )
+  val baseVecU: Expr = fun(3`.`3`.`f32)(weights2d =>
+    padClamp2D(1) >> map(slideVectors(4) >> slide(3)(4)) >>
+    slide(3)(1) >> map(transpose) >>
+    mapSeq(mapSeq(fun(nbh => weightsSeqVecUnroll(join(weights2d))(join(nbh)))))
+  )
 
   val factorised: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     padClamp2D(1) >> slide2D(3, 1) >>
@@ -103,9 +107,9 @@ object separableConvolution2D {
   }))
   val separatedSeq: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
     val horizontal = mapSeq(slide(3)(1) >> mapSeq(dotSeqUnroll(weightsH)))
-    val vertical = slide(3)(1) >> mapSeq(
+    val vertical = slide(3)(1) >> toMemFun(mapSeq(
       transpose >> mapSeq(dotSeqUnroll(weightsV))
-    )
+    ))
     padClamp2D(1) >> vertical >> horizontal
   }))
 
@@ -124,7 +128,7 @@ object separableConvolution2D {
       mapSeq(dotSeqUnroll(weightsH)))
   ))
   val shuffle: Expr =
-    asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
+    asScalar >> drop(3) >> take(6) >> slideVectors(4)
   val scanlinePar: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     map(implN(w => fun(w`.`f32)(x =>
       x |> asVectorAligned(4)
@@ -144,7 +148,8 @@ object separableConvolution2D {
     padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(weightsV)) >>
-      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(weightsH))
+      rotateValues(3)(id) >>
+      iterateStream(dotSeqUnroll(weightsH))
     )
   ))
   val regRotPar: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
@@ -159,9 +164,8 @@ object separableConvolution2D {
     slide(3)(1) >> mapGlobal(
       transpose >>
       map(Dv) >>
-      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(id)(
-        shuffle >> Dh
-      ) >>
+      oclRotateValues(AddressSpace.Private)(3)(id) >>
+      iterateStream(shuffle >> Dh) >>
       asScalar
     )
   }))

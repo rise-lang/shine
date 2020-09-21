@@ -1,12 +1,11 @@
 package shine.DPIA.Primitives
 
-import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import util.gen
 
-class Generate extends shine.test_util.Tests {
+class Generate extends test_util.Tests {
   val id = fun(x => x)
   val addT = fun(x => fst(x) + snd(x))
   val cos = foreignFun("callCos", Seq("x"), "{ return cos(x); }", f64 ->: f64)

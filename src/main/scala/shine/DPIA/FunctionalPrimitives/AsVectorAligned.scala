@@ -13,35 +13,43 @@ import scala.xml.Elem
 
 final case class AsVectorAligned(n: Nat,
                                  m: Nat,
+                                 w: AccessType,
                                  dt: ScalarType,
                                  array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  array :: expT({m * n}`.`dt, read)
-  override val t: ExpType = expT(m`.`vec(n, dt), read)
+  array :: expT({m * n}`.`dt, w)
+  override val t: ExpType = expT(m`.`vec(n, dt), w)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    AsVectorAligned(f.nat(n), f.nat(m), f.data(dt), VisitAndRebuild(array, f))
+    AsVectorAligned(f.nat(n), f.nat(m), f.access(w),
+      f.data(dt), VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): Data = ???
 
-  override def prettyPrint: String = s"(asVectorAligned ${n.toString} ${PrettyPhrasePrinter(array)})"
+  override def prettyPrint: String =
+    s"(asVectorAligned ${n.toString} ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asVectorAligned n={ToString(n)}>
+    <asVectorAligned n={ToString(n)} m={ToString(m)}
+                     w={ToString(w)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </asVectorAligned>
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(array)(AsVectorAcc(n, m, dt, A))
   }
 
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
-    TranslationToImperative.con(array)(λ(array.t)(x => C(AsVectorAligned(n, m, dt, x)) ))
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
+    import TranslationToImperative._
+
+    con(array)(λ(array.t)(x => C(AsVectorAligned(n, m, w, dt, x)) ))
   }
 }

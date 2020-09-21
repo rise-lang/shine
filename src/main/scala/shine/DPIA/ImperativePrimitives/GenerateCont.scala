@@ -9,7 +9,6 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-//noinspection ScalaUnnecessaryParentheses
 // note: would not be necessary if generate was defined as indices + map
 final case class GenerateCont(n: Nat,
                               dt: DataType,

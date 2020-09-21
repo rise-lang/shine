@@ -60,11 +60,16 @@ object AdjustArraySizesForAllocations {
         case RecordInfo(_, snd) :: Nil => snd
         case pi => error(s"did not expect $pi")
       }
-      case AsScalar(_, _, _, p) => visitAndGatherInformation(p, parallInfo)
+      case AsScalar(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)
 
       // TODO: think more thoroughly about split and join
       case Split(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)
       case Join(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)
+
+      case Unzip(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo) match {
+        case Nil => Nil
+        case pi => error(s"did not expect $pi")
+      }
 
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunction |
@@ -99,7 +104,7 @@ object AdjustArraySizesForAllocations {
 
         case (PairType(adjDt1, adjDt2), PairType(oldDt1, oldDt2)) =>
           parallInfo match {
-            case (ri: RecordInfo) :: _ => RecordAcc(oldDt1, oldDt2,
+            case (ri: RecordInfo) :: _ => PairAcc(oldDt1, oldDt2,
               adjustedAcceptor(ri.fst, adjDt1, oldDt1, addrSpace)(PairAcc1(adjDt1, adjDt2, A)),
               adjustedAcceptor(ri.snd, adjDt2, oldDt2, addrSpace)(PairAcc2(adjDt1, adjDt2, A)))
             case _ => throw new Exception("This should never happen.")
@@ -131,11 +136,12 @@ object AdjustArraySizesForAllocations {
           val arr = identifier(freshName("arr"), expT(adjElemT, read))
           val mapFunBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
 
-          Map(oldSize, adjElemT, mapFunBody.t.dataType, Lambda(arr, mapFunBody), outerDimension)
+          val accessType = outerDimension.t.accessType
+          Map(oldSize, adjElemT, mapFunBody.t.dataType, accessType, Lambda(arr, mapFunBody), outerDimension)
 
         case (PairType(adjDt1, adjDt2), PairType(oldDt1, oldDt2)) =>
           parallInfo match {
-            case (ri: RecordInfo) :: _ => Pair(oldDt1, oldDt2,
+            case (ri: RecordInfo) :: _ => Pair(oldDt1, oldDt2, read,
               adjustedExpr(ri.fst, adjDt1, oldDt1, addrSpace)(Fst(adjDt1, adjDt2, E)),
               adjustedExpr(ri.snd, adjDt2, oldDt2, addrSpace)(Snd(adjDt1, adjDt2, E)))
             case _ => throw new Exception("This should never happen.")

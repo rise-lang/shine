@@ -9,14 +9,22 @@ package object util {
 
   def writeToTempFile(prefix: String, suffix: String, content: String): File = {
     val tmp = createTempFile(prefix, suffix)
-    new PrintWriter(tmp) {
+    writeToFile(tmp, content)
+    tmp
+  }
+
+  def writeToPath(path: String, content: String): Unit = {
+    writeToFile(new File(path), content)
+  }
+
+  def writeToFile(file: File, content: String): Unit = {
+    new PrintWriter(file) {
       try {
         write(content)
       } finally {
         close()
       }
     }
-    tmp
   }
 
   def readFile(path: String): String = {
@@ -40,7 +48,7 @@ package object util {
     finally Executor.shutdown()
   }
 
-  def printTime[T](block: => T): T = {
+  def printTime[T](msg: String, block: => T): T = {
     val start = System.currentTimeMillis()
     val result = block
     val end = System.currentTimeMillis()
@@ -54,7 +62,31 @@ package object util {
     val millisStr = s"${milliseconds}ms"
     val secondsStr = if (seconds > 0) s"${seconds}s " else ""
     val minutesStr = if (minutes > 0) s"${minutes}mn " else ""
-    println(s"elapsed time: ${minutesStr}${secondsStr}${millisStr}")
+    println(s"${msg}: ${minutesStr}${secondsStr}${millisStr}")
     result
+  }
+
+  def dotPrintTmp(
+    name: String,
+    r: elevate.core.RewriteResult[rise.elevate.Rise]
+  ): Unit = r match {
+    case elevate.core.Success(p) => dotPrintTmp(name, p)
+    case _ =>
+  }
+
+  def dotPrintTmp(prefix: String, e: rise.core.Expr): Unit = {
+    import scala.language.postfixOps
+    import scala.sys.process._
+
+    val dotString = rise.core.dotPrinter.generateDotString(e,
+      printTypes = false,
+      inlineLambdaIdentifier = true,
+      applyNodes = false)
+    val dotFile = File.createTempFile(prefix, ".dot")
+    writeToFile(dotFile, dotString)
+    val dotPath = dotFile.getPath()
+    val svgPath = dotPath.replace(".dot", ".svg")
+    (s"dot -Tsvg $dotPath -o $svgPath" !!)
+    println(s"wrote $dotPath.svg and .dot")
   }
 }

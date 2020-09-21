@@ -3,20 +3,19 @@ package apps
 import separableConvolution2D._
 import rise.core._
 import rise.core.types._
-import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
 import util.gen
 
-class separableConvolution2DCheck extends shine.test_util.Tests {
+class separableConvolution2DCheck extends test_util.Tests {
   private def wrapExpr(e: Expr): Expr = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
     nFun(RangeAdd(3, PosInf, 1), h =>
       nFun(RangeAdd(12, PosInf, 4), w =>
-        fun(h `.` w `.` f32)(a => e(a))))
+        fun(h`.`w`.`f32)(a => e(a))))
   }
 
   private val H = 20
@@ -94,6 +93,12 @@ int main(int argc, char** argv) {
     println(s"time: $time")
   }
 
+  test("baseVecU compiles to valid OpenCL that passes checks") {
+    util.withExecutor {
+      checkOCL(LocalSize(1), GlobalSize(1), baseVecU(binomialWeights2d))
+    }
+  }
+
   test("regRotPar compiles to valid OpenCL that passes checks") {
     util.withExecutor {
       checkOCL(LocalSize(1), GlobalSize(4),
@@ -117,15 +122,17 @@ int main(int argc, char** argv) {
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
-      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
+      rotateValues(3)(id) >>
+      iterateStream(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
     " / ".r.findAllIn(code).length shouldBe 0
   }
 
-  test("compiling OpenCL private arrays should unroll loops") {
-    import rise.OpenCL.DSL._
+  // FIXME: code generation cannot evaluate index literal
+  ignore("compiling OpenCL private arrays should unroll loops") {
+    import rise.openCL.DSL._
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))

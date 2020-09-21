@@ -1,12 +1,13 @@
 package util
 
+import rise.elevate.rules.traversal.default.RiseTraversable
 import shine.DPIA
 import shine.OpenCL.{GlobalSize, LocalSize}
 
 object gen {
   private def toDPIA(e: rise.core.Expr): DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType] = {
     val typed_e = rise.core.types.infer(e)
-    shine.DPIA.fromRise(typed_e)
+    shine.DPIA.fromRise(typed_e)(RiseTraversable)
   }
 
   def CProgram(e: rise.core.Expr, name: String = "foo"): shine.C.Program = {
