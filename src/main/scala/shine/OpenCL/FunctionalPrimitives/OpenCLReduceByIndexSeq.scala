@@ -17,28 +17,24 @@ final case class OpenCLReduceByIndexSeq(n: Nat,
                                         dt: DataType,
                                         f: Phrase[ExpType ->: ExpType ->: ExpType],
                                         hist: Phrase[ExpType],
-                                        is: Phrase[ExpType],
-                                        xs: Phrase[ExpType]
+                                        input: Phrase[ExpType]
                                        ) extends ExpPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
   hist :: expT(k`.`dt, write)
-  is :: expT(n`.`IndexType(k), read)
-  xs :: expT(n`.`dt, read)
+  input :: expT(n`.`PairType(IndexType(k), dt), read)
   override val t: ExpType = expT(k`.`dt, read)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLReduceByIndexSeq(fun.nat(n), fun.nat(k), fun.addressSpace(histAddrSpace), fun.data(dt),
-      VisitAndRebuild(f, fun), VisitAndRebuild(hist, fun),
-      VisitAndRebuild(is, fun), VisitAndRebuild(xs, fun))
+      VisitAndRebuild(f, fun), VisitAndRebuild(hist, fun), VisitAndRebuild(input, fun))
   }
 
   override def eval(s: Store): Data = ???
 
   override def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${histAddrSpace})" +
-      s"(${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(hist)})" +
-      s"(${PrettyPhrasePrinter(is)}) (${PrettyPhrasePrinter(xs)})"
+      s"(${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(hist)}) (${PrettyPhrasePrinter(input)})"
 
   override def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
@@ -49,13 +45,12 @@ final case class OpenCLReduceByIndexSeq(n: Nat,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(xs)(λ(expT(n`.`dt, read))(X =>
-      con(is)(λ(expT(n`.`IndexType(k), read))(I =>
-        OpenCLReduceByIndexSeqI(n, k, histAddrSpace, dt,
-          λ(expT(dt, read))(x =>
-            λ(expT(dt, read))(y =>
-              λ(accT(dt))(o => acc( f(x)(y) )( o )))),
-          hist, I, X, C)(context)))))
+    con(input)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
+      OpenCLReduceByIndexSeqI(n, k, histAddrSpace, dt,
+        λ(expT(dt, read))(x =>
+          λ(expT(dt, read))(y =>
+            λ(accT(dt))(o => acc( f(x)(y) )( o )))),
+        hist, X, C)(context)))
   }
 
   override def xmlPrinter: Elem =
@@ -68,12 +63,9 @@ final case class OpenCLReduceByIndexSeq(n: Nat,
       <hist type={ToString(ExpType(ArrayType(k, dt), write))}>
         {Phrases.xmlPrinter(hist)}
       </hist>
-      <is type={ToString(ExpType(ArrayType(n, IndexType(k)), read))}>
-        {Phrases.xmlPrinter(is)}
-      </is>
-      <xs type={ToString(ExpType(ArrayType(n, dt), read))}>
-        {Phrases.xmlPrinter(is)}
-      </xs>
+      <input type={ToString(ExpType(ArrayType(n, PairType(IndexType(k), dt)), read))}>
+        {Phrases.xmlPrinter(input)}
+      </input>
     </reduce>.copy(label = {
       val name = this.getClass.getSimpleName
       Character.toLowerCase(name.charAt(0)) + name.substring(1)

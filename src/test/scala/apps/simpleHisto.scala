@@ -35,22 +35,21 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
     )))
 
     val simpleHistoTest = nFun(n => nFun(numBins => nFun(chunkSize => fun(isT(n, numBins))(is =>
-      is |> // n.NatType
-      split(chunkSize) |> // n/chunkSize.chunkSize.NatType
-      mapGlobal(
-        fun(chunk =>
+      generate(fun(IndexType(n))(_ => l(1))) |>
+      fun(xs =>
+        zip(is)(xs) |> // n.NatType
+        split(chunkSize) |> // n/chunkSize.chunkSize.NatType
+        mapGlobal(
           oclReduceByIndexSeq(AddressSpace.Global)(add)(
             generate(fun(IndexType(numBins))(_ => l(0))) |>
               mapSeq(id)
-          )(chunk)(
-            generate(fun(IndexType(chunkSize))(_ => l(1)))
-          )
-        ) >> mapSeq(id)
-      ) |> // n/chunkSize.numBins.int
-      toGlobal |>
-      // reduce all subhistograms
-      reduceHistos
-    ))))
+          ) >>
+          mapSeq(id)
+        )) |> // n/chunkSize.numBins.int
+        toGlobal |>
+        // reduce all subhistograms
+        reduceHistos
+      ))))
 
     gen.OpenCLKernel(simpleHistoTest)
   }

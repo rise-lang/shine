@@ -626,31 +626,27 @@ object fromRise {
       aFunT(a,
         (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
           expT(ArrayType(k, _), `write`) ->:
-            expT(ArrayType(n, IndexType(_)), `read`) ->:
-              expT(ArrayType(_, _), `read`) ->:
-                expT(ArrayType(_, _), `read`))) =>
+            expT(ArrayType(n, PairType(IndexType(_), _)), `read`) ->:
+              expT(ArrayType(_, _), `read`))) =>
         depFun[AddressSpaceKind](a)(
           fun[ExpType ->: ExpType ->: ExpType](
             expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
               fun[ExpType](expT(k`.`t, write), h =>
-                fun[ExpType](expT(n`.`IndexType(k), read), i =>
-                  fun[ExpType](expT(n`.`t, read), x =>
-                    OpenCLReduceByIndexSeq(n, k, a, t, f, h, i, x))))))
+                fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
+                  OpenCLReduceByIndexSeq(n, k, a, t, f, h, e)))))
 
       case (ocl.OclReduceByIndexPar(),
       aFunT(a,
         (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
-          expT(ArrayType(k, _), `read`) ->:
-            expT(ArrayType(n, IndexType(_)), `read`) ->:
-              expT(ArrayType(_, _), `read`) ->:
-                expT(ArrayType(_, _), `read`))) =>
+          expT(ArrayType(k, _), `write`) ->:
+            expT(ArrayType(n, PairType(IndexType(_), _)), `read`) ->:
+              expT(ArrayType(_, _), `read`))) =>
         depFun[AddressSpaceKind](a)(
           fun[ExpType ->: ExpType ->: ExpType](
             expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
-              fun[ExpType](expT(k`.`t, read), h =>
-                fun[ExpType](expT(n`.`IndexType(k), read), i =>
-                  fun[ExpType](expT(n`.`t, read), x =>
-                    OpenCLReduceByIndexPar(n, k, a, t, f, h, i, x))))))
+              fun[ExpType](expT(k`.`t, write), h =>
+                fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
+                  OpenCLReduceByIndexPar(n, k, a, t, f, h, e)))))
 
       case (ocl.OclSegmentedReduce(),
       aFunT(a,

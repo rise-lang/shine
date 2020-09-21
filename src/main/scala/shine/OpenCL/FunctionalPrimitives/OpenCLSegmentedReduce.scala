@@ -49,11 +49,11 @@ final case class OpenCLSegmentedReduce(
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
-        OpenCLSegmentedReduceI(n, k, initAddrSpace, dt,
-          λ(expT(dt, read))(x =>
-            λ(expT(dt, read))(y =>
-              λ(accT(dt))(o => acc( f(x)(y) )( o )))),
-          init, X, C)(context)))
+      OpenCLSegmentedReduceI(n, k, initAddrSpace, dt,
+        λ(expT(dt, read))(x =>
+          λ(expT(dt, read))(y =>
+            λ(accT(dt))(o => acc( f(x)(y) )( o )))),
+        init, X, C)(context)))
   }
 
   override def xmlPrinter: Elem =

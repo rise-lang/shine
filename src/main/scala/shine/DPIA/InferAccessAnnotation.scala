@@ -456,35 +456,9 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case roclp.OclReduceByIndexSeq() => p.t match {
-        case rtdsl.aFunT(a,
-          ((t: rt.DataType) ->: (_: rt.DataType) ->: (_: rt.DataType)) ->:
-            rt.ArrayType(k, _) ->: rt.ArrayType(n, rt.IndexType(_)) ->: rt.ArrayType(_, _) ->: rt.ArrayType(_, _)) =>
-
-          aFunT(a,
-            (expT(t, read) ->: expT(t, read) ->: expT(t, write)) ->:
-              expT(rt.ArrayType(k, t), write) ->:
-                expT(rt.ArrayType(n, rt.IndexType(k)), read) ->:
-                  expT(rt.ArrayType(n, t), read) ->:
-                    expT(rt.ArrayType(k, t), read))
-        case _ => error()
-      }
-
-      case roclp.OclReduceByIndexPar() => p.t match {
-        case rtdsl.aFunT(a,
-        ((t: rt.DataType) ->: (_: rt.DataType) ->: (_: rt.DataType)) ->:
-          rt.ArrayType(k, _) ->: rt.ArrayType(n, rt.IndexType(_)) ->: rt.ArrayType(_, _) ->: rt.ArrayType(_, _)) =>
-
-          aFunT(a,
-            (expT(t, read) ->: expT(t, read) ->: expT(t, write)) ->:
-              expT(rt.ArrayType(k, t), read) ->:
-                expT(rt.ArrayType(n, rt.IndexType(k)), read) ->:
-                  expT(rt.ArrayType(n, t), read) ->:
-                    expT(rt.ArrayType(k, t), read))
-        case _ => error()
-      }
-
-      case roclp.OclSegmentedReduce() => p.t match {
+      case roclp.OclReduceByIndexSeq() |
+           roclp.OclReduceByIndexPar() |
+           roclp.OclSegmentedReduce() => p.t match {
         case rtdsl.aFunT(a,
         ((t: rt.DataType) ->: (_: rt.DataType) ->: (_: rt.DataType)) ->:
           rt.ArrayType(k, _) ->: rt.ArrayType(n, rt.PairType(rt.IndexType(_), _)) ->: rt.ArrayType(_, _)) =>

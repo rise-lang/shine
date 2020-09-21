@@ -113,6 +113,4 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
     output
   }
 
-
-
 }
