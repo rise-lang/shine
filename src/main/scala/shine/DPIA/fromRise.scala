@@ -622,7 +622,7 @@ object fromRise {
           fun[ExpType](expT(t, write), e =>
             OclToMem(a, t, e)))
 
-      case (ocl.ReduceByIndexSeq(),
+      case (ocl.OclReduceByIndexSeq(),
       aFunT(a,
         (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
           expT(ArrayType(k, _), `write`) ->:
@@ -635,7 +635,22 @@ object fromRise {
               fun[ExpType](expT(k`.`t, write), h =>
                 fun[ExpType](expT(n`.`IndexType(k), read), i =>
                   fun[ExpType](expT(n`.`t, read), x =>
-                    ReduceByIndexSeq(n, k, a, t, f, h, i, x))))))
+                    OpenCLReduceByIndexSeq(n, k, a, t, f, h, i, x))))))
+
+      case (ocl.OclReduceByIndexPar(),
+      aFunT(a,
+        (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
+          expT(ArrayType(k, _), `read`) ->:
+            expT(ArrayType(n, IndexType(_)), `read`) ->:
+              expT(ArrayType(_, _), `read`) ->:
+                expT(ArrayType(_, _), `read`))) =>
+        depFun[AddressSpaceKind](a)(
+          fun[ExpType ->: ExpType ->: ExpType](
+            expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
+              fun[ExpType](expT(k`.`t, read), h =>
+                fun[ExpType](expT(n`.`IndexType(k), read), i =>
+                  fun[ExpType](expT(n`.`t, read), x =>
+                    OpenCLReduceByIndexPar(n, k, a, t, f, h, i, x))))))
 
       case (ocl.OclSegmentedReduce(),
       aFunT(a,

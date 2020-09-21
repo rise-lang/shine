@@ -3,14 +3,13 @@ package shine.OpenCL.IntermediatePrimitives
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}
-import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
 
-object ReduceByIndexSeqI {
+object OpenCLReduceByIndexSeqI {
   def apply(n: Nat,
             k: Nat,
             histAddrSpace: shine.DPIA.Types.AddressSpace,

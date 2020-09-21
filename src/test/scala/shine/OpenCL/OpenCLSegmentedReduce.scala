@@ -13,7 +13,7 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
   private def histosT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
 
-  val add = fun(x => fun(a => x + a))
+  private val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
 
   val n = 8192

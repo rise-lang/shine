@@ -7,19 +7,19 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.OpenCL.IntermediatePrimitives.ReduceByIndexSeqI
+import shine.OpenCL.IntermediatePrimitives.OpenCLReduceByIndexSeqI
 
 import scala.xml.Elem
 
-final case class ReduceByIndexSeq(n: Nat,
-                                  k: Nat,
-                                  histAddrSpace: shine.DPIA.Types.AddressSpace,
-                                  dt: DataType,
-                                  f: Phrase[ExpType ->: ExpType ->: ExpType],
-                                  hist: Phrase[ExpType],
-                                  is: Phrase[ExpType],
-                                  xs: Phrase[ExpType]
-                                 ) extends ExpPrimitive {
+final case class OpenCLReduceByIndexSeq(n: Nat,
+                                        k: Nat,
+                                        histAddrSpace: shine.DPIA.Types.AddressSpace,
+                                        dt: DataType,
+                                        f: Phrase[ExpType ->: ExpType ->: ExpType],
+                                        hist: Phrase[ExpType],
+                                        is: Phrase[ExpType],
+                                        xs: Phrase[ExpType]
+                                       ) extends ExpPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
   hist :: expT(k`.`dt, write)
@@ -27,10 +27,8 @@ final case class ReduceByIndexSeq(n: Nat,
   xs :: expT(n`.`dt, read)
   override val t: ExpType = expT(k`.`dt, read)
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
-    ReduceByIndexSeq(fun.nat(n), fun.nat(k), fun.addressSpace(histAddrSpace), fun.data(dt),
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
+    OpenCLReduceByIndexSeq(fun.nat(n), fun.nat(k), fun.addressSpace(histAddrSpace), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(hist, fun),
       VisitAndRebuild(is, fun), VisitAndRebuild(xs, fun))
   }
@@ -53,7 +51,7 @@ final case class ReduceByIndexSeq(n: Nat,
 
     con(xs)(λ(expT(n`.`dt, read))(X =>
       con(is)(λ(expT(n`.`IndexType(k), read))(I =>
-        ReduceByIndexSeqI(n, k, histAddrSpace, dt,
+        OpenCLReduceByIndexSeqI(n, k, histAddrSpace, dt,
           λ(expT(dt, read))(x =>
             λ(expT(dt, read))(y =>
               λ(accT(dt))(o => acc( f(x)(y) )( o )))),
@@ -67,7 +65,7 @@ final case class ReduceByIndexSeq(n: Nat,
         ExpType(dt, read) ->: (ExpType(dt, read) ->: ExpType(dt, write)))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <hist type={ToString(ExpType(ArrayType(k, dt), read))}>
+      <hist type={ToString(ExpType(ArrayType(k, dt), write))}>
         {Phrases.xmlPrinter(hist)}
       </hist>
       <is type={ToString(ExpType(ArrayType(n, IndexType(k)), read))}>
