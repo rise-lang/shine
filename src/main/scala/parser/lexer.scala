@@ -300,165 +300,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
 
     //ignore whitespaces
         skipWhitespace(column, row) match {
-      case (c,r) =>{
-        column = c
-        row = r
-      }
-    }
-
-    arr(column)(row) match {
-      case '\\' =>{
-        lexerLambda(column,row,list) match {
-          case (l, c,r) =>{
-            column = c
-            row = r
-            list = l
-          }
-        }
-      }
-      case '(' => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Right(LBrace(new Span(fileReader,loc))))
-        row = row +1
-        //ignore whitespaces
-        skipWhitespace(column, row) match {
           case (c,r) =>{
             column = c
             row = r
           }
         }
-        lexerExpression(column,row, list) match {
-          case (l, c, r) =>{
-            l(0) match {
-              case Right(RBrace(_)) => {
-                list = l
-                column = c
-                row = r
-              }
-              case Right(a) => { //last symbol not a RBrace => failure
-                val beginLoc:Location = Location(column, row)
-                val endLoc:Location = Location(c, r)
-                val span:Span = Span(fileReader,beginLoc, endLoc)
-                val ex = RightBraceMissing(span,fileReader)
-                ex.throwException()
-              }
-              case Left(a) => {
-                //should not be happening
-                a.throwException()
-              }
-            }
-          }
-        }
-      }
-      case ')' => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Right(RBrace(new Span(fileReader, loc))))
-        row = row +1
-//        val lB: Int = list.count(a => a match {
-//          case Right(LBrace(_)) => true
-//          case b => false
-//        } )
-//        val rB: Int = list.count(a => a match {
-//          case Right(RBrace(_)) => true
-//          case b => false
-//        } )
-//        if(lB<rB){ //for example "( ... ) .. )"
-//          val ex = LeftBraceMissing(new Span(fileReader, loc), fileReader)
-//          ex.throwException()
-//        }
-        return (list, column, row) //i have to return, because the LBrace wants to see a RBrace
-      }
-      case '!' => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Right(UnOp(UnaryOpType.NOT,new Span(fileReader, loc))))
-        row = row +1
-        //ignore whitespaces
-        skipWhitespace(column, row) match {
-          case (c,r) =>{
-            column = c
-            row = r
-          }
-        }
-        lexerExpression(column,row,list) match {
-          case (l, c, r) =>{
-            list = l
-            column = c
-            row = r
-          }
-        }
-      }
-      case '-' => {
-        lexNEGOperator(column, row) match {
-          case Right(a) => {
-            row = row +1
-            list = list.::(Right(a))
-            //ignore whitespaces
-            skipWhitespace(column, row) match {
-              case (c,r) =>{
-                column = c
-                row = r
-              }
-            }
-            lexerExpression(column,row,list) match {
-              case (l, c, r) =>{
-                list = l
-                column = c
-                row = r
-              }
-            }
-          }
-          case Left(a) => {
-            a.throwException()
-          }
-        }
-      }
-      case a => {
-        if(a.isDigit){
-          //more than one step but column keeps the same
-          lexNumber(column, row) match {
-            case (Right(a), r) => {
-              row = r
-              list=list.::(Right(a))
-            }
-            case (Left(a), _) => {
-              a.throwException()
-            }
-          }
-        }else if(a.isLetter){
-          //more than one step but column keeps the same
-          lexIdentifier(column, row) match {
-            case (Right(a), r) => {
-              row = r
-              list=list.::(Right(a))
-            }
-            case (Left(a), _) => {
-              a.throwException()
-            }
-          }
-        }else if(otherKnownSymbol(a)){
-          val loc:Location = Location(column, row) //endLocation is equal to startLocation
-          val ex = NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator", ""+ a, new Span(fileReader, loc), fileReader)
-          ex.throwException()
-        }else{
-          val loc:Location = Location(column, row) //endLocation is equal to startLocation
-          val ex = UnknownSymbol(a, new Span(fileReader, loc), fileReader)
-          ex.throwException()
-        }
-      }
-    }
-
-    //ignore whitespaces
-    skipWhitespace(column, row) match {
-      case (c,r) =>{
-        column = c
-        row = r
-      }
-    }
-
-    //now only a BinOperator could be here or a second expression or nothing
-    if(column >= arr.length || (column == arr.length-1 && row >= arr(column).length)){
-      return (list, column, row) //end is reached
-    }
 
     if(isBinaryOperatorSymbol(arr(column)(row))){ //it is a binary operator
       lexBinOperator(column, row) match {
@@ -468,16 +314,150 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
         }
         case (Right(a)) => {
           row = row +1
-       //   println("\n\n"+ a.toString)
+          //   println("\n\n"+ a.toString)
           list=list.::(Right(a))
         }
         case (Left(a)) => {
           a.throwException()
         }
       }
-      return lexerExpression(column,row, list)
+      return lexerExpression(column,row, list) //only syntax is controlled here
     }else{
-      return lexerExpression(column,row, list)
+      arr(column)(row) match {
+        case '\\' =>{
+          lexerLambda(column,row,list) match {
+            case (l, c,r) =>{
+              column = c
+              row = r
+              list = l
+            }
+          }
+        }
+        case '(' => {
+          val loc:Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(Right(LBrace(new Span(fileReader,loc))))
+          row = row +1
+          //ignore whitespaces
+          skipWhitespace(column, row) match {
+            case (c,r) =>{
+              column = c
+              row = r
+            }
+          }
+          lexerExpression(column,row, list) match {
+            case (l, c, r) =>{
+              l(0) match {
+                case Right(RBrace(_)) => {
+                  list = l
+                  column = c
+                  row = r
+                }
+                case Right(a) => { //last symbol not a RBrace => failure
+                  val beginLoc:Location = Location(column, row)
+                  val endLoc:Location = Location(c, r)
+                  val span:Span = Span(fileReader,beginLoc, endLoc)
+                  val ex = RightBraceMissing(span,fileReader)
+                  ex.throwException()
+                }
+                case Left(a) => {
+                  //should not be happening
+                  a.throwException()
+                }
+              }
+            }
+          }
+        }
+        case ')' => {
+          val loc:Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(Right(RBrace(new Span(fileReader, loc))))
+          row = row +1
+          return (list, column, row) //i have to return, because the LBrace wants to see a RBrace
+        }
+        case '!' => {
+          val loc:Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(Right(UnOp(UnaryOpType.NOT,new Span(fileReader, loc))))
+          row = row +1
+          //ignore whitespaces
+          skipWhitespace(column, row) match {
+            case (c,r) =>{
+              column = c
+              row = r
+            }
+          }
+          lexerExpression(column,row,list) match {
+            case (l, c, r) =>{
+              list = l
+              column = c
+              row = r
+            }
+          }
+        }
+        case '~' => { //TODO: Is this symbol as a Neg-Sign ok?
+          val loc:Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(Right(UnOp(UnaryOpType.NEG,new Span(fileReader, loc))))
+          row = row +1
+          //ignore whitespaces
+          skipWhitespace(column, row) match {
+            case (c,r) =>{
+              column = c
+              row = r
+            }
+          }
+          lexerExpression(column,row,list) match {
+            case (l, c, r) =>{
+              list = l
+              column = c
+              row = r
+            }
+          }
+        }
+        case a => {
+          if(a.isDigit){
+            //more than one step but column keeps the same
+            lexNumber(column, row) match {
+              case (Right(a), r) => {
+                row = r
+                list=list.::(Right(a))
+              }
+              case (Left(a), _) => {
+                a.throwException()
+              }
+            }
+          }else if(a.isLetter){
+            //more than one step but column keeps the same
+            lexIdentifier(column, row) match {
+              case (Right(a), r) => {
+                row = r
+                list=list.::(Right(a))
+              }
+              case (Left(a), _) => {
+                a.throwException()
+              }
+            }
+          }else if(otherKnownSymbol(a)){
+            val loc:Location = Location(column, row) //endLocation is equal to startLocation
+            val ex = NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator or a BinOperator", ""+ a, new Span(fileReader, loc), fileReader)
+            ex.throwException()
+          }else{
+            val loc:Location = Location(column, row) //endLocation is equal to startLocation
+            val ex = UnknownSymbol(a, new Span(fileReader, loc), fileReader)
+            ex.throwException()
+          }
+        }
+      }
+    }
+    //ignore whitespaces
+    skipWhitespace(column, row) match {
+      case (c,r) =>{
+        column = c
+        row = r
+      }
+    }
+
+    if(column >= arr.length || (column == arr.length-1 && row >= arr(column).length)){
+      return (list, column, row) //end is reached
+    }else{ //a second expression is accepted
+      return lexerExpression(column, row, list)
     }
   }
   /*
@@ -590,25 +570,25 @@ requirements:  no whitespace at arr(column)(row)
     }
   }*/
 
-  private def lexNEGOperator(column:Int, row:Int, arr: Array[String] = fileReader.sourceLines):Either[PreAndErrorToken, Token]= {
-    arr(column)(row) match {
-      case '-' => {
-        if (arr(column).length <= row + 1 || arr(column).substring(row, row + 2) != "->") { // -
-          val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          Right(UnOp(OpType.UnaryOpType.NEG, new Span(fileReader, loc))) //it is possible that it is OpType.UnaryType.Neg, but here it is not decideable
-          //so we save it at first as NegSign so, that we can decide later
-        } else { // ->
-          val locStart: Location = Location(column, row)
-          val locEnd: Location = Location(column, row + 1)
-          Left(NotExpectedToken("-", "->", Span(fileReader, locStart, locEnd), fileReader))
-        }
-      }
-      case a => {
-        val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Left(NotExpectedToken("-", ""+a, new Span(fileReader, loc), fileReader))
-      }
-    }
-  }
+//  private def lexNEGOperator(column:Int, row:Int, arr: Array[String] = fileReader.sourceLines):Either[PreAndErrorToken, Token]= {
+//    arr(column)(row) match {
+//      case '-' => {
+//        if (arr(column).length <= row + 1 || arr(column).substring(row, row + 2) != "->") { // -
+//          val loc: Location = Location(column, row) //endLocation is equal to startLocation
+//          Right(UnOp(OpType.UnaryOpType.NEG, new Span(fileReader, loc))) //it is possible that it is OpType.UnaryType.Neg, but here it is not decideable
+//          //so we save it at first as NegSign so, that we can decide later
+//        } else { // ->
+//          val locStart: Location = Location(column, row)
+//          val locEnd: Location = Location(column, row + 1)
+//          Left(NotExpectedToken("-", "->", Span(fileReader, locStart, locEnd), fileReader))
+//        }
+//      }
+//      case a => {
+//        val loc: Location = Location(column, row) //endLocation is equal to startLocation
+//        Left(NotExpectedToken("-", ""+a, new Span(fileReader, loc), fileReader))
+//      }
+//    }
+//  }
 
 /*
 this lexes if it is an binary operator
@@ -884,6 +864,35 @@ two steps
       }
     }
   }
+
+//  private def lexNegOrMinusOperator(oldColumn:Int, oldRow: Int, l: List[Either[PreAndErrorToken, Token]]): Unit ={
+//    var row = oldRow
+//    var column = oldColumn
+//    var list = l
+//    lexNEGOperator(column, row) match {
+//    case Right(a) => {
+//      row = row + 1
+//      list = list.::(Right(a))
+//      //ignore whitespaces
+//      skipWhitespace(column, row) match {
+//        case (c, r) => {
+//          column = c
+//          row = r
+//        }
+//      }
+//      lexerExpression(column, row, list) match {
+//        case (l, c, r) => {
+//          list = l
+//          column = c
+//          row = r
+//        }
+//      }
+//    }
+//    case Left(a) => {
+//      a.throwException()
+//    }
+//  }
+//}
 
 
   //______________________________________________________________________
