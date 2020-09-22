@@ -635,19 +635,6 @@ object fromRise {
                 fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
                   OpenCLReduceByIndexSeq(n, k, a, t, f, h, e)))))
 
-      case (ocl.OclReduceByIndexGlobal(),
-      aFunT(a,
-        (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
-          expT(ArrayType(k, _), `write`) ->:
-            expT(ArrayType(n, PairType(IndexType(_), _)), `read`) ->:
-              expT(ArrayType(_, _), `read`))) =>
-        depFun[AddressSpaceKind](a)(
-          fun[ExpType ->: ExpType ->: ExpType](
-            expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
-              fun[ExpType](expT(k`.`t, write), h =>
-                fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
-                  OpenCLReduceByIndexGlobal(n, k, a, t, f, h, e)))))
-
       case (ocl.OclReduceByIndexLocal(),
       aFunT(a,
         (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
