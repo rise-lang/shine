@@ -91,7 +91,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case Backslash(span8) :: Identifier("x", span7) :: Colon(span6) :: Type(IntTyp(), span5) :: Arrow(span4) :: Identifier("x", span3) :: BinOp(BinOpType.ADD, span2) :: I32(5, span1) :: Nil => true
+      case Backslash(span8) :: Identifier("x", span7) :: Colon(span6) :: Type(IntTyp(), span5) :: Arrow(span4) :: BinOp(BinOpType.ADD, span2) :: Identifier("x", span3) ::  I32(5, span1) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -101,7 +101,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case Backslash(span8) :: Identifier("x", span7) :: Colon(span6) :: Type(IntTyp(), span5) :: Arrow(span4) :: Identifier("x", span3) :: BinOp(BinOpType.SUB, span2) :: I32(5, span1) :: Nil => true
+      case Backslash(span8) :: Identifier("x", span7) :: Colon(span6) :: Type(IntTyp(), span5) :: Arrow(span4) :: BinOp(BinOpType.SUB, span2) :: Identifier("x", span3)  :: I32(5, span1) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -196,12 +196,42 @@ class LexerTest extends  AnyFlatSpec {
     thrown.getMessage should equal(expected)
   }
 
+  "RecognizeLexeme" should "littleComplexLine" in {
+    val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/littleComplexLine.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Arrow(_) ::  BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: I32(42, _) :: Nil => true
+      case a => throw new Exception(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "lessComplexInOneLine" in {
+    val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/lessComplexInOneLine.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _)  :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: Nil => true
+      case a => throw new Exception(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "lessComplexInOneLineWithType" in {
+    val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/lessComplexInOneLineWithType.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: Nil => true
+      case a => throw new Exception(a.toString())
+    }
+  }
+
   "RecognizeLexeme" should "complexInOneLine" in {
     val fileName: String = "src/test/scala/parser/readFiles/filesToLexe/complexInOneLine.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    lexer.tokens match { //\x:I32->\y->-(x*y)+42%5
-      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_) :: Identifier("x", _) :: BinOp(BinOpType.MUL, _) :: Identifier("y", _) :: RBrace(_) :: BinOp(BinOpType.ADD, _) :: I32(42, _) :: BinOp(BinOpType.MOD, _) :: I32(5, _) :: Nil => true
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -211,7 +241,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_) :: Identifier("x", _) :: BinOp(BinOpType.MUL, _) :: Identifier("y", _) :: RBrace(_) :: BinOp(BinOpType.ADD, _) :: I32(42, _) :: BinOp(BinOpType.MOD, _) :: I32(5, _) :: Nil => true
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_)  :: BinOp(BinOpType.MOD, _) :: I32(42, _)  :: I32(5, _) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -221,7 +251,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case Backslash(_) :: Identifier("Michael", _) :: Colon(_) :: Type(BoolType(), _) :: Arrow(_) :: Backslash(_) :: Identifier("Heinrich", _) :: Colon(_) :: Type(BoolType(), _) :: Arrow(_) :: UnOp(UnaryOpType.NOT, _) :: LBrace(_) :: LBrace(_) :: Backslash(_) :: Identifier("varX", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("varY", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Identifier("varX", _) :: BinOp(BinOpType.MUL, _) :: Identifier("varY", _) :: BinOp(BinOpType.MUL, _) :: LBrace(_) :: I32(25, _) :: BinOp(BinOpType.SUB, _) :: F32(a, _) :: RBrace(_) :: BinOp(BinOpType.DIV, _) :: F32(b, _) :: RBrace(_) :: BinOp(BinOpType.MOD, _) :: I32(42, _) :: BinOp(BinOpType.EQ, _) :: I32(0, _) :: RBrace(_) :: Nil => {
+      case Backslash(_) :: Identifier("Michael", _) :: Colon(_) :: Type(BoolType(), _) :: Arrow(_) :: Backslash(_) :: Identifier("Heinrich", _) :: Colon(_) :: Type(BoolType(), _) :: Arrow(_) :: UnOp(UnaryOpType.NOT, _) :: LBrace(_) :: BinOp(BinOpType.EQ, _) :: BinOp(BinOpType.MOD, _) ::  LBrace(_) :: Backslash(_) :: Identifier("varX", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("varY", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) :: BinOp(BinOpType.MUL, _) :: Identifier("varX", _)  :: BinOp(BinOpType.MUL, _) :: Identifier("varY", _)  :: BinOp(BinOpType.DIV, _) :: LBrace(_) :: BinOp(BinOpType.SUB, _) :: I32(25, _) :: F32(a, _) :: RBrace(_) ::  F32(b, _) :: RBrace(_) :: I32(42, _)  :: I32(0, _) :: RBrace(_) :: Nil => {
         a == 10.5 && b == 2.3 //I can't write 2.3 directly in the pattern match, because then it would be unequal
       }
       case a => throw new Exception(a.toString())
