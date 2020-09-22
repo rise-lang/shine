@@ -414,10 +414,14 @@ object TypedDSL {
       }
     }
 
-    def infer(e: Expr): Expr = {
+    def inferDependent(e: TDSL[Expr]): Expr = this.infer(e.e, Flags.ExplicitDependence.On)
+
+    def infer(e: Expr,
+              explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off
+             ): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-      val solution = Constraint.solve(constraints, Seq()) match {
+      val solution = Constraint.solve(constraints, Seq())(explDep) match {
         case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
           Solution(
             ts.mapValues(t => ftvSubs(t)),

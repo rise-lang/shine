@@ -24,7 +24,7 @@ object infer {
 
     // solve the constraints
     // val bound = boundIdentifiers(typed_e)
-    val solution = Constraint.solve(constraints, Seq())
+    val solution = Constraint.solve(constraints, Seq())(Flags.ExplicitDependence.Off)
 
     // apply the solution
     val r = solution(typed_e)
