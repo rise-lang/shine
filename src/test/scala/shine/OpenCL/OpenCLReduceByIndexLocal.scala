@@ -49,14 +49,14 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
           fun(acc_histo => // numBins.int
             fun(cur_histo => // numBins.int
               zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapGlobal(fun(x => fst(x) + snd(x)))
+                mapLocal(fun(x => fst(x) + snd(x)))
             )
           )
         )(
           generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-            mapSeq(id) //numBins.int
+            mapLocal(id) //numBins.int
         ) |>
-        mapSeq(id)
+        mapLocal(id)
     )))
 
     val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
@@ -96,14 +96,14 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
           fun(acc_histo => // numBins.int
             fun(cur_histo => // numBins.int
               zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapGlobal(fun(x => fst(x) + snd(x)))
+                mapLocal(fun(x => fst(x) + snd(x)))
             )
           )
         )(
           generate(fun(IndexType(numBins))(_ => l(0.0f))) |> // numBins.int
-            mapSeq(id) //numBins.int
+            mapLocal(id) //numBins.int
         ) |>
-        mapSeq(id)
+        mapLocal(id)
     )))
 
     val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(f_xsT(n))(xs =>
