@@ -1,6 +1,6 @@
 \Michael:Bool->\Heinrich:Bool
     ->!
         (
-            (\varX:I32->\varY:F32->varX*varY*(25-10.5)/2.3F32)
-            %42==0
+            ==%(\varX:I32->\varY:F32->* varX * varY /(- 25 10.5) 2.3F32)
+            42 0
         )
