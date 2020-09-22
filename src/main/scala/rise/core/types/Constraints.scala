@@ -3,6 +3,7 @@ package rise.core.types
 import rise.core.TypeLevelDSL.n2dtFun
 import rise.core.{freshName, substitute}
 import rise.core.lifting.liftDependentFunctionType
+import rise.core.types.Flags.ExplicitDependence
 import rise.core.types.InferenceException.error
 
 import scala.collection.mutable
@@ -32,7 +33,8 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 }
 
 object Constraint {
-  def solve(cs: Seq[Constraint], trace: Seq[Constraint]): Solution = cs match {
+  def solve(cs: Seq[Constraint], trace: Seq[Constraint])
+     (implicit explDep: Flags.ExplicitDependence): Solution = cs match {
     case Nil => Solution()
     case c +: cs =>
       val s = solveOne(c, trace)
@@ -40,7 +42,8 @@ object Constraint {
   }
 
   // scalastyle:off method.length
-  def solveOne(c: Constraint, trace: Seq[Constraint]): Solution = {
+  def solveOne(c: Constraint, trace: Seq[Constraint])
+    (implicit explDep: Flags.ExplicitDependence): Solution = {
     implicit val _trace: Seq[Constraint] = trace
     def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace)
 
@@ -78,26 +81,38 @@ object Constraint {
             DepFunType(na: NatIdentifier, ta),
             DepFunType(nb: NatIdentifier, tb)
             ) =>
-            val n = NatIdentifier(freshName("n"), isExplicit = true)
-//            val (nTa, nTaSub) = dependence.explicitlyDependent(
-//              substitute.natInType(n, `for`=na, ta), n
-//            )
-//            val (nTb, nTbSub) = dependence.explicitlyDependent(
-//              substitute.natInType(n, `for`= nb, tb), n
-//            )
-            /** Note(federico): I am not 100% sure it is necessary to propagate nTaSub/nTbSub
-             * (the explicit-dependence substitutions) upwards.
-             * It seems to me it might be necessary, but I have no evidence of it.
-             * In any case, this should be safe to do
-             */
-//            nTaSub ++ nTbSub ++
-              decomposed(
-                Seq(
-                  NatConstraint(n, na.asImplicit),
-                  NatConstraint(n, nb.asImplicit),
-                  TypeConstraint(ta, tb)
+            explDep match {
+              case ExplicitDependence.On =>
+                val n = NatIdentifier(freshName("n"), isExplicit = true)
+                /** Note(federico):
+                  * This step recurses in both functions and makes dependence between type
+                  * variables and n explicit (by replacing type variables with NatToData/NatToNat).
+                  *
+                  * Perhaps this can be moved away from constraint solving, and pulled up in the
+                  * initial constrain-types phase?
+                  */
+                val (nTa, nTaSub) = dependence.explicitlyDependent(
+                  substitute.natInType(n, `for`=na, ta), n
                 )
-              )
+                val (nTb, nTbSub) = dependence.explicitlyDependent(
+                  substitute.natInType(n, `for`= nb, tb), n
+                )
+                nTaSub ++ nTbSub ++ decomposed(
+                    Seq(
+                      NatConstraint(n, na.asImplicit),
+                      NatConstraint(n, nb.asImplicit),
+                      TypeConstraint(nTa, nTb)
+                    ))
+              case ExplicitDependence.Off =>
+                val n = NatIdentifier(freshName("n"), isExplicit = true)
+                decomposed(
+                  Seq(
+                    NatConstraint(n, na.asImplicit),
+                    NatConstraint(n, nb.asImplicit),
+                    TypeConstraint(ta, tb)
+                  )
+                )
+            }
           case (
             DepFunType(dta: DataTypeIdentifier, ta),
             DepFunType(dtb: DataTypeIdentifier, tb)
