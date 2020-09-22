@@ -76,10 +76,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case Barrier(localMemFence, globalMemFence) =>
         OpenCL.AST.Barrier(localMemFence, globalMemFence)
 
-      case AtomicBinOpAssign(dt, f, dst, src) =>
+      case AtomicBinOpAssign(dt, addrSpace, f, dst, src) =>
         acc(dst, env, Nil, a =>
           exp(src, env, Nil, e => {
-            OpenCLCodeGen.codeGenAtomicBinOpAssign(dt, f, a, e)
+            OpenCLCodeGen.codeGenAtomicBinOpAssign(dt, addrSpace, f, a, e)
           }))
 
       case _: NewDoubleBuffer =>
@@ -479,6 +479,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     }
 
     def codeGenAtomicBinOpAssign(dt: DataType,
+                                 addrSpace: AddressSpace,
                                  f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
                                  dst: Expr,
                                  src: Expr): Stmt = {
@@ -502,10 +503,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
                 //TODO: Min, Max, And, Or and Xor would also be supported but are not implemented as an operator yet.
 
-                case _ => codeGenAtomicBinOpAssignWorkaround(dt, op, dst, src)
+                case _ => codeGenAtomicBinOpAssignWorkaround(dt, addrSpace, op, dst, src)
               }
 
-            case _ => codeGenAtomicBinOpAssignWorkaround(dt, op, dst, src)
+            case _ => codeGenAtomicBinOpAssignWorkaround(dt, addrSpace, op, dst, src)
           }
 
         case _ => error("This should not happen.")
@@ -521,6 +522,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     }
 
     def codeGenAtomicBinOpAssignWorkaround(dt: DataType,
+                                           addrSpace: AddressSpace,
                                            op: Operators.Binary.Value,
                                            dst: Expr,
                                            src: Expr): Stmt = {
@@ -541,7 +543,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       val expected_t = C.AST.StructMemberAccess(expected, t)
 
       val ptr = C.AST.Cast(
-                  OpenCL.AST.PointerType(shine.OpenCL.AddressSpace.Global, C.AST.Type.uint, volatile = true),
+                  OpenCL.AST.PointerType(addrSpace, C.AST.Type.uint, volatile = true),
                   C.AST.UnaryExpr(C.AST.UnaryOperator.&, dst))
 
       Block(immutable.Seq(

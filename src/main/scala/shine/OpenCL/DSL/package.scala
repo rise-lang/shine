@@ -59,9 +59,10 @@ package object DSL {
 
   object atomicBinOpAssign {
     def apply(dt: DataType,
+              addrSpace: AddressSpace,
               f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
               dst: Phrase[AccType],
               src: Phrase[ExpType]) =
-      AtomicBinOpAssign(dt, f, dst, src)
+      AtomicBinOpAssign(dt, addrSpace, f, dst, src)
   }
 }

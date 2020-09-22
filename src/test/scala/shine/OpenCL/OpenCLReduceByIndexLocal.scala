@@ -69,7 +69,7 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
     val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(f_xsT(n))(xs =>
       zip(is)(xs) |>
-        oclReduceByIndexLocal(rise.core.types.AddressSpace.Global)(add)(
+        oclReduceByIndexLocal(rise.core.types.AddressSpace.Local)(add)(
           generate(fun(IndexType(k))(_ => l(0.0f))) |>
             mapLocal(id)
         ) |>
