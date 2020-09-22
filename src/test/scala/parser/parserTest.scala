@@ -21,7 +21,7 @@ class parserTest extends  AnyFlatSpec {
       parse(lexer.tokens)
     }
     //Todo: that is horrible, that I don't have an Error-Message
-    thrown.getMessage should equal(null)
+    thrown should equal(null)
   }
 
   "parser" should "be able to parse 'longIdentityWithI32.rise'" in {

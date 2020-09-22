@@ -64,7 +64,13 @@ object parse {
    */
     def apply(tokenList: List[Token]): r.Expr = {
       val parseState: ParseState = (tokenList, Nil)
-      val shineLambda:r.Expr = parseTopLevelLambda(parseState)
+      val shineLambda:r.Expr = parseTopLevelLambda(parseState) match {
+        case Right(ex) => ex
+        case Left(errorOrState) => {
+          println(errorOrState)
+          throw new RuntimeException("failed parsing : " + errorOrState)
+        }
+      }
       println("parse: "+ shineLambda)
       shineLambda
       //r.Identifier("placeholder")()
@@ -139,7 +145,7 @@ object parse {
       case Backslash(_) =>
       case tok => {
         println("failed parseBacklash: "+ parseState)
-        return Left(ParseError("failed to parse Backslash") (tok))
+        return Left(BacklashWasExpected(tok)) //Todo: Left(ParseError("failed to parse Backslash")
       }
     }
 
