@@ -777,6 +777,17 @@ object fromRise {
             OclToMem(a, t, e)))
       }
 
+      case core.DMatch() => fromType {
+        case expT(DepPairType(x, elemT), `read`) ->:
+          nFunT(i, expT(_, `read`) ->: expT(outT, `write`))
+          ->: expT(_, `write`) =>
+          fun[ExpType](ExpType(DepPairType(x, elemT), read), pair =>
+            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(NatToDataLambda(x, elemT)(i), read) ->: ExpType(outT, write)),f =>
+              DMatch(x, elemT, outT, f, pair)
+            )
+          )
+      }
+
       case core.Reduce() =>
         throw new Exception(s"$p has no implementation")
 
@@ -805,6 +816,11 @@ object fromRise {
     case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
     case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
     case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
+    case rt.DepPairType(x, t) =>
+      x match {
+      case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
+      case _ => ???
+    }
   }
 
   def scalarType(t: rt.ScalarType): ScalarType = t match {

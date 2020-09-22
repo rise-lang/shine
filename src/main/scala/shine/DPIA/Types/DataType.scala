@@ -2,7 +2,7 @@ package shine.DPIA.Types
 
 import arithexpr.arithmetic.{ArithExpr, BigSum}
 import shine.DPIA
-import shine.DPIA.Nat
+import shine.DPIA.{Nat, NatIdentifier}
 
 sealed trait DataType
 
@@ -45,6 +45,12 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
 {
   override def toString: String = s"$size.$elemFType"
 }
+
+final case class DepPairType(x:NatIdentifier, elemT:DataType)
+  extends ComposedType {
+  override def toString: String = s"($x:nat ** ${elemT}"
+}
+
 
 final case class PairType(fst: DataType, snd: DataType) extends ComposedType {
   override def toString: String = s"($fst x $snd)"
@@ -128,6 +134,7 @@ object DataType {
   def getTotalNumberOfElements(dt: DataType): Nat = dt match {
     case _: BasicType => 1
     case _: PairType => 1
+    case _: DepPairType => 1
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
@@ -144,6 +151,7 @@ object DataType {
   def getSize(dt: DataType): Nat = dt match {
     case _: IndexType | _: ScalarType => 1
     case _: PairType => 1 // TODO: is this correct?
+    case _: DepPairType => 1
     case VectorType(size, _) => size
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
@@ -162,6 +170,7 @@ object DataType {
   def getBaseDataType(dt: DataType): DataType = dt match {
     case _: BasicType => dt
     case _: PairType => dt
+    case _: DepPairType => dt
     case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>

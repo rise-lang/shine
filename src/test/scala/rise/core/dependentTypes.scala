@@ -38,6 +38,16 @@ class dependentTypes extends test_util.Tests {
     print(inferred.t)
   }
 
+  test("GEN: Dependent pair match") {
+    val e = fun(n2dPairT(n => n`.`f32))(pair =>
+      dmatch(pair)(nFun(n => fun(x => dpair(n)(x))))
+    )
+    val inferred: Expr = TDSL.inferDependent(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
+
   test("Dependent pair match with reduction") {
     val e = fun(n2dPairT(n => n`.`f32))(pair =>
       dmatch(pair)(nFun(_ => fun(xs =>

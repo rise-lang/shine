@@ -537,6 +537,15 @@ private class InferAccessAnnotation {
           case _ => error(s"did not expect t")
         }
         buildType(p.t)
+
+      case rp.DMatch() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case _ =>
+            println(t)
+            ???
+          //case _ => error(s"did not expect t")
+        }
+        buildType(p.t)
     }
 
     checkConsistency(p.t, primitiveType)
