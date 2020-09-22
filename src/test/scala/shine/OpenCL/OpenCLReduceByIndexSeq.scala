@@ -35,8 +35,8 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
 
   test("Reduce By Index Seq Test") {
 
-    val reduceHistos = implN(n => implN(numBins => fun(histosT(n, numBins))(histos =>
-      histos |> // n.numBins.int
+    val reduceHists = implN(n => implN(numBins => fun(histosT(n, numBins))(hists =>
+      hists |> // n.numBins.int
         oclReduceSeq(rise.core.types.AddressSpace.Global)(
           fun(acc_histo => // numBins.int
             fun(cur_histo => // numBins.int
@@ -46,15 +46,15 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
           )
         )(
           generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-            mapSeq(id) //numBins.int
+            mapGlobal(id) //numBins.int
         ) |>
-        mapSeq(id)
+        mapGlobal(id)
     )))
 
     val reduceByIndexSeqTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
       zip(is)(xs) |>
       split(50) |>
-      mapGlobal(
+      mapLocal(
         oclReduceByIndexSeq(rise.core.types.AddressSpace.Global)(add)(
           generate(fun(IndexType(k))(_ => l(0))) |>
             mapSeq(id)
@@ -62,7 +62,7 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
         mapSeq(id)
       ) |>
       toGlobal |>
-      reduceHistos
+      reduceHists
     ))))
 
     val output = runKernel(reduceByIndexSeqTest)(LocalSize(50), GlobalSize(50))(n, k, indices, values)

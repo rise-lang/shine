@@ -43,20 +43,20 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
   test("Reduce By Index Local Test (Multiple Histograms, Int)") {
 
-    val reduceHistos = implN(n => implN(numBins => fun(histosT(n, numBins))(histos =>
-      histos |> // n.numBins.int
+    val reduceHists = implN(n => implN(numBins => fun(histosT(n, numBins))(hists =>
+      hists |> // n.numBins.int
         oclReduceSeq(rise.core.types.AddressSpace.Global)(
           fun(acc_histo => // numBins.int
             fun(cur_histo => // numBins.int
               zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapLocal(fun(x => fst(x) + snd(x)))
+                mapGlobal(fun(x => fst(x) + snd(x)))
             )
           )
         )(
           generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-            mapLocal(id) //numBins.int
+            mapGlobal(id) //numBins.int
         ) |>
-        mapLocal(id)
+        mapGlobal(id)
     )))
 
     val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
@@ -70,7 +70,7 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
           mapLocal(id)
         ) |>
         toGlobal |>
-        reduceHistos
+        reduceHists
     ))))
 
     val output = runKernel(reduceByIndexLocalTest)(LocalSize(50), GlobalSize(1000))(n, k, indices, values)
@@ -90,20 +90,20 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
     //TODO: Add address space parameter to AtomicBinOp for float case
 
-    val reduceHistos = implN(n => implN(numBins => fun(f_histosT(n, numBins))(histos =>
-      histos |> // n.numBins.int
+    val reduceHists = implN(n => implN(numBins => fun(f_histosT(n, numBins))(hists =>
+      hists |> // n.numBins.int
         oclReduceSeq(rise.core.types.AddressSpace.Global)(
           fun(acc_histo => // numBins.int
             fun(cur_histo => // numBins.int
               zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapLocal(fun(x => fst(x) + snd(x)))
+                mapGlobal(fun(x => fst(x) + snd(x)))
             )
           )
         )(
           generate(fun(IndexType(numBins))(_ => l(0.0f))) |> // numBins.int
-            mapLocal(id) //numBins.int
+            mapGlobal(id) //numBins.int
         ) |>
-        mapLocal(id)
+        mapGlobal(id)
     )))
 
     val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(f_xsT(n))(xs =>
@@ -117,7 +117,7 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
             mapLocal(id)
         ) |>
         toGlobal |>
-        reduceHistos
+        reduceHists
     ))))
 
     val output = runKernel(reduceByIndexLocalTest)(LocalSize(50), GlobalSize(1000))(n, k, indices, f_values)

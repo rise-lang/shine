@@ -55,8 +55,8 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
 
   test("OpenCL Segmented Reduce Test") {
 
-    val reduceHistos = implN(n => implN(k => fun(histosT(n, k))(histos =>
-      histos |> // n.numBins.int
+    val reduceHists = implN(n => implN(numBins => fun(histosT(n, numBins))(hists =>
+      hists |> // n.numBins.int
         oclReduceSeq(rise.core.types.AddressSpace.Global)(
           fun(acc_histo => // numBins.int
             fun(cur_histo => // numBins.int
@@ -65,10 +65,10 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
             )
           )
         )(
-          generate(fun(IndexType(k))(_ => l(0))) |> // numBins.int
-            mapSeq(id) //numBins.int
+          generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
+            mapGlobal(id) //numBins.int
         ) |>
-        mapSeq(id)
+        mapGlobal(id)
     )))
 
     val oclSegmentedReduceTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
@@ -81,7 +81,7 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
           ) >> mapLocal(id)
         ) |>
         toGlobal |>
-        reduceHistos
+        reduceHists
     ))))
 
     val output = runKernel(oclSegmentedReduceTest)(LocalSize(32), GlobalSize(256))(n, k, indices, values)
