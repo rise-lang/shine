@@ -6,102 +6,152 @@ import scala.language.experimental.macros
 
 // scalastyle:off indentation
 object Primitive {
+  val verbose = true
 
   // noinspection ScalaUnusedSymbol
   @compileTimeOnly("primitive macro")
   class primitive extends StaticAnnotation {
-    def macroTransform(annottees: Any*): Any = macro Impl.primitive
+    def macroTransform(annottees: Any*): Any = macro PrimitiveImpl.prim
   }
 
-  // noinspection ScalaUnusedSymbol
-  class Impl(val c: blackbox.Context) {
-
-    import c.universe.Flag._
+  class PrimitiveImpl(val c: blackbox.Context) {
     import c.universe._
 
-    def primitive(annottees: c.Expr[Any]*): c.Expr[Any] = {
+    def prim(annottees: c.Expr[Any]*): c.Expr[Any] = {
       annottees.map(_.tree) match {
+        case (mdef: ModuleDef) :: Nil =>
+          c.Expr(fromModuleDef(mdef))
         case (cdef: ClassDef) :: Nil =>
           c.Expr(fromClassDef(cdef))
-        case (cdef: ClassDef) :: (md: ModuleDef) :: Nil =>
-          c.Expr(q"{${fromClassDef(cdef)}; $md}")
-        case _ => c.abort(c.enclosingPosition, "expected a class definition")
+        case _ => c.abort(c.enclosingPosition,
+          "expected an object or class definition")
       }
     }
 
-    def makeStringName(s: String): String =
-      Character.toLowerCase(s.charAt(0)) + s.substring(1)
-
-    def makeArgs(p: Seq[Tree]): Seq[TermName] =
-      p.map({
-          case q"$_ val $n: $_ "     => n
-          case q"$_ val $n: $_ = $_" => n
-          case x =>
-            c.abort(c.enclosingPosition, s"expected a parameter, but got $x")
-        })
-        .asInstanceOf[Seq[TermName]]
-
-    def makeChain(a: TermName, props: Seq[TermName]): Tree =
-      if (props.isEmpty) {
-        q"true"
-      } else {
-        q"($a.${props.head} == ${props.head}) && ${makeChain(a, props.tail)}"
-      }
-
-    def fromClassDef: ClassDef => ClassDef = {
-      case q"case class $name(..$params)(..$_) extends $_ {..$body} " =>
-        val r = q"""
-            case class $name(..$params)(override val t: Type = TypePlaceholder)
-              extends Primitive {
-              override def equals(obj: Any) = obj match {
-                case ${TermName("p")} : ${name.asInstanceOf[c.TypeName]} =>
-                  ${makeChain(
-          TermName("p"),
-          makeArgs(params.asInstanceOf[Seq[Tree]])
-        )} && (${TermName("p")}.t =~= t)
-                case _ => false
-              }
-              override val name: String = ${Literal(
-          Constant(makeStringName(name.toString()))
-        )}
-              override def setType(t: Type): $name =
-                ${name.asInstanceOf[c.TypeName].toTermName}(..${makeArgs(
-          params.asInstanceOf[Seq[Tree]]
-        )})(t)
-              ..$body
-            }
-         """.asInstanceOf[ClassDef]
-        // the Scala macro bug: https://github.com/scala/bug/issues/10589
-        // the workaround: https://stackoverflow.com/questions/52222122/
-        //                         workaround-for-scala-macro-annotation-bug
-        val noCaseAccessorForType = r match {
-          case ClassDef(
-              mods,
-              name,
-              tparams,
-              impl @ Template(parents, self, body)
-              ) =>
-            val newBody = body.map {
-              case ValDef(mods, name, tpt, rhs) if name.toString == "t" =>
-                val newMods = if (mods.hasFlag(CASEACCESSOR)) {
-                  mods
-                    .asInstanceOf[scala.reflect.internal.Trees#Modifiers]
-                    .&~(CASEACCESSOR.asInstanceOf[Long])
-                    .asInstanceOf[Modifiers]
-                } else {
-                  mods
-                }
-                ValDef(newMods, name, tpt, rhs)
-              case d => d
-            }
-            ClassDef(mods, name, tparams, Template(parents, self, newBody))
-          case _ => c.abort(c.enclosingPosition, "should be impossible")
-        }
-        // for debugging
-        // c.warning(c.enclosingPosition, s"generated\n$noCaseAccessorForType")
-        noCaseAccessorForType
+    def fromModuleDef: ModuleDef => Tree = {
+      case q"object ${name: TermName} extends Primitive with Builder { $typeScheme }" =>
+        makePrimitiveClassAndObject(name.toString, typeScheme)
       case _ =>
-        c.abort(c.enclosingPosition, "expected a case class extends Primitive")
+        c.abort(c.enclosingPosition, "expected a matching definition:\n" +
+          "object primitive extends Primitive with Builder { typeScheme }\n")
+    }
+
+    def fromClassDef: ClassDef => Tree = {
+      case q"case class ${name: TypeName}(..$params) extends Primitive with Builder { $typeScheme }" =>
+        makePrimitiveClass(name.toString, params, typeScheme)
+      case _ =>
+        c.abort(c.enclosingPosition, "expected a matching definition:\n" +
+          "case class primitive(params) extends Primitive with Builder { typeScheme }\n")
+    }
+
+    def makePrimitiveClassAndObject(name: String, typeScheme: Tree): Tree = {
+      val className = name + "_class"
+      val makeInstance = q"${TermName(className)}()"
+
+      val generated = q"""
+        final case class ${TypeName(className)}()
+          (override val t: rise.core.types.Type =
+              rise.core.types.TypePlaceholder) extends Primitive
+        {
+          override val name: String = $name
+          override def setType(ty: rise.core.types.Type): ${TypeName(className)} =
+            $makeInstance(ty)
+          override def typeScheme: rise.core.types.Type = $typeScheme
+
+          override def equals(obj: Any) = obj match {
+            case p: ${TypeName(className)} => ${TermName("p")}.t =~= t
+            case _ => false
+          }
+        }
+
+        object ${TermName{name}}  extends Builder {
+          override def primitive: ${TypeName(className)} = $makeInstance()
+          override def apply: rise.core.TypedDSL.TDSL[${TypeName(className)}] =
+            rise.core.TypedDSL.toTDSL($makeInstance())
+          override def unapply(arg: rise.core.Expr): Boolean = arg match {
+            case _: ${TypeName(className)} => true
+            case _ => false
+          }
+        }
+        """
+      if (verbose) {
+        c.info(c.enclosingPosition,
+          s"generated `${name.toString}'\n$generated", force = false)
+      }
+      generated
+    }
+
+    def makePrimitiveClass(name: String,
+                           params: List[ValDef],
+                           typeScheme: Tree): Tree = {
+      val className = name + "_class"
+      val makeInstance = q"${TermName(className)}(..${getArgs(params)})"
+
+      val generated = q"""
+        final case class ${TypeName(className)}(..$params)
+            (override val t: rise.core.types.Type =
+                rise.core.types.TypePlaceholder) extends Primitive
+        {
+          override val name: String = $name
+          override def setType(ty: rise.core.types.Type): ${TypeName(className)} =
+            $makeInstance(ty)
+          override def typeScheme: rise.core.types.Type = $typeScheme
+
+          override def equals(obj: Any) = obj match {
+            case other: ${TypeName(className)} =>
+              ${makeComparisonChain(TermName("other"), getArgs(params))} &&
+              (${TermName("other")}.t =~= t)
+            case _ => false
+          }
+        }
+
+        final case class ${TypeName(name)}(..$params) extends Builder {
+          override def primitive: ${TypeName(className)} = $makeInstance()
+          override def apply: rise.core.TypedDSL.TDSL[${TypeName(className)}] =
+            rise.core.TypedDSL.toTDSL($makeInstance())
+        }
+
+        object ${TermName(name)} {
+          def unapply(arg: rise.core.Expr): Option[..${getTypes(params)}] = arg match {
+            case p: ${TypeName(className)} =>
+              Some(..${makeMemberAccess(TermName("p"), getArgs(params))})
+            case _ => None
+          }
+        }
+        """
+      if (verbose) {
+        c.info(c.enclosingPosition,
+          s"generated `${name.toString}'\n$generated", force = false)
+      }
+      generated
+    }
+
+    def getArgs(p: List[ValDef]): Seq[TermName] =
+      p.map({
+        case ValDef(_, tn, _, _) => tn
+      })
+
+    def getTypes(p: List[ValDef]): Seq[Tree] =
+      p.map({
+        case ValDef(_, _, ty, _) => ty
+      })
+
+    def makeComparisonChain(other: TermName, props: Seq[TermName]): Tree = {
+      props match {
+        case Seq() => q"true"
+        case Seq(head, tail @ _*) =>
+          q"($other.$head == $head) && ${
+            makeComparisonChain(other, tail)}"
+      }
+    }
+
+    def makeMemberAccess(a: TermName, props: Seq[TermName]): Seq[Tree] = {
+      props match {
+        case Seq()      => Seq(q"")
+        case Seq(prop)  => Seq(q"$a.$prop")
+        case Seq(head, tail @ _*) =>
+          q"$a.$head" +: makeMemberAccess(a, tail)
+      }
     }
   }
 }

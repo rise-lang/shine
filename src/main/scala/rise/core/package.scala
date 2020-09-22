@@ -2,6 +2,8 @@ package rise
 
 import rise.core.types._
 
+import scala.language.implicitConversions
+
 package object core {
   object freshName {
     private var counter = 0
@@ -40,4 +42,8 @@ package object core {
       case p: Primitive        => p.toString
     }
   }
+
+  implicit def primitiveBuilderToPrimitive(pb: Builder
+                                          ): TypedDSL.TDSL[Primitive] =
+    pb.apply
 }

@@ -15,6 +15,7 @@ import rise.elevate.strategies.algorithmic._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.alternative._
 import rise.elevate.util.makeClosed
+import rise.core.primitives._
 
 class separableConvolution2DRewrite extends test_util.Tests {
   private val idE: Expr = fun(x => x)
@@ -24,8 +25,8 @@ class separableConvolution2DRewrite extends test_util.Tests {
   private val weightsV = binomialWeightsV
   private val weightsH = binomialWeightsH
 
-  private val * = map
-  private val T = transpose
+  private val * : TDSL[Rise] = map
+  private val T: TDSL[Rise] = transpose
   private val P = toTDSL(padClamp2D(1))
   private val Sh = slide(3)(1)
   private val Sv = slide(3)(1)

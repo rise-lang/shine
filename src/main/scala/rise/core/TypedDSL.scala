@@ -119,13 +119,13 @@ object TypedDSL {
           case (ts, ns, as, n2ds, n2ns, natColls) =>
             ftv match {
               case i: TypeIdentifier =>
-                (ts ++ Map(i -> implT(identity)), ns, as, n2ds, n2ns, natColls)
+                (ts ++ Map(i -> implType(identity)), ns, as, n2ds, n2ns, natColls)
               case i: DataTypeIdentifier =>
                 (ts ++ Map(i -> implDT(identity)), ns, as, n2ds, n2ns,  natColls)
               case i: NatIdentifier =>
-                (ts, ns ++ Map(i -> implN(identity)), as, n2ds, n2ns,  natColls)
+                (ts, ns ++ Map(i -> implNat(identity)), as, n2ds, n2ns,  natColls)
               case i: AddressSpaceIdentifier =>
-                (ts, ns, as ++ Map(i -> implA(identity)), n2ds, n2ns,  natColls)
+                (ts, ns, as ++ Map(i -> implAddr(identity)), n2ds, n2ns,  natColls)
               case i: NatToDataIdentifier =>
                 (ts, ns, as, n2ds ++ Map(i -> implN2DT(identity)), n2ns,  natColls)
               case i: NatToNatIdentifier =>
@@ -397,7 +397,7 @@ object TypedDSL {
           constraints += constraint
           (DepApp(tf, x)(exprT), ftvSubsF)
 
-        case Annotation(e, t) =>
+        case TypeAnnotation(e, t) =>
           val (te, ftvSubsE) = constrained(e)
           val ftvSubsT = Opaque.getFTVSubs(t)
           val constraint = TypeConstraint(te.t, Opaque.freeze(ftvSubsT, t))
@@ -446,54 +446,7 @@ object TypedDSL {
     f >>= (f => toTDSL(DepApp[K](f, x)()))
   def literal(d: semantics.Data): TDSL[Literal] = toTDSL(Literal(d))
 
-  def array(n: Int): TDSL[MakeArray] = toTDSL(primitives.MakeArray(n)())
-  def cast: TDSL[Cast] = toTDSL(primitives.Cast()())
-  def depJoin: TDSL[DepJoin] = toTDSL(primitives.DepJoin()())
-  def depMapSeq: TDSL[DepMapSeq] = toTDSL(primitives.DepMapSeq()())
-  def depZip: TDSL[DepZip] = toTDSL(primitives.DepZip()())
-  def drop: TDSL[Drop] = toTDSL(primitives.Drop()())
-  def fst: TDSL[Fst] = toTDSL(primitives.Fst()())
-  def gather: TDSL[Gather] = toTDSL(primitives.Gather()())
-  def generate: TDSL[Generate] = toTDSL(primitives.Generate()())
-  def idx: TDSL[Idx] = toTDSL(primitives.Idx()())
-  def id: TDSL[Id] = toTDSL(primitives.Id()())
-  def indexAsNat: TDSL[IndexAsNat] = toTDSL(primitives.IndexAsNat()())
-  def iterate: TDSL[Iterate] = toTDSL(primitives.Iterate()())
-  def join: TDSL[Join] = toTDSL(primitives.Join()())
-  def let: TDSL[Let] = toTDSL(primitives.Let()())
-  def letf: TDSL[Expr] = fun(k => fun(x => let(x)(k)))
-  def map: TDSL[Map] = toTDSL(primitives.Map()())
-  def mapFst: TDSL[MapFst] = toTDSL(primitives.MapFst()())
-  def mapSnd: TDSL[MapSnd] = toTDSL(primitives.MapSnd()())
-  def mapSeq: TDSL[MapSeq] = toTDSL(primitives.MapSeq()())
-  def mapSeqUnroll: TDSL[MapSeqUnroll] = toTDSL(primitives.MapSeqUnroll()())
-  def natAsIndex: TDSL[NatAsIndex] = toTDSL(primitives.NatAsIndex()())
-  def padCst: TDSL[PadCst] = toTDSL(primitives.PadCst()())
-  def padEmpty: TDSL[PadEmpty] = toTDSL(primitives.PadEmpty()())
-  def padClamp: TDSL[PadClamp] = toTDSL(primitives.PadClamp()())
-  def partition: TDSL[Partition] = toTDSL(primitives.Partition()())
-  def pair: TDSL[Pair] = toTDSL(primitives.Pair()())
-  def reduce: TDSL[Reduce] = toTDSL(primitives.Reduce()())
-  def reduceSeq: TDSL[ReduceSeq] = toTDSL(primitives.ReduceSeq()())
-  def reduceSeqUnroll: TDSL[ReduceSeqUnroll] =
-    toTDSL(primitives.ReduceSeqUnroll()())
-  def reorder: TDSL[Reorder] = toTDSL(primitives.Reorder()())
-  def scanSeq: TDSL[ScanSeq] = toTDSL(primitives.ScanSeq()())
-  def slide: TDSL[Slide] = toTDSL(primitives.Slide()())
-  def circularBuffer: TDSL[CircularBuffer] =
-    toTDSL(primitives.CircularBuffer()())
-  def rotateValues: TDSL[RotateValues] =
-    toTDSL(primitives.RotateValues()())
-  def snd: TDSL[Snd] = toTDSL(primitives.Snd()())
-  def split: TDSL[Split] = toTDSL(primitives.Split()())
-  def take: TDSL[Take] = toTDSL(primitives.Take()())
-  def toMem: TDSL[ToMem] = toTDSL(primitives.ToMem()())
-  def transpose: TDSL[Transpose] = toTDSL(primitives.Transpose()())
-  def select: TDSL[Select] = toTDSL(primitives.Select()())
-  def unzip: TDSL[Unzip] = toTDSL(primitives.Unzip()())
-  def zip: TDSL[Zip] = toTDSL(primitives.Zip()())
-  def dpair: TDSL[DPair] = toTDSL(primitives.DPair()())
-  def dmatch: TDSL[DMatch] = toTDSL(primitives.DMatch()())
+  def array(n: Int): TDSL[Primitive] = primitives.makeArray(n).apply
   def store(cont: TDSL[Expr] => TDSL[Expr]): TDSL[Expr] =
     fun(e => let(toMem(e))(fun(cont)))
   def store(how: TDSL[Expr])
@@ -501,25 +454,6 @@ object TypedDSL {
     fun(e => let(toMem(how(e)))(fun(in)))
   def store2(how: TDSL[Expr]): TDSL[Expr] =
     fun(e => let(toMem(how(e)))(fun(x => x)))
-  def neg: TDSL[Neg] = toTDSL(primitives.Neg()())
-  def add: TDSL[Add] = toTDSL(primitives.Add()())
-  def sub: TDSL[Sub] = toTDSL(primitives.Sub()())
-  def mul: TDSL[Mul] = toTDSL(primitives.Mul()())
-  def div: TDSL[Div] = toTDSL(primitives.Div()())
-  def mod: TDSL[Mod] = toTDSL(primitives.Mod()())
-  def gt: TDSL[Gt] = toTDSL(primitives.Gt()())
-  def lt: TDSL[Lt] = toTDSL(primitives.Lt()())
-  def equal: TDSL[Equal] = toTDSL(primitives.Equal()())
-
-  def asVector: TDSL[AsVector] = toTDSL(primitives.AsVector()())
-  def asVectorAligned: TDSL[AsVectorAligned] =
-    toTDSL(primitives.AsVectorAligned()())
-  def asScalar: TDSL[AsScalar] = toTDSL(primitives.AsScalar()())
-  def vectorFromScalar: TDSL[VectorFromScalar] =
-    toTDSL(primitives.VectorFromScalar()())
-
-  def printType(msg: String): TDSL[PrintType] = toTDSL(PrintType(msg)())
-  def typeHole(msg: String): TDSL[TypeHole] = toTDSL(TypeHole(msg)())
 
   implicit class Ops(lhs: TDSL[Expr]) {
 
@@ -556,9 +490,9 @@ object TypedDSL {
     def `:`[T <: Expr](e: TDSL[T]): TDSL[T] = e :: t
   }
    */
-  implicit class TypeAnnotation(t: Type) {
+  implicit class TypeAnnotationHelper(t: Type) {
     def ::[T <: Expr](e: TDSL[T]): TDSL[Expr] =
-      e >>= (e => toTDSL(Annotation(e, t)))
+      e >>= (e => toTDSL(TypeAnnotation(e, t)))
     def `:`[T <: Expr](e: TDSL[T]): TDSL[Expr] = e :: t
   }
 
@@ -609,12 +543,24 @@ object TypedDSL {
     def $(e: TDSL[Expr]): TDSL[App] = f.apply(e)
   }
 
+  implicit class FunPipeReversePrimitiveBuilde(f: Builder) {
+    def $(e: TDSL[Expr]): TDSL[App] = f.apply(e)
+  }
+
   implicit class FunComp(f: TDSL[Expr]) {
     def >>(g: TDSL[Expr]): TDSL[Lambda] = fun(x => g(f(x)))
   }
 
+  implicit class FunCompPrimitiveBuilder(f: Builder) {
+    def >>(g: TDSL[Expr]): TDSL[Lambda] = fun(x => g(f.apply(x)))
+  }
+
   implicit class FunCompReverse(f: TDSL[Expr]) {
     def o(g: TDSL[Expr]): TDSL[Lambda] = fun(x => f(g(x)))
+  }
+
+  implicit class FunCompReversePrimitiveBuilder(f: Builder) {
+    def o(g: TDSL[Expr]): TDSL[Lambda] = fun(x => f.apply(g(x)))
   }
 
   // function values
@@ -850,6 +796,15 @@ object TypedDSL {
     ): TDSL[DepLambda[DataKind]] = {
       val x = DataTypeIdentifier(freshName("dt"), isExplicit = true)
       depLambda[DataKind](x, f(x))
+    }
+  }
+
+  object letf {
+    def apply(in: TDSL[Expr] => TDSL[Expr]): TDSL[Expr] = {
+      fun(e => primitives.let(e)(fun(in)))
+    }
+    def apply(in: TDSL[Expr]): TDSL[Expr] = {
+      fun(e => primitives.let(e)(in))
     }
   }
 

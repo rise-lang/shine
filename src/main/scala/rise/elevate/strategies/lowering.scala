@@ -6,6 +6,7 @@ import elevate.core.strategies.traversal.tryAll
 import rise.elevate.Rise
 import rise.core.TypedDSL._
 import rise.core._
+import rise.core.primitives.{let, toMem}
 
 object lowering {
 

@@ -14,7 +14,7 @@ object sgemm {
   // we can use implicit type parameters and type annotations to specify the function type of mult
   val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))
   val add   = fun(x => fun(y => x + y))
-  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32)))
+  val scal  = implNat(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32)))
   val dot = fun(x => foreignFun("dot", vec(4, f32) ->: vec(4, f32) ->: f32)(x._1, x._2))
   def id: Expr = fun(x => x)
 
@@ -56,7 +56,7 @@ object sgemm {
     val p3: Nat = 4
     val vw: Nat = 4
 
-    val write_zeros = implN(n => implN(m =>
+    val write_zeros = implNat(n => implNat(m =>
       generate(fun(IndexType(m))(_ => generate(fun(IndexType(n))(_ => l(0.0f)))))
       |> mapSeq(mapSeq(id))))
 
@@ -112,7 +112,7 @@ object sgemm {
           generate(fun(IndexType(n2))(_ =>
             generate(fun(IndexType(n1))(_ => l(0.0f)))))))))))))
 
-    def tile2: Expr = nFun(s1 => nFun(s2 => implN(n1 => implN(n2 => fun(ArrayType(n1, ArrayType(n2, f32)))(x =>
+    def tile2: Expr = nFun(s1 => nFun(s2 => implNat(n1 => implNat(n2 => fun(ArrayType(n1, ArrayType(n2, f32)))(x =>
       transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  )))))
 
     def redOp: Expr = fun((8`.`32`.`8`.`4`.`f32) ->: ( (8`.`64`.`f32) x (8`.`128`.`f32) ) ->: (8`.`32`.`8`.`4`.`f32) )((p14, p15) =>

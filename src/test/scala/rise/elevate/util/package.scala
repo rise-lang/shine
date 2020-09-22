@@ -50,9 +50,9 @@ package object util {
   }
 
   // notation
-  def T: TDSL[Transpose] = transpose
+  def T: TDSL[Rise] = transpose
   def S: TDSL[DepApp[NatKind]] = split(tileSize) //slide(3)(1)
-  def J: TDSL[Join] = join
+  def J: TDSL[Rise] = join
   def *(x: TDSL[Rise]): TDSL[App] = map(x)
   def **(x: TDSL[Rise]): TDSL[App] = map(map(x))
   def ***(x: TDSL[Rise]): TDSL[App] = map(map(map(x)))

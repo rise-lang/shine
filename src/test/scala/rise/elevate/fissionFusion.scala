@@ -5,6 +5,7 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal.{position, topDown}
 import rise.elevate.util._
 import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core._
 import rise.elevate.rules.algorithmic.{mapFusion, mapLastFission}
 import rise.elevate.rules.traversal.default._

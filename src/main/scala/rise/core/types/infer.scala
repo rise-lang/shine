@@ -3,7 +3,7 @@ package rise.core.types
 import rise.core._
 import rise.core.types.InferenceException.error
 import rise.core.TypeLevelDSL._
-import rise.core.primitives.Annotation
+import rise.core.TypeAnnotation
 
 import scala.collection.mutable
 
@@ -99,7 +99,7 @@ object infer {
         constraints += constraint
         DepApp(tf, x)(exprT)
 
-      case Annotation(e, t) =>
+      case TypeAnnotation(e, t) =>
         val te = typed(e)
         val constraint = TypeConstraint(te.t, t)
         constraints += constraint
@@ -118,11 +118,11 @@ object infer {
       new traversal.Visitor {
         override def visitExpr(e: Expr): traversal.Result[Expr] = {
           e match {
-            case h: primitives.TypeHole =>
-              println(s"found type hole ${h.msg}: ${h.t}")
+            case h@primitives.typeHole(msg) =>
+              println(s"found type hole ${msg}: ${h.t}")
               holeFound = true
-            case p: primitives.PrintType =>
-              println(s"${p.msg} : ${p.t} (Lift level)")
+            case p@primitives.printType(msg) =>
+              println(s"${msg} : ${p.t} (Lift level)")
             case _ =>
           }
           traversal.Continue(e, this)

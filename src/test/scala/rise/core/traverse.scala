@@ -1,16 +1,15 @@
 package rise.core
 
-import rise.core.types._
-import rise.core.primitives._
-import rise.core.traversal._
 import rise.core.DSL._
+import rise.core.traversal._
+import rise.core.types._
 
 import scala.collection.mutable
 
 class traverse extends test_util.Tests {
   val e: DepLambda[NatKind] = nFun(h =>
     nFun(w =>
-      fun(ArrayType(h, ArrayType(w, f32)))(input => map(map(fun(x => x)))(input)
+      fun(ArrayType(h, ArrayType(w, f32)))(input => DSL.map(DSL.map(fun(x => x)))(input)
       )
     )
   )
@@ -47,10 +46,10 @@ class traverse extends test_util.Tests {
         { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
         { case _: App                                    => () },
         { case _: App                                    => () },
-        { case _: Map                                    => () },
+        { case primitives.map()                          => () },
         { case TypePlaceholder                           => () },
         { case _: App                                    => () },
-        { case _: Map                                    => () },
+        { case primitives.map()                          => () },
         { case TypePlaceholder                           => () },
         { case _: Lambda                                 => () },
         { case _: Identifier                             => () },
@@ -101,7 +100,7 @@ class traverse extends test_util.Tests {
     class Visitor extends TraceVisitor(trace) {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
-          case App(App(Map(), _), e) =>
+          case App(App(primitives.map(), _), e) =>
             val r = app(fun(x => x), e)
             println(r)
             Stop(r)
@@ -135,14 +134,14 @@ class traverse extends test_util.Tests {
   test("traverse an expression depth-first with global stop") {
     val e = nFun(n =>
       fun(ArrayType(n, f32))(input =>
-        input |> map(fun(x => x)) |> map(fun(x => x))
+        input |> DSL.map(fun(x => x)) |> DSL.map(fun(x => x))
       )
     )
 
     class Visitor extends traversal.Visitor {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
-          case App(Map(), f) =>
+          case App(primitives.map(), f) =>
             println(f)
             Stop(f)
           case _ => Continue(expr, this)
@@ -158,7 +157,7 @@ class traverse extends test_util.Tests {
         val expected = nFun(n =>
           fun(ArrayType(n, f32))(input => {
             val x = identifier(freshName("x"))
-            app(lambda(x, x), input |> map(fun(x => x)))
+            app(lambda(x, x), input |> DSL.map(fun(x => x)))
           })
         )
         assert(r == expected)

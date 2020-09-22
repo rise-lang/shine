@@ -17,7 +17,7 @@ class showRise extends test_util.Tests {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
-    }))(l(0.0f))(zip(join(elem))(weights))
+    }))(l(0.0f))(DSL.zip(DSL.join(elem))(weights))
   )
 
   private val blurXTiled2D: Expr = nFun(n =>
@@ -39,8 +39,8 @@ class showRise extends test_util.Tests {
 
   test("show blurXTiled2D as an example") {
     val probe: Expr => Boolean = {
-      case _: PadClamp => true
-      case _           => false
+      case padClamp() => true
+      case _          => false
     }
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, defaultUnicodeConfig)
@@ -59,7 +59,7 @@ class showRise extends test_util.Tests {
           block(s"Λ${x.name}:${dl.kindName}", drawASTSimp(e))
         case DepApp(f, x)     => line(x.toString) <+: drawASTSimp(f)
         case Literal(d)       => line(d.toString)
-        case Annotation(e, _) => drawASTSimp(e)
+        case TypeAnnotation(e, _) => drawASTSimp(e)
         case p: Primitive     => line(p.name)
       }
     }
@@ -97,7 +97,7 @@ class showRise extends test_util.Tests {
 
         case Literal(d) => d.toString
 
-        case Annotation(e, _) => lessBrackets(e, wrapped)
+        case TypeAnnotation(e, _) => lessBrackets(e, wrapped)
 
         case p: Primitive => p.name
       }
