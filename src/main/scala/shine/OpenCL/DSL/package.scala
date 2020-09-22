@@ -57,11 +57,11 @@ package object DSL {
     def apply(local: Boolean = true, global: Boolean = true) = Barrier(local, global)
   }
 
-  object atomicBinOp {
+  object atomicBinOpAssign {
     def apply(dt: DataType,
               f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
               dst: Phrase[AccType],
               src: Phrase[ExpType]) =
-      AtomicBinOp(dt, f, dst, src)
+      AtomicBinOpAssign(dt, f, dst, src)
   }
 }

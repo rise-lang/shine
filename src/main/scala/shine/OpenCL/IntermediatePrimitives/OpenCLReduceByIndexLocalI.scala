@@ -34,7 +34,7 @@ object OpenCLReduceByIndexLocalI {
           `new`(histAddrSpace)(ArrayType(n, dt), acc_fix =>
             ParForLocal(0)(n, dt, acc_fix.wr,
               λ(expT(idx(n), read))(j => λ(accT(dt))(a =>
-                atomicBinOp(dt, f,
+                atomicBinOpAssign(dt, f,
                   adj.accF(accumulator.wr) `@` fst(input `@` j),
                   snd(input `@` j))
               )))

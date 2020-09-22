@@ -7,10 +7,10 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class AtomicBinOp(dt: DataType,
-                             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
-                             dst: Phrase[AccType],
-                             src: Phrase[ExpType])
+final case class AtomicBinOpAssign(dt: DataType,
+                                   f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
+                                   dst: Phrase[AccType],
+                                   src: Phrase[ExpType])
   extends CommandPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: accT(dt) ->: comm
@@ -22,7 +22,7 @@ final case class AtomicBinOp(dt: DataType,
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    AtomicBinOp(fun.data(dt), VisitAndRebuild(f, fun), VisitAndRebuild(dst, fun), VisitAndRebuild(src, fun))
+    AtomicBinOpAssign(fun.data(dt), VisitAndRebuild(f, fun), VisitAndRebuild(dst, fun), VisitAndRebuild(src, fun))
   }
 
   override def prettyPrint: String = s"atomic_${PrettyPhrasePrinter(f)}" +
