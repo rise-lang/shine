@@ -386,9 +386,9 @@ object movement {
           // todo implement recursively
           val reduceArgTransposed: TDSL[Rise] = inputT match {
             case ArrayType(_, ArrayType(_, ArrayType(_,ArrayType(_,_)))) =>
-              transpose.apply >> map(transpose.apply) >> map(map(transpose))
+              transpose o map(transpose) o map(map(transpose))
             case ArrayType(_, ArrayType(_, ArrayType(_,_))) =>
-              transpose.apply >> map(transpose)
+              transpose o map(transpose)
             case ArrayType(_, ArrayType(_,_)) => transpose
             case _ => ???
           }
