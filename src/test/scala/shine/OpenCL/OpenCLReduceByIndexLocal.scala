@@ -10,10 +10,10 @@ import util.gen
 class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
-  private def f_xsT(N: NatIdentifier) = ArrayType(N, f32)
+  private def xsfT(N: NatIdentifier) = ArrayType(N, f32)
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
-  private def histosT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
-  private def f_histosT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, f32))
+  private def histsT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
+  private def histsfT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, f32))
 
   private val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
@@ -44,12 +44,12 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
   test("Reduce By Index Local Test (Single Histogram, Int)") {
 
     val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-      zip(is)(xs) |>
+      zip(is)(xs) |> // n.(idx(k) x int)
         oclReduceByIndexLocal(rise.core.types.AddressSpace.Local)(add)(
           generate(fun(IndexType(k))(_ => l(0))) |>
-            mapLocal(id)
+            mapLocal(id) // k.int
         ) |>
-        mapLocal(id)
+        mapLocal(id) // k.int
     ))))
 
     val output = runKernel(reduceByIndexLocalTest)(LocalSize(1000), GlobalSize(1000))(n, k, indices, values)
@@ -67,13 +67,13 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
   test("Reduce By Index Local Test (Single Histogram, Float)") {
 
-    val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(f_xsT(n))(xs =>
-      zip(is)(xs) |>
+    val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsfT(n))(xs =>
+      zip(is)(xs) |> // n.(idx(k) x float)
         oclReduceByIndexLocal(rise.core.types.AddressSpace.Local)(add)(
           generate(fun(IndexType(k))(_ => l(0.0f))) |>
-            mapLocal(id)
+            mapLocal(id) // k.int
         ) |>
-        mapLocal(id)
+        mapLocal(id) // k.int
     ))))
 
     val output = runKernel(reduceByIndexLocalTest)(LocalSize(1000), GlobalSize(1000))(n, k, indices, f_values)
@@ -91,34 +91,36 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
   test("Reduce By Index Local Test (Multiple Histograms, Int)") {
 
-    val reduceHists = implN(n => implN(numBins => fun(histosT(n, numBins))(hists =>
-      hists |> // n.numBins.int
+    val reduceHists = implN(m => implN(k => fun(histsT(m, k))(hists =>
+      hists |> // m.k.int
         oclReduceSeq(rise.core.types.AddressSpace.Local)(
-          fun(acc_histo => // numBins.int
-            fun(cur_histo => // numBins.int
-              zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapLocal(fun(x => fst(x) + snd(x)))
+          fun(acc_histo => // k.int
+            fun(cur_histo => // k.int
+              zip(acc_histo)(cur_histo) |> // k.(int x int)
+                mapLocal(fun(x => fst(x) + snd(x))) // (int x int)
             )
           )
         )(
-          generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-            mapLocal(id) //numBins.int
+          generate(fun(IndexType(k))(_ => l(0))) |>
+            mapLocal(id) // k.int
         ) |>
-        mapLocal(id)
+        mapLocal(id) // k.int
     )))
 
     val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-      zip(is)(xs) |>
-        split(50) |>
+      zip(is)(xs) |> // n.(idx(k) x int)
+        split(50) |> // n/50.50.(idx(k) x int)
         mapWorkGroup(
+          // 50.(idx(k) x int)
           oclReduceByIndexLocal(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
-              mapLocal(id)
+              mapLocal(id) // k.int
           ) >>
-          mapLocal(id)
+          mapLocal(id) // k.int
         ) |>
-        toGlobal |>
-        reduceHists
+        //TODO: toLocal doesn't work with mapWorkGroup
+        toGlobal |> // n/50.k.int
+        reduceHists // reduce all subhistograms
     ))))
 
     val output = runKernel(reduceByIndexLocalTest)(LocalSize(50), GlobalSize(1000))(n, k, indices, values)
@@ -136,36 +138,35 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
   test("Reduce By Index Local Test (Multiple Histograms, Float)") {
 
-    //TODO: Add address space parameter to AtomicBinOp for float case
-
-    val reduceHists = implN(n => implN(numBins => fun(f_histosT(n, numBins))(hists =>
-      hists |> // n.numBins.int
+    val reduceHists = implN(m => implN(k => fun(histsfT(m, k))(hists =>
+      hists |> // m.k.float
         oclReduceSeq(rise.core.types.AddressSpace.Local)(
-          fun(acc_histo => // numBins.int
-            fun(cur_histo => // numBins.int
-              zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapLocal(fun(x => fst(x) + snd(x)))
+          fun(acc_histo => // k.float
+            fun(cur_histo => // k.float
+              zip(acc_histo)(cur_histo) |> // k.(float x float)
+                mapLocal(fun(x => fst(x) + snd(x))) // (float x float)
             )
           )
         )(
-          generate(fun(IndexType(numBins))(_ => l(0.0f))) |> // numBins.int
-            mapLocal(id) //numBins.int
+          generate(fun(IndexType(k))(_ => l(0.0f))) |>
+            mapLocal(id) // k.float
         ) |>
-        mapLocal(id)
+        mapLocal(id) // k.float
     )))
 
-    val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(f_xsT(n))(xs =>
-      zip(is)(xs) |>
-        split(50) |>
+    val reduceByIndexLocalTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsfT(n))(xs =>
+      zip(is)(xs) |> // n.(idx(k) x float)
+        split(50) |> // n/50.50.(idx(k) x float)
         mapWorkGroup(
-          oclReduceByIndexLocal(rise.core.types.AddressSpace.Global)(add)(
+          // 50.(idx(k) x float)
+          oclReduceByIndexLocal(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0.0f))) |>
-              mapLocal(id)
+              mapLocal(id) // k.float
           ) >>
-            mapLocal(id)
+            mapLocal(id) // k.float
         ) |>
-        toGlobal |>
-        reduceHists
+        toGlobal |> // n/50.k.float
+        reduceHists // reduce all subhistograms
     ))))
 
     val output = runKernel(reduceByIndexLocalTest)(LocalSize(50), GlobalSize(1000))(n, k, indices, f_values)

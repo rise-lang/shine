@@ -11,7 +11,7 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
-  private def histosT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
+  private def histsT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
 
   private val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
@@ -35,34 +35,35 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
 
   test("Reduce By Index Seq Test") {
 
-    val reduceHists = implN(n => implN(numBins => fun(histosT(n, numBins))(hists =>
-      hists |> // n.numBins.int
+    val reduceHists = implN(m => implN(k => fun(histsT(m, k))(hists =>
+      hists |> // m.k.int
         oclReduceSeq(rise.core.types.AddressSpace.Local)(
-          fun(acc_histo => // numBins.int
-            fun(cur_histo => // numBins.int
-              zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapLocal(fun(x => fst(x) + snd(x)))
+          fun(acc_histo => // k.int
+            fun(cur_histo => // k.int
+              zip(acc_histo)(cur_histo) |> // k.(int x int)
+                mapLocal(fun(x => fst(x) + snd(x))) // (int x int)
             )
           )
         )(
-          generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-            mapLocal(id) //numBins.int
+          generate(fun(IndexType(k))(_ => l(0))) |>
+            mapLocal(id) // k.int
         ) |>
-        mapLocal(id)
+        mapLocal(id) // k.int
     )))
 
     val reduceByIndexSeqTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-      zip(is)(xs) |>
-      split(50) |>
+      zip(is)(xs) |> // n.(idx(k) x int)
+      split(50) |> // n/50.50.(idx(k) x int)
       mapLocal(
+        // 50.(idx(k) x int)
         oclReduceByIndexSeq(rise.core.types.AddressSpace.Global)(add)(
           generate(fun(IndexType(k))(_ => l(0))) |>
-            mapSeq(id)
+            mapSeq(id) // k.int
         ) >>
-        mapSeq(id)
+        mapSeq(id) // k.int
       ) |>
-      toGlobal |>
-      reduceHists
+      toLocal |> // n/50.k.int
+      reduceHists // reduce all subhistograms
     ))))
 
     val output = runKernel(reduceByIndexSeqTest)(LocalSize(50), GlobalSize(50))(n, k, indices, values)
