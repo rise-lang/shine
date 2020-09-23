@@ -1,7 +1,6 @@
 package shine.OpenCL.IntermediatePrimitives
 
-import arithexpr.arithmetic.ArithExpr.{intToCst, simplifyImplicitly}
-import arithexpr.arithmetic.Log
+import arithexpr.arithmetic.ArithExpr.intToCst
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}

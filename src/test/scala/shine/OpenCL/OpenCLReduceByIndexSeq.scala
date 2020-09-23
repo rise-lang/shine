@@ -2,7 +2,6 @@ package shine.OpenCL
 
 import rise.core.DSL._
 import rise.core.Expr
-import rise.core.TypeLevelDSL.implN
 import rise.core.types._
 import rise.openCL.DSL._
 import util.gen
@@ -35,7 +34,20 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
 
   test("Reduce By Index Seq Test") {
 
-    val reduceHists = implN(m => implN(k => fun(histsT(m, k))(hists =>
+    val reduceByIndexSeqTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
+      zip(is)(xs) |> // n.(idx(k) x int)
+      split(50) |> // n/50.50.(idx(k) x int)
+      mapLocal(
+        // 50.(idx(k) x int)
+        oclReduceByIndexSeq(rise.core.types.AddressSpace.Local)(add)(
+          generate(fun(IndexType(k))(_ => l(0))) |>
+            mapSeq(id) // k.int
+        ) >>
+        mapSeq(id) // k.int
+      )
+    )))) // n/50.k.int
+
+    val reduceHists = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
       hists |> // m.k.int
         oclReduceSeq(rise.core.types.AddressSpace.Local)(
           fun(acc_histo => // k.int
@@ -51,32 +63,29 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
         mapLocal(id) // k.int
     )))
 
-    val reduceByIndexSeqTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-      zip(is)(xs) |> // n.(idx(k) x int)
-      split(50) |> // n/50.50.(idx(k) x int)
-      mapLocal(
-        // 50.(idx(k) x int)
-        oclReduceByIndexSeq(rise.core.types.AddressSpace.Local)(add)(
-          generate(fun(IndexType(k))(_ => l(0))) |>
-            mapSeq(id) // k.int
-        ) >>
-        mapSeq(id) // k.int
-      ) |>
-      toLocal |> // n/50.k.int
-      reduceHists // reduce all subhistograms
-    ))))
+    val tempOutput = runKernel(reduceByIndexSeqTest)(LocalSize(50), GlobalSize(50))(n, k, indices, values)
 
-    val output = runKernel(reduceByIndexSeqTest)(LocalSize(50), GlobalSize(50))(n, k, indices, values)
+    val m = tempOutput.length
+    val threads = if (k > 1024) 1024 else k
 
+    print("\nReducing all subhistograms...")
+
+    val finalOutput = runSecondKernel(reduceHists)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
+
+    checkResult(finalOutput, result)
+  }
+
+  def checkResult[T](output: Array[T], expected: Array[T]): Unit = {
     println("\nResult: ")
     print(output.deep.mkString(" "))
 
     println("\nExpected: ")
     for(i <- 0 until k) {
-      print(result(i) + " ")
+      print(expected(i) + " ")
 
-      assert(output(i) == result(i))
+      assert(output(i) == expected(i))
     }
+    println("")
   }
 
   def runKernel(kernel: Expr)(
@@ -91,6 +100,20 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
       .OpenCLKernel(kernel)
       .as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Int]`)=>` Array[Int]]
     val (output, _) = runKernel(localSize, globalSize)(n `,` k `,` indices `,` values)
+    output
+  }
+
+  def runSecondKernel[T](kernel: Expr)(
+    localSize: LocalSize,
+    globalSize: GlobalSize)(
+                          m: Int,
+                          k: Int,
+                          input: Array[T]
+                        ): Array[T] = {
+    val runKernel = gen
+      .OpenCLKernel(kernel)
+      .as[ScalaFunction `(` Int `,` Int `,` Array[T]`)=>` Array[T]]
+    val (output, _) = runKernel(localSize, globalSize)(m `,` k `,` input)
     output
   }
 
