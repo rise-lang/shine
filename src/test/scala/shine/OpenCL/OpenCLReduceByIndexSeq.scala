@@ -56,7 +56,7 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
       split(50) |> // n/50.50.(idx(k) x int)
       mapLocal(
         // 50.(idx(k) x int)
-        oclReduceByIndexSeq(rise.core.types.AddressSpace.Global)(add)(
+        oclReduceByIndexSeq(rise.core.types.AddressSpace.Local)(add)(
           generate(fun(IndexType(k))(_ => l(0))) |>
             mapSeq(id) // k.int
         ) >>

@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType.idx
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.OpenCL
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
 import shine.OpenCL.ImperativePrimitives.ParForLocal
@@ -30,8 +31,9 @@ object OpenCLReduceByIndexLocalI {
           //TODO: The size of the accumulator must be equal to the number of loop iterations.
           //      However in this case you have iterate n times and write into an array with a size of k.
           //      Declaring a n-sized array and using it as the accumulator fixes this,
-          //      but probably isn't the best solution to this problem.
-          `new`(histAddrSpace)(ArrayType(n, dt), acc_fix =>
+          //      but this leads to additional allocated memory that is never used.
+          //      To fix this, you probably need to introduce a new parallel for primitive.
+          `new`(AddressSpace.Global)(ArrayType(n, dt), acc_fix =>
             ParForLocal(0)(n, dt, acc_fix.wr,
               λ(expT(idx(n), read))(j => λ(accT(dt))(a =>
                 atomicBinOpAssign(dt, histAddrSpace, f,
