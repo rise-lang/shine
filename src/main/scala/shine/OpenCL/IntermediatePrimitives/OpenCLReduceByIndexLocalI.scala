@@ -7,7 +7,6 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType.idx
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
 import shine.OpenCL.ImperativePrimitives.ParForLocal

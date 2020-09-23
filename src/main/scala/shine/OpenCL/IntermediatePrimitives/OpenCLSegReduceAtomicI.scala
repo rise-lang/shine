@@ -5,15 +5,13 @@ import arithexpr.arithmetic.Log
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}
-import shine.DPIA.FunctionalPrimitives.{Cast, IndexAsNat, NatAsIndex, Split}
+import shine.DPIA.FunctionalPrimitives.{IndexAsNat, NatAsIndex, Split}
 import shine.DPIA.ImperativePrimitives.PairAcc2
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType.idx
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.{AdjustArraySizesForAllocations, get_local_id}
+import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
-import shine.OpenCL.ImperativePrimitives.ParForLocal
 
 object OpenCLSegReduceAtomicI {
   def apply(n: Nat,
@@ -28,7 +26,6 @@ object OpenCLSegReduceAtomicI {
     val pt = PairType(IndexType(k), dt)
     val m: Nat = 32
     val o: Nat = n/m
-    val tree_loops: Nat = Log(2, o)
 
     val adj = AdjustArraySizesForAllocations(init, ArrayType(k, dt), addrSpace)
 
