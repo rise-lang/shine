@@ -22,10 +22,10 @@ object OpenCLReduceSeqI {
     val adj = AdjustArraySizesForAllocations(init, dt2, initAddrSpace)
 
     comment("oclReduceSeq") `;`
-      `new` (initAddrSpace) (adj.dt, accumulator =>
+      (`new` (initAddrSpace) (adj.dt, accumulator =>
         acc(init)(adj.accF(accumulator.wr)) `;`
           `for`(n, i => f(adj.exprF(accumulator.rd))(in `@` i)(adj.accF(accumulator.wr)), unroll) `;`
           out(adj.exprF(accumulator.rd))
-      )
+      ))
   }
 }

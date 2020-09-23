@@ -9,6 +9,7 @@ import rise.core.TypeLevelDSL._
 import rise.openCL.DSL._
 import rise.core.types._
 import util.{Time, TimeSpan}
+import scala.collection.parallel.CollectionConverters._
 
 object sgemm {
   // we can use implicit type parameters and type annotations to specify the function type of mult

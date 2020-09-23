@@ -1,4 +1,3 @@
-import com.github.ghik.silencer.silent
 import opencl.executor.Executor
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
@@ -6,10 +5,8 @@ import org.scalatest.funsuite.AnyFunSuite
 import util.{AssertSame, Time, TimeSpan}
 
 package object test_util {
-  @silent("define classes/objects inside of package objects")
   abstract class Tests extends AnyFunSuite with Matchers
 
-  @silent("define classes/objects inside of package objects")
   abstract class TestsWithExecutor extends Tests with BeforeAndAfter {
     before {
       Executor.loadLibrary()

@@ -18,7 +18,7 @@ object normalForm {
 
   // Beta-Eta-Normal-Form
   @strategy def BENF()(implicit ev: Traversable[Rise]): Strategy[Rise] =
-    normalize(ev)(etaReduction <+ betaReduction)
+    normalize(ev)(etaReduction() <+ betaReduction)
 
   // Data-Flow-Normal-Form
   @strategy def DFNF()(implicit ev: Traversable[Rise]): Strategy[Rise] =

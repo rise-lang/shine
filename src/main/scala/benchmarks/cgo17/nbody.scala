@@ -10,8 +10,8 @@ object nbody {
     val N = 1024
 
     val random = new scala.util.Random()
-    val pos = Array.fill(N * 4)(random.nextFloat * random.nextInt(10))
-    val vel = Array.fill(N * 4)(random.nextFloat * random.nextInt(10))
+    val pos = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+    val vel = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
 
     val localSizeAMD = LocalSize(128)
     val globalSizeAMD = GlobalSize(N)

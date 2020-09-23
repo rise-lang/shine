@@ -24,7 +24,7 @@ object infer {
 
     // solve the constraints
     // val bound = boundIdentifiers(typed_e)
-    val solution = Constraint.solve(constraints, Seq())(Flags.ExplicitDependence.Off)
+    val solution = Constraint.solve(constraints.toSeq, Seq())(Flags.ExplicitDependence.Off)
 
     // apply the solution
     val r = solution(typed_e)
@@ -54,7 +54,7 @@ object infer {
 
       case Lambda(x, e) =>
         val tx = x.setType(genType(x))
-        env update (tx.name, tx.t)
+        env.update(tx.name, tx.t)
         val te = typed(e)
         env remove tx.name
         val ft = FunType(tx.t, te.t)

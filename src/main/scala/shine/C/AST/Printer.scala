@@ -88,7 +88,7 @@ class CPrinter extends Printer {
     case b: Block => printBlock(b)
     case f: ForLoop => printForLoop(f)
     case w: WhileLoop => printWhileLoop(w)
-    case i: IfThenElse => printIfThenElse(i)
+    case i: shine.C.AST.IfThenElse => printIfThenElse(i)
     case g: GOTO => printGOTO(g)
     case b: Break => printBreak(b)
     case c: Continue => printContinue(c)
@@ -203,7 +203,7 @@ class CPrinter extends Printer {
     printStmt(w.body)
   }
 
-  private def printIfThenElse(i: IfThenElse): Unit = {
+  private def printIfThenElse(i: shine.C.AST.IfThenElse): Unit = {
     print("if (")
     printExpr(i.cond)
     print(") ")

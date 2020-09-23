@@ -11,8 +11,8 @@ class Convolution extends test_util.TestsWithExecutor {
   test("convolution versions produce same results") {
     val N = inputSize_small // TODO: this is still big for a test
     val random = new scala.util.Random()
-    val matrix = Array.fill(N, N)(random.nextFloat * 10.0f)
-    val weights = Array.fill(17)(random.nextFloat)
+    val matrix = Array.fill(N, N)(random.nextFloat() * 10.0f)
+    val weights = Array.fill(17)(random.nextFloat())
 
     val (lsX, gsX) = blurXTiled2DSizes(N)
     val (lsY, gsY) = blurYTiled2DTiledLoadingTransposedSizes(N)

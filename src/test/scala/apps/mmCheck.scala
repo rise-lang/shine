@@ -11,8 +11,8 @@ class mmCheck extends test_util.TestsWithExecutor {
 
   private def randGold(): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
     val rand = new scala.util.Random
-    val At = Array.fill(O, N)(rand.nextFloat * 10)
-    val B = Array.fill(O, M)(rand.nextFloat * 10)
+    val At = Array.fill(O, N)(rand.nextFloat() * 10)
+    val B = Array.fill(O, M)(rand.nextFloat() * 10)
     val gold = computeGold(N, M, O, At, B).flatten
     (At, B, gold)
   }
