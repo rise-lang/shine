@@ -7,11 +7,11 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.OpenCL.IntermediatePrimitives.OpenCLSegmentedReduceI
+import shine.OpenCL.IntermediatePrimitives.OpenCLSegReduceI
 
 import scala.xml.Elem
 
-final case class OpenCLSegmentedReduce(
+final case class OpenCLSegReduce(
                                    n: Nat,
                                    k: Nat,
                                    initAddrSpace: shine.DPIA.Types.AddressSpace,
@@ -29,7 +29,7 @@ final case class OpenCLSegmentedReduce(
   override def visitAndRebuild(
                                 fun: VisitAndRebuild.Visitor
                               ): Phrase[ExpType] = {
-    OpenCLSegmentedReduce(fun.nat(n), fun.nat(k), fun.addressSpace(initAddrSpace), fun.data(dt),
+    OpenCLSegReduce(fun.nat(n), fun.nat(k), fun.addressSpace(initAddrSpace), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
@@ -49,7 +49,7 @@ final case class OpenCLSegmentedReduce(
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
-      OpenCLSegmentedReduceI(n, k, initAddrSpace, dt,
+      OpenCLSegReduceI(n, k, initAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
             λ(accT(dt))(o => acc( f(x)(y) )( o )))),

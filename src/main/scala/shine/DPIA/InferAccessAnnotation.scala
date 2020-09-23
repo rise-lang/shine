@@ -458,7 +458,8 @@ private class InferAccessAnnotation {
 
       case roclp.OclReduceByIndexSeq() |
            roclp.OclReduceByIndexLocal() |
-           roclp.OclSegmentedReduce() => p.t match {
+           roclp.OclSegReduce() |
+           roclp.OclSegReduceAtomic() => p.t match {
         case rtdsl.aFunT(a,
         ((t: rt.DataType) ->: (_: rt.DataType) ->: (_: rt.DataType)) ->:
           rt.ArrayType(k, _) ->: rt.ArrayType(n, rt.PairType(rt.IndexType(_), _)) ->: rt.ArrayType(_, _)) =>

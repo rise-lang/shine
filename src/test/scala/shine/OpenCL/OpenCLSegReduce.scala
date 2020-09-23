@@ -7,7 +7,7 @@ import rise.core.types._
 import rise.openCL.DSL._
 import util.gen
 
-class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
+class OpenCLSegReduce extends shine.test_util.TestsWithExecutor {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
@@ -76,7 +76,7 @@ class OpenCLSegmentedReduce extends shine.test_util.TestsWithExecutor {
         split(1024) |> // n/1024.1024.(idx(k) x int)
         mapWorkGroup(
           // 1024.(idx(k) x int)
-          oclSegmentedReduce(rise.core.types.AddressSpace.Local)(add)(
+          oclSegReduce(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id) // k.int
           ) >>

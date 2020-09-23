@@ -131,7 +131,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(output._1, output._2)
   }
 
-  test("Segmented Reduction") {
+  test("Segmented Reduction: Tree-based second reduction") {
     //TODO: The input array has to be sorted before it can used by the segmented reduction algorithm.
     //      Usually this would be part of the algorithm in Rise however, as there isn't a sorting algorithm
     //      in Rise yet, this has to be done by a function call in Scala.
@@ -140,13 +140,13 @@ class histogram extends shine.test_util.TestsWithExecutor {
     //      faster than it normally would be.
     val sortedIndices = indices.sorted
 
-    val reduceByIndexSingleHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
+    val segmentedReductionTree = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
             split(1024) |>
               mapWorkGroup(
-                oclSegmentedReduce(rise.core.types.AddressSpace.Local)(add)(
+                oclSegReduce(AddressSpace.Local)(add)(
                   generate(fun(IndexType(k))(_ => l(0))) |>
                     mapLocal(id)
                 ) >>
@@ -157,7 +157,33 @@ class histogram extends shine.test_util.TestsWithExecutor {
         reduceHists
     )))
 
-    val output = runKernel(reduceByIndexSingleHistogram)(LocalSize(32), GlobalSize(256))(n, k, sortedIndices)
+    val output = runKernel(segmentedReductionTree)(LocalSize(32), GlobalSize(n / 32))(n, k, sortedIndices)
+
+    checkResult(output._1, output._2)
+  }
+
+  test("Segmented Reduction: Atomic operation instead of second reduction") {
+    //TODO: See TODO above
+    val sortedIndices = indices.sorted
+
+    val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is =>
+      generate(fun(IndexType(n))(_ => l(1))) |>
+        fun(xs =>
+          zip(is)(xs) |>
+            split(2048) |>
+            mapWorkGroup(
+              oclSegReduceAtomic(AddressSpace.Local)(add)(
+                generate(fun(IndexType(k))(_ => l(0))) |>
+                  mapLocal(id)
+              ) >>
+                mapLocal(id)
+            )
+        ) |>
+        toGlobal |>
+        reduceHists
+    )))
+
+    val output = runKernel(segmentedReductionAtomic)(LocalSize(64), GlobalSize(64 * n / 2048))(n, k, sortedIndices)
 
     checkResult(output._1, output._2)
   }
