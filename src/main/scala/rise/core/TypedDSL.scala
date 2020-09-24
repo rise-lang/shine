@@ -284,7 +284,7 @@ object TypedDSL {
     def >>=[X <: Expr](f: T => ToBeTyped[X]): ToBeTyped[X] = f(e)
   }
 
-  implicit def isTyped[T <: Expr](e: T): ToBeTyped[Opaque] = ToBeTyped(Opaque(e)())
+  implicit def preserveType[T <: Expr](e: T): ToBeTyped[Opaque] = ToBeTyped(Opaque(e)())
 
   def toBeTyped[T <: Expr](e: T): ToBeTyped[T] = ToBeTyped(e)
 

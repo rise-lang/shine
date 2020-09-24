@@ -36,7 +36,7 @@ object algorithmic {
           if (gx2 == x) {
             map(f2) >> map(f)
           } else {
-            mapFirstFissionRec(x, fun(e => f(isTyped(f2)(e))), gx2)
+            mapFirstFissionRec(x, fun(e => f(preserveType(f2)(e))), gx2)
           }
       }
     }

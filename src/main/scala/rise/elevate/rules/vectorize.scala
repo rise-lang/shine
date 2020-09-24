@@ -46,7 +46,7 @@ object vectorize {
     case e @ App(v, App(App(map(), App(App(reduce(), f), init)), in))
     if isAsVector(v) && isScalarFun(f.t) =>
       // TODO: generalize?
-      val inV = isTyped(in) |> transpose |> map(eraseType(v)) |> transpose
+      val inV = preserveType(in) |> transpose |> map(eraseType(v)) |> transpose
       val fV = vectorizeScalarFun(f, Set())
       Success(map(reduce(fV)(vectorFromScalar(init)))(inV) :: e.t)
   }
@@ -58,7 +58,7 @@ object vectorize {
     case e @ App(v, App(App(map(), App(r @ App(ReduceX(), f), init)),
       App(App(map(), App(zip(), b)), a)
     )) if isAsVector(v) && isScalarFun(f.t) =>
-      val aV = isTyped(a) |> transpose |> map(eraseType(v)) |> transpose
+      val aV = preserveType(a) |> transpose |> map(eraseType(v)) |> transpose
       val bV = map(vectorFromScalar)(b)
       val rV = vectorizeScalarFun(r, Set())
       Success(map(zip(bV) >> rV(vectorFromScalar(init)))(aV) :: e.t)
@@ -125,7 +125,7 @@ object vectorize {
       } else {
         Cst(v + v) - ((inW + v) % v)
       }
-      val r = isTyped(in) |>
+      val r = preserveType(in) |>
         map(padEmpty(pV) >> asVectorAligned(v) >> slide(2)(1)) >>
         transpose >>
         map(
@@ -147,7 +147,7 @@ object vectorize {
       } else {
         Cst(v + v) - ((inW + v) % v)
       }
-      val r = isTyped(in) |>
+      val r = preserveType(in) |>
         padEmpty(pV) >> asVectorAligned(v) >> slide(2)(1) >>
         map(asScalar >> take(v+2) >> slide(v)(1) >> join >> asVector(v))
       Success(r :: e.t)
@@ -167,7 +167,7 @@ object vectorize {
         asScalar >> take(t) >>
         slide(v)(1) >> join >> asVector(v)
       )(in.t)
-      Success((isTyped(in) |> shuffle |> map(f)) :: e.t)
+      Success((preserveType(in) |> shuffle |> map(f)) :: e.t)
   }
 
   // FIXME: this is very specific
@@ -179,7 +179,7 @@ object vectorize {
       in
     )) if x == x2 && x == x3 && isAsVector(asV) && asV == asV2 =>
       Success((
-        isTyped(in) |> mapFst(padEmpty(p*v)) |> mapSnd(padEmpty(p*v)) |>
+        preserveType(in) |> mapFst(padEmpty(p*v)) |> mapSnd(padEmpty(p*v)) |>
         // FIXME: aligning although we have no alignment information
         fun(p => zip(asVectorAligned(v)(fst(p)))(asVectorAligned(v)(snd(p))))
       ) :: e.t)

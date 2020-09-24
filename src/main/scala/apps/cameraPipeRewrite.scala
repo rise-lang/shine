@@ -347,7 +347,7 @@ object cameraPipeRewrite {
                 // TODO: use proper rewriting to achieve this
                 function(argument(body({ expr =>
                   Success(
-                    isTyped(expr) |> transpose >> map(transpose) >>
+                    preserveType(expr) |> transpose >> map(transpose) >>
                       // 2 bands of y. all x. rgb channels.
                       mapSeqUnroll(mapSeq(mapSeqUnroll(fun(x => x)))) >>
                       map(transpose) >> transpose
@@ -383,7 +383,7 @@ object cameraPipeRewrite {
 
   def letHoist: Strategy[Rise] = {
     case expr @ App(f, App(App(p.let(), v), Lambda(x, b))) =>
-      Success(letf(lambda(eraseType(x), isTyped(f)(b)))(v) :: expr.t)
+      Success(letf(lambda(eraseType(x), preserveType(f)(b)))(v) :: expr.t)
     // TODO: normal form / non-map specific?
     case expr @ App(App(p.map(), Lambda(y,
       App(App(p.let(), v), Lambda(x, b))

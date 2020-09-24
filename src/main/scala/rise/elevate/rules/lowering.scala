@@ -128,14 +128,14 @@ object lowering {
   // TODO: think about more complex cases
   @rule def mapSeqUnrollWrite: Strategy[Rise] = e => e.t match {
     case ArrayType(_, t) if typeHasTrivialCopy(t) =>
-      Success(app(p.mapSeqUnroll(fun(x => x)), isTyped(e)) :: e.t)
+      Success(app(p.mapSeqUnroll(fun(x => x)), preserveType(e)) :: e.t)
     case _ =>
       Failure(mapSeqUnrollWrite)
   }
 
   @rule def toMemAfterMapSeq: Strategy[Rise] = {
     case a@App(App(p.mapSeq(), _), _) =>
-      Success((isTyped(a) |> p.toMem) :: a.t)
+      Success((preserveType(a) |> p.toMem) :: a.t)
   }
 
   // Lowerings used in PLDI submission
@@ -201,7 +201,7 @@ object lowering {
 
     e match {
       case reduceResult@App(App(App(ReduceX(), _), _), _) =>
-        Success((isTyped(e) |> constructCopy(reduceResult.t) ) :: e.t)
+        Success((preserveType(e) |> constructCopy(reduceResult.t) ) :: e.t)
       case _ => Failure(copyAfterReduce)
     }
   }
@@ -216,7 +216,7 @@ object lowering {
 
     e match {
       case App(a@App(ReduceX(), _), init) =>
-        Success((isTyped(init) |> constructCopy(init.t) |> a) :: e.t)
+        Success((preserveType(init) |> constructCopy(init.t) |> a) :: e.t)
       case _ => Failure(copyAfterReduceInit)
     }
   }
@@ -231,7 +231,7 @@ object lowering {
 
     e match {
       case a@App(generate(), _) =>
-        Success((isTyped(a) |> constructCopy(a.t)) :: e.t)
+        Success((preserveType(a) |> constructCopy(a.t)) :: e.t)
       case _ => Failure(copyAfterGenerate)
     }
   }
@@ -295,7 +295,7 @@ object lowering {
         cb @ DepApp(DepApp(DepApp(oclCircularBuffer(), _), _), _),
         load), App(App(map(), f), in)
       ) =>
-        Success(eraseType(cb)(isTyped(f) >> load, in) :: e.t)
+        Success(eraseType(cb)(preserveType(f) >> load, in) :: e.t)
     }
 
     @rule def rotateValues(a: AddressSpace, write: Expr): Strategy[Rise] = {
