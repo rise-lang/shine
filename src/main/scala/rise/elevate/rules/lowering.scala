@@ -74,12 +74,12 @@ object lowering {
   // TODO: load identity instead, then change with other rules?
   @rule def circularBuffer(load: Expr): Strategy[Rise] = {
     case e@DepApp(DepApp(slide(), sz: Nat), Cst(1)) => Success(
-      p.circularBuffer(sz)(sz)(untyped(load)) :: e.t)
+      p.circularBuffer(sz)(sz)(eraseType(load)) :: e.t)
   }
 
   @rule def rotateValues(write: Expr): Strategy[Rise] = {
     case e@DepApp(DepApp(slide(), sz: Nat), Cst(1)) => Success(
-      p.rotateValues(sz)(untyped(write)) :: e.t)
+      p.rotateValues(sz)(eraseType(write)) :: e.t)
   }
 
   @rule def containsComputation()(implicit ev: Traversable[Rise]): Strategy[Rise] =
@@ -128,14 +128,14 @@ object lowering {
   // TODO: think about more complex cases
   @rule def mapSeqUnrollWrite: Strategy[Rise] = e => e.t match {
     case ArrayType(_, t) if typeHasTrivialCopy(t) =>
-      Success(app(p.mapSeqUnroll(fun(x => x)), typed(e)) :: e.t)
+      Success(app(p.mapSeqUnroll(fun(x => x)), isTyped(e)) :: e.t)
     case _ =>
       Failure(mapSeqUnrollWrite)
   }
 
   @rule def toMemAfterMapSeq: Strategy[Rise] = {
     case a@App(App(p.mapSeq(), _), _) =>
-      Success((typed(a) |> p.toMem) :: a.t)
+      Success((isTyped(a) |> p.toMem) :: a.t)
   }
 
   // Lowerings used in PLDI submission
@@ -156,7 +156,7 @@ object lowering {
     )
 
   @rule def insertCopyAfter: Strategy[Rise] = e => {
-    def constructCopy(t: Type): TDSL[Rise] = t match {
+    def constructCopy(t: Type): ToBeTyped[Rise] = t match {
       case ArrayType(_, dt) => p.mapSeq(fun(x => constructCopy(dt) $ x))
       case _ if typeHasTrivialCopy(t) => fun(x => x)
       case _ => ??? // shouldn't happen?
@@ -192,7 +192,7 @@ object lowering {
 
   // todo currently only works for mapSeq
   @rule def copyAfterReduce: Strategy[Rise] = e => {
-    def constructCopy(t: Type): TDSL[Rise] = t match {
+    def constructCopy(t: Type): ToBeTyped[Rise] = t match {
       case _ if typeHasTrivialCopy(t) => letf(fun(x => x))
       case ArrayType(_, b) if typeHasTrivialCopy(b) => p.mapSeq(fun(x => x))
       case ArrayType(_, a: ArrayType) => p.mapSeq(fun(x => constructCopy(a) $ x))
@@ -201,13 +201,13 @@ object lowering {
 
     e match {
       case reduceResult@App(App(App(ReduceX(), _), _), _) =>
-        Success((typed(e) |> constructCopy(reduceResult.t) ) :: e.t)
+        Success((isTyped(e) |> constructCopy(reduceResult.t) ) :: e.t)
       case _ => Failure(copyAfterReduce)
     }
   }
 
   @rule def copyAfterReduceInit: Strategy[Rise] = e => {
-    def constructCopy(t: Type): TDSL[Rise] = t match {
+    def constructCopy(t: Type): ToBeTyped[Rise] = t match {
       case _ if typeHasTrivialCopy(t) => letf(fun(x => x))
       case ArrayType(_, b) if typeHasTrivialCopy(b) => p.mapSeq(fun(x => x))
       case ArrayType(_, a: ArrayType) => p.mapSeq(fun(x => constructCopy(a) $ x))
@@ -216,14 +216,14 @@ object lowering {
 
     e match {
       case App(a@App(ReduceX(), _), init) =>
-        Success((typed(init) |> constructCopy(init.t) |> a) :: e.t)
+        Success((isTyped(init) |> constructCopy(init.t) |> a) :: e.t)
       case _ => Failure(copyAfterReduceInit)
     }
   }
 
   // todo currently only works for mapSeq
   @rule def copyAfterGenerate: Strategy[Rise] = e => {
-    def constructCopy(t: Type): TDSL[Rise] = t match {
+    def constructCopy(t: Type): ToBeTyped[Rise] = t match {
       case ArrayType(_, dt) => p.mapSeq(fun(x => constructCopy(dt) $ x))
       case _ if typeHasTrivialCopy(t) => fun(x => x)
       case _ => ??? // shouldn't happen?
@@ -231,7 +231,7 @@ object lowering {
 
     e match {
       case a@App(generate(), _) =>
-        Success((typed(a) |> constructCopy(a.t)) :: e.t)
+        Success((isTyped(a) |> constructCopy(a.t)) :: e.t)
       case _ => Failure(copyAfterGenerate)
     }
   }
@@ -240,8 +240,8 @@ object lowering {
     case a@App(App(map(), f), input) if
       isComputation()(ev)(f) && !isVectorArray(a.t) =>
 
-      def vectorizeArrayBasedOnType(t: Type): TDSL[Rise] = {
-        def generateUnZips(dt: Type): TDSL[Rise] = {
+      def vectorizeArrayBasedOnType(t: Type): ToBeTyped[Rise] = {
+        def generateUnZips(dt: Type): ToBeTyped[Rise] = {
           dt match {
             case _ if typeHasTrivialCopy(dt) => asVectorAligned(n)
             case PairType(aT, bT) => fun(x =>
@@ -256,9 +256,9 @@ object lowering {
         }
       }
 
-      val newF = untyped(f)
+      val newF = eraseType(f)
       Success(
-        toTDSL(input) |> vectorizeArrayBasedOnType(input.t) |> (map(newF) >> asScalar)
+        toBeTyped(input) |> vectorizeArrayBasedOnType(input.t) |> (map(newF) >> asScalar)
       )
     case _ => Failure(vectorize(n))
   }
@@ -295,13 +295,13 @@ object lowering {
         cb @ DepApp(DepApp(DepApp(oclCircularBuffer(), _), _), _),
         load), App(App(map(), f), in)
       ) =>
-        Success(untyped(cb)(typed(f) >> load, in) :: e.t)
+        Success(eraseType(cb)(isTyped(f) >> load, in) :: e.t)
     }
 
     @rule def rotateValues(a: AddressSpace, write: Expr): Strategy[Rise] = {
       case e@DepApp(DepApp(slide(), n: Nat), Cst(1)) =>
         Success(
-          oclRotateValues(a)(n)(untyped(write))
+          oclRotateValues(a)(n)(eraseType(write))
             :: e.t)
     }
   }

@@ -104,7 +104,7 @@ class algorithmic extends test_util.Tests {
                 reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(
                   l(0.0f)))))))))))
 
-    def goldMKN(reduceFun: TDSL[Rise]): Rise = {
+    def goldMKN(reduceFun: ToBeTyped[Rise]): Rise = {
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>

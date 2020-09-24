@@ -73,7 +73,7 @@ object harrisCornerDetectionHalideRewrite {
         case _ => ???
       } `;` reducedFusedForm
 
-    def writeUnrolled(t: Type): TDSL[Rise] = t match {
+    def writeUnrolled(t: Type): ToBeTyped[Rise] = t match {
       case _ if typeHasTrivialCopy(t) => fun(p => p)
       case PairType(a, b) if typeHasTrivialCopy(a) && typeHasTrivialCopy(b) =>
         fun(p => p)

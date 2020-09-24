@@ -46,7 +46,7 @@ object vectorize {
     case e @ App(v, App(App(map(), App(App(reduce(), f), init)), in))
     if isAsVector(v) && isScalarFun(f.t) =>
       // TODO: generalize?
-      val inV = typed(in) |> transpose |> map(untyped(v)) |> transpose
+      val inV = isTyped(in) |> transpose |> map(eraseType(v)) |> transpose
       val fV = vectorizeScalarFun(f, Set())
       Success(map(reduce(fV)(vectorFromScalar(init)))(inV) :: e.t)
   }
@@ -58,7 +58,7 @@ object vectorize {
     case e @ App(v, App(App(map(), App(r @ App(ReduceX(), f), init)),
       App(App(map(), App(zip(), b)), a)
     )) if isAsVector(v) && isScalarFun(f.t) =>
-      val aV = typed(a) |> transpose |> map(untyped(v)) |> transpose
+      val aV = isTyped(a) |> transpose |> map(eraseType(v)) |> transpose
       val bV = map(vectorFromScalar)(b)
       val rV = vectorizeScalarFun(r, Set())
       Success(map(zip(bV) >> rV(vectorFromScalar(init)))(aV) :: e.t)
@@ -102,7 +102,7 @@ object vectorize {
   @rule def padEmptyBeforeAsVector: Strategy[Rise] = {
     case e @ App(DepApp(padEmpty(), p: Nat), App(asV @ DepApp(_, v: Nat), in))
     if isAsVector(asV) =>
-      Success(untyped(asV)(padEmpty(p*v)(in)) :: e.t)
+      Success(eraseType(asV)(padEmpty(p*v)(in)) :: e.t)
   }
 
   // TODO: express as a combination of smaller rules
@@ -125,7 +125,7 @@ object vectorize {
       } else {
         Cst(v + v) - ((inW + v) % v)
       }
-      val r = typed(in) |>
+      val r = isTyped(in) |>
         map(padEmpty(pV) >> asVectorAligned(v) >> slide(2)(1)) >>
         transpose >>
         map(
@@ -147,7 +147,7 @@ object vectorize {
       } else {
         Cst(v + v) - ((inW + v) % v)
       }
-      val r = typed(in) |>
+      val r = isTyped(in) |>
         padEmpty(pV) >> asVectorAligned(v) >> slide(2)(1) >>
         map(asScalar >> take(v+2) >> slide(v)(1) >> join >> asVector(v))
       Success(r :: e.t)
@@ -167,7 +167,7 @@ object vectorize {
         asScalar >> take(t) >>
         slide(v)(1) >> join >> asVector(v)
       )(in.t)
-      Success((typed(in) |> shuffle |> map(f)) :: e.t)
+      Success((isTyped(in) |> shuffle |> map(f)) :: e.t)
   }
 
   // FIXME: this is very specific
@@ -179,7 +179,7 @@ object vectorize {
       in
     )) if x == x2 && x == x3 && isAsVector(asV) && asV == asV2 =>
       Success((
-        typed(in) |> mapFst(padEmpty(p*v)) |> mapSnd(padEmpty(p*v)) |>
+        isTyped(in) |> mapFst(padEmpty(p*v)) |> mapSnd(padEmpty(p*v)) |>
         // FIXME: aligning although we have no alignment information
         fun(p => zip(asVectorAligned(v)(fst(p)))(asVectorAligned(v)(snd(p))))
       ) :: e.t)
@@ -203,8 +203,8 @@ object vectorize {
     case _ => false
   }
 
-  private def makeAsVector(asV: Rise): Type => TDSL[Rise] = {
-    case ArrayType(_, _: ScalarType) => untyped(asV)
+  private def makeAsVector(asV: Rise): Type => ToBeTyped[Rise] = {
+    case ArrayType(_, _: ScalarType) => eraseType(asV)
     case ArrayType(n, PairType(a, b)) =>
       unzip >> fun(p => zip(
         makeAsVector(asV)(ArrayType(n, a))(fst(p)))(
@@ -212,8 +212,8 @@ object vectorize {
     case t => throw new Exception(s"did not expect $t")
   }
 
-  private def makeShuffle(s: Rise): Type => TDSL[Rise] = {
-    case ArrayType(_, _: VectorType) => untyped(s)
+  private def makeShuffle(s: Rise): Type => ToBeTyped[Rise] = {
+    case ArrayType(_, _: VectorType) => eraseType(s)
     case ArrayType(n, PairType(a, b)) =>
       unzip >> fun(p => zip(
         makeShuffle(s)(ArrayType(n, a))(fst(p)))(
@@ -223,11 +223,11 @@ object vectorize {
 
   // FIXME: assuming every scalar function vectorizes like this
   private def vectorizeScalarFun(f: Expr, vEnv: Set[Identifier])
-  : TDSL[Expr] = f match {
-    case i: Identifier if vEnv(i) => untyped(i)
-    case Lambda(x, b) => lambda(untyped(x), vectorizeScalarFun(b, vEnv + x))
+  : ToBeTyped[Expr] = f match {
+    case i: Identifier if vEnv(i) => eraseType(i)
+    case Lambda(x, b) => lambda(eraseType(x), vectorizeScalarFun(b, vEnv + x))
     case App(f, e) => vectorizeScalarFun(f, vEnv)(vectorizeScalarFun(e, vEnv))
-    case p: Primitive => untyped(p)
+    case p: Primitive => eraseType(p)
     case s if (s.t match {
       case _: ScalarType => true
       case _ => false

@@ -6,44 +6,44 @@ import rise.core.types.AddressSpaceKind
 
 object TypedDSL {
   object mapGlobal {
-    def apply(): TDSL[Primitive] = primitives.mapGlobal(0)
-    def apply[T <: Expr](e: TDSL[T]): TDSL[rise.core.App] =
+    def apply(): ToBeTyped[Primitive] = primitives.mapGlobal(0)
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] =
       primitives.mapGlobal(0)(e)
-    def apply(dim: Int): TDSL[Primitive] = primitives.mapGlobal(dim)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapGlobal(dim)
   }
 
   object mapLocal {
-    def apply(): TDSL[Primitive] = primitives.mapLocal(0)
-    def apply[T <: Expr](e: TDSL[T]): TDSL[rise.core.App] =
+    def apply(): ToBeTyped[Primitive] = primitives.mapLocal(0)
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] =
       primitives.mapLocal(0)(e)
-    def apply(dim: Int): TDSL[Primitive] = primitives.mapLocal(dim)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapLocal(dim)
   }
 
   object mapWorkGroup {
-    def apply(): TDSL[Primitive] = primitives.mapWorkGroup(0)
-    def apply[T <: Expr](e: TDSL[T]): TDSL[rise.core.App] =
+    def apply(): ToBeTyped[Primitive] = primitives.mapWorkGroup(0)
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] =
       primitives.mapWorkGroup(0)(e)
-    def apply(dim: Int): TDSL[Primitive] = primitives.mapWorkGroup(dim)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapWorkGroup(dim)
   }
 
-  def toMem: TDSL[Primitive] = primitives.oclToMem
+  def toMem: ToBeTyped[Primitive] = primitives.oclToMem
   def toFun[A <: Expr, B <: Expr](
-                                   to: TDSL[A],
-                                   f: TDSL[B]
-                                 ): TDSL[rise.core.Lambda] = fun(x => to(f(x)))
-  val toGlobal: TDSL[rise.core.DepApp[AddressSpaceKind]] = toMem(
+                                   to: ToBeTyped[A],
+                                   f: ToBeTyped[B]
+                                 ): ToBeTyped[rise.core.Lambda] = fun(x => to(f(x)))
+  val toGlobal: ToBeTyped[rise.core.DepApp[AddressSpaceKind]] = toMem(
     rise.core.types.AddressSpace.Global
   )
-  def toGlobalFun[T <: Expr](f: TDSL[T]): TDSL[rise.core.Lambda] =
+  def toGlobalFun[T <: Expr](f: ToBeTyped[T]): ToBeTyped[rise.core.Lambda] =
     toFun(toGlobal, f)
-  val toLocal: TDSL[rise.core.DepApp[AddressSpaceKind]] = toMem(
+  val toLocal: ToBeTyped[rise.core.DepApp[AddressSpaceKind]] = toMem(
     rise.core.types.AddressSpace.Local
   )
-  def toLocalFun[T <: Expr](f: TDSL[T]): TDSL[rise.core.Lambda] =
+  def toLocalFun[T <: Expr](f: ToBeTyped[T]): ToBeTyped[rise.core.Lambda] =
     toFun(toLocal, f)
-  val toPrivate: TDSL[rise.core.DepApp[AddressSpaceKind]] = toMem(
+  val toPrivate: ToBeTyped[rise.core.DepApp[AddressSpaceKind]] = toMem(
     rise.core.types.AddressSpace.Private
   )
-  def toPrivateFun[T <: Expr](f: TDSL[T]): TDSL[rise.core.Lambda] =
+  def toPrivateFun[T <: Expr](f: ToBeTyped[T]): ToBeTyped[rise.core.Lambda] =
     toFun(toPrivate, f)
 }

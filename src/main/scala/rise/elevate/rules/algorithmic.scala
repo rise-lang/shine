@@ -32,7 +32,7 @@ object algorithmic {
   }
 
   @rule def splitJoin2(n: Nat): Strategy[Rise] = e => e.t match {
-    case ArrayType(_,_) => Success( (toTDSL(e) |> split(n) |> join) :: e.t )
+    case ArrayType(_,_) => Success( (toBeTyped(e) |> split(n) |> join) :: e.t )
     case _ => Failure(splitJoin2(n))
   }
 
@@ -41,19 +41,19 @@ object algorithmic {
   def mapFusion: Strategy[Rise] = `*g >> *f -> *(g >> f)`
   @rule def `*g >> *f -> *(g >> f)`: Strategy[Rise] = {
     case e @ App(App(map(), f), App(App(map(), g), arg)) =>
-      Success(map(typed(g) >> f)(arg) :: e.t)
+      Success(map(isTyped(g) >> f)(arg) :: e.t)
   }
 
     // mapFst g >> mapFst f -> mapFst (g >> f)
   @rule def mapFstFusion: Strategy[Rise] = {
     case e @ App(App(mapFst(), f), App(App(mapFst(), g), in)) =>
-      Success(mapFst(typed(g) >> f)(in) :: e.t)
+      Success(mapFst(isTyped(g) >> f)(in) :: e.t)
   }
 
   // mapSnd g >> mapSnd f -> mapSnd (g >> f)
   @rule def mapSndFusion: Strategy[Rise] = {
     case e @ App(App(mapSnd(), f), App(App(mapSnd(), g), in)) =>
-      Success(mapSnd(typed(g) >> f)(in) :: e.t)
+      Success(mapSnd(isTyped(g) >> f)(in) :: e.t)
   }
 
   // padEmpty n >> padEmpty m -> padEmpty n + m
@@ -70,7 +70,7 @@ object algorithmic {
         case _ => reduceSeq
       }
       Success(red(fun(acc => fun(x =>
-        typed(f)(acc)(typed(g)(x)))))(init)(in) :: e.t)
+        isTyped(f)(acc)(isTyped(g)(x)))))(init)(in) :: e.t)
   }
 
   @rule def fuseReduceMap: Strategy[Rise] = {
@@ -84,7 +84,7 @@ object algorithmic {
       }
       Success(
         (red(fun((acc, y) =>
-          typed(op)(acc)(typed(f)(y))))(init) $ mapArg) :: e.t)
+          isTyped(op)(acc)(isTyped(f)(y))))(init) $ mapArg) :: e.t)
   }
 
   @rule def reduceMapFission()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
@@ -92,7 +92,7 @@ object algorithmic {
         App(App(op, acc2), f@App(_, y2))))), init)
       if acc == acc2 && contains[Rise](y).apply(y2) =>
       Success((reduce(op)(init) o
-        map(lambda(TDSL[Identifier](y), typed(f)))) :: e.t
+        map(lambda(ToBeTyped[Identifier](y), isTyped(f)))) :: e.t
       )
   }
 
@@ -111,13 +111,13 @@ object algorithmic {
       if !contains[Rise](x).apply(f) && !isIdentifier(gx) =>
       gx.t match {
         case _: DataType =>
-          Success((app(map, lambda(untyped(x), gx)) >> map(f)) :: e.t)
+          Success((app(map, lambda(eraseType(x), gx)) >> map(f)) :: e.t)
         case _ => Failure(mapLastFission())
       }
   }
 
   // identities
-  @rule def idAfter: Strategy[Rise] = e => Success((typed(e) |> id) :: e.t)
+  @rule def idAfter: Strategy[Rise] = e => Success((isTyped(e) |> id) :: e.t)
 
   @rule def idToCopy: Strategy[Rise] = {
     case App(id() ::: FunType(in: ScalarType, out: ScalarType), arg ::: (argT: ScalarType))
@@ -155,7 +155,7 @@ object algorithmic {
   // slide n 1 >> drop l -> slide (n+l) 1 >> map(drop l)
   @rule def dropInSlide: Strategy[Rise] = {
     case e@App(DepApp(drop(), l: Nat), App(DepApp(DepApp(slide(), n: Nat), Cst(1)), in)) =>
-      Success(app(map(drop(l)), app(slide(n + l)(1), typed(in))) :: e.t)
+      Success(app(map(drop(l)), app(slide(n + l)(1), isTyped(in))) :: e.t)
   }
   // slide n 1 >> take (N - r) -> slide (n+r) 1 >> map(take (n - r))
   @rule def takeInSlide: Strategy[Rise] = {
@@ -163,7 +163,7 @@ object algorithmic {
       t.t match {
         case FunType(ArrayType(size, _), _) =>
           val r = size - rem
-          Success(app(map(take(n)), app(slide(n + r)(1), typed(in))) :: e.t)
+          Success(app(map(take(n)), app(slide(n + r)(1), isTyped(in))) :: e.t)
         case _ => throw new Exception("this should not happen")
       }
   }
@@ -253,7 +253,7 @@ object algorithmic {
       case _ => None
     }
 
-    def transformMakeArray(mka: Rise, x: TDSL[Rise]): TDSL[Rise] = mka match {
+    def transformMakeArray(mka: Rise, x: ToBeTyped[Rise]): ToBeTyped[Rise] = mka match {
       case makeArray(n) => array(n)
       case App(mka, App(App(map(), f), _)) =>
         app(transformMakeArray(mka, x), app(f, x))
@@ -276,7 +276,7 @@ object algorithmic {
       App(App(map(), g), e2))))
     if e1 == e2 && !contains[Rise](i).apply(e1) =>
       Success(transpose(map(
-        fun(x => generate(lambda(untyped(i), select(t)(app(f, x), app(g, x))))))(
+        fun(x => generate(lambda(eraseType(i), select(t)(app(f, x), app(g, x))))))(
         e1
       )) :: expr.t)
   }
@@ -305,7 +305,7 @@ object algorithmic {
       case _ => None
     }
 
-    def transformMakeArray(mka: Rise): TDSL[Rise] = mka match {
+    def transformMakeArray(mka: Rise): ToBeTyped[Rise] = mka match {
       case makeArray(n) => array(n)
       case App(mka, App(_, e)) => app(transformMakeArray(mka), e)
       case _ => throw new Exception("this should not happen")
@@ -444,7 +444,7 @@ object algorithmic {
       App(a1 @ (fst() | snd()), App(unzip(), e1))),
       App(a2 @ (fst() | snd()), App(unzip(), e2))
     ) if e1 == e2 =>
-      Success(map(fun(p => pair(untyped(a1)(p))(untyped(a2)(p))))(e1) :: e.t)
+      Success(map(fun(p => pair(eraseType(a1)(p))(eraseType(a2)(p))))(e1) :: e.t)
   }
 
   // FIXME: this is very specific
@@ -457,7 +457,7 @@ object algorithmic {
     ) if x == x2 && x == x3 && v == v2 =>
       println(in.t)
       println(e.t)
-      val r = typed(in) |>
+      val r = isTyped(in) |>
         mapFst(asVectorAligned(v)) |> mapSnd(asVectorAligned(v)) |>
         fun(p => zip(fst(p))(snd(p)))
       Success(r :: e.t)
@@ -475,7 +475,7 @@ object algorithmic {
     if e1 == e2 && p == p1 && p == p2 &&
       a1 == a2 && !contains[Rise](p).apply(g)
     =>
-      Success(map(fun(p => typed(g)(untyped(a1)(p), untyped(a2)(p))))(
+      Success(map(fun(p => isTyped(g)(eraseType(a1)(p), eraseType(a2)(p))))(
         zip(fst(e1))(snd(e1))) :: e.t)
   }
 
@@ -526,16 +526,16 @@ object algorithmic {
       val freshOp = tryAll(freshLambdaIdentifier()).apply(op).get
       DFNF()(ev)(
         (reduceSeq(fun((acc, y) =>
-          typed(op)(acc, reduce(freshOp)(init)(y))))(init) o
+          isTyped(op)(acc, reduce(freshOp)(init)(y))))(init) o
           split(n)) $ arg
       )
   }
 
   
 
-  private val mulT: TDSL[Rise] = fun(x => fst(x) * snd(x))
-  private val sum: TDSL[Rise] = reduce(add)(l(0.0f))
-  private val dot: TDSL[Rise] = fun(a => fun(b =>
+  private val mulT: ToBeTyped[Rise] = fun(x => fst(x) * snd(x))
+  private val sum: ToBeTyped[Rise] = reduce(add)(l(0.0f))
+  private val dot: ToBeTyped[Rise] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> sum
   ))
   // TODO: check separability property?
@@ -547,7 +547,7 @@ object algorithmic {
       mf == ((mulT :: mf.t): Expr) &&
       weights == weights2d
       =>
-      Success((typed(nbh) |> map(dot(wH)) |> dot(wV)) :: e.t)
+      Success((isTyped(nbh) |> map(dot(wH)) |> dot(wV)) :: e.t)
   }
 
   @rule def separateDotVH(weights2d: Expr, wV: Expr, wH: Expr): Strategy[Rise] = {
@@ -558,16 +558,16 @@ object algorithmic {
       mf == ((mulT :: mf.t): Expr) &&
       weights == weights2d
     =>
-      Success((typed(nbh) |> transpose |> map(dot(wV)) |> dot(wH)) :: e.t)
+      Success((isTyped(nbh) |> transpose |> map(dot(wV)) |> dot(wH)) :: e.t)
   }
 
   @rule def separateSumHV: Strategy[Rise] = {
     case e @ App(sum2, App(join(), in)) if sum2 == ((sum :: sum2.t): Expr) =>
-      Success((typed(in) |> map(sum) |> sum) :: e.t)
+      Success((isTyped(in) |> map(sum) |> sum) :: e.t)
   }
 
   @rule def separateSumVH: Strategy[Rise] = {
     case e @ App(sum2, App(join(), in)) if sum2 == ((sum :: sum2.t): Expr) =>
-      Success((typed(in) |> transpose |> map(sum) |> sum) :: e.t)
+      Success((isTyped(in) |> transpose |> map(sum) |> sum) :: e.t)
   }
 }
