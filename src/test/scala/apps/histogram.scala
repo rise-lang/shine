@@ -1,9 +1,7 @@
 package apps
 
-import arithexpr.arithmetic.IntDiv
 import rise.core.DSL._
 import rise.core.Expr
-import rise.core.TypeLevelDSL.implN
 import rise.core.types._
 import rise.core._
 import rise.openCL.DSL._
