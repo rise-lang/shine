@@ -2,7 +2,7 @@ package exploration
 
 import org.scalatest.Ignore
 import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
-import rise.core.types.{ArrayType, f32, infer}
+import rise.core.types.{ArrayType, f32}
 
 @Ignore
 class explore extends test_util.Tests {
@@ -11,7 +11,7 @@ class explore extends test_util.Tests {
   val N = 1 << 9
 
   // example expressions
-  val mm = infer(
+  val mm = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
         map(fun(ak =>
@@ -19,18 +19,19 @@ class explore extends test_util.Tests {
             (reduce(add)(l(0.0f)) o
               map(fun(x => fst(x) * snd(x)))) $
               zip(ak, bk))) $ transpose(b) )) $ a))
-  )
+//  )
 
-  val dot = infer(
+  val dot = //infer(
     fun(ArrayType(N, f32))(a =>
       fun(ArrayType(N, f32))(b =>
         reduce(add)(l(0.0f)) o map(fun(x => fst(x) * snd(x))) $ zip(a,b)))
-  )
+//  )
 
-  val scal = infer(fun(ArrayType(N, f32))(input =>
+  val scal = //infer(
+   fun(ArrayType(N, f32))(input =>
     fun(f32)(alpha =>
       map(fun(x => alpha * x)) $ input))
-  )
+//  )
 
   test("test exploration dot version 0") {
     riseExploration(mm, "exploration/configuration/dot_0.json")

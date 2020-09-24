@@ -3,7 +3,10 @@ package exploration
 import java.nio.file.{Files, Paths}
 
 import elevate.core.Strategy
-//import elevate.core.strategies.traversal.topDown
+import elevate.core.strategies.traversal.topDown
+import rise.elevate.rules.algorithmic.fuseReduceMap
+import rise.elevate.rules.traversal.default
+import rise.elevate.strategies.normalForm.DFNF
 import exploration.runner.CExecutor
 import elevate.heuristic_search.Metaheuristic
 import elevate.heuristic_search.util.Solution
@@ -11,22 +14,9 @@ import exploration.explorationUtil.jsonParser
 import exploration.explorationUtil.jsonParser.ParseExploration
 import rise.elevate.Rise
 import strategies.standardStrategies
-//import rise.elevate.strategies.lowering._
-//import rise.elevate.rules.lowering._
-
-//import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
-//import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
-//import rise.elevate.strategies.algorithmic.reorder
-//import rise.elevate.strategies.lowering._
-//import rise.elevate.strategies.normalForm._
-//import rise.elevate.strategies.predicate._
-//import rise.elevate.strategies.tiling._
-//import rise.elevate.strategies.traversal
-//import rise.elevate.strategies.traversal._
-
-
+import rise.elevate.strategies.traversal._
 
 import scala.sys.process._
 import scala.language.postfixOps
@@ -75,8 +65,8 @@ object riseExploration {
     // -- todo --  read expression from file
 
     // make this more generic
-    val lowering = lowerToC
-    val gold = lowering.apply(solution).get
+    val lowering = DFNF()(default.RiseTraversable) `;` fuseReduceMap `@` topDown[Rise] `;` lowerToC
+    val gold = lowering(solution).get
 
     // create unique output folder
     val uniqueFilename_full = uniqueFilename(output + "/" + name)
