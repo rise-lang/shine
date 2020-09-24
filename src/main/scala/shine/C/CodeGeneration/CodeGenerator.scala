@@ -543,6 +543,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         C.AST.StructType("Record_" + typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
+      case shine.DPIA.Types.DepPairType(_, dt) =>
+        C.AST.StructType("DepRecord_nat_" + typeToStructNameComponent(dt), immutable.Seq(
+          (C.AST.Type.u32, "_fst"),
+          (typ(dt), "_snd")
+        ))
       case _: shine.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
       case _: shine.DPIA.Types.NatToDataApply => throw new Exception("This should not happen")
     }
