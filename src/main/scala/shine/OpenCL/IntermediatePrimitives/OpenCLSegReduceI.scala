@@ -32,7 +32,7 @@ object OpenCLSegReduceI {
 
     val adj = AdjustArraySizesForAllocations(init, ArrayType(k, dt), addrSpace)
 
-    comment("oclSegmentedReduce") `;`
+    comment("oclSegReduce") `;`
     // Initialize final output array g_output
     `new` (addrSpace) (adj.dt, g_output =>
       acc(init)(adj.accF(g_output.wr)) `;`

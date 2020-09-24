@@ -28,13 +28,13 @@ object OpenCLSegReduceAtomicI {
 
     val adj = AdjustArraySizesForAllocations(init, ArrayType(k, dt), addrSpace)
 
-    comment("oclSegmentedReduce") `;`
+    comment("oclSegReduceAtomic") `;`
       // Initialize final output array g_output
       `new` (addrSpace) (adj.dt, g_output =>
         acc(init)(adj.accF(g_output.wr)) `;`
 
           // Declare temporary output array s_data
-          `new` (addrSpace) (ArrayType(o, pt), s_data =>
+          `new` (AddressSpace.Global) (ArrayType(o, pt), s_data =>
 
             // ********************************************************************
             // First Reduction: Every local thread reduces m elements sequentially.
@@ -79,15 +79,9 @@ object OpenCLSegReduceAtomicI {
                           (PairAcc2(IndexType(k), dt, current_reduction.wr)))
                       ) `;`
 
-                        //TODO: This command works but acc(current_element.rd)(a) doesn't.
-                        //      Apparently this happens because the variable suffix rd isn't processed inside of acc.
-                        (a :=| pt | current_reduction.rd) `;`
-
                         atomicBinOpAssign(dt, addrSpace, f,
                           g_output.wr `@` fst(current_reduction.rd),
                           snd(current_reduction.rd))
-
-
                     ))),
                 Split(m, o, read, pt, in),
                 s_data.wr)
