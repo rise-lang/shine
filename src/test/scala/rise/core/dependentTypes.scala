@@ -5,7 +5,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 
 class dependentTypes extends test_util.Tests {
-  ignore("Infer int addition type") {
+  test("Infer int addition type") {
     val e =
       nFun(n =>
         fun(
@@ -15,7 +15,7 @@ class dependentTypes extends test_util.Tests {
           )
         )(xs => xs |> depMapSeq(nFun(_ => mapSeq(fun(x => x)))))
       )
-    val inferred: Expr = e
+    val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     println(inferred.t)
   }
@@ -24,7 +24,7 @@ class dependentTypes extends test_util.Tests {
     val e = nFun(n =>
       fun(n `.` f32)(x => dpair(n)(x))
     )
-     val inferred: Expr = e
+    val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -33,7 +33,7 @@ class dependentTypes extends test_util.Tests {
     val e = fun(n2dPairT(n => n`.`f32))(pair =>
       dmatch(pair)(nFun(n => fun(x => dpair(n)(x))))
     )
-    val inferred: Expr = e
+    val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -44,7 +44,7 @@ class dependentTypes extends test_util.Tests {
         reduceSeq(fun(x => fun(y => x + y)))(l(1.0f))(xs))
       ))
     )
-    val inferred: Expr = e
+    val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -55,7 +55,7 @@ class dependentTypes extends test_util.Tests {
         depMapSeq(nFun(_ => mapSeq(fun(x => x))))(array)
       ))
 
-    val inferred: Expr = e
+    val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -65,7 +65,7 @@ class dependentTypes extends test_util.Tests {
       depMapSeq(nFun(_ => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
     ))
 
-    val inferred: Expr = e
+    val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -89,7 +89,7 @@ class dependentTypes extends test_util.Tests {
       }
     ))))
 
-    val inferred: Expr = e
+    val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
