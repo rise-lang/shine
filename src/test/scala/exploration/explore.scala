@@ -5,7 +5,7 @@ import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
 import rise.core.types.{ArrayType, f32, infer}
 
 @Ignore
-class explore extends shine.test_util.Tests {
+class explore extends test_util.Tests {
 
   // input size
   val N = 1 << 9

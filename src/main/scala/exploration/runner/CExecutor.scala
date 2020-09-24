@@ -2,13 +2,13 @@ package exploration.runner
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import elevate.rise.Rise
 import elevate.heuristic_search.Runner
 import shine.C.Program
 import util.{createTempFile, gen, writeToTempFile}
 import elevate.core.Strategy
 import elevate.heuristic_search.util.{IOHelper, Solution}
 import exploration.explorationUtil.ExplorationErrorLevel.ExplorationErrorLevel
+import rise.elevate.Rise
 //import exploration.explorationUtil.executeC
 import exploration.explorationUtil.ExplorationErrorLevel._
 //import exploration.explorationUtil.executeC.{Exception, globalBest}
