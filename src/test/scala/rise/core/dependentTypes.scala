@@ -45,7 +45,6 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
   }
 
   test("Dependent pair match with reduction") {
@@ -57,6 +56,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
   }
 
 

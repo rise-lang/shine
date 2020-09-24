@@ -540,9 +540,19 @@ private class InferAccessAnnotation {
 
       case rp.DMatch() =>
         def buildType(t: rt.Type): PhraseType = t match {
-          case _ =>
-            ???
-          //case _ => error(s"did not expect t")
+          case rt.FunType(rt.DepPairType(x, elemT),
+            rt.FunType(rt.DepFunType(i, rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
+            x match {
+              case x:rt.NatIdentifier =>
+                assert(i.isInstanceOf[rt.NatIdentifier])
+                val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
+                val newT = expT(DepPairType(natIdentifier(x), dataType(elemT)), read) ->:
+                  nFunT(i_, expT(dataType(app1), read) ->: expT(dataType(outT), read)) ->:
+                    expT(dataType(retT), read)
+                newT
+              case _ => ???
+            }
+          case _ => error(s"did not expect t")
         }
         buildType(p.t)
     }
