@@ -18,7 +18,7 @@ object lowering {
 
         replaceAll(what, idx)(ev)(p) match {
           case Success(replaced) =>
-            Success(let(toMem(storedSubExpr))(lambda(TDSL(idx), replaced)) :: p.t)
+            Success(let(toMem(storedSubExpr))(lambda(ToBeTyped(idx), replaced)) :: p.t)
           case Failure(_) => Failure(storeInMemory(what, how))
         }
       })

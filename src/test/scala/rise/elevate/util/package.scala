@@ -50,35 +50,35 @@ package object util {
   }
 
   // notation
-  def T: TDSL[Rise] = transpose
-  def S: TDSL[DepApp[NatKind]] = split(tileSize) //slide(3)(1)
-  def J: TDSL[Rise] = join
-  def *(x: TDSL[Rise]): TDSL[App] = map(x)
-  def **(x: TDSL[Rise]): TDSL[App] = map(map(x))
-  def ***(x: TDSL[Rise]): TDSL[App] = map(map(map(x)))
-  def ****(x: TDSL[Rise]): TDSL[App] = map(map(map(map(x))))
-  def *****(x: TDSL[Rise]): TDSL[App] = map(map(map(map(map(x)))))
-  def ******(x: TDSL[Rise]): TDSL[App] = map(map(map(map(map(map(x))))))
+  def T: ToBeTyped[Rise] = transpose
+  def S: ToBeTyped[DepApp[NatKind]] = split(tileSize) //slide(3)(1)
+  def J: ToBeTyped[Rise] = join
+  def *(x: ToBeTyped[Rise]): ToBeTyped[App] = map(x)
+  def **(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(x))
+  def ***(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(map(x)))
+  def ****(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(map(map(x))))
+  def *****(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(map(map(map(x)))))
+  def ******(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(map(map(map(map(x))))))
 
-  def λ(f: TDSL[Identifier] => TDSL[Expr]): TDSL[Lambda] = fun(f)
+  def λ(f: ToBeTyped[Identifier] => ToBeTyped[Expr]): ToBeTyped[Lambda] = fun(f)
 
   // map in LCNF
-  def *!(x: TDSL[Rise]): TDSL[App] = {
+  def *!(x: ToBeTyped[Rise]): ToBeTyped[App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(x, i)))
   }
 
-  def **!(x: TDSL[Rise]): TDSL[App] = {
+  def **!(x: ToBeTyped[Rise]): ToBeTyped[App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(*!(x), i)))
   }
 
-  def ***!(x: TDSL[Rise]): TDSL[App] = {
+  def ***!(x: ToBeTyped[Rise]): ToBeTyped[App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(**!(x), i)))
   }
 
-  def ****!(x: TDSL[Rise]): TDSL[App] = {
+  def ****!(x: ToBeTyped[Rise]): ToBeTyped[App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(***!(x), i)))
   }

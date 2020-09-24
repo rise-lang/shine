@@ -1,7 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.{Cst, RangeAdd}
-import rise.core.TypedDSL.TDSL
+import rise.core.TypedDSL.ToBeTyped
 import rise.core.types._
 
 // scalastyle:off multiple.string.literals
@@ -221,7 +221,7 @@ object TypeLevelDSL {
     @inline def `..`(f: NatToData): DepArrayType = DepArrayType(n, f)
   }
 
-  implicit final class NatCollectionConstructors(private val e: TDSL[Expr])
+  implicit final class NatCollectionConstructors(private val e: ToBeTyped[Expr])
     extends AnyVal {
     @inline def `#`(nats: Nat*): Nat = {
       NatCollectionFromArray(e)(nats: _*)

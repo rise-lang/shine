@@ -34,7 +34,7 @@ class tiling extends test_util.Tests {
   def betaEtaEquals(a: Rise, b: Rise): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toTDSL(na) :: nb.t
+    val uab: Rise = toBeTyped(na) :: nb.t
     makeClosed(uab) == makeClosed(nb)
   }
   // Check that DSL makes sense
@@ -247,9 +247,9 @@ class tiling extends test_util.Tests {
   }
 
   def wrapInLambda[T <: Expr](dim: Int,
-                   f: TDSL[Identifier] => TDSL[T],
-                   genInputType: List[NatIdentifier] => ArrayType,
-                   natIds: List[NatIdentifier] = List()): TDSL[DepLambda[NatKind]] = {
+                              f: ToBeTyped[Identifier] => ToBeTyped[T],
+                              genInputType: List[NatIdentifier] => ArrayType,
+                              natIds: List[NatIdentifier] = List()): ToBeTyped[DepLambda[NatKind]] = {
     dim match {
       case 1 => nFun(n => fun(genInputType( natIds :+ n))(f))
       case d => nFun(n => wrapInLambda(d - 1, f, genInputType, natIds :+ n))

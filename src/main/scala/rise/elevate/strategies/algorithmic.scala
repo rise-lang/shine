@@ -31,13 +31,13 @@ object algorithmic {
     // TODO: this should be expressed with elevate strategies
     @nowarn("msg=match may not be exhaustive")
     @scala.annotation.tailrec
-    def mapFirstFissionRec(x: Identifier, f: TDSL[Rise], gx: Rise): TDSL[Rise] = {
+    def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): ToBeTyped[Rise] = {
       gx match {
         case App(f2, gx2) =>
           if (gx2 == x) {
             map(f2) >> map(f)
           } else {
-            mapFirstFissionRec(x, fun(e => f(typed(f2)(e))), gx2)
+            mapFirstFissionRec(x, fun(e => f(preserveType(f2)(e))), gx2)
           }
       }
     }
@@ -53,7 +53,7 @@ object algorithmic {
   @strategy def mapFullFission: Strategy[Rise] = e => {
     // TODO: this should be expressed with elevate strategies
     @nowarn("msg=match may not be exhaustive")
-    def mapFullFissionRec(x: Identifier, gx: Rise): TDSL[Rise] = {
+    def mapFullFissionRec(x: Identifier, gx: Rise): ToBeTyped[Rise] = {
       gx match {
         case App(f, gx2) =>
           if (gx2 == x) {

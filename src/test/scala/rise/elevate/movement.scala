@@ -21,7 +21,7 @@ class movement extends test_util.Tests {
   def betaEtaEquals(a: Rise, b: Rise): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toTDSL(na) :: nb.t
+    val uab: Rise = toBeTyped(na) :: nb.t
     makeClosed(uab) == makeClosed(nb)
   }
 

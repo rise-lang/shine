@@ -66,8 +66,8 @@ object Primitive {
 
         object ${TermName{name}}  extends Builder {
           override def primitive: ${TypeName(className)} = $makeInstance()
-          override def apply: rise.core.TypedDSL.TDSL[${TypeName(className)}] =
-            rise.core.TypedDSL.toTDSL($makeInstance())
+          override def apply: rise.core.TypedDSL.ToBeTyped[${TypeName(className)}] =
+            rise.core.TypedDSL.toBeTyped($makeInstance())
           override def unapply(arg: rise.core.Expr): Boolean = arg match {
             case _: ${TypeName(className)} => true
             case _ => false
@@ -107,8 +107,8 @@ object Primitive {
 
         final case class ${TypeName(name)}(..$params) extends Builder {
           override def primitive: ${TypeName(className)} = $makeInstance()
-          override def apply: rise.core.TypedDSL.TDSL[${TypeName(className)}] =
-            rise.core.TypedDSL.toTDSL($makeInstance())
+          override def apply: rise.core.TypedDSL.ToBeTyped[${TypeName(className)}] =
+            rise.core.TypedDSL.toBeTyped($makeInstance())
         }
 
         object ${TermName(name)} {
