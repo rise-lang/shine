@@ -89,28 +89,18 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
     val reduceHistsInt = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
       hists |> // m.k.int
-        oclReduceSeq(rise.core.types.AddressSpace.Local)(
-          fun(acc_histo => // k.int
-            fun(cur_histo => // k.int
-              zip(acc_histo)(cur_histo) |> // k.(int x int)
-                mapLocal(fun(x => fst(x) + snd(x))) // (int x int)
-            )
-          )
-        )(
-          generate(fun(IndexType(k))(_ => l(0))) |>
-            mapLocal(id) // k.int
-        ) |>
-        mapLocal(id) // k.int
+        transpose |> // k.m.int
+        mapLocal(
+          // m.int
+          oclReduceSeq(rise.core.types.AddressSpace.Local)(
+            fun(a => fun(x => a + x)) // int
+          )(l(0))
+        ) // k.int
     )))
 
     val tempOutput = runKernel(multipleHistogramsInt)(LocalSize(50), GlobalSize(1000))(n, k, indices, values)
 
-    val m = tempOutput.length
-    val threads = if (k > 1024) 1024 else k
-
-    print("\nReducing all subhistograms...")
-
-    val finalOutput = runSecondKernel(reduceHistsInt)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
+    val finalOutput = finalReduce(tempOutput, reduceHistsInt)
 
     checkResult(finalOutput, result)
   }
@@ -132,30 +122,29 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
 
     val reduceHistsFloat = nFun(m => nFun(k => fun(histsfT(m, k))(hists =>
       hists |> // m.k.float
-        oclReduceSeq(rise.core.types.AddressSpace.Local)(
-          fun(acc_histo => // k.float
-            fun(cur_histo => // k.float
-              zip(acc_histo)(cur_histo) |> // k.(float x float)
-                mapLocal(fun(x => fst(x) + snd(x))) // (float x float)
-            )
-          )
-        )(
-          generate(fun(IndexType(k))(_ => l(0.0f))) |>
-            mapLocal(id) // k.float
-        ) |>
-        mapLocal(id) // k.float
+        transpose |> // k.m.float
+        mapLocal(
+          // m.float
+          oclReduceSeq(rise.core.types.AddressSpace.Local)(
+            fun(a => fun(x => a + x)) // float
+          )(l(0.0f))
+        ) // k.float
     )))
 
     val tempOutput = runKernel(multipleHistogramsFloat)(LocalSize(50), GlobalSize(1000))(n, k, indices, fValues)
 
-    val m = tempOutput.length
+    val finalOutput = finalReduce(tempOutput, reduceHistsFloat)
+
+    checkResult(finalOutput, fResult)
+  }
+
+  def finalReduce[T](tempOutput: Array[T], kernel: Expr): Array[T] = {
+    val m = tempOutput.length / k
     val threads = if (k > 1024) 1024 else k
 
     print("\nReducing all subhistograms...")
 
-    val finalOutput = runSecondKernel(reduceHistsFloat)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
-
-    checkResult(finalOutput, fResult)
+    runSecondKernel(kernel)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
   }
 
   def checkResult[T](output: Array[T], expected: Array[T]): Unit = {

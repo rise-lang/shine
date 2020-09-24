@@ -1,9 +1,10 @@
 package apps
 
+import arithexpr.arithmetic.IntDiv
 import rise.core.DSL._
 import rise.core.Expr
+import rise.core.TypeLevelDSL.implN
 import rise.core.types._
-import rise.core.TypeLevelDSL._
 import rise.core._
 import rise.openCL.DSL._
 import shine.OpenCL.{GlobalSize, LocalSize}
@@ -33,20 +34,15 @@ class histogram extends shine.test_util.TestsWithExecutor {
     result(index) = result(index) + 1
   }
 
-  private val reduceHists = implN(m => implN(k => fun(histsT(m, k))(hists =>
+  private val reduceHists = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
     hists |> // m.k.int
-      oclReduceSeq(AddressSpace.Local)(
-        fun(acc_histo => // k.int
-          fun(cur_histo => // k.int
-            zip(acc_histo)(cur_histo) |> // k.(int x int)
-              mapLocal(fun(x => fst(x) + snd(x))) // (int x int)
-          )
-        )
-      )(
-        generate(fun(IndexType(k))(_ => l(0))) |>
-          mapLocal(id) // k.int
-      ) |>
-      mapLocal(id) // k.int
+      transpose |> // k.m.int
+      mapLocal(
+        // m.int
+        oclReduceSeq(AddressSpace.Local)(
+          fun(a => fun(x => a + x)) // int
+        )(l(0))
+      ) // k.int
   )))
 
   test("Sequential Histogram") {
@@ -68,11 +64,14 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   test("Reduce by Index: Each thread accumulates into its own histogram") {
+    val threads = 32
+    val chunkSize = n / threads
+
     val reduceByIndexIndividualHistograms = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
-            split(256) |>
+            split(chunkSize) |>
               mapLocal(
                 oclReduceByIndexSeq(AddressSpace.Local)(add)(
                   generate(fun(IndexType(k))(_ => l(0))) |>
@@ -80,40 +79,45 @@ class histogram extends shine.test_util.TestsWithExecutor {
                 ) >>
                 mapSeq(id)
               )
-        ) |>
-        toLocal |>
-        reduceHists
+        )
     )))
 
-    val output = runKernel(reduceByIndexIndividualHistograms)(LocalSize(32), GlobalSize(32))(n, k, indices)
+    val tempOutput = runKernel(reduceByIndexIndividualHistograms)(LocalSize(threads), GlobalSize(threads))(n, k, indices)
 
-    checkResult(output._1, output._2)
+    val finalOutput = finalReduce(tempOutput._1, reduceHists)
+
+    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
   test("Reduce by Index: Multiple threads accumulate into one histogram") {
+    val lSize = 1024
+    val gSize = n
+
     val reduceByIndexSharedHistograms = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
-            split(1024) |>
+            split(lSize) |>
             mapWorkGroup(
               oclReduceByIndexLocal(AddressSpace.Local)(add)(
                 generate(fun(IndexType(k))(_ => l(0))) |>
                   mapLocal(id)
               ) >>
-              mapLocal(id)
+                mapLocal(id)
             )
-        ) |>
-        toGlobal |>
-        reduceHists
+        )
     )))
 
-    val output = runKernel(reduceByIndexSharedHistograms)(LocalSize(1024), GlobalSize(8192))(n, k, indices)
+    val tempOutput = runKernel(reduceByIndexSharedHistograms)(LocalSize(lSize), GlobalSize(gSize))(n, k, indices)
 
-    checkResult(output._1, output._2)
+    val finalOutput = finalReduce(tempOutput._1, reduceHists)
+
+    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
   test("Reduce by Index: All threads accumulate into one histogram") {
+    val threads = 512
+
     val reduceByIndexSingleHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
@@ -126,12 +130,46 @@ class histogram extends shine.test_util.TestsWithExecutor {
         )
     )))
 
-    val output = runKernel(reduceByIndexSingleHistogram)(LocalSize(512), GlobalSize(512))(n, k, indices)
+    val output = runKernel(reduceByIndexSingleHistogram)(LocalSize(threads), GlobalSize(threads))(n, k, indices)
 
     checkResult(output._1, output._2)
   }
 
+  test("Segmented Reduction: Atomic operation instead of second reduction") {
+    val lSize = 64
+    val gSize = n / 32
+    val chunkSize = 32 * lSize
+
+    //TODO: See TODO below
+    val sortedIndices = indices.sorted
+
+    val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is =>
+      generate(fun(IndexType(n))(_ => l(1))) |>
+        fun(xs =>
+          zip(is)(xs) |>
+            split(chunkSize) |>
+            mapWorkGroup(
+              oclSegReduceAtomic(AddressSpace.Local)(add)(
+                generate(fun(IndexType(k))(_ => l(0))) |>
+                  mapLocal(id)
+              ) >>
+                mapLocal(id)
+            )
+        )
+    )))
+
+    val tempOutput = runKernel(segmentedReductionAtomic)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices)
+
+    val finalOutput = finalReduce(tempOutput._1, reduceHists)
+
+    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
+  }
+
   test("Segmented Reduction: Tree-based second reduction") {
+    val lSize = 64
+    val gSize = n / 32
+    val chunkSize = 32 * lSize
+
     //TODO: The input array has to be sorted before it can used by the segmented reduction algorithm.
     //      Usually this would be part of the algorithm in Rise however, as there isn't a sorting algorithm
     //      in Rise yet, this has to be done by a function call in Scala.
@@ -144,7 +182,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
-            split(1024) |>
+            split(chunkSize) |>
               mapWorkGroup(
                 oclSegReduce(AddressSpace.Local)(add)(
                   generate(fun(IndexType(k))(_ => l(0))) |>
@@ -152,55 +190,46 @@ class histogram extends shine.test_util.TestsWithExecutor {
                 ) >>
                 mapLocal(id)
               )
-        ) |>
-        toGlobal |>
-        reduceHists
+        )
     )))
 
-    val output = runKernel(segmentedReductionTree)(LocalSize(32), GlobalSize(n / 32))(n, k, sortedIndices)
+    val tempOutput = runKernel(segmentedReductionTree)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices)
 
-    checkResult(output._1, output._2)
+    val finalOutput = finalReduce(tempOutput._1, reduceHists)
+
+    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
-  test("Segmented Reduction: Atomic operation instead of second reduction") {
-    //TODO: See TODO above
-    val sortedIndices = indices.sorted
+  def finalReduce(tempOutput: Array[Int], kernel: Expr): (Array[Int], TimeSpan[Time.ms]) = {
+    val m = tempOutput.length / k
+    val threads = if (k > 1024) 1024 else k
 
-    val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is =>
-      generate(fun(IndexType(n))(_ => l(1))) |>
-        fun(xs =>
-          zip(is)(xs) |>
-            split(2048) |>
-            mapWorkGroup(
-              oclSegReduceAtomic(AddressSpace.Local)(add)(
-                generate(fun(IndexType(k))(_ => l(0))) |>
-                  mapLocal(id)
-              ) >>
-                mapLocal(id)
-            )
-        ) |>
-        toGlobal |>
-        reduceHists
-    )))
+    print("\nReducing all subhistograms...")
 
-    val output = runKernel(segmentedReductionAtomic)(LocalSize(64), GlobalSize(64 * n / 2048))(n, k, sortedIndices)
-
-    checkResult(output._1, output._2)
+    runSecondKernel(kernel)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
   }
 
-  def checkResult(output: Array[Int], runtime: TimeSpan[Time.ms]): Unit = {
+  def checkResult(output: Array[Int], firstTime: TimeSpan[Time.ms], secondTime: TimeSpan[Time.ms] = null): Unit = {
     println("\nResult: ")
     print(output.deep.mkString(" "))
-
-    println("\nExpected: ")
-    for(i <- 0 until k) {
-      print(result(i) + " ")
-
-      assert(output(i) == result(i))
-    }
     println("")
 
-    println("Time: " + runtime)
+    for(i <- 0 until k) {
+      assert(output(i) == result(i))
+    }
+
+    println("Result matches with expected values.")
+
+    if (secondTime != null) {
+      val total = firstTime + secondTime
+      println("Runtime of first kernel: " + firstTime)
+      println("Runtime of second kernel: " + secondTime)
+      println("Total runtime: " + total)
+    }
+    else {
+      println("Runtime: " + firstTime)
+    }
+
   }
 
   def runKernel(kernel: Expr)(
@@ -216,4 +245,19 @@ class histogram extends shine.test_util.TestsWithExecutor {
       .as[ScalaFunction `(` Int `,` Int `,` Array[Int] `)=>` Array[Int]]
     runKernel(localSize, globalSize)(n `,` k `,` indices)
     }
+
+  def runSecondKernel(kernel: Expr)(
+    localSize: LocalSize,
+    globalSize: GlobalSize)(
+    m: Int,
+    k: Int,
+    input: Array[Int]
+  ): (Array[Int], TimeSpan[Time.ms]) = {
+    import shine.OpenCL._
+    val runKernel = gen
+      .OpenCLKernel(kernel)
+      .as[ScalaFunction `(` Int `,` Int `,` Array[Int]`)=>` Array[Int]]
+    runKernel(localSize, globalSize)(m `,` k `,` input)
+  }
+
 }

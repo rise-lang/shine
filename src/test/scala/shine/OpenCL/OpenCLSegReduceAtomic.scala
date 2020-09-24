@@ -54,30 +54,29 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
 
     val reduceHists = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
       hists |> // m.k.int
-        oclReduceSeq(rise.core.types.AddressSpace.Local)(
-          fun(acc_histo => // k.int
-            fun(cur_histo => // k.int
-              zip(acc_histo)(cur_histo) |> // k.(int x int)
-                mapLocal(fun(x => fst(x) + snd(x))) // (int x int)
-            )
-          )
-        )(
-          generate(fun(IndexType(k))(_ => l(0))) |>
-            mapLocal(id) // k.int
-        ) |>
-        mapLocal(id) // k.int
+        transpose |> // k.m.int
+        mapLocal(
+          // m.int
+          oclReduceSeq(rise.core.types.AddressSpace.Local)(
+            fun(a => fun(x => a + x)) // int
+          )(l(0))
+        ) // k.int
     )))
 
     val tempOutput = runKernel(oclSegmentedReduceAtomicTest)(LocalSize(32), GlobalSize(256))(n, k, indices, values)
 
-    val m = tempOutput.length
+    val finalOutput = finalReduce(tempOutput, reduceHists)
+
+    checkResult(finalOutput, result)
+  }
+
+  def finalReduce[T](tempOutput: Array[T], kernel: Expr): Array[T] = {
+    val m = tempOutput.length / k
     val threads = if (k > 1024) 1024 else k
 
     print("\nReducing all subhistograms...")
 
-    val finalOutput = runSecondKernel(reduceHists)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
-
-    checkResult(finalOutput, result)
+    runSecondKernel(kernel)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
   }
 
   def checkResult[T](output: Array[T], expected: Array[T]): Unit = {
@@ -93,17 +92,17 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
     println("")
   }
 
-  def runKernel(kernel: Expr)(
+  def runKernel[T](kernel: Expr)(
     localSize: LocalSize,
     globalSize: GlobalSize)(
-                 n: Int,
-                 k: Int,
-                 indices: Array[Int],
-                 values: Array[Int]
-               ): Array[Int] = {
+    n: Int,
+    k: Int,
+    indices: Array[Int],
+    values: Array[T]
+  ): Array[T] = {
     val runKernel = gen
       .OpenCLKernel(kernel)
-      .as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Int]`)=>` Array[Int]]
+      .as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[T]`)=>` Array[T]]
     val (output, _) = runKernel(localSize, globalSize)(n `,` k `,` indices `,` values)
     output
   }
@@ -111,10 +110,10 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
   def runSecondKernel[T](kernel: Expr)(
     localSize: LocalSize,
     globalSize: GlobalSize)(
-                          m: Int,
-                          k: Int,
-                          input: Array[T]
-                        ): Array[T] = {
+    m: Int,
+    k: Int,
+    input: Array[T]
+  ): Array[T] = {
     val runKernel = gen
       .OpenCLKernel(kernel)
       .as[ScalaFunction `(` Int `,` Int `,` Array[T]`)=>` Array[T]]
