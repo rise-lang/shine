@@ -175,8 +175,11 @@ class parserTest extends  AnyFlatSpec {
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(),
       r.App(r.App(r.primitives.Add(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
       r.App(r.App(r.primitives.Mod(), r.Literal(rS.IntData(42))), r.Literal(rS.IntData(5))))))) => true
-      case r.Lambda(x,e) => throw Exception("not correct Identifier or not correct expression: "+ x + " , " + e)
-      case a => throw Exception("not a lambda: "+ a)
+      case r.Lambda(x,e) => throw new RuntimeException("not correct Identifier or not correct expression: "+ x + " , " + e + ": expected: " +
+        r.Lambda(r.Identifier("x")() , r.Lambda(r.Identifier("y")() , r.App(r.primitives.Neg()(),
+          r.App(r.App(r.primitives.Add()(), r.App(r.App(r.primitives.Mul()(), r.Identifier("x")())(), r.Identifier("y")())())(),
+            r.App(r.App(r.primitives.Mod()(), r.Literal(rS.IntData(42)))(), r.Literal(rS.IntData(5)))())())())())())
+      case a => throw new RuntimeException("not a lambda: "+ a)
     }
   }
 
