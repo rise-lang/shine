@@ -183,4 +183,91 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "be able to parse 'Complex2.rise'" in {
+    val fileName: String = testFilePath + "Complex2.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val ex: r.Expr = parse(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Mul(), r.App(r.App(r.primitives.Add(),
+      r.Identifier("x")), r.Identifier("x"))), r.Identifier("x")))=> true
+      case r.Lambda(x,e) => throw new RuntimeException("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => throw new RuntimeException("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'Complex3.rise'" in {
+    val fileName: String = testFilePath + "Complex3.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val ex: r.Expr = parse(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Mul(), r.App(r.App(r.primitives.Add(),
+      r.Identifier("x")), r.Identifier("x"))), r.Identifier("x")))=> true
+      case r.Lambda(x,e) => throw new RuntimeException("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => throw new RuntimeException("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'Complex4.rise'" in {
+    val fileName: String = testFilePath + "Complex4.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val ex: r.Expr = parse(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
+      r.Identifier("x")), r.Identifier("x"))))=> true
+      case r.Lambda(x,e) => throw new RuntimeException("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => throw new RuntimeException("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'Complex5.rise'" in {
+    val fileName: String = testFilePath + "Complex5.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val ex: r.Expr = parse(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
+      r.Identifier("x")), r.Identifier("x"))))=> true
+      case r.Lambda(x,e) => throw new RuntimeException("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => throw new RuntimeException("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'Complex6.rise'" in {
+    val fileName: String = testFilePath + "Complex6.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val ex: r.Expr = parse(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
+      r.Identifier("x")), r.Identifier("x"))))=> true
+      case r.Lambda(x,e) => throw new RuntimeException("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => throw new RuntimeException("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'Complex7.rise'" in {
+    val fileName: String = testFilePath + "Complex7.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val ex: r.Expr = parse(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
+      r.Identifier("x")), r.Identifier("x"))))=> true
+      case r.Lambda(x,e) => throw new RuntimeException("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => throw new RuntimeException("not a lambda: "+ a)
+    }
+  }
 }
