@@ -265,27 +265,6 @@ object parse {
         parseArrow |>
         parseExpression
 
-//    println("durchgelaufen: "+ psLambdaOld)
-//    //Todo: here call n-times parseApp
-//    var ps:ParseState = psLambdaOld match {
-//      case Left(e) => return Left(e)
-//      case Right(ps) => ps
-//    }
-//    val numberParseApps = countHowManyParseApps(ps._1)
-//    val psLambda = if(numberParseApps==0){
-//       val p = parseExpression(ps)
-//      println("psLambda:parseExpression: " + p)
-//      p
-//    }else {
-//      for(i<- 0 until numberParseApps){
-//        ps = parseApp(ps) match {
-//          case Left(e) => return Left(e)
-//          case Right(p) => p
-//        }
-//      }
-//      println("psLambda:parseApp-" + numberParseApps + "-times: " + ps)
-//      Right(ps)
-//    }
       psLambda match {
       case Left(e) => Left(e)
       case Right(ps) => {
@@ -296,7 +275,7 @@ object parse {
         val synElemList = ps._2
         val (expr, synElemListExpr) = (synElemList.head match {
           case SExpr(e) => e
-          case _ => ???
+          case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
         }, synElemList.tail)
 
         val (typedIdent, synElemListTIdent) =
@@ -304,11 +283,11 @@ object parse {
             case SType(t) =>
               synElemListExpr.tail.head match {
                 case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
-                case _ => ???
+                case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
               }
             case SExpr(i) => {
               println(i)
-              ???
+              throw new RuntimeException("We are in TopLevelLambda and there is an Type for the declared Identifier needed; " + i +" is not an r.Type!")
             }
           }
 
@@ -352,7 +331,7 @@ object parse {
     }
     val (expr, synElemListExpr) = (synElemList.head match {
       case SExpr(e) => e
-      case _ => ???
+      case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
     }, synElemList.tail)
 
     val (maybeTypedIdent, synElemListMaybeTIdent) =
@@ -360,7 +339,7 @@ object parse {
         case SType(t) =>
           synElemListExpr.tail.head match {
             case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
-            case _ => ???
+            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
           }
         case SExpr(i) => (i, synElemListExpr.tail)
       }
@@ -394,8 +373,6 @@ object parse {
       Right(parseState) |>
         (parseLambda _ || parseApp ||
           parseIdent || parseUnOperator || parseBinOperator || parseBracesExpr  ||
-           //Todo: parseApp creates an endless loop because an expression
-                                                            //Todo: creates two expression and so on...
         parseNumber)
 
   }
@@ -452,11 +429,10 @@ object parse {
 
   def parseApp(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     println("parseApp: " + parseState)
-    //TODO: Here endless loop because Expression is everything!!!
     if(parseState._3==0){
       println("Abbruch; parseApp: "+ parseState)
       return Left(NoParseAppLeft())
-    }//TODO: Here endless loop because Expression is everything!!!
+    }
     val pas = (parseState._1, parseState._2, parseState._3-1)
     val p =
       Right(pas)  |>
@@ -562,7 +538,7 @@ object parse {
     nextToken match {
       case BinOp(op, _) => op match {
         case OpType.BinOpType.ADD =>
-          Right((restTokens, SExpr(r.primitives.Add()()) :: parsedSynElems, c))  //Todo: Or r.DSL.add ?
+          Right((restTokens, SExpr(r.primitives.Add()()) :: parsedSynElems, c))
         case OpType.BinOpType.DIV =>
           Right((restTokens, SExpr(r.primitives.Div()()) :: parsedSynElems, c))
         case OpType.BinOpType.EQ =>
