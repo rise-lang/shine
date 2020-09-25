@@ -134,18 +134,18 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   test("Segmented Reduction: Atomic operation instead of second reduction") {
-    //val lSize = 64
-    //val gSize = n / 32
-    //val chunkSize = 32 * lSize
+    val lSize = 64
+    val gSize = n / 32
+    val chunkSize = 32 * lSize
 
     //TODO: See TODO below
-    //val sortedIndices = indices.sorted
+    val sortedIndices = indices.sorted
 
     val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
-            split(1024) |>
+            split(chunkSize) |>
             mapWorkGroup(
               oclSegReduceAtomic(AddressSpace.Local)(add)(
                 generate(fun(IndexType(k))(_ => l(0))) |>
@@ -156,7 +156,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
         )
     )))
 
-    val tempOutput = runKernel(segmentedReductionAtomic)(LocalSize(32), GlobalSize(256))(n, k, indices)
+    val tempOutput = runKernel(segmentedReductionAtomic)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices)
 
     val finalOutput = finalReduce(tempOutput._1, reduceHists)
 
@@ -174,7 +174,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     //      This way of sorting the input array is pretty slow which is why it isn't added to the
     //      elapsed time of the kernel call. Therefore the runtime of this test case is considerably
     //      faster than it normally would be.
-    //val sortedIndices = indices.sorted
+    val sortedIndices = indices.sorted
 
     val segmentedReductionTree = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
@@ -191,7 +191,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
         )
     )))
 
-    val tempOutput = runKernel(segmentedReductionTree)(LocalSize(lSize), GlobalSize(gSize))(n, k, indices)
+    val tempOutput = runKernel(segmentedReductionTree)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices)
 
     val finalOutput = finalReduce(tempOutput._1, reduceHists)
 
