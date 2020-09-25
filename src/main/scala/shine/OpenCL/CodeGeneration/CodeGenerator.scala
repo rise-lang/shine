@@ -19,7 +19,6 @@ import shine.OpenCL.ImperativePrimitives._
 import shine._
 
 import scala.collection.{immutable, mutable}
-import scala.language.implicitConversions
 
 object CodeGenerator {
   def apply(): CodeGenerator =
@@ -487,9 +486,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           val workaround = codeGenAtomicBinOpAssignWorkaround(dt, addrSpace, e, a, p, dst, env)
 
           dt match {
-            // Every atomic operation only works on int pointers (except xchg).
-            // Therefore you can only use these atomic operations on DPIA types that will
-            // be translated to ints in the generated code.
             case shine.DPIA.Types.int |
                  shine.DPIA.Types.NatType |
                  shine.DPIA.Types.bool |
@@ -520,7 +516,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                 case _ => workaround
               }
 
-            case _ => workaround
+            case shine.DPIA.Types.i32 | shine.DPIA.Types.u32 | shine.DPIA.Types.f32 => workaround
+
+            case _ => error("Currently only 32-bit data types are supported for atomic operations.")
           }
 
         case _ => error("This should not happen.")
@@ -581,21 +579,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           ))
         )
       ))
-    }
-
-    protected implicit def convertBinaryOp(op: Operators.Binary.Value): shine.C.AST.BinaryOperator.Value = {
-      import Operators.Binary._
-      op match {
-        case ADD => C.AST.BinaryOperator.+
-        case SUB => C.AST.BinaryOperator.-
-        case MUL => C.AST.BinaryOperator.*
-        case DIV => C.AST.BinaryOperator./
-        case MOD => C.AST.BinaryOperator.%
-        case GT => C.AST.BinaryOperator.>
-        case LT => C.AST.BinaryOperator.<
-        case EQ => C.AST.BinaryOperator.==
-        case NEQ => C.AST.BinaryOperator.!=
-      }
     }
   }
 }
