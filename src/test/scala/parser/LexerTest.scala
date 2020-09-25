@@ -6,9 +6,10 @@ import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
 
 class LexerTest extends  AnyFlatSpec {
+  val filePath = "src/test/scala/parser/readFiles/filesToLex/"
 
   "RecognizeLexeme" should "work for the identity" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/identity.rise"
+    val fileName: String = filePath + "identity.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -18,7 +19,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the constant42" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/constant42.rise"
+    val fileName: String = filePath + "constant42.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -28,7 +29,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the longIdentity" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/longIdentity.rise"
+    val fileName: String = filePath + "longIdentity.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -38,7 +39,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the identityWithI32" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/identityWithI32.rise"
+    val fileName: String = filePath + "identityWithI32.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -48,7 +49,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the longIdentityWithI32" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/longIdentityWithI32.rise"
+    val fileName: String = filePath + "longIdentityWithI32.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -58,7 +59,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the ComplexIdentifier" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/ComplexIdentifier.rise"
+    val fileName: String = filePath + "ComplexIdentifier.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -68,7 +69,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for TypWith-" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/TypWith-.rise"
+    val fileName: String = filePath + "TypWith-.rise"
     val file: FileReader =  FileReader(fileName)
     val thrown = intercept[Exception] {
       RecognizeLexeme(file)
@@ -78,7 +79,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for noBacklashAtBeginning.rise" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/noBacklashAtBeginning.rise"
+    val fileName: String = filePath + "noBacklashAtBeginning.rise"
     val file: FileReader =  FileReader(fileName)
     val thrown = intercept[Exception] {
       RecognizeLexeme(file)
@@ -87,7 +88,7 @@ class LexerTest extends  AnyFlatSpec {
     thrown.getMessage should equal(expected)
   }
   "RecognizeLexeme" should "work for plus" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/plus.rise"
+    val fileName: String = filePath + "plus.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -97,7 +98,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for minus" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/minus.rise"
+    val fileName: String = filePath + "minus.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -107,7 +108,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for negation" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/negation.rise"
+    val fileName: String = filePath + "negation.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -117,7 +118,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for negationWithBool" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/negationWithBool.rise"
+    val fileName: String = filePath + "negationWithBool.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -127,7 +128,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for not" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/not.rise"
+    val fileName: String = filePath + "not.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -137,7 +138,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for braces" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/braces.rise"
+    val fileName: String = filePath + "braces.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -147,7 +148,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for bracesWithNot" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/bracesWithNot.rise"
+    val fileName: String = filePath + "bracesWithNot.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -157,7 +158,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
 //  "RecognizeLexeme" should "work for LeftBraceMissing.rise" in {
-//    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/LeftBraceMissing.rise"
+//    val fileName: String = filePath + "LeftBraceMissing.rise"
 //    val file: FileReader =  FileReader(fileName)
 //    val thrown = intercept[Exception] {
 //      RecognizeLexeme(file)
@@ -167,7 +168,7 @@ class LexerTest extends  AnyFlatSpec {
 //  }
 //
 //  "RecognizeLexeme" should "work for RightBraceMissing.rise" in {
-//    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/RightBraceMissing.rise"
+//    val fileName: String = filePath + "RightBraceMissing.rise"
 //    val file: FileReader =  FileReader(fileName)
 //    val thrown = intercept[Exception] {
 //      RecognizeLexeme(file)
@@ -177,7 +178,7 @@ class LexerTest extends  AnyFlatSpec {
 //  }
 //
 //  "RecognizeLexeme" should "work for tooMuchRightBraces.rise" in {
-//    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/tooMuchRightBraces.rise"
+//    val fileName: String = filePath + "tooMuchRightBraces.rise"
 //    val file: FileReader =  FileReader(fileName)
 //    val thrown = intercept[Exception] {
 //      RecognizeLexeme(file)
@@ -187,7 +188,7 @@ class LexerTest extends  AnyFlatSpec {
 //  }
 //
 //  "RecognizeLexeme" should "work for tooMuchLeftBraces.rise" in {
-//    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/tooMuchLeftBraces.rise"
+//    val fileName: String = filePath + "tooMuchLeftBraces.rise"
 //    val file: FileReader =  FileReader(fileName)
 //    val thrown = intercept[Exception] {
 //      RecognizeLexeme(file)
@@ -197,7 +198,7 @@ class LexerTest extends  AnyFlatSpec {
 //  }
 
   "RecognizeLexeme" should "littleComplexLine" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/littleComplexLine.rise"
+    val fileName: String = filePath + "littleComplexLine.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -207,7 +208,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "lessComplexInOneLine" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/lessComplexInOneLine.rise"
+    val fileName: String = filePath + "lessComplexInOneLine.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -217,7 +218,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "lessComplexInOneLineWithType" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/lessComplexInOneLineWithType.rise"
+    val fileName: String = filePath + "lessComplexInOneLineWithType.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -227,7 +228,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "complexInOneLine" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/complexInOneLine.rise"
+    val fileName: String = filePath + "complexInOneLine.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -237,7 +238,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "complexInThreeLines" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/complexInThreeLines.rise"
+    val fileName: String = filePath + "complexInThreeLines.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -247,7 +248,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "veryComplicated.rise" in {
-    val fileName: String = "src/test/scala/parser/readFiles/filesToLex/veryComplicated.rise"
+    val fileName: String = filePath + "veryComplicated.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -257,4 +258,90 @@ class LexerTest extends  AnyFlatSpec {
       case a => throw new Exception(a.toString())
     }
   }
+
+  "RecognizeLexeme" should "Complex1" in {
+    val fileName: String = filePath + "Complex1.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
+        Backslash(_) :: Identifier("y", _) :: Arrow(_):: Backslash(_) :: Identifier("z", _) :: Arrow(_)::
+        BinOp(BinOpType.MUL, _):: Identifier("x", _)::
+        BinOp(BinOpType.ADD, _):: Identifier("y", _):: Identifier("z", _)::Nil =>
+      case a => throw new Exception(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "Complex2" in {
+    val fileName: String = filePath + "Complex2.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
+        BinOp(BinOpType.MUL, _):: LBrace(_) :: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
+        RBrace(_):: Identifier("x", _):: Nil =>
+      case a => throw new Exception(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "Complex3" in {
+    val fileName: String = filePath + "Complex3.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(ShortTyp(), _) :: Arrow(_) ::
+        BinOp(BinOpType.MUL, _):: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
+        Identifier("x", _):: Nil =>
+      case a => throw new Exception(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "Complex4" in {
+    val fileName: String = filePath + "Complex4.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
+      BinOp(BinOpType.DIV, _)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::
+        BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::Nil =>
+      case a => throw new Exception(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "Complex5" in {
+    val fileName: String = filePath + "Complex5.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
+        BinOp(BinOpType.DIV, _)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::
+        LBrace(_)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_)::Nil =>
+      case a => throw new Exception(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "Complex6" in {
+    val fileName: String = filePath + "Complex6.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
+        BinOp(BinOpType.DIV, _)::LBrace(_)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_)::
+        BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::Nil =>
+      case a => throw new Exception(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "Complex7" in {
+    val fileName: String = filePath + "Complex7.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
+        BinOp(BinOpType.DIV, _)::LBrace(_)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_)::
+        LBrace(_)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_)::Nil =>
+      case a => throw new Exception(a.toString())
+    }
+  }
+
 }

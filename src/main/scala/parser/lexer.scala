@@ -294,7 +294,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
     require(row >= 0, "row is not allowed to be negative")
     require(column >= 0, "column is not allowed to be negative")
     require(arr.length > column, "array does not have so much columns")
-    require(arr(column).length > row, "arr(column) has less than row chars")
+    //require(arr(column).length > row, "arr(column) has less than row chars")
 
     var list = l
 
@@ -671,7 +671,7 @@ if '==' then two steps else only one step
       substring match {
         case "bool" => (Right(Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
         case "Bool" => (Right(parser.Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
-        case "I8"   => (Right(parser.Type(ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "I16"   => (Right(parser.Type(ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
         case "I32"  => (Right(parser.Type(IntTyp(), Span(fileReader,locStart, locEnd))),pos)
         case "F32"  => (Right(parser.Type(FloatTyp(), Span(fileReader,locStart, locEnd))),pos)
         case "F64"  => (Right(parser.Type(DoubleType(), Span(fileReader,locStart, locEnd))),pos)

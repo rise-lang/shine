@@ -115,7 +115,7 @@ abstract sealed class TypeKind()
   abstract sealed class I() extends Z
 
   final case class ShortTyp() extends I {
-    override def toString = s"<I8>"
+    override def toString = s"<I16>"
   }
 
   final case class IntTyp() extends I {
