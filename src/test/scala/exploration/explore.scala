@@ -11,7 +11,7 @@ class explore extends test_util.Tests {
   val N = 1 << 9
 
   // example expressions
-  val mm = //infer(
+  val mmPrep = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
         map(fun(ak =>
@@ -20,6 +20,8 @@ class explore extends test_util.Tests {
               map(fun(x => fst(x) * snd(x)))) $
               zip(ak, bk))) $ transpose(b) )) $ a))
 //  )
+
+  val mm = exploration.strategies.standardStrategies.baseline(mmPrep).get
 
   val dot = //infer(
     fun(ArrayType(N, f32))(a =>

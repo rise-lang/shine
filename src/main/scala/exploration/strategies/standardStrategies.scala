@@ -43,7 +43,7 @@ object standardStrategies {
 
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
   val blocking: Strategy[Rise] =
-    baseline `;`
+//    baseline `;`
       (tile(32,32)        `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
       (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
@@ -60,7 +60,8 @@ object standardStrategies {
 
   // -- LOOP PERMUTATION -------------------------------------------------------
 
-  val loopPerm: Strategy[Rise] = baseline `;`
+  val loopPerm: Strategy[Rise] =
+//    baseline `;`
     (tile(32,32)        `@` outermost(mapNest(2))) `;;`
     (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
     (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
@@ -109,7 +110,6 @@ object standardStrategies {
 
 
   val strategies = Set(
-    baseline,
     blocking,
     vectorization,
     loopPerm,

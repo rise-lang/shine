@@ -3,7 +3,7 @@ package exploration.runner
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import elevate.heuristic_search.Runner
-import shine.C.Program
+import shine.OpenMP.Program
 import util.{createTempFile, gen, writeToTempFile}
 import elevate.core.Strategy
 import elevate.heuristic_search.util.{IOHelper, Solution}
@@ -20,7 +20,8 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
   var globalBest:Option[Double] = None
   val N = inputSize
   var best:Option[Double] = None
-  var gold = gen.CProgram(goldExpression, "compute_gold")
+//  var gold = gen.CProgram(goldExpression, "compute_gold")
+  var gold = gen.OpenMPProgram(goldExpression, "compute_gold")
   var counter = 0
   var errorLevel:ExplorationErrorLevel = LoweringError
 
@@ -64,7 +65,8 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
             case Some(value) => {
               if (returnValue.toDouble < value) {
                 best = Some(returnValue.toDouble)
-                gold = gen.CProgram(lowered.get, "compute_gold")
+//                gold = gen.CProgram(lowered.get, "compute_gold")
+                gold = gen.OpenMPProgram(lowered.get, "compute_gold")
                 println("use new gold with runtime: " + best.get)
               }
             }
@@ -373,7 +375,8 @@ int compare_gold(float* C, float* GOLD){
 
   def genExecutableCode(riseProgram:Rise):String = {
 
-    val p = gen.CProgram(riseProgram)
+//    val p = gen.CProgram(riseProgram)
+    val p = gen.OpenMPProgram(riseProgram)
 
     val preparation = prepareInput(p)
 

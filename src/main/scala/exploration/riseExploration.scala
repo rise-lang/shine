@@ -3,9 +3,9 @@ package exploration
 import java.nio.file.{Files, Paths}
 
 import elevate.core.Strategy
-import elevate.core.strategies.traversal.topDown
-import rise.elevate.rules.algorithmic.fuseReduceMap
-import rise.elevate.rules.traversal.default
+//import elevate.core.strategies.traversal.topDown
+//import rise.elevate.rules.algorithmic.fuseReduceMap
+//import rise.elevate.rules.traversal.default
 import rise.elevate.strategies.normalForm.DFNF
 import exploration.runner.CExecutor
 import elevate.heuristic_search.Metaheuristic
@@ -16,7 +16,7 @@ import rise.elevate.Rise
 import strategies.standardStrategies
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
-import rise.elevate.strategies.traversal._
+//import rise.elevate.strategies.traversal._
 
 import scala.sys.process._
 import scala.language.postfixOps
@@ -65,7 +65,7 @@ object riseExploration {
     // -- todo --  read expression from file
 
     // make this more generic
-    val lowering = DFNF()(default.RiseTraversable) `;` fuseReduceMap `@` topDown[Rise] `;` lowerToC
+    val lowering = DFNF() `;` lowerToC
     val gold = lowering(solution).get
 
     // create unique output folder
