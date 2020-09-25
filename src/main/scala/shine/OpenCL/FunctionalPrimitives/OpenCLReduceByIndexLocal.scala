@@ -49,7 +49,7 @@ final case class OpenCLReduceByIndexLocal(n: Nat,
       OpenCLReduceByIndexLocalI(n, k, histAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
-            λ(accT(dt))(o => acc( f(x)(y) )( o )))),
+            λ(accT(dt))(o => acc( f(y)(x) )( o )))),
         hist, X, C)(context)))
   }
 

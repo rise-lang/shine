@@ -14,7 +14,7 @@ class OpenCLReduceByIndexLocal extends shine.test_util.TestsWithExecutor {
   private def histsT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
   private def histsfT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, f32))
 
-  private val add = fun(x => fun(a => x + a))
+  private val add = fun(a => fun(x => a + x))
   def id: Expr = fun(x => x)
 
   val n = 1000
