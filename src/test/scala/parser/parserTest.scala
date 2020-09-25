@@ -155,13 +155,12 @@ class parserTest extends  AnyFlatSpec {
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(x@r.Identifier("x"),
-             r.Lambda(r.Identifier("y"),
-               r.App(r.primitives.Neg(),
+             r.Lambda(y@r.Identifier("y"),
                      r.App(r.App(r.primitives.Add(),
                       r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
                      r.Literal(rS.IntData(42)))
-               ))) if x.t == rt.i32 => true
-      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e + " , x.t= "+ x.t)
+               )) if x.t == rt.i32 && y.t == rt.i32 => true
+      case r.Lambda(x,r.Lambda(y,e)) => fail("not correct Identifier or not correct expression: "+ "Lambda(" + x +",Lambda,"+y+ " , " + e + " , x.t= "+ x.t + " , y.t= "+ y.t)
       case a => throw Exception("not a lambda: "+ a)
     }
   }
