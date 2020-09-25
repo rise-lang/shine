@@ -15,7 +15,7 @@ class scal extends test_util.Tests {
     val typed = infer(simpleScal)
 
     assert(
-      forallNat(n => ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
+      expl((n: Nat) => ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
         ==
       typed.t
     )

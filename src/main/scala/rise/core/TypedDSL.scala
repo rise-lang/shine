@@ -119,19 +119,19 @@ object TypedDSL {
           case (ts, ns, as, n2ds, n2ns, natColls) =>
             ftv match {
               case i: TypeIdentifier =>
-                (ts ++ Map(i -> implType(identity)), ns, as, n2ds, n2ns, natColls)
+                (ts ++ Map(i -> impl{ x: TypeIdentifier => x }), ns, as, n2ds, n2ns, natColls)
               case i: DataTypeIdentifier =>
-                (ts ++ Map(i -> implDT(identity)), ns, as, n2ds, n2ns,  natColls)
+                (ts ++ Map(i -> impl{ x: DataType => x }), ns, as, n2ds, n2ns,  natColls)
               case i: NatIdentifier =>
-                (ts, ns ++ Map(i -> implNat(identity)), as, n2ds, n2ns,  natColls)
+                (ts, ns ++ Map(i -> impl{ x: Nat => x }), as, n2ds, n2ns,  natColls)
               case i: AddressSpaceIdentifier =>
-                (ts, ns, as ++ Map(i -> implAddr(identity)), n2ds, n2ns,  natColls)
+                (ts, ns, as ++ Map(i -> impl{ x: AddressSpace => x }), n2ds, n2ns,  natColls)
               case i: NatToDataIdentifier =>
-                (ts, ns, as, n2ds ++ Map(i -> implN2DT(identity)), n2ns,  natColls)
+                (ts, ns, as, n2ds ++ Map(i -> impl{ x: NatToData => x }), n2ns,  natColls)
               case i: NatToNatIdentifier =>
-                (ts, ns, as, n2ds, n2ns ++ Map(i -> implN2N(identity)), natColls)
+                (ts, ns, as, n2ds, n2ns ++ Map(i -> impl{ x: NatToNat => x }), natColls)
               case i: NatCollectionIdentifier =>
-                (ts, ns, as, n2ds,  n2ns, natColls ++ Map(i -> implNatColl(identity)))
+                (ts, ns, as, n2ds,  n2ns, natColls ++ Map(i -> impl{ x: NatCollection => x }))
               case i =>
                 throw TypeException(s"${i.getClass} is not supported yet")
             }

@@ -130,11 +130,11 @@ object separableConvolution2D {
   val shuffle: Expr =
     asScalar >> drop(3) >> take(6) >> slideVectors(4)
   val scanlinePar: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
-    map(implNat(w => fun(w`.`f32)(x =>
+    map(impl{ w: Nat => fun(w`.`f32)(x =>
       x |> asVectorAligned(4)
         |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
         |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
-    ))) >> padClamp(1)(1) >>
+    )}) >> padClamp(1)(1) >>
     slide(3)(1) >> mapGlobal(
       transpose >>
       toGlobalFun(mapSeq(weightsSeqVecUnroll(weightsV))) >>
@@ -156,11 +156,11 @@ object separableConvolution2D {
     val Dv = weightsSeqVecUnroll(weightsV)
     val Dh = weightsSeqVecUnroll(weightsH)
     // map(padClamp(4)(4) >> asVectorAligned(4)) >> padClamp(1)(1) >>
-    map(implNat(w => fun(w`.`f32)(x =>
+    map(impl{ w: Nat => fun(w`.`f32)(x =>
       x |> asVectorAligned(4)
         |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
         |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
-    ))) >> padClamp(1)(1) >>
+    )}) >> padClamp(1)(1) >>
     slide(3)(1) >> mapGlobal(
       transpose >>
       map(Dv) >>

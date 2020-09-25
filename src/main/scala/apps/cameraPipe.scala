@@ -101,19 +101,19 @@ object cameraPipe {
     )
   }
 
-  def interleaveX: Expr = implDT(dt => implNat(h => implNat(w => fun(
+  def interleaveX: Expr = impl{ dt: DataType => impl{ h: Nat => impl{ w: Nat => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: (h`.`(2*w)`.`dt)
   )((a, b) =>
     generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
     transpose >> map(transpose >> join)
-  ))))
+  ) }}}
 
-  def interleaveY: Expr = implDT(dt => implNat(h => implNat(w => fun(
+  def interleaveY: Expr = impl{ dt: DataType => impl{ h: Nat => impl{ w: Nat => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: ((2*h)`.`w`.`dt)
   )((a, b) =>
     generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
     transpose >> join
-  ))))
+  ) }}}
 
   val demosaic: Expr = nFun(h => nFun(w => fun(
     (4`.`(h+2)`.`(w+2)`.`i16) ->: (3`.`(2*h)`.`(2*w)`.`i16)
@@ -425,8 +425,8 @@ object cameraPipe {
       //  mapSeq(mapSeqUnroll(fun(x => x)))
       // )) >> join >> map(transpose) >> transpose >>
       // --
-      map(implNat(w => map(drop(1) >> take(w))) >>
-        implNat(h => drop(1) >> take(h))) >>
+      map(impl{ w: Nat => map(drop(1) >> take(w)) } >>
+        impl{ h: Nat => drop(1) >> take(h) }) >>
       fun(x => color_correct(2*h+2)(2*w+2)(hm)(wm)(x)
         (matrix_3200)(matrix_7000)(color_temp)) >>
       // TODO: reorder and store with elevate
