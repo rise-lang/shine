@@ -45,49 +45,6 @@ class histogram extends shine.test_util.TestsWithExecutor {
       ) // k.int
   )))
 
-  test("Segmented Reduction: Atomic operation instead of second reduction") {
-    val lSize = 64
-    val gSize = n / 32
-    val chunkSize = 32 * lSize
-
-    //TODO: See TODO below
-    val sortedIndices = indices.sorted
-
-    val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-          zip(is)(xs) |>
-            split(chunkSize) |>
-            mapWorkGroup(
-              oclSegReduceAtomic(AddressSpace.Local)(add)(
-                generate(fun(IndexType(k))(_ => l(0))) |>
-                  mapLocal(id)
-              ) >>
-                mapLocal(id)
-            )
-        )
-    )))
-
-    val tempOutput = runKernel2(segmentedReductionAtomic)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices, values)
-
-    val finalOutput = finalReduce(tempOutput._1, reduceHists)
-
-    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
-  }
-
-  def runKernel2(kernel: Expr)(
-    localSize: LocalSize,
-    globalSize: GlobalSize)(
-                 n: Int,
-                 k: Int,
-                 indices: Array[Int],
-                 values: Array[Int]
-               ): (Array[Int], TimeSpan[Time.ms]) = {
-    import shine.OpenCL._
-    val runKernel = gen
-      .OpenCLKernel(kernel)
-      .as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Int] `)=>` Array[Int]]
-    runKernel(localSize, globalSize)(n `,` k `,` indices `,` values)
-  }
-
   test("Sequential Histogram") {
     val sequentialHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
@@ -178,6 +135,34 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(output._1, output._2)
   }
 
+  test("Segmented Reduction: Atomic operation instead of second reduction") {
+    val lSize = 64
+    val gSize = n / 32
+    val chunkSize = 32 * lSize
+
+    //TODO: See TODO below
+    val sortedIndices = indices.sorted
+
+    val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
+      zip(is)(xs) |>
+        split(chunkSize) |>
+        mapWorkGroup(
+          oclSegReduceAtomic(AddressSpace.Local)(add)(
+            generate(fun(IndexType(k))(_ => l(0))) |>
+              mapLocal(id)
+          ) >>
+            mapLocal(id)
+        )
+    )
+    )))
+
+    val tempOutput = runKernel2(segmentedReductionAtomic)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices, values)
+
+    val finalOutput = finalReduce(tempOutput._1, reduceHists)
+
+    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
+  }
+
   test("Segmented Reduction: Tree-based second reduction") {
     val lSize = 64
     val gSize = n / 32
@@ -191,9 +176,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     //      faster than it normally would be.
     val sortedIndices = indices.sorted
 
-    val segmentedReductionTree = nFun(n => nFun(k => fun(isT(n, k))(is =>
-      generate(fun(IndexType(n))(_ => l(1))) |>
-        fun(xs =>
+    val segmentedReductionTree = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
           zip(is)(xs) |>
             split(chunkSize) |>
               mapWorkGroup(
@@ -206,7 +189,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
         )
     )))
 
-    val tempOutput = runKernel(segmentedReductionTree)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices)
+    val tempOutput = runKernel2(segmentedReductionTree)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices, values)
 
     val finalOutput = finalReduce(tempOutput._1, reduceHists)
 
@@ -258,6 +241,21 @@ class histogram extends shine.test_util.TestsWithExecutor {
       .as[ScalaFunction `(` Int `,` Int `,` Array[Int] `)=>` Array[Int]]
     runKernel(localSize, globalSize)(n `,` k `,` indices)
     }
+
+  def runKernel2(kernel: Expr)(
+    localSize: LocalSize,
+    globalSize: GlobalSize)(
+    n: Int,
+    k: Int,
+    indices: Array[Int],
+    values: Array[Int]
+  ): (Array[Int], TimeSpan[Time.ms]) = {
+    import shine.OpenCL._
+    val runKernel = gen
+      .OpenCLKernel(kernel)
+      .as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Int] `)=>` Array[Int]]
+    runKernel(localSize, globalSize)(n `,` k `,` indices `,` values)
+  }
 
   def runSecondKernel(kernel: Expr)(
     localSize: LocalSize,
