@@ -11,15 +11,14 @@ import shine.OpenCL.IntermediatePrimitives.OpenCLSegReduceI
 
 import scala.xml.Elem
 
-final case class OpenCLSegReduce(
-                                   n: Nat,
-                                   k: Nat,
-                                   initAddrSpace: shine.DPIA.Types.AddressSpace,
-                                   dt: DataType,
-                                   f: Phrase[ExpType ->: ExpType ->: ExpType],
-                                   init: Phrase[ExpType],
-                                   array: Phrase[ExpType]
-                                 ) extends ExpPrimitive {
+final case class OpenCLSegReduce(m: Int)(n: Nat,
+                                         k: Nat,
+                                         initAddrSpace: shine.DPIA.Types.AddressSpace,
+                                         dt: DataType,
+                                         f: Phrase[ExpType ->: ExpType ->: ExpType],
+                                         init: Phrase[ExpType],
+                                         array: Phrase[ExpType])
+  extends ExpPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
   init :: expT(k`.`dt, write)
@@ -29,7 +28,7 @@ final case class OpenCLSegReduce(
   override def visitAndRebuild(
                                 fun: VisitAndRebuild.Visitor
                               ): Phrase[ExpType] = {
-    OpenCLSegReduce(fun.nat(n), fun.nat(k), fun.addressSpace(initAddrSpace), fun.data(dt),
+    OpenCLSegReduce(m)(fun.nat(n), fun.nat(k), fun.addressSpace(initAddrSpace), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
@@ -49,7 +48,7 @@ final case class OpenCLSegReduce(
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
-      OpenCLSegReduceI(n, k, initAddrSpace, dt,
+      OpenCLSegReduceI(m)(n, k, initAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
             λ(accT(dt))(o => acc( f(x)(y) )( o )))),

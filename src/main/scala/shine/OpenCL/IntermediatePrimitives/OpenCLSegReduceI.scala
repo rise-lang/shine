@@ -15,7 +15,7 @@ import shine.OpenCL.{AdjustArraySizesForAllocations, get_local_id}
 import shine.OpenCL.DSL._
 import shine.OpenCL.ImperativePrimitives.ParForLocal
 
-object OpenCLSegReduceI {
+final case class OpenCLSegReduceI(m: Int) {
   def apply(n: Nat,
             k: Nat,
             addrSpace: shine.DPIA.Types.AddressSpace,
@@ -26,7 +26,6 @@ object OpenCLSegReduceI {
             out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] = {
     val pt = PairType(IndexType(k), dt)
-    val m: Nat = 32
     val o: Nat = n/m
     val tree_loops: Nat = Log(2, o)
 

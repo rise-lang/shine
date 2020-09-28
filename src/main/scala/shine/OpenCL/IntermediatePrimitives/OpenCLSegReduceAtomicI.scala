@@ -12,7 +12,7 @@ import shine.DPIA._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
 
-object OpenCLSegReduceAtomicI {
+final case class OpenCLSegReduceAtomicI(m: Int) {
   def apply(n: Nat,
             k: Nat,
             addrSpace: shine.DPIA.Types.AddressSpace,
@@ -23,7 +23,6 @@ object OpenCLSegReduceAtomicI {
             out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] = {
     val pt = PairType(IndexType(k), dt)
-    val m: Nat = 32
     val o: Nat = n/m
 
     val adj = AdjustArraySizesForAllocations(init, ArrayType(k, dt), addrSpace)
@@ -65,9 +64,9 @@ object OpenCLSegReduceAtomicI {
                             `then` (
                             // => end of current segment reached
                             // Write current_reduction.value into g_output[current_reduction.key]
-                            f(g_output.rd `@` fst(current_reduction.rd))
-                            (snd(current_reduction.rd))
-                            (g_output.wr `@` fst(current_reduction.rd)) `;`
+                            atomicBinOpAssign(dt, addrSpace, f,
+                              g_output.wr `@` fst(current_reduction.rd),
+                              snd(current_reduction.rd)) `;`
 
                               // and assign current_element to current_reduction
                               (current_reduction.wr :=| pt | current_element.rd)

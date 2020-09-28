@@ -17,7 +17,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
   private val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
 
-  val n = 8192
+  val n = 262144
   val k = 99
 
   val indices = new Array[Int](n)
@@ -116,7 +116,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   test("Reduce by Index: All threads accumulate into one histogram") {
-    val threads = 512
+    val threads = 1024
 
     val reduceByIndexSingleHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
@@ -135,38 +135,11 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(output._1, output._2)
   }
 
-  test("Segmented Reduction: Atomic operation instead of second reduction") {
-    val lSize = 64
-    val gSize = n / 32
-    val chunkSize = 32 * lSize
-
-    //TODO: See TODO below
-    val sortedIndices = indices.sorted
-
-    val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-      zip(is)(xs) |>
-        split(chunkSize) |>
-        mapWorkGroup(
-          oclSegReduceAtomic(AddressSpace.Local)(add)(
-            generate(fun(IndexType(k))(_ => l(0))) |>
-              mapLocal(id)
-          ) >>
-            mapLocal(id)
-        )
-    )
-    )))
-
-    val tempOutput = runKernel2(segmentedReductionAtomic)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices, values)
-
-    val finalOutput = finalReduce(tempOutput._1, reduceHists)
-
-    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
-  }
-
   test("Segmented Reduction: Tree-based second reduction") {
-    val lSize = 64
-    val gSize = n / 32
-    val chunkSize = 32 * lSize
+    val chunkSizeLocal = 32
+    val lSize = 32
+    val gSize = n / chunkSizeLocal
+    val chunkSizeWorkgroup = chunkSizeLocal * lSize
 
     //TODO: The input array has to be sorted before it can used by the segmented reduction algorithm.
     //      Usually this would be part of the algorithm in Rise however, as there isn't a sorting algorithm
@@ -178,9 +151,9 @@ class histogram extends shine.test_util.TestsWithExecutor {
 
     val segmentedReductionTree = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
           zip(is)(xs) |>
-            split(chunkSize) |>
+            split(chunkSizeWorkgroup) |>
               mapWorkGroup(
-                oclSegReduce(AddressSpace.Local)(add)(
+                oclSegReduce(chunkSizeLocal)(AddressSpace.Local)(add)(
                   generate(fun(IndexType(k))(_ => l(0))) |>
                     mapLocal(id)
                 ) >>
@@ -190,6 +163,35 @@ class histogram extends shine.test_util.TestsWithExecutor {
     )))
 
     val tempOutput = runKernel2(segmentedReductionTree)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices, values)
+
+    val finalOutput = finalReduce(tempOutput._1, reduceHists)
+
+    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
+  }
+
+  test("Segmented Reduction: Atomic operation instead of second reduction") {
+    val chunkSizeLocal = 8
+    val lSize = 128
+    val gSize = n / chunkSizeLocal
+    val chunkSizeWorkgroup = chunkSizeLocal * lSize
+
+    //TODO: See TODO below
+    val sortedIndices = indices.sorted
+
+    val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
+      zip(is)(xs) |>
+        split(chunkSizeWorkgroup) |>
+        mapWorkGroup(
+          oclSegReduceAtomic(chunkSizeLocal)(AddressSpace.Local)(add)(
+            generate(fun(IndexType(k))(_ => l(0))) |>
+              mapLocal(id)
+          ) >>
+            mapLocal(id)
+        )
+    )
+    )))
+
+    val tempOutput = runKernel2(segmentedReductionAtomic)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices, values)
 
     val finalOutput = finalReduce(tempOutput._1, reduceHists)
 

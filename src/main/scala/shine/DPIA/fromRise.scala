@@ -648,7 +648,7 @@ object fromRise {
                 fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
                   OpenCLReduceByIndexLocal(n, k, a, t, f, h, e)))))
 
-      case (ocl.OclSegReduce(),
+      case (ocl.OclSegReduce(m),
       aFunT(a,
         (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
           expT(ArrayType(k, _), `write`) ->:
@@ -659,9 +659,9 @@ object fromRise {
             expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
               fun[ExpType](expT(k`.`t, write), i =>
                 fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
-                  OpenCLSegReduce(n, k, a, t, f, i, e)))))
+                  OpenCLSegReduce(m)(n, k, a, t, f, i, e)))))
 
-      case (ocl.OclSegReduceAtomic(),
+      case (ocl.OclSegReduceAtomic(m),
       aFunT(a,
       (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
         expT(ArrayType(k, _), `write`) ->:
@@ -672,7 +672,7 @@ object fromRise {
             expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
               fun[ExpType](expT(k`.`t, write), i =>
                 fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
-                  OpenCLSegReduceAtomic(n, k, a, t, f, i, e)))))
+                  OpenCLSegReduceAtomic(m)(n, k, a, t, f, i, e)))))
 
       case (core.Reduce(), _) =>
         throw new Exception(s"$p has no implementation")

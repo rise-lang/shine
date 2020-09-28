@@ -44,7 +44,7 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
         split(1024) |> // n/1024.1024.(idx(k) x int)
         mapWorkGroup(
           // 1024.(idx(k) x int)
-          oclSegReduceAtomic(rise.core.types.AddressSpace.Local)(add)(
+          oclSegReduceAtomic()(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id) // k.int
           ) >>
