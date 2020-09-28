@@ -248,6 +248,8 @@ object parse {
 
   private def countHowManyParseApps(tokens: List[Token]): Int = {
     //val max = tokens.length-1
+    //\x-> \y -> f 2
+    //\x-> + 2 \y -> + 2 y
     val numberBinOp = tokens.count(p => p.isInstanceOf[BinOp])
     val numberUnOp = tokens.count(p => p.isInstanceOf[UnOp])
     val res = numberBinOp*2 + numberUnOp*1
