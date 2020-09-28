@@ -1,6 +1,6 @@
 package parser
 import org.scalatest.flatspec.AnyFlatSpec
-import parser.parse.HereIsATypeAnnotationExpected
+//import parser.parse.ParseError
 //import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
 import rise.{core => r}
@@ -17,11 +17,11 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "identity.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[HereIsATypeAnnotationExpected] {
+    val thrown = intercept[RuntimeException] {
       parse(lexer.tokens)
     }
     //Todo: that is horrible, that I don't have an Error-Message
-    thrown should equal(null)
+    thrown.getMessage should equal("failed [parsing : ParseError(failed to parse Type: A TypeAnnotation is expected, but -> is not an Colon)]")
   }
 
   "parser" should "be able to parse 'longIdentityWithI32.rise'" in {

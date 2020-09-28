@@ -13,66 +13,70 @@ object parse {
 
   abstract sealed class ParseEnd() extends ParseErrorOrState()
   //Todo: I only want for ParseError the Throwable keyword, but it is the only thing, which should be throwable
-  abstract sealed class ParseError(token: Token) extends ParseErrorOrState(){
-    val span = token.s
-    val fileReader = token.s.file
-    private def underline(str:String):String = {
-      var s:String = ""
-      for( a <- str){ s = s + a + "\u0332" }
-      s
-    }
+  final case class ParseError(mes: String) extends ParseErrorOrState()
+//  final case class ParseError(token: Token) extends ParseErrorOrState() {
+//    val span = token.s
+//    val fileReader = token.s.file
+//
+//    private def underline(str: String): String = {
+//      var s: String = ""
+//      for (a <- str) {
+//        s = s + a + "\u0332"
+//      }
+//      s
+//    }
+//
+//    private def importantPart(str: String): String = {
+//      val s: String = underline(str)
+//      s
+//    }
+//
+//    def throwException(): Unit = {
+//      val currentColumn: String = fileReader.sourceLines(span.begin.column)
+//      val important: String = importantPart(currentColumn.substring(span.begin.row, span.end.row))
+//      val codeLine: String = if (span.begin.row - 1 > 0) {
+//        currentColumn.substring(0, span.begin.row) + important + currentColumn.substring(span.end.row, currentColumn.length)
+//      } else {
+//        important + currentColumn.substring(span.end.row, currentColumn.length)
+//      }
+//      val message: String = "ErrorToken: " + this.toString + " at " + span.toString + "\n" + codeLine
+//      throw new Exception(message)
+//    }
 
-    private def importantPart(str: String): String = {
-      val s: String = underline(str)
-      s
-    }
+    ////    override def throw():Unit = throwException()
+    //  }
+    //  final case class HereIsATypeIdentifierExpected(token:Token) extends ParseError(token)//{
+    ////    override def toString = "A Type is expected but " + token + " is not a Type"
+    ////  }
+    //  final case class TokenListIsEmpty() extends ParseEnd() //Todo: Better name for the classes which are clearly only for States in the parsing process
+    //  final case class BacklashWasExpected(token:Token) extends ParseEnd()
+    //  final case class IdentifierWasExpected(token:Token) extends ParseEnd()
+    //  final case class NotAnAcceptedType(typeK:TypeKind) extends ParseEnd()
+    //  final case class TypeAnnotationNotCorrect(token:Token) extends ParseError(token)
+    //  final case class HereIsATypeAnnotationExpected(token:Token) extends ParseError(token)
+    //  final case class ArrowWasExpected(token:Token) extends ParseEnd()
+    //  final case class AnExpressionAndNotATypeWasExpected(typ:rt.Type) extends ParseEnd()
+    //  final case class UnaryOperatorWasExpected(token:Token) extends ParseEnd()
+    //  final case class notAnAcceptedIntegerOrFloatType(token:Token) extends ParseEnd()
+    //  final case class BinaryOperatorWasExpected(token:Token) extends ParseEnd()
+    //  final case class LBraceWasExpected(token:Token) extends ParseEnd()
+    //  final case class RBraceWasExpected(token:Token) extends ParseEnd()
+    //  final case class NoBinaryOperator() extends ParseEnd()
+    //  final case class NoParseAppLeft() extends ParseEnd()
 
-    def throwException():Unit ={
-      val currentColumn:String = fileReader.sourceLines(span.begin.column)
-      val important:String = importantPart(currentColumn.substring(span.begin.row, span.end.row))
-      val codeLine:String = if (span.begin.row-1 > 0){
-        currentColumn.substring(0,span.begin.row) + important + currentColumn.substring(span.end.row, currentColumn.length)
-      }else{
-        important + currentColumn.substring(span.end.row, currentColumn.length)
-      }
-      val message:String = "ErrorToken: "+ this.toString +" at " + span.toString + "\n" + codeLine
-      throw new Exception(message)
-    }
-
-//    override def throw():Unit = throwException()
-  }
-  final case class HereIsATypeIdentifierExpected(token:Token) extends ParseError(token)//{
-//    override def toString = "A Type is expected but " + token + " is not a Type"
-//  }
-  final case class TokenListIsEmpty() extends ParseEnd() //Todo: Better name for the classes which are clearly only for States in the parsing process
-  final case class BacklashWasExpected(token:Token) extends ParseEnd()
-  final case class IdentifierWasExpected(token:Token) extends ParseEnd()
-  final case class NotAnAcceptedType(typeK:TypeKind) extends ParseEnd()
-  final case class TypeAnnotationNotCorrect(token:Token) extends ParseError(token)
-  final case class HereIsATypeAnnotationExpected(token:Token) extends ParseError(token)
-  final case class ArrowWasExpected(token:Token) extends ParseEnd()
-  final case class AnExpressionAndNotATypeWasExpected(typ:rt.Type) extends ParseEnd()
-  final case class UnaryOperatorWasExpected(token:Token) extends ParseEnd()
-  final case class notAnAcceptedIntegerOrFloatType(token:Token) extends ParseEnd()
-  final case class BinaryOperatorWasExpected(token:Token) extends ParseEnd()
-  final case class LBraceWasExpected(token:Token) extends ParseEnd()
-  final case class RBraceWasExpected(token:Token) extends ParseEnd()
-  final case class NoBinaryOperator() extends ParseEnd()
-  final case class NoParseAppLeft() extends ParseEnd()
-
-  /*
+    /*
    * Precondition: Only valid Tokens in tokenList.
    */
     def apply(tokenList: List[Token]): r.Expr = {
       val parseState: ParseState = (tokenList, Nil, countHowManyParseApps(tokenList))
-      val shineLambda:r.Expr = parseTopLevelLambda(parseState) match {
+      val shineLambda: r.Expr = parseTopLevelLambda(parseState) match {
         case Right(ex) => ex
         case Left(errorOrState) => {
           println(errorOrState)
           throw new RuntimeException("failed parsing : " + errorOrState)
         }
       }
-      println("parse: "+ shineLambda)
+      println("parse: " + shineLambda)
       shineLambda
       //r.Identifier("placeholder")()
     }
@@ -139,7 +143,7 @@ object parse {
   def parseBackslash(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
     val (tokens, parsedExprs, c) = parseState
     if(tokens.isEmpty){
-      return Left(TokenListIsEmpty())
+      return Left(ParseError("failed to parse Backlash: " + " List is empty"))
     }
     val nextToken :: restTokens = tokens
 
@@ -147,7 +151,7 @@ object parse {
       case Backslash(_) =>
       case tok => {
         println("failed parseBacklash: "+ parseState)
-        return Left(BacklashWasExpected(tok)) //Todo: Left(ParseError("failed to parse Backslash")
+        return Left(ParseError("failed to parse Backslash: " + tok + " is not an Backslash"))
       }
     }
 
@@ -158,7 +162,7 @@ object parse {
     println("parseIdent: " + parseState)
     val (tokens, parsedSynElems, c) = parseState
     if(tokens.isEmpty){
-      return Left(TokenListIsEmpty())
+      return Left(ParseError("failed to parse Ident: " + " List is empty"))
     }
     val nextToken :: restTokens = tokens
 
@@ -167,7 +171,7 @@ object parse {
         Right((restTokens, SExpr(r.Identifier(name)()) :: parsedSynElems, c))
       case tok => {
         println("Abbruch parseIdent: " + tok +" : " + parseState)
-        Left(IdentifierWasExpected(tok))
+        Left(ParseError("failed to parse Ident: " + tok + " is not an Identifier"))
       }
     }
   }
@@ -187,14 +191,14 @@ object parse {
               case FloatTyp() => Right(rt.f32)
               case DoubleType() => Right(rt.f64)
               case BoolType() => Right(rt.bool)
-              case notAtype => Left(NotAnAcceptedType(notAtype))
+              case notAtype => Left(ParseError("failed to parse Type: Not accepted Type" + notAtype))
             }
             t match {
               case Right(nowT) => Right((restTokens, SType(nowT) :: parsedSynElems, c))
-              case Left(e) => Left(e)
+              case Left(e) => Left(ParseError("failed to parse Type"))
             }
           }
-          case notAtype => Left(TypeAnnotationNotCorrect(notAtype))
+          case notAtype => Left(ParseError("failed to parse Type: " + notAtype +" is not an Type"))
         }
       }
       case _ => Right(parseState)
@@ -216,17 +220,17 @@ object parse {
               case FloatTyp() => Right(rt.f32)
               case DoubleType() => Right(rt.f64)
               case BoolType() => Right(rt.bool)
-              case notAtype => Left(NotAnAcceptedType(notAtype))
+              case notAtype => Left(ParseError("failed to parse Type: Not accepted Type" + notAtype))
             }
             t match {
               case Right(nowT) => Right((restTokens, SType(nowT) :: parsedSynElems, c))
-              case Left(e) => Left(e)
+              case Left(e) => Left(ParseError("failed to parse Type"))
             }
           }
-          case notAtype => Left(TypeAnnotationNotCorrect(notAtype))
+          case notAtype => Left(ParseError("failed to parse Type: " + notAtype +" is not an Type"))
         }
       }
-      case notAColon => Left(HereIsATypeAnnotationExpected(notAColon))
+      case notAColon => Left(ParseError("failed to parse Type: A TypeAnnotation is expected, but " + notAColon + " is not an Colon"))
     }
   }
 
@@ -236,7 +240,7 @@ object parse {
 
     nextToken match {
       case Arrow(_) =>
-      case tok => Left(ArrowWasExpected(tok))
+      case tok => Left(ParseError("failed to parse Type: " + tok + " is not an Arrow"))
     }
 
     Right((restTokens, parsedExprs, c))
@@ -401,7 +405,7 @@ object parse {
     println("parseBinOperatorApp: "+ parseState)
     if(parseState._1.isEmpty || !parseState._1.exists(t => t.isInstanceOf[BinOp])){
       println("Abbruch; parseBinOperatorApp: "+ parseState)
-      return Left(NoBinaryOperator())
+      return Left(ParseError("failed to parse BinOperatorApp"))
     }
     val p =
       Right(parseState)  |>
@@ -419,11 +423,11 @@ object parse {
       case SExpr(e2) => expr1 match {
         case SExpr(e1) =>  binOp match { //TODO: now it only calculates from right to left, but normaly is * before +
           case SExpr(op) => Right((tokens, SExpr(r.App(r.App(op, e2)(), e1)())  :: restExpr, c))
-          case SType(t) => Left(AnExpressionAndNotATypeWasExpected(t))
+          case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
         }
-        case SType(t) => Left(AnExpressionAndNotATypeWasExpected(t))
+        case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
       }
-      case SType(t) => Left(AnExpressionAndNotATypeWasExpected(t))
+      case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
     }
   }
 
@@ -431,7 +435,7 @@ object parse {
     println("parseApp: " + parseState)
     if(parseState._3==0){
       println("Abbruch; parseApp: "+ parseState)
-      return Left(NoParseAppLeft())
+      return Left(ParseError("failed to parse parseApp: " + " no parseApp is left"))
     }
     val pas = (parseState._1, parseState._2, parseState._3-1)
     val p =
@@ -448,9 +452,9 @@ object parse {
     expr2 match {
       case SExpr(e2) => expr1 match {
         case SExpr(e1) =>  Right((tokens, SExpr(r.App(e1, e2)())  :: restExpr, c))
-        case SType(t) => Left(AnExpressionAndNotATypeWasExpected(t))
+        case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
       }
-      case SType(t) => Left(AnExpressionAndNotATypeWasExpected(t))
+      case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
     }
   }
 
@@ -485,10 +489,10 @@ object parse {
         }
         expr match {
           case SExpr(e) =>  Right((tokens, SExpr(r.App(op, e)())  :: restExpr, c))
-          case SType(t) => Left(AnExpressionAndNotATypeWasExpected(t))
+          case SType(t) => Left(ParseError("failed to parse parseUnOperatorApp: " + t + " is an Type but an Expression is expected"))
         }
       }
-      case SType(t) => Left(AnExpressionAndNotATypeWasExpected(t))
+      case SType(t) => Left(ParseError("failed to parse parseUnOperatorApp: " + t + " is an Type but an Expression is expected"))
     }
   }
 
@@ -502,7 +506,7 @@ object parse {
       }
       case tok => {
         println("UnaryOperatorWasExpected: "+ tok + ": " + restTokens)
-        Left(UnaryOperatorWasExpected(tok))
+        Left(ParseError("failed to parse parseUnOperator: " + tok + " is not an UnaryOperator"))
       }
     }
     p
@@ -512,7 +516,7 @@ object parse {
     println("ParseNumber: " + parseState)
     val (tokens, parsedSynElems, c) = parseState
     if(tokens.isEmpty){
-      return Left(TokenListIsEmpty())
+      return Left(ParseError("failed to parse Number: " + " List is empty"))
     }
     val nextToken :: restTokens = tokens
 
@@ -525,7 +529,7 @@ object parse {
         Right((restTokens, SExpr(r.Literal(rS.FloatData(number))) :: parsedSynElems, c))
       case F64(number, _) =>
         Right((restTokens, SExpr(r.Literal(rS.DoubleData(number))) :: parsedSynElems, c))
-      case tok => Left(notAnAcceptedIntegerOrFloatType(tok))
+      case tok => Left(ParseError("failed to parse Number: " + tok + " is not an accepted Integer of Float"))
     }
   }
 
@@ -552,12 +556,12 @@ object parse {
         case OpType.BinOpType.SUB => Right((restTokens, SExpr(r.primitives.Sub()()) :: parsedSynElems, c))
         case tok => {
           println("Das hier kann nicht sein, weil alle Operatoren müsste ich abgedeckt haben. BinOp: '" + tok + "' is no BinOperator!")
-          Left(BinaryOperatorWasExpected(nextToken)) //Todo: Bessere Fehlermeldung!
+          Left(ParseError("failed to parse BinOperator: " + tok + " is not an accepted BinOp"))
         }
       }
       case tok => {
         println("BinOp: '" + tok + "' is no BinOperator!")
-        Left(BinaryOperatorWasExpected(tok))
+        Left(ParseError("failed to parse BinOperator: " + tok + " is not an BinOp"))
       }
     }
   }
@@ -568,7 +572,7 @@ object parse {
 
     nextToken match {
       case LBrace(_) => Right((restTokens, parsedSynElems, c))
-      case tok => Left(LBraceWasExpected(tok))
+      case tok => Left(ParseError("failed to parse LeftBrace: " + tok + " is not an LeftBrace"))
     }
   }
 
@@ -578,7 +582,7 @@ object parse {
 
     nextToken match {
       case RBrace(_) => Right((restTokens, parsedSynElems, c))
-      case tok => Left(RBraceWasExpected(tok))
+      case tok => Left(ParseError("failed to parse RightBrace: " + tok + " is not an RightBrace"))
     }
   }
 
