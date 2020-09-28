@@ -141,15 +141,15 @@ object TypeLevelDSL {
   }
 
   // dependent pairs
-  object  n2dPairT {
-    def apply(f: NatIdentifier => DataType): Type = {
+  object Nat {
+    def `**`(f: Nat => DataType): Type = {
       val x = NatIdentifier(freshName("n"), isExplicit = true)
       DepPairType[NatKind](x, f(x))
     }
   }
 
-  object nats2dPairT {
-    def apply(f: NatCollectionIdentifier => DataType): Type = {
+  object NatCollection {
+    def `**`(f: NatCollection => DataType): Type = {
       val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
       DepPairType[NatCollectionKind](x, f(x))
     }

@@ -170,12 +170,12 @@ object primitives {
 
   @primitive object dpair extends Primitive with Builder {
     impl{ fdt: NatToData => expl((n: Nat) =>
-      fdt(n) ->: n2dPairT(fdt(_)))}
+      fdt(n) ->: (Nat `**` (fdt(_))))}
   }
 
   @primitive object dmatch extends Primitive with Builder {
     impl{ ft: NatToData => impl{ tOut: DataType =>
-      n2dPairT(ft(_)) ->: expl((m: Nat) => ft(m) ->: tOut) ->: tOut }}
+      (Nat `**` (ft(_))) ->: expl((m: Nat) => ft(m) ->: tOut) ->: tOut }}
   }
 
   @primitive object reduce extends Primitive with Builder {
