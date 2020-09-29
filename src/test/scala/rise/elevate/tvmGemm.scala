@@ -7,6 +7,7 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
 import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
@@ -37,7 +38,7 @@ class tvmGemm extends test_util.Tests {
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
         a |> map(fun(ak =>
           transpose(b) |> map(fun(bk =>
-            zip(ak, bk) |>
+            zip(ak)(bk) |>
               map(fun(x => fst(x) * snd(x))) |>
               reduce(add)(l(0.0f))
           ))

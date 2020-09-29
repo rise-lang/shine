@@ -3,6 +3,7 @@ package rise.core
 import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
+import rise.core.primitives._
 
 class dependentTypes extends test_util.Tests {
   test("Infer int addition type") {

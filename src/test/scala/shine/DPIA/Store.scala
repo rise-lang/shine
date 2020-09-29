@@ -1,7 +1,7 @@
 package shine.DPIA
 
-import rise.core._
 import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.types._
 import util.gen
 
@@ -18,7 +18,7 @@ class Store extends test_util.Tests {
     )).code)
     // this is surprising behaviour
     plusNum(2, gen.CProgram(fun(int)(x =>
-      TypedDSL.let(x + l(2))(fun(y => y * y) )
+      let(x + l(2))(fun(y => y * y) )
     )).code)
     // this is what we actually would expect
     plusNum(1, gen.CProgram(fun(int)(x =>

@@ -152,13 +152,13 @@ case object dotPrinter {
           s"$parent ${attr(fillWhite +
             Label(i.name).orange.italic.toString)}"
         case p: Primitive => p match {
-          case primitives.MapSeq() =>
+          case primitives.mapSeq() =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
-          case primitives.ReduceSeq() =>
+          case primitives.reduceSeq() =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
-          case primitives.ReduceSeqUnroll() =>
+          case primitives.reduceSeqUnroll() =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
-          case rise.openMP.primitives.MapPar() =>
+          case rise.openMP.primitives.mapPar() =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
           case _ =>
             s"$parent ${attr(fillGray + Label(p.toString.trim).bold.toString)}"

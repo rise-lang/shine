@@ -18,7 +18,7 @@ object HighLevelConstructs {
   val reorderWithStride: Expr = {
     nFun(s => {
       val f =
-        implN(n =>
+        implNat(n =>
           fun(IndexType(n))(i =>
             natAsIndex(n)(
               (indexAsNat(i) / (n /^ s)) +
@@ -53,7 +53,7 @@ object HighLevelConstructs {
   }
 
   def dropLast: Expr = nFun(n =>
-    implN(m => implDT(dt => take(m) :: ((m + n) `.` dt) ->: (m `.` dt)))
+    implNat(m => implDT(dt => take(m) :: ((m + n) `.` dt) ->: (m `.` dt)))
   )
 
   // TODO: Investigate. this might be wrong

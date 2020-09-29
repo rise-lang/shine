@@ -37,60 +37,60 @@ object vectorize {
 
   // asScalar >> asVector -> _
   @rule def asScalarAsVectorId: Strategy[Rise] = {
-    case e @ App(v, App(AsScalar(), in)) if isAsVector(v) && e.t == in.t =>
+    case e @ App(v, App(asScalar(), in)) if isAsVector(v) && e.t == in.t =>
       Success(in)
   }
 
   // map (reduce f init) >> asVector -> asVector >> map (reduce f init)
   @rule def beforeMapReduce: Strategy[Rise] = {
-    case e @ App(v, App(App(Map(), App(App(Reduce(), f), init)), in))
+    case e @ App(v, App(App(map(), App(App(reduce(), f), init)), in))
     if isAsVector(v) && isScalarFun(f.t) =>
       // TODO: generalize?
-      val inV = typed(in) |> transpose |> map(untyped(v)) |> transpose
+      val inV = preserveType(in) |> transpose |> map(eraseType(v)) |> transpose
       val fV = vectorizeScalarFun(f, Set())
-      Success(map(reduce(fV, vectorFromScalar(init)), inV) :: e.t)
+      Success(map(reduce(fV)(vectorFromScalar(init)))(inV) :: e.t)
   }
 
   // TODO: express as a combination of beforeMapReduce, beforeMap, and others.
   // a |> map (zip b) |> map (reduce f init) |> asVector
   // -> a |> transpose |> map(asVector) |> transpose |> ..
   @rule def beforeMapDot: Strategy[Rise] = {
-    case e @ App(v, App(App(Map(), App(r @ App(ReduceX(), f), init)),
-      App(App(Map(), App(Zip(), b)), a)
+    case e @ App(v, App(App(map(), App(r @ App(ReduceX(), f), init)),
+      App(App(map(), App(zip(), b)), a)
     )) if isAsVector(v) && isScalarFun(f.t) =>
-      val aV = typed(a) |> transpose |> map(untyped(v)) |> transpose
-      val bV = map(vectorFromScalar, b)
+      val aV = preserveType(a) |> transpose |> map(eraseType(v)) |> transpose
+      val bV = map(vectorFromScalar)(b)
       val rV = vectorizeScalarFun(r, Set())
-      Success(map(zip(bV) >> rV(vectorFromScalar(init)), aV) :: e.t)
+      Success(map(zip(bV) >> rV(vectorFromScalar(init)))(aV) :: e.t)
   }
 
   // map f >> asVector -> asVector >> map f
   @rule def beforeMap: Strategy[Rise] = {
-    case e @ App(v, App(App(Map(), f), in))
+    case e @ App(v, App(App(map(), f), in))
     if isAsVector(v) && isScalarFun(f.t) =>
       val inV = makeAsVector(v)(in.t)(in)
       val fV = vectorizeScalarFun(f, Set())
-      Success(map(fV, inV) :: e.t)
+      Success(map(fV)(inV) :: e.t)
   }
 
   // pair (asScalar a) (asScalar b)
   // -> pair a b >> mapFst asScalar >> mapSnd asScalar
   // TODO: can get any function out, see takeOutsidePair
   @rule def asScalarOutsidePair: Strategy[Rise] = {
-    case e @ App(App(Pair(), App(AsScalar(), a)), App(AsScalar(), b)) =>
-      Success((pair(a, b) |> mapFst(asScalar) |> mapSnd(asScalar)) :: e.t)
+    case e @ App(App(pair(), App(asScalar(), a)), App(asScalar(), b)) =>
+      Success((pair(a)(b) |> mapFst(asScalar) |> mapSnd(asScalar)) :: e.t)
   }
 
   // zip (asScalar a) (asScalar b)
   // -> pair a b >> mapFst asScalar >> mapSnd asScalar
   @rule def asScalarOutsideZip: Strategy[Rise] = {
-    case e @ App(App(Pair(), App(AsScalar(), a)), App(AsScalar(), b)) =>
-      Success((pair(a, b) |> mapFst(asScalar) |> mapSnd(asScalar)) :: e.t)
+    case e @ App(App(pair(), App(asScalar(), a)), App(asScalar(), b)) =>
+      Success((pair(a)(b) |> mapFst(asScalar) |> mapSnd(asScalar)) :: e.t)
   }
 
   // padEmpty (p*v) (asScalar in) -> asScalar (padEmpty p in)
   @rule def padEmptyBeforeAsScalar: Strategy[Rise] = {
-    case App(DepApp(PadEmpty(), pv: Nat), App(AsScalar(), in)) =>
+    case App(DepApp(padEmpty(), pv: Nat), App(asScalar(), in)) =>
       in.t match {
         case ArrayType(_, VectorType(v, _)) if (pv % v) == (0: Nat) =>
           Success(asScalar(padEmpty(pv / v)(in)))
@@ -100,18 +100,18 @@ object vectorize {
 
   // padEmpty p (asVector v in) -> asVector v (padEmpty (p*v) in)
   @rule def padEmptyBeforeAsVector: Strategy[Rise] = {
-    case e @ App(DepApp(PadEmpty(), p: Nat), App(asV @ DepApp(_, v: Nat), in))
+    case e @ App(DepApp(padEmpty(), p: Nat), App(asV @ DepApp(_, v: Nat), in))
     if isAsVector(asV) =>
-      Success(untyped(asV)(padEmpty(p*v)(in)) :: e.t)
+      Success(eraseType(asV)(padEmpty(p*v)(in)) :: e.t)
   }
 
   // TODO: express as a combination of smaller rules
   @rule def alignSlide: Strategy[Rise] = {
-    case e @ App(Transpose(),
-      App(App(Map(), DepApp(AsVector(), Cst(v))),
-        App(Join(), App(App(Map(), Transpose()),
-          App(App(Map(), DepApp(PadEmpty(), Cst(p))),
-            App(App(Map(), DepApp(DepApp(Slide(), Cst(3)), Cst(1))),
+    case e @ App(transpose(),
+      App(App(map(), DepApp(asVector(), Cst(v))),
+        App(join(), App(App(map(), transpose()),
+          App(App(map(), DepApp(padEmpty(), Cst(p))),
+            App(App(map(), DepApp(DepApp(slide(), Cst(3)), Cst(1))),
               in
             )
           )
@@ -125,7 +125,7 @@ object vectorize {
       } else {
         Cst(v + v) - ((inW + v) % v)
       }
-      val r = typed(in) |>
+      val r = preserveType(in) |>
         map(padEmpty(pV) >> asVectorAligned(v) >> slide(2)(1)) >>
         transpose >>
         map(
@@ -134,10 +134,10 @@ object vectorize {
         )
       Success(r :: e.t)
 
-    case e @ App(Transpose(),
-      App(App(Map(), DepApp(AsVector(), Cst(v))),
-        App(Transpose(), App(DepApp(PadEmpty(), Cst(p)),
-          App(DepApp(DepApp(Slide(), Cst(3)), Cst(1)), in)
+    case e @ App(transpose(),
+      App(App(map(), DepApp(asVector(), Cst(v))),
+        App(transpose(), App(DepApp(padEmpty(), Cst(p)),
+          App(DepApp(DepApp(slide(), Cst(3)), Cst(1)), in)
         ))
       )
     ) if p <= v =>
@@ -147,7 +147,7 @@ object vectorize {
       } else {
         Cst(v + v) - ((inW + v) % v)
       }
-      val r = typed(in) |>
+      val r = preserveType(in) |>
         padEmpty(pV) >> asVectorAligned(v) >> slide(2)(1) >>
         map(asScalar >> take(v+2) >> slide(v)(1) >> join >> asVector(v))
       Success(r :: e.t)
@@ -156,10 +156,10 @@ object vectorize {
   // TODO: express as a combination of smaller rules
   // FIXME: function f needs to be element-wise (a hidden mapVec)
   @rule def mapAfterShuffle: Strategy[Rise] = {
-    case e @ App(DepApp(AsVector(), v: Nat),
-      App(Join(), App(DepApp(DepApp(Slide(), v2: Nat), Cst(1)),
-        App(DepApp(Take(), t: Nat), App(AsScalar(),
-          App(App(Map(), f), in)
+    case e @ App(DepApp(asVector(), v: Nat),
+      App(join(), App(DepApp(DepApp(slide(), v2: Nat), Cst(1)),
+        App(DepApp(take(), t: Nat), App(asScalar(),
+          App(App(map(), f), in)
         ))
       ))
     ) if v == v2 =>
@@ -167,27 +167,27 @@ object vectorize {
         asScalar >> take(t) >>
         slide(v)(1) >> join >> asVector(v)
       )(in.t)
-      Success((typed(in) |> shuffle |> map(f)) :: e.t)
+      Success((preserveType(in) |> shuffle |> map(f)) :: e.t)
   }
 
   // FIXME: this is very specific
   @rule def padEmptyBeforeZipAsVector: Strategy[Rise] = {
-    case e @ App(DepApp(PadEmpty(), p: Nat), App(
-      Lambda(x, App(App(Zip(),
-        App(asV @ DepApp(_, v: Nat), App(Fst(), x2))),
-        App(asV2, App(Snd(), x3)))),
+    case e @ App(DepApp(padEmpty(), p: Nat), App(
+      Lambda(x, App(App(zip(),
+        App(asV @ DepApp(_, v: Nat), App(fst(), x2))),
+        App(asV2, App(snd(), x3)))),
       in
     )) if x == x2 && x == x3 && isAsVector(asV) && asV == asV2 =>
       Success((
-        typed(in) |> mapFst(padEmpty(p*v)) |> mapSnd(padEmpty(p*v)) |>
+        preserveType(in) |> mapFst(padEmpty(p*v)) |> mapSnd(padEmpty(p*v)) |>
         // FIXME: aligning although we have no alignment information
-        fun(p => zip(asVectorAligned(v)(fst(p)), asVectorAligned(v)(snd(p))))
+        fun(p => zip(asVectorAligned(v)(fst(p)))(asVectorAligned(v)(snd(p))))
       ) :: e.t)
   }
 
   def isAsVector: Rise => Boolean = {
-    case DepApp(AsVector(), _: Nat) => true
-    case DepApp(AsVectorAligned(), _: Nat) => true
+    case DepApp(asVector(), _: Nat) => true
+    case DepApp(asVectorAligned(), _: Nat) => true
     case _ => false
   }
 
@@ -203,31 +203,31 @@ object vectorize {
     case _ => false
   }
 
-  private def makeAsVector(asV: Rise): Type => TDSL[Rise] = {
-    case ArrayType(_, _: ScalarType) => untyped(asV)
+  private def makeAsVector(asV: Rise): Type => ToBeTyped[Rise] = {
+    case ArrayType(_, _: ScalarType) => eraseType(asV)
     case ArrayType(n, PairType(a, b)) =>
       unzip >> fun(p => zip(
-        makeAsVector(asV)(ArrayType(n, a))(fst(p)),
+        makeAsVector(asV)(ArrayType(n, a))(fst(p)))(
         makeAsVector(asV)(ArrayType(n, b))(snd(p))))
     case t => throw new Exception(s"did not expect $t")
   }
 
-  private def makeShuffle(s: Rise): Type => TDSL[Rise] = {
-    case ArrayType(_, _: VectorType) => untyped(s)
+  private def makeShuffle(s: Rise): Type => ToBeTyped[Rise] = {
+    case ArrayType(_, _: VectorType) => eraseType(s)
     case ArrayType(n, PairType(a, b)) =>
       unzip >> fun(p => zip(
-        makeShuffle(s)(ArrayType(n, a))(fst(p)),
+        makeShuffle(s)(ArrayType(n, a))(fst(p)))(
         makeShuffle(s)(ArrayType(n, b))(snd(p))))
     case t => throw new Exception(s"did not expect $t")
   }
 
   // FIXME: assuming every scalar function vectorizes like this
   private def vectorizeScalarFun(f: Expr, vEnv: Set[Identifier])
-  : TDSL[Expr] = f match {
-    case i: Identifier if vEnv(i) => untyped(i)
-    case Lambda(x, b) => lambda(untyped(x), vectorizeScalarFun(b, vEnv + x))
+  : ToBeTyped[Expr] = f match {
+    case i: Identifier if vEnv(i) => eraseType(i)
+    case Lambda(x, b) => lambda(eraseType(x), vectorizeScalarFun(b, vEnv + x))
     case App(f, e) => vectorizeScalarFun(f, vEnv)(vectorizeScalarFun(e, vEnv))
-    case p: Primitive => untyped(p)
+    case p: Primitive => eraseType(p)
     case s if (s.t match {
       case _: ScalarType => true
       case _ => false

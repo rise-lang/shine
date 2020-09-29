@@ -1,7 +1,6 @@
 package rise.core
 
 import rise.core.DrawTree.UnicodeConfig
-import rise.core.primitives.Annotation
 
 case class RenderException(msg: String) extends Exception {
   override def toString: String = s"render exception: $msg"
@@ -275,7 +274,7 @@ class ShowRiseCompact {
 
     case Literal(d) => (true, dataSize(d), line(d.toString))
 
-    case Annotation(e, _) => drawAST(e, wrapped)
+    case TypeAnnotation(e, _) => drawAST(e, wrapped)
 
     case p: Primitive => (true, 1, line(p.name))
   }

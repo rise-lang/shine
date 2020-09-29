@@ -38,22 +38,22 @@ class traversals extends test_util.Tests {
     println(orig.toString)
 
     val oldTiling = body(body(
-      function(argumentOf(Map()(), body(function(splitJoin(4)) `;` DFNF `;` RNF))) `;`
+      function(argumentOf(map.primitive, body(function(splitJoin(4)) `;` DFNF `;` RNF))) `;`
         function(splitJoin(4)) `;`
         DFNF `;` RNF `;` DFNF `;` RNF `;` DFNF `;`
-        argument(argument(function(argumentOf(Map()(), body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` DFNF `;` RNF)) `;`
+        argument(argument(function(argumentOf(map.primitive, body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` DFNF `;` RNF)) `;`
         DFNF `;` RNF `;` DFNF `;` RNF `;` RNF
     ))
 
     val simplified = body(body(
-      function(argumentOf(Map()(), body(function(splitJoin(4))))) `;`
+      function(argumentOf(map.primitive, body(function(splitJoin(4))))) `;`
         function(splitJoin(4)) `;`
         RNF `;` DFNF `;`
-        argument(argument(function(argumentOf(Map()(), body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` RNF))))
+        argument(argument(function(argumentOf(map.primitive, body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` RNF))))
 
     val normalized = FNF(simplified).get
     println(normalized)
-    val normalizedModified = body(body(function(argumentOf(Map()(), body(function(splitJoin(4))))))) `;`
+    val normalizedModified = body(body(function(argumentOf(map.primitive, body(function(splitJoin(4))))))) `;`
     inferType `;`
       body(body(function(splitJoin(4)))) `;`
       inferType `;`
@@ -61,13 +61,13 @@ class traversals extends test_util.Tests {
       inferType `;`
       body(body(DFNF)) `;`
       inferType `;`
-      body(body(argument(argument(function(argumentOf(Map()(), body(idAfter))))))) `;`
+      body(body(argument(argument(function(argumentOf(map.primitive, body(idAfter))))))) `;`
       inferType `;`
-      body(body(argument(argument(function(argumentOf(Map()(), body(createTransposePair))))))) `;`
+      body(body(argument(argument(function(argumentOf(map.primitive, body(createTransposePair))))))) `;`
       inferType `;`
-      body(body(argument(argument(function(argumentOf(Map()(), body(DFNF))))))) `;`
+      body(body(argument(argument(function(argumentOf(map.primitive, body(DFNF))))))) `;`
       inferType `;`
-      body(body(argument(argument(function(argumentOf(Map()(), body(argument(mapMapFBeforeTranspose())))))))) `;`
+      body(body(argument(argument(function(argumentOf(map.primitive, body(argument(mapMapFBeforeTranspose())))))))) `;`
       inferType `;`
       body(body(argument(argument(RNF))))
 

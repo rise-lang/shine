@@ -90,8 +90,8 @@ object uniqueNames {
               others + (x -> x2)
             ))
           ))
-        case rise.core.primitives.Annotation(a, t) =>
-          traversal.Stop(rise.core.primitives.Annotation(
+        case rise.core.TypeAnnotation(a, t) =>
+          traversal.Stop(rise.core.TypeAnnotation(
             traversal.DepthFirstLocalResult(a, this),
             traversal.types.DepthFirstLocalResult(t, TypeVisitor(others))
           ))

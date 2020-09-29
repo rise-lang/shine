@@ -9,544 +9,297 @@ import rise.macros.Primitive.primitive
 // scalastyle:off number.of.methods
 object primitives {
 
-  case class Annotation(e: Expr, annotation: Type) extends Primitive {
-    override val t: Type = TypePlaceholder
-    override def typeScheme: Type =
-      throw TypeException("cannot get the type scheme of an annotated Expr")
-    override def setType(t: Type): Annotation =
-      throw TypeException("cannot set the type of an annotated Expr")
-    override def name: String = s"Annotated Expr: $annotation"
+  @primitive case class makeArray(n: Int) extends Primitive with Builder {
+    implDT(t => {
+      def tRec(m: Int, dt: DataType): Type =
+        if (m <= 0) {
+          ArrayType(n, dt)
+        } else {
+          dt ->: tRec(m - 1, dt)
+        }
+      tRec(n, t)
+    })
   }
 
-  @primitive case class MakeArray(n: Int)(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    private def tRec(m: Int, dt: DataType): Type =
-      if (m <= 0) {
-        ArrayType(n, dt)
-      } else {
-        dt ->: tRec(m - 1, dt)
-      }
-    override def typeScheme: Type = implDT(t => tRec(n, t))
+  @primitive object cast extends Primitive with Builder {
+    implBT(s => implBT(t => s ->: t))
   }
 
-  @primitive case class Cast()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(s => implBT(t => s ->: t))
+  @primitive object depJoin extends Primitive with Builder {
+    implNat(n => implN2N(lenF => implDT(dt =>
+      (n `..` (i => lenF(i) `.` dt)) ->:
+        (BigSum(from = 0, upTo = n - 1, n => lenF(n)) `.` dt))))
   }
 
-  @primitive case class DepJoin()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implN2N(lenF =>
-          implDT(dt => {
-            DepArrayType(n, n2dtFun(n)(i => ArrayType(lenF(i), dt))) ->:
-              ArrayType(BigSum(from = 0, upTo = n - 1, n => lenF(n)), dt)
-          })
-        )
-      )
+  @primitive object depMapSeq extends Primitive with Builder {
+    implNat(n =>
+      implN2DT(ft1 => implN2DT(ft2 =>
+        forallNat(k => ft1(k) ->: ft2(k)) ->: (n`..`ft1) ->: (n`..`ft2))))
   }
 
-  @primitive case class DepMapSeq()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    // format: off
-    override def typeScheme: Type =
-      implN(n =>
-        implN2DT(ft1 =>
-          implN2DT(ft2 =>
-            nFunT(k => ft1(k) ->: ft2(k)) ->: DepArrayType(n, ft1)
-              ->: DepArrayType(n,ft2)
-          )
-        )
-      )
-    // format: on
+  @primitive object depZip extends Primitive with Builder {
+    implNat(n => implN2DT(ft1 => implN2DT(ft2 =>
+      (n`..`ft1) ->: (n`..`ft2) ->: (n`..`(i => ft1(i) x ft2(i))))))
   }
 
-  @primitive case class DepZip()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implN2DT(ft1 =>
-          implN2DT(ft2 =>
-            DepArrayType(n, ft1) ->: DepArrayType(n, ft2) ->: DepArrayType(
-              n,
-              n2dtFun(i => PairType(ft1(i), ft2(i)))
-            )
-          )
-        )
-      )
+  @primitive object drop extends Primitive with Builder {
+    forallNat(n => implNat(m => implDT(t =>
+      ((n + m)`.`t) ->: (m`.`t))))
   }
 
-  @primitive case class Drop()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      nFunT(n =>
-        implN(m => implDT(t => ArrayType(n + m, t) ->: ArrayType(m, t)))
-      )
+  @primitive object fst extends Primitive with Builder {
+    implDT(s => implDT(t =>
+      (s x t) ->: s))
   }
 
-  @primitive case class Fst()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implDT(s => implDT(t => PairType(s, t) ->: s))
+  @primitive object gather extends Primitive with Builder {
+    implNat(n => implNat(m => implDT(t =>
+      (m`.`IndexType(n)) ->: (n`.`t) ->: (m`.`t))))
   }
 
-  @primitive case class Gather()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implN(m =>
-          implDT(t =>
-            ArrayType(m, IndexType(n)) ->: ArrayType(n, t) ->: ArrayType(m, t)
-          )
-        )
-      )
+  @primitive object generate extends Primitive with Builder {
+    implNat(n => implDT(t =>
+      (IndexType(n) ->: t) ->: ArrayType(n, t)))
   }
 
-  @primitive case class Generate()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n => implDT(t => (IndexType(n) ->: t) ->: ArrayType(n, t)))
+  @primitive object idx extends Primitive with Builder {
+    implNat(n => implDT(t =>
+      IndexType(n) ->: (n`.`t) ->: t))
   }
 
-  @primitive case class Idx()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n => implDT(t => IndexType(n) ->: ArrayType(n, t) ->: t))
+  @primitive object id extends Primitive with Builder { implDT(t => t ->: t) }
+
+  @primitive object indexAsNat extends Primitive with Builder {
+    implNat(n => IndexType(n) ->: NatType)
   }
 
-  @primitive case class Id()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t)
+  @primitive object iterate extends Primitive with Builder {
+    implNat(n => implNat(m =>
+      forallNat(k => implDT(t => forallNat(l =>
+        ((l * n)`.`t) ->: (l`.`t)) ->: ((m * n.pow(k))`.`t) ->: (m`.`t)))))
   }
 
-  @primitive case class IndexAsNat()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implN(n => IndexType(n) ->: NatType)
+  @primitive object join extends Primitive with Builder {
+    implNat(n => implNat(m => implDT(t =>
+      (n`.`m`.`t) ->: ((n * m)`.`t))))
   }
 
-  @primitive case class Iterate()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    // format: off
-    override def typeScheme: Type =
-      implN(n =>
-        implN(m =>
-          nFunT(k =>
-            implDT(t =>
-              nFunT(l =>
-                ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
-                  ArrayType(m * n.pow(k), t)->: ArrayType(m, t)
-            )
-          )
-        )
-      )
-    // format: on
+  @primitive object let extends Primitive with Builder {
+    implDT(s => implDT(t =>
+      s ->: (s ->: t) ->: t))
   }
 
-  @primitive case class Join()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implN(m =>
-          implDT(t => ArrayType(n, ArrayType(m, t)) ->: ArrayType(n * m, t))
-        )
-      )
+  @primitive object map extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (s ->: t) ->: (n `.` s) ->: (n `.` t))))
   }
 
-  @primitive case class Let()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implDT(s => implDT(t => s ->: (s ->: t) ->: t))
+  @primitive object mapFst extends Primitive with Builder {
+    implDT(s => implDT(t => implDT(s2 =>
+      (s ->: s2) ->: (s x t) ->: (s2 x t))))
   }
 
-  @primitive case class Map()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s =>
-          implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-        )
-      )
+  @primitive object mapSnd extends Primitive with Builder {
+    implDT(s => implDT(t => implDT(t2 =>
+      (t ->: t2) ->: (s x t) ->: (s x t2))))
   }
 
-  @primitive case class MapFst()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implDT(s =>
-        implDT(t =>
-          implDT(s2 => (s ->: s2) ->: PairType(s, t) ->: PairType(s2, t))
-        )
-      )
+  @primitive object mapSeq extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (s ->: t) ->: (n`.`s) ->: (n`.`t))))
   }
 
-  @primitive case class MapSnd()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implDT(s =>
-        implDT(t =>
-          implDT(t2 => (t ->: t2) ->: PairType(s, t) ->: PairType(s, t2))
-        )
-      )
-  }
-
-  @primitive case class MapSeq()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
-      (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
-    )))
-  }
-
-  @primitive case class MapStream()(override val t: Type = TypePlaceholder)
-    extends Primitive {
-    override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
+  @primitive object mapStream extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
       // stream to stream
-      (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
-    )))
+      (s ->: t) ->: (n`.`s) ->: (n`.`t))))
   }
 
-  @primitive case class IterateStream()(override val t: Type = TypePlaceholder)
-    extends Primitive {
-    override def typeScheme: Type = implN(n => implDT(s =>
+  @primitive object iterateStream extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
       // stream to array (or should it be stream to value?)
-      implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-    ))
+      (s ->: t) ->: (n`.`s) ->: (n`.`t))))
   }
 
-  @primitive case class MapSeqUnroll()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s =>
-          implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-        )
-      )
+  @primitive object mapSeqUnroll extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (s ->: t) ->: (n `.` s) ->: (n `.` t))))
   }
 
-  @primitive case class ToMem()(override val t: Type = TypePlaceholder)
-    extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t)
-  }
+  @primitive object toMem extends Primitive with Builder { implDT(t => t ->: t) }
 
-  @primitive case class NatAsIndex()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = nFunT(n => NatType ->: IndexType(n))
+  @primitive object natAsIndex extends Primitive with Builder {
+    forallNat(n => NatType ->: IndexType(n))
   }
 
   // TODO? could be expressed in terms of a pad idx -> val
-  @primitive case class PadCst()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n => nFunT(l => nFunT(q => implDT(t =>
-        t ->: ArrayType(n, t) ->: ArrayType(l + n + q, t))
-      )))
+  @primitive object padCst extends Primitive with Builder {
+    implNat(n =>
+      forallNat(l =>
+        forallNat(q => implDT(t => t ->: (n`.`t) ->: ((l + n + q)`.`t)))))
   }
 
-  @primitive case class PadEmpty()(override val t: Type = TypePlaceholder)
-    extends Primitive {
-    override def typeScheme: Type = implN(n => nFunT(r => implDT(t =>
-      ArrayType(n, t) ->: ArrayType(n + r, t))
-    ))
+  @primitive object padEmpty extends Primitive with Builder {
+    implNat(n =>
+      forallNat(r => implDT(t => (n`.`t) ->: ((n + r)`.`t))))
   }
 
   // TODO? could be expressed in terms of a pad idx -> idx or idx -> val
-  @primitive case class PadClamp()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        nFunT(l =>
-          nFunT(q => implDT(t => ArrayType(n, t) ->: ArrayType(l + n + q, t)))
-        )
-      )
+  @primitive object padClamp extends Primitive with Builder {
+    implNat(n =>
+      forallNat(l => forallNat(q => implDT(t =>
+        (n`.`t) ->: ((l + n + q)`.`t)))))
   }
 
-  @primitive case class Partition()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(dt =>
-          nFunT(m =>
-            n2nFunT(lenF =>
-              ArrayType(n, dt) ->: DepArrayType(
-                m,
-                n2dtFun(m)(i => ArrayType(lenF(i), dt))
-              )
-            )
-          )
-        )
-      )
+  @primitive object partition extends Primitive with Builder {
+    implNat(n => implDT(dt =>
+      forallNat(m =>
+        forallN2N(lenF =>
+          (n`.`dt) ->: (m`..`(i => lenF(i)`.`dt))))))
   }
 
-  @primitive case class Pair()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implDT(s => implDT(t => s ->: t ->: PairType(s, t)))
+  @primitive object pair extends Primitive with Builder {
+    implDT(s => implDT(t =>
+      s ->: t ->: (s x t)))
   }
 
-  @primitive case class DPair()(override val t: Type = TypePlaceholder)
-    extends Primitive {
-    override def typeScheme: Type =
-      implN2DT(fdt => nFunT(n => fdt(n) ->: n2dPairT(fdt(_))))
+  @primitive object dpair extends Primitive with Builder {
+    implN2DT(fdt => forallNat(n => fdt(n) ->: n2dPairT(fdt(_))))
   }
 
-  @primitive case class DMatch()(override val t: Type = TypePlaceholder)
-    extends Primitive {
-    override def typeScheme: Type =
-      implN2DT(ft => implDT(tOut =>
-        n2dPairT(ft(_)) ->: nFunT(m => ft(m) ->: tOut) ->: tOut
-      ))
+  @primitive object dmatch extends Primitive with Builder {
+    implN2DT(ft => implDT(tOut =>
+      n2dPairT(ft(_)) ->: forallNat(m => ft(m) ->: tOut) ->: tOut))
   }
 
-  @primitive case class Reduce()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n => implDT(t => (t ->: t ->: t) ->: t ->: ArrayType(n, t) ->: t))
+  @primitive object reduce extends Primitive with Builder {
+    implNat(n => implDT(t =>
+      (t ->: t ->: t) ->: t ->: (n`.`t) ->: t))
   }
 
-  @primitive case class ReduceSeq()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s => implDT(t => (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t)
-        )
-      )
+  @primitive object reduceSeq extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (t ->: s ->: t) ->: t ->: (n`.`s) ->: t)))
   }
 
-  @primitive case class ReduceSeqUnroll()(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s => implDT(t => (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t)
-        )
-      )
+  @primitive object reduceSeqUnroll extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (t ->: s ->: t) ->: t ->: (n`.`s) ->: t)))
   }
 
-  @primitive case class Reorder()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(t =>
-          (IndexType(n) ->: IndexType(n)) ->: // idxF
-            (IndexType(n) ->: IndexType(n)) ->: // idxFinv
-            ArrayType(n, t) ->: ArrayType(n, t)
-        )
-      )
+  @primitive object reorder extends Primitive with Builder {
+    implNat(n => implDT(t =>
+      (IndexType(n) ->: IndexType(n)) ->: // idxF
+        (IndexType(n) ->: IndexType(n)) ->: // idxFinv
+        (n`.`t) ->: (n`.`t)))
   }
 
-  @primitive case class ScanSeq()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s =>
-          implDT(t =>
-            (s ->: t ->: t) ->: t ->: ArrayType(n, s) ->: ArrayType(n, t)
-          )
-        )
-      )
+  @primitive object scanSeq extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (s ->: t ->: t) ->: t ->: (n `.` s) ->: (n `.` t))))
   }
 
-  @primitive case class Slide()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n => nFunT(sz => nFunT(sp => implDT(t =>
-        ArrayType(sp * n + sz, t) ->: ArrayType(1 + n, ArrayType(sz, t))
-      ))))
+  @primitive object slide extends Primitive with Builder {
+    implNat(n => forallNat(sz => forallNat(sp => implDT(t =>
+      ((sp * n + sz) `.` t) ->: ((1 + n) `.` sz `.` t)))))
   }
 
-  @primitive case class CircularBuffer()(
-    override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      // TODO: should return a stream / sequential array, not an array
-      implN(n => nFunT(alloc => nFunT(sz => implDT(s => implDT(t =>
-        (s ->: t) ->: // function to load an input
-          ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
-      )))))
+  @primitive object circularBuffer extends Primitive with Builder {
+    // TODO: should return a stream / sequential array, not an array
+    implNat(n => forallNat(alloc => forallNat(sz => implDT(s => implDT(t =>
+      (s ->: t) ->: // function to load an input
+        ((n + sz) `.` s) ->: ((1 + n) `.` sz `.` t))))))
   }
 
   // mainly to achieve register rotation
-  @primitive case class RotateValues()(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      // TODO: should return a stream / sequential array, not an array
-      implN(n => nFunT(sz => implDT(s =>
-        (s ->: s) ->: // function to write a value
-          ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, s))
-      )))
+  @primitive object rotateValues extends Primitive with Builder {
+    // TODO: should return a stream / sequential array, not an array
+    implNat(n => forallNat(sz => implDT(s =>
+      (s ->: s) ->: // function to write a value
+        ((n + sz) `.` s) ->: ((1 + n) `.` sz `.` s))))
   }
 
-  @primitive case class Snd()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implDT(s => implDT(t => PairType(s, t) ->: t))
+  @primitive object snd extends Primitive with Builder {
+    implDT(s => implDT(t => (s x t) ->: t))
   }
 
-  @primitive case class Split()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      nFunT(n =>
-        implN(m =>
-          implDT(t => ArrayType(m * n, t) ->: ArrayType(m, ArrayType(n, t)))
-        )
-      )
+  @primitive object split extends Primitive with Builder {
+    forallNat(n => implNat(m => implDT(t =>
+      ((m * n)`.`t) ->: (m`.`n`.`t))))
   }
 
-  @primitive case class Take()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      nFunT(n =>
-        implN(m => implDT(t => ArrayType(n + m, t) ->: ArrayType(n, t)))
-      )
+  @primitive object take extends Primitive with Builder {
+    forallNat(n => implNat(m => implDT(t =>
+      ((n + m)`.`t) ->: (n`.`t))))
   }
 
-  @primitive case class Transpose()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implN(m =>
-          implDT(dt =>
-            ArrayType(n, ArrayType(m, dt)) ->: ArrayType(m, ArrayType(n, dt))
-          )
-        )
-      )
+  @primitive object transpose extends Primitive with Builder {
+    implNat(n => implNat(m => implDT(dt =>
+      (n`.`m`.`dt) ->: (m`.`n`.`dt))))
   }
 
   // if-then-else
-  @primitive case class Select()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implDT(t => bool ->: t ->: t ->: t)
+  @primitive object select extends Primitive with Builder {
+    implDT(t => bool ->: t ->: t ->: t)
   }
 
-  @primitive case class Unzip()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(dt1 =>
-          implDT(dt2 =>
-            ArrayType(n, PairType(dt1, dt2)) ->: PairType(
-              ArrayType(n, dt1),
-              ArrayType(n, dt2)
-            )
-          )
-        )
-      )
+  @primitive object unzip extends Primitive with Builder {
+    implNat(n => implDT(dt1 => implDT(dt2 =>
+      (n`.`(dt1 x dt2)) ->: ((n`.`dt1) x (n`.`dt2)))))
   }
 
-  @primitive case class Zip()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(a =>
-          implDT(b =>
-            ArrayType(n, a) ->: ArrayType(n, b) ->: ArrayType(n, PairType(a, b))
-          )
-        )
-      )
+  @primitive object zip extends Primitive with Builder {
+    implNat(n => implDT(a => implDT(b =>
+      (n`.`a) ->: (n`.`b) ->: (n`.`(a x b)))))
   }
 
-  @primitive case class Neg()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t)
+  @primitive object neg extends Primitive with Builder {
+    implBT(t => t ->: t)
   }
 
-  @primitive case class Not()(override val t: Type = TypePlaceholder)
-    extends Primitive {
-    override def typeScheme: Type = bool ->: bool
+  @primitive object not extends Primitive with Builder {
+    bool ->: bool
   }
 
-  @primitive case class Add()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t ->: t)
-  }
+  @primitive object add extends Primitive with Builder { implBT(t => t ->: t ->: t) }
+  @primitive object sub extends Primitive with Builder { implBT(t => t ->: t ->: t) }
+  @primitive object mul extends Primitive with Builder { implBT(t => t ->: t ->: t) }
+  @primitive object div extends Primitive with Builder { implBT(t => t ->: t ->: t) }
+  @primitive object mod extends Primitive with Builder { implBT(t => t ->: t ->: t) }
 
-  @primitive case class Sub()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t ->: t)
-  }
-
-  @primitive case class Mul()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t ->: t)
-  }
-
-  @primitive case class Div()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t ->: t)
-  }
-
-  @primitive case class Mod()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t ->: t)
-  }
-
-  @primitive case class Gt()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t ->: bool)
-  }
-
-  @primitive case class Lt()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t ->: bool)
-  }
-
-  @primitive case class Equal()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implBT(t => t ->: t ->: bool)
-  }
+  @primitive object gt extends Primitive with Builder { implBT(t => t ->: t ->: bool) }
+  @primitive object lt extends Primitive with Builder { implBT(t => t ->: t ->: bool) }
+  @primitive object equal extends Primitive with Builder { implBT(t => t ->: t ->: bool) }
 
   // TODO: should vectorisation be in the core or not?
 
   // TODO: track alignment in type system?
-  @primitive case class AsVectorAligned()(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      nFunT(n =>
-        implN(m =>
-          implDT(a => ArrayType(m * n, a) ->: ArrayType(m, VectorType(n, a)))
-        )
-      )
+  @primitive object asVectorAligned extends Primitive with Builder {
+    forallNat(n => implNat(m => implDT(a =>
+      ((m * n)`.`a) ->: (m`.`vec(n, a)))))
   }
 
-  @primitive case class AsVector()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      nFunT(n =>
-        implN(m =>
-          implST(t => ArrayType(m * n, t) ->: ArrayType(m, VectorType(n, t)))
-        )
-      )
+  @primitive object asVector extends Primitive with Builder {
+    forallNat(n => implNat(m => implST(t =>
+      ((m * n)`.`t) ->: (m`.`vec(n, t)))))
   }
 
-  @primitive case class AsScalar()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implN(m =>
-          implST(t => ArrayType(m, VectorType(n, t)) ->: ArrayType(m * n, t))
-        )
-      )
+  @primitive object asScalar extends Primitive with Builder {
+    implNat(n => implNat(m => implST(t =>
+      (m`.`vec(n, t)) ->: ((m * n)`.`t))))
   }
 
-  @primitive case class VectorFromScalar()(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      implN(n => implST(t => t ->: VectorType(n, t)))
+  @primitive object vectorFromScalar extends Primitive with Builder {
+    implNat(n => implST(t =>
+      t ->: vec(n, t)))
   }
 
-  @primitive case class PrintType(msg: String = "")(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type = implT(t => t ->: t)
+  @primitive case class printType(msg: String = "") extends Primitive with Builder {
+    implType(t => t ->: t)
   }
 
-  @primitive case class TypeHole(msg: String = "")(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type = implT(t => t)
+  @primitive case class typeHole(msg: String = "") extends Primitive with Builder {
+    implType(t => t)
   }
 }
 // scalastyle:on number.of.methods

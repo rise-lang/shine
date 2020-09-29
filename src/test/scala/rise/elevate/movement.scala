@@ -4,6 +4,7 @@ import elevate.core.strategies.predicate.rewriteResultToBoolean
 import elevate.core.strategies.traversal._
 import rise.elevate.util._
 import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core._
 import rise.core.types.f32
 import rise.core.TypeLevelDSL._
@@ -20,7 +21,7 @@ class movement extends test_util.Tests {
   def betaEtaEquals(a: Rise, b: Rise): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toTDSL(na) :: nb.t
+    val uab: Rise = toBeTyped(na) :: nb.t
     makeClosed(uab) == makeClosed(nb)
   }
 
@@ -31,7 +32,7 @@ class movement extends test_util.Tests {
       List(
         DFNF(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         toExpr(λ(f => **(f) >> T))
-      ).map((topDown(`**f >> T -> T >> **f`()(RiseTraversable))).apply(_).get), gold
+      ).map(topDown(`**f >> T -> T >> **f`()(RiseTraversable)).apply(_).get), gold
     )
   }
 
@@ -46,10 +47,10 @@ class movement extends test_util.Tests {
           (transpose o map(fun(ac =>
             map(fun(bc =>
               (fun(x => (x * alpha) + beta * bc._2) o
-                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
-                zip(ac._1, bc._1))) $
-              zip(transpose(b),ac._2)))) $
-            zip(a, c)
+                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(l(0.0f))) $
+                zip(ac._1)(bc._1))) $
+              zip(transpose(b))(ac._2)))) $
+            zip(a)(c)
         )
       )
 
