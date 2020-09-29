@@ -6,7 +6,7 @@ import scala.language.experimental.macros
 
 // scalastyle:off indentation
 object Primitive {
-  val verbose = true
+  val verbose = false
 
   // noinspection ScalaUnusedSymbol
   @compileTimeOnly("primitive macro")

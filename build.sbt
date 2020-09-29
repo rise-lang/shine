@@ -35,7 +35,9 @@ lazy val riseAndShine = (project in file("."))
         "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0",
         // testing
         "junit" % "junit" % "4.11",
-        "org.scalatest" %% "scalatest" % "3.1.0" % "test"
+        "org.scalatest" %% "scalatest" % "3.1.0" % "test",
+        // json
+        "com.typesafe.play" %% "play-json" % "2.9.1"
     )
   )
 
