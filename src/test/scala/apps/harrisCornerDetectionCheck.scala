@@ -11,7 +11,7 @@ class harrisCornerDetectionCheck extends test_util.TestsWithExecutor {
 
   test("harris produces expected result") {
     val random = new scala.util.Random()
-    val input = Array.fill(H, W)(random.nextFloat)
+    val input = Array.fill(H, W)(random.nextFloat())
     val gold = computeGold(H, W, input, kappa).flatten
     val runs = Seq(
       "no pipe" -> NoPipe.create.run(input, kappa),

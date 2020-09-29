@@ -57,8 +57,8 @@ class Acoustic3D extends test_util.TestsWithExecutor {
 
   test("acoustic stencils produce same results") {
     val random = new scala.util.Random()
-    val mat1 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat * random.nextInt(1000))
-    val mat2 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat * random.nextInt(1000))
+    val mat1 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat() * random.nextInt(1000))
+    val mat2 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat() * random.nextInt(1000))
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("acoustic3D.cl", mat1, mat2)),

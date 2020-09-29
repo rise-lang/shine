@@ -99,16 +99,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   def updatedRanges(key: String, value: arithexpr.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
-  override def generate(phrase:Phrase[CommType],
-               topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
-               env:CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
+  override def generate(phrase: Phrase[CommType],
+               topLevelDefinitions: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
+               env: CodeGenerator.Environment): (immutable.Seq[Decl], Stmt) = {
     val stmt = this.generateWithFunctions(phrase, topLevelDefinitions, env)
-    (decls, stmt)
+    (decls.toSeq, stmt)
   }
 
-  def generateWithFunctions(phrase:Phrase[CommType],
-                            topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
-                            env:CodeGenerator.Environment):Stmt = {
+  def generateWithFunctions(phrase: Phrase[CommType],
+                            topLevelDefinitions: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
+                            env: CodeGenerator.Environment):Stmt = {
     topLevelDefinitions.headOption match {
       case Some((ident, defn)) =>
         generateLetNat(ident, defn, env, (gen, env) => gen.generateWithFunctions(phrase, topLevelDefinitions.tail, env))

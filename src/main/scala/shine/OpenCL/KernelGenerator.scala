@@ -13,26 +13,32 @@ import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
 import shine._
 
+import scala.annotation.tailrec
 import scala.collection._
 
 //noinspection VariablePatternShadow
 object KernelGenerator {
   def makeCode[T <: PhraseType](localSize: LocalSize, globalSize: GlobalSize)
                                (originalPhrase: Phrase[T], name: String): OpenCL.KernelWithSizes = {
-    val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
-    makeKernel(name, phrase, params.reverse, defs.reverse, Some(localSize), Some(globalSize)).right.get
+    val (phrase, params, defs) = getPhraseAndParams(originalPhrase, immutable.Seq(), immutable.Seq())
+    makeKernel(name, phrase, params.reverse, defs.reverse,
+      Some(localSize), Some(globalSize)).getOrElse(throw new Exception("Expected KernelWithSizes"))
   }
 
   def makeCode[T <: PhraseType](originalPhrase: Phrase[T], name: String = "KERNEL"): OpenCL.KernelNoSizes = {
-    val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
-    makeKernel(name, phrase, params.reverse, defs.reverse, None, None).left.get
+    val (phrase, params, defs) = getPhraseAndParams(originalPhrase, immutable.Seq(), immutable.Seq())
+    makeKernel(name, phrase, params.reverse, defs.reverse,
+      None, None).swap.getOrElse(throw new Exception("Expected KernelNoSizes"))
   }
 
-//  @scala.annotation.tailrec
+
+  @tailrec
   private def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                                  ps: Seq[Identifier[ExpType]],
-                                                  defs:Seq[(LetNatIdentifier, Phrase[ExpType])]
-                                                 ): (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
+                                                  ps: immutable.Seq[Identifier[ExpType]],
+                                                  defs: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])]):
+  ( Phrase[ExpType], immutable.Seq[Identifier[ExpType]],
+    immutable.Seq[(LetNatIdentifier, Phrase[ExpType])] ) =
+  {
     p match {
       case Apply(f, a) => getPhraseAndParams(Lifting.liftFunction(f).reducing(a), ps, defs)
       case DepApply(f, a) => getPhraseAndParams(Lifting.liftDependentFunction(f)(a), ps, defs)
@@ -45,8 +51,8 @@ object KernelGenerator {
 
   private def makeKernel(name:String,
                          p: Phrase[ExpType],
-                         inputParams: Seq[Identifier[ExpType]],
-                         letNatDefs:Seq[(LetNatIdentifier, Phrase[ExpType])],
+                         inputParams: immutable.Seq[Identifier[ExpType]],
+                         letNatDefs: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
                          localSize: Option[LocalSize],
                          globalSize: Option[GlobalSize]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
 
@@ -71,14 +77,15 @@ object KernelGenerator {
             Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
                 Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap
 
-      val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty, Map.empty)
+      val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap,
+        immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
       val (declarations, code) = gen.generate(p, letNatDefs, env)
 
       val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
 
       val oclKernel = OpenCL.Kernel(typeDeclarations ++ declarations,
-            kernel = makeKernelFunction(name, kernelParams, adaptKernelBody(C.AST.Block(Seq(code))), localSize),
+            kernel = makeKernelFunction(name, kernelParams, adaptKernelBody(C.AST.Block(immutable.Seq(code))), localSize),
             outputParam = outParam,
             inputParams = inputParams,
             intermediateParams = intermediateAllocations.map (_.identifier))
@@ -121,10 +128,10 @@ object KernelGenerator {
 
   private def adaptKernelParameters(p: Phrase[CommType],
                                     out: Identifier[AccType],
-                                    ins: Seq[Identifier[ExpType]],
-                                    intermediateAllocations: Seq[AllocationInfo],
+                                    ins: immutable.Seq[Identifier[ExpType]],
+                                    intermediateAllocations: immutable.Seq[AllocationInfo],
                                     gen: CodeGeneration.CodeGenerator
-                                   ): (Phrase[CommType], Identifier[AccType], Seq[Identifier[ExpType]], Seq[AllocationInfo], Seq[ParamDecl]) = {
+                                   ): (Phrase[CommType], Identifier[AccType], immutable.Seq[Identifier[ExpType]], immutable.Seq[AllocationInfo], immutable.Seq[ParamDecl]) = {
     AdaptKernelParameters(p, out, ins, intermediateAllocations, gen) |> { r =>
       val p = r._1
       xmlPrinter.writeToFile("/tmp/p5.xml", p)
@@ -140,7 +147,7 @@ object KernelGenerator {
   }
 
   private def makeKernelFunction(name: String,
-                                 params: Seq[ParamDecl],
+                                 params: immutable.Seq[ParamDecl],
                                  body: C.AST.Block, localSize: Option[LocalSize]): OpenCL.AST.KernelDecl = {
     OpenCL.AST.KernelDecl(name, params = params, body = body,
                           attribute = if (localSize.isEmpty) None else Some(RequiredWorkGroupSize(localSize.get.size)))

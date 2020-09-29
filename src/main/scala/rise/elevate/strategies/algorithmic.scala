@@ -1,10 +1,11 @@
 package rise.elevate.strategies
 
-import com.github.ghik.silencer.silent
 import elevate.core.strategies.{Traversable, basic}
 import elevate.core.strategies.basic.{applyNTimes, id}
 import elevate.core.strategies.traversal._
 import rise.elevate.strategies.traversal._
+
+import scala.annotation.nowarn
 //import rise.elevate.rules.traversal.default._
 import elevate.core.{Failure, Strategy, Success}
 import elevate.macros.StrategyMacro.strategy
@@ -28,7 +29,7 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> *(.. >> f)
   @strategy def mapFirstFission: Strategy[Rise] = e => {
     // TODO: this should be expressed with elevate strategies
-    @silent
+    @nowarn("msg=match may not be exhaustive")
     @scala.annotation.tailrec
     def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): ToBeTyped[Rise] = {
       gx match {
@@ -51,7 +52,7 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> .. >> *f
   @strategy def mapFullFission: Strategy[Rise] = e => {
     // TODO: this should be expressed with elevate strategies
-    @silent
+    @nowarn("msg=match may not be exhaustive")
     def mapFullFissionRec(x: Identifier, gx: Rise): ToBeTyped[Rise] = {
       gx match {
         case App(f, gx2) =>

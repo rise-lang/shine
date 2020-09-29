@@ -44,7 +44,7 @@ abstract class AbstractSlide(n: Nat,
 
   def primitiveName: String = {
     val name = this.getClass.getSimpleName
-    Character.toLowerCase(name.charAt(0)) + name.substring(1)
+    s"${Character.toLowerCase(name.charAt(0))}${name.substring(1)}"
   }
 
   override def prettyPrint: String =

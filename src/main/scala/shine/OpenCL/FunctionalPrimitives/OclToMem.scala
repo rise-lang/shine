@@ -39,7 +39,7 @@ final case class OclToMem(addrSpace: AddressSpace,
       </input>
     </to>.copy(label = {
       val name = this.getClass.getSimpleName
-      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+      s"${Character.toLowerCase(name.charAt(0))}${name.substring(1)}"
     })
 
   override def acceptorTranslation(A: Phrase[AccType])(
@@ -51,6 +51,7 @@ final case class OclToMem(addrSpace: AddressSpace,
     import TranslationToImperative._
 
     val adj = AdjustArraySizesForAllocations(input, dt, addrSpace)
+
     `new` (addrSpace) (adj.dt, tmp =>
       acc(input)(adj.accF(tmp.wr)) `;` C(adj.exprF(tmp.rd)))
   }

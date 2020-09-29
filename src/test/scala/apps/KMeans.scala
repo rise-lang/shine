@@ -12,12 +12,12 @@ class KMeans extends test_util.TestsWithExecutor {
   // related to pair assignment in the TranslationContext
   ignore("kmeans versions produce same results") {
     val random = new scala.util.Random()
-    val features = Array.fill(F, P)(random.nextFloat)
-    val clusters = Array.fill(C, F)(random.nextFloat)
+    val features = Array.fill(F, P)(random.nextFloat())
+    val clusters = Array.fill(C, F)(random.nextFloat())
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("KMeans.cl", features, clusters)),
-      ("dpia", runKernel(gen.OpenCLKernel(kmeans.kmeans), features, clusters))
+      ("dpia", runKernel(gen.OpenCLKernel(apps.kmeans.kmeans), features, clusters))
     ))
   }
 }

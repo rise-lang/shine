@@ -3,6 +3,8 @@ package exploration
 import java.nio.file.{Files, Paths}
 
 import elevate.core.Strategy
+
+import scala.collection.immutable
 //import elevate.core.strategies.traversal.topDown
 //import rise.elevate.rules.algorithmic.fuseReduceMap
 //import rise.elevate.rules.traversal.default
@@ -26,7 +28,7 @@ object riseExploration {
 
 
   // entry point for exploration
-  def apply(solution:Rise, filePath:String) = {
+  def apply(solution:Rise, filePath:String): (Rise, Option[Double]) = {
 
     // parse config file
     val parsedConfiguration = jsonParser.parse(filePath)
@@ -34,10 +36,12 @@ object riseExploration {
     // setup gold
     // code here
 
-    val startingPoint = prepareExploration(parsedConfiguration, solution, filePath)
+    val startingPoint = prepareExploration(parsedConfiguration,
+      solution, filePath)
 
     // start
-    startingPoint.execute(new Solution[Rise](solution, scala.collection.mutable.Seq.empty[Strategy[Rise]]))
+    startingPoint.execute(Solution(solution,
+      immutable.Seq.empty[Strategy[Rise]]))
 
     // collect results
     // code here
@@ -46,9 +50,11 @@ object riseExploration {
   }
 
     // todo command line parser (replace apply function by main)
-//    def main(args: Array[String], solution:Rise, filePath:String):Unit = {
+    // def main(args: Array[String], solution:Rise, filePath:String):Unit = {
 
-  def prepareExploration(result: ParseExploration, solution:Rise, filePath: String):Metaheuristic[Rise] = {
+  def prepareExploration(result: ParseExploration,
+                         solution: Rise,
+                         filePath: String): Metaheuristic[Rise] = {
 
     // -- todo --check elements -> requirements
 
@@ -101,7 +107,8 @@ object riseExploration {
 
     // begin with executor
     val executor = result.executor.name match {
-      case "C" => new CExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "C" => new CExecutor(lowering, gold, result.executor.iterations,
+        inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
       case _ => new Exception("not a supported executor option")

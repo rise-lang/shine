@@ -23,7 +23,7 @@ final case class Cycle(n: Nat,
     OperationalSemantics.eval(s, input) match {
       case ArrayData(a) =>
         val N = n.eval
-        ArrayData(Stream.continually(a).flatten.take(N).toVector)
+        ArrayData(LazyList.continually(a).flatten.take(N).toVector)
       case _ => throw new Exception("this should not happen")
     }
   }

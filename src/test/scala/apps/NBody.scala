@@ -9,8 +9,8 @@ class NBody extends test_util.TestsWithExecutor {
 
   test("nbody versions produce same results") {
     val random = new scala.util.Random()
-    val pos = Array.fill(N * 4)(random.nextFloat * random.nextInt(10))
-    val vel = Array.fill(N * 4)(random.nextFloat * random.nextInt(10))
+    val pos = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+    val vel = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
 
     val localSizeAMD = LocalSize(128)
     val globalSizeAMD = GlobalSize(N)
