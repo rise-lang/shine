@@ -435,11 +435,11 @@ object parse {
 
   def parseApp(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     println("parseApp: " + parseState)
-//    if(parseState._3==0){
-//      println("Abbruch; parseApp: "+ parseState)
-//      return Left(ParseError("failed to parse parseApp: " + " no parseApp is left"))
-//    }
-    if(parseState._1.length > 1)
+    if(parseState._3==0){
+      println("Abbruch; parseApp: "+ parseState)
+      return Left(ParseError("failed to parse parseApp: " + " no parseApp is left"))
+    }
+//    TODO: if(parseState._1.length > 1)
     val pas = (parseState._1, parseState._2, parseState._3-1)
     val p =
       Right(pas)  |>
