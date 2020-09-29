@@ -32,7 +32,7 @@ object predicate {
 
   case object isMakeArray extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case m: MakeArray => Success(m)
+      case m@makeArray(_) => Success(m)
       case _            => Failure(isMakeArray)
     }
     override def toString: String = "isMakeArray"
@@ -48,7 +48,7 @@ object predicate {
 
   case object isReduce extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case r@Reduce() => Success(r)
+      case r@reduce() => Success(r)
       case _          => Failure(isReduce)
     }
     override def toString: String = "isReduce"
@@ -56,7 +56,7 @@ object predicate {
 
   case object isTranspose extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case t@Transpose() => Success(t)
+      case t@transpose() => Success(t)
       case _             => Failure(isTranspose)
     }
     override def toString = "isTranspose"
@@ -64,7 +64,7 @@ object predicate {
 
   case object isReduceSeq extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case r@ReduceSeq() => Success(r)
+      case r@reduceSeq() => Success(r)
       case _             => Failure(isReduceSeq)
     }
     override def toString = "isReduce"
@@ -72,7 +72,7 @@ object predicate {
 
   case object isReduceSeqUnroll extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case r@ReduceSeqUnroll() => Success(r)
+      case r@reduceSeqUnroll() => Success(r)
       case _                   => Failure(isReduceSeqUnroll)
     }
     override def toString = "isReduce"
@@ -89,7 +89,7 @@ object predicate {
 
   case object isGenerate extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case g@Generate() => Success(g)
+      case g@generate() => Success(g)
       case _            => Failure(isGenerate)
     }
     override def toString: String = "isGenerate"
@@ -105,7 +105,7 @@ object predicate {
 
   case object isMap extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case m@Map() => Success(m)
+      case m@map() => Success(m)
       case _       => Failure(isMap)
     }
     override def toString: String = "isMap"
@@ -113,7 +113,7 @@ object predicate {
 
   case object isLet extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case l@Let() => Success(l)
+      case l@let() => Success(l)
       case _       => Failure(isLet)
     }
     override def toString = "isLet"
@@ -131,7 +131,7 @@ object predicate {
 
   case object isAppliedLet extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case a@App(App(Let(), _), _) => Success(a)
+      case a@App(App(let(), _), _) => Success(a)
       case _                       => Failure(isAppliedLet)
     }
     override def toString: String = "isAppliedLet"
@@ -139,7 +139,7 @@ object predicate {
 
   case object isAppliedMap extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case m@App(App(Map(), f), arg) => Success(m)
+      case m@App(App(map(), f), arg) => Success(m)
       case _                         => Failure(isMap)
     }
     override def toString: String = "isAppliedMap"
@@ -147,7 +147,7 @@ object predicate {
 
   case object isAppliedZip extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case z@App(App(Zip(), a), b) => Success(z)
+      case z@App(App(zip(), a), b) => Success(z)
       case _                       => Failure(isAppliedZip)
     }
     override def toString: String = "isAppliedZip"
@@ -155,7 +155,7 @@ object predicate {
 
   case object isAppliedReduce extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case r@App(App(App(Reduce(), op), init), arg) => Success(r)
+      case r@App(App(App(reduce(), op), init), arg) => Success(r)
       case _                                        => Failure(isMap)
     }
     override def toString: String = "isAppliedReduce"
@@ -170,8 +170,8 @@ object predicate {
 
   case class isVectorizeablePrimitive()(implicit ev: Traversable[Rise]) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case a@App(App(Map(), f), input) if isComputation()(ev)(f) && !isVectorArray(a.t) => Success(a)
-      case r@App(App(App(Reduce(), op), init), input) if isComputation()(ev)(op) => Success(r)
+      case a@App(App(map(), f), input) if isComputation()(ev)(f) && !isVectorArray(a.t) => Success(a)
+      case r@App(App(App(reduce(), op), init), input) if isComputation()(ev)(op) => Success(r)
       case _ => Failure(isVectorizeablePrimitive())
     }
   }

@@ -30,7 +30,7 @@ object convolution {
   ))
 
   def padEmpty(l: Nat, r: Nat): Expr = padClamp(l)(r)
-  def unpadEmpty(l: Nat, r: Nat): Expr = implN(n => implDT(t =>
+  def unpadEmpty(l: Nat, r: Nat): Expr = implNat(n => implDT(t =>
     drop(l) >> (take(n) :: ((n + r) `.` t) ->: (n `.` t))
   ))
 

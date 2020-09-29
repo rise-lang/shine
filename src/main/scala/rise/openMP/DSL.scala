@@ -1,8 +1,8 @@
 package rise.openMP
 
-import rise.openMP.primitives._
+import rise.core.Primitive
 
 object DSL {
-  def mapPar: MapPar = MapPar()()
-  def reducePar: ReducePar = ReducePar()()
+  def mapPar: Primitive = primitives.mapPar.primitive
+  def reducePar: Primitive = primitives.reducePar.primitive
 }
