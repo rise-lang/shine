@@ -270,8 +270,8 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
-  "parser" should "be able to parse 'BastianparseApp.rise'" in {
-    val fileName: String = testFilePath + "BastianparseApp.rise"
+  "parser" should "be able to parse 'fx.rise'" in {
+    val fileName: String = testFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val ex: r.Expr = parse(lexer.tokens)
@@ -283,14 +283,27 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
-  "parser" should "be able to parse 'BastianparseApp2.rise'" in {
-    val fileName: String = testFilePath + "BastianparseApp2.rise"
+  "parser" should "be able to parse 'FunctionInBraces.rise'" in {
+    val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val ex: r.Expr = parse(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.Lambda(r.Identifier("y"), r.Identifier("y")), r.Identifier("x"))) => true
+      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => fail("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'Brace5.rise'" in {
+    val fileName: String = testFilePath + "Brace5.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val ex: r.Expr = parse(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("x"), r.Identifier("x")) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
     }
