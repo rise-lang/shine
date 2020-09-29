@@ -68,7 +68,7 @@ object jsonParser {
     // open file
     val bufferedSource = Source.fromFile(filePath)
     // read in file
-    for (line <- bufferedSource.getLines) {
+    for (line <- bufferedSource.getLines()) {
       output += line
     }
 

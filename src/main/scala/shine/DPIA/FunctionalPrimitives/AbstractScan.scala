@@ -88,7 +88,7 @@ abstract  class AbstractScan(n: Nat,
       </input>
     </reduce>.copy(label = {
       val name = this.getClass.getSimpleName
-      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+      s"${Character.toLowerCase(name.charAt(0))}${name.substring(1)}"
     })
 
 }

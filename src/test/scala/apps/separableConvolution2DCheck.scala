@@ -23,7 +23,7 @@ class separableConvolution2DCheck extends test_util.Tests {
 
   private def checkC(e: Expr): Unit = {
     val random = new scala.util.Random()
-    val input = Array.fill(H, W)(random.nextFloat)
+    val input = Array.fill(H, W)(random.nextFloat())
     val gold = computeGold(H, W, input, binomialWeights2d)
 
     val prog = gen.CProgram(wrapExpr(e))
@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
     import shine.OpenCL._
 
     val random = new scala.util.Random()
-    val input = Array.fill(H, W)(random.nextFloat)
+    val input = Array.fill(H, W)(random.nextFloat())
     val gold = computeGold(H, W, input, binomialWeights2d).flatten
 
     val kernel = gen.OpenCLKernel(wrapExpr(e))

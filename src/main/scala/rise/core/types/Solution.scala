@@ -96,12 +96,12 @@ case class Solution(ts: Map[Type, Type],
     // from s2 to the values in s1 it then concatenates the resulting maps
     val combine: (Solution, Solution) => Solution = (s1, s2) => {
       Solution(
-        s1.ts.mapValues(t => s2(t)) ++ s2.ts,
-        s1.ns.mapValues(n => s2(n)) ++ s2.ns,
-        s1.as.mapValues(a => s2(a)) ++ s2.as,
-        s1.n2ds.mapValues(n => s2(n)) ++ s2.n2ds,
-        s1.n2ns.mapValues(n => s2(n)) ++ s2.n2ns,
-        s1.natColls.mapValues(n => s2(n)) ++ s2.natColls
+        (s1.ts.view.mapValues(t => s2(t)) ++ s2.ts).toMap,
+        (s1.ns.view.mapValues(n => s2(n)) ++ s2.ns).toMap,
+        (s1.as.view.mapValues(a => s2(a)) ++ s2.as).toMap,
+        (s1.n2ds.view.mapValues(n => s2(n)) ++ s2.n2ds).toMap,
+        (s1.n2ns.view.mapValues(n => s2(n)) ++ s2.n2ns).toMap,
+        (s1.natColls.view.mapValues(n => s2(n)) ++ s2.natColls).toMap
       )
     }
 

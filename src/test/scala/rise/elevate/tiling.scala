@@ -14,9 +14,9 @@ import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.traversal._
 import rise.elevate.util._
-
 import _root_.util.gen
 
+import scala.collection.immutable
 import scala.language.implicitConversions
 
 class tiling extends test_util.Tests {
@@ -260,7 +260,7 @@ class tiling extends test_util.Tests {
   // ... but mapAcceptorTranslation for split is missing
   val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
 
-  val identity = dtFun(t => foreignFun("identity", scala.collection.Seq("y"), "{ return y; }", t ->: t))
+  val identity = dtFun(t => foreignFun("identity", immutable.Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(f32)
 
   test("codegen 1D tiles") {

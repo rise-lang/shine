@@ -23,13 +23,13 @@ object fromRise {
 
   def expression(
     expr: r.Expr,
-    ptMap: MutableIdentityHashMap[r.Expr, PhraseType]): Phrase[_ <: PhraseType] = expr match {
+    ptMap: java.util.IdentityHashMap[r.Expr, PhraseType]): Phrase[_ <: PhraseType] = expr match {
 
     case r.Identifier(name) =>
-      Identifier(name, ptMap(expr))
+      Identifier(name, ptMap.get(expr))
 
     case r.Lambda(x, e) =>
-      Lambda(Identifier(x.name, ptMap(x)), expression(e, ptMap))
+      Lambda(Identifier(x.name, ptMap.get(x)), expression(e, ptMap))
 
     case r.App(f, e) =>
       val ef = expression(f, ptMap)
@@ -66,7 +66,7 @@ object fromRise {
       case _ => Literal(data(d))
     }
 
-    case p: r.Primitive => primitive(p, ptMap(p))
+    case p: r.Primitive => primitive(p, ptMap.get(p))
   }
 
   def data(d: rs.Data): OpSem.Data = d match {

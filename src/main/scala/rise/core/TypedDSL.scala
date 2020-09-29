@@ -40,22 +40,22 @@ object TypedDSL {
   object Opaque {
     def freeze(ftvSubs: Solution, t: Type): Type =
       new Solution(
-        ftvSubs.ts.mapValues(dt =>
+        ftvSubs.ts.view.mapValues(dt =>
           dt.asInstanceOf[DataTypeIdentifier].asExplicit
-        ),
-        ftvSubs.ns.mapValues(n => n.asInstanceOf[NatIdentifier].asExplicit),
-        ftvSubs.as.mapValues(a =>
+        ).toMap,
+        ftvSubs.ns.view.mapValues(n => n.asInstanceOf[NatIdentifier].asExplicit).toMap,
+        ftvSubs.as.view.mapValues(a =>
           a.asInstanceOf[AddressSpaceIdentifier].asExplicit
-        ),
-        ftvSubs.n2ds.mapValues(n2d =>
+        ).toMap,
+        ftvSubs.n2ds.view.mapValues(n2d =>
           n2d.asInstanceOf[NatToDataIdentifier].asExplicit
-        ),
-        ftvSubs.n2ns.mapValues(n2n =>
+        ).toMap,
+        ftvSubs.n2ns.view.mapValues(n2n =>
           n2n.asInstanceOf[NatToNatIdentifier].asExplicit
-        ),
-        ftvSubs.natColls.mapValues(natColl =>
+        ).toMap,
+        ftvSubs.natColls.view.mapValues(natColl =>
           natColl.asInstanceOf[NatCollectionIdentifier].asExplicit
-      ))(t)
+      ).toMap)(t)
 
     def getFTVSubs(t: Type): Solution = {
       import scala.collection.immutable.Map
@@ -185,7 +185,7 @@ object TypedDSL {
           }
         }
       )
-      ftvs.distinct
+      ftvs.distinct.toSeq
     }
 
     case class Visitor(ftvSubs: Solution, sol: Solution)
@@ -352,7 +352,7 @@ object TypedDSL {
 
         case Lambda(x, e) =>
           val tx = x.setType(genType(x))
-          env update (tx.name, tx.t)
+          env.update(tx.name, tx.t)
           val (te, ftvSubsE) = constrained(e)
           env remove tx.name
           val ft = FunType(tx.t, te.t)
@@ -423,15 +423,15 @@ object TypedDSL {
              ): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-      val solution = Constraint.solve(constraints, Seq())(explDep) match {
+      val solution = Constraint.solve(constraints.toSeq, Seq())(explDep) match {
         case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
           Solution(
-            ts.mapValues(t => ftvSubs(t)),
-            ns.mapValues(n => ftvSubs(n)),
-            as.mapValues(a => ftvSubs(a)),
-            n2ds.mapValues(n2d => ftvSubs(n2d)),
-            n2ns.mapValues(n2n => ftvSubs(n2n)),
-            natColls.mapValues(ftvSubs(_))
+            ts.view.mapValues(t => ftvSubs(t)).toMap,
+            ns.view.mapValues(n => ftvSubs(n)).toMap,
+            as.view.mapValues(a => ftvSubs(a)).toMap,
+            n2ds.view.mapValues(n2d => ftvSubs(n2d)).toMap,
+            n2ns.view.mapValues(n2n => ftvSubs(n2n)).toMap,
+            natColls.view.mapValues(ftvSubs(_)).toMap
           )
       }
       traversal.DepthFirstLocalResult(typed_e, Visitor(solution))

@@ -16,17 +16,19 @@ import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 object inferAccess {
-  def apply(e: r.Expr): MutableIdentityHashMap[r.Expr, PhraseType] =
+  def apply(e: r.Expr): java.util.IdentityHashMap[r.Expr, PhraseType] =
     new InferAccessAnnotation()(e)
 }
 
 private class InferAccessAnnotation {
-  private val ptAnnotationMap = MutableIdentityHashMap[r.Expr, PhraseType]()
+  private val ptAnnotationMap =
+    new java.util.IdentityHashMap[r.Expr, PhraseType]()
 
-  def apply(e: r.Expr): MutableIdentityHashMap[r.Expr, PhraseType] = {
+  def apply(e: r.Expr): java.util.IdentityHashMap[r.Expr, PhraseType] = {
+    import scala.jdk.CollectionConverters.MapHasAsScala
     val (ePt, substAcc) =
       inferPhraseTypes(e, Map.empty, isKernelParamFun = true)
-    substAcc(ptAnnotationMap)
+    substAcc(ptAnnotationMap.asScala)
     if (!funOutIsWrite(ePt))
       error("The program does not specify how to write the result " +
         s"of the program into output:\n $e")
@@ -63,7 +65,7 @@ private class InferAccessAnnotation {
     }
 
     def apply[A <: r.Expr](m: Map[A, PhraseType]): Map[A, PhraseType] =
-      m mapValues apply
+      m.view.mapValues(apply).toMap
 
     def apply(m: mutable.Map[r.Expr, PhraseType]): Unit =
       m.foreach({ case (i, pt) => m.update(i, apply(pt))})
@@ -98,12 +100,12 @@ private class InferAccessAnnotation {
       } else res
     }
 
-    def +(i: AccessTypeIdentifier, pt: AccessType): Subst = {
+    def add(i: AccessTypeIdentifier, pt: AccessType): Subst = {
       if (substMap contains i)
-        throw new Exception(
+        throw Exception(
           s"Substitution for phrase type identifier $i exists already.")
       else
-        Subst(substMap updated (i, pt))
+        Subst(substMap.updated(i, pt))
     }
   }
 
@@ -115,11 +117,11 @@ private class InferAccessAnnotation {
     e match {
       case i: r.Identifier =>
         val pt = ctx(i)
-        ptAnnotationMap update(i, pt)
+        ptAnnotationMap.put(i, pt)
         (pt, Subst())
       case lit: r.Literal =>
         val lpt = ExpType(dataType(e.t.asInstanceOf[rt.DataType]), read)
-        ptAnnotationMap update(lit, lpt)
+        ptAnnotationMap.put(lit, lpt)
         (lpt, Subst())
       case l: r.Lambda =>
         inferLambda(l, e.t.asInstanceOf[rt.FunType[rt.Type, _]].inT,
@@ -148,13 +150,13 @@ private class InferAccessAnnotation {
         ExpType(dataType(dt), read)
       } else `type`(lambda.x.t)
 
-    val ctxWithX = ctx updated(lambda.x, xType)
+    val ctxWithX = ctx.updated(lambda.x, xType)
     val (eType, eSubst) =
       inferPhraseTypes(lambda.e, ctxWithX, isKernelParamFun)
 
     val lambdaType = FunType(eSubst(xType), eType)
-    ptAnnotationMap update(lambda.x, xType)
-    ptAnnotationMap update(lambda, lambdaType)
+    ptAnnotationMap.put(lambda.x, xType)
+    ptAnnotationMap.put(lambda, lambdaType)
     (lambdaType, eSubst)
   }
 
@@ -176,7 +178,7 @@ private class InferAccessAnnotation {
     }
     val appType = subst(eSubstFType.outT)
     val resSubst = subst(eSubst(fSubst))
-    ptAnnotationMap update(app, appType)
+    ptAnnotationMap.put(app, appType)
     (appType, resSubst)
   }
 
@@ -200,7 +202,7 @@ private class InferAccessAnnotation {
         case n2d: rt.NatToDataIdentifier =>
           DepFunType[NatToDataKind, PhraseType](natToDataIdentifier(n2d), eType)
       }
-    ptAnnotationMap update(depLambda, depLambdaType)
+    ptAnnotationMap.put(depLambda, depLambdaType)
     (depLambdaType, eSubst)
   }
 
@@ -224,7 +226,7 @@ private class InferAccessAnnotation {
         case n2d: rt.NatToDataKind#T =>
           Lifting.liftDependentFunctionType[NatToDataKind](fType)(ntd(n2d))
       }
-    ptAnnotationMap update(depApp, depAppType)
+    ptAnnotationMap.put(depApp, depAppType)
     (depAppType, fSubst)
   }
 
@@ -541,7 +543,7 @@ private class InferAccessAnnotation {
 
     checkConsistency(p.t, primitiveType)
 
-    ptAnnotationMap update(p, primitiveType)
+    ptAnnotationMap.put(p, primitiveType)
     (primitiveType, Subst())
   }
 
@@ -562,8 +564,8 @@ private class InferAccessAnnotation {
   ): Try[Subst] = (less, larger) match {
     case (le@ExpType(ldt, la), re@ExpType(rdt, ra)) if ldt == rdt =>
       (la, ra) match {
-        case (li: AccessTypeIdentifier, _) => Try(Subst() + (li, ra))
-        case (_, ri: AccessTypeIdentifier) => Try(Subst() + (ri, la))
+        case (li: AccessTypeIdentifier, _) => Try(Subst().add(li, ra))
+        case (_, ri: AccessTypeIdentifier) => Try(Subst().add(ri, la))
         case _ => if (le `<=` re) Try(Subst())
                   else Try(error(s"Cannot subunify $less <: $larger."))
       }
