@@ -41,7 +41,9 @@ lazy val riseAndShine = (project in file("."))
         "org.scalatest" %% "scalatest" % "3.1.0" % "test",
         // Silencer: Scala compiler plugin for warning suppression
         compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.4.3" cross CrossVersion.full),
-        "com.github.ghik" % "silencer-lib" % "1.4.3" % Provided cross CrossVersion.full
+        "com.github.ghik" % "silencer-lib" % "1.4.3" % Provided cross CrossVersion.full,
+        // json
+        "com.typesafe.play" %% "play-json" % "2.9.1"
     )
   )
 
