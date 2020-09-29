@@ -52,7 +52,7 @@ class dependentTypes extends test_util.Tests {
 
 
   test("Simple nested") {
-    val e = depFun((n: Nat) => fun(n `..` (i => (i+1) `.` f32))(array =>
+    val e = depFun((n: Nat) => fun(n `*.` (i => (i+1) `.` f32))(array =>
         depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))(array)
       ))
 
@@ -62,7 +62,7 @@ class dependentTypes extends test_util.Tests {
   }
 
   test("Simple reduce") {
-    val e = depFun((n: Nat) => fun(n `..` (i => (i+1) `.` f32))(array =>
+    val e = depFun((n: Nat) => fun(n `*.` (i => (i+1) `.` f32))(array =>
       depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
     ))
 
@@ -75,7 +75,7 @@ class dependentTypes extends test_util.Tests {
     val e = depFun((n: Nat) =>
       fun(n `.` f32)(vector =>
       fun(n `.` NatType)(lengths =>
-      fun(n `..` (i => (lengths `#` i) `.` (f32 `x` IndexType(n))))(array => {
+      fun(n `*.` (i => (lengths `#` i) `.` (f32 `x` IndexType(n))))(array => {
         depMapSeq(depFun((_: Nat) => fun(
           row =>
             reduceSeq(

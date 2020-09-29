@@ -155,6 +155,16 @@ object TypeLevelDSL {
     }
   }
 
+  object `:Nat **` {
+    def unapply(arg: DepPairType[NatKind]): Option[(NatIdentifier, DataType)] =
+      Some(arg.x, arg.t)
+  }
+  object `:NatCollection **` {
+    def unapply(arg: DepPairType[NatCollectionKind]): Option[(NatCollectionIdentifier, DataType)] =
+      Some(arg.x, arg.t)
+  }
+
+
   def freshTypeIdentifier: Type = impl{ x: TypeIdentifier => x }
 
   implicit final class TypeConstructors(private val r: Type) extends AnyVal {
@@ -190,6 +200,10 @@ object TypeLevelDSL {
     @inline def x(b: DataType): PairType = PairType(a, b)
   }
 
+  object x {
+    def unapply(t: PairType): Option[(DataType, DataType)] = Some(t.dt1, t.dt2)
+  }
+
   final case class ArrayTypeConstructorHelper(ns: Seq[Nat]) {
     @inline def `.`(n: Nat): ArrayTypeConstructorHelper =
       ArrayTypeConstructorHelper(ns :+ n)
@@ -213,10 +227,15 @@ object TypeLevelDSL {
     @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
   }
 
+  object `.` {
+    def unapply(arg: ArrayType): Option[(Nat, DataType)] =
+      Some(arg.size, arg.elemType)
+  }
+
   implicit final class DepArrayTypeConstructors(private val n: Nat)
     extends AnyVal {
-    @inline def `..`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
-    @inline def `..`(f: NatToData): DepArrayType = DepArrayType(n, f)
+    @inline def `*.`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
+    @inline def `*.`(f: NatToData): DepArrayType = DepArrayType(n, f)
   }
 
   implicit final class NatCollectionConstructors(private val e: ToBeTyped[Expr])
@@ -224,6 +243,12 @@ object TypeLevelDSL {
     @inline def `#`(nats: Nat*): Nat = {
       NatCollectionFromArray(e)(nats: _*)
     }
+  }
+
+  object `*.` {
+    def unapply(arg: DepArrayType): Option[(Nat, NatToData)] =
+      Some(arg.size, arg.fdt)
+
   }
 
 }

@@ -27,19 +27,19 @@ object primitives {
 
   @primitive object depJoin extends Primitive with Builder {
     impl{ n: Nat => impl{ lenF: NatToNat => impl{ dt: DataType =>
-      (n `..` (i => lenF(i) `.` dt)) ->:
+      (n `*.` (i => lenF(i) `.` dt)) ->:
         (BigSum(from = 0, upTo = n - 1, n => lenF(n)) `.` dt) }}}
   }
 
   @primitive object depMapSeq extends Primitive with Builder {
     impl{ n: Nat =>
       impl{ ft1: NatToData => impl{ ft2: NatToData =>
-        expl((k: Nat) => ft1(k) ->: ft2(k)) ->: (n`..`ft1) ->: (n`..`ft2)}}}
+        expl((k: Nat) => ft1(k) ->: ft2(k)) ->: (n`*.`ft1) ->: (n`*.`ft2)}}}
   }
 
   @primitive object depZip extends Primitive with Builder {
     impl{ n: Nat => impl{ ft1: NatToData => impl{ ft2: NatToData =>
-      (n`..`ft1) ->: (n`..`ft2) ->: (n`..`(i => ft1(i) x ft2(i))) }}}
+      (n`*.`ft1) ->: (n`*.`ft2) ->: (n`*.`(i => ft1(i) x ft2(i))) }}}
   }
 
   @primitive object drop extends Primitive with Builder {
@@ -160,7 +160,7 @@ object primitives {
     impl{ n: Nat => impl{ dt: DataType =>
       expl((m: Nat) =>
         expl((lenF: NatToNat) =>
-          (n`.`dt) ->: (m`..`(i => lenF(i)`.`dt))))}}
+          (n`.`dt) ->: (m`*.`(i => lenF(i)`.`dt))))}}
   }
 
   @primitive object pair extends Primitive with Builder {
