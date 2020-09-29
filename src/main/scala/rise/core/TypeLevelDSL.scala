@@ -1,7 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.{Cst, RangeAdd}
-import rise.core.TypedDSL.TDSL
+import rise.core.TypedDSL.ToBeTyped
 import rise.core.types._
 
 // scalastyle:off multiple.string.literals
@@ -54,7 +54,7 @@ object TypeLevelDSL {
   }
 
   // dependent function types
-  object nFunT {
+  object forallNat {
     def apply(f: NatIdentifier => Type): Type = {
       val x = NatIdentifier(freshName("n"), isExplicit = true)
       DepFunType[NatKind, Type](x, f(x))
@@ -68,7 +68,7 @@ object TypeLevelDSL {
     }
   }
 
-  object dtFunT {
+  object forallDT {
     def apply(f: DataTypeIdentifier => Type): Type = {
       val x = DataTypeIdentifier(freshName("dt"), isExplicit = true)
       DepFunType[DataKind, Type](x, f(x))
@@ -82,7 +82,7 @@ object TypeLevelDSL {
     }
   }
 
-  object n2nFunT {
+  object forallN2N {
     def apply(f: NatToNat => Type): Type = {
       val x = NatToNatIdentifier(freshName("n2n"), isExplicit = true)
       DepFunType[NatToNatKind, Type](x, f(x))
@@ -96,7 +96,7 @@ object TypeLevelDSL {
     }
   }
 
-  object n2dtFunT {
+  object forallN2DT {
     def apply(f: NatToData => Type): Type = {
       val x = NatToDataIdentifier(freshName("n2dt"), isExplicit = true)
       DepFunType[NatToDataKind, Type](x, f(x))
@@ -110,7 +110,7 @@ object TypeLevelDSL {
     }
   }
 
-  object aFunT {
+  object forallAddr {
     def apply(f: AddressSpaceIdentifier => Type): Type = {
       val x = AddressSpaceIdentifier(freshName("a"), isExplicit = true)
       DepFunType[AddressSpaceKind, Type](x, f(x))
@@ -140,11 +140,11 @@ object TypeLevelDSL {
   }
 
   // types with implicit type parameters
-  def implN[A](f: NatIdentifier => A): A = {
+  def implNat[A](f: NatIdentifier => A): A = {
     f(NatIdentifier(freshName("n")))
   }
 
-  def implT[A](f: TypeIdentifier => A): A = {
+  def implType[A](f: TypeIdentifier => A): A = {
     f(TypeIdentifier(freshName("t")))
   }
   def implDT[A](f: DataTypeIdentifier => A): A = {
@@ -167,7 +167,7 @@ object TypeLevelDSL {
     f(NatToDataIdentifier(freshName("n2dt")))
   }
 
-  def implA[A](f: AddressSpaceIdentifier => A): A = {
+  def implAddr[A](f: AddressSpaceIdentifier => A): A = {
     f(AddressSpaceIdentifier(freshName("w")))
   }
 
@@ -175,7 +175,7 @@ object TypeLevelDSL {
     f(NatCollectionIdentifier(freshName("ns")))
   }
 
-  def freshTypeIdentifier: Type = implT(identity)
+  def freshTypeIdentifier: Type = implType(identity)
 
   implicit final class TypeConstructors(private val r: Type) extends AnyVal {
     @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
@@ -218,9 +218,10 @@ object TypeLevelDSL {
   implicit final class DepArrayTypeConstructors(private val n: Nat)
     extends AnyVal {
     @inline def `..`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
+    @inline def `..`(f: NatToData): DepArrayType = DepArrayType(n, f)
   }
 
-  implicit final class NatCollectionConstructors(private val e: TDSL[Expr])
+  implicit final class NatCollectionConstructors(private val e: ToBeTyped[Expr])
     extends AnyVal {
     @inline def `#`(nats: Nat*): Nat = {
       NatCollectionFromArray(e)(nats: _*)

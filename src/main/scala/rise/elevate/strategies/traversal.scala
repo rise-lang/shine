@@ -1,7 +1,7 @@
 package rise.elevate.strategies
 
 import elevate.core._
-import elevate.core.strategies.Traversable
+import elevate.core.strategies.{Traversable, basic}
 import rise.core.primitives._
 import rise.elevate.rules.algorithmic._
 import elevate.core.strategies.traversal._
@@ -20,7 +20,7 @@ object traversal {
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Strategy[Rise] => Strategy[Rise] = s => function(argumentOf(Map()(), body(s)))
+  def fmap: Strategy[Rise] => Strategy[Rise] = s => function(argumentOf(map.primitive, body(s)))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission
@@ -75,7 +75,7 @@ object traversal {
   })
 
   def blocking(implicit ev: Traversable[Rise]): Strategy[Rise] = {
-    id `@` outermost(ev)(mapNest(2))
-    id `@` outermost(ev)(isReduce)
+    basic.id `@` outermost(ev)(mapNest(2))
+    basic.id `@` outermost(ev)(isReduce)
   }
 }

@@ -12,7 +12,7 @@ class gemv extends test_util.Tests {
   // we can use implicit type parameters and type annotations to specify the function type of mult
   val mult = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))
   val add = fun(x => fun(y => x + y))
-  val scal = implN(n =>
+  val scal = implNat(n =>
     fun(xs => fun(a =>
       mapSeq(fun(x => a * x), xs)
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))

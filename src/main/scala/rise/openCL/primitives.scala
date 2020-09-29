@@ -1,117 +1,61 @@
 package rise.openCL
 
 import rise.core.TypeLevelDSL._
-import rise.core.types._
+import rise.core.{Builder, Primitive}
 import rise.macros.Primitive.primitive
 
 // noinspection DuplicatedCode
 object primitives {
-  sealed trait Primitive extends rise.core.Primitive
-
   // TODO? depMapGlobal, depMapLocal, depMapWorkGroup
 
-  @primitive case class MapGlobal(dim: Int)(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s =>
-          implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-        )
-      )
+  @primitive case class mapGlobal(dim: Int) extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (s ->: t) ->: (n`.`s) ->: (n`.`t))))
   }
 
-  @primitive case class MapLocal(dim: Int)(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s =>
-          implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-        )
-      )
+  @primitive case class mapLocal(dim: Int) extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (s ->: t) ->: (n`.`s) ->: (n`.`t))))
   }
 
-  @primitive case class MapWorkGroup(dim: Int)(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s =>
-          implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-        )
-      )
+  @primitive case class mapWorkGroup(dim: Int) extends Primitive with Builder {
+    implNat(n => implDT(s => implDT(t =>
+      (s ->: t) ->: (n`.`s) ->: (n`.`t))))
   }
 
-  @primitive case class OclToMem()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type = implDT(t => aFunT(_ => t ->: t))
+  @primitive object oclToMem extends Primitive with Builder {
+    implDT(t => forallAddr(_ => t ->: t))
   }
 
-  @primitive case class OclReduceSeq()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    override def typeScheme: Type =
-      aFunT(_ =>
-        implN(n =>
-          implDT(s =>
-            implDT(t => (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t)
-          )
-        )
-      )
+  @primitive object oclReduceSeq extends Primitive with Builder {
+    forallAddr(_ => implNat(n => implDT(s => implDT(t =>
+      (t ->: s ->: t) ->: t ->: (n`.`s) ->: t))))
   }
 
-  @primitive case class OclReduceSeqUnroll()(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      aFunT(_ =>
-        implN(n =>
-          implDT(s =>
-            implDT(t => (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t)
-          )
-        )
-      )
+  @primitive object oclReduceSeqUnroll extends Primitive with Builder {
+    forallAddr(_ => implNat(n => implDT(s => implDT(t =>
+      (t ->: s ->: t) ->: t ->: (n`.`s) ->: t))))
   }
 
-  @primitive case class OclIterate()(override val t: Type = TypePlaceholder)
-      extends Primitive {
-    // format: off
-    override def typeScheme: Type =
-      aFunT(_ =>
-        implN(n =>
-          implN(m =>
-            nFunT(k =>
-              implDT(t =>
-                nFunT(l =>
-                  ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
-                    ArrayType(m * n.pow(k), t) ->: ArrayType(m, t)
-              )
-            )
-          )
-        )
-      )
-    // format: on
+  @primitive object oclIterate extends Primitive with Builder {
+    forallAddr(_ => implNat(n => implNat(m =>
+      forallNat(k => implDT(t =>
+        forallNat(l => ((l * n)`.`t) ->: (l`.`t)) ->:
+          ((m * n.pow(k))`.`t) ->: (m`.`t))))))
   }
 
-  @primitive case class OclCircularBuffer()(
-      override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      // TODO: should return a stream / sequential array, not an array
-      aFunT(_ => implN(n => nFunT(alloc => nFunT(sz => implDT(s => implDT(t =>
+  @primitive object oclCircularBuffer extends Primitive with Builder {
+    // TODO: should return a stream / sequential array, not an array
+    forallAddr(_ => implNat(n =>
+      forallNat(alloc => forallNat(sz => implDT(s => implDT(t =>
         (s ->: t) ->: // function to load an input
-          ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
-      ))))))
+          ((n + sz)`.`s) ->: ((1 + n)`.`sz`.`t)))))))
   }
 
-  @primitive case class OclRotateValues()(
-    override val t: Type = TypePlaceholder
-  ) extends Primitive {
-    override def typeScheme: Type =
-      // TODO: should return a stream / sequential array, not an array
-      aFunT(_ => implN(n => nFunT(sz => implDT(s =>
-        (s ->: s) ->: // function to write a value
-          ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, s))
-      ))))
+  @primitive object oclRotateValues extends Primitive with Builder {
+    // TODO: should return a stream / sequential array, not an array
+    forallAddr(_ => implNat(n => forallNat(sz => implDT(s =>
+      (s ->: s) ->: // function to write a value
+        ((n + sz)`.`s) ->: ((1 + n)`.`sz`.`s)))))
   }
 }
