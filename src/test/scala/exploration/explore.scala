@@ -1,7 +1,8 @@
 package exploration
 
 import org.scalatest.Ignore
-import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
+import rise.core.TypedDSL.{fun, l}
+import rise.core.primitives._
 import rise.core.types.{ArrayType, f32}
 
 @Ignore
@@ -18,7 +19,7 @@ class explore extends test_util.Tests {
           map(fun(bk =>
             (reduce(add)(l(0.0f)) o
               map(fun(x => fst(x) * snd(x)))) $
-              zip(ak, bk))) $ transpose(b) )) $ a))
+              zip(ak)(bk))) $ transpose(b) )) $ a))
 //  )
 
   val mm = exploration.strategies.standardStrategies.baseline(mmPrep).get
@@ -26,7 +27,7 @@ class explore extends test_util.Tests {
   val dot = //infer(
     fun(ArrayType(N, f32))(a =>
       fun(ArrayType(N, f32))(b =>
-        reduce(add)(l(0.0f)) o map(fun(x => fst(x) * snd(x))) $ zip(a,b)))
+        reduce(add)(l(0.0f)) o map(fun(x => fst(x) * snd(x))) $ zip(a)(b)))
 //  )
 
   val scal = //infer(
