@@ -17,18 +17,14 @@ import scala.util.{Failure, Success, Try}
 
 object inferAccess {
   def apply(e: r.Expr): java.util.IdentityHashMap[r.Expr, PhraseType] =
-  //MutableIdentityHashMap[r.Expr, PhraseType] =
     new InferAccessAnnotation()(e)
 }
 
 private class InferAccessAnnotation {
   private val ptAnnotationMap =
     new java.util.IdentityHashMap[r.Expr, PhraseType]()
-  //MutableIdentityHashMap[r.Expr, PhraseType]()
 
-  def apply(e: r.Expr): java.util.IdentityHashMap[r.Expr, PhraseType]
-  //MutableIdentityHashMap[r.Expr, PhraseType]
-  = {
+  def apply(e: r.Expr): java.util.IdentityHashMap[r.Expr, PhraseType] = {
     import scala.jdk.CollectionConverters.MapHasAsScala
     val (ePt, substAcc) =
       inferPhraseTypes(e, Map.empty, isKernelParamFun = true)
