@@ -1,0 +1,16 @@
+  {
+      "name" : "dot_0_example",
+      "strategies" : "default",
+      "output" : "exploration",
+      "inputSize" : 512,
+      "metaheuristic" : [{
+        "heuristic" : "IterativeImprovement",
+        "depth" : 0,
+        "iterations" : 1
+      }],
+      "executor" : {
+        "name" : "C",
+        "iterations" : 3,
+	"threshold" : 10
+      }
+}
