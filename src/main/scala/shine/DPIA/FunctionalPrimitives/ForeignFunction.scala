@@ -50,7 +50,8 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
           con(arg)(λ(expT(inT, read))(e =>
             outT match {
               // TODO: this is an ugly fix to avoid calling the function multiple times
-              //  for pair assignment
+              //  for pair assignment, see:
+              // https://github.com/rise-lang/shine/issues/58
               case PairType(_, _) =>
                   val backendNew: (DataType, Phrase[VarType] => Phrase[CommType])
                     => Phrase[CommType] =
