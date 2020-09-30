@@ -159,6 +159,12 @@ class parserTest extends  AnyFlatSpec {
                       r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
                      r.Literal(rS.IntData(42)))
                )) if x.t == rt.i32 && y.t == rt.i32 => true
+      case r.Lambda(x@r.Identifier("x"),
+      r.Lambda(y@r.Identifier("y"),
+      r.App(r.App(r.primitives.Add(),
+      r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.Literal(rS.IntData(42)))
+      )) => fail("almost correct, but Types don't match!  " + x.t +" != rt.i32 oder/und "+ y.t +" != rt.i32")
       case r.Lambda(x,r.Lambda(y,e)) => fail("not correct Identifier or not correct expression: "+ "Lambda(" + x +",Lambda,"+y+ " , " + e + " , x.t= "+ x.t + " , y.t= "+ y.t)
       case a => fail("not a lambda: "+ a)
     }
