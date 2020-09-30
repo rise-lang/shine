@@ -232,7 +232,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: Nil => true
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_):: BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: LBrace(_):: BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: RBrace(_):: RBrace(_):: Nil => true
       case a => fail(a.toString())
     }
   }
@@ -264,10 +264,10 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(DoubleType(), _) :: Arrow(_) ::
         Backslash(_) :: Identifier("y", _) :: Arrow(_):: Backslash(_) :: Identifier("z", _) :: Arrow(_)::
         BinOp(BinOpType.MUL, _):: Identifier("x", _)::
-        BinOp(BinOpType.ADD, _):: Identifier("y", _):: Identifier("z", _)::Nil =>
+        LBrace(_):: BinOp(BinOpType.ADD, _):: Identifier("y", _):: Identifier("z", _)::RBrace(_):: Nil =>
       case a => fail(a.toString())
     }
   }
@@ -290,8 +290,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(ShortTyp(), _) :: Arrow(_) ::
-        BinOp(BinOpType.MUL, _):: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
-        Identifier("x", _):: Nil =>
+        BinOp(BinOpType.MUL, _):: LBrace(_):: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
+        RBrace(_):: Identifier("x", _):: Nil =>
       case a => fail(a.toString())
     }
   }
@@ -302,8 +302,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
-      BinOp(BinOpType.DIV, _)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::
-        BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::Nil =>
+      BinOp(BinOpType.DIV, _):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _):: RBrace(_)::
+        LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_):: Nil =>
       case a => fail(a.toString())
     }
   }
@@ -314,8 +314,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
-        BinOp(BinOpType.DIV, _)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::
-        LBrace(_)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_)::Nil =>
+        BinOp(BinOpType.DIV, _):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _):: RBrace(_)::
+        LBrace(_):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: RBrace(_):: Identifier("x", _)::RBrace(_):: Nil =>
       case a => fail(a.toString())
     }
   }
@@ -326,8 +326,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
-        BinOp(BinOpType.DIV, _)::LBrace(_)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_)::
-        BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::Nil =>
+        BinOp(BinOpType.DIV, _):: LBrace(_):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: RBrace(_):: Identifier("x", _):: RBrace(_)::
+        LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_):: Nil =>
       case a => fail(a.toString())
     }
   }
@@ -338,8 +338,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(FloatTyp(), _) :: Arrow(_) ::
-        BinOp(BinOpType.DIV, _)::LBrace(_)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_)::
-        LBrace(_)::BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::RBrace(_)::Nil =>
+        LBrace(_):: BinOp(BinOpType.DIV, _):: LBrace(_):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _)::RBrace(_)::  Identifier("x", _):: RBrace(_)::
+        LBrace(_):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _)::RBrace(_)::  Identifier("x", _)::RBrace(_)::RBrace(_):: Nil =>
       case a => fail(a.toString())
     }
   }
