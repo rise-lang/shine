@@ -352,12 +352,16 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
                   column = c
                   row = r
                 }
-                case Right(a) => { //last symbol not a RBrace => failure
-                  val beginLoc:Location = Location(column, row)
-                  val endLoc:Location = Location(c, r)
-                  val span:Span = Span(fileReader,beginLoc, endLoc)
-                  val ex = RightBraceMissing(span,fileReader)
-                  ex.throwException()
+                case Right(a) => {
+                  list = l
+                  column = c
+                  row = r
+                  //everything under this is comment out, because it is not a failure if the last symbol is not an RBrace
+//                  val beginLoc:Location = Location(column, row)
+//                  val endLoc:Location = Location(c, r)
+//                  val span:Span = Span(fileReader,beginLoc, endLoc)
+//                  val ex = RightBraceMissing(span,fileReader)
+//                  ex.throwException()
                 }
                 case Left(a) => {
                   //should not be happening
