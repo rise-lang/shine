@@ -60,6 +60,8 @@ object CodeGenerator {
   final case object FstMember extends PairAccess
   final case object SndMember extends PairAccess
   final case class CIntExpr(num: Nat) extends PathExpr
+  final case object DPairSnd extends PathExpr
+
   implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
 
   type Path = immutable.List[PathExpr]
@@ -187,6 +189,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           ))
         })
 
+      case MkDPairFstI(fst, a) =>
+        genNat(fst, env, fst => {
+          acc(a, env, List(), expr => C.AST.ExprStmt(C.AST.Assignment(
+            C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u16), expr), C.AST.Literal("0")
+            ) , fst)))
+        })
       case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
@@ -289,6 +297,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Proj1(pair) => acc(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
+
+      case MkDPairSndAcc(fst, sndT, a) => acc(a, env, DPairSnd::path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) |  _: AccPrimitive =>
@@ -598,6 +608,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             val (dt2, k, ps) = CCodeGen.flattenArrayIndices(dat, path)
             generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env)
           case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
+        }
+
+      case DPairSnd :: ps =>
+        dt match {
+          case DepPairType(_, sndT) =>
+            generateAccess(sndT,
+              C.AST.Cast(C.AST.PointerType(C.AST.Type.getBaseType(typ(sndT))),
+                C.AST.BinaryExpr(expr, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)"))
+            ), ps, env)
+
+          case other => throw new Exception(s"Expected a Dependent Pair but $other found instead")
         }
       case _ =>
         throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")

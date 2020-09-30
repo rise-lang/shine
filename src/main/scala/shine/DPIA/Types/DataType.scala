@@ -48,7 +48,7 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
 
 final case class DepPairType(x:NatIdentifier, elemT:DataType)
   extends ComposedType {
-  override def toString: String = s"($x:nat ** ${elemT}"
+  override def toString: String = s"($x:nat ** $elemT)"
 }
 
 

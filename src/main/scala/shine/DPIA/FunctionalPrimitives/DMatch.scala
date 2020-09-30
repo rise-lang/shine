@@ -31,14 +31,15 @@ final case class DMatchI(x:NatIdentifier,
 final case class DMatch(x: NatIdentifier,
                         elemT: DataType,
                         outT: DataType,
+                        a: AccessType,
                         f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                         dPair: Phrase[ExpType]
                        ) extends ExpPrimitive {
-  override val t: ExpType = expT(outT, `write`)
+  override val t: ExpType = expT(outT, a)
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(dPair)(λ(expT(DepPairType(x, elemT), read))(pair => C(DMatch(x, elemT, outT, f, pair))))
+    con(dPair)(λ(expT(DepPairType(x, elemT), read))(pair => C(DMatch(x, elemT, outT, a, f, pair))))
 
   }
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
@@ -69,17 +70,22 @@ final case class DMatch(x: NatIdentifier,
     v.nat(x),
     v.data(elemT),
     v.data(outT),
+    v.access(a),
     VisitAndRebuild(f, v),
     VisitAndRebuild(dPair, v)
   )
 }
 
-final case class MkDPair(a:AccessType, id:NatIdentifier, sndT:DataType, snd: Phrase[ExpType])
+final case class MkDPair(a:AccessType, fst:NatIdentifier, sndT:DataType, snd: Phrase[ExpType])
   extends ExpPrimitive {
-  override val t = expT(DepPairType(id, sndT), a)
+  override val t = expT(DepPairType(fst, sndT), a)
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = ???
-  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = ???
+  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
+    import TranslationToImperative._
+    MkDPairFstI(fst, A) `;`
+    acc(snd)(MkDPairSndAcc(fst, sndT, A))
+  }
 
   override def eval(s: Store): OperationalSemantics.Data = ???
 
@@ -88,8 +94,41 @@ final case class MkDPair(a:AccessType, id:NatIdentifier, sndT:DataType, snd: Phr
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = MkDPair(
     v.access(a),
-    v.nat(id),
+    v.nat(fst),
     v.data(sndT),
     VisitAndRebuild(snd, v),
   )
 }
+
+final case class MkDPairFstI(fst: NatIdentifier, A: Phrase[AccType]) extends CommandPrimitive {
+  override val t = comm
+
+  override def eval(s: Store) = ???
+
+  override def prettyPrint: String = "mkDPairAcc"
+
+  override def xmlPrinter: Elem = <mkDPairAcc></mkDPairAcc>
+
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): MkDPairFstI = MkDPairFstI(
+    f.nat(fst),
+    VisitAndRebuild(A, f)
+  )
+}
+
+final case class MkDPairSndAcc(fst:NatIdentifier, sndT: DataType, A: Phrase[AccType]) extends AccPrimitive {
+  override val t = AccType(sndT)
+
+  override def eval(s: Store): OperationalSemantics.AccIdentifier = ???
+
+  override def prettyPrint: String = "mkDPairAcc"
+
+  override def xmlPrinter: Elem = <mkDPairAcc></mkDPairAcc>
+
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[AccType] = MkDPairSndAcc(
+    f.nat(fst),
+    f.data(sndT),
+    VisitAndRebuild(A, f)
+  )
+}
+
+

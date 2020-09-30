@@ -779,17 +779,17 @@ object fromRise {
 
       case core.DMatch() => fromType {
         case expT(DepPairType(x, elemT), `read`) ->:
-          nFunT(i, expT(elem_iT, `read`) ->: expT(outT, `read`))
-          ->: expT(_, `read`) =>
+          nFunT(i, expT(elem_iT, `read`) ->: expT(outT, a))
+          ->: expT(_, _) =>
           fun[ExpType](ExpType(DepPairType(x, elemT), read), pair =>
-            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, read) ->: ExpType(outT, read)),f =>
-              DMatch(x, elemT, outT, f, pair)
+            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, read) ->: ExpType(outT, a)),f =>
+              DMatch(x, elemT, outT, a, f, pair)
             )
           )
       }
 
       case core.MkDPair() => fromType {
-        case nFunT(fst, expT(sndT, a) ->: expT(_, _)) ->: expT(_, _) =>
+        case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }
 

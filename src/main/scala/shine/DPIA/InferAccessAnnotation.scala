@@ -235,7 +235,6 @@ private class InferAccessAnnotation {
            | rp.IterateStream() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
           rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
-
           (expT(s, read) ->: expT(t, write)) ->:
             expT(rt.ArrayType(n, s), read) ->:
             expT(rt.ArrayType(n, t), write)
@@ -539,6 +538,7 @@ private class InferAccessAnnotation {
         buildType(p.t)
 
       case rp.DMatch() =>
+        val a = accessTypeIdentifier()
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.DepPairType(x, elemT),
             rt.FunType(rt.DepFunType(i, rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
@@ -546,10 +546,9 @@ private class InferAccessAnnotation {
               case x:rt.NatIdentifier =>
                 assert(i.isInstanceOf[rt.NatIdentifier])
                 val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
-                val newT = expT(DepPairType(natIdentifier(x), dataType(elemT)), read) ->:
-                  nFunT(i_, expT(dataType(app1), read) ->: expT(dataType(outT), read)) ->:
-                    expT(dataType(retT), read)
-                newT
+                expT(DepPairType(natIdentifier(x), dataType(elemT)), read) ->:
+                  nFunT(i_, expT(dataType(app1), read) ->: expT(dataType(outT), a)) ->:
+                    expT(dataType(retT), a)
               case _ => ???
             }
           case _ => error(s"did not expect t")

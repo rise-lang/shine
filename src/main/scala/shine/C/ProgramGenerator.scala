@@ -72,7 +72,7 @@ object ProgramGenerator {
       case _: ArrayType | _: DepArrayType =>
         identifier("output", AccType(outT.dataType))
       case _: PairType => throw new Exception("Pairs as output parameters currently not supported")
-      case _: DepPairType => throw new Exception("Dependent Pairs as output parameter currently not supported")
+      case _: DepPairType => identifier("output", AccType(outT.dataType))
       case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
     }
   }
