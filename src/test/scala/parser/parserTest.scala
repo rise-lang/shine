@@ -20,7 +20,7 @@ class parserTest extends  AnyFlatSpec {
       parse(lexer.tokens)
     }
     //Todo: that is horrible, that I don't have an Error-Message
-    thrown.getMessage should equal("failed [[parsing : ParseError(failed to parse Type: A TypeAnnotation is expected, but -> is not an Colon)]]")
+    thrown.getMessage should equal("failed parsing : ParseError(failed to parse Type: A TypeAnnotation is expected, but -> is not an Colon)")
   }
 
   "parser" should "be able to parse 'longIdentityWithI32.rise'" in {

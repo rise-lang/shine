@@ -255,6 +255,7 @@ object parse {
   }
 
   private def combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList: List[SyntaxElement]) : (r.Expr, List[SyntaxElement]) = {
+    println("combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft: "+ synElemList)
     var synE = synElemList.reverse.tail.head match {
       case SType(_) => synElemList.reverse.tail.tail
       case SExpr(_) => synElemList.reverse.tail
@@ -283,6 +284,29 @@ object parse {
     val res = (e,l)
     println("I have combined the Expressions in Lambda: "+ res)
     res
+  }
+
+  private def combineExpressions(synElemList: List[SyntaxElement]) : r.Expr = {
+    var synE = synElemList.reverse
+    var e:r.Expr = synE.head match {
+      case SExpr(expr) => {
+        synE = synE.tail
+        expr
+      }
+      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
+    }
+    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
+    while(!synE.isEmpty){
+      synE.head match {
+        case SExpr(expr1) => {
+          e = r.App(e, expr1)()
+          synE = synE.tail
+        }
+        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+      }
+    }
+    println("I have combined the Expressions in Lambda: "+ e)
+    e
   }
 
   /*
@@ -354,7 +378,7 @@ object parse {
         parseArrow
 
         val ps = psOld match {
-          case Right(p) => parseHighExpression(p)
+          case Right(p) => parseHighExpression((p._1,Nil, p._3))
           case Left(e) => {
             println("endLambda: "+ e)
             return Left(e)
@@ -362,14 +386,25 @@ object parse {
         }
 
     val (toks, synElemList, c) = ps match {
-      case Right(a) => (a._1,a._2, a._3)
+      case Right(a) => {
+        val expr = SExpr(combineExpressions(a._2))
+        val newL = expr :: Nil
+        val li:List[SyntaxElement] = psOld match {
+          case Right(pa) => pa._2.reverse ++ newL
+          case Left(_) => throw new RuntimeException("this should not be able to happen in parseLambdda, because I already have controlled this!")
+        }
+        val l = li.reverse
+        (a._1,l, a._3)
+      }
       case Left(e) => return Left(e)
     }
-    val (expr, synElemListExpr) = combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList)
-//    val (expr, synElemListExpr) = (synElemList.head match {
-//      case SExpr(e) => e
-//      case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
-//    }, synElemList.tail)
+//    val (expr, synElemListExpr) = combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList)
+
+    val (expr, synElemListExpr) = (synElemList.head match {
+      case SExpr(e) => e
+      case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
+    }, synElemList.tail)
+    println("now in Lambda we want to combine our results: "+ expr +" # " + synElemListExpr)
 
     val (maybeTypedIdent, synElemListMaybeTIdent) =
       synElemListExpr.head match {
@@ -429,14 +464,20 @@ object parse {
       return Right(parseState)
     }
     val p =
-      Right(parseState)  |>
+      Right((parseState._1,Nil, parseState._3))  |>
         parseLeftBrace  |>
         parseHighExpression |>
         parseRightBrace
 
-    //      if ( parsedExprs is with type) { } else {}
     p match {
-      case Right(pState) => Right(pState)
+      case Right(pState) => {
+        val expr = SExpr(combineExpressions(pState._2))
+        val newL = expr :: Nil
+        val li:List[SyntaxElement] = parseState._2.reverse ++ newL
+        val l = li.reverse
+        val newParse:ParseState = (pState._1, l, pState._3)
+        Right(newParse)
+      }
       case Left(e) => Left(e)
     }
   }
@@ -474,6 +515,11 @@ object parse {
 
   def parseApp(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     println("parseApp: " + parseState)
+    if(parseState._1.head.isInstanceOf[RBrace]){
+      println("L" +
+        "RBrace is at the beginning of parseApp: " + parseState)
+      return Right(parseState)
+    }
 //    if(parseState._3==0){
 //      println("Abbruch; parseApp: "+ parseState)
 //      return Left(ParseError("failed to parse parseApp: " + " no parseApp is left"))
