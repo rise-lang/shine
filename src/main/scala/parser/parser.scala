@@ -254,6 +254,37 @@ object parse {
     res
   }
 
+  private def combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList: List[SyntaxElement]) : (r.Expr, List[SyntaxElement]) = {
+    var synE = synElemList.reverse.tail.head match {
+      case SType(_) => synElemList.reverse.tail.tail
+      case SExpr(_) => synElemList.reverse.tail
+    }
+    var e:r.Expr = synE.head match {
+      case SExpr(expr) => {
+        synE = synE.tail
+        expr
+      }
+      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
+    }
+    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
+    while(!synE.isEmpty){
+      synE.head match {
+        case SExpr(expr1) => {
+          e = r.App(e, expr1)()
+          synE = synE.tail
+        }
+        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+      }
+    }
+    val l= synElemList.reverse.tail.head match {
+      case SType(_) =>  synElemList.reverse.tail.head :: synElemList.reverse.head :: Nil
+      case SExpr(_) => synElemList.reverse.head :: Nil
+    }
+    val res = (e,l)
+    println("I have combined the Expressions in Lambda: "+ res)
+    res
+  }
+
   /*
   top level Lambda expects that the type of the Identifier is defined!
 
@@ -277,10 +308,11 @@ object parse {
         //    require(ps._2.length == 3, "it should now have exactly 3 Exprs: Identifier, Type of the Identifier and the expression")
 
         val synElemList = ps._2
-        val (expr, synElemListExpr) = (synElemList.head match {
-          case SExpr(e) => e
-          case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
-        }, synElemList.tail)
+//        val (expr, synElemListExpr) = (synElemList.head match {
+//          case SExpr(e) => e
+//          case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
+//        }, synElemList.tail)
+        val (expr, synElemListExpr) = combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList)
 
         val (typedIdent, synElemListTIdent) =
           synElemListExpr.head match {
@@ -333,10 +365,11 @@ object parse {
       case Right(a) => (a._1,a._2, a._3)
       case Left(e) => return Left(e)
     }
-    val (expr, synElemListExpr) = (synElemList.head match {
-      case SExpr(e) => e
-      case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
-    }, synElemList.tail)
+    val (expr, synElemListExpr) = combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList)
+//    val (expr, synElemListExpr) = (synElemList.head match {
+//      case SExpr(e) => e
+//      case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
+//    }, synElemList.tail)
 
     val (maybeTypedIdent, synElemListMaybeTIdent) =
       synElemListExpr.head match {
@@ -458,19 +491,20 @@ object parse {
                               return Right(parseS)
                             }else{
                               val p = parseHighExpression(parseS)
-                              val (tokens, parsedExprs, c): ParseState = p match {
-                                case Right(parseState) => parseState
-                                case Left(e) => return Left(e)
-                              }
-                              val expr2 :: expr1 :: restExpr= parsedExprs
-
-                              expr2 match {
-                                case SExpr(e2) => expr1 match {
-                                  case SExpr(e1) =>  Right((tokens, SExpr(r.App(e1, e2)())  :: restExpr, c))
-                                  case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
-                                }
-                                case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
-                              }
+                                  p
+//                              val (tokens, parsedExprs, c): ParseState = p match {
+//                                case Right(parseState) => parseState
+//                                case Left(e) => return Left(e)
+//                              }
+//                              val expr2 :: expr1 :: restExpr= parsedExprs
+//
+//                              expr2 match {
+//                                case SExpr(e2) => expr1 match {
+//                                  case SExpr(e1) =>  Right((tokens, SExpr(r.App(e1, e2)())  :: restExpr, c))
+//                                  case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
+//                                }
+//                                case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
+//                              }
                             }
     }
   }
