@@ -3,6 +3,7 @@ package shine.C.CodeGeneration
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import shine.C.AST.Block
+import shine.C.AST.Type.getBaseType
 import shine.DPIA.Compilation.SimplifyNats
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
@@ -162,6 +163,29 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case a: Nat => cmd(Lifting.liftDependentFunction[NatKind, CommType](fun.asInstanceOf[Phrase[NatKind `()->:` CommType]])(a), env)
         case a: DataType => cmd(Lifting.liftDependentFunction[DataKind, CommType](fun.asInstanceOf[Phrase[DataKind `()->:` CommType]])(a), env)
       }
+
+      case DMatchI(x, inT, _, f, dPair) =>
+        exp(dPair, env, List(), input => {
+          // Create a fresh nat identifier, this will be bound to the "actual nat value"
+          val fstId = NatIdentifier(freshName("fstId"))
+          val sndT = DataType.substitute(fstId, x, inT)
+          val sndId = Identifier[ExpType](freshName("sndId"),  ExpType(sndT, `read`))
+          val (sndCType, initT) = typ(sndT) match {
+              case array:C.AST.ArrayType => (C.AST.PointerType(getBaseType(array)), (x:C.AST.Expr) => x)
+              case t => (t, (x:C.AST.Expr) => C.AST.UnaryExpr(C.AST.UnaryOperator.*, x))
+            }
+          // Read off the first uint32_t as a nat
+          C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(
+              C.AST.VarDecl(fstId.name, C.AST.Type.u32, Some(C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), input), C.AST.Literal("0"))))
+            ),
+            C.AST.DeclStmt(
+              C.AST.VarDecl(sndId.name, sndCType,
+                Some(initT(C.AST.Cast(sndCType, C.AST.BinaryExpr(input, C.AST.BinaryOperator.+, C.AST.Literal("4")))))
+            )),
+            cmd(f(fstId)(sndId), env.updatedIdentEnv((sndId, C.AST.DeclRef(sndId.name))))
+          ))
+        })
 
       case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
@@ -543,11 +567,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         C.AST.StructType("Record_" + typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
-      case shine.DPIA.Types.DepPairType(_, dt) =>
-        C.AST.StructType("DepRecord_nat_" + typeToStructNameComponent(dt), immutable.Seq(
-          (C.AST.Type.u32, "_fst"),
-          (typ(dt), "_snd")
-        ))
+      case shine.DPIA.Types.DepPairType(_, _) => C.AST.PointerType(C.AST.Type.u8, const = true)
       case _: shine.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
       case _: shine.DPIA.Types.NatToDataApply => throw new Exception("This should not happen")
     }

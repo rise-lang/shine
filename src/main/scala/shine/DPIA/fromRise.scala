@@ -779,13 +779,18 @@ object fromRise {
 
       case core.DMatch() => fromType {
         case expT(DepPairType(x, elemT), `read`) ->:
-          nFunT(i, expT(_, `read`) ->: expT(outT, `read`))
+          nFunT(i, expT(elem_iT, `read`) ->: expT(outT, `read`))
           ->: expT(_, `read`) =>
           fun[ExpType](ExpType(DepPairType(x, elemT), read), pair =>
-            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(NatToDataLambda(x, elemT)(i), read) ->: ExpType(outT, read)),f =>
+            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, read) ->: ExpType(outT, read)),f =>
               DMatch(x, elemT, outT, f, pair)
             )
           )
+      }
+
+      case core.MkDPair() => fromType {
+        case nFunT(fst, expT(sndT, a) ->: expT(_, _)) ->: expT(_, _) =>
+          depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }
 
       case core.Reduce() =>

@@ -31,11 +31,12 @@ class dependentTypes extends test_util.Tests {
 
   test("Dependent pair match") {
     val e = fun(n2dPairT(n => n`.`f32))(pair =>
-      dmatch(pair)(nFun(n => fun(x => dpair(n)(x))))
+      dmatch(pair)(nFun(n => fun(x => dpair(n)(toMem(x)))))
     )
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
   }
 
   test("GEN: Dependent pair match") {
@@ -50,7 +51,7 @@ class dependentTypes extends test_util.Tests {
   test("Dependent pair match with reduction") {
     val e = fun(n2dPairT(n => n`.`f32))(pair =>
       dmatch(pair)(nFun(_ => fun(xs =>
-        reduceSeq(fun(x => fun(y => x + y)))(l(1.0f))(xs))
+        reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))(xs))
       ))
     )
     val inferred: Expr = TDSL.inferDependent(e)

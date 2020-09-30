@@ -496,7 +496,7 @@ object TypedDSL {
   def select: TDSL[Select] = toTDSL(primitives.Select()())
   def unzip: TDSL[Unzip] = toTDSL(primitives.Unzip()())
   def zip: TDSL[Zip] = toTDSL(primitives.Zip()())
-  def dpair: TDSL[DPair] = toTDSL(primitives.DPair()())
+  def dpair: TDSL[MkDPair] = toTDSL(primitives.MkDPair()())
   def dmatch: TDSL[DMatch] = toTDSL(primitives.DMatch()())
   def store(cont: TDSL[Expr] => TDSL[Expr]): TDSL[Expr] =
     fun(e => let(toMem(e))(fun(cont)))

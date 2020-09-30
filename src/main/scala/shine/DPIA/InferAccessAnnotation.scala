@@ -555,6 +555,21 @@ private class InferAccessAnnotation {
           case _ => error(s"did not expect t")
         }
         buildType(p.t)
+
+      case rp.MkDPair() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.DepFunType(fst, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
+            val a1 = accessTypeIdentifier()
+            fst match {
+              case fst:rt.NatIdentifier =>
+                val fst_ = natIdentifier(fst)
+                nFunT(fst_, expT(dataType(sndT), a1) ->: expT(dataType(outT), a1))
+              case _ => ???
+            }
+
+          case _ => error(s"did not expect $t")
+        }
+        buildType(p.t)
     }
 
     checkConsistency(p.t, primitiveType)

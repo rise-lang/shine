@@ -120,6 +120,10 @@ object DataType {
         VectorType(ArithExpr.substitute(v.size, Map((`for`, ae))), v.elemType)
       case r: PairType =>
         PairType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
+      case r: DepPairType =>
+        // Use the NatToData mechanics to perform substitution
+        val NatToDataLambda(newFst, newSnd) = substitute(ae, `for`, NatToDataLambda(r.x, r.elemT))
+        DepPairType(newFst, newSnd)
     }).asInstanceOf[T]
   }
 
