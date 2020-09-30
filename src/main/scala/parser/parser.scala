@@ -2,8 +2,6 @@ package parser
 
 import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
-import util.Execute.Exception
-
 object parse {
 
   //Todo: throwException in ParseError is not used and RuntimeException is not so good as normal Exception,
@@ -269,7 +267,7 @@ object parse {
         parseIdent          |>
         parseTypeAnnotation |>
         parseArrow |>
-        parseExpression
+        parseHighExpression
 
       psLambda match {
       case Left(e) => Left(e)
@@ -324,7 +322,7 @@ object parse {
         parseArrow
 
         val ps = psOld match {
-          case Right(p) => parseExpression(p)
+          case Right(p) => parseHighExpression(p)
           case Left(e) => {
             println("endLambda: "+ e)
             return Left(e)
@@ -358,27 +356,35 @@ object parse {
   //_________________________________________________________Lambda
   //_________________________________________________________Expres
 
-  def parseExpressionSimplified(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
-    if(parseState._1.isEmpty){
-      println("Abbruch; parseExpression: "+ parseState)
-      return Right(parseState)
-    }
-    println("parseExpression: " + parseState)
-    //FIXME parseState always true
-    Right(parseState) |> (parseIdent _ || parseNumber ||
-      parseUnOperatorApp || parseBracesExpr)
-  }
+//  def parseExpressionSimplified(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+//    if(parseState._1.isEmpty){
+//      println("Abbruch; parseExpression: "+ parseState)
+//      return Right(parseState)
+//    }
+//    println("parseExpression: " + parseState)
+//    //FIXME parseState always true
+//    Right(parseState) |> (parseIdent _ || parseNumber ||
+//      parseUnOperatorApp || parseBracesExpr)
+//  }
 
-  def parseExpression(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
-    if(parseState._1.isEmpty){
-      println("Abbruch; parseExpression: "+ parseState)
-      return Right(parseState)
-    }
-    println("parseExpression: " + parseState)
+  def parseHighExpression(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
+    println("parseHighExpression: " + parseState)
     //FIXME parseState always true
       Right(parseState) |>
-        (parseLambda _ || parseApp ||parseBracesExpr ||
-          parseUnOperator || parseBinOperator || parseIdent ||
+        (parseLambda _ || parseApp)
+
+  }
+
+  def parseLowExpression(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
+//    if(parseState._1.isEmpty){
+//      println("Abbruch; parseExpression: "+ parseState)
+//      return Right(parseState)
+//    }
+    println("parseLowExpression: " + parseState)
+    //FIXME parseState always true
+    Right(parseState) |>
+      (parseBracesExpr _ ||
+        parseUnOperator || parseBinOperator || parseIdent ||
         parseNumber)
 
   }
@@ -392,7 +398,7 @@ object parse {
     val p =
       Right(parseState)  |>
         parseLeftBrace  |>
-        parseExpression |>
+        parseHighExpression |>
         parseRightBrace
 
     //      if ( parsedExprs is with type) { } else {}
@@ -402,102 +408,110 @@ object parse {
     }
   }
 
-  //  1 + 2 * 3 = mul (add 1 2) 3 = App(App(mul, App(App(add, 1), 2)), 3)
-  def parseBinOperatorApp(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
-    println("parseBinOperatorApp: "+ parseState)
-    if(parseState._1.isEmpty || !parseState._1.exists(t => t.isInstanceOf[BinOp])){
-      println("Abbruch; parseBinOperatorApp: "+ parseState)
-      return Left(ParseError("failed to parse BinOperatorApp"))
-    }
-    val p =
-      Right(parseState)  |>
-        parseExpressionSimplified |>
-        parseBinOperator |>
-        parseExpression
-
-    val (tokens, parsedExprs, c):(List[Token], List[SyntaxElement], Int) = p match {
-      case Right(parseState) => parseState
-      case Left(e) => return Left(e) //Todo: how can I do that whitout this ugly return?
-    }
-    val expr2 :: binOp  :: expr1 :: restExpr= parsedExprs
-
-    expr2 match {
-      case SExpr(e2) => expr1 match {
-        case SExpr(e1) =>  binOp match { //TODO: now it only calculates from right to left, but normaly is * before +
-          case SExpr(op) => Right((tokens, SExpr(r.App(r.App(op, e2)(), e1)())  :: restExpr, c))
-          case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
-        }
-        case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
-      }
-      case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
-    }
-  }
+//  //  1 + 2 * 3 = mul (add 1 2) 3 = App(App(mul, App(App(add, 1), 2)), 3)
+//  def parseBinOperatorApp(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+//    println("parseBinOperatorApp: "+ parseState)
+//    if(parseState._1.isEmpty || !parseState._1.exists(t => t.isInstanceOf[BinOp])){
+//      println("Abbruch; parseBinOperatorApp: "+ parseState)
+//      return Left(ParseError("failed to parse BinOperatorApp"))
+//    }
+//    val p =
+//      Right(parseState)  |>
+//        parseExpressionSimplified |>
+//        parseBinOperator |>
+//        parseExpression
+//
+//    val (tokens, parsedExprs, c):(List[Token], List[SyntaxElement], Int) = p match {
+//      case Right(parseState) => parseState
+//      case Left(e) => return Left(e) //Todo: how can I do that whitout this ugly return?
+//    }
+//    val expr2 :: binOp  :: expr1 :: restExpr= parsedExprs
+//
+//    expr2 match {
+//      case SExpr(e2) => expr1 match {
+//        case SExpr(e1) =>  binOp match { //TODO: now it only calculates from right to left, but normaly is * before +
+//          case SExpr(op) => Right((tokens, SExpr(r.App(r.App(op, e2)(), e1)())  :: restExpr, c))
+//          case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
+//        }
+//        case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
+//      }
+//      case SType(t) => Left(ParseError("failed to parse BinOperatorApp: " + t +" is not the expected Type"))
+//    }
+//  }
 
   def parseApp(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     println("parseApp: " + parseState)
-    if(parseState._3==0){
-      println("Abbruch; parseApp: "+ parseState)
-      return Left(ParseError("failed to parse parseApp: " + " no parseApp is left"))
-    }
+//    if(parseState._3==0){
+//      println("Abbruch; parseApp: "+ parseState)
+//      return Left(ParseError("failed to parse parseApp: " + " no parseApp is left"))
+//    }
 //    TODO: if(parseState._1.length > 1)
-    val pas = (parseState._1, parseState._2, parseState._3-1)
-    val p =
-      Right(pas)  |>
-        parseExpression |>
-        parseExpression
-
-    val (tokens, parsedExprs, c): ParseState = p match {
-      case Right(parseState) => parseState
+//    val pas = (parseState._1, parseState._2, parseState._3-1)
+    val ps =
+      Right(parseState)  |>
+        parseLowExpression
+    println("parseApp after parseLowExpression: "+ ps)
+    ps match {
       case Left(e) => return Left(e)
-    }
-    val expr2 :: expr1 :: restExpr= parsedExprs
+      case Right(parseS)=> if(parseS._1.isEmpty){
+                              println("parseApp End, because TokenList is empty: "+ parseS)
+                              return Right(parseS)
+                            }else{
+                              val p = parseHighExpression(parseS)
+                              val (tokens, parsedExprs, c): ParseState = p match {
+                                case Right(parseState) => parseState
+                                case Left(e) => return Left(e)
+                              }
+                              val expr2 :: expr1 :: restExpr= parsedExprs
 
-    expr2 match {
-      case SExpr(e2) => expr1 match {
-        case SExpr(e1) =>  Right((tokens, SExpr(r.App(e1, e2)())  :: restExpr, c))
-        case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
-      }
-      case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
+                              expr2 match {
+                                case SExpr(e2) => expr1 match {
+                                  case SExpr(e1) =>  Right((tokens, SExpr(r.App(e1, e2)())  :: restExpr, c))
+                                  case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
+                                }
+                                case SType(t) => Left(ParseError("failed to parse parseApp: " + t + " is an Type but an Expression is expected"))
+                              }
+                            }
     }
   }
 
-  def parseUnOperatorApp(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
-    println("parseUnOperatorApp: "+ parseState)
-    if(parseState._1.isEmpty){
-      println("Abbruch; parseUnOperatorApp: "+ parseState)
-      return Right(parseState)
-    }
-    val p = {
-    Right(parseState)    |>
-      parseUnOperator   |>
-      parseExpression
-    }
-    println("parseUnOperatorApp durchlaufen: " + p)
-    val (tokens, parsedExprs, c): ParseState = p match {
-      case Right(parseState) => parseState
-      case Left(e) => return Left(e)
-    }
-    val expr :: unop :: restExpr= parsedExprs
-
-    unop match {
-      case SExpr(op) => {
-        op match {
-          case r.primitives.Neg() =>
-          case r.primitives.Not() =>
-          case r.primitives.Sub() => throw Exception("Not and Sub got switched!")
-          case a => {
-            println("the Primitive '"+ a + "' is not expected!")
-            throw Exception(a + " this should not be happening, because parseUnOperator has to be parsed an operator!")
-          }
-        }
-        expr match {
-          case SExpr(e) =>  Right((tokens, SExpr(r.App(op, e)())  :: restExpr, c))
-          case SType(t) => Left(ParseError("failed to parse parseUnOperatorApp: " + t + " is an Type but an Expression is expected"))
-        }
-      }
-      case SType(t) => Left(ParseError("failed to parse parseUnOperatorApp: " + t + " is an Type but an Expression is expected"))
-    }
-  }
+//  def parseUnOperatorApp(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+//    println("parseUnOperatorApp: "+ parseState)
+//    if(parseState._1.isEmpty){
+//      println("Abbruch; parseUnOperatorApp: "+ parseState)
+//      return Right(parseState)
+//    }
+//    val p = {
+//    Right(parseState)    |>
+//      parseUnOperator   |>
+//      parseExpression
+//    }
+//    println("parseUnOperatorApp durchlaufen: " + p)
+//    val (tokens, parsedExprs, c): ParseState = p match {
+//      case Right(parseState) => parseState
+//      case Left(e) => return Left(e)
+//    }
+//    val expr :: unop :: restExpr= parsedExprs
+//
+//    unop match {
+//      case SExpr(op) => {
+//        op match {
+//          case r.primitives.Neg() =>
+//          case r.primitives.Not() =>
+//          case r.primitives.Sub() => throw Exception("Not and Sub got switched!")
+//          case a => {
+//            println("the Primitive '"+ a + "' is not expected!")
+//            throw Exception(a + " this should not be happening, because parseUnOperator has to be parsed an operator!")
+//          }
+//        }
+//        expr match {
+//          case SExpr(e) =>  Right((tokens, SExpr(r.App(op, e)())  :: restExpr, c))
+//          case SType(t) => Left(ParseError("failed to parse parseUnOperatorApp: " + t + " is an Type but an Expression is expected"))
+//        }
+//      }
+//      case SType(t) => Left(ParseError("failed to parse parseUnOperatorApp: " + t + " is an Type but an Expression is expected"))
+//    }
+//  }
 
   def parseUnOperator(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     val nextToken :: restTokens = parseState._1
