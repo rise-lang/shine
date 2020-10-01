@@ -17,8 +17,8 @@ class histogram extends shine.test_util.TestsWithExecutor {
   private val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
 
-  val n = 262144
-  val k = 99
+  val n = 8192
+  val k = 128
 
   val indices = new Array[Int](n)
   val values: Array[Int] = Array.fill[Int](n)(1)
@@ -36,14 +36,70 @@ class histogram extends shine.test_util.TestsWithExecutor {
 
   private val reduceHists = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
     hists |> // m.k.int
-      transpose |> // k.m.int
-      mapLocal(
-        // m.int
-        oclReduceSeq(AddressSpace.Local)(
-          fun(a => fun(x => a + x)) // int
-        )(l(0))
+      split(m) |>
+      mapWorkGroup(
+        transpose >> // k.m.int
+        mapLocal(
+          // m.int
+          oclReduceSeq(AddressSpace.Private)(
+            fun(a => fun(x => a + x)) // int
+          )(l(0))
+        )
       ) // k.int
   )))
+
+  private val reduceHistsGlobal = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
+    hists |> // m.k.int
+        transpose |> // k.m.int
+          mapGlobal(
+            // m.int
+            oclReduceSeq(AddressSpace.Private)(
+              fun(a => fun(x => a + x)) // int
+            )(l(0))
+          )
+      ) // k.int
+  ))
+
+  /*private val reduceHistsSegmented = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
+    hists |> // m.k.int
+      transpose |> // k.m.int
+      mapGlobal(
+        // m.int
+        oclReduceSeq(AddressSpace.Private)(
+          fun(a => fun(x => a + x)) // int
+        )(l(0))
+      )
+  ) // k.int
+  ))*/
+
+  // Might only work for square matrices
+  /*private val transposeEfficient = nFun(m => nFun(n => fun(histsT(m, n))(hists =>
+    tile(16, 16, hists) |>
+      transpose |>
+      mapWorkGroup(
+        fun(tile =>
+          tile |>
+            join |>
+            mapLocal(id) |>
+            toLocal |>
+            split(16) |> // tileWidth
+            transpose |>
+            join |>
+            mapLocal(id) |>
+            split(16) // tileHeight
+        )
+      )
+  )))*/
+
+  def tile(tileHeight: Nat, tileWidth: Nat, matrix: Expr): Expr = {
+    matrix |>
+    split(tileHeight) |>
+    map(
+      transpose >>
+      split(tileWidth) >>
+      map(transpose)
+    )
+  }
 
   test("Sequential Histogram") {
     val sequentialHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
@@ -90,7 +146,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   test("Reduce by Index: Multiple threads accumulate into one histogram") {
-    val lSize = 1024
+    val lSize = 256
     val gSize = n
 
     val reduceByIndexSharedHistograms = nFun(n => nFun(k => fun(isT(n, k))(is =>
@@ -110,13 +166,13 @@ class histogram extends shine.test_util.TestsWithExecutor {
 
     val tempOutput = runKernel(reduceByIndexSharedHistograms)(LocalSize(lSize), GlobalSize(gSize))(n, k, indices)
 
-    val finalOutput = finalReduce(tempOutput._1, reduceHists)
+    val finalOutput = finalReduce(tempOutput._1, reduceHistsGlobal)
 
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
   test("Reduce by Index: All threads accumulate into one histogram") {
-    val threads = 1024
+    val threads = 256
 
     val reduceByIndexSingleHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
@@ -175,7 +231,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     val gSize = n / chunkSizeLocal
     val chunkSizeWorkgroup = chunkSizeLocal * lSize
 
-    //TODO: See TODO below
+    //TODO: See TODO above
     val sortedIndices = indices.sorted
 
     val segmentedReductionAtomic = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
@@ -198,13 +254,13 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
+  //FIXME: This throws a segfault error on CPUs
   test("Generate value array on device") {
     val chunkSizeLocal = 8
     val lSize = 128
     val gSize = n / chunkSizeLocal
     val chunkSizeWorkgroup = chunkSizeLocal * lSize
 
-    //TODO: See TODO below
     val sortedIndices = indices.sorted
 
     val valueArrayOnDevice = nFun(n => nFun(k => fun(isT(n, k))(is =>
@@ -218,8 +274,8 @@ class histogram extends shine.test_util.TestsWithExecutor {
                 mapLocal(id)
             ) >>
               mapLocal(id)
-        )
-    )
+          )
+      )
     )))
 
     val tempOutput = runKernel(valueArrayOnDevice)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices)
@@ -231,11 +287,11 @@ class histogram extends shine.test_util.TestsWithExecutor {
 
   def finalReduce(tempOutput: Array[Int], kernel: Expr): (Array[Int], TimeSpan[Time.ms]) = {
     val m = tempOutput.length / k
-    val threads = if (k > 1024) 1024 else k
+    val threads = 2048
 
     print("\nReducing all subhistograms...")
 
-    runSecondKernel(kernel)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
+    runSecondKernel(kernel)(LocalSize(512), GlobalSize(threads))(m, k, tempOutput)
   }
 
   def checkResult(output: Array[Int], firstTime: TimeSpan[Time.ms], secondTime: TimeSpan[Time.ms] = null): Unit = {
