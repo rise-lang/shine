@@ -154,7 +154,7 @@ object parse {
     }
   }
 
-  def parseTypeAnnotation(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  def parseTypeAnnotation(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     val (tokens, parsedSynElems) = parseState
     val colonToken :: typeToken :: restTokens = tokens
 
@@ -170,7 +170,7 @@ object parse {
       }
     }
 
-  def parseArrow(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  def parseArrow(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     val (tokens, parsedExprs) = parseState
     val nextToken :: restTokens = tokens
 
@@ -374,7 +374,7 @@ object parse {
 
   }
 
-  def parseBracesExpr(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  def parseBracesExpr(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     println("parseBracesExpr: "+ parseState)
     if(parseState._1.isEmpty){
       println("Abbruch; parseBracesExpr: "+ parseState)
@@ -440,7 +440,7 @@ object parse {
     p
   }
 
-  def parseNumber(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  def parseNumber(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     println("ParseNumber: " + parseState)
     val (tokens, parsedSynElems) = parseState
     if(tokens.isEmpty){
@@ -462,7 +462,7 @@ object parse {
   }
 
 
-  def parseBinOperator(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  def parseBinOperator(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     println("parseBinOperator: "+ parseState)
     val (tokens, parsedSynElems) = parseState
     val nextToken :: restTokens = tokens
@@ -494,7 +494,7 @@ object parse {
     }
   }
 
-  def parseLeftBrace(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  def parseLeftBrace(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     val (tokens, parsedSynElems) = parseState
     val nextToken :: restTokens = tokens
 
@@ -504,7 +504,7 @@ object parse {
     }
   }
 
-  def parseRightBrace(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  def parseRightBrace(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     val (tokens, parsedSynElems) = parseState
     val nextToken :: restTokens = tokens
 
