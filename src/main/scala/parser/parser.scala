@@ -4,80 +4,29 @@ import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
 object parse {
 
-  //Todo: throwException in ParseError is not used and RuntimeException is not so good as normal Exception,
-  // because no checking is needed:
-  // https://stackoverflow.com/questions/19857008/extending-exception-runtimeexception-in-java
   abstract sealed class ParseErrorOrState()
 
   abstract sealed class ParseEnd() extends ParseErrorOrState()
-  //Todo: I only want for ParseError the Throwable keyword, but it is the only thing, which should be throwable
+
   final case class ParseError(mes: String) extends ParseErrorOrState()
-//  final case class ParseError(token: Token) extends ParseErrorOrState() {
-//    val span = token.s
-//    val fileReader = token.s.file
-//
-//    private def underline(str: String): String = {
-//      var s: String = ""
-//      for (a <- str) {
-//        s = s + a + "\u0332"
-//      }
-//      s
-//    }
-//
-//    private def importantPart(str: String): String = {
-//      val s: String = underline(str)
-//      s
-//    }
-//
-//    def throwException(): Unit = {
-//      val currentColumn: String = fileReader.sourceLines(span.begin.column)
-//      val important: String = importantPart(currentColumn.substring(span.begin.row, span.end.row))
-//      val codeLine: String = if (span.begin.row - 1 > 0) {
-//        currentColumn.substring(0, span.begin.row) + important + currentColumn.substring(span.end.row, currentColumn.length)
-//      } else {
-//        important + currentColumn.substring(span.end.row, currentColumn.length)
-//      }
-//      val message: String = "ErrorToken: " + this.toString + " at " + span.toString + "\n" + codeLine
-//      throw new Exception(message)
-//    }
 
-    ////    override def throw():Unit = throwException()
-    //  }
-    //  final case class HereIsATypeIdentifierExpected(token:Token) extends ParseError(token)//{
-    ////    override def toString = "A Type is expected but " + token + " is not a Type"
-    ////  }
-    //  final case class TokenListIsEmpty() extends ParseEnd() //Todo: Better name for the classes which are clearly only for States in the parsing process
-    //  final case class BacklashWasExpected(token:Token) extends ParseEnd()
-    //  final case class IdentifierWasExpected(token:Token) extends ParseEnd()
-    //  final case class NotAnAcceptedType(typeK:TypeKind) extends ParseEnd()
-    //  final case class TypeAnnotationNotCorrect(token:Token) extends ParseError(token)
-    //  final case class HereIsATypeAnnotationExpected(token:Token) extends ParseError(token)
-    //  final case class ArrowWasExpected(token:Token) extends ParseEnd()
-    //  final case class AnExpressionAndNotATypeWasExpected(typ:rt.Type) extends ParseEnd()
-    //  final case class UnaryOperatorWasExpected(token:Token) extends ParseEnd()
-    //  final case class notAnAcceptedIntegerOrFloatType(token:Token) extends ParseEnd()
-    //  final case class BinaryOperatorWasExpected(token:Token) extends ParseEnd()
-    //  final case class LBraceWasExpected(token:Token) extends ParseEnd()
-    //  final case class RBraceWasExpected(token:Token) extends ParseEnd()
-    //  final case class NoBinaryOperator() extends ParseEnd()
-    //  final case class NoParseAppLeft() extends ParseEnd()
-
-    /*
+  /*
    * Precondition: Only valid Tokens in tokenList.
    */
-    def apply(tokenList: List[Token]): r.Expr = {
-      val parseState: ParseState = (tokenList, Nil)
-      val shineLambda: r.Expr = parseTopLevelLambda(parseState) match {
-        case Right(ex) => ex
-        case Left(errorOrState) => {
-          println(errorOrState)
-          throw new RuntimeException("failed parsing : " + errorOrState)
-        }
+  def apply(tokenList: List[Token]): r.Expr = {
+    val parseState: ParseState = (tokenList, Nil)
+    val shineLambda: r.Expr = parseTopLevelLambda(parseState) match {
+      case Right(ex) => ex
+      case Left(errorOrState) => {
+        println(errorOrState)
+        throw new RuntimeException("failed parsing : " + errorOrState)
       }
-      println("parse: " + shineLambda)
-      shineLambda
-      //r.Identifier("placeholder")()
     }
+    println("parse: " + shineLambda)
+    shineLambda
+    //r.Identifier("placeholder")()
+  }
+
   //
   //    def checkBracesNumber(tokenList: List[Token]): Unit = {
   //      val list: List[Either[PreAndErrorToken, Token]] = tokens
@@ -104,13 +53,15 @@ object parse {
   //    }
 
   sealed trait SyntaxElement
+
   final case class SExpr(expr: r.Expr) extends SyntaxElement
+
   final case class SType(t: r.types.Type) extends SyntaxElement
 
   type ParseState = (List[Token], List[SyntaxElement])
 
-  implicit class ParseStatePipe(val ps: Either[ParseErrorOrState,ParseState]) extends AnyVal {
-    def |>(f: ParseState => Either[   ParseErrorOrState,ParseState]): Either[   ParseErrorOrState,ParseState] = {
+  implicit class ParseStatePipe(val ps: Either[ParseErrorOrState, ParseState]) extends AnyVal {
+    def |>(f: ParseState => Either[ParseErrorOrState, ParseState]): Either[ParseErrorOrState, ParseState] = {
       println("|> : " + ps)
       ps match {
         case Right(p) => f(p)
@@ -121,8 +72,8 @@ object parse {
 
   implicit class ParseStateElse(val leftF: ParseState => Either[ParseErrorOrState, ParseState]) extends AnyVal {
     def ||(
-      rightF: ParseState => Either[ParseErrorOrState, ParseState]
-   ): ParseState => Either[ParseErrorOrState, ParseState] = {
+            rightF: ParseState => Either[ParseErrorOrState, ParseState]
+          ): ParseState => Either[ParseErrorOrState, ParseState] = {
       ps =>
         leftF(ps) match {
           case Left(_) => rightF(ps)
@@ -132,14 +83,12 @@ object parse {
   }
 
 
-
-
   //_________________________________________________________Lambda
 
 
-  def parseBackslash(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  def parseBackslash(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     val (tokens, parsedExprs) = parseState
-    if(tokens.isEmpty){
+    if (tokens.isEmpty) {
       return Left(ParseError("failed to parse Backlash: " + " List is empty"))
     }
     val nextToken :: restTokens = tokens
@@ -147,7 +96,7 @@ object parse {
     nextToken match {
       case Backslash(_) =>
       case tok => {
-        println("failed parseBacklash: "+ parseState)
+        println("failed parseBacklash: " + parseState)
         return Left(ParseError("failed to parse Backslash: " + tok + " is not an Backslash"))
       }
     }
@@ -158,7 +107,7 @@ object parse {
   def parseIdent(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     println("parseIdent: " + parseState)
     val (tokens, parsedSynElems) = parseState
-    if(tokens.isEmpty){
+    if (tokens.isEmpty) {
       return Left(ParseError("failed to parse Ident: " + " List is empty"))
     }
     val nextToken :: restTokens = tokens
@@ -167,13 +116,29 @@ object parse {
       case Identifier(name, _) =>
         Right((restTokens, SExpr(r.Identifier(name)()) :: parsedSynElems))
       case tok => {
-        println("Abbruch parseIdent: " + tok +" : " + parseState)
+        println("Abbruch parseIdent: " + tok + " : " + parseState)
         Left(ParseError("failed to parse Ident: " + tok + " is not an Identifier"))
       }
     }
   }
 
-  def parseMaybeTypeAnnotation(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
+  private def getType(typ: TypeKind, restTokens: List[Token], parsedSynElems: List[SyntaxElement]): Either[ParseErrorOrState, ParseState] = {
+    val t = typ match {
+      case ShortTyp() => Right(rt.i8)
+      case IntTyp() => Right(rt.i32)
+      case FloatTyp() => Right(rt.f32)
+      case DoubleType() => Right(rt.f64)
+      case BoolType() => Right(rt.bool)
+      case notAtype => Left(ParseError("failed to parse Type: Not accepted Type" + notAtype))
+    }
+    t match {
+      case Right(nowT) => Right((restTokens, SType(nowT) :: parsedSynElems))
+      case Left(e) => Left(ParseError("failed to parse Type"))
+    }
+  }
+
+
+  def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     val (tokens, parsedSynElems) = parseState
     val colonToken :: typeToken :: restTokens = tokens
 
@@ -181,21 +146,8 @@ object parse {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => {
-            val t: Either[   ParseErrorOrState,rt.Type] = typ match {
-              case ShortTyp() => Right(rt.i8)
-              case IntTyp() => Right(rt.i32)
-              case FloatTyp() => Right(rt.f32)
-              case DoubleType() => Right(rt.f64)
-              case BoolType() => Right(rt.bool)
-              case notAtype => Left(ParseError("failed to parse Type: Not accepted Type" + notAtype))
-            }
-            t match {
-              case Right(nowT) => Right((restTokens, SType(nowT) :: parsedSynElems))
-              case Left(e) => Left(ParseError("failed to parse Type"))
-            }
-          }
-          case notAtype => Left(ParseError("failed to parse Type: " + notAtype +" is not an Type"))
+          case Type(typ, _) => getType(typ, restTokens, parsedSynElems)
+          case notAtype => Left(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
       }
       case _ => Right(parseState)
@@ -210,26 +162,13 @@ object parse {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => { //Todo: Here and in parseMaybeTypeAnnotation is this same match!
-            val t: Either[   ParseErrorOrState, rt.Type] = typ match {
-              case ShortTyp() => Right(rt.i8)
-              case IntTyp() => Right(rt.i32)
-              case FloatTyp() => Right(rt.f32)
-              case DoubleType() => Right(rt.f64)
-              case BoolType() => Right(rt.bool)
-              case notAtype => Left(ParseError("failed to parse Type: Not accepted Type" + notAtype))
-            }
-            t match {
-              case Right(nowT) => Right((restTokens, SType(nowT) :: parsedSynElems))
-              case Left(e) => Left(ParseError("failed to parse Type"))
-            }
-          }
-          case notAtype => Left(ParseError("failed to parse Type: " + notAtype +" is not an Type"))
+          case Type(typ, _) => getType(typ, restTokens, parsedSynElems)
+          case notAtype => Left(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
       }
-      case notAColon => Left(ParseError("failed to parse Type: A TypeAnnotation is expected, but " + notAColon + " is not an Colon"))
+        case notAColon => Left(ParseError("failed to parse Type: A TypeAnnotation is expected, but " + notAColon + " is not an Colon"))
+      }
     }
-  }
 
   def parseArrow(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
     val (tokens, parsedExprs) = parseState
@@ -242,7 +181,7 @@ object parse {
 
     Right((restTokens, parsedExprs))
   }
-  
+
   private def combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList: List[SyntaxElement]) : (r.Expr, List[SyntaxElement]) = {
     println("combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft: "+ synElemList)
     var synE = synElemList.reverse.tail.head match {
@@ -316,10 +255,9 @@ object parse {
       psLambda match {
       case Left(e) => Left(e)
       case Right(ps) => {
-        // TODO if tokens left in ps._1, return error
-        require(ps._1.isEmpty, "Everything should be computed!")
-        //    require(ps._2.length == 3, "it should now have exactly 3 Exprs: Identifier, Type of the Identifier and the expression")
-
+        if(!ps._1.isEmpty){
+          throw new RuntimeException("Every Token should be computed! " + ps)
+        }
         val synElemList = ps._2
 //        val (expr, synElemListExpr) = (synElemList.head match {
 //          case SExpr(e) => e
@@ -327,6 +265,10 @@ object parse {
 //        }, synElemList.tail)
         val (expr, synElemListExpr) = combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList)
 
+        if(!(synElemListExpr.length == 2)){
+          throw new RuntimeException("it should now have exactly 2 Exprs: Identifier, " +
+            "Type of the Identifier: " + synElemListExpr)
+        }
         val (typedIdent, synElemListTIdent) =
           synElemListExpr.head match {
             case SType(t) =>
@@ -387,7 +329,6 @@ object parse {
       }
       case Left(e) => return Left(e)
     }
-//    val (expr, synElemListExpr) = combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList)
 
     val (expr, synElemListExpr) = (synElemList.head match {
       case SExpr(e) => e
@@ -413,23 +354,10 @@ object parse {
   //_________________________________________________________Lambda
   //_________________________________________________________Expres
 
-//  def parseExpressionSimplified(parseState: ParseState): Either[   ParseErrorOrState,ParseState] = {
-//    if(parseState._1.isEmpty){
-//      println("Abbruch; parseExpression: "+ parseState)
-//      return Right(parseState)
-//    }
-//    println("parseExpression: " + parseState)
-//    //FIXME parseState always true
-//    Right(parseState) |> (parseIdent _ || parseNumber ||
-//      parseUnOperatorApp || parseBracesExpr)
-//  }
-
   def parseHighExpression(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     println("parseHighExpression: " + parseState)
-    //FIXME parseState always true
       Right(parseState) |>
         (parseLambda _ || parseApp)
-
   }
 
   def parseLowExpression(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
@@ -479,12 +407,6 @@ object parse {
         "RBrace is at the beginning of parseApp: " + parseState)
       return Right(parseState)
     }
-//    if(parseState._3==0){
-//      println("Abbruch; parseApp: "+ parseState)
-//      return Left(ParseError("failed to parse parseApp: " + " no parseApp is left"))
-//    }
-//    TODO: if(parseState._1.length > 1)
-//    val pas = (parseState._1, parseState._2, parseState._3-1)
     val ps =
       Right(parseState)  |>
         parseLowExpression
