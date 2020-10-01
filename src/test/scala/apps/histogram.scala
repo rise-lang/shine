@@ -198,6 +198,37 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
+  test("Generate value array on device") {
+    val chunkSizeLocal = 8
+    val lSize = 128
+    val gSize = n / chunkSizeLocal
+    val chunkSizeWorkgroup = chunkSizeLocal * lSize
+
+    //TODO: See TODO below
+    val sortedIndices = indices.sorted
+
+    val valueArrayOnDevice = nFun(n => nFun(k => fun(isT(n, k))(is =>
+      generate(fun(IndexType(n))(_ => l(1))) |>
+        fun(xs =>
+          zip(is)(xs) |>
+          split(chunkSizeWorkgroup) |>
+          mapWorkGroup(
+            oclSegReduceAtomic(chunkSizeLocal)(AddressSpace.Local)(add)(
+              generate(fun(IndexType(k))(_ => l(0))) |>
+                mapLocal(id)
+            ) >>
+              mapLocal(id)
+        )
+    )
+    )))
+
+    val tempOutput = runKernel(valueArrayOnDevice)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices)
+
+    val finalOutput = finalReduce(tempOutput._1, reduceHists)
+
+    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
+  }
+
   def finalReduce(tempOutput: Array[Int], kernel: Expr): (Array[Int], TimeSpan[Time.ms]) = {
     val m = tempOutput.length / k
     val threads = if (k > 1024) 1024 else k
