@@ -6,10 +6,10 @@ import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
 
 class LexerTest extends  AnyFlatSpec {
-  val filePath = "src/test/scala/parser/readFiles/filesToLex/"
+  val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
 
   "RecognizeLexeme" should "work for the identity" in {
-    val fileName: String = filePath + "identity.rise"
+    val fileName: String = testFilePath + "identity.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -19,7 +19,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the constant42" in {
-    val fileName: String = filePath + "constant42.rise"
+    val fileName: String = testFilePath + "constant42.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -29,7 +29,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the longIdentity" in {
-    val fileName: String = filePath + "longIdentity.rise"
+    val fileName: String = testFilePath + "longIdentity.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -39,7 +39,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the identityWithI32" in {
-    val fileName: String = filePath + "identityWithI32.rise"
+    val fileName: String = testFilePath + "identityWithI32.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -49,7 +49,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the longIdentityWithI32" in {
-    val fileName: String = filePath + "longIdentityWithI32.rise"
+    val fileName: String = testFilePath + "longIdentityWithI32.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -59,7 +59,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for the ComplexIdentifier" in {
-    val fileName: String = filePath + "ComplexIdentifier.rise"
+    val fileName: String = testFilePath + "ComplexIdentifier.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -69,7 +69,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for TypWith-" in {
-    val fileName: String = filePath + "TypWith-.rise"
+    val fileName: String = testFilePath + "TypWith-.rise"
     val file: FileReader =  FileReader(fileName)
     val thrown = intercept[Exception] {
       RecognizeLexeme(file)
@@ -79,7 +79,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for noBacklashAtBeginning.rise" in {
-    val fileName: String = filePath + "noBacklashAtBeginning.rise"
+    val fileName: String = testFilePath + "noBacklashAtBeginning.rise"
     val file: FileReader =  FileReader(fileName)
     val thrown = intercept[Exception] {
       RecognizeLexeme(file)
@@ -88,7 +88,7 @@ class LexerTest extends  AnyFlatSpec {
     thrown.getMessage should equal(expected)
   }
   "RecognizeLexeme" should "work for plus" in {
-    val fileName: String = filePath + "plus.rise"
+    val fileName: String = testFilePath + "plus.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -98,7 +98,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for minus" in {
-    val fileName: String = filePath + "minus.rise"
+    val fileName: String = testFilePath + "minus.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -108,7 +108,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for negation" in {
-    val fileName: String = filePath + "negation.rise"
+    val fileName: String = testFilePath + "negation.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -118,7 +118,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for negationWithBool" in {
-    val fileName: String = filePath + "negationWithBool.rise"
+    val fileName: String = testFilePath + "negationWithBool.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -128,7 +128,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for not" in {
-    val fileName: String = filePath + "not.rise"
+    val fileName: String = testFilePath + "not.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -138,7 +138,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for braces" in {
-    val fileName: String = filePath + "braces.rise"
+    val fileName: String = testFilePath + "braces.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -148,7 +148,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for bracesWithNot" in {
-    val fileName: String = filePath + "bracesWithNot.rise"
+    val fileName: String = testFilePath + "bracesWithNot.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -198,7 +198,7 @@ class LexerTest extends  AnyFlatSpec {
 //  }
 
   "RecognizeLexeme" should "littleComplexLine" in {
-    val fileName: String = filePath + "littleComplexLine.rise"
+    val fileName: String = testFilePath + "littleComplexLine.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -208,7 +208,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "lessComplexInOneLine" in {
-    val fileName: String = filePath + "lessComplexInOneLine.rise"
+    val fileName: String = testFilePath + "lessComplexInOneLine.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -218,7 +218,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "lessComplexInOneLineWithType" in {
-    val fileName: String = filePath + "lessComplexInOneLineWithType.rise"
+    val fileName: String = testFilePath + "lessComplexInOneLineWithType.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -228,7 +228,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "complexInOneLine" in {
-    val fileName: String = filePath + "complexInOneLine.rise"
+    val fileName: String = testFilePath + "complexInOneLine.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -238,7 +238,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "complexInThreeLines" in {
-    val fileName: String = filePath + "complexInThreeLines.rise"
+    val fileName: String = testFilePath + "complexInThreeLines.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -248,7 +248,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "veryComplicated.rise" in {
-    val fileName: String = filePath + "veryComplicated.rise"
+    val fileName: String = testFilePath + "veryComplicated.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -260,7 +260,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "Complex1" in {
-    val fileName: String = filePath + "Complex1.rise"
+    val fileName: String = testFilePath + "Complex1.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -273,7 +273,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "Complex2" in {
-    val fileName: String = filePath + "Complex2.rise"
+    val fileName: String = testFilePath + "Complex2.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -285,7 +285,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "Complex3" in {
-    val fileName: String = filePath + "Complex3.rise"
+    val fileName: String = testFilePath + "Complex3.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -297,7 +297,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "Complex4" in {
-    val fileName: String = filePath + "Complex4.rise"
+    val fileName: String = testFilePath + "Complex4.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -309,7 +309,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "Complex5" in {
-    val fileName: String = filePath + "Complex5.rise"
+    val fileName: String = testFilePath + "Complex5.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -321,7 +321,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "Complex6" in {
-    val fileName: String = filePath + "Complex6.rise"
+    val fileName: String = testFilePath + "Complex6.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -333,7 +333,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "Complex7" in {
-    val fileName: String = filePath + "Complex7.rise"
+    val fileName: String = testFilePath + "Complex7.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -342,6 +342,16 @@ class LexerTest extends  AnyFlatSpec {
         LBrace(_):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _)::RBrace(_)::  Identifier("x", _)::RBrace(_)::RBrace(_):: Nil =>
       case a => fail(a.toString())
     }
+  }
+
+  "parser" should "not be able to parse 'noExpression.rise'" in {
+    val fileName: String = testFilePath + "noExpression.rise"
+    val file: FileReader = new FileReader(fileName)
+    val thrown = intercept[RuntimeException] {
+      RecognizeLexeme(file)
+    }
+    //Todo: that is horrible, that I don't have an Error-Message
+    thrown.getMessage should equal("At position (0,8 is an expression expected , but there is nothing! '\\x:I32->'")
   }
 
 }

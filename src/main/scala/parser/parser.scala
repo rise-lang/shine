@@ -215,6 +215,9 @@ object parse {
   }
 
   private def combineExpressions(synElemList: List[SyntaxElement]) : r.Expr = {
+    if(synElemList.isEmpty){
+      throw new IllegalArgumentException("the ElemList is empty!")
+    }
     var synE = synElemList.reverse
     var e:r.Expr = synE.head match {
       case SExpr(expr) => {
@@ -388,6 +391,11 @@ object parse {
 
     p match {
       case Right(pState) => {
+        if(pState._2.isEmpty){
+          val rBraceIndex = parseState._1.indexWhere(p=> p.isInstanceOf[RBrace])
+          throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
+            " : "+ parseState._1.toString())
+        }
         val expr = SExpr(combineExpressions(pState._2))
         val newL = expr :: Nil
         val li:List[SyntaxElement] = parseState._2.reverse ++ newL

@@ -279,10 +279,30 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
       a.throwException()
     }
   }
-
   lexerExpression(column, row,list)
 }
 
+  private def isEnd(fileReader: FileReader, c: Int, r: Int, arr:Array[String]): Either[(Int, Int), PreAndErrorToken] ={
+    //ignore whitespaces
+    val (column, row) = skipWhitespace(c, r)
+    //are you able to take arr(column)(row)?
+    if(arr.length <= column){
+      var h:String = "'\n"
+      for(x <-arr){
+        h = h ++ x ++ "\n"
+      }
+      h = h++ "'"
+      //throw new IllegalArgumentException("array does not have so much columns: "+ h + " , "+ column + " , "+ row)
+      val loc:Location = Location(column, row) //endLocation is equal to startLocation
+      Right(EndOfFile(new Span(fileReader, loc),fileReader))
+    }else if(arr(column).length <= row ){
+      //throw new IllegalArgumentException("array(column) has less than row chars '"+ arr(column) + "' , "+ row)
+      val loc:Location = Location(column, row) //endLocation is equal to startLocation
+      Right(EndOfLine(new Span(fileReader, loc),fileReader))
+    }else{
+      Left((column, row))
+    }
+  }
 
   /*
     (List[Either[PreAndErrorToken, Token]],column,row)
@@ -293,19 +313,21 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
     var column = oldColumn
     require(row >= 0, "row is not allowed to be negative")
     require(column >= 0, "column is not allowed to be negative")
-    require(arr.length > column, "array does not have so much columns")
-    //require(arr(column).length > row, "arr(column) has less than row chars")
 
     var list = l
-
-    //ignore whitespaces
-        skipWhitespace(column, row) match {
-          case (c,r) =>{
-            column = c
-            row = r
-          }
-        }
-
+//Todo: use this instead of require and skipWhitespaces (in isEnd is skipWhiteSpaces used)
+    isEnd(fileReader, column, row, arr) match{
+      case Left((c, r)) => {
+        column = c
+        row = r
+      }
+      case Right(EndOfFile(_,_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+        " but this should not be able to happen")
+      case Right(EndOfLine(span,_))=> throw new RuntimeException("At position ("
+        + span.begin.column+ ","+ span.begin.row+ " is an expression expected " +
+        ", but there is nothing! '" + arr(column)+ "'")
+      case Right(p)=> throw new RuntimeException("This PreAndErrorToken was not expected: "+ p)
+    }
     if(isBinaryOperatorSymbol(arr(column)(row))){ //it is a binary operator
       lexBinOperator(column, row) match {
         case Right(BinOp(BinOpType.EQ, span)) =>{

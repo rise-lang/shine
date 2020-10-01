@@ -314,4 +314,17 @@ class parserTest extends  AnyFlatSpec {
       case a => fail("not a lambda: "+ a)
     }
   }
+
+
+
+  "parser" should "not be able to parse 'noExpressionInBraces.rise'" in {
+    val fileName: String = testFilePath + "noExpressionInBraces.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val thrown = intercept[RuntimeException] {
+      parse(lexer.tokens)
+    }
+    //Todo: that is horrible, that I don't have an Error-Message
+    thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List((, ))")
+  }
 }
