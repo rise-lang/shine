@@ -10,8 +10,6 @@ import util.{Time, TimeSpan, gen}
 
 class histogram extends shine.test_util.TestsWithExecutor {
 
-  private val maxLSize = 1024
-
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def histsT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
@@ -19,8 +17,8 @@ class histogram extends shine.test_util.TestsWithExecutor {
   private val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
 
-  val n = 262144
-  val k = 2048
+  val n = 8192
+  val k = 64
 
   val indices = new Array[Int](n)
   val values: Array[Int] = Array.fill[Int](n)(1)
@@ -35,6 +33,8 @@ class histogram extends shine.test_util.TestsWithExecutor {
     indices(i) = index
     result(index) = result(index) + 1
   }
+
+  private val maxLocalSize = 256
 
   /*private val reduceHistsOld = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
     hists |> // m.k.int
@@ -134,8 +134,8 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   test("Reduce by Index: Each thread accumulates into its own histogram (global)") {
-    val gSize = 2048
-    val lSize = if (gSize > maxLSize) maxLSize else gSize
+    val lSize = 128
+    val gSize = 1024
     val chunkSize = n / gSize
 
     val individualHistogramsGlobal = nFun(n => nFun(k => nFun(chunk => fun(isT(n, k))(is =>
@@ -165,7 +165,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
 
   test("Reduce by Index: Each thread accumulates into its own histogram (local)") {
     val lSize = 128
-    val lChunkSize = 128
+    val lChunkSize = 8
     val wgChunkSize = lSize * lChunkSize
     val wgSize = n / wgChunkSize
     val gSize = lSize * wgSize
@@ -180,7 +180,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
               split(lChunk) >> // wgChunk/lChunk.lChunk.(idx x int)
                 mapLocal(
                   // lChunk.(idx x int)
-                  oclReduceByIndexSeq(AddressSpace.Global)(add)(
+                  oclReduceByIndexSeq(AddressSpace.Local)(add)(
                     generate(fun(IndexType(k))(_ => l(0))) |>
                       mapSeq(id) // k.int
                   ) >>
@@ -200,9 +200,10 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   test("Reduce by Index: Multiple threads accumulate into one histogram") {
-    val lSize = maxLSize
-    val gSize = n
-    val chunkSize = 8192
+    val lSize = 128
+    val chunkSize = 1024
+    val wgSize = n / chunkSize
+    val gSize = lSize * wgSize
 
     val sharedHistograms = nFun(n => nFun(k => nFun(chunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
@@ -229,22 +230,25 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   test("Reduce by Index: All threads accumulate into one histogram") {
-    val gSize = 1024
-    val lSize = if (gSize > maxLSize) maxLSize else gSize
+    val threads = maxLocalSize
 
-    val reduceByIndexSingleHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
+    val singleHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
-        fun(xs =>
-          zip(is)(xs) |>
-            oclReduceByIndexLocal(AddressSpace.Local)(add)(
-              generate(fun(IndexType(k))(_ => l(0))) |>
-                mapLocal(id)
-            ) |>
-            mapLocal(id)
+        fun(xs => // n.int
+          zip(is)(xs) |> // n.(idx x int)
+            split(n) |> // 1.n.(idx x int)
+            mapWorkGroup(
+              // n.(idx x int)
+              oclReduceByIndexLocal(AddressSpace.Local)(add)(
+                generate(fun(IndexType(k))(_ => l(0))) |>
+                  mapLocal(id) // k.int
+              ) >>
+              mapLocal(id) // k.int
+            ) // k.int
         )
     )))
 
-    val output = runKernel(reduceByIndexSingleHistogram)(LocalSize(lSize), GlobalSize(gSize))(n, k, indices)
+    val output = runKernel(singleHistogram)(LocalSize(threads), GlobalSize(threads))(n, k, indices)
 
     checkResult(output._1, output._2)
   }
@@ -320,34 +324,37 @@ class histogram extends shine.test_util.TestsWithExecutor {
 
   //FIXME: This throws a segfault error on CPUs
   /*test("Generate value array on device") {
-    val chunkSizeLocal = 8
     val lSize = 128
-    val gSize = n / chunkSizeLocal
-    val chunkSizeWorkgroup = chunkSizeLocal * lSize
+    val lChunkSize = 8
+    val wgChunkSize = lChunkSize * lSize
+    val wgSize = n / wgChunkSize
+    val gSize = lSize * wgSize
 
+    //TODO: See TODO above
     val sortedIndices = indices.sorted
 
-    val valueArrayOnDevice = nFun(n => nFun(k => fun(isT(n, k))(is =>
+    val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
-          split(chunkSizeWorkgroup) |>
+          split(wgChunk) |>
           mapWorkGroup(
-            oclSegReduceAtomic(chunkSizeLocal)(AddressSpace.Local)(add)(
+            oclSegReduceAtomic(lChunkSize)(AddressSpace.Local)(add)(
               generate(fun(IndexType(k))(_ => l(0))) |>
                 mapLocal(id)
             ) >>
               mapLocal(id)
           )
       )
-    )))
+    ))))
 
-    val tempOutput = runKernel(valueArrayOnDevice)(LocalSize(lSize), GlobalSize(gSize))(n, k, sortedIndices)
+    val tempOutput =
+      runKernelChunk(valuesOnArray)(LocalSize(lSize), GlobalSize(gSize))(n, k, wgChunkSize, sortedIndices)
 
     val finalOutput = finalReduceGlobal(tempOutput._1)
 
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
-  }*/
+  } */
 
   def nextPowerOf2(n: Int): Int = {
     val highestOneBit = Integer.highestOneBit(n)
@@ -358,7 +365,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
   def finalReduceGlobal(tempOutput: Array[Int]): (Array[Int], TimeSpan[Time.ms]) = {
     val m = tempOutput.length / k
     val gSize = nextPowerOf2(k)
-    val lSize = if (gSize > 1024) 1024 else gSize
+    val lSize = if (gSize > maxLocalSize) maxLocalSize else gSize
 
     println("\nReducing all subhistograms (global):")
 
