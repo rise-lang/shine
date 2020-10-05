@@ -202,7 +202,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Arrow(_) ::  BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: I32(42, _) :: Nil => true
+      case Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Colon(_) :: Type(IntTyp(), _) :: Arrow(_) ::  BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: I32(42, _) :: Nil => true
       case a => fail(a.toString())
     }
   }
