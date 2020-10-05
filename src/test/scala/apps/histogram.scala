@@ -326,7 +326,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   //FIXME: This throws a segfault error on CPUs
-  ignore("Generate value array on device") {
+  test("Generate value array on device") {
     val lSize = 32
     val lChunkSize = 32
     val wgChunkSize = lChunkSize * lSize
@@ -336,7 +336,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     //TODO: See TODO above
     val sortedIndices = indices.sorted
 
-    val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk =>  fun(isT(n, k))(is =>
+    val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
