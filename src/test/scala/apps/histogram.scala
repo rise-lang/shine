@@ -337,7 +337,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     val sortedIndices = indices.sorted
 
     val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
-      generate(fun(IndexType(n))(_ => l(1))) |>
+      generate(fun(IndexType(n))(_ => cast(l(1) :: int))) |>
         fun(xs =>
           zip(is)(xs) |>
           split(wgChunk) |>
