@@ -648,31 +648,35 @@ object fromRise {
                 fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
                   OpenCLReduceByIndexLocal(n, k, a, t, f, h, e)))))
 
-      case (ocl.OclSegReduce(m),
-      aFunT(a,
+      case (ocl.OclSegReduce(),
+      nFunT(m,
+        aFunT(a,
+          (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
+            expT(ArrayType(k, _), `write`) ->:
+              expT(ArrayType(n, PairType(IndexType(_), _)), `read`) ->:
+                expT(ArrayType(_, _), `read`)))) =>
+        depFun[NatKind](m)(
+          depFun[AddressSpaceKind](a)(
+            fun[ExpType ->: ExpType ->: ExpType](
+              expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
+                fun[ExpType](expT(k`.`t, write), i =>
+                  fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
+                    OpenCLSegReduce(n, k, m, a, t, f, i, e))))))
+
+      case (ocl.OclSegReduceAtomic(),
+      nFunT(m,
+        aFunT(a,
         (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
           expT(ArrayType(k, _), `write`) ->:
             expT(ArrayType(n, PairType(IndexType(_), _)), `read`) ->:
-                expT(ArrayType(_, _), `read`))) =>
-        depFun[AddressSpaceKind](a)(
-          fun[ExpType ->: ExpType ->: ExpType](
-            expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
-              fun[ExpType](expT(k`.`t, write), i =>
-                fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
-                  OpenCLSegReduce(m)(n, k, a, t, f, i, e)))))
-
-      case (ocl.OclSegReduceAtomic(m),
-      aFunT(a,
-      (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
-        expT(ArrayType(k, _), `write`) ->:
-          expT(ArrayType(n, PairType(IndexType(_), _)), `read`) ->:
-            expT(ArrayType(_, _), `read`))) =>
-        depFun[AddressSpaceKind](a)(
-          fun[ExpType ->: ExpType ->: ExpType](
-            expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
-              fun[ExpType](expT(k`.`t, write), i =>
-                fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
-                  OpenCLSegReduceAtomic(m)(n, k, a, t, f, i, e)))))
+              expT(ArrayType(_, _), `read`)))) =>
+        depFun[NatKind](m)(
+          depFun[AddressSpaceKind](a)(
+            fun[ExpType ->: ExpType ->: ExpType](
+              expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
+                fun[ExpType](expT(k`.`t, write), i =>
+                  fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
+                    OpenCLSegReduceAtomic(n, k, m, a, t, f, i, e))))))
 
       case (core.Reduce(), _) =>
         throw new Exception(s"$p has no implementation")

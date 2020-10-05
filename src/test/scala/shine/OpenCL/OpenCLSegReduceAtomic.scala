@@ -37,6 +37,8 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
     result(index) = result(index) + index + 1
   }
 
+  private val maxLocalSize = 256
+
   test("OpenCL Segmented Reduce Atomic Test") {
 
     val oclSegmentedReduceAtomicTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
@@ -44,7 +46,7 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
         split(1024) |> // n/1024.1024.(idx(k) x int)
         mapWorkGroup(
           // 1024.(idx(k) x int)
-          oclSegReduceAtomic()(rise.core.types.AddressSpace.Local)(add)(
+          oclSegReduceAtomic(32)(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id) // k.int
           ) >>
@@ -55,11 +57,11 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
     val reduceHists = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
       hists |> // m.k.int
         transpose |> // k.m.int
-        mapLocal(
+        mapGlobal(
           // m.int
-          oclReduceSeq(rise.core.types.AddressSpace.Local)(
+          oclReduceSeq(rise.core.types.AddressSpace.Private)(
             fun(a => fun(x => a + x)) // int
-          )(l(0))
+          )(l(0)) // int
         ) // k.int
     )))
 
@@ -70,13 +72,20 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput, result)
   }
 
+  def nextPowerOf2(n: Int): Int = {
+    val highestOneBit = Integer.highestOneBit(n)
+    if (n == highestOneBit) return n
+    highestOneBit << 1
+  }
+
   def finalReduce[T](tempOutput: Array[T], kernel: Expr): Array[T] = {
     val m = tempOutput.length / k
-    val threads = if (k > 1024) 1024 else k
+    val gSize = nextPowerOf2(k)
+    val lSize = if (gSize > maxLocalSize) maxLocalSize else gSize
 
     print("\nReducing all subhistograms...")
 
-    runSecondKernel(kernel)(LocalSize(threads), GlobalSize(threads))(m, k, tempOutput)
+    runSecondKernel(kernel)(LocalSize(lSize), GlobalSize(gSize))(m, k, tempOutput)
   }
 
   def checkResult[T](output: Array[T], expected: Array[T]): Unit = {

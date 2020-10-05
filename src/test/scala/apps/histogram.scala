@@ -201,28 +201,29 @@ class histogram extends shine.test_util.TestsWithExecutor {
 
   test("Reduce by Index: Multiple threads accumulate into one histogram") {
     val lSize = 128
-    val chunkSize = 1024
-    val wgSize = n / chunkSize
+    val lChunkSize = 8
+    val wgChunkSize = lSize * lChunkSize
+    val wgSize = n / wgChunkSize
     val gSize = lSize * wgSize
 
     val sharedHistograms = nFun(n => nFun(k => nFun(chunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
           zip(is)(xs) |> // n.(idx x int)
-            split(chunk) |> // n/chunk.chunk.(idx x int)
+            split(chunk) |> // n/wgChunk.wgChunk.(idx x int)
             mapWorkGroup(
-              // chunk.(idx x int)
+              // wgChunk.(idx x int)
               oclReduceByIndexLocal(AddressSpace.Local)(add)(
                 generate(fun(IndexType(k))(_ => l(0))) |>
                   mapLocal(id) // k.int
               ) >>
               mapLocal(id) // k.int
-            ) // n/chunk.k.int
+            ) // n/wgChunk.k.int
         )
     ))))
 
     val tempOutput =
-      runKernelChunk(sharedHistograms)(LocalSize(lSize), GlobalSize(gSize))(n, k, chunkSize, indices)
+      runKernelChunk(sharedHistograms)(LocalSize(lSize), GlobalSize(gSize))(n, k, wgChunkSize, indices)
 
     val finalOutput = finalReduceGlobal(tempOutput._1)
 
@@ -268,22 +269,23 @@ class histogram extends shine.test_util.TestsWithExecutor {
     //      faster than it normally would be.
     val sortedIndices = indices.sorted
 
-    val segReduceTree = nFun(n => nFun(k => nFun(wgChunk => fun(isT(n, k))(is => fun(xsT(n))(xs =>
+    val segReduceTree = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is => fun(xsT(n))(xs =>
           zip(is)(xs) |> // n.(idx x int)
             split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
               mapWorkGroup(
                 // wgChunk.(idx x int)
-                oclSegReduce(lChunkSize)(AddressSpace.Local)(add)(
+                oclSegReduce(lChunk)(AddressSpace.Local)(add)(
                   generate(fun(IndexType(k))(_ => l(0))) |>
                     mapLocal(id) // k.int
                 ) >>
                 mapLocal(id) // k.int
               ) // n/wgChunk.k.int
         )
-    ))))
+    )))))
 
     val tempOutput =
-      runKernelSeg(segReduceTree)(LocalSize(lSize), GlobalSize(gSize))(n, k, wgChunkSize, sortedIndices, values)
+      runKernelSeg(segReduceTree)(LocalSize(lSize), GlobalSize(gSize))(
+        n, k, wgChunkSize, lChunkSize, sortedIndices, values)
 
     val finalOutput = finalReduceGlobal(tempOutput._1)
 
@@ -300,22 +302,23 @@ class histogram extends shine.test_util.TestsWithExecutor {
     //TODO: See TODO above
     val sortedIndices = indices.sorted
 
-    val segReduceAtomic = nFun(n => nFun(k => nFun(wgChunk => fun(isT(n, k))(is => fun(xsT(n))(xs =>
+    val segReduceAtomic = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is => fun(xsT(n))(xs =>
       zip(is)(xs) |> // n.(idx x int)
         split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
         mapWorkGroup(
           // wgChunk.(idx x int)
-          oclSegReduceAtomic(lChunkSize)(AddressSpace.Local)(add)(
+          oclSegReduceAtomic(lChunk)(AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id) // k.int
           ) >>
             mapLocal(id) // k.int
         ) // n/wgChunk.k.int
     )
-    ))))
+    )))))
 
     val tempOutput =
-      runKernelSeg(segReduceAtomic)(LocalSize(lSize), GlobalSize(gSize))(n, k, wgChunkSize, sortedIndices, values)
+      runKernelSeg(segReduceAtomic)(LocalSize(lSize), GlobalSize(gSize))(
+        n, k, wgChunkSize, lChunkSize, sortedIndices, values)
 
     val finalOutput = finalReduceGlobal(tempOutput._1)
 
@@ -323,9 +326,9 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   //FIXME: This throws a segfault error on CPUs
-  /*test("Generate value array on device") {
-    val lSize = 128
-    val lChunkSize = 8
+  ignore("Generate value array on device") {
+    val lSize = 32
+    val lChunkSize = 32
     val wgChunkSize = lChunkSize * lSize
     val wgSize = n / wgChunkSize
     val gSize = lSize * wgSize
@@ -333,28 +336,29 @@ class histogram extends shine.test_util.TestsWithExecutor {
     //TODO: See TODO above
     val sortedIndices = indices.sorted
 
-    val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => fun(isT(n, k))(is =>
+    val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk =>  fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
           split(wgChunk) |>
           mapWorkGroup(
-            oclSegReduceAtomic(lChunkSize)(AddressSpace.Local)(add)(
+            oclSegReduceAtomic(lChunk)(AddressSpace.Local)(add)(
               generate(fun(IndexType(k))(_ => l(0))) |>
                 mapLocal(id)
             ) >>
               mapLocal(id)
           )
       )
-    ))))
+    )))))
 
     val tempOutput =
-      runKernelChunk(valuesOnArray)(LocalSize(lSize), GlobalSize(gSize))(n, k, wgChunkSize, sortedIndices)
+      runKernelTwoChunks(valuesOnArray)(LocalSize(lSize), GlobalSize(gSize))(
+        n, k, wgChunkSize, lChunkSize, sortedIndices)
 
     val finalOutput = finalReduceGlobal(tempOutput._1)
 
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
-  } */
+  }
 
   def nextPowerOf2(n: Int): Int = {
     val highestOneBit = Integer.highestOneBit(n)
@@ -456,15 +460,16 @@ class histogram extends shine.test_util.TestsWithExecutor {
     globalSize: GlobalSize)(
     n: Int,
     k: Int,
-    chunk: Int,
+    chunk1: Int,
+    chunk2: Int,
     indices: Array[Int],
     values: Array[Int]
   ): (Array[Int], TimeSpan[Time.ms]) = {
     import shine.OpenCL._
     val runKernel = gen
       .OpenCLKernel(kernel)
-      .as[ScalaFunction `(` Int `,` Int `,` Int `,` Array[Int] `,` Array[Int] `)=>` Array[Int]]
-    runKernel(localSize, globalSize)(n `,` k `,` chunk `,` indices `,` values)
+      .as[ScalaFunction `(` Int `,` Int `,` Int `,` Int `,` Array[Int] `,` Array[Int] `)=>` Array[Int]]
+    runKernel(localSize, globalSize)(n `,` k `,` chunk1 `,` chunk2 `,` indices `,` values)
   }
 
 }

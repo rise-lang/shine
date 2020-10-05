@@ -457,9 +457,7 @@ private class InferAccessAnnotation {
       }
 
       case roclp.OclReduceByIndexSeq() |
-           roclp.OclReduceByIndexLocal() |
-           roclp.OclSegReduce(_) |
-           roclp.OclSegReduceAtomic(_) => p.t match {
+           roclp.OclReduceByIndexLocal() => p.t match {
         case rtdsl.aFunT(a,
         ((t: rt.DataType) ->: (_: rt.DataType) ->: (_: rt.DataType)) ->:
           rt.ArrayType(k, _) ->: rt.ArrayType(n, rt.PairType(rt.IndexType(_), _)) ->: rt.ArrayType(_, _)) =>
@@ -469,6 +467,24 @@ private class InferAccessAnnotation {
               expT(rt.ArrayType(k, t), write) ->:
                 expT(rt.ArrayType(n, rt.PairType(rt.IndexType(k), t)), read) ->:
                     expT(rt.ArrayType(k, t), read))
+        case _ => error()
+      }
+
+      case roclp.OclSegReduce() |
+           roclp.OclSegReduceAtomic() => p.t match {
+        case rtdsl.nFunT(m,
+              rtdsl.aFunT(a,
+                ((t: rt.DataType) ->: (_: rt.DataType) ->: (_: rt.DataType)) ->:
+                  rt.ArrayType(k, _) ->:
+                    rt.ArrayType(n, rt.PairType(rt.IndexType(_), _)) ->:
+                      rt.ArrayType(_, _))) =>
+
+          nFunT(m,
+            aFunT(a,
+              (expT(t, read) ->: expT(t, read) ->: expT(t, write)) ->:
+                expT(rt.ArrayType(k, t), write) ->:
+                  expT(rt.ArrayType(n, rt.PairType(rt.IndexType(k), t)), read) ->:
+                    expT(rt.ArrayType(k, t), read)))
         case _ => error()
       }
 

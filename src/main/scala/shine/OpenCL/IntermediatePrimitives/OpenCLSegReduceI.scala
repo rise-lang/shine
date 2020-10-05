@@ -15,9 +15,10 @@ import shine.OpenCL.{AdjustArraySizesForAllocations, get_local_id}
 import shine.OpenCL.DSL._
 import shine.OpenCL.ImperativePrimitives.ParForLocal
 
-final case class OpenCLSegReduceI(m: Int) {
+object OpenCLSegReduceI {
   def apply(n: Nat,
             k: Nat,
+            m: Nat,
             addrSpace: shine.DPIA.Types.AddressSpace,
             dt: DataType,
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],

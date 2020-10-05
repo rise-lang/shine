@@ -12,9 +12,10 @@ import shine.DPIA._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
 
-final case class OpenCLSegReduceAtomicI(m: Int) {
+object OpenCLSegReduceAtomicI {
   def apply(n: Nat,
             k: Nat,
+            m: Nat,
             addrSpace: shine.DPIA.Types.AddressSpace,
             dt: DataType,
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],

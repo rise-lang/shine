@@ -11,13 +11,14 @@ import shine.OpenCL.IntermediatePrimitives.OpenCLSegReduceAtomicI
 
 import scala.xml.Elem
 
-final case class OpenCLSegReduceAtomic(m: Int)(n: Nat,
-                                               k: Nat,
-                                               initAddrSpace: shine.DPIA.Types.AddressSpace,
-                                               dt: DataType,
-                                               f: Phrase[ExpType ->: ExpType ->: ExpType],
-                                               init: Phrase[ExpType],
-                                               array: Phrase[ExpType])
+final case class OpenCLSegReduceAtomic(n: Nat,
+                                       k: Nat,
+                                       m: Nat,
+                                       initAddrSpace: shine.DPIA.Types.AddressSpace,
+                                       dt: DataType,
+                                       f: Phrase[ExpType ->: ExpType ->: ExpType],
+                                       init: Phrase[ExpType],
+                                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
@@ -28,7 +29,7 @@ final case class OpenCLSegReduceAtomic(m: Int)(n: Nat,
   override def visitAndRebuild(
                                 fun: VisitAndRebuild.Visitor
                               ): Phrase[ExpType] = {
-    OpenCLSegReduceAtomic(m)(fun.nat(n), fun.nat(k), fun.addressSpace(initAddrSpace), fun.data(dt),
+    OpenCLSegReduceAtomic(fun.nat(n), fun.nat(k), fun.nat(m), fun.addressSpace(initAddrSpace), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
@@ -48,7 +49,7 @@ final case class OpenCLSegReduceAtomic(m: Int)(n: Nat,
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
-      OpenCLSegReduceAtomicI(m)(n, k, initAddrSpace, dt,
+      OpenCLSegReduceAtomicI(n, k, m, initAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
             λ(accT(dt))(o => acc( f(x)(y) )( o )))),
@@ -56,8 +57,8 @@ final case class OpenCLSegReduceAtomic(m: Int)(n: Nat,
   }
 
   override def xmlPrinter: Elem =
-    <reduce n={ToString(n)} addrSpace={ToString(initAddrSpace)}
-            k={ToString(n)} dt={ToString(dt)}>
+    <reduce n={ToString(n)} k={ToString(k)} m={ToString(m)}
+            addrSpace={ToString(initAddrSpace)} dt={ToString(dt)}>
       <f type={ToString(
         ExpType(dt, read) ->: (ExpType(dt, read) ->: ExpType(dt, write)))}>
         {Phrases.xmlPrinter(f)}
