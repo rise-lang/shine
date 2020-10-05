@@ -34,7 +34,9 @@ object OpenCLSegReduceAtomicI {
         acc(init)(adj.accF(g_output.wr)) `;`
 
           // Declare temporary output array s_data
-          `new` (AddressSpace.Global) (ArrayType(o, pt), s_data =>
+          // (not used in code, but necessary for MapLocalI,
+          //  see OpenCLReduceByIndexLocalI for more info on this problem)
+          `new` (addrSpace) (ArrayType(o, pt), s_data =>
 
             // ********************************************************************
             // First Reduction: Every local thread reduces m elements sequentially.
@@ -65,9 +67,9 @@ object OpenCLSegReduceAtomicI {
                             `then` (
                             // => end of current segment reached
                             // Write current_reduction.value into g_output[current_reduction.key]
-                            atomicBinOpAssign(dt, addrSpace, f,
-                              g_output.wr `@` fst(current_reduction.rd),
-                              snd(current_reduction.rd)) `;`
+                            f(g_output.rd `@` fst(current_reduction.rd))
+                             (snd(current_reduction.rd))
+                             (g_output.wr `@` fst(current_reduction.rd)) `;`
 
                               // and assign current_element to current_reduction
                               (current_reduction.wr :=| pt | current_element.rd)
@@ -79,14 +81,19 @@ object OpenCLSegReduceAtomicI {
                           (PairAcc2(IndexType(k), dt, current_reduction.wr)))
                       ) `;`
 
-                        atomicBinOpAssign(dt, addrSpace, f,
-                          g_output.wr `@` fst(current_reduction.rd),
-                          snd(current_reduction.rd))
+                        (a :=| pt | current_reduction.rd)
                     ))),
                 Split(m, o, read, pt, in),
                 s_data.wr)
 
             ) `;`
+
+              MapLocalI(0)(o, pt, pt,
+                λ(expT(pt, read))(x => λ(accT(pt))(a =>
+                  atomicBinOpAssign(dt, addrSpace, f,
+                                    g_output.wr `@` fst(x),
+                                    snd(x))
+                )), s_data.rd, s_data.wr) `;`
 
           // Final result of the reduction of this workgroup is inside g_output.
           out(adj.exprF(g_output.rd))
