@@ -253,7 +253,7 @@ object parse {
         parseIdent          |>
         parseTypeAnnotation |>
         parseArrow |>
-        parseHighExpression
+        parseMaybeAppExpr
 
       psLambda match {
       case Left(e) => Left(e)
@@ -312,7 +312,7 @@ object parse {
         parseArrow
 
         val ps = psOld match {
-          case Right(p) => parseHighExpression((p._1,Nil))
+          case Right(p) => parseMaybeAppExpr((p._1,Nil))
           case Left(e) => {
             println("endLambda: "+ e)
             return Left(e)
@@ -357,13 +357,7 @@ object parse {
   //_________________________________________________________Lambda
   //_________________________________________________________Expres
 
-  def parseHighExpression(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
-    println("parseHighExpression: " + parseState)
-      Right(parseState) |>
-        (parseLambda _ || parseApp)
-  }
-
-  def parseLowExpression(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
+  def parseNoAppExpr(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
 //    if(parseState._1.isEmpty){
 //      println("Abbruch; parseExpression: "+ parseState)
 //      return Right(parseState)
@@ -371,7 +365,7 @@ object parse {
     println("parseLowExpression: " + parseState)
     //FIXME parseState always true
     Right(parseState) |>
-      (parseBracesExpr _ ||
+      (parseLambda _ || parseBracesExpr ||
         parseUnOperator || parseBinOperator || parseIdent ||
         parseNumber)
 
@@ -386,7 +380,7 @@ object parse {
     val p =
       Right((parseState._1,Nil))  |>
         parseLeftBrace  |>
-        parseHighExpression |>
+        parseMaybeAppExpr |>
         parseRightBrace
 
     p match {
@@ -408,8 +402,8 @@ object parse {
   }
 
 
-  def parseApp(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
-    println("parseApp: " + parseState)
+  def parseMaybeAppExpr(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
+    println("parseMaybeAppExpr: " + parseState)
     if(parseState._1.head.isInstanceOf[RBrace]){
       println("L" +
         "RBrace is at the beginning of parseApp: " + parseState)
@@ -417,7 +411,7 @@ object parse {
     }
     val ps =
       Right(parseState)  |>
-        parseLowExpression
+        parseNoAppExpr
     println("parseApp after parseLowExpression: "+ ps)
     ps match {
       case Left(e) => return Left(e)
@@ -425,7 +419,7 @@ object parse {
                               println("parseApp End, because TokenList is empty: "+ parseS)
                               return Right(parseS)
                             }else{
-                              val p = parseHighExpression(parseS)
+                              val p = parseMaybeAppExpr(parseS)
                                   p
                             }
     }
