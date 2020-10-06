@@ -28,7 +28,7 @@ class NBody extends test_util.TestsWithExecutor {
 
   // FIXME: generated code calls update too many times
   // related to pair assignment in the TranslationContext
-  ignore("nbody AMD version calls update only once") {
+  test("nbody AMD version calls update only once") {
     val code = gen.OpenCLKernel(amd).code
     "update\\(".r.findAllIn(code).length shouldBe 2
   }
