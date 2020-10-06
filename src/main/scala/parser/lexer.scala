@@ -695,13 +695,12 @@ if '==' then two steps else only one step
       val locEnd:Location = Location(column, pos)
       //different Types in RISE //Todo: not completed yet
       substring match {
-        case "bool" => (Right(Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
         case "Bool" => (Right(parser.Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
         case "I16"   => (Right(parser.Type(ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
         case "I32"  => (Right(parser.Type(IntTyp(), Span(fileReader,locStart, locEnd))),pos)
         case "F32"  => (Right(parser.Type(FloatTyp(), Span(fileReader,locStart, locEnd))),pos)
         case "F64"  => (Right(parser.Type(DoubleType(), Span(fileReader,locStart, locEnd))),pos)
-        case "nat"  => (Right(parser.Type(NatTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "Nat"  => (Right(parser.Type(NatTyp(), Span(fileReader,locStart, locEnd))),pos)
         //unknown Type
         case a => (Left(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos)
       }
