@@ -44,6 +44,8 @@ object OpenCLSegReduceAtomicI {
 
             // Declare private variable for the reduction of the current segment
             `new` (AddressSpace.Private) (pt, current_reduction =>
+              // Declare private variable for the element of the current for-loop iteration
+              `new` (AddressSpace.Private) (pt, current_element =>
 
               // Process all m (n/m)-sized chunks in parallel with all local threads
               MapLocalI(0)(o, pt, pt,
@@ -53,8 +55,6 @@ object OpenCLSegReduceAtomicI {
 
                   // Process first element x[0]
                   acc(x `@` NatAsIndex(m, Natural(0)))(current_reduction.wr) `;`
-                    // Declare private variable for the element of the current for-loop iteration
-                    `new` (AddressSpace.Private) (pt, current_element =>
 
                       // Loop over the remaining (m - 1) elements
                       `for`(m - 1, i =>
@@ -77,16 +77,16 @@ object OpenCLSegReduceAtomicI {
 
                             // Accumulate the value of current_element into the value of current_reduction
                             `else` f(snd(current_reduction.rd))
-                          (snd(current_element.rd))
-                          (PairAcc2(IndexType(k), dt, current_reduction.wr)))
+                                    (snd(current_element.rd))
+                                    (PairAcc2(IndexType(k), dt, current_reduction.wr)))
                       ) `;`
 
                         (a :=| pt | current_reduction.rd)
-                    ))),
+                    )),
                 Split(m, o, read, pt, in),
                 s_data.wr)
 
-            ) `;`
+            )) `;`
 
               MapLocalI(0)(o, pt, pt,
                 λ(expT(pt, read))(x => λ(accT(pt))(a =>

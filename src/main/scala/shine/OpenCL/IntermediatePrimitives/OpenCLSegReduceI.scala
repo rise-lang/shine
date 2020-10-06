@@ -46,6 +46,8 @@ object OpenCLSegReduceI {
 
           // Declare private variable for the reduction of the current segment
           `new` (AddressSpace.Private) (pt, current_reduction =>
+            // Declare private variable for the element of the current for-loop iteration
+            `new` (AddressSpace.Private) (pt, current_element =>
 
             // Process all m (n/m)-sized chunks in parallel with all local threads
             MapLocalI(0)(o, pt, pt,
@@ -55,8 +57,6 @@ object OpenCLSegReduceI {
 
                 // Process first element x[0]
                 acc(x `@` NatAsIndex(m, Natural(0)))(current_reduction.wr) `;`
-                  // Declare private variable for the element of the current for-loop iteration
-                  `new` (AddressSpace.Private) (pt, current_element =>
 
                     // Loop over the remaining (m - 1) elements
                     `for`(m - 1, i =>
@@ -91,11 +91,11 @@ object OpenCLSegReduceI {
                     // atomicBinOp(dt, f, g_output.wr `@` fst(current_reduction.rd), snd(current_reduction.rd)))
 
 
-              ))),
+              )),
               Split(m, o, read, pt, in),
               s_data.wr)
 
-          ) `;`
+          )) `;`
 
 
           // ******************************************************************************************************
