@@ -262,10 +262,6 @@ object parse {
           throw new RuntimeException("Every Token should be computed! " + ps)
         }
         val synElemList = ps.parsedSynElems
-//        val (expr, synElemListExpr) = (synElemList.head match {
-//          case SExpr(e) => e
-//          case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
-//        }, synElemList.tail)
         val (expr, synElemListExpr) = combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList)
 
         if(!(synElemListExpr.length == 2)){
