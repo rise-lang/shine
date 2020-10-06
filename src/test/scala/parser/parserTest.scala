@@ -17,7 +17,7 @@ class parserTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val thrown = intercept[RuntimeException] {
-      parse(lexer.tokens)
+      parser(lexer.tokens)
     }
     //Todo: that is horrible, that I don't have an Error-Message
     thrown.getMessage should equal("failed parsing : ParseError(failed to parse Type: A TypeAnnotation is expected, but -> is not an Colon)")
@@ -27,7 +27,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "longIdentityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("jens"), r.Identifier("jens")) => true
@@ -40,7 +40,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "minus.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Sub(), r.Identifier("x")),r.Literal(rS.IntData(5)))) => true
@@ -53,7 +53,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "negation.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.Identifier("y"))) => true
@@ -66,7 +66,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "plus.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Add(), r.Identifier("x")),r.Literal(rS.IntData(5)))) => true
@@ -79,7 +79,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "not.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("b"), r.App(r.primitives.Not(), r.Identifier("b"))) => true
@@ -92,7 +92,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "braces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("b"), r.Identifier("b")) => true
@@ -105,7 +105,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "bracesWithNot.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("b"), r.App(r.primitives.Not(), r.Identifier("b"))) => true
@@ -118,7 +118,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "lessComplexInOneLine.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
@@ -134,7 +134,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "lessComplexInOneLineWithType.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
@@ -150,7 +150,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "littleComplexLine.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(x@r.Identifier("x"),
@@ -174,7 +174,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "complexInOneLine.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(),
@@ -192,7 +192,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex2.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Mul(), r.App(r.App(r.primitives.Add(),
@@ -206,7 +206,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex3.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Mul(), r.App(r.App(r.primitives.Add(),
@@ -220,7 +220,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex4.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
@@ -235,7 +235,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex5.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
@@ -250,7 +250,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex6.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
@@ -265,7 +265,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex7.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
@@ -280,7 +280,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.Identifier("f"), r.Identifier("x"))) => true
@@ -293,7 +293,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.App(r.Lambda(r.Identifier("y"), r.Identifier("y")), r.Identifier("x"))) => true
@@ -306,7 +306,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Brace5.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parse(lexer.tokens)
+    val ex: r.Expr = parser(lexer.tokens)
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.Identifier("x")) => true
@@ -322,7 +322,7 @@ class parserTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val thrown = intercept[RuntimeException] {
-      parse(lexer.tokens)
+      parser(lexer.tokens)
     }
     //Todo: that is horrible, that I don't have an Error-Message
     thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List((, ))")

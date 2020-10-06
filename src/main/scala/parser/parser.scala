@@ -2,7 +2,7 @@ package parser
 
 import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
-object parse {
+object parser {
 
   abstract sealed class ParseErrorOrState()
 
