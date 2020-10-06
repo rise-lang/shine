@@ -336,8 +336,8 @@ class histogram extends shine.test_util.TestsWithExecutor {
     //TODO: See TODO above
     val sortedIndices = indices.sorted
 
-    val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
-      generate(fun(IndexType(n))(_ => cast(l(1) :: int))) |>
+    val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is => fun(xsT(n))(xs =>
+      generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs =>
           zip(is)(xs) |>
           split(wgChunk) |>
@@ -349,11 +349,11 @@ class histogram extends shine.test_util.TestsWithExecutor {
               mapLocal(id)
           )
       )
-    )))))
+    ))))))
 
     val tempOutput =
-      runKernelTwoChunks(valuesOnArray)(LocalSize(lSize), GlobalSize(gSize))(
-        n, k, wgChunkSize, lChunkSize, sortedIndices)
+      runKernelSeg(valuesOnArray)(LocalSize(lSize), GlobalSize(gSize))(
+        n, k, wgChunkSize, lChunkSize, sortedIndices, values)
 
     val finalOutput = finalReduceGlobal(tempOutput._1)
 
