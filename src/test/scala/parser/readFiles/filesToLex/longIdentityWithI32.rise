@@ -1,1 +1,2 @@
-\jens:I32->jens
+f::I32->I32
+f=\jens->jens

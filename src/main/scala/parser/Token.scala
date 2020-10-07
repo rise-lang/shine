@@ -143,6 +143,15 @@ sealed abstract class Token (span: Span){
     override def toString = ":"
   }
 
+  final case class DoubleColons(span: Span) extends Token(span){
+    override def toString = "::"
+  }
+
+  final case class EqualsSign(span: Span) extends Token(span){
+    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    override def toString = "="
+  }
+
 object OpType {
   object UnaryOpType extends Enumeration {
     type UnaryOp = Value
@@ -209,3 +218,9 @@ case class AddrSpaceType(addrSpace: String){
     require(span.begin.column == span.end.column, "not in one column") //Todo: Check if the lenght of the span fits the lenght of "Local", "Private", "Global" or "Constant"
     override def toString = s"<$addrSpaceType: AddrSpace>"
   }
+
+
+final case class BeginTypAnnotatedIdent(span: Span) extends Token(span)
+final case class EndTypAnnotatedIdent(span: Span) extends Token(span)
+final case class BeginNamedExpr(span: Span) extends Token(span)
+final case class EndNamedExpr(span: Span) extends Token(span)

@@ -130,8 +130,8 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
-  "parser" should "be able to parse 'lessComplexInOneLineWithType.rise'" in {
-    val fileName: String = testFilePath + "lessComplexInOneLineWithType.rise"
+  "parser" should "be able to parse 'lessComplexInOneLineWithDifferentType.rise'" in {
+    val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     val ex: r.Expr = parser(lexer.tokens)

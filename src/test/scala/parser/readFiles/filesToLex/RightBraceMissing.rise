@@ -1,1 +1,2 @@
-\b:bool->(   b
+f::Bool->Bool
+f=\b->(   b
