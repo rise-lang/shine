@@ -268,6 +268,7 @@ object primitives {
     bool ->: bool
   }
 
+  // TODO: address https://github.com/rise-lang/rise/issues/11
   @primitive object add extends Primitive with Builder { impl{ t: DataType => t ->: t ->: t } }
   @primitive object sub extends Primitive with Builder { impl{ t: DataType => t ->: t ->: t } }
   @primitive object mul extends Primitive with Builder { impl{ t: DataType => t ->: t ->: t } }
@@ -281,21 +282,25 @@ object primitives {
   // TODO: should vectorisation be in the core or not?
 
   // TODO: track alignment in type system?
+  // TODO: address https://github.com/rise-lang/rise/issues/11
   @primitive object asVectorAligned extends Primitive with Builder {
     expl((n: Nat) => impl{ m: Nat => impl{ a: DataType =>
       ((m * n)`.`a) ->: (m`.`vec(n, a)) }})
   }
 
+  // TODO: address https://github.com/rise-lang/rise/issues/11
   @primitive object asVector extends Primitive with Builder {
     expl((n: Nat) => impl{ m: Nat => impl{ t: DataType =>
       ((m * n)`.`t) ->: (m`.`vec(n, t)) }})
   }
 
+  // TODO: address https://github.com/rise-lang/rise/issues/11
   @primitive object asScalar extends Primitive with Builder {
     impl{ n: Nat => impl{ m: Nat => impl{ t: DataType =>
       (m`.`vec(n, t)) ->: ((m * n)`.`t) }}}
   }
 
+  // TODO: address https://github.com/rise-lang/rise/issues/11
   @primitive object vectorFromScalar extends Primitive with Builder {
     impl{ n: Nat => impl{ t: DataType =>
       t ->: vec(n, t) }}
