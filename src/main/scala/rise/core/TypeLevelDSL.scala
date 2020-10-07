@@ -62,6 +62,12 @@ object TypeLevelDSL {
   case class DataTypeFunctionWrapper[A](f: DataType => A)
   implicit def toDataTypeFunctionWrapper[A](f: DataType => A): DataTypeFunctionWrapper[A] =
     DataTypeFunctionWrapper(f)
+  implicit def toScalarTypeFunctionWrapper[A](f: ScalarType => A): DataTypeFunctionWrapper[A] =
+    DataTypeFunctionWrapper {
+      case st: ScalarType => f(st)
+      // TODO: see https://github.com/rise-lang/rise/issues/11
+      case _ => throw new Exception("Excepted a ScalarType")
+    }
 
   case class NatToDataFunctionWrapper[A](f: NatToData => A)
   implicit def toNatToDataFunctionWrapper[A](f: NatToData => A): NatToDataFunctionWrapper[A] =
