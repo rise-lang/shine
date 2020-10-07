@@ -268,31 +268,31 @@ object primitives {
     bool ->: bool
   }
 
-  @primitive object add extends Primitive with Builder { impl{ t: ScalarType => t ->: t ->: t } }
-  @primitive object sub extends Primitive with Builder { impl{ t: ScalarType => t ->: t ->: t } }
-  @primitive object mul extends Primitive with Builder { impl{ t: ScalarType => t ->: t ->: t } }
-  @primitive object div extends Primitive with Builder { impl{ t: ScalarType => t ->: t ->: t } }
-  @primitive object mod extends Primitive with Builder { impl{ t: ScalarType => t ->: t ->: t } }
+  @primitive object add extends Primitive with Builder { impl{ t: DataType => t ->: t ->: t } }
+  @primitive object sub extends Primitive with Builder { impl{ t: DataType => t ->: t ->: t } }
+  @primitive object mul extends Primitive with Builder { impl{ t: DataType => t ->: t ->: t } }
+  @primitive object div extends Primitive with Builder { impl{ t: DataType => t ->: t ->: t } }
+  @primitive object mod extends Primitive with Builder { impl{ t: DataType => t ->: t ->: t } }
 
-  @primitive object gt extends Primitive with Builder { impl{ t: ScalarType => t ->: t ->: bool } }
-  @primitive object lt extends Primitive with Builder { impl{ t: ScalarType => t ->: t ->: bool } }
+  @primitive object gt extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
+  @primitive object lt extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
   @primitive object equal extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
 
   // TODO: should vectorisation be in the core or not?
 
   // TODO: track alignment in type system?
   @primitive object asVectorAligned extends Primitive with Builder {
-    expl((n: Nat) => impl{ m: Nat => impl{ t: ScalarType =>
-      ((m * n)`.`t) ->: (m`.`vec(n, t)) }})
+    expl((n: Nat) => impl{ m: Nat => impl{ a: DataType =>
+      ((m * n)`.`a) ->: (m`.`vec(n, a)) }})
   }
 
   @primitive object asVector extends Primitive with Builder {
-    expl((n: Nat) => impl{ m: Nat => impl{ t: ScalarType =>
+    expl((n: Nat) => impl{ m: Nat => impl{ t: DataType =>
       ((m * n)`.`t) ->: (m`.`vec(n, t)) }})
   }
 
   @primitive object asScalar extends Primitive with Builder {
-    impl{ n: Nat => impl{ m: Nat => impl{ t: ScalarType =>
+    impl{ n: Nat => impl{ m: Nat => impl{ t: DataType =>
       (m`.`vec(n, t)) ->: ((m * n)`.`t) }}}
   }
 
