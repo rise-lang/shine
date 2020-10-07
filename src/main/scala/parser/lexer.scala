@@ -240,11 +240,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[Token,PreAndErr
     case Left(Colon(_)) => {
       // :Typ ->
       lexType(column,row) match {
-        case (Right(a), r) => {
+        case (Left(a), r) => {
           row = r
           list=list.::(Left(a))
         }
-        case (Left(a), _) => {
+        case (Right(a), _) => {
           a.throwException()
         }
       }
@@ -328,7 +328,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[Token,PreAndErr
         ", but there is nothing! '" + arr(column)+ "'")
       case Right(p)=> throw new RuntimeException("This PreAndErrorToken was not expected: "+ p)
     }
-    if(isBinaryOperatorSymbol(arr(column)(row))){ //it is a binary operator
+    if(isBinaryOperatorSymbol(arr(column)(row))){
       lexBinOperator(column, row) match {
         case Left(BinOp(BinOpType.EQ, span)) =>{
           row = row+2
@@ -343,7 +343,6 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[Token,PreAndErr
           a.throwException()
         }
       }
-      return lexerExpression(column,row, list) //only syntax is controlled here
     }else{
       arr(column)(row) match {
         case '\\' =>{
@@ -359,50 +358,27 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[Token,PreAndErr
           val loc:Location = Location(column, row) //endLocation is equal to startLocation
           list = list.::(Left(LBrace(new Span(fileReader,loc))))
           row = row +1
-          //ignore whitespaces
-          skipWhitespace(column, row) match {
-            case (c,r) =>{
-              column = c
-              row = r
-            }
           }
-          lexerExpression(column,row, list) match {
-            case (l, c, r) =>{
-              l(0) match {
-                case Left(RBrace(_)) => {
-                  list = l
-                  column = c
-                  row = r
-                }
-                case Left(a) => {
-                  list = l
-                  column = c
-                  row = r
-                }
-                case Right(a) => {
-                  //should not be happening
-                  a.throwException()
-                }
-              }
-            }
-          }
-        }
         case ')' => {
           val loc:Location = Location(column, row) //endLocation is equal to startLocation
           list = list.::(Left(RBrace(new Span(fileReader, loc))))
           row = row +1
-          return (list, column, row) //i have to return, because the LBrace wants to see a RBrace
         }
         case '!' => {
           val loc:Location = Location(column, row) //endLocation is equal to startLocation
           list = list.::(Left(UnOp(UnaryOpType.NOT,new Span(fileReader, loc))))
           row = row +1
-          //ignore whitespaces
-          skipWhitespace(column, row) match {
-            case (c,r) =>{
+
+          isEnd(fileReader, column, row, arr) match{
+            case Left((c, r)) => {
               column = c
               row = r
             }
+            case Right(EndOfFile(_,_)) => throw new RuntimeException("an Negation needs an Expression after it")
+            case Right(EndOfLine(span,_))=> throw new RuntimeException("At position ("
+              + span.begin.column+ ","+ span.begin.row+ " is an expression expected " +
+              ", but there is nothing! '" + arr(column)+ "'")
+            case Right(p)=> throw new RuntimeException("This PreAndErrorToken was not expected: "+ p)
           }
           lexerExpression(column,row,list) match {
             case (l, c, r) =>{
@@ -416,12 +392,17 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[Token,PreAndErr
           val loc:Location = Location(column, row) //endLocation is equal to startLocation
           list = list.::(Left(UnOp(UnaryOpType.NEG,new Span(fileReader, loc))))
           row = row +1
-          //ignore whitespaces
-          skipWhitespace(column, row) match {
-            case (c,r) =>{
+
+          isEnd(fileReader, column, row, arr) match{
+            case Left((c, r)) => {
               column = c
               row = r
             }
+            case Right(EndOfFile(_,_)) => throw new RuntimeException("an Negation needs an Expression after it")
+            case Right(EndOfLine(span,_))=> throw new RuntimeException("At position ("
+              + span.begin.column+ ","+ span.begin.row+ " is an expression expected " +
+              ", but there is nothing! '" + arr(column)+ "'")
+            case Right(p)=> throw new RuntimeException("This PreAndErrorToken was not expected: "+ p)
           }
           lexerExpression(column,row,list) match {
             case (l, c, r) =>{
@@ -435,11 +416,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[Token,PreAndErr
           if(a.isDigit){
             //more than one step but column keeps the same
             lexNumber(column, row) match {
-              case (Right(a), r) => {
+              case (Left(a), r) => {
                 row = r
                 list=list.::(Left(a))
               }
-              case (Left(a), _) => {
+              case (Right(a), _) => {
                 a.throwException()
               }
             }
@@ -623,7 +604,7 @@ if '==' then two steps else only one step
   /*
   for example "I32", "Identifier"
  */
-  private def lexType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[PreAndErrorToken,Token],Int) = {
+  private def lexType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
     var r: Int = row + 1
     var substring: String = arr(column).substring(row, r)
     while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[a-zA-Z][a-zA-Z0-9_]*")) {
@@ -634,19 +615,19 @@ if '==' then two steps else only one step
     val pos:Int = r-1
     if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
-      (Left(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos+1)
+      (Right(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
       //different Types in RISE //Todo: not completed yet
       substring match {
-        case "Bool" => (Right(parser.Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
-        case "I16"   => (Right(parser.Type(ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "I32"  => (Right(parser.Type(IntTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "F32"  => (Right(parser.Type(FloatTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "F64"  => (Right(parser.Type(DoubleType(), Span(fileReader,locStart, locEnd))),pos)
-        case "Nat"  => (Right(parser.Type(NatTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "Bool" => (Left(Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
+        case "I16"   => (Left(Type(ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "I32"  => (Left(Type(IntTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "F32"  => (Left(Type(FloatTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "F64"  => (Left(Type(DoubleType(), Span(fileReader,locStart, locEnd))),pos)
+        case "Nat"  => (Left(Type(NatTyp(), Span(fileReader,locStart, locEnd))),pos)
         //unknown Type
-        case a => (Left(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos)
+        case a => (Right(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos)
       }
     }
   }
@@ -676,7 +657,7 @@ if '==' then two steps else only one step
   /*
   span.end.row - span.begin.row is the number of steps
  */
-  private def lexNumber(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[PreAndErrorToken,Token],Int) = {
+  private def lexNumber(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
     var r: Int = row + 1
     var substring: String = arr(column).substring(row, r)
     while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[0-9]+[.]?[0-9]*")) {
@@ -689,10 +670,10 @@ if '==' then two steps else only one step
       lexNumberComplexMatch(column, row, arr, substring, locStart, pos)
     } else if(substring.matches("[0-9]+")){
       val locEnd:Location = Location(column, pos)
-      (Right(I32(substring.toInt, Span(fileReader,locStart, locEnd))),pos)
+      (Left(I32(substring.toInt, Span(fileReader,locStart, locEnd))),pos)
     }else{
       val locEnd:Location = Location(column, pos)
-      (Right(F32(substring.toFloat, Span(fileReader,locStart, locEnd))),pos)
+      (Left(F32(substring.toFloat, Span(fileReader,locStart, locEnd))),pos)
     }
   }
 
@@ -700,29 +681,29 @@ if '==' then two steps else only one step
   requirement: substring has the form: [0-9]+.?[0-9]*
   arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos))
    */
-private def lexNumberComplexMatch(column: Int, row: Int,  arr: Array[String], substring:String, locStart:Location, pos:Int):(Either[PreAndErrorToken,Token],Int) = arr(column)(pos) match {
+private def lexNumberComplexMatch(column: Int, row: Int,  arr: Array[String], substring:String, locStart:Location, pos:Int):(Either[Token,PreAndErrorToken],Int) = arr(column)(pos) match {
   case 'I' => {
     if (substring.matches("[0-9]+")) {
       if (arr(column).substring(pos, pos + 2) == "I8") {
         val locEnd: Location = Location(column, pos + 2)
-        (Right(I8(substring.toInt.toShort, Span(fileReader, locStart, locEnd))),pos+2)
+        (Left(I8(substring.toInt.toShort, Span(fileReader, locStart, locEnd))),pos+2)
       } else if (arr(column).substring(pos, pos + 3) == "I32") {
         val locEnd: Location = Location(column, pos + 3)
-        (Right(I32(substring.toInt, Span(fileReader, locStart, locEnd))),pos + 3)
+        (Left(I32(substring.toInt, Span(fileReader, locStart, locEnd))),pos + 3)
       } else {
         val a = createIdentifierBeginsWithDigits(column, row, pos, locStart)
-        (Left(a._1),a._2)
+        (Right(a._1),a._2)
       }
     } else { //it has an '.' in it and because of that it is not an accepted Integer-Type
       if (arr(column).substring(pos, pos + 2) == "I8") {
         val locEnd: Location = Location(column, pos + 2)
-        (Left(F32DeclaredAsI8(substring.toFloat, Span(fileReader, locStart, locEnd), fileReader)),pos + 2)
+        (Right(F32DeclaredAsI8(substring.toFloat, Span(fileReader, locStart, locEnd), fileReader)),pos + 2)
       } else if (arr(column).substring(pos, pos + 3) == "I32") {
         val locEnd: Location = Location(column, pos + 3)
-        (Left(F32DeclaredAsI32(substring.toFloat, Span(fileReader, locStart, locEnd), fileReader)),pos + 3)
+        (Right(F32DeclaredAsI32(substring.toFloat, Span(fileReader, locStart, locEnd), fileReader)),pos + 3)
       } else {
         val a= createIdentifierBeginsWithAF32Number(column, row, pos, locStart)
-        (Left(a._1),a._2)
+        (Right(a._1),a._2)
       }
     }
   }
@@ -730,30 +711,30 @@ private def lexNumberComplexMatch(column: Int, row: Int,  arr: Array[String], su
     //Todo: should there be an extra warning for if (substring.matches("[0-9]+")) {
     if (arr(column).substring(pos, pos + 3) == "F32") {
       val locEnd: Location = Location(column, pos + 3)
-      (Right(F32(substring.toFloat, Span(fileReader, locStart, locEnd))),pos + 3)
+      (Left(F32(substring.toFloat, Span(fileReader, locStart, locEnd))),pos + 3)
     }else if (arr(column).substring(pos, pos + 3) == "F64") {
       val locEnd: Location = Location(column, pos + 3)
-      (Right(F64(substring.toDouble, Span(fileReader, locStart, locEnd))),pos + 3)
+      (Left(F64(substring.toDouble, Span(fileReader, locStart, locEnd))),pos + 3)
     } else{
       val a = createIdentifierBeginsWithAF32Number(column, row, pos, locStart)
-      (Left(a._1),a._2)
+      (Right(a._1),a._2)
     }
   }
   case a => {
     if(a.isLetter){
       val a= createIdentifierBeginsWithAF32Number(column, row, pos, locStart)
-      (Left(a._1),a._2)
+      (Right(a._1),a._2)
     }else if(a == '_'){
       if (substring.matches("[0-9]+")) {//it has not an '.' in it and because of that it is I32
         val a= createIdentifierBeginsWithDigits(column, row, pos, locStart)
-        (Left(a._1),a._2)
+        (Right(a._1),a._2)
       }else{//it has an '.' in it and because of that it is F32
         val a = createIdentifierBeginsWithAF32Number(column, row, pos, locStart)
-        (Left(a._1),a._2)
+        (Right(a._1),a._2)
       }
     }else{ //it is not an whitespace or an other known symbol!
       val locEnd: Location = Location(column, pos + 1)
-      (Left(NumberWithUnknownSymbol(a, arr(column).substring(row, pos + 1), Span(fileReader, locStart, locEnd), fileReader)),pos + 1)
+      (Right(NumberWithUnknownSymbol(a, arr(column).substring(row, pos + 1), Span(fileReader, locStart, locEnd), fileReader)),pos + 1)
     }
   }
 }
