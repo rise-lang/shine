@@ -13,9 +13,9 @@ class dependentTypes extends test_util.Tests {
             n,
             n2dtFun(i => (i + 1) `.` f32)
           )
-        )(xs => xs |> depMapSeq(nFun(_ => mapSeq(fun(x => x)))))
-      )
-    val inferred: Expr = TDSL.inferDependent(e)
+        )(xs => xs |> depMapSeq(nFun(i => fun(xs => mapSeq(fun(x => x))(xs::((i+1)`.`f32)))))
+      ))
+    val inferred: Expr = TDSL.infer(e)
     println(inferred)
     println(inferred.t)
   }
@@ -86,7 +86,7 @@ class dependentTypes extends test_util.Tests {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
-  test("List of list dot product") {
+  ignore("List of list dot product") {
     val e = nFun(n =>
       fun(n `.` f32)(vector =>
       fun(n `.` NatType)(lengths =>

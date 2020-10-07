@@ -39,7 +39,15 @@ final case class DMatch(x: NatIdentifier,
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(dPair)(λ(expT(DepPairType(x, elemT), read))(pair => C(DMatch(x, elemT, outT, a, f, pair))))
+    con(dPair)(λ(expT(DepPairType(x, elemT), read))(pair =>
+      `new`(outT, outVar => {
+        DMatchI(x, elemT, outT,
+          _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
+            acc(f(fst)(snd))(outVar.wr)
+          ))
+          , pair) `;`
+        C(outVar.rd)
+      })))
 
   }
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {

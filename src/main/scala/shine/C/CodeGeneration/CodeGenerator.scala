@@ -206,10 +206,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    path: Path,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
-      case i@Identifier(_, AccType(dt)) => cont(generateAccess(dt,
+      case i@Identifier(_, AccType(dt)) => generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
-        }), path, env))
+        }), path, env, cont)
 
       case SplitAcc(n, _, _, a) => path match {
         case (i : CIntExpr) :: ps  => acc(a, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
@@ -312,29 +312,29 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    cont: Expr => Stmt) : Stmt =
   {
     phrase match {
-      case i@Identifier(_, ExpType(dt, _)) => cont(generateAccess(dt,
+      case i@Identifier(_, ExpType(dt, _)) => generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
-        }), path, env))
+        }), path, env, cont)
 
-      case Phrases.Literal(n) => cont(path match {
+      case Phrases.Literal(n) => path match {
         case Nil =>
           n.dataType match {
-            case _: IndexType => CCodeGen.codeGenLiteral(n)
-            case _: ScalarType => CCodeGen.codeGenLiteral(n)
+            case _: IndexType => cont(CCodeGen.codeGenLiteral(n))
+            case _: ScalarType => cont(CCodeGen.codeGenLiteral(n))
             case _ => error ("Expected an IndexType or ScalarType.")
           }
         case (i : CIntExpr) :: ps =>
           (n, n.dataType) match {
             case (ArrayData(elems), ArrayType(_, et)) => try {
-              generateAccess(et, CCodeGen.codeGenLiteral(elems(i.eval)), ps, env)
+              generateAccess(et, CCodeGen.codeGenLiteral(elems(i.eval)), ps, env, cont)
             } catch {
               case NotEvaluableException() => error(s"could not evaluate $i")
             }
             case _ => error("Expected an ArrayType.")
           }
         case _ => error(s"Unexpected: $n $path")
-      })
+      }
 
       case Phrases.Natural(n) => cont(path match {
         case Nil => C.AST.ArithmeticExpr(n)
@@ -424,6 +424,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
       case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
       case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
+      case DMatch(x, _, _, _, f, e) => exp(e, env, path, cont)
 
       case Take(_, _, _, e) => exp(e, env, path, cont)
 
@@ -525,7 +526,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case ForeignFunction(f, inTs, outT, args) =>
         CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, fe =>
-          cont(generateAccess(outT, fe, path, env))
+          generateAccess(outT, fe, path, env, cont)
         )
 
       case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
@@ -586,27 +587,28 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   override def generateAccess(dt: DataType,
                               expr: Expr,
                               path: Path,
-                              env: Environment): Expr = {
+                              env: Environment,
+                              cont: Expr => Stmt): Stmt = {
     path match {
-      case Nil => expr
+      case Nil => cont(expr)
       case (xj: PairAccess) :: ps => dt match {
         case rt: PairType =>
           val (structMember, dt2) = xj match {
             case FstMember => ("_fst", rt.fst)
             case SndMember => ("_snd", rt.snd)
           }
-          generateAccess(dt2, C.AST.StructMemberAccess(expr, C.AST.DeclRef(structMember)), ps, env)
+          generateAccess(dt2, C.AST.StructMemberAccess(expr, C.AST.DeclRef(structMember)), ps, env, cont)
         case _ => throw new Exception("expected tuple type")
       }
       case (_: CIntExpr) :: _ =>
         dt match {
           case at: ArrayType =>
             val (dt2, k, ps) = CCodeGen.flattenArrayIndices(at, path)
-            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env)
+            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env, cont)
 
           case dat: DepArrayType =>
             val (dt2, k, ps) = CCodeGen.flattenArrayIndices(dat, path)
-            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env)
+            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env, cont)
           case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
         }
 
@@ -616,7 +618,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             generateAccess(sndT,
               C.AST.Cast(C.AST.PointerType(C.AST.Type.getBaseType(typ(sndT))),
                 C.AST.BinaryExpr(expr, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)"))
-            ), ps, env)
+            ), ps, env, cont)
 
           case other => throw new Exception(s"Expected a Dependent Pair but $other found instead")
         }
