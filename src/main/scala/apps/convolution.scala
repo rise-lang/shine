@@ -30,9 +30,9 @@ object convolution {
   ))
 
   def padEmpty(l: Nat, r: Nat): Expr = padClamp(l)(r)
-  def unpadEmpty(l: Nat, r: Nat): Expr = implNat(n => implDT(t =>
+  def unpadEmpty(l: Nat, r: Nat): Expr = impl{ n: Nat => impl{ t: DataType =>
     drop(l) >> (take(n) :: ((n + r) `.` t) ->: (n `.` t))
-  ))
+  }}
 
   val blurYTiled2DTiledLoadingTransposed: Expr = nFun(n => fun(
     (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)

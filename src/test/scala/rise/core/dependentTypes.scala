@@ -8,13 +8,13 @@ import rise.core.primitives._
 class dependentTypes extends test_util.Tests {
   test("Infer int addition type") {
     val e =
-      nFun(n =>
+      depFun((n: Nat) =>
         fun(
           DepArrayType(n, n2dtFun(i => (i + 1) `.` f32)) ->: DepArrayType(
             n,
             n2dtFun(i => (i + 1) `.` f32)
           )
-        )(xs => xs |> depMapSeq(nFun(_ => mapSeq(fun(x => x)))))
+        )(xs => xs |> depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x)))))
       )
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
@@ -22,7 +22,7 @@ class dependentTypes extends test_util.Tests {
   }
 
   test("Dependent pair construct") {
-    val e = nFun(n =>
+    val e = depFun((n: Nat) =>
       fun(n `.` f32)(x => dpair(n)(x))
     )
     val inferred: Expr = TDSL.inferDependent(e)
@@ -31,8 +31,8 @@ class dependentTypes extends test_util.Tests {
   }
 
   test("Dependent pair match") {
-    val e = fun(n2dPairT(n => n`.`f32))(pair =>
-      dmatch(pair)(nFun(n => fun(x => dpair(n)(x))))
+    val e = fun(Nat `**` (n => n`.`f32))(pair =>
+      dmatch(pair)(depFun((n: Nat) => fun(x => dpair(n)(x))))
     )
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
@@ -40,8 +40,8 @@ class dependentTypes extends test_util.Tests {
   }
 
   test("Dependent pair match with reduction") {
-    val e = fun(n2dPairT(n => n`.`f32))(pair =>
-      dmatch(pair)(nFun(_ => fun(xs =>
+    val e = fun(Nat `**` (n => n`.`f32))(pair =>
+      dmatch(pair)(depFun((_: Nat) => fun(xs =>
         reduceSeq(fun(x => fun(y => x + y)))(l(1.0f))(xs))
       ))
     )
@@ -52,8 +52,8 @@ class dependentTypes extends test_util.Tests {
 
 
   test("Simple nested") {
-    val e = nFun(n => fun(n `..` (i => (i+1) `.` f32))(array =>
-        depMapSeq(nFun(_ => mapSeq(fun(x => x))))(array)
+    val e = depFun((n: Nat) => fun(n `*.` (i => (i+1) `.` f32))(array =>
+        depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))(array)
       ))
 
     val inferred: Expr = TDSL.inferDependent(e)
@@ -62,8 +62,8 @@ class dependentTypes extends test_util.Tests {
   }
 
   test("Simple reduce") {
-    val e = nFun(n => fun(n `..` (i => (i+1) `.` f32))(array =>
-      depMapSeq(nFun(_ => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
+    val e = depFun((n: Nat) => fun(n `*.` (i => (i+1) `.` f32))(array =>
+      depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
     ))
 
     val inferred: Expr = TDSL.inferDependent(e)
@@ -72,11 +72,11 @@ class dependentTypes extends test_util.Tests {
   }
 
   test("List of list dot product") {
-    val e = nFun(n =>
+    val e = depFun((n: Nat) =>
       fun(n `.` f32)(vector =>
       fun(n `.` NatType)(lengths =>
-      fun(n `..` (i => (lengths `#` i) `.` (f32 `x` IndexType(n))))(array => {
-        depMapSeq(nFun(_ => fun(
+      fun(n `*.` (i => (lengths `#` i) `.` (f32 `x` IndexType(n))))(array => {
+        depMapSeq(depFun((_: Nat) => fun(
           row =>
             reduceSeq(
               fun(x => fun(y => x + y))

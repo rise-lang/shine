@@ -6,7 +6,7 @@ import rise.elevate.util._
 import rise.core.TypedDSL._
 import rise.core.primitives._
 import rise.core._
-import rise.core.types.f32
+import rise.core.types.{Nat, f32}
 import rise.core.TypeLevelDSL._
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.default._
@@ -41,7 +41,7 @@ class movement extends test_util.Tests {
     // val test = λ(i => λ(f => (T o ***(f)) $ zip(i,i)))
 
     val backward: Expr =
-      nFun((m, n, k) =>
+      depFun((m: Nat, n: Nat, k: Nat) =>
         fun((m`.`k`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32) ->: f32 ->: f32 ->: (n`.`m`.`f32))
         ((a, b, c, alpha, beta) =>
           (transpose o map(fun(ac =>

@@ -354,7 +354,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
       )(a =>
         interpolate(Image(0, w, 0, h, a)).expr
       ))),
-      forallNat(h => forallNat(w => (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)))
+      expl((h: Nat) => expl((w: Nat) => (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)))
     )
 
     assertClosedT(
@@ -363,7 +363,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
       )(a =>
         pointAbsDiff(Image(0, w, 0, h, a)).expr
       ))),
-      forallNat(h => forallNat(w => (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)))
+      expl((h: Nat) => expl((w: Nat) => (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)))
     )
 
     val cameraPipeT = (1968`.`2592`.`u16) ->:
@@ -372,7 +372,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
       f32 ->:
       (3`.`1920`.`2560`.`u8)
     assertClosedT(
-      implNat(h => implNat(w => camera_pipe(h)(w)(3)(4))) :: cameraPipeT,
+      impl{ h: Nat => impl{ w: Nat => camera_pipe(h)(w)(3)(4) }} :: cameraPipeT,
       cameraPipeT
     )
   }

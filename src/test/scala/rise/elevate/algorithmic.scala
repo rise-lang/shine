@@ -318,7 +318,7 @@ class algorithmic extends test_util.Tests {
 
     // loop ordering: M -> N -> K
     val mm =
-      nFun((m, n, k) =>
+      depFun((m: Nat, n: Nat, k: Nat) =>
         fun((m`.`k`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32))
         ((a, b) =>
           map(fun(ak =>
@@ -426,7 +426,7 @@ class algorithmic extends test_util.Tests {
   test("reduce rows") {
     val addT = fun(x => fst(x) + snd(x))
 
-    val test = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, f32)))(i =>
+    val test =depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(i =>
       reduceSeq(fun((y, acc) =>
         map(addT) $ zip(y)(acc)))(
         generate(fun(IndexType(m) ->: f32)(_ => l(0.0f)))) $ i)))
@@ -435,17 +435,17 @@ class algorithmic extends test_util.Tests {
   }
 
   test("dot and outer product") {
-    def xsT(N : NatIdentifier) = ArrayType(N, f32)
-    def ysT(N : NatIdentifier) = ArrayType(N, f32)
+    def xsT(N : Nat) = ArrayType(N, f32)
+    def ysT(N : Nat) = ArrayType(N, f32)
 
     val mulT = fun(x => fst(x) * snd(x))
     val add = fun(x => fun(a => x + a))
 
-    val dot = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    val dot = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       (reduce(add)(l(0.0f)) o map(mulT)) $ zip(xs)(ys)
     )))
 
-    val outer = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    val outer = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       map(fun(a => map(fun(b => add(a,b))) $ ys )) $ xs
     )))
 

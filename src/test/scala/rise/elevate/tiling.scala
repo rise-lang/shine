@@ -241,18 +241,18 @@ class tiling extends test_util.Tests {
 
   // Codegen tests
 
-  def inputT(dim: Int, n : List[NatIdentifier]): ArrayType = dim match {
+  def inputT(dim: Int, n : List[Nat]): ArrayType = dim match {
     case 1 => ArrayType(n.head, f32)
     case d => ArrayType(n.head, inputT(d-1, n.tail))
   }
 
   def wrapInLambda[T <: Expr](dim: Int,
                               f: ToBeTyped[Identifier] => ToBeTyped[T],
-                              genInputType: List[NatIdentifier] => ArrayType,
-                              natIds: List[NatIdentifier] = List()): ToBeTyped[DepLambda[NatKind]] = {
+                              genInputType: List[Nat] => ArrayType,
+                              natIds: List[Nat] = List()): ToBeTyped[DepLambda[NatKind]] = {
     dim match {
-      case 1 => nFun(n => fun(genInputType( natIds :+ n))(f))
-      case d => nFun(n => wrapInLambda(d - 1, f, genInputType, natIds :+ n))
+      case 1 => depFun((n: Nat) => fun(genInputType( natIds :+ n))(f))
+      case d => depFun((n: Nat) => wrapInLambda(d - 1, f, genInputType, natIds :+ n))
     }
   }
 
@@ -260,7 +260,7 @@ class tiling extends test_util.Tests {
   // ... but mapAcceptorTranslation for split is missing
   val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
 
-  val identity = dtFun(t => foreignFun("identity", immutable.Seq("y"), "{ return y; }", t ->: t))
+  val identity = depFun((t: DataType) => foreignFun("identity", immutable.Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(f32)
 
   test("codegen 1D tiles") {
@@ -302,12 +302,12 @@ class tiling extends test_util.Tests {
  // Tests related to fixing some development issues
 
   test("map fission issue when used with zip") {
-    def xsT(N : NatIdentifier) = ArrayType(N, f32)
-    def ysT(N : NatIdentifier) = ArrayType(N, f32)
+    def xsT(N : Nat) = ArrayType(N, f32)
+    def ysT(N : Nat) = ArrayType(N, f32)
 
     val mulT = fun(x => fst(x) * snd(x))
 
-    val simple = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    val simple = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs)(ys) |> map(mulT)
     )))
 
