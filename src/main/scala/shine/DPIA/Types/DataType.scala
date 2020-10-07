@@ -44,11 +44,24 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
   extends ComposedType
 {
   override def toString: String = s"$size.$elemFType"
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case DepArrayType(s2, elemT2) => size == s2 && elemT2 == elemFType
+      case _ => false
+    }
+  }
 }
 
 final case class DepPairType(x:NatIdentifier, elemT:DataType)
   extends ComposedType {
   override def toString: String = s"($x:nat ** $elemT)"
+
+  override def equals(other: Any): Boolean =other match {
+    case DepPairType(x2, elemT2) =>
+      this.elemT == DataType.substitute(this.x, x2, elemT2)
+    case _ => false
+  }
 }
 
 
@@ -121,8 +134,11 @@ object DataType {
       case r: PairType =>
         PairType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
       case r: DepPairType =>
-        // Use the NatToData mechanics to perform substitution
-        val NatToDataLambda(newFst, newSnd) = substitute(ae, `for`, NatToDataLambda(r.x, r.elemT))
+        val newFst = `for` match {
+          case ident: DPIA.NatIdentifier if ident == r.x => ae.asInstanceOf[NatIdentifier]
+          case _ =>  r.x
+        }
+        val newSnd = substitute(ae, `for`, r.elemT)
         DepPairType(newFst, newSnd)
     }).asInstanceOf[T]
   }

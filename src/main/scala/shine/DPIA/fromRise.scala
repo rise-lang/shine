@@ -229,7 +229,7 @@ object fromRise {
           expT(DepArrayType(_, ft2), `write`)
         =>
         fun[`(nat)->:`[ExpType ->: ExpType]](
-          k ->: (ExpType(ft1(k), read) ->: ExpType(ft2(k), read)), f =>
+          k ->: (ExpType(ft1(k), read) ->: ExpType(ft2(k), write)), f =>
             fun[ExpType](ExpType(DepArrayType(n, ft1), read), e =>
               DepMapSeq(n, ft1, ft2, f, e)))
       }

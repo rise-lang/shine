@@ -241,6 +241,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
+
       case rp.Map() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
           rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
@@ -534,6 +535,17 @@ private class InferAccessAnnotation {
             expT(dataType(in), read) ->: buildType(out)
           case rt.ArrayType(n, dt) => expT(ArrayType(n, dataType(dt)), read)
           case _ => error(s"did not expect t")
+        }
+        buildType(p.t)
+
+      case rp.DepMapSeq() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(rt.DepFunType(i, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
+            rt.FunType(inArr@rt.DepArrayType(_, _), outArr@rt.DepArrayType(_, _))) =>
+            val iNat = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
+            nFunT(iNat, expT(dataType(elemInT), read) ->: expT(dataType(elemOutT), write)) ->:
+              expT(dataType(inArr), read) ->: expT(dataType(outArr), write)
+          case _ => error("did not expect t")
         }
         buildType(p.t)
 

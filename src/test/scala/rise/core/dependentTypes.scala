@@ -30,23 +30,15 @@ class dependentTypes extends test_util.Tests {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
-  test("Dependent pair match") {
+  test("GEN: Dependent pair match") {
     val e = fun(n2dPairT(n => n`.`f32))(pair =>
-      dmatch(pair)(nFun(n => fun(xs => dpair(n)(mapSeq(fun(x => x))(xs)))))
-    )
+      dmatch(pair)(nFun(n => fun(xs =>
+        dpair(n)(mapSeq(fun(x => x))(xs) ::(n`.`f32))
+      ))))
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
     util.gen.CProgram(inferred, "Foo_foo")
-  }
-
-  test("GEN: Dependent pair match") {
-    val e = fun(n2dPairT(n => n`.`f32))(pair =>
-      dmatch(pair)(nFun(n => fun(x => dpair(n)(x))))
-    )
-    val inferred: Expr = TDSL.inferDependent(e)
-    println(inferred)
-    print(inferred.t)
   }
 
   test("Dependent pair match with reduction") {
@@ -80,6 +72,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
   }
 
   test("Simple reduce") {
@@ -90,6 +83,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
   }
 
   test("List of list dot product") {
@@ -114,6 +108,6 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
     print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
   }
-
 }
