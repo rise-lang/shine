@@ -22,6 +22,11 @@ class harrisCornerDetectionHalideCheck
   val strip = 32
   assert(Ho % strip == 0)
 
+  val tileX = 4 // can't be 8 due to current implementation
+  val tileY = 8
+  assert((Wo-4) % tileX == 0)
+  assert(Ho % tileY == 0)
+
   def lowerOMP(e: Expr): Expr =
     rewrite.unrollDots(util.printTime("infer", types.infer(e))).get
 
@@ -181,6 +186,12 @@ class harrisCornerDetectionHalideCheck
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 8,
       ocl.harrisBufferedRegRotVecAligned(3, 8))),
       LocalSize(1), GlobalSize(Ho / strip))
+  }
+
+  test("harrisVecUnalignedTilePar(4) generates valid OpenCL") {
+    checkOCL(lowerOCL(ocl.harrisTilePar(tileX, tileY,
+      ocl.harrisVecUnaligned2(4))),
+      LocalSize((1, 1)), GlobalSize((2, 2)))
   }
 
   test("harrisBuffered rewrite generates valid OpenCL") {

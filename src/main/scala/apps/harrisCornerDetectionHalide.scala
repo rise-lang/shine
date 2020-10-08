@@ -212,6 +212,18 @@ object harrisCornerDetectionHalide {
         ) >> join
       )))
 
+    def harrisTilePar(tileX: Int, tileY: Int, innerHarris: Expr): Expr =
+      nFun(h => nFun(w => fun(
+        (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
+      )(input => input |>
+        transpose >> map(transpose) >>
+        slide2D(tileY+4, tileY, tileX+4, tileX) >> mapGlobal(1)(
+          mapGlobal(0)(
+            map(transpose) >> transpose >>
+            innerHarris(tileY)(tileX)
+        )) >> unslide2D >> map(padEmpty(4))
+      )))
+
     def harrisVecUnaligned(v: Int): Expr =
       nFun(h => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
@@ -250,6 +262,45 @@ object harrisCornerDetectionHalide {
               coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
             )))))))))
           )) >> write1DSeq >> asScalar // W.f
+        )))
+      )))
+
+    def harrisVecUnaligned2(v: Int): Expr =
+      nFun(h => nModFun(v, w => fun(
+        (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+      )(input => input |>
+        map(map(asVectorAligned(v))) >>
+        transpose >> map(transpose) >> // H.W+2.3.<v>f
+        mapSeq(
+          mapSeq(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f)))) >>
+          asScalar >> padEmpty(2)
+        ) >> toPrivate >> letf( // H.(W+2)v.f
+        slide(3)(1) >> mapSeq( // 3.(W+2)v.f
+          map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
+          mapSeq(fun(nbh => makeArray(2)(
+            dotWeightsVec(join(sobelXWeights2d), join(nbh)),
+            dotWeightsVec(join(sobelYWeights2d), join(nbh))
+          ) |> mapSeqUnroll(id))) >> transpose >>
+          map(asScalar)
+        ) >> toPrivate >> letf( // H.2.Wv.f
+        slide(3)(1) >> mapSeq( // 3.2.Wv.f
+          map(map(dropLast(2) >> slideVectors(v) >> slide(3)(v))) >> // 3.2.W.3.<v>f
+          map(transpose) >> transpose >> map(map(transpose)) >> // W.3.3.2.<v>f
+          mapSeq(fun(ixiy =>
+            ixiy |> map(map(fun(p => (p `@` lidx(0, 2)) * (p `@` lidx(0, 2)))))
+            |> fun(ixx =>
+            ixiy |> map(map(fun(p => (p `@` lidx(0, 2)) * (p `@` lidx(1, 2)))))
+            |> fun(ixy =>
+            ixiy |> map(map(fun(p => (p `@` lidx(1, 2)) * (p `@` lidx(1, 2)))))
+            |> fun(iyy =>
+            // ^ 3.3.<v>f
+            ixx |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(sxx =>
+            ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(sxy =>
+            iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(syy =>
+              // ^ <v>f
+              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+            )))))))))
+          )) >> asScalar // W.f
         )))
       )))
 
