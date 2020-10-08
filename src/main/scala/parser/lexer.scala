@@ -532,6 +532,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
 
     if(row >= arr(column).length){
       //end of Line is reached is reached and TypAnnotatedIdent has to be in one line
+      println("before isEnd: " + column + " , " + row )
       isEnd(fileReader, column, row, arr) match {
         case Left((c, r)) => {
           column = c
@@ -541,6 +542,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
         case Right(EndOfLine(span, _)) => list
         case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
       }
+      println("after isEnd: " + column + " , " + row )
       if (arr(column)(row).isLetter) {
         lexIdentifier(column, row) match {
           case (Left(a), r) => {
@@ -739,6 +741,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
       }
     }
     if (arr(column).length > row) {
+      println("before isEnd: " + column + " , " + row )
       isEnd(fileReader, column, row, arr) match {
         case Left((c, r)) => {
           column = c
@@ -751,6 +754,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
           ", but there is nothing! '" + arr(column) + "'")
         case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
       }
+      println("after isEnd: " + column + " , " + row )
 
       if (arr(column)(row).isLetter) {
         lexIdentifier(column, row) match {
@@ -762,7 +766,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
                 newRow = r
               }
             }
-
+            if(newRow>=arr(column).length){
+              println("escape: " + row + " , "+ column)
+              return lexerExpression(column, row, list)
+            }
             arr(column).substring(newRow, newRow + 1) match {
               case ":" => {
                 if (arr(column).length >= newRow + 2) {
