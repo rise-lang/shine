@@ -220,7 +220,15 @@ case class AddrSpaceType(addrSpace: String){
   }
 
 
-final case class BeginTypAnnotatedIdent(span: Span) extends Token(span)
-final case class EndTypAnnotatedIdent(span: Span) extends Token(span)
-final case class BeginNamedExpr(span: Span) extends Token(span)
-final case class EndNamedExpr(span: Span) extends Token(span)
+final case class BeginTypAnnotatedIdent(span: Span) extends Token(span){
+  override  def toString = "<BeginTypAnn>"
+}
+final case class EndTypAnnotatedIdent(span: Span) extends Token(span){
+  override  def toString = "<EndTypAnn>"
+}
+final case class BeginNamedExpr(span: Span) extends Token(span){
+  override  def toString = "<BeginNamedExpr>"
+}
+final case class EndNamedExpr(span: Span) extends Token(span){
+  override  def toString = "<EndNamedExpr>"
+}
