@@ -448,7 +448,7 @@ class LexerTest extends  AnyFlatSpec {
     val thrown = intercept[RuntimeException] {
       RecognizeLexeme(file)
     }
-    thrown.getMessage should equal("At position (0,8 is an expression expected , but there is nothing! '\\x:I32->'")
+    thrown.getMessage should equal("Here is at the Beginning a Identifier expected, but here is no Identifier!")
   }
 
   "RecognizeLexeme" should "work for noIdentityAndEqualSignAtBeginning.rise" in {
@@ -457,7 +457,7 @@ class LexerTest extends  AnyFlatSpec {
     val thrown = intercept[Exception] {
       RecognizeLexeme(file)
     } //Todo: should we have a underline of the important code here too? yes, but here is no
-    val expected: String = "ErrorToken: It is an '\\' expected. The Lexeme 'x' is not an '\\'! at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/noBacklashAtBeginning.rise'; fileContent: {\nx:I32->+ x 5\n}; beginLocation: (column: 0 ; row: 0); endLocation: (column: 0 ; row: 0)\nx:I32->+ x 5"
+    val expected: String = "Here should be an '::' or '=', but whitout this nothing new can be started"
     thrown.getMessage should equal(expected)
   }
 
@@ -500,7 +500,9 @@ class LexerTest extends  AnyFlatSpec {
     val thrown = intercept[Exception] {
       RecognizeLexeme(file)
     }
-    val expected: String = "ErrorToken: It is an '->' expected. The Lexeme '--' is not an '->'! at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\n\\x:I32-->x\n}; beginLocation: (column: 0 ; row: 6); endLocation: (column: 0 ; row: 7)\n\\x:I32-̲->x"
+    val expected: String = "ErrorToken: It is an '->' expected. The Lexeme '--' is not an '->'! at FileReader: " +
+      "fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\n" +
+      "f::I32->I32f=\\x-->x\n}; beginLocation: (column: 1 ; row: 4); endLocation: (column: 1 ; row: 5)\nf=\\x-̲->x"
     thrown.getMessage should equal(expected)
   }
 
