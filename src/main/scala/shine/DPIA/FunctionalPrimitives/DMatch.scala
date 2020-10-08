@@ -39,19 +39,17 @@ final case class DMatch(x: NatIdentifier,
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
+    // Turn the f imperative by means of forwarding the continuation translation
     con(dPair)(λ(expT(DepPairType(x, elemT), read))(pair =>
-      `new`(outT, outVar => {
         DMatchI(x, elemT, outT,
           _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
-            acc(f(fst)(snd))(outVar.wr)
-          ))
-          , pair) `;`
-        C(outVar.rd)
-      })))
-
+            con(f(fst)(snd))(C)
+          )), pair)))
   }
+
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
+    // Turn the f imperative by means of forwarding the acceptor translation
     con(dPair)(λ(expT(DepPairType(x, elemT), read))(pair => DMatchI(x, elemT, outT,
       _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
         acc(f(fst)(snd))(A)
@@ -88,9 +86,24 @@ final case class MkDPair(a:AccessType, fst:NatIdentifier, sndT:DataType, snd: Ph
   extends ExpPrimitive {
   override val t = expT(DepPairType(fst, sndT), a)
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = ???
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
+    import TranslationToImperative._
+    // Allocate for the resulting dependent pair,
+    // then imperatively write the first element,
+    // acc-translate and write the second element
+    // and call the continuation on the result
+    // TODO(federico) - This is allocating eagerly. How to make it allocate lazily? ideally Dmatch(..,..., MkDPair(x, y))
+    // should not allocate
+    `new`(t.dataType, outVar => {
+      MkDPairFstI(fst, outVar.wr) `;`
+        acc(snd)(MkDPairSndAcc(fst, sndT, outVar.wr)) `;`
+        C(outVar.rd)
+    })
+  }
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
+    // We have the acceptor already, so simply write the first element and then
+    // the second element in sequentially
     MkDPairFstI(fst, A) `;`
     acc(snd)(MkDPairSndAcc(fst, sndT, A))
   }
