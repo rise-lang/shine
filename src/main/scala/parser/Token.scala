@@ -155,7 +155,7 @@ sealed abstract class Token (span: Span){
 object OpType {
   object UnaryOpType extends Enumeration {
     type UnaryOp = Value
-    val NEG: UnaryOp = Value("-") //it's not clear which one is which alone from the representation "-"
+    val NEG: UnaryOp = Value("~") //it's not clear which one is which alone from the representation "-"
     val NOT: UnaryOp = Value("!")
   }
 

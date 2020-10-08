@@ -65,7 +65,7 @@ class LexerTest extends  AnyFlatSpec {
         DoubleColons(_) :: Type(DoubleType(), _) :: Arrow(_) :: Type(DoubleType(), _)::
         Arrow(_) :: Type(DoubleType(), _)::Arrow(_) :: Type(DoubleType(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
-        EqualsSign(_)::Backslash(_) :: Identifier("x", _) :: Colon(_) ::  Arrow(_) ::
+        EqualsSign(_)::Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
         Backslash(_) :: Identifier("y", _) :: Arrow(_):: Backslash(_) ::
         Identifier("z", _) :: Arrow(_)::
         BinOp(BinOpType.MUL, _):: Identifier("x", _)::
@@ -84,7 +84,7 @@ class LexerTest extends  AnyFlatSpec {
         DoubleColons(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(_) :: Identifier("x", _) :: Colon(_) :: Arrow(_) ::
+        Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
         BinOp(BinOpType.MUL, _):: LBrace(_) :: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
         RBrace(_):: Identifier("x", _):: EndNamedExpr(_)::Nil =>
       case a => fail(a.toString())
@@ -100,7 +100,7 @@ class LexerTest extends  AnyFlatSpec {
         DoubleColons(_) :: Type(ShortTyp(), _) :: Arrow(_) :: Type(ShortTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(_) :: Identifier("x", _) :: Colon(_) :: Arrow(_) ::
+        Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
         BinOp(BinOpType.MUL, _):: LBrace(_) :: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
         RBrace(_):: Identifier("x", _):: EndNamedExpr(_)::Nil =>
       case a => fail(a.toString())
@@ -225,10 +225,10 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
-        Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_)::
+        Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) ::
         BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) ::
-        Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: LBrace(_)::
-        BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: RBrace(_):: RBrace(_)::
+        Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) ::
+        BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) ::
         EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
@@ -285,13 +285,10 @@ class LexerTest extends  AnyFlatSpec {
   "RecognizeLexeme" should "work for the identity" in {
     val fileName: String = testFilePath + "identity.rise"
     val file: FileReader =  FileReader(fileName)
-    val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    lexer.tokens match {
-      case BeginNamedExpr(_) :: Identifier("f", _) ::
-        EqualsSign(_)::Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        Identifier("x", _) :: EndNamedExpr(_):: Nil => true
-      case a => fail(a.toString())
+    val thrown = intercept[RuntimeException] {
+      RecognizeLexeme(file)
     }
+    thrown.getMessage should equal("You can't start with a NamedExpr")
   }
 
   "RecognizeLexeme" should "work for the identityWithI32" in {
