@@ -330,8 +330,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(DoubleType(), _)::
-        Arrow(_) :: Type(DoubleType(), _)::
+        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
+        Arrow(_) :: Type(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
@@ -347,8 +347,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(DoubleType(), _)::
-        Arrow(_) :: Type(DoubleType(), _)::
+        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        Arrow(_) :: Type(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
@@ -362,14 +362,10 @@ class LexerTest extends  AnyFlatSpec {
   "RecognizeLexeme" should "work for the longIdentity" in {
     val fileName: String = testFilePath + "longIdentity.rise"
     val file: FileReader = FileReader(fileName)
-    val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    lexer.tokens match {
-      case BeginNamedExpr(_) :: Identifier("f", _) ::
-        EqualsSign(_)::
-        Backslash(_) :: Identifier("Kevin", _) :: Arrow(_) :: Identifier("Kevin", _)
-        :: EndNamedExpr(_)::Nil => true
-      case a => fail(a.toString())
+    val thrown = intercept[RuntimeException] {
+      RecognizeLexeme(file)
     }
+    thrown.getMessage should equal("You can't start with a NamedExpr")
   }
 
   "RecognizeLexeme" should "work for the longIdentityWithI32" in {
@@ -421,6 +417,15 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
+  "RecognizeLexeme" should "work for negationWithoutIdentifierAtBeginning" in {
+    val fileName: String = testFilePath + "negationWithoutIdentifierAtBeginning.rise"
+    val file: FileReader =  FileReader(fileName)
+    val thrown = intercept[RuntimeException] {
+      RecognizeLexeme(file)
+    }
+    thrown.getMessage should equal("Here should be an Identifier, but whitout an Identifier nothing new can be started")
+  }
+
   "RecognizeLexeme" should "work for negationWithBool" in {
     val fileName: String = testFilePath + "negationWithBool.rise"
     val file: FileReader =  FileReader(fileName)
@@ -443,7 +448,6 @@ class LexerTest extends  AnyFlatSpec {
     val thrown = intercept[RuntimeException] {
       RecognizeLexeme(file)
     }
-    //Todo: that is horrible, that I don't have an Error-Message
     thrown.getMessage should equal("At position (0,8 is an expression expected , but there is nothing! '\\x:I32->'")
   }
 
@@ -483,7 +487,7 @@ class LexerTest extends  AnyFlatSpec {
         Arrow(_) :: Type(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) ::
+        Backslash(_) :: Identifier("x", _)  ::
         Arrow(_) :: BinOp(BinOpType.ADD, _) :: Identifier("x", _)  :: I32(5, _) ::
         EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
@@ -506,10 +510,9 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
+        DoubleColons(_) :: Type(BoolType(), _)::
         Arrow(_) :: Type(BoolType(), _)::
-        Arrow(_) :: Type(BoolType(), _)::
-        Arrow(_) :: Type(FloatTyp(), _)::
+        Arrow(_) :: Type(IntTyp(), _)::
         Arrow(_) :: Type(FloatTyp(), _)::
         Arrow(_) :: Type(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
