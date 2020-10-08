@@ -133,7 +133,7 @@ case class RecognizeLexeme(fileReader: FileReader){
 
   private def lexer(): List[Token] = {
     val list:List[Token] = lexNamedExprOrTypAnnotatedIdent(0,0, Nil)
-    list
+    list.reverse
   }
 
   private def lexNamedExprOrTypAnnotatedIdent(oldColumn:Int, oldRow:Int, l:List[Token]):List[Token] =  {
