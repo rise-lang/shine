@@ -132,11 +132,116 @@ case class RecognizeLexeme(fileReader: FileReader){
   type TokenList = List[Either[Token,PreAndErrorToken]]
 
   private def lexer(): List[Token] = {
-    val list:List[Token] = lexerLambda(0,0, Nil)._1
+    val list:List[Token] = lexNamedExprOrTypAnnotatedIdent(0,0, Nil)
     list
   }
 
+  private def lexNamedExprOrTypAnnotatedIdent(oldColumn:Int, oldRow:Int, l:List[Token]):List[Token] =  {
+    val arr: Array[String]= fileReader.sourceLines
+    var row = oldRow
+    var column = oldColumn
+    require(row>=0, "row is not allowed to be negative")
+    require(column>=0, "column is not allowed to be negative")
+    require(arr.length > column, "array does not have so much columns")
+    require(arr(column).length > row, "arr(column) has less than row chars")
+
+    //in this list we add all
+    val list= l
+
+    isEnd(fileReader, column, row, arr) match {
+      case Left((c, r)) => {
+        column = c
+        row = r
+      }
+      case Right(EndOfFile(_, _)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+        " but this should not be able to happen")
+      case Right(EndOfLine(span, _)) => throw new RuntimeException("At position ("
+        + span.begin.column + "," + span.begin.row + " is an expression expected " +
+        ", but there is nothing! '" + arr(column) + "'")
+      case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+    }
+
+    arr(column).substring(row, row+1) match {
+      case ":" => {
+        if (arr(column).length >= row + 2) {
+          arr(column).substring(row, row + 2) match {
+            case "::" => {
+              return beginTypAnnotatedIdent(column, row, list)._1
+            }
+            case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+          }
+        } else {
+          throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+        }
+      }
+      case "=" => {
+        if (arr(column).length >= row + 2) {
+          arr(column).substring(row, row + 2) match {
+            case "==" =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+            case a => {
+//              return beginNamedExpr(column, row, list)._1
+              throw new IllegalStateException("You can't start with a NamedExpr")
+            }
+          }
+        } else {
+//          return beginNamedExpr(column, row, list)._1
+          throw new IllegalStateException("You can't start with a NamedExpr")
+        }
+      }
+      case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+    }
+  }
+
+
   private def lexerNamedExpr(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],Int,Int) = {
+    val arr: Array[String]= fileReader.sourceLines
+    var row = oldRow
+    var column = oldColumn
+    require(row>=0, "row is not allowed to be negative")
+    require(column>=0, "column is not allowed to be negative")
+    require(arr.length > column, "array does not have so much columns")
+    require(arr(column).length > row, "arr(column) has less than row chars")
+
+    //in this list we add all
+    var list= l
+
+    isEnd(fileReader, column, row, arr) match {
+      case Left((c, r)) => {
+        column = c
+        row = r
+      }
+      case Right(EndOfFile(_, _)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+        " but this should not be able to happen")
+      case Right(EndOfLine(span, _)) => throw new RuntimeException("At position ("
+        + span.begin.column + "," + span.begin.row + " is an expression expected " +
+        ", but there is nothing! '" + arr(column) + "'")
+      case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+    }
+
+    lexIdentifier(column, row) match {
+      case (Left(a), r) => {
+        row = r
+        list=list.::(a)
+      }
+      case (Right(a), _) => {
+        a.throwException()
+      }
+    }
+
+    lexEqualsSign(column, row) match {
+      case Left(a) => {
+        row = row+2
+        list=list.::(a)
+      }
+      case Right(a) => {
+        a.throwException()
+      }
+    }
+
+    lexerExpression(column, row,list)
+  }
+
+  private def lexerTypAnnotatedIdent(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],Int,Int) = {
     val arr: Array[String]= fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -401,52 +506,105 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
     }
 
     if(row >= arr(column).length){
-      list //end of Line is reached is reached and TypAnnotatedIdent has to be in one line
+      //end of Line is reached is reached and TypAnnotatedIdent has to be in one line
+      isEnd(fileReader, column, row, arr) match {
+        case Left((c, r)) => {
+          column = c
+          row = r
+        }
+        case Right(EndOfFile(_, _)) => list
+        case Right(EndOfLine(span, _)) => list
+        case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+      }
+      if (arr(column)(row).isLetter) {
+        lexIdentifier(column, row) match {
+          case (Left(a), r) => {
+            var newRow = r
+            //            val i: Token = a
+            skipWhitespaceWhitoutNewLine(column, newRow) match {
+              case (c, r) => {
+                newRow = r
+              }
+            }
+
+            arr(column).substring(newRow, newRow + 1) match {
+              case ":" => {
+                if (arr(column).length >= newRow + 2) {
+                  arr(column).substring(newRow, newRow + 2) match {
+                    case "::" => {
+                      return endTypAnnotatedIdentBeginTypAnnotatedIdent(column, row, list)._1
+                    }
+                    case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+                  }
+                } else {
+                  throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+                }
+              }
+              case "=" => {
+                if (arr(column).length >= row + 2) {
+                  arr(column).substring(row, row + 2) match {
+                    case "==" =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+                    case a => {
+                      return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
+                    }
+                  }
+                } else {
+                  return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
+                }
+              }
+              case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+            }
+          }
+          case (Right(_), _) =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+        }
+      }else {
+        throw new IllegalStateException("Here should be an Identifier, but whitout an Identifier nothing new can be started")
+      }
     }else{ //a second expression is accepted
       lexerTypAnnotationExpression(column, row, list)
     }
   }
 
   private def lexerExpression(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token], Int, Int) = {
-    val arr: Array[String]= fileReader.sourceLines
+    val arr: Array[String] = fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
     require(row >= 0, "row is not allowed to be negative")
     require(column >= 0, "column is not allowed to be negative")
 
     var list = l
-    isEnd(fileReader, column, row, arr) match{
+    isEnd(fileReader, column, row, arr) match {
       case Left((c, r)) => {
         column = c
         row = r
       }
-      case Right(EndOfFile(_,_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+      case Right(EndOfFile(_, _)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
         " but this should not be able to happen")
-      case Right(EndOfLine(span,_))=> throw new RuntimeException("At position ("
-        + span.begin.column+ ","+ span.begin.row+ " is an expression expected " +
-        ", but there is nothing! '" + arr(column)+ "'")
-      case Right(p)=> throw new RuntimeException("This PreAndErrorToken was not expected: "+ p)
+      case Right(EndOfLine(span, _)) => throw new RuntimeException("At position ("
+        + span.begin.column + "," + span.begin.row + " is an expression expected " +
+        ", but there is nothing! '" + arr(column) + "'")
+      case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
     }
-    if(isBinaryOperatorSymbol(arr(column)(row))){
+    if (isBinaryOperatorSymbol(arr(column)(row))) {
       lexBinOperator(column, row) match {
-        case Left(BinOp(BinOpType.EQ, span)) =>{
-          row = row+2
-          list=list.::(BinOp(BinOpType.EQ, span))
+        case Left(BinOp(BinOpType.EQ, span)) => {
+          row = row + 2
+          list = list.::(BinOp(BinOpType.EQ, span))
         }
         case Left(a) => {
-          row = row +1
+          row = row + 1
           //   println("\n\n"+ a.toString)
-          list=list.::(a)
+          list = list.::(a)
         }
         case Right(a) => {
           a.throwException()
         }
       }
-    }else{
+    } else {
       arr(column)(row) match {
-        case '\\' =>{
-          lexerLambda(column,row,list) match {
-            case (l, c,r) =>{
+        case '\\' => {
+          lexerLambda(column, row, list) match {
+            case (l, c, r) => {
               column = c
               row = r
               list = l
@@ -454,33 +612,33 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
           }
         }
         case '(' => {
-          val loc:Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(LBrace(new Span(fileReader,loc)))
-          row = row +1
-          }
+          val loc: Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(LBrace(new Span(fileReader, loc)))
+          row = row + 1
+        }
         case ')' => {
-          val loc:Location = Location(column, row) //endLocation is equal to startLocation
+          val loc: Location = Location(column, row) //endLocation is equal to startLocation
           list = list.::(RBrace(new Span(fileReader, loc)))
-          row = row +1
+          row = row + 1
         }
         case '!' => {
-          val loc:Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(UnOp(UnaryOpType.NOT,new Span(fileReader, loc)))
-          row = row +1
+          val loc: Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(UnOp(UnaryOpType.NOT, new Span(fileReader, loc)))
+          row = row + 1
 
-          isEnd(fileReader, column, row, arr) match{
+          isEnd(fileReader, column, row, arr) match {
             case Left((c, r)) => {
               column = c
               row = r
             }
-            case Right(EndOfFile(_,_)) => throw new RuntimeException("an Negation needs an Expression after it")
-            case Right(EndOfLine(span,_))=> throw new RuntimeException("At position ("
-              + span.begin.column+ ","+ span.begin.row+ " is an expression expected " +
-              ", but there is nothing! '" + arr(column)+ "'")
-            case Right(p)=> throw new RuntimeException("This PreAndErrorToken was not expected: "+ p)
+            case Right(EndOfFile(_, _)) => throw new RuntimeException("an Negation needs an Expression after it")
+            case Right(EndOfLine(span, _)) => throw new RuntimeException("At position ("
+              + span.begin.column + "," + span.begin.row + " is an expression expected " +
+              ", but there is nothing! '" + arr(column) + "'")
+            case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
           }
-          lexerExpression(column,row,list) match {
-            case (l, c, r) =>{
+          lexerExpression(column, row, list) match {
+            case (l, c, r) => {
               list = l
               column = c
               row = r
@@ -488,23 +646,23 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
           }
         }
         case '~' => { //TODO: Is this symbol as a Neg-Sign ok?
-          val loc:Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(UnOp(UnaryOpType.NEG,new Span(fileReader, loc)))
-          row = row +1
+          val loc: Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(UnOp(UnaryOpType.NEG, new Span(fileReader, loc)))
+          row = row + 1
 
-          isEnd(fileReader, column, row, arr) match{
+          isEnd(fileReader, column, row, arr) match {
             case Left((c, r)) => {
               column = c
               row = r
             }
-            case Right(EndOfFile(_,_)) => throw new RuntimeException("an Negation needs an Expression after it")
-            case Right(EndOfLine(span,_))=> throw new RuntimeException("At position ("
-              + span.begin.column+ ","+ span.begin.row+ " is an expression expected " +
-              ", but there is nothing! '" + arr(column)+ "'")
-            case Right(p)=> throw new RuntimeException("This PreAndErrorToken was not expected: "+ p)
+            case Right(EndOfFile(_, _)) => throw new RuntimeException("an Negation needs an Expression after it")
+            case Right(EndOfLine(span, _)) => throw new RuntimeException("At position ("
+              + span.begin.column + "," + span.begin.row + " is an expression expected " +
+              ", but there is nothing! '" + arr(column) + "'")
+            case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
           }
-          lexerExpression(column,row,list) match {
-            case (l, c, r) =>{
+          lexerExpression(column, row, list) match {
+            case (l, c, r) => {
               list = l
               column = c
               row = r
@@ -512,34 +670,34 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
           }
         }
         case a => {
-          if(a.isDigit){
+          if (a.isDigit) {
             //more than one step but column keeps the same
             lexNumber(column, row) match {
               case (Left(a), r) => {
                 row = r
-                list=list.::(a)
+                list = list.::(a)
               }
               case (Right(a), _) => {
                 a.throwException()
               }
             }
-          }else if(a.isLetter){
+          } else if (a.isLetter) {
             //more than one step but column keeps the same
             lexIdentifier(column, row) match {
               case (Left(a), r) => {
                 row = r
-                list=list.::(a)
+                list = list.::(a)
               }
               case (Right(a), _) => {
                 a.throwException()
               }
             }
-          }else if(otherKnownSymbol(a)){
-            val loc:Location = Location(column, row) //endLocation is equal to startLocation
-            val ex = NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator or a BinOperator", ""+ a, new Span(fileReader, loc), fileReader)
+          } else if (otherKnownSymbol(a)) {
+            val loc: Location = Location(column, row) //endLocation is equal to startLocation
+            val ex = NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator or a BinOperator", "" + a, new Span(fileReader, loc), fileReader)
             ex.throwException()
-          }else{
-            val loc:Location = Location(column, row) //endLocation is equal to startLocation
+          } else {
+            val loc: Location = Location(column, row) //endLocation is equal to startLocation
             val ex = UnknownSymbol(a, new Span(fileReader, loc), fileReader)
             ex.throwException()
           }
@@ -547,18 +705,116 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
       }
     }
     //ignore whitespaces
-    skipWhitespace(column, row) match {
-      case (c,r) =>{
+    skipWhitespaceWhitoutNewLine(column, row) match {
+      case (c, r) => {
         column = c
         row = r
       }
     }
+    if (arr(column).length <= row) {
+      isEnd(fileReader, column, row, arr) match {
+        case Left((c, r)) => {
+          column = c
+          row = r
+        }
+        case Right(EndOfFile(_, _)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+          " but this should not be able to happen")
+        case Right(EndOfLine(span, _)) => throw new RuntimeException("At position ("
+          + span.begin.column + "," + span.begin.row + " is an expression expected " +
+          ", but there is nothing! '" + arr(column) + "'")
+        case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+      }
 
-    if(column >= arr.length || (column == arr.length-1 && row >= arr(column).length)){
-      return (list, column, row) //end is reached
-    }else{ //a second expression is accepted
-      return lexerExpression(column, row, list)
+      if (arr(column)(row).isLetter) {
+        lexIdentifier(column, row) match {
+          case (Left(a), r) => {
+            var newRow = r
+//            val i: Token = a
+            skipWhitespaceWhitoutNewLine(column, newRow) match {
+              case (c, r) => {
+                newRow = r
+              }
+            }
+
+            arr(column).substring(newRow, newRow + 1) match {
+              case ":" => {
+                if (arr(column).length >= newRow + 2) {
+                  arr(column).substring(newRow, newRow + 2) match {
+                    case "::" => {
+                      return endNamedExprBeginTypAnnotatedIdent(column, row, list)
+                    }
+                    case a =>
+                  }
+                } else {
+
+                }
+              }
+              case "=" => {
+                if (arr(column).length >= row + 2) {
+                  arr(column).substring(row, row + 2) match {
+                    case "==" =>
+                    case a => {
+                      return endNamedExprBeginNamedExpr(column, row, list)
+                    }
+                  }
+                } else {
+                  return endNamedExprBeginNamedExpr(column, row, list)
+                }
+              }
+              case a =>
+            }
+          }
+          case (Right(_), _) =>
+        }
+      }
     }
+
+      if (column >= arr.length || (column == arr.length - 1 && row >= arr(column).length)) {
+        return (list, column, row) //end is reached
+      } else { //a second expression is accepted
+        return lexerExpression(column, row, list)
+      }
+    }
+
+  private def endNamedExprBeginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):(List[Token],Int,Int) = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = new Span(fileReader, loc)
+    list = list.::(EndNamedExpr(span))
+    list = list.::(BeginTypAnnotatedIdent(span))
+    lexerTypAnnotatedIdent(column, row, list)
+  }
+  private def endNamedExprBeginNamedExpr(column: Int, row: Int, l: List[Token]):(List[Token],Int,Int) = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = new Span(fileReader, loc)
+    list = list.::(EndNamedExpr(span))
+    list = list.::(BeginNamedExpr(span))
+    lexerNamedExpr(column, row, list)
+  }
+
+  private def endTypAnnotatedIdentBeginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):(List[Token],Int,Int) = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = new Span(fileReader, loc)
+    list = list.::(EndTypAnnotatedIdent(span))
+    list = list.::(BeginTypAnnotatedIdent(span))
+    lexerTypAnnotatedIdent(column, row, list)
+  }
+  private def endTypAnnotatedIdentBeginNamedExpr(column: Int, row: Int, l: List[Token]):(List[Token],Int,Int) = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = new Span(fileReader, loc)
+    list = list.::(EndTypAnnotatedIdent(span))
+    list = list.::(BeginNamedExpr(span))
+    lexerNamedExpr(column, row, list)
+  }
+  private def beginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):(List[Token],Int,Int) = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = new Span(fileReader, loc)
+    list = list.::(BeginTypAnnotatedIdent(span))
+    lexerTypAnnotatedIdent(column, row, list)
   }
   /*
   skip the Whitespaces
@@ -691,7 +947,6 @@ requirements:  no whitespace at arr(column)(row)
         Left(Colon(Span(fileReader,beginLoc, endLoc)))
       }
       case a => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
         Right(NotExpectedToken("::", ""+ a, Span(fileReader,beginLoc, endLoc), fileReader))
       }
     }

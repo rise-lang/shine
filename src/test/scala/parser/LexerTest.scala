@@ -9,7 +9,7 @@ class LexerTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
 
   "RecognizeLexeme" should "work for the Brace5" in {
-    val fileName: String = testFilePath + "Brace6.rise"
+    val fileName: String = testFilePath + "Brace5.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
