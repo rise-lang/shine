@@ -31,7 +31,7 @@ lazy val riseAndShine = (project in file("."))
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-library" % scalaVersion.value,
-        "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
+        "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
         "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0",
         // testing
         "junit" % "junit" % "4.11",
