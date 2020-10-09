@@ -2,6 +2,8 @@ package parser
 
 import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
+
+import scala.collection.mutable
 object parser {
 
   abstract sealed class ParseErrorOrState()
@@ -14,7 +16,7 @@ object parser {
    * Precondition: Only valid Tokens in tokenList.
    */
   def apply(tokenList: List[Token]): r.Expr = {
-    val parseState: ParseState = ParseState(tokenList, Nil)
+    val parseState: ParseState = ParseState(tokenList, Nil, new MapFkt)
     val shineLambda: r.Expr = parseTopLevelLambda(parseState) match {
       case Right(ex) => ex
       case Left(errorOrState) => {
@@ -27,38 +29,14 @@ object parser {
     //r.Identifier("placeholder")()
   }
 
-  //
-  //    def checkBracesNumber(tokenList: List[Token]): Unit = {
-  //      val list: List[Either[PreAndErrorToken, Token]] = tokens
-  //      val arr: Array[String] = fileReader.sourceLines
-  //      val lB: Int = list.count(a => a match {
-  //        case Right(LBrace(_)) => true
-  //        case b => false
-  //      })
-  //      val rB: Int = list.count(a => a match {
-  //        case Right(RBrace(_)) => true
-  //        case b => false
-  //      })
-  //
-  //      if (lB > rB) {
-  //        //for example "( .. ( ... )"
-  //        val loc: Location = Location(arr.length - 1, arr(arr.length - 1).length)
-  //        val ex = RightBraceMissing(new Span(fileReader, loc), fileReader)
-  //        ex.throwException()
-  //      } else if (lB < rB) { //for example "( .. ) ... )"
-  //        val loc: Location = Location(arr.length - 1, arr(arr.length - 1).length)
-  //        val ex = LeftBraceMissing(new Span(fileReader, loc), fileReader)
-  //        ex.throwException()
-  //      }
-  //    }
-
   sealed trait SyntaxElement
 
   final case class SExpr(expr: r.Expr) extends SyntaxElement
 
   final case class SType(t: r.types.Type) extends SyntaxElement
 
-  final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement])
+  type MapFkt = mutable.HashMap[r.Identifier, Either[r.Expr, List[r.types.Type]]]
+  final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], map: MapFkt)
 
   implicit class ParseStatePipe(val ps: Either[ParseErrorOrState, ParseState]) extends AnyVal {
     def |>(f: ParseState => Either[ParseErrorOrState, ParseState]): Either[ParseErrorOrState, ParseState] = {
@@ -87,7 +65,7 @@ object parser {
 
 
   def parseBackslash(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
-    val ParseState(tokens, parsedExprs) = parseState
+    val ParseState(tokens, parsedExprs, map) = parseState
     if (tokens.isEmpty) {
       return Left(ParseError("failed to parse Backlash: " + " List is empty"))
     }
@@ -101,12 +79,12 @@ object parser {
       }
     }
 
-    Right(ParseState(restTokens, parsedExprs))
+    Right(ParseState(restTokens, parsedExprs, map))
   }
 
   def parseIdent(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
     println("parseIdent: " + parseState)
-    val ParseState(tokens, parsedSynElems) = parseState
+    val ParseState(tokens, parsedSynElems, map) = parseState
     if (tokens.isEmpty) {
       return Left(ParseError("failed to parse Ident: " + " List is empty"))
     }
@@ -114,7 +92,7 @@ object parser {
 
     nextToken match {
       case Identifier(name, _) =>
-        Right(ParseState(restTokens, SExpr(r.Identifier(name)()) :: parsedSynElems))
+        Right(ParseState(restTokens, SExpr(r.Identifier(name)()) :: parsedSynElems, map))
       case tok => {
         println("Abbruch parseIdent: " + tok + " : " + parseState)
         Left(ParseError("failed to parse Ident: " + tok + " is not an Identifier"))
@@ -122,7 +100,7 @@ object parser {
     }
   }
 
-  private def getType(typ: TypeKind, restTokens: List[Token], parsedSynElems: List[SyntaxElement]): Either[ParseErrorOrState, ParseState] = {
+  private def getType(typ: TypeKind, restTokens: List[Token], parsedSynElems: List[SyntaxElement], map: MapFkt): Either[ParseErrorOrState, ParseState] = {
     val t = typ match {
       case ShortTyp() => Right(rt.i8)
       case IntTyp() => Right(rt.i32)
@@ -132,21 +110,21 @@ object parser {
       case notAtype => Left(ParseError("failed to parse Type: Not accepted Type" + notAtype))
     }
     t match {
-      case Right(nowT) => Right(ParseState(restTokens, SType(nowT) :: parsedSynElems))
+      case Right(nowT) => Right(ParseState(restTokens, SType(nowT) :: parsedSynElems, map))
       case Left(e) => Left(ParseError("failed to parse Type"))
     }
   }
 
 
   def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseErrorOrState, ParseState] = {
-    val ParseState(tokens, parsedSynElems) = parseState
+    val ParseState(tokens, parsedSynElems, map) = parseState
     val colonToken :: typeToken :: restTokens = tokens
 
     colonToken match {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => getType(typ, restTokens, parsedSynElems)
+          case Type(typ, _) => getType(typ, restTokens, parsedSynElems, map)
           case notAtype => Left(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
       }
@@ -155,14 +133,14 @@ object parser {
   }
 
   def parseTypeAnnotation(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
-    val ParseState(tokens, parsedSynElems) = parseState
+    val ParseState(tokens, parsedSynElems, map) = parseState
     val colonToken :: typeToken :: restTokens = tokens
 
     colonToken match {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => getType(typ, restTokens, parsedSynElems)
+          case Type(typ, _) => getType(typ, restTokens, parsedSynElems, map)
           case notAtype => Left(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
       }
@@ -171,7 +149,7 @@ object parser {
     }
 
   def parseArrow(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
-    val ParseState(tokens, parsedExprs) = parseState
+    val ParseState(tokens, parsedExprs, map) = parseState
     val nextToken :: restTokens = tokens
 
     nextToken match {
@@ -179,7 +157,7 @@ object parser {
       case tok => Left(ParseError("failed to parse Type: " + tok + " is not an Arrow"))
     }
 
-    Right(ParseState(restTokens, parsedExprs))
+    Right(ParseState(restTokens, parsedExprs, map))
   }
 
   private def combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList: List[SyntaxElement]) : (r.Expr, List[SyntaxElement]) = {
@@ -308,14 +286,14 @@ object parser {
         parseArrow
 
         val psOrErr = psOld match {
-          case Right(p) => parseMaybeAppExpr(ParseState(p.tokenStream,Nil))
+          case Right(p) => parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.map))
           case Left(e) => {
             println("endLambda: "+ e)
             return Left(e)
           }
         }
 
-    val (toks, synElemList) = psOrErr match {
+    val (toks, synElemList, map) = psOrErr match {
       case Right(psNew) => {
         val expr = SExpr(combineExpressions(psNew.parsedSynElems))
         val newL = expr :: Nil
@@ -324,7 +302,7 @@ object parser {
           case Left(_) => throw new RuntimeException("this should not be able to happen in parseLambdda, because I already have controlled this!")
         }
         val l = li.reverse
-        (psNew.tokenStream,l)
+        (psNew.tokenStream,l, psNew.map)
       }
       case Left(e) => return Left(e)
     }
@@ -347,7 +325,7 @@ object parser {
 
     val lambda = Lambda(maybeTypedIdent.asInstanceOf[r.Identifier], expr)()
     println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
-    Right(ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent))
+    Right(ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent, map))
   }
 
   //_________________________________________________________Lambda
@@ -374,7 +352,7 @@ object parser {
       return Right(parseState)
     }
     val p =
-      Right(ParseState(parseState.tokenStream,Nil))  |>
+      Right(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
         parseLeftBrace  |>
         parseMaybeAppExpr |>
         parseRightBrace
@@ -390,7 +368,7 @@ object parser {
         val newL = expr :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse
-        val newParse:ParseState = ParseState(pState.tokenStream, l)
+        val newParse:ParseState = ParseState(pState.tokenStream, l, pState.map)
         Right(newParse)
       }
       case Left(e) => Left(e)
@@ -426,8 +404,8 @@ object parser {
 
     val p = nextToken match {
       case UnOp(un, _) => un match {
-        case OpType.UnaryOpType.NEG => Right(ParseState(restTokens, SExpr(r.primitives.Neg()()) :: parseState.parsedSynElems))
-        case OpType.UnaryOpType.NOT => Right(ParseState(restTokens, SExpr(r.primitives.Not()()) :: parseState.parsedSynElems))
+        case OpType.UnaryOpType.NEG => Right(ParseState(restTokens, SExpr(r.primitives.Neg()()) :: parseState.parsedSynElems, parseState.map))
+        case OpType.UnaryOpType.NOT => Right(ParseState(restTokens, SExpr(r.primitives.Not()()) :: parseState.parsedSynElems, parseState.map))
       }
       case tok => {
         println("UnaryOperatorWasExpected: "+ tok + ": " + restTokens)
@@ -439,7 +417,7 @@ object parser {
 
   def parseNumber(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     println("ParseNumber: " + parseState)
-    val ParseState(tokens, parsedSynElems) = parseState
+    val ParseState(tokens, parsedSynElems, map) = parseState
     if(tokens.isEmpty){
       return Left(ParseError("failed to parse Number: " + " List is empty"))
     }
@@ -447,13 +425,13 @@ object parser {
 
     nextToken match {
       case I8(number, _) =>
-        Right(ParseState(restTokens, SExpr(r.Literal(rS.IntData(number))) :: parsedSynElems))
+        Right(ParseState(restTokens, SExpr(r.Literal(rS.IntData(number))) :: parsedSynElems, map))
       case I32(number, _) =>
-        Right(ParseState(restTokens, SExpr(r.Literal(rS.IntData(number))) :: parsedSynElems))
+        Right(ParseState(restTokens, SExpr(r.Literal(rS.IntData(number))) :: parsedSynElems, map))
       case F32(number, _) =>
-        Right(ParseState(restTokens, SExpr(r.Literal(rS.FloatData(number))) :: parsedSynElems))
+        Right(ParseState(restTokens, SExpr(r.Literal(rS.FloatData(number))) :: parsedSynElems, map))
       case F64(number, _) =>
-        Right(ParseState(restTokens, SExpr(r.Literal(rS.DoubleData(number))) :: parsedSynElems))
+        Right(ParseState(restTokens, SExpr(r.Literal(rS.DoubleData(number))) :: parsedSynElems, map))
       case tok => Left(ParseError("failed to parse Number: " + tok + " is not an accepted Integer of Float"))
     }
   }
@@ -461,24 +439,24 @@ object parser {
 
   def parseBinOperator(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
     println("parseBinOperator: "+ parseState)
-    val ParseState(tokens, parsedSynElems) = parseState
+    val ParseState(tokens, parsedSynElems, map) = parseState
     val nextToken :: restTokens = tokens
 
     nextToken match {
       case BinOp(op, _) => op match {
         case OpType.BinOpType.ADD =>
-          Right(ParseState(restTokens, SExpr(r.primitives.Add()()) :: parsedSynElems))
+          Right(ParseState(restTokens, SExpr(r.primitives.Add()()) :: parsedSynElems, map))
         case OpType.BinOpType.DIV =>
-          Right(ParseState(restTokens, SExpr(r.primitives.Div()()) :: parsedSynElems))
+          Right(ParseState(restTokens, SExpr(r.primitives.Div()()) :: parsedSynElems, map))
         case OpType.BinOpType.EQ =>
-          Right(ParseState(restTokens, SExpr(r.primitives.Equal()()) :: parsedSynElems))
+          Right(ParseState(restTokens, SExpr(r.primitives.Equal()()) :: parsedSynElems, map))
         case OpType.BinOpType.GT =>
-          Right(ParseState(restTokens, SExpr(r.primitives.Gt()()) :: parsedSynElems))
+          Right(ParseState(restTokens, SExpr(r.primitives.Gt()()) :: parsedSynElems, map))
         case OpType.BinOpType.LT =>
-          Right(ParseState(restTokens, SExpr(r.primitives.Lt()()) :: parsedSynElems))
-        case OpType.BinOpType.MOD => Right(ParseState(restTokens, SExpr(r.primitives.Mod()()) :: parsedSynElems))
-        case OpType.BinOpType.MUL => Right(ParseState(restTokens, SExpr(r.primitives.Mul()()) :: parsedSynElems))
-        case OpType.BinOpType.SUB => Right(ParseState(restTokens, SExpr(r.primitives.Sub()()) :: parsedSynElems))
+          Right(ParseState(restTokens, SExpr(r.primitives.Lt()()) :: parsedSynElems, map))
+        case OpType.BinOpType.MOD => Right(ParseState(restTokens, SExpr(r.primitives.Mod()()) :: parsedSynElems, map))
+        case OpType.BinOpType.MUL => Right(ParseState(restTokens, SExpr(r.primitives.Mul()()) :: parsedSynElems, map))
+        case OpType.BinOpType.SUB => Right(ParseState(restTokens, SExpr(r.primitives.Sub()()) :: parsedSynElems, map))
         case tok => {
           println("Das hier kann nicht sein, weil alle Operatoren müsste ich abgedeckt haben. BinOp: '" + tok + "' is no BinOperator!")
           Left(ParseError("failed to parse BinOperator: " + tok + " is not an accepted BinOp"))
@@ -492,21 +470,21 @@ object parser {
   }
 
   def parseLeftBrace(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
-    val ParseState(tokens, parsedSynElems) = parseState
+    val ParseState(tokens, parsedSynElems, map) = parseState
     val nextToken :: restTokens = tokens
 
     nextToken match {
-      case LBrace(_) => Right(ParseState(restTokens, parsedSynElems))
+      case LBrace(_) => Right(ParseState(restTokens, parsedSynElems, map))
       case tok => Left(ParseError("failed to parse LeftBrace: " + tok + " is not an LeftBrace"))
     }
   }
 
   def parseRightBrace(parseState: ParseState): Either[ParseErrorOrState,ParseState] = {
-    val ParseState(tokens, parsedSynElems) = parseState
+    val ParseState(tokens, parsedSynElems, map) = parseState
     val nextToken :: restTokens = tokens
 
     nextToken match {
-      case RBrace(_) => Right(ParseState(restTokens, parsedSynElems))
+      case RBrace(_) => Right(ParseState(restTokens, parsedSynElems, map))
       case tok => Left(ParseError("failed to parse RightBrace: " + tok + " is not an RightBrace"))
     }
   }

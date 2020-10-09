@@ -10,18 +10,19 @@ import rise.core.{semantics => rS}
 
 class parserTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
+//HashMap<r.Identifier, Option[r.Expr]> ist das oberste
 
-
-  "parser" should "not be able to parse 'Identity.rise'" in {
-    val fileName: String = testFilePath + "identity.rise"
+  "parser" should "not be able to parse 'IdentityWithI32.rise'" in {
+    val fileName: String = testFilePath + "identityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[RuntimeException] {
-      parser(lexer.tokens)
-    }
-    //Todo: that is horrible, that I don't have an Error-Message
-    thrown.getMessage should equal("failed parsing : ParseError(failed to parse Type: A TypeAnnotation is expected, but -> is not an Colon)")
-  }
+    val ex: r.Expr = parser(lexer.tokens)
+    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
+    ex match {//rt.i32
+      case r.Lambda(r.Identifier("x"), r.Identifier("x")) => true
+      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => fail("not a lambda: "+ a)
+    }  }
 
   "parser" should "be able to parse 'longIdentityWithI32.rise'" in {
     val fileName: String = testFilePath + "longIdentityWithI32.rise"

@@ -211,7 +211,7 @@ case class RecognizeLexeme(fileReader: FileReader){
 
 
   private def lexerNamedExpr(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],Int,Int) = {
-    println("lexerNamedExpr: "+ l)
+    //println("lexerNamedExpr: "+ l)
     val arr: Array[String]= fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -268,7 +268,7 @@ case class RecognizeLexeme(fileReader: FileReader){
   }
 
   private def lexerTypAnnotatedIdent(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],Int,Int) = {
-    println("lexerTypAnnotatedIdent: "+ l)
+    //println("lexerTypAnnotatedIdent: "+ l)
     val arr: Array[String]= fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -324,7 +324,7 @@ case class RecognizeLexeme(fileReader: FileReader){
   (List[Either[Token,PreAndErrorToken]],column,row)
    */
 private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],Int,Int) = {
-  println("lexerLambda: "+ l)
+  //println("lexerLambda: "+ l)
     val arr: Array[String]= fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -475,7 +475,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
 
 
   private def lexerTypAnnotationExpression(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token]) = {
-    println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
+    //println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
     val arr: Array[String]= fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -544,7 +544,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
 
     if(row >= arr(column).length){
       //end of Line is reached is reached and TypAnnotatedIdent has to be in one line
-      println("before isEnd1: " + column + " , " + row )
+      //println("before isEnd1: " + column + " , " + row )
       isEnd(fileReader, column, row, arr) match {
         case Left((c, r)) => {
           column = c
@@ -554,7 +554,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
         case Right(EndOfLine(span, _)) => return list
         case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
       }
-      println("after isEnd1: " + column + " , " + row )
+      //println("after isEnd1: " + column + " , " + row )
       if (arr(column)(row).isLetter) {
         lexIdentifier(column, row) match {
           case (Left(a), r) => {
@@ -605,7 +605,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
   }
 
   private def lexerExpression(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token], Int, Int) = {
-    println("lexerExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
+    //println("lexerExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
     val arr: Array[String] = fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -633,7 +633,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
         }
         case Left(a) => {
           row = row + 1
-          //   println("\n\n"+ a.toString)
+          //   //println("\n\n"+ a.toString)
           list = list.::(a)
         }
         case Right(a) => {
@@ -641,7 +641,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
         }
       }
     } else {
-      println("mitte: "+ arr(column)(row))
+      //println("mitte: "+ arr(column)(row))
       arr(column)(row) match {
         case '\\' => {
           return lexerLambda(column, row, list)
@@ -735,7 +735,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
       }
     }
     if (arr(column).length >= row) {
-      println("before isEnd: " + column + " , " + row )
+      //println("before isEnd: " + column + " , " + row )
       isEnd(fileReader, column, row, arr) match {
         case Left((c, r)) => {
           column = c
@@ -744,12 +744,12 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
         case Right(EndOfFile(_, _)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
           " but this should not be able to happen")
         case Right(EndOfLine(span, _)) => {
-          println("EndOfLine in lexerExpression: " + list)
+          //println("EndOfLine in lexerExpression: " + list)
           return (list, column, row)
         } //end is reached
         case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
       }
-      println("after isEnd: " + column + " , " + row + " arr(column)(row)= '" + arr(column)(row)+ "'")
+      //println("after isEnd: " + column + " , " + row + " arr(column)(row)= '" + arr(column)(row)+ "'")
 
       if (arr(column)(row).isLetter) {
         lexIdentifier(column, row) match {
@@ -762,9 +762,9 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
                 newRow = r
               }
             }
-            println("Alice Wonderland: "+ list + " <<<<>>>> " + column + " , " + row)
+            //println("Alice Wonderland: "+ list + " <<<<>>>> " + column + " , " + row)
             if(newRow>=arr(column).length){
-              println("escape: " + row + " , "+ column)
+              //println("escape: " + row + " , "+ column)
               return lexerExpression(column, row, list)
             }
             arr(column).substring(newRow, newRow + 1) match {
@@ -785,12 +785,12 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
                   arr(column).substring(row, row + 2) match {
                     case "==" =>
                     case a => {
-                      println("endNamedExpr1: " + list)
+                      //println("endNamedExpr1: " + list)
                       return endNamedExprBeginNamedExpr(column, row, list)
                     }
                   }
                 } else {
-                  println("endNamedExpr2: " + list)
+                  //println("endNamedExpr2: " + list)
                   return endNamedExprBeginNamedExpr(column, row, list)
                 }
               }
@@ -800,7 +800,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
           case (Right(_), _) =>
         }
       }else{
-        println("not in the end of Line: " + list)
+        //println("not in the end of Line: " + list)
       }
     }
 
@@ -808,7 +808,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
       if (column >= arr.length || (column == arr.length - 1 && row >= arr(column).length)) {
         return (list, column, row) //end is reached
       } else { //a second expression is accepted
-        println("Neustart: " + list + "  ( "+  column + " , " + row + " )")
+        //println("Neustart: " + list + "  ( "+  column + " , " + row + " )")
         return lexerExpression(column, row, list)
       }
     }
@@ -823,7 +823,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
     if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])){
       newList = newList.::(EndTypAnnotatedIdent(new Span(fileReader, Location(c, r))))
     }
-    println("endNamedExprBeginTypAnnotatedIdent ended: "+  newList)
+    //println("endNamedExprBeginTypAnnotatedIdent ended: "+  newList)
     (newList, c, r)
   }
   private def endNamedExprBeginNamedExpr(column: Int, row: Int, l: List[Token]):(List[Token],Int,Int) = {
@@ -836,7 +836,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
     if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])){
       newList = newList.::(EndNamedExpr(new Span(fileReader, Location(c, r))))
     }
-    println("endNamedExprBeginNamedExpr ended: "+  newList)
+    //println("endNamedExprBeginNamedExpr ended: "+  newList)
     (newList, c, r)
   }
 
@@ -850,7 +850,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
     if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])){
       newList = newList.::(EndTypAnnotatedIdent(new Span(fileReader, Location(c, r))))
     }
-    println("endTypAnnotatedIdentBeginTypAnnotatedIdent ended: "+  newList)
+    //println("endTypAnnotatedIdentBeginTypAnnotatedIdent ended: "+  newList)
     (newList, c, r)
   }
   private def endTypAnnotatedIdentBeginNamedExpr(column: Int, row: Int, l: List[Token]):(List[Token],Int,Int) = {
@@ -863,7 +863,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],I
     if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])){
       newList = newList.::(EndNamedExpr(new Span(fileReader, Location(c, r))))
     }
-    println("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
+    //println("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
     (newList, c, r)
   }
   private def beginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):(List[Token],Int,Int) = {
