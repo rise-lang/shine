@@ -494,6 +494,106 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
+  "RecognizeLexeme" should "work for twoplus1extraDefintion" in {
+    val fileName: String = testFilePath + "twoplus1extraDefintion.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: Type(IntTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginTypAnnotatedIdent(_):: Identifier("h", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("h", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: Identifier("x", _)  ::
+        Arrow(_) :: Backslash(_) :: Identifier("fkt", _)  ::
+        Arrow(_) :: Identifier("fkt", _) :: Identifier("x", _) ::
+        EndNamedExpr(_)::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: Identifier("x", _)  ::
+        Arrow(_) :: BinOp(BinOpType.ADD, _) :: Identifier("x", _)  :: I32(5, _) ::
+        EndNamedExpr(_)::
+
+        BeginTypAnnotatedIdent(_):: Identifier("z", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: Type(IntTyp(), _)::
+        EndTypAnnotatedIdent(_) ::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "work for twoSimpleFunctionsInDifferentOrder" in {
+    val fileName: String = testFilePath + "twoSimpleFunctionsInDifferentOrder.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: Type(IntTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("h", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: Identifier("x", _)  ::
+        Arrow(_) :: Backslash(_) :: Identifier("fkt", _)  ::
+        Arrow(_) :: Identifier("fkt", _) :: Identifier("x", _) ::
+        EndNamedExpr(_)::
+
+        BeginTypAnnotatedIdent(_):: Identifier("h", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: Identifier("x", _)  ::
+        Arrow(_) :: BinOp(BinOpType.ADD, _) :: Identifier("x", _)  :: I32(5, _) ::
+        EndNamedExpr(_)::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+
+  "RecognizeLexeme" should "work for twoSimpleFunctions" in {
+    val fileName: String = testFilePath + "twoSimpleFunctions.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: Type(IntTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginTypAnnotatedIdent(_):: Identifier("h", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("h", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: Identifier("x", _)  ::
+        Arrow(_) :: Backslash(_) :: Identifier("fkt", _)  ::
+        Arrow(_) :: Identifier("fkt", _) :: Identifier("x", _) ::
+        EndNamedExpr(_)::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: Identifier("x", _)  ::
+        Arrow(_) :: BinOp(BinOpType.ADD, _) :: Identifier("x", _)  :: I32(5, _) ::
+        EndNamedExpr(_)::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+
   "RecognizeLexeme" should "work for TypWith-" in {
     val fileName: String = testFilePath + "TypWith-.rise"
     val file: FileReader =  FileReader(fileName)
