@@ -1,7 +1,6 @@
 package parser
 import org.scalatest.flatspec.AnyFlatSpec
 
-import scala.collection.mutable
 //import parser.parse.ParseError
 //import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
@@ -13,7 +12,7 @@ import rise.core.{semantics => rS}
 class parserTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
 //HashMap<r.Identifier, Option[r.Expr]> ist das oberste
-type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
+type MapFkt = parser.MapFkt
   "parser" should "not be able to parse 'IdentityWithI32.rise'" in {
     val fileName: String = testFilePath + "identityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
@@ -24,8 +23,8 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.Identifier("x")) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -35,9 +34,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "longIdentityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("jens"), r.Identifier("jens")) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -48,9 +52,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "minus.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Sub(), r.Identifier("x")),r.Literal(rS.IntData(5)))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -61,9 +70,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "negation.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.Identifier("y"))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -74,9 +88,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "plus.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Add(), r.Identifier("x")),r.Literal(rS.IntData(5)))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -87,9 +106,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "not.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("b"), r.App(r.primitives.Not(), r.Identifier("b"))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -100,9 +124,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "braces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("b"), r.Identifier("b")) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -113,9 +142,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "bracesWithNot.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("b"), r.App(r.primitives.Not(), r.Identifier("b"))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -126,9 +160,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "lessComplexInOneLine.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
       case r.Lambda(x,e) => {
         println("not correct Identifier or not correct expression: "+ x + " , " + e)
@@ -142,9 +181,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
       case r.Lambda(x,e) => {
         println("not correct Identifier or not correct expression: "+ x + " , " + e)
@@ -158,9 +202,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "littleComplexLine.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(x@r.Identifier("x"),
              r.Lambda(y@r.Identifier("y"),
                      r.App(r.App(r.primitives.Add(),
@@ -182,9 +231,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "complexInOneLine.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(),
       r.App(r.App(r.primitives.Add(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
       r.App(r.App(r.primitives.Mod(), r.Literal(rS.IntData(42))), r.Literal(rS.IntData(5))))))) => true
@@ -200,9 +254,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "Complex2.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Mul(), r.App(r.App(r.primitives.Add(),
       r.Identifier("x")), r.Identifier("x"))), r.Identifier("x")))=> true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
@@ -214,9 +273,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "Complex3.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Mul(), r.App(r.App(r.primitives.Add(),
       r.Identifier("x")), r.Identifier("x"))), r.Identifier("x")))=> true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
@@ -228,9 +292,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "Complex4.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
       r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
       r.Identifier("x")), r.Identifier("x"))))=> true
@@ -243,9 +312,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "Complex5.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
       r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
       r.Identifier("x")), r.Identifier("x"))))=> true
@@ -258,9 +332,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "Complex6.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
       r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
       r.Identifier("x")), r.Identifier("x"))))=> true
@@ -273,9 +352,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "Complex7.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
       r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
       r.Identifier("x")), r.Identifier("x"))))=> true
@@ -288,9 +372,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.Identifier("f"), r.Identifier("x"))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -301,9 +390,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.Lambda(r.Identifier("y"), r.Identifier("y")), r.Identifier("x"))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
@@ -314,9 +408,14 @@ type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
     val fileName: String = testFilePath + "Brace5.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
-    //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
-    ex match {//rt.i32
+val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+    
+    ex match {
       case r.Lambda(r.Identifier("x"), r.Identifier("x")) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)

@@ -17,8 +17,8 @@ object parser {
    */
   def apply(tokenList: List[Token]): MapFkt = {
     val parseState: ParseState = ParseState(tokenList, Nil, new MapFkt)
-    val shineLambda: MapFkt = parseNamedExpr(parseState) match {
-      case Left(tupleMapList) => tupleMapList._2
+    val shineLambda: MapFkt = parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState) match {
+      case Left(map) => map
       case Right(errorOrState) => {
         println(errorOrState)
         throw new RuntimeException("failed parsing : " + errorOrState)
@@ -36,7 +36,7 @@ object parser {
   final case class SType(t: r.types.Type) extends SyntaxElement
 
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
-  type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
+  type MapFkt = mutable.HashMap[String, Either[r.Expr, List[SyntaxElement]]]
 
   final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], map: MapFkt)
 
@@ -56,8 +56,11 @@ object parser {
           ): ParseState => Either[ParseState, ParseErrorOrState] = {
       ps =>
         leftF(ps) match {
-          case Left(_) => rightF(ps)
-          case Right(resPs) => Right(resPs)
+          case Right(_) => {
+            println("|| : " + ps)
+            rightF(ps)
+          }
+          case Left(resPs) => Left(resPs)
         }
     }
   }
@@ -150,6 +153,36 @@ object parser {
     }
   }
 
+  def parseTypeWithArrow(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val arrowToken :: typeToken :: restTokens = tokens
+
+    println("parseTypeWithArrow: " + parseState)
+    arrowToken match {
+      case Arrow(_) => {
+
+        typeToken match {
+          case Type(typ, _) => {
+            println("Type was in parseTypeWithArrow parsed: " + typ)
+            getType(typ, restTokens, parsedSynElems, map)
+          }
+          case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
+        }
+      }
+      case notAnArrow => Right(ParseError("failed to parse Type: A TypeAnnotation is expected, but " + notAnArrow + " is not an Arrow"))
+    }
+  }
+
+  def parseType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val typeToken :: restTokens = tokens
+
+        typeToken match {
+          case Type(typ, _) => getType(typ, restTokens, parsedSynElems, map)
+          case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
+        }
+  }
+
   def parseArrow(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedExprs, map) = parseState
     val nextToken :: restTokens = tokens
@@ -220,6 +253,71 @@ object parser {
     e
   }
 
+  def parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState:ParseState): Either[MapFkt, ParseErrorOrState] = {
+    if(parseState.tokenStream.isEmpty){
+      throw new IllegalArgumentException("TokenStream is empty")
+    }
+    if(!parseState.parsedSynElems.isEmpty){
+      throw new IllegalArgumentException("parsedSynElemnts has to be empty: " + parseState.parsedSynElems)
+    }
+    if(!parseState.map.isEmpty){
+      throw new IllegalArgumentException("map has to be empty: " + parseState.map)
+    }
+
+    var (t, map): (List[Token], MapFkt) = parseState.tokenStream match {
+      case BeginTypAnnotatedIdent(_) :: restTokens => {
+        val ps:ParseState = ParseState(restTokens, Nil, parseState.map)
+        val psNew = parseTypAnnotatedIdent(ps)
+        psNew match {
+          case Left((tokens, m)) => if(!tokens.isEmpty){
+            (tokens, m)
+          }else{
+            throw new IllegalStateException("We need an NamedExpr too, because of that it " +
+              "should not be possible only to have an TypAnnotatedIdent")
+          }
+          case Right(e) => return Right(e)
+        }
+      }
+      case BeginNamedExpr(_):: restTokens => {
+        throw new IllegalArgumentException("You aren't allowed to start with an NamedExpr")
+      }
+      case a => throw new IllegalArgumentException("You have started with something different: " + a)
+    }
+
+    while(!t.isEmpty) {
+      println("tokens: " + t + " ,MapFkt: " + map)
+       t match {
+        case BeginTypAnnotatedIdent(_) :: restTokens => {
+          val p:ParseState = ParseState(restTokens, Nil, map)
+          val psNew = parseTypAnnotatedIdent(p)
+          psNew match {
+            case Left((tokens, m)) => {
+              t = tokens
+              map = m
+            }
+            case Right(e) => return Right(e)
+          }
+        }
+        case BeginNamedExpr(_):: restTokens => {
+          val p:ParseState = ParseState(restTokens, Nil, map)
+          println("p: " + p)
+          val psNew = parseNamedExpr(p)
+          println("psNew: " + psNew)
+          psNew match {
+            case Left((tokens, m)) => {
+              t = tokens
+              map = m
+            }
+            case Right(e) => return Right(e)
+          }
+        }
+        case a => throw new IllegalArgumentException("You have started with something different: " + a)
+      }
+    }
+
+    Left(map)
+  }
+
   /*
   top level Lambda expects that the type of the Identifier is defined!
 
@@ -253,6 +351,8 @@ object parser {
         parseMaybeAppExpr
     }
 
+    //Todo: i have to remove EndNamedExpr from the List!!!!
+
     val psNamedExpr = psNamedExprBefore match {
       case Right(e) => return Right(e)
       case Left(p) => {
@@ -285,6 +385,7 @@ object parser {
         val lambda = Lambda(typedIdent.asInstanceOf[r.Identifier], expr)()
         println("lambda durchgelaufen: " + lambda)
         ps.tokenStream match {
+
           case EndNamedExpr(_) :: restTokens => {
             val m = ps.map
             m.update(identifierFkt.name, Left(lambda))
@@ -295,6 +396,72 @@ object parser {
           }
         }
       }
+
+  def parseTypAnnotatedIdent(parseState: ParseState): Either[(List[Token], MapFkt) , ParseErrorOrState] = {
+    require(parseState.parsedSynElems.isEmpty, "parseState is not empty, but nothing should be in it yet")
+    val psLambdaOld =
+      Left(parseState)      |>
+        parseIdent
+
+    val (ps, identifierFkt) : (ParseState, r.Identifier) = psLambdaOld match {
+      case Right(e) => return Right(e)
+      case Left(p) => {
+        p.parsedSynElems.head match {
+          case SExpr(r.Identifier(n))=> if(p.map.contains(n)){
+            println("Identifier does already exist: " + n + " , " + psLambdaOld)
+            throw new IllegalStateException("We want to parse an TypAnnotatedIdent for " + n + " but this Identifier is already declared!")
+          }else{
+            (p, r.Identifier(n)())
+          }
+          case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
+          case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
+        }
+      }
+    }
+
+    val psNamedExprBefore = {
+      Left(ParseState(ps.tokenStream, Nil, ps.map))        |>
+        parseDoubleColons |>
+        parseType |>
+        parseMaybeAppTypAnnotatedIdentExpr
+    }
+
+
+    val psNew = psNamedExprBefore match {
+      case Right(e) => return Right(e)
+      case Left(p) => p
+    }
+
+    println("in the middle of TypAnnotatedIden: "+ psNew)
+    psNew.tokenStream match {
+      case EndTypAnnotatedIdent(_) :: restTokens => {
+        val m = psNew.map
+        m.put(identifierFkt.name, Right(psNew.parsedSynElems))
+        println("return TypAnnotatedIdent: "+ restTokens+ " <<<<>>>> " + m )
+        Left((restTokens, m))
+      }
+      case EndNamedExpr(_) :: restTokens => {
+        throw new IllegalStateException("TypAnnotatedIdent ends with an EndTypAnnotatedIdent, but end with EndNamedExpr")
+      }
+      case a => {
+        throw new IllegalStateException("TypAnnotatedIdent ends with an EndTypAnnotatedIdent, but we have no EndTypAnnotatedIdent at the end: " + a)
+      }
+    }
+  }
+
+  def parseMaybeAppTypAnnotatedIdentExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    if(parseState.tokenStream.head.isInstanceOf[EndTypAnnotatedIdent]||parseState.tokenStream.head.isInstanceOf[RBrace]){
+      println("Abbruch; parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
+      return Left(parseState)
+    }
+    println("parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
+    val ps: Either[ParseState, ParseErrorOrState]  =
+      Left(parseState) |>
+    (parseBracesExprType _ ||
+      parseTypeWithArrow)
+
+    ps |> parseMaybeAppTypAnnotatedIdentExpr
+  }
   /*
   is the whole Syntax-Tree.
   the syntax-Tree has on top an Lambda-Expression
@@ -359,9 +526,9 @@ object parser {
   //_________________________________________________________Expres
 
   def parseNoAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-//    if(parseState.tokenStream.isEmpty){
+//    if(parseState.tokenStream.head.isInstanceOf[EndNamedExpr]){
 //      println("Abbruch; parseExpression: "+ parseState)
-//      return Right(parseState)
+//      return Left(parseState)
 //    }
     println("parseLowExpression: " + parseState)
     //FIXME parseState always true
@@ -402,11 +569,41 @@ object parser {
     }
   }
 
+  def parseBracesExprType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseBracesExprType: "+ parseState)
+    val p =
+      Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
+        parseLeftBrace  |>
+        parseType |>
+        parseMaybeAppTypAnnotatedIdentExpr |>
+        parseRightBrace
+
+    p match {
+      case Left(pState) => {
+        if(pState.parsedSynElems.isEmpty){
+          val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RBrace])
+          throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
+            " : "+ parseState.tokenStream.toString())
+        }
+        val expr = SExpr(combineExpressions(pState.parsedSynElems))
+        val newL = expr :: Nil
+        val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
+        val l = li.reverse
+        val newParse:ParseState = ParseState(pState.tokenStream, l, pState.map)
+        Left(newParse)
+      }
+      case Right(e) => Right(e)
+    }
+  }
+
   def parseMaybeAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseMaybeAppExpr: " + parseState)
     if(parseState.tokenStream.head.isInstanceOf[RBrace]){
       println("L" +
         "RBrace is at the beginning of parseApp: " + parseState)
+      return Left(parseState)
+    }else if(parseState.tokenStream.head.isInstanceOf[EndNamedExpr]){
+      println("EndNamedExpr sighted in ParseMaybeAppExpr: "+ parseState)
       return Left(parseState)
     }
     val parseStateOrError =
