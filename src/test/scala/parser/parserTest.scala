@@ -1,5 +1,7 @@
 package parser
 import org.scalatest.flatspec.AnyFlatSpec
+
+import scala.collection.mutable
 //import parser.parse.ParseError
 //import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
@@ -11,12 +13,17 @@ import rise.core.{semantics => rS}
 class parserTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
 //HashMap<r.Identifier, Option[r.Expr]> ist das oberste
-
+type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
   "parser" should "not be able to parse 'IdentityWithI32.rise'" in {
     val fileName: String = testFilePath + "identityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val ex: r.Expr = parser(lexer.tokens)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val ex: r.Expr = map.head._2 match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
     //ex.t should equal(r.Lambda) //TODO: Why does this not work!?
     ex match {//rt.i32
       case r.Lambda(r.Identifier("x"), r.Identifier("x")) => true
