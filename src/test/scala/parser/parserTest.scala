@@ -380,7 +380,7 @@ val map: MapFkt = parser(lexer.tokens)
     }
     
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.Identifier("f"), r.Identifier("x"))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.Identifier("fkt"), r.Identifier("x"))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
     }
@@ -431,7 +431,7 @@ val map: MapFkt = parser(lexer.tokens)
     val thrown = intercept[RuntimeException] {
       parser(lexer.tokens)
     }
-    //Todo: that is horrible, that I don't have an Error-Message
-    thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List((, ))")
+
+    thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List((, ), <EndNamedExpr>)")
   }
 }
