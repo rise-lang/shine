@@ -496,7 +496,7 @@ object parser {
     val psOld =
       Left(parseState) |>
         parseBackslash |>
-        parseIdent |>
+        parseIdent     |>
         parseMaybeTypeAnnotation |>
         parseArrow
 
@@ -530,10 +530,10 @@ object parser {
 
     val (maybeTypedIdent, synElemListMaybeTIdent) =
       synElemListExpr.head match {
-        case SType(t) =>
+        case SType(t) => if(t.equals())
           synElemListExpr.tail.head match {
             case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
-            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
+            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
           }
         case SExpr(i) => (i, synElemListExpr.tail)
       }
