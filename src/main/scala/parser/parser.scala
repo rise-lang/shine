@@ -195,37 +195,37 @@ object parser {
     Left(ParseState(remainderTokens, parsedExprs, map))
   }
 
-  private def combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList: List[SyntaxElement]) : (r.Expr, List[SyntaxElement]) = {
-    println("combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft: "+ synElemList)
-    var synE = synElemList.reverse.tail.head match {
-      case SType(_) => synElemList.reverse.tail.tail
-      case SExpr(_) => synElemList.reverse.tail
-    }
-    var e:r.Expr = synE.head match {
-      case SExpr(expr) => {
-        synE = synE.tail
-        expr
-      }
-      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
-    }
-    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
-    while(!synE.isEmpty){
-      synE.head match {
-        case SExpr(expr1) => {
-          e = r.App(e, expr1)()
-          synE = synE.tail
-        }
-        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
-      }
-    }
-    val l= synElemList.reverse.tail.head match {
-      case SType(_) =>  synElemList.reverse.tail.head :: synElemList.reverse.head :: Nil
-      case SExpr(_) => synElemList.reverse.head :: Nil
-    }
-    val res = (e,l)
-    println("I have combined the Expressions in Lambda: "+ res)
-    res
-  }
+//  private def combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList: List[SyntaxElement]) : (r.Expr, List[SyntaxElement]) = {
+//    println("combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft: "+ synElemList)
+//    var synE = synElemList.reverse.tail.head match {
+//      case SType(_) => synElemList.reverse.tail.tail
+//      case SExpr(_) => synElemList.reverse.tail
+//    }
+//    var e:r.Expr = synE.head match {
+//      case SExpr(expr) => {
+//        synE = synE.tail
+//        expr
+//      }
+//      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
+//    }
+//    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
+//    while(!synE.isEmpty){
+//      synE.head match {
+//        case SExpr(expr1) => {
+//          e = r.App(e, expr1)()
+//          synE = synE.tail
+//        }
+//        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+//      }
+//    }
+//    val l= synElemList.reverse.tail.head match {
+//      case SType(_) =>  synElemList.reverse.tail.head :: synElemList.reverse.head :: Nil
+//      case SExpr(_) => synElemList.reverse.head :: Nil
+//    }
+//    val res = (e,l)
+//    println("I have combined the Expressions in Lambda: "+ res)
+//    res
+//  }
 
   private def combineExpressions(synElemList: List[SyntaxElement]) : r.Expr = {
     if(synElemList.isEmpty){
@@ -368,15 +368,17 @@ object parser {
             m.get(identifierFkt.name) match {
               case None => throw new IllegalStateException("Identifier seems not to be in the Map: " + identifierFkt.name + " , " + m)
               case Some(Left(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: "+ e)
-              case Some(Right(l)) => if(!l.isEmpty){
-                throw new IllegalStateException("The List should be empty! But it isn't. " +
-                  "Probably we have one or more Types in the " +
-                  "TypAnnotationIdent declared than the NamedExpr really has. Types left: " + l + "\nTypes defined: " + typesDefined + "\nNamedExpr: " + p.parsedSynElems)
-              }else{
+              case Some(Right(l)) =>
+                //Todo: I have to add Types in the Identifiers in Lambda and delete it after it, after this this if-clause makes sense
+//                if(!l.isEmpty){
+//                throw new IllegalStateException("The List should be empty! But it isn't. " +
+//                  "Probably we have one or more Types in the " +
+//                  "TypAnnotationIdent declared than the NamedExpr really has. Types left: " + l + "\nTypes defined: " + typesDefined + "\nNamedExpr: " + p.parsedSynElems)
+//              }else{
                 //Todo: We have to give the Identifier (identifierFkt/p.map.get(n)) now a Type
 
                 (remainderTokens, p.parsedSynElems, m)
-              }
+//              }
             }
           }
           case _ => {
@@ -387,31 +389,11 @@ object parser {
     }
 
         val synElemList = psNamedExpr._2
-        val (expr, synElemListExpr) = combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList)
+        val expr = combineExpressions(synElemList)
 
-        if(!(synElemListExpr.length == 2)){
-          throw new RuntimeException("it should now have exactly 2 Exprs: Identifier, " +
-            "Type of the Identifier: " + synElemListExpr)
-        }
-        val (typedIdent, synElemListTIdent) =
-          synElemListExpr.head match {
-            case SType(t) =>
-              synElemListExpr.tail.head match {
-                case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
-                case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
-              }
-            case SExpr(i) => {
-              println(i)
-              throw new RuntimeException("We are in TopLevelLambda and there is an Type for the declared Identifier needed; " + i +" is not an r.Type!")
-            }
-          }
-
-        require(synElemListTIdent.isEmpty, "the List has to be empty!")
-
-        val lambda = Lambda(typedIdent.asInstanceOf[r.Identifier], expr)()
-        println("lambda finished: " + lambda)
+        println("expr finished: " + expr)
         val m = psNamedExpr._3
-        m.update(identifierFkt.name, Left(lambda))
+        m.update(identifierFkt.name, Left(expr))
         println("map updated: " + m + "\nRemainderTokens: " + psNamedExpr._1)
         Left((psNamedExpr._1, m))
       }
@@ -528,7 +510,7 @@ object parser {
 
     val (maybeTypedIdent, synElemListMaybeTIdent) =
       synElemListExpr.head match {
-        case SType(t) => if(t.equals())
+        case SType(t) => //Todo: Here ask it t equals the head of the list of map.get(identifier.name) if(t.equals())
           synElemListExpr.tail.head match {
             case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
