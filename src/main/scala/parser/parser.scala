@@ -358,8 +358,6 @@ object parser {
         parseMaybeAppExpr
     }
 
-    //Todo: i have to remove EndNamedExpr from the List!!!!
-
     val psNamedExpr = psNamedExprBefore match {
       case Right(e) => return Right(e)
       case Left(p) => {
