@@ -1,9 +1,9 @@
 package shine
 
 import arithexpr.arithmetic._
-import com.github.ghik.silencer.silent
 import shine.DPIA.Nat
 
+import scala.annotation.nowarn
 import scala.language.implicitConversions
 
 package object OpenCL {
@@ -51,7 +51,6 @@ package object OpenCL {
       BuiltInFunctionCall("get_group_id", param, ContinuousRange(0, get_num_groups(param)))
   }
 
-  @silent("define classes/objects inside of package objects")
   trait FunctionHelper {
     type T
     type R
@@ -61,13 +60,11 @@ package object OpenCL {
 
   type `)=>`[TT, RR] = FunctionHelper { type T = TT; type R = RR }
 
-  @silent("define classes/objects inside of package objects")
   sealed trait HList {
     def length: Int
     def toList: List[Any]
   }
 
-  @silent("define classes/objects inside of package objects")
   case class HCons[+L <: HList, +N](list: L, node: N) extends HList {
     def `,`[V](v: V) = HCons(this, v)
 

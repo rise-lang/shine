@@ -38,7 +38,7 @@ abstract class AbstractParForNat(val n: Nat,
       </body>
     </parForNat>.copy(label = {
       val name = this.getClass.getSimpleName
-      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+      s"${Character.toLowerCase(name.charAt(0))}${name.substring(1)}"
     })
 
   def makeParForNat: (Nat, NatToData, Phrase[AccType], Phrase[`(nat)->:`[AccType ->: CommType]]) => AbstractParForNat

@@ -1,8 +1,10 @@
 package rise.core
 
 import arithexpr.arithmetic.{Cst, RangeAdd}
-import rise.core.TypedDSL.TDSL
+import rise.core.TypedDSL.ToBeTyped
 import rise.core.types._
+
+import scala.language.implicitConversions
 
 // scalastyle:off multiple.string.literals
 object TypeLevelDSL {
@@ -53,129 +55,117 @@ object TypeLevelDSL {
     }
   }
 
-  // dependent function types
-  object nFunT {
-    def apply(f: NatIdentifier => Type): Type = {
+  case class NatFunctionWrapper[A](f: Nat => A)
+  implicit def toNatFunctionWrapper[A](f: Nat => A): NatFunctionWrapper[A] =
+    NatFunctionWrapper(f)
+
+  case class DataTypeFunctionWrapper[A](f: DataType => A)
+  implicit def toDataTypeFunctionWrapper[A](f: DataType => A): DataTypeFunctionWrapper[A] =
+    DataTypeFunctionWrapper(f)
+
+  case class NatToDataFunctionWrapper[A](f: NatToData => A)
+  implicit def toNatToDataFunctionWrapper[A](f: NatToData => A): NatToDataFunctionWrapper[A] =
+    NatToDataFunctionWrapper(f)
+
+  case class NatToNatFunctionWrapper[A](f: NatToNat => A)
+  implicit def toNatToNatFunctionWrapper[A](f: NatToNat => A): NatToNatFunctionWrapper[A] =
+    NatToNatFunctionWrapper(f)
+
+  case class AddressSpaceFunctionWrapper[A](f: AddressSpace => A)
+  implicit def toAddressSpaceFunctionWrapper[A](f: AddressSpace => A): AddressSpaceFunctionWrapper[A] =
+    AddressSpaceFunctionWrapper(f)
+
+  case class TypeFunctionWrapper[A](f: TypeIdentifier => A)
+  implicit def toTypeFunctionWrapper[A](f: TypeIdentifier => A): TypeFunctionWrapper[A] =
+    TypeFunctionWrapper(f)
+
+  case class NatCollectionFunctionWrapper[A](f: NatCollectionIdentifier => A)
+  implicit def toNatCollectionFunctionWrapper[A](f: NatCollectionIdentifier => A): NatCollectionFunctionWrapper[A] =
+    NatCollectionFunctionWrapper(f)
+
+  object expl {
+    def apply(w: NatFunctionWrapper[Type]): Type = {
       val x = NatIdentifier(freshName("n"), isExplicit = true)
-      DepFunType[NatKind, Type](x, f(x))
+      DepFunType[NatKind, Type](x, w.f(x))
     }
 
-    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatIdentifier, T)] = {
-      funType.x match {
-        case n: NatIdentifier => Some((n, funType.t))
-        case _ => throw new Exception("Expected Nat DepFunType")
-      }
-    }
-  }
-
-  object dtFunT {
-    def apply(f: DataTypeIdentifier => Type): Type = {
+    def apply(w: DataTypeFunctionWrapper[Type]): Type = {
       val x = DataTypeIdentifier(freshName("dt"), isExplicit = true)
-      DepFunType[DataKind, Type](x, f(x))
+      DepFunType[DataKind, Type](x, w.f(x))
     }
 
-    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(DataTypeIdentifier, T)] = {
-      funType.x match {
-        case dt: DataTypeIdentifier => Some((dt, funType.t))
-        case _ => throw new Exception("Expected DataType DepFunType")
-      }
+    def apply(w: NatToDataFunctionWrapper[Type]): Type = {
+      val x = NatToDataIdentifier(freshName("n2d"), isExplicit = true)
+      DepFunType[NatToDataKind, Type](x, w.f(x))
     }
-  }
 
-  object n2nFunT {
-    def apply(f: NatToNat => Type): Type = {
+    def apply(w: NatToNatFunctionWrapper[Type]): Type = {
       val x = NatToNatIdentifier(freshName("n2n"), isExplicit = true)
-      DepFunType[NatToNatKind, Type](x, f(x))
+      DepFunType[NatToNatKind, Type](x, w.f(x))
     }
 
-    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatToNatIdentifier, T)] = {
-      funType.x match {
-        case n2n: NatToNatIdentifier => Some((n2n, funType.t))
-        case _ => throw new Exception("Expected Nat to Nat DepFunType")
-      }
-    }
-  }
-
-  object n2dtFunT {
-    def apply(f: NatToData => Type): Type = {
-      val x = NatToDataIdentifier(freshName("n2dt"), isExplicit = true)
-      DepFunType[NatToDataKind, Type](x, f(x))
-    }
-
-    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatToDataIdentifier, T)] = {
-      funType.x match {
-        case n2dt: NatToDataIdentifier => Some((n2dt, funType.t))
-        case _ => throw new Exception("Expected Nat to Data DepFunType")
-      }
-    }
-  }
-
-  object aFunT {
-    def apply(f: AddressSpaceIdentifier => Type): Type = {
+    def apply(w: AddressSpaceFunctionWrapper[Type]): Type = {
       val x = AddressSpaceIdentifier(freshName("a"), isExplicit = true)
-      DepFunType[AddressSpaceKind, Type](x, f(x))
+      DepFunType[AddressSpaceKind, Type](x, w.f(x))
+    }
+  }
+
+  object impl {
+    def apply[A](w: NatFunctionWrapper[A]): A = {
+      w.f(NatIdentifier(freshName("n")))
     }
 
-    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(AddressSpaceIdentifier, T)] = {
-      funType.x match {
-        case a: AddressSpaceIdentifier => Some((a, funType.t))
-        case _ => throw new Exception("Expected AddressSpace DepFunType")
-      }
+    def apply[A](w: DataTypeFunctionWrapper[A]): A = {
+      w.f(DataTypeIdentifier(freshName("dt")))
+    }
+
+    def apply[A](w: NatToDataFunctionWrapper[A]): A = {
+      w.f(NatToDataIdentifier(freshName("n2d")))
+    }
+
+    def apply[A](w: NatToNatFunctionWrapper[A]): A = {
+      w.f(NatToNatIdentifier(freshName("n2n")))
+    }
+
+    def apply[A](w: AddressSpaceFunctionWrapper[A]): A = {
+      w.f(AddressSpaceIdentifier(freshName("n2n")))
+    }
+
+    def apply[A](w: TypeFunctionWrapper[A]): A = {
+      w.f(TypeIdentifier(freshName("t")))
+    }
+
+    def apply[A](w: NatCollectionFunctionWrapper[A]): A = {
+      w.f(NatCollectionIdentifier(freshName("ns")))
     }
   }
 
   // dependent pairs
-  object  n2dPairT {
-    def apply(f: NatIdentifier => DataType): Type = {
+  object Nat {
+    def `**`(f: Nat => DataType): Type = {
       val x = NatIdentifier(freshName("n"), isExplicit = true)
       DepPairType[NatKind](x, f(x))
     }
   }
 
-  object nats2dPairT {
-    def apply(f: NatCollectionIdentifier => DataType): Type = {
+  object NatCollection {
+    def `**`(f: NatCollection => DataType): Type = {
       val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
       DepPairType[NatCollectionKind](x, f(x))
     }
   }
 
-  // types with implicit type parameters
-  def implN[A](f: NatIdentifier => A): A = {
-    f(NatIdentifier(freshName("n")))
+  object `:Nat **` {
+    def unapply(arg: DepPairType[NatKind]): Option[(NatIdentifier, DataType)] =
+      Some(arg.x, arg.t)
+  }
+  object `:NatCollection **` {
+    def unapply(arg: DepPairType[NatCollectionKind]): Option[(NatCollectionIdentifier, DataType)] =
+      Some(arg.x, arg.t)
   }
 
-  def implT[A](f: TypeIdentifier => A): A = {
-    f(TypeIdentifier(freshName("t")))
-  }
-  def implDT[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("dt")))
-  }
-  // TODO: BasicTypeIdentifier
-  def implBT[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("dt")))
-  }
-  // TODO: ScalarTypeIdentifier
-  def implST[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("dt")))
-  }
 
-  def implN2N[A](f: NatToNat => A): A = {
-    f(NatToNatIdentifier(freshName("n2n")))
-  }
-
-  def implN2DT[A](f: NatToData => A): A = {
-    f(NatToDataIdentifier(freshName("n2dt")))
-  }
-
-  def implA[A](f: AddressSpaceIdentifier => A): A = {
-    f(AddressSpaceIdentifier(freshName("w")))
-  }
-
-  def implNatColl[A](f: NatCollectionIdentifier => A): A = {
-    f(NatCollectionIdentifier(freshName("ns")))
-  }
-
-  def freshTypeIdentifier: Type = implT(identity)
+  def freshTypeIdentifier: Type = impl{ x: TypeIdentifier => x }
 
   implicit final class TypeConstructors(private val r: Type) extends AnyVal {
     @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
@@ -187,9 +177,31 @@ object TypeLevelDSL {
     }
   }
 
+  object `(Addr)->:` {
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(AddressSpaceIdentifier, T)] = {
+      funType.x match {
+        case a: AddressSpaceIdentifier => Some((a, funType.t))
+        case _ => throw new Exception("Expected AddressSpace DepFunType")
+      }
+    }
+  }
+
+  object `(Nat)->:` {
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatIdentifier, T)] = {
+      funType.x match {
+        case n: NatIdentifier => Some((n, funType.t))
+        case _ => throw new Exception("Expected Nat DepFunType")
+      }
+    }
+  }
+
   implicit final class TupleTypeConstructors(private val a: DataType)
       extends AnyVal {
     @inline def x(b: DataType): PairType = PairType(a, b)
+  }
+
+  object x {
+    def unapply(t: PairType): Option[(DataType, DataType)] = Some(t.dt1, t.dt2)
   }
 
   final case class ArrayTypeConstructorHelper(ns: Seq[Nat]) {
@@ -215,16 +227,28 @@ object TypeLevelDSL {
     @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
   }
 
-  implicit final class DepArrayTypeConstructors(private val n: Nat)
-    extends AnyVal {
-    @inline def `..`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
+  object `.` {
+    def unapply(arg: ArrayType): Option[(Nat, DataType)] =
+      Some(arg.size, arg.elemType)
   }
 
-  implicit final class NatCollectionConstructors(private val e: TDSL[Expr])
+  implicit final class DepArrayTypeConstructors(private val n: Nat)
+    extends AnyVal {
+    @inline def `*.`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
+    @inline def `*.`(f: NatToData): DepArrayType = DepArrayType(n, f)
+  }
+
+  implicit final class NatCollectionConstructors(private val e: ToBeTyped[Expr])
     extends AnyVal {
     @inline def `#`(nats: Nat*): Nat = {
       NatCollectionFromArray(e)(nats: _*)
     }
+  }
+
+  object `*.` {
+    def unapply(arg: DepArrayType): Option[(Nat, NatToData)] =
+      Some(arg.size, arg.fdt)
+
   }
 
 }

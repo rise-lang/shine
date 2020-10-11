@@ -8,9 +8,9 @@ class NearestNeighbour extends test_util.TestsWithExecutor {
 
   test("nearest neighbour versions produce same results") {
     val random = new scala.util.Random()
-    val locations = Array.fill(2 * N)(random.nextFloat)
-    val lat = random.nextFloat
-    val lng = random.nextFloat
+    val locations = Array.fill(2 * N)(random.nextFloat())
+    val lat = random.nextFloat()
+    val lng = random.nextFloat()
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("NearestNeighbour.cl", locations, lat, lng)),

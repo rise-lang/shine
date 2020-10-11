@@ -91,7 +91,7 @@ class Pad extends test_util.Tests {
 
     val N = 20
     val random = new scala.util.Random()
-    val input = Array.fill(4, N)(random.nextInt)
+    val input = Array.fill(4, N)(random.nextInt())
 
     import shine.OpenCL._
     val localSize = LocalSize(1)

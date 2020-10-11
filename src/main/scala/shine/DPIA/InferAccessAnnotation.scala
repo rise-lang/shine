@@ -2,7 +2,7 @@ package shine.DPIA
 
 import rise.{core => r}
 import rise.core.{TypeLevelDSL => rtdsl, types => rt}
-import rise.core.TypeLevelDSL.->:
+import rise.core.TypeLevelDSL.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
 import rise.core.{primitives => rp}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
@@ -16,17 +16,19 @@ import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 object inferAccess {
-  def apply(e: r.Expr): MutableIdentityHashMap[r.Expr, PhraseType] =
+  def apply(e: r.Expr): java.util.IdentityHashMap[r.Expr, PhraseType] =
     new InferAccessAnnotation()(e)
 }
 
 private class InferAccessAnnotation {
-  private val ptAnnotationMap = MutableIdentityHashMap[r.Expr, PhraseType]()
+  private val ptAnnotationMap =
+    new java.util.IdentityHashMap[r.Expr, PhraseType]()
 
-  def apply(e: r.Expr): MutableIdentityHashMap[r.Expr, PhraseType] = {
+  def apply(e: r.Expr): java.util.IdentityHashMap[r.Expr, PhraseType] = {
+    import scala.jdk.CollectionConverters.MapHasAsScala
     val (ePt, substAcc) =
       inferPhraseTypes(e, Map.empty, isKernelParamFun = true)
-    substAcc(ptAnnotationMap)
+    substAcc(ptAnnotationMap.asScala)
     if (!funOutIsWrite(ePt))
       error("The program does not specify how to write the result " +
         s"of the program into output:\n $e")
@@ -41,7 +43,7 @@ private class InferAccessAnnotation {
     case _ => throw error("This should never happen.")
   }
 
-  private type Context = Map[r.Identifier, PhraseType]
+  private type Context = Predef.Map[r.Identifier, PhraseType]
   private type SubstMap = Predef.Map[AccessTypeIdentifier, AccessType]
   //No occurs check needed, because rw annotations cannot contain variables
   private case class Subst(
@@ -63,7 +65,7 @@ private class InferAccessAnnotation {
     }
 
     def apply[A <: r.Expr](m: Map[A, PhraseType]): Map[A, PhraseType] =
-      m mapValues apply
+      m.view.mapValues(apply).toMap
 
     def apply(m: mutable.Map[r.Expr, PhraseType]): Unit =
       m.foreach({ case (i, pt) => m.update(i, apply(pt))})
@@ -98,12 +100,12 @@ private class InferAccessAnnotation {
       } else res
     }
 
-    def +(i: AccessTypeIdentifier, pt: AccessType): Subst = {
+    def add(i: AccessTypeIdentifier, pt: AccessType): Subst = {
       if (substMap contains i)
-        throw new Exception(
+        throw Exception(
           s"Substitution for phrase type identifier $i exists already.")
       else
-        Subst(substMap updated (i, pt))
+        Subst(substMap.updated(i, pt))
     }
   }
 
@@ -115,11 +117,11 @@ private class InferAccessAnnotation {
     e match {
       case i: r.Identifier =>
         val pt = ctx(i)
-        ptAnnotationMap update(i, pt)
+        ptAnnotationMap.put(i, pt)
         (pt, Subst())
       case lit: r.Literal =>
         val lpt = ExpType(dataType(e.t.asInstanceOf[rt.DataType]), read)
-        ptAnnotationMap update(lit, lpt)
+        ptAnnotationMap.put(lit, lpt)
         (lpt, Subst())
       case l: r.Lambda =>
         inferLambda(l, e.t.asInstanceOf[rt.FunType[rt.Type, _]].inT,
@@ -148,13 +150,13 @@ private class InferAccessAnnotation {
         ExpType(dataType(dt), read)
       } else `type`(lambda.x.t)
 
-    val ctxWithX = ctx updated(lambda.x, xType)
+    val ctxWithX = ctx.updated(lambda.x, xType)
     val (eType, eSubst) =
       inferPhraseTypes(lambda.e, ctxWithX, isKernelParamFun)
 
     val lambdaType = FunType(eSubst(xType), eType)
-    ptAnnotationMap update(lambda.x, xType)
-    ptAnnotationMap update(lambda, lambdaType)
+    ptAnnotationMap.put(lambda.x, xType)
+    ptAnnotationMap.put(lambda, lambdaType)
     (lambdaType, eSubst)
   }
 
@@ -176,7 +178,7 @@ private class InferAccessAnnotation {
     }
     val appType = subst(eSubstFType.outT)
     val resSubst = subst(eSubst(fSubst))
-    ptAnnotationMap update(app, appType)
+    ptAnnotationMap.put(app, appType)
     (appType, resSubst)
   }
 
@@ -200,7 +202,7 @@ private class InferAccessAnnotation {
         case n2d: rt.NatToDataIdentifier =>
           DepFunType[NatToDataKind, PhraseType](natToDataIdentifier(n2d), eType)
       }
-    ptAnnotationMap update(depLambda, depLambdaType)
+    ptAnnotationMap.put(depLambda, depLambdaType)
     (depLambdaType, eSubst)
   }
 
@@ -224,113 +226,102 @@ private class InferAccessAnnotation {
         case n2d: rt.NatToDataKind#T =>
           Lifting.liftDependentFunctionType[NatToDataKind](fType)(ntd(n2d))
       }
-    ptAnnotationMap update(depApp, depAppType)
+    ptAnnotationMap.put(depApp, depAppType)
     (depAppType, fSubst)
   }
 
   private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
     val primitiveType = p match {
-      case roclp.MapGlobal(_) | roclp.MapWorkGroup(_) | roclp.MapLocal(_)
-           | rompp.MapPar() | rp.MapSeq() | rp.MapSeqUnroll()
-           | rp.IterateStream() => p.t match {
-        case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
-          rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
+      case roclp.mapGlobal(_) | roclp.mapWorkGroup(_) | roclp.mapLocal(_)
+           | rompp.mapPar() | rp.mapSeq() | rp.mapSeqUnroll()
+           | rp.iterateStream() => p.t match {
+        case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
           (expT(s, read) ->: expT(t, write)) ->:
-            expT(rt.ArrayType(n, s), read) ->:
-            expT(rt.ArrayType(n, t), write)
+            expT(n`.`s, read) ->: expT(n`.`t, write)
         case _ => error()
       }
 
-
-      case rp.Map() => p.t match {
-        case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
-          rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
+      case rp.map() => p.t match {
+        case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
 
           val ai = accessTypeIdentifier()
-          (expT(s, ai) ->: expT(t, ai)) ->:
-            expT(rt.ArrayType(n, s), ai) ->:
-            expT(rt.ArrayType(n, t), ai)
+          (expT(s, ai) ->: expT(t, ai)) ->: expT(n`.`s, ai) ->: expT(n`.`t, ai)
         case _ => error()
       }
 
-      case rp.MapFst() => p.t match {
+      case rp.mapFst() => p.t match {
         case ((dt1: rt.DataType) ->: (dt3: rt.DataType)) ->:
-          rt.PairType(_, dt2) ->: rt.PairType(_, _) =>
+          (_ x dt2) ->: (_ x _) =>
 
           val ai = accessTypeIdentifier()
           (expT(dt1, ai) ->: expT(dt3, ai)) ->:
-            expT(rt.PairType(dt1, dt2), ai) ->:
-            expT(rt.PairType(dt3, dt2), ai)
+            expT(dt1 x dt2, ai) ->: expT(dt3 x dt2, ai)
         case _ => error()
       }
 
-      case rp.MapSnd() => p.t match {
+      case rp.mapSnd() => p.t match {
         case ((dt2: rt.DataType) ->: (dt3: rt.DataType)) ->:
-          rt.PairType(dt1, _) ->: rt.PairType(_, _) =>
+          (dt1 x _) ->: (_ x _) =>
 
           val ai = accessTypeIdentifier()
           (expT(dt2, ai) ->: expT(dt3, ai)) ->:
-            expT(rt.PairType(dt1, dt2), ai) ->:
-            expT(rt.PairType(dt1, dt3), ai)
+            expT(dt1 x dt2, ai) ->: expT(dt1 x dt3, ai)
         case _ => error()
       }
 
-      case rp.MapStream() => p.t match {
-        case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
-          rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
+      case rp.mapStream() => p.t match {
+        case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
 
           (expT(s, read) ->: expT(t, write)) ->:
-            expT(rt.ArrayType(n, s), read) ->:
-            expT(rt.ArrayType(n, t), read)
+            expT(n`.`s, read) ->: expT(n`.`t, read)
         case _ => error()
       }
 
-      case rp.ToMem() => p.t match {
+      case rp.toMem() => p.t match {
         case (t: rt.DataType) ->: (_: rt.DataType) =>
           expT(t, write) ->: expT(t, read)
         case _ => error()
       }
 
-      case roclp.OclToMem() => p.t match {
-        case rtdsl.aFunT(a, (t: rt.DataType) ->: (_: rt.DataType)) =>
+      case roclp.oclToMem() => p.t match {
+        case a `(Addr)->:` ((t: rt.DataType) ->: (_: rt.DataType)) =>
           aFunT(a, expT(t, write) ->: expT(t, read))
         case _ => error()
       }
 
-      case rp.Join() | rp.Transpose() | rp.AsScalar()
-           | rp.Unzip() => p.t match {
+      case rp.join() | rp.transpose() | rp.asScalar()
+           | rp.unzip() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) =>
           val ai = accessTypeIdentifier()
           expT(dt1, ai) ->: expT(dt2, ai)
         case _ => error()
       }
 
-      case rp.VectorFromScalar() | rp.Neg() | rp.Not()
-           | rp.IndexAsNat() | rp.Fst() | rp.Snd()  | rp.Cast() => p.t match {
+      case rp.vectorFromScalar() | rp.neg() | rp.not()
+           | rp.indexAsNat() | rp.fst() | rp.snd()  | rp.cast() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) =>
           expT(dt1, read) ->: expT(dt2, read)
         case _ => error()
       }
 
-      case rp.Let() => p.t match {
+      case rp.let() => p.t match {
         case (s: rt.DataType) ->:
-          ((_: rt.DataType) ->: (t: rt.DataType)) ->:
-          (_: rt.DataType) =>
+          ((_: rt.DataType) ->: (t: rt.DataType)) ->: (_: rt.DataType) =>
 
           val ai = accessTypeIdentifier()
           expT(s, read) ->: (expT(s, read) ->: expT(t, ai)) ->: expT(t, ai)
         case _ => error()
       }
 
-      case rp.Split() | rp.AsVector() | rp.AsVectorAligned() => p.t match {
-        case rtdsl.nFunT(n, (dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
+      case rp.split() | rp.asVector() | rp.asVectorAligned() => p.t match {
+        case n `(Nat)->:` ((dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
 
           val ai = accessTypeIdentifier()
           nFunT(n, expT(dt1, ai) ->: expT(dt2, ai))
         case _ => error()
       }
 
-      case rp.Zip() | rp.Pair() => p.t match {
+      case rp.zip() | rp.pair() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
 
           val ai = accessTypeIdentifier()
@@ -338,138 +329,120 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.Idx() | rp.Add() | rp.Sub() | rp.Mul() | rp.Div() | rp.Gt()
-           | rp.Lt() | rp.Equal() | rp.Mod() | rp.Gather() => p.t match {
+      case rp.idx() | rp.add() | rp.sub() | rp.mul() | rp.div() | rp.gt()
+           | rp.lt() | rp.equal() | rp.mod() | rp.gather() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
           expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read)
         case _ => error()
       }
 
-      case rp.NatAsIndex() | rp.Take() | rp.Drop() => p.t match {
-        case rtdsl.nFunT(n, (dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
+      case rp.natAsIndex() | rp.take() | rp.drop() => p.t match {
+        case n `(Nat)->:` ((dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
           nFunT(n, expT(dt1, read) ->: expT(dt2, read))
         case _ => error()
       }
 
-      case rp.ReduceSeq() | rp.ReduceSeqUnroll() => p.t match {
+      case rp.reduceSeq() | rp.reduceSeqUnroll() => p.t match {
         case ((t: rt.DataType) ->: (s: rt.DataType) ->: (_: rt.DataType)) ->:
-          (_: rt.DataType) ->: rt.ArrayType(n, _) ->: (_: rt.DataType) =>
+          (_: rt.DataType) ->: (n`.`_) ->: (_: rt.DataType) =>
 
           (expT(t, read) ->: expT(s, read) ->: expT(t, write)) ->:
-            expT(t, write) ->:
-            expT(rt.ArrayType(n, s), read) ->:
-            expT(t, read)
+            expT(t, write) ->: expT(n`.`s, read) ->: expT(t, read)
         case _ => error()
       }
 
-      case  rp.ScanSeq() => p.t match {
+      case  rp.scanSeq() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType) ->: (_: rt.DataType)) ->:
-          (_: rt.DataType) ->: rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
+          (_: rt.DataType) ->: (n`.`_) ->: (_`.`_) =>
 
           (expT(s, read) ->: expT(t, read) ->: expT(t, write)) ->:
-            expT(t, write) ->:
-            expT(rt.ArrayType(n, s), read) ->:
-            expT(rt.ArrayType(n, t), write)
+            expT(t, write) ->: expT(n`.`s, read) ->: expT(n`.`t, write)
         case _ => error()
       }
 
-      case roclp.OclReduceSeq() | roclp.OclReduceSeqUnroll() => p.t match {
-        case rtdsl.aFunT(a,
-          ((t: rt.DataType) ->: (s: rt.DataType) ->: (_: rt.DataType)) ->:
-          (_: rt.DataType) ->: rt.ArrayType(n, _) ->: (_: rt.DataType)) =>
+      case roclp.oclReduceSeq() | roclp.oclReduceSeqUnroll() => p.t match {
+        case a `(Addr)->:`
+          (((t: rt.DataType) ->: (s: rt.DataType) ->: (_: rt.DataType)) ->:
+            (_: rt.DataType) ->: (n`.`_) ->: (_: rt.DataType)) =>
 
           aFunT(a,
             (expT(t, read) ->: expT(s, read) ->: expT(t, write)) ->:
-            expT(t, write) ->:
-            expT(rt.ArrayType(n, s), read) ->:
-            expT(t, read))
+            expT(t, write) ->: expT(n`.`s, read) ->: expT(t, read))
         case _ => error()
       }
 
         //TODO Circular Buffer and OCL versions
-      case rp.RotateValues() => p.t match {
-        case  rtdsl.nFunT(sz,
-                      ((s: rt.DataType) ->: (_: rt.DataType)) ->:
-                      (inT: rt.ArrayType) ->:
-                      (outT: rt.ArrayType)) =>
+      case rp.rotateValues() => p.t match {
+        case  sz `(Nat)->:`
+          (((s: rt.DataType) ->: (_: rt.DataType)) ->:
+            (inT: rt.ArrayType) ->: (outT: rt.ArrayType)) =>
           nFunT(sz,
             (expT(s, read) ->: expT(s, write)) ->:
-            expT(inT, read) ->:
-            expT(outT, read))
+            expT(inT, read) ->: expT(outT, read))
         case _ => error()
       }
 
-      case rp.CircularBuffer() => p.t match {
-        case rtdsl.nFunT(alloc, rtdsl.nFunT(sz,
-                      ((s: rt.DataType) ->: (t: rt.DataType)) ->:
-                      (inT: rt.ArrayType) ->:
-                      (outT: rt.ArrayType))) =>
+      case rp.circularBuffer() => p.t match {
+        case alloc `(Nat)->:` (sz `(Nat)->:`
+          (((s: rt.DataType) ->: (t: rt.DataType)) ->:
+            (inT: rt.ArrayType) ->: (outT: rt.ArrayType))) =>
           nFunT(alloc, nFunT(sz,
             (expT(s, read) ->: expT(t, write)) ->:
-            expT(inT, read) ->:
-            expT(outT, read)))
+            expT(inT, read) ->: expT(outT, read)))
         case _ => error()
       }
 
-      case roclp.OclRotateValues() => p.t match {
-        case rtdsl.aFunT(a, rtdsl.nFunT(sz,
-                   ((s: rt.DataType) ->: (_: rt.DataType)) ->:
-                   (inT: rt.ArrayType) ->:
-                   (outT: rt.ArrayType))) =>
+      case roclp.oclRotateValues() => p.t match {
+        case a `(Addr)->:` (sz `(Nat)->:`
+          (((s: rt.DataType) ->: (_: rt.DataType)) ->:
+            (inT: rt.ArrayType) ->: (outT: rt.ArrayType))) =>
           aFunT(a,
             nFunT(sz,
               (expT(s, read) ->: expT(s, write)) ->:
-              expT(inT, read) ->:
-              expT(outT, read)))
+              expT(inT, read) ->: expT(outT, read)))
         case _ => error()
       }
 
-      case roclp.OclCircularBuffer() => p.t match {
-        case rtdsl.aFunT(a, rtdsl.nFunT(alloc, rtdsl.nFunT(sz,
-          ((s: rt.DataType) ->: (t: rt.DataType)) ->:
-          (inT: rt.ArrayType) ->:
-          (outT: rt.ArrayType)))) =>
+      case roclp.oclCircularBuffer() => p.t match {
+        case a `(Addr)->:` (alloc `(Nat)->:` (sz `(Nat)->:`
+          (((s: rt.DataType) ->: (t: rt.DataType)) ->:
+            (inT: rt.ArrayType) ->: (outT: rt.ArrayType)))) =>
 
           aFunT(a, nFunT(alloc, nFunT(sz,
             (expT(s, read) ->: expT(t, write)) ->:
-              expT(inT, read) ->:
-              expT(outT, read))))
+              expT(inT, read) ->: expT(outT, read))))
         case _ => error()
       }
 
-      case rp.Slide() | rp.PadClamp() => p.t match {
-        case rtdsl.nFunT(sz, rtdsl.nFunT(sp,
-                    (dt1: rt.DataType) ->: (dt2: rt.DataType))) =>
+      case rp.slide() | rp.padClamp() => p.t match {
+        case sz `(Nat)->:` (sp `(Nat)->:`
+          ((dt1: rt.DataType) ->: (dt2: rt.DataType))) =>
           nFunT(sz, nFunT(sp,
             expT(dt1, read) ->: expT(dt2, read)))
         case _ => error()
       }
 
-      case rp.Iterate() => p.t match {
-        case rtdsl.nFunT(k,
-              rtdsl.nFunT(l, (at1: rt.ArrayType) ->: (at2: rt.ArrayType)) ->:
-              (at3: rt.ArrayType) ->:
-              (at4: rt.ArrayType) ) =>
+      case rp.iterate() => p.t match {
+        case k `(Nat)->:`
+          ((l `(Nat)->:` ((at1: rt.ArrayType) ->: (at2: rt.ArrayType))) ->:
+            (at3: rt.ArrayType) ->: (at4: rt.ArrayType)) =>
           nFunT(k,
             nFunT(l, expT(at1, read) ->: expT(at2, write)) ->:
-            expT(at3, read) ->:
-            expT(at4, write) )
+            expT(at3, read) ->: expT(at4, write) )
         case _ => error()
       }
 
-      case roclp.OclIterate() => p.t match {
-        case rtdsl.aFunT(a, rtdsl.nFunT(k,
-              rtdsl.nFunT(l, (at1: rt.ArrayType) ->: (at2: rt.ArrayType)) ->:
-              (at3: rt.ArrayType) ->:
-              (at4: rt.ArrayType) )) =>
+      case roclp.oclIterate() => p.t match {
+        case a `(Addr)->:` (k `(Nat)->:`
+          ((l `(Nat)->:` ((at1: rt.ArrayType) ->: (at2: rt.ArrayType))) ->:
+            (at3: rt.ArrayType) ->: (at4: rt.ArrayType))) =>
           aFunT(a, nFunT(k,
             nFunT(l, expT(at1, read) ->: expT(at2, write)) ->:
-              expT(at3, read) ->:
-              expT(at4, write) ))
+              expT(at3, read) ->: expT(at4, write) ))
         case _ => error()
       }
 
-      case rp.Select() => p.t match {
+      case rp.select() => p.t match {
         case rt.bool ->: (t: rt.DataType) ->:
           (_: rt.DataType) ->: (_: rt.DataType) =>
 
@@ -478,43 +451,37 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.PadEmpty() => p.t match {
-        case rtdsl.nFunT(r,
-          rt.ArrayType(n, t) ->: rt.ArrayType(_, _)) =>
-
-          nFunT(r,
-            expT(rt.ArrayType(n, t), write) ->:
-            expT(rt.ArrayType(n + r, t), write))
+      case rp.padEmpty() => p.t match {
+        case r `(Nat)->:` ((n`.`t) ->: (_`.`_)) =>
+          nFunT(r, expT(n`.`t, write) ->: expT((n + r)`.`t, write))
         case _ => error()
       }
 
-      case rp.PadCst() => p.t match {
-        case rtdsl.nFunT(l, rtdsl.nFunT(q,
-          (t: rt.DataType) ->: rt.ArrayType(n, _) ->: rt.ArrayType(_, _) )) =>
+      case rp.padCst() => p.t match {
+        case l `(Nat)->:` (q `(Nat)->:`
+          ((t: rt.DataType) ->: (n`.`_) ->: (_`.`_))) =>
 
           nFunT(l, nFunT(q,
-            expT(t, read) ->:
-              expT(rt.ArrayType(n, t), read) ->:
-              expT(rt.ArrayType(l + n + q, t), read)))
+            expT(t, read) ->: expT(n`.`t, read) ->:
+              expT((l + n + q)`.`t, read)))
         case _ => error()
       }
 
-      case rp.Generate() => p.t match {
-        case (rt.IndexType(n) ->: (t: rt.DataType)) ->: rt.ArrayType(_, _) =>
+      case rp.generate() => p.t match {
+        case (rt.IndexType(n) ->: (t: rt.DataType)) ->: (_`.`_) =>
           (expT(rt.IndexType(n), read) ->: expT(t, read)) ->:
-            expT(rt.ArrayType(n, t), read)
+            expT(n`.`t, read)
         case _ => error()
       }
 
-      case rp.Reorder() => p.t match {
+      case rp.reorder() => p.t match {
         case (rt.IndexType(n) ->: rt.IndexType(_)) ->:
-          (rt.IndexType(_) ->: rt.IndexType(_)) ->:
-          rt.ArrayType(_, t) ->: rt.ArrayType(_, _) =>
+          (rt.IndexType(_) ->: rt.IndexType(_)) ->: (_`.`t) ->: (_`.`_) =>
 
           val ai = accessTypeIdentifier()
           (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
             (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
-            expT(rt.ArrayType(n, t), ai) ->: expT(rt.ArrayType(n, t), ai)
+            expT(n`.`t, ai) ->: expT(n`.`t, ai)
         case _ => error()
       }
 
@@ -525,20 +492,20 @@ private class InferAccessAnnotation {
           case rt.FunType(in: rt.DataType, out) =>
             expT(in, read) ->: buildType(out)
           case _ =>
-            throw new Exception("This should not happen")
+            throw Exception("This should not happen")
         }
         buildType(p.t)
 
-      case rp.MakeArray(_) =>
+      case rp.makeArray(_) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(in: rt.DataType, out) =>
             expT(dataType(in), read) ->: buildType(out)
-          case rt.ArrayType(n, dt) => expT(ArrayType(n, dataType(dt)), read)
+          case n`.`dt => expT(n`.`dt, read)
           case _ => error(s"did not expect t")
         }
         buildType(p.t)
 
-      case rp.DepMapSeq() =>
+      case rp.depMapSeq() =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.DepFunType(i, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
             rt.FunType(inArr@rt.DepArrayType(_, _), outArr@rt.DepArrayType(_, _))) =>
@@ -549,7 +516,7 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.DMatch() =>
+      case rp.dmatch() =>
         val a = accessTypeIdentifier()
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.DepPairType(x, elemT),
@@ -567,7 +534,7 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.MkDPair() =>
+      case rp.dpair() =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.DepFunType(fst, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
             val a1 = accessTypeIdentifier()
@@ -585,7 +552,7 @@ private class InferAccessAnnotation {
 
     checkConsistency(p.t, primitiveType)
 
-    ptAnnotationMap update(p, primitiveType)
+    ptAnnotationMap.put(p, primitiveType)
     (primitiveType, Subst())
   }
 
@@ -606,8 +573,8 @@ private class InferAccessAnnotation {
   ): Try[Subst] = (less, larger) match {
     case (le@ExpType(ldt, la), re@ExpType(rdt, ra)) if ldt == rdt =>
       (la, ra) match {
-        case (li: AccessTypeIdentifier, _) => Try(Subst() + (li, ra))
-        case (_, ri: AccessTypeIdentifier) => Try(Subst() + (ri, la))
+        case (li: AccessTypeIdentifier, _) => Try(Subst().add(li, ra))
+        case (_, ri: AccessTypeIdentifier) => Try(Subst().add(ri, la))
         case _ => if (le `<=` re) Try(Subst())
                   else Try(error(s"Cannot subunify $less <: $larger."))
       }

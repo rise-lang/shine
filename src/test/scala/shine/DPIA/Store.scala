@@ -1,8 +1,8 @@
 package shine.DPIA
 
-import rise.core._
 import rise.core.TypedDSL._
-import rise.core.types._
+import rise.core.primitives._
+import rise.core.types.{Nat, _}
 import util.gen
 
 class Store extends test_util.Tests {
@@ -18,7 +18,7 @@ class Store extends test_util.Tests {
     )).code)
     // this is surprising behaviour
     plusNum(2, gen.CProgram(fun(int)(x =>
-      TypedDSL.let(x + l(2))(fun(y => y * y) )
+      let(x + l(2))(fun(y => y * y) )
     )).code)
     // this is what we actually would expect
     plusNum(1, gen.CProgram(fun(int)(x =>
@@ -29,7 +29,7 @@ class Store extends test_util.Tests {
   }
 
   test("array values") {
-    val code = gen.CProgram(nFun(n => fun(ArrayType(n, int))(xs =>
+    val code = gen.CProgram(depFun((n: Nat) => fun(ArrayType(n, int))(xs =>
       xs |> store2(how = mapSeq(fun(x => x))) |> fun(xs =>
         xs |> mapSeq(fun(x => x))
       )
@@ -39,7 +39,7 @@ class Store extends test_util.Tests {
   }
 
   test("array of array values") {
-    val code = gen.CProgram(nFun(n => fun(ArrayType(n, ArrayType(n, int)))(xs =>
+    val code = gen.CProgram(depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, int)))(xs =>
       xs |> store(how = mapSeq(mapSeq(fun(x => x)))) { xs =>
         xs |> mapSeq(mapSeq(fun(x => x)))
       }

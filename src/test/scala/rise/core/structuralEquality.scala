@@ -75,9 +75,9 @@ class structuralEquality extends test_util.Tests {
 
   test("dependent function type using an array") {
     assert(
-      nFunT(n => dtFunT(a => dtFunT(t => ArrayType(n, a) ->: t)))
+      expl((n: Nat) => expl((a: DataType) => expl((t: DataType) => ArrayType(n, a) ->: t)))
         ==
-          nFunT(m => dtFunT(b => dtFunT(t => ArrayType(m, b) ->: t)))
+          expl((m: Nat) => expl((b: DataType) => expl((t: DataType) => ArrayType(m, b) ->: t)))
     )
   }
 }

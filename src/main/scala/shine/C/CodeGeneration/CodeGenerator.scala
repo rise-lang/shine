@@ -102,16 +102,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   def updatedRanges(key: String, value: arithexpr.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
-  override def generate(phrase:Phrase[CommType],
-               topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
-               env:CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
+  override def generate(phrase: Phrase[CommType],
+               topLevelDefinitions: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
+               env: CodeGenerator.Environment): (immutable.Seq[Decl], Stmt) = {
     val stmt = this.generateWithFunctions(phrase, topLevelDefinitions, env)
-    (decls, stmt)
+    (decls.toSeq, stmt)
   }
 
-  def generateWithFunctions(phrase:Phrase[CommType],
-                            topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
-                            env:CodeGenerator.Environment):Stmt = {
+  def generateWithFunctions(phrase: Phrase[CommType],
+                            topLevelDefinitions: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
+                            env: CodeGenerator.Environment):Stmt = {
     topLevelDefinitions.headOption match {
       case Some((ident, defn)) =>
         generateLetNat(ident, defn, env, (gen, env) => gen.generateWithFunctions(phrase, topLevelDefinitions.tail, env))
@@ -192,7 +192,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case MkDPairFstI(fst, a) =>
         genNat(fst, env, fst => {
           acc(a, env, List(), expr => C.AST.ExprStmt(C.AST.Assignment(
-            C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u16), expr), C.AST.Literal("0")
+            C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), expr), C.AST.Literal("0")
             ) , fst)))
         })
       case Apply(_, _) | DepApply(_, _) |
@@ -578,7 +578,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         C.AST.StructType("Record_" + typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
-      case shine.DPIA.Types.DepPairType(_, _) => C.AST.PointerType(C.AST.Type.u8, const = true)
+      case shine.DPIA.Types.DepPairType(_, _) => C.AST.PointerType(C.AST.Type.u8)
       case _: shine.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
       case _: shine.DPIA.Types.NatToDataApply => throw new Exception("This should not happen")
     }

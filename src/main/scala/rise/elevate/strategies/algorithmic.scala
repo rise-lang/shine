@@ -1,10 +1,11 @@
 package rise.elevate.strategies
 
-import com.github.ghik.silencer.silent
 import elevate.core.strategies.{Traversable, basic}
 import elevate.core.strategies.basic.{applyNTimes, id}
 import elevate.core.strategies.traversal._
 import rise.elevate.strategies.traversal._
+
+import scala.annotation.nowarn
 //import rise.elevate.rules.traversal.default._
 import elevate.core.{Failure, Strategy, Success}
 import elevate.macros.StrategyMacro.strategy
@@ -17,7 +18,7 @@ import rise.elevate.strategies.predicate.{isApplied, isMap, isReduceSeq}
 import rise.elevate.strategies.traversal.fmap
 import rise.core.TypedDSL._
 import rise.core._
-import rise.core.primitives.ReduceSeq
+import rise.core.primitives.{map, reduceSeq}
 import rise.elevate._
 
 object algorithmic {
@@ -28,21 +29,21 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> *(.. >> f)
   @strategy def mapFirstFission: Strategy[Rise] = e => {
     // TODO: this should be expressed with elevate strategies
-    @silent
+    @nowarn("msg=match may not be exhaustive")
     @scala.annotation.tailrec
-    def mapFirstFissionRec(x: Identifier, f: TDSL[Rise], gx: Rise): TDSL[Rise] = {
+    def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): ToBeTyped[Rise] = {
       gx match {
         case App(f2, gx2) =>
           if (gx2 == x) {
             map(f2) >> map(f)
           } else {
-            mapFirstFissionRec(x, fun(e => f(typed(f2)(e))), gx2)
+            mapFirstFissionRec(x, fun(e => f(preserveType(f2)(e))), gx2)
           }
       }
     }
 
     e match {
-      case App(primitives.Map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx) :: e.t)
+      case App(primitives.map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx) :: e.t)
       case _                                    => Failure(mapFirstFission)
     }
   }
@@ -51,8 +52,8 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> .. >> *f
   @strategy def mapFullFission: Strategy[Rise] = e => {
     // TODO: this should be expressed with elevate strategies
-    @silent
-    def mapFullFissionRec(x: Identifier, gx: Rise): TDSL[Rise] = {
+    @nowarn("msg=match may not be exhaustive")
+    def mapFullFissionRec(x: Identifier, gx: Rise): ToBeTyped[Rise] = {
       gx match {
         case App(f, gx2) =>
           if (gx2 == x) {
@@ -64,7 +65,7 @@ object algorithmic {
     }
 
     e match {
-      case App(primitives.Map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx) :: e.t)
+      case App(primitives.map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx) :: e.t)
       case _                                    => Failure(mapFullFission)
     }
   }
@@ -80,9 +81,9 @@ object algorithmic {
   @strategy def reorderRec(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
 
     def freduce(s: Strategy[Rise]): Strategy[Rise] =
-      function(function(argumentOf(ReduceSeq()(), body(body(s)))))
+      function(function(argumentOf(reduceSeq.primitive, body(body(s)))))
     def freduceX(s: Strategy[Rise]): Strategy[Rise] =
-      argument(function(function(argumentOf(ReduceSeq()(), body(body(s))))))
+      argument(function(function(argumentOf(reduceSeq.primitive, body(body(s))))))
     def stepDown(s: Strategy[Rise]): Strategy[Rise] = freduceX(s) <+ freduce(s) <+ fmap(s)
 
     val isFullyAppliedReduceSeq: Strategy[Rise] = isApplied(isApplied(isApplied(isReduceSeq))) <+

@@ -18,14 +18,14 @@ object HighLevelConstructs {
   val reorderWithStride: Expr = {
     nFun(s => {
       val f =
-        implN(n =>
+        impl{ n: Nat =>
           fun(IndexType(n))(i =>
             natAsIndex(n)(
               (indexAsNat(i) / (n /^ s)) +
                 ((s: Expr) * (indexAsNat(i) % (n /^ s)))
             )
           )
-        )
+        }
       reorder(f)(f)
     })
   }
@@ -52,8 +52,8 @@ object HighLevelConstructs {
     fun(a => fun(b => rec(n, a, b)))
   }
 
-  def dropLast: Expr = nFun(n =>
-    implN(m => implDT(dt => take(m) :: ((m + n) `.` dt) ->: (m `.` dt)))
+  def dropLast: Expr = nFun(n => impl{ m: Nat => impl{ dt: DataType =>
+    take(m) :: ((m + n) `.` dt) ->: (m `.` dt) }}
   )
 
   // TODO: Investigate. this might be wrong

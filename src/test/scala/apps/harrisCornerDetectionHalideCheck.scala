@@ -93,7 +93,7 @@ class harrisCornerDetectionHalideCheck
     val goldProg = gen.OpenCLKernel(dumbLowering, "harrisGold")
 
     val random = new scala.util.Random()
-    val input = Array.fill(3, Hi, Wi)(random.nextFloat * 10.0f)
+    val input = Array.fill(3, Hi, Wi)(random.nextFloat() * 10.0f)
 
     val fg = goldProg.as[ScalaFunction `(`
       Int `,` Int `,` Array[Array[Array[Float]]]

@@ -5,6 +5,7 @@ import elevate.core.strategies.traversal._
 import elevate.core.{RewriteResult, Strategy}
 import rise.core.TypeLevelDSL._
 import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core._
 import rise.core.types.{ArrayType, NatKind, f32, infer, _}
 import rise.elevate.rules._
@@ -13,9 +14,9 @@ import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.traversal._
 import rise.elevate.util._
-
 import _root_.util.gen
 
+import scala.collection.immutable
 import scala.language.implicitConversions
 
 class tiling extends test_util.Tests {
@@ -33,7 +34,7 @@ class tiling extends test_util.Tests {
   def betaEtaEquals(a: Rise, b: Rise): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toTDSL(na) :: nb.t
+    val uab: Rise = toBeTyped(na) :: nb.t
     makeClosed(uab) == makeClosed(nb)
   }
   // Check that DSL makes sense
@@ -240,18 +241,18 @@ class tiling extends test_util.Tests {
 
   // Codegen tests
 
-  def inputT(dim: Int, n : List[NatIdentifier]): ArrayType = dim match {
+  def inputT(dim: Int, n : List[Nat]): ArrayType = dim match {
     case 1 => ArrayType(n.head, f32)
     case d => ArrayType(n.head, inputT(d-1, n.tail))
   }
 
   def wrapInLambda[T <: Expr](dim: Int,
-                   f: TDSL[Identifier] => TDSL[T],
-                   genInputType: List[NatIdentifier] => ArrayType,
-                   natIds: List[NatIdentifier] = List()): TDSL[DepLambda[NatKind]] = {
+                              f: ToBeTyped[Identifier] => ToBeTyped[T],
+                              genInputType: List[Nat] => ArrayType,
+                              natIds: List[Nat] = List()): ToBeTyped[DepLambda[NatKind]] = {
     dim match {
-      case 1 => nFun(n => fun(genInputType( natIds :+ n))(f))
-      case d => nFun(n => wrapInLambda(d - 1, f, genInputType, natIds :+ n))
+      case 1 => depFun((n: Nat) => fun(genInputType( natIds :+ n))(f))
+      case d => depFun((n: Nat) => wrapInLambda(d - 1, f, genInputType, natIds :+ n))
     }
   }
 
@@ -259,7 +260,7 @@ class tiling extends test_util.Tests {
   // ... but mapAcceptorTranslation for split is missing
   val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
 
-  val identity = dtFun(t => foreignFun("identity", scala.collection.Seq("y"), "{ return y; }", t ->: t))
+  val identity = depFun((t: DataType) => foreignFun("identity", immutable.Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(f32)
 
   test("codegen 1D tiles") {
@@ -301,12 +302,12 @@ class tiling extends test_util.Tests {
  // Tests related to fixing some development issues
 
   test("map fission issue when used with zip") {
-    def xsT(N : NatIdentifier) = ArrayType(N, f32)
-    def ysT(N : NatIdentifier) = ArrayType(N, f32)
+    def xsT(N : Nat) = ArrayType(N, f32)
+    def ysT(N : Nat) = ArrayType(N, f32)
 
     val mulT = fun(x => fst(x) * snd(x))
 
-    val simple = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    val simple = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs)(ys) |> map(mulT)
     )))
 

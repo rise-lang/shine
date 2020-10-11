@@ -4,6 +4,7 @@ import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import rise.core.TypeLevelDSL._
+import rise.core.primitives._
 import rise.core.TypedDSL._
 import rise.core._
 import rise.core.types._
@@ -76,7 +77,7 @@ class algorithmic extends test_util.Tests {
       depLambda[NatKind](M, depLambda[NatKind](N,
         fun(ArrayType(M, ArrayType(N, f32)))(i =>
           reduce(fun((acc, y) =>
-            map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: f32)(_ => l(0.0f)))) $ transpose(i))))
+            map(addTuple) $ zip(acc)(y)))(generate(fun(IndexType(M) ->: f32)(_ => l(0.0f)))) $ transpose(i))))
 
     val rewrite = body(body(body(function(liftReduce))))(DFNF(mapReduce).get).get
 
@@ -97,31 +98,25 @@ class algorithmic extends test_util.Tests {
     val mm = depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
-          map(fun(ak =>
-            map(fun(bk =>
-              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
-                zip(ak, bk))) $ transpose(b) )) $ a)))))
+          a |> map(fun(ak =>
+            transpose(b) |> map(fun(bk =>
+              zip(ak)(bk) |>
+                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(
+                  l(0.0f)))))))))))
 
-    def goldMKN(reduceFun: TDSL[Rise]): Rise = {
+    def goldMKN(reduceFun: ToBeTyped[Rise]): Rise = {
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
-            map(fun(ak =>
-              reduceSeq(
-                reduceFun,
-                generate(fun(IndexType(N) ->: f32)(_ => l(0.0f)))
-              ) $
-                zip(ak, b))
-            ) $ a
-          )
-        )
-      )))
+            a |> map(fun(ak =>
+              zip(ak)(b) |> reduceSeq(reduceFun)(
+                generate(fun(IndexType(N) ->: f32)(_ => l(0.0f)))))))))))
     }
 
     val goldMKNVersion1 = goldMKN(
       fun((acc, y) => // y :: (f32, N.f32); acc :: N.f32
         mapSeq(fun(t => fst(t) + snd(t))) $
-          zip(acc,
+          zip(acc)(
             mapSeq(fun(bs => bs * fst(y))) $ snd(y))
       )
     )
@@ -132,8 +127,8 @@ class algorithmic extends test_util.Tests {
        val as = fst(aBN)
        map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
          /* N.(f32, (f32, f32))*/
-         zip(acc,
-           map(fun(bs => pair(bs, as))) $ BN/*:N.f32*/)
+         zip(acc)(
+           map(fun(bs => pair(bs)(as))) $ BN/*:N.f32*/)
      })
     )
 
@@ -160,12 +155,12 @@ class algorithmic extends test_util.Tests {
                 fun((acc, y) => { // akB :: (f32, N.f32); acc :: N.f32
                   map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
                     /* N.(f32, (f32, f32))*/
-                    zip(acc,
-                      map(fun(bs => pair(bs, fst(y)))) $ snd(y)/*:N.f32*/)
-                }),
+                    zip(acc)(
+                      map(fun(bs => pair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
+                }))(
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f)))
               ) $
-                zip(ak, b))
+                zip(ak)(b))
             ) $ a
           )
         )
@@ -198,8 +193,8 @@ class algorithmic extends test_util.Tests {
     val op = fun((acc, y) => { // akB :: (f32, N.f32); acc :: N.f32
       map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
         /* N.(f32, (f32, f32))*/
-        zip(acc,
-          map(fun(bs => pair(bs, fst(y)))) $ snd(y)/*:N.f32*/)
+        zip(acc)(
+          map(fun(bs => pair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
     })
 
     // this one is constructed more similar to what the rewrite rules will create
@@ -212,12 +207,12 @@ class algorithmic extends test_util.Tests {
                 map(fun(x => // x :: M.((f32, N.f32), N.f32)
                   app(app(op, fst(x)), snd(x)))) $
                   // M.((f32, N.f32), N.f32)
-                  zip(acc, map(fun(t => pair(t,snd(y)))) $ fst(y))),
+                  zip(acc)(map(fun(t => pair(t)(snd(y)))) $ fst(y))))(
               // generate zeros :: M.N.f32
               generate(fun(IndexType(M) ->: ArrayType(N, f32))(_ =>
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f) ))))
             ) $
-              zip(transpose(a), b) // :: K.(M.f32, N.f32)
+              zip(transpose(a))(b) // :: K.(M.f32, N.f32)
           ))
       )))
 
@@ -231,12 +226,12 @@ class algorithmic extends test_util.Tests {
                 map(fun(x => // x :: M.((f32, N.f32), N.f32)
                   app(app(op, fst(x)), snd(x)))) $
                   // M.((N.f32, f32), N.f32)
-                  zip(acc, map(fun(t => pair(t,fst(y)))) $ snd(y))),
+                  zip(acc)(map(fun(t => pair(t)(fst(y)))) $ snd(y))))(
               // generate zeros :: M.N.f32
               generate(fun(IndexType(M) ->: ArrayType(N, f32))(_ =>
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f) ))))
             ) $
-              zip(b,transpose(a)) // :: K.(N.f32, M.f32)
+              zip(b)(transpose(a)) // :: K.(N.f32, M.f32)
           ))
       )))
 
@@ -286,8 +281,8 @@ class algorithmic extends test_util.Tests {
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
-                zip(ak, bk))) $ transpose(b) )) $ a)))))).get
+              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(l(0.0f))) $
+                zip(ak)(bk))) $ transpose(b) )) $ a)))))).get
 
     val typedMM = infer(mm)
 
@@ -323,13 +318,13 @@ class algorithmic extends test_util.Tests {
 
     // loop ordering: M -> N -> K
     val mm =
-      nFun((m, n, k) =>
+      depFun((m: Nat, n: Nat, k: Nat) =>
         fun((m`.`k`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32))
         ((a, b) =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
-                zip(ak, bk))) $ transpose(b) )) $ a
+              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(l(0.0f))) $
+                zip(ak)(bk))) $ transpose(b) )) $ a
         )
       )
 
@@ -431,26 +426,26 @@ class algorithmic extends test_util.Tests {
   test("reduce rows") {
     val addT = fun(x => fst(x) + snd(x))
 
-    val test = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, f32)))(i =>
+    val test =depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(i =>
       reduceSeq(fun((y, acc) =>
-        map(addT) $ zip(y)(acc)),
+        map(addT) $ zip(y)(acc)))(
         generate(fun(IndexType(m) ->: f32)(_ => l(0.0f)))) $ i)))
 
     infer(test)
   }
 
   test("dot and outer product") {
-    def xsT(N : NatIdentifier) = ArrayType(N, f32)
-    def ysT(N : NatIdentifier) = ArrayType(N, f32)
+    def xsT(N : Nat) = ArrayType(N, f32)
+    def ysT(N : Nat) = ArrayType(N, f32)
 
     val mulT = fun(x => fst(x) * snd(x))
     val add = fun(x => fun(a => x + a))
 
-    val dot = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    val dot = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       (reduce(add)(l(0.0f)) o map(mulT)) $ zip(xs)(ys)
     )))
 
-    val outer = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    val outer = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       map(fun(a => map(fun(b => add(a,b))) $ ys )) $ xs
     )))
 

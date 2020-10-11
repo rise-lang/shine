@@ -9,8 +9,8 @@ import util._
 object mm {
   def withSize(N: Int, M: Int, O: Int, sampleCount: Int): Unit = {
     val rand = new scala.util.Random()
-    val At = Array.fill(O, N)(rand.nextFloat * 10)
-    val B = Array.fill(O, M)(rand.nextFloat * 10)
+    val At = Array.fill(O, N)(rand.nextFloat() * 10)
+    val B = Array.fill(O, M)(rand.nextFloat() * 10)
 
 
     val localSize = LocalSize((32, 8))

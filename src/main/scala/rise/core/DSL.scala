@@ -1,8 +1,7 @@
 package rise.core
 
-import rise.core.types._
 import rise.core.semantics._
-import rise.core.primitives._
+import rise.core.types._
 
 import scala.language.implicitConversions
 
@@ -18,69 +17,69 @@ object DSL {
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
-  def toMem: ToMem = ToMem()()
+  def toMem: Primitive = primitives.toMem.primitive
   def toMemFun(f: Expr): Expr = fun(x => toMem(f(x)))
-  def makeArray(n: Int): MakeArray = primitives.MakeArray(n)()
-  def cast: Cast = primitives.Cast()()
-  def depJoin: DepJoin = primitives.DepJoin()()
-  def depMapSeq: DepMapSeq = primitives.DepMapSeq()()
-  def depZip: DepZip = primitives.DepZip()()
-  def drop: Drop = primitives.Drop()()
-  def fst: Fst = primitives.Fst()()
-  def gather: Gather = primitives.Gather()()
-  def generate: Generate = primitives.Generate()()
-  def idx: Idx = primitives.Idx()()
-  def id: Id = primitives.Id()()
-  def indexAsNat: IndexAsNat = primitives.IndexAsNat()()
-  def iterate: Iterate = primitives.Iterate()()
-  def join: Join = primitives.Join()()
-  def map: Map = primitives.Map()()
-  def mapFst: MapFst = primitives.MapFst()()
-  def mapSnd: MapSnd = primitives.MapSnd()()
-  def mapSeq: MapSeq = primitives.MapSeq()()
-  def mapStream: MapStream = primitives.MapStream()()
-  def iterateStream: IterateStream = primitives.IterateStream()()
-  def mapSeqUnroll: MapSeqUnroll = primitives.MapSeqUnroll()()
-  def natAsIndex: NatAsIndex = primitives.NatAsIndex()()
-  def padCst: PadCst = primitives.PadCst()()
-  def padEmpty: PadEmpty = primitives.PadEmpty()()
-  def padClamp: PadClamp = primitives.PadClamp()()
-  def partition: Partition = primitives.Partition()()
-  def pair: Pair = primitives.Pair()()
-  def reduce: Reduce = primitives.Reduce()()
-  def reduceSeq: ReduceSeq = primitives.ReduceSeq()()
-  def reduceSeqUnroll: ReduceSeqUnroll = primitives.ReduceSeqUnroll()()
-  def reorder: Reorder = primitives.Reorder()()
-  def scanSeq: ScanSeq = primitives.ScanSeq()()
-  def slide: Slide = primitives.Slide()()
-  def circularBuffer: CircularBuffer = primitives.CircularBuffer()()
-  def rotateValues: RotateValues = primitives.RotateValues()()
-  def snd: Snd = primitives.Snd()()
-  def split: Split = primitives.Split()()
-  def take: Take = primitives.Take()()
-  def transpose: Transpose = primitives.Transpose()()
-  def select: Select = primitives.Select()()
-  def unzip: Unzip = primitives.Unzip()()
-  def zip: Zip = primitives.Zip()()
+  def makeArray(n: Int): Primitive = primitives.makeArray(n).primitive
+  def cast: Primitive = primitives.cast.primitive
+  def depJoin: Primitive = primitives.depJoin.primitive
+  def depMapSeq: Primitive = primitives.depMapSeq.primitive
+  def depZip: Primitive = primitives.depZip.primitive
+  def drop: Primitive = primitives.drop.primitive
+  def fst: Primitive = primitives.fst.primitive
+  def gather: Primitive = primitives.gather.primitive
+  def generate: Primitive = primitives.generate.primitive
+  def idx: Primitive = primitives.idx.primitive
+  def id: Primitive = primitives.id.primitive
+  def indexAsNat: Primitive = primitives.indexAsNat.primitive
+  def iterate: Primitive = primitives.iterate.primitive
+  def join: Primitive = primitives.join.primitive
+  def map: Primitive = primitives.map.primitive
+  def mapFst: Primitive = primitives.mapFst.primitive
+  def mapSnd: Primitive = primitives.mapSnd.primitive
+  def mapSeq: Primitive = primitives.mapSeq.primitive
+  def mapStream: Primitive = primitives.mapStream.primitive
+  def iterateStream: Primitive = primitives.iterateStream.primitive
+  def mapSeqUnroll: Primitive = primitives.mapSeqUnroll.primitive
+  def natAsIndex: Primitive = primitives.natAsIndex.primitive
+  def padCst: Primitive = primitives.padCst.primitive
+  def padEmpty: Primitive = primitives.padEmpty.primitive
+  def padClamp: Primitive = primitives.padClamp.primitive
+  def partition: Primitive = primitives.partition.primitive
+  def pair: Primitive = primitives.pair.primitive
+  def reduce: Primitive = primitives.reduce.primitive
+  def reduceSeq: Primitive = primitives.reduceSeq.primitive
+  def reduceSeqUnroll: Primitive = primitives.reduceSeqUnroll.primitive
+  def reorder: Primitive = primitives.reorder.primitive
+  def scanSeq: Primitive = primitives.scanSeq.primitive
+  def slide: Primitive = primitives.slide.primitive
+  def circularBuffer: Primitive = primitives.circularBuffer.primitive
+  def rotateValues: Primitive = primitives.rotateValues.primitive
+  def snd: Primitive = primitives.snd.primitive
+  def split: Primitive = primitives.split.primitive
+  def take: Primitive = primitives.take.primitive
+  def transpose: Primitive = primitives.transpose.primitive
+  def select: Primitive = primitives.select.primitive
+  def unzip: Primitive = primitives.unzip.primitive
+  def zip: Primitive = primitives.zip.primitive
 
-  def neg: Neg = primitives.Neg()()
-  def not: Not = primitives.Not()()
-  def add: Add = primitives.Add()()
-  def sub: Sub = primitives.Sub()()
-  def mul: Mul = primitives.Mul()()
-  def div: Div = primitives.Div()()
-  def mod: Mod = primitives.Mod()()
-  def gt: Gt = primitives.Gt()()
-  def lt: Lt = primitives.Lt()()
-  def equal: Equal = primitives.Equal()()
+  def neg: Primitive = primitives.neg.primitive
+  def not: Primitive = primitives.not.primitive
+  def add: Primitive = primitives.add.primitive
+  def sub: Primitive = primitives.sub.primitive
+  def mul: Primitive = primitives.mul.primitive
+  def div: Primitive = primitives.div.primitive
+  def mod: Primitive = primitives.mod.primitive
+  def gt: Primitive = primitives.gt.primitive
+  def lt: Primitive = primitives.lt.primitive
+  def equal: Primitive = primitives.equal.primitive
 
-  def asVector: AsVector = primitives.AsVector()()
-  def asVectorAligned: AsVectorAligned = primitives.AsVectorAligned()()
-  def asScalar: AsScalar = primitives.AsScalar()()
-  def vectorFromScalar: VectorFromScalar = primitives.VectorFromScalar()()
+  def asVector: Primitive = primitives.asVector.primitive
+  def asVectorAligned: Primitive = primitives.asVectorAligned.primitive
+  def asScalar: Primitive = primitives.asScalar.primitive
+  def vectorFromScalar: Primitive = primitives.vectorFromScalar.primitive
 
-  def printType(msg: String): PrintType = PrintType(msg)()
-  def typeHole(msg: String): TypeHole = TypeHole(msg)()
+  def printType(msg: String): Primitive = primitives.printType(msg).primitive
+  def typeHole(msg: String): Primitive = primitives.typeHole(msg).primitive
 
   // scalastyle:off method.name
   implicit class Ops(lhs: Expr) {
@@ -122,8 +121,8 @@ object DSL {
   }
    */
 
-  implicit class TypeAnnotation(t: Type) {
-    def ::(e: Expr): Expr = Annotation(e, t)
+  implicit class TypeAnnotationHelper(t: Type) {
+    def ::(e: Expr): Expr = TypeAnnotation(e, t)
     def `:`(e: Expr): Expr = e :: t
   }
   // scalastyle:on method.name
@@ -179,17 +178,17 @@ object DSL {
       def be(in: Expr => Expr): Expr
     } = new {
       def be(in: Expr => Expr): Expr =
-        primitives.Let()().apply(e).apply(fun(in))
+        primitives.let.primitive.apply(e).apply(fun(in))
     }
   }
   // scalastyle:on structural.type
 
   object letf {
     def apply(in: Expr => Expr): Expr = {
-      fun(e => primitives.Let()().apply(e).apply(fun(in)))
+      fun(e => primitives.let.primitive.apply(e).apply(fun(in)))
     }
     def apply(in: Expr): Expr = {
-      fun(e => primitives.Let()().apply(e).apply(in))
+      fun(e => primitives.let.primitive.apply(e).apply(in))
     }
   }
 

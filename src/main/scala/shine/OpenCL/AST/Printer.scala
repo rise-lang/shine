@@ -78,7 +78,7 @@ class Printer extends shine.C.AST.CPrinter {
     }
   }
 
-  private def printVarDecl(v: VarDecl): Unit = {
+  private def printVarDecl(v: shine.OpenCL.AST.VarDecl): Unit = {
     if (v.addressSpace != AddressSpace.Private) print(s"${v.addressSpace} ")
     if (v.t.const) print("const ")
     v.t match {
@@ -90,7 +90,7 @@ class Printer extends shine.C.AST.CPrinter {
           case None => ""
           case Some(s) => s
         } }]")
-      case p: PointerType => print(s"${toString(p.a)} ${p.valueType}* ${v.name}")
+      case p: shine.OpenCL.AST.PointerType => print(s"${toString(p.a)} ${p.valueType}* ${v.name}")
       case _: shine.C.AST.PointerType => throw new Exception("This should not happen")
       case _: shine.C.AST.UnionType => ???
     }
