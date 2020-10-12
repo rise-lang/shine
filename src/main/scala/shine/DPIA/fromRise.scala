@@ -420,6 +420,16 @@ object fromRise {
             Gather(n, m, t, y, x)))
       }
 
+      case core.scatter() => fromType {
+        case expT(ArrayType(n, IndexType(m)), `read`) ->:
+          expT(ArrayType(_, t), `write`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType](expT(n`.`idx(m), read), y =>
+            fun[ExpType](expT(n`.`t, write), x =>
+              Scatter(n, m, t, y, x)))
+      }
+
       case core.transpose() => fromType {
         case expT(ArrayType(n, ArrayType(m, t)), a) ->:
           expT(ArrayType(_, ArrayType(_, _)), _)

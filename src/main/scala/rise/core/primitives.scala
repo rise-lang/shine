@@ -57,6 +57,12 @@ object primitives {
       (m`.`IndexType(n)) ->: (n`.`t) ->: (m`.`t)  }}}
   }
 
+  @primitive object scatter extends Primitive with Builder {
+    implNat(n => implNat(m => implDT(t =>
+      (n`.`IndexType(m)) ->: (n`.`t) ->: (m`.`t)
+    )))
+  }
+
   @primitive object generate extends Primitive with Builder {
     impl{ n: Nat => impl{ t: DataType =>
       (IndexType(n) ->: t) ->: ArrayType(n, t) }}

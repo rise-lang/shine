@@ -12,6 +12,38 @@ object HighLevelConstructs {
   val unslide2D: Expr =
     map(transpose >> map(join)) >> join
 
+  // Halide::TailStrategy::ShiftInwards:
+  // Prevent evaluation beyond the original extent by shifting the tail case inwards,
+  // re-evaluating some points near the end.
+  def tileShiftInwards(tileSize: Nat): Expr =
+    implNat(n => implNat(haloSize => implDT(s => implDT(t =>
+    fun(processTile =>
+    fun(input => {
+      val tiles = (n + tileSize - 1) / tileSize
+      generate(fun(tile =>
+        (input :: ((n + haloSize) `.` s)) |>
+        gather(generate(fun(i => {
+          val endRegularTile = lidx(n / tileSize, tiles)
+          val startRegular = indexAsNat(tile) * tileSize
+          val startShifted = n - tileSize
+          val start = select(tile < endRegularTile, startRegular, startShifted)
+          natAsIndex(n + haloSize)(start + indexAsNat(i))
+        })))
+      )) |>
+      (processTile ::
+        (tiles `.` (tileSize + haloSize) `.` s) ->: (tiles `.` tileSize `.` t)) >>
+      join >>
+      scatter(generate(fun(i => {
+        val tile = indexAsNat(i) / tileSize
+        val endRegularTile = n / tileSize
+        val regularPos = indexAsNat(i)
+        val recomputed = tileSize - (n % tileSize)
+        val shiftedPos = indexAsNat(i) - recomputed
+        val pos = select(tile < endRegularTile, regularPos, shiftedPos)
+        natAsIndex(n)(pos)
+      })))
+    } :: (n `.` t)))))))
+
   def slide3D(sz: Nat, st: Nat): Expr =
     map(slide2D(sz, st)) >> slide(sz)(st) >> map(transpose >> map(transpose))
 

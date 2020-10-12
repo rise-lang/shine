@@ -216,12 +216,24 @@ object harrisCornerDetectionHalide {
       nFun(h => nFun(w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
-        transpose >> map(transpose) >>
+        transpose >> map(transpose) >> // H.W.3.
+        tileShiftInwards(tileY)(mapGlobal(1)( // tY.W.3.
+          transpose >> // W.tY.3.
+          tileShiftInwards(tileX)(mapGlobal(0)( // tX.tY.3.
+            map(transpose) >> transpose >> map(transpose) >> // 3.tY.tX.
+            innerHarris(tileY)(tileX) >> // tY.tX.
+            transpose // tX.tY.
+          )) >> // W.tY.
+          transpose // ty.W.
+        )) >> // H.W.
+        map(padEmpty(4))
+        /*
         slide2D(tileY+4, tileY, tileX+4, tileX) >> mapGlobal(1)(
           mapGlobal(0)(
             map(transpose) >> transpose >>
             innerHarris(tileY)(tileX)
         )) >> unslide2D >> map(padEmpty(4))
+         */
       )))
 
     def harrisVecUnaligned(v: Int): Expr =

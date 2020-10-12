@@ -22,10 +22,8 @@ class harrisCornerDetectionHalideCheck
   val strip = 32
   assert(Ho % strip == 0)
 
-  val tileX = 4 // can't be 8 due to current implementation
+  val tileX = 8
   val tileY = 8
-  assert((Wo-4) % tileX == 0)
-  assert(Ho % tileY == 0)
 
   def lowerOMP(e: Expr): Expr =
     rewrite.unrollDots(util.printTime("infer", types.infer(e))).get

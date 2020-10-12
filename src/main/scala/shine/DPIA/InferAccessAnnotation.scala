@@ -336,6 +336,12 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
+      case rp.scatter() => p.t match {
+        case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
+          expT(dt1, read) ->: expT(dt2, write) ->: expT(dt3, write)
+        case _ => error()
+      }
+
       case rp.natAsIndex() | rp.take() | rp.drop() => p.t match {
         case n `(Nat)->:` ((dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
           nFunT(n, expT(dt1, read) ->: expT(dt2, read))

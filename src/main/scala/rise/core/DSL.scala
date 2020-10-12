@@ -27,6 +27,7 @@ object DSL {
   def drop: Primitive = primitives.drop.primitive
   def fst: Primitive = primitives.fst.primitive
   def gather: Primitive = primitives.gather.primitive
+  def scatter: Primitive = primitives.scatter.primitive
   def generate: Primitive = primitives.generate.primitive
   def idx: Primitive = primitives.idx.primitive
   def id: Primitive = primitives.id.primitive
