@@ -16,7 +16,8 @@ object HighLevelConstructs {
   // Prevent evaluation beyond the original extent by shifting the tail case inwards,
   // re-evaluating some points near the end.
   def tileShiftInwards(tileSize: Nat): Expr =
-    implNat(n => implNat(haloSize => implDT(s => implDT(t =>
+    impl{ n : Nat => impl{ haloSize : Nat =>
+    impl{ s : DataType => impl{ t : DataType =>
     fun(processTile =>
     fun(input => {
       val tiles = (n + tileSize - 1) / tileSize
@@ -42,7 +43,7 @@ object HighLevelConstructs {
         val pos = select(tile < endRegularTile, regularPos, shiftedPos)
         natAsIndex(n)(pos)
       })))
-    } :: (n `.` t)))))))
+    } :: (n `.` t)))}}}}
 
   def slide3D(sz: Nat, st: Nat): Expr =
     map(slide2D(sz, st)) >> slide(sz)(st) >> map(transpose >> map(transpose))

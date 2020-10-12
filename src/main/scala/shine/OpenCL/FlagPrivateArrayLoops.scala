@@ -12,15 +12,12 @@ import scala.collection.mutable
 
 object FlagPrivateArrayLoops {
   def apply(p: Phrase[CommType]): Phrase[CommType] = {
-    /*
     val vs = varsToEliminate(p)
     val p2 = eliminateLoopVars(p, vs)
     if (vs.nonEmpty) {
       println(s"WARNING: could not eliminate variables $vs")
     }
     p2
-     */
-    p
   }
 
   private def varsToEliminate(p: Phrase[CommType]): mutable.Set[String] = {
