@@ -17,7 +17,7 @@ class Scatter extends test_util.Tests {
     val e = fun((n`.`int) ->: (n`.`int))(a => a |>
       mapGlobal(0)(fun(x => x)) |>
       scatter(generate(fun(i =>
-        natAsIndex(n)((n - 1 : rise.core.Expr) - indexAsNat(i)))))
+        natAsIndex(n)((n - 1: rise.core.Expr) - indexAsNat(i)))))
     )
 
     val k = gen.OpenCLKernel(e)

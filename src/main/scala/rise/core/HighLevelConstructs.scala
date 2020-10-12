@@ -16,8 +16,8 @@ object HighLevelConstructs {
   // Prevent evaluation beyond the original extent by shifting the tail case inwards,
   // re-evaluating some points near the end.
   def tileShiftInwards(tileSize: Nat): Expr =
-    impl{ n : Nat => impl{ haloSize : Nat =>
-    impl{ s : DataType => impl{ t : DataType =>
+    impl{ n: Nat => impl{ haloSize: Nat =>
+    impl{ s: DataType => impl{ t: DataType =>
     fun(processTile =>
     fun(input => {
       val tiles = (n + tileSize - 1) / tileSize

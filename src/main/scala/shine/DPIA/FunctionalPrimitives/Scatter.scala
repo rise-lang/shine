@@ -28,7 +28,9 @@ final case class Scatter(n: Nat, m: Nat, dt: DataType,
 
   override def eval(s: Store): OperationalSemantics.Data = ???
 
-  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import shine.DPIA.Compilation.TranslationToImperative._
 
     con(indices)(fun(expT(m`.`idx(n), read))(y =>
@@ -36,10 +38,13 @@ final case class Scatter(n: Nat, m: Nat, dt: DataType,
     ))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] =
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] =
     throw new Exception("this should not happen")
 
-  override def prettyPrint: String = s"(scatter ${PrettyPhrasePrinter(indices)} ${PrettyPhrasePrinter(input)})"
+  override def prettyPrint: String =
+    s"(scatter ${PrettyPhrasePrinter(indices)} ${PrettyPhrasePrinter(input)})"
 
   override def xmlPrinter: Elem =
     <scatter>
