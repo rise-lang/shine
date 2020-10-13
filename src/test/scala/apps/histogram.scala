@@ -280,8 +280,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
                 ) >>
                 mapLocal(id) // k.int
               ) // n/wgChunk.k.int
-        )
-    )))))
+    ))))))
 
     val tempOutput =
       runKernelSeg(segReduceTree)(LocalSize(lSize), GlobalSize(gSize))(
@@ -292,7 +291,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
-  test("Segmented Reduction: Atomic operation instead of second reduction") {
+  test("Segmented Reduction: Atomic operation as second reduction") {
     val lSize = 128
     val lChunkSize = 8
     val wgChunkSize = lChunkSize * lSize
@@ -313,8 +312,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
           ) >>
             mapLocal(id) // k.int
         ) // n/wgChunk.k.int
-    )
-    )))))
+    ))))))
 
     val tempOutput =
       runKernelSeg(segReduceAtomic)(LocalSize(lSize), GlobalSize(gSize))(
@@ -325,34 +323,67 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
-  //FIXME: This throws a segfault error on CPUs
-  ignore("Generate value array on device") {
+  ignore("Segmented Reduction: Tree-based second reduction (with values on device)") {
     val lSize = 32
     val lChunkSize = 32
     val wgChunkSize = lChunkSize * lSize
     val wgSize = n / wgChunkSize
     val gSize = lSize * wgSize
 
-    //TODO: See TODO above
     val sortedIndices = indices.sorted
 
-    val valuesOnArray = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
+    val segReduceTree = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
-        fun(xs =>
-          zip(is)(xs) |>
-          split(wgChunk) |>
+        fun(xs => // n.int
+          zip(is)(xs) |> // n.(idx x int)
+          split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
           mapWorkGroup(
-            oclSegReduceAtomicWrg(lChunk)(AddressSpace.Local)(add)(
+            // wgChunk.(idx x int)
+            oclSegReduceWrg(lChunk)(AddressSpace.Local)(add)(
               generate(fun(IndexType(k))(_ => l(0))) |>
-                mapLocal(id)
+                mapLocal(id) // k.int
             ) >>
-              mapLocal(id)
-          )
+              mapLocal(id) // k.int
+        ) // n/wgChunk.k.int
       )
     )))))
 
     val tempOutput =
-      runKernelTwoChunks(valuesOnArray)(LocalSize(lSize), GlobalSize(gSize))(
+      runKernelTwoChunks(segReduceTree)(LocalSize(lSize), GlobalSize(gSize))(
+        n, k, wgChunkSize, lChunkSize, sortedIndices)
+
+    val finalOutput = finalReduceGlobal(tempOutput._1)
+
+    checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
+  }
+
+  ignore("Segmented Reduction: Atomic operation as second reduction (with values on device)") {
+    val lSize = 128
+    val lChunkSize = 8
+    val wgChunkSize = lChunkSize * lSize
+    val wgSize = n / wgChunkSize
+    val gSize = lSize * wgSize
+
+    val sortedIndices = indices.sorted
+
+    val segReduceAtomic = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
+      generate(fun(IndexType(n))(_ => l(1))) |>
+        fun(xs => // n.int
+          zip(is)(xs) |> // n.(idx x int)
+          split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
+          mapWorkGroup(
+            // wgChunk.(idx x int)
+            oclSegReduceAtomicWrg(lChunk)(AddressSpace.Local)(add)(
+              generate(fun(IndexType(k))(_ => l(0))) |>
+                mapLocal(id) // k.int
+            ) >>
+              mapLocal(id) // k.int
+          ) // n/wgChunk.k.int
+      )
+    )))))
+
+    val tempOutput =
+      runKernelTwoChunks(segReduceAtomic)(LocalSize(lSize), GlobalSize(gSize))(
         n, k, wgChunkSize, lChunkSize, sortedIndices)
 
     val finalOutput = finalReduceGlobal(tempOutput._1)
