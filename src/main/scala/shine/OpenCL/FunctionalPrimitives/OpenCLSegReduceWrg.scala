@@ -7,18 +7,18 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.OpenCL.IntermediatePrimitives.OpenCLSegReduceI
+import shine.OpenCL.IntermediatePrimitives.OpenCLSegReduceWrgI
 
 import scala.xml.Elem
 
-final case class OpenCLSegReduce(n: Nat,
-                                 k: Nat,
-                                 m: Nat,
-                                 initAddrSpace: shine.DPIA.Types.AddressSpace,
-                                 dt: DataType,
-                                 f: Phrase[ExpType ->: ExpType ->: ExpType],
-                                 init: Phrase[ExpType],
-                                 array: Phrase[ExpType])
+final case class OpenCLSegReduceWrg(n: Nat,
+                                    k: Nat,
+                                    m: Nat,
+                                    initAddrSpace: shine.DPIA.Types.AddressSpace,
+                                    dt: DataType,
+                                    f: Phrase[ExpType ->: ExpType ->: ExpType],
+                                    init: Phrase[ExpType],
+                                    array: Phrase[ExpType])
   extends ExpPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
@@ -29,7 +29,7 @@ final case class OpenCLSegReduce(n: Nat,
   override def visitAndRebuild(
                                 fun: VisitAndRebuild.Visitor
                               ): Phrase[ExpType] = {
-    OpenCLSegReduce(fun.nat(n), fun.nat(k), fun.nat(m), fun.addressSpace(initAddrSpace), fun.data(dt),
+    OpenCLSegReduceWrg(fun.nat(n), fun.nat(k), fun.nat(m), fun.addressSpace(initAddrSpace), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
@@ -49,7 +49,7 @@ final case class OpenCLSegReduce(n: Nat,
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
-      OpenCLSegReduceI(n, k, m, initAddrSpace, dt,
+      OpenCLSegReduceWrgI(n, k, m, initAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
             λ(accT(dt))(o => acc( f(x)(y) )( o )))),

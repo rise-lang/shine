@@ -12,7 +12,7 @@ import shine.DPIA._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
 
-object OpenCLSegReduceAtomicI {
+object OpenCLSegReduceAtomicWrgI {
   def apply(n: Nat,
             k: Nat,
             m: Nat,

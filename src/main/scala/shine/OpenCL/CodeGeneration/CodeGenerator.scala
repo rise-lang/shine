@@ -46,6 +46,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       DepLambda(i: NatIdentifier, Lambda(o, p)), _, _, _) =>
         OpenCLCodeGen.codeGenOpenCLParForNat(f, n, a, i, o, p, env)
 
+      case f@OpenCLStridedFor(n, Lambda(i, p), _, _, _) =>
+        OpenCLCodeGen.codeGenOpenCLStridedFor(f, n, i, p, env)
+
       case Assign(dt, a, e) => dt match {
         case VectorType(_, _) =>
           //noinspection VariablePatternShadow
@@ -379,6 +382,47 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
               C.AST.Block(immutable.Seq(updatedGen.cmd(p, env))))
         }}))})
+    }
+
+    def codeGenOpenCLStridedFor(f: OpenCLStridedFor,
+                                n: Nat,
+                                i: Identifier[ExpType],
+                                p: Phrase[CommType],
+                                env: Environment): Stmt = {
+      assert(!f.unroll)
+      val cI = C.AST.DeclRef(f.name)
+      val range = RangeAdd(f.init, n, f.step)
+      val updatedGen = updatedRanges(cI.name, range)
+
+      applySubstitutions(n, env.identEnv) |> (n => {
+
+        val init =
+          OpenCL.AST.VarDecl(
+            cI.name, C.AST.Type.int, AddressSpace.Private,
+            init = Some(C.AST.ArithmeticExpr(range.start)))
+        val cond =
+          C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+        val increment =
+          C.AST.Assignment(cI,
+            C.AST.ArithmeticExpr(NamedVar(cI.name, range) + range.step))
+
+          env.updatedIdentEnv(i -> cI) |> (env => {
+
+            range.numVals match {
+              // iteration count is 0 => skip body; no code to be emitted
+              case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+
+              // iteration count is 1 => no loop
+              case Cst(1) =>
+                C.AST.Stmts(C.AST.Stmts(
+                  C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+                  C.AST.DeclStmt(init)),
+                  updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
+
+              case _ =>
+                C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+                  C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
+            }})})
     }
 
     def codeGenOpenCLParForNat(f: OpenCLParForNat,

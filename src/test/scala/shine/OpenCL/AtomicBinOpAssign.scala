@@ -36,7 +36,7 @@ class AtomicBinOpAssign extends shine.test_util.TestsWithExecutor {
   private val atomicTestInt = (func: Expr, init: Int) => {
     nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
       zip(is)(xs) |> // n.(idx(k) x int)
-        oclReduceByIndexLocal(rise.core.types.AddressSpace.Local)(func)(
+        oclReduceByIndexWrg(rise.core.types.AddressSpace.Local)(func)(
           generate(fun(IndexType(k))(_ => l(init))) |>
             mapLocal(id) // k.int
         ) |>
@@ -47,7 +47,7 @@ class AtomicBinOpAssign extends shine.test_util.TestsWithExecutor {
   private val atomicTestFloat = (func: Expr, init: Float) => {
     nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsfT(n))(xs =>
       zip(is)(xs) |> // n.(idx(k) x float)
-        oclReduceByIndexLocal(rise.core.types.AddressSpace.Local)(func)(
+        oclReduceByIndexWrg(rise.core.types.AddressSpace.Local)(func)(
           generate(fun(IndexType(k))(_ => l(init))) |>
             mapLocal(id) // k.float
         ) |>

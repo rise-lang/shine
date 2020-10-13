@@ -9,9 +9,9 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
-import shine.OpenCL.ImperativePrimitives.ParForLocal
+import shine.OpenCL.ImperativePrimitives.StridedForLocal
 
-object OpenCLReduceByIndexLocalI {
+object OpenCLReduceByIndexWrgI {
   def apply(n: Nat,
             k: Nat,
             histAddrSpace: shine.DPIA.Types.AddressSpace,
@@ -27,19 +27,12 @@ object OpenCLReduceByIndexLocalI {
       `new` (histAddrSpace) (adj.dt, accumulator =>
         acc(hist)(adj.accF(accumulator.wr)) `;`
 
-          //TODO: The size of the accumulator must be equal to the number of loop iterations.
-          //      However in this case you have iterate n times and write into an array with a size of k.
-          //      Declaring a n-sized array and using it as the accumulator fixes this,
-          //      but this leads to additional allocated memory that is never used.
-          //      To fix this, you probably need to introduce a new parallel for primitive.
-          `new`(AddressSpace.Global)(ArrayType(n, dt), acc_fix =>
-            ParForLocal(0)(n, dt, acc_fix.wr,
-              λ(expT(idx(n), read))(j => λ(accT(dt))(a =>
+            StridedForLocal(0)(n,
+              λ(expT(idx(n), read))(j =>
                 atomicBinOpAssign(dt, histAddrSpace, f,
                   adj.accF(accumulator.wr) `@` fst(input `@` j),
                   snd(input `@` j))
-              )))
-          ) `;`
+              )) `;`
 
           barrier() `;`
 

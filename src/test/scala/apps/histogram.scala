@@ -120,7 +120,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
           zip(is)(xs) |> //n.(idx x int)
-            oclReduceByIndexSeq(AddressSpace.Local)(add)(
+            oclReduceByIndexSeq(AddressSpace.Global)(add)(
               generate(fun(IndexType(k))(_ => l(0))) |>
                 mapSeq(id) // k.int
             )
@@ -213,7 +213,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
             split(chunk) |> // n/wgChunk.wgChunk.(idx x int)
             mapWorkGroup(
               // wgChunk.(idx x int)
-              oclReduceByIndexLocal(AddressSpace.Local)(add)(
+              oclReduceByIndexWrg(AddressSpace.Local)(add)(
                 generate(fun(IndexType(k))(_ => l(0))) |>
                   mapLocal(id) // k.int
               ) >>
@@ -240,7 +240,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
             split(n) |> // 1.n.(idx x int)
             mapWorkGroup(
               // n.(idx x int)
-              oclReduceByIndexLocal(AddressSpace.Local)(add)(
+              oclReduceByIndexWrg(AddressSpace.Local)(add)(
                 generate(fun(IndexType(k))(_ => l(0))) |>
                   mapLocal(id) // k.int
               ) >>
@@ -274,7 +274,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
             split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
               mapWorkGroup(
                 // wgChunk.(idx x int)
-                oclSegReduce(lChunk)(AddressSpace.Local)(add)(
+                oclSegReduceWrg(lChunk)(AddressSpace.Local)(add)(
                   generate(fun(IndexType(k))(_ => l(0))) |>
                     mapLocal(id) // k.int
                 ) >>
@@ -307,7 +307,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
         split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
         mapWorkGroup(
           // wgChunk.(idx x int)
-          oclSegReduceAtomic(lChunk)(AddressSpace.Local)(add)(
+          oclSegReduceAtomicWrg(lChunk)(AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id) // k.int
           ) >>
@@ -326,7 +326,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
   }
 
   //FIXME: This throws a segfault error on CPUs
-  test("Generate value array on device") {
+  ignore("Generate value array on device") {
     val lSize = 32
     val lChunkSize = 32
     val wgChunkSize = lChunkSize * lSize
@@ -342,7 +342,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
           zip(is)(xs) |>
           split(wgChunk) |>
           mapWorkGroup(
-            oclSegReduceAtomic(lChunk)(AddressSpace.Local)(add)(
+            oclSegReduceAtomicWrg(lChunk)(AddressSpace.Local)(add)(
               generate(fun(IndexType(k))(_ => l(0))) |>
                 mapLocal(id)
             ) >>

@@ -15,7 +15,7 @@ import shine.OpenCL.{AdjustArraySizesForAllocations, get_local_id}
 import shine.OpenCL.DSL._
 import shine.OpenCL.ImperativePrimitives.ParForLocal
 
-object OpenCLSegReduceI {
+object OpenCLSegReduceWrgI {
   def apply(n: Nat,
             k: Nat,
             m: Nat,

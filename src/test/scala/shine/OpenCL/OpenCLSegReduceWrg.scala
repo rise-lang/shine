@@ -6,7 +6,7 @@ import rise.core.types._
 import rise.openCL.DSL._
 import util.gen
 
-class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
+class OpenCLSegReduceWrg extends shine.test_util.TestsWithExecutor {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
@@ -39,18 +39,18 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
 
   private val maxLocalSize = 256
 
-  test("OpenCL Segmented Reduce Atomic Test") {
+  test("OpenCL Segmented Reduce Test") {
 
-    val oclSegmentedReduceAtomicTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
+    val oclSegmentedReduceTest = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
       zip(is)(xs) |> // n.(idx(k) x int)
         split(1024) |> // n/1024.1024.(idx(k) x int)
         mapWorkGroup(
           // 1024.(idx(k) x int)
-          oclSegReduceAtomic(32)(rise.core.types.AddressSpace.Local)(add)(
+          oclSegReduceWrg(32)(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id) // k.int
           ) >>
-            mapLocal(id) // k.int
+          mapLocal(id) // k.int
         )
     )))) // n/1024.k.int
 
@@ -65,7 +65,7 @@ class OpenCLSegReduceAtomic extends shine.test_util.TestsWithExecutor {
         ) // k.int
     )))
 
-    val tempOutput = runKernel(oclSegmentedReduceAtomicTest)(LocalSize(32), GlobalSize(256))(n, k, indices, values)
+    val tempOutput = runKernel(oclSegmentedReduceTest)(LocalSize(32), GlobalSize(256))(n, k, indices, values)
 
     val finalOutput = finalReduce(tempOutput, reduceHists)
 
