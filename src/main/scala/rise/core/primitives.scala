@@ -169,7 +169,7 @@ object primitives {
   }
 
   @primitive object dpair extends Primitive with Builder {
-      impl{ fdt: NatToData => expl((n: Nat) =>
+    impl{ fdt: NatToData => expl((n: Nat) =>
       fdt(n) ->: (Nat `**` (fdt(_))))}
   }
 
