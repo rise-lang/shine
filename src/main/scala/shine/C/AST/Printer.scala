@@ -207,12 +207,17 @@ class CPrinter extends Printer {
     print("if (")
     printExpr(i.cond)
     print(") ")
-    printStmt(i.trueBody)
+
+    def blockify(s:Stmt): Block = s match {
+      case b: Block => b
+      case _ => Block(Seq(s))
+    }
+    printStmt(blockify(i.trueBody))
 
     i.falseBody match {
       case Some(falseBody) =>
         print(" else ")
-        printStmt(falseBody)
+        printStmt(blockify(falseBody))
       case None =>
     }
   }

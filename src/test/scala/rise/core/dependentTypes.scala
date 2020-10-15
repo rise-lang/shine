@@ -161,6 +161,16 @@ class dependentTypes extends test_util.Tests {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
+  test("Simple filter") {
+    val e = depFun((n: Nat) => fun(n `.` f32)(array => filter(array)(fun(x => x =:= l(0.0f)))))
+
+    val inferred: Expr = TDSL.inferDependent(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
+
+
 
   ignore("List of list dot product") {
     val e = depFun((n: Nat) =>

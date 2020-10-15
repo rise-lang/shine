@@ -178,6 +178,10 @@ object primitives {
       (Nat `**` (ft(_))) ->: expl((m: Nat) => ft(m) ->: tOut) ->: tOut }}
   }
 
+  @primitive object filter extends Primitive with Builder {
+    impl{ n: Nat => impl { dt: DataType => (n `.` dt) ->: (dt ->: bool) ->: (Nat `**` (m => m `.` IndexType(n))) } }
+  }
+
   @primitive object reduce extends Primitive with Builder {
     impl{ n: Nat => impl{ t: DataType =>
       (t ->: t ->: t) ->: t ->: (n`.`t) ->: t }}

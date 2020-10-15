@@ -793,6 +793,15 @@ object fromRise {
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }
 
+      case core.filter() => fromType {
+        case expT(inputT@ArrayType(n, elemT), `read`) ->:
+          (expT(_, read) ->: expT(bool, `read`))->: expT(_, `write`) =>
+          fun[ExpType](ExpType(inputT, read), input =>
+            fun[ExpType ->: ExpType](
+              ExpType(elemT, read) ->: ExpType(bool, read), f =>
+                Filter(n, elemT, f, input)))
+      }
+
       case core.reduce() =>
         throw new Exception(s"$p has no implementation")
 

@@ -31,6 +31,24 @@ object TranslationToImperative {
             fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
       }
 
+      case c: Literal => A :=|c.t.dataType| c
+
+      case x: Identifier[ExpType] => A :=|x.t.dataType| x
+
+      case n: Natural => A :=|n.t.dataType| n
+
+      case u@UnaryOp(op, e) =>
+        con(e)(λ(e.t)(x =>
+          A :=|u.t.dataType| UnaryOp(op, x)
+        ))
+
+      case b@BinOp(op, e1, e2) =>
+        con(e1)(λ(e1.t)(x =>
+          con(e2)(λ(e2.t)(y =>
+            A :=|b.t.dataType| BinOp(op, x, y)
+          ))
+        ))
+
       case e
         if TypeCheck.notContainingArrayType(e.t.dataType)
           && e.t.accessType == read =>
@@ -38,6 +56,9 @@ object TranslationToImperative {
         // The pattern matching is needed in order to generate separate
         // assignments to elements of pairs (structs), because the AMD SDK
         // cannot deal with literal struct assignments or definitions (C99).
+
+        // NOTE(federico) Moved this case down the list after binop, as the condition
+        // eagerly triggers when the result of the binop is into a var (exp x acc pair)
         e match {
           case Pair(dt1, dt2, _, fst, snd) =>
             acc(fst)(pairAcc1(dt1, dt2, A)) `;`
@@ -46,23 +67,6 @@ object TranslationToImperative {
             con(e)(λ(e.t)(a => A :=| e.t.dataType | a))
         }
 
-      case c: Literal => A :=|c.t.dataType| c
-
-      case x: Identifier[ExpType] => A :=|x.t.dataType| x
-
-      case n: Natural => A :=|n.t.dataType| n
-
-      case u@UnaryOp(op, e) =>
-        con(e)(λ(u.t)(x =>
-          A :=|u.t.dataType| UnaryOp(op, x)
-        ))
-
-      case b@BinOp(op, e1, e2) =>
-        con(e1)(λ(b.t)(x =>
-          con(e2)(λ(b.t)(y =>
-            A :=|b.t.dataType| BinOp(op, x, y)
-          ))
-        ))
 
       case ep: ExpPrimitive => ep.acceptorTranslation(A)
 

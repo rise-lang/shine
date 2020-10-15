@@ -18,6 +18,9 @@ object OperationalSemantics {
   final case class IntData(i: Int) extends Data(int) {
     override def toString: String = i.toString
   }
+  final case class U32Data(i: Int) extends Data(u32) {
+    override def toString: String = i.toString
+  }
 //  final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
   final case class FloatData(f: Float) extends Data(f32) {
     override def toString: String = f.toString + "f"

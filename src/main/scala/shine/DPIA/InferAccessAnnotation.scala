@@ -1,13 +1,12 @@
 package shine.DPIA
 
-import rise.{core => r}
-import rise.core.{TypeLevelDSL => rtdsl, types => rt}
-import rise.core.TypeLevelDSL.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
-import rise.core.{primitives => rp}
-import rise.openMP.{primitives => rompp}
+import rise.core.TypeLevelDSL.{->:, ArrayTypeConstructors, TupleTypeConstructors, `(Addr)->:`, `(Nat)->:`, `.`, x}
+import rise.core.{primitives => rp, types => rt}
 import rise.openCL.{primitives => roclp}
-import shine.DPIA.Types._
+import rise.openMP.{primitives => rompp}
+import rise.{core => r}
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
+import shine.DPIA.Types._
 import shine.DPIA.fromRise._
 import util.Execute.Exception
 
@@ -546,6 +545,14 @@ private class InferAccessAnnotation {
             }
 
           case _ => error(s"did not expect $t")
+        }
+        buildType(p.t)
+
+      case rp.filter() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(input:rt.ArrayType, rt.FunType(rt.FunType(elemT, rt.bool), outputT:rt.DataType)) =>
+            expT(dataType(input), read) ->: (expT(input.elemType, read) ->: expT(bool, read)) ->: expT(dataType(outputT), write)
+          case _ => ???
         }
         buildType(p.t)
     }
