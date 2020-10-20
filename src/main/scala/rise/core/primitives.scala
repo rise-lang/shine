@@ -92,6 +92,12 @@ object primitives {
       (n`.`m`.`t) ->: ((n * m)`.`t) }}}
   }
 
+  @primitive object concat extends Primitive with Builder {
+    impl{ n: Nat => impl{ m: Nat => impl{ t: DataType =>
+      (n`.`t) ->: (m`.`t) ->: ((n + m)`.`t)
+    }}}
+  }
+
   @primitive object let extends Primitive with Builder {
     impl{ s: DataType => impl{ t: DataType =>
       s ->: (s ->: t) ->: t }}
@@ -313,11 +319,11 @@ object primitives {
   }
 
   @primitive case class printType(msg: String = "") extends Primitive with Builder {
-    impl{ t: DataType => t ->: t }
+    impl{ t: TypeIdentifier => t ->: t }
   }
 
   @primitive case class typeHole(msg: String = "") extends Primitive with Builder {
-    impl{ t: DataType => t }
+    impl{ t: TypeIdentifier => t }
   }
 }
 // scalastyle:on number.of.methods

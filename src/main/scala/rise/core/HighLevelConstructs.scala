@@ -15,6 +15,7 @@ object HighLevelConstructs {
   // Halide::TailStrategy::ShiftInwards:
   // Prevent evaluation beyond the original extent by shifting the tail case inwards,
   // re-evaluating some points near the end.
+  // WARNING: data-races can currently happen if processing tiles in parallel
   def tileShiftInwards(tileSize: Nat): Expr =
     impl{ n: Nat => impl{ haloSize: Nat =>
     impl{ s: DataType => impl{ t: DataType =>
@@ -44,6 +45,39 @@ object HighLevelConstructs {
         natAsIndex(n)(pos)
       })))
     } :: (n `.` t)))}}}}
+
+  def tileDep(tileSize: Nat): Expr =
+    impl{ n: Nat => impl{ haloSize: Nat =>
+    impl{ s: DataType => impl{ t: DataType =>
+    fun(processTile =>
+    fun(input => {
+      import arithexpr.{arithmetic => ae}
+      val tiles = (n + tileSize - 1) / tileSize
+      (input :: ((n + haloSize) `.` s)) |>
+      partition(tiles)(n2nFun { tile =>
+        val endRegularTile = n / tileSize
+        ae.IfThenElse(
+          ae.BoolExpr.arithPredicate(tile, endRegularTile,
+            ae.BoolExpr.ArithPredicate.Operator.<),
+          tileSize, n % tileSize
+        )
+      }) |>
+      processTile |>
+      depJoin
+    } :: (n `.` t)))}}}}
+
+  def tileEpilogue(tileSize: Nat): Expr =
+    impl{ n: Nat => impl{ haloSize: Nat =>
+    impl{ t: DataType =>
+    fun(f => fun(g => fun(a =>
+      (concat(
+        a |> take((n / tileSize) * tileSize + haloSize) |>
+        slide(tileSize + haloSize)(tileSize) |> f |> join
+      )(
+        a |> drop((n / tileSize) * tileSize) |>
+        slide(n % tileSize + haloSize)(n % tileSize) |> g |> join
+      ) |> typeHole("b")) :: (n`.`t)
+    )))}}}
 
   def slide3D(sz: Nat, st: Nat): Expr =
     map(slide2D(sz, st)) >> slide(sz)(st) >> map(transpose >> map(transpose))

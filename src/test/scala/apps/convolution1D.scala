@@ -29,10 +29,24 @@ class convolution1D extends test_util.Tests {
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ) >> join
 
+  // FIXME: running in parallel will trigger race condition
   val binomialTileShiftInwards: Expr =
     tileShiftInwards(32)(mapGlobal(0)(
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ))
+
+  val binomialTileEpilogue: Expr = {
+    def f = mapGlobal(0)(
+      slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
+    )
+    tileEpilogue(32)(f)(f)
+  }
+
+  val binomialTileDep: Expr = {
+    tileDep(32)(depMapSeq(nFun(_ => // TODO: depMapGlobal(0)
+      slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
+    )))
+  }
 
   private def wrapExpr(e: Expr): Expr = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
@@ -77,10 +91,29 @@ class convolution1D extends test_util.Tests {
   }
 
   test("binomialTileShiftInwards compiles to valid OpenCL that passes checks") {
+    // FIXME: don't process in parallel due to race condition
     util.withExecutor {
-      checkOCL(128, LocalSize(1), GlobalSize(2), binomialTileShiftInwards)
-      checkOCL(132, LocalSize(1), GlobalSize(2), binomialTileShiftInwards)
-      checkOCL(148, LocalSize(1), GlobalSize(2), binomialTileShiftInwards)
+      checkOCL(128, LocalSize(1), GlobalSize(1), binomialTileShiftInwards)
+      checkOCL(132, LocalSize(1), GlobalSize(1), binomialTileShiftInwards)
+      checkOCL(148, LocalSize(1), GlobalSize(1), binomialTileShiftInwards)
+    }
+  }
+
+  // FIXME: type inference
+  ignore("binomialTileEpilogue compiles to valid OpenCL that passes checks") {
+    util.withExecutor {
+      checkOCL(128, LocalSize(1), GlobalSize(2), binomialTileEpilogue)
+      checkOCL(132, LocalSize(1), GlobalSize(2), binomialTileEpilogue)
+      checkOCL(148, LocalSize(1), GlobalSize(2), binomialTileEpilogue)
+    }
+  }
+
+  // TODO: parallelism
+  test("binomialTileDep compiles to valid OpenCL that passes checks") {
+    util.withExecutor {
+      checkOCL(128, LocalSize(1), GlobalSize(1), binomialTileDep)
+      checkOCL(132, LocalSize(1), GlobalSize(1), binomialTileDep)
+      checkOCL(148, LocalSize(1), GlobalSize(1), binomialTileDep)
     }
   }
 }

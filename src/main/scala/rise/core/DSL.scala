@@ -34,6 +34,7 @@ object DSL {
   def indexAsNat: Primitive = primitives.indexAsNat.primitive
   def iterate: Primitive = primitives.iterate.primitive
   def join: Primitive = primitives.join.primitive
+  def concat: Primitive = primitives.concat.primitive
   def map: Primitive = primitives.map.primitive
   def mapFst: Primitive = primitives.mapFst.primitive
   def mapSnd: Primitive = primitives.mapSnd.primitive
