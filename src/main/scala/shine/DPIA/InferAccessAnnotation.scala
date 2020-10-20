@@ -236,7 +236,6 @@ private class InferAccessAnnotation {
            | rompp.mapPar() | rp.mapSeq() | rp.mapSeqUnroll()
            | rp.iterateStream() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
-
           (expT(s, read) ->: expT(t, write)) ->:
             expT(n`.`s, read) ->: expT(n`.`t, write)
         case _ => error()
@@ -503,6 +502,50 @@ private class InferAccessAnnotation {
             expT(dataType(in), read) ->: buildType(out)
           case n`.`dt => expT(n`.`dt, read)
           case _ => error(s"did not expect t")
+        }
+        buildType(p.t)
+
+      case rp.depMapSeq() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(rt.DepFunType(i, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
+            rt.FunType(inArr@rt.DepArrayType(_, _), outArr@rt.DepArrayType(_, _))) =>
+            val iNat = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
+            nFunT(iNat, expT(dataType(elemInT), read) ->: expT(dataType(elemOutT), write)) ->:
+              expT(dataType(inArr), read) ->: expT(dataType(outArr), write)
+          case _ => error("did not expect t")
+        }
+        buildType(p.t)
+
+      case rp.dmatch() =>
+        val a = accessTypeIdentifier()
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(rt.DepPairType(x, elemT),
+            rt.FunType(rt.DepFunType(i, rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
+            x match {
+              case x:rt.NatIdentifier =>
+                assert(i.isInstanceOf[rt.NatIdentifier])
+                val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
+                expT(DepPairType(natIdentifier(x), dataType(elemT)), read) ->:
+                  nFunT(i_, expT(dataType(app1), read) ->: expT(dataType(outT), a)) ->:
+                    expT(dataType(retT), a)
+              case _ => ???
+            }
+          case _ => error(s"did not expect t")
+        }
+        buildType(p.t)
+
+      case rp.dpair() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.DepFunType(fst, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
+            val a1 = accessTypeIdentifier()
+            fst match {
+              case fst:rt.NatIdentifier =>
+                val fst_ = natIdentifier(fst)
+                nFunT(fst_, expT(dataType(sndT), a1) ->: expT(dataType(outT), a1))
+              case _ => ???
+            }
+
+          case _ => error(s"did not expect $t")
         }
         buildType(p.t)
     }

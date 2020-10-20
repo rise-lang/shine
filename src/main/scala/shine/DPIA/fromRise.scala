@@ -229,7 +229,7 @@ object fromRise {
           expT(DepArrayType(_, ft2), `write`)
         =>
         fun[`(nat)->:`[ExpType ->: ExpType]](
-          k ->: (ExpType(ft1(k), read) ->: ExpType(ft2(k), read)), f =>
+          k ->: (ExpType(ft1(k), read) ->: ExpType(ft2(k), write)), f =>
             fun[ExpType](ExpType(DepArrayType(n, ft1), read), e =>
               DepMapSeq(n, ft1, ft2, f, e)))
       }
@@ -777,6 +777,22 @@ object fromRise {
             OclToMem(a, t, e)))
       }
 
+      case core.dmatch() => fromType {
+        case expT(DepPairType(x, elemT), `read`) ->:
+          nFunT(i, expT(elem_iT, `read`) ->: expT(outT, a))
+          ->: expT(_, _) =>
+          fun[ExpType](ExpType(DepPairType(x, elemT), read), pair =>
+            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, read) ->: ExpType(outT, a)),f =>
+              DMatch(x, elemT, outT, a, f, pair)
+            )
+          )
+      }
+
+      case core.dpair() => fromType {
+        case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
+          depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
+      }
+
       case core.reduce() =>
         throw new Exception(s"$p has no implementation")
 
@@ -805,6 +821,11 @@ object fromRise {
     case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
     case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
     case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
+    case rt.DepPairType(x, t) =>
+      x match {
+      case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
+      case _ => ???
+    }
   }
 
   def scalarType(t: rt.ScalarType): ScalarType = t match {
