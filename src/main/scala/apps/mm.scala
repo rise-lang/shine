@@ -122,6 +122,66 @@ object mm {
     ))
   }
 
+  def genMMKernel(v3:Int, v4:Int, v5:Int, v6:Int, v7:Int, v8:Int):Expr = {
+    nFun((n, m, o) => fun(
+      (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
+    )((at, b) =>
+      at |>
+        map(split(v5)) |> split(v8) |> // O'.v8.N'.v5.f
+        map(transpose) |> transpose |> // N'.O'.v8.v5.f
+        mapWorkGroup(1)(fun(p2 =>
+          b |>
+            map(split(v7)) |> split(v8) |> // O'.v8.M'.v7.f
+            map(transpose) |> transpose |> // M'.O'.v8.v7.f
+            mapWorkGroup(0)(fun(p3 =>
+              zip(p2, p3) |> // O'.(v8.v5.f x v8.v7.f)
+                oclReduceSeq(AddressSpace.Local)(fun((p13, p14) =>
+                  // (v5/^v4).(v7/^v3).v4.v3.f x (v8.v5.f x v8.v7.f)
+                  let (toLocal(pair(
+                    p14._1 |> join |> split(v6) |> // ((v8 x v5) /^ v6).v6.f
+                      mapLocal(1)(asScalar o mapLocal(0)(id) o asVectorAligned(4)) |>
+                      join |> split(v5), // v8.v5.f
+                    p14._2 |> // v8.v7.f
+                      mapLocal(1)(asScalar o mapLocal(0)(id) o asVectorAligned(4))
+                  )))
+                    be(p15 =>
+                    zip(p13, split(v4)(transpose(p15._1))) |> // (v5/^v4).((v7/^v3).v4.v3.f x v4.v8.f)
+                      mapLocal(1)(fun(p16 =>
+                        zip(p16._1, split(v3)(transpose(p15._2))) |> // (v7/^v3).(v4.v3.f x v3.v8.f)
+                          mapLocal(0)(fun(p17 =>
+                            zip(transpose(p16._2), transpose(p17._2)) |> // v8.(v4.f x v3.f)
+                              oclReduceSeq(AddressSpace.Private)(fun((p19, p20) =>
+                                // v4.v3.f x (v4.f x v3.f)
+                                let (toPrivate(pair(mapSeq(id)(p20._1), mapSeq(id)(p20._2))))
+                                  be (p21 =>
+                                  zip(p19, p21._1) |> // v4.(v3.f x f)
+                                    mapSeq(fun(p22 =>
+                                      zip(p22._1, p21._2) |> // v3.(f x f)
+                                        mapSeq(fun(p23 =>
+                                          p23._1 + (p22._2 * p23._2)
+                                        ))
+                                    ))
+                                  )
+                              ))(p17._1 // v4.v3.f
+                                |> mapSeq(mapSeq(id)) // TODO: think about that
+                              ) |> mapSeq(mapSeq(id)) // TODO: think about that
+                          ))
+                      ))
+                    )
+                ))(
+                  generate(fun(_ =>
+                    generate(fun( _ =>
+                      generate(fun(_ =>
+                        generate(fun(_ => l(0.0f))))))))) |>
+                    mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(id))))
+                ) |> // (v5/^v4).(v7/^v3).v4.v3.f
+                mapLocal(1)(mapLocal(0)(mapSeq(asScalar o mapSeq(id) o asVector(4)))) |>
+                map(transpose) |> join |> map(join) |> transpose // v7.v5.f
+            )) |> join |> transpose // v5.M.f
+        )) |> join // N.M.f
+    ))
+  }
+
   def computeGold(n: Int, m: Int, o: Int,
                   At: Array[Array[Float]],
                   B: Array[Array[Float]]): Array[Array[Float]] = {
