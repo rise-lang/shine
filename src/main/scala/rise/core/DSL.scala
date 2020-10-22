@@ -54,6 +54,7 @@ object DSL {
   def reorder: Primitive = primitives.reorder.primitive
   def scanSeq: Primitive = primitives.scanSeq.primitive
   def slide: Primitive = primitives.slide.primitive
+  def depTile: Primitive = primitives.depTile.primitive
   def circularBuffer: Primitive = primitives.circularBuffer.primitive
   def rotateValues: Primitive = primitives.rotateValues.primitive
   def snd: Primitive = primitives.snd.primitive

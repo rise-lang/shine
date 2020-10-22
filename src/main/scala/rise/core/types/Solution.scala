@@ -1,5 +1,6 @@
 package rise.core.types
 
+import arithexpr.arithmetic.BoolExpr
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
@@ -59,6 +60,10 @@ case class Solution(ts: Map[Type, Type],
   def apply(n: Nat): Nat =
     (substitute.natsInNat(ns, _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
 
+  def apply(b: BoolExpr): BoolExpr = {
+    import arithexpr.arithmetic.ArithExpr
+    b.substitute(ns.asInstanceOf[Map[ArithExpr, ArithExpr]]).getOrElse(b)
+  }
 
   def apply(a: AddressSpace): AddressSpace =
     substitute.addressSpacesInAddressSpace(as, a)
@@ -72,6 +77,7 @@ case class Solution(ts: Map[Type, Type],
       case lambda@NatToDataLambda(x, body) =>
         val xSub = apply(x) match {
           case n: NatIdentifier => n
+          case n: arithexpr.arithmetic.NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
           case other => throw NonIdentifierInBinderException(lambda, other)
         }
         NatToDataLambda(xSub, apply(body).asInstanceOf[DataType])
@@ -117,6 +123,8 @@ case class Solution(ts: Map[Type, Type],
         AddressSpaceConstraint(apply(a), apply(b))
       case NatConstraint(a, b) =>
         NatConstraint(apply(a), apply(b))
+      case BoolConstraint(a, b) =>
+        BoolConstraint(apply(a), apply(b))
       case NatToDataConstraint(a, b) =>
         NatToDataConstraint(apply(a), apply(b))
       case DepConstraint(df, arg: Nat, t) =>

@@ -42,10 +42,21 @@ class convolution1D extends test_util.Tests {
     tileEpilogue(32)(f)(f)
   }
 
-  val binomialTileDep: Expr = {
-    tileDep(32)(depMapSeq(nFun(_ => // TODO: depMapGlobal(0)
-      slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
-    )))
+  val binomialTileDep: Expr = impl{ n: Nat =>
+    // depSlide(34)(32) >>
+    depTile(32)(
+      depMapSeq(nFun { i => // TODO: depMapGlobal(0)
+        import arithexpr.arithmetic.IfThenElse
+        import arithexpr.arithmetic.BoolExpr.arithPredicate
+        import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
+
+        val fullWindows = n / 32
+        val remainder = n % 32
+        val m: Nat = IfThenElse(arithPredicate(i, fullWindows, Operator.<), 32, remainder)
+        (slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
+          ) :: ((m+2) `.` f32) ->: (m `.` f32)
+      })
+    )
   }
 
   private def wrapExpr(e: Expr): Expr = {

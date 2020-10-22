@@ -222,6 +222,37 @@ object primitives {
       ((sp * n + sz) `.` t) ->: ((1 + n) `.` sz `.` t) }))}
   }
 
+  /*
+  @primitive object depSlide extends Primitive with Builder {
+    impl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
+      import arithexpr.arithmetic.IfThenElse
+      import arithexpr.arithmetic.BoolExpr.arithPredicate
+      import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
+
+      val allWindows = (n - sz + 2*sp - 1) / sp
+      val fullWindows = (n - sz + sp) / sp
+      val remainder = (n - sz + sp) % sp
+      (n `.` t) ->: (allWindows`*.`(i => IfThenElse(arithPredicate(i, fullWindows, Operator.<), sz, remainder) `.` t))
+    }))}
+  }*/
+  @primitive object depTile extends Primitive with Builder {
+    impl{ n: Nat => expl((tile: Nat) => impl{ halo: Nat =>
+    impl{ s: DataType => impl{ t: DataType =>
+      import arithexpr.arithmetic.IfThenElse
+      import arithexpr.arithmetic.BoolExpr.arithPredicate
+      import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
+
+      val allTiles = (n + tile - 1) / tile
+      val fullTiles = n / tile
+      val remainder = n % tile
+      def depSize(i: Nat) =
+        IfThenElse(arithPredicate(i, fullTiles, Operator.<), tile, remainder)
+      ((allTiles `*.` (i => (depSize(i) + halo) `.` s)) ->:
+        (allTiles `*.` (i => (depSize(i) `.` t)))) ->:
+        ((n + halo) `.` s) ->: (n `.` t)
+    }}})}
+  }
+
   @primitive object circularBuffer extends Primitive with Builder {
     // TODO: should return a stream / sequential array, not an array
     impl{ n: Nat => expl((alloc: Nat) => expl((sz: Nat) =>

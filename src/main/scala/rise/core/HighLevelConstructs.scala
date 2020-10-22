@@ -19,7 +19,7 @@ object HighLevelConstructs {
   def tileShiftInwards(tileSize: Nat): Expr =
     impl{ n: Nat => impl{ haloSize: Nat =>
     impl{ s: DataType => impl{ t: DataType =>
-    fun(processTile =>
+    fun(processTiles =>
     fun(input => {
       val tiles = (n + tileSize - 1) / tileSize
       generate(fun(tile =>
@@ -32,7 +32,7 @@ object HighLevelConstructs {
           natAsIndex(n + haloSize)(start + indexAsNat(i))
         })))
       )) |>
-      (processTile ::
+      (processTiles ::
         (tiles `.` (tileSize + haloSize) `.` s) ->: (tiles `.` tileSize `.` t)) >>
       join >>
       scatter(generate(fun(i => {
@@ -44,26 +44,6 @@ object HighLevelConstructs {
         val pos = select(tile < endRegularTile, regularPos, shiftedPos)
         natAsIndex(n)(pos)
       })))
-    } :: (n `.` t)))}}}}
-
-  def tileDep(tileSize: Nat): Expr =
-    impl{ n: Nat => impl{ haloSize: Nat =>
-    impl{ s: DataType => impl{ t: DataType =>
-    fun(processTile =>
-    fun(input => {
-      import arithexpr.{arithmetic => ae}
-      val tiles = (n + tileSize - 1) / tileSize
-      (input :: ((n + haloSize) `.` s)) |>
-      partition(tiles)(n2nFun { tile =>
-        val endRegularTile = n / tileSize
-        ae.IfThenElse(
-          ae.BoolExpr.arithPredicate(tile, endRegularTile,
-            ae.BoolExpr.ArithPredicate.Operator.<),
-          tileSize, n % tileSize
-        )
-      }) |>
-      processTile |>
-      depJoin
     } :: (n `.` t)))}}}}
 
   def tileEpilogue(tileSize: Nat): Expr =

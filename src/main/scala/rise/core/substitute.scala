@@ -90,7 +90,8 @@ object substitute {
     (x, `for`) match {
       case (dt: DataType, forDt: DataTypeIdentifier) =>
         typeInType(dt, forDt, in)
-      case (n: Nat, forN: NatIdentifier) => natInType(n, forN, in)
+      case (n: Nat, forN: NatIdentifier) =>
+        natInType(n, forN, in)
       case (a: AddressSpace, forA: AddressSpaceIdentifier) =>
         addressSpaceInType(a, forA, in)
       case (n2n: NatToNat, forN2N: NatToNatIdentifier) =>
