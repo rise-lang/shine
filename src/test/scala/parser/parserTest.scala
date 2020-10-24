@@ -19,7 +19,8 @@ type MapFkt = parser.MapFkt
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+    val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -36,7 +37,8 @@ type MapFkt = parser.MapFkt
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -54,7 +56,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -72,7 +75,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -90,7 +94,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -108,7 +113,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -126,7 +132,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -144,7 +151,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -162,7 +170,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -183,7 +192,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -204,7 +214,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -233,7 +244,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -256,7 +268,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -275,7 +288,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -294,7 +308,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -314,7 +329,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -334,7 +350,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -354,7 +371,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -374,7 +392,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -392,7 +411,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
@@ -410,7 +430,8 @@ val map: MapFkt = parser(lexer.tokens)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
 val map: MapFkt = parser(lexer.tokens)
 
-    val ex: r.Expr = map.head._2 match {
+val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }

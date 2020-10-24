@@ -159,6 +159,22 @@ object parser {
     }
   }
 
+  def parseScalarType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+      val ParseState(tokens, parsedSynElems, map) = parseState
+      val inputType :: remainderTokens = tokens
+
+      println("parseTypeWithoutArrow: " + parseState)
+          inputType match {
+            case Type(typ, _) => {
+              println("Type was in parseTypeWithoutArrow parsed: " + typ)
+              val parsedInType = getScalarType(typ)
+              val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
+              Left(ParseState(remainderTokens, SType(inT):: parseState.parsedSynElems, parseState.map))
+            }
+            case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
+          }
+  }
+
   def parseFunType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map) = parseState
     val inputType :: arrowToken :: remainderTokens = tokens
@@ -175,7 +191,7 @@ object parser {
             parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
               case Right(e) => Right(e)
               case Left(pS) => {
-                if (pS.parsedSynElems.tail.isEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
+                if (!pS.parsedSynElems.tail.isEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
                 pS.parsedSynElems.head match {
                   case SType(outT) => Left(ParseState(pS.tokenStream, SType(rt.FunType(inT, outT)):: parseState.parsedSynElems, pS.map))
                   case _ => Right(ParseError("Not a Type"))
@@ -434,7 +450,7 @@ object parser {
     val ps: Either[ParseState, ParseErrorOrState]  =
       Left(parseState) |>
     (parseBracesExprType _ ||
-      parseFunType)
+      parseFunType || parseScalarType)
 
     ps |> parseType
   }
