@@ -105,20 +105,14 @@ object parser {
     }
   }
 
-  private def getType(typ: TypeKind, remainderTokens: List[Token], parsedSynElems: List[SyntaxElement], map: MapFkt): Either[ParseState, ParseErrorOrState] = {
-    val t = typ match {
-      case ShortTyp() => Left(rt.i8)
-      case IntTyp() => Left(rt.i32)
-      case FloatTyp() => Left(rt.f32)
-      case DoubleType() => Left(rt.f64)
-      case BoolType() => Left(rt.bool)
-      case notAtype => Right(ParseError("failed to parse Type: Not accepted Type" + notAtype))
+  private def getScalarType(typ: TypeKind): Option[rt.Type] = typ match {
+      case ShortTyp() => Some(rt.i8)
+      case IntTyp() => Some(rt.i32)
+      case FloatTyp() => Some(rt.f32)
+      case DoubleType() => Some(rt.f64)
+      case BoolType() => Some(rt.bool)
+      case notAtype => None
     }
-    t match {
-      case Left(nowT) => Left(ParseState(remainderTokens, SType(nowT) :: parsedSynElems, map))
-      case Right(e) => Right(ParseError("failed to parse Type"))
-    }
-  }
 
 
   def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
@@ -129,7 +123,7 @@ object parser {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => getType(typ, remainderTokens, parsedSynElems, map)
+          case Type(typ, _) => getScalarType(typ, remainderTokens, parsedSynElems, map)
           case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
       }
@@ -145,7 +139,7 @@ object parser {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => getType(typ, remainderTokens, parsedSynElems, map)
+          case Type(typ, _) => getScalarType(typ, remainderTokens, parsedSynElems, map)
           case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
       }
@@ -153,18 +147,29 @@ object parser {
     }
   }
 
-  def parseTypeWithArrow(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseFunType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map) = parseState
-    val arrowToken :: typeToken :: remainderTokens = tokens
+    val inputType :: arrowToken :: remainderTokens = tokens
 
     println("parseTypeWithArrow: " + parseState)
     arrowToken match {
       case Arrow(_) => {
 
-        typeToken match {
+        inputType match {
           case Type(typ, _) => {
             println("Type was in parseTypeWithArrow parsed: " + typ)
-            getType(typ, remainderTokens, parsedSynElems, map)
+            val parsedInType = getScalarType(typ)
+            val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
+            parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
+              case Right(e) => Right(e)
+              case Left(pS) => {
+                if (pS.parsedSynElems.tail.isEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
+                pS.parsedSynElems.head match {
+                  case SType(outT) => Left(ParseState(pS.tokenStream, SType(rt.FunType(inT, outT)):: parseState.parsedSynElems, pS.map))
+                  case _ => Right(ParseError("Not a Type"))
+                }
+              }
+            }
           }
           case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
@@ -172,17 +177,7 @@ object parser {
       case notAnArrow => Right(ParseError("failed to parse Type: A TypeAnnotation is expected, but " + notAnArrow + " is not an Arrow"))
     }
   }
-
-  def parseType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    val ParseState(tokens, parsedSynElems, map) = parseState
-    val typeToken :: remainderTokens = tokens
-
-        typeToken match {
-          case Type(typ, _) => getType(typ, remainderTokens, parsedSynElems, map)
-          case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
-        }
-  }
-
+  
   def parseArrow(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedExprs, map) = parseState
     val nextToken :: remainderTokens = tokens
@@ -424,7 +419,7 @@ object parser {
       Left(ParseState(ps.tokenStream, Nil, ps.map))        |>
         parseDoubleColons |>
         parseType |>
-        parseMaybeAppTypAnnotatedIdentExpr
+        parseType
     }
 
 
@@ -450,7 +445,7 @@ object parser {
     }
   }
 
-  def parseMaybeAppTypAnnotatedIdentExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     if(parseState.tokenStream.head.isInstanceOf[EndTypAnnotatedIdent]||parseState.tokenStream.head.isInstanceOf[RBrace]){
       println("Abbruch; parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
       return Left(parseState)
@@ -459,9 +454,9 @@ object parser {
     val ps: Either[ParseState, ParseErrorOrState]  =
       Left(parseState) |>
     (parseBracesExprType _ ||
-      parseTypeWithArrow)
+      parseFunType)
 
-    ps |> parseMaybeAppTypAnnotatedIdentExpr
+    ps |> parseType
   }
   /*
   is the whole Syntax-Tree.
@@ -576,7 +571,6 @@ object parser {
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
         parseLeftBrace  |>
         parseType |>
-        parseMaybeAppTypAnnotatedIdentExpr |>
         parseRightBrace
 
     p match {
