@@ -123,7 +123,13 @@ object parser {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => getScalarType(typ, remainderTokens, parsedSynElems, map)
+          case Type(typ, _) => {
+            val t = getScalarType(typ)
+            t match {
+              case None => Right(ParseError("failed to parse Type: " + typ + " is not an accpeted Type"))
+              case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems, parseState.map))
+            }
+          }
           case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
       }
@@ -139,7 +145,13 @@ object parser {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => getScalarType(typ, remainderTokens, parsedSynElems, map)
+          case Type(typ, _) =>  {
+            val t = getScalarType(typ)
+            t match {
+              case None => Right(ParseError("failed to parse Type: " + typ + " is not an accpeted Type"))
+              case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems, parseState.map))
+            }
+          }
           case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
         }
       }
@@ -189,38 +201,6 @@ object parser {
 
     Left(ParseState(remainderTokens, parsedExprs, map))
   }
-
-//  private def combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft(synElemList: List[SyntaxElement]) : (r.Expr, List[SyntaxElement]) = {
-//    println("combineExpressionsUntilOnly2WithTypeor1ExpressionsAreLeft: "+ synElemList)
-//    var synE = synElemList.reverse.tail.head match {
-//      case SType(_) => synElemList.reverse.tail.tail
-//      case SExpr(_) => synElemList.reverse.tail
-//    }
-//    var e:r.Expr = synE.head match {
-//      case SExpr(expr) => {
-//        synE = synE.tail
-//        expr
-//      }
-//      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
-//    }
-//    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
-//    while(!synE.isEmpty){
-//      synE.head match {
-//        case SExpr(expr1) => {
-//          e = r.App(e, expr1)()
-//          synE = synE.tail
-//        }
-//        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
-//      }
-//    }
-//    val l= synElemList.reverse.tail.head match {
-//      case SType(_) =>  synElemList.reverse.tail.head :: synElemList.reverse.head :: Nil
-//      case SExpr(_) => synElemList.reverse.head :: Nil
-//    }
-//    val res = (e,l)
-//    println("I have combined the Expressions in Lambda: "+ res)
-//    res
-//  }
 
   private def combineExpressions(synElemList: List[SyntaxElement]) : r.Expr = {
     if(synElemList.isEmpty){
@@ -512,9 +492,16 @@ object parser {
           }
         case SExpr(i) => (i, synElemListExpr.tail)
       }
-
-    val lambda = Lambda(maybeTypedIdent.asInstanceOf[r.Identifier], expr)()
+    val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
+    val lambda = Lambda(identifierName, expr)()
     println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
+
+    //local variables are in the list, so that not two same localVariables are declared
+    if (map.contains(identifierName.name)) {
+      return Right(ParseError("A variable or function with the exact same name '"+ identifierName.name + "' is already declared!"))
+    }
+    map.update(identifierName.name, Left(identifierName))
+
     Left(ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent, map))
   }
 

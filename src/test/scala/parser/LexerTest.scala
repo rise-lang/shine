@@ -574,14 +574,48 @@ class LexerTest extends  AnyFlatSpec {
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
         DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+        Arrow(_) :: LBrace(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: RBrace(_):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _)  ::
-        Arrow(_) :: Backslash(_) :: Identifier("fkt", _)  ::
-        Arrow(_) :: Identifier("fkt", _) :: Identifier("x", _) ::
+        Arrow(_) :: LBrace(_)::Backslash(_) :: Identifier("fkt", _)  ::
+        Arrow(_) :: LBrace(_):: Identifier("fkt", _) :: Identifier("x", _) ::
+        RBrace(_)::RBrace(_)::
+        EndNamedExpr(_)::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: Identifier("y", _)  ::
+        Arrow(_) :: BinOp(BinOpType.ADD, _) :: Identifier("y", _)  :: I32(5, _) ::
+        EndNamedExpr(_)::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+
+  "RecognizeLexeme" should "work for twoSimpleFunctionsButWithSameLocalVarName" in {
+    val fileName: String = testFilePath + "twoSimpleFunctionsButWithSameLocalVarName.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: Type(IntTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginTypAnnotatedIdent(_):: Identifier("h", _)::
+        DoubleColons(_) :: Type(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: RBrace(_):: EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("h", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: Identifier("x", _)  ::
+        Arrow(_) :: LBrace(_)::Backslash(_) :: Identifier("fkt", _)  ::
+        Arrow(_) :: LBrace(_):: Identifier("fkt", _) :: Identifier("x", _) ::
+        RBrace(_)::RBrace(_)::
         EndNamedExpr(_)::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -592,7 +626,6 @@ class LexerTest extends  AnyFlatSpec {
       case a => fail(a.toString())
     }
   }
-
 
   "RecognizeLexeme" should "work for TypWith-" in {
     val fileName: String = testFilePath + "TypWith-.rise"
