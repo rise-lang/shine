@@ -282,8 +282,61 @@ type MapFkt = parser.MapFkt
     }
   }
 
+  "parser" should "be able to parse 'constant42.rise'" in {
+    val fileName: String = testFilePath + "constant42.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
 
+    val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
 
+    ex match {
+      case r.Lambda(r.Identifier("c"), r.Literal(rS.IntData(42))) => true
+      case a => fail("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'FunctionInBraces.rise'" in {
+    val fileName: String = testFilePath + "FunctionInBraces.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("x"), r.App(r.Lambda(r.Identifier("y"), r.Identifier("y")), r.Identifier("x"))) => true
+      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => fail("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'fx.rise'" in {
+    val fileName: String = testFilePath + "fx.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("x"), r.App(r.Identifier("fkt"), r.Identifier("x"))) => true
+      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => fail("not a lambda: "+ a)
+    }
+  }
 
   "parser" should "not be able to parse 'IdentityWithI32.rise'" in {
     val fileName: String = testFilePath + "identityWithI32.rise"
@@ -302,6 +355,80 @@ type MapFkt = parser.MapFkt
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
     }  }
+
+  "parser" should "be able to parse 'lessComplexInOneLine.rise'" in {
+    val fileName: String = testFilePath + "lessComplexInOneLine.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
+      case r.Lambda(x,e) => {
+        println("not correct Identifier or not correct expression: "+ x + " , " + e)
+        fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      }
+      case a => fail("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'lessComplexInOneLineWithDifferentType.rise'" in {
+    val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
+    val file: FileReader = FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
+      case r.Lambda(x,e) => {
+        println("not correct Identifier or not correct expression: "+ x + " , " + e)
+        fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      }
+      case a => fail("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'littleComplexLine.rise'" in {
+    val fileName: String = testFilePath + "littleComplexLine.rise"
+    val file: FileReader = FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex match {
+      case r.Lambda(x@r.Identifier("x"),
+      r.Lambda(y@r.Identifier("y"),
+      r.App(r.App(r.primitives.Add(),
+      r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.Literal(rS.IntData(42)))
+      )) if x.t == rt.i32 && y.t == rt.i32 => true
+      case r.Lambda(x@r.Identifier("x"),
+      r.Lambda(y@r.Identifier("y"),
+      r.App(r.App(r.primitives.Add(),
+      r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.Literal(rS.IntData(42)))
+      )) => fail("almost correct, but Types don't match!  " + x.t + " != rt.i32 oder/und " + y.t + " != rt.i32")
+      case r.Lambda(x, r.Lambda(y, e)) => fail("not correct Identifier or not correct expression: " + "Lambda(" + x + ",Lambda," + y + " , " + e + " , x.t= " + x.t + " , y.t= " + y.t)
+      case a => fail("not a lambda: " + a)
+    }
+  }
 
   "parser" should "be able to parse 'longIdentityWithI32.rise'" in {
     val fileName: String = testFilePath + "longIdentityWithI32.rise"
@@ -360,6 +487,44 @@ val functionName:String = "f"
     }
   }
 
+  "parser" should "be able to parse 'negationWithBool.rise'" in {
+    val fileName: String = testFilePath + "negationWithBool.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("b"), r.App(r.primitives.Neg(), r.Identifier("b"))) => true
+      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => fail("not a lambda: "+ a)
+    }
+  }
+
+  "parser" should "be able to parse 'not.rise'" in {
+    val fileName: String = testFilePath + "not.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName:String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: "+ types)
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("b"), r.App(r.primitives.Not(), r.Identifier("b"))) => true
+      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => fail("not a lambda: "+ a)
+    }
+  }
+
   "parser" should "be able to parse 'plus.rise'" in {
     val fileName: String = testFilePath + "plus.rise"
     val file: FileReader = new FileReader(fileName)
@@ -379,136 +544,61 @@ val functionName:String = "f"
     }
   }
 
-  "parser" should "be able to parse 'not.rise'" in {
-    val fileName: String = testFilePath + "not.rise"
+  "parser" should "be able to parse 'twoplus1extraDefintion.rise'" in {
+    val fileName: String = testFilePath + "twoplus1extraDefintion.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-val map: MapFkt = parser(lexer.tokens)
-
-val functionName:String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
-      case Left(lambda) => lambda
-      case Right(types) => fail("no definition is in map: "+ types)
-    }
-    
-    ex match {
-      case r.Lambda(r.Identifier("b"), r.App(r.primitives.Not(), r.Identifier("b"))) => true
-      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
-      case a => fail("not a lambda: "+ a)
-    }
-  }
-
-  "parser" should "be able to parse 'lessComplexInOneLine.rise'" in {
-    val fileName: String = testFilePath + "lessComplexInOneLine.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-val map: MapFkt = parser(lexer.tokens)
-
-val functionName:String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
-      case Left(lambda) => lambda
-      case Right(types) => fail("no definition is in map: "+ types)
-    }
-    
-    ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
-      case r.Lambda(x,e) => {
-        println("not correct Identifier or not correct expression: "+ x + " , " + e)
-        fail("not correct Identifier or not correct expression: "+ x + " , " + e)
-      }
-      case a => fail("not a lambda: "+ a)
-    }
-  }
-
-  "parser" should "be able to parse 'lessComplexInOneLineWithDifferentType.rise'" in {
-    val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
-    val file: FileReader = FileReader(fileName)
-    val lexer: RecognizeLexeme = RecognizeLexeme(file)
-val map: MapFkt = parser(lexer.tokens)
-
-val functionName:String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
-      case Left(lambda) => lambda
-      case Right(types) => fail("no definition is in map: "+ types)
-    }
-    
-    ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
-      case r.Lambda(x,e) => {
-        println("not correct Identifier or not correct expression: "+ x + " , " + e)
-        fail("not correct Identifier or not correct expression: "+ x + " , " + e)
-      }
-      case a => fail("not a lambda: "+ a)
-    }
-  }
-
-  "parser" should "be able to parse 'littleComplexLine.rise'" in {
-    val fileName: String = testFilePath + "littleComplexLine.rise"
-    val file: FileReader = FileReader(fileName)
-    val lexer: RecognizeLexeme = RecognizeLexeme(file)
     val map: MapFkt = parser(lexer.tokens)
 
-    val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-
-    ex match {
-      case r.Lambda(x@r.Identifier("x"),
-      r.Lambda(y@r.Identifier("y"),
-      r.App(r.App(r.primitives.Add(),
-      r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.Literal(rS.IntData(42)))
-      )) if x.t == rt.i32 && y.t == rt.i32 => true
-      case r.Lambda(x@r.Identifier("x"),
-      r.Lambda(y@r.Identifier("y"),
-      r.App(r.App(r.primitives.Add(),
-      r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.Literal(rS.IntData(42)))
-      )) => fail("almost correct, but Types don't match!  " + x.t + " != rt.i32 oder/und " + y.t + " != rt.i32")
-      case r.Lambda(x, r.Lambda(y, e)) => fail("not correct Identifier or not correct expression: " + "Lambda(" + x + ",Lambda," + y + " , " + e + " , x.t= " + x.t + " , y.t= " + y.t)
-      case a => fail("not a lambda: " + a)
-    }
-  }
-
-  "parser" should "be able to parse 'fx.rise'" in {
-    val fileName: String = testFilePath + "fx.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-val map: MapFkt = parser(lexer.tokens)
-
-val functionName:String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+    val functionName_h:String = "h"
+    val ex_h: r.Expr = map.get(functionName_h).getOrElse(fail("The function '"+ functionName_h+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
-    
-    ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.Identifier("fkt"), r.Identifier("x"))) => true
-      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
-      case a => fail("not a lambda: "+ a)
-    }
-  }
-
-  "parser" should "be able to parse 'FunctionInBraces.rise'" in {
-    val fileName: String = testFilePath + "FunctionInBraces.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-val map: MapFkt = parser(lexer.tokens)
-
-val functionName:String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '"+ functionName+ "' does not exist!!!")) match {
+    val functionName_f:String = "f"
+    val ex_f: r.Expr = map.get(functionName_f).getOrElse(fail("The function '"+ functionName_f+ "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: "+ types)
     }
-    
-    ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.Lambda(r.Identifier("y"), r.Identifier("y")), r.Identifier("x"))) => true
+    val functionName_z:String = "z"
+    val ex_z: r.types.Type= map.get(functionName_z).getOrElse(fail("The function '"+ functionName_z+ "' does not exist!!!")) match {
+      case Left(lambda) => fail("it is no definition expected: "+ lambda)
+      case Right(types) => if(types.length == 1){
+        types.head
+      }else{
+        fail("only one Element in the Types list is in the end expected: "+ types)
+      }
+    }
+
+    ex_h match {
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("fkt"), r.App(r.Identifier("fkt"), r.Identifier("x")))) => true
       case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
       case a => fail("not a lambda: "+ a)
     }
+
+    ex_f match {
+      case r.Lambda(r.Identifier("y"), r.App(r.App(r.primitives.Add(), r.Identifier("y")),r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(x,e) => fail("not correct Identifier or not correct expression: "+ x + " , " + e)
+      case a => fail("not a lambda: "+ a)
+    }
+    ex_z match {
+      case rt.FunType(rt.i32, rt.i32) => true
+      case a => fail("not correct Type: "+ a)
+    }
+
   }
+
+  "parser" should "not be able to parse 'twoplus1extraDefintionButSameNameInLocalVariable.rise'" in {
+    val fileName: String = testFilePath + "twoplus1extraDefintionButSameNameInLocalVariable.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val thrown = intercept[RuntimeException] {
+      parser(lexer.tokens)
+    }
+
+    thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left( x))")
+  }
+
 
 
   "parser" should "not be able to parse 'noExpressionInBraces.rise'" in {

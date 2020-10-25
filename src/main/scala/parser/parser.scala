@@ -36,7 +36,7 @@ object parser {
   final case class SType(t: r.types.Type) extends SyntaxElement
 
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
-  type MapFkt = mutable.HashMap[String, Either[r.Expr, List[SyntaxElement]]]
+  type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
 
   final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], map: MapFkt)
 
@@ -218,6 +218,17 @@ object parser {
     Left(ParseState(remainderTokens, parsedExprs, map))
   }
 
+  private def combineTypes(typesList: List[r.types.Type]) : r.types.Type = {
+    if(typesList.isEmpty){
+      throw new IllegalArgumentException("the ElemList is empty!")
+    }
+    if(typesList.tail.isEmpty){
+      typesList.head
+    }else{
+      rt.FunType(typesList.head, combineTypes(typesList.tail))
+    }
+  }
+
   private def combineExpressions(synElemList: List[SyntaxElement]) : r.Expr = {
     if(synElemList.isEmpty){
       throw new IllegalArgumentException("the ElemList is empty!")
@@ -320,7 +331,7 @@ object parser {
       Left(parseState)      |>
         parseIdent
 
-    val (ps, identifierFkt, typesDefined) : (ParseState, r.Identifier, List[SyntaxElement]) = psLambdaOld match {
+    val (ps, identifierFkt, typesDefined) : (ParseState, r.Identifier, List[r.types.Type]) = psLambdaOld match {
       case Right(e) => return Right(e)
       case Left(p) => {
         p.parsedSynElems.head match {
@@ -348,6 +359,8 @@ object parser {
         parseEqualsSign |>
         parseMaybeAppExpr
     }
+
+
 
     val psNamedExpr = psNamedExprBefore match {
       case Right(e) => return Right(e)
@@ -414,7 +427,6 @@ object parser {
     val psNamedExprBefore = {
       Left(ParseState(ps.tokenStream, Nil, ps.map))        |>
         parseDoubleColons |>
-        parseType |>
         parseType
     }
 
@@ -428,7 +440,8 @@ object parser {
     psNew.tokenStream match {
       case EndTypAnnotatedIdent(_) :: remainderTokens => {
         val m = psNew.map
-        m.put(identifierFkt.name, Right(psNew.parsedSynElems))
+        val typesList: List[r.types.Type] = getTypesInList(psNew.parsedSynElems)
+        m.put(identifierFkt.name, Right(typesList))
         println("return TypAnnotatedIdent: "+ remainderTokens+ " <<<<>>>> " + m )
         Left((remainderTokens, m))
       }
@@ -441,18 +454,49 @@ object parser {
     }
   }
 
-  def parseType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    if(parseState.tokenStream.head.isInstanceOf[EndTypAnnotatedIdent]||parseState.tokenStream.head.isInstanceOf[RBrace]){
-      println("Abbruch; parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
-      return Left(parseState)
+  def getTypesInList(synElems: List[SyntaxElement]): List[r.types.Type]= {
+    if( !synElems.isEmpty){
+      synElems.head match {
+        case SType(typ) => typ :: getTypesInList(synElems.tail)
+        case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
+      }
+    }else{
+      Nil
     }
+  }
+
+  def parseType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+//    if(parseState.tokenStream.head.isInstanceOf[EndTypAnnotatedIdent]||parseState.tokenStream.head.isInstanceOf[RBrace]){
+//      println("Abbruch; parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
+//      return Left(parseState)
+//    }
     println("parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
     val ps: Either[ParseState, ParseErrorOrState]  =
       Left(parseState) |>
-    (parseBracesExprType _ ||
-      parseFunType || parseScalarType)
+    (parseBracesExprType _ || //parseFunType ||
+      parseScalarType)
 
-    ps |> parseType
+    ps match {
+      case Right(e)=> Right(e)
+      case Left(p)=> p.tokenStream.head match {
+        case Arrow(_) => {
+          val newParse = parseType(ParseState(p.tokenStream.tail, Nil, p.map)) match{
+            case Left(pars) => pars
+            case Right(e) => return Right(e)
+          }
+          val typesList:List[r.types.Type] = combineTypes(getTypesInList(p.parsedSynElems))::
+            combineTypes(getTypesInList(newParse.parsedSynElems))::Nil
+          val newType: r.types.Type = combineTypes(typesList)
+          Left(ParseState(newParse.tokenStream, SType(newType)::Nil, newParse.map))
+        }
+          //Todo: the same for GenericsArrow what is above for Arrow
+
+          //Todo: Maybe remove already here the EndTypAnnotatedIdent or RBrace from the TokenList
+        case EndTypAnnotatedIdent(_) => Left(p)
+        case RBrace(_) => Left(p)
+        case a => return Right(ParseError("the Token '"+ a + "' is not here expected!!!"))
+      }
+    }
   }
   /*
   is the whole Syntax-Tree.
@@ -514,11 +558,13 @@ object parser {
 
     //local variables are in the list, so that not two same localVariables are declared
     if (map.contains(identifierName.name)) {
-      return Right(ParseError("A variable or function with the exact same name '"+ identifierName.name + "' is already declared!"))
+      throw new IllegalArgumentException("A variable or function with the exact same name '"+ identifierName.name + "' is already declared! <- " + map.get(identifierName.name))
     }
     map.update(identifierName.name, Left(identifierName))
 
-    Left(ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent, map))
+    val myNewParseState = ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent, map)
+    println("myNewParseState: "+ myNewParseState)
+    Left(myNewParseState)
   }
 
   //_________________________________________________________Lambda
@@ -583,8 +629,8 @@ object parser {
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
-        val expr = SExpr(combineExpressions(pState.parsedSynElems))
-        val newL = expr :: Nil
+        val ty = SType(combineTypes(getTypesInList(pState.parsedSynElems)))
+        val newL = ty :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse
         val newParse:ParseState = ParseState(pState.tokenStream, l, pState.map)
