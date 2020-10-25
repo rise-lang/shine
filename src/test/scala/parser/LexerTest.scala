@@ -64,7 +64,9 @@ class LexerTest extends  AnyFlatSpec {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: Type(DoubleType(), _) :: Arrow(_) :: Type(DoubleType(), _)::
         Arrow(_) :: Type(DoubleType(), _)::Arrow(_) :: Type(DoubleType(), _)::
-        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
+        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) ::
+
+        Identifier("f", _) ::
         EqualsSign(_)::Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
         Backslash(_) :: Identifier("y", _) :: Arrow(_):: Backslash(_) ::
         Identifier("z", _) :: Arrow(_)::
@@ -186,7 +188,9 @@ class LexerTest extends  AnyFlatSpec {
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
-        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(span6) :: Identifier("Hans_Georg", _) ::Arrow(_) ::
         Identifier("Hans_Georg", _) :: EndNamedExpr(_)::Nil => true
@@ -202,7 +206,9 @@ class LexerTest extends  AnyFlatSpec {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
         Arrow(_) :: Type(IntTyp(), _)::
-        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
         Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_)::
@@ -222,13 +228,15 @@ class LexerTest extends  AnyFlatSpec {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
         Arrow(_) :: Type(IntTyp(), _)::
-        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
-        Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) ::
+        Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_)::
         BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) ::
-        Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) ::
-        BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) ::
+        Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: LBrace(_)::
+        BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: RBrace(_):: RBrace(_)::
         EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
