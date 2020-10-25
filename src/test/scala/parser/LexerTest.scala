@@ -698,7 +698,9 @@ class LexerTest extends  AnyFlatSpec {
         Arrow(_) :: Type(IntTyp(), _)::
         Arrow(_) :: Type(FloatTyp(), _)::
         Arrow(_) :: Type(FloatTyp(), _)::
-        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
+        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) ::
+
+        Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("Michael", _) :: Arrow(_) :: Backslash(_) ::
         Identifier("Heinrich", _) :: Arrow(_) :: UnOp(UnaryOpType.NOT, _) ::
@@ -709,7 +711,17 @@ class LexerTest extends  AnyFlatSpec {
         BinOp(BinOpType.MUL, _) :: Identifier("varY", _)  :: BinOp(BinOpType.DIV, _)
         :: LBrace(_) :: BinOp(BinOpType.SUB, _) :: I32(25, _) :: F32(a, _) :: RBrace(_)
         ::  F32(b, _) :: RBrace(_) :: I32(42, _)  :: I32(0, _) :: RBrace(_) ::
-        EndNamedExpr(_)::Nil => {
+        EndNamedExpr(_)::
+
+        BeginTypAnnotatedIdent(_):: Identifier("specialFunctionOfChaos", _)::
+        DoubleColons(_) :: Type(BoolType(), _)::
+        Arrow(_) :: Type(BoolType(), _)::
+        Arrow(_) :: Type(IntTyp(), _)::
+        Arrow(_) :: Type(FloatTyp(), _)::
+        Arrow(_) :: Type(FloatTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        Nil => {
         a == 10.5 && b == 2.3 //I can't write 2.3 directly in the pattern match, because then it would be unequal
       }
       case a => fail(a.toString())

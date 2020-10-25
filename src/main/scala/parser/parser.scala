@@ -36,7 +36,7 @@ object parser {
   final case class SType(t: r.types.Type) extends SyntaxElement
 
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
-  type MapFkt = mutable.HashMap[String, Either[r.Expr, List[r.types.Type]]]
+  type MapFkt = mutable.HashMap[String, Either[r.Expr, r.types.Type]]
 
   final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], map: MapFkt)
 
@@ -331,7 +331,7 @@ object parser {
       Left(parseState)      |>
         parseIdent
 
-    val (ps, identifierFkt, typesDefined) : (ParseState, r.Identifier, List[r.types.Type]) = psLambdaOld match {
+    val (ps, identifierFkt, typeOfFkt) : (ParseState, r.Identifier, r.types.Type) = psLambdaOld match {
       case Right(e) => return Right(e)
       case Left(p) => {
         p.parsedSynElems.head match {
@@ -342,11 +342,8 @@ object parser {
                 throw new IllegalStateException("We want to parse an NamedExpr for " + n + " but this Identifier is not declared yet!")
               }
               case Some(Left(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: "+ e)
-              case Some(Right(l)) => if(l.isEmpty){
-                throw new IllegalStateException("The List should not be empty!")
-              }else{
-                (ParseState(p.tokenStream, parseState.parsedSynElems, p.map), r.Identifier(n)(), l)
-              }
+              case Some(Right(typeFkt)) =>
+                (ParseState(p.tokenStream, parseState.parsedSynElems, p.map), r.Identifier(n)(), typeFkt)
             }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
@@ -441,7 +438,10 @@ object parser {
       case EndTypAnnotatedIdent(_) :: remainderTokens => {
         val m = psNew.map
         val typesList: List[r.types.Type] = getTypesInList(psNew.parsedSynElems)
-        m.put(identifierFkt.name, Right(typesList))
+        if(typesList.length!=1){
+          throw new IllegalStateException("The TypesList should have lenght 1: "+ typesList)
+        }
+        m.put(identifierFkt.name, Right(typesList.head))
         println("return TypAnnotatedIdent: "+ remainderTokens+ " <<<<>>>> " + m )
         Left((remainderTokens, m))
       }
