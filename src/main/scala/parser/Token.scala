@@ -136,6 +136,12 @@ sealed abstract class Token (span: Span){
     override def toString = "->"
   }
 
+  // "=>"
+  final case class DepArrow (span: Span) extends Token(span){
+    require(span.begin.column == span.end.column && (span.begin.row+1) ==span.end.row, "depArrow has not lenght two")
+    override def toString = "=>"
+  }
+
   // ":"
   //  (\x:a.x) : a -> a
   final case class Colon(span: Span) extends Token(span){
