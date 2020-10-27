@@ -25,69 +25,8 @@ object TypedDSL {
       )
   }
 
-  final case class Opaque(e: Expr, ftvSubs: Solution = Solution())(
-      override val t: Type = e.t
-  ) extends Primitive {
-    import TypedDSL.Opaque._
-    override def typeScheme: Type = e.t
-    override def setType(t: Type): Opaque = {
-      val ftvSubs = getFTVSubs(t)
-      this.copy(ftvSubs = ftvSubs)(freeze(ftvSubs, t))
-    }
+  final case class Opaque(e: Expr, override val t: Type) extends Primitive {
     override def name: String = s"{Opaque Expr: $t}"
-  }
-
-  object Opaque {
-    def freeze(ftvSubs: Solution, t: Type): Type =
-      new Solution(
-        ftvSubs.ts.view.mapValues(dt =>
-          dt.asInstanceOf[DataTypeIdentifier].asExplicit
-        ).toMap,
-        ftvSubs.ns.view.mapValues(n => n.asInstanceOf[NatIdentifier].asExplicit).toMap,
-        ftvSubs.as.view.mapValues(a =>
-          a.asInstanceOf[AddressSpaceIdentifier].asExplicit
-        ).toMap,
-        ftvSubs.n2ds.view.mapValues(n2d =>
-          n2d.asInstanceOf[NatToDataIdentifier].asExplicit
-        ).toMap,
-        ftvSubs.n2ns.view.mapValues(n2n =>
-          n2n.asInstanceOf[NatToNatIdentifier].asExplicit
-        ).toMap,
-        ftvSubs.natColls.view.mapValues(natColl =>
-          natColl.asInstanceOf[NatCollectionIdentifier].asExplicit
-      ).toMap)(t)
-
-    def getFTVSubs(t: Type): Solution = {
-      import scala.collection.immutable.Map
-      val emptySubs: (
-          Map[Type, Type],
-          Map[NatIdentifier, Nat],
-          Map[AddressSpaceIdentifier, AddressSpace],
-          Map[NatToDataIdentifier, NatToData],
-          Map[NatToNatIdentifier, NatToNat],
-          Map[NatCollectionIdentifier, NatCollection]
-      ) = (Map(), Map(), Map(), Map(), Map(), Map())
-      val ftvs = TopLevel.getFTVs(t)
-      val subs = ftvs.foldLeft(emptySubs)((subs, ftv) =>
-        subs match {
-          case (ts, ns, as, n2ds, n2ns, natColls) =>
-            ftv match {
-              case _: TypeIdentifier =>
-                throw TypeException("TypeIdentifier cannot be frozen")
-              case i: DataTypeIdentifier => (ts ++ Map(i -> i), ns, as, n2ds, n2ns, natColls)
-              case i: NatIdentifier      => (ts, ns ++ Map(i -> i), as, n2ds,  n2ns, natColls)
-              case i: AddressSpaceIdentifier =>
-                (ts, ns, as ++ Map(i -> i), n2ds,  n2ns, natColls)
-              case i: NatToDataIdentifier => (ts, ns, as, n2ds ++ Map(i -> i), n2ns,  natColls)
-              case i: NatToNatIdentifier => (ts, ns, as, n2ds, n2ns ++ Map(i -> i),  natColls)
-              case i: NatCollectionIdentifier => (ts, ns, as, n2ds,  n2ns, natColls ++ Map(i -> i))
-              case i =>
-                throw TypeException(s"${i.getClass} is not supported yet")
-            }
-        }
-      )
-      new Solution(subs._1, subs._2, subs._3, subs._4, subs._5, subs._6)
-    }
   }
 
   final case class TopLevel(e: Expr, inst: Solution = Solution())(
@@ -103,89 +42,31 @@ object TypedDSL {
   }
 
   object TopLevel {
-    def instantiate(t: Type): Solution = {
+    private def instantiate(t: Type): Solution = {
       import scala.collection.immutable.Map
-      val emptySubs: (
-          Map[Type, Type],
-          Map[NatIdentifier, Nat],
-          Map[AddressSpaceIdentifier, AddressSpace],
-          Map[NatToDataIdentifier, NatToData],
-          Map[NatToNatIdentifier, NatToNat],
-          Map[NatCollectionIdentifier, NatCollection]
-      ) = (Map(), Map(), Map(), Map(), Map(), Map())
-      val ftvs = getFTVs(t)
-      val subs = ftvs.foldLeft(emptySubs)((subs, ftv) =>
+      getFTVs(t).foldLeft(Solution())((subs, ftv) =>
         subs match {
-          case (ts, ns, as, n2ds, n2ns, natColls) =>
+          case s@Solution(ts, ns, as, n2ds, n2ns, natColls) =>
             ftv match {
               case i: TypeIdentifier =>
-                (ts ++ Map(i -> impl{ x: TypeIdentifier => x }), ns, as, n2ds, n2ns, natColls)
+                s.copy(ts = ts ++ Map(i -> impl{ x: TypeIdentifier => x }))
               case i: DataTypeIdentifier =>
-                (ts ++ Map(i -> impl{ x: DataType => x }), ns, as, n2ds, n2ns,  natColls)
+                s.copy(ts = ts ++ Map(i -> impl{ x: DataType => x }))
               case i: NatIdentifier =>
-                (ts, ns ++ Map(i -> impl{ x: Nat => x }), as, n2ds, n2ns,  natColls)
+                s.copy(ns = ns ++ Map(i -> impl{ x: Nat => x }))
               case i: AddressSpaceIdentifier =>
-                (ts, ns, as ++ Map(i -> impl{ x: AddressSpace => x }), n2ds, n2ns,  natColls)
+                s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
               case i: NatToDataIdentifier =>
-                (ts, ns, as, n2ds ++ Map(i -> impl{ x: NatToData => x }), n2ns,  natColls)
+                s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
               case i: NatToNatIdentifier =>
-                (ts, ns, as, n2ds, n2ns ++ Map(i -> impl{ x: NatToNat => x }), natColls)
+                s.copy(n2ns = n2ns ++ Map(i -> impl{ x: NatToNat => x }))
               case i: NatCollectionIdentifier =>
-                (ts, ns, as, n2ds,  n2ns, natColls ++ Map(i -> impl{ x: NatCollection => x }))
+                s.copy(natColls = natColls ++ Map(i -> impl{ x: NatCollection => x }))
               case i =>
                 throw TypeException(s"${i.getClass} is not supported yet")
             }
         }
       )
-      new Solution(subs._1, subs._2, subs._3, subs._4, subs._5, subs._6)
-    }
-
-    def getFTVs(t: Type): Seq[Kind.Identifier] = {
-      val ftvs = mutable.ListBuffer[Kind.Identifier]()
-      traversal.types.DepthFirstLocalResult(
-        t,
-        new traversal.Visitor {
-          override def visitType[T <: Type](t: T): Result[T] = {
-            t match {
-              case i: DataTypeIdentifier if !i.isExplicit => ftvs += i
-              case i: TypeIdentifier                      => ftvs += i
-              case _                                      =>
-            }
-            Continue(t, this)
-          }
-          override def visitNat(ae: Nat): Result[Nat] =
-            Stop(ae.visitAndRebuild({
-              case i: NatIdentifier if !i.isExplicit =>
-                ftvs += i
-                i
-              case n => n
-            }))
-          override def visitAddressSpace(
-              a: AddressSpace
-          ): Result[AddressSpace] = {
-            a match {
-              case i: AddressSpaceIdentifier if !i.isExplicit => ftvs += i
-              case _                                          =>
-            }
-            Continue(a, this)
-          }
-          override def visitN2N(n2n: NatToNat): Result[NatToNat] = {
-            n2n match {
-              case i: NatToNatIdentifier if !i.isExplicit => ftvs += i
-              case _                                      =>
-            }
-            Continue(n2n, this)
-          }
-          override def visitN2D(n2d: NatToData): Result[NatToData] = {
-            n2d match {
-              case i: NatToDataIdentifier if !i.isExplicit => ftvs += i
-              case _                                       =>
-            }
-            Continue(n2d, this)
-          }
-        }
-      )
-      ftvs.distinct.toSeq
     }
 
     case class Visitor(ftvSubs: Solution, sol: Solution)
@@ -279,13 +160,110 @@ object TypedDSL {
     }
   }
 
+  private def freeze(ftvSubs: Solution, t: Type): Type =
+    Solution(
+      ftvSubs.ts.view.mapValues(dt =>
+        dt.asInstanceOf[DataTypeIdentifier].asExplicit).toMap,
+      ftvSubs.ns.view.mapValues(n =>
+        n.asInstanceOf[NatIdentifier].asExplicit).toMap,
+      ftvSubs.as.view.mapValues(a =>
+        a.asInstanceOf[AddressSpaceIdentifier].asExplicit).toMap,
+      ftvSubs.n2ds.view.mapValues(n2d =>
+        n2d.asInstanceOf[NatToDataIdentifier].asExplicit).toMap,
+      ftvSubs.n2ns.view.mapValues(n2n =>
+        n2n.asInstanceOf[NatToNatIdentifier].asExplicit).toMap,
+      ftvSubs.natColls.view.mapValues(natColl =>
+        natColl.asInstanceOf[NatCollectionIdentifier].asExplicit).toMap
+    )(t)
+
+  private def unfreeze(ftvSubs: Solution, solution: Solution): Solution = solution match {
+    case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
+      Solution(
+        ts.view.mapValues(t => ftvSubs(t)).toMap,
+        ns.view.mapValues(n => ftvSubs(n)).toMap,
+        as.view.mapValues(a => ftvSubs(a)).toMap,
+        n2ds.view.mapValues(n2d => ftvSubs(n2d)).toMap,
+        n2ns.view.mapValues(n2n => ftvSubs(n2n)).toMap,
+        natColls.view.mapValues(ftvSubs(_)).toMap
+      )
+  }
+
+  private def getFTVSubs(t: Type): Solution = {
+    import scala.collection.immutable.Map
+    getFTVs(t).foldLeft(Solution())((solution, ftv) =>
+      solution match {
+        case s@Solution(ts, ns, as, n2ds, n2ns, natColls) =>
+          ftv match {
+            case _: TypeIdentifier =>
+              throw TypeException("TypeIdentifier cannot be frozen")
+            case i: DataTypeIdentifier      => s.copy(ts = ts ++ Map(i -> i))
+            case i: NatIdentifier           => s.copy(ns = ns ++ Map(i -> i))
+            case i: AddressSpaceIdentifier  => s.copy(as = as ++ Map(i -> i))
+            case i: NatToDataIdentifier     => s.copy(n2ds = n2ds ++ Map(i -> i))
+            case i: NatToNatIdentifier      => s.copy(n2ns = n2ns ++ Map(i -> i))
+            case i: NatCollectionIdentifier => s.copy(natColls = natColls ++ Map(i -> i))
+            case i =>
+              throw TypeException(s"${i.getClass} is not supported yet")
+          }
+      }
+    )
+  }
+
+  def getFTVs(t: Type): Seq[Kind.Identifier] = {
+    val ftvs = mutable.ListBuffer[Kind.Identifier]()
+    traversal.types.DepthFirstLocalResult(
+      t,
+      new traversal.Visitor {
+        override def visitType[T <: Type](t: T): Result[T] = {
+          t match {
+            case i: DataTypeIdentifier if !i.isExplicit => ftvs += i
+            case i: TypeIdentifier                      => ftvs += i
+            case _                                      =>
+          }
+          Continue(t, this)
+        }
+        override def visitNat(ae: Nat): Result[Nat] =
+          Stop(ae.visitAndRebuild({
+            case i: NatIdentifier if !i.isExplicit =>
+              ftvs += i
+              i
+            case n => n
+          }))
+        override def visitAddressSpace(
+                                        a: AddressSpace
+                                      ): Result[AddressSpace] = {
+          a match {
+            case i: AddressSpaceIdentifier if !i.isExplicit => ftvs += i
+            case _                                          =>
+          }
+          Continue(a, this)
+        }
+        override def visitN2N(n2n: NatToNat): Result[NatToNat] = {
+          n2n match {
+            case i: NatToNatIdentifier if !i.isExplicit => ftvs += i
+            case _                                      =>
+          }
+          Continue(n2n, this)
+        }
+        override def visitN2D(n2d: NatToData): Result[NatToData] = {
+          n2d match {
+            case i: NatToDataIdentifier if !i.isExplicit => ftvs += i
+            case _                                       =>
+          }
+          Continue(n2d, this)
+        }
+      }
+    )
+    ftvs.distinct.toSeq
+  }
+
   final case class ToBeTyped[+T <: Expr](private val e: T) {
     def toExpr: Expr = TDSL.infer(e)
     def >>=[X <: Expr](f: T => ToBeTyped[X]): ToBeTyped[X] = f(e)
   }
 
   implicit def preserveType[T <: Expr](e: T): ToBeTyped[Opaque] =
-    ToBeTyped(Opaque(e)())
+    ToBeTyped(Opaque(e, e.t))
 
   def toBeTyped[T <: Expr](e: T): ToBeTyped[T] = ToBeTyped(e)
 
@@ -325,8 +303,8 @@ object TypedDSL {
         Stop(sol(t).asInstanceOf[T])
       override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
         Stop(sol(a))
-      override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
-
+      override def visitN2D(n2d: NatToData): Result[NatToData] =
+        Stop(sol(n2d))
       override def visitN2N(n2n: NatToNat): Result[NatToNat] =
         Stop(sol(n2n))
     }
@@ -400,15 +378,16 @@ object TypedDSL {
           (DepApp(tf, x)(exprT), ftvSubsF)
 
         case TypeAnnotation(e, t) =>
+          val ftvSubsT = getFTVSubs(t)
           val (te, ftvSubsE) = constrained(e)
-          val ftvSubsT = Opaque.getFTVSubs(t)
-          val constraint = TypeConstraint(te.t, Opaque.freeze(ftvSubsT, t))
+          val constraint = TypeConstraint(te.t, freeze(ftvSubsT, t))
           constraints += constraint
           (te, ftvSubsE <> ftvSubsT)
 
         case o: Opaque =>
-          val frozenExpr = o.setType(o.typeScheme)
-          (frozenExpr, frozenExpr.ftvSubs)
+          val ftvSubs = getFTVSubs(o.t)
+          val frozenExpr = Opaque(o.e, freeze(ftvSubs, o.t))
+          (frozenExpr, ftvSubs)
 
         case l: Literal => (l, Solution())
 
@@ -425,17 +404,7 @@ object TypedDSL {
              ): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-      val solution = Constraint.solve(constraints.toSeq, Seq())(explDep) match {
-        case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
-          Solution(
-            ts.view.mapValues(t => ftvSubs(t)).toMap,
-            ns.view.mapValues(n => ftvSubs(n)).toMap,
-            as.view.mapValues(a => ftvSubs(a)).toMap,
-            n2ds.view.mapValues(n2d => ftvSubs(n2d)).toMap,
-            n2ns.view.mapValues(n2n => ftvSubs(n2n)).toMap,
-            natColls.view.mapValues(ftvSubs(_)).toMap
-          )
-      }
+      val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
       traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
     }
   }
