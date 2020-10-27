@@ -14,18 +14,19 @@ import scala.xml.Elem
 final case class DMatch(x: NatIdentifier,
                         elemT: DataType,
                         outT: DataType,
-                        a: AccessType,
+                        aIn: AccessType,
+                        aOut: AccessType,
                         f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                         input: Phrase[ExpType]
                        ) extends ExpPrimitive {
-  override val t: ExpType = expT(outT, a)
+  override val t: ExpType = expT(outT, aOut)
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     // Turn the f imperative by means of forwarding the continuation translation
-    con(input)(λ(expT(DepPairType(x, elemT), read))(pair =>
+    con(input)(λ(expT(DepPairType(x, elemT), aIn))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
+          _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), aIn))(snd =>
             con(f(fst)(snd))(C)
           )), pair)))
   }
@@ -33,8 +34,8 @@ final case class DMatch(x: NatIdentifier,
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     // Turn the f imperative by means of forwarding the acceptor translation
-    con(input)(λ(expT(DepPairType(x, elemT), read))(pair => ImperativePrimitives.DMatchI(x, elemT, outT,
-      _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
+    con(input)(λ(expT(DepPairType(x, elemT), aIn))(pair => ImperativePrimitives.DMatchI(x, elemT, outT,
+      _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), aIn))(snd =>
         acc(f(fst)(snd))(A)
       )), pair)))
   }
@@ -59,7 +60,8 @@ final case class DMatch(x: NatIdentifier,
     v.nat(x),
     v.data(elemT),
     v.data(outT),
-    v.access(a),
+    v.access(aIn),
+    v.access(aOut),
     VisitAndRebuild(f, v),
     VisitAndRebuild(input, v)
   )

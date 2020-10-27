@@ -132,7 +132,7 @@ package object DSL {
 
   def mapTransientNat(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
     Phrase.Internal.exprFromTransientNat(
-      Phrase.Internal.transientNatFromExpr(natExpr).map(f))
+     Phrase.Internal.transientNatFromExpr(natExpr).map(f))
   }
 
   implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i))

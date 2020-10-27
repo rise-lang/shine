@@ -778,12 +778,16 @@ object fromRise {
       }
 
       case core.dmatch() => fromType {
-        case expT(DepPairType(x, elemT), `read`) ->:
-          nFunT(i, expT(elem_iT, `read`) ->: expT(outT, a))
-          ->: expT(_, _) =>
-          fun[ExpType](ExpType(DepPairType(x, elemT), read), pair =>
-            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, read) ->: ExpType(outT, a)),f =>
-              DMatch(x, elemT, outT, a, f, pair)
+        case expT(DepPairType(x, elemT), aIn1) ->:
+          nFunT(i, expT(elem_iT, aIn2) ->: expT(outT, aOut1))
+          ->: expT(_, aOut2) =>
+          assert(aIn1 == aIn2)
+          assert(aOut1 == aOut2)
+          val aIn = aIn1
+          val aOut = aOut1
+          fun[ExpType](ExpType(DepPairType(x, elemT), aIn), pair =>
+            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, aIn) ->: ExpType(outT, aOut)),f =>
+              DMatch(x, elemT, outT, aIn, aOut, f, pair)
             )
           )
       }
@@ -793,13 +797,43 @@ object fromRise {
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }
 
-      case core.filter() => fromType {
+      case core.filter() | core.filterW() => fromType {
         case expT(inputT@ArrayType(n, elemT), `read`) ->:
-          (expT(_, read) ->: expT(bool, `read`))->: expT(_, `write`) =>
+          (expT(_, read) ->: expT(bool, `read`))->: expT(_, a) =>
           fun[ExpType](ExpType(inputT, read), input =>
             fun[ExpType ->: ExpType](
               ExpType(elemT, read) ->: ExpType(bool, read), f =>
-                Filter(n, elemT, f, input)))
+                Filter(a, n, elemT, f, input)))
+      }
+
+      case core.count() => fromType {
+        case expT(inputT@ArrayType(n, elemT), `read`) ->:
+          (expT(_, read) ->: expT(bool, `read`))->: expT(IndexType(n2), `read`) =>
+          fun[ExpType](ExpType(inputT, read), input =>
+            fun[ExpType ->: ExpType](
+              ExpType(elemT, read) ->: ExpType(bool, read), f =>
+                Count(n, elemT, f, input)))
+      }
+
+      case core.which() => fromType {
+        case expT(inputT@ArrayType(n, elemT), `read`) ->:
+          nFunT(count,
+            (expT(_, read) ->: expT(bool, `read`))->: expT(_, `read`)) =>
+
+          fun[ExpType](ExpType(inputT, read), input =>
+            depFun[NatKind](count)(
+            fun[ExpType ->: ExpType](
+              ExpType(elemT, read) ->: ExpType(bool, read), f => Which(n, elemT, count, f, input)))
+          )
+      }
+
+      case core.liftN() => fromType {
+        case expT(NatType, `read`) ->:
+            nFunT(n, expT(outT, a)) ->: expT(_, _) =>
+          fun[ExpType](ExpType(NatType, read), input =>
+            fun[`(nat)->:`[ExpType]](n ->: expT(outT, a),f => LiftN(a, outT, input, f)
+            )
+          )
       }
 
       case core.reduce() =>

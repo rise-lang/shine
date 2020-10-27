@@ -4,6 +4,7 @@ import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.primitives._
+import shine.DPIA.FunctionalPrimitives.IndexAsNat
 import util.Execute
 
 class dependentTypes extends test_util.Tests {
@@ -37,7 +38,7 @@ class dependentTypes extends test_util.Tests {
       dmatch(pair)(depFun((n:Nat) => fun(xs =>
         dpair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
       ))))
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
 
@@ -89,7 +90,7 @@ class dependentTypes extends test_util.Tests {
         reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))(xs))
       ))
     )
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
     val cFunName = "foo"
@@ -161,14 +162,72 @@ class dependentTypes extends test_util.Tests {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
-  test("Simple filter") {
-    val e = depFun((n: Nat) => fun(n `.` f32)(array => filter(array)(fun(x => x =:= l(0.0f)))))
+  test("Simple count") {
+    val e = depFun((n: Nat) =>
+      fun(n `.` f32)(array => count(array)(fun(x => x =:= l(0.0f))))
+    )
 
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
     util.gen.CProgram(inferred, "Foo_foo")
   }
+
+  test("Simple which") {
+    val e = depFun((n: Nat) => depFun((count:Nat) =>
+      fun(n `.` f32)(array => mapSeq(fun(x => x))(which(array)(count)(fun(x => x =:= l(0.0f)))))
+    ))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
+
+  test("Filter and sum") {
+    val e = depFun((n: Nat) =>
+      fun(n `.` f32)(array => {
+        def pred = fun(x => x =:= l(0.0f))
+        val cnt = count(array)(pred)
+        liftN(indexAsNat(cnt))(depFun((cnt: Nat) =>
+          reduceSeq(fun(x => fun(_ => x)))(lidx(0, n))(which(array)(cnt)(pred))
+        ))
+      })
+    )
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
+
+  /*
+  test("Simple filter") {
+    val e = depFun((n: Nat) =>
+      fun(n `.` f32)(array => filterW(array)(fun(x => x =:= l(0.0f))))
+    )
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
+
+  test("Deep filter") {
+    val e = depFun((n: Nat) => depFun((m: Nat) =>
+      fun(n `.` m `.` f32)(array =>
+        mapSeq(fun(row => {
+          val f = filter(row)(fun(x => x =:= l(0.0f)))
+          dmatch(f)(depFun((k:Nat) => fun(idxs => dpair(k)(mapSeq(fun(x => x))(idxs::(k`.`IndexType(m)))))))
+        }
+        ))(array)
+    )))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }*/
 
 
 

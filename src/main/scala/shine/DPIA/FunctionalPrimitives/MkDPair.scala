@@ -6,30 +6,25 @@ import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.{MkDPairFstI, MkDPairSndAcc, Skip}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics.{FloatData, IntData, Store, U32Data}
+import shine.DPIA.Semantics.OperationalSemantics.{IndexData, Store, U32Data}
 import shine.DPIA.Types._
 import shine.DPIA.{ImperativePrimitives, _}
 
 import scala.xml.Elem
 
-final case class Filter(n: Nat, elemT: DataType, f: Phrase[ExpType ->: ExpType], input:Phrase[ExpType])
+final case class Filter(a: AccessType, n: Nat, elemT: DataType, f: Phrase[ExpType ->: ExpType], input:Phrase[ExpType])
   extends ExpPrimitive {
-  private val binder: NatIdentifier = NatIdentifier(freshName("n"))
+  private val binder: NatIdentifier = NatIdentifier(freshName("n"), arithexpr.arithmetic.GoesToRange(n))
   private val sndT = ArrayType(binder,  IndexType(n))
-  override val t = expT(DepPairType(binder, sndT), write)
+  override val t = expT(DepPairType(binder, sndT), a)
   // Filter needs to allocate more memory than it's 'logical' type says
-  val memorySizeT = DepPairType(binder, ArrayType(n, IndexType(n)))
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
-    con(input)(λ(expT(ArrayType(n, elemT), read))(input => {
-      `new`(memorySizeT, outputMem => {
+      `new`(DepPairType(binder, sndT), output => {
         // We just newed it, so we know output is an identifier. We will need to play some tricks
         // here, and change it's type.
-        val output = Identifier(outputMem.asInstanceOf[Identifier[_]].name, PhrasePairType(expT(sndT, read), accT(sndT)))
         acceptorTranslation(output.wr) `;` C(output.rd)
       })
-    }))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
@@ -61,6 +56,7 @@ final case class Filter(n: Nat, elemT: DataType, f: Phrase[ExpType ->: ExpType],
   override def xmlPrinter: Elem = <filter></filter>
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = Filter(
+    v.access(a),
     v.nat(n),
     v.data(elemT),
     VisitAndRebuild(f, v),

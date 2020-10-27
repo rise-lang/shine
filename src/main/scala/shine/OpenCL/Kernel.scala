@@ -3,6 +3,7 @@ package shine.OpenCL
 import arithexpr.arithmetic._
 import opencl.executor._
 import shine.C.AST.ParamDecl
+import shine.C.SizeInByte
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -231,7 +232,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     //Helper for the creation of intermdiate arguments
     def createIntermediateArg(arg: Argument, sizeVariables: Map[Nat, Nat]): KernelArg = {
       //Get the size of bytes, potentially with free variables
-      val rawSize = sizeInByte(arg.identifier.t.dataType)
+      val rawSize = SizeInByte(arg.identifier.t.dataType)
       //Try to substitue away all the free variables
       val cleanSize = ArithExpr.substitute(rawSize.value, sizeVariables)
       Try(cleanSize.evalLong) match {
@@ -264,7 +265,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def createOutputKernelArg(sizeVariables:Map[Nat,Nat]):GlobalArg = {
-    val rawSize = sizeInByte(this.outputParam.t.dataType).value
+    val rawSize = SizeInByte(this.outputParam.t.dataType).value
     val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
     Try(cleanSize.evalLong) match {
       case Success(actualSize) => createGlobalArg(actualSize)
@@ -342,42 +343,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
     case DepArrayType(_, _) | _: NatToDataApply =>
       throw new Exception("This should not happen")
     case _:DepPairType => throw new Exception("Dependent pair not supported as output type")
-  }
-
-  private def sizeInByte(dt: DataType): SizeInByte = dt match {
-    case s: ScalarType => s match {
-      case shine.DPIA.Types.bool => SizeInByte(1)
-      case shine.DPIA.Types.int | shine.DPIA.Types.NatType => SizeInByte(4)
-      case shine.DPIA.Types.u8 | shine.DPIA.Types.i8 =>
-        SizeInByte(1)
-      case shine.DPIA.Types.u16 | shine.DPIA.Types.i16 | shine.DPIA.Types.f16 =>
-        SizeInByte(2)
-      case shine.DPIA.Types.u32 | shine.DPIA.Types.i32 | shine.DPIA.Types.f32 =>
-        SizeInByte(4)
-      case shine.DPIA.Types.u64 | shine.DPIA.Types.i64 | shine.DPIA.Types.f64 =>
-        SizeInByte(8)
-    }
-    case _: IndexType => SizeInByte(4) // == sizeof(int)
-    case v: VectorType => sizeInByte(v.elemType) * v.size
-    case r: PairType => sizeInByte(r.fst) + sizeInByte(r.snd)
-    case a: ArrayType => sizeInByte(a.elemType) * a.size
-    case a: DepArrayType =>
-      a.elemFType match {
-        case NatToDataLambda(x, body) =>
-          SizeInByte(BigSum(Cst(0), a.size - 1, `for`=x, in=sizeInByte(body).value))
-        case _: NatToDataIdentifier =>
-          throw new Exception("This should not happen")
-      }
-    case _: DepPairType => throw new Exception("This should not happen")
-    case _: NatToDataApply =>  throw new Exception("This should not happen")
-    case _: DataTypeIdentifier => throw new Exception("This should not happen")
-  }
-
-  case class SizeInByte(value: Nat) {
-    def *(rhs: Nat) = SizeInByte(value * rhs)
-    def +(rhs: SizeInByte) = SizeInByte(value + rhs.value)
-
-    override def toString = s"$value bytes"
   }
 }
 

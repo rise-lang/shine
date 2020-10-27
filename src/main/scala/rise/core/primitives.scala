@@ -182,6 +182,22 @@ object primitives {
     impl{ n: Nat => impl { dt: DataType => (n `.` dt) ->: (dt ->: bool) ->: (Nat `**` (m => m `.` IndexType(n))) } }
   }
 
+  @primitive object filterW extends Primitive with Builder {
+    impl{ n: Nat => impl { dt: DataType => (n `.` dt) ->: (dt ->: bool) ->: (Nat `**` (m => m `.` IndexType(n))) } }
+  }
+
+  @primitive object count extends Primitive with Builder {
+    impl { n: Nat => impl { dt : DataType => (n `.` dt) ->: (dt ->: bool) ->: IndexType(n) }}
+  }
+
+  @primitive object which extends Primitive with Builder {
+    impl { n: Nat => impl { dt : DataType => (n `.` dt) ->: expl((count: Nat) => (dt ->: bool) ->: (count `.` IndexType(n)))}}
+  }
+
+  @primitive object liftN extends Primitive with Builder {
+    impl { dt: DataType => NatType ->: expl {(_: Nat) => dt } ->: dt }
+  }
+
   @primitive object reduce extends Primitive with Builder {
     impl{ n: Nat => impl{ t: DataType =>
       (t ->: t ->: t) ->: t ->: (n`.`t) ->: t }}

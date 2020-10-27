@@ -1,6 +1,7 @@
 package shine.DPIA
 
 import rise.core.TypeLevelDSL.{->:, ArrayTypeConstructors, TupleTypeConstructors, `(Addr)->:`, `(Nat)->:`, `.`, x}
+import rise.core.types.Kind.Explicitness
 import rise.core.{primitives => rp, types => rt}
 import rise.openCL.{primitives => roclp}
 import rise.openMP.{primitives => rompp}
@@ -516,7 +517,8 @@ private class InferAccessAnnotation {
         buildType(p.t)
 
       case rp.dmatch() =>
-        val a = accessTypeIdentifier()
+        val aIn = accessTypeIdentifier()
+        val aOut = accessTypeIdentifier()
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.DepPairType(x, elemT),
             rt.FunType(rt.DepFunType(i, rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
@@ -524,9 +526,9 @@ private class InferAccessAnnotation {
               case x:rt.NatIdentifier =>
                 assert(i.isInstanceOf[rt.NatIdentifier])
                 val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
-                expT(DepPairType(natIdentifier(x), dataType(elemT)), read) ->:
-                  nFunT(i_, expT(dataType(app1), read) ->: expT(dataType(outT), a)) ->:
-                    expT(dataType(retT), a)
+                expT(DepPairType(natIdentifier(x), dataType(elemT)), aIn) ->:
+                  nFunT(i_, expT(dataType(app1), aIn) ->: expT(dataType(outT), aOut)) ->:
+                    expT(dataType(retT), aOut)
               case _ => ???
             }
           case _ => error(s"did not expect t")
@@ -551,7 +553,43 @@ private class InferAccessAnnotation {
       case rp.filter() =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(input:rt.ArrayType, rt.FunType(rt.FunType(elemT, rt.bool), outputT:rt.DataType)) =>
+            expT(dataType(input), read) ->: (expT(input.elemType, read) ->: expT(bool, read)) ->: expT(dataType(outputT), read)
+          case _ => ???
+        }
+        buildType(p.t)
+
+      case rp.filterW() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(input:rt.ArrayType, rt.FunType(rt.FunType(elemT, rt.bool), outputT:rt.DataType)) =>
             expT(dataType(input), read) ->: (expT(input.elemType, read) ->: expT(bool, read)) ->: expT(dataType(outputT), write)
+          case _ => ???
+        }
+        buildType(p.t)
+
+      case rp.count() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(input:rt.ArrayType, rt.FunType(rt.FunType(_, rt.bool), outputT:rt.IndexType)) =>
+            expT(dataType(input), read) ->: (expT(input.elemType, read) ->: expT(bool, read)) ->: expT(dataType(outputT), read)
+          case _ => ???
+        }
+        buildType(p.t)
+
+      case rp.which() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(input:rt.ArrayType, rt.DepFunType(count, rt.FunType(rt.FunType(_, rt.bool), rt.ArrayType(_ , rt.IndexType(_))))) =>
+            val _count = natIdentifier(count.asInstanceOf[rt.NatIdentifier])
+            val _input = dataType(input).asInstanceOf[ArrayType]
+            expT(_input, read) ->: nFunT(_count, (expT(input.elemType, read) ->: expT(bool, read)) ->: expT(ArrayType(_count, IndexType(_input.size)), read))
+          case _ => ???
+        }
+        buildType(p.t)
+
+      case rp.liftN() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(rt.NatType, rt.FunType(rt.DepFunType(n: rt.NatIdentifier, dt:rt.DataType), outT:rt.DataType)) =>
+            val a = accessTypeIdentifier()
+            val n_ = natIdentifier(n)
+            expT(NatType, read) ->: (nFunT(n_, expT(dataType(dt), a)) ->: expT(dataType(outT), a))
           case _ => ???
         }
         buildType(p.t)

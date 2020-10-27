@@ -4,6 +4,7 @@ import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
+import shine.C.SizeInByte
 import shine.DPIA.Compilation.SimplifyNats
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
@@ -13,6 +14,7 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.OpenCL.Kernel
 import shine._
 
 import scala.collection.immutable.VectorBuilder
@@ -186,6 +188,23 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                 Some(initT(C.AST.Cast(sndCType, C.AST.BinaryExpr(input, C.AST.BinaryOperator.+, C.AST.Literal("4")))))
             )),
             cmd(f(fstId)(sndId), env.updatedIdentEnv((sndId, C.AST.DeclRef(sndId.name))))
+          ))
+        })
+
+      case LiftNI(input, f) =>
+        exp(input, env, List(), input => {
+
+          val name = freshName("lN")
+
+
+          val range = RangeUnknown
+          val freshNat = NatIdentifier(name, range)
+          val newGen = updatedRanges(freshNat.name, range)
+
+          C.AST.Block(immutable.Seq(
+            C.AST.Comment("Lifted nat"),
+            C.AST.DeclStmt(C.AST.VarDecl(name, typ(NatType), Some(input))),
+            newGen.cmd(f(freshNat), env)
           ))
         })
 
@@ -424,7 +443,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
       case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
       case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
-      case DMatch(x, _, _, _, f, e) => exp(e, env, path, cont)
+      case DMatch(x, _, _, _, _, f, e) => exp(e, env, path, cont)
 
       case Take(_, _, _, e) => exp(e, env, path, cont)
 
@@ -529,8 +548,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           generateAccess(outT, fe, path, env, cont)
         )
 
-      case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
-      case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
+      // case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
+      // case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
+      case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
+      case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive =>
@@ -700,11 +721,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val va = Identifier(s"${v.name}_a", v.t.t2)
       val vC = C.AST.DeclRef(v.name)
 
+      val generator = dt match {
+        case IndexType(sz) => updatedRanges(v.name, RangeAdd(0, sz, 1))
+        case _ => CodeGenerator.this
+      }
+
+      val subPhrase = Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p)
+
       C.AST.Block(immutable.Seq(
         C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
-        cmd(Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p),
-          env updatedIdentEnv (ve -> vC)
-            updatedIdentEnv (va -> vC))))
+        generator.cmd(subPhrase,
+          env.updatedIdentEnv(ve -> vC).updatedIdentEnv (va -> vC))
+      ))
     }
 
     def codeGenNewDoubleBuffer(dt: ArrayType,

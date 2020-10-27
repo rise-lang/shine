@@ -13,7 +13,8 @@ object TranslationToImperative {
            (implicit context: TranslationContext): Phrase[CommType] = {
     val outT = p.t
     val out = identifier("output", AccType(outT.dataType))
-    acc(p)(out)
+    val res = acc(p)(out)
+    res
   }
 
   def acc(E: Phrase[ExpType])

@@ -168,23 +168,6 @@ object DataType {
       throw new Exception("This should not happen")
   }
 
-  def getSize(dt: DataType): Nat = dt match {
-    case _: IndexType | _: ScalarType => 1
-    case _: PairType => 1 // TODO: is this correct?
-    case _: DepPairType => 1
-    case VectorType(size, _) => size
-    case ArrayType(size, _) => size
-    case DepArrayType(size, _) => size
-    case _: DataTypeIdentifier | _: NatToDataApply =>
-      throw new Exception("This should not happen")
-  }
-
-  def getSizes(dt: DataType): Seq[Nat] = dt match {
-    case ArrayType(size, elemType) => Seq(size) ++ getSizes(elemType)
-    case DepArrayType(size, NatToDataLambda(_, elemType)) =>
-      Seq(size) ++ getSizes(elemType) // TODO: is this correct?
-    case _ => Seq(getSize(dt))
-  }
 
   @scala.annotation.tailrec
   def getBaseDataType(dt: DataType): DataType = dt match {

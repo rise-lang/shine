@@ -249,7 +249,7 @@ object traversal {
               case pair@DepPairType(x, e) =>
                   x match {
                     case n: NatIdentifier =>
-                      val n2 = visit.visitNat(n).value
+                      val n2 = v.visitNat(n).value
                         .asInstanceOf[NatIdentifier]
                       DepPairType[NatKind](n2, data(e, v))
                     case _ => DepPairType(x, data(e,v))(pair.kindName)
