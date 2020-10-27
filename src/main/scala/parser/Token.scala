@@ -111,6 +111,15 @@ sealed abstract class Token (span: Span){
   final case class Identifier (name: String, span: Span) extends Token(span){
     require(!name.isEmpty, "String is empty")
     //<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
+    require(name.matches("[a-z][a-zA-Z0-9_]*"), "has not the preffered structure")
+    require(span.begin.column == span.end.column, "not in one column")
+
+    override def toString = s"<$name :Identifier>"
+  }
+
+  final case class TypeIdentifier (name: String, span: Span) extends Token(span){
+    require(!name.isEmpty, "String is empty")
+    //<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
     require(name.matches("[a-zA-Z][a-zA-Z0-9_]*"), "has not the preffered structure")
     require(span.begin.column == span.end.column, "not in one column")
 
@@ -118,12 +127,17 @@ sealed abstract class Token (span: Span){
   }
 
   // example "Double" which is saved as <doubleTyp>
-  final case class Type(typType: TypeKind, span: Span) extends Token(span){
+  final case class Type(concreteType: ConcreteType, span: Span) extends Token(span){
     require(span.begin.column == span.end.column, "not in one column")
-    val t:TypeKind = typType
+    val t:ConcreteType = concreteType
     override def toString = t.toString
   }
 
+  final case class Kind(concreteKind: ConcreteKind, span: Span) extends Token(span){
+    require(span.begin.column == span.end.column, "not in one column")
+    val k:ConcreteKind = concreteKind
+    override def toString = k.toString
+  }
   // "\"
   final case class Backslash (span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end

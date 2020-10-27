@@ -9,26 +9,18 @@ case class Nat(number: Int){
   override def toString = s"<$number:nat>"
 }
 
-/*
-Every Type has a Kind
-class-hierachie:
- abstract sealed class Kind()
-  1.final case class dataKind() extends Kind
-  2.final case class typeKind() extends Kind
-  3.final case class addrSpaceKind() extends Kind
-  4.final case class natKind() extends Kind
- */
-abstract sealed class Kind()
-  final case class DataK() extends Kind{
+
+abstract sealed class ConcreteKind()
+  final case class DataK() extends ConcreteKind{
     override def toString = "<dataKind>"
   }
-  final case class TypeK() extends Kind{
+  final case class TypeK() extends ConcreteKind{
     override def toString = "<typeKind>"
   }
-  final case class AddrSpaceK() extends Kind{
+  final case class AddrSpaceK() extends ConcreteKind{
     override def toString = "<addrSpaceKind>"
   }
-  final case class NatK() extends Kind{
+  final case class NatK() extends ConcreteKind{
     override def toString = "<natKind>"
   }
 
@@ -74,28 +66,28 @@ abstract sealed class Kind()
  Here we save, if in the code is  "\x:Double ->" we save <Backslash><x:doubleN><Dots><doubleTyp><Arrow>
  */
 //TODO add whitespace
-abstract sealed class TypeKind()
+abstract sealed class ConcreteType()
 
-  abstract sealed class FunctionTypes() extends TypeKind
+  abstract sealed class FunctionTypes() extends ConcreteType
 
   //<LambdaTyp>::=<Typ> -> <Typ>
-  final case class FunctionTyp(typ1: TypeKind, typ2: TypeKind) extends FunctionTypes {
-    val t1: TypeKind = typ1
-    val t2: TypeKind = typ2
+  final case class FunctionTyp(typ1: ConcreteType, typ2: ConcreteType) extends FunctionTypes {
+    val t1: ConcreteType = typ1
+    val t2: ConcreteType = typ2
 
     override def toString = t1.toString + " -> " + t2.toString
   }
 
   //<GenericsTyp>::=(<Identifier> : <Kind>) -> <Typ>
-  final case class GenericsTyp(identifier: Identifier, kind: Kind, typ: TypeKind) extends FunctionTypes {
+  final case class GenericsTyp(identifier: Identifier, kind: ConcreteKind, typ: ConcreteType) extends FunctionTypes {
     val i: Identifier = identifier
-    val k: Kind = kind
-    val t: TypeKind = typ
+    val k: ConcreteKind = kind
+    val t: ConcreteType = typ
 
     override def toString = "( " + i.toString + " : " + k.toString + " ) -> " + t.toString
   }
 
-  abstract sealed class DataTypes() extends TypeKind
+  abstract sealed class DataTypes() extends ConcreteType
 
   abstract sealed class SimpleTypes() extends DataTypes
 
@@ -143,17 +135,17 @@ abstract sealed class TypeKind()
   abstract sealed class ComplexType() extends DataTypes
 
   //<tupleTypes>::="("<Typ>,<Typ>")"
-  final case class TupleType(typ1: TypeKind, typ2: TypeKind) extends ComplexType {
-    val t1: TypeKind = typ1
-    val t2: TypeKind = typ2
+  final case class TupleType(typ1: ConcreteType, typ2: ConcreteType) extends ComplexType {
+    val t1: ConcreteType = typ1
+    val t2: ConcreteType = typ2
 
     override def toString = "( " + t1.toString + " , " + t2.toString + " )"
   }
 
   //<arrayTypes>::=<nat>.<Typ>
-  final case class ArrayType(number: Nat, typ: TypeKind) extends ComplexType {
+  final case class ArrayType(number: Nat, typ: ConcreteType) extends ComplexType {
     val n: Nat = number
-    val t: TypeKind = typ
+    val t: ConcreteType = typ
 
     override def toString = s"$n" + "." + typ.toString
   }

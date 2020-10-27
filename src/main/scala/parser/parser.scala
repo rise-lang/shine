@@ -105,15 +105,7 @@ object parser {
     }
   }
 
-//  private def getKind(kind: Kind): Option[rt.KindName.type] = kind match {
-//    case DataK() => Some(rt.KindName[DataKind])
-//    case TypeK() =>Some(rt.KindName[TypeKind])
-//    case AddrSpaceK() =>Some(rt.KindName[AddrSpaceK])
-//    case NatK() =>Some(rt.KindName[NatK])
-//    case _ => None
-//  }
-
-  private def getScalarType(typ: TypeKind): Option[rt.Type] = typ match {
+  private def getScalarType(typ: ConcreteType): Option[rt.Type] = typ match {
       case ShortTyp() => Some(rt.i8)
       case IntTyp() => Some(rt.i32)
       case FloatTyp() => Some(rt.f32)
@@ -184,36 +176,48 @@ object parser {
   }
 
 
-//  def parseDepFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-//    val ParseState(tokens, parsedSynElems, map) = parseState
-//    val inputType :: arrowToken :: remainderTokens = tokens
-//
-//    println("parseDepFunctionType: " + parseState)
-//    arrowToken match {
-//      case DepArrow(_) => {
-//
-//        inputType match {
-//          case k if k.isInstanceOf[Kind] => {
-//            println("Kind was in parseDepFunctionType parsed: " + k)
-//            val parsedInKind = getKind(k.asInstanceOf[Kind])
-//            val inT = parsedInKind.getOrElse(return Right(ParseError("IllegalInputScalaKind: "+ k)))
-//            parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
-//              case Right(e) => Right(e)
-//              case Left(pS) => {
-//                if (!pS.parsedSynElems.tail.isEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
-//                pS.parsedSynElems.head match {
-//                  case SType(outT) => Left(ParseState(pS.tokenStream, SType(rt.DepFunType[DataKind](inT, outT)():: parseState.parsedSynElems, pS.map)))
-//                  case _ => Right(ParseError("Not a Type"))
-//                }
-//              }
-//            }
-//          }
-//          case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
-//        }
-//      }
-//      case notAnArrow => Right(ParseError("failed to parse Type: A TypeAnnotation is expected, but " + notAnArrow + " is not an Arrow"))
-//    }
-//  }
+  def parseDepFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val typeIdentToken:: colonToken :: inputKindToken :: remainderTokens = tokens
+
+    val nameOfIdentifier = typeIdentToken match {
+      case TypeIdentifier(name, _) => name
+      case _ => return Right(ParseError("No TypeIdentifier seen"))
+    }
+
+    colonToken match {
+      case Colon(_) =>
+      case _ => return Right(ParseError("A Colon was expected"))
+    }
+
+    println("parseDepFunctionType: " + parseState)
+        inputKindToken match {
+          case Kind(concreteKind, span) => {
+            println("Kind was in parseDepFunctionType parsed: " + concreteKind)
+            parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
+              case Right(e) => Right(e)
+              case Left(pS) => {
+                if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
+                val depFun:SType = pS.parsedSynElems.head match {
+                  case SType(outT) => {
+                    concreteKind match {
+                      case DataK() => SType(rt.DepFunType[rt.DataKind, rt.Type](rt.DataTypeIdentifier(nameOfIdentifier), outT))
+                        //it seems that DepFunType does not work for TypeIdentifier. In the usage in infer.scala is only NatToNatKind and not DataKind in it
+                      //case TypeK() => rt.DepFunType[rt.TypeKind, rt.Type](rt.TypeIdentifier(nameOfIdentifier), outT)
+                      case NatK() => SType(rt.DepFunType[rt.NatKind, rt.Type](rt.NatIdentifier(nameOfIdentifier), outT))
+                      case AddrSpaceK() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](rt.AddressSpaceIdentifier(nameOfIdentifier), outT))
+                      case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
+                    }
+                  }
+                  case _ => return Right(ParseError("Not a Type"))
+                }
+                Left(ParseState(pS.tokenStream, depFun:: parseState.parsedSynElems, pS.map))
+              }
+            }
+          }
+          case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
+        }
+  }
 
   def parseFunType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map) = parseState
@@ -231,7 +235,7 @@ object parser {
             parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
               case Right(e) => Right(e)
               case Left(pS) => {
-                if (!pS.parsedSynElems.tail.isEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
+                if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
                 pS.parsedSynElems.head match {
                   case SType(outT) => Left(ParseState(pS.tokenStream, SType(rt.FunType(inT, outT)):: parseState.parsedSynElems, pS.map))
                   case _ => Right(ParseError("Not a Type"))
@@ -513,7 +517,7 @@ object parser {
     println("parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
     val ps: Either[ParseState, ParseErrorOrState]  =
       Left(parseState) |>
-    (parseBracesExprType _ || //parseDepFunctionType || //parseFunType ||
+    (parseBracesExprType _ || parseDepFunctionType || //parseFunType ||
       parseScalarType)
 
     ps match {
