@@ -36,20 +36,6 @@ class histogram extends shine.test_util.TestsWithExecutor {
 
   private val maxLocalSize = 256
 
-  /*private val reduceHistsOld = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
-    hists |> // m.k.int
-      split(m) |>
-      mapWorkGroup(
-        transpose >> // k.m.int
-        mapLocal(
-          // m.int
-          oclReduceSeq(AddressSpace.Private)(
-            fun(a => fun(x => a + x)) // int
-          )(l(0))
-        )
-      ) // k.int
-  )))*/
-
   private val reduceHistsGlobal = nFun(m => nFun(k => fun(histsT(m, k))(hists =>
     hists |> // m.k.int
         transpose |> // k.m.int
@@ -61,6 +47,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
           ) // k.int
   )))
 
+  // Alternative but unused RISE expression for subhistogramming
   private val reduceHistsWorkGroup = nFun(m => nFun(k => nFun(chunk => fun(histsT(m, k))(hists =>
     hists |> // m.k.int
       transpose |> // k.m.int
@@ -86,41 +73,12 @@ class histogram extends shine.test_util.TestsWithExecutor {
       ) // k.int
   ))))
 
-  // Might only work for square matrices
-  /*private val transposeEfficient = nFun(m => nFun(n => fun(histsT(m, n))(hists =>
-    tile(16, 16, hists) |>
-      transpose |>
-      mapWorkGroup(
-        fun(t =>
-          t |>
-            join |>
-            mapLocal(id) |>
-            toLocal |>
-            split(16) |> // tileWidth
-            transpose |>
-            join |>
-            mapLocal(id) |>
-            split(16) // tileHeight
-        )
-      )
-  )))
-
-  def tile(tileHeight: Nat, tileWidth: Nat, matrix: Expr): Expr = {
-    matrix |>
-    split(tileHeight) |>
-    map(
-      transpose >>
-      split(tileWidth) >>
-      map(transpose)
-    )
-  }*/
-
   test("Sequential Histogram") {
     val sequentialHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
-          zip(is)(xs) |> //n.(idx x int)
-            oclReduceByIndexSeq(AddressSpace.Global)(add)(
+          zip(is)(xs) |> //n.(idx[k] x int)
+            oclReduceByKeySeq(AddressSpace.Local)(add)(
               generate(fun(IndexType(k))(_ => l(0))) |>
                 mapSeq(id) // k.int
             )
@@ -133,7 +91,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(output._1, output._2)
   }
 
-  test("Reduce by Index: Each thread accumulates into its own histogram (global)") {
+  test("Reduce by Key: Each thread accumulates into its own histogram (global)") {
     val lSize = 128
     val gSize = 1024
     val chunkSize = n / gSize
@@ -141,12 +99,12 @@ class histogram extends shine.test_util.TestsWithExecutor {
     val individualHistogramsGlobal = nFun(n => nFun(k => nFun(chunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
-          zip(is)(xs) |> // n.(idx x int)
-            split(n/chunk) |> // chunk.n/chunk.(idx x int)
-            transpose |> // n/chunk.chunk.(idx x int)
+          zip(is)(xs) |> // n.(idx[k] x int)
+            split(n/chunk) |> // chunk.n/chunk.(idx[k] x int)
+            transpose |> // n/chunk.chunk.(idx[k] x int)
             mapGlobal(
-              // chunk.(idx x int)
-              oclReduceByIndexSeq(AddressSpace.Global)(add)(
+              // chunk.(idx[k] x int)
+              oclReduceByKeySeq(AddressSpace.Global)(add)(
                 generate(fun(IndexType(k))(_ => l(0))) |>
                   mapSeq(id) // k.int
               ) >>
@@ -163,7 +121,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
-  test("Reduce by Index: Each thread accumulates into its own histogram (local)") {
+  test("Reduce by Key: Each thread accumulates into its own histogram (local)") {
     val lSize = 128
     val lChunkSize = 8
     val wgChunkSize = lSize * lChunkSize
@@ -173,14 +131,14 @@ class histogram extends shine.test_util.TestsWithExecutor {
     val individualHistogramsLocal = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
-          zip(is)(xs) |> // n.(idx x int)
-            split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
+          zip(is)(xs) |> // n.(idx[k] x int)
+            split(wgChunk) |> // n/wgChunk.wgChunk.(idx[k] x int)
             mapWorkGroup(
-              // wgChunk.(idx x int)
-              split(lChunk) >> // wgChunk/lChunk.lChunk.(idx x int)
+              // wgChunk.(idx[k] x int)
+              split(lChunk) >> // wgChunk/lChunk.lChunk.(idx[k] x int)
                 mapLocal(
-                  // lChunk.(idx x int)
-                  oclReduceByIndexSeq(AddressSpace.Local)(add)(
+                  // lChunk.(idx[k] x int)
+                  oclReduceByKeySeq(AddressSpace.Local)(add)(
                     generate(fun(IndexType(k))(_ => l(0))) |>
                       mapSeq(id) // k.int
                   ) >>
@@ -199,21 +157,21 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
-  test("Reduce by Index: Multiple threads accumulate into one histogram") {
+  test("Reduce by Key: Multiple threads accumulate into one histogram") {
     val lSize = 128
     val lChunkSize = 8
     val wgChunkSize = lSize * lChunkSize
     val wgSize = n / wgChunkSize
     val gSize = lSize * wgSize
 
-    val sharedHistograms = nFun(n => nFun(k => nFun(chunk => fun(isT(n, k))(is =>
+    val sharedHistogramsLocal = nFun(n => nFun(k => nFun(chunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
-          zip(is)(xs) |> // n.(idx x int)
-            split(chunk) |> // n/wgChunk.wgChunk.(idx x int)
+          zip(is)(xs) |> // n.(idx[k] x int)
+            split(chunk) |> // n/wgChunk.wgChunk.(idx[k] x int)
             mapWorkGroup(
-              // wgChunk.(idx x int)
-              oclReduceByIndexWrg(AddressSpace.Local)(add)(
+              // wgChunk.(idx[k] x int)
+              oclReduceByKeyWrg(AddressSpace.Global)(add)(
                 generate(fun(IndexType(k))(_ => l(0))) |>
                   mapLocal(id) // k.int
               ) >>
@@ -223,24 +181,24 @@ class histogram extends shine.test_util.TestsWithExecutor {
     ))))
 
     val tempOutput =
-      runKernelChunk(sharedHistograms)(LocalSize(lSize), GlobalSize(gSize))(n, k, wgChunkSize, indices)
+      runKernelChunk(sharedHistogramsLocal)(LocalSize(lSize), GlobalSize(gSize))(n, k, wgChunkSize, indices)
 
     val finalOutput = finalReduceGlobal(tempOutput._1)
 
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
-  test("Reduce by Index: All threads accumulate into one histogram") {
+  test("Reduce by Key: All threads accumulate into one histogram") {
     val threads = maxLocalSize
 
     val singleHistogram = nFun(n => nFun(k => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
-          zip(is)(xs) |> // n.(idx x int)
-            split(n) |> // 1.n.(idx x int)
+          zip(is)(xs) |> // n.(idx[k] x int)
+            split(n) |> // 1.n.(idx[k] x int)
             mapWorkGroup(
-              // n.(idx x int)
-              oclReduceByIndexWrg(AddressSpace.Local)(add)(
+              // n.(idx[k] x int)
+              oclReduceByKeyWrg(AddressSpace.Global)(add)(
                 generate(fun(IndexType(k))(_ => l(0))) |>
                   mapLocal(id) // k.int
               ) >>
@@ -270,10 +228,10 @@ class histogram extends shine.test_util.TestsWithExecutor {
     val sortedIndices = indices.sorted
 
     val segReduceTree = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-          zip(is)(xs) |> // n.(idx x int)
-            split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
+          zip(is)(xs) |> // n.(idx[k] x int)
+            split(wgChunk) |> // n/wgChunk.wgChunk.(idx[k] x int)
               mapWorkGroup(
-                // wgChunk.(idx x int)
+                // wgChunk.(idx[k] x int)
                 oclSegReduceWrg(lChunk)(AddressSpace.Local)(add)(
                   generate(fun(IndexType(k))(_ => l(0))) |>
                     mapLocal(id) // k.int
@@ -302,10 +260,10 @@ class histogram extends shine.test_util.TestsWithExecutor {
     val sortedIndices = indices.sorted
 
     val segReduceAtomic = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is => fun(xsT(n))(xs =>
-      zip(is)(xs) |> // n.(idx x int)
-        split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
+      zip(is)(xs) |> // n.(idx[k] x int)
+        split(wgChunk) |> // n/wgChunk.wgChunk.(idx[k] x int)
         mapWorkGroup(
-          // wgChunk.(idx x int)
+          // wgChunk.(idx[k] x int)
           oclSegReduceAtomicWrg(lChunk)(AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id) // k.int
@@ -323,6 +281,12 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
+  // The following two segmented reduction expressions were the one used in our benchmarks.
+  // Unfortunately these expression both always throw a segfault error on Github which is
+  // why we made an alternative version which doesn't throw an error.
+  // We couldn't find out what causes this error, only that adding an weights array
+  // as a parameter instead of using 1 as a value everywhere in the kernel fixes this.
+  // On GPUs however, this problem has never occured.
   ignore("Segmented Reduction: Tree-based second reduction (with values on device)") {
     val lSize = 32
     val lChunkSize = 32
@@ -335,11 +299,11 @@ class histogram extends shine.test_util.TestsWithExecutor {
     val segReduceTree = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
-          zip(is)(xs) |> // n.(idx x int)
-          split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
+          zip(is)(xs) |> // n.(idx[k] x int)
+          split(wgChunk) |> // n/wgChunk.wgChunk.(idx[k] x int)
           mapWorkGroup(
-            // wgChunk.(idx x int)
-            oclSegReduceWrg(lChunk)(AddressSpace.Local)(add)(
+            // wgChunk.(idx[k] x int)
+            oclSegReduceWrg(lChunk)(AddressSpace.Global)(add)(
               generate(fun(IndexType(k))(_ => l(0))) |>
                 mapLocal(id) // k.int
             ) >>
@@ -357,6 +321,7 @@ class histogram extends shine.test_util.TestsWithExecutor {
     checkResult(finalOutput._1, tempOutput._2, finalOutput._2)
   }
 
+  // See comment above
   ignore("Segmented Reduction: Atomic operation as second reduction (with values on device)") {
     val lSize = 128
     val lChunkSize = 8
@@ -369,11 +334,11 @@ class histogram extends shine.test_util.TestsWithExecutor {
     val segReduceAtomic = nFun(n => nFun(k => nFun(wgChunk => nFun(lChunk => fun(isT(n, k))(is =>
       generate(fun(IndexType(n))(_ => l(1))) |>
         fun(xs => // n.int
-          zip(is)(xs) |> // n.(idx x int)
-          split(wgChunk) |> // n/wgChunk.wgChunk.(idx x int)
+          zip(is)(xs) |> // n.(idx[k] x int)
+          split(wgChunk) |> // n/wgChunk.wgChunk.(idx[k] x int)
           mapWorkGroup(
-            // wgChunk.(idx x int)
-            oclSegReduceAtomicWrg(lChunk)(AddressSpace.Local)(add)(
+            // wgChunk.(idx[k] x int)
+            oclSegReduceAtomicWrg(lChunk)(AddressSpace.Global)(add)(
               generate(fun(IndexType(k))(_ => l(0))) |>
                 mapLocal(id) // k.int
             ) >>

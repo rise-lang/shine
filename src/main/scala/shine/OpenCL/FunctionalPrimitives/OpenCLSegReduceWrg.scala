@@ -13,7 +13,7 @@ import scala.xml.Elem
 
 final case class OpenCLSegReduceWrg(n: Nat,
                                     k: Nat,
-                                    m: Nat,
+                                    chunkSize: Nat,
                                     initAddrSpace: shine.DPIA.Types.AddressSpace,
                                     dt: DataType,
                                     f: Phrase[ExpType ->: ExpType ->: ExpType],
@@ -29,7 +29,7 @@ final case class OpenCLSegReduceWrg(n: Nat,
   override def visitAndRebuild(
                                 fun: VisitAndRebuild.Visitor
                               ): Phrase[ExpType] = {
-    OpenCLSegReduceWrg(fun.nat(n), fun.nat(k), fun.nat(m), fun.addressSpace(initAddrSpace), fun.data(dt),
+    OpenCLSegReduceWrg(fun.nat(n), fun.nat(k), fun.nat(chunkSize), fun.addressSpace(initAddrSpace), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
@@ -49,7 +49,7 @@ final case class OpenCLSegReduceWrg(n: Nat,
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
-      OpenCLSegReduceWrgI(n, k, m, initAddrSpace, dt,
+      OpenCLSegReduceWrgI(n, k, chunkSize, initAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
             λ(accT(dt))(o => acc( f(x)(y) )( o )))),
@@ -57,7 +57,7 @@ final case class OpenCLSegReduceWrg(n: Nat,
   }
 
   override def xmlPrinter: Elem =
-    <reduce n={ToString(n)} k={ToString(k)} m={ToString(m)}
+    <reduce n={ToString(n)} k={ToString(k)} m={ToString(chunkSize)}
             addrSpace={ToString(initAddrSpace)} dt={ToString(dt)}>
       <f type={ToString(
         ExpType(dt, read) ->: (ExpType(dt, read) ->: ExpType(dt, write)))}>

@@ -6,7 +6,7 @@ import rise.core.types._
 import rise.openCL.DSL._
 import util.gen
 
-class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
+class OpenCLReduceByKeySeq extends shine.test_util.TestsWithExecutor {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def isT(N: NatIdentifier, K: NatIdentifier) = ArrayType(N, IndexType(K))
@@ -41,7 +41,7 @@ class OpenCLReduceByIndexSeq extends shine.test_util.TestsWithExecutor {
       split(50) |> // n/50.50.(idx(k) x int)
       mapLocal(
         // 50.(idx(k) x int)
-        oclReduceByIndexSeq(rise.core.types.AddressSpace.Local)(add)(
+        oclReduceByKeySeq(rise.core.types.AddressSpace.Local)(add)(
           generate(fun(IndexType(k))(_ => l(0))) |>
             mapSeq(id) // k.int
         ) >>

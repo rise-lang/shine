@@ -633,7 +633,7 @@ object fromRise {
             expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
               fun[ExpType](expT(k`.`t, write), h =>
                 fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
-                  OpenCLReduceByIndexSeq(n, k, a, t, f, h, e)))))
+                  OpenCLReduceByKeySeq(n, k, a, t, f, h, e)))))
 
       case (ocl.OclReduceByIndexWrg(),
       aFunT(a,
@@ -646,7 +646,7 @@ object fromRise {
             expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
               fun[ExpType](expT(k`.`t, write), h =>
                 fun[ExpType](expT(n`.`PairType(IndexType(k), t), read), e =>
-                  OpenCLReduceByIndexWrg(n, k, a, t, f, h, e)))))
+                  OpenCLReduceByKeyWrg(n, k, a, t, f, h, e)))))
 
       case (ocl.OclSegReduceWrg(),
       nFunT(m,

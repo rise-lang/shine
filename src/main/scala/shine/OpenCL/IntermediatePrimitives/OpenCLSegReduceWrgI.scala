@@ -18,7 +18,7 @@ import shine.OpenCL.ImperativePrimitives.ParForLocal
 object OpenCLSegReduceWrgI {
   def apply(n: Nat,
             k: Nat,
-            m: Nat,
+            chunkSize: Nat,
             addrSpace: shine.DPIA.Types.AddressSpace,
             dt: DataType,
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
@@ -27,7 +27,7 @@ object OpenCLSegReduceWrgI {
             out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] = {
     val pt = PairType(IndexType(k), dt)
-    val o: Nat = n/m
+    val o: Nat = n/^chunkSize
     val tree_loops: Nat = Log(2, o)
 
     val adj = AdjustArraySizesForAllocations(init, ArrayType(k, dt), addrSpace)
@@ -51,17 +51,15 @@ object OpenCLSegReduceWrgI {
 
             // Process all m (n/m)-sized chunks in parallel with all local threads
             MapLocalI(0)(o, pt, pt,
-              λ(expT(ArrayType(m, pt), read))(x => λ(accT(pt))(a =>
-
-                //TODO: Maybe add padding to avoid bank conflicts
+              λ(expT(ArrayType(chunkSize, pt), read))(x => λ(accT(pt))(a =>
 
                 // Process first element x[0]
-                acc(x `@` NatAsIndex(m, Natural(0)))(current_reduction.wr) `;`
+                acc(x `@` NatAsIndex(chunkSize, Natural(0)))(current_reduction.wr) `;`
 
                     // Loop over the remaining (m - 1) elements
-                    `for`(m - 1, i =>
+                    `for`(chunkSize - 1, i =>
                       // Save current element (x[i + 1]) in current_element
-                      acc(x `@` NatAsIndex(m, IndexAsNat(m - 1, i) + Natural(1)))(current_element.wr) `;`
+                      acc(x `@` NatAsIndex(chunkSize, IndexAsNat(chunkSize - 1, i) + Natural(1)))(current_element.wr) `;`
 
                        // If segment of current_reduction != segment of current_element
                         (`if` (fst(current_reduction.rd) `!:=` fst(current_element.rd))
@@ -92,7 +90,7 @@ object OpenCLSegReduceWrgI {
 
 
               )),
-              Split(m, o, read, pt, in),
+              Split(chunkSize, o, read, pt, in),
               s_data.wr)
 
           )) `;`

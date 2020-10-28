@@ -6,7 +6,7 @@ import rise.core.types._
 import rise.openCL.DSL._
 import util.gen
 
-class OpenCLReduceByIndexWrg extends shine.test_util.TestsWithExecutor {
+class OpenCLReduceByKeyWrg extends shine.test_util.TestsWithExecutor {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def xsfT(N: NatIdentifier) = ArrayType(N, f32)
@@ -46,7 +46,7 @@ class OpenCLReduceByIndexWrg extends shine.test_util.TestsWithExecutor {
 
     val singleHistogramInt = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsT(n))(xs =>
       zip(is)(xs) |> // n.(idx(k) x int)
-        oclReduceByIndexWrg(rise.core.types.AddressSpace.Local)(add)(
+        oclReduceByKeyWrg(rise.core.types.AddressSpace.Local)(add)(
           generate(fun(IndexType(k))(_ => l(0))) |>
             mapLocal(id) // k.int
         ) |>
@@ -62,7 +62,7 @@ class OpenCLReduceByIndexWrg extends shine.test_util.TestsWithExecutor {
 
     val singleHistogramFloat = nFun(n => nFun(k => fun(isT(n, k))(is => fun(xsfT(n))(xs =>
       zip(is)(xs) |> // n.(idx(k) x float)
-        oclReduceByIndexWrg(rise.core.types.AddressSpace.Local)(add)(
+        oclReduceByKeyWrg(rise.core.types.AddressSpace.Local)(add)(
           generate(fun(IndexType(k))(_ => l(0.0f))) |>
             mapLocal(id) // k.int
         ) |>
@@ -81,7 +81,7 @@ class OpenCLReduceByIndexWrg extends shine.test_util.TestsWithExecutor {
         split(50) |> // n/50.50.(idx(k) x int)
         mapWorkGroup(
           // 50.(idx(k) x int)
-          oclReduceByIndexWrg(rise.core.types.AddressSpace.Local)(add)(
+          oclReduceByKeyWrg(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0))) |>
               mapLocal(id) // k.int
           ) >>
@@ -114,7 +114,7 @@ class OpenCLReduceByIndexWrg extends shine.test_util.TestsWithExecutor {
         split(50) |> // n/50.50.(idx(k) x float)
         mapWorkGroup(
           // 50.(idx(k) x float)
-          oclReduceByIndexWrg(rise.core.types.AddressSpace.Local)(add)(
+          oclReduceByKeyWrg(rise.core.types.AddressSpace.Local)(add)(
             generate(fun(IndexType(k))(_ => l(0.0f))) |>
               mapLocal(id) // k.float
           ) >>

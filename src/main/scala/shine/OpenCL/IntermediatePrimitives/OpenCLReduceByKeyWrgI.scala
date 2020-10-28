@@ -11,7 +11,7 @@ import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
 import shine.OpenCL.ImperativePrimitives.StridedForLocal
 
-object OpenCLReduceByIndexWrgI {
+object OpenCLReduceByKeyWrgI {
   def apply(n: Nat,
             k: Nat,
             histAddrSpace: shine.DPIA.Types.AddressSpace,

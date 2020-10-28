@@ -7,17 +7,17 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.OpenCL.IntermediatePrimitives.OpenCLReduceByIndexSeqI
+import shine.OpenCL.IntermediatePrimitives.OpenCLReduceByKeySeqI
 
 import scala.xml.Elem
 
-final case class OpenCLReduceByIndexSeq(n: Nat,
-                                        k: Nat,
-                                        histAddrSpace: shine.DPIA.Types.AddressSpace,
-                                        dt: DataType,
-                                        f: Phrase[ExpType ->: ExpType ->: ExpType],
-                                        hist: Phrase[ExpType],
-                                        input: Phrase[ExpType]
+final case class OpenCLReduceByKeySeq(n: Nat,
+                                      k: Nat,
+                                      histAddrSpace: shine.DPIA.Types.AddressSpace,
+                                      dt: DataType,
+                                      f: Phrase[ExpType ->: ExpType ->: ExpType],
+                                      hist: Phrase[ExpType],
+                                      input: Phrase[ExpType]
                                        ) extends ExpPrimitive {
 
   f :: expT(dt, read) ->: expT(dt, read) ->: expT(dt, write)
@@ -26,7 +26,7 @@ final case class OpenCLReduceByIndexSeq(n: Nat,
   override val t: ExpType = expT(k`.`dt, read)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    OpenCLReduceByIndexSeq(fun.nat(n), fun.nat(k), fun.addressSpace(histAddrSpace), fun.data(dt),
+    OpenCLReduceByKeySeq(fun.nat(n), fun.nat(k), fun.addressSpace(histAddrSpace), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(hist, fun), VisitAndRebuild(input, fun))
   }
 
@@ -46,7 +46,7 @@ final case class OpenCLReduceByIndexSeq(n: Nat,
     import TranslationToImperative._
 
     con(input)(λ(expT(n`.`PairType(IndexType(k), dt), read))(X =>
-      OpenCLReduceByIndexSeqI(n, k, histAddrSpace, dt,
+      OpenCLReduceByKeySeqI(n, k, histAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
             λ(accT(dt))(o => acc( f(x)(y) )( o )))),
