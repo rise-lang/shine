@@ -228,7 +228,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("Hans_Georg"), r.Identifier("Hans_Georg")) => true
+      case r.Lambda(r.Identifier("hans_Georg"), r.Identifier("hans_Georg")) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -678,11 +678,11 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("Michael"), r.Lambda(r.Identifier("Heinrich"),
+      case r.Lambda(r.Identifier("michael"), r.Lambda(r.Identifier("heinrich"),
       r.App(r.primitives.Not(), r.App(r.App(r.primitives.Equal(),r.App(
       r.App(r.primitives.Mod(),
 
-      r.Lambda(r.Identifier("VarX"), r.Lambda(r.Identifier("VarY"),
+      r.Lambda(r.Identifier("varX"), r.Lambda(r.Identifier("varY"),
       r.App(r.App(r.primitives.Mul(), r.Identifier("varX")),
       r.App(r.App(r.primitives.Mul(), r.Identifier("varY"))
       ,
@@ -693,7 +693,7 @@ class parserTest extends  AnyFlatSpec {
 
       ))))),r.Literal(rS.IntData(42)))),
       r.Literal(rS.IntData(0))))
-      )) if a == 10.5 && b == 2.3=> true
+      )) if a == 10.5000 && b == 2.3000f=> true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }

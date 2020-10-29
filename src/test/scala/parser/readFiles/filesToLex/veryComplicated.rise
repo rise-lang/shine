@@ -1,5 +1,5 @@
 f::Bool->Bool->I32->F32->F32
-f=\Michael->\Heinrich
+f=\michael->\heinrich
     ->!
         (
             ==(%(\varX->\varY->* varX (* varY (/(- 25 10.5) 2.3F32)))

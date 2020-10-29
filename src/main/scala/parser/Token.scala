@@ -111,7 +111,7 @@ sealed abstract class Token (span: Span){
   final case class Identifier (name: String, span: Span) extends Token(span){
     require(!name.isEmpty, "String is empty")
     //<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
-    require(name.matches("[a-z][a-zA-Z0-9_]*"), "has not the preffered structure")
+    require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     require(span.begin.column == span.end.column, "not in one column")
 
     override def toString = s"<$name :Identifier>"

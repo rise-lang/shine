@@ -177,20 +177,28 @@ object parser {
 
 
   def parseDepFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseDepFunctionType: " + parseState)
     val ParseState(tokens, parsedSynElems, map) = parseState
+    if( tokens.length < 3){
+      return Right(ParseError("only "+ tokens.length + " arguments are in the TokenList, but we need minimum 3!"))
+    }
     val typeIdentToken:: colonToken :: inputKindToken :: remainderTokens = tokens
 
     val nameOfIdentifier = typeIdentToken match {
       case TypeIdentifier(name, _) => name
-      case _ => return Right(ParseError("No TypeIdentifier seen"))
+      case _ => {
+        return Right(ParseError("No TypeIdentifier seen"))
+      }
     }
 
     colonToken match {
       case Colon(_) =>
-      case _ => return Right(ParseError("A Colon was expected"))
+      case _ => {
+        return Right(ParseError("A Colon was expected"))
+      }
     }
 
-    println("parseDepFunctionType: " + parseState)
+    println("parseDepFunctionType2: " + parseState)
         inputKindToken match {
           case Kind(concreteKind, span) => {
             println("Kind was in parseDepFunctionType parsed: " + concreteKind)
