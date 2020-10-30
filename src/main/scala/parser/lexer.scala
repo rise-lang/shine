@@ -1103,12 +1103,9 @@ if '==' then two steps else only one step
       }
     }
   }
-  
-  /*
-    for example "split", "go", "def", "while"
 
-   */
-  private def lexIdentifier( column:Int, row:Int, arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
+
+  private def lexName(column:Int, row:Int,arr:Array[String]):(Int, String, Location) = {
     var r: Int = row + 1
     var substring: String = arr(column).substring(row, r)
     while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[a-zA-Z][a-zA-Z0-9_]*")) {
@@ -1117,12 +1114,29 @@ if '==' then two steps else only one step
     }
     val locStart:Location = Location(column, row)
     val pos:Int = r-1
+    (pos, substring, locStart)
+  }
+  /*
+    for example "split", "go", "def", "while"
+
+   */
+  private def lexIdentifier( column:Int, row:Int, arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
+    val (pos, substring, locStart) = lexName(column, row, arr)
     if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
       (Right(IdentifierWithNotAllowedSymbol(arr(column)(pos), arr(column).substring(row, pos+1), Span(fileReader,locStart, locEnd), fileReader)), pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
-      (Left(Identifier(substring, Span(fileReader,locStart, locEnd))), pos)
+    substring match {
+        //Todo: other case for keywords!!!
+      case s => {
+        if (s.matches("[a-z][a-zA-Z0-9_]*")){
+          (Left(Identifier(substring, Span(fileReader,locStart, locEnd))), pos)
+        }else{
+          (Left(TypeIdentifier(substring, Span(fileReader,locStart, locEnd))), pos)
+        }
+      }
+    }
     }
   }
 

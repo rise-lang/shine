@@ -192,8 +192,25 @@ class LexerTest extends  AnyFlatSpec {
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(span6) :: Identifier("Hans_Georg", _) ::Arrow(_) ::
-        Identifier("Hans_Georg", _) :: EndNamedExpr(_)::Nil => true
+        Backslash(span6) :: Identifier("hans_Georg", _) ::Arrow(_) ::
+        Identifier("hans_Georg", _) :: EndNamedExpr(_)::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "work for the DepLambda" in {
+    val fileName: String = testFilePath + "DepLambda.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Kind(AddrSpaceK(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(span6) :: TypeIdentifier("Addr", _) ::DepArrow(_) ::
+        I32(5,_) :: EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
   }
@@ -702,15 +719,15 @@ class LexerTest extends  AnyFlatSpec {
 
         Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(_) :: Identifier("Michael", _) :: Arrow(_) :: Backslash(_) ::
-        Identifier("Heinrich", _) :: Arrow(_) :: UnOp(UnaryOpType.NOT, _) ::
-        LBrace(_) :: BinOp(BinOpType.EQ, _) :: BinOp(BinOpType.MOD, _) ::
+        Backslash(_) :: Identifier("michael", _) :: Arrow(_) :: Backslash(_) ::
+        Identifier("heinrich", _) :: Arrow(_) :: UnOp(UnaryOpType.NOT, _) ::
+        LBrace(_) :: BinOp(BinOpType.EQ, _) :: LBrace(_)::BinOp(BinOpType.MOD, _) ::
         LBrace(_) :: Backslash(_) :: Identifier("varX", _) ::
         Arrow(_) :: Backslash(_) :: Identifier("varY", _) ::
-        Arrow(_) :: BinOp(BinOpType.MUL, _) :: Identifier("varX", _)  ::
-        BinOp(BinOpType.MUL, _) :: Identifier("varY", _)  :: BinOp(BinOpType.DIV, _)
+        Arrow(_) :: BinOp(BinOpType.MUL, _) :: Identifier("varX", _)  :: LBrace(_)::
+        BinOp(BinOpType.MUL, _) :: Identifier("varY", _)  :: LBrace(_) :: BinOp(BinOpType.DIV, _)
         :: LBrace(_) :: BinOp(BinOpType.SUB, _) :: I32(25, _) :: F32(a, _) :: RBrace(_)
-        ::  F32(b, _) :: RBrace(_) :: I32(42, _)  :: I32(0, _) :: RBrace(_) ::
+        ::  F32(b, _) :: RBrace(_) :: RBrace(_):: RBrace(_):: I32(42, _) :: RBrace(_) :: I32(0, _) :: RBrace(_) ::
         EndNamedExpr(_)::
 
         BeginTypAnnotatedIdent(_):: Identifier("specialFunctionOfChaos", _)::
