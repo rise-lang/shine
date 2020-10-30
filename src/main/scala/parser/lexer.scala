@@ -135,20 +135,21 @@ this recognizes the Lexeme in the File which represents the right Token
 case class RecognizeLexeme(fileReader: FileReader){
   val tokens:List[Token] = lexer()
   type TokenAndPos = (List[Token],Int,Int)
-  implicit class ParseStateElse(val leftF: TokenAndPos => Either[TokenAndPos, PreAndErrorToken]) extends AnyVal{
-    def ||(
-            rightF: TokenAndPos => Either[TokenAndPos, PreAndErrorToken]
-          ): TokenAndPos => Either[TokenAndPos, PreAndErrorToken] = {
-      ps =>
-        leftF(ps) match {
-          case Right(_) => {
-            println("|| : " + ps)
-            rightF(ps)
-          }
-          case Left(resPs) => Left(resPs)
-        }
-    }
-  }
+  //Todo: ParseStateElse does not work in another class, I have to transform everything to an object and that ist a hell of work
+//  implicit class ParseStateElse(val leftF: TokenAndPos => Either[TokenAndPos, PreAndErrorToken]) extends AnyVal{
+//    def ||(
+//            rightF: TokenAndPos => Either[TokenAndPos, PreAndErrorToken]
+//          ): TokenAndPos => Either[TokenAndPos, PreAndErrorToken] = {
+//      ps =>
+//        leftF(ps) match {
+//          case Right(_) => {
+//            println("|| : " + ps)
+//            rightF(ps)
+//          }
+//          case Left(resPs) => Left(resPs)
+//        }
+//    }
+//  }
 
   type TokenList = List[Either[Token,PreAndErrorToken]]
 
@@ -387,9 +388,9 @@ case class RecognizeLexeme(fileReader: FileReader){
         list=list.::(TypeIdentifier(name, span))
       }
       case (Left(Identifier(name, span)), r) => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
         return Right(TypeIdentifierExpectedNotIdentifier(name, span, fileReader))
       }
+      case (Left(a), _) => return Right(NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s, fileReader))
       case (Right(a), _) => {
         return Right(a)
       }
@@ -523,9 +524,9 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       list=list.::(Identifier(name, span))
     }
     case (Left(TypeIdentifier(name, span)), r) => {
-      val loc:Location = Location(column, row) //endLocation is equal to startLocation
       return Right(IdentifierExpectedNotTypeIdentifier(name, span, fileReader))
     }
+    case (Left(a), _) => return Right(NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s, fileReader))
     case (Right(a), _) => {
       return Right(a)
     }
@@ -807,7 +808,13 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       //println("mitte: "+ arr(column)(row))
       arr(column)(row) match {
         case '\\' => {
-          return lexerLambda(column, row, list) || depLexerLambda(column, row, list)
+          lexerLambda(column, row, list) match {
+            case Right(_) => lexerDepLambda(column, row, list) match {
+              case Right(e) => e.throwException()
+              case Left(p)=> return p
+            }
+            case Left(p) => return p
+          }
         }
         case '(' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
@@ -1454,26 +1461,38 @@ requirements:  no whitespace at arr(column)(row)
 two steps
 */
   private def lexArrow(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]= {
-    if(arr(column).length <= row +1){
-      val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      Right(ToShortToBeThisToken(2, "->", Span(fileReader,loc, loc), fileReader))
-    }else{
-      val beginLoc:Location = Location(column, row)
-      val endLoc:Location = Location(column, row+1)
-      val span:Span = Span(fileReader,beginLoc, endLoc)
-      arr(column).substring(row, row+2) match {
-        case "->" => {
-          Left(Arrow(span))
-        }
-        case a => {
-          Right(NotExpectedToken("->", a, span, fileReader))
-        }
+    lexDeporNormalArrow(column,row,arr, "->") match {
+      case Left(Arrow(span)) => {
+        Left(Arrow(span))
       }
+      case Left(DepArrow(span)) => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken("->", "=>", span, fileReader))
+      }
+      case Left(a) => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken("->", a.toString, a.s, fileReader))
+      }
+      case Right(e) => Right(e)
     }
   }
 
   private def lexDepArrow(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]= {
-
+    lexDeporNormalArrow(column,row,arr, "=>") match {
+      case Left(DepArrow(span)) => {
+        Left(DepArrow(span))
+      }
+      case Left(Arrow(span)) => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        return Right(NotExpectedToken("=>", "->", new Span(fileReader, loc), fileReader))
+      }
+      case Left(a) => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken("=>", a.toString, a.s, fileReader))
+      }
+      case Right(e) => Right(e)
+    }
+    }
   }
 
 }
