@@ -1,7 +1,7 @@
 package rise.core
 
 import rise.core.types._
-import rise.core.TypeLevelDSL.TypeEqual
+import rise.core.DSL.Type.TypeEqual
 import rise.core.ShowRise._
 
 sealed abstract class Expr {

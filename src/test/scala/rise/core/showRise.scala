@@ -1,10 +1,10 @@
 package rise.core
 
 import rise.core.DrawTree._
-import rise.core.HighLevelConstructs._
+import rise.core.DSL.HighLevelConstructs._
 import rise.core.ShowRise._
-import rise.core.TypeLevelDSL._
-import rise.core.TypedDSL._
+import rise.core.DSL.Type._
+import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
 import rise.openCL.TypedDSL._

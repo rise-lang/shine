@@ -1,9 +1,9 @@
 package shine.OpenCL
 
 import util.gen
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
+import Type._
 import rise.core.types._
 import rise.core.types.AddressSpace._
 import rise.openCL.TypedDSL._

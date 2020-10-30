@@ -4,9 +4,9 @@ import _root_.util.{Execute, gen}
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import rise.core.HighLevelConstructs.dropLast
-import rise.core.TypeLevelDSL._
-import rise.core.TypedDSL._
+import rise.core.DSL.HighLevelConstructs.dropLast
+import rise.core.DSL.Type._
+import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
@@ -109,7 +109,7 @@ class circularBuffering extends test_util.Tests {
   }
 
   private def openEquality(typedA: Rise, b: Rise): Boolean = {
-    import rise.core.TypedDSL._
+    import rise.core.DSL._
     val typedB: Rise = toBeTyped(b) !: typedA.t
     makeClosed(typedA)._1 == makeClosed(typedB)._1
   }

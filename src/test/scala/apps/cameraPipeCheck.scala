@@ -4,9 +4,9 @@ import cameraPipe._
 import util._
 import rise.core._
 import rise.core.types._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
+import Type._
 import elevate.core._
 import rise.elevate.Rise
 import rise.elevate.rules._

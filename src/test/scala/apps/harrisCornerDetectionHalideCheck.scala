@@ -2,7 +2,7 @@ package apps
 
 import apps.harrisCornerDetectionHalide._
 import apps.{harrisCornerDetectionHalideRewrite => rewrite}
-import rise.core.TypedDSL.ToBeTyped
+import rise.core.DSL.ToBeTyped
 import rise.core._
 import util.gen
 

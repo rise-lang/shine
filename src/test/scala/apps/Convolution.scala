@@ -1,7 +1,7 @@
 package apps
 
 import apps.convolution._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import util.gen
 
 class Convolution extends test_util.TestsWithExecutor {

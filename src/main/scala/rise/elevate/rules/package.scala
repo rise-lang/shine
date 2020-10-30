@@ -5,7 +5,7 @@ import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal._
 import elevate.core.{Failure, Strategy, Success}
 import elevate.macros.RuleMacro.rule
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core._
 import rise.core.types._
 

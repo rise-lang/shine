@@ -2,7 +2,7 @@ package apps
 
 import util.printTime
 import rise.core.{primitives => p, _}
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
@@ -333,7 +333,7 @@ object cameraPipeRewrite {
 
       // 4. lowering with slideSeq
       {
-        import TypedDSL._
+        import DSL._
         import rise.core.primitives._
         body(body(body(
           function(body(function(body(

@@ -1,7 +1,7 @@
 package rise.core
 
-import rise.core.TypedDSL._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL._
+import Type._
 import rise.core.types._
 import rise.core.primitives._
 
@@ -16,7 +16,7 @@ class dependentTypes extends test_util.Tests {
           )
         )(xs => xs |> depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x)))))
       )
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
     println(inferred.t)
   }
@@ -25,7 +25,7 @@ class dependentTypes extends test_util.Tests {
     val e = depFun((n: Nat) =>
       fun(n `.` f32)(x => dpair(n)(x))
     )
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -34,7 +34,7 @@ class dependentTypes extends test_util.Tests {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((n: Nat) => fun(x => dpair(n)(x))))
     )
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -45,7 +45,7 @@ class dependentTypes extends test_util.Tests {
         reduceSeq(fun(x => fun(y => x + y)))(l(1.0f))(xs))
       ))
     )
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -56,7 +56,7 @@ class dependentTypes extends test_util.Tests {
         depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))(array)
       ))
 
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -66,7 +66,7 @@ class dependentTypes extends test_util.Tests {
       depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
     ))
 
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
   }
@@ -90,7 +90,7 @@ class dependentTypes extends test_util.Tests {
       }
     ))))
 
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
   }

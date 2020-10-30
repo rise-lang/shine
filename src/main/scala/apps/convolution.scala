@@ -1,13 +1,13 @@
 package apps
 
+import rise.core.DSL._
+import rise.core.DSL.Type._
+import HighLevelConstructs._
 import rise.core._
-import rise.core.TypedDSL._
 import rise.core.primitives._
 import rise.core.types._
-import rise.core.TypeLevelDSL._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeqUnroll
-import rise.core.HighLevelConstructs._
 import util.{Time, TimeSpan}
 
 object convolution {

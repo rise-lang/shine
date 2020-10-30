@@ -1,6 +1,6 @@
 package rise.openCL
 
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.{Expr, Primitive}
 import rise.core.types.AddressSpaceKind
 

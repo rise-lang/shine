@@ -4,7 +4,7 @@ import elevate.core.strategies.Traversable
 import elevate.core.{Failure, Strategy, Success}
 import elevate.core.strategies.traversal.tryAll
 import rise.elevate.Rise
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core._
 import rise.core.primitives.{let, toMem}
 

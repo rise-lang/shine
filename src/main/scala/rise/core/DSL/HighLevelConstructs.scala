@@ -1,12 +1,13 @@
-package rise.core
+package rise.core.DSL
 
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
+import rise.core.Expr
 import rise.core.primitives._
-import rise.core.TypedDSL._
 import rise.core.types._
 
 object HighLevelConstructs {
   def slide2D(sz: Nat, st: Nat): ToBeTyped[Expr] = slide2D(sz, st, sz, st)
+
   def slide2D(szOuter: Nat, stOuter: Nat, szInner: Nat, stInner: Nat): ToBeTyped[Expr] =
     map(slide(szInner)(stInner)) >> slide(szOuter)(stOuter) >> map(transpose)
 
@@ -19,7 +20,7 @@ object HighLevelConstructs {
   val reorderWithStride: ToBeTyped[Expr] = {
     depFun((s: Nat) => {
       val f =
-        impl{ n: Nat =>
+        impl { n: Nat =>
           fun(IndexType(n))(i =>
             natAsIndex(n)(
               (indexAsNat(i) / (n /^ s)) +
@@ -32,11 +33,14 @@ object HighLevelConstructs {
   }
 
   def padClamp2D(b: Nat): ToBeTyped[Expr] = padClamp2D(b, b, b, b)
+
   def padClamp2D(l: Nat, r: Nat): ToBeTyped[Expr] = padClamp2D(l, r, l, r)
+
   def padClamp2D(lOuter: Nat, rOuter: Nat, lInner: Nat, rInner: Nat): ToBeTyped[Expr] =
     map(padClamp(lInner)(rInner)) >> padClamp(lOuter)(rOuter)
 
   def padCst2D(n: Nat): ToBeTyped[Expr] = padCst2D(n, n)
+
   def padCst2D(n: Nat, b: Nat): ToBeTyped[Expr] =
     fun(x => padCst(n)(b)(generate(fun(_ => x))) >> map(padCst(n)(b)(x)))
 
@@ -53,8 +57,11 @@ object HighLevelConstructs {
     fun(a => fun(b => rec(n, a, b)))
   }
 
-  def dropLast: ToBeTyped[Expr] = depFun((n: Nat) => impl{ m: Nat => impl{ dt: DataType =>
-    take(m) :: ((m + n) `.` dt) ->: (m `.` dt) }}
+  def dropLast: ToBeTyped[Expr] = depFun((n: Nat) => impl { m: Nat =>
+    impl { dt: DataType =>
+      take(m) :: ((m + n) `.` dt) ->: (m `.` dt)
+    }
+  }
   )
 
   // TODO: Investigate. this might be wrong

@@ -3,8 +3,8 @@ package rise.elevate
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.core.{RewriteResult, Strategy}
-import rise.core.TypeLevelDSL._
-import rise.core.TypedDSL._
+import rise.core.DSL.Type._
+import rise.core.DSL._
 import rise.core.primitives._
 import rise.core._
 import rise.core.types.{ArrayType, NatKind, f32, _}

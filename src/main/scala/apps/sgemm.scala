@@ -2,11 +2,11 @@ package apps
 
 import shine.OpenCL.{AddressSpace => _, _}
 import arithexpr.arithmetic.Cst
-import rise.core.HighLevelConstructs.reorderWithStride
+import rise.core.DSL.HighLevelConstructs.reorderWithStride
 import rise.core._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
 import rise.core.types._

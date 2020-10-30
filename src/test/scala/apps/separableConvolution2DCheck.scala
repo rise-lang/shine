@@ -3,11 +3,11 @@ package apps
 import separableConvolution2D._
 import rise.core._
 import rise.core.types._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
-import rise.core.HighLevelConstructs._
-import rise.core.TypedDSL.ToBeTyped
+import Type._
+import HighLevelConstructs._
+import rise.core.DSL.ToBeTyped
 import util.gen
 
 class separableConvolution2DCheck extends test_util.Tests {

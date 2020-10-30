@@ -1,6 +1,6 @@
 package rise.core.types
 
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core._
 import scala.util.Try
 

@@ -1,7 +1,7 @@
 package apps
 
-import rise.core.TypeLevelDSL._
-import rise.core.TypedDSL._
+import rise.core.DSL.Type._
+import rise.core.DSL._
 import rise.core._
 import rise.core.types._
 import rise.openCL.TypedDSL._

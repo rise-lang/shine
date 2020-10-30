@@ -7,7 +7,7 @@ import rise.elevate._
 import rise.core._
 import rise.core.types._
 import rise.core.primitives._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 
 object vectorize {
   // FIXME: sometimes assuming loads or stores will be aligned

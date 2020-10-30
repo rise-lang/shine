@@ -1,8 +1,8 @@
 package rise.core
 
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
+import Type._
 import rise.core.types._
 import shine.DPIA.Nat
 

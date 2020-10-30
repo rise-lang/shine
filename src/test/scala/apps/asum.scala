@@ -4,10 +4,10 @@ import shine.DPIA.Types.ExpType
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core._
 import rise.core.types._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
-import rise.core.HighLevelConstructs.reorderWithStride
+import Type._
+import HighLevelConstructs.reorderWithStride
 import util.{gen, SyntaxChecker}
 
 import rise.elevate.rules.traversal.default._

@@ -62,7 +62,7 @@ object harrisCornerDetectionHalideRewrite {
     cameraPipeRewrite.normalizeInput
 
   object storeToPrivate {
-    import rise.core.TypedDSL._
+    import rise.core.DSL._
     import rise.openCL.TypedDSL.toPrivate
     import rise.elevate.rules.lowering.typeHasTrivialCopy
 
@@ -428,7 +428,7 @@ object harrisCornerDetectionHalideRewrite {
           ) `;` reducedFusedForm `;`
           repeatNTimes(2)(topDown({
             import rise.core.primitives._
-            import rise.core.TypedDSL._
+            import rise.core.DSL._
             var t: Type = null
             function(isEqualToUntyped(slide(2)(1))) `;`
             argument { e: Rise => t = e.t; Success(e) } `;`

@@ -1,7 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.BigSum
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core.types._
 import rise.macros.Primitive.primitive
 

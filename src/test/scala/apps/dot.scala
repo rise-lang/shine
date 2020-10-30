@@ -1,7 +1,7 @@
 package apps
 
-import rise.core.HighLevelConstructs.reorderWithStride
-import rise.core.TypedDSL._
+import rise.core.DSL.HighLevelConstructs.reorderWithStride
+import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.traversal.default

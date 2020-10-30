@@ -1,7 +1,7 @@
 package rise.core
 
 import rise.core.types._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 
 object lifting {
   sealed trait Result[+T] {

@@ -1,8 +1,8 @@
 package shine.DPIA
 
 import rise.{core => r}
-import rise.core.{TypeLevelDSL => rtdsl, types => rt}
-import rise.core.TypeLevelDSL.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
+import rise.core.{types => rt}
+import rise.core.DSL.Type.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
 import rise.core.{primitives => rp}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}

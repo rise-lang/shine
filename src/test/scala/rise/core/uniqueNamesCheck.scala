@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.core.TypedDSL._
+import rise.core.DSL._
 
 class uniqueNamesCheck extends test_util.Tests {
   test("beta-reducing holds unique names") {

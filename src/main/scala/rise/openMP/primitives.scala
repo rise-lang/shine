@@ -1,6 +1,6 @@
 package rise.openMP
 
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core.types.{DataType, Nat}
 import rise.core.{Builder, Primitive}
 import rise.macros.Primitive.primitive

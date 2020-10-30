@@ -1,9 +1,9 @@
 package rise.core
 
 import rise.elevate.util._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
+import Type._
 import rise.core.types.{Nat, f32}
 
 class dotPrinterTests extends test_util.Tests {

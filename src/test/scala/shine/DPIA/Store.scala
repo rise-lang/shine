@@ -1,6 +1,6 @@
 package shine.DPIA
 
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types.{Nat, _}
 import util.gen

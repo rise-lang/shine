@@ -1,7 +1,7 @@
 package rise.core
 
-import rise.core.TypedDSL._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL._
+import Type._
 import rise.core.types._
 
 class infer extends test_util.Tests {

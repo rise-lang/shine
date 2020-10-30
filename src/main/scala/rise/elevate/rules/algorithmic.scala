@@ -8,7 +8,7 @@ import elevate.macros.RuleMacro.rule
 import rise.elevate._
 import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
