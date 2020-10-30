@@ -40,9 +40,12 @@ object traversal {
           c.value match {
             case i: Identifier => i.setType(v.visitType(i.t).value)
             case l @ Lambda(x, e) =>
-              Lambda(apply(x, v).asInstanceOf[Identifier], apply(e, v))(
-                v.visitType(l.t).value
-              )
+              apply(x, v) match {
+                case newX: Identifier =>
+                  Lambda(newX, apply(e, v))(v.visitType(l.t).value)
+                case otherwise =>
+                  throw new Exception(s"Expected Identifier found: $otherwise")
+              }
             case a @ App(f, e) =>
               App(apply(f, v), apply(e, v))(v.visitType(a.t).value)
             case dl @ DepLambda(x, e) =>
@@ -283,7 +286,8 @@ object traversal {
           case Stop(r) => Stop(r)
           case Continue(c, v) =>
             (c match {
-              case dt: DataType => data(dt, v)
+              case TypePlaceholder => Continue(c, v)
+              case i: TypeIdentifier => Continue(i, v)
               case FunType(a, b) =>
                 chainT(apply(a, v), b).map(r => FunType(r._1, r._2))
               case DepFunType(i, t) =>
@@ -299,8 +303,12 @@ object traversal {
                           NatIdentifier(n.name, n.range, isExplicit = true)
                       }, r._2)
                     )
+                  case a: AddressSpaceIdentifier =>
+                    chainT(v.visitAddressSpace(a), t).map(r =>
+                      DepFunType[AddressSpaceKind, Type](r._1.asInstanceOf[AddressSpaceIdentifier], r._2)
+                    )
                 }
-              case i: TypeIdentifier => Continue(i, v)
+              case dt: DataType => data(dt, v)
             }).asInstanceOf[Result[T]]
         }
       }

@@ -1,10 +1,12 @@
 package apps
 
 import rise.core._
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.types._
 import rise.core.TypeLevelDSL._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeqUnroll
 import rise.core.HighLevelConstructs._
 import util.{Time, TimeSpan}
 
@@ -18,7 +20,7 @@ object convolution {
       acc + (pixel * weight)
     }))(l(0.0f))(zip(join(elem))(weights)))
 
-  val blurXTiled2D: Expr = nFun(n => fun(
+  val blurXTiled2D: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
   )((matrix, weights) =>
     unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
@@ -29,14 +31,16 @@ object convolution {
     o padClamp2D(0, 0, 8, 8) $ matrix
   ))
 
-  def padEmpty(l: Nat, r: Nat): Expr = padClamp(l)(r)
-  def unpadEmpty(l: Nat, r: Nat): Expr = impl{ n: Nat => impl{ t: DataType =>
-    drop(l) >> (take(n) :: ((n + r) `.` t) ->: (n `.` t))
-  }}
+  def padEmpty(l: Nat, r: Nat): ToBeTyped[Expr] = padClamp(l)(r)
+  def unpadEmpty(l: Nat, r: Nat): ToBeTyped[Expr] =
+    impl{ n: Nat => impl{ t: DataType =>
+      drop(l) >> (take(n) :: ((n + r) `.` t) ->: (n `.` t))
+    }}
 
-  val blurYTiled2DTiledLoadingTransposed: Expr = nFun(n => fun(
-    (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
-  )((matrix, weights) =>
+  val blurYTiled2DTiledLoadingTransposed: ToBeTyped[Expr] =
+    depFun((n: Nat) => fun(
+      (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
+    )((matrix, weights) =>
     unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
       mapLocal(1)(mapLocal(0)(dotElemWeights(weights)))
         // o unpadEmpty(0, 1)

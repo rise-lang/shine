@@ -1,6 +1,7 @@
 package shine.DPIA.Semantics
 
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.types._
 
 import util.gen

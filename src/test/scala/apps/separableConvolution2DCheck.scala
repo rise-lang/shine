@@ -3,25 +3,27 @@ package apps
 import separableConvolution2D._
 import rise.core._
 import rise.core.types._
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
+import rise.core.TypedDSL.ToBeTyped
 import util.gen
 
 class separableConvolution2DCheck extends test_util.Tests {
-  private def wrapExpr(e: Expr): Expr = {
+  private def wrapExpr(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
-    nFun(RangeAdd(3, PosInf, 1), h =>
-      nFun(RangeAdd(12, PosInf, 4), w =>
+    depFun(RangeAdd(3, PosInf, 1), (h: Nat) =>
+      depFun(RangeAdd(12, PosInf, 4), (w: Nat) =>
         fun(h`.`w`.`f32)(a => e(a))))
   }
 
   private val H = 20
   private val W = 80
 
-  private def checkC(e: Expr): Unit = {
+  private def checkC(e: ToBeTyped[Expr]): Unit = {
     val random = new scala.util.Random()
     val input = Array.fill(H, W)(random.nextFloat())
     val gold = computeGold(H, W, input, binomialWeights2d)
@@ -76,7 +78,7 @@ int main(int argc, char** argv) {
   private def checkOCL(
     localSize: LocalSize,
     globalSize: GlobalSize,
-    e: Expr
+    e: ToBeTyped[Expr]
   ): Unit = {
     import shine.OpenCL._
 
@@ -118,7 +120,7 @@ int main(int argc, char** argv) {
   test(
     "register rotation binomial with unroll should contain no modulo or division"
   ) {
-    val id: Expr = fun(x => x)
+    val id = fun(x => x)
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
@@ -132,7 +134,8 @@ int main(int argc, char** argv) {
 
   // FIXME: code generation cannot evaluate index literal
   ignore("compiling OpenCL private arrays should unroll loops") {
-    import rise.openCL.DSL._
+    import rise.openCL.TypedDSL._
+    import rise.openCL.primitives.oclReduceSeq
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))

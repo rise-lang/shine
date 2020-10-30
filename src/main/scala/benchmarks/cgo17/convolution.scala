@@ -1,7 +1,6 @@
 package benchmarks.cgo17
 
 import apps.convolution._
-import rise.core.DSL._
 import benchmarks.core._
 import util._
 

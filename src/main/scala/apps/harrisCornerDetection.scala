@@ -1,9 +1,11 @@
 package apps
 
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclRotateValues
 import util.gen
 
 import scala.reflect.ClassTag
@@ -13,7 +15,6 @@ object harrisCornerDetection {
   private val id = C2D.id
   private val mulT = C2D.mulT
   private val sq = fun(x => x * x)
-  // private def zip2D(a: Expr, b: Expr) = zipND(2)(a)(b)
 
   // 5 for two scalar stencils of 3
   private val hRange =
@@ -21,26 +22,26 @@ object harrisCornerDetection {
   // 12 for one vector stencil of 3 (includes 2 scalar stencils of 3)
   private val wRange =
     arithexpr.arithmetic.RangeAdd(12, arithexpr.arithmetic.PosInf, 4)
-  private val sobelX = nFun(hRange, h => nFun(wRange, w => fun(
+  private val sobelX = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (h `.` w `.` f32) ->: (h `.` w `.` f32)
   )(a =>
     C2D.regRotPar(C2D.sobelXWeightsV)(C2D.sobelXWeightsH)(a)
   )))
-  private val sobelY = nFun(hRange, h => nFun(wRange, w => fun(
+  private val sobelY = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (h `.` w `.` f32) ->: (h `.` w `.` f32)
   )(a =>
     C2D.regRotPar(C2D.sobelYWeightsV)(C2D.sobelYWeightsH)(a)
   )))
-  private val mul = nFun(hRange, h => nFun(wRange, w => fun(
+  private val mul = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (h `.` w `.` f32) ->: (h `.` w `.` f32) ->: (h `.` w `.` f32)
   )((a, b) =>
-    zip(a, b) |> mapGlobal(fun(ab =>
+    zip(a)(b) |> mapGlobal(fun(ab =>
       zip(asVectorAligned(4)(ab._1))(asVectorAligned(4)(ab._2)) |>
       mapSeq(mulT) >>
       asScalar
     ))
   )))
-  private val gaussian = nFun(hRange, h => nFun(wRange, w => fun(
+  private val gaussian = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (h `.` w `.` f32) ->: (h `.` w `.` f32)
   )(a =>
     C2D.regRotPar(C2D.binomialWeightsV)(C2D.binomialWeightsH)(a)
@@ -50,10 +51,10 @@ object harrisCornerDetection {
     val trace = sxx + syy
     det - vectorFromScalar(kappa) * trace * trace
   }))))
-  private val coarsity = nFun(hRange, h => nFun(wRange, w => fun(
+  private val coarsity = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: f32 ->: (h`.`w`.`f32)
   )((sxx, sxy, syy, kappa) =>
-    zip(sxx, zip(sxy, syy)) |> mapGlobal(fun(s =>
+    zip(sxx)(zip(sxy)(syy)) |> mapGlobal(fun(s =>
       zip(asVectorAligned(4)(s._1))(
         zip(asVectorAligned(4)(s._2._1))(asVectorAligned(4)(s._2._2))
       ) |>
@@ -69,7 +70,7 @@ object harrisCornerDetection {
 
   private val shuffle =
     asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
-  private val sobelXYMuls = nFun(hRange, h => nFun(wRange, w => fun(
+  private val sobelXYMuls = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (h `.` w `.` f32) ->: (3 `.` h `.` w `.` f32)
     // (h`.`w`.`f32) x ((h`.`w`.`f32) x (h`.`w`.`f32)))
   )(input => {
@@ -111,7 +112,7 @@ object harrisCornerDetection {
 
     */
   })))
-  private val gaussianCoarsity = nFun(hRange, h => nFun(wRange, w => fun(
+  private val gaussianCoarsity = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (3 `.` h `.` w `.` f32) ->: f32 ->: (h `.` w `.` f32)
   )((input, kappa) => {
     input |>
@@ -141,7 +142,7 @@ object harrisCornerDetection {
     )
   })))
 
-  private val sobelXY = nFun(hRange, h => nFun(wRange, w => fun(
+  private val sobelXY = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (h `.` w `.` f32) ->: (2 `.` h `.` w `.` f32)
   )(input =>
     input |>
@@ -164,7 +165,7 @@ object harrisCornerDetection {
       ) >> transpose >> map(asScalar)
     ) >> transpose
   )))
-  private val mulGaussianCoarsity = nFun(hRange, h => nFun(wRange, w => fun(
+  private val mulGaussianCoarsity = depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
     (2 `.` h `.` w `.` f32) ->: f32 ->: (h `.` w `.` f32)
   )((input, kappa) =>
     input |>
@@ -200,7 +201,7 @@ object harrisCornerDetection {
   )))
 
   private val sobelXYMulGaussianCoarsity =
-    nFun(hRange, h => nFun(wRange, w => fun(
+    depFun(hRange, (h: Nat) => depFun(wRange, (w: Nat) => fun(
       (h `.` w `.` f32) ->: f32 ->: (h `.` w `.` f32)
     )((input, kappa) =>
       input // TODO

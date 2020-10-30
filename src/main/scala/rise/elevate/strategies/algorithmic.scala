@@ -43,7 +43,7 @@ object algorithmic {
     }
 
     e match {
-      case App(primitives.map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx) :: e.t)
+      case App(primitives.map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx) !: e.t)
       case _                                    => Failure(mapFirstFission)
     }
   }
@@ -65,7 +65,7 @@ object algorithmic {
     }
 
     e match {
-      case App(primitives.map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx) :: e.t)
+      case App(primitives.map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx) !: e.t)
       case _                                    => Failure(mapFullFission)
     }
   }

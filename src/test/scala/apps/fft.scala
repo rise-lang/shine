@@ -2,9 +2,10 @@ package apps
 
 import rise.core._
 import rise.core.types._
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.TypeLevelDSL._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
 
 class fft extends test_util.Tests {
   def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr = {
@@ -51,7 +52,7 @@ class fft extends test_util.Tests {
           )
         )
       }))) |> join |> split(LPrevIter) |>
-        mapSeq(transpose |> join) |> transpose |> join
+        mapSeq(transpose.apply |> join) |> transpose |> join
     )
   }
 

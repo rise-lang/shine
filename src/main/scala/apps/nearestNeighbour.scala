@@ -1,10 +1,10 @@
 package apps
 
-import rise.core._
-import rise.core.DSL._
 import rise.core.TypeLevelDSL._
+import rise.core.TypedDSL._
+import rise.core._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
 
 object nearestNeighbour {
   private val distance = foreignFun("distance_",
@@ -13,7 +13,7 @@ object nearestNeighbour {
     (f32 x f32) ->: f32 ->: f32 ->: f32
   )
 
-  val nn: Expr = nFun(n => fun(
+  val nn: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` (f32 x f32)) ->: f32 ->: f32 ->: (n `.` f32)
   )((locations, lat, lng) =>
     locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))

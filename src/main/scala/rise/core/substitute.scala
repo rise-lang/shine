@@ -28,7 +28,12 @@ object substitute {
         if (`for` == e) {
           Stop(expr)
         } else {
-          Continue(e, this)
+          e match {
+            case Lambda(x, _)  if x == `for` =>
+              // identified shadowing => do not recurse the substitution
+              Stop(e)
+            case _ => Continue(e, this)
+          }
         }
       }
     }

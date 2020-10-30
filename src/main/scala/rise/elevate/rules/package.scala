@@ -40,14 +40,14 @@ package object rules {
 
   //TODO @rule
   def etaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
-    case e@Lambda(x1, App(f, x2)) if x1 == x2 && !contains[Rise](x1).apply(f) => Success(f :: e.t)
+    case e@Lambda(x1, App(f, x2)) if x1 == x2 && !contains[Rise](x1).apply(f) => Success(f !: e.t)
     case _ => Failure(etaReduction())
   }
 
   @rule def etaAbstraction: Strategy[Rise] = f => f.t match {
     case FunType(_, _) =>
       val x = identifier(freshName("η"))
-      Success(lambda(x, app(f, x)) :: f.t)
+      Success(lambda(x, app(f, x)) !: f.t)
     case _ => Failure(etaAbstraction)
   }
 
@@ -79,6 +79,11 @@ package object rules {
     }
   }
 
-  // todo: remove once all rules are type-preserving
-  @rule def inferRise: Strategy[Rise] = e => Success(infer(e))
+  @rule def checkType(msg: String = ""): Strategy[Rise] = e => {
+    types.check(e) match {
+      case scala.util.Success(_) => Success(e)
+      case scala.util.Failure(exception) =>
+        Failure(checkType(exception.getMessage))
+    }
+  }
 }

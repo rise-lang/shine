@@ -1,10 +1,12 @@
 package apps
 
 import rise.core._
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 
 object kmeans {
   private val update = fun(f32 ->: (f32 x f32) ->: f32)((dist, pair) =>
@@ -27,7 +29,7 @@ object kmeans {
 
   private val select = fun(tuple => tuple._2._2)
 
-  val kmeans: Expr = nFun(p => nFun(c => nFun(f => fun(
+  val kmeans: Expr = depFun((p: Nat) => depFun((c: Nat) => depFun((f: Nat) => fun(
     (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
   )((features, clusters) =>
     features |> transpose |> mapGlobal(fun(feature =>

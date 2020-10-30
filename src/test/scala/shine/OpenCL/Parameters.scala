@@ -1,6 +1,7 @@
 package shine.OpenCL
 
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.types._
 import util.gen
 
@@ -17,7 +18,7 @@ class Parameters extends test_util.Tests {
 
   test("Output array") {
     gen.OpenCLKernel(
-      nFun(n => fun(ArrayType(n, f32))(vs => vs |> mapSeq(fun(x => x))))
+      depFun((n: Nat) => fun(ArrayType(n, f32))(vs => vs |> mapSeq(fun(x => x))))
     )
   }
 }

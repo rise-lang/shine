@@ -1,10 +1,12 @@
 package apps
 
 import rise.core._
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 
 object mriQ {
   private val phiMag = foreignFun("phiMag",
@@ -28,29 +30,29 @@ object mriQ {
       |}""".stripMargin,
     f32 `x3 ->:` f32 `x3 ->:` f32 ->: (f32 x f32) ->: (f32 x f32))
 
-  val computePhiMag: Expr = nFun(k => fun(
+  val computePhiMag: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
     mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
-  val computeQ: Expr = nFun(k => nFun(x => fun(
+  val computeQ: Expr = depFun((k: Nat) => depFun((x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
     mapGlobal(fun(t =>
-      let (toPrivate(t._1))
-      be (sX =>
-        let (toPrivate(t._2._1))
-        be (sY =>
-          let (toPrivate(t._2._2._1))
-          be (sZ =>
+      let(toPrivate(t._1)
+      )(fun(sX =>
+        let(toPrivate(t._2._1)
+        )(fun(sY =>
+          let(toPrivate(t._2._2._1)
+          )(fun(sZ =>
             kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
               qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
-            ))(pair(t._2._2._2._1, t._2._2._2._2))
-          )
-        )
-      )
+            ))(pair(t._2._2._2._1)(t._2._2._2._2))
+          ))
+        ))
+      ))
     ))
   )))
 

@@ -1,7 +1,7 @@
 package rise.core
 
 import rise.core.types._
-import rise.core.DSL._
+import rise.core.TypedDSL._
 
 object lifting {
   sealed trait Result[+T] {
@@ -55,7 +55,7 @@ object lifting {
 
   def liftDepFunExpr[K <: Kind](p: Expr): Result[K#T => Expr] = {
     def chain(r: Result[Expr]): Result[K#T => Expr] =
-      r.bind(liftDepFunExpr, f => Expanding((x: K#T) => depApp[K](f, x)))
+      r.bind(liftDepFunExpr[K], f => Expanding((x: K#T) => depApp[K](f, x)))
 
     p match {
       case DepLambda(x, e) =>

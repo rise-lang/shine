@@ -1,10 +1,12 @@
 package apps
 
 import rise.core._
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 
 object molecularDynamics {
   private val mdCompute = foreignFun("updateF",
@@ -30,7 +32,7 @@ object molecularDynamics {
       f32 ->: f32 ->: f32 ->:
       vec(4, f32))
 
-  val shoc: Expr = nFun(n => nFun(m => fun(
+  val shoc: Expr = depFun((n: Nat) => depFun((m: Nat) => fun(
     (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
       f32 ->: f32 ->: f32 ->:
       (n`.`vec(4, f32))
@@ -39,13 +41,13 @@ object molecularDynamics {
       split(128) |>
       mapWorkGroup(
         mapLocal(fun(p =>
-          let (toPrivate(p._1))
-          be (particle =>
+          let(toPrivate(p._1))(
+          fun(particle =>
             gather(p._2)(particles) |>
             oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
               mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
             )))(vectorFromScalar(l(0.0f)))
-          )
+          ))
         ))
       ) |> join
   )))

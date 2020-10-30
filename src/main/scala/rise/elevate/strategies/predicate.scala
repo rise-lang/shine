@@ -1,13 +1,14 @@
 package rise.elevate.strategies
 
-import elevate.core.strategies.predicate._
 import elevate.core._
 import elevate.core.strategies.Traversable
-import rise.elevate._
-import rise.elevate.rules.lowering.isComputation
+import elevate.core.strategies.predicate._
+import rise.core.TypedDSL.ToBeTyped
+import rise.core._
 import rise.core.primitives._
 import rise.core.types._
-import rise.core._
+import rise.elevate._
+import rise.elevate.rules.lowering.isComputation
 
 
 object predicate {
@@ -179,5 +180,12 @@ object predicate {
   def isVectorArray(t: Type): Boolean = t match {
     case ArrayType(_, VectorType(_,_)) => true
     case _ => false
+  }
+
+  case class isEqualToUntyped(x: ToBeTyped[Expr]) extends Strategy[Rise] {
+    override def apply(e: Rise): RewriteResult[Rise] = {
+      val p = x.toUntypedExpr
+      if (p == e) Success(e) else Failure(isEqualToUntyped(x))
+    }
   }
 }

@@ -67,16 +67,16 @@ object showScala {
   def expr(e: Expr): String = {
     e match {
       case Identifier(name) => s"""Identifier("$name")(${`type`(e.t)})"""
-      case p: Primitive => p.name
+      case p: Primitive => s"${p.name}.primitive"
       case Literal(d) => s"Literal(${data(d)})"
-      case App(f, e) => s"app(${expr(f)}, ${expr(e)})"
-      case Lambda(x, b) => s"lambda(${expr(x)}, ${expr(b)})"
+      case App(f, a) => s"App(${expr(f)}, ${expr(a)})(${`type`(e.t)})"
+      case Lambda(x, b) => s"Lambda(${expr(x)}, ${expr(b)})(${`type`(e.t)})"
       case DepApp(f, v: Nat) =>
-        s"depApp[NatKind](${expr(f)}, $v)"
+        s"DepApp[NatKind](${expr(f)}, $v)(${`type`(e.t)})"
       case DepApp(f, v: AddressSpace) =>
-        s"depApp[AddressSpaceKind](${expr(f)}, $v)"
+        s"DepApp[AddressSpaceKind](${expr(f)}, $v)(${`type`(e.t)})"
       case DepApp(_, _) => ???
-      case DepLambda(x, b) => s"depLambda(${kindIdent(x)}, ${expr(b)})"
+      case DepLambda(x, b) => s"DepLambda(${kindIdent(x)}, ${expr(b)})(${`type`(e.t)})"
     }
   }
 }

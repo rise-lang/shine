@@ -2,27 +2,28 @@ package apps
 
 import rise.core._
 import rise.core.types._
-import rise.core.DSL._
+import rise.core.TypedDSL._
+import rise.core.primitives._
 import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
 
 // algorithm taken from Halide (halide-lang.org)
 object cameraPipe {
   // iN -> iN -> uN
-  val abs_diff: Expr = foreignFun("abs_diff_i16", i16 ->: i16 ->: u16)
-  def clamp(dt: DataType): Expr =
+  val abs_diff: ToBeTyped[Expr] = foreignFun("abs_diff_i16", i16 ->: i16 ->: u16)
+  def clamp(dt: DataType): ToBeTyped[Expr] =
     foreignFun(s"clamp_${dt}", dt ->: dt ->: dt ->: dt)
-  val max: Expr = foreignFun("max_i16", i16 ->: i16 ->: i16)
-  val pow: Expr = foreignFun("pow_f32", f32 ->: f32 ->: f32)
+  val max: ToBeTyped[Expr] = foreignFun("max_i16", i16 ->: i16 ->: i16)
+  val pow: ToBeTyped[Expr] = foreignFun("pow_f32", f32 ->: f32 ->: f32)
 
-  def li16(v: Int): Expr = cast(l(v)) :: i16
-  def li32(v: Int): Expr = cast(l(v)) :: i32
-  def lu8(v: Int): Expr = cast(l(v)) :: u8
+  def li16(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i16
+  def li32(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i32
+  def lu8(v: Int): ToBeTyped[Expr] = cast(l(v)) :: u8
 
   // average two positive values rounding up
-  val avg: Expr = dtFun(dt => dtFun(compute_dt => fun(
-    dt ->: dt ->: dt
-  )((a, b) => {
+  val avg: ToBeTyped[Expr] =
+    depFun((dt: DataType) => depFun((compute_dt: DataType) =>
+      fun(dt ->: dt ->: dt)((a, b) => {
     val cdt = fun(a => cast(a) :: compute_dt)
     // FIXME: avoid literal casts?
     cast((cdt(a) + cdt(b) + cdt(l(1))) / cdt(l(2))) :: dt
@@ -31,13 +32,13 @@ object cameraPipe {
   case class Image(
     xBeg: Nat, xEnd: Nat,
     yBeg: Nat, yEnd: Nat,
-    expr: Expr
+    expr: ToBeTyped[Expr]
   )
 
-  def letImage(img: Image, f: Image => Expr): Expr =
+  def letImage(img: Image, f: Image => ToBeTyped[Expr]): ToBeTyped[Expr] =
     img.expr |> fun(x => f(Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, x)))
 
-  def mapImage(img: Image, f: Expr): Image =
+  def mapImage(img: Image, f: ToBeTyped[Expr]): Image =
     Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, img.expr |> map(map(f)))
 
   def zipImage(a: Image, b: Image): Image = {
@@ -55,7 +56,7 @@ object cameraPipe {
   ))
 
   // assumptions: newBeg >= beg, newEnd <= end, newEnd >= newBeg
-  def slice(beg: Nat, end: Nat, newBeg: Nat, newEnd: Nat): Expr = {
+  def slice(beg: Nat, end: Nat, newBeg: Nat, newEnd: Nat): ToBeTyped[Expr] = {
     drop(newBeg - beg) >> take(newEnd - newBeg)
   }
 
@@ -92,7 +93,7 @@ object cameraPipe {
         img.expr |> slide2D(y_range, 1, x_range, 1)
       ),
       fun(nbh =>
-        offsets.foldLeft(makeArray(n): Expr)({ case (e, offset) =>
+        offsets.foldLeft(makeArray(n): ToBeTyped[Expr])({ case (e, offset) =>
           e(nbh `@`
             lidx(offset._2 - y_min, y_range) `@`
             lidx(offset._1 - x_min, x_range))
@@ -101,21 +102,21 @@ object cameraPipe {
     )
   }
 
-  def interleaveX: Expr = impl{ dt: DataType => impl{ h: Nat => impl{ w: Nat => fun(
+  def interleaveX: ToBeTyped[Expr] = impl{ dt: DataType => impl{ h: Nat => impl{ w: Nat => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: (h`.`(2*w)`.`dt)
   )((a, b) =>
     generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
     transpose >> map(transpose >> join)
   ) }}}
 
-  def interleaveY: Expr = impl{ dt: DataType => impl{ h: Nat => impl{ w: Nat => fun(
+  def interleaveY: ToBeTyped[Expr] = impl{ dt: DataType => impl{ h: Nat => impl{ w: Nat => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: ((2*h)`.`w`.`dt)
   )((a, b) =>
     generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
     transpose >> join
   ) }}}
 
-  val demosaic: Expr = nFun(h => nFun(w => fun(
+  val demosaic: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat ) => fun(
     (4`.`(h+2)`.`(w+2)`.`i16) ->: (3`.`(2*h)`.`(2*w)`.`i16)
   )(deinterleaved => {
     // x_y = the value of channel x at a site in the input of channel y
@@ -134,7 +135,9 @@ object cameraPipe {
       a: Image, ad: Image, b: Image, bd: Image
     ): Image = {
       mapImage(zipImage(zipImage(a, ad), zipImage(b, bd)), fun(ab =>
-        select(snd(fst(ab)) < snd(snd(ab)), fst(fst(ab)), fst(snd(ab)))
+        `if` (snd(fst(ab)) < snd(snd(ab)))
+          .`then` (fst(fst(ab)))
+          .`else` (fst(snd(ab)))
       ))
     }
 
@@ -230,21 +233,21 @@ object cameraPipe {
       ))
       makeArray(3)(
         interleaveY(
-          interleaveX(r_gr_o.expr, r_r_o.expr),
-          interleaveX(r_b_o.expr, r_gb_o.expr)), // r
+          interleaveX(r_gr_o.expr, r_r_o.expr))(
+          interleaveX(r_b_o.expr, r_gb_o.expr)))( // r
         interleaveY(
-          interleaveX(g_gr_o.expr, g_r_o.expr),
-          interleaveX(g_b_o.expr, g_gb_o.expr)), // g
+          interleaveX(g_gr_o.expr, g_r_o.expr))(
+          interleaveX(g_b_o.expr, g_gb_o.expr)))( // g
         interleaveY(
-          interleaveX(b_gr_o.expr, b_r_o.expr),
+          interleaveX(b_gr_o.expr, b_r_o.expr))(
           interleaveX(b_b_o.expr, b_gb_o.expr))  // b
       ) // 3.(2*H).(2*W).f
     }))))))))))))))))))))))))
   })))
 
-  val hot_pixel_suppression: Expr = nFun(h => nFun(w => fun(
-    ((h+4)`.`(w+4)`.`i16) ->: (h`.`w`.`i16)
-  )(input =>
+  val hot_pixel_suppression: ToBeTyped[Expr] =
+    depFun((h: Nat) => depFun((w: Nat) =>
+      fun(((h+4)`.`(w+4)`.`i16) ->: (h`.`w`.`i16))(input =>
     mapImage(
       stencilCollect(
         Seq((-2, 0), (2, 0), (0, 0), (0, -2), (0, 2)),
@@ -256,7 +259,7 @@ object cameraPipe {
     ).expr
   )))
 
-  val deinterleave: Expr = nFun(h => nFun(w => fun(
+  val deinterleave: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
     ((2*h)`.`(2*w)`.`i16) ->: (4`.`h`.`w`.`i16)
   )(raw =>
     raw |>
@@ -266,7 +269,8 @@ object cameraPipe {
       join // 4.h.w.
   )))
 
-  val color_correct: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
+  val color_correct: ToBeTyped[Expr] =
+    depFun((h: Nat) => depFun((w: Nat) => depFun((hm: Nat) => depFun((wm: Nat) => fun(
     (3`.`h`.`w`.`i16) ->:
       (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->:
       (3`.`h`.`w`.`i16)
@@ -287,11 +291,11 @@ object cameraPipe {
           val ir = irgb `@` lidx(0, 3)
           val ig = irgb `@` lidx(1, 3)
           val ib = irgb `@` lidx(2, 3)
-          def m(x: Int, y: Int): Expr =
+          def m(x: Int, y: Int): ToBeTyped[Expr] =
             cast(matrix `@` lidx(y, hm) `@` lidx(x, wm)) :: i32
           makeArray(3)(
-            m(3, 0) + m(0, 0) * ir + m(1, 0) * ig + m(2, 0) * ib,
-            m(3, 1) + m(0, 1) * ir + m(1, 1) * ig + m(2, 1) * ib,
+            m(3, 0) + m(0, 0) * ir + m(1, 0) * ig + m(2, 0) * ib)(
+            m(3, 1) + m(0, 1) * ir + m(1, 1) * ig + m(2, 1) * ib)(
             m(3, 2) + m(0, 2) * ir + m(1, 2) * ig + m(2, 2) * ib
           )
         }))) >>
@@ -301,7 +305,7 @@ object cameraPipe {
     )
   })))))
 
-  val apply_curve: Expr = nFun(h => nFun(w => fun(
+  val apply_curve: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
     (3`.`h`.`w`.`i16) ->: f32 ->: f32 ->: int ->: int ->: (3`.`h`.`w`.`u8)
   )((input, gamma, contrast, blackLevel, whiteLevel) => {
     // val lutResample = 1 // how much to resample the LUT by when sampling it
@@ -323,16 +327,22 @@ object cameraPipe {
       val g = pow(xf, l(1.0f) / gamma)
       // apply a piecewise quadratic contrast curve
       val gmo = l(1.0f) - g
-      val z = select(g > l(0.5f),
-        l(1.0f) - (a * gmo * gmo + b * gmo),
-        a * g * g + b * g
-      )
+      val z = `if` (g > l(0.5f))
+        .`then` (l(1.0f) - (a * gmo * gmo + b * gmo))
+        .`else` (a * g * g + b * g)
       // convert to 8 bit
       val v = cast(
         clamp(f32)(z * l(255.0f) + l(0.5f), l(0.0f), l(255.0f))
       ) :: u8
+
       // add guard band outside of (minraw, maxRaw]
-      select(x <= minRaw, lu8(0), select(x > maxRaw, lu8(255), v))
+      `if` (not(x > minRaw))
+        .`then`(lu8(0))
+        .`else`(
+          `if` (x > maxRaw)
+            .`then`(lu8(255))
+            .`else`(v)
+        )
     })) |> fun(curve =>
       input |> map(map(map(fun(p =>
         curve `@` (
@@ -342,7 +352,8 @@ object cameraPipe {
     )
   })))
 
-  val blur121: Expr = dtFun(dt => dtFun(compute_dt => fun(
+  val blur121: ToBeTyped[Expr] =
+    depFun((dt: DataType) => depFun((compute_dt: DataType) => fun(
     (3`.`dt) ->: dt
   )(vs =>
     avg(dt)(compute_dt)(
@@ -350,7 +361,7 @@ object cameraPipe {
       vs `@` lidx(1, 3))
   )))
 
-  val sharpen: Expr = nFun(h => nFun(w => fun(
+  val sharpen: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
     (3`.`(h+2)`.`(w+2)`.`u8) ->: f32 ->: (3`.`h`.`w`.`u8)
   )((input, strength) => {
     // convert sharpening strength to 2.5 fixed point.
@@ -385,7 +396,7 @@ object cameraPipe {
   // TODO? Halide reference in/out:
   // (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
 
-  val shift: Expr = nFun(h => nFun(w => fun(
+  val shift: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
     ((h+36)`.`(w+20)`.`u16) ->: (h`.`w`.`i16)
   )(input => input |>
     // shift things inwards to give us enough padding on the
@@ -399,7 +410,7 @@ object cameraPipe {
     map(map(fun(p => cast(p) :: i16)))
   )))
 
-  val camera_pipe: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm =>
+  val camera_pipe: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => depFun((hm: Nat) => depFun((wm: Nat) =>
     fun((2*(h+6)+36)`.`(2*(w+6)+20)`.`u16)(input =>
     fun(hm`.`wm`.`f32)(matrix_3200 =>
     fun(hm`.`wm`.`f32)(matrix_7000 =>

@@ -30,40 +30,40 @@ object lowering {
   }
 
   @rule def mapSeq: Strategy[Rise] = {
-    case m@map() => Success(p.mapSeq :: m.t)
+    case m@map() => Success(p.mapSeq !: m.t)
   }
 
   @rule def mapStream: Strategy[Rise] = {
-    case m@map() => Success(p.mapStream :: m.t)
+    case m@map() => Success(p.mapStream !: m.t)
   }
 
   @rule def iterateStream: Strategy[Rise] = {
-    case m@map() => Success(p.iterateStream :: m.t)
+    case m@map() => Success(p.iterateStream !: m.t)
   }
 
   @rule def mapSeqUnroll: Strategy[Rise] = {
-    case m@map() => Success(p.mapSeqUnroll :: m.t)
+    case m@map() => Success(p.mapSeqUnroll !: m.t)
   }
 
   @rule def mapGlobal(dim: Int = 0): Strategy[Rise] = {
-    case m@map() => Success(rise.openCL.TypedDSL.mapGlobal(dim) :: m.t)
+    case m@map() => Success(rise.openCL.TypedDSL.mapGlobal(dim) !: m.t)
   }
 
   @rule def reduceSeq: Strategy[Rise] = {
-    case e@reduce() => Success(p.reduceSeq :: e.t)
+    case e@reduce() => Success(p.reduceSeq !: e.t)
   }
 
   // TODO shall we allow lowering from an already lowered reduceSeq?
   @rule def reduceSeqUnroll: Strategy[Rise] = {
-    case e@reduce() => Success(p.reduceSeqUnroll :: e.t)
-    case e@p.reduceSeq() => Success(p.reduceSeqUnroll :: e.t)
+    case e@reduce() => Success(p.reduceSeqUnroll !: e.t)
+    case e@p.reduceSeq() => Success(p.reduceSeqUnroll !: e.t)
   }
 
   // Specialized Lowering
 
   @rule def mapSeqCompute()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case e@App(map(), f) if containsComputation()(ev)(f) && predicate.not(isMappingZip)(f) =>
-      Success(p.mapSeq(f) :: e.t)
+      Success(p.mapSeq(f) !: e.t)
   }
 
   @rule def isMappingZip: Strategy[Rise] = {
@@ -74,12 +74,12 @@ object lowering {
   // TODO: load identity instead, then change with other rules?
   @rule def circularBuffer(load: Expr): Strategy[Rise] = {
     case e@DepApp(DepApp(slide(), sz: Nat), Cst(1)) => Success(
-      p.circularBuffer(sz)(sz)(eraseType(load)) :: e.t)
+      p.circularBuffer(sz)(sz)(eraseType(load)) !: e.t)
   }
 
   @rule def rotateValues(write: Expr): Strategy[Rise] = {
     case e@DepApp(DepApp(slide(), sz: Nat), Cst(1)) => Success(
-      p.rotateValues(sz)(eraseType(write)) :: e.t)
+      p.rotateValues(sz)(eraseType(write)) !: e.t)
   }
 
   @rule def containsComputation()(implicit ev: Traversable[Rise]): Strategy[Rise] =
@@ -128,14 +128,14 @@ object lowering {
   // TODO: think about more complex cases
   @rule def mapSeqUnrollWrite: Strategy[Rise] = e => e.t match {
     case ArrayType(_, t) if typeHasTrivialCopy(t) =>
-      Success(app(p.mapSeqUnroll(fun(x => x)), preserveType(e)) :: e.t)
+      Success(app(p.mapSeqUnroll(fun(x => x)), preserveType(e)) !: e.t)
     case _ =>
       Failure(mapSeqUnrollWrite)
   }
 
   @rule def toMemAfterMapSeq: Strategy[Rise] = {
     case a@App(App(p.mapSeq(), _), _) =>
-      Success((preserveType(a) |> p.toMem) :: a.t)
+      Success((preserveType(a) |> p.toMem) !: a.t)
   }
 
   // Lowerings used in PLDI submission
@@ -201,7 +201,7 @@ object lowering {
 
     e match {
       case reduceResult@App(App(App(ReduceX(), _), _), _) =>
-        Success((preserveType(e) |> constructCopy(reduceResult.t) ) :: e.t)
+        Success((preserveType(e) |> constructCopy(reduceResult.t) ) !: e.t)
       case _ => Failure(copyAfterReduce)
     }
   }
@@ -216,7 +216,7 @@ object lowering {
 
     e match {
       case App(a@App(ReduceX(), _), init) =>
-        Success((preserveType(init) |> constructCopy(init.t) |> a) :: e.t)
+        Success((preserveType(init) |> constructCopy(init.t) |> a) !: e.t)
       case _ => Failure(copyAfterReduceInit)
     }
   }
@@ -231,7 +231,7 @@ object lowering {
 
     e match {
       case a@App(generate(), _) =>
-        Success((preserveType(a) |> constructCopy(a.t)) :: e.t)
+        Success((preserveType(a) |> constructCopy(a.t)) !: e.t)
       case _ => Failure(copyAfterGenerate)
     }
   }
@@ -266,11 +266,11 @@ object lowering {
   @rule def untype: Strategy[Rise] = p => Success(p.setType(TypePlaceholder))
 
   @rule def parallel()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
-    case e@App(map(), f) if containsComputation()(ev)(f) => Success(mapPar(f) :: e.t)
+    case e@App(map(), f) if containsComputation()(ev)(f) => Success(mapPar(f) !: e.t)
   }
 
   @rule def unroll: Strategy[Rise] = {
-    case e@p.reduceSeq() => Success(p.reduceSeqUnroll :: e.t)
+    case e@p.reduceSeq() => Success(p.reduceSeqUnroll !: e.t)
   }
 
   object ocl {
@@ -279,15 +279,15 @@ object lowering {
 
     // TODO shall we allow lowering from an already lowered reduceSeq?
     @rule def reduceSeqUnroll(a: AddressSpace): Strategy[Rise] = {
-      case e@reduce() => Success(oclReduceSeqUnroll(a) :: e.t)
-      case e@p.reduceSeq() => Success(oclReduceSeqUnroll(a) :: e.t)
+      case e@reduce() => Success(oclReduceSeqUnroll(a) !: e.t)
+      case e@p.reduceSeq() => Success(oclReduceSeqUnroll(a) !: e.t)
     }
 
     @rule def circularBuffer(a: AddressSpace): Strategy[Rise] = {
       case e@DepApp(DepApp(slide(), n: Nat), Cst(1)) =>
         Success(
           oclCircularBuffer(a)(n)(n)(fun(x => x))
-            :: e.t)
+            !: e.t)
     }
 
     @rule def circularBufferLoadFusion: Strategy[Rise] = {
@@ -295,14 +295,14 @@ object lowering {
         cb @ DepApp(DepApp(DepApp(oclCircularBuffer(), _), _), _),
         load), App(App(map(), f), in)
       ) =>
-        Success(eraseType(cb)(preserveType(f) >> load, in) :: e.t)
+        Success(eraseType(cb)(preserveType(f) >> load, in) !: e.t)
     }
 
     @rule def rotateValues(a: AddressSpace, write: Expr): Strategy[Rise] = {
       case e@DepApp(DepApp(slide(), n: Nat), Cst(1)) =>
         Success(
           oclRotateValues(a)(n)(eraseType(write))
-            :: e.t)
+            !: e.t)
     }
   }
 }

@@ -259,6 +259,16 @@ object TypedDSL {
 
   final case class ToBeTyped[+T <: Expr](private val e: T) {
     def toExpr: Expr = TDSL.infer(e)
+    def toUntypedExpr: Expr = traversal.DepthFirstLocalResult(e, new traversal.Visitor {
+        override def visitExpr(e: Expr): traversal.Result[Expr] = e match {
+          case Opaque(x, _) => Continue(x, this)
+          case TopLevel(x, _) => Continue(x, this)
+          case Literal(_) => Stop(e)
+          case TypeAnnotation(e, _) => Continue(e, this)
+          case TypeAssertion(e, _) => Continue(e, this)
+          case _ => Continue(e.setType(TypePlaceholder), this)
+        }
+      })
     def >>=[X <: Expr](f: T => ToBeTyped[X]): ToBeTyped[X] = f(e)
   }
 
@@ -291,23 +301,17 @@ object TypedDSL {
   def eraseType[T <: Expr](e: T): ToBeTyped[T] = toBeTyped(eraseTypeFromExpr(e))
 
   object TDSL {
-    case class Visitor(sol: Solution) extends traversal.Visitor {
-      override def visitExpr(e: Expr): Result[Expr] = e match {
-        case Opaque(x, _) => Stop(x)
-        case TopLevel(x, inst) =>
-          Stop(traversal.DepthFirstLocalResult(x, TopLevel.Visitor(inst, sol)))
-        case _ => Continue(e, this)
-      }
-      override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
-      override def visitType[T <: Type](t: T): Result[T] =
-        Stop(sol(t).asInstanceOf[T])
-      override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
-        Stop(sol(a))
-      override def visitN2D(n2d: NatToData): Result[NatToData] =
-        Stop(sol(n2d))
-      override def visitN2N(n2n: NatToNat): Result[NatToNat] =
-        Stop(sol(n2n))
+    def infer(e: Expr,
+              explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+      val constraints = mutable.ArrayBuffer[Constraint]()
+      val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
+      val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
+      traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
     }
+
+    def inferDependent(e: ToBeTyped[Expr]): Expr = this.infer(e match {
+      case ToBeTyped(e) => e
+    }, Flags.ExplicitDependence.On)
 
     def constrainTypes(
         expr: Expr,
@@ -378,6 +382,12 @@ object TypedDSL {
           (DepApp(tf, x)(exprT), ftvSubsF)
 
         case TypeAnnotation(e, t) =>
+          val (te, ftvSubsE) = constrained(e)
+          val constraint = TypeConstraint(te.t, t)
+          constraints += constraint
+          (te, ftvSubsE)
+
+        case TypeAssertion(e, t) =>
           val ftvSubsT = getFTVSubs(t)
           val (te, ftvSubsE) = constrained(e)
           val constraint = TypeConstraint(te.t, freeze(ftvSubsT, t))
@@ -395,17 +405,22 @@ object TypedDSL {
       }
     }
 
-    def inferDependent(e: ToBeTyped[Expr]): Expr = this.infer(e match {
-      case ToBeTyped(e) => e
-    }, Flags.ExplicitDependence.On)
-
-    def infer(e: Expr,
-              explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off
-             ): Expr = {
-      val constraints = mutable.ArrayBuffer[Constraint]()
-      val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-      val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
-      traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
+    case class Visitor(sol: Solution) extends traversal.Visitor {
+      override def visitExpr(e: Expr): Result[Expr] = e match {
+        case Opaque(x, _) => Stop(x)
+        case TopLevel(x, inst) =>
+          Stop(traversal.DepthFirstLocalResult(x, TopLevel.Visitor(inst, sol)))
+        case _ => Continue(e, this)
+      }
+      override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
+      override def visitType[T <: Type](t: T): Result[T] =
+        Stop(sol(t).asInstanceOf[T])
+      override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
+        Stop(sol(a))
+      override def visitN2D(n2d: NatToData): Result[NatToData] =
+        Stop(sol(n2d))
+      override def visitN2N(n2n: NatToNat): Result[NatToNat] =
+        Stop(sol(n2n))
     }
   }
 
@@ -433,6 +448,24 @@ object TypedDSL {
   def store2(how: ToBeTyped[Expr]): ToBeTyped[Expr] =
     fun(e => let(toMem(how(e)))(fun(x => x)))
 
+  def toMemFun(f: ToBeTyped[Expr]): ToBeTyped[Expr] = fun(x => toMem(f(x)))
+
+  object `if` {
+    def apply(b: ToBeTyped[Expr]): Object {
+      def `then`(tE: ToBeTyped[Expr]): Object {
+        def `else` (eE: ToBeTyped[Expr] ): ToBeTyped[Expr]
+      }
+    } = new {
+      def `then`(tE: ToBeTyped[Expr]): Object {
+        def `else`(eE: ToBeTyped[Expr]): ToBeTyped[Expr]
+      } = new {
+        def `else`(eE: ToBeTyped[Expr]): ToBeTyped[Expr] = {
+          select(b)(tE)(eE)
+        }
+      }
+    }
+  }
+
   implicit class Ops(lhs: ToBeTyped[Expr]) {
 
     // binary
@@ -457,6 +490,11 @@ object TypedDSL {
 
   implicit class Indexing(e: ToBeTyped[Expr]) {
     def `@`(i: ToBeTyped[Expr]): ToBeTyped[App] = idx(i)(e)
+  }
+
+  implicit class TypeAssertionHelper(t: Type) {
+    def !:[T <: Expr](e: ToBeTyped[T]): ToBeTyped[Expr] =
+      e >>= (e => toBeTyped(TypeAssertion(e, t)))
   }
 
   implicit class TypeAnnotationHelper(t: Type) {
@@ -803,6 +841,7 @@ object TypedDSL {
   def l(i: Int): ToBeTyped[Literal] = literal(IntData(i))
   def l(f: Float): ToBeTyped[Literal] = literal(FloatData(f))
   def l(d: Double): ToBeTyped[Literal] = literal(DoubleData(d))
+  def l(n: Nat): ToBeTyped[Literal] = literal(NatData(n))
   def lidx(i: Nat, n: Nat): ToBeTyped[Literal] = literal(IndexData(i, n))
   def lvec(v: Seq[ScalarData]): ToBeTyped[Literal] = literal(VectorData(v))
   def larr(a: Seq[Data]): ToBeTyped[Literal] = literal(ArrayData(a))

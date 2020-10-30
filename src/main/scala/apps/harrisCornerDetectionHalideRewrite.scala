@@ -16,6 +16,7 @@ import rise.elevate.rules.traversal._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
 import cameraPipeRewrite.{afterTopLevel, anyMapOutsideZip, depFunction, isAppliedMap, isAppliedZip, stronglyReducedForm}
+import rise.elevate.strategies.predicate.isEqualToUntyped
 
 object harrisCornerDetectionHalideRewrite {
   private def rewriteSteps(steps: scala.collection.Seq[Strategy[Rise]]): Strategy[Rise] = a => {
@@ -30,7 +31,7 @@ object harrisCornerDetectionHalideRewrite {
     })
   }
 
-  val unrollDots = normalize.apply(lowering.reduceSeqUnroll)
+  val unrollDots: Strategy[Rise] = normalize.apply(lowering.reduceSeqUnroll)
 
   def someGentleReduction: Strategy[Rise] =
     gentleBetaReduction() <+ etaReduction() <+
@@ -83,20 +84,20 @@ object harrisCornerDetectionHalideRewrite {
   }
 
   def isAppliedPair: Strategy[Rise] =
-    function(function(isEqualTo(rise.core.DSL.pair)))
+    function(function(isEqualTo(rise.core.primitives.pair.primitive)))
   def isReduceFI: Strategy[Rise] =
-    function(function(isEqualTo(rise.core.DSL.reduce)))
+    function(function(isEqualTo(rise.core.primitives.reduce.primitive)))
   def isAppliedReduce: Strategy[Rise] = function(isReduceFI)
   def isAppliedUnzip: Strategy[Rise] =
-    function(isEqualTo(rise.core.DSL.unzip))
+    function(isEqualTo(rise.core.primitives.unzip.primitive))
   def isPadEmpty: Strategy[Rise] =
-    depFunction(isEqualTo(rise.core.DSL.padEmpty))
+    depFunction(isEqualTo(rise.core.primitives.padEmpty.primitive))
 
   object ocl {
-    val unrollDots = normalize.apply(
+    val unrollDots: Strategy[Rise] = normalize.apply(
       lowering.ocl.reduceSeqUnroll(AddressSpace.Private))
 
-    val lineBuffer = lowering.ocl.circularBuffer(AddressSpace.Global)
+    val lineBuffer: Strategy[Rise] = lowering.ocl.circularBuffer(AddressSpace.Global)
 
     def harrisBufferedShape: scala.collection.Seq[Strategy[Rise]] = scala.collection.Seq(
       reducedFusedForm,
@@ -146,15 +147,15 @@ object harrisCornerDetectionHalideRewrite {
       function(argument(topDown(
         function(lowerReductionLoop) `;`
         argument(stronglyReducedForm `;` lambdaBodyWithName(x => {
-          import rise.core.DSL._
+          import rise.core.primitives._
           storeToPrivate(
-            isEqualTo(fst(x)) <+ isAppliedReduce
+            isEqualToUntyped(fst(x)) <+ isAppliedReduce
           ) `;`
           storeToPrivate(
-            isEqualTo(fst(snd(x))) <+ isAppliedReduce
+            isEqualToUntyped(fst(snd(x))) <+ isAppliedReduce
           ) `;`
           storeToPrivate(
-            isEqualTo(snd(snd(x))) <+ isAppliedReduce
+            isEqualToUntyped(snd(snd(x))) <+ isAppliedReduce
           )
         }))
       ))) `;`
@@ -261,7 +262,7 @@ object harrisCornerDetectionHalideRewrite {
           isAppliedZip `;` argument(isAppliedZip) `;`
           subexpressionElimination {
             isAppliedMap `;` function(argument(
-              function(isEqualTo(rise.core.DSL.mapSnd)) `;`
+              function(isEqualToUntyped(rise.core.primitives.mapSnd.primitive)) `;`
               argument(isPadEmpty)
             ))
           }
@@ -270,7 +271,7 @@ object harrisCornerDetectionHalideRewrite {
         topDown(
           isAppliedMap `;`
           function(argument(argument(argument(
-            function(isEqualTo(rise.core.DSL.mapSnd)) `;`
+            function(isEqualToUntyped(rise.core.primitives.mapSnd.primitive)) `;`
             argument(isPadEmpty)
           )))) `;`
           reducedFusedForm `;`
@@ -318,13 +319,13 @@ object harrisCornerDetectionHalideRewrite {
       topDown(
         lambdaBodyWithName(jnbh =>
           isAppliedPair `;`
-          storeToPrivate(isEqualTo(jnbh))
+          storeToPrivate(isEqualToUntyped(jnbh))
         )
       ) `;`
       topDown(
-        function(function(isEqualTo(rise.core.DSL.mapSeq))) `;`
+        function(function(isEqualToUntyped(rise.core.primitives.mapSeq.primitive))) `;`
         topDown(lambdaBodyWithName(x =>
-          storeToPrivate(isEqualTo(x))
+          storeToPrivate(isEqualToUntyped(x))
         ))
       )
 
@@ -350,7 +351,7 @@ object harrisCornerDetectionHalideRewrite {
       afterTopLevel(
         normalize.apply(
           isAppliedMap `;`
-          argument(function(isEqualTo(rise.core.DSL.transpose))) `;`
+          argument(function(isEqualToUntyped(rise.core.primitives.transpose.primitive))) `;`
           reducedFissionedForm `;` topDown(vectorize.alignSlide) `;`
           reducedFusedForm `;`
           normalize.apply(
@@ -426,9 +427,10 @@ object harrisCornerDetectionHalideRewrite {
             topDown(slideOutsideZip)
           ) `;` reducedFusedForm `;`
           repeatNTimes(2)(topDown({
-            import rise.core.DSL._
+            import rise.core.primitives._
+            import rise.core.TypedDSL._
             var t: Type = null
-            function(isEqualTo(slide(2)(1))) `;`
+            function(isEqualToUntyped(slide(2)(1))) `;`
             argument { e: Rise => t = e.t; Success(e) } `;`
             { p: Rise => topDown(lowering.ocl.rotateValues(AddressSpace.Private,
               t match {
