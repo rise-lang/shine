@@ -341,6 +341,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       getOutputType(elemType)
     case DepArrayType(_, _) | _: NatToDataApply =>
       throw new Exception("This should not happen")
+    case _:DepPairType => throw new Exception("Dependent pair not supported as output type")
   }
 
   private def sizeInByte(dt: DataType): SizeInByte = dt match {
@@ -367,6 +368,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
         case _: NatToDataIdentifier =>
           throw new Exception("This should not happen")
       }
+    case _: DepPairType => throw new Exception("This should not happen")
     case _: NatToDataApply =>  throw new Exception("This should not happen")
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }

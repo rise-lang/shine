@@ -29,7 +29,8 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident, Type] {
   def generateAccess(dt: DataType,
                      expr: Expr,
                      path: Path,
-                     env: Environment): Expr
+                     env: Environment,
+                     C: Expr => Stmt): Stmt
 
   def genNat(n:Nat, env:Environment, cont:Expr => Stmt): Stmt
 }

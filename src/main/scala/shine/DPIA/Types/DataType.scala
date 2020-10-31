@@ -2,7 +2,7 @@ package shine.DPIA.Types
 
 import arithexpr.arithmetic.{ArithExpr, BigSum}
 import shine.DPIA
-import shine.DPIA.Nat
+import shine.DPIA.{Nat, NatIdentifier}
 
 sealed trait DataType
 
@@ -44,7 +44,26 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
   extends ComposedType
 {
   override def toString: String = s"$size.$elemFType"
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case DepArrayType(s2, elemT2) => size == s2 && elemT2 == elemFType
+      case _ => false
+    }
+  }
 }
+
+final case class DepPairType(x:NatIdentifier, elemT:DataType)
+  extends ComposedType {
+  override def toString: String = s"($x:nat ** $elemT)"
+
+  override def equals(other: Any): Boolean =other match {
+    case DepPairType(x2, elemT2) =>
+      this.elemT == DataType.substitute(this.x, x2, elemT2)
+    case _ => false
+  }
+}
+
 
 final case class PairType(fst: DataType, snd: DataType) extends ComposedType {
   override def toString: String = s"($fst x $snd)"
@@ -114,6 +133,13 @@ object DataType {
         VectorType(ArithExpr.substitute(v.size, Map((`for`, ae))), v.elemType)
       case r: PairType =>
         PairType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
+      case r: DepPairType =>
+        val newFst = `for` match {
+          case ident: DPIA.NatIdentifier if ident == r.x => ae.asInstanceOf[NatIdentifier]
+          case _ =>  r.x
+        }
+        val newSnd = substitute(ae, `for`, r.elemT)
+        DepPairType(newFst, newSnd)
     }).asInstanceOf[T]
   }
 
@@ -128,6 +154,7 @@ object DataType {
   def getTotalNumberOfElements(dt: DataType): Nat = dt match {
     case _: BasicType => 1
     case _: PairType => 1
+    case _: DepPairType => 1
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
@@ -144,6 +171,7 @@ object DataType {
   def getSize(dt: DataType): Nat = dt match {
     case _: IndexType | _: ScalarType => 1
     case _: PairType => 1 // TODO: is this correct?
+    case _: DepPairType => 1
     case VectorType(size, _) => size
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
@@ -162,6 +190,7 @@ object DataType {
   def getBaseDataType(dt: DataType): DataType = dt match {
     case _: BasicType => dt
     case _: PairType => dt
+    case _: DepPairType => dt
     case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>

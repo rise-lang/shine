@@ -215,13 +215,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def generateAccess(dt: DataType,
                               expr: Expr,
                               path: Path,
-                              env: Environment): Expr = {
+                              env: Environment,
+                              cont: Expr => Stmt): Stmt = {
     (path, dt) match {
       case (CIntExpr(Cst(i)) :: _, _: VectorType) =>
-        OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(Cst(i)))
+        cont(OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(Cst(i))))
       case (CIntExpr(i) :: _, _: VectorType) =>
         error(s"expected constant access to vector elements, found $i")
-      case _ => super.generateAccess(dt, expr, path, env)
+      case _ => super.generateAccess(dt, expr, path, env, cont)
     }
   }
 
