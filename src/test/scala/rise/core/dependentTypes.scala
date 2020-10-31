@@ -20,15 +20,21 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = e.toExpr
     println(inferred)
     println(inferred.t)
+    assert(inferred.t ==
+      expl((n: Nat) => (n `*.`n2dtFun(i => (i + 1) `.` f32)) ->: (n `*.`n2dtFun(i => (i + 1) `.` f32)))
+    )
   }
 
   test("Dependent pair construct") {
     val e = depFun((n: Nat) =>
       fun(n `.` f32)(xs => dpair(n)(mapSeq(fun(x => x))(xs)))
     )
-    val inferred: Expr = inferDependent(e)
+    val inferred: Expr = e.toExpr
     println(inferred)
-    print(inferred.t)
+    println(inferred.t)
+    assert(inferred.t ==
+      expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
+    )
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
@@ -37,9 +43,12 @@ class dependentTypes extends test_util.Tests {
       dmatch(pair)(depFun((n:Nat) => fun(xs =>
         dpair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
       ))))
-    val inferred: Expr = inferDependent(e)
+    val inferred: Expr = e.toExpr
     println(inferred)
-    print(inferred.t)
+    println(inferred.t)
+    assert(inferred.t ==
+      ((Nat `**` (n => n`.`f32)) ->: (Nat `**` (m => m `.` f32)))
+    )
 
     val cFunName = "foo"
     val cFun = util.gen.CProgram(inferred, cFunName)
@@ -89,9 +98,13 @@ class dependentTypes extends test_util.Tests {
         reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))(xs))
       ))
     )
-    val inferred: Expr = inferDependent(e)
+    val inferred: Expr = e.toExpr
     println(inferred)
-    print(inferred.t)
+    println(inferred.t)
+    assert(inferred.t ==
+      ((Nat `**` (n => n`.`f32)) ->: f32)
+    )
+
     val cFunName = "foo"
     val cFun = util.gen.CProgram(inferred, cFunName)
 
@@ -133,9 +146,12 @@ class dependentTypes extends test_util.Tests {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((_:Nat) => fun(xs => mapSeq(fun(x => x))(take(5)(xs)))))
     )
-    val inferred: Expr = inferDependent(e)
+    val inferred: Expr = e.toExpr
     println(inferred)
-    print(inferred.t)
+    println(inferred.t)
+    assert(inferred.t ==
+      ((Nat `**` (n => n`.`f32)) ->: (5`.`f32))
+    )
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
@@ -146,7 +162,10 @@ class dependentTypes extends test_util.Tests {
 
     val inferred: Expr = inferDependent(e)
     println(inferred)
-    print(inferred.t)
+    println(inferred.t)
+    assert(inferred.t ==
+      expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => (m+1) `.` f32) ))
+    )
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
@@ -157,7 +176,10 @@ class dependentTypes extends test_util.Tests {
 
     val inferred: Expr = inferDependent(e)
     println(inferred)
-    print(inferred.t)
+    println(inferred.t)
+    assert(inferred.t ==
+      expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => f32) ))
+    )
     util.gen.CProgram(inferred, "Foo_foo")
   }
 

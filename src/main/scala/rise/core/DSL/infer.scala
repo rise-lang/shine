@@ -9,7 +9,7 @@ import rise.core.types._
 import scala.collection.mutable
 
 object infer {
-  def apply(e: Expr,
+  private [DSL] def apply(e: Expr,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())

@@ -1,7 +1,7 @@
 package rise.core.DSL
 
 import rise.core.traversal.{Continue, Stop}
-import rise.core.types.TypePlaceholder
+import rise.core.types.{Flags, TypePlaceholder}
 import rise.core.{Expr, Literal, TypeAnnotation, TypeAssertion, traversal}
 
 final case class ToBeTyped[+T <: Expr](private val e: T) {
