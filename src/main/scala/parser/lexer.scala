@@ -809,9 +809,13 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       arr(column)(row) match {
         case '\\' => {
           lexerLambda(column, row, list) match {
-            case Right(_) => lexerDepLambda(column, row, list) match {
-              case Right(e) => e.throwException()
-              case Left(p) => return p
+            case Right(eLambda) => if(!eLambda.isInstanceOf[IdentifierExpectedNotTypeIdentifier]) {
+              eLambda.throwException()
+            }else{
+              lexerDepLambda(column, row, list) match {
+                case Right(eDepLambda) => eDepLambda.throwException()
+                case Left(p) => return p
+              }
             }
             case Left(p) => return p
           }
