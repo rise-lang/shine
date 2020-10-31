@@ -811,7 +811,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           lexerLambda(column, row, list) match {
             case Right(_) => lexerDepLambda(column, row, list) match {
               case Right(e) => e.throwException()
-              case Left(p)=> return p
+              case Left(p) => return p
             }
             case Left(p) => return p
           }
@@ -926,14 +926,14 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
 
           case (Left(a), r) => {
             var newRow = r
-//            val i: Token = a
+            //            val i: Token = a
             skipWhitespaceWhitoutNewLine(column, newRow) match {
               case (c, r) => {
                 newRow = r
               }
             }
             //println("Alice Wonderland: "+ list + " <<<<>>>> " + column + " , " + row)
-            if(newRow>=arr(column).length){
+            if (newRow >= arr(column).length) {
               //println("escape: " + row + " , "+ column)
               return lexerExpression(column, row, list)
             }
@@ -969,19 +969,19 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           }
           case (Right(_), _) =>
         }
-      }else{
+      } else {
         //println("not in the end of Line: " + list)
       }
     }
 
 
-      if (column >= arr.length || (column == arr.length - 1 && row >= arr(column).length)) {
-        return (list, column, row) //end is reached
-      } else { //a second expression is accepted
-        //println("Neustart: " + list + "  ( "+  column + " , " + row + " )")
-        return lexerExpression(column, row, list)
-      }
+    if (column >= arr.length || (column == arr.length - 1 && row >= arr(column).length)) {
+      return (list, column, row) //end is reached
+    } else { //a second expression is accepted
+      //println("Neustart: " + list + "  ( "+  column + " , " + row + " )")
+      return lexerExpression(column, row, list)
     }
+  }
 
   private def endNamedExprBeginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):TokenAndPos = {
     var list = l
@@ -1466,11 +1466,9 @@ two steps
         Left(Arrow(span))
       }
       case Left(DepArrow(span)) => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
         Right(NotExpectedToken("->", "=>", span, fileReader))
       }
       case Left(a) => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
         Right(NotExpectedToken("->", a.toString, a.s, fileReader))
       }
       case Right(e) => Right(e)
@@ -1483,16 +1481,13 @@ two steps
         Left(DepArrow(span))
       }
       case Left(Arrow(span)) => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        return Right(NotExpectedToken("=>", "->", new Span(fileReader, loc), fileReader))
+        return Right(NotExpectedToken("=>", "->", span, fileReader))
       }
       case Left(a) => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
         Right(NotExpectedToken("=>", a.toString, a.s, fileReader))
       }
       case Right(e) => Right(e)
     }
     }
-  }
 
 }

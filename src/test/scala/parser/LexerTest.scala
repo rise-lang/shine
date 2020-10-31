@@ -198,23 +198,6 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
-  "RecognizeLexeme" should "work for the DepLambda" in {
-    val fileName: String = testFilePath + "DepLambda.rise"
-    val file: FileReader =  FileReader(fileName)
-    val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    lexer.tokens match {
-      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Kind(AddrSpaceK(), _) :: Arrow(_) :: Type(IntTyp(), _)::
-        EndTypAnnotatedIdent(_) ::
-
-        BeginNamedExpr(_) :: Identifier("f", _) ::
-        EqualsSign(_)::
-        Backslash(span6) :: TypeIdentifier("Addr", _) ::DepArrow(_) ::
-        I32(5,_) :: EndNamedExpr(_)::Nil => true
-      case a => fail(a.toString())
-    }
-  }
-
   "RecognizeLexeme" should "complexInOneLine" in {
     val fileName: String = testFilePath + "complexInOneLine.rise"
     val file: FileReader =  FileReader(fileName)
@@ -272,6 +255,23 @@ class LexerTest extends  AnyFlatSpec {
         EqualsSign(_)::
         Backslash(_) :: Identifier("c", _) :: Arrow(_) ::
         I32(42, _) :: EndNamedExpr(_)::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "work for the DepLambda" in {
+    val fileName: String = testFilePath + "DepLambda.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Kind(AddrSpaceK(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(span6) :: TypeIdentifier("Addr", _) ::DepArrow(_) ::
+        I32(5,_) :: EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
   }
