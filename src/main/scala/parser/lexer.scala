@@ -1303,16 +1303,22 @@ if '==' then two steps else only one step
         case "F32"  => (Left(Type(FloatTyp(), span)),pos)
         case "F64"  => (Left(Type(DoubleType(), span)),pos)
         case "Nat"  => (Left(Type(NatTyp(), span)),pos)
-        case array if array.matches("([0-9])+[.]([a-zA-Z]+)") => {
-          val dotPosition = array.indexOf(".")
-          val arrayLength = Nat(array.substring(0, dotPosition).toInt)
-          val a: Array[String] = Array{array}
-          val arrayType:Type = lexType(0, dotPosition, a) match {
-            case (Right(e), pos) => return (Right(e), pos)
-            case (Left(t),_) => t.asInstanceOf[Type]
-          }
-          (Left(Type(ArrayType(arrayLength, arrayType.concreteType), span)),pos)
-        }
+          //Todo: this doesn't work, because it isn't able to match this pattern, because in lexName we
+          //Todo: match a different more simpler pattern.
+          //Todo: we aren't able to change the pattern in lexName or have an extra pattern for
+          //Todo: lexType, because this whole Function don't work then not any longer correct.
+          //Todo: I have to lex then Numbers and Dots and after that lexType in a
+          //Todo: different function and I have to call that. I can reuse for that the RegexExpr.
+//        case array if array.matches("([0-9])+[.]([a-zA-Z]+)") => {
+//          val dotPosition = array.indexOf(".")
+//          val arrayLength = Nat(array.substring(0, dotPosition).toInt)
+//          val a: Array[String] = Array{array}
+//          val arrayType:Type = lexType(0, dotPosition, a) match {
+//            case (Right(e), pos) => return (Right(e), pos)
+//            case (Left(t),_) => t.asInstanceOf[Type]
+//          }
+//          (Left(Type(ArrayType(arrayLength, arrayType.concreteType), span)),pos)
+//        }
           //Todo: Tuple is pretty hard, because simple to work with the regex pattern or to see
         // Todo: where the first "," doesn't work correct.
         // Todo: I have to make a seperate function, where I go per Hand/Loop throug this string!!!
@@ -1341,21 +1347,6 @@ if '==' then two steps else only one step
         case a => (Right(UnknownKind(substring, span, fileReader)),pos)
       }
     }
-  }
-
-  private def lexNameForType(column:Int, row:Int,arr:Array[String]):(Int, String, Location) = {
-    var r: Int = row + 1
-    var substring: String = arr(column).substring(row, r)
-    var substringNew: String = arr(column).substring(row, r)
-    while (r-1 < arr(column).length && (substringNew.matches("[a-zA-Z][a-zA-Z0-9_]*")
-      ||substringNew.matches("([0-9])+[.]([a-zA-Z]+)"))) {
-      substring= arr(column).substring(row, r)
-      r = r + 1
-      substringNew = arr(column).substring(row, r)
-    }
-    val locStart:Location = Location(column, row)
-    val pos:Int = r-1
-    (pos, substring, locStart)
   }
 
   private def lexName(column:Int, row:Int,arr:Array[String]):(Int, String, Location) = {
