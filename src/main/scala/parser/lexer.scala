@@ -1,5 +1,6 @@
 package parser
 
+
 import OpType.{BinOpType, UnaryOpType}
 
 
@@ -1302,6 +1303,20 @@ if '==' then two steps else only one step
         case "F32"  => (Left(Type(FloatTyp(), span)),pos)
         case "F64"  => (Left(Type(DoubleType(), span)),pos)
         case "Nat"  => (Left(Type(NatTyp(), span)),pos)
+        case array if array.matches("([0-9])+[.]([a-zA-Z]+)") => {
+          val dotPosition = array.indexOf(".")
+          val arrayLength = Nat(array.substring(0, dotPosition).toInt)
+          val a: Array[String] = Array{array}
+          val arrayType:Type = lexType(0, dotPosition, a) match {
+            case (Right(e), pos) => return (Right(e), pos)
+            case (Left(t),_) => t.asInstanceOf[Type]
+          }
+          (Left(Type(ArrayType(arrayLength, arrayType.concreteType), span)),pos)
+        }
+          //Todo: Tuple is pretty hard, because simple to work with the regex pattern or to see
+        // Todo: where the first "," doesn't work correct.
+        // Todo: I have to make a seperate function, where I go per Hand/Loop throug this string!!!
+//        case tuple if tuple.matches("[(].*[,].*[)]") => { }
 
         case a => (Right(UnknownType(substring, span, fileReader)),pos)
       }
