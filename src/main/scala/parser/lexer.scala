@@ -29,7 +29,7 @@ abstract sealed class PreAndErrorToken(span:Span, fileReader: FileReader){
       important + currentColumn.substring(span.end.row, currentColumn.length)
     }
     val message:String = "ErrorToken: "+ this.toString +" at " + span.toString + "\n" + codeLine
-    throw new Exception(message)
+    throw new Exception(message) //Todo:: Maybe RuntimeException is here better?
   }
 }
 final case class EndOfLine(span:Span, fileReader:FileReader) extends PreAndErrorToken(span, fileReader){
@@ -107,6 +107,11 @@ final case class NOTanUnOperator(symbol: String, span:Span, fileReader:FileReade
 final case class UnknownType(str: String, span:Span, fileReader:FileReader) extends PreAndErrorToken(span, fileReader) {
   require(span.begin.column == span.end.column, "not in one column")
   override def toString = "The Type '" + str + "' is not an accepted Type in RISE"
+}
+
+final case class UnknownKind(str: String, span:Span, fileReader:FileReader) extends PreAndErrorToken(span, fileReader) {
+  require(span.begin.column == span.end.column, "not in one column")
+  override def toString = "The Kind '" + str + "' is not an accepted Kind in RISE"
 }
 
 abstract sealed class ThisTokenShouldntBeHere(token: Token, span:Span, fileReader:FileReader) extends PreAndErrorToken(span, fileReader) {
@@ -439,7 +444,7 @@ case class RecognizeLexeme(fileReader: FileReader){
     list(0) match {
       case Colon(_) => {
         // :Typ ->
-        lexType(column,row) match {
+        lexKind(column,row) match {
           case (Left(a), r) => {
             row = r
             list=list.::(a)
@@ -693,7 +698,29 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             list=list.::(a)
           }
           case (Right(a), _) => {
-            a.throwException()
+            lexKind(column, row) match {
+              case (Left(a), r) => {
+                row = r
+                skipWhitespaceWhitoutNewLine(column, row) match {
+                  case (c,r) =>{
+                    column = c
+                    row = r
+                  }
+                }
+                lexDepArrow(column, row) match {
+                  case Left(b) => {
+                    row = row +2
+                    list=list.::(a).::(b)
+                  }
+                  case Right(e) => {
+                    e.throwException()
+                  }
+                }
+              }
+              case (Right(a), _) => {
+                a.throwException()
+              }
+            }
           }
         }
 //          return list
@@ -1275,13 +1302,28 @@ if '==' then two steps else only one step
         case "F32"  => (Left(Type(FloatTyp(), span)),pos)
         case "F64"  => (Left(Type(DoubleType(), span)),pos)
         case "Nat"  => (Left(Type(NatTyp(), span)),pos)
-        //Kinds //Todo: extra function for lexKind
+
+        case a => (Right(UnknownType(substring, span, fileReader)),pos)
+      }
+    }
+  }
+
+  private def lexKind(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
+    val (pos, substring, locStart) = lexName(column, row, arr)
+    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
+      val locEnd:Location = Location(column, pos+1)
+      (Right(UnknownKind(substring, Span(fileReader,locStart, locEnd), fileReader)),pos+1)
+    }else{
+      val locEnd:Location = Location(column, pos)
+      val span =  Span(fileReader,locStart, locEnd)
+      //different Types in RISE //Todo: not completed yet
+      substring match {
         case "DataK" => (Left(Kind(DataK(), span)), pos)
         case "TypeK" => (Left(Kind(TypeK(), span)), pos)
         case "AddrSpaceK" => (Left(Kind(AddrSpaceK(), span)), pos)
         case "NatK" => (Left(Kind(NatK(), span)), pos)
-        //unknown Type
-        case a => (Right(UnknownType(substring, span, fileReader)),pos)
+
+        case a => (Right(UnknownKind(substring, span, fileReader)),pos)
       }
     }
   }

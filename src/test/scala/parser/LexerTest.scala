@@ -265,7 +265,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Kind(AddrSpaceK(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: Kind(AddrSpaceK(), _) :: DepArrow(_) :: Type(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -274,6 +274,55 @@ class LexerTest extends  AnyFlatSpec {
         I32(5,_) :: EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
+  }
+
+  "RecognizeLexeme" should "work for the DepLambda2" in {
+    val fileName: String = testFilePath + "DepLambda2.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Kind(DataK(), _) :: DepArrow(_) :: Type(IntTyp(), _)::
+        Arrow(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _):: Arrow(_) ::
+        Kind(NatK(), _) :: DepArrow(_):: Type(FloatTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: TypeIdentifier("D", _) ::DepArrow(_) ::
+        Identifier("x", _) :: Arrow(_) :: Identifier("y", _) :: Arrow(_) ::
+        TypeIdentifier("N", _) :: DepArrow(_) :: BinOp(BinOpType.MUL, _) ::
+        Identifier("x", _) :: Identifier("y", _)
+        :: EndNamedExpr(_)::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "work for the DepLambda3" in {
+    val fileName: String = testFilePath + "DepLambda3.rise"
+    val file: FileReader =  FileReader(fileName)
+    val thrown = intercept[Exception] {
+      RecognizeLexeme(file)
+    }
+    thrown.getMessage should equal("ErrorToken: It is an '=>' expected. The Lexeme '->' is not an '=>'! at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/DepLambda3.rise'; fileContent: {\nf::AddrSpaceK->I32f=\\Addr=>5\n}; beginLocation: (column: 0 ; row: 13); endLocation: (column: 0 ; row: 14)\nf::AddrSpaceK-̲>I32")
+  }
+
+  "RecognizeLexeme" should "work for the DepLambda4" in {
+    val fileName: String = testFilePath + "DepLambda4.rise"
+    val file: FileReader =  FileReader(fileName)
+    val thrown = intercept[Exception] {
+      RecognizeLexeme(file)
+    }
+    thrown.getMessage should equal("ErrorToken: It is an '=>' expected. The Lexeme '->' is not an '=>'! at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/DepLambda4.rise'; fileContent: {\nf::AddrSpaceK=>I32f=\\Addr->5\n}; beginLocation: (column: 1 ; row: 7); endLocation: (column: 1 ; row: 7)\nf=\\Addr->5")
+  }
+
+  "RecognizeLexeme" should "work for the DepLambda5" in {
+    val fileName: String = testFilePath + "DepLambda5.rise"
+    val file: FileReader =  FileReader(fileName)
+    val thrown = intercept[Exception] {
+      RecognizeLexeme(file)
+    }
+    thrown.getMessage should equal("ErrorToken: the given length is less than 2 for =>! at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/DepLambda5.rise'; fileContent: {\nf::AddrSpaceKf=A\n}; beginLocation: (column: 0 ; row: 13); endLocation: (column: 0 ; row: 13)\nf::AddrSpaceK")
   }
 
   "RecognizeLexeme" should "work for the FunctionInBraces" in {
