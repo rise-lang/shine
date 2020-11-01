@@ -1,10 +1,11 @@
 package apps
 
-import rise.core.DSL.Type._
-import rise.core.DSL._
+import rise.core.dsl.Type._
+import rise.core.dsl._
 import rise.core._
+import rise.core.exprs.Expr
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.opencl.dsl._
 
 object nearestNeighbour {
   private val distance = foreignFun("distance_",
@@ -20,7 +21,7 @@ object nearestNeighbour {
   ))
 
   import shine.OpenCL._
-  import util.{Time, TimeSpan}
+  import _root_.util.{Time, TimeSpan}
 
   def runOriginalKernel(
     name: String,
@@ -30,7 +31,7 @@ object nearestNeighbour {
   ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
+    val code = _root_.util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     assert(locations.length % 2 == 0)

@@ -2,9 +2,11 @@ package shine.DPIA
 
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
+import rise.core.exprs.{App, DepApp, Expr, primitives}
+import rise.core.util.IsClosedForm
 import rise.elevate.Rise
 import rise.elevate.rules._
-import rise.core.{semantics => rs, types => rt}
+import rise.core.{exprs, semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
@@ -12,8 +14,8 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 
 object fromRise {
-  def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
-    if (!r.IsClosedForm(expr)) {
+  def apply(expr: Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
+    if (!IsClosedForm(expr)) {
       throw new Exception(s"expression is not in closed form: $expr\n\n with type ${expr.t}")
     }
     val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
@@ -22,22 +24,22 @@ object fromRise {
   }
 
   def expression(
-    expr: r.Expr,
-    ptMap: java.util.IdentityHashMap[r.Expr, PhraseType]): Phrase[_ <: PhraseType] = expr match {
+    expr: Expr,
+    ptMap: java.util.IdentityHashMap[Expr, PhraseType]): Phrase[_ <: PhraseType] = expr match {
 
-    case r.Identifier(name) =>
+    case exprs.Identifier(name) =>
       Identifier(name, ptMap.get(expr))
 
-    case r.Lambda(x, e) =>
+    case exprs.Lambda(x, e) =>
       Lambda(Identifier(x.name, ptMap.get(x)), expression(e, ptMap))
 
-    case r.App(f, e) =>
+    case App(f, e) =>
       val ef = expression(f, ptMap)
         .asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]]
       val ee = expression(e, ptMap).asInstanceOf[Phrase[PhraseType]]
       Apply(ef, ee)
 
-    case r.DepLambda(x, e) => x match {
+    case exprs.DepLambda(x, e) => x match {
       case ni: rt.NatIdentifier =>
         DepLambda[NatKind](natIdentifier(ni))(expression(e, ptMap))
       case dti: rt.DataTypeIdentifier =>
@@ -47,8 +49,8 @@ object fromRise {
           addressSpaceIdentifier(addri))(expression(e, ptMap))
     }
 
-    case r.DepApp(f, x) =>
-      def depApp[K <: Kind](f: r.Expr, arg: K#T): DepApply[K, PhraseType] =
+    case DepApp(f, x) =>
+      def depApp[K <: Kind](f: Expr, arg: K#T): DepApply[K, PhraseType] =
         DepApply[K, PhraseType](
           expression(f, ptMap).asInstanceOf[Phrase[DepFunType[K, PhraseType]]],
           arg)
@@ -60,13 +62,13 @@ object fromRise {
         case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
       }
 
-    case r.Literal(d) => d match {
+    case exprs.Literal(d) => d match {
       case rs.NatData(n) => Natural(n)
       case rs.IndexData(i, n) => FunctionalPrimitives.NatAsIndex(n, Natural(i))
       case _ => Literal(data(d))
     }
 
-    case p: r.Primitive => primitive(p, ptMap.get(p))
+    case p: exprs.Primitive => primitive(p, ptMap.get(p))
   }
 
   def data(d: rs.Data): OpSem.Data = d match {
@@ -81,7 +83,6 @@ object fromRise {
     case rs.NatData(n) => OpSem.NatData(n)
   }
 
-  import rise.core.{primitives => core}
   import shine.DPIA.FunctionalPrimitives._
 
   def fun[T <: PhraseType](
@@ -102,10 +103,10 @@ object fromRise {
     }
   }
 
-  private def primitive(p: r.Primitive,
+  private def primitive(p: exprs.Primitive,
                         t: PhraseType): Phrase[_ <: PhraseType] = {
-    import rise.openCL.{primitives => ocl}
-    import rise.openMP.{primitives => omp}
+    import rise.opencl.{primitives => ocl}
+    import rise.openmp.{primitives => omp}
     import shine.OpenCL.FunctionalPrimitives._
     import shine.OpenMP.FunctionalPrimitives._
     import shine.DPIA.Types.MatchingDSL._
@@ -118,13 +119,13 @@ object fromRise {
     }
 
     p match {
-      case core.printType(msg) => fromType {
+      case primitives.printType(msg) => fromType {
         case expT(dt: DataType, w) ->: _
         =>
         fun[ExpType](expT(dt, w), e => PrintType(msg, dt, w, e))
       }
 
-      case core.natAsIndex() => fromType {
+      case primitives.natAsIndex() => fromType {
         case nFunT(n, expT(`NatType`, `read`) ->:
           expT(IndexType(_), `read`))
         =>
@@ -133,7 +134,7 @@ object fromRise {
             NatAsIndex(n, e)))
       }
 
-      case core.map() => fromType {
+      case primitives.map() => fromType {
         case ( expT(s, ai) ->: expT(t, _) ) ->:
           expT(ArrayType(n, _), _) ->:
           expT(ArrayType(_, _), _)
@@ -143,7 +144,7 @@ object fromRise {
             Map(n, s, t, ai, f, e)))
       }
 
-      case core.mapSeq() => fromType {
+      case primitives.mapSeq() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `write`)
@@ -153,7 +154,7 @@ object fromRise {
             MapSeq(n, s, t, f, e)))
       }
 
-      case core.mapStream() => fromType {
+      case primitives.mapStream() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `read`)
@@ -163,7 +164,7 @@ object fromRise {
             MapStream(n, s, t, f, e)))
       }
 
-      case core.iterateStream() => fromType {
+      case primitives.iterateStream() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `write`)
@@ -173,7 +174,7 @@ object fromRise {
             IterateStream(n, s, t, f, e)))
       }
 
-      case core.mapSeqUnroll() => fromType {
+      case primitives.mapSeqUnroll() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `write`)
@@ -223,7 +224,7 @@ object fromRise {
               MapWorkGroup(dim)(n, s, t, f, e)))
       }
 
-      case core.depMapSeq() => fromType {
+      case primitives.depMapSeq() => fromType {
         case nFunT(k, expT(_, `read`) ->: expT(_, `write`)) ->:
           expT(DepArrayType(n, ft1), `read`) ->:
           expT(DepArrayType(_, ft2), `write`)
@@ -234,7 +235,7 @@ object fromRise {
               DepMapSeq(n, ft1, ft2, f, e)))
       }
 
-      case core.reduceSeq() => fromType {
+      case primitives.reduceSeq() => fromType {
         case (expT(t, `read`) ->: expT(s, `read`) ->: expT(_, `write`)) ->:
           expT(_, `write`) ->:
           expT(ArrayType(n, _), `read`) ->:
@@ -247,7 +248,7 @@ object fromRise {
                 ReduceSeq(n, s, t, f, i, e))))
       }
 
-      case core.reduceSeqUnroll() => fromType {
+      case primitives.reduceSeqUnroll() => fromType {
         case (expT(t, `read`) ->: expT(s, `read`) ->: expT(_, `write`)) ->:
           expT(_, `write`) ->:
           expT(ArrayType(n, _), `read`) ->:
@@ -290,7 +291,7 @@ object fromRise {
                   OpenCLReduceSeq(n, a, s, t, f, i, e, unroll = true)))))
       }
 
-      case core.scanSeq() => fromType {
+      case primitives.scanSeq() => fromType {
         case (expT(s, `read`) ->: expT(t, `read`) ->: expT(_, `write`)) ->:
           expT(_, `write`) ->:
           expT(ArrayType(n, _), `read`) ->:
@@ -303,7 +304,7 @@ object fromRise {
                 ScanSeq(n, s, t, f, i, e))))
       }
 
-      case core.depJoin() => fromType {
+      case primitives.depJoin() => fromType {
         case expT(DepArrayType(n, n2d), `read`) ->:
           expT(ArrayType(_, dt), `read`)
         =>
@@ -312,7 +313,7 @@ object fromRise {
           DepJoin(n, lenF, dt, e))
       }
 
-      case core.join() => fromType {
+      case primitives.join() => fromType {
         case expT(ArrayType(n, ArrayType(m, t)), a) ->:
           expT(ArrayType(_, _), _)
         =>
@@ -320,7 +321,7 @@ object fromRise {
           Join(n, m, a, t, e))
       }
 
-      case core.split() => fromType {
+      case primitives.split() => fromType {
         case nFunT(n, expT(ArrayType(_, t), a) ->:
           expT(ArrayType(m, ArrayType(_, _)), _))
         =>
@@ -329,7 +330,7 @@ object fromRise {
             Split(n, m, a, t, e)))
       }
 
-      case core.slide() => fromType {
+      case primitives.slide() => fromType {
         case nFunT(sz, nFunT(sp,
           expT(ArrayType(insz, t), `read`) ->:
           expT(ArrayType(n, ArrayType(_, _)), `read`)))
@@ -340,7 +341,7 @@ object fromRise {
               Slide(n, sz, sp, t, e))))
       }
 
-      case core.circularBuffer() => fromType {
+      case primitives.circularBuffer() => fromType {
         case nFunT(alloc, nFunT(sz,
           (expT(s, `read`) ->: expT(t, `write`)) ->:
             expT(ArrayType(insz, _), `read`) ->:
@@ -355,7 +356,7 @@ object fromRise {
                   SlideSeq(SlideSeq.Indices, n, sz, 1, s, t, load, e)))))
       }
 
-      case core.rotateValues() => fromType {
+      case primitives.rotateValues() => fromType {
         case nFunT(sz,
           (expT(s, `read`) ->: expT(_, `write`)) ->:
             expT(ArrayType(insz, _), `read`) ->:
@@ -397,7 +398,7 @@ object fromRise {
                     OpenCLRotateValues(a, n, sz, t, write_t, e)))))
       }
 
-      case core.reorder() => fromType {
+      case primitives.reorder() => fromType {
         case (expT(IndexType(n), `read`) ->: expT(IndexType(_), `read`)) ->:
           (expT(IndexType(_), `read`) ->: expT(IndexType(_), `read`)) ->:
           expT(ArrayType(_, t), a) ->: expT(ArrayType(_, _), _)
@@ -410,7 +411,7 @@ object fromRise {
                   Reorder(n, t, a, idxF, idxFinv, e))))
       }
 
-      case core.gather() => fromType {
+      case primitives.gather() => fromType {
         case expT(ArrayType(m, IndexType(n)), `read`) ->:
           expT(ArrayType(_, t), `read`) ->:
           expT(ArrayType(_, _), `read`)
@@ -420,7 +421,7 @@ object fromRise {
             Gather(n, m, t, y, x)))
       }
 
-      case core.transpose() => fromType {
+      case primitives.transpose() => fromType {
         case expT(ArrayType(n, ArrayType(m, t)), a) ->:
           expT(ArrayType(_, ArrayType(_, _)), _)
         =>
@@ -428,7 +429,7 @@ object fromRise {
           Transpose(n, m, t, a, e))
       }
 
-      case core.take() => fromType {
+      case primitives.take() => fromType {
         case nFunT(n, expT(ArrayType(nm, t), `read`) ->:
           expT(ArrayType(_, _), `read`))
         =>
@@ -436,7 +437,7 @@ object fromRise {
           fun[ExpType](expT(nm`.`t, read), e => Take(n, nm-n, t, e)))
       }
 
-      case core.drop() => fromType {
+      case primitives.drop() => fromType {
         case nFunT(n, expT(ArrayType(nm, t), `read`) ->:
           expT(ArrayType(_, _), `read`))
         =>
@@ -445,7 +446,7 @@ object fromRise {
             Drop(n, nm-n, t, e)))
       }
 
-      case core.padCst() => fromType {
+      case primitives.padCst() => fromType {
         case nFunT(l, nFunT(q,
           expT(t, `read`) ->:
           expT(ArrayType(n, _), `read`) ->:
@@ -458,7 +459,7 @@ object fromRise {
                 Pad(n, l, q, t, cst, e)))))
       }
 
-      case core.padEmpty() => fromType {
+      case primitives.padEmpty() => fromType {
         case nFunT(r,
           expT(ArrayType(n, t), `write`) ->: _)
         =>
@@ -467,7 +468,7 @@ object fromRise {
             PadEmpty(n, r, t, e)))
       }
 
-      case core.padClamp() => fromType {
+      case primitives.padClamp() => fromType {
         case nFunT(l, nFunT(q,
           expT(ArrayType(n, t), `read`) ->:
           expT(ArrayType(_, _), `read`)))
@@ -478,7 +479,7 @@ object fromRise {
               PadClamp(n, l, q, t, e))))
       }
 
-      case core.unzip() => fromType {
+      case primitives.unzip() => fromType {
         case expT(ArrayType(n, PairType(s, t)), a) ->:
           expT(PairType(ArrayType(_, _), ArrayType(_, _)), _)
         =>
@@ -486,7 +487,7 @@ object fromRise {
           Unzip(n, s, t, a, e))
       }
 
-      case core.zip() => fromType {
+      case primitives.zip() => fromType {
         case expT(ArrayType(n, s), a) ->:
           expT(ArrayType(_, t), _) ->:
           expT(ArrayType(_, PairType(_, _)), _)
@@ -496,19 +497,19 @@ object fromRise {
             Zip(n, s, t, a, x, y)))
       }
 
-      case core.fst() => fromType {
+      case primitives.fst() => fromType {
         case expT(PairType(s, t), `read`) ->: expT(_, read)
         =>
         fun[ExpType](expT(s x t, read), e => Fst(s, t, e))
       }
 
-      case core.snd() => fromType {
+      case primitives.snd() => fromType {
         case expT(PairType(s, t), `read`) ->: expT(_, read)
         =>
         fun[ExpType](expT(s x t, read), e => Snd(s, t, e))
       }
 
-      case core.mapFst() => fromType {
+      case primitives.mapFst() => fromType {
         case (expT(s, a) ->: expT(s2, _)) ->:
           expT(PairType(_, t), _) ->:
           expT(PairType(_, _), _)
@@ -517,7 +518,7 @@ object fromRise {
           fun[ExpType](expT(s x t, a), e => MapFst(a, s, t, s2, f, e)))
       }
 
-      case core.mapSnd() => fromType {
+      case primitives.mapSnd() => fromType {
         case (expT(t, a) ->: expT(t2, _)) ->:
           expT(PairType(s, _), _) ->:
           expT(PairType(_, _), _) =>
@@ -525,7 +526,7 @@ object fromRise {
           fun[ExpType](expT(s x t, a), e => MapSnd(a, s, t, t2, f, e)))
       }
 
-      case core.pair() => fromType {
+      case primitives.pair() => fromType {
         case expT(s, a) ->:
           expT(t, _) ->:
           expT(PairType(_, _), _)
@@ -535,7 +536,7 @@ object fromRise {
             Pair(s, t, a, x, y)))
         }
 
-      case core.idx() => fromType {
+      case primitives.idx() => fromType {
         case expT(IndexType(n), `read`) ->:
           expT(ArrayType(_, t), `read`) ->:
           expT(_, `read`)
@@ -545,7 +546,7 @@ object fromRise {
             FunctionalPrimitives.Idx(n, t, i, e)))
       }
 
-      case core.select() => fromType {
+      case primitives.select() => fromType {
         case expT(`bool`, `read`) ->:
           expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `read`)
         =>
@@ -555,19 +556,19 @@ object fromRise {
               IfThenElse(cond, tExpr, fExpr))))
       }
 
-      case core.neg() => fromType {
+      case primitives.neg() => fromType {
         case expT(t, `read`) ->: expT(_, `read`)
         =>
         fun[ExpType](expT(t, read), e => UnaryOp(Operators.Unary.NEG, e))
       }
 
-      case core.not() => fromType {
+      case primitives.not() => fromType {
         case expT(`bool`, `read`) ->: expT(`bool`, `read`)
         =>
         fun[ExpType](expT(bool, read), e => UnaryOp(Operators.Unary.NOT, e))
       }
 
-      case core.add() => fromType {
+      case primitives.add() => fromType {
         case expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `read`)
         =>
         fun[ExpType](expT(t, read), e1 =>
@@ -575,7 +576,7 @@ object fromRise {
             BinOp(Operators.Binary.ADD, e1, e2)))
       }
 
-      case core.sub() => fromType {
+      case primitives.sub() => fromType {
         case expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `read`)
         =>
         fun[ExpType](expT(t, read), e1 =>
@@ -583,7 +584,7 @@ object fromRise {
             BinOp(Operators.Binary.SUB, e1, e2)))
       }
 
-      case core.mul() => fromType {
+      case primitives.mul() => fromType {
         case expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `read`)
         =>
         fun[ExpType](expT(t, read), e1 =>
@@ -591,7 +592,7 @@ object fromRise {
             BinOp(Operators.Binary.MUL, e1, e2)))
       }
 
-      case core.div() => fromType {
+      case primitives.div() => fromType {
         case expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `read`)
         =>
         fun[ExpType](expT(t, read), e1 =>
@@ -599,7 +600,7 @@ object fromRise {
             BinOp(Operators.Binary.DIV, e1, e2)))
       }
 
-      case core.mod() => fromType {
+      case primitives.mod() => fromType {
         case expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `read`)
         =>
         fun[ExpType](expT(t, read), e1 =>
@@ -607,7 +608,7 @@ object fromRise {
             BinOp(Operators.Binary.MOD, e1, e2)))
       }
 
-      case core.gt() => fromType {
+      case primitives.gt() => fromType {
         case expT(t, `read`) ->: expT(_, `read`) ->: expT(`bool`, `read`)
         =>
         fun[ExpType](expT(t, read), e1 =>
@@ -615,7 +616,7 @@ object fromRise {
             BinOp(Operators.Binary.GT, e1, e2)))
       }
 
-      case core.lt() => fromType {
+      case primitives.lt() => fromType {
         case expT(t, `read`) ->: expT(_, `read`) ->: expT(`bool`, `read`)
         =>
         fun[ExpType](expT(t, read), e1 =>
@@ -623,7 +624,7 @@ object fromRise {
             BinOp(Operators.Binary.LT, e1, e2)))
       }
 
-      case core.equal() => fromType {
+      case primitives.equal() => fromType {
         case expT(t, `read`) ->: expT(_, `read`) ->: expT(`bool`, `read`)
         =>
         fun[ExpType](expT(t, read), e1 =>
@@ -631,13 +632,13 @@ object fromRise {
             BinOp(Operators.Binary.EQ, e1, e2)))
       }
 
-      case core.cast() => fromType {
+      case primitives.cast() => fromType {
         case expT(s: BasicType, `read`) ->: expT(t: BasicType, `read`)
         =>
         fun[ExpType](ExpType(s, read), x => Cast(s, t, x))
       }
 
-      case core.let() => fromType {
+      case primitives.let() => fromType {
         case expT(s, `read`) ->:
           (expT(_, `read`) ->: expT(t, a)) ->: expT(_, _)
         =>
@@ -646,7 +647,7 @@ object fromRise {
             Let(s, t, a, x, f)))
       }
 
-      case r.ForeignFunction(decl) =>
+      case exprs.ForeignFunction(decl) =>
         def collectTypes(t: PhraseType): (Vector[DataType], DataType) = {
           t match {
             case ExpType(dt: DataType, `read`) =>
@@ -672,7 +673,7 @@ object fromRise {
         }
         buildFFPrimitive(Vector())
 
-      case core.generate() => fromType {
+      case primitives.generate() => fromType {
         case (expT(IndexType(n), `read`) ->: expT(t, `read`)) ->:
           expT(ArrayType(n_, _), `read`)
         =>
@@ -681,7 +682,7 @@ object fromRise {
             Generate(n, t, f))
       }
 
-      case core.makeArray(_) =>
+      case primitives.makeArray(_) =>
         def buildArrayPrimitive(t: PhraseType, elements: Vector[Phrase[ExpType]]
                      ): Phrase[_ <: PhraseType] = t match {
           case FunType(in: ExpType, out) =>
@@ -691,7 +692,7 @@ object fromRise {
         }
         buildArrayPrimitive(t, Vector())
 
-      case core.iterate() => fromType {
+      case primitives.iterate() => fromType {
         case nFunT(k,
           nFunT(l, expT(ArrayType(ln, t), `read`) ->:
             expT(ArrayType(_, _), `write`)) ->:
@@ -719,7 +720,7 @@ object fromRise {
                 OpenCLIterate(a, ln /^ l, m, k, t, f, e)))))
       }
 
-      case core.asVector() => fromType {
+      case primitives.asVector() => fromType {
         case nFunT(n,
           expT(ArrayType(mn, _), a) ->:
           expT(ArrayType(m, VectorType(_, t)), _))
@@ -729,7 +730,7 @@ object fromRise {
             AsVector(n, m, t, a, e)))
       }
 
-      case core.asVectorAligned() => fromType {
+      case primitives.asVectorAligned() => fromType {
         case nFunT(n,
           expT(ArrayType(mn, _), a) ->:
           expT(ArrayType(m, VectorType(_, t)), _))
@@ -739,7 +740,7 @@ object fromRise {
             AsVectorAligned(n, m, a, t, e)))
       }
 
-      case core.asScalar() => fromType {
+      case primitives.asScalar() => fromType {
         case expT(ArrayType(m, VectorType(n, t)), a) ->:
           expT(ArrayType(_, _), _)
         =>
@@ -747,7 +748,7 @@ object fromRise {
           AsScalar(m, n, t, a, e))
       }
 
-      case core.vectorFromScalar() => fromType {
+      case primitives.vectorFromScalar() => fromType {
         case expT(_, `read`) ->:
           expT(VectorType(n, t), `read`)
         =>
@@ -755,7 +756,7 @@ object fromRise {
           VectorFromScalar(n, t, e))
       }
 
-      case core.indexAsNat() => fromType {
+      case primitives.indexAsNat() => fromType {
         case expT(IndexType(n), `read`) ->:
           expT(`NatType`, `read`)
         =>
@@ -763,7 +764,7 @@ object fromRise {
           IndexAsNat(n, e))
       }
 
-      case core.toMem() => fromType {
+      case primitives.toMem() => fromType {
         case expT(t, `write`) ->: expT(_, `read`)
         =>
         fun[ExpType](expT(t, write), e => ToMem(t, e))
@@ -777,7 +778,7 @@ object fromRise {
             OclToMem(a, t, e)))
       }
 
-      case core.dmatch() => fromType {
+      case primitives.dmatch() => fromType {
         case expT(DepPairType(x, elemT), `read`) ->:
           nFunT(i, expT(elem_iT, `read`) ->: expT(outT, a))
           ->: expT(_, _) =>
@@ -788,12 +789,12 @@ object fromRise {
           )
       }
 
-      case core.dpair() => fromType {
+      case primitives.dpair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }
 
-      case core.reduce() =>
+      case primitives.reduce() =>
         throw new Exception(s"$p has no implementation")
 
       case _ => throw new Exception(s"Missing rule for $p")

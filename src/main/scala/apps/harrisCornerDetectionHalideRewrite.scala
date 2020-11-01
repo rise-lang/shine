@@ -1,9 +1,6 @@
 package apps
 
-import harrisCornerDetectionHalide.{
-  sobelXWeights2d, sobelXWeightsV, sobelXWeightsH,
-  sobelYWeights2d, sobelYWeightsV, sobelYWeightsH
-}
+import harrisCornerDetectionHalide.{sobelXWeights2d, sobelXWeightsH, sobelXWeightsV, sobelYWeights2d, sobelYWeightsH, sobelYWeightsV}
 import rise.core.types._
 import elevate.core._
 import elevate.core.strategies.basic._
@@ -16,6 +13,8 @@ import rise.elevate.rules.traversal._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
 import cameraPipeRewrite.{afterTopLevel, anyMapOutsideZip, depFunction, isAppliedMap, isAppliedZip, stronglyReducedForm}
+import rise.core.exprs
+import rise.core.exprs.{App, primitives}
 import rise.elevate.strategies.predicate.isEqualToUntyped
 
 object harrisCornerDetectionHalideRewrite {
@@ -62,14 +61,14 @@ object harrisCornerDetectionHalideRewrite {
     cameraPipeRewrite.normalizeInput
 
   object storeToPrivate {
-    import rise.core.DSL._
-    import rise.openCL.TypedDSL.toPrivate
+    import rise.core.dsl._
+    import rise.opencl.dsl.toPrivate
     import rise.elevate.rules.lowering.typeHasTrivialCopy
 
     def apply(find: Strategy[Rise]): Strategy[Rise] =
       subexpressionElimination(find) `;` {
         // TODO: use rewrite rules
-        case rise.core.App(f, v) =>
+        case App(f, v) =>
           Success(writeUnrolled(v.t)(v) |> toPrivate |> letf(f))
         case _ => ???
       } `;` reducedFusedForm
@@ -78,20 +77,20 @@ object harrisCornerDetectionHalideRewrite {
       case _ if typeHasTrivialCopy(t) => fun(p => p)
       case PairType(a, b) if typeHasTrivialCopy(a) && typeHasTrivialCopy(b) =>
         fun(p => p)
-      case ArrayType(_, elem) => fun(p => rise.core.primitives.mapSeqUnroll(writeUnrolled(elem))(p))
+      case ArrayType(_, elem) => fun(p => primitives.mapSeqUnroll(writeUnrolled(elem))(p))
       case _ => throw new Exception(s"did not expect $t")
     }
   }
 
   def isAppliedPair: Strategy[Rise] =
-    function(function(isEqualTo(rise.core.primitives.pair.primitive)))
+    function(function(isEqualTo(exprs.primitives.pair.primitive)))
   def isReduceFI: Strategy[Rise] =
-    function(function(isEqualTo(rise.core.primitives.reduce.primitive)))
+    function(function(isEqualTo(exprs.primitives.reduce.primitive)))
   def isAppliedReduce: Strategy[Rise] = function(isReduceFI)
   def isAppliedUnzip: Strategy[Rise] =
-    function(isEqualTo(rise.core.primitives.unzip.primitive))
+    function(isEqualTo(exprs.primitives.unzip.primitive))
   def isPadEmpty: Strategy[Rise] =
-    depFunction(isEqualTo(rise.core.primitives.padEmpty.primitive))
+    depFunction(isEqualTo(exprs.primitives.padEmpty.primitive))
 
   object ocl {
     val unrollDots: Strategy[Rise] = normalize.apply(
@@ -147,7 +146,7 @@ object harrisCornerDetectionHalideRewrite {
       function(argument(topDown(
         function(lowerReductionLoop) `;`
         argument(stronglyReducedForm `;` lambdaBodyWithName(x => {
-          import rise.core.primitives._
+          import rise.core.exprs.primitives._
           storeToPrivate(
             isEqualToUntyped(fst(x)) <+ isAppliedReduce
           ) `;`
@@ -262,7 +261,7 @@ object harrisCornerDetectionHalideRewrite {
           isAppliedZip `;` argument(isAppliedZip) `;`
           subexpressionElimination {
             isAppliedMap `;` function(argument(
-              function(isEqualToUntyped(rise.core.primitives.mapSnd.primitive)) `;`
+              function(isEqualToUntyped(exprs.primitives.mapSnd.primitive)) `;`
               argument(isPadEmpty)
             ))
           }
@@ -271,7 +270,7 @@ object harrisCornerDetectionHalideRewrite {
         topDown(
           isAppliedMap `;`
           function(argument(argument(argument(
-            function(isEqualToUntyped(rise.core.primitives.mapSnd.primitive)) `;`
+            function(isEqualToUntyped(exprs.primitives.mapSnd.primitive)) `;`
             argument(isPadEmpty)
           )))) `;`
           reducedFusedForm `;`
@@ -323,7 +322,7 @@ object harrisCornerDetectionHalideRewrite {
         )
       ) `;`
       topDown(
-        function(function(isEqualToUntyped(rise.core.primitives.mapSeq.primitive))) `;`
+        function(function(isEqualToUntyped(exprs.primitives.mapSeq.primitive))) `;`
         topDown(lambdaBodyWithName(x =>
           storeToPrivate(isEqualToUntyped(x))
         ))
@@ -351,7 +350,7 @@ object harrisCornerDetectionHalideRewrite {
       afterTopLevel(
         normalize.apply(
           isAppliedMap `;`
-          argument(function(isEqualToUntyped(rise.core.primitives.transpose.primitive))) `;`
+          argument(function(isEqualToUntyped(exprs.primitives.transpose.primitive))) `;`
           reducedFissionedForm `;` topDown(vectorize.alignSlide) `;`
           reducedFusedForm `;`
           normalize.apply(
@@ -427,8 +426,8 @@ object harrisCornerDetectionHalideRewrite {
             topDown(slideOutsideZip)
           ) `;` reducedFusedForm `;`
           repeatNTimes(2)(topDown({
-            import rise.core.primitives._
-            import rise.core.DSL._
+            import rise.core.exprs.primitives._
+            import rise.core.dsl._
             var t: Type = null
             function(isEqualToUntyped(slide(2)(1))) `;`
             argument { e: Rise => t = e.t; Success(e) } `;`

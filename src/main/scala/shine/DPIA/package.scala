@@ -38,7 +38,7 @@ package object DPIA {
   }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia
-  val freshName: rise.core.freshName.type = rise.core.freshName
+  val freshName: rise.core.util.freshName.type = rise.core.util.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PhrasePairType[T1, T2]
   type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]

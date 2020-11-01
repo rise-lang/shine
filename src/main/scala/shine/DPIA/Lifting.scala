@@ -6,7 +6,7 @@ import shine.DPIA.Types._
 import scala.language.{postfixOps, reflectiveCalls}
 
 object Lifting {
-  import rise.core.lifting.{Expanding, Reducing, Result}
+  import rise.core.util.lifting.{Expanding, Reducing, Result}
 
   def liftDependentFunction[K <: Kind, T <: PhraseType](p: Phrase[K `()->:` T]): K#T => Phrase[T] = {
     p match {

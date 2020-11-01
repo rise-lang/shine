@@ -1,20 +1,23 @@
 package rise.core
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.Expr
+import rise.core.exprs.primitives._
 import rise.core.types._
-import rise.openCL.primitives.oclReduceSeqUnroll
+import rise.core.util.show.showScala
+import rise.opencl.primitives.oclReduceSeqUnroll
 
 class showScalaTest extends test_util.Tests {
   def prefixImports(code: String): String =
     s"""
-       |import rise.core._
+       |import rise.core.exprs._
+       |import rise.core.exprs.primitives._
        |import rise.core.types._
+       |import rise.core.types.AddressSpace._
+       |import rise.core.util._
        |import rise.core.semantics._
-       |import rise.core.primitives._
-       |import rise.openCL.TypedDSL._
-       |import rise.openCL.primitives.oclReduceSeqUnroll
-       |import AddressSpace._
+       |import rise.opencl.dsl._
+       |import rise.opencl.primitives.oclReduceSeqUnroll
        |import arithexpr.arithmetic._
        |
        |$code

@@ -7,10 +7,11 @@ import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{SyntaxChecker, Time, TimeSpan}
 import arithexpr.arithmetic._
 import rise.elevate.rules.traversal.default
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import rise.core._
+import rise.core.exprs.Expr
 import rise.core.types._
 
 import scala.util.Random

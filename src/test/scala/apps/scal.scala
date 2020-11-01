@@ -1,10 +1,10 @@
 package apps
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import rise.core.types._
-import util.gen
+import rise.core.util.gen
 
 class scal extends test_util.Tests {
 
@@ -22,7 +22,7 @@ class scal extends test_util.Tests {
 
   // OpenMP
   test("scalIntel compiles to syntactically correct OpenMP") {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val scalIntel = depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
       input |>
@@ -41,7 +41,7 @@ class scal extends test_util.Tests {
   }
 
   test("scalIntel2 compiles to syntactically correct OpenMP") {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val scalIntel2 = depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
       input |>
@@ -58,7 +58,7 @@ class scal extends test_util.Tests {
 
   // OpenCL
   {
-    import rise.openCL.TypedDSL._
+    import rise.opencl.dsl._
 
     val scalWgLcl = (fst: Nat, snd: Nat) =>
       depFun((n: Nat) => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>

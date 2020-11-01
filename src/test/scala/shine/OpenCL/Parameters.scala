@@ -1,9 +1,9 @@
 package shine.OpenCL
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
-import util.gen
+import rise.core.util.gen
 
 class Parameters extends test_util.Tests {
   val m = 4 // vector width

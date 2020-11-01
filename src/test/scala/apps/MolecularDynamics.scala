@@ -1,7 +1,7 @@
 package apps
 
 import molecularDynamics._
-import util.gen
+import rise.core.util.gen
 
 class MolecularDynamics extends test_util.TestsWithExecutor {
   private val N = 1024

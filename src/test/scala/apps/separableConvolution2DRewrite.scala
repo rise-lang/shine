@@ -2,7 +2,7 @@ package apps
 
 import separableConvolution2D._
 import rise.core._
-import rise.core.DSL._
+import rise.core.dsl._
 import HighLevelConstructs._
 import elevate.core._
 import rise.elevate.rules._
@@ -10,12 +10,13 @@ import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
+import rise.core.exprs.Expr
 import rise.elevate.Rise
 import rise.elevate.strategies.algorithmic._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.alternative._
 import rise.elevate.util.makeClosed
-import rise.core.primitives._
+import rise.core.exprs.primitives._
 
 class separableConvolution2DRewrite extends test_util.Tests {
   private val idE: Expr = fun(x => x)

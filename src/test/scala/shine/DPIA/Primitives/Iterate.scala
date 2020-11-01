@@ -1,10 +1,10 @@
 package shine.DPIA.Primitives
 
-import rise.core.Lambda
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.Lambda
+import rise.core.exprs.primitives._
 import rise.core.types._
-import util.gen
+import rise.core.util.gen
 
 class Iterate extends test_util.Tests {
   val add: ToBeTyped[Lambda] = fun(a => fun(b => a + b))

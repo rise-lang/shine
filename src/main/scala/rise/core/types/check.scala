@@ -1,7 +1,9 @@
 package rise.core.types
 
-import rise.core.DSL.Type._
-import rise.core._
+import rise.core.dsl.Type._
+import rise.core.exprs._
+import rise.core.util.substitute
+
 import scala.util.Try
 
 // Checks if a given Expr is well typed

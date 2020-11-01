@@ -1,8 +1,8 @@
 package apps
 
 import apps.convolution._
-import rise.core.DSL._
-import util.gen
+import rise.core.dsl._
+import rise.core.util.gen
 
 class Convolution extends test_util.TestsWithExecutor {
   private val inputSize_small = 4096

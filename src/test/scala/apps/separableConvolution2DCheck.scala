@@ -3,12 +3,13 @@ package apps
 import separableConvolution2D._
 import rise.core._
 import rise.core.types._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import HighLevelConstructs._
-import rise.core.DSL.ToBeTyped
-import util.gen
+import rise.core.dsl.ToBeTyped
+import rise.core.exprs.Expr
+import rise.core.util.gen
 
 class separableConvolution2DCheck extends test_util.Tests {
   private def wrapExpr(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
@@ -54,7 +55,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 """
-    util.Execute(testCode)
+    _root_.util.Execute(testCode)
   }
 
   test("baseSeq compiles to C Code that passes checks") {
@@ -91,18 +92,18 @@ int main(int argc, char** argv) {
       Int `,` Int `,` Array[Array[Float]]
       `)=>` Array[Float]]
     val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
-    util.assertSame(output, gold, "output is different from gold")
+    _root_.util.assertSame(output, gold, "output is different from gold")
     println(s"time: $time")
   }
 
   test("baseVecU compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    _root_.util.withExecutor {
       checkOCL(LocalSize(1), GlobalSize(1), baseVecU(binomialWeights2d))
     }
   }
 
   test("regRotPar compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    _root_.util.withExecutor {
       checkOCL(LocalSize(1), GlobalSize(4),
         regRotPar(binomialWeightsV)(binomialWeightsH)
       )
@@ -110,7 +111,7 @@ int main(int argc, char** argv) {
   }
 
   test("scanlinePar compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    _root_.util.withExecutor {
       checkOCL(LocalSize(1), GlobalSize(4),
         scanlinePar(binomialWeightsV)(binomialWeightsH)
       )
@@ -134,8 +135,8 @@ int main(int argc, char** argv) {
 
   // FIXME: code generation cannot evaluate index literal
   ignore("compiling OpenCL private arrays should unroll loops") {
-    import rise.openCL.TypedDSL._
-    import rise.openCL.primitives.oclReduceSeq
+    import rise.opencl.dsl._
+    import rise.opencl.primitives.oclReduceSeq
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))

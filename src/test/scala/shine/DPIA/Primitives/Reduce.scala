@@ -1,15 +1,14 @@
 package shine.DPIA.Primitives
 
 import arithexpr.arithmetic.Cst
-import rise.core.DSL.Type._
-import rise.core.DSL._
-import rise.core.primitives._
-import rise.core.semantics.NatData
+import rise.core.dsl.Type._
+import rise.core.dsl._
+import rise.core.exprs.Expr
+import rise.core.exprs.primitives._
 import rise.core.types.{AddressSpace, _}
-import rise.core.{Expr, Literal}
-import rise.openCL.primitives.oclReduceSeq
+import rise.core.util.gen
+import rise.opencl.primitives.oclReduceSeq
 import shine.OpenCL._
-import util.gen
 
 import scala.language.postfixOps
 

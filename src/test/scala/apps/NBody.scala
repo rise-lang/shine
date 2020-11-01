@@ -1,7 +1,7 @@
 package apps
 
 import nbody._
-import util.gen
+import rise.core.util.gen
 import shine.OpenCL._
 
 class NBody extends test_util.TestsWithExecutor {

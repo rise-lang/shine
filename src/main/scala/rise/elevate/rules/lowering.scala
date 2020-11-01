@@ -2,20 +2,20 @@ package rise.elevate.rules
 
 import arithexpr.arithmetic.Cst
 import elevate.core.strategies.basic._
-import elevate.core.strategies.{Traversable, predicate}
 import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.{Traversable, predicate}
 import elevate.core.{Failure, Strategy, Success}
 import elevate.macros.RuleMacro.rule
-import rise.core.DSL._
-import rise.core.{primitives => p, _}
-import rise.core.primitives.{not => _, _}
+import rise.core.dsl._
+import rise.core.exprs.primitives.{not => _, _}
+import rise.core.exprs.{App, DepApp, Expr, ForeignFunction, Lambda, primitives => p}
 import rise.core.types._
 import rise.elevate._
 import rise.elevate.rules.traversal._
 import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate.{isVectorArray, _}
-import rise.openMP.primitives.mapPar
+import rise.openmp.primitives.mapPar
 
 object lowering {
 
@@ -46,7 +46,7 @@ object lowering {
   }
 
   @rule def mapGlobal(dim: Int = 0): Strategy[Rise] = {
-    case m@map() => Success(rise.openCL.TypedDSL.mapGlobal(dim) !: m.t)
+    case m@map() => Success(rise.opencl.dsl.mapGlobal(dim) !: m.t)
   }
 
   @rule def reduceSeq: Strategy[Rise] = {
@@ -275,7 +275,7 @@ object lowering {
 
   object ocl {
     import rise.core.types.AddressSpace
-    import rise.openCL.primitives._
+    import rise.opencl.primitives._
 
     // TODO shall we allow lowering from an already lowered reduceSeq?
     @rule def reduceSeqUnroll(a: AddressSpace): Strategy[Rise] = {

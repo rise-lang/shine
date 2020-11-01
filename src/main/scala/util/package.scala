@@ -1,5 +1,8 @@
 import java.io.{File, PrintWriter}
 
+import rise.core.exprs.Expr
+import rise.core.util.show.dotPrinter
+
 package object util {
   def createTempFile(prefix: String, suffix: String): File = {
     val tmp = File.createTempFile(prefix, suffix)
@@ -74,11 +77,11 @@ package object util {
     case _ =>
   }
 
-  def dotPrintTmp(prefix: String, e: rise.core.Expr): Unit = {
+  def dotPrintTmp(prefix: String, e: Expr): Unit = {
     import scala.language.postfixOps
     import scala.sys.process._
 
-    val dotString = rise.core.dotPrinter.generateDotString(e,
+    val dotString = dotPrinter.generateDotString(e,
       printTypes = false,
       inlineLambdaIdentifier = true,
       applyNodes = false)

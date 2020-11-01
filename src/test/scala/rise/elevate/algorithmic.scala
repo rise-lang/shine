@@ -3,11 +3,12 @@ package rise.elevate
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import rise.core.DSL.Type._
-import rise.core.primitives._
-import rise.core.DSL._
+import rise.core.dsl.Type._
+import rise.core.exprs.primitives._
+import rise.core.dsl._
 import rise.core._
 import rise.core.types._
+import rise.core.util.gen
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement.liftReduce
 import rise.elevate.rules.traversal._
@@ -15,8 +16,6 @@ import rise.elevate.rules.traversal.default._
 import rise.elevate.rules.{checkType, lowering}
 import rise.elevate.strategies.traversal._
 import rise.elevate.util._
-
-import _root_.util.gen
 
 class algorithmic extends test_util.Tests {
 

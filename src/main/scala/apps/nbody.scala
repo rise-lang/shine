@@ -1,12 +1,13 @@
 package apps
 
 import rise.core._
-import rise.core.DSL._
-import rise.core.primitives._
-import rise.core.DSL.Type._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
+import rise.core.dsl.Type._
+import rise.core.exprs.Expr
 import rise.core.types._
-import rise.openCL.TypedDSL._
-import rise.openCL.primitives.oclReduceSeq
+import rise.opencl.dsl._
+import rise.opencl.primitives.oclReduceSeq
 
 object nbody {
   private val id = fun(x => x)
@@ -89,7 +90,7 @@ object nbody {
   ))
 
   import shine.OpenCL._
-  import util.{Time, TimeSpan}
+  import _root_.util.{Time, TimeSpan}
 
   private val deltaT = 0.005f
   private val espSqr = 500.0f
@@ -101,7 +102,7 @@ object nbody {
                         vel: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
+    val code = _root_.util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     assert(pos.length % 4 == 0)

@@ -4,9 +4,10 @@ import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal.{position, topDown}
 import rise.elevate.util._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core._
+import rise.core.exprs.Expr
 import rise.elevate.rules.algorithmic.{mapFusion, mapLastFission}
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.algorithmic.{mapFirstFission, mapFullFission}

@@ -1,6 +1,7 @@
 package rise.core.types
 
-import rise.core.{Expr, substitute, traversal}
+import rise.core.exprs.Expr
+import rise.core.util.{substitute, traversal}
 
 object Solution {
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
@@ -29,7 +30,7 @@ case class Solution(ts: Map[Type, Type],
                     n2ns: Map[NatToNatIdentifier, NatToNat],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
                    ) {
-  import traversal.{Continue, Result, Stop}
+  import rise.core.util.traversal.{Continue, Result, Stop}
 
   case class Visitor(sol: Solution) extends traversal.Visitor {
     override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))

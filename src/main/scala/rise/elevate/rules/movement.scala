@@ -1,16 +1,15 @@
 package rise.elevate.rules
 
+import elevate.core._
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.predicate._
-import elevate.core._
 import elevate.macros.RuleMacro.rule
-import rise.elevate._
-import rise.core._
+import rise.core.dsl.Type._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
+import rise.core.exprs.{App, DepApp, Expr, Lambda}
 import rise.core.types._
-import rise.core.primitives._
-import rise.core.DSL._
-import rise.core.DSL.Type._
-import rise.core.types.{ArrayType, DataType, FunType, IndexType, Nat, PairType}
+import rise.elevate._
 
 // Describing possible movements between pairs of rise primitives
 // (potentially nested in maps)

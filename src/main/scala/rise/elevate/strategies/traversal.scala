@@ -1,12 +1,12 @@
 package rise.elevate.strategies
 
 import elevate.core._
-import elevate.core.strategies.{Traversable, basic}
-import rise.core.primitives._
-import rise.elevate.rules.algorithmic._
-import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
+import elevate.core.strategies.traversal._
+import elevate.core.strategies.{Traversable, basic}
+import rise.core.exprs.primitives._
 import rise.elevate.Rise
+import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.traversal._
 //import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.algorithmic._

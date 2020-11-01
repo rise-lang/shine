@@ -1,9 +1,9 @@
 package rise.elevate.rules
 
 import elevate.core._
-import rise.elevate.Rise
-import rise.core._
+import rise.core.exprs._
 import rise.core.types._
+import rise.elevate.Rise
 
 // implementing elevate.core.strategies.Traversable for Rise
 

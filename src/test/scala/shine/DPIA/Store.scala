@@ -1,9 +1,9 @@
 package shine.DPIA
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types.{Nat, _}
-import util.gen
+import rise.core.util.gen
 
 class Store extends test_util.Tests {
 

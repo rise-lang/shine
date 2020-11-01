@@ -1,11 +1,11 @@
 package apps
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import rise.core.types._
-import util.gen
 import HighLevelConstructs.reorderWithStride
+import rise.core.util.gen
 
 //noinspection TypeAnnotation
 class gemv extends test_util.Tests {
@@ -31,7 +31,7 @@ class gemv extends test_util.Tests {
   ))
 
   object ocl {
-    import rise.openCL.TypedDSL._
+    import rise.opencl.dsl._
 
     val fullMatrixVectorFusedOpenCL = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
@@ -84,7 +84,7 @@ class gemv extends test_util.Tests {
   }
 
   object omp {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val fullMatrixVectorFusedOpenMP = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:

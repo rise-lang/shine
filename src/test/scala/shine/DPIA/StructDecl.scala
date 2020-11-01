@@ -1,11 +1,11 @@
 package shine.DPIA
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
-import rise.openMP.primitives._
-import util.gen
+import rise.core.util.gen
+import rise.opencl.dsl._
+import rise.openmp.primitives._
 
 class StructDecl extends test_util.Tests {
   val id = fun(x => x)

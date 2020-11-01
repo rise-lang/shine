@@ -3,11 +3,12 @@ package rise.elevate
 import elevate.core.strategies.predicate.rewriteResultToBoolean
 import elevate.core.strategies.traversal._
 import rise.elevate.util._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core._
 import rise.core.types.{Nat, f32}
 import Type._
+import rise.core.exprs.Expr
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.default._
 

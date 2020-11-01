@@ -6,7 +6,7 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal.one
 import elevate.macros.StrategyMacro.strategy
-import rise.core.{primitives => p}
+import rise.core.exprs.{primitives => p}
 import rise.elevate.Rise
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._

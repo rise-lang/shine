@@ -1,14 +1,14 @@
 package apps
 
-import rise.core.DSL.HighLevelConstructs.reorderWithStride
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl.HighLevelConstructs.reorderWithStride
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
+import rise.core.util.gen
 import rise.elevate.rules.traversal.default
-import rise.openCL.primitives.oclIterate
+import rise.opencl.primitives.oclIterate
 import shine.DPIA.Types.TypeCheck._
 import shine.DPIA.Types.{ExpType, read, write}
-import util.gen
 
 class dot extends test_util.Tests {
 
@@ -50,7 +50,7 @@ class dot extends test_util.Tests {
 
   // OpenMP
   test("Dot product CPU vector 1 compiles to syntactically correct OpenMP") {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val dotCPUVector1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(asVectorAligned(4)(xs))(asVectorAligned(4)(ys))
@@ -68,7 +68,7 @@ class dot extends test_util.Tests {
 
   test("Intel derived no warp dot product 1 compiles to" +
     "syntactically correct OpenMP") {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val intelDerivedNoWarpDot1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4))
@@ -85,7 +85,7 @@ class dot extends test_util.Tests {
   }
 
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val dotCPU1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs)(ys) |>
@@ -102,7 +102,7 @@ class dot extends test_util.Tests {
   }
 
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val dotCPU2 = depFun((n: Nat) => fun(xsT(n))(in =>
       in |>
@@ -119,8 +119,8 @@ class dot extends test_util.Tests {
   }
 
   { // OpenCL
-    import rise.openCL.TypedDSL._
-    import rise.openCL.primitives.oclReduceSeq
+    import rise.opencl.dsl._
+    import rise.opencl.primitives.oclReduceSeq
 
     test("Intel derived no warp dot product 1 compiles to" +
       "syntactically correct OpenCL") {

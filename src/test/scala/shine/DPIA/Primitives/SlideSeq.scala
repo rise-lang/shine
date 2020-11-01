@@ -1,14 +1,16 @@
 package shine.DPIA.Primitives
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.Expr
+import rise.core.exprs.primitives._
 import rise.core.types._
-import util.{Execute, gen}
+import rise.core.util.gen
+import util.Execute
 
 class SlideSeq extends test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
-  def check3pSum(e: rise.core.Expr): Unit = {
+  def check3pSum(e: Expr): Unit = {
     val p = gen.CProgram(e)
     val testCode = s"""
 #include <stdio.h>

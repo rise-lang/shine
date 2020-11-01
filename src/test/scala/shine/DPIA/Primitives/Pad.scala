@@ -1,12 +1,11 @@
 package shine.DPIA.Primitives
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import rise.core.types._
 import HighLevelConstructs.padClamp2D
-
-import util.gen
+import rise.core.util.gen
 
 class Pad extends test_util.Tests {
   private val id = fun(x => x)
@@ -36,7 +35,7 @@ class Pad extends test_util.Tests {
   }
 
   test("Simple OpenMP constant pad input and copy") {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
@@ -46,7 +45,7 @@ class Pad extends test_util.Tests {
   }
 
   test("Simple OpenCL pad input and copy") {
-    import rise.openCL.TypedDSL._
+    import rise.opencl.dsl._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
@@ -56,7 +55,7 @@ class Pad extends test_util.Tests {
   }
 
   test("OpenCL Pad only left") {
-    import rise.openCL.TypedDSL._
+    import rise.opencl.dsl._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
@@ -66,7 +65,7 @@ class Pad extends test_util.Tests {
   }
 
   test("OpenCL Pad only right") {
-    import rise.openCL.TypedDSL._
+    import rise.opencl.dsl._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
@@ -76,7 +75,7 @@ class Pad extends test_util.Tests {
   }
 
   test("OpenCL pad before or after transpose") {
-    import rise.openCL.TypedDSL._
+    import rise.opencl.dsl._
 
     val range = arithexpr.arithmetic.RangeAdd(1, arithexpr.arithmetic.PosInf, 1)
     val k1 = gen.OpenCLKernel(depFun(range, (n: Nat) =>

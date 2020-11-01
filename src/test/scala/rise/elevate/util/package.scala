@@ -1,11 +1,13 @@
 package rise.elevate
 
-import rise.elevate.strategies.normalForm.BENF
-import _root_.rise.core.primitives._
-import _root_.rise.core._
-import _root_.rise.core.types._
-import _root_.rise.core.DSL._
 import elevate.core.strategies.Traversable
+import rise.core.dsl._
+import rise.core.{exprs, _}
+import rise.core.exprs.{DepApp, DepLambda, Expr, Identifier, Lambda}
+import rise.core.exprs.primitives._
+import rise.core.types._
+import rise.core.util.freshName
+import rise.elevate.strategies.normalForm.BENF
 
 package object util {
 
@@ -21,7 +23,7 @@ package object util {
       Map[NatIdentifier, Nat],
       Map[AddressSpaceIdentifier, AddressSpace],
       Map[NatToDataIdentifier, NatToData]) = (Map(), Map(), Map(), Map())
-    val (expr, (ts, ns, as, n2ds)) = DSL.infer.getFTVs(e.t).foldLeft((e, emptySubs))((acc, ftv) => acc match {
+    val (expr, (ts, ns, as, n2ds)) = dsl.infer.getFTVs(e.t).foldLeft((e, emptySubs))((acc, ftv) => acc match {
       case (expr, (ts, ns, as, n2ds)) => ftv match {
         case i: TypeIdentifier =>
           val dt = DataTypeIdentifier(freshName("dt"), isExplicit = true)
@@ -53,32 +55,32 @@ package object util {
   def T: ToBeTyped[Rise] = transpose
   def S: ToBeTyped[DepApp[NatKind]] = split(tileSize) //slide(3)(1)
   def J: ToBeTyped[Rise] = join
-  def *(x: ToBeTyped[Rise]): ToBeTyped[App] = map(x)
-  def **(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(x))
-  def ***(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(map(x)))
-  def ****(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(map(map(x))))
-  def *****(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(map(map(map(x)))))
-  def ******(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(map(map(map(map(x))))))
+  def *(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = map(x)
+  def **(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = map(map(x))
+  def ***(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = map(map(map(x)))
+  def ****(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = map(map(map(map(x))))
+  def *****(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = map(map(map(map(map(x)))))
+  def ******(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = map(map(map(map(map(map(x))))))
 
   def λ(f: ToBeTyped[Identifier] => ToBeTyped[Expr]): ToBeTyped[Lambda] = fun(f)
 
   // map in LCNF
-  def *!(x: ToBeTyped[Rise]): ToBeTyped[App] = {
+  def *!(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(x, i)))
   }
 
-  def **!(x: ToBeTyped[Rise]): ToBeTyped[App] = {
+  def **!(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(*!(x), i)))
   }
 
-  def ***!(x: ToBeTyped[Rise]): ToBeTyped[App] = {
+  def ***!(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(**!(x), i)))
   }
 
-  def ****!(x: ToBeTyped[Rise]): ToBeTyped[App] = {
+  def ****!(x: ToBeTyped[Rise]): ToBeTyped[exprs.App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(***!(x), i)))
   }

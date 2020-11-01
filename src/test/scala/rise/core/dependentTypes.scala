@@ -1,10 +1,12 @@
 package rise.core
 
-import rise.core.DSL._
+import rise.core.dsl._
 import Type._
 import rise.core.types._
-import rise.core.primitives._
-import util.Execute
+import rise.core.exprs.primitives._
+import _root_.util.Execute
+import rise.core.exprs.Expr
+import rise.core.util.gen
 
 class dependentTypes extends test_util.Tests {
   test("Infer int addition type") {
@@ -35,7 +37,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
     )
-    util.gen.CProgram(inferred, "Foo_foo")
+    gen.CProgram(inferred, "Foo_foo")
   }
 
   test("GEN: Dependent pair map increment") {

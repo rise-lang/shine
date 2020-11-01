@@ -3,8 +3,8 @@ package rise.elevate
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import rise.elevate.util._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types.NatKind
 import rise.elevate.meta.fission.bodyFission
 import rise.elevate.meta.traversal.inBody

@@ -2,11 +2,12 @@ package rise.OpenCL
 
 import shine.OpenCL._
 import rise.core._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.Expr
+import rise.core.exprs.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
-import util.gen
+import rise.core.util.gen
+import rise.opencl.dsl._
 
 import scala.language.{postfixOps, reflectiveCalls}
 

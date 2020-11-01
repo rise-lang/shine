@@ -4,12 +4,13 @@ import shine.DPIA.Types.ExpType
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core._
 import rise.core.types._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import HighLevelConstructs.reorderWithStride
-import util.{gen, SyntaxChecker}
-
+import _root_.util.SyntaxChecker
+import rise.core.exprs.Expr
+import rise.core.util.gen
 import rise.elevate.rules.traversal.default._
 
 import scala.util.Random
@@ -43,7 +44,7 @@ class asum extends test_util.TestsWithExecutor {
 
   // OpenMP code gen
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val intelDerivedNoWarp1 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
@@ -67,7 +68,7 @@ class asum extends test_util.TestsWithExecutor {
   test(
     "Second kernel of Intel derived compiles to syntactically correct OpenMP code"
   ) {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val intelDerived2 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
@@ -85,7 +86,7 @@ class asum extends test_util.TestsWithExecutor {
   test(
     "AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code"
   ) {
-    import rise.openMP.primitives._
+    import rise.openmp.primitives._
 
     val amdNvidiaDerived2 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
@@ -108,8 +109,8 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   { // OpenCL code gen
-    import rise.openCL.TypedDSL._
-    import rise.openCL.primitives.{oclReduceSeq, oclIterate}
+    import rise.opencl.dsl._
+    import rise.opencl.primitives.{oclReduceSeq, oclIterate}
     import shine.OpenCL
 
     val random = new Random()

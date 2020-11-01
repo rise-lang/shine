@@ -1,11 +1,11 @@
 package rise.elevate.meta
 
+import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import rise.elevate.Rise
 import rise.elevate.rules.traversal._
-import elevate.core.strategies.Traversable
 // import rise.elevate.rules.traversal.default._
 
 // implementing elevate.core.strategies.Traversable for Strategy[Rise]

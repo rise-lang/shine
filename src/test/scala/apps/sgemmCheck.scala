@@ -1,9 +1,9 @@
 package apps
 
 import sgemm._
-import util.gen
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.types._
+import rise.core.util.gen
 
 //noinspection TypeAnnotation
 class sgemmCheck extends test_util.TestsWithExecutor {

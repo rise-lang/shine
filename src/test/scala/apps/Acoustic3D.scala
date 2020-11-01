@@ -1,8 +1,9 @@
 package apps
 
 import acoustic3D._
+import rise.core.util.gen
 import shine.OpenCL._
-import util.{Time, TimeSpan, gen}
+import util.{Time, TimeSpan}
 
 class Acoustic3D extends test_util.TestsWithExecutor {
   private val N = 128

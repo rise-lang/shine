@@ -1,7 +1,7 @@
 package apps
 
 import mriQ._
-import util.gen
+import rise.core.util.gen
 
 class MRIQ extends test_util.TestsWithExecutor {
   private val K = 32

@@ -8,8 +8,9 @@ import elevate.heuristic_search.util.{IOHelper, Solution}
 import exploration.explorationUtil.ExplorationErrorLevel.ExplorationErrorLevel
 import rise.elevate.Rise
 import shine.OpenMP.Program
-import util.{createTempFile, gen, writeToTempFile}
+import util.{createTempFile, writeToTempFile}
 import exploration.explorationUtil.ExplorationErrorLevel._
+import rise.core.util.gen
 
 import scala.language.postfixOps
 import scala.sys.process._

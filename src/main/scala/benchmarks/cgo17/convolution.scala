@@ -2,6 +2,7 @@ package benchmarks.cgo17
 
 import apps.convolution._
 import benchmarks.core._
+import rise.core.util.gen
 import util._
 
 object convolution {

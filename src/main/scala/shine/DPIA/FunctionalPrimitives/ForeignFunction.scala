@@ -1,6 +1,6 @@
 package shine.DPIA.FunctionalPrimitives
 
-import rise.{core => lc}
+import rise.core.{exprs => lc}
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.Assign

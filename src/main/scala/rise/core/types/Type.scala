@@ -1,7 +1,7 @@
 package rise.core.types
 
 import arithexpr.arithmetic.RangeAdd
-import rise.core._
+import rise.core.util.{freshName, lifting, substitute}
 
 sealed trait Type
 

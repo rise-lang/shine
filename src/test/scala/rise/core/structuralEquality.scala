@@ -1,7 +1,7 @@
 package rise.core
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import rise.core.types._
 import shine.DPIA.Nat

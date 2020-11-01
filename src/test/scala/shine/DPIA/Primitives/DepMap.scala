@@ -1,10 +1,10 @@
 package shine.DPIA.Primitives
 
-import rise.core.DSL.Type._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl.Type._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
-import util.gen
+import rise.core.util.gen
 
 class DepMap extends test_util.Tests {
   ignore("Simple triangle depMap example should generate syntactic valid C code with two for loop") {

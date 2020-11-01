@@ -1,11 +1,11 @@
 package rise
 
-import _root_.rise.core._
-import _root_.rise.core.primitives._
-import _root_.rise.core.types.Type
-import rise.elevate.strategies.normalForm.DFNF
 import _root_.elevate.core.Strategy
 import _root_.elevate.core.strategies.Traversable
+import _root_.rise.core.types.Type
+import rise.core.exprs.Expr
+import rise.core.exprs.primitives._
+import rise.elevate.strategies.normalForm.DFNF
 
 package object elevate {
   type Rise = Expr

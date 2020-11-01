@@ -1,12 +1,13 @@
 package rise.elevate.strategies
 
 import elevate.core.strategies.Traversable
-import elevate.core.{Failure, Strategy, Success}
 import elevate.core.strategies.traversal.tryAll
+import elevate.core.{Failure, Strategy, Success}
+import rise.core.dsl._
+import rise.core.exprs.primitives.{let, toMem}
+import rise.core.exprs._
+import rise.core.util.freshName
 import rise.elevate.Rise
-import rise.core.DSL._
-import rise.core._
-import rise.core.primitives.{let, toMem}
 
 object lowering {
 

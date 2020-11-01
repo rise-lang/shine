@@ -1,7 +1,7 @@
 package apps
 
 import kmeans._
-import util.gen
+import rise.core.util.gen
 
 class KMeans extends test_util.TestsWithExecutor {
   private val P = 1024

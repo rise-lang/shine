@@ -1,9 +1,11 @@
 package rise.core
 
-import rise.core.DSL._
-import rise.core.primitives._
-import rise.core.traversal._
+import rise.core.dsl._
+import rise.core.exprs.{App, DepLambda, Expr, Identifier, Lambda, primitives}
+import rise.core.exprs.primitives._
+import rise.core.util.traversal._
 import rise.core.types._
+import rise.core.util.{freshName, traversal}
 
 import scala.collection.mutable
 
@@ -45,11 +47,11 @@ class traverse extends test_util.Tests {
         { case _: Lambda                                 => () },
         { case _: Identifier                             => () },
         { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case _: App                                    => () },
-        { case _: App                                    => () },
+        { case _: exprs.App                                    => () },
+        { case _: exprs.App                                    => () },
         { case primitives.map()                          => () },
         { case _: FunType[_, _]                          => () },
-        { case _: App                                    => () },
+        { case _: exprs.App                                    => () },
         { case primitives.map()                          => () },
         { case _: FunType[_, _]                          => () },
         { case _: Lambda                                 => () },

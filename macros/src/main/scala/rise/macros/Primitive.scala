@@ -66,9 +66,9 @@ object Primitive {
 
         object ${TermName{name}}  extends Builder {
           override def primitive: ${TypeName(className)} = $makeInstance()
-          override def apply: rise.core.DSL.ToBeTyped[${TypeName(className)}] =
-            rise.core.DSL.toBeTyped($makeInstance())
-          override def unapply(arg: rise.core.Expr): Boolean = arg match {
+          override def apply: rise.core.dsl.ToBeTyped[${TypeName(className)}] =
+            rise.core.dsl.toBeTyped($makeInstance())
+          override def unapply(arg: rise.core.exprs.Expr): Boolean = arg match {
             case _: ${TypeName(className)} => true
             case _ => false
           }
@@ -107,12 +107,12 @@ object Primitive {
 
         final case class ${TypeName(name)}(..$params) extends Builder {
           override def primitive: ${TypeName(className)} = $makeInstance()
-          override def apply: rise.core.DSL.ToBeTyped[${TypeName(className)}] =
-            rise.core.DSL.toBeTyped($makeInstance())
+          override def apply: rise.core.dsl.ToBeTyped[${TypeName(className)}] =
+            rise.core.dsl.toBeTyped($makeInstance())
         }
 
         object ${TermName(name)} {
-          def unapply(arg: rise.core.Expr): Option[..${getTypes(params)}] = arg match {
+          def unapply(arg: rise.core.exprs.Expr): Option[..${getTypes(params)}] = arg match {
             case p: ${TypeName(className)} =>
               Some(..${makeMemberAccess(TermName("p"), getArgs(params))})
             case _ => None

@@ -1,8 +1,8 @@
 package exploration
 
 import org.scalatest.Ignore
-import rise.core.DSL.{fun, l}
-import rise.core.primitives._
+import rise.core.dsl.{fun, l}
+import rise.core.exprs.primitives._
 import rise.core.types.{ArrayType, f32}
 
 @Ignore

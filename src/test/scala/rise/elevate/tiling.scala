@@ -3,18 +3,19 @@ package rise.elevate
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.core.{RewriteResult, Strategy}
-import rise.core.DSL.Type._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl.Type._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core._
+import rise.core.exprs.{DepLambda, Expr, Identifier}
 import rise.core.types.{ArrayType, NatKind, f32, _}
+import rise.core.util.gen
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.traversal._
 import rise.elevate.util._
-import _root_.util.gen
 
 import scala.collection.immutable
 import scala.language.implicitConversions

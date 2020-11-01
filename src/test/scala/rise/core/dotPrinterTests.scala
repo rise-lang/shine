@@ -1,10 +1,13 @@
 package rise.core
 
 import rise.elevate.util._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
+import rise.core.exprs.Expr
 import rise.core.types.{Nat, f32}
+import rise.core.util.show
+import rise.core.util.show.dotPrinter
 
 class dotPrinterTests extends test_util.Tests {
 
@@ -24,11 +27,11 @@ class dotPrinterTests extends test_util.Tests {
   }
 
   test("typed *f") {
-    println(dotPrinter(λ(i => λ(f => *(f) $ i))))
+    println(show.dotPrinter(λ(i => λ(f => *(f) $ i))))
   }
 
   test("tiled 4D") {
-    println(dotPrinter(λ(i => λ(f => (
+    println(show.dotPrinter(λ(i => λ(f => (
       J o **(J) o ****(J) o ******(J) o
         *****(T) o ***(T) o ****(T) o *(T) o **(T) o ***(T) o
         ****(****(f)) o
@@ -54,8 +57,8 @@ class dotPrinterTests extends test_util.Tests {
       )
 
     // without type inference
-    println(dotPrinter(gemm.toUntypedExpr))
+    println(show.dotPrinter(gemm.toUntypedExpr))
     // with type inference
-    println(dotPrinter(gemm.toExpr))
+    println(show.dotPrinter(gemm.toExpr))
   }
 }

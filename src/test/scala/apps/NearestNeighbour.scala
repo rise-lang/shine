@@ -1,7 +1,7 @@
 package apps
 
 import nearestNeighbour._
-import util.gen
+import rise.core.util.gen
 
 class NearestNeighbour extends test_util.TestsWithExecutor {
   private val N = 512

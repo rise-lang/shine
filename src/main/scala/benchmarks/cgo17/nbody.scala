@@ -2,6 +2,7 @@ package benchmarks.cgo17
 
 import apps.nbody._
 import benchmarks.core._
+import rise.core.util.gen
 import shine.OpenCL._
 import util._
 

@@ -1,10 +1,9 @@
 package shine.DPIA.Semantics
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
-
-import util.gen
+import rise.core.util.gen
 
 class SplitSlide extends test_util.Tests {
 

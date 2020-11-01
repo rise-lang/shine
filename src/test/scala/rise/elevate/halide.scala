@@ -3,7 +3,7 @@ package rise.elevate
 import elevate.core.strategies.traversal._
 import elevate.core.{NotApplicable, Strategy}
 import rise.elevate.util._
-import rise.core.DSL._
+import rise.core.dsl._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.halide._

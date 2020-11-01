@@ -1,13 +1,15 @@
 package shine.DPIA.Primitives
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.Expr
+import rise.core.exprs.primitives._
 import rise.core.types._
-import util.{Execute, gen}
+import rise.core.util.gen
+import util.Execute
 
 class Transpose extends test_util.Tests {
   test("Simple transpose should produce the expected result on a test") {
-    def checkResult(e: rise.core.Expr) = {
+    def checkResult(e: Expr) = {
       val p = gen.CProgram(e)
 
       val testCode =

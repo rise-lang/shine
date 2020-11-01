@@ -5,9 +5,11 @@ import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal._
 import elevate.core.{Failure, Strategy, Success}
 import elevate.macros.RuleMacro.rule
-import rise.core.DSL._
 import rise.core._
+import rise.core.dsl._
+import rise.core.exprs._
 import rise.core.types._
+import rise.core.util.{freshName, substitute}
 
 package object rules {
 
@@ -53,7 +55,7 @@ package object rules {
 
   @rule def idxReduction: Strategy[Rise] = e => {
     import arithexpr.arithmetic._
-    import rise.core.primitives._
+    import rise.core.exprs.primitives._
     import rise.core.semantics._
 
     @scala.annotation.tailrec

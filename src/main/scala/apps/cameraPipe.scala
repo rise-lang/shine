@@ -2,10 +2,11 @@ package apps
 
 import rise.core._
 import rise.core.types._
-import rise.core.DSL._
-import rise.core.primitives._
-import rise.core.DSL.Type._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
+import rise.core.dsl.Type._
 import HighLevelConstructs._
+import rise.core.exprs.Expr
 
 // algorithm taken from Halide (halide-lang.org)
 object cameraPipe {

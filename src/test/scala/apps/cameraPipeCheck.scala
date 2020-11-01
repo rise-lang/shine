@@ -1,17 +1,19 @@
 package apps
 
 import cameraPipe._
-import util._
+import _root_.util._
 import rise.core._
 import rise.core.types._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import elevate.core._
 import rise.elevate.Rise
 import rise.elevate.rules._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
+import rise.core.exprs.Expr
+import rise.core.util.{IsClosedForm, gen}
 import rise.elevate.rules.traversal.alternative
 import rise.elevate.rules.traversal.alternative._
 
@@ -151,7 +153,7 @@ int main(int argc, char** argv) {
   return exit_status;
 }
 """
-    printTime("execute", util.Execute(testCode))
+    printTime("execute", _root_.util.Execute(testCode))
   }
 
   test("hot pixel suppression passes checks") {

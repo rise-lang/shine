@@ -1,11 +1,11 @@
 package shine.DPIA.Primitives
 
-import rise.core.{ForeignFunction, Lambda}
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
+import rise.core.exprs.{ForeignFunction, Lambda}
 import rise.core.types._
-import util.gen
+import rise.core.util.gen
 
 class Generate extends test_util.Tests {
   val id: ToBeTyped[Lambda] = fun(x => x)

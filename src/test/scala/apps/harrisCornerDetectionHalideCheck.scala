@@ -2,15 +2,16 @@ package apps
 
 import apps.harrisCornerDetectionHalide._
 import apps.{harrisCornerDetectionHalideRewrite => rewrite}
-import rise.core.DSL.ToBeTyped
+import rise.core.dsl.ToBeTyped
 import rise.core._
-import util.gen
+import rise.core.exprs.Expr
+import rise.core.util.gen
 
 class harrisCornerDetectionHalideCheck
   extends test_util.TestsWithExecutor
 {
   test("harris typechecks") {
-    val typed = util.printTime("infer", harris(1, 1).toExpr)
+    val typed = _root_.util.printTime("infer", harris(1, 1).toExpr)
     println(typed.t)
   }
 
@@ -24,13 +25,13 @@ class harrisCornerDetectionHalideCheck
   assert(Ho % strip == 0)
 
   def lowerOMP(e: ToBeTyped[Expr]): Expr =
-    rewrite.unrollDots(util.printTime("infer", e.toExpr)).get
+    rewrite.unrollDots(_root_.util.printTime("infer", e.toExpr)).get
 
   def checkOMP(lowered: Expr): Unit = {
     val dumbLowering = lowerOMP(omp.harrisSeqWrite)
     val goldProg = gen.OpenMPProgram(dumbLowering, "harrisGold")
 
-    val prog = util.printTime("codegen",
+    val prog = _root_.util.printTime("codegen",
       gen.OpenMPProgram(lowered, "harris"))
 
     val testCode =
@@ -73,7 +74,7 @@ class harrisCornerDetectionHalideCheck
          |   return exit_status;
          | }
          |""".stripMargin
-    util.printTime("execute", util.Execute(testCode))
+    _root_.util.printTime("execute", _root_.util.Execute(testCode))
   }
 
   test("harrisBuffered generates valid OpenMP") {
@@ -83,11 +84,11 @@ class harrisCornerDetectionHalideCheck
   import shine.OpenCL._
 
   def lowerOCL(e: ToBeTyped[Expr]): Expr =
-    rewrite.ocl.unrollDots(util.printTime("infer", e.toExpr)).get
+    rewrite.ocl.unrollDots(_root_.util.printTime("infer", e.toExpr)).get
 
   def checkOCL(lowered: Expr, ls: LocalSize, gs: GlobalSize): Unit = {
     assert(lowered.t == harris(1, 1).toExpr.t)
-    val prog = util.printTime("codegen",
+    val prog = _root_.util.printTime("codegen",
       gen.OpenCLKernel(lowered, "harris"))
 
     val dumbLowering = lowerOCL(ocl.harrisSeqWrite)
@@ -108,7 +109,7 @@ class harrisCornerDetectionHalideCheck
 
     println(s"gold time: $goldTime")
     println(s"time: $time")
-    util.assertSame(
+    _root_.util.assertSame(
       output.sliding(Wov, Wo).toArray,
       gold.sliding(Wov, Wo).toArray,
       "output is different from gold")
@@ -185,20 +186,20 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisBuffered rewrite generates valid OpenCL") {
-    val typed = util.printTime("infer", harris(1, 1).toExpr)
+    val typed = _root_.util.printTime("infer", harris(1, 1).toExpr)
     val lowered = rewrite.ocl.harrisBuffered(typed).get
     checkOCL(lowered, LocalSize(1), GlobalSize(1))
   }
 
   test("harrisBufferedSplitPar rewrite generates valid OpenCL") {
-    val typed = util.printTime("infer", harris(strip, 1).toExpr)
+    val typed = _root_.util.printTime("infer", harris(strip, 1).toExpr)
     val lowered = rewrite.ocl.harrisBufferedSplitPar(strip)(typed).get
     checkOCL(lowered, LocalSize(1), GlobalSize(Ho / strip))
   }
 
   test("harrisBufferedVecUnalignedSplitPar rewrite generates valid OpenCL") {
     assert(Wo % 8 == 0)
-    val typed = util.printTime("infer", harris(strip, 8).toExpr)
+    val typed = _root_.util.printTime("infer", harris(strip, 8).toExpr)
 
     val lowered4 =
       rewrite.ocl.harrisBufferedVecUnalignedSplitPar(4, strip)(typed).get
@@ -211,7 +212,7 @@ class harrisCornerDetectionHalideCheck
 
   test("harrisBufferedVecAlignedSplitPar rewrite generates valid OpenCL") {
     assert(Wo % 8 == 0)
-    val typed = util.printTime("infer", harris(strip, 8).toExpr)
+    val typed = _root_.util.printTime("infer", harris(strip, 8).toExpr)
 
     val lowered4 =
       rewrite.ocl.harrisBufferedVecAlignedSplitPar(4, strip)(typed).get
@@ -224,7 +225,7 @@ class harrisCornerDetectionHalideCheck
 
   test("harrisBufferedRegRotVecAlignedSplitPar rewrite generates valid OpenCL") {
     assert(Wo % 8 == 0)
-    val typed = util.printTime("infer", harris(strip, 8).toExpr)
+    val typed = _root_.util.printTime("infer", harris(strip, 8).toExpr)
 
     val lowered4 =
       rewrite.ocl.harrisBufferedRegRotVecAlignedSplitPar(4, strip)(typed).get

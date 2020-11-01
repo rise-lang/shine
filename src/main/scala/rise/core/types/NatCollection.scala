@@ -1,7 +1,7 @@
 package rise.core.types
 
 import arithexpr.arithmetic.{ArithExprFunctionCall, SimplifiedExpr}
-import rise.core.Expr
+import rise.core.exprs.Expr
 
 
 private final class NatCollectionIndexing(collection: NatCollection, idxs: Seq[Nat])

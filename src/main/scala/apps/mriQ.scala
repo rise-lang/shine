@@ -1,12 +1,13 @@
 package apps
 
 import rise.core._
-import rise.core.DSL._
-import rise.core.primitives._
-import rise.core.DSL.Type._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
+import rise.core.dsl.Type._
+import rise.core.exprs.Expr
 import rise.core.types._
-import rise.openCL.TypedDSL._
-import rise.openCL.primitives.oclReduceSeq
+import rise.opencl.dsl._
+import rise.opencl.primitives.oclReduceSeq
 
 object mriQ {
   private val phiMag = foreignFun("phiMag",
@@ -57,7 +58,7 @@ object mriQ {
   )))
 
   import shine.OpenCL._
-  import util.{Time, TimeSpan}
+  import _root_.util.{Time, TimeSpan}
 
   def runOriginalComputePhiMag(
     name: String,
@@ -66,7 +67,7 @@ object mriQ {
   ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
+    val code = _root_.util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     val K = phiR.length
@@ -123,7 +124,7 @@ object mriQ {
   ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
+    val code = _root_.util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     val X = x.length

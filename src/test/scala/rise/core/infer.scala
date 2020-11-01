@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.core.DSL._
+import rise.core.dsl._
 import Type._
 import rise.core.types._
 

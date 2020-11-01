@@ -1,10 +1,11 @@
 package shine.DPIA.Primitives
 
-import rise.core.Lambda
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
+import rise.core.exprs.Lambda
 import rise.core.types._
+import rise.core.util.gen
 import util._
 
 class Select extends test_util.Tests {

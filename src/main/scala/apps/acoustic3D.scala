@@ -1,13 +1,13 @@
 package apps
 
-import rise.core._
-import rise.core.DSL._
-import rise.core.primitives._
-import rise.core.DSL.Type._
+import rise.core.dsl.HighLevelConstructs._
+import rise.core.dsl.Type._
+import rise.core.dsl._
+import rise.core.exprs.Expr
+import rise.core.exprs.primitives._
 import rise.core.types._
-import HighLevelConstructs._
-import rise.openCL.TypedDSL._
-import rise.openCL.primitives.oclRotateValues
+import rise.opencl.dsl._
+import rise.opencl.primitives.oclRotateValues
 
 object acoustic3D {
   private val getNumNeighbours = foreignFun("idxF",

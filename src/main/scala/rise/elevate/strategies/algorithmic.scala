@@ -1,25 +1,24 @@
 package rise.elevate.strategies
 
-import elevate.core.strategies.{Traversable, basic}
 import elevate.core.strategies.basic.{applyNTimes, id}
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.{Traversable, basic}
+import rise.core.exprs.{App, Identifier, Lambda, primitives}
 import rise.elevate.strategies.traversal._
 
 import scala.annotation.nowarn
 //import rise.elevate.rules.traversal.default._
 import elevate.core.{Failure, Strategy, Success}
 import elevate.macros.StrategyMacro.strategy
-import rise.elevate.Rise
+import rise.core.dsl._
+import rise.core.exprs.primitives.{map, reduceSeq}
+import rise.elevate.{Rise, _}
 import rise.elevate.rules.algorithmic.fuseReduceMap
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.{argument, argumentOf, body, function}
 import rise.elevate.strategies.normalForm.{DFNF, RNF}
 import rise.elevate.strategies.predicate.{isApplied, isMap, isReduceSeq}
 import rise.elevate.strategies.traversal.fmap
-import rise.core.DSL._
-import rise.core._
-import rise.core.primitives.{map, reduceSeq}
-import rise.elevate._
 
 object algorithmic {
   // TODO: only compose simpler rules

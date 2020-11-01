@@ -1,10 +1,10 @@
 package shine.OpenCL
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
-import util.gen
+import rise.core.util.gen
+import rise.opencl.dsl._
 
 class Vectors extends test_util.Tests {
   val vs = 4

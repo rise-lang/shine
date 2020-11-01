@@ -2,15 +2,17 @@ package apps
 
 import shine.OpenCL.{AddressSpace => _, _}
 import arithexpr.arithmetic.Cst
-import rise.core.DSL.HighLevelConstructs.reorderWithStride
+import rise.core.dsl.HighLevelConstructs.reorderWithStride
 import rise.core._
-import rise.core.DSL._
-import rise.core.primitives._
-import rise.core.DSL.Type._
-import rise.openCL.TypedDSL._
-import rise.openCL.primitives.oclReduceSeq
+import rise.core.dsl._
+import rise.core.exprs.primitives._
+import rise.core.dsl.Type._
+import rise.opencl.dsl._
+import rise.opencl.primitives.oclReduceSeq
 import rise.core.types._
-import util.{Time, TimeSpan}
+import _root_.util.{Time, TimeSpan}
+import rise.core.exprs.Expr
+
 import scala.collection.parallel.CollectionConverters._
 
 object sgemm {
@@ -237,7 +239,7 @@ object sgemm {
                        isMaliKernel: Boolean = false): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/main/scala/apps/originalLift/$fileName")
+    val code = _root_.util.readFile(s"src/main/scala/apps/originalLift/$fileName")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     val float_bytes = 4

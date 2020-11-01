@@ -1,6 +1,7 @@
 package apps
 
 import mm._
+import rise.core.util.gen
 import shine.OpenCL._
 import util._
 

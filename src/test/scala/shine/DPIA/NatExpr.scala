@@ -1,10 +1,10 @@
 package shine.DPIA
 
 import arithexpr.arithmetic.Cst
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
-import util.gen
+import rise.core.util.gen
 
 class NatExpr extends test_util.Tests {
   test("Nat can be used as DataType inside of an expression in C.") {

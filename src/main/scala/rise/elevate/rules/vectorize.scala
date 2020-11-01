@@ -3,11 +3,11 @@ package rise.elevate.rules
 import arithexpr.arithmetic.Cst
 import elevate.core._
 import elevate.macros.RuleMacro.rule
-import rise.elevate._
-import rise.core._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
+import rise.core.exprs._
 import rise.core.types._
-import rise.core.primitives._
-import rise.core.DSL._
+import rise.elevate._
 
 object vectorize {
   // FIXME: sometimes assuming loads or stores will be aligned

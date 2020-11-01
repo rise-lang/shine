@@ -1,6 +1,6 @@
 package rise.core.types
 
-import rise.core._
+import rise.core.util.substitute
 
 sealed trait NatToData {
   def map(f: DataType => DataType): NatToData = this match {

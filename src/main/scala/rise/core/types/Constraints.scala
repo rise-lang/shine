@@ -1,10 +1,10 @@
 package rise.core.types
 
-import rise.core.DSL.Type.n2dtFun
-import rise.core.{freshName, substitute}
-import rise.core.lifting.liftDependentFunctionType
+import rise.core.dsl.Type.n2dtFun
 import rise.core.types.Flags.ExplicitDependence
 import rise.core.types.InferenceException.error
+import rise.core.util.lifting.liftDependentFunctionType
+import rise.core.util.{freshName, substitute}
 
 import scala.collection.mutable
 
@@ -445,7 +445,7 @@ object Constraint {
 
 object dependence {
 
-  import rise.core.traversal._
+  import rise.core.util.traversal._
 
   /*
    * Given a type t which is in the scope of a natIdentifier depVar,

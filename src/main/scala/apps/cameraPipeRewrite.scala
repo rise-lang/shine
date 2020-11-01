@@ -1,13 +1,15 @@
 package apps
 
 import util.printTime
-import rise.core.{primitives => p, _}
-import rise.core.DSL._
+import rise.core.exprs
+import rise.core.dsl._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import rise.elevate.rules.traversal.alternative._
 import elevate.core.strategies.predicate._
+import rise.core.exprs.{App, DepApp, Identifier, Lambda, Literal, primitives => p}
+import rise.core.semantics.IndexData
 import rise.elevate._
 import rise.elevate.rules._
 import rise.elevate.rules.movement._
@@ -29,7 +31,7 @@ object cameraPipeRewrite {
 
   case class depFunction(s: Strategy[Rise]) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case ap @ DepApp(f, x) => s(f).mapSuccess(DepApp(_, x)(ap.t))
+      case ap @ DepApp(f, x) => s(f).mapSuccess(exprs.DepApp(_, x)(ap.t))
       case _ => Failure(s)
     }
     override def toString = s"depFunction($s)"
@@ -211,8 +213,7 @@ object cameraPipeRewrite {
   ) <+ debugS("zipSameId failed")
 
   def singleInputId(ret: Int => Unit): Strategy[Rise] = p => {
-    import rise.core.primitives.idx
-    import semantics.IndexData
+    import rise.core.exprs.primitives.idx
     import arithexpr.arithmetic.Cst
 
     var num = 0
@@ -256,7 +257,7 @@ object cameraPipeRewrite {
           case current +: rightPs =>
             val withSnd = if (rightPs.nonEmpty) {
               argument(zipSndAfter(
-                rightPs.reduceRight[Rise] { case (a, b) => rise.core.primitives.zip(a)(b) }
+                rightPs.reduceRight[Rise] { case (a, b) => exprs.primitives.zip(a)(b) }
               )) `;` mapFusion
             } else {
               idS
@@ -333,8 +334,7 @@ object cameraPipeRewrite {
 
       // 4. lowering with slideSeq
       {
-        import DSL._
-        import rise.core.primitives._
+        import rise.core.exprs.primitives._
         body(body(body(
           function(body(function(body(
             argument(argument(

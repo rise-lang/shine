@@ -2,12 +2,13 @@ package rise.elevate
 
 import elevate.core._
 import elevate.core.strategies.basic._
+import rise.core.util.gen
 //import elevate.core.strategies.debug.peek
 //import rise.core.IsClosedForm
 import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
@@ -20,8 +21,6 @@ import rise.elevate.strategies.predicate._
 import rise.elevate.strategies.tiling._
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
-
-import _root_.util.gen
 
 // scalastyle:off
 class tvmGemm extends test_util.Tests {

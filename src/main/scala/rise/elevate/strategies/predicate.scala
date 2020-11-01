@@ -3,9 +3,9 @@ package rise.elevate.strategies
 import elevate.core._
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.predicate._
-import rise.core.DSL.ToBeTyped
-import rise.core._
-import rise.core.primitives._
+import rise.core.dsl.ToBeTyped
+import rise.core.exprs.primitives._
+import rise.core.exprs._
 import rise.core.types._
 import rise.elevate._
 import rise.elevate.rules.lowering.isComputation

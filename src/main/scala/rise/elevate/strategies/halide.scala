@@ -4,9 +4,9 @@ import elevate.core.Strategy
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic._
 import rise.elevate.Rise
-import rise.elevate.strategies.traversal._
 import rise.elevate.strategies.normalForm._
 import rise.elevate.strategies.tiling._
+import rise.elevate.strategies.traversal._
 
 object halide {
 

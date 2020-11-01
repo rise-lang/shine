@@ -1,12 +1,12 @@
 package apps
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import Type._
 import rise.core.types._
-import rise.openCL.TypedDSL._
-import rise.openCL.primitives.oclRotateValues
-import util.gen
+import rise.core.util.gen
+import rise.opencl.dsl._
+import rise.opencl.primitives.oclRotateValues
 
 import scala.reflect.ClassTag
 

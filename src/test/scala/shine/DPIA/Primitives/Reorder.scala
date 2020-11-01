@@ -1,12 +1,11 @@
 package shine.DPIA.Primitives
 
-import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.dsl._
+import rise.core.exprs.primitives._
 import rise.core.types._
 import HighLevelConstructs.reorderWithStride
-import util.gen
-
 import arithexpr.arithmetic.Cst
+import rise.core.util.gen
 
 class Reorder extends test_util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {
