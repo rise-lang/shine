@@ -1343,6 +1343,20 @@ if '==' then two steps else only one step
     }
   }
 
+  private def lexNameForType(column:Int, row:Int,arr:Array[String]):(Int, String, Location) = {
+    var r: Int = row + 1
+    var substring: String = arr(column).substring(row, r)
+    var substringNew: String = arr(column).substring(row, r)
+    while (r-1 < arr(column).length && (substringNew.matches("[a-zA-Z][a-zA-Z0-9_]*")
+      ||substringNew.matches("([0-9])+[.]([a-zA-Z]+)"))) {
+      substring= arr(column).substring(row, r)
+      r = r + 1
+      substringNew = arr(column).substring(row, r)
+    }
+    val locStart:Location = Location(column, row)
+    val pos:Int = r-1
+    (pos, substring, locStart)
+  }
 
   private def lexName(column:Int, row:Int,arr:Array[String]):(Int, String, Location) = {
     var r: Int = row + 1

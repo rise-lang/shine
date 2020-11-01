@@ -8,6 +8,24 @@ import org.scalatest.matchers.should.Matchers._
 class LexerTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
 
+  "RecognizeLexeme" should "work for the arrayType" in {
+    val fileName: String = testFilePath + "arrayType.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(ArrayType(Nat(5), IntTyp()), _):: Arrow(_)::Type(IntTyp(), _) ::
+        Arrow(_) :: Type(IntTyp(), _)::
+
+        EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::Backslash(_)::Identifier("a",_)::Arrow(_)::
+        Backslash(_)::Identifier("x",_)::Arrow(_):: LBrace(_)::
+        Identifier("a",_)::RBrace(_) ::EndNamedExpr(_)
+        :: Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
   "RecognizeLexeme" should "work for the Brace5" in {
     val fileName: String = testFilePath + "Brace5.rise"
     val file: FileReader =  FileReader(fileName)
