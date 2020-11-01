@@ -1,8 +1,7 @@
 package exploration.explorationUtil
 
 import elevate.heuristic_search.Heuristic
-import elevate.heuristic_search.heuristics.Random
-import elevate.heuristic_search.heuristic.IterativeImprovement
+import elevate.heuristic_search.heuristics.{Annealing, IterativeImprovement, Random, TabuSearch}
 import rise.elevate.Rise
 
 import scala.io._
@@ -57,6 +56,8 @@ object jsonParser {
     val heuristic = name match {
       case "IterativeImprovement" => new IterativeImprovement[Rise]
       case "Random" => new Random[Rise]
+      case "Annealing" => new Annealing[Rise]
+      case "TabuSearch" => new TabuSearch[Rise]
       case _ => new Exception("not a supported heuristic option")
     }
     heuristic.asInstanceOf[Heuristic[Rise]]

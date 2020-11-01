@@ -1,11 +1,11 @@
 package exploration
 
-import org.scalatest.Ignore
+//import org.scalatest.Ignore
 import rise.core.TypedDSL.{fun, l}
 import rise.core.primitives._
 import rise.core.types.{ArrayType, f32}
 
-@Ignore
+//@Ignore
 class explore extends test_util.Tests {
 
   // input size
@@ -50,6 +50,14 @@ class explore extends test_util.Tests {
 
   test("test exploration dot version 3") {
     riseExploration(mm, "exploration/configuration/dot_3.json")
+  }
+
+  test("test exploration dot version annealing") {
+    riseExploration(mm, "exploration/configuration/dot_annealing.json")
+  }
+
+  test("test exploration dot version tabu search") {
+    riseExploration(mm, "exploration/configuration/dot_tabu.json")
   }
 }
 

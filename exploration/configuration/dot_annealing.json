@@ -1,0 +1,16 @@
+{
+  "name" : "dot_annealing",
+  "strategies" : "default",
+  "output" : "exploration",
+  "inputSize" : 512,
+  "metaheuristic" : [{
+    "heuristic" : "Annealing",
+    "depth" : 10,
+    "iterations" : 1
+  }],
+  "executor" : {
+    "name" : "C",
+    "iterations" : 3,
+    "threshold" : 10
+  }
+}
