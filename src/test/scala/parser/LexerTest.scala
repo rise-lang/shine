@@ -283,15 +283,15 @@ class LexerTest extends  AnyFlatSpec {
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: Kind(DataK(), _) :: DepArrow(_) :: Type(IntTyp(), _)::
-        Arrow(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _):: Arrow(_) ::
+        Arrow(_) :: Type(IntTyp(), _):: Arrow(_) ::
         Kind(NatK(), _) :: DepArrow(_):: Type(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(_) :: TypeIdentifier("D", _) ::DepArrow(_) ::
-        Identifier("x", _) :: Arrow(_) :: Identifier("y", _) :: Arrow(_) ::
-        TypeIdentifier("N", _) :: DepArrow(_) :: BinOp(BinOpType.MUL, _) ::
+        Backslash(_) :: TypeIdentifier("D", _) ::DepArrow(_) :: Backslash(_) ::
+        Identifier("x", _) :: Arrow(_) :: Backslash(_) :: Identifier("y", _) :: Arrow(_) ::
+        Backslash(_) :: TypeIdentifier("N", _) :: DepArrow(_) :: BinOp(BinOpType.MUL, _) ::
         Identifier("x", _) :: Identifier("y", _)
         :: EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
