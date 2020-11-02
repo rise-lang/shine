@@ -43,8 +43,8 @@ class OclToMem extends test_util.Tests {
     val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(xs =>
         xs
-          |> toPrivateFun(mapLocal(1) (fun(x => pair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
-          |> mapLocal(1) (fun(t => pair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
+          |> toPrivateFun(mapLocal(1) (fun(x => makePair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
+          |> mapLocal(1) (fun(t => makePair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
 
     gen.OpenCLKernel(LocalSize((4, 4, 1)), GlobalSize((4, 8, 1)))(e(4)(8), "KERNEL")
 
@@ -56,8 +56,8 @@ class OclToMem extends test_util.Tests {
     val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(xs =>
         xs
-          |> toLocalFun(mapLocal(1) (fun(x => pair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
-          |> mapLocal(1) (fun(t => pair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
+          |> toLocalFun(mapLocal(1) (fun(x => makePair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
+          |> mapLocal(1) (fun(t => makePair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
 
     gen.OpenCLKernel(e(4)(8))
 

@@ -105,7 +105,7 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val random = new Random()
 
-    val initRecordExp = pair(l(0.0f))(l(0.0f))
+    val initRecordExp = makePair(l(0.0f))(l(0.0f))
 
     def e(init : ToBeTyped[Expr]) = depFun((n: Nat) =>
       fun(n`.`f32)(arr =>

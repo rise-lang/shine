@@ -29,9 +29,16 @@ object substitute {
           Stop(expr)
         } else {
           e match {
-            case Lambda(x, _)  if x == `for` =>
-              // identified shadowing => do not recurse the substitution
-              Stop(e)
+            case Lambda(x, b) =>
+              // See https://www.cs.cornell.edu/courses/cs3110/2019sp/textbook/interp/subst_lambda.html
+              if (x == `for`) Stop(e)
+              if (!(FV(b) contains x))
+                Continue(e, this)
+              else {
+                val newX = Identifier(freshName(x.name.substring(0, 1)))(x.t)
+                val newB = replace.exprInExpr(newX, `for`=x, in=b)
+                Continue(Lambda(newX, newB)(e.t), this)
+              }
             case _ => Continue(e, this)
           }
         }
@@ -39,6 +46,18 @@ object substitute {
     }
 
     traversal.DepthFirstLocalResult(in, Visitor)
+  }
+
+  def FV(expr: Expr): Set[Identifier] = expr match {
+    case i: Identifier => Set(i)
+    case Lambda(x, e) => FV(e) - x
+    case App(f, e) => FV(f) ++ FV(e)
+    case DepLambda(_, e) => FV(e)
+    case DepApp(f, _) => FV(f)
+    case Literal(_) => Set()
+    case TypeAnnotation(e, _) => FV(e)
+    case TypeAssertion(e, _) => FV(e)
+    case _: Primitive => Set()
   }
 
   def dataTypeInExpr(

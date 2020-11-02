@@ -128,7 +128,7 @@ class algorithmic extends test_util.Tests {
        map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
          /* N.(f32, (f32, f32))*/
          zip(acc)(
-           map(fun(bs => pair(bs)(as))) $ BN/*:N.f32*/)
+           map(fun(bs => makePair(bs)(as))) $ BN/*:N.f32*/)
      })
     )
 
@@ -155,7 +155,7 @@ class algorithmic extends test_util.Tests {
                   map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
                     /* N.(f32, (f32, f32))*/
                     zip(acc)(
-                      map(fun(bs => pair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
+                      map(fun(bs => makePair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
                 }))(
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f)))
               ) $
@@ -193,7 +193,7 @@ class algorithmic extends test_util.Tests {
       map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
         /* N.(f32, (f32, f32))*/
         zip(acc)(
-          map(fun(bs => pair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
+          map(fun(bs => makePair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
     })
 
     // this one is constructed more similar to what the rewrite rules will create
@@ -206,7 +206,7 @@ class algorithmic extends test_util.Tests {
                 map(fun(x => // x :: M.((f32, N.f32), N.f32)
                   app(app(op, fst(x)), snd(x)))) $
                   // M.((f32, N.f32), N.f32)
-                  zip(acc)(map(fun(t => pair(t)(snd(y)))) $ fst(y))))(
+                  zip(acc)(map(fun(t => makePair(t)(snd(y)))) $ fst(y))))(
               // generate zeros :: M.N.f32
               generate(fun(IndexType(M) ->: ArrayType(N, f32))(_ =>
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f) ))))
@@ -225,7 +225,7 @@ class algorithmic extends test_util.Tests {
                 map(fun(x => // x :: M.((f32, N.f32), N.f32)
                   app(app(op, fst(x)), snd(x)))) $
                   // M.((N.f32, f32), N.f32)
-                  zip(acc)(map(fun(t => pair(t)(fst(y)))) $ snd(y))))(
+                  zip(acc)(map(fun(t => makePair(t)(fst(y)))) $ snd(y))))(
               // generate zeros :: M.N.f32
               generate(fun(IndexType(M) ->: ArrayType(N, f32))(_ =>
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f) ))))

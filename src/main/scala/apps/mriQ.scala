@@ -49,7 +49,7 @@ object mriQ {
           be (sZ =>
             kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
               qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
-            ))(pair(t._2._2._2._1)(t._2._2._2._2))
+            ))(makePair(t._2._2._2._1)(t._2._2._2._2))
           )
         )
       )

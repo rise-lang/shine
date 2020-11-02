@@ -51,7 +51,7 @@ object HighLevelConstructs {
       } else if (n > 1) {
         zip(a)(b) |> map(fun(p2 => rec(n - 1, fst(p2), snd(p2))))
       } else {
-        pair(a)(b)
+        makePair(a)(b)
       }
 
     fun(a => fun(b => rec(n, a, b)))

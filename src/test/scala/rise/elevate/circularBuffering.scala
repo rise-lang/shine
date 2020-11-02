@@ -267,7 +267,7 @@ class circularBuffering extends test_util.Tests {
 
   val circBufTogether: ToBeTyped[Rise] =
     circularBuffer(3)(3)(
-      slide(3)(1) >> mapSeq(fun(x => pair(sumSeq(x))(sumSeq(x)))) >> unzip
+      slide(3)(1) >> mapSeq(fun(x => makePair(sumSeq(x))(sumSeq(x)))) >> unzip
     ) >> // N.3.(M.f x M.f)
     iterateStream(
       map(fun(p => zip(fst(p))(snd(p)))) >> // 3.M.(f x f)

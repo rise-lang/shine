@@ -145,7 +145,7 @@ object harrisCornerDetectionHalide {
           write1DSeq) >>
         circularBuffer(3)(3)(
           map(slide(3)(1)) >> transpose >>
-          map(fun(nbh => pair(
+          map(fun(nbh => makePair(
             dot(join(sobelXWeights2d))(join(nbh)))(
             dot(join(sobelYWeights2d))(join(nbh))
           ))) >> write1DSeq >> unzip
@@ -269,7 +269,7 @@ object harrisCornerDetectionHalide {
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
           mapSeq(fun(nbh =>
             join(nbh) |> mapSeqUnroll(id) |> toPrivate |>
-            letf(jnbh => pair(
+            letf(jnbh => makePair(
               dotWeightsVec(join(sobelXWeights2d))(jnbh))(
               dotWeightsVec(join(sobelYWeights2d))(jnbh)
             ))
@@ -312,7 +312,7 @@ object harrisCornerDetectionHalide {
           mapSeq(fun(nbh =>
             nbh |> mapSeqUnroll(mapSeqUnroll(id)) |> toPrivate |>
             map(shuffle(v)) >> join >>
-            letf(jnbh => pair(
+            letf(jnbh => makePair(
               dotWeightsVec(join(sobelXWeights2d), jnbh))(
               dotWeightsVec(join(sobelYWeights2d), jnbh)
             ))
@@ -349,12 +349,12 @@ object harrisCornerDetectionHalide {
         map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
         circularBuffer(bLines)(3)(write1DSeq >> padEmpty(1)) >>
         circularBuffer(bLines)(3)(
-          transpose >> map(fun(nbh => pair(
+          transpose >> map(fun(nbh => makePair(
             dotWeightsVec(sobelXWeightsV, nbh))(
             dotWeightsVec(sobelYWeightsV, nbh)
           ))) >>
           registerRotation(2)(id) >>
-          iterateStream(unzip >> fun(nbh => pair(
+          iterateStream(unzip >> fun(nbh => makePair(
             dotWeightsVec(sobelXWeightsH, shuffle(v)(fst(nbh))))(
             dotWeightsVec(sobelYWeightsH, shuffle(v)(snd(nbh)))
           ))) >> unzip >>

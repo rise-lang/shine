@@ -40,7 +40,7 @@ object kmeans {
           testF(dist)(tuple)
         }))
       )(
-        pair(cast(l(3.40282347e+38)) :: f32)(pair(l(0))(l(0)))
+        makePair(cast(l(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
       ) |> select
     ))
   ))

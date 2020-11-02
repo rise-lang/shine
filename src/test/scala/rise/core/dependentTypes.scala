@@ -27,7 +27,7 @@ class dependentTypes extends test_util.Tests {
 
   test("Dependent pair construct") {
     val e = depFun((n: Nat) =>
-      fun(n `.` f32)(xs => dpair(n)(mapSeq(fun(x => x))(xs)))
+      fun(n `.` f32)(xs => makeDepPair(n)(mapSeq(fun(x => x))(xs)))
     )
     val inferred: Expr = e.toExpr
     println(inferred)
@@ -41,7 +41,7 @@ class dependentTypes extends test_util.Tests {
   test("GEN: Dependent pair map increment") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((n:Nat) => fun(xs =>
-        dpair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
+        makeDepPair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
       ))))
     val inferred: Expr = e.toExpr
     println(inferred)

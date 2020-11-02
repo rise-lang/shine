@@ -321,7 +321,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.zip() | rp.pair() => p.t match {
+      case rp.zip() | rp.makePair() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
 
           val ai = accessTypeIdentifier()
@@ -534,7 +534,7 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.dpair() =>
+      case rp.makeDepPair() =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.DepFunType(fst, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
             val a1 = accessTypeIdentifier()

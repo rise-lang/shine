@@ -122,7 +122,7 @@ object sgemm {
     def redOp: ToBeTyped[Expr] = fun((8`.`32`.`8`.`4`.`f32) ->: ( (8`.`64`.`f32) x (8`.`128`.`f32) ) ->: (8`.`32`.`8`.`4`.`f32) )((p14, p15) =>
       let(p15 |> fun(p29 =>
           zip (p29._1) (p29._2)
-            |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
+            |> toLocalFun(mapLocal(1) (fun(p31 => makePair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
             |> unzip
         ))
       be (p16 =>
@@ -132,7 +132,7 @@ object sgemm {
             |> mapLocal(0) (fun(p18 =>
             zip (transpose (p17._2)) (transpose (p18._2))
               |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-                let (pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
+                let (makePair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
                 be (fun(p22 =>
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>

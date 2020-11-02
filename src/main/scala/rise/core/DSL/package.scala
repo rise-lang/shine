@@ -26,8 +26,7 @@ package object DSL {
   def depApp[K <: Kind](f: ToBeTyped[Expr], x: K#T): ToBeTyped[DepApp[K]] =
     f >>= (f => toBeTyped(DepApp[K](f, x)()))
   def literal(d: semantics.Data): ToBeTyped[Literal] = toBeTyped(Literal(d))
-
-  def array(n: Int): ToBeTyped[Primitive] = primitives.makeArray(n).apply
+  
   def store(cont: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] =
     fun(e => let(toMem(e)) be cont)
   def store(how: ToBeTyped[Expr])

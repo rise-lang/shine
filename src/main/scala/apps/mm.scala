@@ -41,7 +41,7 @@ object mm {
         mapGlobal(0)(fun(v3`.`o`.`f32)(p4 =>
           zip(transpose(p3))(transpose(p4)) |> // o.(Mi.f x Ni.f)
           oclReduceSeq(AddressSpace.Private)(fun((p6, p7) =>
-            let (toPrivate(pair(mapSeq(id)(p7._1))(
+            let (toPrivate(makePair(mapSeq(id)(p7._1))(
               asScalar o mapSeq(id) o asVectorAligned(vw) $ p7._2)))
             be (x =>
               mapSeq(fun(p8 =>
@@ -80,7 +80,7 @@ object mm {
           zip(p2)(p3) |> // O'.(v8.v5.f x v8.v7.f)
           oclReduceSeq(AddressSpace.Local)(fun((p13, p14) =>
             // (v5/^v4).(v7/^v3).v4.v3.f x (v8.v5.f x v8.v7.f)
-            let (toLocal(pair(
+            let (toLocal(makePair(
               p14._1 |> join |> split(v6) |> // ((v8 x v5) /^ v6).v6.f
                 mapLocal(1)(asScalar o mapLocal(0)(id) o asVectorAligned(4)) |>
                 join |> split(v5)
@@ -96,7 +96,7 @@ object mm {
                 zip(transpose(p16._2))(transpose(p17._2)) |> // v8.(v4.f x v3.f)
                   oclReduceSeq(AddressSpace.Private)(fun((p19, p20) =>
                     // v4.v3.f x (v4.f x v3.f)
-                    let (toPrivate(pair(mapSeq(id)(p20._1))(mapSeq(id)(p20._2))))
+                    let (toPrivate(makePair(mapSeq(id)(p20._1))(mapSeq(id)(p20._2))))
                     be (p21 =>
                       zip(p19)(p21._1) |> // v4.(v3.f x f)
                       mapSeq(fun(p22 =>

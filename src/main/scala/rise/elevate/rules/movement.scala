@@ -131,10 +131,10 @@ object movement {
   // pair (take n a) (take m b) -> pair a b >> mapFst take n >> mapSnd take m
   // TODO: can get any function out, see asScalarOutsidePair
   @rule def takeOutsidePair: Strategy[Rise] = {
-    case e @ App(App(pair(),
+    case e @ App(App(makePair(),
       App(DepApp(take(), n: Nat), a)), App(DepApp(take(), m: Nat), b)
     ) =>
-      Success((pair(a)(b) |> mapFst(take(n)) |> mapSnd(take(m))) !: e.t)
+      Success((makePair(a)(b) |> mapFst(take(n)) |> mapSnd(take(m))) !: e.t)
   }
 
   def dropInZip: Strategy[Rise] = `drop n (zip a b) -> zip (drop n a) (drop n b)`
@@ -375,7 +375,7 @@ object movement {
           val notToBeTransposed = if (mapVar == u) v else u
           reduceMap(
             zippedMapArg = (acc, y) =>
-              zip(acc)(map(fun(bs => pair(bs)(fst(y)))) $ snd(y)),
+              zip(acc)(map(fun(bs => makePair(bs)(fst(y)))) $ snd(y)),
             reduceArgFun = zip(notToBeTransposed) o transpose
           )
 

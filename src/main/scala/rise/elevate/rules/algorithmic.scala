@@ -255,7 +255,7 @@ object algorithmic {
     }
 
     def transformMakeArray(mka: Rise, x: ToBeTyped[Rise]): ToBeTyped[Rise] = mka match {
-      case makeArray(n) => array(n)
+      case makeArray(n) => makeArray(n)
       case App(mka, App(App(map(), f), _)) =>
         app(transformMakeArray(mka, x), app(f, x))
       case _ => throw new Exception("this should not happen")
@@ -307,7 +307,7 @@ object algorithmic {
     }
 
     def transformMakeArray(mka: Rise): ToBeTyped[Rise] = mka match {
-      case makeArray(n) => array(n)
+      case makeArray(n) => makeArray(n)
       case App(mka, App(_, e)) => app(transformMakeArray(mka), e)
       case _ => throw new Exception("this should not happen")
     }
@@ -322,32 +322,32 @@ object algorithmic {
   // zip (map fa a) (map fb b) -> zip a b >> map (p => pair (fa (fst p)) (fb (snd p)))
   @rule def mapOutsideZip: Strategy[Rise] = {
     case expr @ App(App(zip(), App(App(map(), fa), a)), App(App(map(), fb), b)) =>
-      Success(map(fun(p => pair(app(fa, fst(p)))(app(fb, snd(p)))))(zip(a)(b)) !: expr.t)
+      Success(map(fun(p => makePair(app(fa, fst(p)))(app(fb, snd(p)))))(zip(a)(b)) !: expr.t)
   }
 
   // pair (map fa a) (map fb b)
   // -> zip a b >> map (p => pair (fa (fst p)) (fb (snd p))) >> unzip
   @rule def mapOutsidePair: Strategy[Rise] = {
-    case expr @ App(App(pair(), App(App(map(), fa), a)), App(App(map(), fb), b)) =>
-      Success(unzip(map(fun(p => pair(app(fa, fst(p)))(app(fb, snd(p)))))(zip(a)(b))) !: expr.t)
+    case expr @ App(App(makePair(), App(App(map(), fa), a)), App(App(map(), fb), b)) =>
+      Success(unzip(map(fun(p => makePair(app(fa, fst(p)))(app(fb, snd(p)))))(zip(a)(b))) !: expr.t)
   }
 
   // zip a a -> map (x => pair(x, x)) a
   @rule def zipSame: Strategy[Rise] = {
     case expr @ App(App(zip(), a), a2) if a == a2 =>
-      Success(map(fun(x => pair(x)(x)))(a) !: expr.t)
+      Success(map(fun(x => makePair(x)(x)))(a) !: expr.t)
   }
 
   // zip(a, b) -> map (x => pair(snd(x), fst(x))) zip(b, a)
   @rule def zipSwap: Strategy[Rise] = {
     case expr @ App(App(zip(), a), b) =>
-      Success(map(fun(x => pair(snd(x))(fst(x))))(zip(b)(a)) !: expr.t)
+      Success(map(fun(x => makePair(snd(x))(fst(x))))(zip(b)(a)) !: expr.t)
   }
 
   // zip(a, zip(b, c)) -> map (x => pair(.., pair(..))) zip(zip(a, b), c)
   @rule def zipRotateLeft: Strategy[Rise] = {
     case expr @ App(App(zip(), a), App(App(zip(), b), c)) => Success(map(
-      fun(x => pair(fst(fst(x)))(pair(snd(fst(x)))(snd(x)))))(
+      fun(x => makePair(fst(fst(x)))(makePair(snd(fst(x)))(snd(x)))))(
       zip(zip(a)(b))(c)
     ) !: expr.t)
   }
@@ -355,7 +355,7 @@ object algorithmic {
   // zip(zip(a, b), c) -> map (x => pair(pair(..), ..)) zip(a, zip(b, c))
   @rule def zipRotateRight: Strategy[Rise] = {
     case expr @ App(App(zip(), App(App(zip(), a), b)), c) => Success(map(
-      fun(x => pair(pair(fst(x))(fst(snd(x))))(snd(snd(x)))))(
+      fun(x => makePair(makePair(fst(x))(fst(snd(x))))(snd(snd(x)))))(
       zip(a)(zip(b)(c))
     ) !: expr.t)
   }
@@ -370,12 +370,12 @@ object algorithmic {
 
   // fst (pair a b) -> a
   @rule def fstReduction: Strategy[Rise] = {
-    case expr @ App(fst(), App(App(pair(), a), _)) => Success(a !: expr.t)
+    case expr @ App(fst(), App(App(makePair(), a), _)) => Success(a !: expr.t)
   }
 
   // snd (pair a b) -> b
   @rule def sndReduction: Strategy[Rise] = {
-    case expr @ App(snd(), App(App(pair(), _), b)) => Success(b !: expr.t)
+    case expr @ App(snd(), App(App(makePair(), _), b)) => Success(b !: expr.t)
   }
 
   // zip (slide n m a) (slide n m b) -> map unzip (slide n m (zip a b))
@@ -425,7 +425,7 @@ object algorithmic {
   // unzip (zip a b) -> pair a b
   @rule def unzipZipIsPair: Strategy[Rise] = {
     case e @ App(unzip(), App(App(zip(), a), b)) =>
-      Success(pair(a)(b) !: e.t)
+      Success(makePair(a)(b) !: e.t)
   }
 
   // FIXME: fighting against beta-reduction
@@ -445,7 +445,7 @@ object algorithmic {
       App(a1 @ (fst() | snd()), App(unzip(), e1))),
       App(a2 @ (fst() | snd()), App(unzip(), e2))
     ) if e1 == e2 =>
-      Success(map(fun(p => pair(eraseType(a1)(p))(eraseType(a2)(p))))(e1) !: e.t)
+      Success(map(fun(p => makePair(eraseType(a1)(p))(eraseType(a2)(p))))(e1) !: e.t)
   }
 
   // FIXME: this is very specific

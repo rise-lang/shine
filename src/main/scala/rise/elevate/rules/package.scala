@@ -29,7 +29,7 @@ package object rules {
   def gentleBetaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case App(Lambda(x, b), v: Identifier) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
-    case App(Lambda(x, b), v @ App(App(primitives.pair(), _), _)) =>
+    case App(Lambda(x, b), v @ App(App(primitives.makePair(), _), _)) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
     case App(Lambda(x, b), v) if !containsAtLeast(1, x)(ev)(b) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))

@@ -77,15 +77,15 @@ object vectorize {
   // -> pair a b >> mapFst asScalar >> mapSnd asScalar
   // TODO: can get any function out, see takeOutsidePair
   @rule def asScalarOutsidePair: Strategy[Rise] = {
-    case e @ App(App(pair(), App(asScalar(), a)), App(asScalar(), b)) =>
-      Success((pair(a)(b) |> mapFst(asScalar) |> mapSnd(asScalar)) !: e.t)
+    case e @ App(App(makePair(), App(asScalar(), a)), App(asScalar(), b)) =>
+      Success((makePair(a)(b) |> mapFst(asScalar) |> mapSnd(asScalar)) !: e.t)
   }
 
   // zip (asScalar a) (asScalar b)
   // -> pair a b >> mapFst asScalar >> mapSnd asScalar
   @rule def asScalarOutsideZip: Strategy[Rise] = {
-    case e @ App(App(pair(), App(asScalar(), a)), App(asScalar(), b)) =>
-      Success((pair(a)(b) |> mapFst(asScalar) |> mapSnd(asScalar)) !: e.t)
+    case e @ App(App(makePair(), App(asScalar(), a)), App(asScalar(), b)) =>
+      Success((makePair(a)(b) |> mapFst(asScalar) |> mapSnd(asScalar)) !: e.t)
   }
 
   // padEmpty (p*v) (asScalar in) -> asScalar (padEmpty p in)

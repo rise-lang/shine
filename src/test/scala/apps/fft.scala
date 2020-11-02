@@ -17,7 +17,7 @@ class fft extends test_util.Tests {
     val cmultandsum = fun(acc => fun(vt => {
       val lres = acc._1 + (vt._1._1 * vt._2._1 - vt._1._2 * vt._2._2)
       val rres = acc._2 + (vt._1._2 * vt._2._1 + vt._1._1 * vt._2._2)
-      pair(lres)(rres)
+      makePair(lres)(rres)
     }))
 
     // TODO compare with previous implementations again
@@ -28,7 +28,7 @@ class fft extends test_util.Tests {
             val exponentWoMinus2 =
               (j * (LPrevIter: Nat)) + i * (k / (p * (LPrevIter: Nat)))
             val exponent = (cast(exponentWoMinus2) :: f32) * l(-2.0)
-            pair(cast(cospi(exponent) :: f32))(cast(sinpi(exponent) :: f32))
+            makePair(cast(cospi(exponent) :: f32))(cast(sinpi(exponent) :: f32))
           }))
         ))
       ))
@@ -47,7 +47,7 @@ class fft extends test_util.Tests {
         Brow |> mapSeq(
           fun(Bchunk =>
             zip(yChunk)(Bchunk) |> reduceSeq(cmultandsum)(
-              pair(l(0.0f))(l(0.0f))
+              makePair(l(0.0f))(l(0.0f))
             )
           )
         )

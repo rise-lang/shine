@@ -55,7 +55,7 @@ class Generate extends test_util.Tests {
           generate(fun(IndexType(p))(k => {
             val exponentWoMinus2 = (j * LPrevIter) + i * (k / (p * LPrevIter))
             val exponent = (cast(exponentWoMinus2) :: f64) * l(-2.0)
-            pair(cast(foreignFun("cospi", f64 ->: f64)(exponent)) :: f32)(
+            makePair(cast(foreignFun("cospi", f64 ->: f64)(exponent)) :: f32)(
               cast(foreignFun("sinpi", f64 ->: f64)(exponent)) :: f32)
           }))))))
 

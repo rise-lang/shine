@@ -84,7 +84,7 @@ object harrisCornerDetectionHalideRewrite {
   }
 
   def isAppliedPair: Strategy[Rise] =
-    function(function(isEqualTo(rise.core.primitives.pair.primitive)))
+    function(function(isEqualTo(rise.core.primitives.makePair.primitive)))
   def isReduceFI: Strategy[Rise] =
     function(function(isEqualTo(rise.core.primitives.reduce.primitive)))
   def isAppliedReduce: Strategy[Rise] = function(isReduceFI)
