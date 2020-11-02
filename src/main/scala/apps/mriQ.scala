@@ -2,7 +2,7 @@ package apps
 
 import rise.core._
 import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types._
 import rise.openCL.TypedDSL._
@@ -36,25 +36,25 @@ object mriQ {
     mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
-  val computeQ: Expr = depFun((k: Nat) => depFun((x: Nat) => fun(
+  val computeQ: Expr = depFun((k: Nat, x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
     mapGlobal(fun(t =>
-      let(toPrivate(t._1)
-      )(fun(sX =>
-        let(toPrivate(t._2._1)
-        )(fun(sY =>
-          let(toPrivate(t._2._2._1)
-          )(fun(sZ =>
+      let (toPrivate(t._1))
+      be (sX =>
+        let (toPrivate(t._2._1))
+        be (sY =>
+          let (toPrivate(t._2._2._1))
+          be (sZ =>
             kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
               qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
             ))(pair(t._2._2._2._1)(t._2._2._2._2))
-          ))
-        ))
-      ))
+          )
+        )
+      )
     ))
-  )))
+  ))
 
   import shine.OpenCL._
   import util.{Time, TimeSpan}

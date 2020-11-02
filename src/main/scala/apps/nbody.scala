@@ -2,7 +2,7 @@ package apps
 
 import rise.core._
 import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types._
 import rise.openCL.TypedDSL._
@@ -69,9 +69,8 @@ object nbody {
             // TODO: is this the correct address space?
             oclReduceSeq(AddressSpace.Local)(
               fun(tileY`.`tileX`.`vec(4, f32))(acc => fun(tileY`.`tileX`.`vec(4, f32))(p2 =>
-                let(
-                  toLocal(mapLocal(1)(mapLocal(0)(id))(p2))
-                )(fun(p2Local =>
+                let (toLocal(mapLocal(1)(mapLocal(0)(id))(p2)))
+                be (p2Local =>
                   mapLocal(1)(fun(((tileX`.`vec(4, f32)) x (tileX`.`vec(4, f32))) ->: (tileX`.`vec(4, f32)))(accDim2 =>
                     mapLocal(0)(fun(((vec(4, f32) x vec(4, f32)) x vec(4, f32)) ->: vec(4, f32))(p1 =>
                       oclReduceSeq(AddressSpace.Private)(fun(vec(4, f32) ->: vec(4, f32) ->: vec(4, f32))((acc, p2) =>
@@ -79,7 +78,7 @@ object nbody {
                       ))(p1._2)(accDim2._1)
                     )) $ zip(newP1Chunk)(accDim2._2)
                   )) $ zip(p2Local)(acc)
-                ))
+                )
               )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(l(0.0f))))))))
             o split(tileY) o split(tileX) $ pos
           // TODO: toPrivate when it works..

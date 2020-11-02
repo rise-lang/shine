@@ -63,9 +63,9 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
   test("Running a simple kernel with multiple generic input sizes") {
     val m = 4
     val n = 8
-    val f: ToBeTyped[Expr] = depFun((m: Nat) => depFun((n: Nat) =>
+    val f: ToBeTyped[Expr] = depFun((m: Nat, n: Nat) =>
       fun(ArrayType(m, ArrayType(n, int)))(xs =>
-        xs |> mapSeq(mapSeq(fun(x => x + l(1)))))))
+        xs |> mapSeq(mapSeq(fun(x => x + l(1))))))
 
     val kernel = gen.OpenCLKernel(f)
 

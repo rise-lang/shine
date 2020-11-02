@@ -16,12 +16,12 @@ object harrisCornerDetectionHalide {
     larr(s.map(semantics.FloatData))
   }
 
-  val gray: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
+  val gray: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     (3`.`h`.`w`.`f32) ->: (h`.`w`.`f32)
   )(input => input |>
     transpose >> map(transpose) >>
     map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f)))))
-  )))
+  ))
 
   val sobelXWeights2d: ToBeTyped[Expr] = C2D.weights2d(1.0f / 12.0f, Seq(
     Seq(-1, 0, +1),
@@ -48,29 +48,29 @@ object harrisCornerDetectionHalide {
   ))
 
   val conv3x3: ToBeTyped[Expr] = fun(3`.`3`.`f32)(weights =>
-    depFun((h: Nat) => depFun((w: Nat) => fun(
+    depFun((h: Nat, w: Nat) => fun(
       ((h+2)`.`(w+2)`.`f32) ->: (h`.`w`.`f32)
     )(input => input |>
       slide2D(3, 1) >>
       map(map(fun(nbh => dot(join(weights))(join(nbh)))))
-    )))
+    ))
   )
   val sobelX: ToBeTyped[Expr] = conv3x3(sobelXWeights2d)
   val sobelY: ToBeTyped[Expr] = conv3x3(sobelYWeights2d)
 
-  val mul = depFun((h: Nat) => depFun((w: Nat) => fun(
+  val mul = depFun((h: Nat, w: Nat) => fun(
     (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: (h`.`w`.`f32)
   )((a, b) =>
     zipND(2)(a, b) |> map(map(mulT))
-  )))
+  ))
 
   val sum: ToBeTyped[Expr] = reduce(add)(l(0.0f))
-  val sum3x3: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
+  val sum3x3: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     ((h+2)`.`(w+2)`.`f32) ->: (h`.`w`.`f32)
   )(input => input |>
     slide2D(3, 1) >>
     map(map(fun(nbh => sum(join(nbh)))))
-  )))
+  ))
 
   // halide: det + trace + output
   val coarsityElem = fun(sxx => fun(sxy => fun(syy => fun(kappa => {
@@ -78,7 +78,7 @@ object harrisCornerDetectionHalide {
     val trace = sxx + syy
     det - kappa * trace * trace
   }))))
-  val coarsity = depFun((h: Nat) => depFun((w: Nat) => fun(
+  val coarsity = depFun((h: Nat, w: Nat) => fun(
     (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: (h`.`w`.`f32)
   )((sxx, sxy, syy) =>
     zipND(2)(sxx, zipND(2)(sxy, syy)) |> map(map(fun { s =>
@@ -87,7 +87,7 @@ object harrisCornerDetectionHalide {
       val syy = snd(snd(s))
       coarsityElem(sxx)(sxy)(syy)(l(0.04f))
     }))
-  )))
+  ))
 
   // note: the output is strided:
   // it only contains w-4 meaningful values per line
@@ -118,7 +118,7 @@ object harrisCornerDetectionHalide {
 
   object gen {
     def harrisSeqWrite(letMem: ToBeTyped[Expr]): ToBeTyped[Expr] =
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
        (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         gray(h+4)(w) |> write2DSeq |> letMem(fun(g =>
@@ -132,10 +132,10 @@ object harrisCornerDetectionHalide {
         sum3x3(h)(w-4)(iyy) |> write2DSeq |> letMem(fun(syy =>
         coarsity(h)(w-4)(sxx)(sxy)(syy) |> write2DSeq |> map(padEmpty(4))
         ))))))))))))))))))
-      )))
+      ))
 
     def harrisBuffered(circularBuffer: ToBeTyped[Expr]): ToBeTyped[Expr] =
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         transpose >> map(transpose) >>
@@ -169,7 +169,7 @@ object harrisCornerDetectionHalide {
             }))
           )))))) >> write2DSeq
         )) >> join >> map(padEmpty(4))
-      )))
+      ))
   }
 
   object omp { // and plain C
@@ -395,45 +395,45 @@ object harrisCornerDetectionHalide {
     // following variants are used for comparison to Lift
 
     def grayPar: ToBeTyped[Expr] =
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: ((h+4)`.`w`.`f32)
       )(input =>
         gray(h+4)(w)(input) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
     def sobelXPar: ToBeTyped[Expr] =
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         ((h+4)`.`w`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
       )(gray =>
         sobelX(h+2)(w-2)(gray) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
     def sobelYPar: ToBeTyped[Expr] =
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         ((h+4)`.`w`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
       )(gray =>
         sobelY(h+2)(w-2)(gray) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
     def mulPar: ToBeTyped[Expr] =
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         ((h+2)`.`(w-2)`.`f32) ->: ((h+2)`.`(w-2)`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
       )((ix, iy) =>
         mul(h+2)(w-2)(ix)(iy) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
     def sum3x3Par: ToBeTyped[Expr] =
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         ((h+2)`.`(w-2)`.`f32) ->: (h`.`(w-4)`.`f32)
       )(input =>
         sum3x3(h)(w-4)(input) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
     def coarsityPadPar: ToBeTyped[Expr] =
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         (h`.`(w-4)`.`f32) ->: (h`.`(w-4)`.`f32) ->: (h`.`(w-4)`.`f32) ->: (h`.`w`.`f32)
       )((sxx, sxy, syy) =>
         coarsity(h)(w-4)(sxx)(sxy)(syy) |> mapGlobal(write1DSeq) |> map(padEmpty(4))
-      )))
+      ))
   }
 }

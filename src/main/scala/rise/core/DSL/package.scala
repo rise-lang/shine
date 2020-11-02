@@ -29,12 +29,12 @@ package object DSL {
 
   def array(n: Int): ToBeTyped[Primitive] = primitives.makeArray(n).apply
   def store(cont: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] =
-    fun(e => let(toMem(e))(fun(cont)))
+    fun(e => let(toMem(e)) be cont)
   def store(how: ToBeTyped[Expr])
            (in: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] =
-    fun(e => let(toMem(how(e)))(fun(in)))
+    fun(e => let(toMem(how(e))) be in)
   def store2(how: ToBeTyped[Expr]): ToBeTyped[Expr] =
-    fun(e => let(toMem(how(e)))(fun(x => x)))
+    fun(e => let(toMem(how(e))) be (x => x))
 
   def toMemFun(f: ToBeTyped[Expr]): ToBeTyped[Expr] = fun(x => toMem(f(x)))
 
@@ -65,10 +65,13 @@ package object DSL {
     def >(rhs: ToBeTyped[Expr]): ToBeTyped[App] = gt(lhs)(rhs)
     def <(rhs: ToBeTyped[Expr]): ToBeTyped[App] = lt(lhs)(rhs)
     def =:=(rhs: ToBeTyped[Expr]): ToBeTyped[App] = equal(lhs)(rhs)
+    def >=(rhs: ToBeTyped[Expr]): ToBeTyped[App] = not(lhs < rhs)
+    def <=(rhs: ToBeTyped[Expr]): ToBeTyped[App] = not(lhs > rhs)
 
     // scalastyle:off disallow.space.before.token
     // unary
     def unary_- : ToBeTyped[App] = neg(lhs)
+    def unary_! : ToBeTyped[App] = not(lhs)
     // scalastyle:on disallow.space.before.token
 
     // pair accesses
@@ -365,6 +368,21 @@ package object DSL {
       depLambda[AddressSpaceKind](x, w.f(x))
     }
   }
+
+  // noinspection ScalaUnusedSymbol
+  // scalastyle:off structural.type
+  object let {
+    def apply(e: ToBeTyped[Expr]): Object {
+      def be(in: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr]
+      def be(in: ToBeTyped[Expr]): ToBeTyped[Expr]
+    } = new {
+      def be(in: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] =
+        primitives.let(e)(fun(in))
+      def be(in: ToBeTyped[Expr]): ToBeTyped[Expr] =
+        primitives.let(e)(in)
+    }
+  }
+  // scalastyle:on structural.type
 
   object letf {
     def apply(in: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] = {

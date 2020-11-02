@@ -45,12 +45,12 @@ int main(int argc, char** argv) {
       Execute(testCode)
     }
 
-    val gatherExp = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, int)))(a =>
+    val gatherExp = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, int)))(a =>
       a |> transpose |> mapSeq(mapSeq(fun(x => x)))
-    )))
-    val scatterExp = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, int)))(a =>
+    ))
+    val scatterExp = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, int)))(a =>
       a |> mapSeq(mapSeq(fun(x => x))) |> transpose
-    )))
+    ))
     checkResult(gatherExp)
     checkResult(scatterExp)
   }

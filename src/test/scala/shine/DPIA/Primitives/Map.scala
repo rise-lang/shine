@@ -18,8 +18,8 @@ class Map extends test_util.Tests {
 
   test("Simple 2D map example should generate syntactic valid C code with two for loop") {
     val e =
-      depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
-        xs |> mapSeq(mapSeq(fun(x => x))))))
+      depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
+        xs |> mapSeq(mapSeq(fun(x => x)))))
 
     val code = gen.CProgram(e).code
 
@@ -28,9 +28,9 @@ class Map extends test_util.Tests {
 
   test("Simple 3D map example should generate syntactic valid C code with three for loop") {
     val e =
-      depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) =>
+      depFun((n: Nat, m: Nat, o: Nat) =>
         fun(ArrayType(n, ArrayType(m, ArrayType(o, f32))))(xs =>
-          xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))))
+          xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))
 
     val code = gen.CProgram(e).code
 

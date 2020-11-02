@@ -30,10 +30,10 @@ class Reduce extends test_util.TestsWithExecutor {
   test("Fusing a reduce into a map should generate syntactically" +
     "valid C code") {
     val e =
-      depFun((h: Nat) => depFun((w: Nat) =>
+      depFun((h: Nat, w: Nat) =>
         fun(ArrayType(h, ArrayType(w, f32)))(a =>
           a |> map(reduceSeq(add)(l(0.0f))) |> mapSeq(fun(x => x))
-        )))
+        ))
 
     gen.CProgram(e)
   }
@@ -41,10 +41,10 @@ class Reduce extends test_util.TestsWithExecutor {
   test("Fusing a reduce into another should generate syntactically" +
     "valid C code with two loops") {
     val e =
-      depFun((h: Nat) => depFun((w: Nat) =>
+      depFun((h: Nat, w: Nat) =>
         fun(ArrayType(h, ArrayType(w, f32)))(a =>
           a |> map(reduceSeq(add)(l(0.0f))) |> reduceSeq(add)(l(0.0f))
-      )))
+      ))
 
     val code = gen.CProgram(e).code
 

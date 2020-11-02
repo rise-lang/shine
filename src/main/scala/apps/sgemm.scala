@@ -5,7 +5,7 @@ import arithexpr.arithmetic.Cst
 import rise.core.DSL.HighLevelConstructs.reorderWithStride
 import rise.core._
 import rise.core.DSL._
-import rise.core.primitives._
+import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
@@ -107,32 +107,33 @@ object sgemm {
     val v6: Nat = 64
     val v7: Nat = 8
 
-    def tile: ToBeTyped[Expr] = depFun((s1: Nat) => depFun((s2: Nat) =>
-      map(map(transpose) o split(s2) o transpose) o split(s1) ))
+    def tile: ToBeTyped[Expr] = depFun((s1: Nat, s2: Nat) =>
+      map(map(transpose) o split(s2) o transpose) o split(s1) )
 
-    val zeros = depFun((n1: Nat) => depFun((n2: Nat) => depFun((n3: Nat) => depFun((n4: Nat) =>
+    val zeros = depFun((n1: Nat, n2: Nat, n3: Nat, n4: Nat) =>
       generate(fun(IndexType(n4))(_ =>
         generate(fun(IndexType(n3))(_ =>
           generate(fun(IndexType(n2))(_ =>
-            generate(fun(IndexType(n1))(_ => l(0.0f)))))))))))))
+            generate(fun(IndexType(n1))(_ => l(0.0f))))))))))
 
-    def tile2: ToBeTyped[Expr] = depFun((s1: Nat) => depFun((s2: Nat) => impl{ n1: Nat => impl{ n2: Nat => fun(ArrayType(n1, ArrayType(n2, f32)))(x =>
-      transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  ) }}))
+    def tile2: ToBeTyped[Expr] = depFun((s1: Nat, s2: Nat) => impl{ n1: Nat => impl{ n2: Nat => fun(ArrayType(n1, ArrayType(n2, f32)))(x =>
+      transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  ) }})
 
     def redOp: ToBeTyped[Expr] = fun((8`.`32`.`8`.`4`.`f32) ->: ( (8`.`64`.`f32) x (8`.`128`.`f32) ) ->: (8`.`32`.`8`.`4`.`f32) )((p14, p15) =>
       let(p15 |> fun(p29 =>
           zip (p29._1) (p29._2)
             |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
             |> unzip
-        ))(fun(p16 =>
+        ))
+      be (p16 =>
         zip (p14) (split (v5) (transpose (p16._1)))
           |> mapLocal(1) (fun(p17 =>
           zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
             |> mapLocal(0) (fun(p18 =>
             zip (transpose (p17._2)) (transpose (p18._2))
               |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-                let(pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2)))
-                  )(fun(p22 =>
+                let (pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
+                be (fun(p22 =>
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
                         p24._1 + (p23._2 * p24._2) )) )) ))
@@ -140,7 +141,7 @@ object sgemm {
               |> mapSeq (mapSeq (fun(x => x)))
           ))
         ))
-      )))
+      ))
 
     depFun((n: Nat, m: Nat, k: Nat) =>
       fun((k`.`m`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32) ->: f32 ->: f32 ->: (m`.`n`.`f32))

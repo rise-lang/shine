@@ -22,7 +22,7 @@ object acoustic3D {
     int ->: int ->: int ->: int ->: int ->: int ->: int
   )
 
-  private val generateNumNeighbours = depFun((o: Nat) => depFun((n: Nat) => depFun((m: Nat) =>
+  private val generateNumNeighbours = depFun((o: Nat, n: Nat, m: Nat) =>
     generate(fun(k =>
       generate(fun(j =>
         generate(fun(i =>
@@ -31,7 +31,7 @@ object acoustic3D {
         ))
       ))
     ))
-  )))
+  )
 
   private val getCF = foreignFun("getCF", Seq("neigh", "cfB", "cfI"),
     "{ if (neigh < 6) { return cfB; } else { return cfI; } }",
@@ -79,7 +79,7 @@ object acoustic3D {
       ((stencil * maskedValStencil) - (valueMat1 * cf2))) * cf
   })
 
-  val stencil: ToBeTyped[Expr] = depFun((o: Nat) => depFun((n: Nat) => depFun((m: Nat) => fun(
+  val stencil: ToBeTyped[Expr] = depFun((o: Nat, n: Nat, m: Nat) => fun(
     ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
       ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
       (o `.` n `.` m `.` f32)
@@ -87,9 +87,9 @@ object acoustic3D {
     mapGlobal(2)(mapGlobal(1)(mapGlobal(0)(acoustic)))
       o slide3D(sz, 1)
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2)))
-  ))))
+  ))
 
-  val stencilMSS: ToBeTyped[Expr] = depFun((o: Nat) => depFun((n: Nat) => depFun((m: Nat) => fun(
+  val stencilMSS: ToBeTyped[Expr] = depFun((o: Nat, n: Nat, m: Nat) => fun(
     ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
       ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
       (o `.` n `.` m `.` f32)
@@ -104,5 +104,5 @@ object acoustic3D {
         )
       ) o transpose o slide2D(sz, 1) o map(transpose) o transpose
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2)))
-  ))))
+  ))
 }

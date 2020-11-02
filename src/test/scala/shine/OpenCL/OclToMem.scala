@@ -67,11 +67,11 @@ class OclToMem extends test_util.Tests {
   test("oclReduceSeq allocates memory with appropriate data type:" +
     "private memory accumulator with two mapLocal nesting two mapSeq") {
 
-    val zeros = depFun((n1: Nat) => depFun((n2: Nat) => depFun((n3: Nat) => depFun((n4: Nat) =>
+    val zeros = depFun((n1: Nat, n2: Nat, n3: Nat, n4: Nat) =>
       generate(fun(IndexType(n1))(_ =>
         generate(fun(IndexType(n2))(_ =>
           generate(fun(IndexType(n3))(_ =>
-            generate(fun(IndexType(n4))(_ => l(0.0f)))))))))))))
+            generate(fun(IndexType(n4))(_ => l(0.0f))))))))))
 
     val e = depFun((k: Nat, m: Nat, n: Nat, o: Nat, p: Nat) =>
       fun(k `.` m `.` n `.` o `.` p `.` f32)(xs =>

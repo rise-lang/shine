@@ -24,7 +24,7 @@ object HighLevelConstructs {
           fun(IndexType(n))(i =>
             natAsIndex(n)(
               (indexAsNat(i) / (n /^ s)) +
-                ((s: ToBeTyped[Expr]) * (indexAsNat(i) % (n /^ s)))
+                (l(s) * (indexAsNat(i) % (n /^ s)))
             )
           )
         }

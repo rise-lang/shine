@@ -170,9 +170,9 @@ int main(int argc, char** argv) {
   }
 
   test("deinterleave passes checks") {
-    val typed = printTime("infer", depFun((h: Nat) => depFun((w: Nat) =>
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       deinterleave(h)(w) >> mapSeq(mapSeq(mapSeq(fun(x => x))))
-    )).toExpr)
+    ).toExpr)
     println(s"deinterleave: ${typed.t}")
     /* TODO
     val lower: Strategy[Rise] =
@@ -198,9 +198,9 @@ int main(int argc, char** argv) {
   }
 
   test("demosaic passes checks") {
-    val typed = printTime("infer", depFun((h: Nat) => depFun((w: Nat) =>
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       demosaic(h)(w) >> mapSeqUnroll(mapSeq(mapSeq(fun(x => x))))
-    )).toExpr)
+    ).toExpr)
     println(s"demosaic: ${typed.t}")
     // TODO
     val lower: Strategy[Rise] = strategies.basic.id
@@ -209,13 +209,13 @@ int main(int argc, char** argv) {
   }
 
   test("demosaic passes checks with reordering") {
-    val typed = printTime("infer", depFun((h: Nat) => depFun((w: Nat) =>
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       demosaic(h)(w) >> transpose >> map(transpose) >>
       split(2) >> mapSeq(mapSeqUnroll(
         mapSeq(
           mapSeqUnroll(fun(x => x)))
       )) >> join >> map(transpose) >> transpose
-    )).toExpr)
+    ).toExpr)
     println(s"demosaic: ${typed.t}")
     // TODO
     val lower: Strategy[Rise] = strategies.basic.id
@@ -231,13 +231,13 @@ int main(int argc, char** argv) {
 
   test("color correction passes checks") {
     val typed = printTime("infer",
-      depFun((h: Nat) => depFun((w: Nat) =>
-        depFun((hm: Nat) => depFun((wm: Nat) => fun(3`.`(h+2)`.`(w+2)`.`i16)(in =>
+      depFun((h: Nat, w: Nat, hm: Nat, wm: Nat) =>
+        fun(3`.`(h+2)`.`(w+2)`.`i16)(in =>
           color_correct(h)(w)(hm)(wm)(in |>
             map(map(drop(1) >> take(w)) >>
               drop(1) >> take(h))
           )
-        ))))).toExpr
+        )).toExpr
     )
     println(s"color correction: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
@@ -280,11 +280,11 @@ ${fName}(output, ${2*H + 2}, ${2*W + 2},
   }
 
   test("sharpen passes checks") {
-    val typed = printTime("infer", depFun((h: Nat) => depFun((w: Nat) => fun(
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) => fun(
       (3`.`(h+2)`.`(w+2)`.`u8) ->: f32 ->: (3`.`h`.`w`.`u8)
     )((input, strength) =>
       sharpen(h)(w)(input)(strength) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
-    ))).toExpr)
+    )).toExpr)
     println(s"sharpen: ${typed.t}")
     val lower: Strategy[Rise] = strategies.basic.id
     val lowered = printTime("lower", lower(typed).get)
@@ -300,9 +300,9 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   }
 
   test("shift passes checks") {
-    val typed = printTime("infer", depFun((h: Nat) => depFun((w: Nat) =>
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       shift(h)(w) >> mapSeq(mapSeq(fun(x => x)))
-    )).toExpr)
+    ).toExpr)
     check(
       typed, fName => s"${fName}(output, ${2*H + 12}, ${2*W + 12}, input);",
       (2*H + 48) * (2*W + 32), "uint16_t", "input.dump",
@@ -351,20 +351,20 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
     assertClosedT(blur121(i16)(i32), (3`.`i16) ->: i16)
 
     assertClosedT(
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)
       )(a =>
         interpolate(Image(0, w, 0, h, a)).expr
-      ))),
+      )),
       expl((h: Nat) => expl((w: Nat) => (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)))
     )
 
     assertClosedT(
-      depFun((h: Nat) => depFun((w: Nat) => fun(
+      depFun((h: Nat, w: Nat) => fun(
         (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)
       )(a =>
         pointAbsDiff(Image(0, w, 0, h, a)).expr
-      ))),
+      )),
       expl((h: Nat) => expl((w: Nat) => (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)))
     )
 

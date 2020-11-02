@@ -236,11 +236,11 @@ class circularBuffering extends test_util.Tests {
   }
 
   def wrapExprTogether(e: ToBeTyped[Rise]): ToBeTyped[Rise] = {
-    depFun((n: Nat) => depFun((m: Nat) => fun(
+    depFun((n: Nat, m: Nat) => fun(
       ((n+2)`.`(m+2)`.`f32) ->: (n`.`m`.`f32)
     )(input =>
       e(input)
-    )))
+    ))
   }
 
   val highLevelTogether: ToBeTyped[Rise] =

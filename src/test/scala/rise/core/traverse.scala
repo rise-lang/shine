@@ -79,11 +79,6 @@ class traverse extends test_util.Tests {
     trace.zip(expected).foreach({ case (x, e) => e(x) })
   }
 
-  /* TODO?
-  test("traverse an expression depth-first with types") {
-  }
-   */
-
   test("traverse an expression depth-first with stop and update") {
     val expected = {
       Seq(

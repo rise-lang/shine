@@ -412,10 +412,10 @@ class algorithmic extends test_util.Tests {
   test("reduce rows") {
     val addT = fun(x => fst(x) + snd(x))
 
-    val test = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(i =>
+    val test = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(i =>
       reduceSeq(fun((y, acc) =>
         map(addT) $ zip(y)(acc)))(
-        generate(fun(IndexType(m) ->: f32)(_ => l(0.0f)))) $ i)))
+        generate(fun(IndexType(m) ->: f32)(_ => l(0.0f)))) $ i))
 
     test.toExpr
   }

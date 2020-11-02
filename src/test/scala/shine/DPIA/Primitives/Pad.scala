@@ -28,9 +28,9 @@ class Pad extends test_util.Tests {
   }
 
   test("2D C clamp pad input and copy") {
-    val e = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
+    val e = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
       xs |> padClamp2D(2) |> mapSeq(mapSeq(fun(x => x)))
-    )))
+    ))
 
     gen.CProgram(e)
   }

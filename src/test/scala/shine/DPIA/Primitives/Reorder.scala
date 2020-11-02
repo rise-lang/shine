@@ -20,9 +20,9 @@ class Reorder extends test_util.Tests {
   }
 
   test("Simple 2D gather example should generate syntactic valid C code with two two loops") {
-    val e = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
+    val e = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
       xs |> map(reorderWithStride(128)) |> mapSeq(mapSeq(fun(x => x)))
-    )))
+    ))
 
     val code = gen.CProgram(e).code
 
@@ -40,9 +40,9 @@ class Reorder extends test_util.Tests {
   }
 
   test("Simple 2D scatter example should generate syntactic valid C code with two two loops") {
-    val e = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
+    val e = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
       xs |> mapSeq(mapSeq(fun(x => x))) |> map(reorderWithStride(Cst(128)))
-    )))
+    ))
 
     val code = gen.CProgram(e).code
 

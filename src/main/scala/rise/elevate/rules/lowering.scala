@@ -167,7 +167,7 @@ object lowering {
 
   // todo currently only works for mapSeq
   @rule def isCopy: Strategy[Rise] = {
-    case c@App(let(), id) if isId(id) => Success(c)
+    case c@App(p.let(), id) if isId(id) => Success(c)
     case c@App(App(p.mapSeq(), id), etaInput) if isId(id) => Success(c)
     case App(App(p.mapSeq(), Lambda(_, f)), etaInput) => isCopy(f)
     case c@App(id, _) if isId(id) => Success(c)

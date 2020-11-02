@@ -19,10 +19,10 @@ class Split extends test_util.Tests {
 
   test("Simple 2D split example with separate maps should generate syntactic valid OpenMP code with three for loops") {
     val e =
-      depFun((n: Nat) => depFun((m: Nat) =>
+      depFun((n: Nat, m: Nat) =>
         fun(ArrayType(n, ArrayType(m, f32)))(xs =>
           xs |> map(split(2)) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
-        )))
+        ))
 
     val code = gen.CProgram(e).code
 
@@ -31,10 +31,10 @@ class Split extends test_util.Tests {
 
   test("Simple 2D split example with merged maps should generate syntactic valid OpenMP code with three for loops") {
     val e =
-      depFun((n: Nat) => depFun((m: Nat) =>
+      depFun((n: Nat, m: Nat) =>
         fun(ArrayType(n, ArrayType(m, f32)))( xs =>
           xs |> mapSeq(split(2) >> mapSeq(mapSeq(fun(x => x))))
-        )))
+        ))
 
     val code = gen.CProgram(e).code
 

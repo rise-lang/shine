@@ -116,7 +116,7 @@ object cameraPipe {
     transpose >> join
   ) }}}
 
-  val demosaic: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat ) => fun(
+  val demosaic: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     (4`.`(h+2)`.`(w+2)`.`i16) ->: (3`.`(2*h)`.`(2*w)`.`i16)
   )(deinterleaved => {
     // x_y = the value of channel x at a site in the input of channel y
@@ -243,10 +243,10 @@ object cameraPipe {
           interleaveX(b_b_o.expr, b_gb_o.expr))  // b
       ) // 3.(2*H).(2*W).f
     }))))))))))))))))))))))))
-  })))
+  }))
 
   val hot_pixel_suppression: ToBeTyped[Expr] =
-    depFun((h: Nat) => depFun((w: Nat) =>
+    depFun((h: Nat, w: Nat) =>
       fun(((h+4)`.`(w+4)`.`i16) ->: (h`.`w`.`i16))(input =>
     mapImage(
       stencilCollect(
@@ -257,9 +257,9 @@ object cameraPipe {
           max(nbh `@` lidx(3, 5), nbh `@` lidx(4, 5)))
       ))
     ).expr
-  )))
+  ))
 
-  val deinterleave: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
+  val deinterleave: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     ((2*h)`.`(2*w)`.`i16) ->: (4`.`h`.`w`.`i16)
   )(raw =>
     raw |>
@@ -267,10 +267,10 @@ object cameraPipe {
       map(map(transpose)) >> // h.2.2.w.
       transpose >> map(transpose) >> // 2.2.h.w.
       join // 4.h.w.
-  )))
+  ))
 
   val color_correct: ToBeTyped[Expr] =
-    depFun((h: Nat) => depFun((w: Nat) => depFun((hm: Nat) => depFun((wm: Nat) => fun(
+    depFun((h: Nat, w: Nat, hm: Nat, wm: Nat) => fun(
     (3`.`h`.`w`.`i16) ->:
       (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->:
       (3`.`h`.`w`.`i16)
@@ -303,9 +303,9 @@ object cameraPipe {
           cast(rgb / li32(256)) :: i16
         ))) >> transpose) >> transpose
     )
-  })))))
+  }))
 
-  val apply_curve: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
+  val apply_curve: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     (3`.`h`.`w`.`i16) ->: f32 ->: f32 ->: int ->: int ->: (3`.`h`.`w`.`u8)
   )((input, gamma, contrast, blackLevel, whiteLevel) => {
     // val lutResample = 1 // how much to resample the LUT by when sampling it
@@ -350,7 +350,7 @@ object cameraPipe {
         )
       ))))
     )
-  })))
+  }))
 
   val blur121: ToBeTyped[Expr] =
     depFun((dt: DataType) => depFun((compute_dt: DataType) => fun(
@@ -361,7 +361,7 @@ object cameraPipe {
       vs `@` lidx(1, 3))
   )))
 
-  val sharpen: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
+  val sharpen: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     (3`.`(h+2)`.`(w+2)`.`u8) ->: f32 ->: (3`.`h`.`w`.`u8)
   )((input, strength) => {
     // convert sharpening strength to 2.5 fixed point.
@@ -391,12 +391,12 @@ object cameraPipe {
         }))
       }))
     )
-  })))
+  }))
 
   // TODO? Halide reference in/out:
   // (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
 
-  val shift: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => fun(
+  val shift: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     ((h+36)`.`(w+20)`.`u16) ->: (h`.`w`.`i16)
   )(input => input |>
     // shift things inwards to give us enough padding on the
@@ -408,9 +408,9 @@ object cameraPipe {
     // We also convert it to be signed, so we can deal with
     // values that fall below 0 during processing.
     map(map(fun(p => cast(p) :: i16)))
-  )))
+  ))
 
-  val camera_pipe: ToBeTyped[Expr] = depFun((h: Nat) => depFun((w: Nat) => depFun((hm: Nat) => depFun((wm: Nat) =>
+  val camera_pipe: ToBeTyped[Expr] = depFun((h: Nat, w: Nat, hm: Nat, wm: Nat) =>
     fun((2*(h+6)+36)`.`(2*(w+6)+20)`.`u16)(input =>
     fun(hm`.`wm`.`f32)(matrix_3200 =>
     fun(hm`.`wm`.`f32)(matrix_7000 =>
@@ -459,5 +459,5 @@ object cameraPipe {
       // map(transpose) >> transpose
       // --
     )))))))))
-  ))))
+  )
 }

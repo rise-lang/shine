@@ -29,7 +29,7 @@ object kmeans {
 
   private val select = fun(tuple => tuple._2._2)
 
-  val kmeans: Expr = depFun((p: Nat) => depFun((c: Nat) => depFun((f: Nat) => fun(
+  val kmeans: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
     (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
   )((features, clusters) =>
     features |> transpose |> mapGlobal(fun(feature =>
@@ -43,7 +43,7 @@ object kmeans {
         pair(cast(l(3.40282347e+38)) :: f32)(pair(l(0))(l(0)))
       ) |> select
     ))
-  ))))
+  ))
 
   import shine.OpenCL._
   import util.{Time, TimeSpan}

@@ -33,14 +33,14 @@ class Generate extends test_util.Tests {
   }
 
   test("Two-dimensional generate generates syntactically correct code in C.") {
-    val e = depFun((m: Nat) => depFun((n: Nat) => fun(ArrayType(m, ArrayType(n, f64)))(in =>
+    val e = depFun((m: Nat, n: Nat) => fun(ArrayType(m, ArrayType(n, f64)))(in =>
       zip(in)(
         generate(fun(IndexType(m))(i =>
           generate(fun(IndexType(n))(j =>
             cos(cast((indexAsNat(j) + n) * indexAsNat(i) + m))
           )))))
         |> mapSeq(fun(t => zip(fst(t))(snd(t)) |> mapSeq(addT)))
-    )))
+    ))
     gen.CProgram(e)
   }
 
