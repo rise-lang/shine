@@ -11,7 +11,7 @@ sealed abstract class Expr {
 }
 
 final case class Identifier(name: String)(
-    override val t: Type = TypePlaceholder
+    override val t: Type
 ) extends Expr {
   override def setType(t: Type): Identifier = this.copy(name)(t)
   override def equals(obj: Any): Boolean = obj match {
@@ -21,7 +21,7 @@ final case class Identifier(name: String)(
 }
 
 final case class Lambda(x: Identifier, e: Expr)(
-    override val t: Type = TypePlaceholder
+    override val t: Type
 ) extends Expr {
   override def setType(t: Type): Lambda = this.copy(x, e)(t)
   override def equals(obj: Any): Boolean = obj match {
@@ -34,7 +34,7 @@ final case class Lambda(x: Identifier, e: Expr)(
   }
 }
 
-final case class App(f: Expr, e: Expr)(override val t: Type = TypePlaceholder)
+final case class App(f: Expr, e: Expr)(override val t: Type)
     extends Expr {
   override def setType(t: Type): App = this.copy(f, e)(t)
   override def equals(obj: Any): Boolean = obj match {
@@ -46,7 +46,7 @@ final case class App(f: Expr, e: Expr)(override val t: Type = TypePlaceholder)
 final case class DepLambda[K <: Kind: KindName](
     x: K#I with Kind.Explicitness,
     e: Expr
-)(override val t: Type = TypePlaceholder)
+)(override val t: Type)
     extends Expr {
   val kindName: String = implicitly[KindName[K]].get
   override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
@@ -71,7 +71,7 @@ final case class DepLambda[K <: Kind: KindName](
 }
 
 final case class DepApp[K <: Kind](f: Expr, x: K#T)(
-    override val t: Type = TypePlaceholder
+    override val t: Type
 ) extends Expr {
   override def setType(t: Type): DepApp[K] = this.copy(f, x)(t)
   override def equals(obj: Any): Boolean = obj match {

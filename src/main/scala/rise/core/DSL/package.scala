@@ -13,20 +13,20 @@ package object DSL {
   // DSL for Exprs
 
   def identifier(name: String): ToBeTyped[Identifier] =
-    toBeTyped(Identifier(name)())
+    toBeTyped(Identifier(name)(TypePlaceholder))
   def lambda(x: ToBeTyped[Identifier], e: ToBeTyped[Expr]): ToBeTyped[Lambda] =
-    x >>= (x => e >>= (e => toBeTyped(Lambda(x, e)())))
+    x >>= (x => e >>= (e => toBeTyped(Lambda(x, e)(TypePlaceholder))))
   def app(f: ToBeTyped[Expr], e: ToBeTyped[Expr]): ToBeTyped[App] =
-    f >>= (f => e >>= (e => toBeTyped(App(f, e)())))
+    f >>= (f => e >>= (e => toBeTyped(App(f, e)(TypePlaceholder))))
   def depLambda[K <: Kind: KindName](
                                       x: K#I with Kind.Explicitness,
                                       e: ToBeTyped[Expr]
                                     ): ToBeTyped[DepLambda[K]] =
-    e >>= (e => toBeTyped(DepLambda[K](x, e)()))
+    e >>= (e => toBeTyped(DepLambda[K](x, e)(TypePlaceholder)))
   def depApp[K <: Kind](f: ToBeTyped[Expr], x: K#T): ToBeTyped[DepApp[K]] =
-    f >>= (f => toBeTyped(DepApp[K](f, x)()))
+    f >>= (f => toBeTyped(DepApp[K](f, x)(TypePlaceholder)))
   def literal(d: semantics.Data): ToBeTyped[Literal] = toBeTyped(Literal(d))
-  
+
   def store(cont: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] =
     fun(e => let(toMem(e)) be cont)
   def store(how: ToBeTyped[Expr])
