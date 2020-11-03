@@ -355,6 +355,18 @@ object fromRise {
                   SlideSeq(SlideSeq.Indices, n, sz, 1, s, t, load, e)))))
       }
 
+      case core.depTile() => fromType {
+        case nFunT(tile,
+          ((fa : ExpType) ->: (fb : ExpType)) ->:
+          (inT @ expT(ArrayType(m, s), `read`)) ->:
+          expT(ArrayType(n, t), `write`))
+        =>
+          depFun[NatKind](tile)(
+            fun[ExpType ->: ExpType](fa ->: fb, f =>
+              fun[ExpType](inT, e =>
+                DepTile(n, tile, m-n, s, t, f, e))))
+      }
+
       case core.rotateValues() => fromType {
         case nFunT(sz,
           (expT(s, `read`) ->: expT(_, `write`)) ->:

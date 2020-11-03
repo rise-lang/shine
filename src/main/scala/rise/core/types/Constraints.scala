@@ -39,11 +39,27 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 
 object Constraint {
   def solve(cs: Seq[Constraint], trace: Seq[Constraint])
-     (implicit explDep: Flags.ExplicitDependence): Solution = cs match {
+     (implicit explDep: Flags.ExplicitDependence): Solution =/* cs match {
     case Nil => Solution()
     case c +: cs =>
       val s = solveOne(c, trace)
       s ++ solve(s.apply(cs), trace)
+  }*/
+  solveRec(cs, Nil, trace)
+
+  def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint])
+              (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
+    case (Nil, Nil) => Solution()
+    case (Nil, _) => error(s"could not solve constraints ${rs}")(trace)
+    case (c +: cs, _) =>
+      val s = try {
+        solveOne(c, trace)
+      } catch {
+        case e: InferenceException =>
+          println(e.msg)
+          return solveRec(cs, rs :+ c, trace)
+      }
+      s ++ solve(s.apply(rs ++ cs), trace)
   }
 
   // scalastyle:off method.length
@@ -355,7 +371,11 @@ object Constraint {
             }))
           }
         case Pow(b, Cst(-1)) => pivotSolution(pivot, b, Cst(1) /^ value)
-        case _               => None
+        case Mod(p, m) if p == pivot =>
+          val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
+          Some(Solution.subs(pivot, k*m + value))
+        case _               =>
+          None
       }
     }
 

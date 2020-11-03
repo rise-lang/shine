@@ -48,16 +48,22 @@ object HighLevelConstructs {
 
   def tileEpilogue(tileSize: Nat): Expr =
     impl{ n: Nat => impl{ haloSize: Nat =>
-    impl{ t: DataType =>
+    impl{ s: DataType => impl{ t: DataType =>
     fun(f => fun(g => fun(a =>
       (concat(
-        a |> take((n / tileSize) * tileSize + haloSize) |>
-        slide(tileSize + haloSize)(tileSize) |> f |> join
+        (a :: ((n + haloSize) `.` s)) |>
+        take((n / tileSize) * tileSize + haloSize) |>
+        slide(tileSize + haloSize)(tileSize) |>
+        impl{ sza: Nat => f :: (sza`.`(tileSize + haloSize)`.`s) ->: (sza`.`tileSize`.`t) } |>
+        join
       )(
-        a |> drop((n / tileSize) * tileSize) |>
-        slide(n % tileSize + haloSize)(n % tileSize) |> g |> join
-      ) |> typeHole("b")) :: (n`.`t)
-    )))}}}
+        (a :: ((n + haloSize) `.` s)) |>
+        drop((n / tileSize) * tileSize) |>
+        slide(n % tileSize + haloSize)(n % tileSize) |>
+        impl{ szb: Nat => g :: (szb`.`(n % tileSize + haloSize)`.`s) ->: (szb`.`(n % tileSize)`.`t) } |>
+        join
+      )) :: (n`.`t)
+    )))}}}}
 
   def slide3D(sz: Nat, st: Nat): Expr =
     map(slide2D(sz, st)) >> slide(sz)(st) >> map(transpose >> map(transpose))

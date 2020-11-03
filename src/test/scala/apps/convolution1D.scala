@@ -29,11 +29,14 @@ class convolution1D extends test_util.Tests {
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ) >> join
 
-  // FIXME: running in parallel will trigger race condition
+  // FIXME: running in parallel will trigger race condition?
   val binomialTileShiftInwards: Expr =
     tileShiftInwards(32)(mapGlobal(0)(
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ))
+    /*tileShiftInwards(32)(mapWorkGroup(0)(
+      slide(3)(1) >> mapLocal(0)(fun(nbh => dotSeq(nbh)(binomialWeights)))
+    ))*/
 
   val binomialTileEpilogue: Expr = {
     def f = mapGlobal(0)(
@@ -76,15 +79,16 @@ class convolution1D extends test_util.Tests {
     import shine.OpenCL._
 
     val random = new scala.util.Random()
-    val input = Array.fill(N)(random.nextFloat())
+    val input = Array.fill(N+2)(random.nextFloat())
 
     val goldKernel = gen.OpenCLKernel(wrapExpr(binomialSeq))
+    val kernel = gen.OpenCLKernel(wrapExpr(e))
+
     val goldRun = goldKernel.as[ScalaFunction `(`
       Int `,` Array[Float]
       `)=>` Array[Float]]
     val (gold, _) = goldRun(LocalSize(1), GlobalSize(1))(N `,` input)
 
-    val kernel = gen.OpenCLKernel(wrapExpr(e))
     val run = kernel.as[ScalaFunction `(`
       Int `,` Array[Float]
       `)=>` Array[Float]]
@@ -102,15 +106,15 @@ class convolution1D extends test_util.Tests {
   }
 
   test("binomialTileShiftInwards compiles to valid OpenCL that passes checks") {
-    // FIXME: don't process in parallel due to race condition
+    // FIXME: race condition?
     util.withExecutor {
-      checkOCL(128, LocalSize(1), GlobalSize(1), binomialTileShiftInwards)
-      checkOCL(132, LocalSize(1), GlobalSize(1), binomialTileShiftInwards)
-      checkOCL(148, LocalSize(1), GlobalSize(1), binomialTileShiftInwards)
+      checkOCL(128, LocalSize(1), GlobalSize(64), binomialTileShiftInwards)
+      checkOCL(132, LocalSize(1), GlobalSize(64), binomialTileShiftInwards)
+      checkOCL(148, LocalSize(1), GlobalSize(64), binomialTileShiftInwards)
     }
   }
 
-  // FIXME: type inference
+  // TODO: concat codegen
   ignore("binomialTileEpilogue compiles to valid OpenCL that passes checks") {
     util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(2), binomialTileEpilogue)
@@ -119,8 +123,8 @@ class convolution1D extends test_util.Tests {
     }
   }
 
-  // TODO: parallelism
-  test("binomialTileDep compiles to valid OpenCL that passes checks") {
+  // TODO: codegen+parallelism
+  ignore("binomialTileDep compiles to valid OpenCL that passes checks") {
     util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(1), binomialTileDep)
       checkOCL(132, LocalSize(1), GlobalSize(1), binomialTileDep)
