@@ -14,7 +14,32 @@ object infer {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
-    traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
+    val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
+    printTypesAndTypeHoles(res)
+    res
+  }
+
+  def printTypesAndTypeHoles(expr: Expr): Unit = {
+    var holeFound = false
+    traversal.DepthFirstLocalResult(
+      expr,
+      new traversal.Visitor {
+        override def visitExpr(e: Expr): traversal.Result[Expr] = {
+          e match {
+            case h@primitives.typeHole(msg) =>
+              println(s"found type hole ${msg}: ${h.t}")
+              holeFound = true
+            case p@primitives.printType(msg) =>
+              println(s"$msg : ${p.t} (Rise level)")
+            case _ =>
+          }
+          traversal.Continue(e, this)
+        }
+      }
+    )
+    if (holeFound) {
+      error("type holes were found")(Seq())
+    }
   }
 
   implicit class TrivialSolutionConcat(a: Solution) {

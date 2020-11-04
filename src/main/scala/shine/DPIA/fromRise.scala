@@ -4,7 +4,7 @@ import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
 import rise.elevate.Rise
 import rise.elevate.rules._
-import rise.core.{semantics => rs, types => rt}
+import rise.core.{uniqueNames, semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
@@ -16,7 +16,9 @@ object fromRise {
     if (!r.IsClosedForm(expr)) {
       throw new Exception(s"expression is not in closed form: $expr\n\n with type ${expr.t}")
     }
-    val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
+    // TODO: consider if we can remove this going forward
+    val exprWithUniqueNames = uniqueNames.enforce(expr)
+    val bnfExpr = normalize(ev).apply(betaReduction)(exprWithUniqueNames).get
     val rwMap = inferAccess(bnfExpr)
     expression(bnfExpr, rwMap)
   }
