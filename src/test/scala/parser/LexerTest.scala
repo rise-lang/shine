@@ -19,8 +19,8 @@ class LexerTest extends  AnyFlatSpec {
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("a",_)::Arrow(_)::
-        Backslash(_)::Identifier("x",_)::Arrow(_):: LBrace(_)::
-        Identifier("a",_)::RBrace(_) ::EndNamedExpr(_)
+        Backslash(_)::Identifier("x",_)::Arrow(_)::
+        Identifier("a",_)::EndNamedExpr(_)
         :: Nil => true
       case a => fail(a.toString())
     }
@@ -586,6 +586,23 @@ class LexerTest extends  AnyFlatSpec {
         Backslash(_) :: Identifier("x", _)  ::
         Arrow(_) :: BinOp(BinOpType.ADD, _) :: Identifier("x", _)  :: I32(5, _) ::
         EndNamedExpr(_)::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "work for the TupleType" in {
+    val fileName: String = testFilePath + "TupleType.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(TupleType(IntTyp(),FloatTyp()), _):: Arrow(_)::Type(IntTyp(), _) ::
+        Arrow(_) :: Type(IntTyp(), _)::
+
+        EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
+        Identifier("t",_)::EndNamedExpr(_)
+        :: Nil => true
       case a => fail(a.toString())
     }
   }

@@ -1282,11 +1282,69 @@ if '==' then two steps else only one step
     }
   }
 
-
-  /*
-  for example "I32", "Identifier"
- */
   private def lexType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
+    println("Now in lexType: arr("+column+","+row+") = "+ arr(column)(row))
+    var r = row
+    if(arr(column)(r)=='(' || ){ //TupleType
+      r=r+1
+      val type1Either = lexType(column,r)
+      r=type1Either._2
+      val type1:ConcreteType = type1Either._1 match {
+        case Left(Type(concreteType, span)) => concreteType
+        case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
+        case Right(e) => return (Right(e),r)
+      }
+      if(!(arr(column)(r)==',')){
+        val loc = Location(column,r)
+        val span = new Span(fileReader,loc)
+        return (Right(NotExpectedToken(",", arr(column)(r)+"",span, fileReader)), r)
+      }
+      r=r+1
+      val type2Either = lexType(column,r)
+      r=type2Either._2
+      val type2:ConcreteType = type2Either._1 match {
+        case Left(Type(concreteType, span)) => concreteType
+        case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
+        case Right(e) => return (Right(e),r)
+      }
+      if(!(arr(column)(r)==')')){
+        val loc = Location(column,r)
+        val span = new Span(fileReader,loc)
+        return (Right(NotExpectedToken(")", arr(column)(r)+"",span, fileReader)), r)
+      }
+      r=r+1
+      val locBegin = Location(column, row)
+      val locEnd = Location(column, r)
+      (Left(Type(TupleType(type1, type2), Span(fileReader, locBegin, locEnd))),r)
+    }else if(arr(column)(r).isDigit){
+      val (nat,r1) =  lexNat(column,r)
+      r=r1-1
+      if(!(arr(column)(r)=='.')){
+        val loc = Location(column,r)
+        val span = new Span(fileReader,loc)
+        return (Right(NotExpectedToken(".", arr(column)(r)+"",span, fileReader)), r)
+      }
+      r=r+1
+      val typeArrayEither = lexType(column,r)
+//      println("typeArrayEither: "+ typeArrayEither.toString())
+      r=typeArrayEither._2
+      val typeArray:ConcreteType = typeArrayEither._1 match {
+        case Left(Type(concreteType, span)) => concreteType
+        case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
+        case Right(e) => return (Right(e),r)
+      }
+//      println("typeArray: "+ typeArray.toString())
+      val locBegin = Location(column, row)
+      val locEnd = Location(column, r)
+      val arrType = ArrayType(nat, typeArray)
+      println("arrType: "+ arrType)
+      (Left(Type(arrType, Span(fileReader, locBegin, locEnd))),r)
+    }else{
+      lexScalarType(column,r)
+    }
+  }
+
+  private def lexScalarType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
     val (pos, substring, locStart) = lexName(column, row, arr)
     if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
@@ -1405,6 +1463,16 @@ if '==' then two steps else only one step
       val locEnd:Location = Location(column, pos)
       (Left(F32(substring.toFloat, Span(fileReader,locStart, locEnd))),pos)
     }
+  }
+
+  private def lexNat(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Nat,Int) = {
+    var r: Int = row + 1
+    var substring: String = arr(column).substring(row, r)
+    while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[0-9]+")) {
+      substring= arr(column).substring(row, r)
+      r = r + 1
+    }
+    (Nat(substring.toInt),r)
   }
 
   /*
