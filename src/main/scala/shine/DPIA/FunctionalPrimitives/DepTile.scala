@@ -45,6 +45,8 @@ final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
   ): Phrase[CommType] = {
     import shine.DPIA.Compilation.TranslationToImperative._
 
+    // "DepSlide"
+    // DepJoinAcc
     con(array)(fun(array.t)(x =>
       ???
     ))

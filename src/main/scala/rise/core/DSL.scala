@@ -21,6 +21,7 @@ object DSL {
   def toMemFun(f: Expr): Expr = fun(x => toMem(f(x)))
   def makeArray(n: Int): Primitive = primitives.makeArray(n).primitive
   def cast: Primitive = primitives.cast.primitive
+  def depSlide: Primitive = primitives.depSlide.primitive
   def depJoin: Primitive = primitives.depJoin.primitive
   def depMapSeq: Primitive = primitives.depMapSeq.primitive
   def depZip: Primitive = primitives.depZip.primitive

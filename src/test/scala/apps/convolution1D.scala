@@ -29,7 +29,6 @@ class convolution1D extends test_util.Tests {
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ) >> join
 
-  // FIXME: running in parallel will trigger race condition?
   val binomialTileShiftInwards: Expr =
     tileShiftInwards(32)(mapGlobal(0)(
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
@@ -106,7 +105,6 @@ class convolution1D extends test_util.Tests {
   }
 
   test("binomialTileShiftInwards compiles to valid OpenCL that passes checks") {
-    // FIXME: race condition?
     util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(64), binomialTileShiftInwards)
       checkOCL(132, LocalSize(1), GlobalSize(64), binomialTileShiftInwards)
@@ -114,7 +112,7 @@ class convolution1D extends test_util.Tests {
     }
   }
 
-  // TODO: concat codegen
+  // TODO: nat normal form + concat codegen
   ignore("binomialTileEpilogue compiles to valid OpenCL that passes checks") {
     util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(2), binomialTileEpilogue)
@@ -123,12 +121,33 @@ class convolution1D extends test_util.Tests {
     }
   }
 
-  // TODO: codegen+parallelism
+  // TODO: codegen + parallelism
   ignore("binomialTileDep compiles to valid OpenCL that passes checks") {
     util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(1), binomialTileDep)
       checkOCL(132, LocalSize(1), GlobalSize(1), binomialTileDep)
       checkOCL(148, LocalSize(1), GlobalSize(1), binomialTileDep)
     }
+  }
+
+  // TODO: BigSum simplification/unification
+  ignore("depSlide inference") {
+    println(types.infer(
+      nFun(n => fun(((n+2)`.`f32) ->: (n`.`f32))(a =>
+        a |>
+        depSlide(n+2)(34)(32) >>
+        depMapSeq(nFun { i =>
+          import arithexpr.arithmetic.IfThenElse
+          import arithexpr.arithmetic.BoolExpr.arithPredicate
+          import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
+
+          val fullWindows = n / 32
+          val remainder = n % 32
+          val m: Nat = IfThenElse(arithPredicate(i, fullWindows, Operator.<), 32, remainder)
+          (slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
+            ) :: ((m + 2) `.` f32) ->: (m `.` f32)
+        }) >> depJoin
+      ))
+    ).t)
   }
 }

@@ -15,7 +15,7 @@ object HighLevelConstructs {
   // Halide::TailStrategy::ShiftInwards:
   // Prevent evaluation beyond the original extent by shifting the tail case inwards,
   // re-evaluating some points near the end.
-  // WARNING: data-races can currently happen if processing tiles in parallel
+  // WARNING: data-races will happen if processing tiles in parallel
   def tileShiftInwards(tileSize: Nat): Expr =
     impl{ n: Nat => impl{ haloSize: Nat =>
     impl{ s: DataType => impl{ t: DataType =>

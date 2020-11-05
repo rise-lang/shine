@@ -222,19 +222,21 @@ object primitives {
       ((sp * n + sz) `.` t) ->: ((1 + n) `.` sz `.` t) }))}
   }
 
-  /*
   @primitive object depSlide extends Primitive with Builder {
-    impl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
+    expl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
       import arithexpr.arithmetic.IfThenElse
       import arithexpr.arithmetic.BoolExpr.arithPredicate
       import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
 
-      val allWindows = (n - sz + 2*sp - 1) / sp
-      val fullWindows = (n - sz + sp) / sp
-      val remainder = (n - sz + sp) % sp
-      (n `.` t) ->: (allWindows`*.`(i => IfThenElse(arithPredicate(i, fullWindows, Operator.<), sz, remainder) `.` t))
+      val halo = sz - sp
+      val allWindows = (n - halo + sp - 1) / sp
+      val fullWindows = (n - halo) / sp
+      val remainder = (n - halo) % sp
+      (n `.` t) ->: (allWindows`*.`(i =>
+        (IfThenElse(arithPredicate(i, fullWindows, Operator.<), sp, remainder) + halo) `.` t))
     }))}
-  }*/
+  }
+
   @primitive object depTile extends Primitive with Builder {
     impl{ n: Nat => expl((tile: Nat) => impl{ halo: Nat =>
     impl{ s: DataType => impl{ t: DataType =>
