@@ -665,9 +665,17 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
       arr(column)(row) match {
         case '(' => {
-          val loc:Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(LBrace(new Span(fileReader,loc)))
-          row = row +1
+          lexType(column,row) match {
+            case (Left(a), r) => {
+              row = r
+              list=list.::(a)
+            }
+            case (Right(_), _) => {
+              val loc:Location = Location(column, row) //endLocation is equal to startLocation
+              list = list.::(LBrace(new Span(fileReader,loc)))
+              row = row +1
+            }
+          }
         }
         case ')' => {
           val loc:Location = Location(column, row) //endLocation is equal to startLocation
@@ -1285,15 +1293,17 @@ if '==' then two steps else only one step
   private def lexType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
     println("Now in lexType: arr("+column+","+row+") = "+ arr(column)(row))
     var r = row
-    if(arr(column)(r)=='(' || ){ //TupleType
+    if(arr(column)(r)=='('){ //TupleType
       r=r+1
       val type1Either = lexType(column,r)
+//      println("type1Either: "+ type1Either.toString())
       r=type1Either._2
       val type1:ConcreteType = type1Either._1 match {
         case Left(Type(concreteType, span)) => concreteType
         case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
         case Right(e) => return (Right(e),r)
       }
+//      println("type1: "+ type1.toString())
       if(!(arr(column)(r)==',')){
         val loc = Location(column,r)
         val span = new Span(fileReader,loc)
@@ -1301,12 +1311,14 @@ if '==' then two steps else only one step
       }
       r=r+1
       val type2Either = lexType(column,r)
+//      println("type2Either: "+ type2Either.toString())
       r=type2Either._2
       val type2:ConcreteType = type2Either._1 match {
         case Left(Type(concreteType, span)) => concreteType
         case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
         case Right(e) => return (Right(e),r)
       }
+//      println("type2: "+ type2.toString())
       if(!(arr(column)(r)==')')){
         val loc = Location(column,r)
         val span = new Span(fileReader,loc)
@@ -1315,7 +1327,9 @@ if '==' then two steps else only one step
       r=r+1
       val locBegin = Location(column, row)
       val locEnd = Location(column, r)
-      (Left(Type(TupleType(type1, type2), Span(fileReader, locBegin, locEnd))),r)
+      val tupleType = TupleType(type1, type2)
+      println("TupleType: "+ tupleType)
+      (Left(Type(tupleType, Span(fileReader, locBegin, locEnd))),r)
     }else if(arr(column)(r).isDigit){
       val (nat,r1) =  lexNat(column,r)
       r=r1-1
@@ -1575,7 +1589,7 @@ private def createIdentifierBeginsWithAF32Number(column:Int,row:Int,  pos:Int, l
   it is only relevant here, that '=' is a known symbol
    */
   def otherKnownSymbol(c:Char): Boolean = {
-    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!')
+    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',')
     set(c) //set.contains(c)
   }
 
