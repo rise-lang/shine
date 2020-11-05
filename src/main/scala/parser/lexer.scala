@@ -1377,6 +1377,33 @@ if '==' then two steps else only one step
       val arrType = ArrayType(nat, typeArray)
       println("arrType: "+ arrType)
       (Left(Type(arrType, Span(fileReader, locBegin, locEnd))),r)
+    }else if(arr(column).length>r+4 && arr(column).substring(r, r+4)=="Idx["){
+      r=r+4
+      //ignore whitespaces
+      skipWhitespaceWhitoutNewLine(column, r) match {
+        case (c, row) => {
+          r = row
+        }
+      }
+      val (nat,r1) =  lexNat(column,r)
+      r=r1-1
+      //ignore whitespaces
+      skipWhitespaceWhitoutNewLine(column, r) match {
+        case (c, row) => {
+          r = row
+        }
+      }
+      if(!(arr(column)(r)==']')){
+        val loc = Location(column,r)
+        val span = new Span(fileReader,loc)
+        return (Right(NotExpectedToken("]", arr(column)(r)+"",span, fileReader)), r)
+      }
+      r=r+1
+      val locBegin = Location(column, row)
+      val locEnd = Location(column, r)
+      val indexType = IndexType(nat)
+      println("indexType: "+ indexType)
+      (Left(Type(indexType, Span(fileReader, locBegin, locEnd))),r)
     }else{
       lexScalarType(column,r)
     }

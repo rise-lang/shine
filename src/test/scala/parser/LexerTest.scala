@@ -400,6 +400,40 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
+  "RecognizeLexeme" should "work for the Idx" in {
+    val fileName: String = testFilePath + "Idx.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(IndexType(Nat(2)), _)::
+        Arrow(_)::Type(IntTyp(), _) ::
+
+        EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
+        Identifier("t",_)::EndNamedExpr(_)
+        :: Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "work for the Idx2" in {
+    val fileName: String = testFilePath + "Idx2.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(IndexType(Nat(42)), _)::
+        Arrow(_)::Type(IntTyp(), _) ::
+
+        EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
+        Identifier("t",_)::EndNamedExpr(_)
+        :: Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
   "RecognizeLexeme" should "lessComplexInOneLine" in {
     val fileName: String = testFilePath + "lessComplexInOneLine.rise"
     val file: FileReader =  FileReader(fileName)
