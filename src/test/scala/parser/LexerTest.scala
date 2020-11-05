@@ -607,6 +607,60 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
+  "RecognizeLexeme" should "work for the TupleType2" in {
+    val fileName: String = testFilePath + "TupleType2.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(TupleType(IntTyp(),FloatTyp()), _)::
+        Arrow(_)::Type(IntTyp(), _) ::
+
+        EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
+        Identifier("t",_)::EndNamedExpr(_)
+        :: Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "work for the TupleType3" in {
+    val fileName: String = testFilePath + "TupleType3.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(TupleType(IntTyp(), ArrayType(Nat(2),IntTyp())), _)::
+        Arrow(_)::Type(IntTyp(), _) ::
+
+        EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
+        Identifier("t",_)::EndNamedExpr(_)
+        :: Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
+  "RecognizeLexeme" should "work for the TupleType4" in {
+    val fileName: String = testFilePath + "TupleType4.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: Type(TupleType(TupleType(IntTyp(),
+          ArrayType(Nat(5), ArrayType(Nat(4), ArrayType(Nat(3),
+            ArrayType(Nat(2), IntTyp()))))),
+      ArrayType(Nat(2), TupleType(IntTyp(), IntTyp()))), _)::
+        Arrow(_)::Type(IntTyp(), _) ::
+
+        EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
+        Identifier("t",_)::EndNamedExpr(_)
+        :: Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
   "RecognizeLexeme" should "work for twoplus1extraDefintion" in {
     val fileName: String = testFilePath + "twoplus1extraDefintion.rise"
     val file: FileReader =  FileReader(fileName)

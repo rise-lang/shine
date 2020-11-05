@@ -1295,6 +1295,12 @@ if '==' then two steps else only one step
     var r = row
     if(arr(column)(r)=='('){ //TupleType
       r=r+1
+      //ignore whitespaces
+      skipWhitespaceWhitoutNewLine(column, r) match {
+        case (c, row) => {
+          r = row
+        }
+      }
       val type1Either = lexType(column,r)
 //      println("type1Either: "+ type1Either.toString())
       r=type1Either._2
@@ -1303,6 +1309,12 @@ if '==' then two steps else only one step
         case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
         case Right(e) => return (Right(e),r)
       }
+      //ignore whitespaces
+      skipWhitespaceWhitoutNewLine(column, r) match {
+        case (c, row) => {
+          r = row
+        }
+      }
 //      println("type1: "+ type1.toString())
       if(!(arr(column)(r)==',')){
         val loc = Location(column,r)
@@ -1310,6 +1322,12 @@ if '==' then two steps else only one step
         return (Right(NotExpectedToken(",", arr(column)(r)+"",span, fileReader)), r)
       }
       r=r+1
+      //ignore whitespaces
+      skipWhitespaceWhitoutNewLine(column, r) match {
+        case (c, row) => {
+          r = row
+        }
+      }
       val type2Either = lexType(column,r)
 //      println("type2Either: "+ type2Either.toString())
       r=type2Either._2
@@ -1319,6 +1337,12 @@ if '==' then two steps else only one step
         case Right(e) => return (Right(e),r)
       }
 //      println("type2: "+ type2.toString())
+      //ignore whitespaces
+      skipWhitespaceWhitoutNewLine(column, r) match {
+        case (c, row) => {
+          r = row
+        }
+      }
       if(!(arr(column)(r)==')')){
         val loc = Location(column,r)
         val span = new Span(fileReader,loc)
