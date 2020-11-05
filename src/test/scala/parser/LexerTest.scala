@@ -596,8 +596,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(TupleType(IntTyp(),FloatTyp()), _):: Arrow(_)::Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: Type(TupleType(IntTyp(),FloatTyp()), _)::
+        Arrow(_)::Type(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
