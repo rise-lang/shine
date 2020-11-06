@@ -277,6 +277,23 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
+  "RecognizeLexeme" should "work for the DepLambdaNat" in {
+    val fileName: String = testFilePath + "DepLambdaNat.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(NatK(), _) :: DepArrow(_) :: Type(ArrayType(n, IntTyp()), _)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(span6) :: Identifier("a", _) ::Arrow(_) ::
+        Identifier("a", _) :: EndNamedExpr(_)::Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
   "RecognizeLexeme" should "work for the DepLambda" in {
     val fileName: String = testFilePath + "DepLambda.rise"
     val file: FileReader =  FileReader(fileName)

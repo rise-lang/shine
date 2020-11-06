@@ -707,6 +707,36 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             list=list.::(a)
           }
           case (Right(a), _) => {
+            lexIdentifier(column,row) match {
+              case (Left(ident),r) => {
+                row =r
+                if(ident.isInstanceOf[TypeIdentifier]){
+                  list = list.::(ident)
+                  skipWhitespaceWhitoutNewLine(column, row) match {
+                    case (c,r) =>{
+                      column = c
+                      row = r
+                    }
+                  }
+                }else{
+                  TypeIdentifierExpectedNotIdentifier(ident.toString, ident.s, fileReader).throwException()
+                }
+              }
+              case (Right(e),r) => e.throwException()
+            }
+            lexColon(column, row) match {
+              case Left(colon)=>{
+                row=row+1
+                skipWhitespaceWhitoutNewLine(column, row) match {
+                  case (c,r) =>{
+                    column = c
+                    row = r
+                  }
+                }
+                list=list.::(colon)
+              }
+              case Right(e)=> e.throwException()
+            }
             lexKind(column, row) match {
               case (Left(a), r) => {
                 row = r
@@ -1141,6 +1171,21 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
   }
 
+
+  private def lexColon(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]={
+    arr(column)(row) match {
+      case ':' => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Left(Colon(new Span(fileReader,loc)))
+      }
+      case a => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken(":", ""+ a, Span(fileReader,loc, loc), fileReader))
+      }
+    }
+  }
+
+
 private def lexDeporNormalArrow(column:Int, row: Int, arr: Array[String], symbol: String):Either[Token,PreAndErrorToken]={
   if(arr(column).length <= row +1){
     val loc:Location = Location(column, row) //endLocation is equal to startLocation
@@ -1354,29 +1399,6 @@ if '==' then two steps else only one step
       val tupleType = TupleType(type1, type2)
       println("TupleType: "+ tupleType)
       (Left(Type(tupleType, Span(fileReader, locBegin, locEnd))),r)
-    }else if(arr(column)(r).isDigit){
-      val (nat,r1) =  lexNat(column,r)
-      r=r1-1
-      if(!(arr(column)(r)=='.')){
-        val loc = Location(column,r)
-        val span = new Span(fileReader,loc)
-        return (Right(NotExpectedToken(".", arr(column)(r)+"",span, fileReader)), r)
-      }
-      r=r+1
-      val typeArrayEither = lexType(column,r)
-//      println("typeArrayEither: "+ typeArrayEither.toString())
-      r=typeArrayEither._2
-      val typeArray:ConcreteType = typeArrayEither._1 match {
-        case Left(Type(concreteType, span)) => concreteType
-        case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
-        case Right(e) => return (Right(e),r)
-      }
-//      println("typeArray: "+ typeArray.toString())
-      val locBegin = Location(column, row)
-      val locEnd = Location(column, r)
-      val arrType = ArrayType(nat, typeArray)
-//      println("arrType: "+ arrType)
-      (Left(Type(arrType, Span(fileReader, locBegin, locEnd))),r)
     }else if(arr(column).length>r+4 && arr(column).substring(r, r+4)=="Idx["){
       r=r+4
       //ignore whitespaces
@@ -1404,8 +1426,39 @@ if '==' then two steps else only one step
       val indexType = IndexType(nat)
 //      println("indexType: "+ indexType)
       (Left(Type(indexType, Span(fileReader, locBegin, locEnd))),r)
+    }else if(arr(column)(r).isLetterOrDigit){//ArrayType
+      val (nat,r1) =  if(arr(column)(r).isDigit) {
+        println("Ja: "+ arr(column)(r))
+        lexNat(column,r)
+      }else{
+        println("Nein: "+arr(column)(r))
+        lexIdentifier(column,row)
+      }
+      r=r1-1
+      if(!(arr(column)(r)=='.')){
+        return lexScalarType(column,row)
+      }
+      r=r+1
+      val typeArrayEither = lexType(column,r)
+      //      println("typeArrayEither: "+ typeArrayEither.toString())
+      r=typeArrayEither._2
+      val typeArray:ConcreteType = typeArrayEither._1 match {
+        case Left(Type(concreteType, span)) => concreteType
+        case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
+        case Right(e) => return (Right(e),r)
+      }
+      //      println("typeArray: "+ typeArray.toString())
+      val locBegin = Location(column, row)
+      val locEnd = Location(column, r)
+      val arrType = nat match {
+        case Nat(n) => ArrayType(Nat(n), typeArray)
+        case TypeIdentifier(name,_) => ArrayType(Nat(-1), typeArray)
+      }
+      //      println("arrType: "+ arrType)
+      (Left(Type(arrType, Span(fileReader, locBegin, locEnd))),r)
     }else{
-      lexScalarType(column,r)
+      val loc = Location(column, r)
+      (Right(NotExpectedToken("We expect a ScalarType or an CombinedType", ""+arr(column)(r), new Span(fileReader, loc), fileReader)), r)
     }
   }
 
@@ -1640,7 +1693,7 @@ private def createIdentifierBeginsWithAF32Number(column:Int,row:Int,  pos:Int, l
   it is only relevant here, that '=' is a known symbol
    */
   def otherKnownSymbol(c:Char): Boolean = {
-    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',')
+    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',', '.')
     set(c) //set.contains(c)
   }
 

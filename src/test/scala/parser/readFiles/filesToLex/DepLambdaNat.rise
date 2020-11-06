@@ -1,2 +1,2 @@
-f::n:NatK=>n.I32
+f::N:NatK=>N.I32
 f=\arr->arr
