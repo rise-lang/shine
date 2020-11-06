@@ -1407,7 +1407,7 @@ if '==' then two steps else only one step
           r = row
         }
       }
-      val (nat,r1) =  lexNat(column,r)
+      val (nat,r1) =  lexNatNumber(column,r)
       r=r1-1
       //ignore whitespaces
       skipWhitespaceWhitoutNewLine(column, r) match {
@@ -1424,37 +1424,55 @@ if '==' then two steps else only one step
       val locBegin = Location(column, row)
       val locEnd = Location(column, r)
       val indexType = IndexType(nat)
-//      println("indexType: "+ indexType)
+      println("indexType: "+ indexType)
       (Left(Type(indexType, Span(fileReader, locBegin, locEnd))),r)
     }else if(arr(column)(r).isLetterOrDigit){//ArrayType
       val (nat,r1) =  if(arr(column)(r).isDigit) {
         println("Ja: "+ arr(column)(r))
-        lexNat(column,r)
+        lexNatNumber(column,r)
       }else{
         println("Nein: "+arr(column)(r))
         lexIdentifier(column,row)
       }
-      r=r1-1
-      if(!(arr(column)(r)=='.')){
+      r=r1
+      if(arr(column).length<=r|| !(arr(column)(r)=='.')){
+        if(!(arr(column).length<=r) && arr(column)(r)==':'){
+          println("We see an ':'")
+          val loc:Location = Location(column, r)
+          val span =  new Span(fileReader,loc)
+          return (Right(NotExpectedToken('.'+"", ':'+"", span, fileReader)), r)
+        }
+        if(!(arr(column).length<=r)){
+          println("We don't see an '.', but an "+ arr(column)(r))
+        }
         return lexScalarType(column,row)
       }
       r=r+1
       val typeArrayEither = lexType(column,r)
-      //      println("typeArrayEither: "+ typeArrayEither.toString())
+      println("typeArrayEither: "+ typeArrayEither.toString())
       r=typeArrayEither._2
       val typeArray:ConcreteType = typeArrayEither._1 match {
         case Left(Type(concreteType, span)) => concreteType
         case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
         case Right(e) => return (Right(e),r)
       }
-      //      println("typeArray: "+ typeArray.toString())
+      println("typeArray: "+ typeArray.toString())
       val locBegin = Location(column, row)
       val locEnd = Location(column, r)
       val arrType = nat match {
-        case Nat(n) => ArrayType(Nat(n), typeArray)
-        case TypeIdentifier(name,_) => ArrayType(Nat(-1), typeArray)
+        case NatNumber(n) => ArrayType(NatNumber(n), typeArray)
+          //Todo: How should I implement an TypeIdentifier in ArrayType and how should I work with it????
+        case Left(TypeIdentifier(name,_)) => ArrayType(NatIdent(name), typeArray)
+        case Left(Identifier(name,span))=> {
+          println("We see an Identifier and not an TypeIdentifier: "+ name)
+          return (Right(TypeIdentifierExpectedNotIdentifier(name, span, fileReader)),r)
+        }
+        case t => {
+          println("This is completely wrong: "+ t)
+          return (Right(NotExpectedToken("5 or 'N'", t.toString, Span(fileReader,Location(column,row), Location(column, r)), fileReader)), r)
+        }
       }
-      //      println("arrType: "+ arrType)
+      println("arrType: "+ arrType)
       (Left(Type(arrType, Span(fileReader, locBegin, locEnd))),r)
     }else{
       val loc = Location(column, r)
@@ -1479,27 +1497,6 @@ if '==' then two steps else only one step
         case "F32"  => (Left(Type(FloatTyp(), span)),pos)
         case "F64"  => (Left(Type(DoubleType(), span)),pos)
         case "Nat"  => (Left(Type(NatTyp(), span)),pos)
-          //Todo: this doesn't work, because it isn't able to match this pattern, because in lexName we
-          //Todo: match a different more simpler pattern.
-          //Todo: we aren't able to change the pattern in lexName or have an extra pattern for
-          //Todo: lexType, because this whole Function don't work then not any longer correct.
-          //Todo: I have to lex then Numbers and Dots and after that lexType in a
-          //Todo: different function and I have to call that. I can reuse for that the RegexExpr.
-//        case array if array.matches("([0-9])+[.]([a-zA-Z]+)") => {
-//          val dotPosition = array.indexOf(".")
-//          val arrayLength = Nat(array.substring(0, dotPosition).toInt)
-//          val a: Array[String] = Array{array}
-//          val arrayType:Type = lexType(0, dotPosition, a) match {
-//            case (Right(e), pos) => return (Right(e), pos)
-//            case (Left(t),_) => t.asInstanceOf[Type]
-//          }
-//          (Left(Type(ArrayType(arrayLength, arrayType.concreteType), span)),pos)
-//        }
-          //Todo: Tuple is pretty hard, because simple to work with the regex pattern or to see
-        // Todo: where the first "," doesn't work correct.
-        // Todo: I have to make a seperate function, where I go per Hand/Loop throug this string!!!
-//        case tuple if tuple.matches("[(].*[,].*[)]") => { }
-
         case a => (Right(UnknownType(substring, span, fileReader)),pos)
       }
     }
@@ -1583,14 +1580,14 @@ if '==' then two steps else only one step
     }
   }
 
-  private def lexNat(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Nat,Int) = {
+  private def lexNatNumber(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Nat,Int) = {
     var r: Int = row + 1
     var substring: String = arr(column).substring(row, r)
     while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[0-9]+")) {
       substring= arr(column).substring(row, r)
       r = r + 1
     }
-    (Nat(substring.toInt),r)
+    (NatNumber(substring.toInt),r)
   }
 
   /*

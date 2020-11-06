@@ -4,9 +4,17 @@ package parser
 nat is a natural number
 it is needed for arrayTypes (how long is the array)
  */
-case class Nat(number: Int){
+abstract sealed class Nat()
+
+case class NatNumber(number: Int) extends Nat{
   require(number >= 0, "number is negative")
   override def toString = s"<$number:nat>"
+}
+
+case class NatIdent(name: String) extends Nat{
+  require(!name.isEmpty, "String is empty")
+  require(name.matches("[a-zA-Z][a-zA-Z0-9_]*"), "has not the preffered structure")
+  override def toString = s"<$name :natIdent>"
 }
 
 

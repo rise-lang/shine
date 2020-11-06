@@ -14,7 +14,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(ArrayType(Nat(5), IntTyp()), _):: Arrow(_)::Type(IntTyp(), _) ::
+        DoubleColons(_) :: Type(ArrayType(NatNumber(5), IntTyp()), _):: Arrow(_)::Type(IntTyp(), _) ::
         Arrow(_) :: Type(IntTyp(), _)::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -423,7 +423,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IndexType(Nat(2)), _)::
+        DoubleColons(_) :: Type(IndexType(NatNumber(2)), _)::
         Arrow(_)::Type(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -440,7 +440,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IndexType(Nat(42)), _)::
+        DoubleColons(_) :: Type(IndexType(NatNumber(42)), _)::
         Arrow(_)::Type(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -681,7 +681,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(TupleType(IntTyp(), ArrayType(Nat(2),IntTyp())), _)::
+        DoubleColons(_) :: Type(TupleType(IntTyp(), ArrayType(NatNumber(2),IntTyp())), _)::
         Arrow(_)::Type(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -699,9 +699,9 @@ class LexerTest extends  AnyFlatSpec {
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: Type(TupleType(TupleType(IntTyp(),
-          ArrayType(Nat(5), ArrayType(Nat(4), ArrayType(Nat(3),
-            ArrayType(Nat(2), IntTyp()))))),
-      ArrayType(Nat(2), TupleType(IntTyp(), IntTyp()))), _)::
+          ArrayType(NatNumber(5), ArrayType(NatNumber(4), ArrayType(NatNumber(3),
+            ArrayType(NatNumber(2), IntTyp()))))),
+      ArrayType(NatNumber(2), TupleType(IntTyp(), IntTyp()))), _)::
         Arrow(_)::Type(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::

@@ -138,7 +138,10 @@ object parser {
   }
 
   private def getNat(nat: Nat):r.Nat= {
-    nat.number
+    nat match {
+      case NatNumber(number) => number
+      case NatIdent(name) => rt.NatIdentifier(name)
+    }
   }
 
 
