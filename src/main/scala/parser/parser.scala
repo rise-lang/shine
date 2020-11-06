@@ -105,14 +105,41 @@ object parser {
     }
   }
 
-  private def getScalarType(typ: ConcreteType): Option[rt.Type] = typ match {
-      case ShortTyp() => Some(rt.i8)
-      case IntTyp() => Some(rt.i32)
-      case FloatTyp() => Some(rt.f32)
-      case DoubleType() => Some(rt.f64)
-      case BoolType() => Some(rt.bool)
-      case notAtype => None
+  private def getType(typ: ConcreteType): Option[rt.DataType] = typ match {
+      case ArrayType(nat, concreteType) => {
+        val conT = getType(concreteType) match {
+          case None => return None
+          case Some(t) => t
+        }
+        Some(rt.ArrayType(getNat(nat),conT))
+      }
+      case TupleType(typ1, typ2) => {
+        val t1 = getType(typ1) match {
+          case None => return None
+          case Some(t) => t
+        }
+        val t2 = getType(typ2) match {
+          case None => return None
+          case Some(t) => t
+        }
+        Some(rt.PairType(t1, t2))
+      }
+      case IndexType(nat) => Some(rt.IndexType(getNat(nat)))
+      case otherType => getScalarType(otherType)
     }
+
+  private def getScalarType(typ: ConcreteType): Option[rt.DataType] = typ match {
+    case ShortTyp() => Some(rt.i8)
+    case IntTyp() => Some(rt.i32)
+    case FloatTyp() => Some(rt.f32)
+    case DoubleType() => Some(rt.f64)
+    case BoolType() => Some(rt.bool)
+    case notAtype => None
+  }
+
+  private def getNat(nat: Nat):r.Nat= {
+    nat.number
+  }
 
 
   def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
@@ -124,7 +151,7 @@ object parser {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
           case Type(typ, _) => {
-            val t = getScalarType(typ)
+            val t = getType(typ)
             t match {
               case None => Right(ParseError("failed to parse Type: " + typ + " is not an accpeted Type"))
               case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems, parseState.map))
@@ -146,7 +173,7 @@ object parser {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
           case Type(typ, _) =>  {
-            val t = getScalarType(typ)
+            val t = getType(typ)
             t match {
               case None => Right(ParseError("failed to parse Type: " + typ + " is not an accpeted Type"))
               case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems, parseState.map))
@@ -167,7 +194,7 @@ object parser {
           inputType match {
             case Type(typ, _) => {
               println("Type was in parseTypeWithoutArrow parsed: " + typ)
-              val parsedInType = getScalarType(typ)
+              val parsedInType = getType(typ)
               val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
               Left(ParseState(remainderTokens, SType(inT):: parseState.parsedSynElems, parseState.map))
             }
@@ -238,7 +265,7 @@ object parser {
         inputType match {
           case Type(typ, _) => {
             println("Type was in parseTypeWithArrow parsed: " + typ)
-            val parsedInType = getScalarType(typ)
+            val parsedInType = getType(typ)
             val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
             parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
               case Right(e) => Right(e)
@@ -443,6 +470,7 @@ object parser {
 
         val synElemList = psNamedExpr._2
         val expr = combineExpressions(synElemList)
+        expr.setType(typeOfFkt)
 
         println("expr finished: " + expr)
         val m = psNamedExpr._3

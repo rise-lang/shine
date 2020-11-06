@@ -1291,7 +1291,7 @@ if '==' then two steps else only one step
   }
 
   private def lexType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
-    println("Now in lexType: arr("+column+","+row+") = "+ arr(column)(row))
+//    println("Now in lexType: arr("+column+","+row+") = "+ arr(column)(row))
     var r = row
     if(arr(column)(r)=='('){ //TupleType
       r=r+1
@@ -1375,7 +1375,7 @@ if '==' then two steps else only one step
       val locBegin = Location(column, row)
       val locEnd = Location(column, r)
       val arrType = ArrayType(nat, typeArray)
-      println("arrType: "+ arrType)
+//      println("arrType: "+ arrType)
       (Left(Type(arrType, Span(fileReader, locBegin, locEnd))),r)
     }else if(arr(column).length>r+4 && arr(column).substring(r, r+4)=="Idx["){
       r=r+4
@@ -1402,7 +1402,7 @@ if '==' then two steps else only one step
       val locBegin = Location(column, row)
       val locEnd = Location(column, r)
       val indexType = IndexType(nat)
-      println("indexType: "+ indexType)
+//      println("indexType: "+ indexType)
       (Left(Type(indexType, Span(fileReader, locBegin, locEnd))),r)
     }else{
       lexScalarType(column,r)
