@@ -186,10 +186,23 @@ class harrisCornerDetectionHalideCheck
       LocalSize(1), GlobalSize(Ho / strip))
   }
 
-  test("harrisVecUnalignedTilePar(4) generates valid OpenCL") {
-    checkOCL(lowerOCL(ocl.harrisTilePar(tileX, tileY,
-      ocl.harrisVecUnaligned2(4))),
-      LocalSize((1, 1)), GlobalSize((2, 2)))
+  test("harrisTileShiftInwardsGParVecUnaligned(4) generates valid OpenCL") {
+    import rise.core.DSL.mapSeq
+    import rise.openCL.DSL.{mapGlobal, toPrivate}
+
+    checkOCL(lowerOCL(
+      ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
+      ocl.harrisVecUnaligned2(4, _ => mapSeq, toPrivate))),
+      LocalSize((1, 1)), GlobalSize((32, 32)))
+  }
+
+  test("harrisTileShiftInwardsWLParVecUnaligned(4) generates valid OpenCL") {
+    import rise.openCL.DSL.{mapWorkGroup, mapLocal, toLocal}
+
+    checkOCL(lowerOCL(
+      ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
+        ocl.harrisVecUnaligned2(4, mapLocal(_), toLocal))),
+      LocalSize((4, 4)), GlobalSize((32, 32)))
   }
 
   test("harrisBuffered rewrite generates valid OpenCL") {
