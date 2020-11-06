@@ -356,6 +356,56 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "be able to parse 'DepLambda.rise'" in {
+    //Todo: All DepLambda except DepLambdaNat are bullshit in their logic
+    //Todo: How I understand it, shuld DepLambda work like in DepLambdaNat
+    val fileName: String = testFilePath + "DepLambda.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex.t match {
+      case rt.DepFunType(rt.AddressSpaceIdentifier("Addr", _), rt.i32) => true
+      case t => println("The Type '"+t+"' is not the expected type.")
+    }
+
+    ex match {
+      case r.DepLambda(rt.AddressSpaceIdentifier("Addr", _), r.Identifier("t")) => true
+      case r.DepLambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'DepLambdaNat.rise'" in {
+    val fileName: String = testFilePath + "DepLambdaNat.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex.t match {
+      case rt.DepFunType(nat, rt.ArrayType(n,rt.i32)) => true
+      case t => println("The Type '"+t+"' is not the expected type.")
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("arr"), r.Identifier("arr")) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+  }
+
   "parser" should "be able to parse 'FunctionInBraces.rise'" in {
     val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
@@ -408,6 +458,30 @@ class parserTest extends  AnyFlatSpec {
 
     ex match {
       case r.Lambda(r.Identifier("x"), r.Identifier("x")) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'Idx.rise'" in {
+    val fileName: String = testFilePath + "Idx.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex.t match {
+      case rt.FunType(rt.IndexType(n), rt.i32) if n.eval.equals(2)=> true
+      case t => println("The Type '"+t+"' is not the expected type.")
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("t"), r.Identifier("t")) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -674,6 +748,33 @@ class parserTest extends  AnyFlatSpec {
 
     ex.t match {
       case rt.FunType(rt.PairType(rt.i32,rt.ArrayType(n,rt.i32)), rt.i32) if n.eval.equals(2) => true
+      case t => println("The Type '"+t+"' is not the expected type.")
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("t"), r.Identifier("t")) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'TupleType4.rise'" in {
+    val fileName: String = testFilePath + "TupleType4.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex.t match {
+      case rt.FunType(rt.PairType(rt.PairType(rt.i32,
+      rt.ArrayType(n5,rt.ArrayType(n4, rt.ArrayType(n3, rt.ArrayType(n2, rt.i32))))),
+      rt.ArrayType(n,rt.PairType(rt.i32, rt.i32))), rt.i32)
+        if n5.eval.equals(5) && n4.eval.equals(4) && n3.eval.equals(3)&&n2.eval.equals(2) &&n.eval.equals(2)=> true
       case t => println("The Type '"+t+"' is not the expected type.")
     }
 

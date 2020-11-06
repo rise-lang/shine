@@ -214,6 +214,7 @@ object parser {
     val nameOfIdentifier = typeIdentToken match {
       case TypeIdentifier(name, _) => name
       case _ => {
+        println("No TypeIdentifier seen")
         return Right(ParseError("No TypeIdentifier seen"))
       }
     }
