@@ -94,27 +94,26 @@ sealed abstract class Token (span: Span){
   val s:Span = span
 }
 
-  // "("
   final case class LParentheses(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
 
-    override def toString = "("
+    override def toString = "'('"
   }
 
   // ")"
   final case class RParentheses(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-    override def toString = ")"
+    override def toString = "')'"
   }
 
   final case class LBracket(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-    override def toString = "["
+    override def toString = "'['"
   }
 
   final case class RBracket(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-    override def toString = "]"
+    override def toString = "']'"
   }
 
   // example: "split"
@@ -152,64 +151,64 @@ sealed abstract class Token (span: Span){
   // "\"
   final case class Backslash (span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-    override def toString = "\\"
+    override def toString = "'\\'"
   }
 
   // "->"
   final case class Arrow (span: Span) extends Token(span){
     require(span.begin.column == span.end.column && (span.begin.row+1) ==span.end.row, "arrow has not lenght two")
-    override def toString = "->"
+    override def toString = "'->'"
   }
 
   // "=>"
   final case class DepArrow (span: Span) extends Token(span){
     require(span.begin.column == span.end.column && (span.begin.row+1) ==span.end.row, "depArrow has not lenght two")
-    override def toString = "=>"
+    override def toString = "'=>'"
   }
 
   final case class Dot(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-    override def toString = "."
+    override def toString = "'.'"
   }
 
   final case class Comma(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-    override def toString = ","
+    override def toString = "','"
   }
 
   // ":"
   //  (\x:a.x) : a -> a
   final case class Colon(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-    override def toString = ":"
+    override def toString = "':'"
   }
 
   final case class DoubleColons(span: Span) extends Token(span){
-    override def toString = "::"
+    override def toString = "'::'"
   }
 
   final case class EqualsSign(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-    override def toString = "="
+    override def toString = "'='"
   }
 
 object OpType {
   object UnaryOpType extends Enumeration {
     type UnaryOp = Value
-    val NEG: UnaryOp = Value("~") //it's not clear which one is which alone from the representation "-"
-    val NOT: UnaryOp = Value("!")
+    val NEG: UnaryOp = Value("'~'") //it's not clear which one is which alone from the representation "-"
+    val NOT: UnaryOp = Value("'!'")
   }
 
   object BinOpType extends Enumeration {
     type BinaryOp = Value
-      val ADD: BinaryOp = Value("+")
-      val SUB: BinaryOp = Value("-")
-      val MUL: BinaryOp = Value("*")
-      val DIV: BinaryOp = Value("/")
-      val MOD: BinaryOp = Value("%")
-      val GT: BinaryOp = Value(">")
-      val LT: BinaryOp = Value("<")
-      val EQ: BinaryOp = Value("==")
+      val ADD: BinaryOp = Value("'+'")
+      val SUB: BinaryOp = Value("'-'")
+      val MUL: BinaryOp = Value("'*'")
+      val DIV: BinaryOp = Value("'/'")
+      val MOD: BinaryOp = Value("'%'")
+      val GT: BinaryOp = Value("'>'")
+      val LT: BinaryOp = Value("'<'")
+      val EQ: BinaryOp = Value("'=='")
   }
 }
 import OpType.BinOpType._
