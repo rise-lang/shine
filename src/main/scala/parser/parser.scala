@@ -105,28 +105,29 @@ object parser {
     }
   }
 
-  private def getType(typ: ConcreteType): Option[rt.DataType] = typ match {
-      case ArrayType(nat, concreteType) => {
-        val conT = getType(concreteType) match {
-          case None => return None
-          case Some(t) => t
-        }
-        Some(rt.ArrayType(getNat(nat),conT))
-      }
-      case TupleType(typ1, typ2) => {
-        val t1 = getType(typ1) match {
-          case None => return None
-          case Some(t) => t
-        }
-        val t2 = getType(typ2) match {
-          case None => return None
-          case Some(t) => t
-        }
-        Some(rt.PairType(t1, t2))
-      }
-      case IndexType(nat) => Some(rt.IndexType(getNat(nat)))
-      case otherType => getScalarType(otherType)
-    }
+  //Todo: In Parser ArrayType etc. has to be created!!!
+//  private def getType(typ: ConcreteType): Option[rt.DataType] = typ match {
+//      case ArrayType(nat, concreteType) => {
+//        val conT = getType(concreteType) match {
+//          case None => return None
+//          case Some(t) => t
+//        }
+//        Some(rt.ArrayType(getNat(nat),conT))
+//      }
+//      case TupleType(typ1, typ2) => {
+//        val t1 = getType(typ1) match {
+//          case None => return None
+//          case Some(t) => t
+//        }
+//        val t2 = getType(typ2) match {
+//          case None => return None
+//          case Some(t) => t
+//        }
+//        Some(rt.PairType(t1, t2))
+//      }
+//      case IndexType(nat) => Some(rt.IndexType(getNat(nat)))
+//      case otherType => getScalarType(otherType)
+//    }
 
   private def getScalarType(typ: ConcreteType): Option[rt.DataType] = typ match {
     case ShortTyp() => Some(rt.i8)
@@ -137,12 +138,12 @@ object parser {
     case notAtype => None
   }
 
-  private def getNat(nat: NatType):r.Nat= {
-    nat match {
-      case NatNumber(number) => number
-      case NatIdent(name) => rt.NatIdentifier(name)
-    }
-  }
+//  private def getNat(nat: NatType):r.Nat= {
+//    nat match {
+//      case NatNumber(number) => number
+//      case NatIdent(name) => rt.NatIdentifier(name)
+//    }
+//  }
 
 
   def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
@@ -153,8 +154,9 @@ object parser {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
+            //Todo: Here is only for ScalarType yet, but I have to implement my complex Alg. now for ArrayType etc. here in parser
           case ScalarType(typ, _) => {
-            val t = getType(typ)
+            val t = getScalarType(typ)
             t match {
               case None => Right(ParseError("failed to parse Type: " + typ + " is not an accpeted Type"))
               case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems, parseState.map))
@@ -176,7 +178,8 @@ object parser {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
           case ScalarType(typ, _) =>  {
-            val t = getType(typ)
+            //Todo: Complex Alg for Types Parsing
+            val t = getScalarType(typ)
             t match {
               case None => Right(ParseError("failed to parse Type: " + typ + " is not an accpeted Type"))
               case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems, parseState.map))
@@ -197,7 +200,8 @@ object parser {
           inputType match {
             case ScalarType(typ, _) => {
               println("Type was in parseTypeWithoutArrow parsed: " + typ)
-              val parsedInType = getType(typ)
+              //Todo: Complex Alg for Type Parsing
+              val parsedInType = getScalarType(typ)
               val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
               Left(ParseState(remainderTokens, SType(inT):: parseState.parsedSynElems, parseState.map))
             }
@@ -267,7 +271,8 @@ object parser {
         inputType match {
           case ScalarType(typ, _) => {
             println("Type was in parseTypeWithArrow parsed: " + typ)
-            val parsedInType = getType(typ)
+            //Todo: Complex Alg for Type Parsing
+            val parsedInType = getScalarType(typ)
             val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
             parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
               case Right(e) => Right(e)

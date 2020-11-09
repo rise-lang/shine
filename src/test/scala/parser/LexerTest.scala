@@ -7,7 +7,7 @@ import org.scalatest.matchers.should.Matchers._
 
 class LexerTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
-
+  
   "RecognizeLexeme" should "work for the arrayType" in {
     val fileName: String = testFilePath + "arrayType.rise"
     val file: FileReader =  FileReader(fileName)
