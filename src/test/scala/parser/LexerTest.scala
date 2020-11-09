@@ -693,9 +693,9 @@ class LexerTest extends  AnyFlatSpec {
         LParentheses(_):: ScalarType(IntTyp(),_):: Comma(_) ::
         NatNumber(5, _)::Dot(_)::NatNumber(4, _)::Dot(_)::
         NatNumber(3, _)::Dot(_):: NatNumber(2, _)::Dot(_)::
-        ScalarType(FloatTyp(),_)::
+        ScalarType(IntTyp(),_)::
         RParentheses(_)::
-        Comma(_)::LParentheses(_)::
+        Comma(_)::
         NatNumber(2,_)::Dot(_)::
         LParentheses(_)::ScalarType(IntTyp(),_)::Comma(_)::ScalarType(IntTyp(),_)::RParentheses(_)::
         RParentheses(_)::
