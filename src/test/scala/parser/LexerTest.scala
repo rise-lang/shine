@@ -34,8 +34,8 @@ class LexerTest extends  AnyFlatSpec {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
-        EqualsSign(_)::Backslash(_)::Identifier("x",_)::Arrow(_)::LBrace(_)::
-        Identifier("x",_)::RBrace(_) ::EndNamedExpr(_)
+        EqualsSign(_)::Backslash(_)::Identifier("x",_)::Arrow(_)::LParentheses(_)::
+        Identifier("x",_)::RParentheses(_) ::EndNamedExpr(_)
         :: Nil => true
       case a => fail(a.toString())
     }
@@ -50,8 +50,8 @@ class LexerTest extends  AnyFlatSpec {
         DoubleColons(_) :: ScalarType(BoolType(), _) :: Arrow(_) :: ScalarType(BoolType(), _)::
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_) :: Identifier("b", _) :: Arrow(_) ::
-        LBrace(_) :: Identifier("b", _)
-        :: RBrace(_)
+        LParentheses(_) :: Identifier("b", _)
+        :: RParentheses(_)
         ::EndNamedExpr(_) :: Nil => true
       case a => fail(a.toString())
     }
@@ -66,8 +66,8 @@ class LexerTest extends  AnyFlatSpec {
         DoubleColons(_) :: ScalarType(BoolType(), _) :: Arrow(_) :: ScalarType(BoolType(), _)::
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_) :: Identifier("b", _) :: Arrow(_) ::
-        LBrace(_) :: UnOp(UnaryOpType.NOT, _)::Identifier("b", _)
-        :: RBrace(_)
+        LParentheses(_) :: UnOp(UnaryOpType.NOT, _)::Identifier("b", _)
+        :: RParentheses(_)
         ::EndNamedExpr(_) :: Nil => true
       case a => fail(a.toString())
     }
@@ -89,8 +89,8 @@ class LexerTest extends  AnyFlatSpec {
         Backslash(_) :: Identifier("y", _) :: Arrow(_):: Backslash(_) ::
         Identifier("z", _) :: Arrow(_)::
         BinOp(BinOpType.MUL, _):: Identifier("x", _)::
-        LBrace(_):: BinOp(BinOpType.ADD, _):: Identifier("y", _):: Identifier("z", _)::
-        RBrace(_):: EndNamedExpr(_)::Nil =>
+        LParentheses(_):: BinOp(BinOpType.ADD, _):: Identifier("y", _):: Identifier("z", _)::
+        RParentheses(_):: EndNamedExpr(_)::Nil =>
       case a => fail(a.toString())
     }
   }
@@ -105,8 +105,8 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        BinOp(BinOpType.MUL, _):: LBrace(_) :: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
-        RBrace(_):: Identifier("x", _):: EndNamedExpr(_)::Nil =>
+        BinOp(BinOpType.MUL, _):: LParentheses(_) :: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
+        RParentheses(_):: Identifier("x", _):: EndNamedExpr(_)::Nil =>
       case a => fail(a.toString())
     }
   }
@@ -121,8 +121,8 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        BinOp(BinOpType.MUL, _):: LBrace(_) :: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
-        RBrace(_):: Identifier("x", _):: EndNamedExpr(_)::Nil =>
+        BinOp(BinOpType.MUL, _):: LParentheses(_) :: BinOp(BinOpType.ADD, _):: Identifier("x", _):: Identifier("x", _)::
+        RParentheses(_):: Identifier("x", _):: EndNamedExpr(_)::Nil =>
       case a => fail(a.toString())
     }
   }
@@ -137,10 +137,10 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        BinOp(BinOpType.DIV, _):: LBrace(_):: BinOp(BinOpType.MUL, _)::
-        Identifier("x", _):: Identifier("x", _):: RBrace(_)::
-        LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::
-        RBrace(_):: EndNamedExpr(_)::Nil =>
+        BinOp(BinOpType.DIV, _):: LParentheses(_):: BinOp(BinOpType.MUL, _)::
+        Identifier("x", _):: Identifier("x", _):: RParentheses(_)::
+        LParentheses(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::
+        RParentheses(_):: EndNamedExpr(_)::Nil =>
       case a => fail(a.toString())
     }
   }
@@ -155,10 +155,10 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        BinOp(BinOpType.DIV, _):: LBrace(_):: BinOp(BinOpType.MUL, _)::
-        Identifier("x", _):: Identifier("x", _):: RBrace(_)::
-        LBrace(_):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _)::
-        RBrace(_):: Identifier("x", _)::RBrace(_)::EndNamedExpr(_):: Nil =>
+        BinOp(BinOpType.DIV, _):: LParentheses(_):: BinOp(BinOpType.MUL, _)::
+        Identifier("x", _):: Identifier("x", _):: RParentheses(_)::
+        LParentheses(_):: LParentheses(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _)::
+        RParentheses(_):: Identifier("x", _)::RParentheses(_)::EndNamedExpr(_):: Nil =>
       case a => fail(a.toString())
     }
   }
@@ -173,10 +173,10 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        BinOp(BinOpType.DIV, _):: LBrace(_):: LBrace(_):: BinOp(BinOpType.MUL, _)::
-        Identifier("x", _):: RBrace(_):: Identifier("x", _):: RBrace(_)::
-        LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::
-        RBrace(_):: EndNamedExpr(_)::Nil =>
+        BinOp(BinOpType.DIV, _):: LParentheses(_):: LParentheses(_):: BinOp(BinOpType.MUL, _)::
+        Identifier("x", _):: RParentheses(_):: Identifier("x", _):: RParentheses(_)::
+        LParentheses(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _):: Identifier("x", _)::
+        RParentheses(_):: EndNamedExpr(_)::Nil =>
       case a => fail(a.toString())
     }
   }
@@ -191,10 +191,10 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        LBrace(_):: BinOp(BinOpType.DIV, _):: LBrace(_):: LBrace(_)::
-        BinOp(BinOpType.MUL, _)::Identifier("x", _)::RBrace(_)::  Identifier("x", _)::
-        RBrace(_):: LBrace(_):: LBrace(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _)
-        ::RBrace(_)::  Identifier("x", _)::RBrace(_)::RBrace(_)::EndNamedExpr(_):: Nil =>
+        LParentheses(_):: BinOp(BinOpType.DIV, _):: LParentheses(_):: LParentheses(_)::
+        BinOp(BinOpType.MUL, _)::Identifier("x", _)::RParentheses(_)::  Identifier("x", _)::
+        RParentheses(_):: LParentheses(_):: LParentheses(_):: BinOp(BinOpType.MUL, _)::Identifier("x", _)
+        ::RParentheses(_)::  Identifier("x", _)::RParentheses(_)::RParentheses(_)::EndNamedExpr(_):: Nil =>
       case a => fail(a.toString())
     }
   }
@@ -229,10 +229,10 @@ class LexerTest extends  AnyFlatSpec {
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
-        Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_)::
-        BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) ::
-        Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: LBrace(_)::
-        BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: RBrace(_):: RBrace(_)::
+        Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LParentheses(_)::
+        BinOp(BinOpType.ADD, _) :: LParentheses(_) :: BinOp(BinOpType.MUL, _) ::
+        Identifier("x", _)  :: Identifier("y", _) :: RParentheses(_) :: LParentheses(_)::
+        BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: RParentheses(_):: RParentheses(_)::
         EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
@@ -251,10 +251,10 @@ class LexerTest extends  AnyFlatSpec {
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
-        Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_)::
-        BinOp(BinOpType.ADD, _) :: LBrace(_) :: BinOp(BinOpType.MUL, _) ::
-        Identifier("x", _)  :: Identifier("y", _) :: RBrace(_) :: LBrace(_)::
-        BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: RBrace(_):: RBrace(_)::
+        Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LParentheses(_)::
+        BinOp(BinOpType.ADD, _) :: LParentheses(_) :: BinOp(BinOpType.MUL, _) ::
+        Identifier("x", _)  :: Identifier("y", _) :: RParentheses(_) :: LParentheses(_)::
+        BinOp(BinOpType.MOD, _) :: I32(42, _) :: I32(5, _) :: RParentheses(_):: RParentheses(_)::
         EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
@@ -370,8 +370,8 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        LBrace(_)::Backslash(_):: Identifier("y", _):: Colon(_) ::ScalarType(IntTyp(),_)::
-        Arrow(_)::Identifier("y", _)::RBrace(_):: Identifier("x",_)
+        LParentheses(_)::Backslash(_):: Identifier("y", _):: Colon(_) ::ScalarType(IntTyp(),_)::
+        Arrow(_)::Identifier("y", _)::RParentheses(_):: Identifier("x",_)
        :: EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
@@ -462,9 +462,9 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
-        Identifier("y", _)  :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_) ::
+        Identifier("y", _)  :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LParentheses(_) ::
         BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) ::
-        RBrace(_) :: EndNamedExpr(_):: Nil => true
+        RParentheses(_) :: EndNamedExpr(_):: Nil => true
       case a => fail(a.toString())
     }
   }
@@ -480,9 +480,9 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
-        Identifier("y", _)  :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LBrace(_) ::
+        Identifier("y", _)  :: Arrow(_) :: UnOp(UnaryOpType.NEG, _) :: LParentheses(_) ::
         BinOp(BinOpType.MUL, _) :: Identifier("x", _)  :: Identifier("y", _) ::
-        RBrace(_) :: EndNamedExpr(_):: Nil => true      case a => fail(a.toString())
+        RParentheses(_) :: EndNamedExpr(_):: Nil => true      case a => fail(a.toString())
     }
   }
 
@@ -498,8 +498,8 @@ class LexerTest extends  AnyFlatSpec {
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
         Identifier("y", _) ::  Arrow(_) ::  BinOp(BinOpType.ADD, _) ::
-        LBrace(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  ::
-        Identifier("y", _) :: RBrace(_) :: I32(42, _) :: EndNamedExpr(_):: Nil => true
+        LParentheses(_) :: BinOp(BinOpType.MUL, _) :: Identifier("x", _)  ::
+        Identifier("y", _) :: RParentheses(_) :: I32(42, _) :: EndNamedExpr(_):: Nil => true
       case a => fail(a.toString())
     }
   }
@@ -724,8 +724,8 @@ class LexerTest extends  AnyFlatSpec {
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
         DoubleColons(_) :: ScalarType(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+        Arrow(_) :: LParentheses(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RParentheses(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
@@ -760,8 +760,8 @@ class LexerTest extends  AnyFlatSpec {
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
         DoubleColons(_) :: ScalarType(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+        Arrow(_) :: LParentheses(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RParentheses(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
@@ -803,8 +803,8 @@ class LexerTest extends  AnyFlatSpec {
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
         DoubleColons(_) :: ScalarType(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+        Arrow(_) :: LParentheses(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RParentheses(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
@@ -828,15 +828,15 @@ class LexerTest extends  AnyFlatSpec {
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
         DoubleColons(_) :: ScalarType(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: RBrace(_):: EndTypAnnotatedIdent(_) ::
+        Arrow(_) :: LParentheses(_) :: LParentheses(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RParentheses(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: RParentheses(_):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _)  ::
-        Arrow(_) :: LBrace(_)::Backslash(_) :: Identifier("fkt", _)  ::
-        Arrow(_) :: LBrace(_):: Identifier("fkt", _) :: Identifier("x", _) ::
-        RBrace(_)::RBrace(_)::
+        Arrow(_) :: LParentheses(_)::Backslash(_) :: Identifier("fkt", _)  ::
+        Arrow(_) :: LParentheses(_):: Identifier("fkt", _) :: Identifier("x", _) ::
+        RParentheses(_)::RParentheses(_)::
         EndNamedExpr(_)::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -861,15 +861,15 @@ class LexerTest extends  AnyFlatSpec {
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
         DoubleColons(_) :: ScalarType(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: RBrace(_):: EndTypAnnotatedIdent(_) ::
+        Arrow(_) :: LParentheses(_) :: LParentheses(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RParentheses(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: RParentheses(_):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _)  ::
-        Arrow(_) :: LBrace(_)::Backslash(_) :: Identifier("fkt", _)  ::
-        Arrow(_) :: LBrace(_):: Identifier("fkt", _) :: Identifier("x", _) ::
-        RBrace(_)::RBrace(_)::
+        Arrow(_) :: LParentheses(_)::Backslash(_) :: Identifier("fkt", _)  ::
+        Arrow(_) :: LParentheses(_):: Identifier("fkt", _) :: Identifier("x", _) ::
+        RParentheses(_)::RParentheses(_)::
         EndNamedExpr(_)::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -910,13 +910,13 @@ class LexerTest extends  AnyFlatSpec {
         EqualsSign(_)::
         Backslash(_) :: Identifier("michael", _) :: Arrow(_) :: Backslash(_) ::
         Identifier("heinrich", _) :: Arrow(_) :: UnOp(UnaryOpType.NOT, _) ::
-        LBrace(_) :: BinOp(BinOpType.EQ, _) :: LBrace(_)::BinOp(BinOpType.MOD, _) ::
-        LBrace(_) :: Backslash(_) :: Identifier("varX", _) ::
+        LParentheses(_) :: BinOp(BinOpType.EQ, _) :: LParentheses(_)::BinOp(BinOpType.MOD, _) ::
+        LParentheses(_) :: Backslash(_) :: Identifier("varX", _) ::
         Arrow(_) :: Backslash(_) :: Identifier("varY", _) ::
-        Arrow(_) :: BinOp(BinOpType.MUL, _) :: Identifier("varX", _)  :: LBrace(_)::
-        BinOp(BinOpType.MUL, _) :: Identifier("varY", _)  :: LBrace(_) :: BinOp(BinOpType.DIV, _)
-        :: LBrace(_) :: BinOp(BinOpType.SUB, _) :: I32(25, _) :: F32(a, _) :: RBrace(_)
-        ::  F32(b, _) :: RBrace(_) :: RBrace(_):: RBrace(_):: I32(42, _) :: RBrace(_) :: I32(0, _) :: RBrace(_) ::
+        Arrow(_) :: BinOp(BinOpType.MUL, _) :: Identifier("varX", _)  :: LParentheses(_)::
+        BinOp(BinOpType.MUL, _) :: Identifier("varY", _)  :: LParentheses(_) :: BinOp(BinOpType.DIV, _)
+        :: LParentheses(_) :: BinOp(BinOpType.SUB, _) :: I32(25, _) :: F32(a, _) :: RParentheses(_)
+        ::  F32(b, _) :: RParentheses(_) :: RParentheses(_):: RParentheses(_):: I32(42, _) :: RParentheses(_) :: I32(0, _) :: RParentheses(_) ::
         EndNamedExpr(_)::
 
         BeginTypAnnotatedIdent(_):: Identifier("specialFunctionOfChaos", _)::

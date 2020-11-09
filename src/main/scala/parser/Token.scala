@@ -95,16 +95,26 @@ sealed abstract class Token (span: Span){
 }
 
   // "("
-  final case class LBrace(span: Span) extends Token(span){
+  final case class LParentheses(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
 
     override def toString = "("
   }
 
   // ")"
-  final case class RBrace(span: Span) extends Token(span){
+  final case class RParentheses(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
     override def toString = ")"
+  }
+
+  final case class LBracket(span: Span) extends Token(span){
+    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    override def toString = "["
+  }
+
+  final case class RBracket(span: Span) extends Token(span){
+    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    override def toString = "]"
   }
 
   // example: "split"
@@ -155,6 +165,16 @@ sealed abstract class Token (span: Span){
   final case class DepArrow (span: Span) extends Token(span){
     require(span.begin.column == span.end.column && (span.begin.row+1) ==span.end.row, "depArrow has not lenght two")
     override def toString = "=>"
+  }
+
+  final case class Dot(span: Span) extends Token(span){
+    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    override def toString = "."
+  }
+
+  final case class Comma(span: Span) extends Token(span){
+    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    override def toString = ","
   }
 
   // ":"

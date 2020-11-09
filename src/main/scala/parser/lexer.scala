@@ -672,14 +672,14 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             }
             case (Right(_), _) => {
               val loc:Location = Location(column, row) //endLocation is equal to startLocation
-              list = list.::(LBrace(new Span(fileReader,loc)))
+              list = list.::(LParentheses(new Span(fileReader,loc)))
               row = row +1
             }
           }
         }
         case ')' => {
           val loc:Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(RBrace(new Span(fileReader, loc)))
+          list = list.::(RParentheses(new Span(fileReader, loc)))
           row = row +1
         }
         case '-' => {
@@ -888,12 +888,12 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         }
         case '(' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(LBrace(new Span(fileReader, loc)))
+          list = list.::(LParentheses(new Span(fileReader, loc)))
           row = row + 1
         }
         case ')' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(RBrace(new Span(fileReader, loc)))
+          list = list.::(RParentheses(new Span(fileReader, loc)))
           row = row + 1
         }
         case '!' => {

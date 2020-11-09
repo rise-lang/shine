@@ -573,7 +573,7 @@ object parser {
         }
           //Todo: Maybe remove already here the EndTypAnnotatedIdent or RBrace from the TokenList
         case EndTypAnnotatedIdent(_) => Left(p)
-        case RBrace(_) => Left(p)
+        case RParentheses(_) => Left(p)
         case a => return Right(ParseError("the Token '"+ a + "' is not here expected!!!"))
       }
     }
@@ -679,7 +679,7 @@ object parser {
     p match {
       case Left(pState) => {
         if(pState.parsedSynElems.isEmpty){
-          val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RBrace])
+          val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RParentheses])
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
@@ -705,7 +705,7 @@ object parser {
     p match {
       case Left(pState) => {
         if(pState.parsedSynElems.isEmpty){
-          val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RBrace])
+          val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RParentheses])
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
@@ -722,7 +722,7 @@ object parser {
 
   def parseMaybeAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseMaybeAppExpr: " + parseState)
-    if(parseState.tokenStream.head.isInstanceOf[RBrace]){
+    if(parseState.tokenStream.head.isInstanceOf[RParentheses]){
       println("L" +
         "RBrace is at the beginning of parseApp: " + parseState)
       return Left(parseState)
@@ -858,7 +858,7 @@ object parser {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case LBrace(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
+      case LParentheses(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
       case tok => Right(ParseError("failed to parse LeftBrace: " + tok + " is not an LeftBrace"))
     }
   }
@@ -868,7 +868,7 @@ object parser {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case RBrace(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
+      case RParentheses(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
       case tok => Right(ParseError("failed to parse RightBrace: " + tok + " is not an RightBrace"))
     }
   }
