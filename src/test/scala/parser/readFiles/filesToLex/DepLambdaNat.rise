@@ -1,2 +1,2 @@
-f::N:Nat=>N.I32 //Todo: Im Parser soll N von Lexer.TypeIdentifier zu rt.NatIdentifier übersetzt werden.
-f=\arr->arr
+f::N:Nat=>N.I32->N.I32 //Todo: Im Parser soll N von Lexer.TypeIdentifier zu rt.NatIdentifier übersetzt werden.
+f=N:Nat=>\arr->arr
