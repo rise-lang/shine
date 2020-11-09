@@ -14,8 +14,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(ArrayType(NatNumber(5), IntTyp()), _):: Arrow(_)::Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(ArrayType(NatNumber(5), IntTyp()), _):: Arrow(_)::ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("a",_)::Arrow(_)::
@@ -32,7 +32,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("x",_)::Arrow(_)::LBrace(_)::
         Identifier("x",_)::RBrace(_) ::EndNamedExpr(_)
@@ -47,7 +47,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(BoolType(), _) :: Arrow(_) :: Type(BoolType(), _)::
+        DoubleColons(_) :: ScalarType(BoolType(), _) :: Arrow(_) :: ScalarType(BoolType(), _)::
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_) :: Identifier("b", _) :: Arrow(_) ::
         LBrace(_) :: Identifier("b", _)
@@ -63,7 +63,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(BoolType(), _) :: Arrow(_) :: Type(BoolType(), _)::
+        DoubleColons(_) :: ScalarType(BoolType(), _) :: Arrow(_) :: ScalarType(BoolType(), _)::
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_) :: Identifier("b", _) :: Arrow(_) ::
         LBrace(_) :: UnOp(UnaryOpType.NOT, _)::Identifier("b", _)
@@ -80,8 +80,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(DoubleType(), _) :: Arrow(_) :: Type(DoubleType(), _)::
-        Arrow(_) :: Type(DoubleType(), _)::Arrow(_) :: Type(DoubleType(), _)::
+        DoubleColons(_) :: ScalarType(DoubleType(), _) :: Arrow(_) :: ScalarType(DoubleType(), _)::
+        Arrow(_) :: ScalarType(DoubleType(), _)::Arrow(_) :: ScalarType(DoubleType(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) ::
 
         Identifier("f", _) ::
@@ -101,7 +101,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
@@ -117,7 +117,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(ShortTyp(), _) :: Arrow(_) :: Type(ShortTyp(), _)::
+        DoubleColons(_) :: ScalarType(ShortTyp(), _) :: Arrow(_) :: ScalarType(ShortTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
@@ -133,7 +133,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
@@ -151,7 +151,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
@@ -169,7 +169,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
@@ -187,7 +187,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
@@ -205,7 +205,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(FloatTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -222,8 +222,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -244,8 +244,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -266,7 +266,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) ::
 
         Identifier("f", _) ::
@@ -283,7 +283,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(NatK(), _) :: DepArrow(_) :: Type(ArrayType(n, IntTyp()), _)::
+        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) :: DepArrow(_) :: ScalarType(ArrayType(n, IntTyp()), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -300,7 +300,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Kind(AddrSpaceK(), _) :: DepArrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: Kind(AddrSpace(), _) :: DepArrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -317,9 +317,9 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Kind(DataK(), _) :: DepArrow(_) :: Type(IntTyp(), _)::
-        Arrow(_) :: Type(IntTyp(), _):: Arrow(_) ::
-        Kind(NatK(), _) :: DepArrow(_):: Type(FloatTyp(), _)::
+        DoubleColons(_) :: Kind(Data(), _) :: DepArrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_) :: ScalarType(IntTyp(), _):: Arrow(_) ::
+        Kind(Nat(), _) :: DepArrow(_):: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -366,11 +366,11 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        LBrace(_)::Backslash(_):: Identifier("y", _):: Colon(_) ::Type(IntTyp(),_)::
+        LBrace(_)::Backslash(_):: Identifier("y", _):: Colon(_) ::ScalarType(IntTyp(),_)::
         Arrow(_)::Identifier("y", _)::RBrace(_):: Identifier("x",_)
        :: EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
@@ -383,7 +383,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
@@ -408,7 +408,7 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
@@ -423,8 +423,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IndexType(NatNumber(2)), _)::
-        Arrow(_)::Type(IntTyp(), _) ::
+        DoubleColons(_) :: ScalarType(IndexType(NatNumber(2)), _)::
+        Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
@@ -440,8 +440,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IndexType(NatNumber(42)), _)::
-        Arrow(_)::Type(IntTyp(), _) ::
+        DoubleColons(_) :: ScalarType(IndexType(NatNumber(42)), _)::
+        Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
@@ -457,8 +457,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
@@ -475,8 +475,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(FloatTyp(), _)::
-        Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
+        Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
@@ -492,8 +492,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) :: Arrow(_) :: Type(IntTyp(), _)::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) :: Backslash(_) ::
@@ -519,8 +519,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("jens", _) :: Arrow(_) :: Identifier("jens", _)
@@ -535,11 +535,11 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(_) :: Identifier("x", _) :: Colon(_) :: Type(IntTyp(), _) ::
+        Backslash(_) :: Identifier("x", _) :: Colon(_) :: ScalarType(IntTyp(), _) ::
         Arrow(_) :: BinOp(BinOpType.SUB, _) :: Identifier("x", _)  :: I32(5, _) ::
         EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
@@ -552,8 +552,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("y", _) :: Arrow(_) :: UnOp(UnaryOpType.NEG, _)
@@ -577,8 +577,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(BoolType(), _) ::
-        Arrow(_) :: Type(BoolType(), _)::
+        DoubleColons(_) :: ScalarType(BoolType(), _) ::
+        Arrow(_) :: ScalarType(BoolType(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -614,8 +614,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(BoolType(), _) ::
-        Arrow(_) :: Type(BoolType(), _)::
+        DoubleColons(_) :: ScalarType(BoolType(), _) ::
+        Arrow(_) :: ScalarType(BoolType(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("b", _) :: Arrow(_) :: UnOp(UnaryOpType.NOT, _)
@@ -630,8 +630,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _)  ::
@@ -647,8 +647,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(TupleType(IntTyp(),FloatTyp()), _)::
-        Arrow(_)::Type(IntTyp(), _) ::
+        DoubleColons(_) :: ScalarType(TupleType(IntTyp(),FloatTyp()), _)::
+        Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
@@ -664,8 +664,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(TupleType(IntTyp(),FloatTyp()), _)::
-        Arrow(_)::Type(IntTyp(), _) ::
+        DoubleColons(_) :: ScalarType(TupleType(IntTyp(),FloatTyp()), _)::
+        Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
@@ -681,8 +681,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(TupleType(IntTyp(), ArrayType(NatNumber(2),IntTyp())), _)::
-        Arrow(_)::Type(IntTyp(), _) ::
+        DoubleColons(_) :: ScalarType(TupleType(IntTyp(), ArrayType(NatNumber(2),IntTyp())), _)::
+        Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
@@ -698,11 +698,11 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(TupleType(TupleType(IntTyp(),
+        DoubleColons(_) :: ScalarType(TupleType(TupleType(IntTyp(),
           ArrayType(NatNumber(5), ArrayType(NatNumber(4), ArrayType(NatNumber(3),
             ArrayType(NatNumber(2), IntTyp()))))),
       ArrayType(NatNumber(2), TupleType(IntTyp(), IntTyp()))), _)::
-        Arrow(_)::Type(IntTyp(), _) ::
+        Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
@@ -718,14 +718,14 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
@@ -741,8 +741,8 @@ class LexerTest extends  AnyFlatSpec {
         EndNamedExpr(_)::
 
         BeginTypAnnotatedIdent(_):: Identifier("z", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::Nil => true
       case a => fail(a.toString())
     }
@@ -754,14 +754,14 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
@@ -777,8 +777,8 @@ class LexerTest extends  AnyFlatSpec {
         EndNamedExpr(_)::
 
         BeginTypAnnotatedIdent(_):: Identifier("z", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::Nil => true
       case a => fail(a.toString())
     }
@@ -790,8 +790,8 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
@@ -802,9 +802,9 @@ class LexerTest extends  AnyFlatSpec {
         EndNamedExpr(_)::
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
@@ -822,14 +822,14 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: RBrace(_):: EndTypAnnotatedIdent(_) ::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: RBrace(_):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
@@ -855,14 +855,14 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: Type(IntTyp(), _)::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         BeginTypAnnotatedIdent(_):: Identifier("h", _)::
-        DoubleColons(_) :: Type(IntTyp(), _) ::
-        Arrow(_) :: LBrace(_) :: LBrace(_) :: Type(IntTyp(), _):: Arrow(_) :: Type(IntTyp(), _) ::
-        RBrace(_) :: Arrow(_) :: Type(IntTyp(), _):: RBrace(_):: EndTypAnnotatedIdent(_) ::
+        DoubleColons(_) :: ScalarType(IntTyp(), _) ::
+        Arrow(_) :: LBrace(_) :: LBrace(_) :: ScalarType(IntTyp(), _):: Arrow(_) :: ScalarType(IntTyp(), _) ::
+        RBrace(_) :: Arrow(_) :: ScalarType(IntTyp(), _):: RBrace(_):: EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("h", _) ::
         EqualsSign(_)::
@@ -899,11 +899,11 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: Type(BoolType(), _)::
-        Arrow(_) :: Type(BoolType(), _)::
-        Arrow(_) :: Type(IntTyp(), _)::
-        Arrow(_) :: Type(FloatTyp(), _)::
-        Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(BoolType(), _)::
+        Arrow(_) :: ScalarType(BoolType(), _)::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_) :: ScalarType(FloatTyp(), _)::
+        Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) ::
 
         Identifier("f", _) ::
@@ -920,11 +920,11 @@ class LexerTest extends  AnyFlatSpec {
         EndNamedExpr(_)::
 
         BeginTypAnnotatedIdent(_):: Identifier("specialFunctionOfChaos", _)::
-        DoubleColons(_) :: Type(BoolType(), _)::
-        Arrow(_) :: Type(BoolType(), _)::
-        Arrow(_) :: Type(IntTyp(), _)::
-        Arrow(_) :: Type(FloatTyp(), _)::
-        Arrow(_) :: Type(FloatTyp(), _)::
+        DoubleColons(_) :: ScalarType(BoolType(), _)::
+        Arrow(_) :: ScalarType(BoolType(), _)::
+        Arrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_) :: ScalarType(FloatTyp(), _)::
+        Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::
 
         Nil => {

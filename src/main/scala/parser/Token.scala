@@ -126,8 +126,9 @@ sealed abstract class Token (span: Span){
     override def toString = s"<$name :Identifier>"
   }
 
+
   // example "Double" which is saved as <doubleTyp>
-  final case class Type(concreteType: ConcreteType, span: Span) extends Token(span){
+  final case class ScalarType(concreteType: ConcreteType, span: Span) extends Token(span){
     require(span.begin.column == span.end.column, "not in one column")
     val t:ConcreteType = concreteType
     override def toString = t.toString

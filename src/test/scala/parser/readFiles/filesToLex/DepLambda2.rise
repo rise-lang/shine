@@ -1,2 +1,0 @@
-f::DataK=>I32->I32->NatK=>F32
-f=\D=>\x->\y->\N=>* x y

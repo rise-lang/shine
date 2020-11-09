@@ -137,7 +137,7 @@ object parser {
     case notAtype => None
   }
 
-  private def getNat(nat: Nat):r.Nat= {
+  private def getNat(nat: NatType):r.Nat= {
     nat match {
       case NatNumber(number) => number
       case NatIdent(name) => rt.NatIdentifier(name)
@@ -153,7 +153,7 @@ object parser {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) => {
+          case ScalarType(typ, _) => {
             val t = getType(typ)
             t match {
               case None => Right(ParseError("failed to parse Type: " + typ + " is not an accpeted Type"))
@@ -175,7 +175,7 @@ object parser {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case Type(typ, _) =>  {
+          case ScalarType(typ, _) =>  {
             val t = getType(typ)
             t match {
               case None => Right(ParseError("failed to parse Type: " + typ + " is not an accpeted Type"))
@@ -195,7 +195,7 @@ object parser {
 
       println("parseTypeWithoutArrow: " + parseState)
           inputType match {
-            case Type(typ, _) => {
+            case ScalarType(typ, _) => {
               println("Type was in parseTypeWithoutArrow parsed: " + typ)
               val parsedInType = getType(typ)
               val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
@@ -240,11 +240,9 @@ object parser {
                 val depFun:SType = pS.parsedSynElems.head match {
                   case SType(outT) => {
                     concreteKind match {
-                      case DataK() => SType(rt.DepFunType[rt.DataKind, rt.Type](rt.DataTypeIdentifier(nameOfIdentifier), outT))
-                        //it seems that DepFunType does not work for TypeIdentifier. In the usage in infer.scala is only NatToNatKind and not DataKind in it
-                      //case TypeK() => rt.DepFunType[rt.TypeKind, rt.Type](rt.TypeIdentifier(nameOfIdentifier), outT)
-                      case NatK() => SType(rt.DepFunType[rt.NatKind, rt.Type](rt.NatIdentifier(nameOfIdentifier), outT))
-                      case AddrSpaceK() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](rt.AddressSpaceIdentifier(nameOfIdentifier), outT))
+                      case Data() => SType(rt.DepFunType[rt.DataKind, rt.Type](rt.DataTypeIdentifier(nameOfIdentifier), outT))
+                      case Nat() => SType(rt.DepFunType[rt.NatKind, rt.Type](rt.NatIdentifier(nameOfIdentifier), outT))
+                      case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](rt.AddressSpaceIdentifier(nameOfIdentifier), outT))
                       case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
                     }
                   }
@@ -267,7 +265,7 @@ object parser {
       case Arrow(_) => {
 
         inputType match {
-          case Type(typ, _) => {
+          case ScalarType(typ, _) => {
             println("Type was in parseTypeWithArrow parsed: " + typ)
             val parsedInType = getType(typ)
             val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))

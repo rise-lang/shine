@@ -4,14 +4,14 @@ package parser
 nat is a natural number
 it is needed for arrayTypes (how long is the array)
  */
-abstract sealed class Nat()
+abstract sealed class NatType()
 
-case class NatNumber(number: Int) extends Nat{
+case class NatNumber(number: Int) extends NatType{
   require(number >= 0, "number is negative")
   override def toString = s"<$number:nat>"
 }
 
-case class NatIdent(name: String) extends Nat{
+case class NatIdent(name: String) extends NatType{
   require(!name.isEmpty, "String is empty")
   require(name.matches("[a-zA-Z][a-zA-Z0-9_]*"), "has not the preffered structure")
   override def toString = s"<$name :natIdent>"
@@ -19,16 +19,13 @@ case class NatIdent(name: String) extends Nat{
 
 
 abstract sealed class ConcreteKind()
-  final case class DataK() extends ConcreteKind{
+  final case class Data() extends ConcreteKind{ //Data is the same like Type
     override def toString = "<dataKind>"
   }
-  final case class TypeK() extends ConcreteKind{
-    override def toString = "<typeKind>"
-  }
-  final case class AddrSpaceK() extends ConcreteKind{
+  final case class AddrSpace() extends ConcreteKind{
     override def toString = "<addrSpaceKind>"
   }
-  final case class NatK() extends ConcreteKind{
+  final case class Nat() extends ConcreteKind{
     override def toString = "<natKind>"
   }
 
@@ -134,8 +131,8 @@ abstract sealed class ConcreteType()
   }
 
   //<indexType>::=idx"["<nat>"]"
-  final case class IndexType(number: Nat) extends Basic {
-    val n: Nat = number
+  final case class IndexType(number: NatType) extends Basic {
+    val n: NatType = number
 
     override def toString = s"idx[$n]"
   }
@@ -151,8 +148,8 @@ abstract sealed class ConcreteType()
   }
 
   //<arrayTypes>::=<nat>.<Typ>
-  final case class ArrayType(number: Nat, typ: ConcreteType) extends ComplexType {
-    val n: Nat = number
+  final case class ArrayType(number: NatType, typ: ConcreteType) extends ComplexType {
+    val n: NatType = number
     val t: ConcreteType = typ
 
     override def toString = s"$n" + "." + typ.toString

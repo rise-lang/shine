@@ -1350,7 +1350,7 @@ if '==' then two steps else only one step
 //      println("type1Either: "+ type1Either.toString())
       r=type1Either._2
       val type1:ConcreteType = type1Either._1 match {
-        case Left(Type(concreteType, span)) => concreteType
+        case Left(ScalarType(concreteType, span)) => concreteType
         case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
         case Right(e) => return (Right(e),r)
       }
@@ -1377,7 +1377,7 @@ if '==' then two steps else only one step
 //      println("type2Either: "+ type2Either.toString())
       r=type2Either._2
       val type2:ConcreteType = type2Either._1 match {
-        case Left(Type(concreteType, span)) => concreteType
+        case Left(ScalarType(concreteType, span)) => concreteType
         case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
         case Right(e) => return (Right(e),r)
       }
@@ -1398,7 +1398,7 @@ if '==' then two steps else only one step
       val locEnd = Location(column, r)
       val tupleType = TupleType(type1, type2)
       println("TupleType: "+ tupleType)
-      (Left(Type(tupleType, Span(fileReader, locBegin, locEnd))),r)
+      (Left(ScalarType(tupleType, Span(fileReader, locBegin, locEnd))),r)
     }else if(arr(column).length>r+4 && arr(column).substring(r, r+4)=="Idx["){
       r=r+4
       //ignore whitespaces
@@ -1425,7 +1425,7 @@ if '==' then two steps else only one step
       val locEnd = Location(column, r)
       val indexType = IndexType(nat)
       println("indexType: "+ indexType)
-      (Left(Type(indexType, Span(fileReader, locBegin, locEnd))),r)
+      (Left(ScalarType(indexType, Span(fileReader, locBegin, locEnd))),r)
     }else if(arr(column)(r).isLetterOrDigit){//ArrayType
       val (nat,r1) =  if(arr(column)(r).isDigit) {
         println("Ja: "+ arr(column)(r))
@@ -1452,7 +1452,7 @@ if '==' then two steps else only one step
       println("typeArrayEither: "+ typeArrayEither.toString())
       r=typeArrayEither._2
       val typeArray:ConcreteType = typeArrayEither._1 match {
-        case Left(Type(concreteType, span)) => concreteType
+        case Left(ScalarType(concreteType, span)) => concreteType
         case Left(token) => return (Right(NotExpectedToken("Type", token.toString, token.s, fileReader)),r)
         case Right(e) => return (Right(e),r)
       }
@@ -1473,7 +1473,7 @@ if '==' then two steps else only one step
         }
       }
       println("arrType: "+ arrType)
-      (Left(Type(arrType, Span(fileReader, locBegin, locEnd))),r)
+      (Left(ScalarType(arrType, Span(fileReader, locBegin, locEnd))),r)
     }else{
       val loc = Location(column, r)
       (Right(NotExpectedToken("We expect a ScalarType or an CombinedType", ""+arr(column)(r), new Span(fileReader, loc), fileReader)), r)
@@ -1491,12 +1491,12 @@ if '==' then two steps else only one step
       //different Types in RISE //Todo: not completed yet
       substring match {
         //Types
-        case "Bool" => (Left(Type(BoolType(), span)),pos)
-        case "I16"   => (Left(Type(ShortTyp(), span)),pos)
-        case "I32"  => (Left(Type(IntTyp(), span)),pos)
-        case "F32"  => (Left(Type(FloatTyp(), span)),pos)
-        case "F64"  => (Left(Type(DoubleType(), span)),pos)
-        case "Nat"  => (Left(Type(NatTyp(), span)),pos)
+        case "Bool" => (Left(ScalarType(BoolType(), span)),pos)
+        case "I16"   => (Left(ScalarType(ShortTyp(), span)),pos)
+        case "I32"  => (Left(ScalarType(IntTyp(), span)),pos)
+        case "F32"  => (Left(ScalarType(FloatTyp(), span)),pos)
+        case "F64"  => (Left(ScalarType(DoubleType(), span)),pos)
+        case "Nat"  => (Left(ScalarType(NatTyp(), span)),pos)
         case a => (Right(UnknownType(substring, span, fileReader)),pos)
       }
     }
@@ -1512,10 +1512,10 @@ if '==' then two steps else only one step
       val span =  Span(fileReader,locStart, locEnd)
       //different Types in RISE //Todo: not completed yet
       substring match {
-        case "DataK" => (Left(Kind(DataK(), span)), pos)
+        case "DataK" => (Left(Kind(Data(), span)), pos)
         case "TypeK" => (Left(Kind(TypeK(), span)), pos)
-        case "AddrSpaceK" => (Left(Kind(AddrSpaceK(), span)), pos)
-        case "NatK" => (Left(Kind(NatK(), span)), pos)
+        case "AddrSpaceK" => (Left(Kind(AddrSpace(), span)), pos)
+        case "NatK" => (Left(Kind(Nat(), span)), pos)
 
         case a => (Right(UnknownKind(substring, span, fileReader)),pos)
       }
@@ -1580,7 +1580,7 @@ if '==' then two steps else only one step
     }
   }
 
-  private def lexNatNumber(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Nat,Int) = {
+  private def lexNatNumber(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(NatType,Int) = {
     var r: Int = row + 1
     var substring: String = arr(column).substring(row, r)
     while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[0-9]+")) {
