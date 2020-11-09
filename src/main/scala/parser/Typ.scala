@@ -1,23 +1,5 @@
 package parser
 
-/*
-nat is a natural number
-it is needed for arrayTypes (how long is the array)
- */
-abstract sealed class NatType()
-
-case class NatNumber(number: Int) extends NatType{
-  require(number >= 0, "number is negative")
-  override def toString = s"<$number:nat>"
-}
-
-case class NatIdent(name: String) extends NatType{
-  require(!name.isEmpty, "String is empty")
-  require(name.matches("[a-zA-Z][a-zA-Z0-9_]*"), "has not the preffered structure")
-  override def toString = s"<$name :natIdent>"
-}
-
-
 abstract sealed class ConcreteKind()
   final case class Data() extends ConcreteKind{ //Data is the same like Type
     override def toString = "<data>"

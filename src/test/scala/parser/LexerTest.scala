@@ -7,14 +7,15 @@ import org.scalatest.matchers.should.Matchers._
 
 class LexerTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
-  
+
   "RecognizeLexeme" should "work for the arrayType" in {
     val fileName: String = testFilePath + "arrayType.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: ScalarType(ArrayType(NatNumber(5), IntTyp()), _):: Arrow(_)::ScalarType(IntTyp(), _) ::
+        DoubleColons(_) :: NatNumber(5,_) :: Dot(_)::ScalarType(IntTyp(), _)::
+        Arrow(_)::ScalarType(IntTyp(), _) ::
         Arrow(_) :: ScalarType(IntTyp(), _)::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -283,13 +284,38 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) :: DepArrow(_) :: ScalarType(ArrayType(n, IntTyp()), _)::
+        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        DepArrow(_) ::TypeIdentifier("N",_)::Dot(_)::ScalarType(IntTyp(),_)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(span6) :: Identifier("a", _) ::Arrow(_) ::
-        Identifier("a", _) :: EndNamedExpr(_)::Nil => true
+        Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+          DepArrow(_) :: Identifier("g",_):: LBracket(_):: TypeIdentifier("N",_) ::
+        ScalarType(IntTyp(),_)::RBracket(_)::
+        EndNamedExpr(_)::
+
+        BeginTypAnnotatedIdent(_):: Identifier("g", _)::
+        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        DepArrow(_) ::
+        TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
+        DepArrow(_)::
+        TypeIdentifier("N",_)::Dot(_)::TypeIdentifier("D",_)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("g", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        DepArrow(_) ::
+        TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
+        DepArrow(_)::
+        Identifier("generate",_):: LBracket(_):: TypeIdentifier("N",_) ::RBracket(_)::
+        LParentheses(_)::Backslash(_)::Identifier("i",_)::Arrow(_)::Identifier("cast", _)::
+        LBracket(_)::TypeIdentifier("D",_)::RBracket(_):: Identifier("i", _)::
+        RParentheses(_)::
+        EndNamedExpr(_)::
+
+        Nil => true
       case a => fail(a.toString())
     }
   }
@@ -422,8 +448,8 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: ScalarType(IndexType(NatNumber(2)), _)::
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _):: DoubleColons(_) ::
+        TypeIdentifier("Idx",_)::LBracket(_)::NatNumber(2, _):: RBracket(_)::
         Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -439,8 +465,8 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
-      case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: ScalarType(IndexType(NatNumber(42)), _)::
+      case BeginTypAnnotatedIdent(_):: Identifier("f", _):: DoubleColons(_) ::
+        TypeIdentifier("Idx",_)::LBracket(_)::NatNumber(42,_):: RBracket(_)::
         Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -647,7 +673,9 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: ScalarType(TupleType(IntTyp(),FloatTyp()), _)::
+        DoubleColons(_) ::
+        LParentheses(_):: ScalarType(IntTyp(),_):: Comma(_) :: ScalarType(FloatTyp(),_)::
+        RParentheses(_)::
         Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -664,7 +692,9 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: ScalarType(TupleType(IntTyp(),FloatTyp()), _)::
+        DoubleColons(_) ::
+        LParentheses(_):: ScalarType(IntTyp(),_):: Comma(_) :: ScalarType(FloatTyp(),_)::
+        RParentheses(_)::
         Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -681,7 +711,10 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: ScalarType(TupleType(IntTyp(), ArrayType(NatNumber(2),IntTyp())), _)::
+        DoubleColons(_) ::
+        LParentheses(_):: ScalarType(IntTyp(),_):: Comma(_) ::
+        NatNumber(2, _)::Dot(_)::ScalarType(FloatTyp(),_)::
+        RParentheses(_)::
         Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -698,10 +731,17 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: ScalarType(TupleType(TupleType(IntTyp(),
-          ArrayType(NatNumber(5), ArrayType(NatNumber(4), ArrayType(NatNumber(3),
-            ArrayType(NatNumber(2), IntTyp()))))),
-      ArrayType(NatNumber(2), TupleType(IntTyp(), IntTyp()))), _)::
+        DoubleColons(_) ::
+        LParentheses(_)::
+        LParentheses(_):: ScalarType(IntTyp(),_):: Comma(_) ::
+        NatNumber(5, _)::Dot(_)::NatNumber(4, _)::Dot(_)::
+        NatNumber(3, _)::Dot(_):: NatNumber(2, _)::Dot(_)::
+        ScalarType(FloatTyp(),_)::
+        RParentheses(_)::
+        Comma(_)::LParentheses(_)::
+        NatNumber(2,_)::Dot(_)::
+        LParentheses(_)::ScalarType(IntTyp(),_)::Comma(_)::ScalarType(IntTyp(),_)::RParentheses(_)::
+        RParentheses(_)::
         Arrow(_)::ScalarType(IntTyp(), _) ::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::

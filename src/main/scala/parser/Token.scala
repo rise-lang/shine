@@ -130,7 +130,7 @@ sealed abstract class Token (span: Span){
   final case class TypeIdentifier (name: String, span: Span) extends Token(span){
     require(!name.isEmpty, "String is empty")
     //<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
-    require(name.matches("[a-zA-Z][a-zA-Z0-9_]*"), "has not the preffered structure")
+    require(name.matches("[A-Z][a-zA-Z0-9_]*"), "has not the preffered structure")
     require(span.begin.column == span.end.column, "not in one column")
 
     override def toString = s"<$name :Identifier>"
@@ -227,25 +227,27 @@ import OpType.BinOpType._
   }
 
   // example: "32" which is saved as <32, intN>
-  abstract sealed class Number (span: Span) extends Token(span)
+  abstract sealed class Number (span: Span) extends Token(span){
+    require(span.begin.column == span.end.column, "not in one column")
+  }
     final case class I8(number: Short, span: Span) extends Number(span) {
-      require(span.begin.column == span.end.column, "not in one column")
       override def toString = s"<$number:I8>"
     }
 
     final case class I32(number: Int, span: Span) extends Number(span){
-      require(span.begin.column == span.end.column, "not in one column")
       override def toString = s"<$number:I32>"
     }
 
     final case class F32(number: Float, span: Span) extends Number(span){
-      require(span.begin.column == span.end.column, "not in one column")
       override def toString = s"<$number:F32>"
     }
 
     final case class F64(number: Double, span: Span) extends Number(span){
-      require(span.begin.column == span.end.column, "not in one column")
       override def toString = s"<$number:F64>"
+    }
+
+    case class NatNumber(number: Int, span: Span) extends Number(span){
+      override def toString = s"<$number:nat>"
     }
 
 case class AddrSpaceType(addrSpace: String){
