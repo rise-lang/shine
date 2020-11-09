@@ -716,66 +716,97 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           }
         }
       }
-      case _ => lexScalarType(column, row) match {
-        case (Left(a), r) => {
-          row = r
-          list = list.::(a)
-        }
-        case (Right(a), _) => {
-          lexIdentifier(column, row) match {
-            case (Left(ident), r) => {
-              row = r
-              if (ident.isInstanceOf[TypeIdentifier]) {
-                list = list.::(ident)
+      case a => if(a.isDigit){
+        lexNatNumber(column,row) match {
+          case (nat, r) => {
+            row = r
+            if (nat.isInstanceOf[NatNumber]) {
+              skipWhitespaceWhitoutNewLine(column, row) match {
+                case (c1, r1) => {
+                  column = c1
+                  row = r1
+                }
+              }
+            } else {
+              return Right(TypeIdentifierExpectedNotIdentifier(nat.toString, nat.s, fileReader))
+            }
+            lexDot(column, row) match {
+              case Left(dot) => {
+                row = row + 1
                 skipWhitespaceWhitoutNewLine(column, row) match {
                   case (c, r) => {
                     column = c
                     row = r
                   }
                 }
-              } else {
-                return Right(TypeIdentifierExpectedNotIdentifier(ident.toString, ident.s, fileReader))
+                list = list.::(nat).::(dot)
               }
+              case Right(e) => return Right(e)
             }
-            case (Right(e), r) => return Right(e)
           }
-          lexColon(column, row) match {
-            case Left(colon) => {
-              row = row + 1
-              skipWhitespaceWhitoutNewLine(column, row) match {
-                case (c, r) => {
-                  column = c
-                  row = r
-                }
-              }
-              list = list.::(colon)
-            }
-            case Right(e) => return Right(e)
-          }
-          lexKind(column, row) match {
+        }
+      }else {
+          lexScalarType(column, row) match {
             case (Left(a), r) => {
               row = r
-              skipWhitespaceWhitoutNewLine(column, row) match {
-                case (c, r) => {
-                  column = c
+              list = list.::(a)
+            }
+            case (Right(a), _) => {
+              lexIdentifier(column, row) match {
+                case (Left(ident), r) => {
                   row = r
+                  if (ident.isInstanceOf[TypeIdentifier]) {
+                    list = list.::(ident)
+                    skipWhitespaceWhitoutNewLine(column, row) match {
+                      case (c, r) => {
+                        column = c
+                        row = r
+                      }
+                    }
+                  } else {
+                    return Right(TypeIdentifierExpectedNotIdentifier(ident.toString, ident.s, fileReader))
+                  }
                 }
+                case (Right(e), r) => return Right(e)
               }
-              lexDepArrow(column, row) match {
-                case Left(b) => {
-                  row = row + 2
-                  list = list.::(a).::(b)
+              lexColon(column, row) match {
+                case Left(colon) => {
+                  row = row + 1
+                  skipWhitespaceWhitoutNewLine(column, row) match {
+                    case (c, r) => {
+                      column = c
+                      row = r
+                    }
+                  }
+                  list = list.::(colon)
                 }
-                case Right(e) => {
+                case Right(e) => return Right(e)
+              }
+              lexKind(column, row) match {
+                case (Left(a), r) => {
+                  row = r
+                  skipWhitespaceWhitoutNewLine(column, row) match {
+                    case (c, r) => {
+                      column = c
+                      row = r
+                    }
+                  }
+                  lexDepArrow(column, row) match {
+                    case Left(b) => {
+                      row = row + 2
+                      list = list.::(a).::(b)
+                    }
+                    case Right(e) => {
+                      return Right(e)
+                    }
+                  }
+                }
+                case (Right(e), _) => {
                   return Right(e)
                 }
               }
             }
-            case (Right(e), _) => {
-              return Right(e)
-            }
           }
-        }
       }
     }
     Left((column, row, list))
@@ -1228,6 +1259,19 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
   }
 
+  private def lexDot(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]={
+    arr(column)(row) match {
+      case '.' => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Left(Dot(new Span(fileReader,loc)))
+      }
+      case a => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken(".", ""+ a, Span(fileReader,loc, loc), fileReader))
+      }
+    }
+  }
+
 
 private def lexDeporNormalArrow(column:Int, row: Int, arr: Array[String], symbol: String):Either[Token,PreAndErrorToken]={
   if(arr(column).length <= row +1){
@@ -1477,15 +1521,16 @@ if '==' then two steps else only one step
     }
   }
 
-//  private def lexNatNumber(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(NatType,Int) = {
-//    var r: Int = row + 1
-//    var substring: String = arr(column).substring(row, r)
-//    while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[0-9]+")) {
-//      substring= arr(column).substring(row, r)
-//      r = r + 1
-//    }
-//    (NatNumber(substring.toInt),r)
-//  }
+  private def lexNatNumber(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(NatNumber,Int) = {
+    var r: Int = row + 1
+    var substring: String = arr(column).substring(row, r)
+    while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[0-9]+")) {
+      substring= arr(column).substring(row, r)
+      r = r + 1
+    }
+    val loc = Location(column, r)
+    (NatNumber(substring.toInt, new Span(fileReader, loc)),r-1)
+  }
 
   /*
   requirement: substring has the form: [0-9]+.?[0-9]*

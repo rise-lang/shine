@@ -340,7 +340,7 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
-  
+
   "RecognizeLexeme" should "work for the FunctionInBraces" in {
     val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = FileReader(fileName)
@@ -348,7 +348,9 @@ class LexerTest extends  AnyFlatSpec {
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: ScalarType(IntTyp(), _) :: Arrow(_) :: ScalarType(IntTyp(), _)::
-        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: Identifier("f", _) ::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
         LParentheses(_)::Backslash(_):: Identifier("y", _):: Colon(_) ::ScalarType(IntTyp(),_)::
