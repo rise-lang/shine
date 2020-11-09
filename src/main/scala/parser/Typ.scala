@@ -20,13 +20,13 @@ case class NatIdent(name: String) extends NatType{
 
 abstract sealed class ConcreteKind()
   final case class Data() extends ConcreteKind{ //Data is the same like Type
-    override def toString = "<dataKind>"
+    override def toString = "<data>"
   }
   final case class AddrSpace() extends ConcreteKind{
-    override def toString = "<addrSpaceKind>"
+    override def toString = "<addrSpace>"
   }
   final case class Nat() extends ConcreteKind{
-    override def toString = "<natKind>"
+    override def toString = "<nat>"
   }
 
 /*
@@ -72,44 +72,16 @@ abstract sealed class ConcreteKind()
  */
 //TODO add whitespace
 abstract sealed class ConcreteType()
-
-  abstract sealed class FunctionTypes() extends ConcreteType
-
-  //<LambdaTyp>::=<Typ> -> <Typ>
-  final case class FunctionTyp(typ1: ConcreteType, typ2: ConcreteType) extends FunctionTypes {
-    val t1: ConcreteType = typ1
-    val t2: ConcreteType = typ2
-
-    override def toString = t1.toString + " -> " + t2.toString
-  }
-
-  //<GenericsTyp>::=(<Identifier> : <Kind>) -> <Typ>
-  final case class GenericsTyp(identifier: Identifier, kind: ConcreteKind, typ: ConcreteType) extends FunctionTypes {
-    val i: Identifier = identifier
-    val k: ConcreteKind = kind
-    val t: ConcreteType = typ
-
-    override def toString = "( " + i.toString + " : " + k.toString + " ) -> " + t.toString
-  }
-
-  abstract sealed class DataTypes() extends ConcreteType
-
-  abstract sealed class SimpleTypes() extends DataTypes
-
-  final case class NatTyp() extends SimpleTypes {
+  final case class NatTyp() extends ConcreteType {
     override def toString = s"<NatTyp>"
   }
 
-  abstract sealed class Basic() extends SimpleTypes
-
-  final case class BoolType() extends Basic {
+  final case class BoolType() extends ConcreteType {
     override def toString = s"<Bool>"
   }
 
-  abstract sealed class Z() extends Basic
-
   //<i>::= i32|i64
-  abstract sealed class I() extends Z
+  abstract sealed class I() extends ConcreteType
 
   final case class ShortTyp() extends I {
     override def toString = s"<I16>"
@@ -120,7 +92,7 @@ abstract sealed class ConcreteType()
   }
 
   //<f>::= f32|f64
-  abstract sealed class F() extends Z
+  abstract sealed class F() extends ConcreteType
 
   final case class FloatTyp() extends F {
     override def toString = s"<Float>"
@@ -128,30 +100,5 @@ abstract sealed class ConcreteType()
 
   final case class DoubleType() extends F {
     override def toString = s"<Double>"
-  }
-
-  //<indexType>::=idx"["<nat>"]"
-  final case class IndexType(number: NatType) extends Basic {
-    val n: NatType = number
-
-    override def toString = s"idx[$n]"
-  }
-
-  abstract sealed class ComplexType() extends DataTypes
-
-  //<tupleTypes>::="("<Typ>,<Typ>")"
-  final case class TupleType(typ1: ConcreteType, typ2: ConcreteType) extends ComplexType {
-    val t1: ConcreteType = typ1
-    val t2: ConcreteType = typ2
-
-    override def toString = "( " + t1.toString + " , " + t2.toString + " )"
-  }
-
-  //<arrayTypes>::=<nat>.<Typ>
-  final case class ArrayType(number: NatType, typ: ConcreteType) extends ComplexType {
-    val n: NatType = number
-    val t: ConcreteType = typ
-
-    override def toString = s"$n" + "." + typ.toString
   }
 
