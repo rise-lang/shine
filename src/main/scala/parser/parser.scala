@@ -137,7 +137,7 @@ object parser {
     case BoolType() => Some(rt.bool)
     case notAtype => None
   }
-
+  //Todo: Im Parser soll N von Lexer.TypeIdentifier zu rt.NatIdentifier übersetzt werden.
 //  private def getNat(nat: NatType):r.Nat= {
 //    nat match {
 //      case NatNumber(number) => number

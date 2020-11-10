@@ -306,7 +306,7 @@ class LexerTest extends  AnyFlatSpec {
         BeginNamedExpr(_) :: Identifier("g", _) ::
         EqualsSign(_)::
         Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
-        DepArrow(_) ::
+        DepArrow(_) :: Backslash(_)::
         TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
         DepArrow(_)::
         Identifier("generate",_):: LBracket(_):: TypeIdentifier("N",_) ::RBracket(_)::
