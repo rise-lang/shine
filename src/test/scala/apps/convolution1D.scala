@@ -33,9 +33,11 @@ class convolution1D extends test_util.Tests {
     tileShiftInwards(32)(mapGlobal(0)(
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ))
-    /*tileShiftInwards(32)(mapWorkGroup(0)(
+    /* alternative:
+    tileShiftInwards(32)(mapWorkGroup(0)(
       slide(3)(1) >> mapLocal(0)(fun(nbh => dotSeq(nbh)(binomialWeights)))
-    ))*/
+    ))
+    */
 
   val binomialTileEpilogue: Expr = {
     def f = mapGlobal(0)(

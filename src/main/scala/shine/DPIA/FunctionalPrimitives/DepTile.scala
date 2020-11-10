@@ -12,7 +12,6 @@ import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
-//noinspection TypeAnnotation
 final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
                          dt1: DataType, dt2: DataType,
                          processTiles: Phrase[ExpType ->: ExpType],
@@ -22,7 +21,7 @@ final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
   val allTiles = (n + tileSize - 1) / tileSize
   val fullTiles = n / tileSize
   val remainder = n % tileSize
-  def depSize(i: Nat) =
+  def depSize(i: Nat): Nat =
     IfThenElse(arithPredicate(i, fullTiles, Operator.<), tileSize, remainder)
 
   processTiles :: (

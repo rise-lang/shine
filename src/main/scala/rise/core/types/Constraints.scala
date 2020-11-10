@@ -39,13 +39,16 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 
 object Constraint {
   def solve(cs: Seq[Constraint], trace: Seq[Constraint])
-     (implicit explDep: Flags.ExplicitDependence): Solution =/* cs match {
+     (implicit explDep: Flags.ExplicitDependence): Solution =
+  solveRec(cs, Nil, trace)
+  /* faster but not always enough:
+   cs match {
     case Nil => Solution()
     case c +: cs =>
       val s = solveOne(c, trace)
       s ++ solve(s.apply(cs), trace)
-  }*/
-  solveRec(cs, Nil, trace)
+  }
+  */
 
   def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint])
               (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {

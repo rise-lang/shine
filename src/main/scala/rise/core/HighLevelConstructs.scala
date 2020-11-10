@@ -54,13 +54,15 @@ object HighLevelConstructs {
         (a :: ((n + haloSize) `.` s)) |>
         take((n / tileSize) * tileSize + haloSize) |>
         slide(tileSize + haloSize)(tileSize) |>
-        impl{ sza: Nat => f :: (sza`.`(tileSize + haloSize)`.`s) ->: (sza`.`tileSize`.`t) } |>
+        impl{ sza: Nat => f ::
+          (sza`.`(tileSize + haloSize)`.`s) ->: (sza`.`tileSize`.`t) } |>
         join
       )(
         (a :: ((n + haloSize) `.` s)) |>
         drop((n / tileSize) * tileSize) |>
         slide(n % tileSize + haloSize)(n % tileSize) |>
-        impl{ szb: Nat => g :: (szb`.`(n % tileSize + haloSize)`.`s) ->: (szb`.`(n % tileSize)`.`t) } |>
+        impl{ szb: Nat => g ::
+          (szb`.`(n % tileSize + haloSize)`.`s) ->: (szb`.`(n % tileSize)`.`t) } |>
         join
       )) :: (n`.`t)
     )))}}}}

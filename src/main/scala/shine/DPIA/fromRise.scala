@@ -357,7 +357,7 @@ object fromRise {
 
       case core.depTile() => fromType {
         case nFunT(tile,
-          ((fa : ExpType) ->: (fb : ExpType)) ->:
+          ((fa: ExpType) ->: (fb: ExpType)) ->:
           (inT @ expT(ArrayType(m, s), `read`)) ->:
           expT(ArrayType(n, t), `write`))
         =>
