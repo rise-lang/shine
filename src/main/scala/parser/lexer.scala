@@ -721,16 +721,16 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           }
         }
       }
-      case a => if(a.isDigit){
-        lexNatNumber(column,row) match {
+      case a => if (a.isDigit) {
+        lexNatNumber(column, row) match {
           case (nat, r) => {
             row = r
-              skipWhitespaceWhitoutNewLine(column, row) match {
-                case (c1, r1) => {
-                  column = c1
-                  row = r1
-                }
+            skipWhitespaceWhitoutNewLine(column, row) match {
+              case (c1, r1) => {
+                column = c1
+                row = r1
               }
+            }
             lexDot(column, row) match {
               case Left(dot) => {
                 row = row + 1
@@ -746,31 +746,31 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             }
           }
         }
-      }else if(arr(column).length>row+2 &&
-        arr(column).substring(row, row+2).equals("=>")){
+      } else if (arr(column).length > row + 2 &&
+        arr(column).substring(row, row + 2).equals("=>")) {
         val beginLoc = Location(column, row)
-        val endLoc = Location(column, row+1)
+        val endLoc = Location(column, row + 1)
         val depArrow = DepArrow(Span(fileReader, beginLoc, endLoc))
-        row=row+2
-        list=list.::(depArrow)
-      }else if(arr(column).length>row+3 &&
-        arr(column).substring(row, row+3).equals("Idx")){
+        row = row + 2
+        list = list.::(depArrow)
+      } else if (arr(column).length > row + 3 &&
+        arr(column).substring(row, row + 3).equals("Idx")) {
         val beginLoc = Location(column, row)
-        val endLoc = Location(column, row+2)
-        val idx = TypeIdentifier("Idx",Span(fileReader, beginLoc, endLoc))
-        row=row+3
+        val endLoc = Location(column, row + 2)
+        val idx = TypeIdentifier("Idx", Span(fileReader, beginLoc, endLoc))
+        row = row + 3
         val lB = lexLBracket(column, row) match {
           case Right(e) => return Right(e)
           case Left(t) => t
         }
-        row=row+1
+        row = row + 1
         skipWhitespaceWhitoutNewLine(column, row) match {
           case (c, r) => {
             column = c
             row = r
           }
         }
-        val (nat, r) = lexNatNumber(column,row)
+        val (nat, r) = lexNatNumber(column, row)
         row = r
         skipWhitespaceWhitoutNewLine(column, row) match {
           case (c, r) => {
@@ -782,16 +782,35 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           case Right(e) => return Right(e)
           case Left(t) => t
         }
-        row=row+1
+        row = row + 1
 
         list = list.::(idx).::(lB).::(nat).::(rB)
       } else {
-          lexScalarType(column, row) match {
+        lexScalarType(column, row) match {
+          case (Left(a), r) => {
+            row = r
+            list = list.::(a)
+          }
+          case (Right(a), _) => lexKind(column, row) match {
             case (Left(a), r) => {
               row = r
-              list = list.::(a)
+              skipWhitespaceWhitoutNewLine(column, row) match {
+                case (c, r) => {
+                  column = c
+                  row = r
+                }
+              }
+              lexDepArrow(column, row) match {
+                case Left(b) => {
+                  row = row + 2
+                  list = list.::(a).::(b)
+                }
+                case Right(e) => {
+                  return Right(e)
+                }
+              }
             }
-            case (Right(a), _) => {
+            case (Right(e), _) => {
               lexIdentifier(column, row) match {
                 case (Left(ident), r) => {
                   row = r
@@ -801,32 +820,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                     return Right(TypeIdentifierExpectedNotIdentifier(ident.toString, ident.s, fileReader))
                   }
                 }
-                case (Right(e), r) => lexKind(column, row) match {
-                  case (Left(a), r) => {
-                    row = r
-                    skipWhitespaceWhitoutNewLine(column, row) match {
-                      case (c, r) => {
-                        column = c
-                        row = r
-                      }
-                    }
-                    lexDepArrow(column, row) match {
-                      case Left(b) => {
-                        row = row + 2
-                        list = list.::(a).::(b)
-                      }
-                      case Right(e) => {
-                        return Right(e)
-                      }
-                    }
-                  }
-                  case (Right(e), _) => {
-                    return Right(e)
-                  }
-                }
+                case (Right(e), _) => return Right(e)
               }
             }
           }
+        }
       }
     }
     Left((column, row, list))
@@ -988,6 +986,16 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         case ')' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
           list = list.::(RParentheses(new Span(fileReader, loc)))
+          row = row + 1
+        }
+        case '[' => {
+          val loc: Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(LBracket(new Span(fileReader, loc)))
+          row = row + 1
+        }
+        case ']' => {
+          val loc: Location = Location(column, row) //endLocation is equal to startLocation
+          list = list.::(RBracket(new Span(fileReader, loc)))
           row = row + 1
         }
         case '!' => {
@@ -1484,7 +1492,7 @@ if '==' then two steps else only one step
         case "I32"  => (Left(ScalarType(IntTyp(), span)),pos)
         case "F32"  => (Left(ScalarType(FloatTyp(), span)),pos)
         case "F64"  => (Left(ScalarType(DoubleType(), span)),pos)
-        case "Nat"  => (Left(ScalarType(NatTyp(), span)),pos)
+        case "NatTyp"  => (Left(ScalarType(NatTyp(), span)),pos)
         case a => (Right(UnknownType(substring, span, fileReader)),pos)
       }
     }

@@ -132,7 +132,7 @@ sealed abstract class Token (span: Span){
     require(name.matches("[A-Z][a-zA-Z0-9_]*"), "'"+name+"'has not the preffered structure")
     require(span.begin.column == span.end.column, "not in one column")
 
-    override def toString = s"<$name :Identifier>"
+    override def toString = s"<$name :TypeIdentifier>"
   }
 
 
