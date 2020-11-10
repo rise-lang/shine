@@ -288,13 +288,6 @@ class LexerTest extends  AnyFlatSpec {
         DepArrow(_) ::TypeIdentifier("N",_)::Dot(_)::ScalarType(IntTyp(),_)::
         EndTypAnnotatedIdent(_) ::
 
-        BeginNamedExpr(_) :: Identifier("f", _) ::
-        EqualsSign(_)::
-        Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
-          DepArrow(_) :: Identifier("g",_):: LBracket(_):: TypeIdentifier("N",_) ::
-        ScalarType(IntTyp(),_)::RBracket(_)::
-        EndNamedExpr(_)::
-
         BeginTypAnnotatedIdent(_):: Identifier("g", _)::
         DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
         DepArrow(_) ::
@@ -302,6 +295,13 @@ class LexerTest extends  AnyFlatSpec {
         DepArrow(_)::
         TypeIdentifier("N",_)::Dot(_)::TypeIdentifier("D",_)::
         EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        DepArrow(_) :: Identifier("g",_):: LBracket(_):: TypeIdentifier("N",_) ::
+        ScalarType(IntTyp(),_)::RBracket(_)::
+        EndNamedExpr(_)::
 
         BeginNamedExpr(_) :: Identifier("g", _) ::
         EqualsSign(_)::

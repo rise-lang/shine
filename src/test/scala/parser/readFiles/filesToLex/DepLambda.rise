@@ -1,4 +1,4 @@
 f::N:Nat=>N.I32
-f=\N:Nat=>g[N I32]
 g::N:Nat=>D:Data=>N.D
+f=\N:Nat=>g[N I32]
 g= \N:Nat=>\D:Data=>generate[N] (\i->cast[D] i)

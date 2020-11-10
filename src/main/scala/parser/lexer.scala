@@ -797,6 +797,9 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                 }
                 case (Right(e), r) => return Right(e)
               }
+              if(arr(column).length<=row){
+                return Left((column ,row, list))
+              }
               lexColon(column, row) match {
                 case Left(colon) => {
                   row = row + 1
@@ -808,7 +811,24 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                   }
                   list = list.::(colon)
                 }
-                case Right(e) => return Right(e)
+                case Right(e) => lexDot(column, row) match {
+                  case Right(e) => return Left((column ,row, list))
+                  case Left(dot) => {
+                    row=row+1
+                    list = list.::(dot)
+                    skipWhitespaceWhitoutNewLine(column, row) match {
+                      case (c, r) => {
+                        column = c
+                        row = r
+                      }
+                    }
+                    println(list)
+                    lexTypAnnotationToken(column, row, list) match{
+                      case Right(e) => return Right(e)
+                      case Left((c,r,l)) => return Left((c,r,l))
+                    }
+                  }
+                }
               }
               lexKind(column, row) match {
                 case (Left(a), r) => {
@@ -1508,9 +1528,9 @@ if '==' then two steps else only one step
       val span =  Span(fileReader,locStart, locEnd)
       //different Types in RISE //Todo: not completed yet
       substring match {
-        case "DataK" => (Left(Kind(Data(), span)), pos)
-        case "AddrSpaceK" => (Left(Kind(AddrSpace(), span)), pos)
-        case "NatK" => (Left(Kind(Nat(), span)), pos)
+        case "Data" => (Left(Kind(Data(), span)), pos)
+        case "AddrSpace" => (Left(Kind(AddrSpace(), span)), pos)
+        case "Nat" => (Left(Kind(Nat(), span)), pos)
 
         case a => (Right(UnknownKind(substring, span, fileReader)),pos)
       }
