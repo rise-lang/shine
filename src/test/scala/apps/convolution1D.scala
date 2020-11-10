@@ -130,7 +130,7 @@ class convolution1D extends test_util.Tests {
     }
   }
 
-  // TODO: BigSum simplification/unification
+  // TODO: nat unification
   ignore("depSlide inference") {
     println(types.infer(
       nFun(n => fun(((n+2)`.`f32) ->: (n`.`f32))(a =>

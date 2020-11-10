@@ -283,6 +283,9 @@ object harrisCornerDetectionHalide {
         )))
       )))
 
+    // limitations:
+    // - v <= 4
+    // - if toMem = toPrivate, loop unrolling can fail due to blowup
     def harrisVecUnaligned2(v: Int,
                             mapPar: Int => Expr,
                             toMem: Expr): Expr =
@@ -290,22 +293,22 @@ object harrisCornerDetectionHalide {
         (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
-        transpose >> map(transpose) >> // H.W+2.3.<v>f
+        transpose >> map(transpose) >>
         mapPar(1)(
           mapPar(0)(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f)))) >>
           asScalar >> padEmpty(2)
-        ) >> toMem >> letf( // H.(W+2)v.f
-        slide(3)(1) >> mapPar(1)( // 3.(W+2)v.f
-          map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
+        ) >> toMem >> letf(
+        slide(3)(1) >> mapPar(1)(
+          map(slideVectors(v) >> slide(3)(v)) >> transpose >>
           mapPar(0)(fun(nbh => makeArray(2)(
             dotWeightsVec(join(sobelXWeights2d), join(nbh)),
             dotWeightsVec(join(sobelYWeights2d), join(nbh))
           ) |> mapSeqUnroll(id))) >> transpose >>
           map(asScalar)
-        ) >> toMem >> letf( // H.2.Wv.f
-        slide(3)(1) >> mapPar(1)( // 3.2.Wv.f
-          map(map(dropLast(2) >> slideVectors(v) >> slide(3)(v))) >> // 3.2.W.3.<v>f
-          map(transpose) >> transpose >> map(map(transpose)) >> // W.3.3.2.<v>f
+        ) >> toMem >> letf(
+        slide(3)(1) >> mapPar(1)(
+          map(map(dropLast(2) >> slideVectors(v) >> slide(3)(v))) >>
+          map(transpose) >> transpose >> map(map(transpose)) >>
           mapPar(0)(fun(ixiy =>
             ixiy |> map(map(fun(p => (p `@` lidx(0, 2)) * (p `@` lidx(0, 2)))))
             |> fun(ixx =>
