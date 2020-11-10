@@ -27,8 +27,8 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex.t match {
-      case rt.FunType(rt.ArrayType(n,rt.i32), rt.FunType(rt.i32,rt.i32)) if n.eval.equals(5) => true
-      case t => println("The Type '"+t+"' is not the expected type.")
+      case rt.FunType(rt.ArrayType(n, rt.i32), rt.FunType(rt.i32, rt.i32)) if n.eval.equals(5) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
     ex match {
@@ -48,19 +48,24 @@ class parserTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val exT = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => fail("no definition is expected: "+ lambda)
+      case Left(lambda) => fail("no definition is expected: " + lambda)
       case Right(t) => t
     }
 
     exT match {
-      case rt.FunType(rt.ArrayType(n,rt.i32), rt.FunType(rt.i32,rt.i32)) if n.eval.equals(5) => true
-      case a => fail("it was a different definition expected, but we see: "+ a)
+      case rt.FunType(rt.ArrayType(n, rt.i32), rt.FunType(rt.i32, rt.i32)) if n.eval.equals(5) => true
+      case a => fail("it was a different definition expected, but we see: " + a)
     }
 
     val functionName2: String = "h"
     val ex: r.Expr = map.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex.t match {
+      case rt.FunType(rt.i32, rt.i32) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
     ex match {
@@ -357,30 +362,61 @@ class parserTest extends  AnyFlatSpec {
   }
 
   "parser" should "be able to parse 'DepLambda.rise'" in {
-    //Todo: All DepLambda except DepLambdaNat are bullshit in their logic
-    //Todo: How I understand it, shuld DepLambda work like in DepLambdaNat
     val fileName: String = testFilePath + "DepLambda.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val map: MapFkt = parser(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
 
-    ex.t match {
-      case rt.DepFunType(rt.AddressSpaceIdentifier("Addr", _), rt.i32) => true
-      case t => println("The Type '"+t+"' is not the expected type.")
+    val functionName2: String = "g"
+    val ex_g: r.Expr = map.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
     }
 
-    ex match {
-      case r.DepLambda(rt.AddressSpaceIdentifier("Addr", _), r.Identifier("t")) => true
-      case r.DepLambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      case a => fail("not a lambda: " + a)
+    ex_f.t match {
+      case rt.DepFunType(n,
+      rt.ArrayType(n1: rt.NatIdentifier, rt.i32))
+        if n.name.equals("N") && n1.name.equals("N") => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
     }
+
+    ex_g.t match {
+      case rt.DepFunType(n, rt.DepFunType(d,
+      rt.ArrayType(n1: rt.NatIdentifier, d1: rt.DataTypeIdentifier)))
+        if n.name.equals("N") && n1.name.equals(n.name)
+          && d.name.equals("D") && d1.name.equals(d.name) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+  ex_f match {
+    case r.DepLambda(n: rt.NatIdentifier, r.DepApp(r.DepApp(r.Identifier("g"),
+    n1: rt.NatIdentifier), rt.i32))
+      if n.name.equals("N") && n1.name.equals("N") => true
+    case r.DepLambda(n, e) => fail("Not correct deplambda: "
+      +n.toString()+ " , " + e.toString())
+    case a => fail("Not a DepLambda: " + a)
   }
+
+  ex_g match {
+    case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
+      r.App(r.DepApp(r.Identifier("g"), d1:rt.DataTypeIdentifier),
+      r.Lambda(r.Identifier("i"), r.App(
+      r.DepApp(r.Identifier("cast"),d2:rt.DataTypeIdentifier), r.Identifier("i")))
+    )))
+      if n.name.equals("N")
+        && d.name.equals("D") && d1.name.equals(d.name)&&
+        d2.name.equals(d.name)=> true
+    case r.DepLambda(n, e) => fail("Not correct deplambda: "
+      +n.toString()+ " , " + e.toString())
+    case a => fail("Not a DepLambda: " + a)
+  }
+}
 
   "parser" should "be able to parse 'DepLambdaNat.rise'" in {
     val fileName: String = testFilePath + "DepLambdaNat.rise"
@@ -396,7 +432,7 @@ class parserTest extends  AnyFlatSpec {
 
     ex.t match {
       case rt.DepFunType(nat, rt.ArrayType(n,rt.i32)) => true
-      case t => println("The Type '"+t+"' is not the expected type.")
+      case t => fail("The Type '"+t+"' is not the expected type.")
     }
 
     ex match {
@@ -477,7 +513,7 @@ class parserTest extends  AnyFlatSpec {
 
     ex.t match {
       case rt.FunType(rt.IndexType(n), rt.i32) if n.eval.equals(2)=> true
-      case t => println("The Type '"+t+"' is not the expected type.")
+      case t => fail("The Type '"+t+"' is not the expected type.")
     }
 
     ex match {
@@ -700,7 +736,7 @@ class parserTest extends  AnyFlatSpec {
 
     ex.t match {
       case rt.FunType(rt.PairType(rt.i32,rt.f32), rt.i32) => true
-      case t => println("The Type '"+t+"' is not the expected type.")
+      case t => fail("The Type '"+t+"' is not the expected type.")
     }
 
     ex match {
@@ -724,7 +760,7 @@ class parserTest extends  AnyFlatSpec {
 
     ex.t match {
       case rt.FunType(rt.PairType(rt.i32,rt.f32), rt.i32) => true
-      case t => println("The Type '"+t+"' is not the expected type.")
+      case t => fail("The Type '"+t+"' is not the expected type.")
     }
 
     ex match {
@@ -748,7 +784,7 @@ class parserTest extends  AnyFlatSpec {
 
     ex.t match {
       case rt.FunType(rt.PairType(rt.i32,rt.ArrayType(n,rt.i32)), rt.i32) if n.eval.equals(2) => true
-      case t => println("The Type '"+t+"' is not the expected type.")
+      case t => fail("The Type '"+t+"' is not the expected type.")
     }
 
     ex match {
@@ -775,7 +811,7 @@ class parserTest extends  AnyFlatSpec {
       rt.ArrayType(n5,rt.ArrayType(n4, rt.ArrayType(n3, rt.ArrayType(n2, rt.i32))))),
       rt.ArrayType(n,rt.PairType(rt.i32, rt.i32))), rt.i32)
         if n5.eval.equals(5) && n4.eval.equals(4) && n3.eval.equals(3)&&n2.eval.equals(2) &&n.eval.equals(2)=> true
-      case t => println("The Type '"+t+"' is not the expected type.")
+      case t => fail("The Type '"+t+"' is not the expected type.")
     }
 
     ex match {
