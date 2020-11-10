@@ -316,7 +316,43 @@ class LexerTest extends  AnyFlatSpec {
         EndNamedExpr(_)::
 
         Nil => true
-      case a => fail(a.toString())
+      case a => {
+        fail(a.toString())
+      }
+    }
+  }
+
+  "RecognizeLexeme" should "work for the DepLambda2" in {
+    val fileName: String = testFilePath + "DepLambda2.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("g", _)::
+        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        DepArrow(_) ::
+        TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
+        DepArrow(_)::
+        TypeIdentifier("N",_)::Dot(_)::
+        TypeIdentifier("N",_)::Dot(_)::TypeIdentifier("D",_)::
+        EndTypAnnotatedIdent(_) ::
+
+        BeginNamedExpr(_) :: Identifier("g", _) ::
+        EqualsSign(_)::
+        Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        DepArrow(_) :: Backslash(_)::
+        TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
+        DepArrow(_)::
+        Identifier("generate",_):: LBracket(_):: LParentheses(_)::
+        TypeIdentifier("N",_) ::RParentheses(_)::RBracket(_)::
+        LParentheses(_)::Backslash(_)::Identifier("i",_)::Arrow(_)::Identifier("cast", _)::
+        LBracket(_)::TypeIdentifier("N",_)::Dot(_)::TypeIdentifier("D",_)::RBracket(_):: Identifier("i", _)::
+        RParentheses(_)::
+        EndNamedExpr(_)::
+
+        Nil => true
+      case a => {
+        fail(a.toString())
+      }
     }
   }
 

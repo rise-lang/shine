@@ -992,6 +992,16 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
           list = list.::(LBracket(new Span(fileReader, loc)))
           row = row + 1
+          while(!list(0).isInstanceOf[RBracket]){
+            lexTypAnnotationToken(column,row,list) match {
+              case Right(e) => e
+              case Left((c,r, l)) => {
+                column = c
+                row = r
+                list = l
+              }
+            }
+          }
         }
         case ']' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
@@ -1047,7 +1057,6 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
               }
             }
           } else if (a.isLetter) {
-            //more than one step but column keeps the same
             lexIdentifier(column, row) match {
               case (Left(a), r) => {
                 row = r
