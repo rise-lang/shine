@@ -697,6 +697,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         list = list.::(Dot(new Span(fileReader, loc)))
         row = row + 1
       }
+      case ':' => {
+        val loc: Location = Location(column, row) //endLocation is equal to startLocation
+        list = list.::(Colon(new Span(fileReader, loc)))
+        row = row + 1
+      }
       case '-' => {
         if (arr(column).length <= row + 1) {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
@@ -741,10 +746,17 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             }
           }
         }
+      }else if(arr(column).length>row+2 &&
+        arr(column).substring(row, row+2).equals("=>")){
+        val beginLoc = Location(column, row)
+        val endLoc = Location(column, row+1)
+        val depArrow = DepArrow(Span(fileReader, beginLoc, endLoc))
+        row=row+2
+        list=list.::(depArrow)
       }else if(arr(column).length>row+3 &&
         arr(column).substring(row, row+3).equals("Idx")){
         val beginLoc = Location(column, row)
-        val endLoc = Location(column, row+3)
+        val endLoc = Location(column, row+2)
         val idx = TypeIdentifier("Idx",Span(fileReader, beginLoc, endLoc))
         row=row+3
         val lB = lexLBracket(column, row) match {
@@ -785,72 +797,32 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                   row = r
                   if (ident.isInstanceOf[TypeIdentifier]) {
                     list = list.::(ident)
-                    skipWhitespaceWhitoutNewLine(column, row) match {
-                      case (c, r) => {
-                        column = c
-                        row = r
-                      }
-                    }
                   } else {
                     return Right(TypeIdentifierExpectedNotIdentifier(ident.toString, ident.s, fileReader))
                   }
                 }
-                case (Right(e), r) => return Right(e)
-              }
-              if(arr(column).length<=row){
-                return Left((column ,row, list))
-              }
-              lexColon(column, row) match {
-                case Left(colon) => {
-                  row = row + 1
-                  skipWhitespaceWhitoutNewLine(column, row) match {
-                    case (c, r) => {
-                      column = c
-                      row = r
-                    }
-                  }
-                  list = list.::(colon)
-                }
-                case Right(e) => lexDot(column, row) match {
-                  case Right(e) => return Left((column ,row, list))
-                  case Left(dot) => {
-                    row=row+1
-                    list = list.::(dot)
+                case (Right(e), r) => lexKind(column, row) match {
+                  case (Left(a), r) => {
+                    row = r
                     skipWhitespaceWhitoutNewLine(column, row) match {
                       case (c, r) => {
                         column = c
                         row = r
                       }
                     }
-                    println(list)
-                    lexTypAnnotationToken(column, row, list) match{
-                      case Right(e) => return Right(e)
-                      case Left((c,r,l)) => return Left((c,r,l))
+                    lexDepArrow(column, row) match {
+                      case Left(b) => {
+                        row = row + 2
+                        list = list.::(a).::(b)
+                      }
+                      case Right(e) => {
+                        return Right(e)
+                      }
                     }
                   }
-                }
-              }
-              lexKind(column, row) match {
-                case (Left(a), r) => {
-                  row = r
-                  skipWhitespaceWhitoutNewLine(column, row) match {
-                    case (c, r) => {
-                      column = c
-                      row = r
-                    }
+                  case (Right(e), _) => {
+                    return Right(e)
                   }
-                  lexDepArrow(column, row) match {
-                    case Left(b) => {
-                      row = row + 2
-                      list = list.::(a).::(b)
-                    }
-                    case Right(e) => {
-                      return Right(e)
-                    }
-                  }
-                }
-                case (Right(e), _) => {
-                  return Right(e)
                 }
               }
             }
@@ -1320,18 +1292,18 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   }
 
 
-  private def lexColon(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]={
-    arr(column)(row) match {
-      case ':' => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Left(Colon(new Span(fileReader,loc)))
-      }
-      case a => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken(":", ""+ a, Span(fileReader,loc, loc), fileReader))
-      }
-    }
-  }
+//  private def lexColon(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]={
+//    arr(column)(row) match {
+//      case ':' => {
+//        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+//        Left(Colon(new Span(fileReader,loc)))
+//      }
+//      case a => {
+//        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+//        Right(NotExpectedToken(":", ""+ a, Span(fileReader,loc, loc), fileReader))
+//      }
+//    }
+//  }
 
   private def lexDot(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]={
     arr(column)(row) match {
