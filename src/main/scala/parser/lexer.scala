@@ -720,16 +720,12 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         lexNatNumber(column,row) match {
           case (nat, r) => {
             row = r
-            if (nat.isInstanceOf[NatNumber]) {
               skipWhitespaceWhitoutNewLine(column, row) match {
                 case (c1, r1) => {
                   column = c1
                   row = r1
                 }
               }
-            } else {
-              return Right(TypeIdentifierExpectedNotIdentifier(nat.toString, nat.s, fileReader))
-            }
             lexDot(column, row) match {
               case Left(dot) => {
                 row = row + 1
@@ -745,7 +741,39 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             }
           }
         }
-      }else {
+      }else if(arr(column).length>row+3 &&
+        arr(column).substring(row, row+3).equals("Idx")){
+        val beginLoc = Location(column, row)
+        val endLoc = Location(column, row+3)
+        val idx = TypeIdentifier("Idx",Span(fileReader, beginLoc, endLoc))
+        row=row+3
+        val lB = lexLBracket(column, row) match {
+          case Right(e) => return Right(e)
+          case Left(t) => t
+        }
+        row=row+1
+        skipWhitespaceWhitoutNewLine(column, row) match {
+          case (c, r) => {
+            column = c
+            row = r
+          }
+        }
+        val (nat, r) = lexNatNumber(column,row)
+        row = r
+        skipWhitespaceWhitoutNewLine(column, row) match {
+          case (c, r) => {
+            column = c
+            row = r
+          }
+        }
+        val rB = lexRBracket(column, row) match {
+          case Right(e) => return Right(e)
+          case Left(t) => t
+        }
+        row=row+1
+
+        list = list.::(idx).::(lB).::(nat).::(rB)
+      } else {
           lexScalarType(column, row) match {
             case (Left(a), r) => {
               row = r
@@ -1245,6 +1273,32 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
   }
 
+  private def lexLBracket(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]= {
+    arr(column)(row) match {
+      case '[' => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Left(LBracket(new Span(fileReader,loc)))
+      }
+      case a => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken("[", ""+ a, Span(fileReader,loc, loc), fileReader))
+      }
+    }
+  }
+
+  private def lexRBracket(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]= {
+    arr(column)(row) match {
+      case ']' => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Left(RBracket(new Span(fileReader,loc)))
+      }
+      case a => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken("]", ""+ a, Span(fileReader,loc, loc), fileReader))
+      }
+    }
+  }
+
 
   private def lexColon(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]={
     arr(column)(row) match {
@@ -1632,7 +1686,7 @@ private def createIdentifierBeginsWithAF32Number(column:Int,row:Int,  pos:Int, l
   it is only relevant here, that '=' is a known symbol
    */
   def otherKnownSymbol(c:Char): Boolean = {
-    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',', '.')
+    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',', '.', '[', ']')
     set(c) //set.contains(c)
   }
 
