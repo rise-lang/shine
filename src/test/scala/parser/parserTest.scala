@@ -471,13 +471,17 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex.t match {
-      case rt.DepFunType(nat, rt.ArrayType(n,rt.i32)) => true
+      case rt.DepFunType(nat, rt.FunType(rt.ArrayType(n:rt.NatIdentifier,rt.i32),
+      rt.ArrayType(n1:rt.NatIdentifier,rt.i32)))
+      if nat.name.equals("NeverGiveUp") && n.name.equals(nat.name)
+      &&n1.name.equals(nat.name)=> true
       case t => fail("The Type '"+t+"' is not the expected type.")
     }
 
     ex match {
-      case r.Lambda(r.Identifier("arr"), r.Identifier("arr")) => true
-      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case r.DepLambda(nat, r.Lambda(r.Identifier("arr"), r.Identifier("arr")))
+        if nat.name.equals("NeverGiveUp")=> true
+      case r.DepLambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
   }
