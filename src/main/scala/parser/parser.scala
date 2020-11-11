@@ -1,6 +1,6 @@
 package parser
 
-import rise.core.{Lambda,  semantics => rS, types => rt, primitives => rp}
+import rise.core.{Lambda, primitives => rp, semantics => rS, types => rt}
 import rise.{core => r}
 
 import scala.collection.mutable
@@ -29,11 +29,15 @@ object parser {
     //r.Identifier("placeholder")()
   }
 
-  sealed trait SyntaxElement
+  sealed trait NatElement
+    final case class NNumber(nat: r.Nat) extends NatElement
+    final case class NIdentifier(nat: rt.NatIdentifier) extends NatElement
 
-  final case class SExpr(expr: r.Expr) extends SyntaxElement
-  final case class SType(t: r.types.Type) extends SyntaxElement
-  final case class SAnyRef(value: AnyRef) extends SyntaxElement
+  sealed trait SyntaxElement
+    final case class SExpr(expr: r.Expr) extends SyntaxElement
+    final case class SType(t: rt.Type) extends SyntaxElement
+    final case class SAnyRef(value: AnyRef) extends SyntaxElement
+    final case class SNat(nat: NatElement) extends SyntaxElement
 
 
 
@@ -89,6 +93,7 @@ object parser {
     Left(ParseState(remainderTokens, parsedExprs, map))
   }
 
+  //Todo: maybe it works if i change AnyRef to r.Primitive and delete annotation and makeArray
   def nameMatchPrimitives(name:String): AnyRef= {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     name match {
@@ -637,7 +642,8 @@ object parser {
     println("parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
     val ps: Either[ParseState, ParseErrorOrState]  =
       Left(parseState) |>
-    (parseBracesExprType _ || parseDepFunctionType || //parseFunType ||
+    (parseBracesExprType _ || parseDepFunctionType ||
+      parseTupleType || parseIndexType || parseArrayType || //parseFunType ||
       parseScalarType)
 
     ps match {
@@ -757,7 +763,7 @@ object parser {
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
         parseLeftBrace  |>
         parseMaybeAppExpr |>
-        parseRightBrace
+        parseRightParentheses
 
     p match {
       case Left(pState) => {
@@ -777,13 +783,72 @@ object parser {
     }
   }
 
+
+
+  def parseIndexType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseIndexType: " + parseState)
+    val p =
+      Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
+        parseIdent  |>
+        parseLeftBracket |>
+        parseNat |>
+        parseRightBracket
+
+    p match {
+      case Left(pState) => {
+        require(pState.parsedSynElems.length==2, "It should exactly be 1 Nat and one Identifer for IndexType in the list!")
+        val ty = pState.parsedSynElems.reverse match {
+          case SExpr(r.Identifier("Idx")) :: SNat(nat)::Nil => nat match {
+            case NNumber(nat) => SType(rt.IndexType(nat))
+            case NIdentifier(nat) => SType(rt.IndexType(nat))
+          }
+        }
+        val newL = ty :: Nil
+        val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
+        val l = li.reverse
+        val newParse:ParseState = ParseState(pState.tokenStream, l, pState.map)
+        Left(newParse)
+      }
+      case Right(e) => Right(e)
+    }
+  }
+  def parseTupleType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseTupleType: "+ parseState)
+    val p =
+      Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
+        parseLeftParentheses  |>
+        parseType |>
+        parseComma |>
+        parseType |>
+        parseRightParentheses
+
+    p match {
+      case Left(pState) => {
+        if(pState.parsedSynElems.isEmpty){
+          val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RParentheses])
+          throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
+            " : "+ parseState.tokenStream.toString())
+        }
+        val typesList = getTypesInList(pState.parsedSynElems)
+        require(typesList.length==2, "It should exactly be two Types for PairType in the list!")
+        val ty = SType(rt.PairType(typesList.head.asInstanceOf[rt.DataType], typesList.tail.head.asInstanceOf[rt.DataType]))
+        val newL = ty :: Nil
+        val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
+        val l = li.reverse
+        val newParse:ParseState = ParseState(pState.tokenStream, l, pState.map)
+        Left(newParse)
+      }
+      case Right(e) => Right(e)
+    }
+  }
+
   def parseBracesExprType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseBracesExprType: "+ parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
         parseLeftBrace  |>
         parseType |>
-        parseRightBrace
+        parseRightParentheses
 
     p match {
       case Left(pState) => {
@@ -936,23 +1001,75 @@ object parser {
     }
   }
 
-  def parseLeftBrace(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+
+  def parseComma(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case Comma(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
+      case tok => Right(ParseError("failed to parse Comma: " + tok + " is not an Comma"))
+    }
+  }
+
+  def parseDot(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case Dot(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
+      case tok => Right(ParseError("failed to parse Dot: " + tok + " is not an Dot"))
+    }
+  }
+
+  def parseNat(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case NatNumber(number, _) => Left(ParseState(remainderTokens, SNat(NNumber(number:r.Nat))::parsedSynElems, map))
+      case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens, SNat(NIdentifier(rt.NatIdentifier(name)))::parsedSynElems, map))
+      case tok => Right(ParseError("failed to parse Dot: " + tok + " is not an Dot"))
+    }
+  }
+
+  def parseLeftBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case LBracket(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
+      case tok => Right(ParseError("failed to parse LeftBracket: " + tok + " is not an LeftBracket"))
+    }
+  }
+
+  def parseRightBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case RBracket(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
+      case tok => Right(ParseError("failed to parse RightBracket: " + tok + " is not an RightBracket"))
+    }
+  }
+
+  def parseLeftParentheses(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map) = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case LParentheses(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
-      case tok => Right(ParseError("failed to parse LeftBrace: " + tok + " is not an LeftBrace"))
+      case tok => Right(ParseError("failed to parse LeftParentheses: " + tok + " is not an LeftParentheses"))
     }
   }
 
-  def parseRightBrace(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseRightParentheses(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map) = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case RParentheses(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
-      case tok => Right(ParseError("failed to parse RightBrace: " + tok + " is not an RightBrace"))
+      case tok => Right(ParseError("failed to parse RightParentheses: " + tok + " is not an RightParentheses"))
     }
   }
 
