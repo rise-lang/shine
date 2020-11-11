@@ -1,0 +1,2 @@
+f::D:Data=>T:Data=>(D,T)->D
+f=\D:Data=>\T:Data=>\t->Fst t

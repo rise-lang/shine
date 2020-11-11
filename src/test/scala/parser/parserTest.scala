@@ -767,6 +767,181 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "be able to parse 'PrimitiveFstTwoDep.rise'" in {
+    val fileName: String = testFilePath + "PrimitiveFstTwoDep.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.DepFunType(d,rt.DepFunType(t,
+      rt.FunType(rt.PairType(d1:rt.DataTypeIdentifier, t1:rt.DataTypeIdentifier), d2:rt.DataTypeIdentifier)))
+        if d.name.equals("D") && d1.name.equals(d.name)&& d2.name.equals(d.name)
+        && t.name.equals("T") && t1.name.equals(t.name) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.DepLambda(d, r.DepLambda(t,
+      r.Lambda(r.Identifier("t"), r.App(rp.Fst(), r.Identifier("t")))))
+        if d.name.equals("D")
+        && t.name.equals("T") => true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'PrimitiveSndTwoDep.rise'" in {
+    val fileName: String = testFilePath + "PrimitiveSndTwoDep.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.DepFunType(d,rt.DepFunType(t,
+      rt.FunType(rt.PairType(d1:rt.DataTypeIdentifier, t1:rt.DataTypeIdentifier), t2:rt.DataTypeIdentifier)))
+        if d.name.equals("D") && d1.name.equals(d.name)
+          && t.name.equals("T") && t1.name.equals(t.name) && t2.name.equals(t.name) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.DepLambda(d, r.DepLambda(t,
+      r.Lambda(r.Identifier("t"), r.App(rp.Snd(), r.Identifier("t")))))
+        if d.name.equals("D")
+          && t.name.equals("T") => true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'PrimitiveSndDep.rise'" in {
+    val fileName: String = testFilePath + "PrimitiveSndDep.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.DepFunType(d,
+      rt.FunType(rt.PairType(d1:rt.DataTypeIdentifier, rt.i32), rt.i32))
+        if d.name.equals("D") && d1.name.equals(d.name) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.DepLambda(d,
+      r.Lambda(r.Identifier("t"), r.App(rp.Snd(), r.Identifier("t"))))
+        if d.name.equals("D") => true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'PrimitiveFstDep.rise'" in {
+    val fileName: String = testFilePath + "PrimitiveFstDep.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.DepFunType(d,
+      rt.FunType(rt.PairType(d1:rt.DataTypeIdentifier, rt.i32), d2:rt.DataTypeIdentifier))
+        if d.name.equals("D") && d1.name.equals(d.name) &&d2.name.equals(d.name)=> true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.DepLambda(d,
+      r.Lambda(r.Identifier("t"), r.App(rp.Fst(), r.Identifier("t"))))
+        if d.name.equals("D") => true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'PrimitiveSnd.rise'" in {
+    val fileName: String = testFilePath + "PrimitiveSnd.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.FunType(rt.PairType(rt.i32, rt.i32), rt.i32) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.Lambda(r.Identifier("t"), r.App(rp.Snd(), r.Identifier("t"))) => true
+      case r.Lambda(n, e) => fail("Not correct lambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'PrimitiveFst.rise'" in {
+    val fileName: String = testFilePath + "PrimitiveFst.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.FunType(rt.PairType(rt.i32, rt.i32), rt.i32) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.Lambda(r.Identifier("t"), r.App(rp.Fst(), r.Identifier("t")))=> true
+      case r.Lambda(n, e) => fail("Not correct lambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
   "parser" should "be able to parse 'TupleType.rise'" in {
     val fileName: String = testFilePath + "TupleType.rise"
     val file: FileReader = new FileReader(fileName)

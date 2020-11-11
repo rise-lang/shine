@@ -1,0 +1,2 @@
+f::D:Data=>(D,I32)->I32
+f=\D:Data=>\t->Snd t
