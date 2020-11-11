@@ -828,7 +828,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex.t match {
-      case rt.FunType(rt.PairType(rt.i32,rt.ArrayType(n,rt.i32)), rt.i32) if n.eval.equals(2) => true
+      case rt.FunType(rt.PairType(rt.i32,rt.ArrayType(n,rt.f32)), rt.i32) if n.eval.equals(2) => true
       case t => fail("The Type '"+t+"' is not the expected type.")
     }
 
