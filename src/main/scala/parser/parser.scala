@@ -33,11 +33,16 @@ object parser {
     final case class NNumber(nat: r.Nat) extends NatElement
     final case class NIdentifier(nat: rt.NatIdentifier) extends NatElement
 
+  sealed trait DataElement
+    final case class DIdentifier(data: rt.DataTypeIdentifier) extends DataElement
+    final case class DType(data: rt.DataType) extends DataElement
+
   sealed trait SyntaxElement
     final case class SExpr(expr: r.Expr) extends SyntaxElement
     final case class SType(t: rt.Type) extends SyntaxElement
     final case class SAnyRef(value: AnyRef) extends SyntaxElement
     final case class SNat(nat: NatElement) extends SyntaxElement
+    final case class SData(data: DataElement) extends SyntaxElement
 
 
 
@@ -404,6 +409,8 @@ object parser {
       }
       case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
       case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
+      case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+      case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
     }
     println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
     while(!synE.isEmpty){
@@ -413,7 +420,9 @@ object parser {
           synE = synE.tail
         }
       case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
-        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+      case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
       }
     }
     println("I have combined the Expressions in Lambda: "+ e)
@@ -513,6 +522,8 @@ object parser {
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
           case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ p)
+          case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+          case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
         }
       }
     }
@@ -585,6 +596,8 @@ object parser {
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
           case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ p)
+          case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+          case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
         }
       }
     }
@@ -628,6 +641,8 @@ object parser {
         case SType(typ) => typ :: getTypesInList(synElems.tail)
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
         case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElems)
+        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
       }
     }else{
       Nil
@@ -720,6 +735,8 @@ object parser {
           }
         case SExpr(i) => (i, synElemListExpr.tail)
         case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemListExpr)
+        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
       }
     val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
     val lambda = Lambda(identifierName, expr)()
@@ -761,7 +778,7 @@ object parser {
     }
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
-        parseLeftBrace  |>
+        parseLeftParentheses  |>
         parseMaybeAppExpr |>
         parseRightParentheses
 
@@ -783,7 +800,39 @@ object parser {
     }
   }
 
+  def parseArrayType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseIndexType: " + parseState)
+    val p =
+      Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
+        parseNat |>
+        parseDot |>
+        parseData
 
+    p match {
+      case Left(pState) => {
+        require(pState.parsedSynElems.length==2, "It should exactly be 1 Nat and one Identifer for IndexType in the list!")
+        val ty = pState.parsedSynElems.reverse match {
+          case SNat(nat)::SData(data) :: Nil => nat match {
+            case NNumber(n) => data match {
+              case DIdentifier(d) => SType(rt.ArrayType(n, d))
+              case DType(d) => SType(rt.ArrayType(n,d))
+            }
+            case NIdentifier(n) => data match {
+              case DIdentifier(d) => SType(rt.ArrayType(n, d))
+              case DType(d) => SType(rt.ArrayType(n,d))
+            }
+          }
+          case a => throw new RuntimeException("List should't have only Nat at this position! " + a)
+        }
+        val newL = ty :: Nil
+        val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
+        val l = li.reverse
+        val newParse:ParseState = ParseState(pState.tokenStream, l, pState.map)
+        Left(newParse)
+      }
+      case Right(e) => Right(e)
+    }
+  }
 
   def parseIndexType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseIndexType: " + parseState)
@@ -802,6 +851,7 @@ object parser {
             case NNumber(nat) => SType(rt.IndexType(nat))
             case NIdentifier(nat) => SType(rt.IndexType(nat))
           }
+          case a => throw new RuntimeException("List should't have only Identifier at this position! " + a)
         }
         val newL = ty :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
@@ -846,7 +896,7 @@ object parser {
     println("parseBracesExprType: "+ parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
-        parseLeftBrace  |>
+        parseLeftParentheses  |>
         parseType |>
         parseRightParentheses
 
@@ -1029,6 +1079,17 @@ object parser {
     nextToken match {
       case NatNumber(number, _) => Left(ParseState(remainderTokens, SNat(NNumber(number:r.Nat))::parsedSynElems, map))
       case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens, SNat(NIdentifier(rt.NatIdentifier(name)))::parsedSynElems, map))
+      case tok => Right(ParseError("failed to parse Dot: " + tok + " is not an Dot"))
+    }
+  }
+
+  def parseData(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+        //Todo: I have to accept any explicit type too and because of that, I have to parseType extra here too!!!!
+      case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens, SData(DIdentifier(rt.DataTypeIdentifier(name)))::parsedSynElems, map))
       case tok => Right(ParseError("failed to parse Dot: " + tok + " is not an Dot"))
     }
   }
