@@ -319,7 +319,7 @@ object parser {
         inputKindToken match {
           case Kind(concreteKind, span) => {
             println("Kind was in parseDepFunctionType parsed: " + concreteKind)
-            parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
+            parseCompleteType(ParseState(remainderTokens, Nil, parseState.map)) match {
               case Right(e) => Right(e)
               case Left(pS) => {
                 if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
@@ -356,7 +356,7 @@ object parser {
             //Todo: Complex Alg for Type Parsing
             val parsedInType = getScalarType(typ)
             val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
-            parseType(ParseState(remainderTokens, Nil, parseState.map)) match {
+            parseCompleteType(ParseState(remainderTokens, Nil, parseState.map)) match {
               case Right(e) => Right(e)
               case Left(pS) => {
                 if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
@@ -605,7 +605,7 @@ object parser {
     val psNamedExprBefore = {
       Left(ParseState(ps.tokenStream, Nil, ps.map))        |>
         parseDoubleColons |>
-        parseType
+        parseCompleteType
     }
 
 
@@ -650,22 +650,22 @@ object parser {
   }
 
   def parseType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-//    if(parseState.tokenStream.head.isInstanceOf[EndTypAnnotatedIdent]||parseState.tokenStream.head.isInstanceOf[RBrace]){
-//      println("Abbruch; parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
-//      return Left(parseState)
-//    }
-    println("parseMaybeAppTypAnnotatedIdentExpr: "+ parseState)
-    val ps: Either[ParseState, ParseErrorOrState]  =
+    println("parseType: " + parseState)
+    val ps: Either[ParseState, ParseErrorOrState] =
       Left(parseState) |>
-    (parseBracesExprType _ || parseDepFunctionType ||
-      parseTupleType || parseIndexType || parseArrayType || //parseFunType ||
-      parseScalarType)
+        (parseBracesExprType _ || parseDepFunctionType ||
+          parseTupleType || parseIndexType || parseArrayType || //parseFunType ||
+          parseScalarType)
+    ps
+  }
 
+  def parseCompleteType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ps = parseType(parseState)
     ps match {
       case Right(e)=> Right(e)
       case Left(p)=> p.tokenStream.head match {
         case Arrow(_) => {
-          val newParse = parseType(ParseState(p.tokenStream.tail, Nil, p.map)) match{
+          val newParse = parseCompleteType(ParseState(p.tokenStream.tail, Nil, p.map)) match{
             case Left(pars) => pars
             case Right(e) => return Right(e)
           }
@@ -867,9 +867,9 @@ object parser {
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
         parseLeftParentheses  |>
-        parseType |>
+        parseCompleteType |>
         parseComma |>
-        parseType |>
+        parseCompleteType |>
         parseRightParentheses
 
     p match {
@@ -897,7 +897,7 @@ object parser {
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
         parseLeftParentheses  |>
-        parseType |>
+        parseCompleteType |>
         parseRightParentheses
 
     p match {
@@ -1079,7 +1079,7 @@ object parser {
     nextToken match {
       case NatNumber(number, _) => Left(ParseState(remainderTokens, SNat(NNumber(number:r.Nat))::parsedSynElems, map))
       case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens, SNat(NIdentifier(rt.NatIdentifier(name)))::parsedSynElems, map))
-      case tok => Right(ParseError("failed to parse Dot: " + tok + " is not an Dot"))
+      case tok => Right(ParseError("failed to parse Nat: " + tok + " is not an Nat"))
     }
   }
 
@@ -1090,7 +1090,20 @@ object parser {
     nextToken match {
         //Todo: I have to accept any explicit type too and because of that, I have to parseType extra here too!!!!
       case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens, SData(DIdentifier(rt.DataTypeIdentifier(name)))::parsedSynElems, map))
-      case tok => Right(ParseError("failed to parse Dot: " + tok + " is not an Dot"))
+      case _ => {
+        parseType(ParseState(tokens, Nil, map)) match {
+          case Right(e) => Right(e)
+          case Left(p) => {
+            if(p.parsedSynElems.length!=1){
+              throw new IllegalStateException("It has to be 1 elemnt long in parseData: "+ p.parsedSynElems)
+            }
+            p.parsedSynElems.head match {
+              case SType(t) => Left(ParseState(p.tokenStream, SData(DType(t.asInstanceOf[rt.DataType]))::parsedSynElems, map))
+              case a => throw new IllegalStateException("Only Type is expected in parseData: " + a)
+            }
+          }
+        }
+      }
     }
   }
 
