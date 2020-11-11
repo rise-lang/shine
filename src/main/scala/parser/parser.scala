@@ -517,7 +517,7 @@ object parser {
               }
               case Some(Left(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: "+ e)
               case Some(Right(typeFkt)) =>
-                (ParseState(p.tokenStream, parseState.parsedSynElems, p.map), r.Identifier(n)(), typeFkt)
+                (ParseState(p.tokenStream, parseState.parsedSynElems, p.map), r.Identifier(n)(typeFkt), typeFkt)
             }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
@@ -567,10 +567,10 @@ object parser {
     }
 
         val synElemList = psNamedExpr._2
-        val expr = combineExpressions(synElemList)
-        expr.setType(typeOfFkt)
+        var expr = combineExpressions(synElemList)
+        expr = expr.setType(typeOfFkt)
 
-        println("expr finished: " + expr)
+        println("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
         val m = psNamedExpr._3
         m.update(identifierFkt.name, Left(expr))
         println("map updated: " + m + "\nRemainderTokens: " + psNamedExpr._1)

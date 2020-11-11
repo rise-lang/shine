@@ -27,15 +27,16 @@ class parserTest extends  AnyFlatSpec {
       case Right(types) => fail("no definition is in map: " + types)
     }
 
-    ex.t match {
-      case rt.FunType(rt.ArrayType(n, rt.i32), rt.FunType(rt.i32, rt.i32)) if n.eval.equals(5) => true
-      case t => fail("The Type '" + t + "' is not the expected type.")
-    }
 
     ex match {
       case r.Lambda(r.Identifier("a"), r.Lambda(r.Identifier("x"), r.Identifier("a"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
+    }
+
+    ex.t match {
+      case rt.FunType(rt.ArrayType(n, rt.i32), rt.FunType(rt.i32, rt.i32)) if n.eval.equals(5) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
     }
   }
 
