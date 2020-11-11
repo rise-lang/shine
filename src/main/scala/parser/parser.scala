@@ -1,6 +1,6 @@
 package parser
 
-import rise.core.{Lambda, semantics => rS, types => rt}
+import rise.core.{Lambda,  semantics => rS, types => rt, primitives => rp}
 import rise.{core => r}
 
 import scala.collection.mutable
@@ -85,6 +85,72 @@ object parser {
     }
 
     Left(ParseState(remainderTokens, parsedExprs, map))
+  }
+
+  def nameMatchPrimitives(name:String): AnyRef= {
+    require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
+    name match {
+      case "annotation" => rp.Annotation(_,_)
+      case "makeArray" => rp.MakeArray(_:Int)()
+      case "cast" => rp.Cast()()
+      case "depJoin" => rp.DepJoin()()
+      case "depMapSeq" => rp.DepMapSeq()()
+      case "depZip" => rp.DepZip()()
+      case "drop" => rp.Drop()()
+      case "fst" => rp.Fst()()
+      case "gather" => rp.Gather()()
+      case "generate" => rp.Generate()()
+      case "idx" => rp.Idx()()
+      case "id" => rp.Id()()
+      case "indexAsNat" => rp.IndexAsNat()()
+      case "iterate" => rp.Iterate()()
+      case "join" => rp.Join()()
+      case "let" => rp.Let()()
+      case "map" => rp.Map()()
+      case "mapFst" => rp.MapFst()()
+      case "mapSnd" => rp.MapSnd()()
+      case "mapSeq" => rp.MapSeq()()
+      case "mapStream" => rp.MapStream()()
+      case "iterateStream" => rp.IterateStream()()
+      case "mapSeqUnroll" => rp.MapSeqUnroll()()
+      case "toMem" => rp.ToMem()()
+      case "natAsIndex" => rp.NatAsIndex()()
+      case "padEmpty" => rp.PadEmpty()()
+      case "padClamp" => rp.PadClamp()()
+      case "partition" => rp.Partition()()
+      case "pair" => rp.Pair()()
+      case "reduce" => rp.Reduce()()
+      case "reduceSeq" => rp.ReduceSeq()()
+      case "reduceSeqUnroll" => rp.ReduceSeqUnroll()()
+      case "reorder" => rp.Reorder()()
+      case "scanSeq" => rp.ScanSeq()()
+      case "slide" => rp.Slide()()
+      case "circularBuffer" => rp.CircularBuffer()()
+      case "rotateValues" => rp.RotateValues()()
+      case "snd" => rp.Snd()()
+      case "split" => rp.Split()()
+      case "take" => rp.Take()()
+      case "transpose" => rp.Transpose()()
+      case "select" => rp.Select()()
+      case "zip" => rp.Zip()()
+      case "neg" => rp.Neg()()
+      case "not" => rp.Not()()
+      case "add" => rp.Add()()
+      case "sub" => rp.Sub()()
+      case "mul" => rp.Mul()()
+      case "div" => rp.Div()()
+      case "mod" => rp.Mod()()
+      case "gt" => rp.Gt()()
+      case "lt" => rp.Lt()()
+      case "equal" => rp.Equal()()
+      case "asVectorAligned" => rp.AsVectorAligned()()
+      case "asVector" => rp.AsVector()()
+      case "asScalar" => rp.AsScalar()()
+      case "vectorFromScalar" => rp.VectorFromScalar()()
+      case "printType" => rp.PrintType()()
+      case "typeHole" => rp.TypeHole()()
+      case _ => r.Identifier(name)()
+    }
   }
 
   def parseIdent(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
