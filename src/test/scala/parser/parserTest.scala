@@ -725,7 +725,7 @@ class parserTest extends  AnyFlatSpec {
       parser(lexer.tokens)
     }
 
-    thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List((, ), <EndNamedExpr>)")
+    thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List('(', ')', <EndNamedExpr>)")
   }
 
   "parser" should "be able to parse 'not.rise'" in {

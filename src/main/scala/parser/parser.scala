@@ -32,8 +32,10 @@ object parser {
   sealed trait SyntaxElement
 
   final case class SExpr(expr: r.Expr) extends SyntaxElement
-
   final case class SType(t: r.types.Type) extends SyntaxElement
+  final case class SAnyRef(value: AnyRef) extends SyntaxElement
+
+
 
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
   type MapFkt = mutable.HashMap[String, Either[r.Expr, r.types.Type]]
@@ -162,8 +164,12 @@ object parser {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case Identifier(name, _) =>
-        Left(ParseState(remainderTokens, SExpr(r.Identifier(name)()) :: parsedSynElems, map))
+      case Identifier(name, _) => {
+        nameMatchPrimitives(name) match {
+          case r.Identifier(_) => Left(ParseState(remainderTokens, SExpr(r.Identifier(name)()) :: parsedSynElems, map))
+          case prim =>  Left(ParseState(remainderTokens, SAnyRef(prim) :: parsedSynElems, map))
+        }
+      }
       case tok => {
         println("Abbruch parseIdent: " + tok + " : " + parseState)
         Right(ParseError("failed to parse Ident: " + tok + " is not an Identifier"))
@@ -391,6 +397,7 @@ object parser {
         synE = synE.tail
         expr
       }
+      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
       case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
     }
     println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
@@ -400,6 +407,7 @@ object parser {
           e = r.App(e, expr1)()
           synE = synE.tail
         }
+      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
         case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
       }
     }
@@ -499,6 +507,7 @@ object parser {
             }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
+          case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ p)
         }
       }
     }
@@ -570,6 +579,7 @@ object parser {
           }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
+          case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ p)
         }
       }
     }
@@ -612,6 +622,7 @@ object parser {
       synElems.head match {
         case SType(typ) => typ :: getTypesInList(synElems.tail)
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
+        case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElems)
       }
     }else{
       Nil
@@ -702,6 +713,7 @@ object parser {
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
           }
         case SExpr(i) => (i, synElemListExpr.tail)
+        case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemListExpr)
       }
     val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
     val lambda = Lambda(identifierName, expr)()
