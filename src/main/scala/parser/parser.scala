@@ -187,6 +187,23 @@ object parser {
     }
   }
 
+  def parseTypeIdent(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseTypeIdent: " + parseState)
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    if (tokens.isEmpty) {
+      return Right(ParseError("failed to parse Ident: " + " List is empty"))
+    }
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case TypeIdentifier(name, _) => Left(ParseState(remainderTokens, SType(rt.TypeIdentifier(name)) :: parsedSynElems, map))
+      case tok => {
+        println("Abbruch parseTypeIdent: " + tok + " : " + parseState)
+        Right(ParseError("failed to parse TypeIdent: " + tok + " is not an TypeIdentifier"))
+      }
+    }
+  }
+
   //Todo: In Parser ArrayType etc. has to be created!!!
 //  private def getType(typ: ConcreteType): Option[rt.DataType] = typ match {
 //      case ArrayType(nat, concreteType) => {
@@ -765,7 +782,7 @@ object parser {
     //FIXME parseState always true
     Left(parseState) |>
       (parseLambda _ || parseBracesExpr ||
-        parseUnOperator || parseBinOperator || parseIdent ||
+        parseUnOperator || parseBinOperator || parseIdent || //Todo: parseTypeIdent
         parseNumber)
 
   }
@@ -838,7 +855,7 @@ object parser {
     println("parseIndexType: " + parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
-        parseIdent  |>
+        parseTypeIdent |>
         parseLeftBracket |>
         parseNat |>
         parseRightBracket
@@ -847,7 +864,7 @@ object parser {
       case Left(pState) => {
         require(pState.parsedSynElems.length==2, "It should exactly be 1 Nat and one Identifer for IndexType in the list!")
         val ty = pState.parsedSynElems.reverse match {
-          case SExpr(r.Identifier("Idx")) :: SNat(nat)::Nil => nat match {
+          case SType(rt.TypeIdentifier("Idx")) :: SNat(nat)::Nil => nat match {
             case NNumber(nat) => SType(rt.IndexType(nat))
             case NIdentifier(nat) => SType(rt.IndexType(nat))
           }
