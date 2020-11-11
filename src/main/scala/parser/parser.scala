@@ -308,6 +308,44 @@ object parser {
           }
   }
 
+  def parseKindWithDepArrowAfter(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseKind: " + parseState)
+    val nameOfIdentifier:String = parseState.parsedSynElems.head match {
+      case SType(rt.TypeIdentifier(name)) => name
+      case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'")
+    }
+    val newPS = parseState.parsedSynElems.tail
+
+    val tokens = parseState.tokenStream
+     tokens.head match {
+      case Kind(concreteKind, span) => tokens.tail.head match{
+        case DepArrow(_) =>       {
+          println("Kind was in parseDepFunctionType parsed: " + concreteKind)
+          parseCompleteType(ParseState(tokens.tail.tail, Nil, parseState.map)) match {
+            case Right(e) => Right(e)
+            case Left(pS) => {
+              if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
+              val depFun:SType = pS.parsedSynElems.head match {
+                case SType(outT) => {
+                  concreteKind match {
+                    case Data() => SType(rt.DepFunType[rt.DataKind, rt.Type](rt.DataTypeIdentifier(nameOfIdentifier), outT))
+                    case Nat() => SType(rt.DepFunType[rt.NatKind, rt.Type](rt.NatIdentifier(nameOfIdentifier), outT))
+                    case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](rt.AddressSpaceIdentifier(nameOfIdentifier), outT))
+                    case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
+                  }
+                }
+                case _ => return Right(ParseError("Not a Type"))
+              }
+              Left(ParseState(pS.tokenStream, depFun:: newPS, pS.map))
+            }
+          }
+        }
+        case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
+      }
+      case Arrow(_)=> Right(ParseError("DepArrow and not Arrow was expected"))
+      case t => Right(ParseError("DepArrow and not "+ t + " was expected"))
+      }
+  }
 
   def parseDepFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseDepFunctionType: " + parseState)
@@ -315,48 +353,13 @@ object parser {
     if( tokens.length < 3){
       return Right(ParseError("only "+ tokens.length + " arguments are in the TokenList, but we need minimum 3!"))
     }
-    val typeIdentToken:: colonToken :: inputKindToken :: remainderTokens = tokens
 
-    val nameOfIdentifier = typeIdentToken match {
-      case TypeIdentifier(name, _) => name
-      case _ => {
-        println("No TypeIdentifier seen")
-        return Right(ParseError("No TypeIdentifier seen"))
-      }
-    }
-
-    colonToken match {
-      case Colon(_) =>
-      case _ => {
-        return Right(ParseError("A Colon was expected"))
-      }
-    }
-
-    println("parseDepFunctionType2: " + parseState)
-        inputKindToken match {
-          case Kind(concreteKind, span) => {
-            println("Kind was in parseDepFunctionType parsed: " + concreteKind)
-            parseCompleteType(ParseState(remainderTokens, Nil, parseState.map)) match {
-              case Right(e) => Right(e)
-              case Left(pS) => {
-                if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
-                val depFun:SType = pS.parsedSynElems.head match {
-                  case SType(outT) => {
-                    concreteKind match {
-                      case Data() => SType(rt.DepFunType[rt.DataKind, rt.Type](rt.DataTypeIdentifier(nameOfIdentifier), outT))
-                      case Nat() => SType(rt.DepFunType[rt.NatKind, rt.Type](rt.NatIdentifier(nameOfIdentifier), outT))
-                      case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](rt.AddressSpaceIdentifier(nameOfIdentifier), outT))
-                      case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
-                    }
-                  }
-                  case _ => return Right(ParseError("Not a Type"))
-                }
-                Left(ParseState(pS.tokenStream, depFun:: parseState.parsedSynElems, pS.map))
-              }
-            }
-          }
-          case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
-        }
+    val psOld =
+      Left(parseState) |>
+        parseTypeIdent     |>
+        parseColon |>
+        parseKindWithDepArrowAfter
+    psOld
   }
 
   def parseFunType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
@@ -1077,6 +1080,28 @@ object parser {
     nextToken match {
       case Comma(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
       case tok => Right(ParseError("failed to parse Comma: " + tok + " is not an Comma"))
+    }
+  }
+
+
+
+  def parseDepArrow(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case DepArrow(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
+      case tok => Right(ParseError("failed to parse DepArrow: " + tok + " is not an DepArrow"))
+    }
+  }
+
+  def parseColon(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case Colon(_) => Left(ParseState(remainderTokens, parsedSynElems, map))
+      case tok => Right(ParseError("failed to parse Colon: " + tok + " is not an Colon"))
     }
   }
 
