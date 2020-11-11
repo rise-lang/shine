@@ -867,7 +867,7 @@ object parser {
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.map))  |>
         parseLeftParentheses  |>
-        parseCompleteType |>
+        parseType |>
         parseComma |>
         parseCompleteType |>
         parseRightParentheses
@@ -879,7 +879,7 @@ object parser {
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
-        val typesList = getTypesInList(pState.parsedSynElems)
+        val typesList = getTypesInList(pState.parsedSynElems).reverse
         require(typesList.length==2, "It should exactly be two Types for PairType in the list!")
         val ty = SType(rt.PairType(typesList.head.asInstanceOf[rt.DataType], typesList.tail.head.asInstanceOf[rt.DataType]))
         val newL = ty :: Nil
@@ -1053,6 +1053,7 @@ object parser {
 
 
   def parseComma(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseComma: " + parseState)
     val ParseState(tokens, parsedSynElems, map) = parseState
     val nextToken :: remainderTokens = tokens
 
