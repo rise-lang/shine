@@ -308,7 +308,46 @@ object parser {
           }
   }
 
-  def parseKindWithDepArrowAfter(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseKindWithDepArrowAfterForDepLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseKind: " + parseState)
+    val nameOfIdentifier:String = parseState.parsedSynElems.head match {
+      case SType(rt.TypeIdentifier(name)) => name
+      case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'")
+    }
+    val newPS = parseState.parsedSynElems.tail
+
+    val tokens = parseState.tokenStream
+    tokens.head match {
+      case Kind(concreteKind, span) => tokens.tail.head match{
+        case DepArrow(_) =>       {
+          println("Kind was in parseDepFunctionType parsed: " + concreteKind)
+          parseMaybeAppExpr(ParseState(tokens.tail.tail, Nil, parseState.map)) match {
+            case Right(e) => Right(e)
+            case Left(pS) => {
+              if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
+              val depLam:SExpr = pS.parsedSynElems.head match {
+                case SExpr(outT) => {
+                  concreteKind match {
+                    case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)())
+                    case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier), outT)())
+                    case AddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](rt.AddressSpaceIdentifier(nameOfIdentifier), outT)())
+                    case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
+                  }
+                }
+                case _ => return Right(ParseError("Not a Type"))
+              }
+              Left(ParseState(pS.tokenStream, depLam:: newPS, pS.map))
+            }
+          }
+        }
+        case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an Type"))
+      }
+      case Arrow(_)=> Right(ParseError("DepArrow and not Arrow was expected"))
+      case t => Right(ParseError("DepArrow and not "+ t + " was expected"))
+    }
+  }
+
+  def parseKindWithDepArrowAfterForDepFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseKind: " + parseState)
     val nameOfIdentifier:String = parseState.parsedSynElems.head match {
       case SType(rt.TypeIdentifier(name)) => name
@@ -358,7 +397,23 @@ object parser {
       Left(parseState) |>
         parseTypeIdent     |>
         parseColon |>
-        parseKindWithDepArrowAfter
+        parseKindWithDepArrowAfterForDepFunctionType
+    psOld
+  }
+
+  def parseDepLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseDepFunctionType: " + parseState)
+    val ParseState(tokens, parsedSynElems, map) = parseState
+    if( tokens.length < 3){
+      return Right(ParseError("only "+ tokens.length + " arguments are in the TokenList, but we need minimum 3!"))
+    }
+
+    val psOld =
+      Left(parseState) |>
+        parseBackslash |>
+        parseTypeIdent     |>
+        parseColon |>
+        parseKindWithDepArrowAfterForDepLambda
     psOld
   }
 
@@ -784,7 +839,7 @@ object parser {
     println("parseLowExpression: " + parseState)
     //FIXME parseState always true
     Left(parseState) |>
-      (parseLambda _ || parseBracesExpr ||
+      (parseLambda _ || parseDepLambda || parseBracesExpr ||
         parseUnOperator || parseBinOperator || parseIdent || //Todo: parseTypeIdent
         parseNumber)
 
