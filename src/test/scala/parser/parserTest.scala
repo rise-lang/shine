@@ -7,6 +7,7 @@ import org.scalatest.matchers.should.Matchers._
 import rise.{core => r}
 import rise.core.{types => rt}
 import rise.core.{semantics => rS}
+import rise.core.{primitives => rp}
 
 
 class parserTest extends  AnyFlatSpec {
@@ -395,9 +396,12 @@ class parserTest extends  AnyFlatSpec {
     }
 
   ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
     case r.DepLambda(n: rt.NatIdentifier, r.DepApp(r.DepApp(r.Identifier("g"),
-    n1: rt.NatIdentifier), rt.i32))
-      if n.name.equals("N") && n1.name.equals("N") => true
+    n1: rt.NatIdentifier), i:rt.DataKind))
+      if n.name.equals("N") && n1.name.equals("N")
+    //&& i.isInstanceOf[rt.i32.type]
+    => true
     case r.DepLambda(n, e) => fail("Not correct deplambda: "
       +n.toString()+ " , " + e.toString())
     case a => fail("Not a DepLambda: " + a)
@@ -405,9 +409,9 @@ class parserTest extends  AnyFlatSpec {
 
   ex_g match {
     case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(r.Identifier("g"), d1:rt.DataTypeIdentifier),
+      r.App(r.DepApp(rp.Generate(), d1:rt.DataTypeIdentifier),
       r.Lambda(r.Identifier("i"), r.App(
-      r.DepApp(r.Identifier("cast"),d2:rt.DataTypeIdentifier), r.Identifier("i")))
+      r.DepApp(rp.Cast(),d2:rt.DataTypeIdentifier), r.Identifier("i")))
     )))
       if n.name.equals("N")
         && d.name.equals("D") && d1.name.equals(d.name)&&
@@ -417,6 +421,42 @@ class parserTest extends  AnyFlatSpec {
     case a => fail("Not a DepLambda: " + a)
   }
 }
+
+  "parser" should "be able to parse 'DepLambda2.rise'" in {
+    val fileName: String = testFilePath + "DepLambda2.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName2: String = "g"
+    val ex_g: r.Expr = map.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_g.t match {
+      case rt.DepFunType(n, rt.DepFunType(d,
+      rt.ArrayType(n1: rt.NatIdentifier,
+      rt.ArrayType(n2: rt.NatIdentifier,d1: rt.DataTypeIdentifier))))
+        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
+          && d.name.equals("D") && d1.name.equals(d.name) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_g match {
+      case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
+      r.App(r.DepApp(rp.Generate(), d1:rt.DataTypeIdentifier),
+      r.Lambda(r.Identifier("i"), r.App(
+      r.DepApp(rp.Cast(),rt.ArrayType(n1:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
+      )))
+        if n.name.equals("N") && n1.name.equals(n.name)
+          && d.name.equals("D") && d1.name.equals(d.name)&&
+          d2.name.equals(d.name)=> true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
 
   "parser" should "be able to parse 'DepLambdaNat.rise'" in {
     val fileName: String = testFilePath + "DepLambdaNat.rise"
