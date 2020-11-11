@@ -504,6 +504,44 @@ object parser {
     e
   }
 
+//  private def combineExpressionsDependent(synElemList: List[SyntaxElement]) : r.Expr = {
+//    if(synElemList.isEmpty){
+//      throw new IllegalArgumentException("the ElemList is empty!")
+//    }
+//    var synE = synElemList.reverse
+//    var e:r.Expr = synE.head match {
+//      case SExpr(expr) => {
+//        synE = synE.tail
+//        expr
+//      }
+//      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
+//      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
+//      case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+//      case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+//    }
+//    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
+//    while(!synE.isEmpty){
+//      synE.head match {
+////        case SData(DType(d)) => {
+////          e = r.DepApp[rt.DataType](e, d)()
+////          synE = synE.tail
+////        }
+//        case SData(DIdentifier(rt.DataTypeIdentifier(name,_))) => {
+//
+////          case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)())
+//          e = r.DepApp[rt.DataType](e, rt.DataTypeIdentifier(name,true))()
+//          synE = synE.tail
+//        }
+//        case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
+//        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+//        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+//        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+//      }
+//    }
+//    println("I have combined the Expressions in Lambda: "+ e)
+//    e
+//  }
+
   def parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState:ParseState): Either[MapFkt, ParseErrorOrState] = {
     if(parseState.tokenStream.isEmpty){
       throw new IllegalArgumentException("TokenStream is empty")
@@ -837,11 +875,11 @@ object parser {
 //      return Left(parseState)
 //    }
     println("parseLowExpression: " + parseState)
-    //FIXME parseState always true
     Left(parseState) |>
       (parseLambda _ || parseDepLambda || parseBracesExpr ||
-        parseUnOperator || parseBinOperator || parseIdent || //Todo: parseTypeIdent
-        parseNumber)
+        parseUnOperator || parseBinOperator || parseIdent ||
+        parseNumber //|| parseDependencies
+        )
 
   }
 
