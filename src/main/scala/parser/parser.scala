@@ -40,24 +40,18 @@ object parser {
   sealed trait SyntaxElement
     final case class SExpr(expr: r.Expr) extends SyntaxElement
     final case class SType(t: rt.Type) extends SyntaxElement
-    final case class SAnyRef(value: AnyRef) extends SyntaxElement
+    final case class SAnyRef(value: AnyRef) extends SyntaxElement //Todo: AnyRef entfernen
     final case class SNat(nat: NatElement) extends SyntaxElement
     final case class SData(data: DataElement) extends SyntaxElement
 
-
-  sealed trait Primitive
-    final case class PrimitiveIdentifier(i: r.Identifier) extends Primitive
-    final case class PrimitiveAnnotation() extends Primitive
-    final case class PrimitiveMakeArray() extends Primitive
-
-  sealed trait DepLambdaKind
-    final case class DepData() extends DepLambdaKind
-    final case class DepNat() extends DepLambdaKind
-    final case class DepAddrSpace() extends DepLambdaKind
+  sealed trait RiseKind //Todo: Scoping einbauen, also Kind nennen und Token explizit immer hinzufügen
+    final case class RData() extends RiseKind
+    final case class RNat() extends RiseKind
+    final case class RAddrSpace() extends RiseKind
 
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
   type MapFkt = mutable.HashMap[String, Either[r.Expr, r.types.Type]]
-  type MapDepL = mutable.HashMap[String, DepLambdaKind]
+  type MapDepL = mutable.HashMap[String, RiseKind]
 
   final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], mapFkt: MapFkt, mapDepL:MapDepL)
 
@@ -111,11 +105,12 @@ object parser {
 
 
   //Todo: maybe it works if i change AnyRef to r.Primitive and delete annotation and makeArray
-  def nameMatchPrimitives(name:String): Either[r.Primitive, Primitive]= {
+  def matchPrimitiveOrIdentifier(name:String): Either[r.Primitive, r.Identifier]= {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     name match {
-      case "annotation" => Right(PrimitiveAnnotation())
-      case "makeArray" => Right(PrimitiveMakeArray())
+        //Todo: annotation and makeArray
+        //      case "annotation" => Right(PrimitiveAnnotation())
+        //      case "makeArray" => Right(PrimitiveMakeArray())
       case "cast" => Left(rp.Cast()())
       case "depJoin" => Left(rp.DepJoin()())
       case "depMapSeq" => Left(rp.DepMapSeq()())
@@ -173,7 +168,7 @@ object parser {
       case "vectorFromScalar" => Left(rp.VectorFromScalar()())
       case "printType" => Left(rp.PrintType()())
       case "typeHole" => Left(rp.TypeHole()())
-      case _ => Right(PrimitiveIdentifier(r.Identifier(name)()))
+      case _ => Right(r.Identifier(name)())
     }
   }
 
@@ -187,9 +182,8 @@ object parser {
 
     nextToken match {
       case Identifier(name, _) => {
-        nameMatchPrimitives(name) match {
-          case Right(PrimitiveIdentifier(i)) => Left(ParseState(remainderTokens, SExpr(i) :: parsedSynElems, map, mapDepL))
-          case Right(e) => throw new IllegalStateException( e + " is not able to be handled yet...")
+        matchPrimitiveOrIdentifier(name) match {
+          case Right(i) => Left(ParseState(remainderTokens, SExpr(i) :: parsedSynElems, map, mapDepL))
           case Left(prim) =>  Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems, map, mapDepL))
         }
       }
@@ -205,11 +199,11 @@ object parser {
     parseState.tokenStream.head match {
       case TypeIdentifier(name, _) => parseState.mapDepL.get(name) match {
         case None =>  Right(ParseError("It exists no DepLambda with this Name: "+ name))
-        case Some(DepNat()) =>
+        case Some(RNat()) =>
           Left(ParseState(parseState.tokenStream.tail, SNat(NIdentifier(rt.NatIdentifier(name))) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
-        case Some(DepData()) =>
+        case Some(RData()) =>
           Left(ParseState(parseState.tokenStream.tail, SData(DIdentifier(rt.DataTypeIdentifier(name))) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
-        case Some(DepAddrSpace()) =>throw new IllegalStateException("DepAddrSpace is not implemented yet")
+        case Some(RAddrSpace()) =>throw new IllegalStateException("DepAddrSpace is not implemented yet")
       }
       case t => Right(ParseError("Not an TypeIdentifier: "+ t))
     }
@@ -396,9 +390,9 @@ object parser {
             throw new IllegalArgumentException("It exists already an Fkt with this Name: "+ nameOfIdentifier)
           }
           concreteKind match {
-            case Data() => parseState.mapDepL.update(nameOfIdentifier, DepData())
-            case Nat() => parseState.mapDepL.update(nameOfIdentifier, DepNat())
-            case AddrSpace() => parseState.mapDepL.update(nameOfIdentifier, DepAddrSpace())
+            case Data() => parseState.mapDepL.update(nameOfIdentifier, RData())
+            case Nat() => parseState.mapDepL.update(nameOfIdentifier, RNat())
+            case AddrSpace() => parseState.mapDepL.update(nameOfIdentifier, RAddrSpace())
             case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
           }
           println("Kind was in parseDepFunctionType parsed: " + concreteKind)
@@ -546,43 +540,43 @@ object parser {
     e
   }
 
-//  private def combineExpressionsDependent(synElemList: List[SyntaxElement]) : r.Expr = {
-//    if(synElemList.isEmpty){
-//      throw new IllegalArgumentException("the ElemList is empty!")
-//    }
-//    var synE = synElemList.reverse
-//    var e:r.Expr = synE.head match {
-//      case SExpr(expr) => {
-//        synE = synE.tail
-//        expr
-//      }
-//      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
-//      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
-//      case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
-//      case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-//    }
-//    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
-//    while(!synE.isEmpty){
-//      synE.head match {
-////        case SData(DType(d)) => {
-////          e = r.DepApp[rt.DataType](e, d)()
-////          synE = synE.tail
-////        }
-//        case SData(DIdentifier(rt.DataTypeIdentifier(name,_))) => {
-//
-////          case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)())
-//          e = r.DepApp[rt.DataType](e, rt.DataTypeIdentifier(name,true))()
+  private def combineExpressionsDependent(synElemList: List[SyntaxElement]) : r.Expr = {
+    if(synElemList.isEmpty){
+      throw new IllegalArgumentException("the ElemList is empty!")
+    }
+    var synE = synElemList.reverse
+    var e:r.Expr = synE.head match {
+      case SExpr(expr) => {
+        synE = synE.tail
+        expr
+      }
+      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
+      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
+      case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+      case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+    }
+    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
+    while(!synE.isEmpty){
+      synE.head match {
+//        case SData(DType(d)) => {
+//          e = r.DepApp[rt.DataType](e, d)()
 //          synE = synE.tail
 //        }
-//        case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
-//        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
-//        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
-//        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-//      }
-//    }
-//    println("I have combined the Expressions in Lambda: "+ e)
-//    e
-//  }
+        case SData(DIdentifier(rt.DataTypeIdentifier(name,_))) => {
+
+//          case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)())
+          e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))()
+          synE = synE.tail
+        }
+        case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
+        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+      }
+    }
+    println("I have combined the Expressions in Lambda: "+ e)
+    e
+  }
 
   def parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState:ParseState): Either[MapFkt, ParseErrorOrState] = {
     if(parseState.tokenStream.isEmpty){
