@@ -4,7 +4,7 @@ import arithexpr.arithmetic.{ArithExprFunctionCall, SimplifiedExpr}
 import rise.core.Expr
 
 
-private final class NatCollectionIndexing(collection: NatCollection, idxs: Seq[Nat])
+final class NatCollectionIndexing(val collection: NatCollection, val idxs: Seq[Nat])
   extends ArithExprFunctionCall(s"($collection)#[${idxs.map(_.toString).mkString(",")}]") {
   override lazy val toString: String = this.name
 
@@ -19,11 +19,16 @@ private final class NatCollectionIndexing(collection: NatCollection, idxs: Seq[N
   override def substitute(subs: scala.collection.Map[Nat, Nat]): Option[Nat] = {
     Some(visitAndRebuild(x => subs.getOrElse(x, x.substitute(subs).getOrElse(x))))
   }
+}
 
+object NatCollectionIndexing {
+    def apply(ns: NatCollection, idxs:Nat*): NatCollectionIndexing = NatCollectionIndexing(ns, idxs:_*)
+    def unapply(arg: NatCollectionIndexing): Option[(NatCollection, Seq[Nat])] =
+      Some((arg.collection, arg.idxs))
 }
 
 sealed abstract class NatCollection {
-  def apply(idxs: Nat*): Nat = new NatCollectionIndexing(this, idxs)
+  def `@`(idxs: Nat*): Nat = new NatCollectionIndexing(this, idxs)
 }
 
 final case class NatCollectionIdentifier(
@@ -43,15 +48,3 @@ final case class NatCollectionIdentifier(
   }
   override def hashCode(): Int = this.name.hashCode()
 }
-
-/**
-  * Represents an n-dimensional array of natural number, which is indexable at the
-  * type level with the # operator, but whose value is runtime dependent.
-  * It's implemented as a wrapper around the expression which computes the runtime
-  * value as an array of a suitable element type (say, natType)
-  * */
-final case class NatCollectionFromArray(expr: Expr)
-    extends NatCollection {
-  override def toString: String = expr.toString
-}
-

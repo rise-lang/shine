@@ -192,6 +192,8 @@ private class InferAccessAnnotation {
       depLambda.x match {
         case n: rt.NatIdentifier =>
           DepFunType[NatKind, PhraseType](natIdentifier(n), eType)
+        case ns: rt.NatCollectionIdentifier =>
+          DepFunType[NatCollectionKind, PhraseType](natCollectionIdentifier(ns), eType)
         case dt: rt.DataTypeIdentifier =>
           DepFunType[DataKind, PhraseType](dataTypeIdentifier(dt), eType)
         case ad: rt.AddressSpaceIdentifier =>
@@ -330,7 +332,7 @@ private class InferAccessAnnotation {
       }
 
       case rp.idx() | rp.add() | rp.sub() | rp.mul() | rp.div() | rp.gt()
-           | rp.lt() | rp.equal() | rp.mod() | rp.gather() => p.t match {
+           | rp.lt() | rp.equal() | rp.notEqual() | rp.mod() | rp.gather() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
           expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read)
         case _ => error()
@@ -590,6 +592,25 @@ private class InferAccessAnnotation {
             val a = accessTypeIdentifier()
             val n_ = natIdentifier(n)
             expT(NatType, read) ->: (nFunT(n_, expT(dataType(dt), a)) ->: expT(dataType(outT), a))
+          case _ => ???
+        }
+        buildType(p.t)
+
+      case rp.liftNats() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(arrT@rt.ArrayType(_, rt.NatType), rt.FunType(rt.DepFunType(ns: rt.NatCollectionIdentifier, dt:rt.DataType), outT:rt.DataType)) =>
+            val a = accessTypeIdentifier()
+            val ns_ = natCollectionIdentifier(ns)
+            expT(dataType(arrT), read) ->: (nsFunT(ns_, expT(dataType(dt), a)) ->: expT(dataType(outT), a))
+          case _ => ???
+        }
+        buildType(p.t)
+
+      case rp.toDepArray() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(inT:rt.ArrayType, outT:rt.DepArrayType) =>
+            val a = accessTypeIdentifier()
+            expT(dataType(inT), a) ->: expT(dataType(outT), a)
           case _ => ???
         }
         buildType(p.t)

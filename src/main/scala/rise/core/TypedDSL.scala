@@ -21,7 +21,8 @@ object TypedDSL {
         a.as ++ b.as,
         a.n2ds ++ b.n2ds,
         a.n2ns ++ b.n2ns,
-        a.natColls ++ b.natColls
+        a.natColls ++ b.natColls,
+        a.ns2ds ++ b.ns2ds
       )
   }
 
@@ -55,7 +56,9 @@ object TypedDSL {
         ).toMap,
         ftvSubs.natColls.view.mapValues(natColl =>
           natColl.asInstanceOf[NatCollectionIdentifier].asExplicit
-      ).toMap)(t)
+      ).toMap,
+        ftvSubs.ns2ds.view.mapValues(ns2ds =>)
+      )(t)
 
     def getFTVSubs(t: Type): Solution = {
       import scala.collection.immutable.Map
@@ -377,6 +380,8 @@ object TypedDSL {
           val tf = x match {
             case n: NatIdentifier =>
               DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
+            case ns: NatCollectionIdentifier =>
+              DepLambda[NatCollectionKind](ns, te)(DepFunType[NatCollectionKind, Type](ns, te.t))
             case dt: DataTypeIdentifier =>
               DepLambda[DataKind](dt, te)(DepFunType[DataKind, Type](dt, te.t))
             case ad: AddressSpaceIdentifier =>
@@ -425,6 +430,9 @@ object TypedDSL {
              ): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
+      if(constraints.nonEmpty) {
+        println("Interesting")
+      }
       val solution = Constraint.solve(constraints.toSeq, Seq())(explDep) match {
         case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
           Solution(
@@ -475,6 +483,7 @@ object TypedDSL {
     def >(rhs: ToBeTyped[Expr]): ToBeTyped[App] = gt(lhs)(rhs)
     def <(rhs: ToBeTyped[Expr]): ToBeTyped[App] = lt(lhs)(rhs)
     def =:=(rhs: ToBeTyped[Expr]): ToBeTyped[App] = equal(lhs)(rhs)
+    def =/=(rhs: ToBeTyped[Expr]): ToBeTyped[App] = notEqual(lhs)(rhs)
 
     // scalastyle:off disallow.space.before.token
     // unary
@@ -768,6 +777,12 @@ object TypedDSL {
              ): ToBeTyped[DepLambda[AddressSpaceKind]] = {
       val x = AddressSpaceIdentifier(freshName("a"), isExplicit = true)
       depLambda[AddressSpaceKind](x, w.f(x))
+    }
+
+    def apply(w: NatCollectionFunctionWrapper[ToBeTyped[Expr]]
+             ): ToBeTyped[DepLambda[NatCollectionKind]] = {
+      val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
+      depLambda[NatCollectionKind](x, w.f(x))
     }
   }
 

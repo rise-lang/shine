@@ -27,6 +27,12 @@ object Kind {
     override def makeIdentifier(): NatIdentifier =
       NatIdentifier(DPIA.freshName("n"))
   }
+
+  implicit object NatCollectionIdentifierMaker extends IdentifierMaker [NatCollectionKind] {
+    override def makeIdentifier(): NatCollectionIdentifier =
+      NatCollectionIdentifier(DPIA.freshName("ns"))
+  }
+
   implicit object AddrIdentifierMaker
     extends IdentifierMaker[AddressSpaceKind] {
     override def makeIdentifier(): AddressSpaceIdentifier =
@@ -51,6 +57,11 @@ sealed trait DataKind extends Kind {
 sealed trait NatKind extends Kind {
   override type T = DPIA.Nat
   override type I = DPIA.NatIdentifier
+}
+
+sealed trait NatCollectionKind extends Kind {
+  override type T = NatCollection
+  override type I = NatCollectionIdentifier
 }
 
 sealed trait AddressSpaceKind extends Kind {
@@ -83,6 +94,9 @@ object KindName {
   }
   implicit val natKN: KindName[NatKind] = new KindName[NatKind] {
     def get = "nat"
+  }
+  implicit val natCollectionKN: KindName[NatCollectionKind] = new KindName[NatCollectionKind] {
+    override def get: String = "natCollection"
   }
   implicit val dataKN: KindName[DataKind] = new KindName[DataKind] {
     def get = "data"

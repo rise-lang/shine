@@ -173,6 +173,11 @@ object primitives {
       fdt(n) ->: (Nat `**` (fdt(_))))}
   }
 
+  @primitive object dpairNats extends Primitive with Builder {
+    impl{ fdt: NatCollectionToData => expl((ns: NatCollection) =>
+      fdt(ns) ->: (NatCollection `**` (fdt(_))))}
+  }
+
   @primitive object dmatch extends Primitive with Builder {
     impl{ ft: NatToData => impl{ tOut: DataType =>
       (Nat `**` (ft(_))) ->: expl((m: Nat) => ft(m) ->: tOut) ->: tOut }}
@@ -196,6 +201,14 @@ object primitives {
 
   @primitive object liftN extends Primitive with Builder {
     impl { dt: DataType => NatType ->: expl {(_: Nat) => dt } ->: dt }
+  }
+
+  @primitive object liftNats extends Primitive with Builder {
+    impl { n: Nat => impl { dt: DataType => (n `.` NatType) ->: expl {(_: NatCollection) => dt} ->: dt } }
+  }
+
+  @primitive object toDepArray extends Primitive with Builder {
+    impl { n: Nat => impl { dt: DataType => (n `.` dt) ->: (n `*.` n2dtFun(_ => dt)) } }
   }
 
   @primitive object reduce extends Primitive with Builder {
@@ -298,6 +311,7 @@ object primitives {
   @primitive object gt extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
   @primitive object lt extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
   @primitive object equal extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
+  @primitive object notEqual extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
 
   // TODO: should vectorisation be in the core or not?
 

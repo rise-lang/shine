@@ -71,6 +71,10 @@ object TypeLevelDSL {
   implicit def toNatToNatFunctionWrapper[A](f: NatToNat => A): NatToNatFunctionWrapper[A] =
     NatToNatFunctionWrapper(f)
 
+  case class NatCollectionToDataFunctionWrapper[A](f: NatCollectionToData => A)
+  implicit def toNatCollectionToDataFunctionWrapper[A](f: NatCollectionToData => A): NatCollectionToDataFunctionWrapper[A] =
+    NatCollectionToDataFunctionWrapper(f)
+
   case class AddressSpaceFunctionWrapper[A](f: AddressSpace => A)
   implicit def toAddressSpaceFunctionWrapper[A](f: AddressSpace => A): AddressSpaceFunctionWrapper[A] =
     AddressSpaceFunctionWrapper(f)
@@ -108,11 +112,19 @@ object TypeLevelDSL {
       val x = AddressSpaceIdentifier(freshName("a"), isExplicit = true)
       DepFunType[AddressSpaceKind, Type](x, w.f(x))
     }
+
+    def apply(w: NatCollectionFunctionWrapper[Type]): Type = {
+      val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
+      DepFunType[NatCollectionKind, Type](x, w.f(x))
+    }
   }
 
   object impl {
     def apply[A](w: NatFunctionWrapper[A]): A = {
       w.f(NatIdentifier(freshName("n")))
+    }
+    def apply[A](w: NatCollectionFunctionWrapper[A]): A = {
+      w.f(NatCollectionIdentifier(freshName("ns")))
     }
 
     def apply[A](w: DataTypeFunctionWrapper[A]): A = {
@@ -127,16 +139,16 @@ object TypeLevelDSL {
       w.f(NatToNatIdentifier(freshName("n2n")))
     }
 
+    def apply[A](w: NatCollectionToDataFunctionWrapper[A]): A = {
+      w.f(NatCollectionToDataIdentifier(freshName("ns2d")))
+    }
+
     def apply[A](w: AddressSpaceFunctionWrapper[A]): A = {
       w.f(AddressSpaceIdentifier(freshName("n2n")))
     }
 
     def apply[A](w: TypeFunctionWrapper[A]): A = {
       w.f(TypeIdentifier(freshName("t")))
-    }
-
-    def apply[A](w: NatCollectionFunctionWrapper[A]): A = {
-      w.f(NatCollectionIdentifier(freshName("ns")))
     }
   }
 
@@ -236,13 +248,6 @@ object TypeLevelDSL {
     extends AnyVal {
     @inline def `*.`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
     @inline def `*.`(f: NatToData): DepArrayType = DepArrayType(n, f)
-  }
-
-  implicit final class NatCollectionConstructors(private val e: ToBeTyped[Expr])
-    extends AnyVal {
-    @inline def `#`(nats: Nat*): Nat = {
-      NatCollectionFromArray(e)(nats: _*)
-    }
   }
 
   object `*.` {

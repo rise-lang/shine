@@ -133,6 +133,20 @@ object NatToDataApply {
     Some((arg.f, arg.n))
 }
 
+final class NatCollectionToDataApply(val f: NatCollectionToData, val n: NatCollection) extends DataType {
+  override def toString: String = s"$f($n)"
+}
+
+object NatCollectionToDataApply {
+  def apply(f: NatCollectionToData, n: NatCollection): DataType = f match {
+    case l: NatCollectionToDataLambda     => l.apply(n)
+    case i: NatCollectionToDataIdentifier => new NatCollectionToDataApply(i, n)
+  }
+
+  def unapply(arg: NatCollectionToDataApply): Option[(NatCollectionToData, NatCollection)] =
+    Some((arg.f, arg.n))
+}
+
 final case class ArrayType(size: Nat, elemType: DataType) extends DataType {
   override def toString: String = s"$size.$elemType"
 }

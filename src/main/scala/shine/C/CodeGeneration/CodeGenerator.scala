@@ -2,6 +2,7 @@ package shine.C.CodeGeneration
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
+import rise.core.types.NatCollectionIndexing
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
 import shine.C.SizeInByte
@@ -205,6 +206,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             C.AST.Comment("Lifted nat"),
             C.AST.DeclStmt(C.AST.VarDecl(name, typ(NatType), Some(input))),
             newGen.cmd(f(freshNat), env)
+          ))
+        })
+
+      case LiftNatsI(_, input, f) =>
+        exp(input, env, List(), input => {
+
+          C.AST.Block(immutable.Seq(
+            C.AST.Comment("Lifted nat collection"),
+            C.AST.DeclStmt(C.AST.VarDecl(f.t.x.name, C.AST.PointerType(typ(NatType)), Some(input))),
+              cmd(f(f.t.x), env)
           ))
         })
 
@@ -547,6 +558,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, fe =>
           generateAccess(outT, fe, path, env, cont)
         )
+
+      case ToDepArray(_, _, _, input) => exp(input, env, path, cont)
 
       // case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
       // case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
@@ -1037,6 +1050,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case GT => C.AST.BinaryOperator.>
         case LT => C.AST.BinaryOperator.<
         case EQ => C.AST.BinaryOperator.==
+        case NEQ => C.AST.BinaryOperator.!=
       }
     }
 
@@ -1252,6 +1266,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                  })
                })
              })
+         case NatCollectionIndexing(ns, idxs) =>
+           assert(idxs.length == 1)
+           genNat(idxs.head, env, idx => cont(C.AST.ArraySubscript(C.AST.Literal(s"$ns"), idx)))
          case otherwise => throw new Exception(s"Don't know how to print $otherwise")
        }
   }

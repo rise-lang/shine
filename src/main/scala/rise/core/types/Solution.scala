@@ -3,23 +3,28 @@ package rise.core.types
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
-  def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
+  def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map())
   def subs(ta: Type, tb: Type): Solution = {
-    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map())
+    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map(), Map())
   }
 
   def subs(ta: DataTypeIdentifier, tb: Type): Solution =
-    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map())
+    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map(), Map())
   def subs(na: NatIdentifier, nb: Nat): Solution =
-    Solution(Map(), Map(na -> nb), Map(), Map(), Map(), Map())
+    Solution(Map(), Map(na -> nb), Map(), Map(), Map(), Map(), Map())
   def subs(aa: AddressSpaceIdentifier, ab: AddressSpace): Solution =
-    Solution(Map(), Map(), Map(aa -> ab), Map(), Map(), Map())
+    Solution(Map(), Map(), Map(aa -> ab), Map(), Map(), Map(), Map())
   def subs(na: NatToDataIdentifier, nb: NatToData): Solution =
-    Solution(Map(), Map(), Map(), Map(na -> nb), Map(), Map())
+    Solution(Map(), Map(), Map(), Map(na -> nb), Map(), Map(), Map())
   def subs(na: NatToNatIdentifier, nb: NatToNat): Solution =
-    Solution(Map(), Map(), Map(), Map(), Map(na -> nb), Map())
-  def subs(na: NatCollectionIdentifier, nb: NatCollection): Solution =
-    Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
+    Solution(Map(), Map(), Map(), Map(), Map(na -> nb), Map(), Map())
+  def subs(na: NatCollectionIdentifier, nb: NatCollection): Solution = {
+    Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb), Map())
+  }
+  def subs(na: NatCollectionToDataIdentifier, nb: NatCollectionToData): Solution = {
+    Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
+
+  }
 }
 
 case class Solution(ts: Map[Type, Type],
@@ -27,12 +32,14 @@ case class Solution(ts: Map[Type, Type],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
                     n2ds: Map[NatToDataIdentifier, NatToData],
                     n2ns: Map[NatToNatIdentifier, NatToNat],
-                    natColls: Map[NatCollectionIdentifier, NatCollection]
+                    natColls: Map[NatCollectionIdentifier, NatCollection],
+                    ns2ds: Map[NatCollectionToDataIdentifier, NatCollectionToData]
                    ) {
   import traversal.{Continue, Result, Stop}
 
   case class Visitor(sol: Solution) extends traversal.Visitor {
     override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
+    override def visitNatCollection(nc: NatCollection): Result[NatCollection] = Stop(sol(nc))
     override def visitType[T <: Type](t: T): Result[T] =
       Stop(sol(t).asInstanceOf[T])
     override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
@@ -57,8 +64,9 @@ case class Solution(ts: Map[Type, Type],
   }
 
   def apply(n: Nat): Nat =
-    (substitute.natsInNat(ns, _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
-
+    (substitute.natsInNat(ns, _))
+      .andThen(substitute.n2nsInNat(n2ns, _))
+      .andThen(substitute.natCollectionInNat(natColls,_))(n)
 
   def apply(a: AddressSpace): AddressSpace =
     substitute.addressSpacesInAddressSpace(as, a)
@@ -90,6 +98,8 @@ case class Solution(ts: Map[Type, Type],
     }
   }
 
+  def apply(ns2d: NatCollectionToData): NatCollectionToData = ???
+
   // concatenating two solutions into a single one
   def ++(other: Solution): Solution = {
     // this function combines two solutions by applying all the solutions
@@ -101,7 +111,8 @@ case class Solution(ts: Map[Type, Type],
         (s1.as.view.mapValues(a => s2(a)) ++ s2.as).toMap,
         (s1.n2ds.view.mapValues(n => s2(n)) ++ s2.n2ds).toMap,
         (s1.n2ns.view.mapValues(n => s2(n)) ++ s2.n2ns).toMap,
-        (s1.natColls.view.mapValues(n => s2(n)) ++ s2.natColls).toMap
+        (s1.natColls.view.mapValues(n => s2(n)) ++ s2.natColls).toMap,
+        (s1.ns2ds.view.mapValues(ns => s2(ns)) ++ s2.ns2ds).toMap
       )
     }
 
@@ -117,10 +128,13 @@ case class Solution(ts: Map[Type, Type],
         AddressSpaceConstraint(apply(a), apply(b))
       case NatConstraint(a, b) =>
         NatConstraint(apply(a), apply(b))
+      case NatCollectionConstraint(a, b) => NatCollectionConstraint(apply(a), apply(b))
       case NatToDataConstraint(a, b) =>
         NatToDataConstraint(apply(a), apply(b))
       case DepConstraint(df, arg: Nat, t) =>
         DepConstraint[NatKind](apply(df), apply(arg), apply(t))
+      case DepConstraint(df, arg: NatCollection, t) =>
+        DepConstraint[NatCollectionKind](apply(df), apply(arg), apply(t))
       case DepConstraint(df, arg: DataType, t) =>
         DepConstraint[DataKind](
           apply(df),

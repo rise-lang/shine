@@ -103,6 +103,13 @@ package object DSL {
     def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
+  implicit class CallNatCollectionDependentLambda[T <: PhraseType](fun: Phrase[`(natCollection)->:`[T]]) {
+    def apply(arg: NatCollection): Phrase[T] =
+      Lifting.liftDependentFunction[NatCollectionKind, T](fun)(arg)
+
+    def $(arg: NatCollection): Phrase[T] = apply(arg)
+  }
+
   implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->:`[T]]) {
     def apply(arg: DataType): Phrase[T] =
       Lifting.liftDependentFunction[DataKind, T](fun)(arg)

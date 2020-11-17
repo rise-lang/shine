@@ -2,6 +2,49 @@ package rise.core.types
 
 import rise.core._
 
+sealed trait NatCollectionToData {
+  def map(f: DataType => DataType): NatCollectionToData = this match {
+    case ident: NatCollectionToDataIdentifier => ident
+    case NatCollectionToDataLambda(x, body)   => NatCollectionToDataLambda(x, f(body))
+  }
+
+  def apply(ns: NatCollection): DataType = NatCollectionToDataApply(this, ns)
+}
+
+final case class NatCollectionToDataIdentifier(name: String,
+                                     override val isExplicit: Boolean = false
+                                    ) extends NatCollectionToData
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: NatCollectionToDataIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: NatCollectionToDataIdentifier = this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case n2d: NatCollectionToDataIdentifier => this.name == n2d.name
+    case _                        => false
+  }
+  override def hashCode(): Int = this.name.hashCode()
+}
+
+
+case class NatCollectionToDataLambda private (x: NatCollectionIdentifier, body: DataType)
+  extends NatCollectionToData {
+  // See hash code of NatNatTypeFunction
+  override def hashCode(): Int =
+    this.apply(NatCollectionIdentifier("ComparisonDummy")).hashCode()
+
+  override def apply(a: NatCollection): DataType =
+    substitute.natCollectionInDataType(a, `for` = x, in = body)
+
+  override def toString: String = s"($x: nats |-> $body)"
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: NatCollectionToDataLambda => body == other.apply(x)
+    case _                      => false
+  }
+}
+
+
 sealed trait NatToData {
   def map(f: DataType => DataType): NatToData = this match {
     case ident: NatToDataIdentifier => ident

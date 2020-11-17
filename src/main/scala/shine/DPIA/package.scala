@@ -45,6 +45,7 @@ package object DPIA {
   type `->p:`[T <: PhraseType, R <: PhraseType] = PassiveFunType[T, R]
   type `()->:`[K <: Kind, R <: PhraseType] = DepFunType[K, R]
   type `(nat)->:`[R <: PhraseType] = DepFunType[NatKind, R]
+  type `(natCollection)->:`[R <: PhraseType] = DepFunType[NatCollectionKind, R]
   type `(dt)->:`[R <: PhraseType] = DepFunType[DataKind, R]
   type VarType = ExpType x AccType
 
@@ -105,6 +106,7 @@ package object DPIA {
   implicit class DepFunTypeConstructor[R <: PhraseType](r: R) {
     def ->:(i: DataTypeIdentifier): `()->:`[DataKind, R] = DepFunType[DataKind, R](i, r)
     def ->:(n: NatIdentifier): `()->:`[NatKind, R] = DepFunType[NatKind, R](n, r)
+    def ->:(n: NatCollectionIdentifier): `()->:`[NatCollectionKind, R] = DepFunType[NatCollectionKind, R](n, r)
     def ->:(n: NatToNatIdentifier): `()->:`[NatToNatKind, R] = DepFunType[NatToNatKind, R](n, r)
     def ->:(n: NatToDataIdentifier): `()->:`[NatToDataKind, R] = DepFunType[NatToDataKind, R](n, r)
   }
@@ -146,6 +148,24 @@ package object DPIA {
                                            ): Option[(NatIdentifier, T)] = {
       funType.x match {
         case n: NatIdentifier => Some((n, funType.t))
+        case _ => throw new Exception("Expected Nat DepFunType")
+      }
+    }
+  }
+
+  object nsFunT {
+    def apply(n: rt.NatCollectionIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[NatCollectionKind, PhraseType](fromRise.natCollectionIdentifier(n), t)
+    }
+
+    def apply(n: NatCollectionIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[NatCollectionKind, PhraseType](n, t)
+    }
+
+    def unapply[K <: Kind, T <: PhraseType](funType: DepFunType[K, T]
+                                           ): Option[(NatCollectionIdentifier, T)] = {
+      funType.x match {
+        case n: NatCollectionIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
       }
     }

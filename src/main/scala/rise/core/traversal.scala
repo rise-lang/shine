@@ -25,10 +25,12 @@ object traversal {
     def visitExpr(e: Expr): Result[Expr] = Continue(e, this)
     def visitType[T <: Type](t: T): Result[T] = Continue(t, this)
     def visitNat(ae: Nat): Result[Nat] = Continue(ae, this)
+    def visitNatCollection(nc: NatCollection): Result[NatCollection] = Continue(nc, this)
     def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
       Continue(a, this)
     def visitN2N(n2n: NatToNat): Result[NatToNat] = Continue(n2n, this)
     def visitN2D(n2d: NatToData): Result[NatToData] = Continue(n2d, this)
+    def visitNS2D(ns2d: NatCollectionToData): Result[NatCollectionToData] = Continue(ns2d, this)
   }
 
   object DepthFirstLocalResult {
@@ -53,6 +55,10 @@ object traversal {
                   }, apply(e, v))(v.visitType(dl.t).value)
                 case dt: DataTypeIdentifier =>
                   DepLambda[DataKind](v.visitType(dt).value, apply(e, v))(
+                    v.visitType(dl.t).value
+                  )
+                case ns: NatCollectionIdentifier =>
+                  DepLambda[NatCollectionKind](v.visitNatCollection(ns).value.asInstanceOf[NatCollectionIdentifier], apply(e, v))(
                     v.visitType(dl.t).value
                   )
               }
@@ -209,6 +215,11 @@ object traversal {
                       },
                       apply(t, v)
                     )
+                  case ns: NatCollection =>
+                    DepFunType[NatCollectionKind, Type](
+                      v.visitNatCollection(ns).value.asInstanceOf[NatCollectionIdentifier],
+                      apply(t, v)
+                    )
                   case dt: DataTypeIdentifier =>
                     DepFunType[DataKind, Type](data(dt, v), apply(t, v))
                   case a: AddressSpaceIdentifier =>
@@ -261,6 +272,8 @@ object traversal {
                 VectorType(v.visitNat(n).value, data(e, v))
               case NatToDataApply(ndtf, n) =>
                 NatToDataApply(v.visitN2D(ndtf).value, v.visitNat(n).value)
+              case NatCollectionToDataApply(nsdtf, ns) =>
+                NatCollectionToDataApply(v.visitNS2D(nsdtf).value, v.visitNatCollection(ns).value)
             }).asInstanceOf[DT]
         }
       }

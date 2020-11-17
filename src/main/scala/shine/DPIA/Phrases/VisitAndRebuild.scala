@@ -10,6 +10,8 @@ object VisitAndRebuild {
 
     def nat[N <: Nat](n: N): N = n
 
+    def natCollection(ns: NatCollection): NatCollection = ns
+
     def data[T <: DataType](dt: T): T = dt
 
     def natToNat[N <: NatToNat](ft: N): N = (ft match {
@@ -58,6 +60,12 @@ object VisitAndRebuild {
                 NatIdentifier(
                   v.nat(n).asInstanceOf[arithexpr.arithmetic.NamedVar].name),
                 apply(p, v))
+            case ns: NatCollectionIdentifier =>
+              DepLambda[NatCollectionKind, PhraseType](
+                NatCollectionIdentifier(
+                  v.natCollection(ns).asInstanceOf[NatCollectionIdentifier].name
+                ), apply(p, v)
+              )
             case dt: DataTypeIdentifier =>
               DepLambda[DataKind, PhraseType](
                 v.data(dt).asInstanceOf[DataTypeIdentifier],
@@ -153,6 +161,12 @@ object VisitAndRebuild {
             NatIdentifier(
               v.nat(n).asInstanceOf[arithexpr.arithmetic.NamedVar].name),
             visitPhraseTypeAndRebuild(t, v))
+        case ns: NatCollectionIdentifier =>
+          DepFunType[NatCollectionKind, PhraseType](
+            NatCollectionIdentifier(
+              v.natCollection(ns).asInstanceOf[NatCollectionIdentifier].name
+            ), visitPhraseTypeAndRebuild(t, v)
+          )
         case dt: DataTypeIdentifier =>
           DepFunType[DataKind, PhraseType](
             v.data(dt).asInstanceOf[DataTypeIdentifier],

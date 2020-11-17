@@ -91,12 +91,15 @@ object substitute {
       case (dt: DataType, forDt: DataTypeIdentifier) =>
         typeInType(dt, forDt, in)
       case (n: Nat, forN: NatIdentifier) => natInType(n, forN, in)
+      case (ns: NatCollection, forN: NatCollectionIdentifier) => natCollectionInType(ns, forN, in)
       case (a: AddressSpace, forA: AddressSpaceIdentifier) =>
         addressSpaceInType(a, forA, in)
       case (n2n: NatToNat, forN2N: NatToNatIdentifier) =>
         n2nInType(n2n, forN2N, in)
       case (n2d: NatToData, forN2D: NatToDataIdentifier) =>
         n2dInType(n2d, forN2D, in)
+      case (ns2d: NatCollectionToData, forNs2D: NatCollectionToDataIdentifier) =>
+        ns2dInType(ns2d, forNs2D, in)
       case (_, _) => ???
     }
 
@@ -119,6 +122,23 @@ object substitute {
         Continue(substitute.natInNat(n, `for`, in), this)
     }
 
+    traversal.types.DepthFirstLocalResult(in, Visitor())
+  }
+
+  def natCollectionInType[T <: Type](
+                             ns: NatCollection,
+                             `for`: NatCollectionIdentifier,
+                             in: T
+                           ): T = {
+    case class Visitor() extends traversal.Visitor {
+      override def visitNatCollection(b: NatCollection): Result[NatCollection] = {
+        if (`for` == b) {
+          Stop(ns)
+        } else {
+          Continue(b, this)
+        }
+      }
+    }
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
@@ -180,12 +200,31 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
+  def ns2dInType[T <: Type](
+                                     ns: NatCollectionToData,
+                                     `for`: NatCollectionToData,
+                                     in: T
+                                   ): T = {
+    case class Visitor() extends traversal.Visitor {
+      override def visitNS2D(b: NatCollectionToData): Result[NatCollectionToData] = {
+        if (`for` == b) {
+          Stop(ns)
+        } else {
+          Continue(b, this)
+        }
+      }
+    }
+      traversal.types.DepthFirstLocalResult(in, Visitor())
+  }
+
+
   // substitute in Nat
 
   def natsInNat(subs: Map[NatIdentifier, Nat], in: Nat): Nat = {
     import arithexpr.arithmetic.ArithExpr
     ArithExpr.substitute(in, subs.asInstanceOf[Map[ArithExpr, ArithExpr]])
   }
+
 
   def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat =
     natsInNat(Map(`for` -> ae), in)
@@ -269,9 +308,28 @@ object substitute {
       subs: Map[NatCollectionIdentifier, NatCollection],
       in: NatCollection): NatCollection = {
     in match {
-      case ident: NatCollectionIdentifier=>
-        subs(ident)
+      case ident: NatCollectionIdentifier => subs.getOrElse(ident, ident)
       case _ => throw new Exception("No idea how to substitute")
     }
   }
+
+  def natCollectionInNat(subs: Map[NatCollectionIdentifier, NatCollection], in: Nat): Nat = {
+    in.visitAndRebuild({
+      case NatCollectionIndexing(ns, idxs) =>
+        NatCollectionIndexing(substitute.natCollectionInNatCollection(subs, ns),
+          idxs.map(idx => substitute.natCollectionInNat(subs, idx)):_*
+        )
+      case x => x
+    })
+  }
+
+  def natCollectionInDataType(ns: NatCollection, `for`: NatCollectionIdentifier, in: DataType): DataType = {
+    case class Visitor() extends traversal.Visitor {
+      override def visitNatCollection(in:NatCollection): Result[NatCollection] =
+        Continue(substitute.natCollectionInNatCollection(Map(`for` -> ns), in), this)
+    }
+
+    traversal.types.DepthFirstLocalResult.data(in, Visitor())
+  }
+
 }

@@ -40,6 +40,8 @@ object fromRise {
     case r.DepLambda(x, e) => x match {
       case ni: rt.NatIdentifier =>
         DepLambda[NatKind](natIdentifier(ni))(expression(e, ptMap))
+      case ni: rt.NatCollectionIdentifier =>
+        DepLambda[NatCollectionKind](natCollectionIdentifier(ni))(expression(e, ptMap))
       case dti: rt.DataTypeIdentifier =>
         DepLambda[DataKind](dataTypeIdentifier(dti))(expression(e, ptMap))
       case addri: rt.AddressSpaceIdentifier =>
@@ -631,6 +633,14 @@ object fromRise {
             BinOp(Operators.Binary.EQ, e1, e2)))
       }
 
+      case core.notEqual() => fromType {
+        case expT(t, `read`) ->: expT(_, `read`) ->: expT(`bool`, `read`)
+        =>
+          fun[ExpType](expT(t, read), e1 =>
+            fun[ExpType](expT(t, read), e2 =>
+              BinOp(Operators.Binary.NEQ, e1, e2)))
+      }
+
       case core.cast() => fromType {
         case expT(s: BasicType, `read`) ->: expT(t: BasicType, `read`)
         =>
@@ -820,20 +830,33 @@ object fromRise {
           nFunT(count,
             (expT(_, read) ->: expT(bool, `read`))->: expT(_, `read`)) =>
 
-          fun[ExpType](ExpType(inputT, read), input =>
+          fun[ExpType](expT(inputT, read), input =>
             depFun[NatKind](count)(
             fun[ExpType ->: ExpType](
-              ExpType(elemT, read) ->: ExpType(bool, read), f => Which(n, elemT, count, f, input)))
+              expT(elemT, read) ->: expT(bool, read), f => Which(n, elemT, count, f, input)))
           )
       }
 
       case core.liftN() => fromType {
         case expT(NatType, `read`) ->:
             nFunT(n, expT(outT, a)) ->: expT(_, _) =>
-          fun[ExpType](ExpType(NatType, read), input =>
+          fun[ExpType](expT(NatType, read), input =>
             fun[`(nat)->:`[ExpType]](n ->: expT(outT, a),f => LiftN(a, outT, input, f)
             )
           )
+      }
+
+      case core.liftNats() => fromType {
+        case expT(arrT@ArrayType(n, _), `read`) ->:
+          nsFunT(ns, expT(outT, a)) ->: expT(_, _) =>
+          fun[ExpType](expT(arrT, read), input =>
+            fun[`(natCollection)->:`[ExpType]](ns ->: expT(outT, a), f => LiftNats(n, a, outT, input, f))
+          )
+      }
+
+      case core.toDepArray() => fromType {
+        case expT(inT:ArrayType, a) ->: expT(outT:DepArrayType, _) =>
+          fun[ExpType](expT(inT, a), input => ToDepArray(a, inT, outT, input))
       }
 
       case core.reduce() =>
@@ -902,6 +925,8 @@ object fromRise {
     DataTypeIdentifier(dt.name)
   def natIdentifier(n: rt.NatIdentifier): NatIdentifier =
     NatIdentifier(n.name, n.range)
+  def natCollectionIdentifier(ns: rt.NatCollectionIdentifier): NatCollectionIdentifier =
+    NatCollectionIdentifier(ns.name)
   def addressSpaceIdentifier(
     a: rt.AddressSpaceIdentifier
   ): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)

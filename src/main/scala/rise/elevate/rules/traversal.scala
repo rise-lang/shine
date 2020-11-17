@@ -160,6 +160,8 @@ object traversal {
           case dl @ DepLambda(x, e) => x match {
             case n: NatIdentifier =>
               Some(s(e).mapSuccess(DepLambda[NatKind](n, _)(dl.t)))
+            case ns: NatCollectionIdentifier =>
+              Some(s(e).mapSuccess(DepLambda[NatCollectionKind](ns, _)(dl.t)))
             case dt: DataTypeIdentifier =>
               Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)(dl.t)))
             case addr: AddressSpaceIdentifier =>

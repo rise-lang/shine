@@ -52,6 +52,7 @@ object PhraseType {
     case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier)  => substitute(a, forA, in)
     case (a: AccessType, forA: AccessTypeIdentifier)      => substitute(a, forA, in)
+    case (ns: NatCollection, forNS: NatCollectionIdentifier)      => substitute(ns, forNS, in)
     case (n2n: NatToNat, fotN2N: NatToNatIdentifier)      => ??? //substitute(n2n, forN2N, in)
     case (n2d: NatToData, fotN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
     case _ => throw new Exception(s"could not substitute $x for ${`for`} in $in")
@@ -175,6 +176,15 @@ object PhraseType {
     }
     Phrases.VisitAndRebuild(in, Visitor)
   }
+  def substitute[T <: PhraseType](ns: NatCollection,
+                                  `for`: NatCollectionIdentifier,
+                                  in: Phrase[T]): Phrase[T] = {
+    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+      override def natCollection(w: NatCollection): NatCollection = if (w == `for`) ns else w
+    }
+    Phrases.VisitAndRebuild(in, Visitor)
+  }
+
 
   def substitute(
     acc: AccessType,

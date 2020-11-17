@@ -81,29 +81,6 @@ object Constraint {
             DepFunType(na: NatIdentifier, ta),
             DepFunType(nb: NatIdentifier, tb)
             ) =>
-            explDep match {
-              case ExplicitDependence.On =>
-                val n = NatIdentifier(freshName("n"), isExplicit = true)
-                /** Note(federico):
-                  * This step recurses in both functions and makes dependence between type
-                  * variables and n explicit (by replacing type variables with NatToData/NatToNat).
-                  *
-                  * Perhaps this can be moved away from constraint solving, and pulled up in the
-                  * initial constrain-types phase?
-                  */
-                val (nTa, nTaSub) = dependence.explicitlyDependent(
-                  substitute.natInType(n, `for`=na, ta), n
-                )
-                val (nTb, nTbSub) = dependence.explicitlyDependent(
-                  substitute.natInType(n, `for`= nb, tb), n
-                )
-                nTaSub ++ nTbSub ++ decomposed(
-                    Seq(
-                      NatConstraint(n, na.asImplicit),
-                      NatConstraint(n, nb.asImplicit),
-                      TypeConstraint(nTa, nTb)
-                    ))
-              case ExplicitDependence.Off =>
                 val n = NatIdentifier(freshName("n"), isExplicit = true)
                 decomposed(
                   Seq(
@@ -112,7 +89,20 @@ object Constraint {
                     TypeConstraint(ta, tb)
                   )
                 )
-            }
+
+          case (
+            DepFunType(ns: NatCollectionIdentifier, ta),
+            DepFunType(ms: NatCollectionIdentifier, tb),
+            ) =>
+            val n = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
+            decomposed(
+              Seq(
+                NatCollectionConstraint(n, ns.asImplicit),
+                NatCollectionConstraint(n, ms.asImplicit),
+                TypeConstraint(ta, tb)
+            )
+          )
+
           case (
             DepFunType(dta: DataTypeIdentifier, ta),
             DepFunType(dtb: DataTypeIdentifier, tb)
@@ -217,11 +207,8 @@ object Constraint {
       case NatCollectionConstraint(a, b) =>
         (a,b) match {
           case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b)
-          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, b)
+          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, a)
           case _ if a == b                    => Solution()
-          case (NatCollectionFromArray(e1), NatCollectionFromArray(e2)) =>
-            // What to do here???
-            ???
         }
 
     }
@@ -429,6 +416,10 @@ object Constraint {
       case j: NatCollectionIdentifier =>
         if (i == j) {
           Solution()
+        } else if(!j.isExplicit) {
+          Solution.subs(j, i)
+        } else if(!i.isExplicit) {
+          Solution.subs(i, j)
         } else {
           error(s"cannot unify $i and $j, they are both bound")
         }

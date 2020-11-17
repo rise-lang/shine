@@ -4,7 +4,6 @@ import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.primitives._
-import shine.DPIA.FunctionalPrimitives.IndexAsNat
 import util.Execute
 
 class dependentTypes extends test_util.Tests {
@@ -140,27 +139,6 @@ class dependentTypes extends test_util.Tests {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
-  test("Simple nested") {
-    val e = depFun((n: Nat) => fun(n `*.` (i => (i+1) `.` f32))(array =>
-        depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))(array)
-      ))
-
-    val inferred: Expr = TDSL.inferDependent(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
-  }
-
-  test("Simple reduce") {
-    val e = depFun((n: Nat) => fun(n `*.` (i => (i+1) `.` f32))(array =>
-      depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
-    ))
-
-    val inferred: Expr = TDSL.inferDependent(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
-  }
 
   test("Simple count") {
     val e = depFun((n: Nat) =>
@@ -187,7 +165,7 @@ class dependentTypes extends test_util.Tests {
   test("Filter and sum") {
     val e = depFun((n: Nat) =>
       fun(n `.` f32)(array => {
-        def pred = fun(x => x =:= l(0.0f))
+        def pred = fun(x => x =/= l(0.0f))
         val cnt = count(array)(pred)
         liftN(indexAsNat(cnt))(depFun((cnt: Nat) =>
           reduceSeq(fun(x => fun(_ => x)))(lidx(0, n))(which(array)(cnt)(pred))
@@ -201,6 +179,55 @@ class dependentTypes extends test_util.Tests {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
+  test("List of list one row") {
+    val e = depFun((n: Nat) =>
+      fun(n `.` f32)(array => {
+        def pred = fun(x => x =/= l(0.0f))
+        val cnt = count(array)(pred)
+        liftN(indexAsNat(cnt))(depFun((cnt: Nat) =>
+           dpair(cnt)(mapSeq(fun(idx => pair(array `@` idx)(idx)))(which(array)(cnt)(pred)))
+        ))
+      })
+    )
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
+
+  test("List of list simplified") {
+    val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
+      def pred = fun(x => x =/= l(0.0f))
+      val cnts = toMem(mapSeq(fun(row => indexAsNat(count(row)(pred))))(array))
+      liftNats(cnts)(depFun((ns:NatCollection) =>
+        toDepArray(array) |> depMapSeq(depFun((rowIdx:Nat) => fun(row => row `@` lidx(ns `@` rowIdx, m))))
+      ))
+    })))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
+
+  test("List of list") {
+    val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
+      def pred = fun(x => x =/= l(0.0f))
+      val rowLengths = toMem(mapSeq(fun(row => indexAsNat(count(row)(pred))))(array))
+      liftNats(rowLengths)(depFun((rowLengths:NatCollection) =>
+        dpairNats(rowLengths)(depMapSeq(depFun((rowIdx:Nat) => fun(row => {
+          which(row)(rowLengths`@` rowIdx)(pred) |>
+            mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` indexAsNat(nnzIdx))))
+        })))(toDepArray(array)))
+      )) ::(NatCollection ** (rowLengths => n `*.`(rowIdx => (rowLengths `@` rowIdx) `.` (IndexType(rowLengths `@` rowIdx) x f32))))
+    })))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
   /*
   test("Simple filter") {
     val e = depFun((n: Nat) =>
@@ -228,31 +255,4 @@ class dependentTypes extends test_util.Tests {
     print(inferred.t)
     util.gen.CProgram(inferred, "Foo_foo")
   }*/
-
-
-
-  ignore("List of list dot product") {
-    val e = depFun((n: Nat) =>
-      fun(n `.` f32)(vector =>
-      fun(n `.` NatType)(lengths =>
-      fun(n `*.` (i => (lengths `#` i) `.` (f32 `x` IndexType(n))))(array => {
-        depMapSeq(depFun((_: Nat) => fun(
-          row =>
-            reduceSeq(
-              fun(x => fun(y => x + y))
-            )(l(0.0f))(mapSeq(fun(entry => {
-              val number = entry._1
-              val index = entry._2
-              number * (vector `@` index)
-            }))(row))
-        )
-        ))(array)
-      }
-    ))))
-
-    val inferred: Expr = TDSL.inferDependent(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
-  }
 }
