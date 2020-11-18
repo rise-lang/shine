@@ -16,9 +16,7 @@ object fromRise {
     if (!r.IsClosedForm(expr)) {
       throw new Exception(s"expression is not in closed form: $expr\n\n with type ${expr.t}")
     }
-    // TODO: consider if we can remove this going forward
-    val exprWithUniqueNames = uniqueNames.enforce(expr)
-    val bnfExpr = normalize(ev).apply(betaReduction)(exprWithUniqueNames).get
+    val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
     val rwMap = inferAccess(bnfExpr)
     expression(bnfExpr, rwMap)
   }
