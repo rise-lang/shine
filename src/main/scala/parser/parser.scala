@@ -256,7 +256,10 @@ object parser {
     case FloatTyp() => Some(rt.f32)
     case DoubleType() => Some(rt.f64)
     case BoolType() => Some(rt.bool)
-    case notAtype => None
+    case notAtype => {
+      println("                        This is not an accepted Type: "+ notAtype)
+      None
+    }
   }
   //Todo: Im Parser soll N von Lexer.TypeIdentifier zu rt.NatIdentifier übersetzt werden.
 //  private def getNat(nat: NatType):r.Nat= {
@@ -267,23 +270,43 @@ object parser {
 //  }
 
 
+//  def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+//    val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
+//    val colonToken :: typeToken :: remainderTokens = tokens
+//
+//    colonToken match {
+//      case Colon(_) => {
+//        //if a type Annotation exist, we set the type new of the Identifier
+//        typeToken match {
+//            //Todo: Here is only for ScalarType yet, but I have to implement my complex Alg. now for ArrayType etc. here in parser
+//          case ScalarType(typ, _) => {
+//            val t = getScalarType(typ)
+//            t match {
+//              case None => Right(ParseError("failed to parse ScalarType: " + typ + " is not an accpeted Type"))
+//              case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems, parseState.mapFkt, mapDepL))
+//            }
+//          }
+//          case notAtype => Right(ParseError("failed to parse(match) ScalarType: " + notAtype + " is not an Type"))
+//        }
+//      }
+//      case _ => Left(parseState)
+//    }
+//  }
+
   def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
-    val colonToken :: typeToken :: remainderTokens = tokens
+    val colonToken :: typeTokenWithremainderTokens = tokens
 
     colonToken match {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
-        typeToken match {
-            //Todo: Here is only for ScalarType yet, but I have to implement my complex Alg. now for ArrayType etc. here in parser
-          case ScalarType(typ, _) => {
-            val t = getScalarType(typ)
-            t match {
-              case None => Right(ParseError("failed to parse ScalarType: " + typ + " is not an accpeted Type"))
-              case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems, parseState.mapFkt, mapDepL))
-            }
+        parseType(ParseState(typeTokenWithremainderTokens, Nil, map, mapDepL)) match {
+          case Right(e) => Right(e)
+          case Left(newPS) => if (newPS.parsedSynElems.length == 1) {
+            return Left(ParseState(newPS.tokenStream, newPS.parsedSynElems.head :: parsedSynElems, newPS.mapFkt, newPS.mapDepL))
+          } else {
+            throw new IllegalStateException("It should only be one argument in the end of the computing of the Type exist")
           }
-          case notAtype => Right(ParseError("failed to parse(match) ScalarType: " + notAtype + " is not an Type"))
         }
       }
       case _ => Left(parseState)
