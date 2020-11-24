@@ -197,13 +197,13 @@ class harrisCornerDetectionHalideCheck
   }
 
   // FIXME: does not pass in CI
-  ignore("harrisTileShiftInwardsWLParVecUnaligned(4) generates valid OpenCL") {
+  test("harrisTileShiftInwardsWLParVecUnaligned(4) generates valid OpenCL") {
     import rise.openCL.DSL.{mapWorkGroup, mapLocal, toLocal}
 
     checkOCL(lowerOCL(
       ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
         ocl.harrisVecUnaligned2(4, mapLocal(_), toLocal))),
-      LocalSize((4, 4)), GlobalSize((32, 32)))
+      LocalSize((16, 16)), GlobalSize((64, 64)))
   }
 
   test("harrisBuffered rewrite generates valid OpenCL") {

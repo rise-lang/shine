@@ -29,15 +29,15 @@ class convolution1D extends test_util.Tests {
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ) >> join
 
-  val binomialTileShiftInwards: Expr =
+  val binomialTileShiftInwardsGP: Expr =
     tileShiftInwards(32)(mapGlobal(0)(
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ))
-    /* alternative:
+
+  val binomialTileShiftInwardsWLP: Expr =
     tileShiftInwards(32)(mapWorkGroup(0)(
       slide(3)(1) >> mapLocal(0)(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ))
-    */
 
   val binomialTileEpilogue: Expr = {
     def f = mapGlobal(0)(
@@ -106,11 +106,19 @@ class convolution1D extends test_util.Tests {
     }
   }
 
-  test("binomialTileShiftInwards compiles to valid OpenCL that passes checks") {
+  test("binomialTileShiftInwardsGP compiles to valid OpenCL that passes checks") {
     util.withExecutor {
-      checkOCL(128, LocalSize(1), GlobalSize(64), binomialTileShiftInwards)
-      checkOCL(132, LocalSize(1), GlobalSize(64), binomialTileShiftInwards)
-      checkOCL(148, LocalSize(1), GlobalSize(64), binomialTileShiftInwards)
+      checkOCL(128, LocalSize(1), GlobalSize(64), binomialTileShiftInwardsGP)
+      checkOCL(132, LocalSize(1), GlobalSize(64), binomialTileShiftInwardsGP)
+      checkOCL(148, LocalSize(1), GlobalSize(64), binomialTileShiftInwardsGP)
+    }
+  }
+
+  test("binomialTileShiftInwardsWLP compiles to valid OpenCL that passes checks") {
+    util.withExecutor {
+      checkOCL(128, LocalSize(16), GlobalSize(128), binomialTileShiftInwardsWLP)
+      checkOCL(132, LocalSize(32), GlobalSize(128), binomialTileShiftInwardsWLP)
+      checkOCL(148, LocalSize(64), GlobalSize(128), binomialTileShiftInwardsWLP)
     }
   }
 
