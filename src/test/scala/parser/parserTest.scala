@@ -71,7 +71,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Add(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Add(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -129,7 +129,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("b"), r.App(r.primitives.Not(), r.Identifier("b"))) => true
+      case r.Lambda(r.Identifier("b"), r.App(rp.Not(), r.Identifier("b"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -148,7 +148,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.Lambda(r.Identifier("z"), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.App(r.App(r.primitives.Add(), r.Identifier("y")), r.Identifier("z")))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.Lambda(r.Identifier("z"), r.App(r.App(rp.Mul(), r.Identifier("x")), r.App(r.App(rp.Add(), r.Identifier("y")), r.Identifier("z")))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -167,7 +167,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Mul(), r.App(r.App(r.primitives.Add(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Mul(), r.App(r.App(rp.Add(),
       r.Identifier("x")), r.Identifier("x"))), r.Identifier("x"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -187,7 +187,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Mul(), r.App(r.App(r.primitives.Add(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Mul(), r.App(r.App(rp.Add(),
       r.Identifier("x")), r.Identifier("x"))), r.Identifier("x"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -207,8 +207,8 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
-      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Div(), r.App(r.App(rp.Mul(),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.Mul(),
       r.Identifier("x")), r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -228,8 +228,8 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
-      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Div(), r.App(r.App(rp.Mul(),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.Mul(),
       r.Identifier("x")), r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -249,8 +249,8 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
-      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Div(), r.App(r.App(rp.Mul(),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.Mul(),
       r.Identifier("x")), r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -270,8 +270,8 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Mul(),
-      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(r.primitives.Mul(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Div(), r.App(r.App(rp.Mul(),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.Mul(),
       r.Identifier("x")), r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -310,13 +310,13 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(),
-      r.App(r.App(r.primitives.Add(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.App(r.App(r.primitives.Mod(), r.Literal(rS.IntData(42))), r.Literal(rS.IntData(5))))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.Neg(),
+      r.App(r.App(rp.Add(), r.App(r.App(rp.Mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.App(r.App(rp.Mod(), r.Literal(rS.IntData(42))), r.Literal(rS.IntData(5))))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
-        r.Lambda(r.Identifier("x")(), r.Lambda(r.Identifier("y")(), r.App(r.primitives.Neg()(),
-          r.App(r.App(r.primitives.Add()(), r.App(r.App(r.primitives.Mul()(), r.Identifier("x")())(), r.Identifier("y")())())(),
-            r.App(r.App(r.primitives.Mod()(), r.Literal(rS.IntData(42)))(), r.Literal(rS.IntData(5)))())())())())())
+        r.Lambda(r.Identifier("x")(), r.Lambda(r.Identifier("y")(), r.App(rp.Neg()(),
+          r.App(r.App(rp.Add()(), r.App(r.App(rp.Mul()(), r.Identifier("x")())(), r.Identifier("y")())())(),
+            r.App(r.App(rp.Mod()(), r.Literal(rS.IntData(42)))(), r.Literal(rS.IntData(5)))())())())())())
       case a => fail("not a lambda: " + a)
     }
   }
@@ -334,13 +334,13 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(),
-      r.App(r.App(r.primitives.Add(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.App(r.App(r.primitives.Mod(), r.Literal(rS.IntData(42))), r.Literal(rS.IntData(5))))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.Neg(),
+      r.App(r.App(rp.Add(), r.App(r.App(rp.Mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.App(r.App(rp.Mod(), r.Literal(rS.IntData(42))), r.Literal(rS.IntData(5))))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
-        r.Lambda(r.Identifier("x")(), r.Lambda(r.Identifier("y")(), r.App(r.primitives.Neg()(),
-          r.App(r.App(r.primitives.Add()(), r.App(r.App(r.primitives.Mul()(), r.Identifier("x")())(), r.Identifier("y")())())(),
-            r.App(r.App(r.primitives.Mod()(), r.Literal(rS.IntData(42)))(), r.Literal(rS.IntData(5)))())())())())())
+        r.Lambda(r.Identifier("x")(), r.Lambda(r.Identifier("y")(), r.App(rp.Neg()(),
+          r.App(r.App(rp.Add()(), r.App(r.App(rp.Mul()(), r.Identifier("x")())(), r.Identifier("y")())())(),
+            r.App(r.App(rp.Mod()(), r.Literal(rS.IntData(42)))(), r.Literal(rS.IntData(5)))())())())())())
       case a => fail("not a lambda: " + a)
     }
   }
@@ -487,6 +487,45 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "be able to parse 'dotProduct.rise'" in {
+    val fileName: String = testFilePath + "dotProduct.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.DepFunType(n,
+      rt.FunType(rt.ArrayType(n1:rt.NatIdentifier, rt.i32),
+      rt.FunType(rt.ArrayType(n2:rt.NatIdentifier, rt.i32),
+      rt.i32)))
+        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.DepLambda(n,
+      r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("res"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      ))),
+      r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(rp.Fst(), r.Identifier("x")) )
+      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec1"))))
+      ))) => true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
   "parser" should "be able to parse 'FunctionInBraces.rise'" in {
     val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
@@ -581,7 +620,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.Neg(), r.App(r.App(rp.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
       case r.Lambda(x, e) => {
         println("not correct Identifier or not correct expression: " + x + " , " + e)
         fail("not correct Identifier or not correct expression: " + x + " , " + e)
@@ -603,7 +642,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.Neg(), r.App(r.App(rp.Mul(), r.Identifier("x")), r.Identifier("y"))))) => true
       case r.Lambda(x, e) => {
         println("not correct Identifier or not correct expression: " + x + " , " + e)
         fail("not correct Identifier or not correct expression: " + x + " , " + e)
@@ -627,14 +666,14 @@ class parserTest extends  AnyFlatSpec {
     ex match {
       case r.Lambda(x@r.Identifier("x"),
       r.Lambda(y@r.Identifier("y"),
-      r.App(r.App(r.primitives.Add(),
-      r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.App(r.App(rp.Add(),
+      r.App(r.App(rp.Mul(), r.Identifier("x")), r.Identifier("y"))),
       r.Literal(rS.IntData(42)))
       )) if x.t == rt.i32 && y.t == rt.i32 => true
       case r.Lambda(x@r.Identifier("x"),
       r.Lambda(y@r.Identifier("y"),
-      r.App(r.App(r.primitives.Add(),
-      r.App(r.App(r.primitives.Mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.App(r.App(rp.Add(),
+      r.App(r.App(rp.Mul(), r.Identifier("x")), r.Identifier("y"))),
       r.Literal(rS.IntData(42)))
       )) => fail("almost correct, but Types don't match!  " + x.t + " != rt.i32 oder/und " + y.t + " != rt.i32")
       case r.Lambda(x, r.Lambda(y, e)) => fail("not correct Identifier or not correct expression: " + "Lambda(" + x + ",Lambda," + y + " , " + e + " , x.t= " + x.t + " , y.t= " + y.t)
@@ -674,7 +713,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Sub(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Sub(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -693,7 +732,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("y"), r.App(r.primitives.Neg(), r.Identifier("y"))) => true
+      case r.Lambda(r.Identifier("y"), r.App(rp.Neg(), r.Identifier("y"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -712,7 +751,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("b"), r.App(r.primitives.Neg(), r.Identifier("b"))) => true
+      case r.Lambda(r.Identifier("b"), r.App(rp.Neg(), r.Identifier("b"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -742,7 +781,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("b"), r.App(r.primitives.Not(), r.Identifier("b"))) => true
+      case r.Lambda(r.Identifier("b"), r.App(rp.Not(), r.Identifier("b"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -761,7 +800,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(r.primitives.Add(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.Add(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1071,7 +1110,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("y"), r.App(r.App(r.primitives.Add(), r.Identifier("y")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.Add(), r.Identifier("y")), r.Literal(rS.IntData(5)))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1121,7 +1160,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("y"), r.App(r.App(r.primitives.Add(), r.Identifier("y")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.Add(), r.Identifier("y")), r.Literal(rS.IntData(5)))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1164,15 +1203,15 @@ class parserTest extends  AnyFlatSpec {
 
     ex_f match {
       case r.Lambda(r.Identifier("michael"), r.Lambda(r.Identifier("heinrich"),
-      r.App(r.primitives.Not(), r.App(r.App(r.primitives.Equal(),r.App(
-      r.App(r.primitives.Mod(),
+      r.App(rp.Not(), r.App(r.App(rp.Equal(),r.App(
+      r.App(rp.Mod(),
 
       r.Lambda(r.Identifier("varX"), r.Lambda(r.Identifier("varY"),
-      r.App(r.App(r.primitives.Mul(), r.Identifier("varX")),
-      r.App(r.App(r.primitives.Mul(), r.Identifier("varY"))
+      r.App(r.App(rp.Mul(), r.Identifier("varX")),
+      r.App(r.App(rp.Mul(), r.Identifier("varY"))
       ,
 
-      r.App(r.App(r.primitives.Div(), r.App(r.App(r.primitives.Sub(),
+      r.App(r.App(rp.Div(), r.App(r.App(rp.Sub(),
       r.Literal(rS.IntData(25))), r.Literal(rS.FloatData(a)))
       ), r.Literal(rS.FloatData(b)))
 

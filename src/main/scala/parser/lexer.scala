@@ -811,6 +811,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
               }
             }
             case (Right(e), _) => {
+              if(!arr(column)(row).isLetterOrDigit){
+                  val loc: Location = Location(column, row) //endLocation is equal to startLocation
+                return Right(NotExpectedToken("Some Number or String", arr(column)(row)+"", new Span(fileReader, loc), fileReader))
+              }
               lexIdentifier(column, row) match {
                 case (Left(ident), r) => {
                   row = r
@@ -993,6 +997,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           list = list.::(LBracket(new Span(fileReader, loc)))
           row = row + 1
           while(!list(0).isInstanceOf[RBracket]){
+            //Todo: This is not an good algorithm I really want something more like lexTypAnnotationTokenLoopInNamedExpr
             lexTypAnnotationToken(column,row,list) match {
               case Right(e) => e
               case Left((c,r, l)) => {
