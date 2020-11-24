@@ -997,6 +997,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           list = list.::(LBracket(new Span(fileReader, loc)))
           row = row + 1
           while(!list(0).isInstanceOf[RBracket]){
+            //TODO: THIS WILL create AN ERROR sometime maybe
             //Todo: This is not an good algorithm I really want something more like lexTypAnnotationTokenLoopInNamedExpr
             lexTypAnnotationToken(column,row,list) match {
               case Right(e) => e
