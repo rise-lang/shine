@@ -508,7 +508,39 @@ object parser {
     }
   }
 
-  private def combineExpressions(synElemList: List[SyntaxElement]) : r.Expr = {
+//  private def combineExpressions(synElemList: List[SyntaxElement]) : r.Expr = {
+//    if(synElemList.isEmpty){
+//      throw new IllegalArgumentException("the ElemList is empty!")
+//    }
+//    var synE = synElemList.reverse
+//    var e:r.Expr = synE.head match {
+//      case SExpr(expr) => {
+//        synE = synE.tail
+//        expr
+//      }
+//      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
+//      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
+//      case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+//      case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+//    }
+//    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
+//    while(!synE.isEmpty){
+//      synE.head match {
+//        case SExpr(expr1) => {
+//          e = r.App(e, expr1)()
+//          synE = synE.tail
+//        }
+//      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
+//      case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+//        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+//        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+//      }
+//    }
+//    println("I have combined the Expressions in Lambda: "+ e)
+//    e
+//  }
+
+  private def combineExpressionsDependent(synElemList: List[SyntaxElement]) : r.Expr = {
     if(synElemList.isEmpty){
       throw new IllegalArgumentException("the ElemList is empty!")
     }
@@ -530,38 +562,6 @@ object parser {
           e = r.App(e, expr1)()
           synE = synE.tail
         }
-      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
-      case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
-        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
-        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-      }
-    }
-    println("I have combined the Expressions in Lambda: "+ e)
-    e
-  }
-
-  private def combineExpressionsDependent(synElemList: List[SyntaxElement]) : r.Expr = {
-    if(synElemList.isEmpty){
-      throw new IllegalArgumentException("the ElemList is empty!")
-    }
-    var synE = synElemList.reverse
-    var e:r.Expr = synE.head match {
-      case SExpr(expr) => {
-        synE = synE.tail
-        expr
-      }
-      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
-      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
-      case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
-      case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-    }
-    println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
-    while(!synE.isEmpty){
-      synE.head match {
-//        case SData(DType(d)) => {
-//          e = r.DepApp[rt.DataType](e, d)()
-//          synE = synE.tail
-//        }
         case SData(DIdentifier(rt.DataTypeIdentifier(name,_))) => {
 
 //          case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)())
@@ -716,7 +716,7 @@ object parser {
     }
 
         val synElemList = psNamedExpr._2
-        var expr = combineExpressions(synElemList)
+        var expr = combineExpressionsDependent(synElemList)
         expr = expr.setType(typeOfFkt)
 
         println("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
@@ -862,7 +862,7 @@ object parser {
 
     val (toks, synElemList, map, mapDepL) = psOrErr match {
       case Left(psNew) => {
-        val expr = SExpr(combineExpressions(psNew.parsedSynElems))
+        val expr = SExpr(combineExpressionsDependent(psNew.parsedSynElems))
         val newL = expr :: Nil
         val li:List[SyntaxElement] = psOld match {
           case Left(pa) => pa.parsedSynElems.reverse ++ newL
@@ -952,7 +952,7 @@ object parser {
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
-        val expr = SExpr(combineExpressions(pState.parsedSynElems))
+        val expr = SExpr(combineExpressionsDependent(pState.parsedSynElems))
         val newL = expr :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse
