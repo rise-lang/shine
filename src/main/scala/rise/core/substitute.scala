@@ -314,22 +314,12 @@ object substitute {
   }
 
   def natCollectionInNat(subs: Map[NatCollectionIdentifier, NatCollection], in: Nat): Nat = {
-    in.visitAndRebuild({
+    val res = in.visitAndRebuild {
       case NatCollectionIndexing(ns, idxs) =>
-        NatCollectionIndexing(substitute.natCollectionInNatCollection(subs, ns),
-          idxs.map(idx => substitute.natCollectionInNat(subs, idx)):_*
-        )
+        val newColl = substitute.natCollectionInNatCollection(subs, ns)
+        NatCollectionIndexing(newColl, idxs)
       case x => x
-    })
-  }
-
-  def natCollectionInDataType(ns: NatCollection, `for`: NatCollectionIdentifier, in: DataType): DataType = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitNatCollection(in:NatCollection): Result[NatCollection] =
-        Continue(substitute.natCollectionInNatCollection(Map(`for` -> ns), in), this)
     }
-
-    traversal.types.DepthFirstLocalResult.data(in, Visitor())
+    res
   }
-
 }

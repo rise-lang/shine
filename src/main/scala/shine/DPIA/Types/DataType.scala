@@ -110,12 +110,40 @@ object DataType {
         case _: BasicType | _: DataTypeIdentifier => in
         case a: ArrayType =>
           ArrayType(a.size, substitute(dt, `for`, a.elemType))
+        case dp: DepArrayType => ???
         case r: PairType =>
           PairType(substitute(dt, `for`, r.fst), substitute(dt, `for`, r.snd))
       }).asInstanceOf[T]
     }
   }
 
+  def visitNat[T <: DataType](f: Nat => Nat, in: T): T = {
+    (in match {
+      case s: ScalarType => s
+      case i: IndexType =>
+        IndexType(f(i.size))
+      case a: ArrayType =>
+        ArrayType(f(a.size),
+          visitNat(f, a.elemType))
+      case a: DepArrayType =>
+        val newSize = f(a.size)
+        val newElemFType = a.elemFType match {
+          case NatToDataLambda(x, body) =>  NatToDataLambda(x, visitNat(f, body))
+          case id:NatToDataIdentifier => id
+        }
+        DepArrayType(newSize, newElemFType)
+      case v: VectorType =>
+        VectorType(f(v.size), v.elemType)
+      case r: PairType =>
+        PairType(visitNat(f, r.fst), visitNat(f, r.snd))
+      case r: DepPairType =>
+        val newFst = f(r.x).asInstanceOf[NatIdentifier]
+        val newSnd = visitNat(f, r.elemT)
+        DepPairType(newFst, newSnd)
+    }).asInstanceOf[T]
+  }
+
+  // TODO: Re-express in terms of visitNat?
   def substitute[T <: DataType](ae: Nat, `for`: Nat, in: T): T = {
     (in match {
       case s: ScalarType => s

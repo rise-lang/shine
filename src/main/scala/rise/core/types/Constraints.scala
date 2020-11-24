@@ -411,20 +411,21 @@ object Constraint {
 
   object natCollection {
     def unifyIdent(i: NatCollectionIdentifier, n: NatCollection)(
-        implicit trace: Seq[Constraint]
-      ): Solution = n match {
+      implicit trace: Seq[Constraint]
+    ): Solution = n match {
       case j: NatCollectionIdentifier =>
         if (i == j) {
           Solution()
-        } else if(!j.isExplicit) {
-          Solution.subs(j, i)
-        } else if(!i.isExplicit) {
+        } else if (!i.isExplicit) {
           Solution.subs(i, j)
+        } else if (!j.isExplicit) {
+          Solution.subs(j, i)
         } else {
-          error(s"cannot unify $i and $j, they are both bound")
+          error(s"cannot unify $i and $j")
         }
-      case _ => Solution.subs(i,n)
+      case _       => error(s"cannot unify $i and $n")
     }
+
   }
 
   def occurs(i: DataTypeIdentifier, t: Type): Boolean = t match {

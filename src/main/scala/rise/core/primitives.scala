@@ -211,6 +211,10 @@ object primitives {
     impl { n: Nat => impl { dt: DataType => (n `.` dt) ->: (n `*.` n2dtFun(_ => dt)) } }
   }
 
+  @primitive object unDepArray extends Primitive with Builder {
+    impl { n: Nat => impl { dt: DataType => (n `*.` (_ => dt)) ->: (n `.` dt) } }
+  }
+
   @primitive object reduce extends Primitive with Builder {
     impl{ n: Nat => impl{ t: DataType =>
       (t ->: t ->: t) ->: t ->: (n`.`t) ->: t }}

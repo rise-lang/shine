@@ -1,7 +1,6 @@
 package shine.DPIA
 
 import rise.core.TypeLevelDSL.{->:, ArrayTypeConstructors, TupleTypeConstructors, `(Addr)->:`, `(Nat)->:`, `.`, x}
-import rise.core.types.Kind.Explicitness
 import rise.core.{primitives => rp, types => rt}
 import rise.openCL.{primitives => roclp}
 import rise.openMP.{primitives => rompp}
@@ -614,6 +613,15 @@ private class InferAccessAnnotation {
           case _ => ???
         }
         buildType(p.t)
+
+      case rp.unDepArray() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(inT:rt.DepArrayType, outT:rt.ArrayType) =>
+            val a = accessTypeIdentifier()
+            expT(dataType(inT), a) ->: expT(dataType(outT), a)
+          case _ => ???
+        }
+        buildType(p.t)
     }
 
     checkConsistency(p.t, primitiveType)
@@ -667,6 +675,8 @@ private class InferAccessAnnotation {
         natToNatIdentifier(n2n) ->: `type`(t)
       case n2d: rt.NatToDataIdentifier =>
         natToDataIdentifier(n2d) ->: `type`(t)
+      case ns: rt.NatCollectionIdentifier =>
+        natCollectionIdentifier(ns) ->: `type`(t)
     }
     case rt.TypeIdentifier(_) | rt.TypePlaceholder =>
       error()

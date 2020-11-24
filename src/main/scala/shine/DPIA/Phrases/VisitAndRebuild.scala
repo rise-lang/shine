@@ -48,7 +48,7 @@ object VisitAndRebuild {
           case Lambda(x, p) =>
             apply(x, v) match {
               case newX: Identifier[_] => Lambda(newX, apply(p, v))
-              case badX => throw new Exception(s"${badX} is not an identifier")
+              case badX => throw new Exception(s"$badX is not an identifier")
             }
 
           case Apply(p, q) =>
@@ -131,7 +131,7 @@ object VisitAndRebuild {
 
           case Literal(d) => Literal(d)
 
-          case Natural(n) => Natural(n)
+          case Natural(n) => Natural(v.nat(n))
 
           case UnaryOp(op, x) => UnaryOp(op, apply(x, v))
 
@@ -195,6 +195,8 @@ object VisitAndRebuild {
       case i: IndexType => IndexType(v.nat(i.size))
       case a: ArrayType =>
         ArrayType(v.nat(a.size), visitDataTypeAndRebuild(a.elemType, v))
+      case a: DepArrayType =>
+        DepArrayType(v.nat(a.size), v.natToData(a.elemFType))
       case vec: VectorType =>
         VectorType(v.nat(vec.size), v.data(vec.elemType))
       case r: PairType =>

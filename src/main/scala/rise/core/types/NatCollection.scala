@@ -1,11 +1,10 @@
 package rise.core.types
 
-import arithexpr.arithmetic.{ArithExprFunctionCall, SimplifiedExpr}
-import rise.core.Expr
+import arithexpr.arithmetic.{ArithExpr, ArithExprFunctionCall, SimplifiedExpr, Var}
 
 
 final class NatCollectionIndexing(val collection: NatCollection, val idxs: Seq[Nat])
-  extends ArithExprFunctionCall(s"($collection)#[${idxs.map(_.toString).mkString(",")}]") {
+  extends ArithExprFunctionCall(s"($collection)[${idxs.map(_.toString).mkString(",")}]") {
   override lazy val toString: String = this.name
 
   override def exposedArgs: Seq[Nat] = idxs
@@ -14,15 +13,17 @@ final class NatCollectionIndexing(val collection: NatCollection, val idxs: Seq[N
     new NatCollectionIndexing(collection, idxs.map(idx => subMap.getOrElse(idx, idx)))
 
   override def visitAndRebuild(f: Nat => Nat): Nat =
-    new NatCollectionIndexing(collection, idxs.map(idx => f(idx)))
+    f(new NatCollectionIndexing(collection, idxs.map(idx => f(idx))))
 
   override def substitute(subs: scala.collection.Map[Nat, Nat]): Option[Nat] = {
-    Some(visitAndRebuild(x => subs.getOrElse(x, x.substitute(subs).getOrElse(x))))
+    Some(new NatCollectionIndexing(this.collection, idxs.map(n => ArithExpr.substitute(n, subs))))
   }
+
+  override def freeVariables: Set[Var] = idxs.map(n => ArithExpr.freeVariables(n)).foldLeft(Set[Var]())(_.union(_))
 }
 
 object NatCollectionIndexing {
-    def apply(ns: NatCollection, idxs:Nat*): NatCollectionIndexing = NatCollectionIndexing(ns, idxs:_*)
+    def apply(ns: NatCollection, idxs:Seq[Nat]): NatCollectionIndexing = new NatCollectionIndexing(ns, idxs)
     def unapply(arg: NatCollectionIndexing): Option[(NatCollection, Seq[Nat])] =
       Some((arg.collection, arg.idxs))
 }

@@ -213,9 +213,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         exp(input, env, List(), input => {
 
           C.AST.Block(immutable.Seq(
-            C.AST.Comment("Lifted nat collection"),
+            C.AST.Comment(s"Started scope of lifted nat collection ${f.t.x.name}"),
             C.AST.DeclStmt(C.AST.VarDecl(f.t.x.name, C.AST.PointerType(typ(NatType)), Some(input))),
-              cmd(f(f.t.x), env)
+              cmd(f(f.t.x), env),
+            C.AST.Comment(s"Ended scope of lifted nat collection ${f.t.x.name}"),
           ))
         })
 
@@ -329,6 +330,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
 
       case MkDPairSndAcc(fst, sndT, a) => acc(a, env, DPairSnd::path, cont)
+
+      case TransmuteAcc(_, _, a) => acc(a, env, path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) |  _: AccPrimitive =>
@@ -559,7 +562,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           generateAccess(outT, fe, path, env, cont)
         )
 
-      case ToDepArray(_, _, _, input) => exp(input, env, path, cont)
+      case Transmute(_, _, _, input) => exp(input, env, path, cont)
 
       // case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
       // case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
@@ -978,7 +981,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       // assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
       val subMap = buildSubMap(dt, indices)
-
       (dt2, ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
     }
 
@@ -1229,7 +1231,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
          case sp: SteppedCase => genNat(sp.intoIfChain(), env, cont)
 
-         case BigSum(variable, body) =>
+         case bs@BigSum(variable, body) =>
              println(s"Generating for loop for big sum $n")
              genNat(variable.from, env, from => {
                genNat(variable.upTo, env, upTo => {
@@ -1256,13 +1258,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                      )
                    )
 
-                   C.AST.Stmts(
+                   C.AST.Block(Vector(
+                     C.AST.Comment(s"Generating big sum: $bs"),
                      C.AST.Stmts(
-                        C.AST.DeclStmt(accumVar),
-                        forLoop
-                     ),
-                     cont(C.AST.DeclRef(accumVar.name))
-                   )
+                       C.AST.Stmts(
+                         C.AST.DeclStmt(accumVar),
+                         forLoop
+                       ),
+                       cont(C.AST.DeclRef(accumVar.name))
+                     )
+                   ))
                  })
                })
              })

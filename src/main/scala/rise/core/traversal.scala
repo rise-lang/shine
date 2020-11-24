@@ -58,9 +58,11 @@ object traversal {
                     v.visitType(dl.t).value
                   )
                 case ns: NatCollectionIdentifier =>
-                  DepLambda[NatCollectionKind](v.visitNatCollection(ns).value.asInstanceOf[NatCollectionIdentifier], apply(e, v))(
+                  val ns2 = v.visitNatCollection(ns).value.asInstanceOf[NatCollectionIdentifier]
+                  val r = DepLambda[NatCollectionKind](ns2, apply(e, v))(
                     v.visitType(dl.t).value
                   )
+                  r
               }
             case da @ DepApp(f, x) =>
               x match {

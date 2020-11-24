@@ -34,7 +34,7 @@ case class NatCollectionToDataLambda private (x: NatCollectionIdentifier, body: 
     this.apply(NatCollectionIdentifier("ComparisonDummy")).hashCode()
 
   override def apply(a: NatCollection): DataType =
-    substitute.natCollectionInDataType(a, `for` = x, in = body)
+    substitute.natCollectionInType(a, `for` = x, in = body)
 
   override def toString: String = s"($x: nats |-> $body)"
 

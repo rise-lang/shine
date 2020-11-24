@@ -200,8 +200,13 @@ class dependentTypes extends test_util.Tests {
     val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
       def pred = fun(x => x =/= l(0.0f))
       val cnts = toMem(mapSeq(fun(row => indexAsNat(count(row)(pred))))(array))
-      liftNats(cnts)(depFun((ns:NatCollection) =>
-        toDepArray(array) |> depMapSeq(depFun((rowIdx:Nat) => fun(row => row `@` lidx(ns `@` rowIdx, m))))
+      liftNats(cnts)(depFun((lengths:NatCollection) =>
+        toDepArray(array) |>
+          depMapSeq(depFun((rowIdx:Nat) => fun(row =>
+            which(row)(lengths `@` rowIdx)(pred)
+              |> take(5)
+              |> mapSeq(fun(nnzIdx => row `@` nnzIdx))
+          ))) |> unDepArray
       ))
     })))
 
@@ -211,7 +216,7 @@ class dependentTypes extends test_util.Tests {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
-  test("List of list") {
+  ignore("List of list") {
     val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
       def pred = fun(x => x =/= l(0.0f))
       val rowLengths = toMem(mapSeq(fun(row => indexAsNat(count(row)(pred))))(array))

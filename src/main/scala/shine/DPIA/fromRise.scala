@@ -856,7 +856,12 @@ object fromRise {
 
       case core.toDepArray() => fromType {
         case expT(inT:ArrayType, a) ->: expT(outT:DepArrayType, _) =>
-          fun[ExpType](expT(inT, a), input => ToDepArray(a, inT, outT, input))
+          fun[ExpType](expT(inT, a), input => Transmute(a, inT, outT, input))
+      }
+
+      case core.unDepArray() => fromType {
+        case expT(inT:DepArrayType, a) ->: expT(outT:ArrayType, _) =>
+          fun[ExpType](expT(inT, a), input => Transmute(a, inT, outT, input))
       }
 
       case core.reduce() =>
@@ -917,7 +922,8 @@ object fromRise {
   }
 
   def ntn(ntn: rt.NatToNat): NatToNat= ntn match {
-    case rt.NatToNatLambda(n, body) => NatToNatLambda(natIdentifier(n), body)
+    case rt.NatToNatLambda(n, body) => NatToNatLambda(
+      natIdentifier(n), body)
     case rt.NatToNatIdentifier(x, _) => NatToNatIdentifier(x)
   }
 

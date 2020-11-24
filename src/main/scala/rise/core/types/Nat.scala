@@ -24,6 +24,9 @@ class NatIdentifier(
     f(new NatIdentifier(name, range.visitAndRebuild(f), isExplicit))
   }
 
+  override def substitute(subs: collection.Map[Nat, Nat]): Option[Nat] =
+    subs.get(this).orElse(range.substitute(subs).map(r => this.copy(r = r)))
+
   override def cloneSimplified(): NatIdentifier with SimplifiedExpr =
     new NatIdentifier(name, range, isExplicit) with SimplifiedExpr
 }

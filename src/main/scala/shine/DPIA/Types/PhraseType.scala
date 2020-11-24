@@ -1,5 +1,6 @@
 package shine.DPIA.Types
 
+import rise.core.types
 import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA._
@@ -179,8 +180,32 @@ object PhraseType {
   def substitute[T <: PhraseType](ns: NatCollection,
                                   `for`: NatCollectionIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
+
+    def replaceOnNat(n:Nat): Nat = {
+        ns match {
+          case NatCollectionIdentifier(replacementName) =>
+            n match {
+              case n@rise.core.types.NatCollectionIndexing(coll, idxs) =>
+                coll match {
+                  case id@types.NatCollectionIdentifier(name, _) if name == `for`.name =>
+                    val newId = id.copy(name = replacementName)
+                    types.NatCollectionIndexing(newId, idxs)
+                  case _ => n
+                }
+
+              case x => x
+            }
+        }
+    }
+
     object Visitor extends Phrases.VisitAndRebuild.Visitor {
       override def natCollection(w: NatCollection): NatCollection = if (w == `for`) ns else w
+
+      override def nat[N <: Nat](n: N): N = n.visitAndRebuild({ n => replaceOnNat(n)}).asInstanceOf[N]
+
+      override def data[Typ <: DataType](dt: Typ): Typ =
+        DataType.visitNat(_.visitAndRebuild({ n => replaceOnNat(n) }), dt)
+
     }
     Phrases.VisitAndRebuild(in, Visitor)
   }

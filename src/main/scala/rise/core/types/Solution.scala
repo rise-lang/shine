@@ -1,5 +1,7 @@
 package rise.core.types
 
+import arithexpr.arithmetic.NamedVar
+import rise.core.types.Solution.subs
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
@@ -39,7 +41,8 @@ case class Solution(ts: Map[Type, Type],
 
   case class Visitor(sol: Solution) extends traversal.Visitor {
     override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
-    override def visitNatCollection(nc: NatCollection): Result[NatCollection] = Stop(sol(nc))
+    override def visitNatCollection(nc: NatCollection): Result[NatCollection] =
+      Stop(sol(nc))
     override def visitType[T <: Type](t: T): Result[T] =
       Stop(sol(t).asInstanceOf[T])
     override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
@@ -47,6 +50,8 @@ case class Solution(ts: Map[Type, Type],
     override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
 
     override def visitN2N(n2n: NatToNat): Result[NatToNat] = Stop(sol(n2n))
+
+    override def visitNS2D(ns2d: NatCollectionToData): Result[NatCollectionToData] = Stop(sol(ns2d))
   }
 
   def apply(e: Expr): Expr = {
@@ -63,16 +68,19 @@ case class Solution(ts: Map[Type, Type],
     })
   }
 
-  def apply(n: Nat): Nat =
-    (substitute.natsInNat(ns, _))
+  def apply(n: Nat): Nat = {
+    val result = (substitute.natsInNat(ns, _))
       .andThen(substitute.n2nsInNat(n2ns, _))
-      .andThen(substitute.natCollectionInNat(natColls,_))(n)
+      .andThen(substitute.natCollectionInNat(natColls, _))(n)
+    result
+  }
 
   def apply(a: AddressSpace): AddressSpace =
     substitute.addressSpacesInAddressSpace(as, a)
 
-  def apply(a: NatCollection): NatCollection =
+  def apply(a: NatCollection): NatCollection = {
     substitute.natCollectionInNatCollection(natColls, a)
+  }
 
   def apply(n2d: NatToData): NatToData = {
     substitute.n2dsInN2d(n2ds, n2d) match {
