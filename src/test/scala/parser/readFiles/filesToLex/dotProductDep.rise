@@ -1,0 +1,5 @@
+f::N:Nat=>D:Data
+=>N.I32->N.I32->I32
+f=\N:Nat=>\D:Data=>\vec1->\vec2 ->
+    reduceSeq (\res:I32->\arg:I32-> + res arg)
+        (mapSeq (\x:(I32,I32)->+ (fst x) (snd x)) (zip vec1 vec2))

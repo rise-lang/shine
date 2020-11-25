@@ -526,6 +526,44 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
+  //Todo:DotProductDep
+
+  "parser" should "be able to parse 'dotProductEasy.rise'" in {
+    val fileName: String = testFilePath + "dotProductEasy.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.FunType(rt.ArrayType(n, rt.i32),
+      rt.FunType(rt.ArrayType(n1, rt.i32),
+      rt.i32))  if n.equals(4)&& n1.equals(n)=> true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("res"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      ))),
+      r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(rp.Fst(), r.Identifier("x")) )
+      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec1"))))
+      )) => true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
   "parser" should "be able to parse 'FunctionInBraces.rise'" in {
     val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
