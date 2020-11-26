@@ -968,3 +968,13 @@ class LexerTest extends  AnyFlatSpec {
   }
 
 }
+
+//Todo: We need tests for failures like:
+//"f::N:Nat=>D:Data
+//=>N.D->N.D->D"
+//where we get "ErrorToken: the given length is less than 2 for =>! at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/dotProductDep.rise'; fileContent: {
+//f::N:Nat=>D:Data=>N.D->N.D->Df=\N:Nat=>\D:Data=>\vec1->\vec2 ->    reduceSeq (\res:I32->\arg:I32-> + res arg)        (mapSeq (\x:(I32,I32)->+ (fst x) (snd x)) (zip vec1 vec2))
+//}; beginLocation: (column: 0 ; row: 16); endLocation: (column: 0 ; row: 16)
+//f::N:Nat=>D:Data"
+//which does not help to understand, what is happened!!!
+//Here happens that everything has to be written in one line in the TypeAnnotation

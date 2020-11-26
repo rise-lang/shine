@@ -526,7 +526,46 @@ class parserTest extends  AnyFlatSpec {
     }
   }
 
-  //Todo:DotProductDep
+  "parser" should "be able to parse 'dotProductDep.rise'" in {
+    val fileName: String = testFilePath + "dotProductDep.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.DepFunType(n,rt.DepFunType(d,
+      rt.FunType(rt.ArrayType(n1:rt.NatIdentifier, d1:rt.DataTypeIdentifier),
+      rt.FunType(rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier),
+      d3:rt.DataTypeIdentifier))))
+        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
+      && d.name.equals("D") && d1.name.equals(d.name)
+      && d2.name.equals(d.name) && d3.name.equals(d.name)=> true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.DepLambda(n,r.DepLambda(d,
+      r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("res"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      ))),
+      r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(rp.Snd(), r.Identifier("x")) )
+      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
+      )))) => true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
 
   "parser" should "be able to parse 'dotProductEasy.rise'" in {
     val fileName: String = testFilePath + "dotProductEasy.rise"
@@ -739,6 +778,61 @@ class parserTest extends  AnyFlatSpec {
       case r.Lambda(r.Identifier("jens"), r.Identifier("jens")) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'matrixMult.rise'" in {
+    val fileName: String = testFilePath + "matrixMult.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.DepFunType(n,rt.DepFunType(m,rt.DepFunType(d,
+      rt.FunType(rt.ArrayType(n1:rt.NatIdentifier,rt.ArrayType(m1:rt.NatIdentifier, d1:rt.DataTypeIdentifier)),
+      rt.FunType(rt.ArrayType(n2:rt.NatIdentifier, rt.ArrayType(m2:rt.NatIdentifier,d2:rt.DataTypeIdentifier)),
+      rt.ArrayType(n3:rt.NatIdentifier, rt.ArrayType(n4:rt.NatIdentifier,d3:rt.DataTypeIdentifier))
+      )))))
+        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name) &&n3.name.equals(n.name) && n4.name.equals(n.name)
+          && m.name.equals("M") && m1.name.equals(m.name) && m2.name.equals(m.name)
+          && d.name.equals("D") && d1.name.equals(d.name)
+          && d2.name.equals(d.name) && d3.name.equals(d.name)=> true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.DepLambda(n, r.DepLambda(m,r.DepLambda(d,
+      r.Lambda(r.Identifier("mat1"),r.Lambda(r.Identifier("mat2"),
+      r.App(r.App(rp.MapSeq(),
+
+      r.App(r.App(rp.MapSeq(),
+
+      r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("res"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      ))),
+      r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(rp.Snd(), r.Identifier("x")) )
+      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
+      ))),
+
+      r.Identifier("mat2")
+      )),
+
+      r.Identifier("mat1")
+    ))
+    ))))=> true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
     }
   }
 
