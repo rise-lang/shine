@@ -796,13 +796,13 @@ class parserTest extends  AnyFlatSpec {
     ex_f.t match {
       case rt.DepFunType(n,rt.DepFunType(m,rt.DepFunType(d,
       rt.FunType(rt.ArrayType(n1:rt.NatIdentifier,rt.ArrayType(m1:rt.NatIdentifier, d1:rt.DataTypeIdentifier)),
-      rt.FunType(rt.ArrayType(n2:rt.NatIdentifier, rt.ArrayType(m2:rt.NatIdentifier,d2:rt.DataTypeIdentifier)),
+      rt.FunType(rt.ArrayType(m2:rt.NatIdentifier, rt.ArrayType(n2:rt.NatIdentifier,d2:rt.DataTypeIdentifier)),
       rt.ArrayType(n3:rt.NatIdentifier, rt.ArrayType(n4:rt.NatIdentifier,d3:rt.DataTypeIdentifier))
-      )))))
-        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name) &&n3.name.equals(n.name) && n4.name.equals(n.name)
-          && m.name.equals("M") && m1.name.equals(m.name) && m2.name.equals(m.name)
-          && d.name.equals("D") && d1.name.equals(d.name)
-          && d2.name.equals(d.name) && d3.name.equals(d.name)=> true
+      )))))        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name) &&n3.name.equals(n.name) && n4.name.equals(n.name)
+        && m.name.equals("M") && m1.name.equals(m.name) && m2.name.equals(m.name)
+        && d.name.equals("D") && d1.name.equals(d.name)
+        && d2.name.equals(d.name) && d3.name.equals(d.name)
+=> true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
