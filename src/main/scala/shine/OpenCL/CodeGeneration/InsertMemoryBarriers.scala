@@ -64,7 +64,7 @@ object InsertMemoryBarriers {
           pf match {
             case ParForLocal(dim) =>
               val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
-              collectWrites(out, allocs, metadata.wg_writes)
+              collectWrites(out, allocs, outer_wg_writes)
               val b2 = visitLoopBody(body, allocs, metadata, outer_wg_writes)
               Stop(ParForLocal(dim)(n, dt, out, Lambda(x, Lambda(o, b2)), init, step, unroll))
             case ParForWorkGroup(dim) =>
@@ -119,6 +119,7 @@ object InsertMemoryBarriers {
       case PairAcc1(_, _, a) => collectWrites(a, allocs, writes)
       case PairAcc2(_, _, a) => collectWrites(a, allocs, writes)
       case TakeAcc(_, _, _, a) => collectWrites(a, allocs, writes)
+      case TransposeAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case _ => throw new Exception(s"did not expect $a")
     }
   }
