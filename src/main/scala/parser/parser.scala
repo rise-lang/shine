@@ -832,7 +832,7 @@ object parser {
       Left(parseState) |>
         (parseBracesExprType _ || parseDepFunctionType ||
           parseTupleType || parseIndexType || parseArrayType || //parseFunType ||
-          parseScalarType || parseTypeIdentToCorrectForm)
+          parseScalarType || parseTypeIdentToCorrectForm || parseData )
     ps
   }
 
@@ -992,7 +992,7 @@ object parser {
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
         parseNat |>
         parseDot |>
-        parseData
+        parseType
 
     p match {
       case Left(pState) => {
@@ -1007,6 +1007,10 @@ object parser {
               case DIdentifier(d) => SType(rt.ArrayType(n, d))
               case DType(d) => SType(rt.ArrayType(n,d))
             }
+          }
+          case SNat(nat)::SType(t) :: Nil => nat match {
+            case NNumber(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]))
+            case NIdentifier(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]))
           }
           case a => throw new RuntimeException("List should't have only Nat at this position! " + a)
         }
