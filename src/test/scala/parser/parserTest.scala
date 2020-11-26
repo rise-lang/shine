@@ -517,8 +517,8 @@ class parserTest extends  AnyFlatSpec {
       ))),
       r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
       r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
-      r.App(rp.Fst(), r.Identifier("x")) )
-      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec1"))))
+      r.App(rp.Snd(), r.Identifier("x")) )
+      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
       ))) => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
@@ -558,8 +558,9 @@ class parserTest extends  AnyFlatSpec {
       ))),
       r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
       r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
-      r.App(rp.Fst(), r.Identifier("x")) )
-      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec1"))))
+      r.App(rp.Snd(), r.Identifier("x")) )
+      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2")))
+      )
       )) => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
