@@ -91,6 +91,11 @@ final case class NumberWithUnderscore(str:String, span:Span, fileReader:FileRead
     override def toString = "It is an '"+ expectedToken +"' expected. The Lexeme '" + givenToken + "' is not an '"+ expectedToken+ "'!"
   }
 
+final case class NotExpectedTwoBackslash(expectedToken:String, span:Span, fileReader:FileReader) extends PreAndErrorToken(span, fileReader){
+  require(span.begin.column == span.end.column, "not in one column")
+  override def toString = "It is an '"+ expectedToken +"' expected. But we have here two '\\'!"
+}
+
   final case class ToShortToBeThisToken(expectedLength:Int, token:String, span:Span, fileReader:FileReader) extends PreAndErrorToken(span, fileReader){
     require(expectedLength >0, "expectedLength is less or equal to zero")
     require(span.begin.column == span.end.column, "not in one column")
@@ -1271,6 +1276,22 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       (column, row)
     }
   }
+
+  private def isTwoBackslash(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Boolean= {
+    arr(column).length> row+1 && arr(column).substring(row, row+2).equals("\\\\")
+  }
+
+//  private def lexComment( column:Int, row:Int, arr:Array[String] = fileReader.sourceLines):(Int,Int) = {
+//    if(isComment(column,row)){
+//      if(arr.length > column+1){
+//        (column+1, 0)
+//      }else{
+//        (column, arr(column).length-1)
+//      }
+//    }else{
+//      (column, row)
+//    }
+//  }
   /*
   we expect to see a Backslash
   requirements:  no whitespace at arr(column)(row)
@@ -1278,7 +1299,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   private def lexBackslash(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]= {
     arr(column)(row) match {
       case '\\' => {
-        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        val loc:Location = Location(column, row)
+        if(isTwoBackslash(column,row)){
+          val endLoc:Location = Location(column, arr(column).length)
+          Right(NotExpectedTwoBackslash("\\", Span(fileReader,loc,endLoc), fileReader))
+        }
         Left(Backslash(new Span(fileReader,loc)))
       }
       case a => {

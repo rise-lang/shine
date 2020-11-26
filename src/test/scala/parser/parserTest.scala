@@ -835,6 +835,70 @@ class parserTest extends  AnyFlatSpec {
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
     }
+
+    println("infer: " +rt.infer(ex_f))
+    //Todo: What is this uniquenNames and infer, what I saw in https://github.com/rise-lang/rise/blob/feature/parallel-reduce/src/test/scala/rise/core/uniqueNamesCheck.scala
+    //assert(r.uniqueNames.check(rt.infer(ex_f))) //Todo:This still fails
+  }
+
+  "parser" should "be able to parse 'matrixMultWithComments.rise'" in {
+    val fileName: String = testFilePath + "matrixMultWithComments.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val map: MapFkt = parser(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f.t match {
+      case rt.DepFunType(n,rt.DepFunType(m,rt.DepFunType(d,
+      rt.FunType(rt.ArrayType(n1:rt.NatIdentifier,rt.ArrayType(m1:rt.NatIdentifier, d1:rt.DataTypeIdentifier)),
+      rt.FunType(rt.ArrayType(m2:rt.NatIdentifier, rt.ArrayType(n2:rt.NatIdentifier,d2:rt.DataTypeIdentifier)),
+      rt.ArrayType(n3:rt.NatIdentifier, rt.ArrayType(n4:rt.NatIdentifier,d3:rt.DataTypeIdentifier))
+      )))))        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name) &&n3.name.equals(n.name) && n4.name.equals(n.name)
+        && m.name.equals("M") && m1.name.equals(m.name) && m2.name.equals(m.name)
+        && d.name.equals("D") && d1.name.equals(d.name)
+        && d2.name.equals(d.name) && d3.name.equals(d.name)
+      => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+      case r.DepLambda(n, r.DepLambda(m,r.DepLambda(d,
+      r.Lambda(r.Identifier("mat1"),r.Lambda(r.Identifier("mat2"),
+      r.App(r.App(rp.MapSeq(),
+      r.Lambda(r.Identifier("vec1"),
+      r.App(r.App(rp.MapSeq(),
+
+      r.Lambda(r.Identifier("vec2"),
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(
+      r.Identifier("res"),r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      ))),
+      r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(rp.Snd(), r.Identifier("x")) )
+      )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
+      )),
+
+      r.App(rp.Transpose(),r.Identifier("mat2"))
+      ))),
+
+      r.Identifier("mat1")
+      ))
+      ))))=> true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+
+    println("infer: " +rt.infer(ex_f))
+    //Todo: What is this uniquenNames and infer, what I saw in https://github.com/rise-lang/rise/blob/feature/parallel-reduce/src/test/scala/rise/core/uniqueNamesCheck.scala
+    //assert(r.uniqueNames.check(rt.infer(ex_f))) //Todo:This still fails
   }
 
   "parser" should "be able to parse 'minus.rise'" in {
