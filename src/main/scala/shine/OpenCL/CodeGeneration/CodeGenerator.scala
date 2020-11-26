@@ -294,16 +294,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
               ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
               ExprStmt(Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1))),
               // toggle flag with xor
-              ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1")))),
-              OpenCL.AST.Barrier(true, true)
+              ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1"))))
             ))
           })
             updatedCommEnv (done -> {
             Block(immutable.Seq(
               ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
               acc(out, env, CIntExpr(0) :: Nil, o =>
-                ExprStmt(Assignment(out_ptr, UnaryExpr(&, o)))),
-              OpenCL.AST.Barrier(true, true)
+                ExprStmt(Assignment(out_ptr, UnaryExpr(&, o))))
             ))
           }))
       ))

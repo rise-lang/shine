@@ -75,6 +75,12 @@ object InsertMemoryBarriers {
         case pfn: OpenCLParForNat => ???
         case OpenCLNew(addr, _, Lambda(x, _)) if addr != AddressSpace.Private =>
           Continue(p, Visitor(allocs + (x -> addr), metadata))
+        case OpenCLNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body)) if addr != AddressSpace.Private =>
+          val (b2, m) = visitNewMetadata(body, allocs + (x -> addr))
+          collectReads(in, allocs, metadata.reads)
+          metadata.reads ++= m.reads
+          metadata.reads ++= m.reads
+          Stop(OpenCLNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, b2)))
         case Assign(_, _, rhs) =>
           collectReads(rhs, allocs, metadata.reads)
           Stop(p)
