@@ -4,13 +4,15 @@ import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
 import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{gen, Display, TimeSpan}
 import util.Time.ms
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 import arithexpr.arithmetic.SteppedCase
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import Type._
 import rise.core.Expr
 import rise.core.types._
-import rise.core.HighLevelConstructs._
+import HighLevelConstructs._
 
 import scala.util.Random
 
@@ -104,7 +106,7 @@ class stencil extends test_util.Tests {
     extends Stencil1DProgramRun
   {
     override def expr: Expr = {
-      nFun(n => fun(ArrayType(n, f32))(input =>
+      depFun((n: Nat) => fun(ArrayType(n, f32))(input =>
         input |>
         padCst(padSize)(padSize)(l(0.0f)) |>
         slide(stencilSize)(1) |>
@@ -117,7 +119,7 @@ class stencil extends test_util.Tests {
     extends Stencil1DProgramRun
   {
     override def expr: Expr = {
-      nFun(n => fun(ArrayType(n, f32))(input =>
+      depFun((n: Nat) => fun(ArrayType(n, f32))(input =>
         input |>
         padCst(padSize)(padSize)(l(0.0f)) |>
         slide(stencilSize)(1) |>
@@ -174,7 +176,7 @@ class stencil extends test_util.Tests {
     extends Stencil2DProgramRun
   {
     override def expr: Expr = {
-      nFun(n => fun(ArrayType(n, ArrayType(n, f32)))(input =>
+      depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, f32)))(input =>
         input |>
         padCst2D(padSize)(l(0.0f)) |>
         slide2D(stencilSize, 1) |>
@@ -190,7 +192,7 @@ class stencil extends test_util.Tests {
   {
 
     override def expr: Expr = {
-      nFun(n => fun(ArrayType(n, ArrayType(n, f32)))(input =>
+      depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, f32)))(input =>
         input |>
         padCst2D(padSize)(l(0.0f)) |>
         slide2D(stencilSize, 1) |>
@@ -209,7 +211,7 @@ class stencil extends test_util.Tests {
     }
   }
 
-  private val simpleStencil = nFun(n => fun(ArrayType(n, f32))(xs =>
+  private val simpleStencil = depFun((n: Nat) => fun(ArrayType(n, f32))(xs =>
     xs |> slide(3)(1) |> mapSeq(fun(nbh =>
       nbh |> reduceSeq(fun(a => fun(x => a + x)))(l(0.0f))
     ))

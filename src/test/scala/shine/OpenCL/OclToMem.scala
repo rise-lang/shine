@@ -2,17 +2,19 @@ package shine.OpenCL
 
 import util.gen
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import Type._
 import rise.core.types._
 import rise.core.types.AddressSpace._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 
 class OclToMem extends test_util.Tests {
   val id = fun(x => x)
   val add1 = fun(x => x + l(1.0f))
 
   test("To creates OpenCLNew with appropriate data type: private mem with two mapLocal nesting two mapSeq") {
-    val e = nFun((m, n, o, p) =>
+    val e = depFun((m: Nat, n: Nat, o: Nat, p: Nat) =>
               fun(m`.`n`.`o`.`p`.`f32)(xs =>
                 xs
                 |> toPrivateFun(mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (fun(x => x))))))
@@ -25,7 +27,7 @@ class OclToMem extends test_util.Tests {
   }
 
   test("To creates OpenCLNew with appropriate data type: private mem with two mapGlobal") {
-    val e = nFun((m, n) =>
+    val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(xs =>
         xs
           |> toPrivateFun(mapGlobal(1) (mapGlobal(0) (fun(x => x))))
@@ -38,11 +40,11 @@ class OclToMem extends test_util.Tests {
 
 
   test("To creates OpenCLNew with appropriate data type: private mem with mapLocal over pair of mapLocal") {
-    val e = nFun((m, n) =>
+    val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(xs =>
         xs
-          |> toPrivateFun(mapLocal(1) (fun(x => pair(x |> mapLocal(0) (fun(x => x)), x |> mapLocal(0) (fun(x => x))))))
-          |> mapLocal(1) (fun(t => pair(t._1 |> mapLocal(0) (fun(x => x)), t._2 |> mapLocal(0) (fun(x => x)))))))
+          |> toPrivateFun(mapLocal(1) (fun(x => makePair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
+          |> mapLocal(1) (fun(t => makePair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
 
     gen.OpenCLKernel(LocalSize((4, 4, 1)), GlobalSize((4, 8, 1)))(e(4)(8), "KERNEL")
 
@@ -51,11 +53,11 @@ class OclToMem extends test_util.Tests {
   }
 
   test("To creates OpenCLNew with appropriate data type: local mem with mapLocal over pair of mapLocal") {
-    val e = nFun((m, n) =>
+    val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(xs =>
         xs
-          |> toLocalFun(mapLocal(1) (fun(x => pair(x |> mapLocal(0) (fun(x => x)), x |> mapLocal(0) (fun(x => x))))))
-          |> mapLocal(1) (fun(t => pair(t._1 |> mapLocal(0) (fun(x => x)), t._2 |> mapLocal(0) (fun(x => x)))))))
+          |> toLocalFun(mapLocal(1) (fun(x => makePair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
+          |> mapLocal(1) (fun(t => makePair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
 
     gen.OpenCLKernel(e(4)(8))
 
@@ -65,13 +67,13 @@ class OclToMem extends test_util.Tests {
   test("oclReduceSeq allocates memory with appropriate data type:" +
     "private memory accumulator with two mapLocal nesting two mapSeq") {
 
-    val zeros = nFun(n1 => nFun(n2 => nFun(n3 => nFun(n4 =>
+    val zeros = depFun((n1: Nat, n2: Nat, n3: Nat, n4: Nat) =>
       generate(fun(IndexType(n1))(_ =>
         generate(fun(IndexType(n2))(_ =>
           generate(fun(IndexType(n3))(_ =>
-            generate(fun(IndexType(n4))(_ => l(0.0f)))))))))))))
+            generate(fun(IndexType(n4))(_ => l(0.0f))))))))))
 
-    val e = nFun((k, m, n, o, p) =>
+    val e = depFun((k: Nat, m: Nat, n: Nat, o: Nat, p: Nat) =>
       fun(k `.` m `.` n `.` o `.` p `.` f32)(xs =>
         xs
           |> oclReduceSeq(Private)(fun((x, y) =>
@@ -90,7 +92,7 @@ class OclToMem extends test_util.Tests {
   }
 
   test("generate OpenCL code with array in private memory") {
-    val e = nFun(n => fun(ArrayType(n, ArrayType(3, f32)))(a =>
+    val e = depFun((n: Nat) => fun(ArrayType(n, ArrayType(3, f32)))(a =>
       a |> mapGlobal(toPrivateFun(mapSeq(add1)) >> mapSeq(id))
     ))
 
@@ -99,7 +101,7 @@ class OclToMem extends test_util.Tests {
   }
 
   test("toGlobal inside mapSeq") {
-    val e = nFun(n => fun(ArrayType(n, ArrayType(3, f32)))(a =>
+    val e = depFun((n: Nat) => fun(ArrayType(n, ArrayType(3, f32)))(a =>
       a |> mapSeq(toGlobalFun(mapSeq(add1)) >> mapSeq(id))
     ))
 
@@ -110,7 +112,7 @@ class OclToMem extends test_util.Tests {
   }
 
   test("toGlobal inside mapGlobal") {
-    val e = nFun(n => fun(ArrayType(n, ArrayType(3, f32)))(a =>
+    val e = depFun((n: Nat) => fun(ArrayType(n, ArrayType(3, f32)))(a =>
       a |> mapGlobal(toGlobalFun(mapSeq(add1)) >> mapSeq(id))
     ))
 
@@ -120,7 +122,7 @@ class OclToMem extends test_util.Tests {
   }
 
   test("toGlobal inside mapSeq inside toGlobal inside mapGlobal") {
-    val e = nFun(n => fun(ArrayType(n, ArrayType(3, f32)))(a =>
+    val e = depFun((n: Nat) => fun(ArrayType(n, ArrayType(3, f32)))(a =>
       a |> mapGlobal(
         toGlobalFun(mapSeq(toGlobalFun(add1) >> add1)) >>
         mapSeq(id)
