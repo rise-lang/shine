@@ -832,7 +832,7 @@ object parser {
       Left(parseState) |>
         (parseBracesExprType _ || parseDepFunctionType ||
           parseTupleType || parseIndexType || parseArrayType || //parseFunType ||
-          parseScalarType || parseTypeIdentToCorrectForm || parseData )
+          parseScalarType || parseData ) //Todo: The Function parseTypeIdentToCorrectForm is not good, because it is not clear what we should parse. I have an Function for parseData, but I don't need a function for parseNat, because Nat should not be returned. For ArrayType i am also unsure.
     ps
   }
 
