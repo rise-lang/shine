@@ -10,7 +10,8 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.AST.RequiredWorkGroupSize
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
-import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations, InsertMemoryBarriers}
+import shine.OpenCL.CodeGeneration.{
+  AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations, InsertMemoryBarriers}
 import shine._
 
 import scala.annotation.tailrec

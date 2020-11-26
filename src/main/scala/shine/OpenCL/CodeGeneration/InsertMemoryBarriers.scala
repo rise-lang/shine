@@ -29,11 +29,12 @@ object InsertMemoryBarriers {
     (p2, meta)
   }
 
-  private def visitLoopBody(p: Phrase[CommType],
-                            allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
-                            metadata: Metadata,
-                            outer_wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace] = mutable.Map()
-                           ): Phrase[CommType] = {
+  private def visitLoopBody(
+    p: Phrase[CommType],
+    allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
+    metadata: Metadata,
+    outer_wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace] = mutable.Map()
+  ): Phrase[CommType] = {
     val p2 = VisitAndRebuild(p, Visitor(allocs, metadata))
     val dependencies = metadata.wg_writes.filter(kv => metadata.reads.contains(kv._1))
     if (dependencies.nonEmpty) {
@@ -46,7 +47,9 @@ object InsertMemoryBarriers {
     }
   }
 
-  private def makeBarrier(allocs: Map[Identifier[_ <: PhraseType], AddressSpace]): Phrase[CommType] = {
+  private def makeBarrier(
+    allocs: Map[Identifier[_ <: PhraseType], AddressSpace]
+  ): Phrase[CommType] = {
     OpenCL.DSL.barrier(
       local = allocs.exists(_._2 == AddressSpace.Local),
       global = allocs.exists(_._2 == AddressSpace.Global))
@@ -68,14 +71,17 @@ object InsertMemoryBarriers {
               val b2 = visitLoopBody(body, allocs, metadata, outer_wg_writes)
               Stop(ParForLocal(dim)(n, dt, out, Lambda(x, Lambda(o, b2)), init, step, unroll))
             case ParForWorkGroup(dim) =>
-              Stop(ParForWorkGroup(dim)(n, dt, out, Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), init, step, unroll))
+              Stop(ParForWorkGroup(dim)(n, dt, out,
+                Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), init, step, unroll))
             case ParForGlobal(dim) =>
-              Stop(ParForGlobal(dim)(n, dt, out, Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), init, step, unroll))
+              Stop(ParForGlobal(dim)(n, dt, out,
+                Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), init, step, unroll))
           }
         case pfn: OpenCLParForNat => ???
         case OpenCLNew(addr, _, Lambda(x, _)) if addr != AddressSpace.Private =>
           Continue(p, Visitor(allocs + (x -> addr), metadata))
-        case OpenCLNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body)) if addr != AddressSpace.Private =>
+        case OpenCLNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body))
+        if addr != AddressSpace.Private =>
           val (b2, m) = visitNewMetadata(body, allocs + (x -> addr))
           collectReads(in, allocs, metadata.reads)
           metadata.reads ++= m.reads
@@ -104,9 +110,11 @@ object InsertMemoryBarriers {
     }
   }
 
-  private def collectWrites(a: Phrase[AccType],
-                            allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
-                            writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]): Unit = {
+  private def collectWrites(
+    a: Phrase[AccType],
+    allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
+    writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
+  ): Unit = {
     def addIdent(i: Identifier[_ <: PhraseType]): Unit = if (allocs.contains(i)) {
       writes(i) = allocs(i)
     }
