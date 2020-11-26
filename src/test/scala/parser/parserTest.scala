@@ -543,7 +543,10 @@ class parserTest extends  AnyFlatSpec {
     ex_f.t match {
       case rt.FunType(rt.ArrayType(n, rt.i32),
       rt.FunType(rt.ArrayType(n1, rt.i32),
-      rt.i32))  if n.equals(4)&& n1.equals(n)=> true
+      rt.i32))  if n.eval.equals(4) && n1.eval.equals(n.eval)=> true
+      case rt.FunType(rt.ArrayType(n, rt.i32),
+      rt.FunType(rt.ArrayType(n1, rt.i32),
+      rt.i32))=> fail("alomst right, but n should be 4, but it ist: "+ n + " , " + n1)
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
