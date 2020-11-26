@@ -4,7 +4,7 @@ import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
 import rise.elevate.Rise
 import rise.elevate.rules._
-import rise.core.{uniqueNames, semantics => rs, types => rt}
+import rise.core.{semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}

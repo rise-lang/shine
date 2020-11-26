@@ -10,12 +10,15 @@ import scala.collection.mutable
 
 object infer {
   private [DSL] def apply(e: Expr,
+            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
     val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
-    printTypesAndTypeHoles(res)
+    if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
+      printTypesAndTypeHoles(res)
+    }
     res
   }
 
@@ -263,7 +266,8 @@ object infer {
 }
 
 object inferDependent {
-  def apply(e: ToBeTyped[Expr]): Expr = infer(e match {
+  def apply(e: ToBeTyped[Expr],
+            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off): Expr = infer(e match {
     case ToBeTyped(e) => e
-  }, Flags.ExplicitDependence.On)
+  }, printFlag, Flags.ExplicitDependence.On)
 }
