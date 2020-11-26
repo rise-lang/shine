@@ -811,21 +811,22 @@ class parserTest extends  AnyFlatSpec {
       case r.DepLambda(n, r.DepLambda(m,r.DepLambda(d,
       r.Lambda(r.Identifier("mat1"),r.Lambda(r.Identifier("mat2"),
       r.App(r.App(rp.MapSeq(),
-
+      r.Lambda(r.Identifier("vec1"),
       r.App(r.App(rp.MapSeq(),
 
-      r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("res"), r.Lambda(
+      r.Lambda(r.Identifier("vec2"),
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(
+      r.Identifier("res"),r.Lambda(
       r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
       ))),
       r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
       r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
       r.App(rp.Snd(), r.Identifier("x")) )
       )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
-      ))),
-
-      r.Identifier("mat2")
       )),
+
+      r.App(rp.Transpose(),r.Identifier("mat2"))
+      ))),
 
       r.Identifier("mat1")
     ))

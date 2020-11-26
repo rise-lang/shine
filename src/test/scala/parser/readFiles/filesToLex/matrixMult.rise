@@ -3,9 +3,10 @@ f=\N:Nat=>\M:Nat=>\D:Data=>
 \mat1->\mat2->
 mapSeq
 (
+\vec1->
 mapSeq
 (
-\vec1->\vec2 ->
+\vec2 ->
     reduceSeq (\res:I32->\arg:I32-> + res arg)
         (mapSeq (\x:(I32,I32)->+ (fst x) (snd x)) (zip vec1 vec2))
 )
