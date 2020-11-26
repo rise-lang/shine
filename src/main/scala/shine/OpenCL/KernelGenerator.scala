@@ -10,7 +10,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.AST.RequiredWorkGroupSize
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
-import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
+import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations, InsertMemoryBarriers}
 import shine._
 
 import scala.annotation.tailrec
@@ -64,6 +64,8 @@ object KernelGenerator {
 
     rewriteToImperative(p, outParam, localSize, globalSize) |> (p =>
 
+    InsertMemoryBarriers(p) |> (p =>
+
     hoistMemoryAllocations(p) |> { case (p, intermediateAllocations) =>
 
     adaptKernelParameters(p, outParam, inputParams, intermediateAllocations, gen) |> {
@@ -95,7 +97,7 @@ object KernelGenerator {
         case (Some(localSize_), Some(globalSize_)) => Right(KernelWithSizes(oclKernel,localSize_, globalSize_))
         case _ => throw new Exception("At the moment, we assume that local and global size are always provided together.")
       }
-    }}))
+    }})))
   }
 
   private def checkTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
