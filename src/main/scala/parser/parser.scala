@@ -840,21 +840,25 @@ object parser {
     val ps = parseType(parseState)
     ps match {
       case Right(e)=> Right(e)
-      case Left(p)=> p.tokenStream.head match {
-        case Arrow(_) => {
-          val newParse = parseCompleteType(ParseState(p.tokenStream.tail, Nil, p.mapFkt, p.mapDepL)) match{
-            case Left(pars) => pars
-            case Right(e) => return Right(e)
+      case Left(p)=> if(p.tokenStream.isEmpty){
+        throw new IllegalStateException("Tokens are empty: "+ p)
+      }else {
+        p.tokenStream.head match {
+          case Arrow(_) => {
+            val newParse = parseCompleteType(ParseState(p.tokenStream.tail, Nil, p.mapFkt, p.mapDepL)) match{
+              case Left(pars) => pars
+              case Right(e) => return Right(e)
+            }
+            val typesList:List[r.types.Type] = combineTypes(getTypesInList(p.parsedSynElems))::
+              combineTypes(getTypesInList(newParse.parsedSynElems))::Nil
+            val newType: r.types.Type = combineTypes(typesList)
+            Left(ParseState(newParse.tokenStream, SType(newType)::Nil, newParse.mapFkt, p.mapDepL))
           }
-          val typesList:List[r.types.Type] = combineTypes(getTypesInList(p.parsedSynElems))::
-            combineTypes(getTypesInList(newParse.parsedSynElems))::Nil
-          val newType: r.types.Type = combineTypes(typesList)
-          Left(ParseState(newParse.tokenStream, SType(newType)::Nil, newParse.mapFkt, p.mapDepL))
-        }
           //Todo: Maybe remove already here the EndTypAnnotatedIdent or RBrace from the TokenList
-        case EndTypAnnotatedIdent(_) => Left(p)
-        case RParentheses(_) => Left(p)
-        case a => return Right(ParseError("the Token '"+ a + "' is not here expected!!!"))
+          case EndTypAnnotatedIdent(_) => Left(p)
+          case RParentheses(_) => Left(p)
+          case a => return Right(ParseError("the Token '"+ a + "' is not here expected!!!"))
+        }
       }
     }
   }
@@ -1277,6 +1281,9 @@ object parser {
 
   def parseDot(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
+    if(tokens.isEmpty||tokens.length<=1){
+      return Right(ParseError("failed to parse Dot, because List is empty"))
+    }
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
@@ -1322,6 +1329,9 @@ object parser {
 
   def parseLeftBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
+    if(tokens.isEmpty||tokens.length<=1){
+      return Right(ParseError("failed to parse LeftBracket, because List is empty"))
+    }
     val nextToken :: remainderTokens = tokens
 
     nextToken match {

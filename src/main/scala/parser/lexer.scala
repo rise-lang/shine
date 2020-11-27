@@ -177,8 +177,8 @@ case class RecognizeLexeme(fileReader: FileReader){
     var column = oldColumn
     require(row>=0, "row is not allowed to be negative")
     require(column>=0, "column is not allowed to be negative")
-    require(arr.length > column, "array does not have so much columns")
-    require(arr(column).length > row, "arr(column) has less than row chars")
+//    require(arr.length > column, "array does not have so much columns")
+//    require(arr(column).length > row, "arr(column) has less than row chars")
 
     //in this list we add all
     val list= l
@@ -187,6 +187,7 @@ case class RecognizeLexeme(fileReader: FileReader){
       case Left((c, r)) => {
         column = c
         row = r
+        println("lexing begins at : ( "+ column +" , " + row + " )" )
       }
       case Right(EndOfFile(_, _)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
         " but this should not be able to happen")
@@ -239,7 +240,7 @@ case class RecognizeLexeme(fileReader: FileReader){
         case (Right(a),_)=> a.throwException()
       }
     }else{
-    throw new IllegalStateException("Here is at the Beginning a Identifier expected, but here is no Identifier!")
+    throw new IllegalStateException("Here is at the Beginning in line " + column + " a Identifier expected, but here is no Identifier!")
     }
     throw new IllegalStateException("Until Here should nothing come")
   }
@@ -819,6 +820,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             }
             case (Right(e), _) => {
               if(!arr(column)(row).isLetterOrDigit){
+                if(arr(column)(row).isWhitespace && arr(column).length <=row+1){
+                  val loc: Location = Location(column, row) //endLocation is equal to startLocation
+                  return Right(EndOfLine(new Span(fileReader, loc),fileReader))
+                }
                 if(arr(column)(row).equals('#')){
                   throw new IllegalStateException("Every '#' should have been removed in the preLexer. This is an IllegalState of the Lexer.")
                 }else{
@@ -849,6 +854,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     //println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
     var (column, row, list) = lexTypAnnotationToken(oldColumn, oldRow, l) match {
       case Left(a) => a
+      //case Right(EndOfLine(_,_)) => return (oldColumn, oldRow, l)
       case Right(_) => return (oldColumn, oldRow, l)
     }
 
@@ -861,24 +867,57 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     lexTypAnnotationTokenLoopInNamedExpr(column,row, list)
   }
 
-  private def lexerTypAnnotationExpression(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token]) = {
-    //println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
-    var (column, row, list):(Int,Int,List[Token]) = lexTypAnnotationToken(oldColumn, oldRow, l) match{
-      case Left(a) => a
-      case Right(e) => {
-        e.throwException()
-        return l
-      }
-    }
+  private def startNewTypAnnoationOrNewExpr(column:Int, row:Int, list:List[Token],arr: Array[String] = fileReader.sourceLines):List[Token]={
+    if (arr(column)(row).isLetter) {
+      lexIdentifier(column, row) match {
+        case (Left(a), r) => {
+          var newRow = r
+          //            val i: Token = a
+          skipWhitespaceWhitoutNewLine(column, newRow) match {
+            case (c, r) => {
+              newRow = r
+            }
+          }
 
-    skipWhitespaceWhitoutNewLine(column, row) match {
-      case (c,r) =>{
-        column = c
-        row = r
+          arr(column).substring(newRow, newRow + 1) match {
+            case ":" => {
+              if (arr(column).length >= newRow + 2) {
+                arr(column).substring(newRow, newRow + 2) match {
+                  case "::" => {
+                    return endTypAnnotatedIdentBeginTypAnnotatedIdent(column, row, list)._1
+                  }
+                  case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+                }
+              } else {
+                throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+              }
+            }
+            case "=" => {
+              if (arr(column).length >= row + 2) {
+                arr(column).substring(row, row + 2) match {
+                  case "==" =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+                  case a => {
+                    return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
+                  }
+                }
+              } else {
+                return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
+              }
+            }
+            case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+          }
+        }
+        case (Right(_), _) =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
       }
+    }else {
+      throw new IllegalStateException("Here should be an Identifier, but whitout an Identifier nothing new can be started")
     }
+  }
 
-    val arr: Array[String] = fileReader.sourceLines
+  private def howToContinueLexerTypAnnoationExpression(oldColumn:Int, oldRow:Int, list:List[Token],arr: Array[String] = fileReader.sourceLines):List[Token] = {
+    var column = oldColumn
+    var row = oldRow
+
     if(row >= arr(column).length){
       //end of Line is reached is reached and TypAnnotatedIdent has to be in one line
       //println("before isEnd1: " + column + " , " + row )
@@ -892,53 +931,30 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
       }
       //println("after isEnd1: " + column + " , " + row )
-      if (arr(column)(row).isLetter) {
-        lexIdentifier(column, row) match {
-          case (Left(a), r) => {
-            var newRow = r
-            //            val i: Token = a
-            skipWhitespaceWhitoutNewLine(column, newRow) match {
-              case (c, r) => {
-                newRow = r
-              }
-            }
-
-            arr(column).substring(newRow, newRow + 1) match {
-              case ":" => {
-                if (arr(column).length >= newRow + 2) {
-                  arr(column).substring(newRow, newRow + 2) match {
-                    case "::" => {
-                      return endTypAnnotatedIdentBeginTypAnnotatedIdent(column, row, list)._1
-                    }
-                    case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
-                  }
-                } else {
-                  throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
-                }
-              }
-              case "=" => {
-                if (arr(column).length >= row + 2) {
-                  arr(column).substring(row, row + 2) match {
-                    case "==" =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
-                    case a => {
-                      return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
-                    }
-                  }
-                } else {
-                  return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
-                }
-              }
-              case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
-            }
-          }
-          case (Right(_), _) =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
-        }
-      }else {
-        throw new IllegalStateException("Here should be an Identifier, but whitout an Identifier nothing new can be started")
-      }
+      startNewTypAnnoationOrNewExpr(column,row,list,arr)
     }else{ //a second expression is accepted
       lexerTypAnnotationExpression(column, row, list)
     }
+  }
+
+  private def lexerTypAnnotationExpression(oldColumn:Int, oldRow:Int, l:List[Token]):List[Token] = {
+    //println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
+    var (column, row, list):(Int,Int,List[Token]) = lexTypAnnotationToken(oldColumn, oldRow, l) match{
+      case Left(a) => a
+      case Right(EndOfLine(_,_)) => return startNewTypAnnoationOrNewExpr(oldColumn+1,0,l)
+      case Right(e) => {
+        e.throwException()
+        return l
+      }
+    }
+
+    skipWhitespaceWhitoutNewLine(column, row) match {
+      case (c,r) =>{
+        column = c
+        row = r
+      }
+    }
+    howToContinueLexerTypAnnoationExpression(column,row,list)
   }
 
   private def lexerExpression(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token], Int, Int) = {
@@ -1011,6 +1027,12 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             //TODO: THIS WILL create AN ERROR sometime maybe
             //Todo: This is not an good algorithm I really want something more like lexTypAnnotationTokenLoopInNamedExpr
             lexTypAnnotationToken(column,row,list) match {
+//              case Right(EndOfLine(_,_)) => skipWhitespace(column,row) match{
+//                case (c,r)=>{
+//                  column = c
+//                  row = r
+//                }
+//              }
               case Right(e) => e
               case Left((c,r, l)) => {
                 column = c
@@ -1087,6 +1109,8 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             val loc: Location = Location(column, row) //endLocation is equal to startLocation
             val ex = NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator or a BinOperator", "" + a, new Span(fileReader, loc), fileReader)
             ex.throwException()
+          } else if (a.isWhitespace && column+1>=arr.length && arr(column).length-1 <=row) {
+            return (list, column, row)
           } else {
             val loc: Location = Location(column, row) //endLocation is equal to startLocation
             val ex = UnknownSymbol(a, new Span(fileReader, loc), fileReader)
@@ -1274,7 +1298,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   return (column, row)
    */
   private def skipWhitespace(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):(Int, Int)= {
-    if(arr(column).length <= row){
+  if(arr(column).length <= row){
       if(arr.length <= column+1){
         return (column, row)
       }else{
@@ -1283,6 +1307,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         return skipWhitespace(c,r)
       }
     }
+//  println("öööö"+ arr(column).length + " : '"+ arr(column)+ "'")
     if (arr(column)(row).isWhitespace) {
       if (arr(column).length > row + 1) {
         skipWhitespace(column, row + 1)

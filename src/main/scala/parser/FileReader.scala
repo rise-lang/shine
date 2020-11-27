@@ -9,7 +9,24 @@ case class FileReader(fileName: String) {
   require(fileName != null, "FileName should not be null")
   require(fileName.endsWith(".rise"), "not a RISE file") //if not, it's not a RISE file
 
-  val sourceLines: Array[String] = readFile(fileName)
+  val sourceLines: Array[String] = preLexer(readFile(fileName))
+
+
+  private def preLexer(array: Array[String]): Array[String] ={
+    deleteSimpleComments(array)
+  }
+  private def deleteSimpleComments(array: Array[String]): Array[String] ={
+    val arr:Array[String] = Array.fill(array.length)("")
+    for(i<- 0 until array.length){
+      if (array(i).contains('#')) {
+       val pos = array(i).indexOf('#')
+       arr(i) = array(i).substring(0, pos)
+      }else{
+        arr(i)=array(i)
+      }
+    }
+    arr
+  }
   /*
   returns the Content of the File with name fileName in
   an String-Array
