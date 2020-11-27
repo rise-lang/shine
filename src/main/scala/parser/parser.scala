@@ -955,9 +955,36 @@ object parser {
     Left(parseState) |>
       (parseLambda _ || parseDepLambda || parseBracesExpr ||
         parseUnOperator || parseBinOperator || parseIdent ||
-        parseNumber //|| parseDependencies
+        parseNumber || parseTypeinNoAppExpr//|| parseDependencies
         )
 
+  }
+
+  def ParseTypesUntilRBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    if(parseState.tokenStream.isEmpty||parseState.tokenStream.head.isInstanceOf[RBracket]){
+      println("Abbruch; endlessPossibleParseType: "+ parseState)
+      return Left(parseState)
+    }
+    val p =
+      Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
+        parseType |>
+        ParseTypesUntilRBracket
+    p
+  }
+
+  def parseTypeinNoAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseTypeinNoAppExpr: "+ parseState)
+    if(parseState.tokenStream.isEmpty){
+      println("Abbruch; parseTypeinNoAppExpr: "+ parseState)
+      return Left(parseState)
+    }
+    val p =
+      Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
+        parseLeftBracket  |>
+        ParseTypesUntilRBracket |>
+        parseRightBracket
+
+    p
   }
 
   def parseBracesExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {

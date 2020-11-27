@@ -289,11 +289,11 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::
 
         BeginTypAnnotatedIdent(_):: Identifier("g", _)::
-        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        DoubleColons(_) :: TypeIdentifier("N1",_)::Colon(_):: Kind(Nat(), _) ::
         DepArrow(_) ::
         TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
         DepArrow(_)::
-        TypeIdentifier("N",_)::Dot(_)::TypeIdentifier("D",_)::
+        TypeIdentifier("N1",_)::Dot(_)::TypeIdentifier("D",_)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
@@ -305,11 +305,11 @@ class LexerTest extends  AnyFlatSpec {
 
         BeginNamedExpr(_) :: Identifier("g", _) ::
         EqualsSign(_)::
-        Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        Backslash(_) :: TypeIdentifier("N1",_)::Colon(_):: Kind(Nat(), _) ::
         DepArrow(_) :: Backslash(_)::
         TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
         DepArrow(_)::
-        Identifier("generate",_):: LBracket(_):: TypeIdentifier("N",_) ::RBracket(_)::
+        Identifier("generate",_):: LBracket(_):: TypeIdentifier("N1",_) ::RBracket(_)::
         LParentheses(_)::Backslash(_)::Identifier("i",_)::Arrow(_)::Identifier("cast", _)::
         LBracket(_)::TypeIdentifier("D",_)::RBracket(_):: Identifier("i", _)::
         RParentheses(_)::
@@ -362,14 +362,14 @@ class LexerTest extends  AnyFlatSpec {
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
-        DoubleColons(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
-        DepArrow(_) ::TypeIdentifier("N",_)::Dot(_)::ScalarType(IntTyp(),_)::
-        Arrow(_) :: TypeIdentifier("N",_)::Dot(_)::ScalarType(IntTyp(),_)::
+        DoubleColons(_) :: TypeIdentifier("NeverGiveUp",_)::Colon(_):: Kind(Nat(), _) ::
+        DepArrow(_) ::TypeIdentifier("NeverGiveUp",_)::Dot(_)::ScalarType(IntTyp(),_)::
+        Arrow(_) :: TypeIdentifier("NeverGiveUp",_)::Dot(_)::ScalarType(IntTyp(),_)::
         EndTypAnnotatedIdent(_) ::
 
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
-        Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
+        Backslash(_) :: TypeIdentifier("NeverGiveUp",_)::Colon(_):: Kind(Nat(), _) ::
         DepArrow(_) :: Backslash(_)::Identifier("arr",_):: Arrow(_)::Identifier("arr", _)::
         EndNamedExpr(_) ::Nil => true
       case a => fail(a.toString())
