@@ -56,12 +56,21 @@ object mm {
   }
 
   val nvidia: Expr = {
-    val v3 = 4
-    val v4 = 8
-    val v5 = 64
-    val v6 = 128
-    val v7 = 128
-    val v8 = 16
+    // A(o,n) x B(o,m)
+    // val v5 = 64 // tile-width A
+    // val v7 = 128 // tile-width B
+    // val v8 = 16 // tile-height A,B
+
+    // val v3 = 4 // divides v7
+    // val v4 = 8 // divides v5
+    // val v6 = 128 // divides v8 x v5
+
+    val v3 = 4 // divides v7
+    val v4 = 8 // divides v5
+    val v5 = 64 // tile-width A
+    val v6 = 128 // divides v8 x v5
+    val v7 = 128 // tile-width B
+    val v8 = 16 // tile-height A,B
 
     nFun((n, m, o) => fun(
       (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
