@@ -512,11 +512,11 @@ class parserTest extends  AnyFlatSpec {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(n,
       r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("res"), r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("acc"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("acc")),r.Identifier("arg"))
       ))),
       r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(r.App(rp.Mul(), r.App(rp.Fst(), r.Identifier("x"))),
       r.App(rp.Snd(), r.Identifier("x")) )
       )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
       ))) => true
@@ -553,11 +553,11 @@ class parserTest extends  AnyFlatSpec {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(n,r.DepLambda(d,
       r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("res"), r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("acc"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("acc")),r.Identifier("arg"))
       ))),
       r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(r.App(rp.Mul(), r.App(rp.Fst(), r.Identifier("x"))),
       r.App(rp.Snd(), r.Identifier("x")) )
       )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
       )))) => true
@@ -592,11 +592,11 @@ class parserTest extends  AnyFlatSpec {
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("res"), r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      r.App(r.App(rp.ReduceSeq(), r.Lambda(r.Identifier("acc"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("acc")),r.Identifier("arg"))
       ))),
       r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(r.App(rp.Mul(), r.App(rp.Fst(), r.Identifier("x"))),
       r.App(rp.Snd(), r.Identifier("x")) )
       )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2")))
       )
@@ -794,7 +794,7 @@ class parserTest extends  AnyFlatSpec {
     }
 
     ex_f.t match {
-      case rt.DepFunType(n,rt.DepFunType(m,rt.DepFunType(d,
+      case rt.DepFunType(n,rt.DepFunType(m,rt.DepFunType(d, //nxm * mxn
       rt.FunType(rt.ArrayType(n1:rt.NatIdentifier,rt.ArrayType(m1:rt.NatIdentifier, d1:rt.DataTypeIdentifier)),
       rt.FunType(rt.ArrayType(m2:rt.NatIdentifier, rt.ArrayType(n2:rt.NatIdentifier,d2:rt.DataTypeIdentifier)),
       rt.ArrayType(n3:rt.NatIdentifier, rt.ArrayType(n4:rt.NatIdentifier,d3:rt.DataTypeIdentifier))
@@ -816,11 +816,11 @@ class parserTest extends  AnyFlatSpec {
 
       r.Lambda(r.Identifier("vec2"),
       r.App(r.App(rp.ReduceSeq(), r.Lambda(
-      r.Identifier("res"),r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("res")),r.Identifier("arg"))
+      r.Identifier("acc"),r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.Add() , r.Identifier("acc")),r.Identifier("arg"))
       ))),
       r.App(r.App(rp.MapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.Add(), r.App(rp.Fst(), r.Identifier("x"))),
+      r.App(r.App(rp.Mul(), r.App(rp.Fst(), r.Identifier("x"))),
       r.App(rp.Snd(), r.Identifier("x")) )
       )), r.App(r.App(rp.Zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
       )),

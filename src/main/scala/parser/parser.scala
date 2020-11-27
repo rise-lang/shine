@@ -694,7 +694,7 @@ object parser {
             }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
-          case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ p)
+          case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ p) //Todo: Remove SAnyRef
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
         }

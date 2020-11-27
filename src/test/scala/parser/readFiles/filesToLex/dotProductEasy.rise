@@ -1,4 +1,4 @@
 f::4.I32->4.I32->I32
 f=\vec1->\vec2 ->
-    reduceSeq (\res:I32->\arg:I32-> + res arg)
-        (mapSeq (\x:(I32,I32)->+ (fst x) (snd x)) (zip vec1 vec2))
+    reduceSeq (\acc:I32->\arg:I32-> + acc arg)
+        (mapSeq (\x:(I32,I32)->* (fst x) (snd x)) (zip vec1 vec2))
