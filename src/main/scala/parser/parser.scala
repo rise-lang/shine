@@ -369,6 +369,7 @@ object parser {
           parseMaybeAppExpr(ParseState(tokens.tail.tail, Nil, parseState.mapFkt, parseState.mapDepL)) match {
             case Right(e) => Right(e)
             case Left(pS) => {
+              println("In the middle of parseDepFunctionType: " + pS)
               if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
               val depLam:SExpr = pS.parsedSynElems.head match {
                 case SExpr(outT) => {
