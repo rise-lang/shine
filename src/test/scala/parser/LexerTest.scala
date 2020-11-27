@@ -614,7 +614,7 @@ class LexerTest extends  AnyFlatSpec {
     val thrown = intercept[RuntimeException] {
       RecognizeLexeme(file)
     }
-    thrown.getMessage should equal("Here is at the Beginning a Identifier expected, but here is no Identifier!")
+    thrown.getMessage should equal("Here is at the Beginning in line 0 a Identifier expected, but here is no Identifier!")
   }
 
   "RecognizeLexeme" should "work for noIdentityAndEqualSignAtBeginning.rise" in {
