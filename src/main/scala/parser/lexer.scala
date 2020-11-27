@@ -316,7 +316,7 @@ case class RecognizeLexeme(fileReader: FileReader){
     var list= l
 
     //ignore whitespaces
-    skipWhiteSpaceAndComment(column, row) match {
+    skipWhitespace(column, row) match {
       case (c,r) =>{
         column = c
         row = r
@@ -369,7 +369,7 @@ case class RecognizeLexeme(fileReader: FileReader){
     var list= l
 
     //ignore whitespaces
-    skipWhiteSpaceAndComment(column, row, arr) match {
+    skipWhitespace(column, row, arr) match {
       case (c,r) =>{
         column = c
         row = r
@@ -388,7 +388,7 @@ case class RecognizeLexeme(fileReader: FileReader){
     }
 
     //ignore whitespaces
-    skipWhiteSpaceAndComment(column, row) match {
+    skipWhitespace(column, row) match {
       case (c,r) =>{
         column = c
         row = r
@@ -410,7 +410,7 @@ case class RecognizeLexeme(fileReader: FileReader){
     }
 
     //ignore whitespaces
-    skipWhiteSpaceAndComment(column, row) match {
+    skipWhitespace(column, row) match {
       case (c,r) =>{
         column = c
         row = r
@@ -441,7 +441,7 @@ case class RecognizeLexeme(fileReader: FileReader){
     }
 
     //ignore whitespaces
-    skipWhiteSpaceAndComment(column, row) match {
+    skipWhitespace(column, row) match {
       case (c,r) =>{
         column = c
         row = r
@@ -462,7 +462,7 @@ case class RecognizeLexeme(fileReader: FileReader){
           }
         }
         //ignore whitespaces
-        skipWhiteSpaceAndComment(column, row) match {
+        skipWhitespace(column, row) match {
           case (c,r) =>{
             column = c
             row = r
@@ -505,7 +505,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     var list= l
 
     //ignore whitespaces
-    skipWhiteSpaceAndComment(column, row, arr) match {
+    skipWhitespace(column, row, arr) match {
       case (c,r) =>{
         column = c
         row = r
@@ -524,7 +524,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   }
 
   //ignore whitespaces
-      skipWhiteSpaceAndComment(column, row) match {
+      skipWhitespace(column, row) match {
       case (c,r) =>{
         column = c
         row = r
@@ -546,7 +546,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   }
 
   //ignore whitespaces
-      skipWhiteSpaceAndComment(column, row) match {
+      skipWhitespace(column, row) match {
       case (c,r) =>{
         column = c
         row = r
@@ -577,7 +577,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   }
 
   //ignore whitespaces
-      skipWhiteSpaceAndComment(column, row) match {
+      skipWhitespace(column, row) match {
       case (c,r) =>{
         column = c
         row = r
@@ -596,7 +596,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         }
       }
       //ignore whitespaces
-          skipWhiteSpaceAndComment(column, row) match {
+          skipWhitespace(column, row) match {
       case (c,r) =>{
         column = c
         row = r
@@ -634,7 +634,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
 
   private def isEnd(fileReader: FileReader, c: Int, r: Int, arr:Array[String]): Either[(Int, Int), PreAndErrorToken] ={
     //ignore whitespaces
-    val (column, row) = skipWhiteSpaceAndComment(c, r)
+    val (column, row) = skipWhitespace(c, r)
     //are you able to take arr(column)(row)?
     if(arr.length <= column){
       var h:String = "'\n"
@@ -820,12 +820,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             case (Right(e), _) => {
               if(!arr(column)(row).isLetterOrDigit){
                 if(arr(column)(row).equals('#')){
-                  skipComment(column, row) match {
-                    case (c, r) => {
-                      column = c
-                      row = r
-                    }
-                  }
+                  throw new IllegalStateException("Every '#' should have been removed in the preLexer. This is an IllegalState of the Lexer.")
                 }else{
                   val loc: Location = Location(column, row) //endLocation is equal to startLocation
                   return Right(NotExpectedToken("Some Number or String", arr(column)(row)+"", new Span(fileReader, loc), fileReader))
@@ -1247,33 +1242,33 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     lexerTypAnnotatedIdent(column, row, list)
   }
 
-  private def skipWhiteSpaceAndComment(co:Int, ro: Int, arr: Array[String]= fileReader.sourceLines):(Int, Int)= {
-    var (column, row) = (co, ro)
-    var end = false
-    while (!end) {
-      end = true
-      //ignore whitespaces
-      skipWhitespace(column, row, arr) match {
-        case (c, r) => {
-          if (c != column || row != r) {
-            end = false
-          }
-          column = c
-          row = r
-        }
-      }
-      skipComment(column, row) match {
-        case (c, r) => {
-          if (c != column || row != r) {
-            end = false
-          }
-          column = c
-          row = r
-        }
-      }
-    }
-    (column, row)
-  }
+//  private def skipWhiteSpaceAndComment(co:Int, ro: Int, arr: Array[String]= fileReader.sourceLines):(Int, Int)= {
+//    var (column, row) = (co, ro)
+//    var end = false
+//    while (!end) {
+//      end = true
+//      //ignore whitespaces
+//      skipWhitespace(column, row, arr) match {
+//        case (c, r) => {
+//          if (c != column || row != r) {
+//            end = false
+//          }
+//          column = c
+//          row = r
+//        }
+//      }
+//      skipComment(column, row) match {
+//        case (c, r) => {
+//          if (c != column || row != r) {
+//            end = false
+//          }
+//          column = c
+//          row = r
+//        }
+//      }
+//    }
+//    (column, row)
+//  }
   /*
   skip the Whitespaces
   return (column, row)
@@ -1320,18 +1315,18 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     arr(column).length> row+1 && arr(column).substring(row, row+2).equals("\\\\")
   }
 
-  private def skipComment( column:Int, row:Int, arr:Array[String] = fileReader.sourceLines):(Int,Int) = {
-    if(arr(column).length > row&&arr(column)(row) == '#'){
-      if(arr.length > column+1){
-        (column+1, 0)
-      }else{
-        println("End Line")
-        (column, arr(column).length-1)
-      }
-    }else{
-      (column, row)
-    }
-  }
+//  private def skipComment( column:Int, row:Int, arr:Array[String] = fileReader.sourceLines):(Int,Int) = {
+//    if(arr(column).length > row&&arr(column)(row) == '#'){
+//      if(arr.length > column+1){
+//        (column+1, 0)
+//      }else{
+//        println("End Line")
+//        (column, arr(column).length-1)
+//      }
+//    }else{
+//      (column, row)
+//    }
+//  }
   /*
   we expect to see a Backslash
   requirements:  no whitespace at arr(column)(row)
@@ -1766,7 +1761,7 @@ private def createIdentifierBeginsWithAF32Number(column:Int,row:Int,  pos:Int, l
   it is only relevant here, that '=' is a known symbol
    */
   def otherKnownSymbol(c:Char): Boolean = {
-    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',', '.', '[', ']', '#')
+    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',', '.', '[', ']')
     set(c) //set.contains(c)
   }
 
