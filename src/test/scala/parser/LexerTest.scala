@@ -920,9 +920,7 @@ class LexerTest extends  AnyFlatSpec {
     val thrown = intercept[Exception] {
       RecognizeLexeme(file)
     }
-    val expected: String = "ErrorToken: It is an '->' expected. The Lexeme '--' is not an '->'! at FileReader: " +
-      "fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\n" +
-      "f::I32->I32f=\\x-->x\n}; beginLocation: (column: 1 ; row: 4); endLocation: (column: 1 ; row: 5)\nf=\\x-̲->x"
+    val expected: String = "ErrorToken: End of Line at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\nf::I32->I32f=\\x\n}; beginLocation: (column: 1 ; row: 4); endLocation: (column: 1 ; row: 4) at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\nf::I32->I32f=\\x\n}; beginLocation: (column: 1 ; row: 4); endLocation: (column: 1 ; row: 4)\nf=\\x"
     thrown.getMessage should equal(expected)
   }
 

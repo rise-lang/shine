@@ -15,8 +15,8 @@ mapSeq --I go through the rows of the first matrix
 mapSeq --and we go through the columns of the second matrix
 (
 \vec2 ->
-    reduceSeq (\res:I32->\arg:I32-> + res arg) --this is simply vectoraddition
-        (mapSeq (\x:(I32,I32)->+ (fst x) (snd x)) (zip vec1 vec2))
+    reduceSeq (\acc:I32->\arg:I32-> + acc arg) --this is simply vectoraddition
+        (mapSeq (\x:(I32,I32)->* (fst x) (snd x)) (zip vec1 vec2))
 )--
 (transpose mat2)
 )

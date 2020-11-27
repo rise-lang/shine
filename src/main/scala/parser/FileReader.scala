@@ -18,8 +18,8 @@ case class FileReader(fileName: String) {
   private def deleteSimpleComments(array: Array[String]): Array[String] ={
     val arr:Array[String] = Array.fill(array.length)("")
     for(i<- 0 until array.length){
-      if (array(i).contains('#')) {
-       val pos = array(i).indexOf('#')
+      if (array(i).contains("--")) {
+       val pos = array(i).indexOf("--")
        arr(i) = array(i).substring(0, pos)
       }else{
         arr(i)=array(i)

@@ -531,6 +531,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         row = r
       }
     }
+
   //more than one step but column keeps the same
   lexIdentifier(column, row) match {
     case (Left(Identifier(name, span)), r) => {
@@ -1454,6 +1455,10 @@ we expect to see Dots or an Arrow
 requirements:  no whitespace at arr(column)(row)
  */
   private def lexDotsOrArrow(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):Either[Token,PreAndErrorToken]= {
+    if(arr(column).length<=row){
+        val loc = Location(column, row)
+      return Right(EndOfLine(new Span(fileReader, loc), fileReader))
+    }
     arr(column)(row) match {
       case ':' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
