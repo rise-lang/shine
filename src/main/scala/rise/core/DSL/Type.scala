@@ -1,18 +1,19 @@
-package rise.core
+package rise.core.DSL
 
 import arithexpr.arithmetic.{Cst, RangeAdd}
-import rise.core.TypedDSL.ToBeTyped
 import rise.core.types._
+import rise.core.{Expr, freshName}
 
 import scala.language.implicitConversions
 
 // scalastyle:off multiple.string.literals
-object TypeLevelDSL {
+object Type {
+
   implicit class TypeEqual(a: Type) {
     def =~=(b: Type): Boolean = (a, b) match {
       case (TypePlaceholder, _) => true
       case (_, TypePlaceholder) => true
-      case _                    => a == b
+      case _ => a == b
     }
   }
 
@@ -24,15 +25,15 @@ object TypeLevelDSL {
     }
 
     def apply(
-        r: arithexpr.arithmetic.Range
-    )(f: NatIdentifier => DataType): NatToDataLambda = {
+               r: arithexpr.arithmetic.Range
+             )(f: NatIdentifier => DataType): NatToDataLambda = {
       val x = NatIdentifier(freshName("n"), r, isExplicit = true)
       NatToDataLambda(x, f(x))
     }
 
     def apply(
-        upperBound: Nat
-    )(f: NatIdentifier => DataType): NatToDataLambda = {
+               upperBound: Nat
+             )(f: NatIdentifier => DataType): NatToDataLambda = {
       apply(RangeAdd(0, upperBound, 1))(f)
     }
   }
@@ -44,8 +45,8 @@ object TypeLevelDSL {
     }
 
     def apply(
-        r: arithexpr.arithmetic.Range
-    )(f: NatIdentifier => Nat): NatToNatLambda = {
+               r: arithexpr.arithmetic.Range
+             )(f: NatIdentifier => Nat): NatToNatLambda = {
       val x = NatIdentifier(freshName("n2n"), r, isExplicit = true)
       NatToNatLambda(x, f(x))
     }
@@ -56,30 +57,37 @@ object TypeLevelDSL {
   }
 
   case class NatFunctionWrapper[A](f: Nat => A)
+
   implicit def toNatFunctionWrapper[A](f: Nat => A): NatFunctionWrapper[A] =
     NatFunctionWrapper(f)
 
   case class DataTypeFunctionWrapper[A](f: DataType => A)
+
   implicit def toDataTypeFunctionWrapper[A](f: DataType => A): DataTypeFunctionWrapper[A] =
     DataTypeFunctionWrapper(f)
 
   case class NatToDataFunctionWrapper[A](f: NatToData => A)
+
   implicit def toNatToDataFunctionWrapper[A](f: NatToData => A): NatToDataFunctionWrapper[A] =
     NatToDataFunctionWrapper(f)
 
   case class NatToNatFunctionWrapper[A](f: NatToNat => A)
+
   implicit def toNatToNatFunctionWrapper[A](f: NatToNat => A): NatToNatFunctionWrapper[A] =
     NatToNatFunctionWrapper(f)
 
   case class AddressSpaceFunctionWrapper[A](f: AddressSpace => A)
+
   implicit def toAddressSpaceFunctionWrapper[A](f: AddressSpace => A): AddressSpaceFunctionWrapper[A] =
     AddressSpaceFunctionWrapper(f)
 
   case class TypeFunctionWrapper[A](f: TypeIdentifier => A)
+
   implicit def toTypeFunctionWrapper[A](f: TypeIdentifier => A): TypeFunctionWrapper[A] =
     TypeFunctionWrapper(f)
 
   case class NatCollectionFunctionWrapper[A](f: NatCollectionIdentifier => A)
+
   implicit def toNatCollectionFunctionWrapper[A](f: NatCollectionIdentifier => A): NatCollectionFunctionWrapper[A] =
     NatCollectionFunctionWrapper(f)
 
@@ -159,13 +167,14 @@ object TypeLevelDSL {
     def unapply(arg: DepPairType[NatKind]): Option[(NatIdentifier, DataType)] =
       Some(arg.x, arg.t)
   }
+
   object `:NatCollection **` {
     def unapply(arg: DepPairType[NatCollectionKind]): Option[(NatCollectionIdentifier, DataType)] =
       Some(arg.x, arg.t)
   }
 
 
-  def freshTypeIdentifier: Type = impl{ x: TypeIdentifier => x }
+  def freshTypeIdentifier: Type = impl { x: TypeIdentifier => x }
 
   implicit final class TypeConstructors(private val r: Type) extends AnyVal {
     @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
@@ -196,7 +205,7 @@ object TypeLevelDSL {
   }
 
   implicit final class TupleTypeConstructors(private val a: DataType)
-      extends AnyVal {
+    extends AnyVal {
     @inline def x(b: DataType): PairType = PairType(a, b)
   }
 
@@ -207,6 +216,7 @@ object TypeLevelDSL {
   final case class ArrayTypeConstructorHelper(ns: Seq[Nat]) {
     @inline def `.`(n: Nat): ArrayTypeConstructorHelper =
       ArrayTypeConstructorHelper(ns :+ n)
+
     @inline def `.`(dt: DataType): ArrayType = {
       val nsr = ns.reverse
       nsr.tail.foldLeft(ArrayType(nsr.head, dt))((t, n) => ArrayType(n, t))
@@ -214,16 +224,18 @@ object TypeLevelDSL {
   }
 
   implicit final class ArrayTypeConstructors(private val n: Nat)
-      extends AnyVal {
+    extends AnyVal {
     @inline def `.`(m: Nat): ArrayTypeConstructorHelper =
       ArrayTypeConstructorHelper(Seq(n, m))
+
     @inline def `.`(dt: DataType): ArrayType = ArrayType(n, dt)
   }
 
   implicit final class ArrayTypeConstructorsFromInt(private val n: Int)
-      extends AnyVal {
+    extends AnyVal {
     @inline def `.`(m: Nat): ArrayTypeConstructorHelper =
       ArrayTypeConstructorHelper(Seq(Cst(n), m))
+
     @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
   }
 
@@ -235,6 +247,7 @@ object TypeLevelDSL {
   implicit final class DepArrayTypeConstructors(private val n: Nat)
     extends AnyVal {
     @inline def `*.`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
+
     @inline def `*.`(f: NatToData): DepArrayType = DepArrayType(n, f)
   }
 
@@ -252,4 +265,3 @@ object TypeLevelDSL {
   }
 
 }
-// scalastyle:on multiple.string.literals

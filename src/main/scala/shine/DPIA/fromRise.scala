@@ -525,7 +525,7 @@ object fromRise {
           fun[ExpType](expT(s x t, a), e => MapSnd(a, s, t, t2, f, e)))
       }
 
-      case core.pair() => fromType {
+      case core.makePair() => fromType {
         case expT(s, a) ->:
           expT(t, _) ->:
           expT(PairType(_, _), _)
@@ -788,7 +788,7 @@ object fromRise {
           )
       }
 
-      case core.dpair() => fromType {
+      case core.makeDepPair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }

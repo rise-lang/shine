@@ -3,7 +3,7 @@ package rise.elevate
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import rise.elevate.util._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types.NatKind
 import rise.elevate.meta.fission.bodyFission
@@ -12,7 +12,6 @@ import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.rules.traversal.{argument, argumentOf, body, function}
-import rise.elevate.strategies.util._
 
 
 class traversals extends test_util.Tests {
@@ -54,21 +53,13 @@ class traversals extends test_util.Tests {
     val normalized = FNF(simplified).get
     println(normalized)
     val normalizedModified = body(body(function(argumentOf(map.primitive, body(function(splitJoin(4))))))) `;`
-    inferType `;`
       body(body(function(splitJoin(4)))) `;`
-      inferType `;`
       body(body(RNF)) `;`
-      inferType `;`
       body(body(DFNF)) `;`
-      inferType `;`
       body(body(argument(argument(function(argumentOf(map.primitive, body(idAfter))))))) `;`
-      inferType `;`
       body(body(argument(argument(function(argumentOf(map.primitive, body(createTransposePair))))))) `;`
-      inferType `;`
       body(body(argument(argument(function(argumentOf(map.primitive, body(DFNF))))))) `;`
-      inferType `;`
       body(body(argument(argument(function(argumentOf(map.primitive, body(argument(mapMapFBeforeTranspose())))))))) `;`
-      inferType `;`
       body(body(argument(argument(RNF))))
 
 
