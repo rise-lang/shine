@@ -1,23 +1,23 @@
-# this is an comment
+-- this is an comment
 
-#We expect to get an nxm und mxn Matrix and as result we get an
+--We expect to get an nxm und mxn Matrix and as result we get an
 
-#
+--
+--Todo: not correct Code
 
-
-# nxn-Matrix
-f::N:Nat=>M:Nat=>D:Data=>N.M.D->M.N.D->N.N.D #TypAnnotation
+-- nxn-Matrix
+f::N:Nat=>M:Nat=>D:Data=>N.M.D->M.N.D->N.N.D --TypAnnotation
 f=\N:Nat=>\M:Nat=>\D:Data=>
 \mat1->\mat2->
-mapSeq #I go through the rows of the first matrix
+mapSeq --I go through the rows of the first matrix
 (
 \vec1->
-mapSeq #and we go through the columns of the second matrix
+mapSeq --and we go through the columns of the second matrix
 (
 \vec2 ->
-    reduceSeq (\res:I32->\arg:I32-> + res arg) #this is simply vectoraddition
+    reduceSeq (\res:I32->\arg:I32-> + res arg) --this is simply vectoraddition
         (mapSeq (\x:(I32,I32)->+ (fst x) (snd x)) (zip vec1 vec2))
-)#
+)--
 (transpose mat2)
 )
-mat1 #here is still a comment: haha hhahaha hakhkah lkkasdfkl +
+mat1 --here is still a comment: haha hhahaha hakhkah lkkasdfkl +
