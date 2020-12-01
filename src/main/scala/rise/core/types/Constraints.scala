@@ -1,7 +1,7 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
-import rise.core.TypeLevelDSL.n2dtFun
+import rise.core.DSL.Type.n2dtFun
 import rise.core.{freshName, substitute}
 import rise.core.lifting.liftDependentFunctionType
 import rise.core.types.Flags.ExplicitDependence

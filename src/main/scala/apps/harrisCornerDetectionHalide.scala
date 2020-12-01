@@ -2,74 +2,75 @@ package apps
 
 import rise.core._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.core.DSL.Type._
 import rise.core.types._
-import rise.core.HighLevelConstructs._
+import HighLevelConstructs._
 
 object harrisCornerDetectionHalide {
   private val C2D = separableConvolution2D
   private val mulT = C2D.mulT
   private val dot = C2D.dot
 
-  private def larr_f32(s: Seq[Float]): Expr = {
+  private def larr_f32(s: Seq[Float]): ToBeTyped[Expr] = {
     larr(s.map(semantics.FloatData))
   }
 
-  val gray: Expr = nFun(h => nFun(w => fun(
+  val gray: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     (3`.`h`.`w`.`f32) ->: (h`.`w`.`f32)
   )(input => input |>
     transpose >> map(transpose) >>
     map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f)))))
-  )))
+  ))
 
-  val sobelXWeights2d: Expr = C2D.weights2d(1.0f / 12.0f, Seq(
+  val sobelXWeights2d: ToBeTyped[Expr] = C2D.weights2d(1.0f / 12.0f, Seq(
     Seq(-1, 0, +1),
     Seq(-2, 0, +2),
     Seq(-1, 0, +1)
   ))
-  val sobelXWeightsV: Expr = C2D.weights1d(1.0f, Seq(
+  val sobelXWeightsV: ToBeTyped[Expr] = C2D.weights1d(1.0f, Seq(
     1, 2, 1
   ))
-  val sobelXWeightsH: Expr = C2D.weights1d(1.0f / 12.0f, Seq(
+  val sobelXWeightsH: ToBeTyped[Expr] = C2D.weights1d(1.0f / 12.0f, Seq(
     -1, 0, +1
   ))
 
-  val sobelYWeights2d: Expr = C2D.weights2d(1.0f / 12.0f, Seq(
+  val sobelYWeights2d: ToBeTyped[Expr] = C2D.weights2d(1.0f / 12.0f, Seq(
     Seq(-1, -2, -1),
     Seq( 0,  0,  0),
     Seq( 1,  2,  1)
   ))
-  val sobelYWeightsV: Expr = C2D.weights1d(1.0f, Seq(
+  val sobelYWeightsV: ToBeTyped[Expr] = C2D.weights1d(1.0f, Seq(
     -1, 0, +1
   ))
-  val sobelYWeightsH: Expr = C2D.weights1d(1.0f / 12.0f, Seq(
+  val sobelYWeightsH: ToBeTyped[Expr] = C2D.weights1d(1.0f / 12.0f, Seq(
     1, 2, 1
   ))
 
-  val conv3x3: Expr = fun(3`.`3`.`f32)(weights =>
-    nFun(h => nFun(w => fun(
+  val conv3x3: ToBeTyped[Expr] = fun(3`.`3`.`f32)(weights =>
+    depFun((h: Nat, w: Nat) => fun(
       ((h+2)`.`(w+2)`.`f32) ->: (h`.`w`.`f32)
     )(input => input |>
       slide2D(3, 1) >>
       map(map(fun(nbh => dot(join(weights))(join(nbh)))))
-    )))
+    ))
   )
-  val sobelX: Expr = conv3x3(sobelXWeights2d)
-  val sobelY: Expr = conv3x3(sobelYWeights2d)
+  val sobelX: ToBeTyped[Expr] = conv3x3(sobelXWeights2d)
+  val sobelY: ToBeTyped[Expr] = conv3x3(sobelYWeights2d)
 
-  val mul = nFun(h => nFun(w => fun(
+  val mul = depFun((h: Nat, w: Nat) => fun(
     (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: (h`.`w`.`f32)
   )((a, b) =>
     zipND(2)(a, b) |> map(map(mulT))
-  )))
+  ))
 
-  val sum: Expr = reduce(add)(l(0.0f))
-  val sum3x3: Expr = nFun(h => nFun(w => fun(
+  val sum: ToBeTyped[Expr] = reduce(add)(l(0.0f))
+  val sum3x3: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     ((h+2)`.`(w+2)`.`f32) ->: (h`.`w`.`f32)
   )(input => input |>
     slide2D(3, 1) >>
     map(map(fun(nbh => sum(join(nbh)))))
-  )))
+  ))
 
   // halide: det + trace + output
   val coarsityElem = fun(sxx => fun(sxy => fun(syy => fun(kappa => {
@@ -77,7 +78,7 @@ object harrisCornerDetectionHalide {
     val trace = sxx + syy
     det - kappa * trace * trace
   }))))
-  val coarsity = nFun(h => nFun(w => fun(
+  val coarsity = depFun((h: Nat, w: Nat) => fun(
     (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: (h`.`w`.`f32)
   )((sxx, sxy, syy) =>
     zipND(2)(sxx, zipND(2)(sxy, syy)) |> map(map(fun { s =>
@@ -86,14 +87,14 @@ object harrisCornerDetectionHalide {
       val syy = snd(snd(s))
       coarsityElem(sxx)(sxy)(syy)(l(0.04f))
     }))
-  )))
+  ))
 
   // note: the output is strided:
   // it only contains w-4 meaningful values per line
   // so 4 meaningless values at the end of each line
   // this way if the input is dividable by a vector width,
   // so is the output
-  def harris(hMod: Int, wMod: Int): Expr =
+  def harris(hMod: Int, wMod: Int): ToBeTyped[Expr] =
     nModFun(hMod, h => nModFun(wMod, w => fun(
       // (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
       (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
@@ -116,8 +117,8 @@ object harrisCornerDetectionHalide {
   private val write2DSeq = mapSeq(write1DSeq)
 
   object gen {
-    def harrisSeqWrite(letMem: Expr): Expr =
-      nFun(h => nFun(w => fun(
+    def harrisSeqWrite(letMem: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
        (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         gray(h+4)(w) |> write2DSeq |> letMem(fun(g =>
@@ -131,10 +132,10 @@ object harrisCornerDetectionHalide {
         sum3x3(h)(w-4)(iyy) |> write2DSeq |> letMem(fun(syy =>
         coarsity(h)(w-4)(sxx)(sxy)(syy) |> write2DSeq |> map(padEmpty(4))
         ))))))))))))))))))
-      )))
+      ))
 
-    def harrisBuffered(circularBuffer: Expr): Expr =
-      nFun(h => nFun(w => fun(
+    def harrisBuffered(circularBuffer: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         transpose >> map(transpose) >>
@@ -144,13 +145,13 @@ object harrisCornerDetectionHalide {
           write1DSeq) >>
         circularBuffer(3)(3)(
           map(slide(3)(1)) >> transpose >>
-          map(fun(nbh => pair(
-            dot(join(sobelXWeights2d))(join(nbh)),
+          map(fun(nbh => makePair(
+            dot(join(sobelXWeights2d))(join(nbh)))(
             dot(join(sobelYWeights2d))(join(nbh))
           ))) >> write1DSeq >> unzip
         ) >> // H.3.(W.f x W.f)
         iterateStream(
-          map(fun(p => zip(fst(p), snd(p)))) >> fun(ixiy => // 3.W.(f x f)
+          map(fun(p => zip(fst(p))(snd(p)))) >> fun(ixiy => // 3.W.(f x f)
           ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
           ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
           ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
@@ -168,42 +169,43 @@ object harrisCornerDetectionHalide {
             }))
           )))))) >> write2DSeq
         )) >> join >> map(padEmpty(4))
-      )))
+      ))
   }
 
   object omp { // and plain C
     private val letStack = fun(k => fun(x => toMem(x) |> letf(k)))
 
-    val harrisSeqWrite: Expr = gen.harrisSeqWrite(letStack)
+    val harrisSeqWrite: ToBeTyped[Expr] = gen.harrisSeqWrite(letStack)
 
-    private val circularBuffer: Expr = DSL.circularBuffer
+    private val circularBuffer: ToBeTyped[Expr] = primitives.circularBuffer
 
-    val harrisBuffered: Expr = gen.harrisBuffered(circularBuffer)
+    val harrisBuffered: ToBeTyped[Expr] = gen.harrisBuffered(circularBuffer)
   }
 
   private val sumVec = reduce(add)(vectorFromScalar(l(0.0f)))
   private val dotWeightsVec = fun(weights => fun(input =>
-    zip(map(vectorFromScalar, weights), input) |> map(mulT) |> sumVec
+    zip(map(vectorFromScalar)(weights))(input) |> map(mulT) |> sumVec
   ))
 
-  def nModFun(m: Nat, f: Nat => Expr): Expr = {
+  def nModFun(m: Nat, f: Nat => ToBeTyped[Expr]): ToBeTyped[Expr] = {
     import arithexpr.arithmetic._
-    nFun(RangeAdd(0, PosInf, m), f)
+    depFun(RangeAdd(0, PosInf, m), f)
   }
 
   object ocl {
-    import rise.openCL.DSL._
+    import rise.openCL.TypedDSL._
+    import rise.openCL.primitives.{oclCircularBuffer, oclRotateValues}
 
     private val letGlobal = fun(k => fun(x => toGlobal(x) |> letf(k)))
 
-    val harrisSeqWrite: Expr = gen.harrisSeqWrite(letGlobal)
+    val harrisSeqWrite: ToBeTyped[Expr] = gen.harrisSeqWrite(letGlobal)
 
-    private val circularBuffer: Expr = oclCircularBuffer(AddressSpace.Global)
-    private val registerRotation: Expr = oclRotateValues(AddressSpace.Private)
+    private val circularBuffer: ToBeTyped[Expr] = oclCircularBuffer(AddressSpace.Global)
+    private val registerRotation: ToBeTyped[Expr] = oclRotateValues(AddressSpace.Private)
 
-    val harrisBuffered: Expr = gen.harrisBuffered(circularBuffer)
+    val harrisBuffered: ToBeTyped[Expr] = gen.harrisBuffered(circularBuffer)
 
-    def harrisSplitPar(strip: Int, v: Int, innerHarris: Expr): Expr =
+    def harrisSplitPar(strip: Int, v: Int, innerHarris: ToBeTyped[Expr]): ToBeTyped[Expr] =
       nModFun(strip, h => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
@@ -212,9 +214,9 @@ object harrisCornerDetectionHalide {
         ) >> join
       )))
 
-    def harrisTilePar(tileX: Int, tileY: Int, mapPar: Int => Expr,
-                      innerHarris: Expr): Expr =
-      nFun(h => nFun(w => fun(
+    def harrisTilePar(tileX: Int, tileY: Int, mapPar: Int => ToBeTyped[Expr],
+                      innerHarris: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         slide2D(tileY+4, tileY, tileX+4, tileX) >>
@@ -222,11 +224,11 @@ object harrisCornerDetectionHalide {
           map(transpose) >> transpose >>
           innerHarris(tileY)(tileX)
         )) >> unslide2D >> map(padEmpty(4))
-      )))
+      ))
 
-    def harrisTileShiftInwardsPar(tileX: Int, tileY: Int, mapPar: Int => Expr,
-                                  innerHarris: Expr): Expr =
-      nFun(h => nFun(w => fun(
+    def harrisTileShiftInwardsPar(tileX: Int, tileY: Int, mapPar: Int => ToBeTyped[Expr],
+                                  innerHarris: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         transpose >> map(transpose) >> // H.W.3.
@@ -240,10 +242,10 @@ object harrisCornerDetectionHalide {
           transpose // ty.W.
         )) >> // H.W.
         map(padEmpty(4))
-      )))
+      ))
 
-    def harrisVecUnaligned(v: Int): Expr =
-      nFun(h => nModFun(v, w => fun(
+    def harrisVecUnaligned(v: Int): ToBeTyped[Expr] =
+      depFun((h: Nat) => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
@@ -257,7 +259,7 @@ object harrisCornerDetectionHalide {
         slide(3)(1) >> mapSeq( // 3.(W+2)v.f
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
           mapSeq(fun(nbh => makeArray(2)(
-            dotWeightsVec(join(sobelXWeights2d), join(nbh)),
+            dotWeightsVec(join(sobelXWeights2d), join(nbh)))(
             dotWeightsVec(join(sobelYWeights2d), join(nbh))
           ) |> mapSeqUnroll(id))) >> transpose >>
           map(asScalar >> padEmpty(2)) // 2.Wv.f
@@ -287,9 +289,9 @@ object harrisCornerDetectionHalide {
     // - v <= 4
     // - if toMem = toPrivate, loop unrolling can fail due to blowup
     def harrisVecUnaligned2(v: Int,
-                            mapPar: Int => Expr,
-                            toMem: Expr): Expr =
-      nFun(h => nModFun(v, w => fun(
+                            mapPar: Int => ToBeTyped[Expr],
+                            toMem: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      depFun((h: Nat) => nModFun(v, w => fun(
         (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
@@ -301,7 +303,7 @@ object harrisCornerDetectionHalide {
         slide(3)(1) >> mapPar(1)(
           map(slideVectors(v) >> slide(3)(v)) >> transpose >>
           mapPar(0)(fun(nbh => makeArray(2)(
-            dotWeightsVec(join(sobelXWeights2d), join(nbh)),
+            dotWeightsVec(join(sobelXWeights2d), join(nbh)))(
             dotWeightsVec(join(sobelYWeights2d), join(nbh))
           ) |> mapSeqUnroll(id))) >> transpose >>
           map(asScalar)
@@ -327,8 +329,8 @@ object harrisCornerDetectionHalide {
         )))
       )))
 
-    def harrisBufferedVecUnaligned(bLines: Int, v: Int): Expr =
-      nFun(h => nModFun(v, w => fun(
+    def harrisBufferedVecUnaligned(bLines: Int, v: Int): ToBeTyped[Expr] =
+      depFun((h: Nat) => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
@@ -341,8 +343,8 @@ object harrisCornerDetectionHalide {
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
           mapSeq(fun(nbh =>
             join(nbh) |> mapSeqUnroll(id) |> toPrivate |>
-            letf(jnbh => pair(
-              dotWeightsVec(join(sobelXWeights2d))(jnbh),
+            letf(jnbh => makePair(
+              dotWeightsVec(join(sobelXWeights2d))(jnbh))(
               dotWeightsVec(join(sobelYWeights2d))(jnbh)
             ))
           )) >> unzip >> // (W.<v>f x W.<v>f)
@@ -369,10 +371,10 @@ object harrisCornerDetectionHalide {
         )
       )))
 
-    def shuffle(v: Int): Expr =
+    def shuffle(v: Int): ToBeTyped[Expr] =
       asScalar >> take(v+2) >> slideVectors(v)
-    def harrisBufferedVecAligned(bLines: Int, v: Int): Expr =
-      nFun(h => nModFun(v, w => fun(
+    def harrisBufferedVecAligned(bLines: Int, v: Int): ToBeTyped[Expr] =
+      depFun((h: Nat) => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
@@ -384,8 +386,8 @@ object harrisCornerDetectionHalide {
           mapSeq(fun(nbh =>
             nbh |> mapSeqUnroll(mapSeqUnroll(id)) |> toPrivate |>
             map(shuffle(v)) >> join >>
-            letf(jnbh => pair(
-              dotWeightsVec(join(sobelXWeights2d), jnbh),
+            letf(jnbh => makePair(
+              dotWeightsVec(join(sobelXWeights2d), jnbh))(
               dotWeightsVec(join(sobelYWeights2d), jnbh)
             ))
           )) >> unzip >>
@@ -393,11 +395,11 @@ object harrisCornerDetectionHalide {
         ) >>
         iterateStream( // 3.(W.<v>f x W.<v>f)
           map(fun(p =>
-            zip(fst(p), snd(p)) |> slide(2)(1) // W.2.(<v>f x <v>f)
+            zip(fst(p))(snd(p)) |> slide(2)(1) // W.2.(<v>f x <v>f)
           )) >> transpose >> // W.3.2.(<v>f x <v>f)
           mapSeq(mapSeqUnroll(mapSeqUnroll(id)) >> toPrivate >>
             map(unzip >> fun(p =>
-              zip(shuffle(v)(fst(p)), shuffle(v)(snd(p)))
+              zip(shuffle(v)(fst(p)))(shuffle(v)(snd(p)))
             )) >> letf(ixiy =>
             ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
             ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
@@ -412,8 +414,8 @@ object harrisCornerDetectionHalide {
         )
       )))
 
-    def harrisBufferedRegRotVecAligned(bLines: Int, v: Int): Expr =
-      nFun(h => nModFun(v, w => fun(
+    def harrisBufferedRegRotVecAligned(bLines: Int, v: Int): ToBeTyped[Expr] =
+      depFun((h: Nat) => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
@@ -421,24 +423,24 @@ object harrisCornerDetectionHalide {
         map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
         circularBuffer(bLines)(3)(write1DSeq >> padEmpty(1)) >>
         circularBuffer(bLines)(3)(
-          transpose >> map(fun(nbh => pair(
-            dotWeightsVec(sobelXWeightsV, nbh),
+          transpose >> map(fun(nbh => makePair(
+            dotWeightsVec(sobelXWeightsV, nbh))(
             dotWeightsVec(sobelYWeightsV, nbh)
           ))) >>
           registerRotation(2)(id) >>
-          iterateStream(unzip >> fun(nbh => pair(
-            dotWeightsVec(sobelXWeightsH, shuffle(v)(fst(nbh))),
+          iterateStream(unzip >> fun(nbh => makePair(
+            dotWeightsVec(sobelXWeightsH, shuffle(v)(fst(nbh))))(
             dotWeightsVec(sobelYWeightsH, shuffle(v)(snd(nbh)))
           ))) >> unzip >>
           mapFst(padEmpty(1)) >> mapSnd(padEmpty(1))
         ) >>
         iterateStream( // 3.(W.<v>f x W.<v>f)
-          map(fun(p => zip(fst(p), snd(p)))) >> // W.(<v>f x <v>f)
+          map(fun(p => zip(fst(p))(snd(p)))) >> // W.(<v>f x <v>f)
           transpose >> // W.3.(<v>f x <v>f)
           map(fun(nbh => makeArray(3)(
-            map(fun(p => fst(p) * fst(p)), nbh),
-            map(fun(p => fst(p) * snd(p)), nbh),
-            map(fun(p => snd(p) * snd(p)), nbh),
+            map(fun(p => fst(p) * fst(p)))(nbh))(
+            map(fun(p => fst(p) * snd(p)))(nbh))(
+            map(fun(p => snd(p) * snd(p)))(nbh)
           ) |> map(sumVec))) >> // W.3.<v>f
           registerRotation(2)(mapSeqUnroll(id)) >> // W.2.3.<v>f
           iterateStream(transpose >> // 3.2<v>f
@@ -454,8 +456,8 @@ object harrisCornerDetectionHalide {
       )))
 
 /*
-    def greyParVec(v: Int): Expr =
-      nFun(h => nModFun(v, w => fun(
+    def greyParVec(v: Int): ToBeTyped[Expr] =
+      depFun((h: Nat) => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: ((h+4)`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
@@ -466,46 +468,46 @@ object harrisCornerDetectionHalide {
 */
     // following variants are used for comparison to Lift
 
-    def grayPar: Expr =
-      nFun(h => nFun(w => fun(
+    def grayPar: ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: ((h+4)`.`w`.`f32)
       )(input =>
         gray(h+4)(w)(input) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
-    def sobelXPar: Expr =
-      nFun(h => nFun(w => fun(
+    def sobelXPar: ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         ((h+4)`.`w`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
       )(gray =>
         sobelX(h+2)(w-2)(gray) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
-    def sobelYPar: Expr =
-      nFun(h => nFun(w => fun(
+    def sobelYPar: ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         ((h+4)`.`w`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
       )(gray =>
         sobelY(h+2)(w-2)(gray) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
-    def mulPar: Expr =
-      nFun(h => nFun(w => fun(
+    def mulPar: ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         ((h+2)`.`(w-2)`.`f32) ->: ((h+2)`.`(w-2)`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
       )((ix, iy) =>
         mul(h+2)(w-2)(ix)(iy) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
-    def sum3x3Par: Expr =
-      nFun(h => nFun(w => fun(
+    def sum3x3Par: ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         ((h+2)`.`(w-2)`.`f32) ->: (h`.`(w-4)`.`f32)
       )(input =>
         sum3x3(h)(w-4)(input) |> mapGlobal(write1DSeq)
-      )))
+      ))
 
-    def coarsityPadPar: Expr =
-      nFun(h => nFun(w => fun(
+    def coarsityPadPar: ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
         (h`.`(w-4)`.`f32) ->: (h`.`(w-4)`.`f32) ->: (h`.`(w-4)`.`f32) ->: (h`.`w`.`f32)
       )((sxx, sxy, syy) =>
         coarsity(h)(w-4)(sxx)(sxy)(syy) |> mapGlobal(write1DSeq) |> map(padEmpty(4))
-      )))
+      ))
   }
 }

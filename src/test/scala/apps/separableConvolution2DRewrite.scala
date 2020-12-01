@@ -2,8 +2,8 @@ package apps
 
 import separableConvolution2D._
 import rise.core._
-import rise.core.TypedDSL._
-import rise.core.HighLevelConstructs._
+import rise.core.DSL._
+import HighLevelConstructs._
 import elevate.core._
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._
@@ -27,18 +27,18 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   private val * : ToBeTyped[Rise] = map
   private val T: ToBeTyped[Rise] = transpose
-  private val P = toBeTyped(padClamp2D(1))
+  private val P = padClamp2D(1)
   private val Sh = slide(3)(1)
   private val Sv = slide(3)(1)
-  private val Dh = toBeTyped(dot)(weightsH)
-  private val Dv = toBeTyped(dot)(weightsV)
+  private val Dh = dot(weightsH)
+  private val Dv = dot(weightsV)
 
   private val BENF = rise.elevate.strategies.normalForm.BENF()(alternative.RiseTraversable)
 
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toBeTyped(na) :: nb.t
+    val uab: Rise = toBeTyped(na) !: nb.t
     makeClosed(uab)._1 == makeClosed(nb)._1
   }
 
@@ -66,15 +66,15 @@ class separableConvolution2DRewrite extends test_util.Tests {
   //// algorithmic
 
   test("base to factorise") {
-    rewrite_steps(toBeTyped(base)(weights2d), scala.collection.Seq(
-      topDown(separateDot) -> toBeTyped(factorised)(weightsV)(weightsH)
+    rewrite_steps(base(weights2d), scala.collection.Seq(
+      topDown(separateDot) -> factorised(weightsV)(weightsH)
     ))
   }
 
   test("base to scanline") {
-    rewrite_steps(toBeTyped(base)(weights2d), scala.collection.Seq(
+    rewrite_steps(base(weights2d), scala.collection.Seq(
       idS
-        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => toBeTyped(dot)(join(weights2d))(join(nbh)))))),
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(join(weights2d))(join(nbh)))))),
       topDown(separateDotT)
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       topDown(`*f >> S -> S >> **f`)
@@ -94,12 +94,12 @@ class separableConvolution2DRewrite extends test_util.Tests {
       topDown(`S >> **f -> *f >> S`)
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       idS
-        -> toBeTyped(scanline)(weightsV)(weightsH)
+        -> scanline(weightsV)(weightsH)
     ))
   }
 
   test("scanline to separated") {
-    rewrite_steps(toBeTyped(scanline)(weightsV)(weightsH), scala.collection.Seq(
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
       idS
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       repeatNTimes(2)(topDown(mapFirstFission))
@@ -107,54 +107,54 @@ class separableConvolution2DRewrite extends test_util.Tests {
       skip(1)(mapFusion)
         -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),
       idS
-        -> toBeTyped(separated)(weightsV)(weightsH)
+        -> separated(weightsV)(weightsH)
     ))
   }
 
   //// lowering
 
   test("base to baseSeq") {
-    rewrite_steps(toBeTyped(base)(weights2d), scala.collection.Seq(
+    rewrite_steps(base(weights2d), scala.collection.Seq(
       (topDown(lowering.reduceSeqUnroll) `;`
         repeatNTimes(2)(topDown(lowering.mapSeq)))
-        -> toBeTyped(baseSeq)(weights2d)
+        -> baseSeq(weights2d)
     ))
   }
 
   test("factorised to factorisedSeq") {
-    rewrite_steps(toBeTyped(factorised)(weightsV)(weightsH), scala.collection.Seq(
+    rewrite_steps(factorised(weightsV)(weightsH), scala.collection.Seq(
       (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;`
         repeatNTimes(2)(topDown(lowering.mapSeq)))
-        -> toBeTyped(factorisedSeq)(weightsV)(weightsH)
+        -> factorisedSeq(weightsV)(weightsH)
     ))
   }
 
   test("separated to separatedSeq") {
-    rewrite_steps(toBeTyped(separated)(weightsV)(weightsH), scala.collection.Seq(
+    rewrite_steps(separated(weightsV)(weightsH), scala.collection.Seq(
       (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;`
         repeatNTimes(2)(topDown(lowering.mapSeq)) `;`
         repeatNTimes(2)(skip(1)(lowering.mapSeq)) `;`
         body(argument(lowering.toMemAfterMapSeq)))
-        -> toBeTyped(separatedSeq)(weightsV)(weightsH)
+        -> separatedSeq(weightsV)(weightsH)
     ))
   }
 
   test("scanline to scanlineSeq") {
-    rewrite_steps(toBeTyped(scanline)(weightsV)(weightsH), scala.collection.Seq(
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
       (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;`
         repeatNTimes(2)(topDown(lowering.mapSeq)) `;`
         skip(1)(lowering.mapSeq))
-        -> toBeTyped(scanlineSeq)(weightsV)(weightsH)
+        -> scanlineSeq(weightsV)(weightsH)
     ))
   }
 
   test("scanline to regRotSeq") {
-    rewrite_steps(toBeTyped(scanline)(weightsV)(weightsH), scala.collection.Seq(
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
       (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;`
         topDown(lowering.mapSeq) `;`
         topDown(lowering.rotateValues(idE)) `;`
         topDown(lowering.iterateStream))
-        -> toBeTyped(regRotSeq)(weightsV)(weightsH)
+        -> regRotSeq(weightsV)(weightsH)
     ))
   }
 }

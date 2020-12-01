@@ -1,10 +1,12 @@
 package apps
 
 import apps.separableConvolution2D._
+import rise.core.primitives._
 import rise.core.DSL._
-import rise.openCL.DSL._
-import rise.core.HighLevelConstructs._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.HighLevelConstructs._
+import rise.core.DSL.Type._
+import rise.openCL.primitives.oclReduceSeqUnroll
+import rise.openCL.TypedDSL._
 import rise.core._
 import rise.core.types._
 import util.gen
@@ -12,44 +14,44 @@ import util.gen
 class convolution1D extends test_util.Tests {
   val binomialWeights = binomialWeightsV
 
-  val dotSeq: Expr = fun(a => fun(b =>
+  val dotSeq: ToBeTyped[Expr] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |>
     oclReduceSeqUnroll(AddressSpace.Private)(add)(l(0.0f))
   ))
 
-  val binomial: Expr =
+  val binomial: ToBeTyped[Expr] =
     slide(3)(1) >> map(fun(nbh => dot(nbh)(binomialWeights)))
 
-  val binomialSeq: Expr =
+  val binomialSeq: ToBeTyped[Expr] =
     slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
 
-  val binomialTile: Expr =
+  val binomialTile: ToBeTyped[Expr] =
     slide(34)(32) >>
     mapGlobal(0)(
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ) >> join
 
-  val binomialTileShiftInwardsGP: Expr =
+  val binomialTileShiftInwardsGP: ToBeTyped[Expr] =
     tileShiftInwards(32)(mapGlobal(0)(
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ))
 
-  val binomialTileShiftInwardsWLP: Expr =
+  val binomialTileShiftInwardsWLP: ToBeTyped[Expr] =
     tileShiftInwards(32)(mapWorkGroup(0)(
       slide(3)(1) >> mapLocal(0)(fun(nbh => dotSeq(nbh)(binomialWeights)))
     ))
 
-  val binomialTileEpilogue: Expr = {
+  val binomialTileEpilogue: ToBeTyped[Expr] = {
     def f = mapGlobal(0)(
       slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
     )
     tileEpilogue(32)(f)(f)
   }
 
-  val binomialTileDep: Expr = impl{ n: Nat =>
+  val binomialTileDep: ToBeTyped[Expr] = impl{ n: Nat =>
     // depSlide(34)(32) >>
     depTile(32)(
-      depMapSeq(nFun { i => // TODO: depMapGlobal(0)
+      depMapSeq(depFun { i: Nat => // TODO: depMapGlobal(0)
         import arithexpr.arithmetic.IfThenElse
         import arithexpr.arithmetic.BoolExpr.arithPredicate
         import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
@@ -63,10 +65,10 @@ class convolution1D extends test_util.Tests {
     )
   }
 
-  private def wrapExpr(e: Expr): Expr = {
+  private def wrapExpr(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3*4 = 12 for one vector sliding window
-    nFun(RangeAdd(12, PosInf, 4), n => fun(((n+2)`.`f32) ->: (n`.`f32))(a => e(a)))
+    depFun(RangeAdd(12, PosInf, 4), (n: Nat) => fun(((n+2)`.`f32) ->: (n`.`f32))(a => e(a)))
   }
 
   import shine.OpenCL.{GlobalSize, LocalSize}
@@ -75,7 +77,7 @@ class convolution1D extends test_util.Tests {
     N: Int,
     localSize: LocalSize,
     globalSize: GlobalSize,
-    e: Expr
+    e: ToBeTyped[Expr]
   ): Unit = {
     import shine.OpenCL._
 
@@ -142,11 +144,11 @@ class convolution1D extends test_util.Tests {
 
   // TODO: nat unification
   ignore("depSlide inference") {
-    println(types.infer(
-      nFun(n => fun(((n+2)`.`f32) ->: (n`.`f32))(a =>
+    println(
+      depFun((n: Nat) => fun(((n+2)`.`f32) ->: (n`.`f32))(a =>
         a |>
         depSlide(n+2)(34)(32) >>
-        depMapSeq(nFun { i =>
+        depMapSeq(depFun { i: Nat =>
           import arithexpr.arithmetic.IfThenElse
           import arithexpr.arithmetic.BoolExpr.arithPredicate
           import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
@@ -157,7 +159,7 @@ class convolution1D extends test_util.Tests {
           (slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
             ) :: ((m + 2) `.` f32) ->: (m `.` f32)
         }) >> depJoin
-      ))
-    ).t)
+      )).toExpr.t
+    )
   }
 }

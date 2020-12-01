@@ -2,17 +2,21 @@ package shine.OpenCL
 
 import util.gen
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core.types._
 import rise.core.types.AddressSpace._
-import rise.openCL.DSL._
+import rise.core.primitives._
+import rise.openCL.primitives.oclReduceSeq
+import rise.openCL.TypedDSL._
 
+// scalastyle:off org.scalastyle.scalariform.MultipleStringLiteralsChecker
 class Barriers extends test_util.Tests {
   private val sum = oclReduceSeq(Private)(add)(l(0.0f))
 
-  // TODO?
+  // TODO? removing these barriers requires more fine grain analysis to
+  // notice that the threads do not actually communicate through the memory
   ignore("1D mapLocal toLocal seq without thread sharing") {
-    val e = nFun((n, m) => fun(n`.`m`.`f32)(in =>
+    val e = depFun((n: Nat, m: Nat) => fun(n`.`m`.`f32)(in =>
       in |> mapWorkGroup(0)(
         mapLocal(0)(fun(x => x)) >>
         toLocal >>
@@ -23,9 +27,10 @@ class Barriers extends test_util.Tests {
     "barrier".r.findAllIn(k.code).length shouldBe 0
   }
 
-  // TODO?
+  // TODO? removing these barriers requires more fine grain analysis to
+  // notice that the threads do not actually communicate through the memory
   ignore("1D mapLocal toGlobal seq without thread sharing") {
-    val e = nFun((n, m) => fun(n`.`m`.`f32)(in =>
+    val e = depFun((n: Nat, m: Nat) => fun(n`.`m`.`f32)(in =>
       in |> mapWorkGroup(0)(
         mapLocal(0)(fun(x => x)) >>
         toGlobal >>
@@ -37,7 +42,7 @@ class Barriers extends test_util.Tests {
   }
 
   test("1D mapLocal toLocal seq with thread sharing") {
-    val e = nFun((n, m) => fun(n`.`m`.`f32)(in =>
+    val e = depFun((n: Nat, m: Nat) => fun(n`.`m`.`f32)(in =>
       in |> mapWorkGroup(0)(
         mapLocal(0)(fun(x => x)) >>
         toLocal >>
@@ -51,7 +56,7 @@ class Barriers extends test_util.Tests {
   }
 
   test("1D mapLocal toGlobal seq with thread sharing") {
-    val e = nFun((n, m) => fun(n`.`m`.`f32)(in =>
+    val e = depFun((n: Nat, m: Nat) => fun(n`.`m`.`f32)(in =>
       in |> mapWorkGroup(0)(
         mapLocal(0)(fun(x => x)) >>
         toGlobal >>
@@ -65,13 +70,14 @@ class Barriers extends test_util.Tests {
   }
 
   test("2D mapLocal toLocal seq with thread sharing") {
-    val e = nFun((n, m, o, p) => fun(n`.`m`.`o`.`p`.`f32)(in =>
-      in |> mapWorkGroup(1)(mapWorkGroup(0)(
-        mapLocal(1)(mapLocal(0)(fun(x => x))) >>
-        toLocal >>
-        map(slide(3)(1)) >>
-        mapLocal(1)(mapLocal(0)(sum))
-      ))
+    val e = depFun((n: Nat, m: Nat, o: Nat, p: Nat) =>
+      fun(n`.`m`.`o`.`p`.`f32)(in =>
+        in |> mapWorkGroup(1)(mapWorkGroup(0)(
+          mapLocal(1)(mapLocal(0)(fun(x => x))) >>
+          toLocal >>
+          map(slide(3)(1)) >>
+          mapLocal(1)(mapLocal(0)(sum))
+        ))
     ))
 
     // expected:
@@ -91,15 +97,16 @@ class Barriers extends test_util.Tests {
 
   // FIXME: barriers might not be reached by all threads
   test("nested 1D mapLocal toLocal seq with thread sharing") {
-    val e = nFun((n, m, o, p) => fun(n`.`m`.`o`.`p`.`f32)(in =>
-      in |> mapWorkGroup(1)(mapWorkGroup(0)(
-        mapLocal(1)(
-          mapLocal(0)(fun(x => x)) >>
-          toLocal >>
-          slide(3)(1) >>
-          mapLocal(0)(sum)
-        )
-      ))
+    val e = depFun((n: Nat, m: Nat, o: Nat, p: Nat) =>
+      fun(n`.`m`.`o`.`p`.`f32)(in =>
+        in |> mapWorkGroup(1)(mapWorkGroup(0)(
+          mapLocal(1)(
+            mapLocal(0)(fun(x => x)) >>
+            toLocal >>
+            slide(3)(1) >>
+            mapLocal(0)(sum)
+          )
+        ))
     ))
 
     // expected:
@@ -118,17 +125,18 @@ class Barriers extends test_util.Tests {
 
   // FIXME: barriers might not be reached by all threads
   test("2D and nested 1D mapLocal toLocal seq with thread sharing") {
-    val e = nFun((n, m, o, p) => fun(n`.`m`.`o`.`p`.`f32)(in =>
-      in |> mapWorkGroup(1)(mapWorkGroup(0)(
-        mapLocal(1)(
-          mapLocal(0)(fun(x => x)) >>
-          toLocal >>
-          slide(3)(1) >>
-          mapLocal(0)(sum)
-        ) >> toLocal >>
-        map(slide(3)(1)) >>
-        mapLocal(1)(mapLocal(0)(sum))
-      ))
+    val e = depFun((n: Nat, m: Nat, o: Nat, p: Nat) =>
+      fun(n`.`m`.`o`.`p`.`f32)(in =>
+        in |> mapWorkGroup(1)(mapWorkGroup(0)(
+          mapLocal(1)(
+            mapLocal(0)(fun(x => x)) >>
+            toLocal >>
+            slide(3)(1) >>
+            mapLocal(0)(sum)
+          ) >> toLocal >>
+          map(slide(3)(1)) >>
+          mapLocal(1)(mapLocal(0)(sum))
+        ))
     ))
 
     // expected:
@@ -149,7 +157,7 @@ class Barriers extends test_util.Tests {
 
   // TODO? array sizes cannot be adjusted for allocation
   ignore("1D zip mapLocal toLocal seq with thread sharing") {
-    val e = nFun((n, m) => fun(n`.`m`.`f32)(in =>
+    val e = depFun((n: Nat, m: Nat) => fun(n`.`m`.`f32)(in =>
       in |> mapWorkGroup(0)(fun(a =>
         zip(mapLocal(0)(fun(x => x))(a))(mapLocal(0)(fun(x => x))(a)) |>
         toLocal >>

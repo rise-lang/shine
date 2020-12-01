@@ -5,7 +5,8 @@ import util._
 import rise.core._
 import rise.core.types._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import Type._
 import elevate.core._
 import rise.elevate.Rise
 import rise.elevate.rules._
@@ -154,7 +155,7 @@ int main(int argc, char** argv) {
   }
 
   test("hot pixel suppression passes checks") {
-    val typed = printTime("infer", infer(hot_pixel_suppression))
+    val typed = printTime("infer", hot_pixel_suppression.toExpr)
     println(s"hot pixel suppression: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
       repeatNTimes(2)(topDown(lowering.mapSeq))
@@ -169,9 +170,9 @@ int main(int argc, char** argv) {
   }
 
   test("deinterleave passes checks") {
-    val typed = printTime("infer", infer(nFun(h => nFun(w =>
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       deinterleave(h)(w) >> mapSeq(mapSeq(mapSeq(fun(x => x))))
-    ))))
+    ).toExpr)
     println(s"deinterleave: ${typed.t}")
     /* TODO
     val lower: Strategy[Rise] =
@@ -197,9 +198,9 @@ int main(int argc, char** argv) {
   }
 
   test("demosaic passes checks") {
-    val typed = printTime("infer", infer(nFun(h => nFun(w =>
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       demosaic(h)(w) >> mapSeqUnroll(mapSeq(mapSeq(fun(x => x))))
-    ))))
+    ).toExpr)
     println(s"demosaic: ${typed.t}")
     // TODO
     val lower: Strategy[Rise] = strategies.basic.id
@@ -208,13 +209,13 @@ int main(int argc, char** argv) {
   }
 
   test("demosaic passes checks with reordering") {
-    val typed = printTime("infer", infer(nFun(h => nFun(w =>
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       demosaic(h)(w) >> transpose >> map(transpose) >>
       split(2) >> mapSeq(mapSeqUnroll(
         mapSeq(
           mapSeqUnroll(fun(x => x)))
       )) >> join >> map(transpose) >> transpose
-    ))))
+    ).toExpr)
     println(s"demosaic: ${typed.t}")
     // TODO
     val lower: Strategy[Rise] = strategies.basic.id
@@ -224,19 +225,20 @@ int main(int argc, char** argv) {
 
   test("demosaic passes checks with circular buffers") {
     checkDemosaic(cameraPipeRewrite.demosaicCircularBuffers(
-      printTime("infer", infer(cameraPipe.demosaic))
+      printTime("infer", cameraPipe.demosaic.toExpr)
     ).get)
   }
 
   test("color correction passes checks") {
-    val typed = printTime("infer", infer(
-      nFun(h => nFun(w => nFun(hm => nFun(wm => fun(3`.`(h+2)`.`(w+2)`.`i16)(in =>
-        color_correct(h)(w)(hm)(wm)(in |>
-          map(map(drop(1) >> take(w)) >>
-            drop(1) >> take(h))
-        )
-      )))))
-    ))
+    val typed = printTime("infer",
+      depFun((h: Nat, w: Nat, hm: Nat, wm: Nat) =>
+        fun(3`.`(h+2)`.`(w+2)`.`i16)(in =>
+          color_correct(h)(w)(hm)(wm)(in |>
+            map(map(drop(1) >> take(w)) >>
+              drop(1) >> take(h))
+          )
+        )).toExpr
+    )
     println(s"color correction: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
       repeatNTimes(2)(topDown(lowering.mapSeq)) `;`
@@ -260,7 +262,7 @@ int main(int argc, char** argv) {
   }
 
   test("apply curve passes checks") {
-    val typed = printTime("infer", infer(apply_curve))
+    val typed = printTime("infer", apply_curve.toExpr)
     println(s"apply curve: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
       repeatNTimes(3)(topDown(lowering.mapSeq))
@@ -278,11 +280,11 @@ ${fName}(output, ${2*H + 2}, ${2*W + 2},
   }
 
   test("sharpen passes checks") {
-    val typed = printTime("infer", infer(nFun(h => nFun(w => fun(
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) => fun(
       (3`.`(h+2)`.`(w+2)`.`u8) ->: f32 ->: (3`.`h`.`w`.`u8)
     )((input, strength) =>
       sharpen(h)(w)(input)(strength) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
-    )))))
+    )).toExpr)
     println(s"sharpen: ${typed.t}")
     val lower: Strategy[Rise] = strategies.basic.id
     val lowered = printTime("lower", lower(typed).get)
@@ -298,9 +300,9 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   }
 
   test("shift passes checks") {
-    val typed = printTime("infer", infer(nFun(h => nFun(w =>
+    val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       shift(h)(w) >> mapSeq(mapSeq(fun(x => x)))
-    ))))
+    ).toExpr)
     check(
       typed, fName => s"${fName}(output, ${2*H + 12}, ${2*W + 12}, input);",
       (2*H + 48) * (2*W + 32), "uint16_t", "input.dump",
@@ -327,20 +329,20 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   }
 
   test("camera pipe passes checks") {
-    val _ = printTime("infer", infer(camera_pipe))
+    val _ = printTime("infer", camera_pipe.toExpr)
     // TODO: simple lowering and check output
   }
 
   test("camera pipe passes checks with circular buffers") {
     cameraPipeRewrite.circularBuffers(
-      printTime("infer", infer(camera_pipe))
+      printTime("infer", camera_pipe.toExpr)
     ).get
     // TODO: check output
   }
 
   test("type inference") {
-    def assertClosedT(e: rise.core.Expr, t: Type): Unit = {
-      val typed = infer(e)
+    def assertClosedT(e: ToBeTyped[Expr], t: Type): Unit = {
+      val typed = e.toExpr
       assert(typed.t == t)
       assert(IsClosedForm(typed))
     }
@@ -349,20 +351,20 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
     assertClosedT(blur121(i16)(i32), (3`.`i16) ->: i16)
 
     assertClosedT(
-      nFun(h => nFun(w => fun(
+      depFun((h: Nat, w: Nat) => fun(
         (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)
       )(a =>
         interpolate(Image(0, w, 0, h, a)).expr
-      ))),
+      )),
       expl((h: Nat) => expl((w: Nat) => (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)))
     )
 
     assertClosedT(
-      nFun(h => nFun(w => fun(
+      depFun((h: Nat, w: Nat) => fun(
         (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)
       )(a =>
         pointAbsDiff(Image(0, w, 0, h, a)).expr
-      ))),
+      )),
       expl((h: Nat) => expl((w: Nat) => (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)))
     )
 

@@ -1,6 +1,6 @@
 package rise.openCL
 
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core.types.{AddressSpace, DataType, Nat}
 import rise.core.{Builder, Primitive}
 import rise.macros.Primitive.primitive

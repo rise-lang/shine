@@ -12,4 +12,10 @@ object Flags {
     case object On extends ExplicitDependence
     case object Off extends ExplicitDependence
   }
+
+  sealed trait PrintTypesAndTypeHoles
+  object PrintTypesAndTypeHoles {
+    case object On extends PrintTypesAndTypeHoles
+    case object Off extends PrintTypesAndTypeHoles
+  }
 }

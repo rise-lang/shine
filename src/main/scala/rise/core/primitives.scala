@@ -1,7 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.BigSum
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core.types._
 import rise.macros.Primitive.primitive
 
@@ -175,12 +175,12 @@ object primitives {
           (n`.`dt) ->: (m`*.`(i => lenF(i)`.`dt))))}}
   }
 
-  @primitive object pair extends Primitive with Builder {
+  @primitive object makePair extends Primitive with Builder {
     impl{ s: DataType => impl{ t: DataType =>
       s ->: t ->: (s x t) }}
   }
 
-  @primitive object dpair extends Primitive with Builder {
+  @primitive object makeDepPair extends Primitive with Builder {
     impl{ fdt: NatToData => expl((n: Nat) =>
       fdt(n) ->: (Nat `**` (fdt(_))))}
   }

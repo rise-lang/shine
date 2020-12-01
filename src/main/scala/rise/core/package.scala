@@ -44,6 +44,6 @@ package object core {
   }
 
   implicit def primitiveBuilderToPrimitive(pb: Builder
-                                          ): TypedDSL.ToBeTyped[Primitive] =
+                                          ): DSL.ToBeTyped[Primitive] =
     pb.apply
 }

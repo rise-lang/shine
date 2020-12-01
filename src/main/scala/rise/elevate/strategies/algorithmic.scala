@@ -16,7 +16,7 @@ import rise.elevate.rules.traversal.{argument, argumentOf, body, function}
 import rise.elevate.strategies.normalForm.{DFNF, RNF}
 import rise.elevate.strategies.predicate.{isApplied, isMap, isReduceSeq}
 import rise.elevate.strategies.traversal.fmap
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core._
 import rise.core.primitives.{map, reduceSeq}
 import rise.elevate._
@@ -43,7 +43,7 @@ object algorithmic {
     }
 
     e match {
-      case App(primitives.map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx) :: e.t)
+      case App(primitives.map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx) !: e.t)
       case _                                    => Failure(mapFirstFission)
     }
   }
@@ -65,7 +65,7 @@ object algorithmic {
     }
 
     e match {
-      case App(primitives.map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx) :: e.t)
+      case App(primitives.map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx) !: e.t)
       case _                                    => Failure(mapFullFission)
     }
   }

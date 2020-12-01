@@ -3,16 +3,16 @@ package rise.elevate
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core.primitives._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement.liftReduce
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
-import rise.elevate.rules.{inferRise, lowering}
+import rise.elevate.rules.{checkType, lowering}
 import rise.elevate.strategies.traversal._
 import rise.elevate.util._
 
@@ -91,9 +91,9 @@ class algorithmic extends test_util.Tests {
   // Tests and Expressions related to loop reordering in Matrix Multiplication
 
   test("MM to MM-LoopMKN") {
-    val M = NatIdentifier("M")
-    val N = NatIdentifier("N")
-    val K = NatIdentifier("K")
+    val M = NatIdentifier("M", isExplicit = true)
+    val N = NatIdentifier("N", isExplicit = true)
+    val K = NatIdentifier("K", isExplicit = true)
 
     val mm = depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
@@ -104,7 +104,7 @@ class algorithmic extends test_util.Tests {
                 reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(
                   l(0.0f)))))))))))
 
-    def goldMKN(reduceFun: ToBeTyped[Rise]): Rise = {
+    def goldMKN(reduceFun: ToBeTyped[Rise]): ToBeTyped[Rise] = {
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
@@ -128,25 +128,24 @@ class algorithmic extends test_util.Tests {
        map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
          /* N.(f32, (f32, f32))*/
          zip(acc)(
-           map(fun(bs => pair(bs)(as))) $ BN/*:N.f32*/)
+           map(fun(bs => makePair(bs)(as))) $ BN/*:N.f32*/)
      })
     )
 
-    infer(goldMKNVersion1)
-    val typedGold = infer(goldMKNAlternative)
+    goldMKNVersion1.toExpr
+    val typedGold = goldMKNAlternative.toExpr
     val loopMKN = (topDown(liftReduce) `;` DFNF `;` topDown(removeTransposePair)).apply(mm).get
-    val typedRewrite = infer(loopMKN)
 
-    assert(typedRewrite == typedGold)
+    assert(loopMKN == typedGold)
   }
 
   // This one just serves as documentation for different mm-rise-expressions
   ignore("MM-LoopMKN to MM-LoopKMN") {
-    val M = NatIdentifier("M")
-    val N = NatIdentifier("N")
-    val K = NatIdentifier("K")
+    val M = NatIdentifier("M", isExplicit = true)
+    val N = NatIdentifier("N", isExplicit = true)
+    val K = NatIdentifier("K", isExplicit = true)
 
-    val mmMKN: Expr = {
+    val mmMKN = {
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
@@ -156,7 +155,7 @@ class algorithmic extends test_util.Tests {
                   map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
                     /* N.(f32, (f32, f32))*/
                     zip(acc)(
-                      map(fun(bs => pair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
+                      map(fun(bs => makePair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
                 }))(
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f)))
               ) $
@@ -194,7 +193,7 @@ class algorithmic extends test_util.Tests {
       map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
         /* N.(f32, (f32, f32))*/
         zip(acc)(
-          map(fun(bs => pair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
+          map(fun(bs => makePair(bs)(fst(y)))) $ snd(y)/*:N.f32*/)
     })
 
     // this one is constructed more similar to what the rewrite rules will create
@@ -207,7 +206,7 @@ class algorithmic extends test_util.Tests {
                 map(fun(x => // x :: M.((f32, N.f32), N.f32)
                   app(app(op, fst(x)), snd(x)))) $
                   // M.((f32, N.f32), N.f32)
-                  zip(acc)(map(fun(t => pair(t)(snd(y)))) $ fst(y))))(
+                  zip(acc)(map(fun(t => makePair(t)(snd(y)))) $ fst(y))))(
               // generate zeros :: M.N.f32
               generate(fun(IndexType(M) ->: ArrayType(N, f32))(_ =>
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f) ))))
@@ -217,7 +216,7 @@ class algorithmic extends test_util.Tests {
       )))
 
     // unfortunately, the order of zip arguments is important
-    val goldKMNAlternative2: Rise =
+    val goldKMNAlternative2 =
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
@@ -226,7 +225,7 @@ class algorithmic extends test_util.Tests {
                 map(fun(x => // x :: M.((f32, N.f32), N.f32)
                   app(app(op, fst(x)), snd(x)))) $
                   // M.((N.f32, f32), N.f32)
-                  zip(acc)(map(fun(t => pair(t)(fst(y)))) $ snd(y))))(
+                  zip(acc)(map(fun(t => makePair(t)(fst(y)))) $ snd(y))))(
               // generate zeros :: M.N.f32
               generate(fun(IndexType(M) ->: ArrayType(N, f32))(_ =>
                 generate(fun(IndexType(N) ->: f32)(_ => l(0.0f) ))))
@@ -235,13 +234,12 @@ class algorithmic extends test_util.Tests {
           ))
       )))
 
-    infer(goldKMNAlternative)
-    infer(goldKMNAlternative2)
+    goldKMNAlternative.toExpr
+    goldKMNAlternative2.toExpr
 
-    val loopKMN: Rise = (topDown(liftReduce)).apply(infer(mmMKN)).get
+    val loopKMN = topDown(liftReduce).apply(mmMKN.toExpr).get
 
-    infer(loopKMN)
-    assert(goldKMNAlternative2 == loopKMN)
+    assert(goldKMNAlternative2.toExpr == loopKMN)
 
     /*
     val goldKMNAlternative2LowLevel =
@@ -271,11 +269,11 @@ class algorithmic extends test_util.Tests {
 
   // todo remove once PLDI-TVM tests are in
   ignore("mm tile + reorder") {
-    val M = NatIdentifier("M")
-    val N = NatIdentifier("N")
-    val K = NatIdentifier("K")
+    val M = NatIdentifier("M", isExplicit = true)
+    val N = NatIdentifier("N", isExplicit = true)
+    val K = NatIdentifier("K", isExplicit = true)
 
-    val mm: Rise =
+    val mm =
       DFNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
@@ -284,34 +282,22 @@ class algorithmic extends test_util.Tests {
               (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(l(0.0f))) $
                 zip(ak)(bk))) $ transpose(b) )) $ a)))))).get
 
-    val typedMM = infer(mm)
-
-    // sanity check
-    assert(mm == typedMM)
-
     val tile = body(body(body(body(body(tileND(2)(32)))))) `;` DFNF
 
-    val untyped = tile.apply(mm).get
-    val typed = tile.apply(typedMM).get
-
-    val typedUntyped = infer(untyped)
-    infer(typed)
+    val typed = tile.apply(mm).get
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
     val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
-    println(gen.CProgram(infer(lower(typedUntyped).get)).code)
-    assert(untyped == typed)
+    println(gen.CProgram(lower(typed).get).code)
 
     /// TILE + REORDER
 
     val tileReorder = body(body(body(body(body(tileNDList(List(16,32))))))) `;` DFNF `;`
-      inferRise `;` topDown(liftReduce) `;` inferRise `;` topDown(liftReduce)
+      topDown(liftReduce) `;` topDown(liftReduce)
 
     val reorder = tileReorder(mm).get
 
-    val fixed = infer(reorder)
-
-    println(gen.CProgram(lower(fixed).get).code)
+    println(gen.CProgram(lower(reorder).get).code)
   }
 
   test("tile mm") {
@@ -420,18 +406,18 @@ class algorithmic extends test_util.Tests {
     */
 
     val tiled = topDown(tileND(2)(16)).apply(mm)
-    infer(tiled.get)
+    tiled.get
   }
 
   test("reduce rows") {
     val addT = fun(x => fst(x) + snd(x))
 
-    val test =depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(i =>
+    val test = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(i =>
       reduceSeq(fun((y, acc) =>
         map(addT) $ zip(y)(acc)))(
-        generate(fun(IndexType(m) ->: f32)(_ => l(0.0f)))) $ i)))
+        generate(fun(IndexType(m) ->: f32)(_ => l(0.0f)))) $ i))
 
-    infer(test)
+    test.toExpr
   }
 
   test("dot and outer product") {
@@ -449,7 +435,7 @@ class algorithmic extends test_util.Tests {
       map(fun(a => map(fun(b => add(a,b))) $ ys )) $ xs
     )))
 
-    infer(dot)
-    infer(outer)
+    dot.toExpr
+    outer.toExpr
   }
 }

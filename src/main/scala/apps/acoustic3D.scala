@@ -2,10 +2,12 @@ package apps
 
 import rise.core._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.core.DSL.Type._
 import rise.core.types._
-import rise.core.HighLevelConstructs._
-import rise.openCL.DSL._
+import HighLevelConstructs._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclRotateValues
 
 object acoustic3D {
   private val getNumNeighbours = foreignFun("idxF",
@@ -20,23 +22,23 @@ object acoustic3D {
     int ->: int ->: int ->: int ->: int ->: int ->: int
   )
 
-  private val generateNumNeighbours = nFun(o => nFun(n => nFun(m =>
+  private val generateNumNeighbours = depFun((o: Nat, n: Nat, m: Nat) =>
     generate(fun(k =>
       generate(fun(j =>
         generate(fun(i =>
           getNumNeighbours(cast(i))(cast(j))(cast(k))
-          (cast(m: Expr))(cast(n: Expr))(cast(o: Expr))
+          (cast(l(m)))(cast(l(n)))(cast(l(o)))
         ))
       ))
     ))
-  )))
+  )
 
   private val getCF = foreignFun("getCF", Seq("neigh", "cfB", "cfI"),
     "{ if (neigh < 6) { return cfB; } else { return cfI; } }",
     int ->: f32 ->: f32 ->: f32)
 
   private val id = fun(x => x)
-  private val zip3D: Expr = zipND(3)
+  private val zip3D: ToBeTyped[Expr] = zipND(3)
 
   private val SR = 441.0f
   private val alpha = 0.005f
@@ -55,7 +57,7 @@ object acoustic3D {
 
   private val sz: Nat = 3
 
-  val acoustic: Expr = fun(
+  val acoustic: ToBeTyped[Expr] = fun(
     (3 `.` 3 `.` 3 `.` PairType(f32, PairType(f32, int))) ->: f32
   )(tile => {
     val x = tile `@` lidx(1, 3) `@` lidx(1, 3) `@` lidx(1, 3) |> snd |> snd
@@ -77,7 +79,7 @@ object acoustic3D {
       ((stencil * maskedValStencil) - (valueMat1 * cf2))) * cf
   })
 
-  val stencil: Expr = nFun(o => nFun(n => nFun(m => fun(
+  val stencil: ToBeTyped[Expr] = depFun((o: Nat, n: Nat, m: Nat) => fun(
     ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
       ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
       (o `.` n `.` m `.` f32)
@@ -85,9 +87,9 @@ object acoustic3D {
     mapGlobal(2)(mapGlobal(1)(mapGlobal(0)(acoustic)))
       o slide3D(sz, 1)
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2)))
-  ))))
+  ))
 
-  val stencilMSS: Expr = nFun(o => nFun(n => nFun(m => fun(
+  val stencilMSS: ToBeTyped[Expr] = depFun((o: Nat, n: Nat, m: Nat) => fun(
     ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
       ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
       (o `.` n `.` m `.` f32)
@@ -102,5 +104,5 @@ object acoustic3D {
         )
       ) o transpose o slide2D(sz, 1) o map(transpose) o transpose
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2)))
-  ))))
+  ))
 }

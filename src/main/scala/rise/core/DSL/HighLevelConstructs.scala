@@ -1,22 +1,24 @@
-package rise.core
+package rise.core.DSL
 
-import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
+import rise.core.Expr
+import rise.core.primitives._
 import rise.core.types._
 
 object HighLevelConstructs {
-  def slide2D(sz: Nat, st: Nat): Expr = slide2D(sz, st, sz, st)
-  def slide2D(szOuter: Nat, stOuter: Nat, szInner: Nat, stInner: Nat): Expr =
+  def slide2D(sz: Nat, st: Nat): ToBeTyped[Expr] = slide2D(sz, st, sz, st)
+
+  def slide2D(szOuter: Nat, stOuter: Nat, szInner: Nat, stInner: Nat): ToBeTyped[Expr] =
     map(slide(szInner)(stInner)) >> slide(szOuter)(stOuter) >> map(transpose)
 
-  val unslide2D: Expr =
+  val unslide2D: ToBeTyped[Expr] =
     map(transpose >> map(join)) >> join
 
   // Halide::TailStrategy::ShiftInwards:
   // Prevent evaluation beyond the original extent by shifting the tail case inwards,
   // re-evaluating some points near the end.
   // WARNING: data-races will happen if processing tiles in parallel
-  def tileShiftInwards(tileSize: Nat): Expr =
+  def tileShiftInwards(tileSize: Nat): ToBeTyped[Expr] =
     impl{ n: Nat => impl{ haloSize: Nat =>
     impl{ s: DataType => impl{ t: DataType =>
     fun(processTiles =>
@@ -27,8 +29,8 @@ object HighLevelConstructs {
         gather(generate(fun(i => {
           val endRegularTile = lidx(n / tileSize, tiles)
           val startRegular = indexAsNat(tile) * tileSize
-          val startShifted = n - tileSize
-          val start = select(tile < endRegularTile, startRegular, startShifted)
+          val startShifted = l(n - tileSize)
+          val start = select(tile < endRegularTile)(startRegular)(startShifted)
           natAsIndex(n + haloSize)(start + indexAsNat(i))
         })))
       )) |>
@@ -41,12 +43,12 @@ object HighLevelConstructs {
         val regularPos = indexAsNat(i)
         val recomputed = tileSize - (n % tileSize)
         val shiftedPos = indexAsNat(i) - recomputed
-        val pos = select(tile < endRegularTile, regularPos, shiftedPos)
+        val pos = select(tile < endRegularTile)(regularPos)(shiftedPos)
         natAsIndex(n)(pos)
       })))
     } :: (n `.` t)))}}}}
 
-  def tileEpilogue(tileSize: Nat): Expr =
+  def tileEpilogue(tileSize: Nat): ToBeTyped[Expr] =
     impl{ n: Nat => impl{ haloSize: Nat =>
     impl{ s: DataType => impl{ t: DataType =>
     fun(f => fun(g => fun(a =>
@@ -67,17 +69,17 @@ object HighLevelConstructs {
       )) :: (n`.`t)
     )))}}}}
 
-  def slide3D(sz: Nat, st: Nat): Expr =
+  def slide3D(sz: Nat, st: Nat): ToBeTyped[Expr] =
     map(slide2D(sz, st)) >> slide(sz)(st) >> map(transpose >> map(transpose))
 
-  val reorderWithStride: Expr = {
-    nFun(s => {
+  val reorderWithStride: ToBeTyped[Expr] = {
+    depFun((s: Nat) => {
       val f =
-        impl{ n: Nat =>
+        impl { n: Nat =>
           fun(IndexType(n))(i =>
             natAsIndex(n)(
               (indexAsNat(i) / (n /^ s)) +
-                ((s: Expr) * (indexAsNat(i) % (n /^ s)))
+                (l(s) * (indexAsNat(i) % (n /^ s)))
             )
           )
         }
@@ -85,37 +87,43 @@ object HighLevelConstructs {
     })
   }
 
-  def padClamp2D(b: Nat): Expr = padClamp2D(b, b, b, b)
-  def padClamp2D(l: Nat, r: Nat): Expr = padClamp2D(l, r, l, r)
-  def padClamp2D(lOuter: Nat, rOuter: Nat, lInner: Nat, rInner: Nat): Expr =
+  def padClamp2D(b: Nat): ToBeTyped[Expr] = padClamp2D(b, b, b, b)
+
+  def padClamp2D(l: Nat, r: Nat): ToBeTyped[Expr] = padClamp2D(l, r, l, r)
+
+  def padClamp2D(lOuter: Nat, rOuter: Nat, lInner: Nat, rInner: Nat): ToBeTyped[Expr] =
     map(padClamp(lInner)(rInner)) >> padClamp(lOuter)(rOuter)
 
-  def padCst2D(n: Nat): Expr = padCst2D(n, n)
-  def padCst2D(n: Nat, b: Nat): Expr =
+  def padCst2D(n: Nat): ToBeTyped[Expr] = padCst2D(n, n)
+
+  def padCst2D(n: Nat, b: Nat): ToBeTyped[Expr] =
     fun(x => padCst(n)(b)(generate(fun(_ => x))) >> map(padCst(n)(b)(x)))
 
-  def zipND(n: Int): Expr = {
-    def rec(n: Int, a: Expr, b: Expr): Expr =
+  def zipND(n: Int): ToBeTyped[Expr] = {
+    def rec(n: Int, a: ToBeTyped[Expr], b: ToBeTyped[Expr]): ToBeTyped[Expr] =
       if (n == 1) {
         zip(a)(b)
       } else if (n > 1) {
         zip(a)(b) |> map(fun(p2 => rec(n - 1, fst(p2), snd(p2))))
       } else {
-        pair(a)(b)
+        makePair(a)(b)
       }
 
     fun(a => fun(b => rec(n, a, b)))
   }
 
-  def dropLast: Expr = nFun(n => impl{ m: Nat => impl{ dt: DataType =>
-    take(m) :: ((m + n) `.` dt) ->: (m `.` dt) }}
+  def dropLast: ToBeTyped[Expr] = depFun((n: Nat) => impl { m: Nat =>
+    impl { dt: DataType =>
+      take(m) :: ((m + n) `.` dt) ->: (m `.` dt)
+    }
+  }
   )
 
   // TODO: Investigate. this might be wrong
-  val partition2D: Expr = {
+  val partition2D: ToBeTyped[Expr] = {
     import arithexpr.arithmetic.SteppedCase
-    nFun(outerSize =>
-      nFun(innerSize =>
+    depFun((outerSize: Nat) =>
+      depFun((innerSize: Nat) =>
         map(
           partition(3)(
             n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize)))
@@ -127,6 +135,6 @@ object HighLevelConstructs {
     )
   }
 
-  def slideVectors(n: Nat): Expr =
+  def slideVectors(n: Nat): ToBeTyped[Expr] =
     slide(n)(1) >> join >> asVector(n)
 }

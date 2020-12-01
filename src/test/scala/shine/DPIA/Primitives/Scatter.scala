@@ -1,15 +1,16 @@
 package shine.DPIA.Primitives
 
+import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import util.gen
 
 import scala.language.postfixOps
 
 class Scatter extends test_util.Tests {
   test("Reversing scatter should generate valid OpenCL") {
-    import rise.openCL.DSL._
+    import rise.openCL.TypedDSL._
     import shine.OpenCL._
 
     val N = 20
@@ -17,7 +18,7 @@ class Scatter extends test_util.Tests {
     val e = fun((n`.`int) ->: (n`.`int))(a => a |>
       mapGlobal(0)(fun(x => x)) |>
       scatter(generate(fun(i =>
-        natAsIndex(n)((n - 1: rise.core.Expr) - indexAsNat(i)))))
+        natAsIndex(n)(l(n - 1) - indexAsNat(i)))))
     )
 
     val k = gen.OpenCLKernel(e)
@@ -33,7 +34,7 @@ class Scatter extends test_util.Tests {
   }
 
   test("Overriding scatter should generate valid OpenCL") {
-    import rise.openCL.DSL._
+    import rise.openCL.TypedDSL._
     import shine.OpenCL._
 
     val N = 20
@@ -42,7 +43,7 @@ class Scatter extends test_util.Tests {
       mapGlobal(0)(mapSeq(fun(x => x))) |>
       join |>
       scatter(generate(fun(i => {
-        val end: rise.core.Expr = n - 1
+        val end = l(n - 1)
         natAsIndex(n)(end - indexAsNat(i) % n)
       })))
     )
