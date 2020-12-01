@@ -542,8 +542,12 @@ object TypedDSL {
       depApp[AddressSpaceKind](f, a)
     def apply(n2n: NatToNat): ToBeTyped[DepApp[NatToNatKind]] =
       depApp[NatToNatKind](f, n2n)
-    def apply(n2d: NatToData): ToBeTyped[DepApp[NatToDataKind]] =
+    def apply(n2d: NatToData): ToBeTyped[DepApp[NatToDataKind]] = {
       depApp[NatToDataKind](f, n2d)
+    }
+    def apply(n2d: NatCollectionToData): ToBeTyped[DepApp[NatCollectionToDataKind]] = {
+      depApp[NatCollectionToDataKind](f, n2d)
+    }
   }
 
   implicit class FunPipe(e: ToBeTyped[Expr]) {

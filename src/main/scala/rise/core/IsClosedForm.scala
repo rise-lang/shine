@@ -58,6 +58,7 @@ object IsClosedForm {
                 }
               case DepPairType(x, dt) => x match {
                 case x:NatIdentifier =>  Continue(t, this.copy(boundN = boundN + x))
+                case x:NatCollectionIdentifier => Continue(t, this)
                 case _ => ???
               }
 

@@ -174,8 +174,9 @@ object primitives {
   }
 
   @primitive object dpairNats extends Primitive with Builder {
-    impl{ fdt: NatCollectionToData => expl((ns: NatCollection) =>
-      fdt(ns) ->: (NatCollection `**` (fdt(_))))}
+    expl((ns: NatCollection) => impl { fdt: NatCollectionToData =>
+        fdt(ns) ->: (NatCollection `**` (fdt(_)))
+      } )
   }
 
   @primitive object dmatch extends Primitive with Builder {

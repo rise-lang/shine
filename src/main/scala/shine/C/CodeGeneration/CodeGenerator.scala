@@ -221,11 +221,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         })
 
       case MkDPairFstI(fst, a) =>
-        genNat(fst, env, fst => {
-          acc(a, env, List(), expr => C.AST.ExprStmt(C.AST.Assignment(
-            C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), expr), C.AST.Literal("0")
-            ) , fst)))
-        })
+        fst match {
+          case fst: NatIdentifier =>
+            genNat(fst, env, fst => {
+              acc(a, env, List(), expr => C.AST.ExprStmt(C.AST.Assignment(
+                C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), expr), C.AST.Literal("0")
+                ) , fst)))
+            })
+          case _: NatCollectionIdentifier => acc(a, env, List(), expr => {
+            C.AST.Stmts(C.AST.Comment("HERE"),
+            C.AST.ExprStmt(expr))
+          })
+        }
+
       case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")

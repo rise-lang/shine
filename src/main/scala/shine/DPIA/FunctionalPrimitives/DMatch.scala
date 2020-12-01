@@ -24,7 +24,7 @@ final case class DMatch(x: NatIdentifier,
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     // Turn the f imperative by means of forwarding the continuation translation
-    con(input)(λ(expT(DepPairType(x, elemT), aIn))(pair =>
+    con(input)(λ(expT(DepPairType[NatKind](x, elemT), aIn))(pair =>
         DMatchI(x, elemT, outT,
           _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), aIn))(snd =>
             con(f(fst)(snd))(C)
@@ -34,7 +34,7 @@ final case class DMatch(x: NatIdentifier,
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     // Turn the f imperative by means of forwarding the acceptor translation
-    con(input)(λ(expT(DepPairType(x, elemT), aIn))(pair => ImperativePrimitives.DMatchI(x, elemT, outT,
+    con(input)(λ(expT(DepPairType[NatKind](x, elemT), aIn))(pair => ImperativePrimitives.DMatchI(x, elemT, outT,
       _Λ_[NatKind]()((fst: NatIdentifier) => λ(expT(DataType.substitute(fst, x, elemT), aIn))(snd =>
         acc(f(fst)(snd))(A)
       )), pair)))
@@ -45,7 +45,7 @@ final case class DMatch(x: NatIdentifier,
     <f type={ToString(f.t.x ->: ExpType(elemT, read) ->: ExpType(outT, write))}>
       {Phrases.xmlPrinter(f)}
     </f>
-    <input type={ToString(ExpType(DepPairType(x, elemT), read))}>
+    <input type={ToString(ExpType(DepPairType[NatKind](x, elemT), read))}>
       {Phrases.xmlPrinter(input)}
     </input>
   </DMatch>.copy(label = {

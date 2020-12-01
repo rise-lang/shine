@@ -22,7 +22,7 @@ final case class DMatchI(x: NatIdentifier,
     <f type={ToString(f.t.x ->: ExpType(elemT, read) ->: ExpType(outT, write))}>
       {Phrases.xmlPrinter(f)}
     </f>
-    <input type={ToString(ExpType(DepPairType(x, elemT), read))}>
+    <input type={ToString(ExpType(DepPairType[NatKind](x, elemT), read))}>
       {Phrases.xmlPrinter(input)}
     </input>
   </DMatchI>.copy(label = {

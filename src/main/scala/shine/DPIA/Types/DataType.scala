@@ -1,8 +1,9 @@
 package shine.DPIA.Types
 
-import arithexpr.arithmetic.{ArithExpr, BigSum}
+import arithexpr.arithmetic.{ArithExpr, BigSum, GoesToRange}
+import shine.C.SizeInByte
 import shine.DPIA
-import shine.DPIA.{Nat, NatIdentifier}
+import shine.DPIA.{Nat, NatIdentifier, Types}
 
 sealed trait DataType
 
@@ -53,14 +54,38 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
   }
 }
 
-final case class DepPairType(x:NatIdentifier, elemT:DataType)
+final case class DepPairType[K <: Kind: KindName:KindReified](x:K#I, elemT:DataType)
   extends ComposedType {
-  override def toString: String = s"($x:nat ** $elemT)"
 
-  override def equals(other: Any): Boolean =other match {
+  override def toString: String = s"($x:${implicitly[KindName[K]].get} ** $elemT)"
+
+  override def equals(other: Any): Boolean = other match {
     case DepPairType(x2, elemT2) =>
-      this.elemT == DataType.substitute(this.x, x2, elemT2)
+      implicitly[KindReified[K]].tryFrom(x2).exists(x2 =>
+        this.elemT == implicitly[Types.KindReified[K]].substitute(this.x, x2, elemT2)
+      )
     case _ => false
+  }
+
+  def visitNat(f: Nat => Nat): DepPairType[K] = {
+    val visited = implicitly[KindReified[K]].visitNat(this.x, f)
+    implicitly[KindReified[K]].tryIdentifier(visited) match {
+      case Some(x) =>
+        val newSnd = DataType.visitNat(f, this.elemT)
+        DepPairType(x, newSnd)
+      case None => throw new Exception(s"Failed to build identifier in dependent type first member: $visited found")
+    }
+  }
+
+  def substituteNat(ae: Nat, `for`: Nat): DepPairType[K] = {
+    val visited = implicitly[KindReified[K]].substituteNat(ae, `for`, this.x)
+    implicitly[KindReified[K]].tryIdentifier(visited) match {
+        case Some(x) =>
+          val newSnd = DataType.substitute(ae, `for`, this.elemT)
+          DepPairType(x, newSnd)
+        case None =>
+          throw new Exception(s"Failed to build identifier in dependent type first member: $visited found")
+      }
   }
 }
 
@@ -136,10 +161,12 @@ object DataType {
         VectorType(f(v.size), v.elemType)
       case r: PairType =>
         PairType(visitNat(f, r.fst), visitNat(f, r.snd))
-      case r: DepPairType =>
+      case r: DepPairType[_] =>
+        /*
         val newFst = f(r.x).asInstanceOf[NatIdentifier]
         val newSnd = visitNat(f, r.elemT)
-        DepPairType(newFst, newSnd)
+        DepPairType(newFst, newSnd)*/
+        r.visitNat(f)
     }).asInstanceOf[T]
   }
 
@@ -161,13 +188,15 @@ object DataType {
         VectorType(ArithExpr.substitute(v.size, Map((`for`, ae))), v.elemType)
       case r: PairType =>
         PairType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
-      case r: DepPairType =>
-        val newFst = `for` match {
+      case r: DepPairType[_] =>
+        /*val newFst = `for` match {
           case ident: DPIA.NatIdentifier if ident == r.x => ae.asInstanceOf[NatIdentifier]
           case _ =>  r.x
         }
         val newSnd = substitute(ae, `for`, r.elemT)
         DepPairType(newFst, newSnd)
+        */
+        r.substituteNat(ae, `for`)
     }).asInstanceOf[T]
   }
 
@@ -182,7 +211,7 @@ object DataType {
   def getTotalNumberOfElements(dt: DataType): Nat = dt match {
     case _: BasicType => 1
     case _: PairType => 1
-    case _: DepPairType => 1
+    case _: DepPairType[_] => 1
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
@@ -201,7 +230,7 @@ object DataType {
   def getBaseDataType(dt: DataType): DataType = dt match {
     case _: BasicType => dt
     case _: PairType => dt
-    case _: DepPairType => dt
+    case _: DepPairType[_] => dt
     case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>

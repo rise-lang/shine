@@ -15,6 +15,8 @@ trait Builder {
     TypedDSL.depApp[AddressSpaceKind](TypedDSL.toBeTyped(apply), a)
   def apply(natCollection: NatCollection):  TypedDSL.ToBeTyped[DepApp[NatCollectionKind]] =
     TypedDSL.depApp[NatCollectionKind](TypedDSL.toBeTyped(apply), natCollection)
+  def apply(natCollectionToData: NatCollectionToData): TypedDSL.ToBeTyped[DepApp[NatCollectionToDataKind]] =
+    TypedDSL.depApp[NatCollectionToDataKind](TypedDSL.toBeTyped(apply), natCollectionToData)
 
   def unapply(arg: Expr): Boolean =
     throw new Exception("unapply method must be overridden")

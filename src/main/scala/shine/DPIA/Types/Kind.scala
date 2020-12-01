@@ -1,11 +1,12 @@
 package shine.DPIA.Types
 
 import shine.DPIA
-import shine.DPIA.NatIdentifier
+import shine.DPIA.fromRise.natIdentifier
+import shine.DPIA.{Nat, NatIdentifier}
 
 sealed trait Kind {
   type T
-  type I <: Kind.Identifier
+  type I <: T with Kind.Identifier
 }
 
 object Kind {
@@ -113,5 +114,59 @@ object KindName {
   }
   implicit val n2dtKN: KindName[NatToDataKind] = new KindName[NatToDataKind] {
     def get = "nat->data"
+  }
+}
+
+trait KindReified[K <: Kind] {
+  def tryFrom(x: Any): Option[K#T]
+  def tryIdentifier(x:K#T): Option[K#I]
+  def substitute(what:K#T, `for`:K#T, in:DataType): DataType
+  def substituteNat(ae:Nat, `for`:Nat, in: K#T): K#T
+
+  def visitNat(x:K#T, f: Nat => Nat):K#T
+}
+
+object KindReified {
+  implicit val natKR: KindReified[NatKind] = new KindReified[NatKind] {
+    override def tryFrom(x: Any): Option[Nat] = x match {
+      case n: Nat => Some(n)
+      case _ => None
+    }
+
+    override def tryIdentifier(x: Nat): Option[NatIdentifier] = x match {
+      case x:NatIdentifier => Some(x)
+      case x:rise.core.types.NatIdentifier => Some(natIdentifier(x))
+      case _ => None
+    }
+    override def substitute(what: Nat, `for`: Nat, in: DataType): DataType = {
+      DataType.substitute(what, `for`, in)
+    }
+
+    override def visitNat(x: Nat, f: Nat => Nat): Nat = f(x)
+
+    override def substituteNat(ae: Nat, `for`: Nat, in: Nat): Nat = {
+      `for` match {
+        case ident: DPIA.NatIdentifier if ident == in => ae.asInstanceOf[NatIdentifier]
+        case _ =>  in
+      }
+    }
+  }
+
+  implicit val natCollectionKR: KindReified[NatCollectionKind] = new KindReified[NatCollectionKind] {
+    override def tryFrom(x: Any): Option[NatCollection] = x match {
+      case x: NatCollection => Some(x)
+      case _ => None
+    }
+
+    override def tryIdentifier(x: NatCollection): Option[NatCollectionIdentifier] = x match {
+      case x: NatCollectionIdentifier => Some(x)
+      case _ => None
+    }
+
+    override def visitNat(x: NatCollection, f: Nat => Nat): NatCollection = x
+
+    override def substituteNat(ae: Nat, `for`: Nat, in: NatCollection): NatCollection = in
+
+    override def substitute(what: NatCollection, `for`: NatCollection, in: DataType): DataType = in
   }
 }

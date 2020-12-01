@@ -57,6 +57,7 @@ object fromRise {
 
       x match {
         case n: Nat => depApp[NatKind](f, n)
+        case ns: rt.NatCollection => depApp[NatCollectionKind](f, nats(ns))
         case dt: rt.DataType =>
           depApp[DataKind](f, dataType(dt))
         case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
@@ -795,16 +796,27 @@ object fromRise {
           assert(aOut1 == aOut2)
           val aIn = aIn1
           val aOut = aOut1
-          fun[ExpType](ExpType(DepPairType(x, elemT), aIn), pair =>
-            fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, aIn) ->: ExpType(outT, aOut)),f =>
-              DMatch(x, elemT, outT, aIn, aOut, f, pair)
-            )
-          )
+
+          x match {
+            case x: NatIdentifier =>
+              fun[ExpType](ExpType(DepPairType[NatKind](x, elemT), aIn), pair =>
+                fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, aIn) ->: ExpType(outT, aOut)),f =>
+                  DMatch(x, elemT, outT, aIn, aOut, f, pair)
+                )
+              )
+            case _ => ???
+          }
       }
 
       case core.dpair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
-          depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
+          depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair[NatKind](a, fst, sndT, snd)))
+      }
+
+      case core.dpairNats() => fromType {
+        case nsFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
+          depFun[NatCollectionKind](fst)(fun[ExpType](expT(sndT, a), snd =>
+            MkDPair[NatCollectionKind](a, fst, sndT, snd)))
       }
 
       case core.filter() | core.filterW() => fromType {
@@ -894,7 +906,8 @@ object fromRise {
     case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
     case rt.DepPairType(x, t) =>
       x match {
-      case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
+      case x:rt.NatIdentifier => DepPairType[NatKind](natIdentifier(x), dataType(t))
+      case x:rt.NatCollectionIdentifier => DepPairType[NatCollectionKind](natCollectionIdentifier(x), dataType(t))
       case _ => ???
     }
   }
@@ -913,6 +926,10 @@ object fromRise {
     case rt.f16 => f16
     case rt.f32 => f32
     case rt.f64 => f64
+  }
+
+  def nats(natCollection: rt.NatCollection): NatCollection = natCollection match {
+    case id:rt.NatCollectionIdentifier => natCollectionIdentifier(id)
   }
 
   def ntd(ntd: rt.NatToData): NatToData= ntd match {

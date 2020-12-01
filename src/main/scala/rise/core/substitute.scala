@@ -322,4 +322,13 @@ object substitute {
     }
     res
   }
+
+  def ns2dInNS2D(
+                subs: Map[NatCollectionToDataIdentifier, NatCollectionToData],
+                in: NatCollectionToData): NatCollectionToData = {
+    in match {
+      case ident: NatCollectionToDataIdentifier => subs.getOrElse(ident, ident)
+      case _ => in
+    }
+  }
 }

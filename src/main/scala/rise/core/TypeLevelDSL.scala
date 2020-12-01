@@ -117,6 +117,11 @@ object TypeLevelDSL {
       val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
       DepFunType[NatCollectionKind, Type](x, w.f(x))
     }
+
+    def apply(w: NatCollectionToDataFunctionWrapper[Type]): Type = {
+      val x = NatCollectionToDataIdentifier(freshName("ns2d"), isExplicit = true)
+      DepFunType[NatCollectionToDataKind, Type](x, w.f(x))
+    }
   }
 
   object impl {

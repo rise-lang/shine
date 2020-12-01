@@ -63,6 +63,7 @@ object PhraseType {
     case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier)  => substitute(a, forA, in)
+    case (ns: NatCollection, forN: NatCollectionIdentifier) => substitute(ns, forN, in)
     case (a: AccessType, forA: AccessTypeIdentifier)      => ??? //substitute(a, forA, in)
     case (n2n: NatToNat, fotN2N: NatToNatIdentifier)      => ??? //substitute(n2n, forN2N, in)
     case (n2d: NatToData, fotN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
@@ -177,28 +178,34 @@ object PhraseType {
     }
     Phrases.VisitAndRebuild(in, Visitor)
   }
+
+
   def substitute[T <: PhraseType](ns: NatCollection,
                                   `for`: NatCollectionIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
+    val v = substituteNatCollection(ns, `for`)
+    Phrases.VisitAndRebuild(in, v)
+  }
 
+  private def substituteNatCollection(ns: NatCollection, `for`: NatCollectionIdentifier): Phrases.VisitAndRebuild.Visitor = {
     def replaceOnNat(n:Nat): Nat = {
-        ns match {
-          case NatCollectionIdentifier(replacementName) =>
-            n match {
-              case n@rise.core.types.NatCollectionIndexing(coll, idxs) =>
-                coll match {
-                  case id@types.NatCollectionIdentifier(name, _) if name == `for`.name =>
-                    val newId = id.copy(name = replacementName)
-                    types.NatCollectionIndexing(newId, idxs)
-                  case _ => n
-                }
+      ns match {
+        case NatCollectionIdentifier(replacementName) =>
+          n match {
+            case n@rise.core.types.NatCollectionIndexing(coll, idxs) =>
+              coll match {
+                case id@types.NatCollectionIdentifier(name, _) if name == `for`.name =>
+                  val newId = id.copy(name = replacementName)
+                  types.NatCollectionIndexing(newId, idxs)
+                case _ => n
+              }
 
-              case x => x
-            }
-        }
+            case x => x
+          }
+      }
     }
 
-    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+    new Phrases.VisitAndRebuild.Visitor {
       override def natCollection(w: NatCollection): NatCollection = if (w == `for`) ns else w
 
       override def nat[N <: Nat](n: N): N = n.visitAndRebuild({ n => replaceOnNat(n)}).asInstanceOf[N]
@@ -207,7 +214,6 @@ object PhraseType {
         DataType.visitNat(_.visitAndRebuild({ n => replaceOnNat(n) }), dt)
 
     }
-    Phrases.VisitAndRebuild(in, Visitor)
   }
 
 
@@ -220,4 +226,10 @@ object PhraseType {
     }
     Phrases.VisitAndRebuild.visitPhraseTypeAndRebuild(in, Visitor)
   }
+
+  def substitute(ns: NatCollection, `for`: NatCollectionIdentifier, in: PhraseType): PhraseType = {
+    val v = substituteNatCollection(ns, `for`)
+    Phrases.VisitAndRebuild.visitPhraseTypeAndRebuild(in, v)
+  }
+
 }

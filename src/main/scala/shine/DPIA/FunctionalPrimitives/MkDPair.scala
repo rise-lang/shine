@@ -4,6 +4,7 @@ package shine.DPIA.FunctionalPrimitives
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.{MkDPairFstI, MkDPairSndAcc, Skip}
+import shine.DPIA.Phrases.VisitAndRebuild.KindVisitable
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{IndexData, Store, U32Data}
@@ -16,11 +17,11 @@ final case class Filter(a: AccessType, n: Nat, elemT: DataType, f: Phrase[ExpTyp
   extends ExpPrimitive {
   private val binder: NatIdentifier = NatIdentifier(freshName("n"), arithexpr.arithmetic.GoesToRange(n))
   private val sndT = ArrayType(binder,  IndexType(n))
-  override val t = expT(DepPairType(binder, sndT), a)
+  override val t = expT(DepPairType[NatKind](binder, sndT), a)
   // Filter needs to allocate more memory than it's 'logical' type says
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
-      `new`(DepPairType(binder, sndT), output => {
+      `new`(DepPairType[NatKind](binder, sndT), output => {
         // We just newed it, so we know output is an identifier. We will need to play some tricks
         // here, and change it's type.
         acceptorTranslation(output.wr) `;` C(output.rd)
@@ -37,11 +38,11 @@ final case class Filter(a: AccessType, n: Nat, elemT: DataType, f: Phrase[ExpTyp
             acc(f(input `@` idx))(testLocal.wr) `;`
             IfThenElse(testLocal.rd,
             {
-              ((MkDPairSndAcc(fst, sndT, A) `@` fst) :=| IndexType(n)| idx) `;`
+              ((MkDPairSndAcc[NatKind](fst, sndT, A) `@` fst) :=| IndexType(n)| idx) `;`
                 (counter.wr :=| u32 | counter.rd + Literal(U32Data(1)))
             },
             Skip()
-          ) `;` MkDPairFstI(fst, A)
+          ) `;` MkDPairFstI[NatKind](fst, A)
           })
         })
       })
@@ -64,9 +65,9 @@ final case class Filter(a: AccessType, n: Nat, elemT: DataType, f: Phrase[ExpTyp
   )
 }
 
-final case class MkDPair(a: AccessType, fst: NatIdentifier, sndT: DataType, snd: Phrase[ExpType])
+final case class MkDPair[K <: Kind: KindName: KindReified:KindVisitable](a: AccessType, fst: K#I, sndT: DataType, snd: Phrase[ExpType])
   extends ExpPrimitive {
-  override val t: ExpType = expT(DepPairType(fst, sndT), a)
+  override val t: ExpType = expT(DepPairType[K](fst, sndT), a)
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
@@ -110,7 +111,7 @@ final case class MkDPair(a: AccessType, fst: NatIdentifier, sndT: DataType, snd:
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = MkDPair(
     v.access(a),
-    v.nat(fst),
+    implicitly[KindVisitable[K]].visit(v, fst),
     v.data(sndT),
     VisitAndRebuild(snd, v),
   )

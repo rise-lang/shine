@@ -1,14 +1,14 @@
 package shine.DPIA.ImperativePrimitives
 
-import shine.DPIA.NatIdentifier
+import shine.DPIA.Phrases.VisitAndRebuild.KindVisitable
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.Store
-import shine.DPIA.Types.{AccType, DataType}
+import shine.DPIA.Types.{AccType, DataType, Kind}
 
 import scala.xml.Elem
 
-final case class MkDPairSndAcc(fst: NatIdentifier, sndT: DataType, A: Phrase[AccType]) extends AccPrimitive {
+final case class MkDPairSndAcc[K <: Kind:KindVisitable](fst: K#I, sndT: DataType, A: Phrase[AccType]) extends AccPrimitive {
   override val t = AccType(sndT)
 
   override def eval(s: Store): OperationalSemantics.AccIdentifier = ???
@@ -25,7 +25,7 @@ final case class MkDPairSndAcc(fst: NatIdentifier, sndT: DataType, A: Phrase[Acc
   </MkDPairSndAcc>
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[AccType] = MkDPairSndAcc(
-    f.nat(fst),
+    implicitly[KindVisitable[K]].visit(f, fst),
     f.data(sndT),
     VisitAndRebuild(A, f)
   )

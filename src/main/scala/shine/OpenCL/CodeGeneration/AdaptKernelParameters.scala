@@ -143,7 +143,7 @@ object AdaptKernelParameters {
       case _: DepArrayType => makeGlobalParam(i, gen)
       case _: BasicType => makePrivateParam(i, gen)
       case _: PairType => makePrivateParam(i, gen)
-      case _: DepPairType => makePrivateParam(i, gen)
+      case _: DepPairType[_] => makePrivateParam(i, gen)
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
       case _: NatToDataApply =>  throw new Exception("This should not happen")
     }

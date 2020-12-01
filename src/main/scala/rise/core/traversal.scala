@@ -87,6 +87,14 @@ object traversal {
                   DepApp[NatToDataKind](apply(f, v), v.visitN2D(n2d).value)(
                     v.visitType(da.t).value
                   )
+                case ns: NatCollection =>
+                  DepApp[NatCollectionKind](apply(f, v), v.visitNatCollection(ns).value)(
+                    v.visitType(da.t).value
+                  )
+                case ns2d: NatCollectionToData =>
+                  DepApp[NatCollectionToDataKind](apply(f, v), v.visitNS2D(ns2d).value)(
+                    v.visitType(da.t).value
+                  )
               }
             case l: Literal =>
               l.d match {
@@ -239,6 +247,11 @@ object traversal {
                   case n2d: NatToDataIdentifier =>
                     DepFunType[NatToDataKind, Type](
                       v.visitN2D(n2d).value.asInstanceOf[NatToDataIdentifier],
+                      apply(t, v)
+                    )
+                  case ns2d: NatCollectionToDataIdentifier =>
+                    DepFunType[NatCollectionToDataKind, Type](
+                      v.visitNS2D(ns2d).value.asInstanceOf[NatCollectionToDataIdentifier],
                       apply(t, v)
                     )
                 }

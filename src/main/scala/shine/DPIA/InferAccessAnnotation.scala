@@ -226,6 +226,8 @@ private class InferAccessAnnotation {
           Lifting.liftDependentFunctionType[NatToNatKind](fType)(ntn(n2n))
         case n2d: rt.NatToDataKind#T =>
           Lifting.liftDependentFunctionType[NatToDataKind](fType)(ntd(n2d))
+        case ns: rt.NatCollectionKind#T =>
+          Lifting.liftDependentFunctionType[NatCollectionKind](fType)(nats(ns))
       }
     ptAnnotationMap.put(depApp, depAppType)
     (depAppType, fSubst)
@@ -527,7 +529,7 @@ private class InferAccessAnnotation {
               case x:rt.NatIdentifier =>
                 assert(i.isInstanceOf[rt.NatIdentifier])
                 val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
-                expT(DepPairType(natIdentifier(x), dataType(elemT)), aIn) ->:
+                expT(DepPairType[NatKind](natIdentifier(x), dataType(elemT)), aIn) ->:
                   nFunT(i_, expT(dataType(app1), aIn) ->: expT(dataType(outT), aOut)) ->:
                     expT(dataType(retT), aOut)
               case _ => ???
@@ -544,6 +546,21 @@ private class InferAccessAnnotation {
               case fst:rt.NatIdentifier =>
                 val fst_ = natIdentifier(fst)
                 nFunT(fst_, expT(dataType(sndT), a1) ->: expT(dataType(outT), a1))
+              case _ => ???
+            }
+
+          case _ => error(s"did not expect $t")
+        }
+        buildType(p.t)
+
+      case rp.dpairNats() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.DepFunType(fst, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
+            val a1 = accessTypeIdentifier()
+            fst match {
+              case fst:rt.NatCollectionIdentifier =>
+                val fst_ = natCollectionIdentifier(fst)
+                nsFunT(fst_, expT(dataType(sndT), a1) ->: expT(dataType(outT), a1))
               case _ => ???
             }
 

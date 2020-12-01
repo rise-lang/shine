@@ -172,6 +172,11 @@ object Constraint {
           case (dt: DataType, _: NatToDataApply) =>
             Solution.subs(b, dt) // substitute apply by data type
 
+            // TODO(fix properly)
+          case (NatCollectionToDataApply(f:NatCollectionToDataIdentifier, ns), dt:DataType) =>
+            // Do the not-really-valid thing where we attempt to invert the function
+            Solution.subs(f, NatCollectionToData(id => substitute.natCollectionInType(ns, id, dt)))
+
           case _ =>
             error(s"cannot unify $a and $b")
         }

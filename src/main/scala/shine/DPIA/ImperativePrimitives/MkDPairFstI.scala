@@ -1,14 +1,14 @@
 package shine.DPIA.ImperativePrimitives
 
+import shine.DPIA.Phrases.VisitAndRebuild.KindVisitable
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.Store
 import shine.DPIA.Types._
-import shine.DPIA._
 
 import scala.xml.Elem
 
 
-final case class MkDPairFstI(fst: Nat, A: Phrase[AccType]) extends CommandPrimitive {
+final case class MkDPairFstI[K <: Kind:KindVisitable](fst: K#I, A: Phrase[AccType]) extends CommandPrimitive {
   override val t = comm
 
   override def eval(s: Store) = ???
@@ -24,8 +24,8 @@ final case class MkDPairFstI(fst: Nat, A: Phrase[AccType]) extends CommandPrimit
     </snd>
   </MkDPairFstI>
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): MkDPairFstI = MkDPairFstI(
-    f.nat(fst),
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): MkDPairFstI[K] = MkDPairFstI[K](
+    implicitly[KindVisitable[K]].visit(f, fst),
     VisitAndRebuild(A, f)
   )
 }

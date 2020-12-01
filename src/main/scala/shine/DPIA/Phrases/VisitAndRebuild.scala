@@ -94,6 +94,11 @@ object VisitAndRebuild {
               DepApply[NatKind, T](
                 apply(p, v).asInstanceOf[Phrase[NatKind `()->:` T]],
                 v.nat(n))
+            case ns: NatCollection =>
+              DepApply[NatCollectionKind, T](
+                apply(p, v).asInstanceOf[Phrase[NatCollectionKind `()->:` T]],
+                v.natCollection(ns)
+              )
             case dt: DataType =>
               DepApply[DataKind, T](
                 apply(p, v).asInstanceOf[Phrase[DataKind `()->:` T]],
@@ -204,4 +209,17 @@ object VisitAndRebuild {
           visitDataTypeAndRebuild(r.snd, v))
       case d => d
     }
+
+  trait KindVisitable[K <: Kind] {
+    def visit(v:VisitAndRebuild.Visitor, x:K#I): K#I
+  }
+
+  implicit val natVisitable = new KindVisitable[NatKind] {
+    override def visit(v: Visitor, x: NatIdentifier): NatIdentifier = v.nat(x)
+  }
+
+  implicit val natCollectionVisitable = new KindVisitable[NatCollectionKind] {
+    override def visit(v: Visitor, x: NatCollectionIdentifier): NatCollectionIdentifier =
+        v.natCollection(x).asInstanceOf[NatCollectionIdentifier]
+  }
 }

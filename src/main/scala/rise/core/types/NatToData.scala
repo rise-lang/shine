@@ -8,7 +8,17 @@ sealed trait NatCollectionToData {
     case NatCollectionToDataLambda(x, body)   => NatCollectionToDataLambda(x, f(body))
   }
 
-  def apply(ns: NatCollection): DataType = NatCollectionToDataApply(this, ns)
+  def apply(ns: NatCollection): DataType = this match {
+    case NatCollectionToDataLambda(x, body) => substitute.natCollectionInType(ns, x, body)
+    case _ => NatCollectionToDataApply(this, ns)
+  }
+}
+
+object NatCollectionToData {
+  def apply(f: NatCollectionIdentifier => DataType):NatCollectionToData = {
+    val id = NatCollectionIdentifier(freshName("ns")) //Non explicit for type inference reasons
+    NatCollectionToDataLambda(id, f(id))
+  }
 }
 
 final case class NatCollectionToDataIdentifier(name: String,

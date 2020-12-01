@@ -342,7 +342,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       getOutputType(elemType)
     case DepArrayType(_, _) | _: NatToDataApply =>
       throw new Exception("This should not happen")
-    case _:DepPairType => throw new Exception("Dependent pair not supported as output type")
+    case _:DepPairType[_] => throw new Exception("Dependent pair not supported as output type")
   }
 }
 

@@ -173,6 +173,8 @@ object traversal {
               Some(s(f).mapSuccess(DepApp[DataKind](_, dt)(da.t)))
             case addr: AddressSpace =>
               Some(s(f).mapSuccess(DepApp[AddressSpaceKind](_, addr)(da.t)))
+            case ns: NatCollection =>
+              Some(s(f).mapSuccess(DepApp[NatCollectionKind](_, ns)(da.t)))
           }
           case Literal(_) => None
           case _: ForeignFunction => None
