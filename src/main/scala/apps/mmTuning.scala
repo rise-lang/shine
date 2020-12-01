@@ -10,13 +10,13 @@ import util.gen
 object mmTuning {
 
   // we don't tune input size
-  private val N = 64
-  private val M = 128
-  private val O = 128
-
-//  private val N = 1024
-//  private val M = 1024
-//  private val O = 1024
+//  private val N = 128
+//  private val M = 128
+//  private val O = 128
+//
+  private val N = 1024
+  private val M = 1024
+  private val O = 1024
 
   private def randGold(): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
     val rand = new scala.util.Random
