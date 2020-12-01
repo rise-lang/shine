@@ -10,13 +10,13 @@ import util.gen
 object mmTuning {
 
   // we don't tune input size
-//  private val N = 128
-//  private val M = 128
-//  private val O = 128
+  private val N = 64
+  private val M = 128
+  private val O = 128
 //
-  private val N = 1024
-  private val M = 1024
-  private val O = 1024
+//  private val N = 512
+//  private val M = 1024
+//  private val O = 1024
 
   private def randGold(): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
     val rand = new scala.util.Random
@@ -55,7 +55,7 @@ object mmTuning {
 //    println("ls1: " + ls1)
 //    println("gs0: " + gs0)
 //    println("gs1: " + gs1)
-
+//
     // default values
     //    val v3 = 4
 //    val v4 = 8
@@ -68,7 +68,9 @@ object mmTuning {
     val kernel = genMMKernel(v3, v4, v5, v6, v7, v8)
 
     // create random values
+    println("compute gold")
     val (at, b, gold) = randGold()
+    println("compute gold finished")
 
     // run kernel
     try{
@@ -99,6 +101,8 @@ object mmTuning {
     }catch{
       case e:Throwable => {
         Executor.shutdown()
+
+        println("error: " + e.getCause)
 
 //        val costfile = new PrintWriter(new FileOutputStream(new File("/home/jo/development/lift/atf/atfc/build/costfile.txt"), false))
 //        costfile.println(Double.MaxValue.toString)

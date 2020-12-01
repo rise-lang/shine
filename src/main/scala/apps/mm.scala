@@ -196,14 +196,21 @@ object mm {
                   B: Array[Array[Float]]): Array[Array[Float]] = {
     val output = Array.ofDim[Float](n, m)
 
+    // init output
+    for(i <- 0 until n){
+      for(j <- 0 until m){
+        output(i)(j) = 0
+      }
+    }
+
     for (i <- 0 until n) {
-      for (j <- 0 until m) {
-        var sum = 0.0f
-        for (k <- 0 until o) {
-          sum += At(k)(i) * B(k)(j)
+      for (k <- 0 until o) {
+          for (j <- 0 until m) {
+          output(i)(j) += At(k)(i) * B(k)(j)
+//          sum += At(k)(i) * B(k)(j)
+//          output(i)(j) += sum
         }
 
-        output(i)(j) = sum
       }
     }
 
