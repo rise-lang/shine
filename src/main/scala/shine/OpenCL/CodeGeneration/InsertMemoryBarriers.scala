@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 object InsertMemoryBarriers {
   def apply(p: Phrase[CommType]): Phrase[CommType] = {
-    val (p2, m) = visitNewMetadata(p, Map())
+    val (p2, _) = analyzeAndInsertBarriers(p, Map())
     p2
   }
 
@@ -20,10 +20,11 @@ object InsertMemoryBarriers {
                               // work-group parallel writes to outer scope allocations
                               wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace])
 
-  private def visitNewMetadata(p: Phrase[CommType],
-                               // allocations in the current scope
-                               allocs: Map[Identifier[_ <: PhraseType], AddressSpace]
-                              ): (Phrase[CommType], Metadata) = {
+  private def analyzeAndInsertBarriers(
+    p: Phrase[CommType],
+    // allocations in the current scope
+    allocs: Map[Identifier[_ <: PhraseType], AddressSpace]
+  ): (Phrase[CommType], Metadata) = {
     val meta = Metadata(mutable.Map(), mutable.Map())
     val p2 = VisitAndRebuild(p, Visitor(allocs, meta))
     (p2, meta)
@@ -82,7 +83,7 @@ object InsertMemoryBarriers {
           Continue(p, Visitor(allocs + (x -> addr), metadata))
         case OpenCLNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body))
         if addr != AddressSpace.Private =>
-          val (b2, m) = visitNewMetadata(body, allocs + (x -> addr))
+          val (b2, m) = analyzeAndInsertBarriers(body, allocs + (x -> addr))
           collectReads(in, allocs, metadata.reads)
           metadata.reads ++= m.reads
           metadata.reads ++= m.reads
@@ -91,8 +92,8 @@ object InsertMemoryBarriers {
           collectReads(rhs, allocs, metadata.reads)
           Stop(p)
         case Seq(a, b) =>
-          val (a2, am) = visitNewMetadata(a, allocs)
-          val (b2, bm) = visitNewMetadata(b, allocs)
+          val (a2, am) = analyzeAndInsertBarriers(a, allocs)
+          val (b2, bm) = analyzeAndInsertBarriers(b, allocs)
           val dependencies = am.reads.keySet.intersect(bm.wg_writes.keySet)
             .union(bm.reads.keySet.intersect(am.wg_writes.keySet))
           metadata.reads ++= am.reads

@@ -13,7 +13,8 @@ import rise.openCL.TypedDSL._
 class Barriers extends test_util.Tests {
   private val sum = oclReduceSeq(Private)(add)(l(0.0f))
 
-  // TODO?
+  // TODO? removing these barriers requires more fine grain analysis to
+  // notice that the threads do not actually communicate through the memory
   ignore("1D mapLocal toLocal seq without thread sharing") {
     val e = depFun((n: Nat, m: Nat) => fun(n`.`m`.`f32)(in =>
       in |> mapWorkGroup(0)(
@@ -26,7 +27,8 @@ class Barriers extends test_util.Tests {
     "barrier".r.findAllIn(k.code).length shouldBe 0
   }
 
-  // TODO?
+  // TODO? removing these barriers requires more fine grain analysis to
+  // notice that the threads do not actually communicate through the memory
   ignore("1D mapLocal toGlobal seq without thread sharing") {
     val e = depFun((n: Nat, m: Nat) => fun(n`.`m`.`f32)(in =>
       in |> mapWorkGroup(0)(
