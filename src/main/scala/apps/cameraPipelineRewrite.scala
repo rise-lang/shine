@@ -14,7 +14,7 @@ import rise.elevate.rules.movement._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.traversal._
 
-object cameraPipeRewrite {
+object cameraPipelineRewrite {
   private def rewriteSteps(steps: scala.collection.Seq[Strategy[Rise]]): Strategy[Rise] = a => {
     var nRewrite = 0
     steps.foldLeft[RewriteResult[Rise]](Success(a))({ case (r, s) =>

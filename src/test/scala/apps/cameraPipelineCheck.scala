@@ -1,6 +1,6 @@
 package apps
 
-import cameraPipe._
+import cameraPipeline._
 import util._
 import rise.core._
 import rise.core.types._
@@ -15,7 +15,7 @@ import elevate.core.strategies.traversal._
 import rise.elevate.rules.traversal.alternative
 import rise.elevate.rules.traversal.alternative._
 
-class cameraPipeCheck extends test_util.TestsWithExecutor {
+class cameraPipelineCheck extends test_util.TestsWithExecutor {
   val H = 99
   val W = 146
 
@@ -224,8 +224,8 @@ int main(int argc, char** argv) {
   }
 
   test("demosaic passes checks with circular buffers") {
-    checkDemosaic(cameraPipeRewrite.demosaicCircularBuffers(
-      printTime("infer", cameraPipe.demosaic.toExpr)
+    checkDemosaic(cameraPipelineRewrite.demosaicCircularBuffers(
+      printTime("infer", cameraPipeline.demosaic.toExpr)
     ).get)
   }
 
@@ -334,7 +334,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   }
 
   test("camera pipe passes checks with circular buffers") {
-    cameraPipeRewrite.circularBuffers(
+    cameraPipelineRewrite.circularBuffers(
       printTime("infer", camera_pipe.toExpr)
     ).get
     // TODO: check output
