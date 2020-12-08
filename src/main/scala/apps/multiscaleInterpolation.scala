@@ -68,21 +68,23 @@ object multiscaleInterpolation {
       (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32)
     )(input => {
       val alpha = lidx(3, 4)
-      val start = generate(fun(i =>
-        select(i < alpha)(
-          zipND(2)(input `@` i, input `@` alpha) |>
-          map(map(fun(p => fst(p) * snd(p))))
-        )(input `@` alpha)
-      )) |> map(padClamp2D(1))
-      val downsampled = (1 to levels).foldRight[ToBeTyped[Expr]](start){ (_, prev) =>
+      val start = map(padClamp2D(0, 1))(input) |> fun(clamped =>
+        generate(fun(i =>
+          select(i < alpha)(
+            zipND(2)(clamped `@` i, clamped `@` alpha) |>
+              map(map(fun(p => fst(p) * snd(p))))
+          )(clamped `@` alpha)
+        ))
+      )
+      val downsampled = (1 until levels).foldRight[ToBeTyped[Expr]](start){ (_, prev) =>
         impl { hp: Nat => impl { wp: Nat => downsample(hp)(wp)(prev) }}
       }
-      val upsampled = (1 to levels).foldRight[ToBeTyped[Expr]](downsampled){ case (_, prev) =>
+      val upsampled = (1 until levels).foldRight[ToBeTyped[Expr]](downsampled){ case (_, prev) =>
         impl { hp: Nat => impl { wp: Nat => upsample(hp)(wp)(prev) }}
       }
       upsampled |>
-      map(drop(1) >> dropLast(1)) >>
-      map(map(drop(1) >> dropLast(1))) >>
+      map(dropLast(1)) >>
+      map(map(dropLast(1))) >>
       normalize(h)(w)
     })))
 
@@ -91,29 +93,29 @@ object multiscaleInterpolation {
   object omp { // and plain C
     import rise.openMP.primitives._
 
-    def multiscaleInterpolationNaivePar(levels: Int): ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
+    def multiscaleInterpolationNaivePar(levels: Int): ToBeTyped[Expr] = depFun(h: Nat, w: Nat) => fun(
       (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32)
     )(input => {
       val alpha = lidx(3, 4)
-      val start = generate(fun(i =>
-        select(i < alpha)(
-          zipND(2)(input `@` i, input `@` alpha) |>
-          map(map(fun(p => fst(p) * snd(p))))
-        )(input `@` alpha)
-      )) |> map(padClamp2D(1))
-      val downsampled = (1 to levels).foldRight[ToBeTyped[Expr]](start) { (_, prev) =>
-        impl { hp: Nat => impl { wp: Nat =>
-          downsample(hp)(wp)(prev) |> mapSeq(mapPar(mapSeq(id))) |> toMem
-        }}
+      val start = map(padClamp2D(0, 1))(input) |> fun(clamped =>
+          generate(fun(i =>
+          select(i < alpha)(
+            zipND(2)(clamped `@` i, clamped `@` alpha) |>
+            map(map(fun(p => fst(p) * snd(p))))
+          )(clamped `@` alpha)
+        ))
+      )
+      val downsampled = (1 until levels).foldLeft[ToBeTyped[Expr]](start) { (prev, i) =>
+        val factor = (2: Nat).pow(i)
+        downsample(h /^ factor)(w /^ factor)(prev) |> mapSeq(mapPar(mapSeq(id))) |> toMem
       }
-      val upsampled = (1 to levels).foldRight[ToBeTyped[Expr]](downsampled) { case (_, prev) =>
-        impl { hp: Nat => impl { wp: Nat =>
-          upsample(hp)(wp)(prev) |> mapSeq(mapPar(mapSeq(id))) |> toMem
-        }}
+      val upsampled = (1 until levels).foldRight[ToBeTyped[Expr]](downsampled) { case (i, prev) =>
+        val factor = (2: Nat).pow(i)
+        upsample(h /^ factor)(w /^ factor)(prev) |> mapSeq(mapPar(mapSeq(id))) |> toMem
       }
       upsampled |>
-      map(drop(1) >> dropLast(1)) >>
-      map(map(drop(1) >> dropLast(1))) >>
+      map(dropLast(1)) >>
+      map(map(dropLast(1))) >>
       normalize(h)(w) >> mapSeq(mapPar(mapSeq(id)))
     }))
   }

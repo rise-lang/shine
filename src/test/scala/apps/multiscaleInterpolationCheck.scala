@@ -6,10 +6,9 @@ import rise.core._
 import util._
 
 class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
-  private val levels = 10
-  private val H = 20
-  private val W = 80
-  private val sigma = 1.5f
+  private val levels = 2
+  private val H = 32
+  private val W = 64
 
   test("interpolation typechecks") {
     println(multiscaleInterpolation(levels, 1).toExpr.t)
@@ -68,8 +67,7 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
     util.printTime("execute", util.Execute(testCode))
   }
 
-  // TODO: cannot infer access annotations
-  ignore("interpolationNaivePar generates OpenMP code") {
+  test("interpolationNaivePar generates OpenMP code") {
     // FIXME: checks against itself
     checkOMP(lowerOMP(omp.multiscaleInterpolationNaivePar(levels)))
   }
