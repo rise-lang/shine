@@ -8,6 +8,8 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives._
 import shine.OpenCL.ImperativePrimitives._
+import shine.cuda.primitives.functional.{FromFragment, GenerateFragment, MapBlock, MapFragmentElements, MapGlobal, MapLane, MapThreads, MapWarp, ToFragment}
+import shine.cuda.warpDim
 
 object AdjustArraySizesForAllocations {
   case class DataTypeAdjustment(accF: Phrase[AccType] => Phrase[AccType],
@@ -31,9 +33,14 @@ object AdjustArraySizesForAllocations {
   private def visitAndGatherInformation[T <: PhraseType](p: Phrase[T],
                                                  parallInfo: List[ParallelismInfo]): List[ParallelismInfo] = {
     p match {
-      case mG@MapGlobal(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
+      case mG@shine.OpenCL.FunctionalPrimitives.MapGlobal(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
       case mWG@MapWorkGroup(dim) => visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
       case mL@MapLocal(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
+      case mWG@shine.cuda.primitives.functional.MapGlobal(dim) => visitAndGatherInformation(mWG.f, BasicInfo(Global, dim) :: parallInfo)
+      case mB@MapBlock(dim) => visitAndGatherInformation(mB.f, BasicInfo(WorkGroup, dim) :: parallInfo)
+      case mG@MapThreads(dim) => visitAndGatherInformation(mG.f, BasicInfo(Local, dim) :: parallInfo)
+      case mW@MapWarp(dim) => visitAndGatherInformation(mW.f, BasicInfo(Warp, dim) :: parallInfo)
+      case mL@MapLane(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
       case mS: MapSeqUnroll => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
 
@@ -71,9 +78,15 @@ object AdjustArraySizesForAllocations {
         case pi => error(s"did not expect $pi")
       }
 
+      case _: FromFragment => BasicInfo(Warp, 'x') :: parallInfo
+
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunction |
-           _: BinOp | _: UnaryOp => parallInfo
+           _: BinOp | _: UnaryOp | _: GenerateFragment |
+           _: FromFragment |_: ToFragment | _: MapFragmentElements => parallInfo
+
+      //TODO visit value first?
+      case Let(_, _, _, _, f) => visitAndGatherInformation(f, parallInfo)
 
       case pattern => throw new Exception(s"this should not happen for now: $pattern")
     }
@@ -165,6 +178,8 @@ object AdjustArraySizesForAllocations {
       case (Local, AddressSpace.Private) => get_local_size(dim)
       case (Local, _) => 1
       case (Sequential, _) => 1
+      //TODO CUDA-ParallelismLevel
+      case (Warp, AddressSpace.Private) => warpDim(dim.asInstanceOf[Char])
       case _ => throw new Exception("This should never happen.")
     }
   }
@@ -188,6 +203,10 @@ object AdjustArraySizesForAllocations {
           case (BasicInfo(Local, _), AddressSpace.Local) => ArrayType(n, adjustedSizeDataType(elemType, is, addrSpace))
 
           case (BasicInfo(Sequential, _), AddressSpace.Local) => ArrayType(n, adjustedSizeDataType(elemType, is, addrSpace))
+
+          //TODO CUDA-ParallelismLevel
+          case (BasicInfo(Warp, dim), AddressSpace.Private) =>
+            ArrayType(n / warpDim(dim.asInstanceOf[Char]), adjustedSizeDataType(elemType, is, addrSpace))
 
 
           case (BasicInfo(Global, dim), AddressSpace.Private) =>

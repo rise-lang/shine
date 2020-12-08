@@ -93,6 +93,71 @@ final case class PairType(dt1: DataType, dt2: DataType) extends DataType {
   override def toString: String = s"($dt1, $dt2)"
 }
 
+sealed trait MatrixLayout
+
+object MatrixLayout {
+  object Row_Major extends MatrixLayout { override def toString = "Row_Major" }
+  object Col_Major extends MatrixLayout { override def toString = "Col_Major" }
+}
+
+final case class MatrixLayoutIdentifier(
+                                         name: String,
+                                         override val isExplicit: Boolean = false
+                                       ) extends MatrixLayout
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: MatrixLayoutIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: MatrixLayoutIdentifier =
+    this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case a: MatrixLayoutIdentifier => this.name == a.name
+    case _                         => false
+  }
+  override def hashCode(): Int = this.name.hashCode()
+}
+
+sealed trait WmmaFragment extends DataType {
+  def m:Nat
+  def n:Nat
+  def k:Nat
+  def dataType: DataType
+
+  def arrayType: ArrayType
+}
+
+final case class WmmaAMatrix(m: Nat,
+                             n: Nat,
+                             k: Nat,
+                             dataType: DataType,
+                             layout: MatrixLayout
+                            ) extends WmmaFragment {
+  override def arrayType: ArrayType = ArrayType(m, ArrayType(k, dataType))
+
+  override def toString: String = s"wmmaAMatrix[$m,$n,$k,$dataType $layout]"
+}
+
+final case class WmmaBMatrix(m: Nat,
+                             n: Nat,
+                             k: Nat,
+                             dataType: DataType,
+                             layout: MatrixLayout
+                            ) extends WmmaFragment {
+  override def arrayType: ArrayType = ArrayType(k, ArrayType(n, dataType))
+
+  override def toString: String = s"wmmaBMatrix[$m,$n,$k,$dataType $layout]"
+}
+
+final case class WmmaAccumulator(m: Nat,
+                                 n: Nat,
+                                 k: Nat,
+                                 dataType: DataType
+                                ) extends WmmaFragment {
+  override def arrayType: ArrayType = ArrayType(m, ArrayType(n, dataType))
+
+  override def toString: String = s"WmmaAccumulator[$m,$n,$k,$dataType]"
+}
+
 
 final case class DepPairType[K <: Kind: KindName](
                             x: K#I,

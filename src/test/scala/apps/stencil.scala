@@ -1,8 +1,8 @@
 package apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import util.{gen, Display, TimeSpan}
+import shine.OpenCL.{GlobalSize, LocalSize}
+import util.{gen, Display, KernelWithSizes, TimeSpan}
 import util.Time.ms
 import rise.openCL.DSL._
 import arithexpr.arithmetic.SteppedCase

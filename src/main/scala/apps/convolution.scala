@@ -6,7 +6,7 @@ import rise.core.types._
 import rise.core.TypeLevelDSL._
 import rise.openCL.DSL._
 import rise.core.HighLevelConstructs._
-import util.{Time, TimeSpan}
+import util.{KernelNoSizes, Time, TimeSpan}
 
 object convolution {
   private val id = fun(x => x)

@@ -12,6 +12,7 @@ import shine.OpenCL.AST.RequiredWorkGroupSize
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
 import shine._
+import util.{KernelNoSizes, KernelWithSizes}
 
 import scala.annotation.tailrec
 import scala.collection._
@@ -19,13 +20,13 @@ import scala.collection._
 //noinspection VariablePatternShadow
 object KernelGenerator {
   def makeCode[T <: PhraseType](localSize: LocalSize, globalSize: GlobalSize)
-                               (originalPhrase: Phrase[T], name: String): OpenCL.KernelWithSizes = {
+                               (originalPhrase: Phrase[T], name: String): KernelWithSizes = {
     val (phrase, params, defs) = getPhraseAndParams(originalPhrase, immutable.Seq(), immutable.Seq())
     makeKernel(name, phrase, params.reverse, defs.reverse,
       Some(localSize), Some(globalSize)).getOrElse(throw new Exception("Expected KernelWithSizes"))
   }
 
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T], name: String = "KERNEL"): OpenCL.KernelNoSizes = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T], name: String = "KERNEL"): KernelNoSizes = {
     val (phrase, params, defs) = getPhraseAndParams(originalPhrase, immutable.Seq(), immutable.Seq())
     makeKernel(name, phrase, params.reverse, defs.reverse,
       None, None).swap.getOrElse(throw new Exception("Expected KernelNoSizes"))
@@ -54,7 +55,7 @@ object KernelGenerator {
                          inputParams: immutable.Seq[Identifier[ExpType]],
                          letNatDefs: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
                          localSize: Option[LocalSize],
-                         globalSize: Option[GlobalSize]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
+                         globalSize: Option[GlobalSize]): Either[KernelNoSizes, KernelWithSizes] = {
 
     val outParam = createOutputParam(outT = p.t)
 
@@ -88,7 +89,8 @@ object KernelGenerator {
             kernel = makeKernelFunction(name, kernelParams, adaptKernelBody(C.AST.Block(immutable.Seq(code))), localSize),
             outputParam = outParam,
             inputParams = inputParams,
-            intermediateParams = intermediateAllocations.map (_.identifier))
+            intermediateParams = intermediateAllocations.map (_.identifier),
+            OpenCL.AST.Printer(_))
 
       (localSize, globalSize) match {
         case (None, None) => Left(KernelNoSizes(oclKernel))

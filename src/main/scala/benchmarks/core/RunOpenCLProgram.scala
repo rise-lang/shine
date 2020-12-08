@@ -2,10 +2,10 @@ package benchmarks.core
 
 import rise.elevate.rules.traversal.default.RiseTraversable
 import shine.DPIA
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
+import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.Expr
 import rise.core.types.infer
-import util.{Display, Time, TimeSpan}
+import util.{Display, KernelWithSizes, Time, TimeSpan}
 
 import scala.util.Random
 

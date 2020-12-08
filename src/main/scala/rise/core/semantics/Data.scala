@@ -23,12 +23,16 @@ final case class IntData(i: Int) extends ScalarData(int) {
   override def toString: String = i.toString
 }
 
+final case class HalfData(f: Float) extends ScalarData(f16) {
+  override def toString: String = f"$f%.4h"
+}
+
 final case class FloatData(f: Float) extends ScalarData(f32) {
   override def toString: String = f"$f%.4f"
 }
 
 final case class DoubleData(d: Double) extends ScalarData(f64) {
-  override def toString: String = f"$d%.6f"
+  override def toString: String = f"$d%.6f" //TODO d instead of f?
 }
 
 final case class VectorData(v: Seq[ScalarData])

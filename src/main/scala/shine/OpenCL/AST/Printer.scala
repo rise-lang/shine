@@ -42,7 +42,7 @@ class Printer extends shine.C.AST.CPrinter {
     case _ => super.toString(e)
   }
 
-  private def printKernelDecl(k: KernelDecl): Unit = {
+  def printKernelDecl(k: KernelDecl): Unit = {
     print("__kernel")
     k.attribute match {
       case Some(RequiredWorkGroupSize(NDRange(x, y, z))) =>
@@ -60,7 +60,7 @@ class Printer extends shine.C.AST.CPrinter {
     printStmt(k.body)
   }
 
-  private def printParamDecl(p: ParamDecl): Unit = {
+  def printParamDecl(p: ParamDecl): Unit = {
     if (p.t.const) print("const ")
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
@@ -79,7 +79,7 @@ class Printer extends shine.C.AST.CPrinter {
   }
 
   private def printVarDecl(v: shine.OpenCL.AST.VarDecl): Unit = {
-    if (v.addressSpace != AddressSpace.Private) print(s"${v.addressSpace} ")
+    if (v.addressSpace != AddressSpace.Private) print(s"${toString(v.addressSpace)} ")
     if (v.t.const) print("const ")
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")

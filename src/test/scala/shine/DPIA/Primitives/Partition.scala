@@ -3,8 +3,8 @@ package shine.DPIA.Primitives
 import benchmarks.core.SimpleRunOpenCLProgram
 import shine.DPIA
 import shine.DPIA.Nat
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import util.{SyntaxChecker, Time, TimeSpan}
+import shine.OpenCL.{GlobalSize, LocalSize}
+import util.{KernelWithSizes, SyntaxChecker, Time, TimeSpan}
 import arithexpr.arithmetic._
 import rise.elevate.rules.traversal.default
 import rise.core.DSL._

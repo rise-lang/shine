@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.openCL.DSL._
+import util.KernelNoSizes
 
 object kmeans {
   private val update = fun(f32 ->: (f32 x f32) ->: f32)((dist, pair) =>

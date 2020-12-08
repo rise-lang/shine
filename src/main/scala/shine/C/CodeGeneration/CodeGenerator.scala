@@ -374,6 +374,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Split(n, _, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i + j) :: ps, cont)
+        //TODO check if this should really be allowed
+        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
       case Join(_, m, _, _, e) => path match {
@@ -565,7 +567,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case shine.DPIA.Types.f32 => C.AST.Type.float
         case shine.DPIA.Types.f64 => C.AST.Type.double
         case _: shine.DPIA.Types.IndexType => C.AST.Type.int
-        case _: shine.DPIA.Types.VectorType =>throw new Exception("Vector types in C are not supported")
+        case  _ => throw new Exception(s"$b types in C are not supported")
       }
       case a: shine.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
       case a: shine.DPIA.Types.DepArrayType =>
@@ -844,7 +846,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       d match {
         case NatData(n)       => C.AST.ArithmeticExpr(n)
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
-        case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
+        case _: IntData | _: FloatData | _: DoubleData | _: BoolData | _: HalfData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {
           case ArrayType(_, ArrayType(_, _)) =>

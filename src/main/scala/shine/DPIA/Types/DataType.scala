@@ -12,6 +12,57 @@ sealed trait BasicType extends DataType
 
 sealed trait ScalarType extends BasicType
 
+sealed trait MatrixLayout
+
+object MatrixLayout {
+  object Row_Major extends MatrixLayout { override def toString = "Row_Major" }
+  object Col_Major extends MatrixLayout { override def toString = "Col_Major" }
+}
+
+sealed trait WmmaFragment extends BasicType {
+  def m:Nat
+  def n:Nat
+  def k:Nat
+  def dataType: DataType
+
+  def arrayType: ArrayType
+}
+
+final case class WmmaAMatrix(m: Nat,
+                             n: Nat,
+                             k: Nat,
+                             dataType: DataType,
+                             layout: MatrixLayout
+                            ) extends WmmaFragment {
+  override def arrayType: ArrayType = ArrayType(m, ArrayType(k, dataType))
+
+  override def toString: String = s"wmmaAMatrix[$m,$n,$k,$dataType $layout]"
+}
+
+final case class WmmaBMatrix(m: Nat,
+                             n: Nat,
+                             k: Nat,
+                             dataType: DataType,
+                             layout: MatrixLayout
+                            ) extends WmmaFragment {
+
+  override def arrayType: ArrayType = ArrayType(k, ArrayType(n, dataType))
+
+  override def toString: String = s"wmmaBMatrix[$m,$n,$k,$dataType $layout]"
+}
+
+final case class WmmaAccumulator(m: Nat,
+                                 n: Nat,
+                                 k: Nat,
+                                 dataType: DataType
+                                ) extends WmmaFragment {
+  override def arrayType: ArrayType = ArrayType(m, ArrayType(n, dataType))
+
+  override def toString: String = s"WmmaAccumulator[$m,$n,$k,$dataType]"
+}
+
+object pipeline extends BasicType { override def toString = "pipeline" }
+
 object bool extends ScalarType { override def toString: String = "bool" }
 
 object int extends ScalarType { override def toString: String = "int" }
@@ -124,6 +175,21 @@ object DataType {
       case a: ArrayType =>
         ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
           substitute(ae, `for`, a.elemType))
+      case f: WmmaAMatrix =>
+        WmmaAMatrix(ArithExpr.substitute(f.m, Map((`for`, ae))),
+          ArithExpr.substitute(f.n, Map((`for`, ae))),
+          ArithExpr.substitute(f.k, Map((`for`, ae))),
+          substitute(ae, `for`, f.dataType), f.layout)
+      case f: WmmaBMatrix =>
+        WmmaBMatrix(ArithExpr.substitute(f.m, Map((`for`, ae))),
+          ArithExpr.substitute(f.n, Map((`for`, ae))),
+          ArithExpr.substitute(f.k, Map((`for`, ae))),
+          substitute(ae, `for`, f.dataType), f.layout)
+      case f: WmmaAccumulator =>
+        WmmaAccumulator(ArithExpr.substitute(f.m, Map((`for`, ae))),
+          ArithExpr.substitute(f.n, Map((`for`, ae))),
+          ArithExpr.substitute(f.k, Map((`for`, ae))),
+          substitute(ae, `for`, f.dataType))
       case a: DepArrayType =>
         val subMap = Map((`for`, ae))
         val newSize = ArithExpr.substitute(a.size, subMap)
@@ -175,7 +241,7 @@ object DataType {
     case VectorType(size, _) => size
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
-    case _: DataTypeIdentifier | _: NatToDataApply =>
+    case _ =>
       throw new Exception("This should not happen")
   }
 

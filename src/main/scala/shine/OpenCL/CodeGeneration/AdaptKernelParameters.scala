@@ -1,6 +1,7 @@
 package shine.OpenCL.CodeGeneration
 
 import shine.C.AST.ParamDecl
+import shine.C.CodeGeneration.{CodeGenerator => CcGen}
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
@@ -22,7 +23,7 @@ object AdaptKernelParameters {
             out: Identifier[AccType],
             ins: Seq[Identifier[ExpType]],
             intermediateAllocations: Seq[AllocationInfo],
-            gen: CodeGenerator
+            gen: CcGen
            ): (Phrase[CommType], Identifier[AccType], Seq[Identifier[ExpType]], Seq[AllocationInfo], Seq[ParamDecl]) = {
     val params = makeParams(out, ins, intermediateAllocations, gen)
     val (newParams, scalarParamsInGlobalOrLocalMemory) = adaptParamDecls(params, ins)
@@ -130,14 +131,14 @@ object AdaptKernelParameters {
   private def makeParams(out: Identifier[AccType],
                          ins: Seq[Identifier[ExpType]],
                          intermediateAllocations: Seq[AllocationInfo],
-                         gen: CodeGenerator): Seq[(AddressSpace, ParamDecl)] = {
+                         gen: CcGen): Seq[(AddressSpace, ParamDecl)] = {
     Seq(makeGlobalParam(out, gen)) ++ // first the output parameter ...
       ins.map(makeInputParam(_, gen)) ++ // ... then the input parameters ...
       intermediateAllocations.map(makeParam(_, gen)) //++  ... then the intermediate buffers ...
   }
 
   // pass arrays via global and scalar + tuple values via private memory
-  private def makeInputParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+  private def makeInputParam(i: Identifier[_], gen: CcGen): (AddressSpace, ParamDecl) = {
     getDataType(i) match {
       case _: ArrayType => makeGlobalParam(i, gen)
       case _: DepArrayType => makeGlobalParam(i, gen)
@@ -149,15 +150,15 @@ object AdaptKernelParameters {
     }
   }
 
-  private def makeGlobalParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+  private def makeGlobalParam(i: Identifier[_], gen: CcGen): (AddressSpace, ParamDecl) = {
     (AddressSpace.Global, ParamDecl(i.name,gen.typ(getDataType(i))))
   }
 
-  private def makePrivateParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+  private def makePrivateParam(i: Identifier[_], gen: CcGen): (AddressSpace, ParamDecl) = {
     (AddressSpace.Private, ParamDecl(i.name, gen.typ(getDataType(i))))
   }
 
-  private def makeParam(allocInfo: AllocationInfo, gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+  private def makeParam(allocInfo: AllocationInfo, gen: CcGen): (AddressSpace, ParamDecl) = {
     (allocInfo.addressSpace, ParamDecl(allocInfo.identifier.name, gen.typ(getDataType(allocInfo.identifier))))
   }
 

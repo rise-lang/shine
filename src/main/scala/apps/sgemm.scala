@@ -8,7 +8,8 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.openCL.DSL._
 import rise.core.types._
-import util.{Time, TimeSpan}
+import util.{KernelWithSizes, Time, TimeSpan}
+
 import scala.collection.parallel.CollectionConverters._
 
 object sgemm {

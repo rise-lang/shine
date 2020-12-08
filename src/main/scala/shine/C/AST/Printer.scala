@@ -167,6 +167,11 @@ class CPrinter extends Printer {
     println("};")
   }
 
+  private def printIncludeDecl(decl: IncludeDecl) : Unit = {
+    print("#include ")
+    print(decl.name)
+  }
+
   // Smts
   private def printStmts(s: Stmts): Unit = {
     printStmt(s.fst)
@@ -262,10 +267,11 @@ class CPrinter extends Printer {
   private def printFunCall(f: FunCall): Unit = {
     printDeclRef(f.fun)
     print("(")
-    f.args.foreach(a => {
+    f.args.take(f.args.length-1).foreach(a => {
       printExpr(a)
-      if (!a.eq(f.args.last)) print(", ")
+      print(", ")
     })
+    printExpr(f.args.last)
     print(")")
   }
 

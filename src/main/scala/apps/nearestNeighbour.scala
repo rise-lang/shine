@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.openCL.DSL._
+import util.KernelNoSizes
 
 object nearestNeighbour {
   private val distance = foreignFun("distance_",

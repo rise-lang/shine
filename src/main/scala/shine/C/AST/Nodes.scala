@@ -61,6 +61,8 @@ abstract class TypedefDecl(val t: Type, override val name: String) extends Decl(
 abstract class StructTypeDecl(override val name: String,
                               val fields: Seq[VarDecl]) extends Decl(name)
 
+abstract class IncludeDecl(override val name: String) extends Decl(name)
+
 
 abstract class Stmt extends Node {
   def visitAndGenerateStmt(v:VisitAndGenerateStmt.Visitor):Stmt
@@ -221,6 +223,11 @@ object TypedefDecl {
 object StructTypeDecl {
   def apply(name: String, fields: Seq[VarDecl]): StructTypeDecl = DefaultImplementations.StructTypeDecl(name, fields)
   def unapply(arg: StructTypeDecl): Option[(String, Seq[VarDecl])] = Some((arg.name, arg.fields))
+}
+
+object IncludeDecl {
+  def apply(name: String): IncludeDecl = DefaultImplementations.IncludeDecl(name)
+  def unapply(arg: StructTypeDecl): Option[(String)] = Some((arg.name))
 }
 
 object Block {
@@ -399,6 +406,11 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): StructTypeDecl =
       StructTypeDecl(name, fields.map(VisitAndRebuild(_, v)))
+  }
+
+  case class IncludeDecl(override val name: String) extends C.AST.IncludeDecl(name)
+  {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): IncludeDecl.this.type = this
   }
 
   case class Block(override val body: Seq[Stmt] = Seq())
