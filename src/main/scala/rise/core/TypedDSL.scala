@@ -453,6 +453,7 @@ object TypedDSL {
             ns2ds.view.mapValues(ftvSubs(_)).toMap
           )
       }
+
       val result = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
       result
     }

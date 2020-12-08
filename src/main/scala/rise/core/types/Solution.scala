@@ -1,7 +1,5 @@
 package rise.core.types
 
-import arithexpr.arithmetic.NamedVar
-import rise.core.types.Solution.subs
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
@@ -106,16 +104,18 @@ case class Solution(ts: Map[Type, Type],
     }
   }
 
-  def apply(ns2d: NatCollectionToData): NatCollectionToData =
+  def apply(ns2d: NatCollectionToData): NatCollectionToData = {
     substitute.ns2dInNS2D(ns2ds, ns2d) match {
-      case id: NatCollectionToDataIdentifier => id
-      case lambda@NatCollectionToDataLambda(x, body) =>
+      case id: NatCollectionToDataIdentifier =>
+        id
+      case NatCollectionToDataLambda(x, body) =>
         val xSub = apply(x) match {
           case n: NatCollectionIdentifier => n
           case other => throw new Exception("Non identifier")
         }
         NatCollectionToDataLambda(xSub, apply(body).asInstanceOf[DataType])
     }
+  }
 
   // concatenating two solutions into a single one
   def ++(other: Solution): Solution = {
@@ -162,6 +162,8 @@ case class Solution(ts: Map[Type, Type],
         DepConstraint[AddressSpaceKind](apply(df), apply(arg), apply(t))
       case DepConstraint(df, arg: NatCollectionToData, t) =>
         DepConstraint[NatCollectionToDataKind](apply(df), apply(arg), apply(t))
+      case NatCollectionToDataConstraint(a,b) =>
+        NatCollectionToDataConstraint(apply(a), apply(b))
     }
   }
 }

@@ -270,7 +270,7 @@ object traversal {
               case i: DataTypeIdentifier => i
               case ArrayType(n, e) => ArrayType(v.visitNat(n).value, data(e, v))
               case DepArrayType(n, fdt) =>
-                DepArrayType(v.visitNat(n).value, v.visitN2D(fdt).value)
+                DepArrayType(v.visitNat(n).value, natToData(fdt, visit))
               case PairType(p1, p2) => PairType(data(p1, v), data(p2, v))
               case pair@DepPairType(x, e) =>
                   x match {
@@ -278,7 +278,9 @@ object traversal {
                       val n2 = v.visitNat(n).value
                         .asInstanceOf[NatIdentifier]
                       DepPairType[NatKind](n2, data(e, v))
-                    case _ => DepPairType(x, data(e,v))(pair.kindName)
+                    case ns: NatCollectionIdentifier =>
+                      val ns2 = v.visitNatCollection(ns).value.asInstanceOf[NatCollectionIdentifier]
+                      DepPairType[NatCollectionKind](ns2, data(e, v))
                   }
               case NatType          => NatType
               case s: ScalarType    => s
@@ -288,11 +290,21 @@ object traversal {
               case NatToDataApply(ndtf, n) =>
                 NatToDataApply(v.visitN2D(ndtf).value, v.visitNat(n).value)
               case NatCollectionToDataApply(nsdtf, ns) =>
-                NatCollectionToDataApply(v.visitNS2D(nsdtf).value, v.visitNatCollection(ns).value)
+                val v1 = v.visitNS2D(nsdtf).value
+                val v2 = v.visitNatCollection(ns).value
+                NatCollectionToDataApply(v1, v2)
             }).asInstanceOf[DT]
         }
       }
+
+      def natToData(n2d: NatToData, v: Visitor): NatToData = {
+        v.visitN2D(n2d).value match {
+          case id: NatToDataIdentifier => id
+          case NatToDataLambda(x, body) => NatToDataLambda(x, data(body, v))
+        }
+      }
     }
+
 
     object DepthFirstGlobalResult {
       import traversal.DepthFirstGlobalResult.chain

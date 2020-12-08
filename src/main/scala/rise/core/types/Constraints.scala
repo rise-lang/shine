@@ -32,6 +32,11 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
   override def toString: String = s"$a ~ $b"
 }
 
+case class NatCollectionToDataConstraint(a: NatCollectionToData, b: NatCollectionToData)
+  extends Constraint {
+  override def toString: String = s"$a ~ $b"
+}
+
 object Constraint {
   def solve(cs: Seq[Constraint], trace: Seq[Constraint])
      (implicit explDep: Flags.ExplicitDependence): Solution = cs match {
@@ -46,6 +51,7 @@ object Constraint {
     (implicit explDep: Flags.ExplicitDependence): Solution = {
     implicit val _trace: Seq[Constraint] = trace
     def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace)
+
 
     c match {
       case TypeConstraint(a, b) =>
@@ -122,6 +128,19 @@ object Constraint {
             ???
 
           case (
+            DepFunType(fdta: NatCollectionToDataIdentifier, ta),
+            DepFunType(fdtb: NatCollectionToDataIdentifier, tb)
+            ) =>
+            val fdtc = NatCollectionToDataIdentifier(freshName("ns2d"), isExplicit = true)
+            decomposed(
+              Seq(
+                NatCollectionToDataConstraint(fdtc, fdta.asImplicit),
+                NatCollectionToDataConstraint(fdtc, fdtb.asImplicit),
+                TypeConstraint(ta, tb)
+              )
+            )
+
+          case (
             DepPairType(x1: NatIdentifier, t1),
             DepPairType(x2: NatIdentifier, t2)
             ) =>
@@ -137,7 +156,7 @@ object Constraint {
             DepPairType(x1: NatCollectionIdentifier, t1),
             DepPairType(x2: NatCollectionIdentifier, t2)
             ) =>
-            val n = NatCollectionIdentifier(freshName("n"), isExplicit = true)
+            val n = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
 
             decomposed(Seq(
               NatCollectionConstraint(n, x1.asImplicit),
@@ -175,7 +194,9 @@ object Constraint {
             // TODO(fix properly)
           case (NatCollectionToDataApply(f:NatCollectionToDataIdentifier, ns), dt:DataType) =>
             // Do the not-really-valid thing where we attempt to invert the function
-            Solution.subs(f, NatCollectionToData(id => substitute.natCollectionInType(ns, id, dt)))
+            val lambda = NatCollectionToData(id => substitute.natCollectionInType(id, ns.asInstanceOf[NatCollectionIdentifier], dt))
+            Solution.subs(f, lambda)
+
 
           case _ =>
             error(s"cannot unify $a and $b")
@@ -213,6 +234,13 @@ object Constraint {
         (a,b) match {
           case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b)
           case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, a)
+          case _ if a == b                    => Solution()
+        }
+
+      case NatCollectionToDataConstraint(a,b) =>
+        (a,b) match {
+          case (i: NatCollectionToDataIdentifier, _) => ns2d.unifyIdent(i, b)
+          case (_, i: NatCollectionToDataIdentifier) => ns2d.unifyIdent(i, a)
           case _ if a == b                    => Solution()
         }
 
@@ -430,7 +458,24 @@ object Constraint {
         }
       case _       => error(s"cannot unify $i and $n")
     }
+  }
 
+  object ns2d {
+    def unifyIdent(i: NatCollectionToDataIdentifier, n: NatCollectionToData)(
+      implicit trace: Seq[Constraint]
+    ): Solution = n match {
+      case j: NatCollectionToDataIdentifier =>
+        if (i == j) {
+          Solution()
+        } else if (!i.isExplicit) {
+          Solution.subs(i, j)
+        } else if (!j.isExplicit) {
+          Solution.subs(j, i)
+        } else {
+          error(s"cannot unify $i and $j")
+        }
+      case _       => error(s"cannot unify $i and $n")
+    }
   }
 
   def occurs(i: DataTypeIdentifier, t: Type): Boolean = t match {

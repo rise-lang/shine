@@ -38,6 +38,11 @@ final case class NatCollectionIdentifier(
  ) extends NatCollection
   with Kind.Identifier
   with Kind.Explicitness {
+
+  if (this.name == "ns140") {
+    println("Here")
+  }
+
   override def toString: String = if (isExplicit) name else "_" + name
   override def asExplicit: NatCollectionIdentifier =
       this.copy(isExplicit = true)

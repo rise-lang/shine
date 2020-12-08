@@ -5,8 +5,6 @@ import arithexpr.arithmetic.{NamedVar, _}
 import rise.core.types.NatCollectionIndexing
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
-import shine.C.SizeInByte
-import shine.DPIA.Compilation.SimplifyNats
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives._
@@ -15,7 +13,6 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.Kernel
 import shine._
 
 import scala.collection.immutable.VectorBuilder
@@ -28,6 +25,7 @@ object CodeGenerator {
     identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.DeclRef],
     commEnv: immutable.Map[Identifier[CommType], C.AST.Stmt],
     contEnv: immutable.Map[Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt],
+    natCollLenEnv: immutable.Map[NatCollection, (Nat, C.AST.DeclRef)],
     letNatEnv: immutable.Map[LetNatIdentifier, Phrase[PhraseType]]
   ) {
     def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseType], C.AST.DeclRef)): Environment = {
@@ -47,6 +45,10 @@ object CodeGenerator {
     def updatedNatEnv(kv:(LetNatIdentifier,  Phrase[PhraseType])):Environment = {
       this.copy(letNatEnv = this.letNatEnv + kv)
     }
+
+    def updatedNatCollLengthEnv(kv:(NatCollection, (Nat, C.AST.DeclRef))): Environment = {
+      this.copy(natCollLenEnv = this.natCollLenEnv + kv)
+    }
   }
 
   object Environment {
@@ -54,7 +56,8 @@ object CodeGenerator {
       immutable.Map(),
       immutable.Map(),
       immutable.Map(),
-      immutable.Map()
+      immutable.Map(),
+      immutable.Map(),
     )
   }
 
@@ -63,7 +66,7 @@ object CodeGenerator {
   final case object FstMember extends PairAccess
   final case object SndMember extends PairAccess
   final case class CIntExpr(num: Nat) extends PathExpr
-  final case object DPairSnd extends PathExpr
+  final case class DPairSnd(length:Nat) extends PathExpr
 
   implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
 
@@ -209,13 +212,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           ))
         })
 
-      case LiftNatsI(_, input, f) =>
+      case LiftNatsI(n, input, f) =>
         exp(input, env, List(), input => {
-
           C.AST.Block(immutable.Seq(
-            C.AST.Comment(s"Started scope of lifted nat collection ${f.t.x.name}"),
+            C.AST.Comment(s"Started scope of lifted nat collection ${f.t.x.name}, of size $n"),
             C.AST.DeclStmt(C.AST.VarDecl(f.t.x.name, C.AST.PointerType(typ(NatType)), Some(input))),
-              cmd(f(f.t.x), env),
+              cmd(f(f.t.x), env.updatedNatCollLengthEnv(f.t.x -> (n, C.AST.DeclRef(f.t.x.name)))),
             C.AST.Comment(s"Ended scope of lifted nat collection ${f.t.x.name}"),
           ))
         })
@@ -228,10 +230,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                 C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), expr), C.AST.Literal("0")
                 ) , fst)))
             })
-          case _: NatCollectionIdentifier => acc(a, env, List(), expr => {
-            C.AST.Stmts(C.AST.Comment("HERE"),
-            C.AST.ExprStmt(expr))
-          })
+          case id: NatCollectionIdentifier =>
+            val (length, storage) = env.natCollLenEnv(id)
+            genNat(length, env, length => {
+              acc(a, env, List(), fstAcc => {
+                val byteLength = C.AST.BinaryExpr(length, C.AST.BinaryOperator.*, C.AST.Literal("sizeof(uint32_t)"))
+                C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memcpy"), List(fstAcc, storage, byteLength)))
+              })
+            })
         }
 
       case Apply(_, _) | DepApply(_, _) |
@@ -337,7 +343,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => acc(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
 
-      case MkDPairSndAcc(fst, sndT, a) => acc(a, env, DPairSnd::path, cont)
+      case MkDPairSndAcc(fst, _, a) =>
+        val length = fst match {
+          case _: NatIdentifier => Cst(1)
+          case id: NatCollectionIdentifier => env.natCollLenEnv(id)._1
+          case _ => ???
+        }
+        acc(a, env, DPairSnd(length)::path, cont)
 
       case TransmuteAcc(_, _, a) => acc(a, env, path, cont)
 
@@ -657,13 +669,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
         }
 
-      case DPairSnd :: ps =>
+      case DPairSnd(length):: ps =>
         dt match {
           case DepPairType(_, sndT) =>
-            generateAccess(sndT,
-              C.AST.Cast(C.AST.PointerType(C.AST.Type.getBaseType(typ(sndT))),
-                C.AST.BinaryExpr(expr, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)"))
-            ), ps, env, cont)
+            genNat(length, env, length => {
+              val fstSize = C.AST.BinaryExpr(C.AST.Literal("sizeof(uint32_t)"), C.AST.BinaryOperator.*, length)
+
+              generateAccess(sndT,
+                C.AST.Cast(C.AST.PointerType(C.AST.Type.getBaseType(typ(sndT))),
+                  C.AST.BinaryExpr(expr, C.AST.BinaryOperator.+, fstSize)
+                ), ps, env, cont)
+            })
 
           case other => throw new Exception(s"Expected a Dependent Pair but $other found instead")
         }

@@ -212,7 +212,6 @@ object PhraseType {
 
       override def data[Typ <: DataType](dt: Typ): Typ =
         DataType.visitNat(_.visitAndRebuild({ n => replaceOnNat(n) }), dt)
-
     }
   }
 

@@ -2,6 +2,9 @@ package rise.core.types
 
 import rise.core._
 
+
+
+
 sealed trait NatCollectionToData {
   def map(f: DataType => DataType): NatCollectionToData = this match {
     case ident: NatCollectionToDataIdentifier => ident

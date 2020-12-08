@@ -205,7 +205,7 @@ class dependentTypes extends test_util.Tests {
         toDepArray(array) |>
           depMapSeq(depFun((rowIdx:Nat) => fun(row =>
             which(row)(lengths `@` rowIdx)(pred)
-              |> take(5)
+              |> take(lengths `@` 0)
               |> mapSeq(fun(nnzIdx => row `@` nnzIdx))
           ))) |> unDepArray
       )))

@@ -175,9 +175,16 @@ object primitives {
 
   @primitive object dpairNats extends Primitive with Builder {
     expl((ns: NatCollection) => impl { fdt: NatCollectionToData =>
-        fdt(ns) ->: (NatCollection `**` (fdt(_)))
-      } )
+      fdt(ns) ->: (NatCollection `**` (n => fdt(n)))
+    })
   }
+
+  /*
+  @primitive object dpairNats extends Primitive with Builder {
+    expl((ns: NatCollection) => impl { dt: DataType =>
+      dt ->: (NatCollection `**` (n => substitute.natCollectionInType(n, ns.asInstanceOf[NatCollectionIdentifier], dt)))
+    })
+  }*/
 
   @primitive object dmatch extends Primitive with Builder {
     impl{ ft: NatToData => impl{ tOut: DataType =>
@@ -207,6 +214,7 @@ object primitives {
   @primitive object liftNats extends Primitive with Builder {
     impl { n: Nat => impl { dt: DataType => (n `.` NatType) ->: expl {(_: NatCollection) => dt} ->: dt } }
   }
+
 
   @primitive object toDepArray extends Primitive with Builder {
     impl { n: Nat => impl { dt: DataType => (n `.` dt) ->: (n `*.` n2dtFun(_ => dt)) } }

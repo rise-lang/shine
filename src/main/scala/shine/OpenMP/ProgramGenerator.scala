@@ -54,7 +54,7 @@ object ProgramGenerator {
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
       (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap,
-      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
+      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
     val (declarations, code) = gen.generate(p, topLevelLetNats, env)
 
