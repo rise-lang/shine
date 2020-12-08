@@ -6,7 +6,7 @@ import rise.core._
 import util._
 
 class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
-  private val levels = 2
+  private val levels = 4
   private val H = 32
   private val W = 64
 

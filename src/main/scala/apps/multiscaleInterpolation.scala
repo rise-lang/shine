@@ -93,7 +93,7 @@ object multiscaleInterpolation {
   object omp { // and plain C
     import rise.openMP.primitives._
 
-    def multiscaleInterpolationNaivePar(levels: Int): ToBeTyped[Expr] = depFun(h: Nat, w: Nat) => fun(
+    def multiscaleInterpolationNaivePar(levels: Int): ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
       (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32)
     )(input => {
       val alpha = lidx(3, 4)
