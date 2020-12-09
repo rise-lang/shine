@@ -101,6 +101,7 @@ object Constraint {
             DepFunType(ms: NatCollectionIdentifier, tb),
             ) =>
             val n = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
+
             decomposed(
               Seq(
                 NatCollectionConstraint(n, ns.asImplicit),
@@ -197,6 +198,10 @@ object Constraint {
             val lambda = NatCollectionToData(id => substitute.natCollectionInType(id, ns.asInstanceOf[NatCollectionIdentifier], dt))
             Solution.subs(f, lambda)
 
+          case (TSub(x1, y1, dt1), TSub(x2, y2, dt2)) if(x1 == x2) && y1 == y2 =>
+            decomposed(Seq(
+              TypeConstraint(dt1, dt2)
+            ))
 
           case _ =>
             error(s"cannot unify $a and $b")
@@ -205,9 +210,15 @@ object Constraint {
 
       case DepConstraint(df, arg, t) =>
         df match {
-          case _: DepFunType[_, _] =>
+          case df: DepFunType[_, _] =>
+            val tc = TypeConstraint(liftDependentFunctionType(df)(arg), t)
+            val subs = df.x match {
+              case x:NatCollectionIdentifier =>
+                Seq(NatCollectionConstraint(x.asImplicit, arg.asInstanceOf[NatCollection]))
+              case _ => Seq()
+            }
             decomposed(
-              Seq(TypeConstraint(liftDependentFunctionType(df)(arg), t))
+              subs ++ Seq(tc)
             )
           case _ =>
             error(s"expected a dependent function type, but got $df")

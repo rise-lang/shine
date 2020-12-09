@@ -199,7 +199,7 @@ class dependentTypes extends test_util.Tests {
   test("List of list simplified") {
     val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
       def pred = fun(x => x =/= l(0.0f))
-      val cnts = toMem(mapSeq(fun(row => indexAsNat(count(row)(pred))))(array))
+      def cnts = toMem(mapSeq(fun(row => indexAsNat(count(row)(pred))))(array))
       liftNats(cnts)(depFun((lengths:NatCollection) =>
         dpairNats(lengths)(
         toDepArray(array) |>
@@ -212,9 +212,10 @@ class dependentTypes extends test_util.Tests {
     })))
 
     val inferred: Expr = TDSL.infer(e)
+    val unsub = TDSL.unsub(inferred)
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
+    util.gen.CProgram(unsub, "Foo_foo")
   }
 
   ignore("List of list") {

@@ -147,6 +147,10 @@ object NatCollectionToDataApply {
     Some((arg.f, arg.n))
 }
 
+final case class TSub[K <: Kind](x:K#T, `for`:K#T, dt: DataType) extends DataType {
+  override def toString: String = s"$dt { ${`for`} -> $x }"
+}
+
 final case class ArrayType(size: Nat, elemType: DataType) extends DataType {
   override def toString: String = s"$size.$elemType"
 }

@@ -457,6 +457,27 @@ object TypedDSL {
       val result = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
       result
     }
+
+    def unsub(e: Expr): Expr = {
+      val expandedSubs = traversal.DepthFirstLocalResult(e, new traversal.Visitor {
+        override def visitType[T <: Type](t: T): Result[T] = {
+          val newT = traversal.types.DepthFirstLocalResult(t, new traversal.Visitor {
+            override def visitType[U <: Type](t: U): Result[U] = t match {
+              case TSub(x, y, dt) => x match {
+                case x: NatCollection =>
+                  val dt2 = substitute.natCollectionInType(x, y.asInstanceOf[NatCollectionIdentifier], dt)
+                  Continue(dt2.asInstanceOf[U], this)
+                case _ => ???
+              }
+              case _ => Continue(t, this)
+            }
+          })
+          Continue(newT, this)
+        }
+      })
+      expandedSubs
+    }
+
   }
 
   def identifier(name: String): ToBeTyped[Identifier] =

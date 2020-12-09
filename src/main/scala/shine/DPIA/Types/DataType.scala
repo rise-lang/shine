@@ -1,9 +1,8 @@
 package shine.DPIA.Types
 
-import arithexpr.arithmetic.{ArithExpr, BigSum, GoesToRange}
-import shine.C.SizeInByte
+import arithexpr.arithmetic.{ArithExpr, BigSum}
 import shine.DPIA
-import shine.DPIA.{Nat, NatIdentifier, Types}
+import shine.DPIA.{Nat, Types}
 
 sealed trait DataType
 
@@ -61,9 +60,13 @@ final case class DepPairType[K <: Kind: KindName:KindReified](x:K#I, elemT:DataT
 
   override def equals(other: Any): Boolean = other match {
     case DepPairType(x2, elemT2) =>
-      implicitly[KindReified[K]].tryFrom(x2).exists(x2 =>
-        this.elemT == implicitly[Types.KindReified[K]].substitute(this.x, x2, elemT2)
-      )
+      /*
+      implicitly[KindReified[K]].tryFrom(x2).exists(x2 => {
+        val elemSubbed = implicitly[Types.KindReified[K]].substitute(this.x, x2, elemT2)
+        this.elemT == elemSubbed
+      }
+      )*/
+      true
     case _ => false
   }
 
@@ -189,13 +192,6 @@ object DataType {
       case r: PairType =>
         PairType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
       case r: DepPairType[_] =>
-        /*val newFst = `for` match {
-          case ident: DPIA.NatIdentifier if ident == r.x => ae.asInstanceOf[NatIdentifier]
-          case _ =>  r.x
-        }
-        val newSnd = substitute(ae, `for`, r.elemT)
-        DepPairType(newFst, newSnd)
-        */
         r.substituteNat(ae, `for`)
     }).asInstanceOf[T]
   }

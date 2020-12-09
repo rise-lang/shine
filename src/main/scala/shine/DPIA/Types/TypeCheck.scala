@@ -112,7 +112,7 @@ object TypeCheck {
 
     (subType, superType) match {
       case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, _))
-        if bSub == bSuper =>
+        if dataTypeSub(bSub, bSuper) =>
           accessSub == read && notContainingArrayType(bSub)
       case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
         subtypeCheck(superInT, subInT) && subtypeCheck(subOutT,  superOutT)
@@ -120,6 +120,10 @@ object TypeCheck {
         subInT == superInT && subtypeCheck(subOutT, superOutT)
       case _ => false
     }
+  }
+
+  private def dataTypeSub(dt1: DataType, dt2: DataType): Boolean = {
+    dt1 == dt2
   }
 
   def notContainingArrayType(composed: DataType): Boolean = composed match {

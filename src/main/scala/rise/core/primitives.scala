@@ -173,18 +173,19 @@ object primitives {
       fdt(n) ->: (Nat `**` (fdt(_))))}
   }
 
+  /*
   @primitive object dpairNats extends Primitive with Builder {
     expl((ns: NatCollection) => impl { fdt: NatCollectionToData =>
       fdt(ns) ->: (NatCollection `**` (n => fdt(n)))
     })
-  }
+  }*/
 
-  /*
+
   @primitive object dpairNats extends Primitive with Builder {
     expl((ns: NatCollection) => impl { dt: DataType =>
-      dt ->: (NatCollection `**` (n => substitute.natCollectionInType(n, ns.asInstanceOf[NatCollectionIdentifier], dt)))
+      dt ->: (NatCollection `**` (n => TSub[NatCollectionKind](n, ns, dt)))
     })
-  }*/
+  }
 
   @primitive object dmatch extends Primitive with Builder {
     impl{ ft: NatToData => impl{ tOut: DataType =>

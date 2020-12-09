@@ -103,7 +103,8 @@ object traversal {
                   Literal(IndexData(v.visitNat(i).value, v.visitNat(n).value))
                 case _ => l
               }
-            case p: Primitive => p.setType(v.visitType(p.t).value)
+            case p: Primitive =>
+              p.setType(v.visitType(p.t).value)
           }
       }
     }
@@ -293,6 +294,15 @@ object traversal {
                 val v1 = v.visitNS2D(nsdtf).value
                 val v2 = v.visitNatCollection(ns).value
                 NatCollectionToDataApply(v1, v2)
+              case TSub(x, y, dt) =>
+                x match {
+                  case x:NatCollection =>
+                    val x2 = v.visitNatCollection(x).value
+                    val y2 = v.visitNatCollection(y.asInstanceOf[NatCollection]).value
+                    val dt2 = data(dt, v)
+                    TSub[NatCollectionKind](x2, y2, dt2)
+                  case _ => ???
+                }
             }).asInstanceOf[DT]
         }
       }
