@@ -201,14 +201,13 @@ class dependentTypes extends test_util.Tests {
       def pred = fun(x => x =/= l(0.0f))
       def cnts = toMem(mapSeq(fun(row => indexAsNat(count(row)(pred))))(array))
       liftNats(cnts)(depFun((lengths:NatCollection) =>
-        dpairNats(lengths)(
-        toDepArray(array) |>
+        dpairNats(lengths)(toDepArray(array) |>
           depMapSeq(depFun((rowIdx:Nat) => fun(row =>
             which(row)(lengths `@` rowIdx)(pred)
               |> take(lengths `@` 0)
               |> mapSeq(fun(nnzIdx => row `@` nnzIdx))
-          ))) |> unDepArray
-      )))
+          ))) |> unDepArray)
+      ))
     })))
 
     val inferred: Expr = TDSL.infer(e)

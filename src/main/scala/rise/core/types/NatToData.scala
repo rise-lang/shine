@@ -80,7 +80,7 @@ final case class NatToDataIdentifier(name: String,
 }
 
 case class NatToDataLambda private (x: NatIdentifier, body: DataType)
-    extends NatToData {
+    extends NatToData{
   // See hash code of NatNatTypeFunction
   override def hashCode(): Int =
     this.apply(NatIdentifier("ComparisonDummy")).hashCode()

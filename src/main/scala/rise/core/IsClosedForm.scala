@@ -56,9 +56,12 @@ object IsClosedForm {
                   case NatToDataLambda(x, _) =>
                     Continue(t, this.copy(boundN = boundN + x))
                 }
-              case DepPairType(x, dt) => x match {
-                case x:NatIdentifier =>  Continue(t, this.copy(boundN = boundN + x))
-                case x:NatCollectionIdentifier => Continue(t, this)
+              case DepPairType(fdt) =>
+              fdt match {
+                case fdt: NatToDataLambda => Continue(t, this.copy(boundN = boundN + fdt.x))
+                case _: NatToDataIdentifier => Continue(t, this)
+                case _: NatCollectionToDataLambda => Continue(t, this)
+                case _: NatCollectionToDataIdentifier => Continue(t, this)
                 case _ => ???
               }
 

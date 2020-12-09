@@ -27,9 +27,7 @@ final case class LiftNats(n:Nat, a: AccessType, outT: DataType, input: Phrase[Ex
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(input)(λ(expT(n `.` NatType, read))(input => {
-      LiftNatsI(n, input, _Λ_[NatCollectionKind]()((i: NatCollectionIdentifier) => {
-        acc(f(i))(A)
-      }))
+      LiftNatsI(n, input,DepLambda(f.t.x, acc(f(f.t.x))(A)))
     }))
   }
 

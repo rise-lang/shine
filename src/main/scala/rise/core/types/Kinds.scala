@@ -5,6 +5,10 @@ sealed trait Kind {
   type I <: Kind.Identifier with T
 }
 
+sealed trait FKind extends Kind {
+   type F
+}
+
 object Kind {
   trait Identifier {
     def name: String
@@ -26,9 +30,10 @@ sealed trait DataKind extends Kind {
   override type I = DataTypeIdentifier
 }
 
-sealed trait NatKind extends Kind {
+sealed trait NatKind extends FKind {
   override type T = Nat
   override type I = NatIdentifier
+  override type F = NatToData
 }
 
 sealed trait AddressSpaceKind extends Kind {
@@ -46,9 +51,10 @@ sealed trait NatToDataKind extends Kind {
   override type I = NatToDataIdentifier
 }
 
-sealed trait NatCollectionKind extends Kind {
+sealed trait NatCollectionKind extends FKind {
   override type T = NatCollection
   override type I = NatCollectionIdentifier
+  override type F = NatCollectionToData
 }
 
 sealed trait NatCollectionToDataKind extends Kind {

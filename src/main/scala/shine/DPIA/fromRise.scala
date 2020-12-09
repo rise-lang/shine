@@ -819,15 +819,6 @@ object fromRise {
             MkDPair[NatCollectionKind](a, fst, sndT, snd)))
       }
 
-      case core.filter() | core.filterW() => fromType {
-        case expT(inputT@ArrayType(n, elemT), `read`) ->:
-          (expT(_, read) ->: expT(bool, `read`))->: expT(_, a) =>
-          fun[ExpType](ExpType(inputT, read), input =>
-            fun[ExpType ->: ExpType](
-              ExpType(elemT, read) ->: ExpType(bool, read), f =>
-                Filter(a, n, elemT, f, input)))
-      }
-
       case core.count() => fromType {
         case expT(inputT@ArrayType(n, elemT), `read`) ->:
           (expT(_, read) ->: expT(bool, `read`))->: expT(IndexType(n2), `read`) =>
@@ -853,16 +844,15 @@ object fromRise {
         case expT(NatType, `read`) ->:
             nFunT(n, expT(outT, a)) ->: expT(_, _) =>
           fun[ExpType](expT(NatType, read), input =>
-            fun[`(nat)->:`[ExpType]](n ->: expT(outT, a),f => LiftN(a, outT, input, f)
-            )
+            fun[`(nat)->:`[ExpType]](n ->: expT(outT, a),f => LiftN(a, outT, input, f))
           )
       }
 
       case core.liftNats() => fromType {
         case expT(arrT@ArrayType(n, _), `read`) ->:
-          nsFunT(ns, expT(outT, a)) ->: expT(_, _) =>
-          fun[ExpType](expT(arrT, read), input =>
-            fun[`(natCollection)->:`[ExpType]](ns ->: expT(outT, a), f => LiftNats(n, a, outT, input, f))
+          nsFunT(ns, expT(outT, a)) ->: expT(_, _)
+        => fun[ExpType](expT(arrT, read), input =>
+          fun[`(natCollection)->:`[ExpType]](ns ->: expT(outT, a), f => LiftNats(n, a, outT, input, f))
           )
       }
 
@@ -904,10 +894,10 @@ object fromRise {
     case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
     case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
     case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
-    case rt.DepPairType(x, t) =>
-      x match {
-      case x:rt.NatIdentifier => DepPairType[NatKind](natIdentifier(x), dataType(t))
-      case x:rt.NatCollectionIdentifier => DepPairType[NatCollectionKind](natCollectionIdentifier(x), dataType(t))
+    case rt.DepPairType(fdt) =>
+      fdt match {
+      case fdt: rt.NatToDataLambda => DepPairType[NatKind](natIdentifier(fdt.x), dataType(fdt.body))
+      case fdt:rt.NatCollectionToDataLambda => DepPairType[NatCollectionKind](natCollectionIdentifier(fdt.x), dataType(fdt.body))
       case _ => ???
     }
   }

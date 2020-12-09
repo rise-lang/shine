@@ -170,34 +170,18 @@ object primitives {
 
   @primitive object dpair extends Primitive with Builder {
     impl{ fdt: NatToData => expl((n: Nat) =>
-      fdt(n) ->: (Nat `**` (fdt(_))))}
+      fdt(n) ->: DepPairType[NatKind](fdt))}
   }
-
-  /*
+  
   @primitive object dpairNats extends Primitive with Builder {
     expl((ns: NatCollection) => impl { fdt: NatCollectionToData =>
-      fdt(ns) ->: (NatCollection `**` (n => fdt(n)))
-    })
-  }*/
-
-
-  @primitive object dpairNats extends Primitive with Builder {
-    expl((ns: NatCollection) => impl { dt: DataType =>
-      dt ->: (NatCollection `**` (n => TSub[NatCollectionKind](n, ns, dt)))
+      fdt(ns) ->: (NatCollection `**` fdt)
     })
   }
 
   @primitive object dmatch extends Primitive with Builder {
     impl{ ft: NatToData => impl{ tOut: DataType =>
-      (Nat `**` (ft(_))) ->: expl((m: Nat) => ft(m) ->: tOut) ->: tOut }}
-  }
-
-  @primitive object filter extends Primitive with Builder {
-    impl{ n: Nat => impl { dt: DataType => (n `.` dt) ->: (dt ->: bool) ->: (Nat `**` (m => m `.` IndexType(n))) } }
-  }
-
-  @primitive object filterW extends Primitive with Builder {
-    impl{ n: Nat => impl { dt: DataType => (n `.` dt) ->: (dt ->: bool) ->: (Nat `**` (m => m `.` IndexType(n))) } }
+      (Nat `**` ft) ->: expl((m: Nat) => ft(m) ->: tOut) ->: tOut }}
   }
 
   @primitive object count extends Primitive with Builder {

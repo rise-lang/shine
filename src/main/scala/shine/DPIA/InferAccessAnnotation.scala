@@ -523,13 +523,13 @@ private class InferAccessAnnotation {
         val aIn = accessTypeIdentifier()
         val aOut = accessTypeIdentifier()
         def buildType(t: rt.Type): PhraseType = t match {
-          case rt.FunType(rt.DepPairType(x, elemT),
+          case rt.FunType(rt.DepPairType(fdt),
             rt.FunType(rt.DepFunType(i, rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
-            x match {
-              case x:rt.NatIdentifier =>
+            fdt match {
+              case fdt:rt.NatToDataLambda =>
                 assert(i.isInstanceOf[rt.NatIdentifier])
                 val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
-                expT(DepPairType[NatKind](natIdentifier(x), dataType(elemT)), aIn) ->:
+                expT(DepPairType[NatKind](natIdentifier(fdt.x), dataType(fdt.body)), aIn) ->:
                   nFunT(i_, expT(dataType(app1), aIn) ->: expT(dataType(outT), aOut)) ->:
                     expT(dataType(retT), aOut)
               case _ => ???
@@ -565,22 +565,6 @@ private class InferAccessAnnotation {
             }
 
           case _ => error(s"did not expect $t")
-        }
-        buildType(p.t)
-
-      case rp.filter() =>
-        def buildType(t: rt.Type): PhraseType = t match {
-          case rt.FunType(input:rt.ArrayType, rt.FunType(rt.FunType(elemT, rt.bool), outputT:rt.DataType)) =>
-            expT(dataType(input), read) ->: (expT(input.elemType, read) ->: expT(bool, read)) ->: expT(dataType(outputT), read)
-          case _ => ???
-        }
-        buildType(p.t)
-
-      case rp.filterW() =>
-        def buildType(t: rt.Type): PhraseType = t match {
-          case rt.FunType(input:rt.ArrayType, rt.FunType(rt.FunType(elemT, rt.bool), outputT:rt.DataType)) =>
-            expT(dataType(input), read) ->: (expT(input.elemType, read) ->: expT(bool, read)) ->: expT(dataType(outputT), write)
-          case _ => ???
         }
         buildType(p.t)
 

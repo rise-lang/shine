@@ -142,28 +142,16 @@ object Constraint {
             )
 
           case (
-            DepPairType(x1: NatIdentifier, t1),
-            DepPairType(x2: NatIdentifier, t2)
+            DepPairType(fdt1:NatToData),
+            DepPairType(fdt2:NatToData)
             ) =>
-            val n = NatIdentifier(freshName("n"), isExplicit = true)
-
-            decomposed(Seq(
-              NatConstraint(n, x1.asImplicit),
-              NatConstraint(n, x2.asImplicit),
-              TypeConstraint(t1, t2)
-            ))
+            decomposed(Seq(NatToDataConstraint(fdt1, fdt2)))
 
           case (
-            DepPairType(x1: NatCollectionIdentifier, t1),
-            DepPairType(x2: NatCollectionIdentifier, t2)
+            DepPairType(fdt1:NatCollectionToData),
+            DepPairType(fdt2:NatCollectionToData)
             ) =>
-            val n = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
-
-            decomposed(Seq(
-              NatCollectionConstraint(n, x1.asImplicit),
-              NatCollectionConstraint(n, x2.asImplicit),
-              TypeConstraint(t1, t2)
-            ))
+            decomposed(Seq(NatCollectionToDataConstraint(fdt1, fdt2)))
 
           case (
             NatToDataApply(f: NatToDataIdentifier, _),
@@ -195,8 +183,9 @@ object Constraint {
             // TODO(fix properly)
           case (NatCollectionToDataApply(f:NatCollectionToDataIdentifier, ns), dt:DataType) =>
             // Do the not-really-valid thing where we attempt to invert the function
-            val lambda = NatCollectionToData(id => substitute.natCollectionInType(id, ns.asInstanceOf[NatCollectionIdentifier], dt))
+            val lambda = NatCollectionToDataLambda(ns.asInstanceOf[NatCollectionIdentifier], dt)
             Solution.subs(f, lambda)
+
 
           case (TSub(x1, y1, dt1), TSub(x2, y2, dt2)) if(x1 == x2) && y1 == y2 =>
             decomposed(Seq(

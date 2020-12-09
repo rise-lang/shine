@@ -273,16 +273,12 @@ object traversal {
               case DepArrayType(n, fdt) =>
                 DepArrayType(v.visitNat(n).value, natToData(fdt, visit))
               case PairType(p1, p2) => PairType(data(p1, v), data(p2, v))
-              case pair@DepPairType(x, e) =>
-                  x match {
-                    case n: NatIdentifier =>
-                      val n2 = v.visitNat(n).value
-                        .asInstanceOf[NatIdentifier]
-                      DepPairType[NatKind](n2, data(e, v))
-                    case ns: NatCollectionIdentifier =>
-                      val ns2 = v.visitNatCollection(ns).value.asInstanceOf[NatCollectionIdentifier]
-                      DepPairType[NatCollectionKind](ns2, data(e, v))
-                  }
+              case DepPairType(fdt) =>
+                fdt match {
+                  case n2d: NatToData => DepPairType[NatKind](v.visitN2D(n2d).value)
+                  case ns2d: NatCollectionToData => DepPairType[NatCollectionKind](v.visitNS2D(ns2d).value)
+                  case _ => ???
+                }
               case NatType          => NatType
               case s: ScalarType    => s
               case IndexType(n)     => IndexType(v.visitNat(n).value)
@@ -377,13 +373,9 @@ object traversal {
               case IndexType(n)  => v.visitNat(n).map(IndexType)
               case VectorType(n, e) =>
                 chainDT(v.visitNat(n), e).map(r => VectorType(r._1, r._2))
-              case DepPairType(x, t) => x match {
-                case n: NatIdentifier =>
-                  chainT(v.visitNat(n), t).map(r =>
-                    DepPairType[NatKind]((r._1: @unchecked) match {
-                      case n: NamedVar =>
-                        NatIdentifier(n.name, n.range, isExplicit = true)
-                    }, r._2))
+              case DepPairType(fdt) => fdt match {
+                case n2d: NatToData => v.visitN2D(n2d).map(DepPairType[NatKind](_))
+                case ns2d: NatCollectionToData => v.visitNS2D(ns2d).map(DepPairType[NatCollectionKind](_))
               }
               case NatToDataApply(nat2Data, n) =>
                 chainN(v.visitN2D(nat2Data), n)

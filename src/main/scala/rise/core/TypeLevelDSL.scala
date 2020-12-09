@@ -159,28 +159,47 @@ object TypeLevelDSL {
 
   // dependent pairs
   object Nat {
+    def `**`(fdt:NatToData): Type = {
+      DepPairType[NatKind](fdt)
+    }
+
     def `**`(f: Nat => DataType): Type = {
-      val x = NatIdentifier(freshName("n"), isExplicit = true)
-      DepPairType[NatKind](x, f(x))
+      val n = NatIdentifier(freshName("n"))
+      DepPairType[NatKind](NatToDataLambda(n, f(n)))
+    }
+
+    def `**`(x:NatIdentifier, t: DataType): Type = {
+      DepPairType[NatKind](NatToDataLambda(x, t))
     }
   }
 
   object NatCollection {
+    def `**`(fdt:NatCollectionToData): Type = {
+      DepPairType[NatCollectionKind](fdt)
+    }
+
     def `**`(f: NatCollection => DataType): Type = {
-      val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
-      DepPairType[NatCollectionKind](x, f(x))
+      val n = NatCollectionIdentifier(freshName("ns"))
+      DepPairType[NatCollectionKind](NatCollectionToDataLambda(n, f(n)))
+    }
+
+    def `**`(x: NatCollectionIdentifier, t: DataType): Type = {
+      DepPairType[NatCollectionKind](NatCollectionToDataLambda(x, t))
     }
   }
 
   object `:Nat **` {
-    def unapply(arg: DepPairType[NatKind]): Option[(NatIdentifier, DataType)] =
-      Some(arg.x, arg.t)
+    def unapply(arg: DepPairType[NatKind]): Option[NatToData] =
+      Some(arg.fdt)
   }
   object `:NatCollection **` {
-    def unapply(arg: DepPairType[NatCollectionKind]): Option[(NatCollectionIdentifier, DataType)] =
-      Some(arg.x, arg.t)
+    def unapply(arg: DepPairType[NatCollectionKind]): Option[NatCollectionToData] =
+      Some(arg.fdt)
   }
 
+  implicit class NatCollectionPairFromIdentifier(val id: NatCollectionIdentifier) {
+    def `**`(dt:DataType): DepPairType[NatCollectionKind] = DepPairType[NatCollectionKind](NatCollectionToDataLambda(id, dt))
+  }
 
   def freshTypeIdentifier: Type = impl{ x: TypeIdentifier => x }
 
