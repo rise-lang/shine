@@ -197,7 +197,6 @@ class harrisCornerDetectionHalideCheck
       LocalSize((1, 1)), GlobalSize((32, 32)))
   }
 
-  // FIXME: does not pass in CI
   test("harrisTileShiftInwardsWLParVecUnaligned(4) generates valid OpenCL") {
     import rise.openCL.TypedDSL._
 

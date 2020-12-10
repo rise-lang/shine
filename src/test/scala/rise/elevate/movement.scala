@@ -21,6 +21,8 @@ class movement extends test_util.Tests {
   def betaEtaEquals(a: Rise, b: Rise): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
+    // TODO: investigate why type erasure is required here
+    // https://github.com/rise-lang/shine/issues/86
     val uab: Rise = eraseType(na) :: nb.t
     val ca = makeClosed(uab)
     val cb = makeClosed(nb)
