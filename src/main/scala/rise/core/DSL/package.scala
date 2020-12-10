@@ -390,6 +390,9 @@ package object DSL {
     def apply(in: ToBeTyped[Expr]): ToBeTyped[Expr] = {
       fun(e => primitives.let(e)(in))
     }
+
+    implicit def toLetf(l: letf.type): ToBeTyped[Expr] =
+      fun(e => fun(in => primitives.let(e)(in)))
   }
 
   case class NatFunction1Wrapper[A](f: Nat => A)

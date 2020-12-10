@@ -47,13 +47,15 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
          |   ${prog.function.name}(output, $H, $W, input);
          |
          |   int exit_status = 0;
-         |   for (int y = 0; y < $H; y++) {
-         |     for (int x = 0; x < $W; x++) {
-         |       int i = y * $W + x;
-         |       if (fabs(gold[i] - output[i]) > 0.001) {
-         |         fprintf(stderr, "%.4f != %.4f\\n", gold[i], output[i]);
-         |         exit_status = 1;
-         |         break;
+         |   for (int c = 0; c < 4; c++) {
+         |     for (int y = 0; y < $H; y++) {
+         |       for (int x = 0; x < $W; x++) {
+         |         int i = (c * $H + y) * $W + x;
+         |         if (fabs(gold[i] - output[i]) > 0.001) {
+         |           fprintf(stderr, "%.4f != %.4f\\n", gold[i], output[i]);
+         |           exit_status = 1;
+         |           break;
+         |         }
          |       }
          |     }
          |   }
