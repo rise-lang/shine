@@ -10,15 +10,15 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
   private val H = 32
   private val W = 64
 
-  test("interpolation typechecks") {
-    println(multiscaleInterpolation(levels, 1).toExpr.t)
+  test("interpolate typechecks") {
+    println(interpolate(levels, 1).toExpr.t)
   }
 
   def lowerOMP(e: ToBeTyped[Expr]): Expr =
     harrisCornerDetectionHalideRewrite.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOMP(lowered: Expr): Unit = {
-    val dumbLowering = lowerOMP(omp.multiscaleInterpolationNaivePar(levels))
+    val dumbLowering = lowerOMP(omp.interpolateNaivePar(levels))
     val goldProg = gen.OpenMPProgram(dumbLowering, "interpolateGold")
 
     val prog = util.printTime("codegen",
@@ -67,8 +67,8 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
     util.printTime("execute", util.Execute(testCode))
   }
 
-  test("interpolationNaivePar generates OpenMP code") {
+  test("interpolateNaivePar generates OpenMP code") {
     // FIXME: checks against itself
-    checkOMP(lowerOMP(omp.multiscaleInterpolationNaivePar(levels)))
+    checkOMP(lowerOMP(omp.interpolateNaivePar(levels)))
   }
 }

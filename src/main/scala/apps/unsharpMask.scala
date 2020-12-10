@@ -89,7 +89,7 @@ object unsharpMask {
     depFun(RangeAdd(0, PosInf, m), f)
   }
 
-  def unsharpMask(wMod: Int): ToBeTyped[Expr] =
+  def unsharp(wMod: Int): ToBeTyped[Expr] =
     depFun((h: Nat) => nModFun(wMod, w => fun(
       f32 ->: (3`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
     )((sigma, input) =>
@@ -107,7 +107,7 @@ object unsharpMask {
   object omp { // and plain C
     import rise.openMP.primitives._
 
-    val unsharpMaskNaivePar: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
+    val unsharpNaivePar: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
       f32 ->: (3`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
     )((sigma, input) =>
       kernel(sigma) |> mapSeq(id) |> toMem |> letf(fun(k =>

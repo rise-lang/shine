@@ -11,14 +11,14 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
   private val sigma = 1.5f
 
   test("unsharp typechecks") {
-    println(unsharpMask(1).toExpr.t)
+    println(unsharp(1).toExpr.t)
   }
 
   def lowerOMP(e: ToBeTyped[Expr]): Expr =
     harrisCornerDetectionHalideRewrite.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOMP(lowered: Expr): Unit = {
-    val dumbLowering = lowerOMP(omp.unsharpMaskNaivePar)
+    val dumbLowering = lowerOMP(omp.unsharpNaivePar)
     val goldProg = gen.OpenMPProgram(dumbLowering, "unsharpGold")
 
     val prog = util.printTime("codegen",
@@ -67,8 +67,8 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
     util.printTime("execute", util.Execute(testCode))
   }
 
-  test("unsharpMaskNaivePar generates OpenMP code") {
+  test("unsharpNaivePar generates OpenMP code") {
     // FIXME: checks against itself
-    checkOMP(lowerOMP(omp.unsharpMaskNaivePar))
+    checkOMP(lowerOMP(omp.unsharpNaivePar))
   }
 }

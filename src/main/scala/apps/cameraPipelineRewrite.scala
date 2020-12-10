@@ -32,7 +32,7 @@ object cameraPipelineRewrite {
       case ap @ DepApp(f, x) => s(f).mapSuccess(DepApp(_, x)(ap.t))
       case _ => Failure(s)
     }
-    override def toString = s"depFunction($s)"
+    override def toString: String = s"depFunction($s)"
   }
 
   def fBeforeZipMapFilter(fPredicate: Strategy[Rise]): Strategy[Rise] = {
@@ -58,9 +58,9 @@ object cameraPipelineRewrite {
     )
   }
 
-  def debugS(msg: String) =
+  private def debugS(msg: String) =
     elevate.core.strategies.debug.debug[Rise](msg)
-  def printS(msg: String) =
+  private def printS(msg: String) =
     elevate.core.strategies.debug.echo[Rise](msg)
   private val idS = elevate.core.strategies.basic.id[Rise]
 
@@ -392,7 +392,9 @@ object cameraPipelineRewrite {
     case expr @ App(p.map(), Lambda(y,
       App(App(p.let(), v), Lambda(x, b))
     )) if !contains[Rise](y).apply(v) =>
-      Success(fun(in => letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v)) !: expr.t)
+      Success(fun(in =>
+        letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v)
+      ) !: expr.t)
     case _ => Failure(letHoist)
   }
 
