@@ -90,9 +90,10 @@ object unsharpMask {
   }
 
   def unsharp(wMod: Int): ToBeTyped[Expr] =
+    fun(f32)(sigma =>
     depFun((h: Nat) => nModFun(wMod, w => fun(
-      f32 ->: (3`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
-    )((sigma, input) =>
+      (3`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
+    )(input =>
       gray(h)(w)(input) |> fun(g =>
       kernel(sigma) |> fun(k =>
       blur(h)(w)(k)(g |> padClamp2D(3)) |> fun(b =>
@@ -100,23 +101,25 @@ object unsharpMask {
       ratio(h)(w)(s)(g) |> fun(r =>
       mul(h)(w)(r)(input)
       )))))
-    )))
+    ))))
 
   private val id = fun(x => x)
 
   object omp { // and plain C
     import rise.openMP.primitives._
 
-    val unsharpNaivePar: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
-      f32 ->: (3`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
-    )((sigma, input) =>
-      kernel(sigma) |> mapSeq(id) |> toMem |> letf(fun(k =>
-      gray(h)(w)(input) |> mapPar(mapSeq(id)) |> toMem |> letf(fun(g =>
-      blur(h)(w)(k)(g |> padClamp2D(3)) |> fun(b =>
-      sharpen(h)(w)(g)(b) |> fun(s =>
-      ratio(h)(w)(s)(g) |> mapPar(mapSeq(id)) |> toMem |> letf(fun(r =>
-      mul(h)(w)(r)(input) |> mapSeq(mapPar(mapSeq(id)))
-      ))))))))
-    ))
+    val unsharpNaivePar: ToBeTyped[Expr] =
+      fun(f32)(sigma =>
+      depFun((h: Nat, w: Nat) => fun(
+        (3`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
+      )(input =>
+        kernel(sigma) |> mapSeq(id) |> toMem |> letf(fun(k =>
+        gray(h)(w)(input) |> mapPar(mapSeq(id)) |> toMem |> letf(fun(g =>
+        blur(h)(w)(k)(g |> padClamp2D(3)) |> fun(b =>
+        sharpen(h)(w)(g)(b) |> fun(s =>
+        ratio(h)(w)(s)(g) |> mapPar(mapSeq(id)) |> toMem |> letf(fun(r =>
+        mul(h)(w)(r)(input) |> mapSeq(mapPar(mapSeq(id)))
+        ))))))))
+      )))
   }
 }

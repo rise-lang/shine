@@ -15,6 +15,30 @@ import elevate.core.strategies.traversal._
 import rise.elevate.rules.traversal.alternative
 import rise.elevate.rules.traversal.alternative._
 
+object cameraPipelineCheck {
+  val ctyToFormat: String => String = {
+    case "uint16_t" => "%hu"
+    case "int16_t" => "%hd"
+    case "uint8_t" => "%hhu"
+    case "float" => "%f"
+  }
+
+  def read_csv(cty: String): String = s"""
+void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
+  FILE* f = fopen(path, "r");
+
+  for (size_t i = 0; i < n; i++) {
+    if (fscanf(f, " ${ctyToFormat(cty)}", &buf[i]) != 1) {
+      fprintf(stderr, "could not read csv file\\n");
+      exit(1);
+    }
+  }
+
+  fclose(f);
+}
+"""
+}
+
 class cameraPipelineCheck extends test_util.TestsWithExecutor {
   val H = 99
   val W = 146
@@ -73,27 +97,6 @@ float clamp_f32(float v, float l, float h) {
 #define pow_f32 powf
 """
 
-  val ctyToFormat: String => String = {
-    case "uint16_t" => "%hu"
-    case "int16_t" => "%hd"
-    case "uint8_t" => "%hhu"
-  }
-
-  def read_csv(cty: String): String = s"""
-void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
-  FILE* f = fopen(path, "r");
-
-  for (size_t i = 0; i < n; i++) {
-    if (fscanf(f, " ${ctyToFormat(cty)}", &buf[i]) != 1) {
-      fprintf(stderr, "could not read csv file\\n");
-      exit(1);
-    }
-  }
-
-  fclose(f);
-}
-"""
-
   val DFNF = rise.elevate.strategies.normalForm.DFNF()(alternative.RiseTraversable)
   val CNF = rise.elevate.strategies.normalForm.CNF()(alternative.RiseTraversable)
 
@@ -109,8 +112,8 @@ ${cHeader}
 
 ${prog.code}
 
-${read_csv(inputCty)}
-${if (inputCty != outputCty) read_csv(outputCty) else ""}
+${cameraPipelineCheck.read_csv(inputCty)}
+${if (inputCty != outputCty) cameraPipelineCheck.read_csv(outputCty) else ""}
 
 int main(int argc, char** argv) {
   ${inputCty}* input = malloc(${inputSize} * sizeof(${inputCty}));

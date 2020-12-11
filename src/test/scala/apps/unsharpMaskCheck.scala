@@ -18,11 +18,7 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
     harrisCornerDetectionHalideRewrite.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOMP(lowered: Expr): Unit = {
-    val dumbLowering = lowerOMP(omp.unsharpNaivePar)
-    val goldProg = gen.OpenMPProgram(dumbLowering, "unsharpGold")
-
-    val prog = util.printTime("codegen",
-      gen.OpenMPProgram(lowered, "unsharp"))
+    val prog = util.printTime("codegen", gen.OpenMPProgram(lowered, "unsharp"))
 
     val testCode =
       s"""
@@ -30,21 +26,19 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
          | #include <stdio.h>
          | #include <math.h>
          |
-         | ${goldProg.code}
-         |
          | ${prog.code}
+         |
+         | ${cameraPipelineCheck.read_csv("float")}
          |
          | int main(int argc, char** argv) {
          |   float* input = malloc(${3 * H * W} * sizeof(float));
          |   float* gold = malloc(${3 * H * W} * sizeof(float));
          |   float* output = malloc(${3 * H * W} * sizeof(float));
          |
-         |   for (int i = 0; i < ${3 * H * W}; i++) {
-         |     input[i] = (float)((i + 179) % 256) / 25.6f;
-         |   }
+         |   read_csv_float(${3 * H * W}, input, "golds/unsharp/input.dump");
+         |   read_csv_float(${3 * H * W}, gold, "golds/unsharp/output.dump");
          |
-         |   ${goldProg.function.name}(gold, $H, $W, $sigma, input);
-         |   ${prog.function.name}(output, $H, $W, $sigma, input);
+         |   ${prog.function.name}(output, $H, $W, input);
          |
          |   int exit_status = 0;
          |   for (int c = 0; c < 3; c++) {
@@ -70,7 +64,6 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
   }
 
   test("unsharpNaivePar generates OpenMP code") {
-    // FIXME: checks against itself
-    checkOMP(lowerOMP(omp.unsharpNaivePar))
+    checkOMP(lowerOMP(omp.unsharpNaivePar(l(sigma))))
   }
 }

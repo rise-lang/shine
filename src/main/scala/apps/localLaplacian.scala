@@ -195,7 +195,7 @@ object localLaplacian {
     depFun(RangeAdd(0, PosInf, m), f)
   }
 
-  def dropLast2D(n: Nat) = dropLast(n) >> map(dropLast(n))
+  def dropLast2D(n: Nat): ToBeTyped[Expr] = dropLast(n) >> map(dropLast(n))
 
   // pyramidLevels from 1 to 20
   def localLaplacian(pyramidLevels: Int = 8): ToBeTyped[Expr] =
