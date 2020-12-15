@@ -1,5 +1,6 @@
 package apps
 
+import localLaplacian.buildPyramid
 import rise.core.DSL.HighLevelConstructs._
 import rise.core.DSL.Type._
 import rise.core.DSL._
@@ -14,10 +15,14 @@ object multiscaleInterpolation {
   private val dot = C2D.dot
 
   val downsample: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
-    (4`.`((2*h)+1)`.`((2*w)+1)`.`f32) ->: (4`.`(h+1)`.`(w+1)`.`f32)
+    (4`.`(h+1)`.`(w+1)`.`f32) ->: (4`.`((h/2)+1)`.`((w/2)+1)`.`f32)
   )(input =>
     input |> map( // 4.
-      padClamp2D(1) >> // TODO: should this be a clamp?
+      // TODO? Halide only clamps the middle pyramid level, PolyMage pads with 0s
+      padClamp2D(
+        0, 2*(1 + h/2 - h/^2), // 1 - h % 2
+        0, 2*(1 + w/2 - w/^2)  // 1 - w % 2
+      ) >>
       map(slide(3)(2)) >> slide(3)(2) >> // H.3.W.3.
       map(transpose) >> // H.W.3.3.
       map(map( // TODO? rewriting could separate the blur
@@ -33,15 +38,20 @@ object multiscaleInterpolation {
   ))
 
   val upsample: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
-    (4`.`(h+1)`.`(w+1)`.`f32) ->: (4`.`((2*h)+1)`.`((2*w)+1)`.`f32)
+    (4`.`((h/2)+1)`.`((w/2)+1)`.`f32) ->: (4`.`(h+1)`.`(w+1)`.`f32)
   )(input =>
     input |> map( // 4.
       map(map(fun(x =>
         generate(fun(_ => generate(fun(_ => x)))) :: (2`.`2`.`f32)
       ))) >> // H+1.W+1.2.2.
       map(join >> transpose) >> join >> // 2H+2.2W+2.
+      // TODO? Halide does not pad for upsampling, PolyMage pads with 0s
+      padClamp2D(
+        0, h - 2*(h/2), // h % 2
+        0, w - 2*(w/2)  // w % 2
+      ) >>
       slide2D(2, 1) >>
-      map(map(
+      map(map( // TODO? rewriting could separate the blur
         transpose >>
         map(dot(avgWeights)) >>
         dot(avgWeights)
@@ -49,12 +59,26 @@ object multiscaleInterpolation {
     )
   ))
 
+  val interpolate_level: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
+    (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32)
+  )((downsampled, upsampled) =>
+      zipND(3)(downsampled, upsampled) |>
+      transpose |> map(transpose) |>
+      map(map(fun { p => // 4.(f32 x f32)
+        val alpha = l(1.0f) - fst(p `@` lidx(3, 4))
+        map(fun(x =>
+          fst(x) + alpha * snd(x)
+        ))(p)
+      })) |>
+      map(transpose) |> transpose
+  ))
+
   val normalize: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
-    (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32)
+    (4`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
   )(input =>
     input |> transpose |> map(transpose) |> // H.W.4.
     map(map(fun { p =>
-      generate(fun(i => p `@` i / p `@` lidx(3, 4))) :: (4`.`f32)
+      generate(fun(i => p `@` cast(i) / p `@` lidx(3, 4))) :: (3`.`f32)
     })) |> map(transpose) |> transpose
   ))
 
@@ -65,7 +89,7 @@ object multiscaleInterpolation {
 
   def interpolate(levels: Int, wMod: Int): ToBeTyped[Expr] =
     depFun((h: Nat) => nModFun(wMod, w => fun(
-      (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32)
+      (4`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
     )(input => {
       val alpha = lidx(3, 4)
       val start = map(padClamp2D(0, 1))(input) |> fun(clamped =>
@@ -76,17 +100,20 @@ object multiscaleInterpolation {
           )(clamped `@` alpha)
         ))
       )
-      val downsampled = (1 until levels).foldRight[ToBeTyped[Expr]](start){ (_, prev) =>
-        impl { hp: Nat => impl { wp: Nat => downsample(hp)(wp)(prev) }}
-      }
-      val upsampled = (1 until levels).foldRight[ToBeTyped[Expr]](downsampled){ case (_, prev) =>
-        impl { hp: Nat => impl { wp: Nat => upsample(hp)(wp)(prev) }}
-      }
-      upsampled |>
+      buildPyramid(0, levels-1, start, { (i, prev) =>
+        val factor = (2: Nat).pow(i - 1)
+        downsample(h / factor)(w / factor)(prev)
+      }, downsampled =>
+      buildPyramid(levels-1, 0, downsampled(levels-1), { (i, prev) =>
+        val factor = (2: Nat).pow(i)
+        upsample(h / factor)(w / factor)(prev) |> fun(u =>
+        interpolate_level(h / factor + 1)(w / factor + 1)(downsampled(i), u))
+      }, interpolated =>
+      interpolated(0) |>
       map(dropLast(1)) >>
       map(map(dropLast(1))) >>
       normalize(h)(w)
-    })))
+    ))})))
 
   private val id = fun(x => x)
 
@@ -94,7 +121,7 @@ object multiscaleInterpolation {
     import rise.openMP.primitives._
 
     def interpolateNaivePar(levels: Int): ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
-      (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32)
+      (4`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`f32)
     )(input => {
       val alpha = lidx(3, 4)
       val start = map(padClamp2D(0, 1))(input) |> fun(clamped =>
@@ -105,19 +132,21 @@ object multiscaleInterpolation {
           )(clamped `@` alpha)
         ))
       )
-      val downsampled = (1 until levels).foldLeft[ToBeTyped[Expr]](start) { (prev, i) =>
+      buildPyramid(0, levels-1, start, { (i, prev) =>
+        val factor = (2: Nat).pow(i - 1)
+        downsample(h / factor)(w / factor)(prev) |> mapSeq(mapPar(mapSeq(id))) |> toMem
+      }, downsampled =>
+      buildPyramid(levels-1, 0, downsampled(levels-1), { (i, prev) =>
         val factor = (2: Nat).pow(i)
-        downsample(h /^ factor)(w /^ factor)(prev) |> mapSeq(mapPar(mapSeq(id))) |> toMem
-      }
-      val upsampled = (1 until levels).foldRight[ToBeTyped[Expr]](downsampled) { case (i, prev) =>
-        val factor = (2: Nat).pow(i)
-        upsample(h /^ factor)(w /^ factor)(prev) |> mapSeq(mapPar(mapSeq(id))) |> toMem
-      }
-      upsampled |>
+        upsample(h / factor)(w / factor)(prev) |> fun(u =>
+        interpolate_level(h / factor + 1)(w / factor + 1)(downsampled(i), u) |>
+        mapSeq(mapPar(mapSeq(id))) |> toMem)
+      }, interpolated =>
+      interpolated(0) |>
       map(dropLast(1)) >>
       map(map(dropLast(1))) >>
       normalize(h)(w) >> mapSeq(mapPar(mapSeq(id)))
-    }))
+    ))}))
   }
 
 }
