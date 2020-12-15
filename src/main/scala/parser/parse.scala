@@ -564,6 +564,21 @@ object parse {
 //    e
 //  }
 
+  private def combineSynElemList(leftSynElemList: List[SyntaxElement], rightSynElemList: List[SyntaxElement]) : List[SyntaxElement] = {
+    var lS = leftSynElemList
+    var rS = rightSynElemList
+    var l:List[SyntaxElement] = Nil
+    while(rS.nonEmpty){
+      l = rS.head::l
+      rS = rS.tail
+    }
+    while(lS.nonEmpty){
+      l = lS.head::l
+      lS = lS.tail
+    }
+    l
+  }
+
   private def combineExpressionsDependent(synElemList: List[SyntaxElement]) : r.Expr = {
     if(synElemList.isEmpty){
       throw new IllegalArgumentException("the ElemList is empty!")
@@ -593,7 +608,10 @@ object parse {
           synE = synE.tail
         }
         case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
-        case SType(t) => throw new  RuntimeException("List should't have Types at this position! " + t)
+        case SType(t) => {
+          e = r.DepApp[rt.TypeKind](e, t)()
+          synE = synE.tail
+        }
         case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
         case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
       }
@@ -970,7 +988,14 @@ object parse {
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
         parseType |>
         ParseTypesUntilRBracket
-    p
+
+    p match {
+      case Left(newPS) => {
+        val synList = combineSynElemList(newPS.parsedSynElems, parseState.parsedSynElems)
+        Left(ParseState(newPS.tokenStream, synList, newPS.mapFkt, newPS.mapDepL))
+      }
+      case Right(e) => Right(e)
+    }
   }
 
   def parseTypeinNoAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
@@ -985,7 +1010,14 @@ object parse {
         ParseTypesUntilRBracket |>
         parseRightBracket
 
-    p
+    println("after parseTypeinNoAppExpr: "+ p)
+    p match {
+      case Left(newPS) => {
+        val synList = combineSynElemList(newPS.parsedSynElems, parseState.parsedSynElems)
+        Left(ParseState(newPS.tokenStream, synList, newPS.mapFkt, newPS.mapDepL))
+      }
+      case Right(e) => Right(e)
+    }
   }
 
   def parseBracesExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
@@ -1158,10 +1190,17 @@ object parse {
       case Right(e) => Right(e)
       case Left(ps)=> if(ps.tokenStream.isEmpty){
                               println("parseApp End, because TokenList is empty: "+ ps)
-                              Left(ps)
+                              val expr = combineExpressionsDependent(ps.parsedSynElems)
+                              Left(ParseState(ps.tokenStream, SExpr(expr)::Nil, ps.mapFkt, ps.mapDepL))
                             }else{
                               val p = parseMaybeAppExpr(ps)
-                                  p
+                              p match {
+                                case Right(e) => Right(e)
+                                case Left(newPS) => {
+                                  val expr = combineExpressionsDependent(newPS.parsedSynElems)
+                                  Left(ParseState(newPS.tokenStream, SExpr(expr)::Nil, newPS.mapFkt, newPS.mapDepL))
+                                }
+                              }
                             }
     }
   }

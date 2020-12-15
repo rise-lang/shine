@@ -19,10 +19,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "arrayType.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -46,10 +46,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "arrayTypeOnlyTypAnn.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val exT = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val exT = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => fail("no definition is expected: " + lambda)
       case Right(t) => t
     }
@@ -60,7 +60,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     val functionName2: String = "h"
-    val ex: r.Expr = map.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -82,10 +82,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Brace5.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -101,10 +101,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "braces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -120,10 +120,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "bracesWithNot.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -139,10 +139,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex1.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -158,10 +158,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex2.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -178,10 +178,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex3.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -198,10 +198,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex4.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -219,10 +219,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex5.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -240,10 +240,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex6.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -261,10 +261,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex7.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -282,10 +282,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "ComplexIdentifier.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -301,10 +301,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "complexInOneLine.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -325,10 +325,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "complexInThreeLines.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -349,10 +349,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "constant42.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -367,16 +367,16 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "DepLambda.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
 
     val functionName2: String = "g"
-    val ex_g: r.Expr = map.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -391,17 +391,15 @@ class parseTest extends  AnyFlatSpec {
     ex_g.t match {
       case rt.DepFunType(n, rt.DepFunType(d,
       rt.ArrayType(n1: rt.NatIdentifier, d1: rt.DataTypeIdentifier)))
-        if n.name.equals("N") && n1.name.equals(n.name)
+        if n.name.equals("N1") && n1.name.equals(n.name)
           && d.name.equals("D") && d1.name.equals(d.name) => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
   ex_f match {
-      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
     case r.DepLambda(n: rt.NatIdentifier, r.DepApp(r.DepApp(r.Identifier("g"),
-    n1: rt.NatIdentifier), i:rt.DataKind))
-      if n.name.equals("N") && n1.name.equals("N")
-    //&& i.isInstanceOf[rt.i32.type]
+    n1), i:rt.i32.type ))
+      if n.name.equals("N") //&& n1.name.equals("N") //Todo: n1 is not of the Type NatIdentifier
     => true
     case r.DepLambda(n, e) => fail("Not correct deplambda: "
       +n.toString()+ " , " + e.toString())
@@ -410,13 +408,14 @@ class parseTest extends  AnyFlatSpec {
 
   ex_g match {
     case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.Generate(), d1:rt.DataTypeIdentifier),
+      r.App(r.DepApp(rp.Generate(), n1),
       r.Lambda(r.Identifier("i"), r.App(
-      r.DepApp(rp.Cast(),d2:rt.DataTypeIdentifier), r.Identifier("i")))
+      r.DepApp(rp.Cast(),d2), r.Identifier("i")))
     )))
-      if n.name.equals("N")
-        && d.name.equals("D") && d1.name.equals(d.name)&&
-        d2.name.equals(d.name)=> true
+      if n.name.equals("N1")
+        && d.name.equals("D") //&& n1.name.equals(n.name)&&
+ //       d2.name.equals(d.name)
+           => true
     case r.DepLambda(n, e) => fail("Not correct deplambda: "
       +n.toString()+ " , " + e.toString())
     case a => fail("Not a DepLambda: " + a)
@@ -427,10 +426,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "DepLambda2.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName2: String = "g"
-    val ex_g: r.Expr = map.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -463,10 +462,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "DepLambdaNat.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -491,10 +490,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "dotProduct.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -530,10 +529,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "dotProductDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -571,10 +570,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "dotProductEasy.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -611,10 +610,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -630,10 +629,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -649,10 +648,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "identityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -668,10 +667,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Idx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -692,10 +691,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "lessComplexInOneLine.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -714,10 +713,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -736,10 +735,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "littleComplexLine.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -766,10 +765,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "longIdentityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -845,10 +844,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "matrixMultWithComments.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -905,10 +904,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "minus.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -924,10 +923,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "negation.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -943,10 +942,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "negationWithBool.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -973,10 +972,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "not.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -992,10 +991,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "plus.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1011,10 +1010,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveFstTwoDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1043,10 +1042,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveSndTwoDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1075,10 +1074,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveSndDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1105,10 +1104,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveFstDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1135,10 +1134,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveSnd.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1160,10 +1159,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveFst.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1186,10 +1185,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "TupleType.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1210,10 +1209,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "TupleType2.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1234,10 +1233,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "TupleType3.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1258,10 +1257,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "TupleType4.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
@@ -1285,20 +1284,20 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "twoplus1extraDefintion.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName_h: String = "h"
-    val ex_h: r.Expr = map.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
+    val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_f: String = "f"
-    val ex_f: r.Expr = map.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_z: String = "z"
-    val ex_z: r.types.Type = map.get(functionName_z).getOrElse(fail("The function '" + functionName_z + "' does not exist!!!")) match {
+    val ex_z: r.types.Type = riseExprByIdent.get(functionName_z).getOrElse(fail("The function '" + functionName_z + "' does not exist!!!")) match {
       case Left(lambda) => fail("it is no definition expected: " + lambda)
       case Right(t) =>
         t
@@ -1337,20 +1336,20 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "twoSimpleFunctions.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName_h: String = "h"
-    val ex_h: r.Expr = map.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
+    val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_f: String = "f"
-    val ex_f: r.Expr = map.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_z: String = "z"
-    if (map.contains(functionName_z)) {
+    if (riseExprByIdent.contains(functionName_z)) {
       fail("no Function with name '" + functionName_z + "' was declared")
     }
 
@@ -1382,15 +1381,15 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "veryComplicated.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
 
     val functionName_f: String = "f"
-    val ex_f: r.Expr = map.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_2: String = "specialFunctionOfChaos"
-    val type_2:r.types.Type= map.get(functionName_2).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
+    val type_2:r.types.Type= riseExprByIdent.get(functionName_2).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
       case Left(lambda) => fail("no definition is expected: "+ lambda)
       case Right(t) => t
     }
