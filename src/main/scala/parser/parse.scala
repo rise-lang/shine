@@ -4,7 +4,7 @@ import rise.core.{Lambda, primitives => rp, semantics => rS, types => rt}
 import rise.{core => r}
 
 import scala.collection.mutable
-object parser {
+object parse {
 
   abstract sealed class ParseErrorOrState()
 

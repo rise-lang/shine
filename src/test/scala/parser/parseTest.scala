@@ -10,16 +10,16 @@ import rise.core.{semantics => rS}
 import rise.core.{primitives => rp}
 
 
-class parserTest extends  AnyFlatSpec {
+class parseTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
   //HashMap<r.Identifier, Option[r.Expr]> ist das oberste
-  type MapFkt = parser.MapFkt
+  type MapFkt = parse.MapFkt
 
   "parser" should "be able to parse 'arrayType.rise'" in {
     val fileName: String = testFilePath + "arrayType.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -46,7 +46,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "arrayTypeOnlyTypAnn.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val exT = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -82,7 +82,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Brace5.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -101,7 +101,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "braces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -120,7 +120,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "bracesWithNot.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -139,7 +139,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex1.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -158,7 +158,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex2.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -178,7 +178,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex3.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -198,7 +198,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex4.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -219,7 +219,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex5.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -240,7 +240,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex6.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -261,7 +261,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Complex7.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -282,7 +282,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "ComplexIdentifier.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -301,7 +301,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "complexInOneLine.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -325,7 +325,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "complexInThreeLines.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -349,7 +349,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "constant42.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -367,7 +367,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "DepLambda.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -427,7 +427,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "DepLambda2.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName2: String = "g"
     val ex_g: r.Expr = map.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
@@ -463,7 +463,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "DepLambdaNat.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -491,7 +491,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "dotProduct.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -530,7 +530,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "dotProductDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -571,7 +571,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "dotProductEasy.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -611,7 +611,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "FunctionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -630,7 +630,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -649,7 +649,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "identityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -668,7 +668,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "Idx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -692,7 +692,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "lessComplexInOneLine.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -714,7 +714,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -736,7 +736,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "littleComplexLine.rise"
     val file: FileReader = FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -766,7 +766,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "longIdentityWithI32.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -785,12 +785,12 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "matrixMult.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val riseExprByIdent= parse(lexer.tokens)
 
     val functionName: String = "f"
-    val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
       case Left(lambda) => lambda
-      case Right(types) => fail("no definition is in map: " + types)
+      case Right(types) => fail("no definition is in riseExprByIdent: " + types)
     }
 
     ex_f.t match {
@@ -843,9 +843,9 @@ class parserTest extends  AnyFlatSpec {
 
   "parser" should "be able to parse 'matrixMultWithComments.rise'" in {
     val fileName: String = testFilePath + "matrixMultWithComments.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val file: FileReader = FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -905,7 +905,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "minus.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -924,7 +924,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "negation.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -943,7 +943,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "negationWithBool.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -963,7 +963,7 @@ class parserTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val thrown = intercept[RuntimeException] {
-      parser(lexer.tokens)
+      parse(lexer.tokens)
     }
 
     thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List('(', ')', <EndNamedExpr>)")
@@ -973,7 +973,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "not.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -992,7 +992,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "plus.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1011,7 +1011,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveFstTwoDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1043,7 +1043,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveSndTwoDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1075,7 +1075,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveSndDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1105,7 +1105,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveFstDep.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1135,7 +1135,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveSnd.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1160,7 +1160,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "PrimitiveFst.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex_f: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1186,7 +1186,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "TupleType.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1210,7 +1210,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "TupleType2.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1234,7 +1234,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "TupleType3.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1258,7 +1258,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "TupleType4.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName: String = "f"
     val ex: r.Expr = map.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
@@ -1285,7 +1285,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "twoplus1extraDefintion.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName_h: String = "h"
     val ex_h: r.Expr = map.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
@@ -1327,7 +1327,7 @@ class parserTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val thrown = intercept[RuntimeException] {
-      parser(lexer.tokens)
+      parse(lexer.tokens)
     }
 
     thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left( x))")
@@ -1337,7 +1337,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "twoSimpleFunctions.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName_h: String = "h"
     val ex_h: r.Expr = map.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
@@ -1372,7 +1372,7 @@ class parserTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val thrown = intercept[RuntimeException] {
-      parser(lexer.tokens)
+      parse(lexer.tokens)
     }
 
     thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left( x))")
@@ -1382,7 +1382,7 @@ class parserTest extends  AnyFlatSpec {
     val fileName: String = testFilePath + "veryComplicated.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val map: MapFkt = parser(lexer.tokens)
+    val map: MapFkt = parse(lexer.tokens)
 
     val functionName_f: String = "f"
     val ex_f: r.Expr = map.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
