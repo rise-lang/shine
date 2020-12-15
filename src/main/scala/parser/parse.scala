@@ -604,7 +604,7 @@ object parse {
         case SData(DIdentifier(rt.DataTypeIdentifier(name,_))) => {
 
 //          case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)())
-          e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))()
+          e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))() //Todo: Not correct Type yet of the Identifier, If I have an NatIdentifier then it should be an Natidentifier and not and DataTypeIdent
           synE = synE.tail
         }
         case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)

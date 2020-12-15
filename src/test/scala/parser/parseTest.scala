@@ -408,13 +408,13 @@ class parseTest extends  AnyFlatSpec {
 
   ex_g match {
     case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.Generate(), n1),
+      r.App(r.DepApp(rp.Generate(), n1:rt.DataTypeIdentifier),
       r.Lambda(r.Identifier("i"), r.App(
-      r.DepApp(rp.Cast(),d2), r.Identifier("i")))
+      r.DepApp(rp.Cast(),d2:rt.DataTypeIdentifier), r.Identifier("i")))
     )))
       if n.name.equals("N1")
-        && d.name.equals("D") //&& n1.name.equals(n.name)&&
- //       d2.name.equals(d.name)
+        && d.name.equals("D") && n1.name.equals(n.name)&&
+        d2.name.equals(d.name)
            => true
     case r.DepLambda(n, e) => fail("Not correct deplambda: "
       +n.toString()+ " , " + e.toString())
