@@ -1,2 +1,2 @@
 g::N:Nat=>D:Data=>N.N.D
-g= \N:Nat=>\D:Data=>generate[( N  )] (\i->cast[N.D] i)
+g= \N:Nat=>\D:Data=>generate[( N  )] (\i->cast[N.D] i) --The problem are the Braces in generate[ .. ], because of them everything inside the Braces is converted to one Type

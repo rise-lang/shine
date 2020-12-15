@@ -617,7 +617,24 @@ object parse {
         }
         case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
         case SType(t) => {
-          e = r.DepApp[rt.TypeKind](e, t)()
+          if(t.isInstanceOf[rt.DataTypeIdentifier]){
+            t match {
+              case rt.DataTypeIdentifier(name,_) => mapDepL.get(name) match {
+                case None => {
+                  //Todo: Bessere Fehlermeldung!!!
+                  throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
+                }
+                case Some(k)=> k match {
+                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))()
+                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))()
+                  case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e, rt.AddressSpaceIdentifier(name,true))()
+                }
+              }
+              case _ => throw new IllegalStateException("This should not be happening in the combining of the Dependent Expressions")
+            }
+          }else{
+            e = r.DepApp[rt.TypeKind](e, t)()
+          }
           synE = synE.tail
         }
         case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)

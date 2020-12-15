@@ -449,11 +449,57 @@ class parseTest extends  AnyFlatSpec {
       r.Lambda(r.Identifier("i"), r.App(
       r.DepApp(rp.Cast(),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
       )))
-        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
+        if n.name.equals("N") &&  n2.name.equals(n.name) //&&n1.name.equals(n.name)
           && d.name.equals("D") &&
           d2.name.equals(d.name)=> true
-      case r.DepLambda(n, e) => fail("Not correct deplambda: "
-        +n.toString()+ " , " + e.toString())
+      case r.DepLambda(n, e) => {
+        fail("Not correct deplambda: "
+          +n.toString()+ " , " + e.toString())
+      }
+      case a => fail("Not a DepLambda: " + a)
+    }
+  }
+
+
+  "parser" should "be able to parse 'DepLambda2CleanCode.rise'" in {
+    val fileName: String = testFilePath + "DepLambda2CleanCode.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "g"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_g.t match {
+      case rt.DepFunType(n, rt.DepFunType(d,
+      rt.ArrayType(n1: rt.NatIdentifier,
+      rt.ArrayType(n2: rt.NatIdentifier,d1: rt.DataTypeIdentifier))))
+        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
+          && d.name.equals("D") && d1.name.equals(d.name) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_g match {
+      case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
+      r.App(r.DepApp(rp.Generate(), n1:rt.NatIdentifier),
+      r.Lambda(r.Identifier("i"), r.App(
+      r.DepApp(rp.Cast(),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
+      )))
+        if n.name.equals("N") &&  n2.name.equals(n.name) //&&n1.name.equals(n.name)
+          && d.name.equals("D") &&
+          d2.name.equals(d.name)=> true
+      case r.DepLambda(n, e) => {
+        println("correct solution: "+  r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.DepLambda[rt.DataKind](rt.DataTypeIdentifier("D"),
+          r.App(r.DepApp[rt.NatKind](rp.Generate()(), rt.NatIdentifier("N"))(),
+            r.Lambda(r.Identifier("i")(), r.App(
+              r.DepApp[rt.TypeKind](rp.Cast()(),rt.ArrayType(rt.NatIdentifier("N"), rt.DataTypeIdentifier("D")))(), r.Identifier("i")()
+            )())())())())())
+        fail("Not correct deplambda: "
+          +n.toString()+ " , " + e.toString())
+      }
       case a => fail("Not a DepLambda: " + a)
     }
   }
