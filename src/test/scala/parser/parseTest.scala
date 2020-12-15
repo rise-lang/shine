@@ -398,8 +398,8 @@ class parseTest extends  AnyFlatSpec {
 
   ex_f match {
     case r.DepLambda(n: rt.NatIdentifier, r.DepApp(r.DepApp(r.Identifier("g"),
-    n1), i:rt.i32.type ))
-      if n.name.equals("N") //&& n1.name.equals("N") //Todo: n1 is not of the Type NatIdentifier
+    n1:rt.NatIdentifier), i:rt.i32.type ))
+      if n.name.equals("N") && n1.name.equals("N") //Todo: n1 is not of the Type NatIdentifier
     => true
     case r.DepLambda(n, e) => fail("Not correct deplambda: "
       +n.toString()+ " , " + e.toString())
@@ -408,7 +408,7 @@ class parseTest extends  AnyFlatSpec {
 
   ex_g match {
     case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.Generate(), n1:rt.DataTypeIdentifier),
+      r.App(r.DepApp(rp.Generate(), n1:rt.NatIdentifier),
       r.Lambda(r.Identifier("i"), r.App(
       r.DepApp(rp.Cast(),d2:rt.DataTypeIdentifier), r.Identifier("i")))
     )))
@@ -445,12 +445,12 @@ class parseTest extends  AnyFlatSpec {
 
     ex_g match {
       case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.Generate(), d1:rt.DataTypeIdentifier),
+      r.App(r.DepApp(rp.Generate(), n1:rt.NatIdentifier),
       r.Lambda(r.Identifier("i"), r.App(
-      r.DepApp(rp.Cast(),rt.ArrayType(n1:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
+      r.DepApp(rp.Cast(),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
       )))
-        if n.name.equals("N") && n1.name.equals(n.name)
-          && d.name.equals("D") && d1.name.equals(d.name)&&
+        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
+          && d.name.equals("D") &&
           d2.name.equals(d.name)=> true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())

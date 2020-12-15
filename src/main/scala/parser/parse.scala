@@ -579,7 +579,7 @@ object parse {
     l
   }
 
-  private def combineExpressionsDependent(synElemList: List[SyntaxElement]) : r.Expr = {
+  private def combineExpressionsDependent(synElemList: List[SyntaxElement], mapDepL: MapDepL) : r.Expr = {
     if(synElemList.isEmpty){
       throw new IllegalArgumentException("the ElemList is empty!")
     }
@@ -602,9 +602,17 @@ object parse {
           synE = synE.tail
         }
         case SData(DIdentifier(rt.DataTypeIdentifier(name,_))) => {
-
-//          case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)())
-          e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))() //Todo: Not correct Type yet of the Identifier, If I have an NatIdentifier then it should be an Natidentifier and not and DataTypeIdent
+          mapDepL.get(name) match {
+            case None => {
+              //Todo: Bessere Fehlermeldung!!!
+              throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
+            }
+            case Some(k)=> k match {
+              case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))()
+              case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))()
+              case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e, rt.AddressSpaceIdentifier(name,true))()
+            }
+          }
           synE = synE.tail
         }
         case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
@@ -746,7 +754,7 @@ object parse {
 //              }else{
                 //Todo: We have to give the Identifier (identifierFkt/p.map.get(n)) now a Type
 
-                (remainderTokens, p.parsedSynElems, m)
+                (remainderTokens, p.parsedSynElems, m, p.mapDepL)
 //              }
             }
           }
@@ -758,7 +766,8 @@ object parse {
     }
 
         val synElemList = psNamedExpr._2
-        var expr = combineExpressionsDependent(synElemList)
+        val mapDepL = psNamedExpr._4
+        var expr = combineExpressionsDependent(synElemList, mapDepL)
         expr = expr.setType(typeOfFkt)
 
         println("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
@@ -908,7 +917,7 @@ object parse {
 
     val (toks, synElemList, map, mapDepL) = psOrErr match {
       case Left(psNew) => {
-        val expr = SExpr(combineExpressionsDependent(psNew.parsedSynElems))
+        val expr = SExpr(combineExpressionsDependent(psNew.parsedSynElems, psNew.mapDepL))
         val newL = expr :: Nil
         val li:List[SyntaxElement] = psOld match {
           case Left(pa) => pa.parsedSynElems.reverse ++ newL
@@ -1039,7 +1048,7 @@ object parse {
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
-        val expr = SExpr(combineExpressionsDependent(pState.parsedSynElems))
+        val expr = SExpr(combineExpressionsDependent(pState.parsedSynElems, pState.mapDepL))
         val newL = expr :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse
@@ -1190,14 +1199,14 @@ object parse {
       case Right(e) => Right(e)
       case Left(ps)=> if(ps.tokenStream.isEmpty){
                               println("parseApp End, because TokenList is empty: "+ ps)
-                              val expr = combineExpressionsDependent(ps.parsedSynElems)
+                              val expr = combineExpressionsDependent(ps.parsedSynElems, ps.mapDepL)
                               Left(ParseState(ps.tokenStream, SExpr(expr)::Nil, ps.mapFkt, ps.mapDepL))
                             }else{
                               val p = parseMaybeAppExpr(ps)
                               p match {
                                 case Right(e) => Right(e)
                                 case Left(newPS) => {
-                                  val expr = combineExpressionsDependent(newPS.parsedSynElems)
+                                  val expr = combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL)
                                   Left(ParseState(newPS.tokenStream, SExpr(expr)::Nil, newPS.mapFkt, newPS.mapDepL))
                                 }
                               }
