@@ -211,10 +211,9 @@ class dependentTypes extends test_util.Tests {
     })))
 
     val inferred: Expr = TDSL.infer(e)
-    val unsub = TDSL.unsub(inferred)
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(unsub, "Foo_foo")
+    util.gen.CProgram(inferred, "Foo_foo")
   }
 
 
@@ -234,9 +233,8 @@ class dependentTypes extends test_util.Tests {
     })))
 
     val inferred: Expr = TDSL.infer(e)
-    val unsub = TDSL.unsub(inferred)
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(unsub, "Foo_foo")
+    util.gen.CProgram(inferred, "Foo_foo")
   }
 }

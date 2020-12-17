@@ -93,15 +93,13 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    // Todo: Re-introduce
-    /*
     SimplifyNats(UnrollLoops(TranslationToImperative.acc(p)(output)(
       new shine.C.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
     })))
-     */
+
 
     val accP = TranslationToImperative.acc(p)(output)(new shine.C.TranslationContext)
     UnrollLoops(accP) |> (p => {
