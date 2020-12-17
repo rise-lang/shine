@@ -26,7 +26,6 @@ object multiscaleInterpolation {
       map(slide(3)(2)) >> slide(3)(2) >> // H.3.W.3.
       map(transpose) >> // H.W.3.3.
       map(map( // TODO? rewriting could separate the blur
-        transpose >>
         map(dot(C2D.binomialWeightsH)) >>
         dot(C2D.binomialWeightsV)
       ))
@@ -52,7 +51,6 @@ object multiscaleInterpolation {
       ) >>
       slide2D(2, 1) >>
       map(map( // TODO? rewriting could separate the blur
-        transpose >>
         map(dot(avgWeights)) >>
         dot(avgWeights)
       ))
