@@ -1,14 +1,15 @@
 package shine.DPIA.Primitives
 
 import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.types._
 import util.gen
 
-class Slide extends shine.test_util.Tests {
+class Slide extends test_util.Tests {
 
   test("Simple slide example should generate syntactic valid C code with two for loops") {
     val e =
-      nFun(n => fun(ArrayType(n, f32))(xs =>
+      depFun((n: Nat) => fun(ArrayType(n, f32))(xs =>
         xs |> slide(3)(1) |> mapSeq(mapSeq(fun(x => x)))))
 
     val code = gen.CProgram(e).code
@@ -18,10 +19,10 @@ class Slide extends shine.test_util.Tests {
 
   test("Simple 2D slide example with separate maps should generate syntactic valid OpenMP code with three for loops") {
     val e =
-      nFun(n => nFun(m =>
+      depFun((n: Nat, m: Nat) =>
         fun(ArrayType(n, ArrayType(m, f32)))( xs =>
           xs |> map(slide(3)(1)) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
-        )))
+        ))
 
     val code = gen.CProgram(e).code
 
@@ -30,10 +31,10 @@ class Slide extends shine.test_util.Tests {
 
   test("Simple 2D slide example with merged maps should generate syntactic valid OpenMP code with three for loops") {
     val e =
-      nFun(n => nFun(m =>
+      depFun((n: Nat, m: Nat) =>
         fun(ArrayType(n, ArrayType(m, f32)))( xs =>
           xs |> mapSeq(slide(3)(1) >> mapSeq(mapSeq(fun(x => x))))
-        )))
+        ))
 
     val code = gen.CProgram(e).code
 
@@ -45,7 +46,7 @@ class Slide extends shine.test_util.Tests {
     val slideSize = 3
     val slideStep = 1
 
-    val f = nFun(n => nFun(m =>
+    val f = depFun((n: Nat) => depFun((m: Nat) =>
       fun(ArrayType(n, ArrayType(m, f32)))(xs =>
         xs |> slide2D(slideSize, slideStep) |> mapSeq(fun(x => x)))))
 

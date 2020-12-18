@@ -1,11 +1,12 @@
 package shine.DPIA.Semantics
 
 import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.types._
 
 import util.gen
 
-class SplitSlide extends shine.test_util.Tests {
+class SplitSlide extends test_util.Tests {
 
   val n = 8
   val sz = 3

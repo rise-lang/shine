@@ -1,10 +1,11 @@
 package shine.DPIA.Primitives
 
 import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.types._
 import util.gen
 
-class Take extends shine.test_util.Tests {
+class Take extends test_util.Tests {
 
   test ("Simple take example") {
     val e = fun(ArrayType(128, int))(a =>

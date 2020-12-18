@@ -2,61 +2,51 @@ package apps
 
 import separableConvolution2D._
 import rise.core._
-import rise.core.primitives._
-import rise.core.TypedDSL._
-import rise.core.HighLevelConstructs._
+import rise.core.DSL._
+import HighLevelConstructs._
 import elevate.core._
-import elevate.rise.rules._
-import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.movement._
+import rise.elevate.rules._
+import rise.elevate.rules.algorithmic._
+import rise.elevate.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.Rise
-import elevate.rise.strategies.algorithmic._
-import elevate.rise.rules.traversal._
-import elevate.rise.rules.traversal.alternative._
-import elevate.util.makeClosed
+import rise.elevate.Rise
+import rise.elevate.strategies.algorithmic._
+import rise.elevate.rules.traversal._
+import rise.elevate.rules.traversal.alternative._
+import rise.elevate.util.makeClosed
+import rise.core.primitives._
 
-class separableConvolution2DRewrite extends shine.test_util.Tests {
+class separableConvolution2DRewrite extends test_util.Tests {
   private val idE: Expr = fun(x => x)
-  private val idS: Strategy[Rise] = strategies.basic.id()
+  private val idS: Strategy[Rise] = strategies.basic.id
 
   private val weights2d = binomialWeights2d
   private val weightsV = binomialWeightsV
   private val weightsH = binomialWeightsH
 
-  private val * = map
-  private val T = transpose
-  private val P = toTDSL(padClamp2D(1))
+  private val * : ToBeTyped[Rise] = map
+  private val T: ToBeTyped[Rise] = transpose
+  private val P = padClamp2D(1)
   private val Sh = slide(3)(1)
   private val Sv = slide(3)(1)
-  private val Dh = toTDSL(dot)(weightsH)
-  private val Dv = toTDSL(dot)(weightsV)
+  private val Dh = dot(weightsH)
+  private val Dv = dot(weightsV)
 
-  private val BENF = elevate.rise.strategies.normalForm.BENF()(alternative.RiseTraversable)
+  private val BENF = rise.elevate.strategies.normalForm.BENF()(alternative.RiseTraversable)
 
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toTDSL(na) :: nb.t
+    val uab: Rise = toBeTyped(na) !: nb.t
     makeClosed(uab)._1 == makeClosed(nb)._1
   }
 
-  private val separateDot: Strategy[Rise] = {
-    case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), App(Join(), w)), App(Join(), nbh))))
-      if ben_eq(rf, add :: rf.t) && init == toExpr(l(0.0f)) && ben_eq(mf, toTDSL(mulT) :: mf.t) && w == weights2d
-    =>
-      Success(typed(nbh) |> map(toTDSL(dot)(weightsH)) |> toTDSL(dot)(weightsV))
-    case _ => Failure(separateDot)
-  }
+  private val separateDot: Strategy[Rise] =
+    separateDotHV(weights2d, weightsH, weightsV)
 
-  private val separateDotT: Strategy[Rise] = {
-    case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), App(Join(), w)), App(Join(), nbh))))
-      if ben_eq(rf, add :: rf.t) && init == toExpr(l(0.0f)) && ben_eq(mf, toTDSL(mulT) :: mf.t) && w == weights2d
-    =>
-      Success(typed(nbh) |> transpose |> map(toTDSL(dot)(weightsV)) |> toTDSL(dot)(weightsH))
-    case _ => Failure(separateDotT)
-  }
+  private val separateDotT: Strategy[Rise] =
+    separateDotVH(weights2d, weightsV, weightsH)
 
   private def assert_ben_eq(a: Expr, b: Expr): Unit =
     if (!ben_eq(a, b)) {
@@ -64,7 +54,7 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
         s"Got:\n${BENF(a).get}\nExpected:\n${BENF(b).get}")
     }
 
-  private def rewrite_steps(a: Expr, steps: Seq[(Strategy[Rise], Expr)]): Unit = {
+  private def rewrite_steps(a: Expr, steps: scala.collection.Seq[(Strategy[Rise], Expr)]): Unit = {
     steps.foldLeft[Expr](a)({ case (e, (s, expected)) =>
       val debug = BENF(e).get
       val result = s(debug).get
@@ -76,15 +66,15 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
   //// algorithmic
 
   test("base to factorise") {
-    rewrite_steps(toTDSL(base)(weights2d), Seq(
-      topDown(separateDot) -> toTDSL(factorised)(weightsV)(weightsH)
+    rewrite_steps(base(weights2d), scala.collection.Seq(
+      topDown(separateDot) -> factorised(weightsV)(weightsH)
     ))
   }
 
   test("base to scanline") {
-    rewrite_steps(toTDSL(base)(weights2d), Seq(
+    rewrite_steps(base(weights2d), scala.collection.Seq(
       idS
-        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => toTDSL(dot)(join(weights2d))(join(nbh)))))),
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(join(weights2d))(join(nbh)))))),
       topDown(separateDotT)
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       topDown(`*f >> S -> S >> **f`)
@@ -97,78 +87,74 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
         -> (P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
       topDown(mapFusion)
         -> (P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
-      topDown(`T >> T -> `)
+      topDown(removeTransposePair)
         -> (P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
       skip(1)(mapFirstFission)
         -> (P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       topDown(`S >> **f -> *f >> S`)
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       idS
-        -> toTDSL(scanline)(weightsV)(weightsH)
+        -> scanline(weightsV)(weightsH)
     ))
   }
 
   test("scanline to separated") {
-    rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
       idS
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
-      repeatNTimes(2, topDown(mapFirstFission))
+      repeatNTimes(2)(topDown(mapFirstFission))
         -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
       skip(1)(mapFusion)
         -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),
       idS
-        -> toTDSL(separated)(weightsV)(weightsH)
+        -> separated(weightsV)(weightsH)
     ))
   }
 
   //// lowering
 
   test("base to baseSeq") {
-    rewrite_steps(toTDSL(base)(weights2d), Seq(
+    rewrite_steps(base(weights2d), scala.collection.Seq(
       (topDown(lowering.reduceSeqUnroll) `;`
-        repeatNTimes(2, topDown(lowering.mapSeq)))
-        -> toTDSL(baseSeq)(weights2d)
+        repeatNTimes(2)(topDown(lowering.mapSeq)))
+        -> baseSeq(weights2d)
     ))
   }
 
   test("factorised to factorisedSeq") {
-    rewrite_steps(toTDSL(factorised)(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
-        repeatNTimes(2, topDown(lowering.mapSeq)))
-        -> toTDSL(factorisedSeq)(weightsV)(weightsH)
+    rewrite_steps(factorised(weightsV)(weightsH), scala.collection.Seq(
+      (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2)(topDown(lowering.mapSeq)))
+        -> factorisedSeq(weightsV)(weightsH)
     ))
   }
 
   test("separated to separatedSeq") {
-    rewrite_steps(toTDSL(separated)(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
-        repeatNTimes(2, topDown(lowering.mapSeq)) `;`
-        repeatNTimes(2, skip(1)(lowering.mapSeq)) `;`
+    rewrite_steps(separated(weightsV)(weightsH), scala.collection.Seq(
+      (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2)(topDown(lowering.mapSeq)) `;`
+        repeatNTimes(2)(skip(1)(lowering.mapSeq)) `;`
         body(argument(lowering.toMemAfterMapSeq)))
-        -> toTDSL(separatedSeq)(weightsV)(weightsH)
+        -> separatedSeq(weightsV)(weightsH)
     ))
   }
 
   test("scanline to scanlineSeq") {
-    rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
-        repeatNTimes(2, topDown(lowering.mapSeq)) `;`
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
+      (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2)(topDown(lowering.mapSeq)) `;`
         skip(1)(lowering.mapSeq))
-        -> toTDSL(scanlineSeq)(weightsV)(weightsH)
+        -> scanlineSeq(weightsV)(weightsH)
     ))
   }
 
   test("scanline to regRotSeq") {
-    rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
+      (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;`
         topDown(lowering.mapSeq) `;`
         topDown(lowering.rotateValues(idE)) `;`
-        topDown(lowering.mapStream))
-        -> toTDSL(regRotSeq)(weightsV)(weightsH)
+        topDown(lowering.iterateStream))
+        -> regRotSeq(weightsV)(weightsH)
     ))
   }
-
-  // TODO
-  // test("scanline to regRotPar") {
-  // }
 }

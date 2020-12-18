@@ -6,12 +6,12 @@
  </check>
  <check level="warning" class="org.scalastyle.file.FileLineLengthChecker" enabled="true">
   <parameters>
-   <parameter name="maxLineLength"><![CDATA[80]]></parameter>
+   <parameter name="maxLineLength"><![CDATA[100]]></parameter>
    <parameter name="tabSize"><![CDATA[2]]></parameter>
   </parameters>
  </check>
  <check level="error" class="org.scalastyle.file.FileTabChecker" enabled="true"/>
- <check enabled="true" class="org.scalastyle.file.IndentationChecker" level="warning">
+ <check level="warning" class="org.scalastyle.file.IndentationChecker" enabled="false">
   <parameters>
    <parameter name="tabSize">2</parameter>
    <parameter name="methodParamIndentSize">2</parameter>
@@ -32,7 +32,7 @@
   </parameters>
  </check>
  <check level="warning" class="org.scalastyle.scalariform.CovariantEqualsChecker" enabled="true"/>
- <check level="warning" class="org.scalastyle.scalariform.CyclomaticComplexityChecker" enabled="true">
+ <check level="warning" class="org.scalastyle.scalariform.CyclomaticComplexityChecker" enabled="false">
   <parameters>
    <parameter name="maximum"><![CDATA[10]]></parameter>
   </parameters>
@@ -75,10 +75,10 @@
  <check level="warning" class="org.scalastyle.scalariform.LowercasePatternMatchChecker" enabled="false"/>
  <check level="warning" class="org.scalastyle.scalariform.MethodLengthChecker" enabled="true">
   <parameters>
-   <parameter name="maxLength"><![CDATA[60]]></parameter>
+   <parameter name="maxLength"><![CDATA[100]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.MethodNamesChecker" enabled="true">
+ <check level="warning" class="org.scalastyle.scalariform.MethodNamesChecker" enabled="false">
   <parameters>
    <parameter name="regex"><![CDATA[^[a-z]([A-Za-z0-9]*|(_?[a-z0-9])*)$]]></parameter>
   </parameters>
@@ -128,7 +128,7 @@
  <check enabled="true" class="org.scalastyle.scalariform.ProcedureDeclarationChecker" level="warning"/>
  <check level="warning" class="org.scalastyle.scalariform.PublicMethodsHaveTypeChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.scalariform.RedundantIfChecker" enabled="true"/>
- <check level="warning" class="org.scalastyle.scalariform.ReturnChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.ReturnChecker" enabled="false"/>
  <check level="warning" class="org.scalastyle.scalariform.SimplifyBooleanExpressionChecker" enabled="true"/>
  <check enabled="true" class="org.scalastyle.scalariform.SpaceAfterCommentStartChecker" level="warning"/>
  <check level="warning" class="org.scalastyle.scalariform.StructuralTypeChecker" enabled="true"/>
@@ -139,7 +139,7 @@
  </check>
  <check level="warning" class="org.scalastyle.scalariform.UnderscoreImportChecker" enabled="false"/>
  <check level="warning" class="org.scalastyle.scalariform.UppercaseLChecker" enabled="true"/>
- <check level="warning" class="org.scalastyle.scalariform.VarFieldChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.VarFieldChecker" enabled="false"/>
  <check level="warning" class="org.scalastyle.scalariform.VarLocalChecker" enabled="false"/>
  <check level="warning" class="org.scalastyle.scalariform.WhileChecker" enabled="false"/>
 </scalastyle>

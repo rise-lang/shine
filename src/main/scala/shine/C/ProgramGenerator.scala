@@ -19,9 +19,9 @@ object ProgramGenerator {
 
     @tailrec
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                            ps: Seq[Identifier[ExpType]],
-                                            defs:Seq[(LetNatIdentifier, Phrase[ExpType])])
-      : (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = p match {
+                                            ps: immutable.Seq[Identifier[ExpType]],
+                                            defs: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])])
+      : (Phrase[ExpType], immutable.Seq[Identifier[ExpType]], immutable.Seq[(LetNatIdentifier, Phrase[ExpType])]) = p match {
         case Apply(f, a) => getPhraseAndParams(Lifting.liftFunction(f).reducing(a), ps, defs)
         case DepApply(f, a) => getPhraseAndParams(Lifting.liftDependentFunction(f)(a), ps, defs)
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
@@ -31,14 +31,14 @@ object ProgramGenerator {
         case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, defs.reverse)
       }
 
-    val (phrase, params, topLevelLetNats) = getPhraseAndParams(originalPhrase, Seq(), Seq())
+    val (phrase, params, topLevelLetNats) = getPhraseAndParams(originalPhrase, immutable.Seq(), immutable.Seq())
 
     makeCode(phrase, params, topLevelLetNats, name)
   }
 
   private def makeCode(p: Phrase[ExpType],
-                       inputParams: Seq[Identifier[ExpType]],
-                       topLevelLetNats:Seq[(LetNatIdentifier, Phrase[ExpType])],
+                       inputParams: immutable.Seq[Identifier[ExpType]],
+                       topLevelLetNats: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
                        name: String): Program = {
     val outParam = createOutputParam(outT = p.t)
 
@@ -49,7 +49,9 @@ object ProgramGenerator {
     rewriteToImperative(p, outParam) |> ( p => {
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap,
+      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty
+    )
 
     val (declarations, code) = gen.generate(p, topLevelLetNats, env)
 
@@ -58,8 +60,8 @@ object ProgramGenerator {
     val typeDeclarations = collectTypeDeclarations(code, params)
 
     C.Program(
-      typeDeclarations ++ declarations,
-      function    = makeFunction(params, C.AST.Block(Seq(code)), name),
+      (typeDeclarations ++ declarations).toSeq,
+      function    = makeFunction(params, C.AST.Block(immutable.Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
     }))
@@ -72,6 +74,7 @@ object ProgramGenerator {
       case _: ArrayType | _: DepArrayType =>
         identifier("output", AccType(outT.dataType))
       case _: PairType => throw new Exception("Pairs as output parameters currently not supported")
+      case _: DepPairType => identifier("output", AccType(outT.dataType))
       case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
     }
   }
@@ -98,14 +101,15 @@ object ProgramGenerator {
     })))
   }
 
-  def makeFunction(params: Seq[C.AST.ParamDecl], body: C.AST.Block, name: String): C.AST.FunDecl = {
+  def makeFunction(params: immutable.Seq[C.AST.ParamDecl],
+                   body: C.AST.Block, name: String): C.AST.FunDecl = {
     C.AST.FunDecl(name, returnType = C.AST.Type.void, params, body)
   }
 
   def makeParams(out: Identifier[AccType],
-                 ins: Seq[Identifier[ExpType]],
-                 gen: CodeGeneration.CodeGenerator): Seq[C.AST.ParamDecl] = {
-    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen))
+                 ins: immutable.Seq[Identifier[ExpType]],
+                 gen: CodeGeneration.CodeGenerator): immutable.Seq[C.AST.ParamDecl] = {
+    immutable.Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen))
   }
 
   def makeParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): C.AST.ParamDecl = {
@@ -119,6 +123,7 @@ object ProgramGenerator {
         val baseDt = DataType.getBaseDataType(dt)
         C.AST.PointerType(gen.typ(baseDt))
       case r : PairType => gen.typ(r)
+      case dr : DepPairType => gen.typ(dr)
       case t : BasicType => gen.typ(t)
       case _: DataTypeIdentifier | _: NatToDataApply | DepArrayType(_, NatToDataIdentifier(_)) =>
         throw new Exception("This should not happen")
@@ -130,7 +135,7 @@ object ProgramGenerator {
     C.AST.ParamDecl(v.toString, C.AST.Type.const_int)
   }
 
-  def collectTypeDeclarations(code: C.AST.Stmt, params: Seq[C.AST.ParamDecl]): Seq[C.AST.Decl] = {
+  def collectTypeDeclarations(code: C.AST.Stmt, params: immutable.Seq[C.AST.ParamDecl]): immutable.Seq[C.AST.Decl] = {
     def visitor(decls: mutable.ArrayBuffer[C.AST.Decl]): C.AST.Nodes.VisitAndRebuild.Visitor = new C.AST.Nodes.VisitAndRebuild.Visitor {
       def collect(t: C.AST.Type): Unit = t match {
         case _: C.AST.BasicType =>
@@ -154,7 +159,7 @@ object ProgramGenerator {
     val paramTypeDecls = mutable.ArrayBuffer[C.AST.Decl]()
     params.foreach(_.visitAndRebuild(visitor(paramTypeDecls)))
 
-    (allocTypeDecls ++ paramTypeDecls).distinct
+    (allocTypeDecls ++ paramTypeDecls).distinct.toSeq
   }
 
   private def getDataType(i: Identifier[_]): DataType = i.t match {

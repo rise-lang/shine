@@ -2,9 +2,11 @@ package apps
 
 import rise.core._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives.{let => _, _}
+import rise.core.DSL.Type._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 
 object nbody {
   private val id = fun(x => x)
@@ -39,7 +41,7 @@ object nbody {
     vec(4, f32) ->: vec(4, f32) ->: f32 ->: vec(4, f32) ->: PairType(vec(4, f32), vec(4, f32))
   )
 
-  val amd: Expr = nFun(n => fun(
+  val amd: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
     mapGlobal(fun(p1 =>
@@ -54,7 +56,7 @@ object nbody {
   val tileY = 1
 
   // TODO: compare generated code to original
-  val nvidia: Expr = nFun(n => fun(
+  val nvidia: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
     join o join o mapWorkGroup(1)(

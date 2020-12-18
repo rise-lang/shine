@@ -2,16 +2,18 @@ package apps
 
 import rise.core._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.core.DSL.Type._
 import rise.core.types._
 import rise.core.semantics._
-import rise.openCL.DSL._
-import rise.core.HighLevelConstructs._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.{oclRotateValues, oclReduceSeqUnroll}
+import HighLevelConstructs._
 
 object separableConvolution2D {
-  private def weights2d(scale: Float, ws: Seq[Seq[Int]]): Expr =
+  def weights2d(scale: Float, ws: Seq[Seq[Int]]): ToBeTyped[Expr] =
     larr(ws.map(r => ArrayData(r.map(x => FloatData(x * scale)))))
-  private def weights1d(scale: Float, ws: Seq[Int]): Expr =
+  def weights1d(scale: Float, ws: Seq[Int]): ToBeTyped[Expr] =
     larr(ws.map(x => FloatData(x * scale)))
 
   // Binomial filter, convolution is separable:
@@ -19,15 +21,15 @@ object separableConvolution2D {
   // 1 2 1   1
   // 2 4 2 ~ 2 x 1 2 1
   // 1 2 1   1
-  val binomialWeights2d: Expr = weights2d(1.0f / 16.0f, Seq(
+  val binomialWeights2d: ToBeTyped[Expr] = weights2d(1.0f / 16.0f, Seq(
     Seq(1, 2, 1),
     Seq(2, 4, 2),
     Seq(1, 2, 1)
   ))
-  val binomialWeightsV: Expr = weights1d(1.0f / 4.0f, Seq(
+  val binomialWeightsV: ToBeTyped[Expr] = weights1d(1.0f / 4.0f, Seq(
     1, 2, 1
   ))
-  val binomialWeightsH: Expr = binomialWeightsV
+  val binomialWeightsH: ToBeTyped[Expr] = binomialWeightsV
 
   // Sobel filters, convolutions are separable:
   //
@@ -35,72 +37,77 @@ object separableConvolution2D {
   // -1  0 +1     1
   // -2  0 +2  ~  2 x -1  0 +1
   // -1  0 +1     1
-  val sobelXWeights2d: Expr = weights2d(1.0f / 8.0f, Seq(
+  val sobelXWeights2d: ToBeTyped[Expr] = weights2d(1.0f / 8.0f, Seq(
     Seq(-1, 0, +1),
     Seq(-2, 0, +2),
     Seq(-1, 0, +1)
   ))
-  val sobelXWeightsV: Expr = weights1d(1.0f / 4.0f, Seq(
+  val sobelXWeightsV: ToBeTyped[Expr] = weights1d(1.0f / 4.0f, Seq(
     1, 2, 1
   ))
-  val sobelXWeightsH: Expr = weights1d(1.0f / 2.0f, Seq(
+  val sobelXWeightsH: ToBeTyped[Expr] = weights1d(1.0f / 2.0f, Seq(
     -1, 0, +1
   ))
   // Sy:
   // -1 -2 -1     -1
   //  0  0  0  ~   0 x 1 2 1
   // +1 +2 +1     +1
-  val sobelYWeights2d: Expr = weights2d(1.0f / 8.0f, Seq(
+  val sobelYWeights2d: ToBeTyped[Expr] = weights2d(1.0f / 8.0f, Seq(
     Seq(-1, -2, -1),
     Seq( 0,  0,  0),
     Seq( 1,  2,  1)
   ))
-  val sobelYWeightsV: Expr = sobelXWeightsH
-  val sobelYWeightsH: Expr = sobelXWeightsV
+  val sobelYWeightsV: ToBeTyped[Expr] = sobelXWeightsH
+  val sobelYWeightsH: ToBeTyped[Expr] = sobelXWeightsV
 
   // Separable convolution expressions
 
-  val id: Expr = fun(x => x)
-  val mulT: Expr = fun(x => fst(x) * snd(x))
-  val dot: Expr = fun(a => fun(b =>
+  val id: ToBeTyped[Expr] = fun(x => x)
+  val mulT: ToBeTyped[Expr] = fun(x => fst(x) * snd(x))
+  val dot: ToBeTyped[Expr] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> reduce(add)(l(0.0f))
   ))
-  val dotSeq: Expr = fun(a => fun(b =>
+  val dotSeq: ToBeTyped[Expr] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> reduceSeq(add)(l(0.0f))
   ))
-  val dotSeqUnroll: Expr = fun(a => fun(b =>
+  val dotSeqUnroll: ToBeTyped[Expr] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
   ))
-  val weightsSeqVecUnroll: Expr = fun(weights => fun(vectors =>
+  val weightsSeqVecUnroll: ToBeTyped[Expr] = fun(weights => fun(vectors =>
     zip(map(vectorFromScalar)(weights))(vectors) |>
     map(mulT) |>
     oclReduceSeqUnroll(AddressSpace.Private)(add)(vectorFromScalar(l(0.0f)))
   ))
 
-  val base: Expr = fun(3`.`3`.`f32)(weights2d =>
+  val base: ToBeTyped[Expr] = fun(3`.`3`.`f32)(weights2d =>
     padClamp2D(1) >> slide2D(3, 1) >>
       map(map(fun(nbh => dot(join(weights2d))(join(nbh)))))
   )
-  val baseSeq: Expr = fun(3`.`3`.`f32)(weights2d =>
+  val baseSeq: ToBeTyped[Expr] = fun(3`.`3`.`f32)(weights2d =>
     padClamp2D(1) >> slide2D(3, 1) >>
       mapSeq(mapSeq(fun(nbh => dotSeqUnroll(join(weights2d))(join(nbh)))))
   )
+  val baseVecU: ToBeTyped[Expr] = fun(3`.`3`.`f32)(weights2d =>
+    padClamp2D(1) >> map(slideVectors(4) >> slide(3)(4)) >>
+    slide(3)(1) >> map(transpose) >>
+    mapSeq(mapSeq(fun(nbh => weightsSeqVecUnroll(join(weights2d))(join(nbh)))))
+  )
 
-  val factorised: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
+  val factorised: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     padClamp2D(1) >> slide2D(3, 1) >>
     map(map(map(dot(weightsH)) >> dot(weightsV)))
   ))
-  val factorisedSeq: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
+  val factorisedSeq: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     padClamp2D(1) >> slide2D(3, 1) >>
     mapSeq(mapSeq(map(dotSeqUnroll(weightsH)) >> dotSeqUnroll(weightsV)))
   ))
 
-  val separated: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
+  val separated: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
     val horizontal = map(slide(3)(1) >> map(dot(weightsH)))
     val vertical = slide(3)(1) >> map(transpose >> map(dot(weightsV)))
     padClamp2D(1) >> vertical >> horizontal
   }))
-  val separatedSeq: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
+  val separatedSeq: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
     val horizontal = mapSeq(slide(3)(1) >> mapSeq(dotSeqUnroll(weightsH)))
     val vertical = slide(3)(1) >> toMemFun(mapSeq(
       transpose >> mapSeq(dotSeqUnroll(weightsV))
@@ -108,28 +115,28 @@ object separableConvolution2D {
     padClamp2D(1) >> vertical >> horizontal
   }))
 
-  val scanline: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
+  val scanline: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     padClamp2D(1) >> slide(3)(1) >> map(
       transpose >>
       map(dot(weightsV)) >>
       slide(3)(1) >>
       map(dot(weightsH)))
   ))
-  val scanlineSeq: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
+  val scanlineSeq: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       mapSeq(dotSeqUnroll(weightsV)) >>
       slide(3)(1) >>
       mapSeq(dotSeqUnroll(weightsH)))
   ))
-  val shuffle: Expr =
-    asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
-  val scanlinePar: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
-    map(implN(w => fun(w`.`f32)(x =>
+  val shuffle: ToBeTyped[Expr] =
+    asScalar >> drop(3) >> take(6) >> slideVectors(4)
+  val scanlinePar: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
+    map(impl{ w: Nat => fun(w`.`f32)(x =>
       x |> asVectorAligned(4)
         |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
         |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
-    ))) >> padClamp(1)(1) >>
+    )}) >> padClamp(1)(1) >>
     slide(3)(1) >> mapGlobal(
       transpose >>
       toGlobalFun(mapSeq(weightsSeqVecUnroll(weightsV))) >>
@@ -139,28 +146,28 @@ object separableConvolution2D {
     )
   ))
 
-  val regRotSeq: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
+  val regRotSeq: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(weightsV)) >>
       rotateValues(3)(id) >>
-      mapStream(dotSeqUnroll(weightsH))
+      iterateStream(dotSeqUnroll(weightsH))
     )
   ))
-  val regRotPar: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
+  val regRotPar: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
     val Dv = weightsSeqVecUnroll(weightsV)
     val Dh = weightsSeqVecUnroll(weightsH)
     // map(padClamp(4)(4) >> asVectorAligned(4)) >> padClamp(1)(1) >>
-    map(implN(w => fun(w`.`f32)(x =>
+    map(impl{ w: Nat => fun(w`.`f32)(x =>
       x |> asVectorAligned(4)
         |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
         |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
-    ))) >> padClamp(1)(1) >>
+    )}) >> padClamp(1)(1) >>
     slide(3)(1) >> mapGlobal(
       transpose >>
       map(Dv) >>
       oclRotateValues(AddressSpace.Private)(3)(id) >>
-      mapStream(shuffle >> Dh) >>
+      iterateStream(shuffle >> Dh) >>
       asScalar
     )
   }))
@@ -198,11 +205,11 @@ object separableConvolution2D {
     h: Int,
     w: Int,
     input: Array[Array[Float]],
-    weights: Expr
+    weights: ToBeTyped[Expr]
   ): Array[Array[Float]] = {
     import rise.core.semantics._
     weights match {
-      case Literal(ArrayData(a)) =>
+      case ToBeTyped(Literal(ArrayData(a))) =>
         computeGold(h, w, input,
           a.map(r =>
             r.asInstanceOf[ArrayData].a.map(x =>

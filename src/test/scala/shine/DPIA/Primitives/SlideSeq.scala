@@ -1,10 +1,11 @@
 package shine.DPIA.Primitives
 
 import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.types._
 import util.{Execute, gen}
 
-class SlideSeq extends shine.test_util.Tests {
+class SlideSeq extends test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
   def check3pSum(e: rise.core.Expr): Unit = {
@@ -38,16 +39,21 @@ int main(int argc, char** argv) {
     Execute(testCode)
   }
 
-  test("3 point sum value rotation: generated C code gives the expected result") {
-    check3pSum(nFun(n => fun(ArrayType(n, int))(a =>
-      a |> rotateValues(3)(fun(x => x)) >> mapStream(reduceSeq(add)(l(0)))
+  test("3 point sum value rotation:"
+    + " generated C code gives the expected result"
+  ) {
+    check3pSum(depFun((n: Nat) => fun(ArrayType(n, int))(a => a |>
+      rotateValues(3)(fun(x => x)) >>
+      iterateStream(reduceSeq(add)(l(0)))
     )))
   }
 
-  test("3 point sum index rotation: generated C code gives the expected result") {
-    val alloc = 0 // currently ignored
-    check3pSum(nFun(n => fun(ArrayType(n, int))(a =>
-      a |> circularBuffer(alloc)(3)(fun(x => x)) >> mapStream(reduceSeq(add)(l(0)))
+  test("3 point sum index rotation:"
+    + " generated C code gives the expected result"
+  ) {
+    check3pSum(depFun((n: Nat) => fun(ArrayType(n, int))(a => a |>
+      circularBuffer(3)(3)(fun(x => x)) >>
+      iterateStream(reduceSeq(add)(l(0)))
     )))
   }
 }

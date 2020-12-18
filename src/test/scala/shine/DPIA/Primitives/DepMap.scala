@@ -1,15 +1,16 @@
 package shine.DPIA.Primitives
 
-import util.gen
+import rise.core.DSL.Type._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
 import rise.core.types._
+import util.gen
 
-class DepMap extends shine.test_util.Tests {
+class DepMap extends test_util.Tests {
   ignore("Simple triangle depMap example should generate syntactic valid C code with two for loop") {
     val e =
-      nFun(n => fun(DepArrayType(n, n2dtFun(i => (i+1)`.`f32)) ->: DepArrayType(n, n2dtFun(i => (i+1)`.`f32)))(xs =>
-        xs |> depMapSeq(nFun(_ => mapSeq(fun(x => x))))))
+      depFun((n: Nat) => fun(DepArrayType(n, n2dtFun(i => (i+1)`.`f32)) ->: DepArrayType(n, n2dtFun(i => (i+1)`.`f32)))(xs =>
+        xs |> depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))))
 
     println(e)
 
@@ -20,9 +21,9 @@ class DepMap extends shine.test_util.Tests {
 
   test("Simple 3D map example should generate syntactic valid C code with three for loop") {
     val e =
-      nFun(n => nFun(m => nFun(o =>
+      depFun((n: Nat, m: Nat, o: Nat) =>
         fun(n`.`(m`.`(o`.`f32)))(xs =>
-          xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))))
+          xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))
 
     val code = gen.CProgram(e).code
 

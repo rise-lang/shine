@@ -1,15 +1,14 @@
 package benchmarks.cgo17
 
 import apps.convolution._
-import rise.core.DSL._
 import benchmarks.core._
 import util._
 
 object convolution {
   def withSize(N: Int, sampleCount: Int, originalSuffix: String): Unit = {
     val random = new scala.util.Random()
-    val matrix = Array.fill(N, N)(random.nextFloat * 10.0f)
-    val weights = Array.fill(17)(random.nextFloat)
+    val matrix = Array.fill(N, N)(random.nextFloat() * 10.0f)
+    val weights = Array.fill(17)(random.nextFloat())
 
     val (lsX, gsX) = blurXTiled2DSizes(N)
     val (lsY, gsY) = blurYTiled2DTiledLoadingTransposedSizes(N)

@@ -4,15 +4,15 @@ import mm._
 import shine.OpenCL._
 import util._
 
-class mmCheck extends shine.test_util.TestsWithExecutor {
+class mmCheck extends test_util.TestsWithExecutor {
   private val N = 64
   private val M = 128
   private val O = 128
 
   private def randGold(): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
     val rand = new scala.util.Random
-    val At = Array.fill(O, N)(rand.nextFloat * 10)
-    val B = Array.fill(O, M)(rand.nextFloat * 10)
+    val At = Array.fill(O, N)(rand.nextFloat() * 10)
+    val B = Array.fill(O, M)(rand.nextFloat() * 10)
     val gold = computeGold(N, M, O, At, B).flatten
     (At, B, gold)
   }

@@ -1,32 +1,30 @@
 package apps
 
-import rise.core._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import Type._
 import rise.core.types._
 import util.gen
 
-class scal extends shine.test_util.Tests {
+class scal extends test_util.Tests {
 
-  private val simpleScal = nFun(n => fun(n`.`f32)(input => fun(f32)(alpha =>
+  private val simpleScal = depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
     input |> mapSeq(fun(x => alpha * x)))
   ))
 
   test("Simple scal type inference works") {
-    val typed = infer(simpleScal)
-
     assert(
-      nFunT(n => ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
+      expl((n: Nat) => ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
         ==
-      typed.t
+        simpleScal.t
     )
   }
 
   // OpenMP
   test("scalIntel compiles to syntactically correct OpenMP") {
-    import rise.openMP.DSL._
+    import rise.openMP.primitives._
 
-    val scalIntel = nFun(n => fun(n`.`f32)(input => fun(f32)(alpha =>
+    val scalIntel = depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
       input |>
       split(4 * 128 * 128) |>
       mapPar(
@@ -43,9 +41,9 @@ class scal extends shine.test_util.Tests {
   }
 
   test("scalIntel2 compiles to syntactically correct OpenMP") {
-    import rise.openMP.DSL._
+    import rise.openMP.primitives._
 
-    val scalIntel2 = nFun(n => fun(n`.`f32)(input => fun(f32)(alpha =>
+    val scalIntel2 = depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
       input |>
       split(4 * 128 * 128) |>
       mapPar(
@@ -60,10 +58,10 @@ class scal extends shine.test_util.Tests {
 
   // OpenCL
   {
-    import rise.openCL.DSL._
+    import rise.openCL.TypedDSL._
 
     val scalWgLcl = (fst: Nat, snd: Nat) =>
-      nFun(n => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>
+      depFun((n: Nat) => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>
         input |>
         split(fst) |>
         mapWorkGroup(
@@ -89,7 +87,7 @@ class scal extends shine.test_util.Tests {
     }
 
     test("scalIntel compiles to syntactically correct OpenCL") {
-      val scalIntel = nFun(n => fun(n`.`f32)(input => fun(f32)(alpha =>
+      val scalIntel = depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
         input |>
         split(4 * 128 * 128) |>
         mapWorkGroup(

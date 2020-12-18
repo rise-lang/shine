@@ -1,11 +1,12 @@
 package rise.core
 
-import elevate.util._
+import rise.elevate.util._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
-import rise.core.types.f32
+import rise.core.primitives._
+import Type._
+import rise.core.types.{Nat, f32}
 
-class dotPrinterTests extends shine.test_util.Tests {
+class dotPrinterTests extends test_util.Tests {
 
   def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
     import java.io._
@@ -23,7 +24,7 @@ class dotPrinterTests extends shine.test_util.Tests {
   }
 
   test("typed *f") {
-    println(dotPrinter(rise.core.types.infer(λ(i => λ(f => *(f) $ i)))))
+    println(dotPrinter(λ(i => λ(f => *(f) $ i))))
   }
 
   test("tiled 4D") {
@@ -38,23 +39,23 @@ class dotPrinterTests extends shine.test_util.Tests {
 
   test("gemm") {
     val gemm =
-      nFun((n, m, k) =>
+      depFun((n: Nat, m: Nat, k: Nat) =>
         fun((n`.`k`.`f32) ->: (k`.`m`.`f32) ->: (n`.`m`.`f32) ->: f32 ->: f32 ->: (n`.`m`.`f32))
         ((a, b, c, alpha, beta) =>
 
-          zip(a, c) |> map(fun(ac =>
-            zip(transpose(b), ac._2) |> map(fun(bc =>
-              zip(ac._1, bc._1) |>
-                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)), l(0.0f)) |>
+          zip(a)(c) |> map(fun(ac =>
+            zip(transpose(b))(ac._2) |> map(fun(bc =>
+              zip(ac._1)(bc._1) |>
+                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)))(l(0.0f)) |>
                 fun(x => (x * alpha) + (beta * bc._2))
             ))
           ))
         )
       )
 
-    val typedGemm = rise.core.types.infer(gemm)
-
-    println(dotPrinter(gemm))
-    println(dotPrinter(typedGemm))
+    // without type inference
+    println(dotPrinter(gemm.toUntypedExpr))
+    // with type inference
+    println(dotPrinter(gemm.toExpr))
   }
 }

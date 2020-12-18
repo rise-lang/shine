@@ -6,7 +6,7 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.types._
 
 //noinspection TypeAnnotation
-class sgemmCheck extends shine.test_util.TestsWithExecutor {
+class sgemmCheck extends test_util.TestsWithExecutor {
 
   val epsilon = 1.0f
 
@@ -27,7 +27,7 @@ class sgemmCheck extends shine.test_util.TestsWithExecutor {
   }
 
   test("Sequential gemm type inference works") {
-    infer(c.sequential)
+    c.sequential.t
   }
 
   test("Sequential gemm compiles to syntactically correct C") {
@@ -35,7 +35,7 @@ class sgemmCheck extends shine.test_util.TestsWithExecutor {
   }
 
   test("mali gemm type inference works") {
-    infer(mali_GEMM)
+    mali_GEMM.t
   }
 
   test("mali gemm compiles to syntactically correct kernel") {
@@ -43,7 +43,7 @@ class sgemmCheck extends shine.test_util.TestsWithExecutor {
   }
 
   test("Kepler best type inference works") {
-    infer(keplerBest)
+    keplerBest.t
   }
 
   test("Kepler best compiles to syntactically correct kernel") {

@@ -23,9 +23,9 @@ object ProgramGenerator {
      *  something like App(mapSeq, f)
      */
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                            ps: Seq[Identifier[ExpType]],
-                                            defs:Seq[(LetNatIdentifier, Phrase[ExpType])]
-                                           ): (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
+                                            ps: immutable.Seq[Identifier[ExpType]],
+                                            defs: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])]
+                                           ): (Phrase[ExpType], immutable.Seq[Identifier[ExpType]], immutable.Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
       p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
         case ndl: DepLambda[_, _] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int, read)) +: ps, defs)
@@ -35,14 +35,14 @@ object ProgramGenerator {
       }
     }
 
-    val (phrase, params, topLevelLetNats) = getPhraseAndParams(originalPhrase, Seq(), Seq())
+    val (phrase, params, topLevelLetNats) = getPhraseAndParams(originalPhrase, immutable.Seq(), immutable.Seq())
 
     makeCode(phrase, params, topLevelLetNats, name)
   }
 
   private def makeCode(p: Phrase[ExpType],
-                       inputParams: Seq[Identifier[ExpType]],
-                       topLevelLetNats:Seq[(LetNatIdentifier, Phrase[ExpType])],
+                       inputParams: immutable.Seq[Identifier[ExpType]],
+                       topLevelLetNats: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
                        name: String): OpenMP.Program = {
     val outParam = createOutputParam(outT = p.t)
 
@@ -53,7 +53,8 @@ object ProgramGenerator {
     rewriteToImperative(p, outParam) |> (p => {
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap,
+      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
     val (declarations, code) = gen.generate(p, topLevelLetNats, env)
 
@@ -63,7 +64,7 @@ object ProgramGenerator {
 
     OpenMP.Program(
       typeDeclarations ++ declarations,
-      function    = C.ProgramGenerator.makeFunction(params, C.AST.Block(Seq(code)), name),
+      function    = C.ProgramGenerator.makeFunction(params, C.AST.Block(immutable.Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
     }))
@@ -76,6 +77,7 @@ object ProgramGenerator {
       case _: ArrayType | _: DepArrayType =>
         identifier("output", AccType(outT.dataType))
       case _: PairType => throw new Exception("Pairs as output parameters currently not supported")
+      case _:DepPairType => throw new Exception("Dependent pairs as output parameters are currently not supported")
       case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
     }
   }

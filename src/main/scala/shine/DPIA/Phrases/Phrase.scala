@@ -319,13 +319,18 @@ object Phrase {
           reconstructTransientBinOp(Operators.Binary.MOD,
             reconstruct(x), reconstruct(m))
         case Pow(b, e) =>
-          Left(Pow(reconstruct(b).left.get, reconstruct(e).left.get))
+          Left(Pow(
+            reconstruct(b).swap.getOrElse(throw new Exception("Expected Nat")),
+            reconstruct(e).swap.getOrElse(throw new Exception("Expected Nat"))))
         case Log(b, x) =>
-          Left(Log(reconstruct(b).left.get, reconstruct(x).left.get))
+          Left(Log(
+            reconstruct(b).swap.getOrElse(throw new Exception("Expected Nat")),
+            reconstruct(x).swap.getOrElse(throw new Exception("Expected Nat"))))
         case arithexpr.arithmetic.IfThenElse(test, t, e) =>
-          Left(arithexpr.arithmetic.IfThenElse(test.visitAndRebuild(x => reconstruct(x).left.get),
-            reconstruct(t).left.get,
-            reconstruct(e).left.get))
+          Left(arithexpr.arithmetic.IfThenElse(
+            test.visitAndRebuild(x => reconstruct(x).swap.getOrElse(throw new Exception("Expected Nat"))),
+            reconstruct(t).swap.getOrElse(throw new Exception("Expected Nat")),
+            reconstruct(e).swap.getOrElse(throw new Exception("Expected Nat"))))
         case PosInf => Left(PosInf)
         case f: ArithExprFunctionCall => Left(f)
         case _ => throw new Exception(s"did not expect ${tn.n}")
@@ -371,7 +376,8 @@ abstract class ExpPrimitive extends Primitive[ExpType] {
                      (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = ???
 
   def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                       (implicit context: TranslationContext): Phrase[CommType] = ???
+                       (implicit context: TranslationContext): Phrase[CommType] =
+    Compilation.TranslationToImperative.translateArrayToStream(this, C)
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType]

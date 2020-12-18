@@ -73,4 +73,28 @@ final case class Zip(
       con(e2)(λ(expT(n`.`dt2, read))(y =>
         C(Zip(n, dt1, dt2, access, x, y)) )) ))
   }
+
+  override def streamTranslation(
+    C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
+    import TranslationToImperative._
+
+    val i = NatIdentifier("i")
+    str(e1)(fun((i: NatIdentifier) ->:
+      (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
+    )(next1 =>
+    str(e2)(fun((i: NatIdentifier) ->:
+      (expT(dt2, read) ->: (comm: CommType)) ->: (comm: CommType)
+    )(next2 =>
+      C(nFun(i => fun(expT(dt1 x dt2, read) ->: (comm: CommType))(k =>
+        Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next1, i),
+        fun(expT(dt1, read))(x1 =>
+        Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next2, i),
+        fun(expT(dt2, read))(x2 =>
+          k(Pair(dt1, dt2, read, x1, x2))
+        ))))
+      ), arithexpr.arithmetic.RangeAdd(0, n, 1)))
+    ))))
+  }
 }

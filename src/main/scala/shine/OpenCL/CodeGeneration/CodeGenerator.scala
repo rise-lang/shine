@@ -3,7 +3,7 @@ package shine.OpenCL.CodeGeneration
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.{BasicType, Decl}
-import shine.C.CodeGeneration.CodeGenerator.{CIntExpr, FstMember, SndMember}
+import shine.C.CodeGeneration.CodeGenerator.CIntExpr
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
@@ -116,19 +116,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
-      case RecordAcc(_, _, fst, snd) => path match {
-        case FstMember :: ps => acc(fst, env, ps, cont)
-        case SndMember :: ps => acc(snd, env, ps, cont)
-        case Nil =>
-          // FIXME: hacky
-          acc(fst, env, Nil, { case C.AST.StructMemberAccess(a1, _) =>
-            acc(snd, env, Nil, { case C.AST.StructMemberAccess(a2, _) =>
-              assert(a1 == a2)
-              cont(a1)
-            })})
-        case _ => error(s"did not expect $path")
-      }
-
       case _ => super.acc(phrase, env, path, cont)
     }
   }
@@ -228,11 +215,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def generateAccess(dt: DataType,
                               expr: Expr,
                               path: Path,
-                              env: Environment): Expr = {
+                              env: Environment,
+                              cont: Expr => Stmt): Stmt = {
     (path, dt) match {
-      case ((i: CIntExpr) :: _, _: VectorType) =>
-        OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(i))
-      case _ => super.generateAccess(dt, expr, path, env)
+      case (CIntExpr(Cst(i)) :: _, _: VectorType) =>
+        cont(OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(Cst(i))))
+      case (CIntExpr(i) :: _, _: VectorType) =>
+        error(s"expected constant access to vector elements, found $i")
+      case _ => super.generateAccess(dt, expr, path, env, cont)
     }
   }
 
@@ -304,16 +294,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
               ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
               ExprStmt(Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1))),
               // toggle flag with xor
-              ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1")))),
-              OpenCL.AST.Barrier(true, true)
+              ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1"))))
             ))
           })
             updatedCommEnv (done -> {
             Block(immutable.Seq(
               ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
               acc(out, env, CIntExpr(0) :: Nil, o =>
-                ExprStmt(Assignment(out_ptr, UnaryExpr(&, o)))),
-              OpenCL.AST.Barrier(true, true)
+                ExprStmt(Assignment(out_ptr, UnaryExpr(&, o))))
             ))
           }))
       ))
