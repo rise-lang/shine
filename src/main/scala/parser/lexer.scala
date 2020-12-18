@@ -829,7 +829,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                   throw new IllegalStateException("Every '#' should have been removed in the preLexer. This is an IllegalState of the Lexer.")
                 }else{
                   val loc: Location = Location(column, row) //endLocation is equal to startLocation
-                  return Right(NotExpectedToken("Some Number or String", arr(column)(row)+"", new Span(fileReader, loc), fileReader))
+                  return Right(NotExpectedToken("Some Number or String", arr(column)(row).toString, new Span(fileReader, loc), fileReader))
                 }
               }
               lexIdentifier(column, row) match {

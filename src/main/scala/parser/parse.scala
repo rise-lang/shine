@@ -1,4 +1,4 @@
-package parser
+package parser //old branch 17. Dezember 2020
 
 import rise.core.{Lambda, primitives => rp, semantics => rS, types => rt}
 import rise.{core => r}
@@ -31,7 +31,7 @@ object parse {
   }
 
   sealed trait NatElement
-    final case class NNumber(nat: r.Nat) extends NatElement
+    final case class NNumber(nat: rt.Nat) extends NatElement
     final case class NIdentifier(nat: rt.NatIdentifier) extends NatElement
 
   sealed trait DataElement
@@ -112,64 +112,64 @@ object parse {
         //Todo: annotation and makeArray
         //      case "annotation" => Right(PrimitiveAnnotation())
         //      case "makeArray" => Right(PrimitiveMakeArray())
-      case "cast" => Left(rp.Cast()())
-      case "depJoin" => Left(rp.DepJoin()())
-      case "depMapSeq" => Left(rp.DepMapSeq()())
-      case "depZip" => Left(rp.DepZip()())
-      case "drop" => Left(rp.Drop()())
-      case "fst" => Left(rp.Fst()())
-      case "gather" => Left(rp.Gather()())
-      case "generate" => Left(rp.Generate()())
-      case "idx" => Left(rp.Idx()())
-      case "id" => Left(rp.Id()())
-      case "indexAsNat" => Left(rp.IndexAsNat()())
-      case "iterate" => Left(rp.Iterate()())
-      case "join" => Left(rp.Join()())
-      case "let" => Left(rp.Let()())
-      case "map" => Left(rp.Map()())
-      case "mapFst" => Left(rp.MapFst()())
-      case "mapSnd" => Left(rp.MapSnd()())
-      case "mapSeq" => Left(rp.MapSeq()())
-      case "mapStream" => Left(rp.MapStream()())
-      case "iterateStream" => Left(rp.IterateStream()())
-      case "mapSeqUnroll" => Left(rp.MapSeqUnroll()())
-      case "toMem" => Left(rp.ToMem()())
-      case "natAsIndex" => Left(rp.NatAsIndex()())
-      case "padEmpty" => Left(rp.PadEmpty()())
-      case "padClamp" => Left(rp.PadClamp()())
-      case "partition" => Left(rp.Partition()())
-      case "pair" => Left(rp.Pair()())
-      case "reduce" => Left(rp.Reduce()())
-      case "reduceSeq" => Left(rp.ReduceSeq()())
-      case "reduceSeqUnroll" => Left(rp.ReduceSeqUnroll()())
-      case "reorder" => Left(rp.Reorder()())
-      case "scanSeq" => Left(rp.ScanSeq()())
-      case "slide" => Left(rp.Slide()())
-      case "circularBuffer" => Left(rp.CircularBuffer()())
-      case "rotateValues" => Left(rp.RotateValues()())
-      case "snd" => Left(rp.Snd()())
-      case "split" => Left(rp.Split()())
-      case "take" => Left(rp.Take()())
-      case "transpose" => Left(rp.Transpose()())
-      case "select" => Left(rp.Select()())
-      case "zip" => Left(rp.Zip()())
-      case "neg" => Left(rp.Neg()())
-      case "not" => Left(rp.Not()())
-      case "add" => Left(rp.Add()())
-      case "sub" => Left(rp.Sub()())
-      case "mul" => Left(rp.Mul()())
-      case "div" => Left(rp.Div()())
-      case "mod" => Left(rp.Mod()())
-      case "gt" => Left(rp.Gt()())
-      case "lt" => Left(rp.Lt()())
-      case "equal" => Left(rp.Equal()())
-      case "asVectorAligned" => Left(rp.AsVectorAligned()())
-      case "asVector" => Left(rp.AsVector()())
-      case "asScalar" => Left(rp.AsScalar()())
-      case "vectorFromScalar" => Left(rp.VectorFromScalar()())
-      case "printType" => Left(rp.PrintType()())
-      case "typeHole" => Left(rp.TypeHole()())
-      case _ => Right(r.Identifier(name)())
+      case "cast" => Left(rp.cast.primitive)
+      case "depJoin" => Left(rp.depJoin.primitive)
+      case "depMapSeq" => Left(rp.depMapSeq.primitive)
+      case "depZip" => Left(rp.depZip.primitive)
+      case "drop" => Left(rp.drop.primitive)
+      case "fst" => Left(rp.fst.primitive)
+      case "gather" => Left(rp.gather.primitive)
+      case "generate" => Left(rp.generate.primitive)
+      case "idx" => Left(rp.idx.primitive)
+      case "id" => Left(rp.id.primitive)
+      case "indexAsNat" => Left(rp.indexAsNat.primitive)
+      case "iterate" => Left(rp.iterate.primitive)
+      case "join" => Left(rp.join.primitive)
+      case "let" => Left(rp.let.primitive)
+      case "map" => Left(rp.map.primitive)
+      case "mapFst" => Left(rp.mapFst.primitive)
+      case "mapSnd" => Left(rp.mapSnd.primitive)
+      case "mapSeq" => Left(rp.mapSeq.primitive)
+      case "mapStream" => Left(rp.mapStream.primitive)
+      case "iterateStream" => Left(rp.iterateStream.primitive)
+      case "mapSeqUnroll" => Left(rp.mapSeqUnroll.primitive)
+      case "toMem" => Left(rp.toMem.primitive)
+      case "natAsIndex" => Left(rp.natAsIndex.primitive)
+      case "padEmpty" => Left(rp.padEmpty.primitive)
+      case "padClamp" => Left(rp.padClamp.primitive)
+      case "partition" => Left(rp.partition.primitive)
+      case "makePair" => Left(rp.makePair.primitive)
+      case "reduce" => Left(rp.reduce.primitive)
+      case "reduceSeq" => Left(rp.reduceSeq.primitive)
+      case "reduceSeqUnroll" => Left(rp.reduceSeqUnroll.primitive)
+      case "reorder" => Left(rp.reorder.primitive)
+      case "scanSeq" => Left(rp.scanSeq.primitive)
+      case "slide" => Left(rp.slide.primitive)
+      case "circularBuffer" => Left(rp.circularBuffer.primitive)
+      case "rotateValues" => Left(rp.rotateValues.primitive)
+      case "snd" => Left(rp.snd.primitive)
+      case "split" => Left(rp.split.primitive)
+      case "take" => Left(rp.take.primitive)
+      case "transpose" => Left(rp.transpose.primitive)
+      case "select" => Left(rp.select.primitive)
+      case "zip" => Left(rp.zip.primitive)
+      case "neg" => Left(rp.neg.primitive)
+      case "not" => Left(rp.not.primitive)
+      case "add" => Left(rp.add.primitive)
+      case "sub" => Left(rp.sub.primitive)
+      case "mul" => Left(rp.mul.primitive)
+      case "div" => Left(rp.div.primitive)
+      case "mod" => Left(rp.mod.primitive)
+      case "gt" => Left(rp.gt.primitive)
+      case "lt" => Left(rp.lt.primitive)
+      case "equal" => Left(rp.equal.primitive)
+      case "asVectorAligned" => Left(rp.asVectorAligned.primitive)
+      case "asVector" => Left(rp.asVector.primitive)
+      case "asScalar" => Left(rp.asScalar.primitive)
+      case "vectorFromScalar" => Left(rp.vectorFromScalar.primitive)
+      case "printType" => Left(rp.printType().primitive)
+      case "typeHole" => Left(rp.typeHole().primitive)
+      case _ => Right(r.Identifier(name)(rt.TypePlaceholder))
     }
   }
 
@@ -375,9 +375,9 @@ object parse {
               val depLam:SExpr = pS.parsedSynElems.head match {
                 case SExpr(outT) => {
                   concreteKind match {
-                    case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)())
-                    case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier), outT)())
-                    case AddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](rt.AddressSpaceIdentifier(nameOfIdentifier), outT)())
+                    case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder))
+                    case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder))
+                    case AddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder))
                     case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
                   }
                 }
@@ -599,7 +599,7 @@ object parse {
     while(!synE.isEmpty){
       synE.head match {
         case SExpr(expr1) => {
-          e = r.App(e, expr1)()
+          e = r.App(e, expr1)(rt.TypePlaceholder)
           synE = synE.tail
         }
         case SData(DIdentifier(rt.DataTypeIdentifier(name,_))) => {
@@ -609,9 +609,9 @@ object parse {
               throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
             }
             case Some(k)=> k match {
-              case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))()
-              case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))()
-              case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e, rt.AddressSpaceIdentifier(name,true))()
+              case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder)
+              case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder)
+              case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e, rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder)
             }
           }
           synE = synE.tail
@@ -626,15 +626,15 @@ object parse {
                   throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
                 }
                 case Some(k)=> k match {
-                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))()
-                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))()
-                  case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e, rt.AddressSpaceIdentifier(name,true))()
+                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder)
+                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder)
+                  case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e, rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder)
                 }
               }
               case _ => throw new IllegalStateException("This should not be happening in the combining of the Dependent Expressions")
             }
           }else{
-            e = r.DepApp[rt.TypeKind](e, t)()
+            e = r.DepApp[rt.TypeKind](e, t)(rt.TypePlaceholder)
           }
           synE = synE.tail
         }
@@ -811,7 +811,7 @@ object parse {
           }else if(p.mapDepL.contains(n)){
             throw new IllegalArgumentException("We want to parse an TypAnnotatedIdent for " + n + " but it exists already an DepLambda with this Name")
           }else{
-            (p, r.Identifier(n)())
+            (p, r.Identifier(n)(rt.TypePlaceholder))
           }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
@@ -975,7 +975,7 @@ object parse {
         case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
       }
     val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
-    val lambda = Lambda(identifierName, expr)()
+    val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder)
     println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
 
     //local variables are in the list, so that not two same localVariables are declared
@@ -1274,8 +1274,8 @@ object parse {
 
     val p = nextToken match {
       case UnOp(un, _) => un match {
-        case OpType.UnaryOpType.NEG => Left(ParseState(remainderTokens, SExpr(r.primitives.Neg()()) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
-        case OpType.UnaryOpType.NOT => Left(ParseState(remainderTokens, SExpr(r.primitives.Not()()) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
+        case OpType.UnaryOpType.NEG => Left(ParseState(remainderTokens, SExpr(r.primitives.neg.primitive) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
+        case OpType.UnaryOpType.NOT => Left(ParseState(remainderTokens, SExpr(r.primitives.not.primitive) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
       }
       case tok => {
         println("UnaryOperatorWasExpected: "+ tok + ": " + remainderTokens)
@@ -1315,18 +1315,18 @@ object parse {
     nextToken match {
       case BinOp(op, _) => op match {
         case OpType.BinOpType.ADD =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.Add()()) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.add.primitive) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.DIV =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.Div()()) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.div.primitive) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.EQ =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.Equal()()) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.equal.primitive) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.GT =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.Gt()()) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.gt.primitive) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.LT =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.Lt()()) :: parsedSynElems, map, mapDepL))
-        case OpType.BinOpType.MOD => Left(ParseState(remainderTokens, SExpr(r.primitives.Mod()()) :: parsedSynElems, map, mapDepL))
-        case OpType.BinOpType.MUL => Left(ParseState(remainderTokens, SExpr(r.primitives.Mul()()) :: parsedSynElems, map, mapDepL))
-        case OpType.BinOpType.SUB => Left(ParseState(remainderTokens, SExpr(r.primitives.Sub()()) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.lt.primitive) :: parsedSynElems, map, mapDepL))
+        case OpType.BinOpType.MOD => Left(ParseState(remainderTokens, SExpr(r.primitives.mod.primitive) :: parsedSynElems, map, mapDepL))
+        case OpType.BinOpType.MUL => Left(ParseState(remainderTokens, SExpr(r.primitives.mul.primitive) :: parsedSynElems, map, mapDepL))
+        case OpType.BinOpType.SUB => Left(ParseState(remainderTokens, SExpr(r.primitives.sub.primitive) :: parsedSynElems, map, mapDepL))
         case tok => {
           println("Das hier kann nicht sein, weil alle Operatoren müsste ich abgedeckt haben. BinOp: '" + tok + "' is no BinOperator!")
           Right(ParseError("failed to parse BinOperator: " + tok + " is not an accepted BinOp"))
@@ -1391,7 +1391,7 @@ object parse {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case NatNumber(number, _) => Left(ParseState(remainderTokens, SNat(NNumber(number:r.Nat))::parsedSynElems, map, mapDepL))
+      case NatNumber(number, _) => Left(ParseState(remainderTokens, SNat(NNumber(number:rt.Nat))::parsedSynElems, map, mapDepL))
       case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens, SNat(NIdentifier(rt.NatIdentifier(name)))::parsedSynElems, map, mapDepL))
       case tok => Right(ParseError("failed to parse Nat: " + tok + " is not an Nat"))
     }
