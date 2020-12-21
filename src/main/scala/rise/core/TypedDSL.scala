@@ -19,6 +19,8 @@ object TypedDSL {
         a.ts ++ b.ts,
         a.ns ++ b.ns,
         a.as ++ b.as,
+        a.ms ++ b.ms,
+        a.fs ++ a.fs,
         a.n2ds ++ b.n2ds,
         a.n2ns ++ b.n2ns,
         a.natColls ++ b.natColls
@@ -47,6 +49,12 @@ object TypedDSL {
         ftvSubs.as.view.mapValues(a =>
           a.asInstanceOf[AddressSpaceIdentifier].asExplicit
         ).toMap,
+        ftvSubs.ms.view.mapValues(m =>
+          m.asInstanceOf[MatrixLayoutIdentifier].asExplicit
+        ).toMap,
+        ftvSubs.fs.view.mapValues(f =>
+          f.asInstanceOf[FragmentTypeIdentifier].asExplicit
+        ).toMap,
         ftvSubs.n2ds.view.mapValues(n2d =>
           n2d.asInstanceOf[NatToDataIdentifier].asExplicit
         ).toMap,
@@ -63,30 +71,36 @@ object TypedDSL {
           Map[Type, Type],
           Map[NatIdentifier, Nat],
           Map[AddressSpaceIdentifier, AddressSpace],
+          Map[MatrixLayoutIdentifier, MatrixLayout],
+          Map[FragmentTypeIdentifier, FragmentType],
           Map[NatToDataIdentifier, NatToData],
           Map[NatToNatIdentifier, NatToNat],
           Map[NatCollectionIdentifier, NatCollection]
-      ) = (Map(), Map(), Map(), Map(), Map(), Map())
+      ) = (Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
       val ftvs = TopLevel.getFTVs(t)
       val subs = ftvs.foldLeft(emptySubs)((subs, ftv) =>
         subs match {
-          case (ts, ns, as, n2ds, n2ns, natColls) =>
+          case (ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
             ftv match {
               case _: TypeIdentifier =>
                 throw TypeException("TypeIdentifier cannot be frozen")
-              case i: DataTypeIdentifier => (ts ++ Map(i -> i), ns, as, n2ds, n2ns, natColls)
-              case i: NatIdentifier      => (ts, ns ++ Map(i -> i), as, n2ds,  n2ns, natColls)
+              case i: DataTypeIdentifier => (ts ++ Map(i -> i), ns, as, ms, fs, n2ds, n2ns, natColls)
+              case i: NatIdentifier      => (ts, ns ++ Map(i -> i), as, ms, fs, n2ds,  n2ns, natColls)
               case i: AddressSpaceIdentifier =>
-                (ts, ns, as ++ Map(i -> i), n2ds,  n2ns, natColls)
-              case i: NatToDataIdentifier => (ts, ns, as, n2ds ++ Map(i -> i), n2ns,  natColls)
-              case i: NatToNatIdentifier => (ts, ns, as, n2ds, n2ns ++ Map(i -> i),  natColls)
-              case i: NatCollectionIdentifier => (ts, ns, as, n2ds,  n2ns, natColls ++ Map(i -> i))
+                (ts, ns, as ++ Map(i -> i), ms, fs, n2ds,  n2ns, natColls)
+              case i: MatrixLayoutIdentifier =>
+                (ts, ns, as, ms ++ Map(i -> i), fs, n2ds,  n2ns, natColls)
+              case i: FragmentTypeIdentifier =>
+                (ts, ns, as, ms, fs ++ Map(i -> i), n2ds,  n2ns, natColls)
+              case i: NatToDataIdentifier => (ts, ns, as, ms, fs, n2ds ++ Map(i -> i), n2ns,  natColls)
+              case i: NatToNatIdentifier => (ts, ns, as, ms, fs, n2ds, n2ns ++ Map(i -> i),  natColls)
+              case i: NatCollectionIdentifier => (ts, ns, as, ms, fs, n2ds,  n2ns, natColls ++ Map(i -> i))
               case i =>
                 throw TypeException(s"${i.getClass} is not supported yet")
             }
         }
       )
-      new Solution(subs._1, subs._2, subs._3, subs._4, subs._5, subs._6)
+      new Solution(subs._1, subs._2, subs._3, subs._4, subs._5, subs._6, subs._7, subs._8)
     }
   }
 
@@ -109,35 +123,41 @@ object TypedDSL {
           Map[Type, Type],
           Map[NatIdentifier, Nat],
           Map[AddressSpaceIdentifier, AddressSpace],
+          Map[MatrixLayoutIdentifier, MatrixLayout],
+          Map[FragmentTypeIdentifier, FragmentType],
           Map[NatToDataIdentifier, NatToData],
           Map[NatToNatIdentifier, NatToNat],
           Map[NatCollectionIdentifier, NatCollection]
-      ) = (Map(), Map(), Map(), Map(), Map(), Map())
+      ) = (Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
       val ftvs = getFTVs(t)
       val subs = ftvs.foldLeft(emptySubs)((subs, ftv) =>
         subs match {
-          case (ts, ns, as, n2ds, n2ns, natColls) =>
+          case (ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
             ftv match {
               case i: TypeIdentifier =>
-                (ts ++ Map(i -> impl{ x: TypeIdentifier => x }), ns, as, n2ds, n2ns, natColls)
+                (ts ++ Map(i -> impl{ x: TypeIdentifier => x }), ns, as, ms, fs, n2ds, n2ns, natColls)
               case i: DataTypeIdentifier =>
-                (ts ++ Map(i -> impl{ x: DataType => x }), ns, as, n2ds, n2ns,  natColls)
+                (ts ++ Map(i -> impl{ x: DataType => x }), ns, as, ms, fs, n2ds, n2ns,  natColls)
               case i: NatIdentifier =>
-                (ts, ns ++ Map(i -> impl{ x: Nat => x }), as, n2ds, n2ns,  natColls)
+                (ts, ns ++ Map(i -> impl{ x: Nat => x }), as, ms, fs, n2ds, n2ns,  natColls)
               case i: AddressSpaceIdentifier =>
-                (ts, ns, as ++ Map(i -> impl{ x: AddressSpace => x }), n2ds, n2ns,  natColls)
+                (ts, ns, as ++ Map(i -> impl{ x: AddressSpace => x }), ms, fs, n2ds, n2ns,  natColls)
+              case i: MatrixLayoutIdentifier =>
+                (ts, ns, as, ms ++ Map(i -> impl{ x: MatrixLayout => x }), fs, n2ds,  n2ns, natColls)
+              case i: FragmentTypeIdentifier =>
+                (ts, ns, as, ms, fs ++ Map(i -> impl{ x: FragmentType => x }), n2ds,  n2ns, natColls)
               case i: NatToDataIdentifier =>
-                (ts, ns, as, n2ds ++ Map(i -> impl{ x: NatToData => x }), n2ns,  natColls)
+                (ts, ns, as, ms, fs, n2ds ++ Map(i -> impl{ x: NatToData => x }), n2ns,  natColls)
               case i: NatToNatIdentifier =>
-                (ts, ns, as, n2ds, n2ns ++ Map(i -> impl{ x: NatToNat => x }), natColls)
+                (ts, ns, as, ms, fs, n2ds, n2ns ++ Map(i -> impl{ x: NatToNat => x }), natColls)
               case i: NatCollectionIdentifier =>
-                (ts, ns, as, n2ds,  n2ns, natColls ++ Map(i -> impl{ x: NatCollection => x }))
+                (ts, ns, as, ms, fs, n2ds,  n2ns, natColls ++ Map(i -> impl{ x: NatCollection => x }))
               case i =>
                 throw TypeException(s"${i.getClass} is not supported yet")
             }
         }
       )
-      new Solution(subs._1, subs._2, subs._3, subs._4, subs._5, subs._6)
+      new Solution(subs._1, subs._2, subs._3, subs._4, subs._5, subs._6, subs._7, subs._8)
     }
 
     def getFTVs(t: Type): Seq[Kind.Identifier] = {
@@ -426,11 +446,13 @@ object TypedDSL {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
       val solution = Constraint.solve(constraints.toSeq, Seq())(explDep) match {
-        case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
+        case Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           Solution(
             ts.view.mapValues(t => ftvSubs(t)).toMap,
             ns.view.mapValues(n => ftvSubs(n)).toMap,
             as.view.mapValues(a => ftvSubs(a)).toMap,
+            ms.view.mapValues(m => ftvSubs(m)).toMap,
+            fs.view.mapValues(f => ftvSubs(f)).toMap,
             n2ds.view.mapValues(n2d => ftvSubs(n2d)).toMap,
             n2ns.view.mapValues(n2n => ftvSubs(n2n)).toMap,
             natColls.view.mapValues(ftvSubs(_)).toMap

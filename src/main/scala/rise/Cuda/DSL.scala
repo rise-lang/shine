@@ -66,7 +66,7 @@ object DSL {
   def generateFragment: Primitive = GenerateFragment.primitive
   def mapFragmentElements: Primitive = MapFragmentElements(WmmaAccumulator(1,1,1,f32)).primitive
   def globalToShared: Primitive = GlobalToShared.primitive
-  def tensorMMA: Primitive = TensorMMA(Row_Major).primitive
+  def tensorMMA: Primitive = TensorMMA.primitive
 
   def h(f: Float): Literal = literal(HalfData(f))
 }

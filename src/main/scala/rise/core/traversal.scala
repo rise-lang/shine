@@ -27,6 +27,10 @@ object traversal {
     def visitNat(ae: Nat): Result[Nat] = Continue(ae, this)
     def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
       Continue(a, this)
+    def visitMatrixLayout(m: MatrixLayout): Result[MatrixLayout] =
+      Continue(m, this)
+    def visitFragmentType(f: FragmentType): Result[FragmentType] =
+      Continue(f, this)
     def visitN2N(n2n: NatToNat): Result[NatToNat] = Continue(n2n, this)
     def visitN2D(n2d: NatToData): Result[NatToData] = Continue(n2d, this)
   }
@@ -259,6 +263,12 @@ object traversal {
               case IndexType(n)     => IndexType(v.visitNat(n).value)
               case VectorType(n, e) =>
                 VectorType(v.visitNat(n).value, data(e, v))
+              case WmmaAMatrix(m, n, k, dt, layout) =>
+                WmmaAMatrix(v.visitNat(m).value, v.visitNat(n).value, v.visitNat(k).value, data(dt, v), v.visitMatrixLayout(layout).value)
+              case WmmaBMatrix(m, n, k, dt, layout) =>
+                WmmaBMatrix(v.visitNat(m).value, v.visitNat(n).value, v.visitNat(k).value, data(dt, v), v.visitMatrixLayout(layout).value)
+              case WmmaAccumulator(m, n, k, dt) =>
+                WmmaAccumulator(v.visitNat(m).value, v.visitNat(n).value, v.visitNat(k).value, data(dt, v))
               case NatToDataApply(ndtf, n) =>
                 NatToDataApply(v.visitN2D(ndtf).value, v.visitNat(n).value)
             }).asInstanceOf[DT]

@@ -107,9 +107,11 @@ object fromRise {
                         t: PhraseType): Phrase[_ <: PhraseType] = {
     import rise.openCL.{primitives => ocl}
     import rise.openMP.{primitives => omp}
+    import rise.Cuda.{primitives => cuda}
     import shine.OpenCL.FunctionalPrimitives._
     import shine.OpenMP.FunctionalPrimitives._
     import shine.DPIA.Types.MatchingDSL._
+    import shine.cuda.primitives.functional._
 
     def fromType(f: PartialFunction[PhraseType, Phrase[_ <: PhraseType]]): Phrase[_ <: PhraseType] = {
       f.lift(t) match {
@@ -201,7 +203,7 @@ object fromRise {
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
-            MapGlobal(dim)(n, s, t, f, e)))
+            shine.OpenCL.FunctionalPrimitives.MapGlobal(dim)(n, s, t, f, e)))
       }
 
       case ocl.mapLocal(dim) => fromType {
@@ -794,6 +796,127 @@ object fromRise {
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }
 
+      case cuda.GlobalToShared() => fromType {
+        case expT(dt, write) ->: _ =>
+          fun[ExpType](expT(dt, write), e =>
+            GlobalToShared(dt, e))
+      }
+
+      case cuda.ToFragmentA(llayout) => fromType {
+        case nFunT(ldm, expT(ArrayType(m, ArrayType(k, dt)), `read`) ->:
+          expT(WmmaAMatrix(_, n, _, _, _), _)) =>
+
+        val fragT = WmmaAMatrix(m, n, k, dt, layout(llayout))
+        DepLambda[NatKind](ldm)(
+          fun[ExpType](expT(ArrayType(m, ArrayType(k, dt)), read), a =>
+            ToFragment(ldm, m, n, k, dt, fragT.layout, fragT, a)))
+      }
+
+      case cuda.ToFragmentB(llayout) => fromType {
+        case nFunT(ldm, expT(ArrayType(k, ArrayType(n, dt)), `read`) ->:
+          expT(WmmaBMatrix(m, _, _, _, _), _)) =>
+
+          val fragT = WmmaBMatrix(m, n, k, dt, layout(llayout))
+          DepLambda[NatKind](ldm)(
+            fun[ExpType](expT(ArrayType(m, ArrayType(k, dt)), read), a =>
+              ToFragment(ldm, m, n, k, dt, fragT.layout, fragT, a)))
+      }
+
+      case cuda.ToFragmentAccumulator(llayout) => fromType {
+        case nFunT(ldm, expT(ArrayType(m, ArrayType(n, dt)), `read`) ->:
+          expT(WmmaAccumulator(_, _, k, _), _)) =>
+          val fragT = WmmaAccumulator(m, n, k, dt)
+          DepLambda[NatKind](ldm)(
+            fun[ExpType](expT(ArrayType(m, ArrayType(k, dt)), read), a =>
+              ToFragment(ldm, m, n, k, dt, layout(llayout), fragT, a)))
+      }
+
+      case cuda.FromFragment(llayout) => fromType {
+        case nFunT(ldm, expT(WmmaAccumulator(m, n, k, dt), `read`) ->: expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
+          DepLambda[NatKind](ldm)(
+            fun[ExpType](expT(WmmaAccumulator(m, n, k, dt), read), dFrag =>
+              FromFragment(ldm, m, n, k, dt, dFrag, layout(llayout))))
+      }
+
+      case cuda.GenerateFragment() => fromType {
+        case expT(dt, `read`) ->: expT(WmmaAccumulator(m, n, k, _), read) =>
+          fun[ExpType](expT(dt, read), fill =>
+            GenerateFragment(m, n, k, dt, fill))
+      }
+
+      case cuda.TensorMMA() => fromType {
+        case expT(WmmaAMatrix(m, n, k, dt, layoutA), `read`) ->: expT(WmmaBMatrix(_, _, _, _, layoutB), `read`) ->:
+          expT(WmmaAccumulator(_, _, _, dtResult), `read`) ->: expT(WmmaAccumulator(_, _, _, _), `write`) =>
+          fun[ExpType](expT(WmmaAMatrix(m, n, k, dt, layoutA), read), a =>
+            fun[ExpType](expT(WmmaBMatrix(m, n, k, dt, layoutB), read), b =>
+              fun[ExpType](expT(WmmaAccumulator(m, n, k, dtResult), read), c =>
+                TensorMatMultAdd(m, n, k, layoutA, layoutB, dt, dtResult, a, b, c))))
+      }
+
+      case cuda.MapFragmentElements(_) => fromType {
+        case expT(dt, `write`) ->: expT(fragType : WmmaFragment, `read`) ->: expT(_, _) =>
+          fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
+            fun[ExpType](ExpType(fragType, read), fragment =>
+              MapFragmentElements(fragType.asInstanceOf[WmmaFragment], fragment, f)))
+      }
+
+      case cuda.ToSharedMemoryShift() => fromType {
+        case nFunT(s, expT(ArrayType(m, ArrayType(n, dt)), `write`) ->: expT(_, _)) =>
+          DepLambda[NatKind](s)(
+            fun[ExpType](expT(ArrayType(m, ArrayType(n, dt)), write), a =>
+              ToSharedMemoryShift(s, m, n, dt, a)))
+      }
+
+      case cuda.MapGlobal(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              shine.cuda.primitives.functional.MapGlobal(dim)(n, s, t, f, e)))
+      }
+
+      case cuda.MapBlock(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              shine.cuda.primitives.functional.MapBlock(dim)(n, s, t, f, e)))
+      }
+
+      case cuda.MapWarp(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              shine.cuda.primitives.functional.MapWarp(dim)(n, s, t, f, e)))
+      }
+
+      case cuda.MapThreads(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              shine.cuda.primitives.functional.MapThreads(dim)(n, s, t, f, e)))
+      }
+
+      case cuda.MapLane(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              shine.cuda.primitives.functional.MapLane(dim)(n, s, t, f, e)))
+      }
+
       case core.reduce() =>
         throw new Exception(s"$p has no implementation")
 
@@ -827,6 +950,19 @@ object fromRise {
       case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
       case _ => ???
     }
+    case f: rt.WmmaFragment => fragType(f)
+  }
+
+  def fragType(f: rt.WmmaFragment): WmmaFragment = f match {
+    case rt.WmmaAMatrix(m, n, k, dt, l) => WmmaAMatrix(m, n, k, dataType(dt), layout(l))
+    case rt.WmmaBMatrix(m, n, k, dt, l) => WmmaBMatrix(m, n, k, dataType(dt), layout(l))
+    case rt.WmmaAccumulator(m, n, k, dt) => WmmaAccumulator(m, n, k, dataType(dt))
+  }
+
+  def layout(layout: rt.MatrixLayout): MatrixLayout = layout match {
+    case rt.MatrixLayout.Row_Major => MatrixLayout.Row_Major
+    case rt.MatrixLayout.Col_Major => MatrixLayout.Col_Major
+    case _ => throw new Exception("this should not happen")
   }
 
   def scalarType(t: rt.ScalarType): ScalarType = t match {

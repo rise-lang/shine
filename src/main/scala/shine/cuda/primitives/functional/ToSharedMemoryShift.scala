@@ -22,7 +22,7 @@ final case class ToSharedMemoryShift(shift: Nat,
                                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  array :: expT(m`.`(n`.`dt), read)
+  array :: expT(m`.`(n`.`dt), write)
   override val t: ExpType = expT(m`.`(n`.`dt), read)
 
   override def eval(s: Store): Data = ???

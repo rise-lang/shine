@@ -117,6 +117,33 @@ final case class MatrixLayoutIdentifier(
   override def hashCode(): Int = this.name.hashCode()
 }
 
+sealed trait FragmentType
+
+object FragmentType {
+  object AMatrix extends FragmentType { override def toString = "AMatrix"}
+  object BMatrix extends FragmentType { override def toString = "BMatrix"}
+  object Acuumulator extends FragmentType { override def toString = "Acuumulator"}
+}
+
+final case class FragmentTypeIdentifier(
+                                         name: String,
+                                         override val isExplicit: Boolean = false
+                                       ) extends FragmentType
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: FragmentTypeIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: FragmentTypeIdentifier =
+    this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case a: FragmentTypeIdentifier => this.name == a.name
+    case _                         => false
+  }
+  override def hashCode(): Int = this.name.hashCode()
+}
+
+
+
 sealed trait WmmaFragment extends DataType {
   def m:Nat
   def n:Nat

@@ -19,6 +19,14 @@ case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace)
   extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
+case class MatrixLayoutConstraint(a: MatrixLayout, b: MatrixLayout)
+  extends Constraint {
+  override def toString: String = s"$a  ~  $b"
+}
+case class FragmentTypeConstraint(a: FragmentType, b: FragmentType)
+  extends Constraint {
+  override def toString: String = s"$a  ~  $b"
+}
 case class NatToDataConstraint(a: NatToData, b: NatToData)
   extends Constraint {
   override def toString: String = s"$a  ~  $b"
@@ -69,6 +77,15 @@ object Constraint {
             decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
           case (VectorType(sa, ea), VectorType(sb, eb)) =>
             decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+          case (WmmaAMatrix(ma, na, ka, dta, layouta), WmmaAMatrix(mb, nb, kb, dtb, layoutb)) =>
+            decomposed(Seq(NatConstraint(ma, mb), NatConstraint(na, nb), NatConstraint(ka, kb),
+              TypeConstraint(dta, dtb), MatrixLayoutConstraint(layouta, layoutb)))
+          case (WmmaBMatrix(ma, na, ka, dta, layouta), WmmaBMatrix(mb, nb, kb, dtb, layoutb)) =>
+            decomposed(Seq(NatConstraint(ma, mb), NatConstraint(na, nb), NatConstraint(ka, kb),
+              TypeConstraint(dta, dtb), MatrixLayoutConstraint(layouta, layoutb)))
+          case (WmmaAccumulator(ma, na, ka, dta), WmmaAccumulator(mb, nb, kb, dtb)) =>
+            decomposed(Seq(NatConstraint(ma, mb), NatConstraint(na, nb), NatConstraint(ka, kb),
+              TypeConstraint(dta, dtb)))
           case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
             decomposed(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb)))
           case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
@@ -224,6 +241,21 @@ object Constraint {
             ???
         }
 
+      case MatrixLayoutConstraint(a, b) =>
+        (a, b) match {
+          case (i: MatrixLayoutIdentifier, _) if (!i.isExplicit) => Solution.subs(i, b)
+          case (_, i: MatrixLayoutIdentifier) if (!i.isExplicit) => Solution.subs(i, a)
+          case _ if a == b                 => Solution()
+          case _                           => error(s"cannot unify $a and $b")
+        }
+
+      case FragmentTypeConstraint(a, b) =>
+        (a, b) match {
+          case (i: FragmentTypeIdentifier, _) if (!i.isExplicit) => Solution.subs(i, b)
+          case (_, i: FragmentTypeIdentifier) if (!i.isExplicit) => Solution.subs(i, a)
+          case _ if a == b                 => Solution()
+          case _                           => error(s"cannot unify $a and $b")
+        }
     }
   }
   // scalastyle:on method.length

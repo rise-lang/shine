@@ -6,6 +6,7 @@ import rise.core.TypeLevelDSL.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstru
 import rise.core.{primitives => rp}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
+import rise.Cuda.{primitives => rocup}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
@@ -233,8 +234,9 @@ private class InferAccessAnnotation {
   private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
     val primitiveType = p match {
       case roclp.mapGlobal(_) | roclp.mapWorkGroup(_) | roclp.mapLocal(_)
-           | rompp.mapPar() | rp.mapSeq() | rp.mapSeqUnroll()
-           | rp.iterateStream() => p.t match {
+           | rocup.MapGlobal(_) | rocup.MapBlock(_) | rocup.MapThreads(_)
+           | rocup.MapWarp(_) | rocup.MapLane(_) |rompp.mapPar()
+           | rp.mapSeq() | rp.mapSeqUnroll() | rp.iterateStream() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
           (expT(s, read) ->: expT(t, write)) ->:
             expT(n`.`s, read) ->: expT(n`.`t, write)
@@ -548,6 +550,52 @@ private class InferAccessAnnotation {
           case _ => error(s"did not expect $t")
         }
         buildType(p.t)
+
+      case rocup.ToFragmentA(_) => p.t match {
+        case ldm `(Nat)->:` ((aMatrix: rt.ArrayType) ->: (resultMatrix: rt.WmmaAMatrix)) =>
+          nFunT(ldm, expT(aMatrix, read) ->: expT(resultMatrix, read))
+      }
+
+      case rocup.ToFragmentB(_) => p.t match {
+        case ldm `(Nat)->:` ((bMatrix: rt.ArrayType) ->: (resultMatrix: rt.WmmaBMatrix)) =>
+          nFunT(ldm, expT(bMatrix, read) ->: expT(resultMatrix, read))
+      }
+
+      case rocup.ToFragmentAccumulator(_) => p.t match {
+        case ldm `(Nat)->:` ((accMatrix: rt.ArrayType) ->: (resultMatrix: rt.WmmaAccumulator)) =>
+          nFunT(ldm, expT(accMatrix, read) ->: expT(resultMatrix, read))
+      }
+
+      case rocup.FromFragment(_) => p.t match {
+        case ldm `(Nat)->:` ((accMatrix: rt.WmmaAccumulator) ->: (resultArray: rt.ArrayType)) =>
+          nFunT(ldm, expT(accMatrix, read) ->: expT(resultArray, write))
+      }
+
+      case rocup.GenerateFragment() => p.t match {
+        case (dt: rt.DataType) ->: (resultMatrix: rt.WmmaAccumulator) =>
+          expT(dt, read) ->: expT(resultMatrix, read)
+      }
+
+      case rocup.TensorMMA() => p.t match {
+        case (aMatrix: rt.WmmaAMatrix) ->: (bMatrix: rt.WmmaBMatrix) ->:
+          (cMatrix: rt.WmmaAccumulator) ->: (resultMatrix: rt.WmmaAccumulator) =>
+          expT(aMatrix, read) ->: expT(bMatrix, read) ->: expT(cMatrix, read) ->: expT(resultMatrix, write)
+      }
+
+      case rocup.GlobalToShared() => p.t match {
+        case (dt: rt.DataType) ->: _ =>
+          expT(dt, write) ->: expT(dt, read)
+      }
+
+      case rocup.ToSharedMemoryShift() => p.t match {
+        case  shift `(Nat)->:` ((matrix: rt.ArrayType) ->: _) =>
+          nFunT(shift, expT(matrix, write) ->: expT(matrix, read))
+      }
+
+      case rocup.MapFragmentElements(_) => p.t match {
+        case (dt: rt.DataType) ->: (fragType: rt.WmmaFragment) ->: _ =>
+          expT(dt, write) ->: expT(fragType, read) ->: expT(fragType, read)
+      }
     }
 
     checkConsistency(p.t, primitiveType)

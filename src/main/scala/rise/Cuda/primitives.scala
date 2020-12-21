@@ -76,30 +76,17 @@ object primitives {
             dt ->: WmmaAccumulator(m, n, k, dt)}}}}
   }
 
-//  @primitive object TensorMMA extends Primitive with Builder {
-//    impl{layoutA: MatrixLayout =>
-//      impl{layoutB: MatrixLayout =>
-//        impl{m: Nat =>
-//          impl{n: Nat =>
-//            impl{k: Nat =>
-//              impl{dt: DataType =>
-//                impl{dt2: DataType =>
-//                  WmmaAMatrix(m, n, k, dt, layoutA) ->:
-//                    WmmaBMatrix(m, n, k, dt, layoutB) ->:
-//                    WmmaAccumulator(m, n, k, dt2) ->: WmmaAccumulator(m, n, k, dt2)}}}}}}}
-//  }
-
-  @primitive case class TensorMMA(layoutA: MatrixLayout) extends Primitive with Builder {
-//    impl{layoutA: MatrixLayout =>
-//      impl{layoutB: MatrixLayout =>
+  @primitive object TensorMMA extends Primitive with Builder {
+    impl{layoutA: MatrixLayout =>
+      impl{layoutB: MatrixLayout =>
         impl{m: Nat =>
           impl{n: Nat =>
             impl{k: Nat =>
               impl{dt: DataType =>
                 impl{dt2: DataType =>
                   WmmaAMatrix(m, n, k, dt, layoutA) ->:
-                    WmmaBMatrix(m, n, k, dt, layoutA) ->:
-                    WmmaAccumulator(m, n, k, dt2) ->: WmmaAccumulator(m, n, k, dt2)}}}}}
+                    WmmaBMatrix(m, n, k, dt, layoutB) ->:
+                    WmmaAccumulator(m, n, k, dt2) ->: WmmaAccumulator(m, n, k, dt2)}}}}}}}
   }
 
   @primitive object ToSharedMemoryShift extends Primitive with Builder {

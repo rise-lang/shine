@@ -19,6 +19,48 @@ object MatrixLayout {
   object Col_Major extends MatrixLayout { override def toString = "Col_Major" }
 }
 
+sealed trait FragmentType
+
+object FragmentType {
+  object AMatrix extends FragmentType { override def toString = "AMatrix"}
+  object BMatrix extends FragmentType { override def toString = "BMatrix"}
+  object Acuumulator extends FragmentType { override def toString = "Acuumulator"}
+}
+
+final case class Fragment(m: Nat,
+                          n: Nat,
+                          k: Nat,
+                          dataType: DataType,
+                          fragmentType: FragmentType,
+                          layout: MatrixLayout){
+  override def toString: String =
+    if (fragmentType == FragmentType.Acuumulator)
+      s"Fragment[$m,$n,$k,$dataType,$fragmentType]"
+    else
+      s"Fragment[$m,$n,$k,$dataType,$fragmentType,$layout]"
+
+  override def equals(o: Any): Boolean = {
+    if (!o.isInstanceOf[Fragment])
+      return false;
+
+    val f = o.asInstanceOf[Fragment]
+    if (fragmentType == FragmentType.Acuumulator && f.fragmentType == FragmentType.Acuumulator){
+      f.m.equals(m) && f.n.equals(n) && f.dataType.equals(dataType)
+    } else {
+      super.equals(o);
+    }
+  }
+
+  def matrixType: ArrayType = fragmentType match {
+    case FragmentType.AMatrix =>
+      ArrayType(m, ArrayType(k, dataType))
+    case FragmentType.BMatrix =>
+      ArrayType(k, ArrayType(n, dataType))
+    case FragmentType.Acuumulator =>
+      ArrayType(m, ArrayType(n, dataType))
+  }
+}
+
 sealed trait WmmaFragment extends BasicType {
   def m:Nat
   def n:Nat
