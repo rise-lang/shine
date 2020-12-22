@@ -731,7 +731,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         }
       }
       case a => if (a.isDigit) { //Todo: here include 2xF32 etc.
-        if(arr(column).length <= row+1 && arr(column)(row+1).equals('x')){
+        if(arr(column).length > row+1 && arr(column)(row+1).equals('x')){
           lexVectorType(column,row) //Todo: Hier fehlt noch der Rest
         }else{
           lexNatNumber(column, row) match {
@@ -1586,7 +1586,7 @@ if '==' then two steps else only one step
   }
 
   private def getConcreteScalarType(substring:String, span:Span):Either[ConcreteType, PreAndErrorToken]={
-    substring.substring(2) match {//different Types in RISE //Todo: not completed yet
+    substring match {//different Types in RISE //Todo: not completed yet
       //Types
       case "Bool" => Left(BoolType())
       case "I16"   => Left(ShortTyp())
@@ -1608,7 +1608,10 @@ if '==' then two steps else only one step
       val span =  Span(fileReader,locStart, locEnd)
       getConcreteScalarType(substring,span) match{
         case Left(concreteType)=>(Left(ScalarType(concreteType, span)),pos)
-        case Right(error) => (Right(error), pos)
+        case Right(error) => {
+          println("NOOOO"+ error)
+          (Right(error), pos)
+        }
       }
     }
   }
