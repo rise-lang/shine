@@ -1,14 +1,15 @@
 package shine.DPIA.Primitives
 
+import arithexpr.arithmetic.Cst
+import rise.core.DSL.Type._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
-import rise.core.types._
-import rise.core.types.AddressSpace
-import util.gen
-import shine.OpenCL._
-import rise.openCL.DSL._
-import rise.core.{Expr, Literal}
+import rise.core.primitives._
 import rise.core.semantics.NatData
+import rise.core.types.{AddressSpace, _}
+import rise.core.{Expr, Literal}
+import rise.openCL.primitives.oclReduceSeq
+import shine.OpenCL._
+import util.gen
 
 import scala.language.postfixOps
 
@@ -18,7 +19,7 @@ class Reduce extends test_util.TestsWithExecutor {
   test("Simple example should generate syntactically valid C code" +
     "with one loop") {
     val e =
-      nFun(n => fun(ArrayType(n, f32))(a =>
+      depFun((n: Nat) => fun(ArrayType(n, f32))(a =>
         a |> reduceSeq(add)(l(0.0f))))
 
     val code = gen.CProgram(e).code
@@ -29,10 +30,10 @@ class Reduce extends test_util.TestsWithExecutor {
   test("Fusing a reduce into a map should generate syntactically" +
     "valid C code") {
     val e =
-      nFun(h => nFun(w =>
+      depFun((h: Nat, w: Nat) =>
         fun(ArrayType(h, ArrayType(w, f32)))(a =>
           a |> map(reduceSeq(add)(l(0.0f))) |> mapSeq(fun(x => x))
-        )))
+        ))
 
     gen.CProgram(e)
   }
@@ -40,10 +41,10 @@ class Reduce extends test_util.TestsWithExecutor {
   test("Fusing a reduce into another should generate syntactically" +
     "valid C code with two loops") {
     val e =
-      nFun(h => nFun(w =>
+      depFun((h: Nat, w: Nat) =>
         fun(ArrayType(h, ArrayType(w, f32)))(a =>
           a |> map(reduceSeq(add)(l(0.0f))) |> reduceSeq(add)(l(0.0f))
-      )))
+      ))
 
     val code = gen.CProgram(e).code
 
@@ -56,11 +57,11 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val random = new Random()
 
-    val initExp = nFun(n =>
+    val initExp = depFun((n: Nat) =>
       generate(fun(IndexType(n))(_ => l(0.0f)))
         |> mapSeq (fun(x => x)))
 
-    val e = nFun((m, n) =>
+    val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(arr => arr
         |> oclReduceSeq (AddressSpace.Private)
           (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t._1 + t._2))))
@@ -86,9 +87,9 @@ class Reduce extends test_util.TestsWithExecutor {
     val initRecordExp =
       (zip (generate(fun(IndexType(n))(_ => l(0.0f))))
            (generate(fun(IndexType(n))(_ => l(0.0f))))
-        |> idx(natAsIndex (n) (Literal(NatData(0)))))
+        |> idx(natAsIndex (n) (l(Cst(0)))))
 
-    def e(init : Expr) = nFun(n =>
+    def e(init : ToBeTyped[Expr]): ToBeTyped[Expr] = depFun((n: Nat) =>
       fun(n`.`f32)(arr =>
         arr |> reduceSeq (fun(_ + _))  (init)))
 
@@ -104,9 +105,9 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val random = new Random()
 
-    val initRecordExp = pair(l(0.0f), l(0.0f))
+    val initRecordExp = makePair(l(0.0f))(l(0.0f))
 
-    def e(init : Expr) = nFun(n =>
+    def e(init : ToBeTyped[Expr]) = depFun((n: Nat) =>
       fun(n`.`f32)(arr =>
         arr |> oclReduceSeq (AddressSpace.Global) (fun(_ + _))  (init)))
 
@@ -115,7 +116,7 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val gold = A.sum
 
-    def runKernel(initWithRecordAccess: Expr) =
+    def runKernel(initWithRecordAccess: ToBeTyped[Expr]) =
       gen.OpenCLKernel(e(initWithRecordAccess))
         .as[ScalaFunction `(`Int`,`Array[Float]`)=>`Array[Float]]
 

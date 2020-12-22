@@ -276,6 +276,21 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
+      case ScatterAcc(n, m, _, y, a) => path match {
+        case (i : CIntExpr) :: ps =>
+          val id = NatIdentifier(freshName("i"))
+          val yi = Idx(n, IndexType(m), NatAsIndex(n, Natural(i)), y)
+          exp(yi, env, Nil, yic => {
+            C.AST.Block(immutable.Seq(
+              C.AST.DeclStmt(C.AST.VarDecl(
+                id.name, C.AST.Type.int, Some(yic)
+              )),
+              acc(a, env, CIntExpr(id) :: ps, cont)
+            ))
+          })
+        case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
       case MapAcc(n, dt, _, f, a) => path match {
         case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, NatAsIndex(n, Natural(i)), a) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")

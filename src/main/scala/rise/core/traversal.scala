@@ -44,9 +44,12 @@ object traversal {
           c.value match {
             case i: Identifier => i.setType(v.visitType(i.t).value)
             case l @ Lambda(x, e) =>
-              Lambda(apply(x, v).asInstanceOf[Identifier], apply(e, v))(
-                v.visitType(l.t).value
-              )
+              apply(x, v) match {
+                case newX: Identifier =>
+                  Lambda(newX, apply(e, v))(v.visitType(l.t).value)
+                case otherwise =>
+                  throw new Exception(s"Expected Identifier found: $otherwise")
+              }
             case a @ App(f, e) =>
               App(apply(f, v), apply(e, v))(v.visitType(a.t).value)
             case dl @ DepLambda(x, e) =>
@@ -248,7 +251,7 @@ object traversal {
               case i: DataTypeIdentifier => i
               case ArrayType(n, e) => ArrayType(v.visitNat(n).value, data(e, v))
               case DepArrayType(n, fdt) =>
-                DepArrayType(v.visitNat(n).value, v.visitN2D(fdt).value)
+                DepArrayType(v.visitNat(n).value, natToData(fdt, v))
               case PairType(p1, p2) => PairType(data(p1, v), data(p2, v))
               case pair@DepPairType(x, e) =>
                   x match {
@@ -270,8 +273,36 @@ object traversal {
               case WmmaAccumulator(m, n, k, dt) =>
                 WmmaAccumulator(v.visitNat(m).value, v.visitNat(n).value, v.visitNat(k).value, data(dt, v))
               case NatToDataApply(ndtf, n) =>
-                NatToDataApply(v.visitN2D(ndtf).value, v.visitNat(n).value)
+                NatToDataApply(natToData(ndtf, v), v.visitNat(n).value)
             }).asInstanceOf[DT]
+        }
+      }
+
+      def natToNat(n2n: NatToNat, visit: Visitor): NatToNat = {
+        visit.visitN2N(n2n) match {
+          case s: Stop[NatToNat] => s.value
+          case c: Continue[NatToNat] =>
+            val v = c.v
+            c.value match {
+              case i: NatToNatIdentifier => i
+              case NatToNatLambda(x, body) =>
+                NatToNatLambda(explNatIdentifier(v.visitNat(x).value),
+                  v.visitNat(body).value)
+            }
+        }
+      }
+
+      def natToData(n2d: NatToData, visit: Visitor): NatToData = {
+        visit.visitN2D(n2d) match {
+          case s: Stop[NatToData] => s.value
+          case c: Continue[NatToData] =>
+            val v = c.v
+            c.value match {
+              case i: NatToDataIdentifier => i
+              case NatToDataLambda(x, body) =>
+                val x2 = v.visitNat(x).value
+                NatToDataLambda(explNatIdentifier(x2), data(body, v))
+            }
         }
       }
     }
@@ -293,7 +324,8 @@ object traversal {
           case Stop(r) => Stop(r)
           case Continue(c, v) =>
             (c match {
-              case dt: DataType => data(dt, v)
+              case TypePlaceholder => Continue(c, v)
+              case i: TypeIdentifier => Continue(i, v)
               case FunType(a, b) =>
                 chainT(apply(a, v), b).map(r => FunType(r._1, r._2))
               case DepFunType(i, t) =>
@@ -304,13 +336,14 @@ object traversal {
                     )
                   case n: NatIdentifier =>
                     chainT(v.visitNat(n), t).map(r =>
-                      DepFunType[NatKind, Type]((r._1: @unchecked) match {
-                        case n: NamedVar =>
-                          NatIdentifier(n.name, n.range, isExplicit = true)
-                      }, r._2)
+                      DepFunType[NatKind, Type](explNatIdentifier(r._1), r._2)
+                    )
+                  case a: AddressSpaceIdentifier =>
+                    chainT(v.visitAddressSpace(a), t).map(r =>
+                      DepFunType[AddressSpaceKind, Type](r._1.asInstanceOf[AddressSpaceIdentifier], r._2)
                     )
                 }
-              case i: TypeIdentifier => Continue(i, v)
+              case dt: DataType => data(dt, v)
             }).asInstanceOf[Result[T]]
         }
       }
@@ -340,10 +373,7 @@ object traversal {
               case DepPairType(x, t) => x match {
                 case n: NatIdentifier =>
                   chainT(v.visitNat(n), t).map(r =>
-                    DepPairType[NatKind]((r._1: @unchecked) match {
-                      case n: NamedVar =>
-                        NatIdentifier(n.name, n.range, isExplicit = true)
-                    }, r._2))
+                    DepPairType[NatKind](explNatIdentifier(r._1), r._2))
               }
               case NatToDataApply(nat2Data, n) =>
                 chainN(v.visitN2D(nat2Data), n)
@@ -352,5 +382,10 @@ object traversal {
         }
       }
     }
+  }
+
+  private def explNatIdentifier(m: Nat): NatIdentifier = m match {
+    case n: NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
+    case _ => throw new Exception(s"did not expect $m")
   }
 }

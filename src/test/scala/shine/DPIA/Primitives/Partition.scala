@@ -8,7 +8,8 @@ import util.{KernelWithSizes, SyntaxChecker, Time, TimeSpan}
 import arithexpr.arithmetic._
 import rise.elevate.rules.traversal.default
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import Type._
 import rise.core._
 import rise.core.types._
 
@@ -20,12 +21,12 @@ class Partition extends test_util.Tests {
     val lenF = n2nFun((i: NatIdentifier) => i + 1)
 
     val slideExample =
-      nFun(n =>
+      depFun((n: Nat) =>
         fun(ArrayType(n, f32))(xs => xs |> partition.apply(3)(lenF) |> depMapSeq(mapSeq(fun(x => x)))))
 
     println("\n" + slideExample + "\n")
 
-    val p = shine.C.ProgramGenerator.makeCode(DPIA.fromRise(infer(slideExample))(default.RiseTraversable))
+    val p = shine.C.ProgramGenerator.makeCode(DPIA.fromRise(slideExample)(default.RiseTraversable))
     val code = p.code
     SyntaxChecker(code)
   }
@@ -35,7 +36,7 @@ class Partition extends test_util.Tests {
 
     def lenF(n: Nat) = n2nFun((i: NatIdentifier) => SteppedCase(3, n, 3)(i))
 
-    val padAndPartition: Expr = nFun(n =>
+    val padAndPartition: Expr = depFun((n: Nat) =>
       fun(ArrayType(n, f32))(xs => xs |>
         padCst(padAmount)(padAmount)(l(0.0f)) |>
         partition(3)(lenF(n)) |>

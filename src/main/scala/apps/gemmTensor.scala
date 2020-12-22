@@ -1,13 +1,17 @@
 package apps
 
-import rise.Cuda.DSL._
-import rise.openCL.DSL.{oclReduceSeq, toPrivate, toLocal}
-import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.Cuda.DSL.{mapBlock, mapThreads}
 import rise.core._
-import rise.core.types._
+import rise.core.DSL._
+import rise.core.primitives.{let => _, _}
+import rise.core.DSL.Type._
+import rise.core.types.{AddressSpace, _}
+import rise.openCL.primitives.oclReduceSeq
+import rise.Cuda.primitives.toSharedMemoryShift
+import rise.openCL.TypedDSL.toPrivate
 import rise.core.types.MatrixLayout._
 import apps.mmTensor.{copyMatrix, crossProductOfMatrixTiles, ldmA, ldmB, mmConfig, warpMMA}
+import rise.Cuda.DSL._
 
 //General Matrix Multiply (gemm) with tensor cores
 //Multiply a m.k a-matrix with a k.n b-matrix and accumulate a m.n c-matrix
@@ -27,32 +31,30 @@ object gemmTensor {
           transpose)))) |>
       join)
 
-
-
   //Simple gemm with any matrix dimensions divisible by fragment sizes
   //Can be executed with any number of blocks and warps
-  val simpleGemm: Expr = {
+  val simpleGemm: ToBeTyped[Expr] = {
     val mTileFrag = 16
     val nTileFrag = 16
     val kTileFrag = 16
 
     //b-matrix is transposed
-    nFun((m, n, k) => fun(
+    depFun((m: Nat, n: Nat, k: Nat) => fun(
       f32 ->: f32 ->: (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32) ->: (m `.` n `.` f32)
     )((alpha, beta, a, bT, c) =>
-      zip(
-        a |> split(mTileFrag),
-        c |> split(mTileFrag)) |> // m/mTileFrag.(mTileFrag.k.f16, mTileFrag.n.f32)
+      zip
+        (a |> split(mTileFrag))
+        (c |> split(mTileFrag)) |> // m/mTileFrag.(mTileFrag.k.f16, mTileFrag.n.f32)
       mapBlock('x')(fun(aRowsC =>
 
-        zip(
-          bT |> split(nTileFrag),
-          aRowsC._2 |> transpose |> split(nTileFrag)) |> // n/nTileFrag.(nTileFrag.k.f16, nTileFrag.mTileFrag.f32)
+        zip
+          (bT |> split(nTileFrag))
+          (aRowsC._2 |> transpose |> split(nTileFrag)) |> // n/nTileFrag.(nTileFrag.k.f16, nTileFrag.mTileFrag.f32)
         mapWarp('x')(fun(bColumnsTCT =>
 
-          zip(
-            transpose(aRowsC._1) |> split(kTileFrag),
-            transpose(bColumnsTCT._1) |> split(kTileFrag)) |> // k/kTileFrag.(kTile.mTileFrag.f16 x kTile.nTile.f16)
+          zip
+            (transpose(aRowsC._1) |> split(kTileFrag))
+            (transpose(bColumnsTCT._1) |> split(kTileFrag)) |> // k/kTileFrag.(kTile.mTileFrag.f16 x kTile.nTile.f16)
 
           oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
             tensorMMA(
@@ -84,7 +86,7 @@ object gemmTensor {
   //Every block calculate a 128x128-tile (per iteration)
   //Every warp calculates a 64x32-tile to reduce number of global memory accesses
   //Matrix dimensions must be divisible by block-tile-size (128x128)
-  val gemmMultipleFragmentsPerWarp: Expr = {
+  val gemmMultipleFragmentsPerWarp: ToBeTyped[Expr] = {
     val mTileBlock = 128
     val nTileBlock = 128
 
@@ -96,32 +98,32 @@ object gemmTensor {
     val nTileWarp = 2*nTileFrag
 
     //b-matrix is transposed
-    nFun((m, n, k) => fun(
+    depFun((m: Nat, n: Nat, k: Nat) => fun(
       f32 ->: f32 ->: (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32) ->: (m `.` n `.` f32)
     )((alpha, beta, a, bT, c) =>
-      zip(
-        a |> split(mTileBlock),
-        c |> split(mTileBlock)) |>
+      zip
+        (a |> split(mTileBlock))
+        (c |> split(mTileBlock)) |>
       mapBlock('y')(fun(aRowsBlockC => // (mTileBlock.k.f16, mTileBlock.n.f32)
 
-        zip(
-          bT |> split(nTileBlock),
-          aRowsBlockC._2 |> transpose |> split(nTileBlock)) |>
+        zip
+          (bT |> split(nTileBlock))
+          (aRowsBlockC._2 |> transpose |> split(nTileBlock)) |>
         mapBlock('x')(fun(bColumnsTBlockCT => // (nTileBlock.k.f16, nTileBlock.mTileBlock.f32)
 
-          zip(
-            aRowsBlockC._1 |> split(mTileWarp),
-            bColumnsTBlockCT._2 |> transpose |> split(mTileWarp)) |>
+          zip
+            (aRowsBlockC._1 |> split(mTileWarp))
+            (bColumnsTBlockCT._2 |> transpose |> split(mTileWarp)) |>
           mapThreads('y')(fun(aRowsWarpC => // (mTileWarp.k.f16, mTileWarp.nTileBlock.f32)
 
-            zip(
-              bColumnsTBlockCT._1 |> split(nTileWarp),
-              aRowsWarpC._2 |> transpose |> split(nTileWarp)) |>
+            zip
+              (bColumnsTBlockCT._1 |> split(nTileWarp))
+              (aRowsWarpC._2 |> transpose |> split(nTileWarp)) |>
             mapWarp('x')(fun(bColumnsTWarpCT => // (nTileWarp.k.f16, nTileWarp.mTileWarp.f32)
 
-              zip(
-                aRowsWarpC._1 |> transpose |> split(kTileFrag),
-                bColumnsTWarpCT._1 |> transpose |> split(kTileFrag)) |>
+              zip
+                (aRowsWarpC._1 |> transpose |> split(kTileFrag))
+                (bColumnsTWarpCT._1 |> transpose |> split(kTileFrag)) |>
                 // k/kTileFrag.(kTileFrag.mTileWarp.f16, kTileFrag.nTileWarp.f16)
 
               oclReduceSeq(AddressSpace.Private)(fun((cFrags, abTilesWarp) =>
@@ -141,9 +143,9 @@ object gemmTensor {
                   be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
 
                     //Do matrix multiplication and accumulate with tensor cores
-                    zip(aFrags, cFrags) |>
+                    zip(aFrags)(cFrags) |>
                     mapSeqUnroll(fun(acFrags =>
-                      zip(bFrags, acFrags._2) |>
+                      zip(bFrags)(acFrags._2) |>
                       mapSeqUnroll(fun(bcFrags =>
                         tensorMMA(acFrags._1, bcFrags._1, bcFrags._2)))))))))
 
@@ -260,14 +262,14 @@ object gemmTensor {
   //elements with factor 'scalar'
   //epilog: Load matrix elements from fragments which are distributed over different warps (into global memory)
   //Result: mTileBlock.nTileBlock.f32
-  def blockMMA(loadMatrixFromCIntoFragments: Expr, epilog: Expr): Expr = {
+  def blockMMA(loadMatrixFromCIntoFragments: ToBeTyped[Expr], epilog: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     ldmA = config.kTileBlock + 8
     ldmB = config.kTileBlock + 8
 
     fun((alpha, beta, aRowsBlock, bColumnsBlock, cTileBlock) =>
-      zip(
-        aRowsBlock |> transpose |> split(config.kTileBlock),
-        bColumnsBlock |> split(config.kTileBlock)) |> // k/kTileBlock.(kTileBlock.mTileBlock.f16, kTileBlock.nTileBlock.f16)
+      zip
+        (aRowsBlock |> transpose |> split(config.kTileBlock))
+        (bColumnsBlock |> split(config.kTileBlock)) |> // k/kTileBlock.(kTileBlock.mTileBlock.f16, kTileBlock.nTileBlock.f16)
 
       oclReduceSeq(AddressSpace.Private)(fun((cFragsBlock, aTbTileBlock) =>
 
@@ -285,9 +287,9 @@ object gemmTensor {
             toSharedMemoryShift(8))
           be(bTileT =>
 
-            zip(
-              crossProductOfMatrixTiles(config.mTileWarp, config.nTileWarp)(aTile, bTileT |> transpose),
-              cFragsBlock) |>
+            zip
+              (crossProductOfMatrixTiles(config.mTileWarp, config.nTileWarp)(aTile, bTileT |> transpose))
+              (cFragsBlock) |>
 
             mapWarp(fun(abWarpC =>
               warpMMA(
@@ -308,7 +310,7 @@ object gemmTensor {
 
   //Load matrix elements from c-matrix (global memory) into fragments and scale matrix elments with factor 'scalar'
   //Simply use toFragmentAccumulator-primitiv and mapFragmentElemnts to load from global memory into fragments
-  private def loadMatrixFromCIntoFragments(ldmC: Nat): Expr =
+  private def loadMatrixFromCIntoFragments(ldmC: Nat): ToBeTyped[Expr] =
     fun((factor, cTileBlock) =>
       cTileBlock |>
       tiling2D(config.mTileWarp, config.nTileWarp) |>
@@ -325,7 +327,7 @@ object gemmTensor {
 
   //Load matrix elements from c-matrix (global memory) into fragments and scale matrix elments with factor 'scalar'
   //avoiding bank conflicts and allow more flexible tiling sizes
-  def loadMatrixFromCIntoFragmentsV2: Expr = {
+  def loadMatrixFromCIntoFragmentsV2: ToBeTyped[Expr] = {
     //Number of fragments that fit into shared memory and is divisible by numberOfWarps
     val fragmentsPerIteration = 32
 
@@ -368,7 +370,7 @@ object gemmTensor {
   //Load matrix elements from fragments which are distributed over different warps (into global memory)
   //Simply use fromFragment-primitiv to load from fragments into global memory
   //Before store data in global memory: scale matrix with alpha using mapFragmentElements
-  private def epilog(ldmResult: Nat): Expr =
+  private def epilog(ldmResult: Nat): ToBeTyped[Expr] =
     fun((alpha, resultFragsBlock) =>
       resultFragsBlock |>
       mapWarp(fun(resultFragsWarp =>
@@ -397,7 +399,7 @@ object gemmTensor {
   //First store date to shared memory avoiding bank conflicts and then coalesced to global memory
   //Complete result must NOT fit into shared memory (multple iterations possible)
   //Before store data in global memory: scale matrix with alpha using mapFragmentElements
-  private def epilogV2: Expr = {
+  private def epilogV2: ToBeTyped[Expr] = {
     //Number of fragments that fit into shared memory and is divisible by numberOfWarps
     val fragmentsPerIteration = 32
 
@@ -456,13 +458,13 @@ object gemmTensor {
   //Calculate alpha * (m.k.f16 a-matrix * k.n.f16 b-matrix) and accumulate beta * m.n.f32 matrix
   //Result: m.n.f32 matrix
   //b-matrix is transposed
-  private def deviceGEMM(blockGEMM: Expr): Expr =
-    nFun((m, n, k) => fun(
+  private def deviceGEMM(blockGEMM: ToBeTyped[Expr]): ToBeTyped[Expr] =
+    depFun((m: Nat, n: Nat, k: Nat) => fun(
       f32 ->: f32 ->: (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32) ->: (m `.` n `.` f32)
     )((alpha, beta, a, bT, c) =>
-      zip(
-        crossProductOfMatrixTiles(config.mTileBlock, config.nTileBlock)(a, bT |> transpose),
-        c |> tiling2D(config.mTileBlock, config.nTileBlock)) |>
+      zip
+        (crossProductOfMatrixTiles(config.mTileBlock, config.nTileBlock)(a, bT |> transpose))
+        (c |> tiling2D(config.mTileBlock, config.nTileBlock)) |>
 
       mapBlock(fun(aRowsBlockBColumnBlockCTileBlock =>
 
@@ -481,16 +483,16 @@ object gemmTensor {
 
 
   //Kernel for gemm using shared memory
-  def gemmSharedMemory(config: mmConfig): Expr = {
+  def gemmSharedMemory(config: mmConfig): ToBeTyped[Expr] = {
     this.config = config
     mmTensor.config = config
-    deviceGEMM(nFun(n => blockMMA(loadMatrixFromCIntoFragments(n), epilog(n))))
+    deviceGEMM(depFun((n: Nat) => blockMMA(loadMatrixFromCIntoFragments(n), epilog(n))))
   }
 
   //More optimzed kernel for gemm using shared memory
-  def gemmSharedMemoryV2(config: mmConfig): Expr = {
+  def gemmSharedMemoryV2(config: mmConfig): ToBeTyped[Expr] = {
     this.config = config
     mmTensor.config = config
-    deviceGEMM(nFun(n => blockMMA(loadMatrixFromCIntoFragmentsV2, epilogV2)))
+    deviceGEMM(depFun((n: Nat) => blockMMA(loadMatrixFromCIntoFragmentsV2, epilogV2)))
   }
 }

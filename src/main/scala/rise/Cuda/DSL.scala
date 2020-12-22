@@ -1,72 +1,74 @@
 package rise.Cuda
 
 import rise.core.DSL._
-import rise.core._
 import rise.core.semantics.HalfData
-import rise.core.types._
-import rise.core.types.MatrixLayout._
-import rise.Cuda.primitives._
+import rise.core.types.MatrixLayout.Row_Major
+import rise.core.{DepApp, Expr, Literal, Primitive}
+import rise.core.types.{MatrixLayout, Nat, NatKind, WmmaAccumulator, f32}
 
 object DSL {
   object mapBlock {
-    def apply(): MapBlock = MapBlock('x')
-    def apply(e: Expr): Expr = MapBlock('x')(e)
-    def apply(dim: Char): Expr = MapBlock(dim).primitive
+    def apply(): ToBeTyped[Primitive] = primitives.mapBlock('x')
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapBlock('x')(e)
+    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapBlock(dim)
   }
 
   object mapGlobal {
-    def apply(): MapGlobal = MapGlobal('x')
-    def apply(e: Expr): Expr = MapGlobal('x')(e)
-    def apply(dim: Char): Expr = MapGlobal(dim).primitive
+    def apply(): ToBeTyped[Primitive] = primitives.mapGlobal('x')
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapGlobal('x')(e)
+    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapGlobal(dim)
   }
 
   object mapThreads {
-    def apply(): MapThreads = MapThreads('x')
-    def apply(e: Expr): Expr = MapThreads('x')(e)
-    def apply(dim: Char): Expr = MapThreads(dim).primitive
+    def apply(): ToBeTyped[Primitive] = primitives.mapThreads('x')
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapThreads('x')(e)
+    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapThreads(dim)
   }
 
   object mapWarp {
-    def apply(): MapWarp = MapWarp('x')
-    def apply(e: Expr): Expr = MapWarp('x')(e)
-    def apply(dim: Char): Expr = MapWarp(dim).primitive
+    def apply(): ToBeTyped[Primitive] = primitives.mapWarp('x')
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapWarp('x')(e)
+    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapWarp(dim)
   }
 
   object mapLane {
-    def apply(): MapLane = MapLane('x')
-    def apply(e: Expr): Expr = MapLane('x')(e)
-    def apply(dim: Char): Expr = MapLane(dim).primitive
+    def apply(): ToBeTyped[Primitive] = primitives.mapLane('x')
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapLane('x')(e)
+    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapLane(dim)
   }
 
   object toFragmentA {
-    def apply(ldm: Nat): Expr = ToFragmentA(Row_Major)(ldm)
-    def apply(layout: MatrixLayout, ldm: Nat): Expr = ToFragmentA(layout)(ldm)
+    def apply(ldm: Nat): ToBeTyped[DepApp[NatKind]] = primitives.toFragmentA(Row_Major)(ldm)
+    def apply(layout: MatrixLayout, ldm: Nat): ToBeTyped[DepApp[NatKind]] = primitives.toFragmentA(layout)(ldm)
   }
 
   object toFragmentB {
-    def apply(ldm: Nat): Expr = ToFragmentB(Row_Major)(ldm)
-    def apply(layout: MatrixLayout, ldm: Nat): Expr = ToFragmentB(layout)(ldm)
+    def apply(ldm: Nat): ToBeTyped[DepApp[NatKind]] = primitives.toFragmentB(Row_Major)(ldm)
+    def apply(layout: MatrixLayout, ldm: Nat): ToBeTyped[DepApp[NatKind]] = primitives.toFragmentB(layout)(ldm)
   }
 
   object toFragmentAccumulator {
-    def apply(ldm: Nat): Expr = ToFragmentAccumulator(Row_Major)(ldm)
-    def apply(layout: MatrixLayout, ldm: Nat): Expr = ToFragmentAccumulator(layout)(ldm)
+    def apply(ldm: Nat): ToBeTyped[DepApp[NatKind]] = primitives.toFragmentAccumulator(Row_Major)(ldm)
+    def apply(layout: MatrixLayout, ldm: Nat): ToBeTyped[DepApp[NatKind]] = primitives.toFragmentAccumulator(layout)(ldm)
   }
 
   object fromFragment {
-    def apply(ldm: Nat): Expr = FromFragment(Row_Major)(ldm)
-    def apply(layout: MatrixLayout, ldm: Nat): Expr = FromFragment(layout)(ldm)
+    def apply(ldm: Nat): ToBeTyped[DepApp[NatKind]] = primitives.fromFragment(Row_Major)(ldm)
+    def apply(layout: MatrixLayout, ldm: Nat): ToBeTyped[DepApp[NatKind]] = primitives.fromFragment(layout)(ldm)
   }
 
-  object toSharedMemoryShift {
-    def apply(shift: Nat): Expr = ToSharedMemoryShift(shift)
-    def apply(shift: Nat, array: Expr): Expr = ToSharedMemoryShift(shift)(array)
+  object tensorMMA {
+    def apply[T <: Expr](a: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.tensorMMA(a)
+    def apply[T <: Expr, U <: Expr](a: ToBeTyped[T], b: ToBeTyped[U]): ToBeTyped[rise.core.App] = primitives.tensorMMA(a)(b)
+    def apply[T <: Expr, U <: Expr, V <: Expr](a: ToBeTyped[T], b: ToBeTyped[U], c: ToBeTyped[V]): ToBeTyped[rise.core.App] = primitives.tensorMMA(a)(b)(c)
   }
 
-  def generateFragment: Primitive = GenerateFragment.primitive
-  def mapFragmentElements: Primitive = MapFragmentElements(WmmaAccumulator(1,1,1,f32)).primitive
-  def globalToShared: Primitive = GlobalToShared.primitive
-  def tensorMMA: Primitive = TensorMMA.primitive
+//  object toSharedMemoryShift {
+//    def apply(shift: Nat): Expr = primitives.toSharedMemoryShift(shift)
+//    def apply(shift: Nat, array: Expr): Expr = primitives.toSharedMemoryShift(shift)(array)
+//  }
 
-  def h(f: Float): Literal = literal(HalfData(f))
+  def mapFragmentElements: ToBeTyped[Primitive] = primitives.mapFragmentElements(WmmaAccumulator(1,1,1,f32)).primitive
+
+  def h(f: Float): ToBeTyped[Literal] = literal(HalfData(f))
 }

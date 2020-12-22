@@ -4,7 +4,7 @@ import rise.elevate.strategies.normalForm.BENF
 import _root_.rise.core.primitives._
 import _root_.rise.core._
 import _root_.rise.core.types._
-import _root_.rise.core.TypedDSL._
+import _root_.rise.core.DSL._
 import elevate.core.strategies.Traversable
 
 package object util {
@@ -21,7 +21,7 @@ package object util {
       Map[NatIdentifier, Nat],
       Map[AddressSpaceIdentifier, AddressSpace],
       Map[NatToDataIdentifier, NatToData]) = (Map(), Map(), Map(), Map())
-    val (expr, (ts, ns, as, n2ds)) = TopLevel.getFTVs(e.t).foldLeft((e, emptySubs))((acc, ftv) => acc match {
+    val (expr, (ts, ns, as, n2ds)) = DSL.infer.getFTVs(e.t).foldLeft((e, emptySubs))((acc, ftv) => acc match {
       case (expr, (ts, ns, as, n2ds)) => ftv match {
         case i: TypeIdentifier =>
           val dt = DataTypeIdentifier(freshName("dt"), isExplicit = true)

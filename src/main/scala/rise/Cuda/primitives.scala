@@ -2,37 +2,37 @@ package rise.Cuda
 
 import rise.core.{Builder, Primitive}
 import rise.macros.Primitive.primitive
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core.types._
 
 object primitives {
 
-  protected def mapTypeScheme: Type =
+  protected def mapType: Type =
     impl{n: Nat =>
       impl{s: DataType =>
         impl{t: DataType => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)}}}
 
-  @primitive case class MapBlock(dim: Char) extends Primitive with Builder {
-    mapTypeScheme
+  @primitive case class mapBlock(dim: Char) extends Primitive with Builder {
+    mapType
   }
 
-  @primitive case class MapGlobal(dim: Char) extends Primitive with Builder {
-    mapTypeScheme
+  @primitive case class mapGlobal(dim: Char) extends Primitive with Builder {
+    mapType
   }
 
-  @primitive case class MapThreads(dim: Char) extends Primitive with Builder {
-    mapTypeScheme
+  @primitive case class mapThreads(dim: Char) extends Primitive with Builder {
+    mapType
   }
 
-  @primitive case class MapWarp(dim: Char) extends Primitive with Builder {
-    mapTypeScheme
+  @primitive case class mapWarp(dim: Char) extends Primitive with Builder {
+    mapType
   }
 
-  @primitive case class MapLane(dim: Char) extends Primitive with Builder {
-    mapTypeScheme
+  @primitive case class mapLane(dim: Char) extends Primitive with Builder {
+    mapType
   }
 
-  @primitive case class ToFragmentA(layout: MatrixLayout) extends Primitive with Builder {
+  @primitive case class toFragmentA(layout: MatrixLayout) extends Primitive with Builder {
     impl{m: Nat =>
       impl{n: Nat  =>
         impl{k: Nat  =>
@@ -41,7 +41,7 @@ object primitives {
               ArrayType(m, ArrayType(k, dt)) ->: WmmaAMatrix(m, n, k, dt, layout))}}}}
   }
 
-  @primitive case class ToFragmentB(layout: MatrixLayout) extends Primitive with Builder {
+  @primitive case class toFragmentB(layout: MatrixLayout) extends Primitive with Builder {
     impl{m: Nat =>
       impl{n: Nat  =>
         impl{k: Nat  =>
@@ -50,7 +50,7 @@ object primitives {
               ArrayType(k, ArrayType(n, dt)) ->: WmmaBMatrix(m, n, k, dt, layout))}}}}
   }
 
-  @primitive case class ToFragmentAccumulator(layout: MatrixLayout) extends Primitive with Builder {
+  @primitive case class toFragmentAccumulator(layout: MatrixLayout) extends Primitive with Builder {
       impl{m: Nat =>
         impl{n: Nat  =>
           impl{k: Nat  =>
@@ -59,7 +59,7 @@ object primitives {
                 ArrayType(m, ArrayType(n, dt)) ->: WmmaAccumulator(m, n, k, dt))}}}}
   }
 
-  @primitive case class FromFragment(layout: MatrixLayout) extends Primitive with Builder {
+  @primitive case class fromFragment(layout: MatrixLayout) extends Primitive with Builder {
     impl{m: Nat =>
       impl{n: Nat  =>
         impl{k: Nat  =>
@@ -68,7 +68,7 @@ object primitives {
               WmmaAccumulator(m, n, k, dt) ->: ArrayType(m, ArrayType(n, dt)))}}}}
   }
 
-  @primitive object GenerateFragment extends Primitive with Builder {
+  @primitive object generateFragment extends Primitive with Builder {
     impl{m: Nat =>
       impl{n: Nat  =>
         impl{k: Nat  =>
@@ -76,7 +76,7 @@ object primitives {
             dt ->: WmmaAccumulator(m, n, k, dt)}}}}
   }
 
-  @primitive object TensorMMA extends Primitive with Builder {
+  @primitive object tensorMMA extends Primitive with Builder {
     impl{layoutA: MatrixLayout =>
       impl{layoutB: MatrixLayout =>
         impl{m: Nat =>
@@ -89,7 +89,7 @@ object primitives {
                     WmmaAccumulator(m, n, k, dt2) ->: WmmaAccumulator(m, n, k, dt2)}}}}}}}
   }
 
-  @primitive object ToSharedMemoryShift extends Primitive with Builder {
+  @primitive object toSharedMemoryShift extends Primitive with Builder {
     impl{m: Nat =>
       impl{n: Nat =>
         expl((_: Nat) =>
@@ -103,13 +103,13 @@ object primitives {
 //          (dt ->: dt) ->: fragType ->: fragType}}
 //  }
 
-  @primitive case class MapFragmentElements(fragType: WmmaFragment) extends Primitive with Builder {
+  @primitive case class mapFragmentElements(fragType: WmmaFragment) extends Primitive with Builder {
     //  impl{fragType: WmmaFragment =>
     impl{dt: DataType =>
       (dt ->: dt) ->: fragType ->: fragType}
   }
 
-  @primitive object GlobalToShared extends Primitive with Builder {
+  @primitive object globalToShared extends Primitive with Builder {
     impl{t: DataType => t ->: t}
   }
 }

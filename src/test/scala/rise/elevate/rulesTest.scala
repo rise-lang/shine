@@ -1,7 +1,7 @@
 package rise.elevate
 
 import elevate.core._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.elevate.rules._
 import rise.elevate.rules.traversal._
 

@@ -2,11 +2,13 @@ package apps
 
 import shine.OpenCL.{AddressSpace => _, _}
 import arithexpr.arithmetic.Cst
-import rise.core.HighLevelConstructs.reorderWithStride
+import rise.core.DSL.HighLevelConstructs.reorderWithStride
 import rise.core._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
-import rise.openCL.DSL._
+import rise.core.primitives.{let => _, _}
+import rise.core.DSL.Type._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 import rise.core.types._
 import util.{KernelWithSizes, Time, TimeSpan}
 
@@ -14,22 +16,23 @@ import scala.collection.parallel.CollectionConverters._
 
 object sgemm {
   // we can use implicit type parameters and type annotations to specify the function type of mult
-  val mult  = impl{ dt: DataType => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt) }
-  val add   = fun(x => fun(y => x + y))
-  val scal  = impl{ n: Nat => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32)) }
-  val dot = fun(x => foreignFun("dot", vec(4, f32) ->: vec(4, f32) ->: f32)(x._1, x._2))
-  def id: Expr = fun(x => x)
+  val mult: ToBeTyped[Expr] = impl{ dt: DataType => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt) }
+  val add: ToBeTyped[Expr] = fun(x => fun(y => x + y))
+  val scal: ToBeTyped[Expr] = impl{ n: Nat =>
+    fun(xs => fun(a => mapSeq(fun(x => a * x))(xs))) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32)) }
+  val dot: ToBeTyped[Expr] = fun(x => foreignFun("dot", vec(4, f32) ->: vec(4, f32) ->: f32)(x._1, x._2))
+  def id: ToBeTyped[Expr] = fun(x => x)
 
   object c {
-    val sequential =
-      nFun((n, m, k) =>
+    val sequential: ToBeTyped[Expr] =
+      depFun((n: Nat, m: Nat, k: Nat) =>
         fun((n`.`k`.`f32) ->: (k`.`m`.`f32) ->: (n`.`m`.`f32) ->: f32 ->: f32 ->: (n`.`m`.`f32))
         ((a, b, c, alpha, beta) =>
 
-          zip(a, c) |> mapSeq(fun(ac =>
-            zip(transpose(b), ac._2) |> mapSeq(fun(bc =>
-              zip(ac._1, bc._1) |>
-                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)), l(0.0f)) |>
+          zip(a)(c) |> mapSeq(fun(ac =>
+            zip(transpose(b))(ac._2) |> mapSeq(fun(bc =>
+              zip(ac._1)(bc._1) |>
+                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)))(l(0.0f)) |>
                 fun(x => (x * alpha) + (beta * bc._2))
             ))
           ))
@@ -37,22 +40,22 @@ object sgemm {
       )
   }
 
-  val sequential =
-    nFun((n, m, k) =>
+  val sequential: ToBeTyped[Expr] =
+    depFun((n: Nat, m: Nat, k: Nat) =>
       fun((m`.`k`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32) ->: f32 ->: f32 ->: (m`.`n`.`f32))
       ((a, b, c, alpha, beta) =>
 
-        zip(a, c) |> mapSeq(fun(ac =>
-          zip(transpose(b), ac._2) |> mapSeq(fun(bc =>
-            zip(ac._1, bc._1) |>
-              oclReduceSeq(AddressSpace.Private)(fun( (acc, y) => acc + (y._1 * y._2)), l(0.0f)) |>
+        zip(a)(c) |> mapSeq(fun(ac =>
+          zip(transpose(b))(ac._2) |> mapSeq(fun(bc =>
+            zip(ac._1)(bc._1) |>
+              oclReduceSeq(AddressSpace.Private)(fun( (acc, y) => acc + (y._1 * y._2)))(l(0.0f)) |>
               fun(x => (x * alpha) + (beta * bc._2))
           ))
         ))
       )
     )
 
-  val mali_GEMM = {
+  val mali_GEMM: ToBeTyped[Expr] = {
     val p1: Nat = 2
     val p2: Nat = 2
     val p3: Nat = 4
@@ -63,32 +66,32 @@ object sgemm {
         generate(fun(IndexType(n))(_ => l(0.0f))))) |> mapSeq(mapSeq(id)) }}
 
 
-    nFun((n, m, k) =>
+    depFun((n: Nat, m: Nat, k: Nat) =>
       fun((m `.` k `.` f32) ->: (n `.` k `.` f32) ->: (m `.` n `.` f32) ->: f32 ->: f32 ->: (m `.` n `.` f32))
       /*
        * The matrix B is assumed to be transposed already!
        */
       ((A, B, C, alpha, beta) =>
 
-        zip(split(p2)(A), split(p2)(C)) |>
+        zip(split(p2)(A))(split(p2)(C)) |>
           mapGlobal(0)(fun(ac =>
-            zip(split(p2)(B), split(p1)(transpose(ac._2))) |>
+            zip(split(p2)(B))(split(p1)(transpose(ac._2))) |>
               mapGlobal(1)(fun(bc =>
-                zip(split(p3)(transpose(ac._1)), split(p3)(transpose(bc._1))) |>
+                zip(split(p3)(transpose(ac._1)))(split(p3)(transpose(bc._1))) |>
                   oclReduceSeq(AddressSpace.Private)(fun((p67, p236) =>
-                    zip(p67, transpose(p236._1)) |>
+                    zip(p67)(transpose(p236._1)) |>
                       mapSeq(fun(p54 =>
-                        zip(p54._1, transpose(p236._2)) |>
+                        zip(p54._1)(transpose(p236._2)) |>
                           mapSeq(fun(p157 =>
-                            zip(asVectorAligned(vw)(p54._2), asVectorAligned(vw)(p157._2)) |>
+                            zip(asVectorAligned(vw)(p54._2))(asVectorAligned(vw)(p157._2)) |>
                               mapSeq(fun(x => p157._1 + dot(x)))
                           )) |> join
                       ))
                   ), write_zeros) |>
                   fun(p235 =>
-                    zip(p235, transpose(bc._2)) |>
+                    zip(p235)(transpose(bc._2)) |>
                       mapSeq(fun(p237 =>
-                        zip(p237._1, p237._2) |>
+                        zip(p237._1)(p237._2) |>
                           mapSeq(fun(p64 => (p64._1 * alpha) + (p64._2 * beta)))
                       ))
                   ) |> transpose
@@ -98,29 +101,29 @@ object sgemm {
     )
   }
 
-  val keplerBest = {
+  val keplerBest: ToBeTyped[Expr] = {
     val v3: Nat = 128
     val v4: Nat = 4
     val v5: Nat = 8
     val v6: Nat = 64
     val v7: Nat = 8
 
-    def tile: Expr = nFun(s1 => nFun(s2 =>
-      map(map(transpose) o split(s2) o transpose) o split(s1) ))
+    def tile: ToBeTyped[Expr] = depFun((s1: Nat, s2: Nat) =>
+      map(map(transpose) o split(s2) o transpose) o split(s1) )
 
-    val zeros = nFun(n1 => nFun(n2 => nFun(n3 => nFun(n4 =>
+    val zeros = depFun((n1: Nat, n2: Nat, n3: Nat, n4: Nat) =>
       generate(fun(IndexType(n4))(_ =>
         generate(fun(IndexType(n3))(_ =>
           generate(fun(IndexType(n2))(_ =>
-            generate(fun(IndexType(n1))(_ => l(0.0f)))))))))))))
+            generate(fun(IndexType(n1))(_ => l(0.0f))))))))))
 
-    def tile2: Expr = nFun(s1 => nFun(s2 => impl{ n1: Nat => impl{ n2: Nat => fun(ArrayType(n1, ArrayType(n2, f32)))(x =>
-      transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  ) }}))
+    def tile2: ToBeTyped[Expr] = depFun((s1: Nat, s2: Nat) => impl{ n1: Nat => impl{ n2: Nat => fun(ArrayType(n1, ArrayType(n2, f32)))(x =>
+      transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  ) }})
 
-    def redOp: Expr = fun((8`.`32`.`8`.`4`.`f32) ->: ( (8`.`64`.`f32) x (8`.`128`.`f32) ) ->: (8`.`32`.`8`.`4`.`f32) )((p14, p15) =>
-      let (p15 |> fun(p29 =>
+    def redOp: ToBeTyped[Expr] = fun((8`.`32`.`8`.`4`.`f32) ->: ( (8`.`64`.`f32) x (8`.`128`.`f32) ) ->: (8`.`32`.`8`.`4`.`f32) )((p14, p15) =>
+      let(p15 |> fun(p29 =>
           zip (p29._1) (p29._2)
-            |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
+            |> toLocalFun(mapLocal(1) (fun(p31 => makePair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
             |> unzip
         ))
       be (p16 =>
@@ -130,18 +133,18 @@ object sgemm {
             |> mapLocal(0) (fun(p18 =>
             zip (transpose (p17._2)) (transpose (p18._2))
               |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-                let (pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
-                be (p22 =>
+                let (makePair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
+                be (fun(p22 =>
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                        p24._1 + (p23._2 * p24._2) )) )) )
+                        p24._1 + (p23._2 * p24._2) )) )) ))
               )) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
               |> mapSeq (mapSeq (fun(x => x)))
           ))
         ))
       ))
 
-    nFun((n, m, k) =>
+    depFun((n: Nat, m: Nat, k: Nat) =>
       fun((k`.`m`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32) ->: f32 ->: f32 ->: (m`.`n`.`f32))
       /*
        * The matrix A is assumed to be transposed already.

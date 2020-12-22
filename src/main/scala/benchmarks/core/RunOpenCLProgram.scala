@@ -4,7 +4,6 @@ import rise.elevate.rules.traversal.default.RiseTraversable
 import shine.DPIA
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.Expr
-import rise.core.types.infer
 import util.{Display, KernelWithSizes, Time, TimeSpan}
 
 import scala.util.Random
@@ -25,7 +24,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelWithSizes = {
-    val kernel = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromRise(infer(this.expr))(RiseTraversable), "KERNEL")
+    val kernel = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromRise(this.expr)(RiseTraversable), "KERNEL")
 
     if(verbose) {
       println(kernel.code)

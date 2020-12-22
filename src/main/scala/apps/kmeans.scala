@@ -1,10 +1,12 @@
 package apps
 
-import rise.core._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
+import rise.core._
+import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 import util.KernelNoSizes
 
 object kmeans {
@@ -28,7 +30,7 @@ object kmeans {
 
   private val select = fun(tuple => tuple._2._2)
 
-  val kmeans: Expr = nFun(p => nFun(c => nFun(f => fun(
+  val kmeans: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
     (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
   )((features, clusters) =>
     features |> transpose |> mapGlobal(fun(feature =>
@@ -39,10 +41,10 @@ object kmeans {
           testF(dist)(tuple)
         }))
       )(
-        pair(cast(l(3.40282347e+38)) :: f32)(pair(l(0))(l(0)))
+        makePair(cast(l(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
       ) |> select
     ))
-  ))))
+  ))
 
   import shine.OpenCL._
   import util.{Time, TimeSpan}
