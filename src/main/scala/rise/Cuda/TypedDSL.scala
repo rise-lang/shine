@@ -6,7 +6,7 @@ import rise.core.types.MatrixLayout.Row_Major
 import rise.core.{DepApp, Expr, Literal, Primitive}
 import rise.core.types.{MatrixLayout, Nat, NatKind, WmmaAccumulator, f32}
 
-object DSL {
+object TypedDSL {
   object mapBlock {
     def apply(): ToBeTyped[Primitive] = primitives.mapBlock('x')
     def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapBlock('x')(e)

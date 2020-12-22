@@ -1,6 +1,6 @@
 package apps
 
-import rise.Cuda.DSL.{mapBlock, mapThreads}
+import rise.Cuda.TypedDSL.{mapBlock, mapThreads}
 import rise.core._
 import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
@@ -8,7 +8,7 @@ import rise.core.DSL.Type._
 import rise.core.types.{AddressSpace, _}
 import rise.core.types.MatrixLayout._
 import rise.openCL.primitives.{oclReduceSeq, oclReduceSeqUnroll}
-import rise.Cuda.DSL._
+import rise.Cuda.TypedDSL._
 import rise.Cuda.primitives.{generateFragment, toSharedMemoryShift}
 import rise.openCL.TypedDSL.{toLocal, toPrivate}
 

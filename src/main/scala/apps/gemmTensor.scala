@@ -1,6 +1,6 @@
 package apps
 
-import rise.Cuda.DSL.{mapBlock, mapThreads}
+import rise.Cuda.TypedDSL.{mapBlock, mapThreads}
 import rise.core._
 import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
@@ -11,7 +11,7 @@ import rise.Cuda.primitives.toSharedMemoryShift
 import rise.openCL.TypedDSL.toPrivate
 import rise.core.types.MatrixLayout._
 import apps.mmTensor.{copyMatrix, crossProductOfMatrixTiles, ldmA, ldmB, mmConfig, warpMMA}
-import rise.Cuda.DSL._
+import rise.Cuda.TypedDSL._
 
 //General Matrix Multiply (gemm) with tensor cores
 //Multiply a m.k a-matrix with a k.n b-matrix and accumulate a m.n c-matrix
