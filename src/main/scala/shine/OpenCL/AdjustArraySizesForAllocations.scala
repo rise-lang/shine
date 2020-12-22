@@ -8,7 +8,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives._
 import shine.OpenCL.ImperativePrimitives._
-import shine.cuda.primitives.functional.{FromFragment, GenerateFragment, MapBlock, MapFragmentElements, MapGlobal, MapLane, MapThreads, MapWarp, ToFragment}
+import shine.cuda.primitives.functional.{FromFragment, GenerateFragment, MapBlock, MapFragmentElements, MapGlobal, MapLane, MapThreads, MapWarp, TensorMatMultAdd, ToFragment}
 import shine.cuda.warpDim
 
 object AdjustArraySizesForAllocations {
@@ -83,7 +83,8 @@ object AdjustArraySizesForAllocations {
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunction |
            _: BinOp | _: UnaryOp | _: GenerateFragment |
-           _: FromFragment |_: ToFragment | _: MapFragmentElements => parallInfo
+           _: FromFragment |_: ToFragment | _: MapFragmentElements |
+           _: TensorMatMultAdd => parallInfo
 
       //TODO visit value first?
       case Let(_, _, _, _, f) => visitAndGatherInformation(f, parallInfo)
