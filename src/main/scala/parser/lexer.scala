@@ -730,28 +730,32 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           }
         }
       }
-      case a => if (a.isDigit) {
-        lexNatNumber(column, row) match {
-          case (nat, r) => {
-            row = r
-            skipWhitespaceWhitoutNewLine(column, row) match {
-              case (c1, r1) => {
-                column = c1
-                row = r1
-              }
-            }
-            lexDot(column, row) match {
-              case Left(dot) => {
-                row = row + 1
-                skipWhitespaceWhitoutNewLine(column, row) match {
-                  case (c, r) => {
-                    column = c
-                    row = r
-                  }
+      case a => if (a.isDigit) { //Todo: here include 2xF32 etc.
+        if(arr(column).length <= row+1 && arr(column)(row+1).equals('x')){
+          lexVectorType(column,row) //Todo: Hier fehlt noch der Rest
+        }else{
+          lexNatNumber(column, row) match {
+            case (nat, r) => {
+              row = r
+              skipWhitespaceWhitoutNewLine(column, row) match {
+                case (c1, r1) => {
+                  column = c1
+                  row = r1
                 }
-                list = list.::(nat).::(dot)
               }
-              case Right(e) => return Right(e)
+              lexDot(column, row) match {
+                case Left(dot) => {
+                  row = row + 1
+                  skipWhitespaceWhitoutNewLine(column, row) match {
+                    case (c, r) => {
+                      column = c
+                      row = r
+                    }
+                  }
+                  list = list.::(nat).::(dot)
+                }
+                case Right(e) => return Right(e)
+              }
             }
           }
         }
@@ -1581,6 +1585,19 @@ if '==' then two steps else only one step
     }
   }
 
+  private def getConcreteScalarType(substring:String, span:Span):Either[ConcreteType, PreAndErrorToken]={
+    substring.substring(2) match {//different Types in RISE //Todo: not completed yet
+      //Types
+      case "Bool" => Left(BoolType())
+      case "I16"   => Left(ShortTyp())
+      case "I32"  => Left(IntTyp())
+      case "F32"  => Left(FloatTyp())
+      case "F64"  => Left(DoubleType())
+      case "NatTyp"  => Left(NatTyp())
+      case _ => Right(UnknownType(substring, span, fileReader))
+    }
+  }
+
   private def lexScalarType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
     val (pos, substring, locStart) = lexName(column, row, arr)
     if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
@@ -1589,16 +1606,33 @@ if '==' then two steps else only one step
     }else{
       val locEnd:Location = Location(column, pos)
       val span =  Span(fileReader,locStart, locEnd)
-      //different Types in RISE //Todo: not completed yet
-      substring match {
-        //Types
-        case "Bool" => (Left(ScalarType(BoolType(), span)),pos)
-        case "I16"   => (Left(ScalarType(ShortTyp(), span)),pos)
-        case "I32"  => (Left(ScalarType(IntTyp(), span)),pos)
-        case "F32"  => (Left(ScalarType(FloatTyp(), span)),pos)
-        case "F64"  => (Left(ScalarType(DoubleType(), span)),pos)
-        case "NatTyp"  => (Left(ScalarType(NatTyp(), span)),pos)
-        case a => (Right(UnknownType(substring, span, fileReader)),pos)
+      getConcreteScalarType(substring,span) match{
+        case Left(concreteType)=>(Left(ScalarType(concreteType, span)),pos)
+        case Right(error) => (Right(error), pos)
+      }
+    }
+  }
+
+  private def lexVectorType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
+    val (pos, substring, locStart) = lexName(column, row, arr)
+    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
+      val locEnd:Location = Location(column, pos+1)
+      (Right(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos+1)
+    }else{
+      val locEnd:Location = Location(column, pos)
+      val span =  Span(fileReader,locStart, locEnd)
+
+      val scalarType = getConcreteScalarType(substring.substring(2),span) match{
+        case Left(concreteType)=> concreteType
+        case Right(error) => return (Right(error), pos)
+      }
+
+      substring.substring(0,2) match{
+        case "2x" => (Left(VectorType(2, scalarType, span)),pos)
+        case "4x" => (Left(VectorType(4, scalarType, span)),pos)
+        case "8x" => (Left(VectorType(8, scalarType, span)),pos)
+        case "16x" => (Left(VectorType(16, scalarType, span)),pos)
+        case _ => (Right(UnknownType(substring, span, fileReader)),pos)
       }
     }
   }

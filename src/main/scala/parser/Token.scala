@@ -143,6 +143,19 @@ sealed abstract class Token (span: Span){
     override def toString = t.toString
   }
 
+  final case class VectorType(len: Char, concreteType: ConcreteType, span: Span) extends Token(span){
+    require(span.begin.column == span.end.column, "not in one column")
+    len match {
+      case 2 =>
+      case 4 =>
+      case 8 =>
+      case 16 =>
+      case illegalLength => throw new IllegalArgumentException("The length " + illegalLength + " is not an accepted length")
+    }
+    val t:ConcreteType = concreteType
+    override def toString = t.toString
+  }
+
   final case class Kind(concreteKind: ConcreteKind, span: Span) extends Token(span){
     require(span.begin.column == span.end.column, "not in one column")
     val k:ConcreteKind = concreteKind
