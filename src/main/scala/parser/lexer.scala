@@ -732,7 +732,13 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
       case a => if (a.isDigit) { //Todo: here include 2xF32 etc.
         if(arr(column).length > row+1 && arr(column)(row+1).equals('x')){
-          lexVectorType(column,row) //Todo: Hier fehlt noch der Rest
+          lexVectorType(column,row) match {
+            case (Left(a), r) => {
+              row = r
+              list = list.::(a)
+            }
+            case (Right(e), r) => return Right(e)
+            }
         }else{
           lexNatNumber(column, row) match {
             case (nat, r) => {
