@@ -41,7 +41,7 @@ object parse {
   sealed trait SyntaxElement
     final case class SExpr(expr: r.Expr) extends SyntaxElement
     final case class SType(t: rt.Type) extends SyntaxElement
-    final case class SAnyRef(value: AnyRef) extends SyntaxElement //Todo: AnyRef entfernen
+    final case class SIntToPrimitive(prim: Int=>r.Primitive) extends SyntaxElement
     final case class SNat(nat: NatElement) extends SyntaxElement
     final case class SData(data: DataElement) extends SyntaxElement
 
@@ -106,12 +106,10 @@ object parse {
 
 
   //Todo: maybe it works if i change AnyRef to r.Primitive and delete annotation and makeArray
-  def matchPrimitiveOrIdentifier(name:String): Either[r.Primitive, r.Identifier]= {
+  def matchPrimitiveOrIdentifier(name:String): Either[r.Primitive, Either[Int=>r.Primitive, r.Identifier]]= {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     name match {
-        //Todo: annotation and makeArray
-        //      case "annotation" => Right(PrimitiveAnnotation())
-        //      case "makeArray" => Right(PrimitiveMakeArray())
+      case "makeArray" => Right(Left(rp.makeArray(_).primitive))
       case "cast" => Left(rp.cast.primitive)
       case "depJoin" => Left(rp.depJoin.primitive)
       case "depMapSeq" => Left(rp.depMapSeq.primitive)
@@ -169,7 +167,7 @@ object parse {
       case "vectorFromScalar" => Left(rp.vectorFromScalar.primitive)
       case "printType" => Left(rp.printType().primitive)
       case "typeHole" => Left(rp.typeHole().primitive)
-      case _ => Right(r.Identifier(name)(rt.TypePlaceholder))
+      case _ => Right(Right(r.Identifier(name)(rt.TypePlaceholder)))
     }
   }
 
@@ -184,7 +182,8 @@ object parse {
     nextToken match {
       case Identifier(name, _) => {
         matchPrimitiveOrIdentifier(name) match {
-          case Right(i) => Left(ParseState(remainderTokens, SExpr(i) :: parsedSynElems, map, mapDepL))
+          case Right(Right(i)) => Left(ParseState(remainderTokens, SExpr(i) :: parsedSynElems, map, mapDepL))
+          case Right(Left(prim)) =>  Left(ParseState(remainderTokens, SIntToPrimitive(prim) :: parsedSynElems, map, mapDepL))
           case Left(prim) =>  Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems, map, mapDepL))
         }
       }
@@ -607,7 +606,17 @@ object parse {
         synE = synE.tail
         expr
       }
-      case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
+      case SIntToPrimitive(prim) => {
+        if(synE.tail.isEmpty){
+          throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
+        }
+        val n = synE.tail.head match{
+          case SExpr(r.Literal(rS.IntData(len))) => len
+          case _ => throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
+        }
+        synE = synE.tail.tail
+        prim.apply(n)
+      }
       case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
       case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
       case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
@@ -633,7 +642,17 @@ object parse {
           }
           synE = synE.tail
         }
-        case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemList)
+        case SIntToPrimitive(prim) => {
+          if(synE.tail.isEmpty){
+            throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
+          }
+          val n = synE.tail.head match{
+            case SExpr(r.Literal(rS.IntData(len))) => len
+            case _ => throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
+          }
+          synE = synE.tail.tail
+          prim.apply(n)
+        }
         case SType(t) => {
           if(t.isInstanceOf[rt.DataTypeIdentifier]){
             t match {
@@ -755,7 +774,7 @@ object parse {
             }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
-          case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ p) //Todo: Remove SAnyRef
+          case SIntToPrimitive(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
         }
@@ -832,7 +851,7 @@ object parse {
           }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException("it is an Identifier expected but an Type is completely false: "+ t)
-          case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ p)
+          case SIntToPrimitive(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
         }
@@ -877,7 +896,7 @@ object parse {
       synElems.head match {
         case SType(typ) => typ :: getTypesInList(synElems.tail)
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
-        case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElems)
+        case SIntToPrimitive(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
         case SData(t) => t match {
           case DIdentifier(data) => data :: getTypesInList(synElems.tail)
           case DType(data) => data :: getTypesInList(synElems.tail)
@@ -978,7 +997,7 @@ object parse {
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
           }
         case SExpr(i) => (i, synElemListExpr.tail)
-        case SAnyRef(anyref) => throw new RuntimeException("AnyRefs aren't supported yet: " + anyref + " , "+ synElemListExpr)
+        case SIntToPrimitive(prim) => throw new RuntimeException("Here is an Expression expected, but " + prim +" is not an Expression!")
         case SData(t) => t match {
           case DIdentifier(data) => synElemListExpr.tail.head match {
             case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)

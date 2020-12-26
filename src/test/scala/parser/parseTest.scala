@@ -1441,7 +1441,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.DepApp(r.DepApp(rp.vectorFromScalar(), n:rt.Nat), i:rt.f32.type) if n.eval.equals(4)=> true
+      case r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(4))), i:rt.f32.type) => true
       case e => fail("not correct expression: " + e)
     }
   }
@@ -1465,9 +1465,10 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.App(r.DepApp(rp.makeArray(_) , n1:rt.Nat),
-      r.App(r.App(rp.makePair(), r.DepApp(r.DepApp(rp.vectorFromScalar(), n2:rt.Nat), i1:rt.i32.type)), r.DepApp(r.DepApp(rp.vectorFromScalar(), n3:rt.Nat), i2: rt.bool.type)))
-        if n1.eval.equals(2) && n2.eval.equals(16) && n3.eval.equals(2)=> true
+      case r.App(rp.makeArray(2),
+      r.App(r.App(rp.makePair(), r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(16))), i1:rt.i32.type)),
+      r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(2))), i2: rt.bool.type)))
+      => true
       case e => fail("not correct expression: " + e)
     }
   }
