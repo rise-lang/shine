@@ -1,2 +1,49 @@
-nbody::N:Nat=>N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
-nbody=\N:Nat=>\pos->\vel->\expSqr->\deltaT->
+titleX::Nat --I have to add that I can create Arrays etc with FunctionNames with Type Nat
+titleX=256
+titleY::Nat
+titleY=1
+
+nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
+nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
+ join (
+ join (
+   mapWorkGroup 1
+   (
+      join (
+      mapWorkGroup 0 (
+        \p1Chunk:(titleX.(4xF32, 4xF32)->titleY.titleX.(4xF32, 4xF32)) ->
+        \newP1Chunk:titleX.(4xF32, 4xF32)->
+        mapLocal 1 (
+          \bla:titleX.4xF32->
+          mapLocal 0 (
+            \p1:((4xF32, 4xF32), 4xF32)->
+            update (fst (fst p1)) (fst (snd p1)) deltaT (snd p1)
+          )
+          (zip newP1Chunk bla)
+        )
+        (
+          oclReduceSeq Local --I have to add AddrSpace.Local in matchPrimitiveAndIdentifier, because there it is easy
+          (
+          \acc:titleY.titleX.4xF32->p2:titleY.titleX.4xF32->
+          let (toLocal (mapLocal 1 (mapLocal 0 id)) p2) --complex primitive let adden
+          be (
+            \p2Local -> mapLocal 1 (
+              \accDim-> mapLocal 0 (
+                \p1 -> oclReduceSeq Private (
+                  acc:4xF32->p2:4xF32->
+                  calcAcc (fst (fst p1)) p2 deltaT espSqr acc
+                ) (snd p1) (fst accDim2)
+              ) (zip newP1Chunk (snd (snd accDim)))
+            ) (zip p2Local acc)
+          ) 
+          )
+          (mapLocal 1 (mapLocal 0 id) (generate (vectorFromScalar 0.0F32)))
+        )
+        (split titleY ( split titleX pos))
+      ) (split titleX)
+      )
+   )
+    (split n ( zip pos vel))
+    )
+  )
+
