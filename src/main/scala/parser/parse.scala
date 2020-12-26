@@ -337,6 +337,23 @@ object parse {
     }
   }
 
+  def parseVecType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
+    val inputType :: remainderTokens = tokens
+
+    println("parseVecType: " + parseState)
+    inputType match {
+      case VectorType(len, concreteType, _) => {
+        println("ConcreteType was in parseVecType: " + concreteType + " , with length: " + len)
+        //Todo: Complex Alg for Type Parsing
+        val parsedInType = getScalarType(concreteType)
+        val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType in VecType")))
+        Left(ParseState(remainderTokens, SType(rt.VectorType(len, inT)):: parseState.parsedSynElems, parseState.mapFkt, mapDepL))
+      }
+      case notAtype => Right(ParseError("failed to parse VecType: " + notAtype + " is not correct Type"))
+    }
+  }
+
   def parseScalarType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
       val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
       val inputType :: remainderTokens = tokens
@@ -877,7 +894,7 @@ object parse {
     val ps: Either[ParseState, ParseErrorOrState] =
       Left(parseState) |>
         (parseBracesExprType _ || parseDepFunctionType ||
-          parseTupleType || parseIndexType || parseArrayType || //parseFunType ||
+          parseTupleType || parseIndexType || parseArrayType || parseVecType || //parseFunType ||
           parseScalarType || parseData ) //Todo: The Function parseTypeIdentToCorrectForm is not good, because it is not clear what we should parse. I have an Function for parseData, but I don't need a function for parseNat, because Nat should not be returned. For ArrayType i am also unsure.
     ps
   }

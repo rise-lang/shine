@@ -731,39 +731,37 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         }
       }
       case a => if (a.isDigit) { //Todo: here include 2xF32 etc.
-        if(arr(column).length > row+1 && arr(column)(row+1).equals('x')){
-          lexVectorType(column,row) match {
+        lexVectorType(column,row) match {
             case (Left(a), r) => {
               row = r
               list = list.::(a)
             }
-            case (Right(e), r) => return Right(e)
-            }
-        }else{
-          lexNatNumber(column, row) match {
-            case (nat, r) => {
-              row = r
-              skipWhitespaceWhitoutNewLine(column, row) match {
-                case (c1, r1) => {
-                  column = c1
-                  row = r1
-                }
-              }
-              lexDot(column, row) match {
-                case Left(dot) => {
-                  row = row + 1
+            case (Right(e), r) => {
+              lexNatNumber(column, row) match {
+                case (nat, r) => {
+                  row = r
                   skipWhitespaceWhitoutNewLine(column, row) match {
-                    case (c, r) => {
-                      column = c
-                      row = r
+                    case (c1, r1) => {
+                      column = c1
+                      row = r1
                     }
                   }
-                  list = list.::(nat).::(dot)
+                  lexDot(column, row) match {
+                    case Left(dot) => {
+                      row = row + 1
+                      skipWhitespaceWhitoutNewLine(column, row) match {
+                        case (c, r) => {
+                          column = c
+                          row = r
+                        }
+                      }
+                      list = list.::(nat).::(dot)
+                    }
+                    case Right(e) => return Right(e)
+                  }
                 }
-                case Right(e) => return Right(e)
               }
             }
-          }
         }
       } else if (arr(column).length > row + 2 &&
         arr(column).substring(row, row + 2).equals("=>")) {
@@ -1623,26 +1621,41 @@ if '==' then two steps else only one step
   }
 
   private def lexVectorType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
+    if(row+3 >= arr(column).length){
+      val loc = Location(column, row)
+      return (Right(EndOfLine(new Span(fileReader, loc), fileReader)),row)
+    }
+    println("lexVectorType: "+ arr(column).substring(row,row+2))
+    arr(column).substring(row,row+2) match{
+      case "2x" => lexVectorTypeWithGivenLength(column, row+2, 2)
+      case "4x" => lexVectorTypeWithGivenLength(column, row+2, 4)
+      case _ => arr(column).substring(row,row+3) match{
+        case "8x" =>lexVectorTypeWithGivenLength(column, row+3, 8)
+        case "16x" =>lexVectorTypeWithGivenLength(column, row+3, 16)
+        case _ =>{
+          val locBegin = Location(column, row)
+          val locEnd = Location(column, row+3)
+          (Right(UnknownType(arr(column).substring(row,row+3),Span(fileReader, locBegin, locEnd),fileReader)),row)
+        }
+      }
+    }
+  }
+
+  private def lexVectorTypeWithGivenLength(column:Int, row:Int, len:Int, arr:Array[String] = fileReader.sourceLines):(Either[Token,PreAndErrorToken],Int) = {
     val (pos, substring, locStart) = lexName(column, row, arr)
     if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
+      //print("Error in lexVectorType: ("+column + " , " + row + ")" + " :: Pos is " + pos)
       (Right(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
       val span =  Span(fileReader,locStart, locEnd)
 
-      val scalarType = getConcreteScalarType(substring.substring(2),span) match{
+      val scalarType = getConcreteScalarType(substring,span) match{
         case Left(concreteType)=> concreteType
         case Right(error) => return (Right(error), pos)
       }
-
-      substring.substring(0,2) match{
-        case "2x" => (Left(VectorType(2, scalarType, span)),pos)
-        case "4x" => (Left(VectorType(4, scalarType, span)),pos)
-        case "8x" => (Left(VectorType(8, scalarType, span)),pos)
-        case "16x" => (Left(VectorType(16, scalarType, span)),pos)
-        case _ => (Right(UnknownType(substring, span, fileReader)),pos)
-      }
+       (Left(VectorType(len, scalarType, span)),pos)
     }
   }
 

@@ -143,7 +143,7 @@ sealed abstract class Token (span: Span){
     override def toString = t.toString
   }
 
-  final case class VectorType(len: Char, concreteType: ConcreteType, span: Span) extends Token(span){
+  final case class VectorType(len: Int, concreteType: ConcreteType, span: Span) extends Token(span){
     require(span.begin.column == span.end.column, "not in one column")
     len match {
       case 2 =>

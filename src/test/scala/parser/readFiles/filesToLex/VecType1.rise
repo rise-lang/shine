@@ -1,0 +1,2 @@
+f::4xF32 --4xF32 for vec(4,f32)
+f=vectorFromScalar 4 F32
