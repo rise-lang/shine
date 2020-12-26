@@ -1,7 +1,7 @@
-titleX::Nat --I have to add that I can create Arrays etc with FunctionNames with Type Nat
-titleX=256
-titleY::Nat
-titleY=1
+--titleX::Nat --I have to add that I can create Arrays etc with FunctionNames with Type Nat
+--titleX=256
+--titleY::Nat
+--titleY=1
 
 nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
 nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
@@ -11,10 +11,10 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
    (
       join (
       mapWorkGroup 0 (
-        \p1Chunk:(titleX.(4xF32, 4xF32)->titleY.titleX.(4xF32, 4xF32)) ->
-        \newP1Chunk:titleX.(4xF32, 4xF32)->
+        \p1Chunk:(256.(4xF32, 4xF32)->1.256.(4xF32, 4xF32)) ->
+        \newP1Chunk:256.(4xF32, 4xF32)->
         mapLocal 1 (
-          \bla:titleX.4xF32->
+          \bla:256.4xF32->
           mapLocal 0 (
             \p1:((4xF32, 4xF32), 4xF32)->
             update (fst (fst p1)) (fst (snd p1)) deltaT (snd p1)
@@ -24,7 +24,7 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
         (
           oclReduceSeq Local --I have to add AddrSpace.Local in matchPrimitiveAndIdentifier, because there it is easy
           (
-          \acc:titleY.titleX.4xF32->p2:titleY.titleX.4xF32->
+          \acc:1.256.4xF32->p2:1.256.4xF32->
           let (toLocal (mapLocal 1 (mapLocal 0 id)) p2) --complex primitive let adden
           be (
             \p2Local -> mapLocal 1 (
@@ -39,8 +39,8 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
           )
           (mapLocal 1 (mapLocal 0 id) (generate (vectorFromScalar 0.0F32)))
         )
-        (split titleY ( split titleX pos))
-      ) (split titleX)
+        (split 1 ( split 256 pos))
+      ) (split 256)
       )
    )
     (split n ( zip pos vel))
