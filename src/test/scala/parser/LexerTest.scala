@@ -565,6 +565,25 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
+  "RecognizeLexeme" should "work for nbody" in {
+    val fileName: String = testFilePath + "nbody.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("nbody", _)::
+        DoubleColons(_) :: TypeIdentifier("N",_) :: Colon(_)::Kind(Nat(),_)::
+        DepArrow(_) :: TypeIdentifier("N",_) :: Dot(_) :: VectorType(4,FloatTyp(),_)::
+        DepArrow(_) :: TypeIdentifier("N",_) :: Dot(_) :: VectorType(4,FloatTyp(),_)::
+        ScalarType(FloatTyp(),_)::Arrow(_)::
+        ScalarType(FloatTyp(),_)::Arrow(_)::
+        TypeIdentifier("N",_) :: Dot(_) :: LParentheses(_)::
+        VectorType(4,FloatTyp(),_)::Comma(_)::VectorType(4,FloatTyp(),_)::
+        RParentheses(_)::
+        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: end => fail("First part is true, but end is: " + end)
+      case a => fail(a.toString())
+    }
+  }
+
   "RecognizeLexeme" should "work for negation" in {
     val fileName: String = testFilePath + "negation.rise"
     val file: FileReader =  FileReader(fileName)

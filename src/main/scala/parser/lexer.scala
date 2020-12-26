@@ -646,7 +646,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
 
   private def lexTypAnnotationToken(oldColumn:Int, oldRow:Int, l:List[Token]):Either[(Int, Int, List[Token]),
     PreAndErrorToken] = {
-    //println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
+    println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
     val arr: Array[String] = fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -662,7 +662,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
     if (arr(column).length <= row) {
       val loc: Location = Location(column, row)
-      Right(EndOfLine(new Span(fileReader, loc), fileReader))
+      return Right(EndOfLine(new Span(fileReader, loc), fileReader))
     }
     arr(column)(row) match {
       case '(' => {
