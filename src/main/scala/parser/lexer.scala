@@ -1625,7 +1625,7 @@ if '==' then two steps else only one step
       val loc = Location(column, row)
       return (Right(EndOfLine(new Span(fileReader, loc), fileReader)),row)
     }
-    println("lexVectorType: "+ arr(column).substring(row,row+2))
+    //println("lexVectorType: "+ arr(column).substring(row,row+2))
     arr(column).substring(row,row+2) match{
       case "2x" => lexVectorTypeWithGivenLength(column, row+2, 2)
       case "4x" => lexVectorTypeWithGivenLength(column, row+2, 4)

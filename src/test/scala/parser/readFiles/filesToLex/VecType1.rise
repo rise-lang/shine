@@ -1,2 +1,2 @@
 f::4xF32 --4xF32 for vec(4,f32)
-f=vectorFromScalar 4 F32
+f=vectorFromScalar 4 F32 --F32 is lexed as an TypeIdentifier, but it is an Type and if I put Brackets '[' around everything then I have an endless loop. Only solution seems to be only around Types an '['
