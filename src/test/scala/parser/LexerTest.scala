@@ -299,8 +299,8 @@ class LexerTest extends  AnyFlatSpec {
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::
         Backslash(_) :: TypeIdentifier("N",_)::Colon(_):: Kind(Nat(), _) ::
-        DepArrow(_) :: Identifier("g",_):: LBracket(_):: TypeIdentifier("N",_) ::
-        ScalarType(IntTyp(),_)::RBracket(_)::
+        DepArrow(_) :: Identifier("g",_):: TypeIdentifier("N",_) ::
+        ScalarType(IntTyp(),_)::
         EndNamedExpr(_)::
 
         BeginNamedExpr(_) :: Identifier("g", _) ::
@@ -309,9 +309,9 @@ class LexerTest extends  AnyFlatSpec {
         DepArrow(_) :: Backslash(_)::
         TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
         DepArrow(_)::
-        Identifier("generate",_):: LBracket(_):: TypeIdentifier("N1",_) ::RBracket(_)::
+        Identifier("generate",_)::  TypeIdentifier("N1",_) ::
         LParentheses(_)::Backslash(_)::Identifier("i",_)::Arrow(_)::Identifier("cast", _)::
-        LBracket(_)::TypeIdentifier("D",_)::RBracket(_):: Identifier("i", _)::
+        TypeIdentifier("D",_):: Identifier("i", _)::
         RParentheses(_)::
         EndNamedExpr(_)::
 
@@ -342,10 +342,10 @@ class LexerTest extends  AnyFlatSpec {
         DepArrow(_) :: Backslash(_)::
         TypeIdentifier("D",_)::Colon(_):: Kind(Data(), _) ::
         DepArrow(_)::
-        Identifier("generate",_):: LBracket(_):: LParentheses(_)::
-        TypeIdentifier("N",_) ::RParentheses(_)::RBracket(_)::
+        Identifier("generate",_)::  LParentheses(_)::
+        TypeIdentifier("N",_) ::RParentheses(_)::
         LParentheses(_)::Backslash(_)::Identifier("i",_)::Arrow(_)::Identifier("cast", _)::
-        LBracket(_)::TypeIdentifier("N",_)::Dot(_)::TypeIdentifier("D",_)::RBracket(_):: Identifier("i", _)::
+        TypeIdentifier("N",_)::Dot(_)::TypeIdentifier("D",_):: Identifier("i", _)::
         RParentheses(_)::
         EndNamedExpr(_)::
 

@@ -822,8 +822,15 @@ object parse {
     println("parseType: " + parseState)
     val ps: Either[ParseState, ParseErrorOrState] =
       Left(parseState) |>
-        (parseDepFunctionType _ || parseFunctionType || //parseFunctionType ||//Todo: parseFunType ||
-         parseSimpleType )
+        (parseDepOrNormalFunctionType _ || parseSimpleType )
+    ps
+  }
+
+  def parseDepOrNormalFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseType: " + parseState)
+    val ps: Either[ParseState, ParseErrorOrState] =
+      Left(parseState) |>
+        (parseDepFunctionType _ || parseFunctionType)
     ps
   }
 
@@ -960,24 +967,34 @@ object parse {
 
   }
 
-  def ParseTypesUntilRBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    if(parseState.tokenStream.isEmpty||parseState.tokenStream.head.isInstanceOf[RBracket]){
-      println("Abbruch; endlessPossibleParseType: "+ parseState)
-      return Left(parseState)
-    }
-    val p =
-      Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
-        parseType |> //Todo: I can't express FunctionTypes yet
-        ParseTypesUntilRBracket
+  //Todo:Maybe not needed any more
+//  def ParseTypesUntilRBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+//    if(parseState.tokenStream.isEmpty||parseState.tokenStream.head.isInstanceOf[RBracket]){
+//      println("Abbruch; endlessPossibleParseType: "+ parseState)
+//      return Left(parseState)
+//    }
+//    val p =
+//      Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
+//        parseType |> //Todo: I can't express FunctionTypes yet
+//        ParseTypesUntilRBracket
+//
+//    p match {
+//      case Left(newPS) => {
+//        val synList = combineSynElemList(parseState.parsedSynElems, newPS.parsedSynElems).reverse
+////        println("SynList in parseTypesUntilRBracket: " + synList + " , newPS: " + newPS.parsedSynElems + " , parseStateOld: " + parseState.parsedSynElems)
+//        Left(ParseState(newPS.tokenStream, synList, newPS.mapFkt, newPS.mapDepL))
+//      }
+//      case Right(e) => Right(e)
+//    }
+//  }
 
-    p match {
-      case Left(newPS) => {
-        val synList = combineSynElemList(parseState.parsedSynElems, newPS.parsedSynElems).reverse
-//        println("SynList in parseTypesUntilRBracket: " + synList + " , newPS: " + newPS.parsedSynElems + " , parseStateOld: " + parseState.parsedSynElems)
-        Left(ParseState(newPS.tokenStream, synList, newPS.mapFkt, newPS.mapDepL))
-      }
-      case Right(e) => Right(e)
-    }
+  def parseDepOrNormalFunctionTypeInNoAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val p = //Todo: change so that no Brackets are needed, only parentheses for Dep- and FunctionType
+      Left(parseState) |>
+        parseLeftParentheses |>
+        parseDepOrNormalFunctionType |>
+        parseRightParentheses
+    p
   }
 
   def parseTypeinNoAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
@@ -988,9 +1005,7 @@ object parse {
     }
     val p = //Todo: change so that no Brackets are needed, only parentheses for Dep- and FunctionType
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
-        parseLeftBracket  |>
-        ParseTypesUntilRBracket |>
-        parseRightBracket
+        (parseDepOrNormalFunctionTypeInNoAppExpr _ || parseSimpleType)
 
     println("after parseTypeinNoAppExpr: "+ p)
     p match {

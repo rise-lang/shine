@@ -1,9 +1,9 @@
 f::2.(16xI32,2xBool) --16xI32 for vec(16,i32)
 f=makeArray 2 (
   makePair (
-    vectorFromScalar 16 [I32]
+    vectorFromScalar 16 I32
   )
   (
-    vectorFromScalar 2 [Bool]
+    vectorFromScalar 2 Bool
   )
   )
