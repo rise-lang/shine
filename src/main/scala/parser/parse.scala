@@ -393,7 +393,7 @@ object parse {
             case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
           }
           println("Kind was in parseDepFunctionType parsed: " + concreteKind)
-          parseCompleteType(ParseState(tokens.tail.tail, Nil, parseState.mapFkt, parseState.mapDepL)) match {
+          parseType(ParseState(tokens.tail.tail, Nil, parseState.mapFkt, parseState.mapDepL)) match {
             case Right(e) => Right(e)
             case Left(pS) => {
               if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
@@ -437,6 +437,22 @@ object parse {
     psOld
   }
 
+//  def parseFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+//    println("parseDepFunctionType: " + parseState)
+//    val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
+//    if( tokens.length < 3){
+//      return Right(ParseError("only "+ tokens.length + " arguments are in the TokenList, but we need minimum 3!"))
+//    }
+//
+//    val psOld =
+//      Left(parseState) |>
+//        parseIdent     |>
+//        parseColon |>
+//        parseType |>
+//        parseArrow
+//    psOld
+//  }
+
   def parseDepLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseDepFunctionType: " + parseState)
     val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
@@ -467,7 +483,7 @@ object parse {
             //Todo: Complex Alg for Type Parsing
             val parsedInType = getScalarType(typ)
             val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
-            parseCompleteType(ParseState(remainderTokens, Nil, parseState.mapFkt, parseState.mapDepL)) match {
+            parseType(ParseState(remainderTokens, Nil, parseState.mapFkt, parseState.mapDepL)) match {
               case Right(e) => Right(e)
               case Left(pS) => {
                 if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
@@ -803,7 +819,7 @@ object parse {
     val psNamedExprBefore = {
       Left(ParseState(ps.tokenStream, Nil, ps.mapFkt, ps.mapDepL))        |>
         parseDoubleColons |>
-        parseCompleteType
+        parseType
     }
 
 
@@ -856,14 +872,23 @@ object parse {
     println("parseType: " + parseState)
     val ps: Either[ParseState, ParseErrorOrState] =
       Left(parseState) |>
-        (parseBracesExprType _ || parseDepFunctionType ||
-          parseTupleType || parseIndexType || parseArrayType || parseVecType || //parseFunType ||
+        (parseDepFunctionType _ || parseFunctionType || //parseFunctionType ||//Todo: parseFunType ||
+         parseSimpleType )
+    ps
+  }
+
+  def parseSimpleType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseType: " + parseState)
+    val ps: Either[ParseState, ParseErrorOrState] =
+      Left(parseState) |>
+        (parseBracesExprType _ ||
+          parseTupleType || parseIndexType || parseArrayType || parseVecType ||
           parseScalarType || parseData ) //Todo: The Function parseTypeIdentToCorrectForm is not good, because it is not clear what we should parse. I have an Function for parseData, but I don't need a function for parseNat, because Nat should not be returned. For ArrayType i am also unsure.
     ps
   }
 
-  def parseCompleteType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    val ps = parseType(parseState)
+  def parseFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val ps = parseSimpleType(parseState)
     ps match {
       case Right(e)=> Right(e)
       case Left(p)=> if(p.tokenStream.isEmpty){
@@ -871,7 +896,7 @@ object parse {
       }else {
         p.tokenStream.head match {
           case Arrow(_) => {
-            val newParse = parseCompleteType(ParseState(p.tokenStream.tail, Nil, p.mapFkt, p.mapDepL)) match{
+            val newParse = parseFunctionType(ParseState(p.tokenStream.tail, Nil, p.mapFkt, p.mapDepL)) match{
               case Left(pars) => pars
               case Right(e) => return Right(e)
             }
@@ -883,7 +908,7 @@ object parse {
           //Todo: Maybe remove already here the EndTypAnnotatedIdent or RBrace from the TokenList
           case EndTypAnnotatedIdent(_) => Left(p)
           case RParentheses(_) => Left(p)
-          case a => return Right(ParseError("the Token '"+ a + "' is not here expected!!!"))
+          case a => Right(ParseError("the Token '"+ a + "' is not here expected!!!"))
         }
       }
     }
@@ -992,7 +1017,7 @@ object parse {
     }
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
-        parseType |>
+        parseType |> //Todo: I can't express FunctionTypes yet
         ParseTypesUntilRBracket
 
     p match {
@@ -1064,7 +1089,7 @@ object parse {
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
         parseNat |>
         parseDot |>
-        parseType
+        parseSimpleType
 
     p match {
       case Left(pState) => {
@@ -1132,7 +1157,7 @@ object parse {
         parseLeftParentheses  |>
         parseType |>
         parseComma |>
-        parseCompleteType |>
+        parseType |>
         parseRightParentheses
 
     p match {
@@ -1161,7 +1186,7 @@ object parse {
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
         parseLeftParentheses  |>
-        parseCompleteType |>
+        parseType |>
         parseRightParentheses
 
     p match {
@@ -1395,21 +1420,23 @@ object parse {
     nextToken match {
       case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens,
         SData(DIdentifier(rt.DataTypeIdentifier(name)))::parsedSynElems, map, mapDepL))
-      case _ => {
-        parseType(ParseState(tokens, Nil, map, mapDepL)) match {
-          case Right(e) => Right(e)
-          case Left(p) => {
-            if(p.parsedSynElems.length!=1){
-              throw new IllegalStateException("It has to be 1 elemnt long in parseData: "+ p.parsedSynElems)
-            }
-            p.parsedSynElems.head match {
-              case SType(t) => Left(ParseState(p.tokenStream, SData(DType(t.asInstanceOf[rt.DataType]))::parsedSynElems,
-                map, mapDepL))
-              case a => throw new IllegalStateException("Only Type is expected in parseData: " + a)
-            }
-          }
-        }
-      }
+      case a => Right(ParseError("It ist DatatypeIdentifier expected but '"+ a.toString +"' is not an DataTypeIdentifier: " + a.s.toString + a.s.file.toString))
+//Todo: Is that under here needed???
+      //      {
+//        parseType(ParseState(tokens, Nil, map, mapDepL)) match {
+//          case Right(e) => Right(e)
+//          case Left(p) => {
+//            if(p.parsedSynElems.length!=1){
+//              throw new IllegalStateException("It has to be 1 elemnt long in parseData: "+ p.parsedSynElems)
+//            }
+//            p.parsedSynElems.head match {
+//              case SType(t) => Left(ParseState(p.tokenStream, SData(DType(t.asInstanceOf[rt.DataType]))::parsedSynElems,
+//                map, mapDepL))
+//              case a => throw new IllegalStateException("Only Type is expected in parseData: " + a)
+//            }
+//          }
+//        }
+//      }
     }
   }
 
