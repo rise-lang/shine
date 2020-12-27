@@ -437,22 +437,6 @@ object parse {
     psOld
   }
 
-//  def parseFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-//    println("parseDepFunctionType: " + parseState)
-//    val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
-//    if( tokens.length < 3){
-//      return Right(ParseError("only "+ tokens.length + " arguments are in the TokenList, but we need minimum 3!"))
-//    }
-//
-//    val psOld =
-//      Left(parseState) |>
-//        parseIdent     |>
-//        parseColon |>
-//        parseType |>
-//        parseArrow
-//    psOld
-//  }
-
   def parseDepLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseDepFunctionType: " + parseState)
     val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
@@ -467,40 +451,6 @@ object parse {
         parseColon |>
         parseKindWithDepArrowAfterForDepLambda
     psOld
-  }
-
-  def parseFunType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    val ParseState(tokens, parsedSynElems, map, mapDepL) = parseState
-    val inputType :: arrowToken :: remainderTokens = tokens
-
-    println("parseTypeWithArrow: " + parseState)
-    arrowToken match {
-      case Arrow(_) => {
-
-        inputType match {
-          case ScalarType(typ, _) => {
-            println("Type was in parseTypeWithArrow parsed: " + typ)
-            //Todo: Complex Alg for Type Parsing
-            val parsedInType = getScalarType(typ)
-            val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
-            parseType(ParseState(remainderTokens, Nil, parseState.mapFkt, parseState.mapDepL)) match {
-              case Right(e) => Right(e)
-              case Left(pS) => {
-                if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
-                pS.parsedSynElems.head match {
-                  case SType(outT) => Left(ParseState(pS.tokenStream, SType(
-                    rt.FunType(inT, outT)):: parseState.parsedSynElems, pS.mapFkt, pS.mapDepL))
-                  case _ => Right(ParseError("Not a Type"))
-                }
-              }
-            }
-          }
-          case notAtype => Right(ParseError("failed to parse Type (in FunType): " + notAtype + " is not an Type"))
-        }
-      }
-      case notAnArrow => Right(ParseError("failed to parse Arrow: A TypeAnnotation is expected, but " + notAnArrow +
-        " is not an Arrow"))
-    }
   }
 
   def parseArrow(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
