@@ -1036,7 +1036,7 @@ object parse {
       println("Abbruch; parseTypeinNoAppExpr: "+ parseState)
       return Left(parseState)
     }
-    val p =
+    val p = //Todo: change so that no Brackets are needed, only parentheses for Dep- and FunctionType
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapFkt, parseState.mapDepL))  |>
         parseLeftBracket  |>
         ParseTypesUntilRBracket |>
@@ -1421,22 +1421,6 @@ object parse {
       case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens,
         SData(DIdentifier(rt.DataTypeIdentifier(name)))::parsedSynElems, map, mapDepL))
       case a => Right(ParseError("It ist DatatypeIdentifier expected but '"+ a.toString +"' is not an DataTypeIdentifier: " + a.s.toString + a.s.file.toString))
-//Todo: Is that under here needed???
-      //      {
-//        parseType(ParseState(tokens, Nil, map, mapDepL)) match {
-//          case Right(e) => Right(e)
-//          case Left(p) => {
-//            if(p.parsedSynElems.length!=1){
-//              throw new IllegalStateException("It has to be 1 elemnt long in parseData: "+ p.parsedSynElems)
-//            }
-//            p.parsedSynElems.head match {
-//              case SType(t) => Left(ParseState(p.tokenStream, SData(DType(t.asInstanceOf[rt.DataType]))::parsedSynElems,
-//                map, mapDepL))
-//              case a => throw new IllegalStateException("Only Type is expected in parseData: " + a)
-//            }
-//          }
-//        }
-//      }
     }
   }
 
