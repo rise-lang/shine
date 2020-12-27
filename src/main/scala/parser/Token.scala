@@ -153,7 +153,7 @@ sealed abstract class Token (span: Span){
       case illegalLength => throw new IllegalArgumentException("The length " + illegalLength + " is not an accepted length")
     }
     val t:ConcreteType = concreteType
-    override def toString = t.toString
+    override def toString = "Vec("+len+","+t.toString+")"
   }
 
   final case class Kind(concreteKind: ConcreteKind, span: Span) extends Token(span){

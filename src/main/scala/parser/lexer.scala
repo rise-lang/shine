@@ -1610,6 +1610,7 @@ if '==' then two steps else only one step
         case Left(concreteType)=> concreteType
         case Right(error) => return (Right(error), pos)
       }
+      //print("VectorType("+len+" , " + scalarType + " , " + span + ")")
        (Left(VectorType(len, scalarType, span)),pos)
     }
   }
