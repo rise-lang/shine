@@ -1037,8 +1037,12 @@ object parse {
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
-        val expr = SExpr(combineExpressionsDependent(pState.parsedSynElems, pState.mapDepL))
-        val newL = expr :: Nil
+        val synElem = if(pState.parsedSynElems.length==1){
+          pState.parsedSynElems.head
+        }else {
+          SExpr(combineExpressionsDependent(pState.parsedSynElems, pState.mapDepL))
+        }
+        val newL = synElem :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse
         val newParse:ParseState = ParseState(pState.tokenStream, l, pState.mapFkt, pState.mapDepL)
@@ -1197,8 +1201,12 @@ object parse {
                               p match {
                                 case Right(e) => Right(e)
                                 case Left(newPS) => {
-                                  val expr = combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL)
-                                  Left(ParseState(newPS.tokenStream, SExpr(expr)::Nil, newPS.mapFkt, newPS.mapDepL))
+                                  val synElem = if(newPS.parsedSynElems.length==1){
+                                    newPS.parsedSynElems.head
+                                  }else {
+                                    SExpr(combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL))
+                                  }
+                                  Left(ParseState(newPS.tokenStream, synElem::Nil, newPS.mapFkt, newPS.mapDepL))
                                 }
                               }
                             }
