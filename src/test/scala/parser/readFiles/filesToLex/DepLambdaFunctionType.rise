@@ -1,0 +1,5 @@
+--f::N:Nat=>D:Data=>N.N.D->(N.N.D -> N.N.D) -> N.N.D
+u::D1:Data=>D1 -> I32
+u=\D1:Data=>\fkt->1
+g::F32->I32
+g=\x:F32-> u (F32->I32)

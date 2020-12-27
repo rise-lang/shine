@@ -422,6 +422,74 @@ class parseTest extends  AnyFlatSpec {
   }
 }
 
+  "parser" should "be able to parse 'DepLambdaFunctionType.rise'" in {
+    val fileName: String = testFilePath + "DepLambdaFunctionType.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+//    val functionName: String = "f"
+//    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+//      case Left(lambda) => lambda
+//      case Right(types) => fail("no definition is in map: " + types)
+//    }
+
+    val functionName2: String = "g"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    val functionName3: String = "u"
+    val ex_u: r.Expr = riseExprByIdent.get(functionName3).getOrElse(fail("The function '" + functionName3 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+//    ex_f.t match {
+//      case rt.DepFunType(n1:rt.NatIdentifier,rt.DepFunType(d1:rt.DataTypeIdentifier,
+//      rt.FunType(rt.ArrayType(n2: rt.NatIdentifier, rt.ArrayType(n3: rt.NatIdentifier, d2:rt.DataTypeIdentifier)),
+//      rt.FunType(rt.FunType(rt.ArrayType(n4: rt.NatIdentifier,
+//      rt.ArrayType(n5: rt.NatIdentifier, d3:rt.DataTypeIdentifier)),
+//      rt.ArrayType(n6: rt.NatIdentifier, rt.ArrayType(n7: rt.NatIdentifier, d4:rt.DataTypeIdentifier)))
+//      , rt.ArrayType(n8: rt.NatIdentifier, rt.ArrayType(n9: rt.NatIdentifier, d5:rt.DataTypeIdentifier))))
+//      ))
+//        if n1.name.equals("N") && n2.name.equals(n1.name) && n3.name.equals(n1.name) && n4.name.equals(n1.name)
+//          && n5.name.equals(n1.name) && n6.name.equals(n1.name) && n7.name.equals(n1.name)
+//          && n8.name.equals(n1.name) && n9.name.equals(n1.name)
+//          && d1.name.equals("D") && d2.name.equals(d1.name) && d3.name.equals(d1.name)
+//          && d4.name.equals(d1.name) && d5.name.equals(d1.name)
+//      => true
+//      case t => fail("The Type '" + t + "' is not the expected type.")
+//    }
+
+    ex_u.t match {
+      case rt.DepFunType(d:rt.DataTypeIdentifier, rt.FunType(d1:rt.DataTypeIdentifier, rt.i32))
+      if d.name.equals("D1") && d1.name.equals("D1")=> true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_g.t match {
+      case rt.FunType(rt.f32, rt.i32) => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_u match {
+      case r.DepLambda(d:rt.DataTypeIdentifier,
+      r.Lambda(r.Identifier("fkt"), r.Literal(rS.IntData(1))))
+        if d.name.equals("D1")
+      => true
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
+
+    ex_g match {
+      case r.Lambda(r.Identifier("x"), r.DepApp(r.Identifier("u"), rt.FunType(rt.f32, rt.i32)))=> true
+      case a => fail("Lambda not correct: " + a)
+    }
+  }
+
   "parser" should "be able to parse 'DepLambda2.rise'" in {
     val fileName: String = testFilePath + "DepLambda2.rise"
     val file: FileReader = new FileReader(fileName)

@@ -1004,7 +1004,13 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           list = list.::(a)
         }
         case Right(a) => {
-          a.throwException()
+          lexDotsOrArrow(column,row) match {
+            case Left(arrow) =>{
+              row = row+2
+              list = list.::(arrow)
+            }
+            case Right(e) => e.throwException()
+          }
         }
       }
     } else {
