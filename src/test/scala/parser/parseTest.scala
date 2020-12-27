@@ -1446,8 +1446,58 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "be able to parse 'VecType1WithLessParentheses.rise'" in {
+    val fileName: String = testFilePath + "VecType1WithLessParentheses.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex.t match {
+      case rt.VectorType(n :rt.Nat, rt.f32) if n.eval.equals(4) => true
+      case t => fail("The Type '"+t+"' is not the expected type.")
+    }
+
+    ex match {
+      case r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(4))), i:rt.f32.type) => true
+      case e => fail("not correct expression: " + e)
+    }
+  }
+
   "parser" should "be able to parse 'VecType2.rise'" in {
     val fileName: String = testFilePath + "VecType2.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex.t match {
+      case rt.ArrayType(n1:rt.Nat, rt.PairType(rt.VectorType(n2:rt.Nat, rt.i32),rt.VectorType(n3:rt.Nat, rt.bool)))
+        if n1.eval.equals(2) && n2.eval.equals(16) && n3.eval.equals(2)=> true
+      case t => fail("The Type '"+t+"' is not the expected type.")
+    }
+
+    ex match {
+      case r.App(rp.makeArray(2),
+      r.App(r.App(rp.makePair(), r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(16))), i1:rt.i32.type)),
+      r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(2))), i2: rt.bool.type)))
+      => true
+      case e => fail("not correct expression: " + e)
+    }
+  }
+
+  "parser" should "be able to parse 'VecType2WithLessParentheses.rise'" in {
+    val fileName: String = testFilePath + "VecType2WithLessParentheses.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val riseExprByIdent = parse(lexer.tokens)

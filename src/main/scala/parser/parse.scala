@@ -997,7 +997,8 @@ object parse {
 
     p match {
       case Left(newPS) => {
-        val synList = combineSynElemList(newPS.parsedSynElems, parseState.parsedSynElems)
+        val synList = combineSynElemList(parseState.parsedSynElems, newPS.parsedSynElems).reverse
+//        println("SynList in parseTypesUntilRBracket: " + synList + " , newPS: " + newPS.parsedSynElems + " , parseStateOld: " + parseState.parsedSynElems)
         Left(ParseState(newPS.tokenStream, synList, newPS.mapFkt, newPS.mapDepL))
       }
       case Right(e) => Right(e)
@@ -1019,7 +1020,8 @@ object parse {
     println("after parseTypeinNoAppExpr: "+ p)
     p match {
       case Left(newPS) => {
-        val synList = combineSynElemList(newPS.parsedSynElems, parseState.parsedSynElems)
+        val synList = combineSynElemList(parseState.parsedSynElems, newPS.parsedSynElems).reverse
+//        println("SynList2 in parseTypeinNoAppExpr: " + synList + " , newPS: " + newPS.parsedSynElems + " , parseStateOld: " + parseState.parsedSynElems)
         Left(ParseState(newPS.tokenStream, synList, newPS.mapFkt, newPS.mapDepL))
       }
       case Right(e) => Right(e)
