@@ -121,8 +121,10 @@ object parse {
       case "oclCircularBuffer"=>SExpr(op.oclCircularBuffer.primitive)
       case "oclRotateValues" => SExpr(op.oclRotateValues.primitive)
 
-      //openCL/TypedDSL
-//      case "toGlobal" => SExpr(dsl.toGlobal.)//Todo: I am not sure how to continue, maybe add ToBeTyped Type to my List or directly put it to an Expr with toExpr
+      //openCL/TypedDSL //Todo: not sure if this with .toExpr is working. Test with nBody
+      case "toGlobal" => SExpr(dsl.toGlobal.toExpr)
+      case "toLocal" => SExpr(dsl.toLocal.toExpr)
+      case "toPrivate" => SExpr(dsl.toPrivate.toExpr)
 
         //core/primitives
       case "makeArray" => SIntToPrimitive(rp.makeArray(_).primitive)
