@@ -622,7 +622,7 @@ class LexerTest extends  AnyFlatSpec {
         LParentheses(_)::Identifier("zip",_)::Identifier("newP1Chunk",_) ::Identifier("bla",_)::RParentheses(_)::
         RParentheses(_)::LParentheses(_)::
 
-        Identifier("oclReduceSeq",_):://AddrSpaceType("Local",_)::LParentheses(_)::
+        Identifier("oclReduceSeq",_)::AddrSpaceType("Local",_)::LParentheses(_)::
         end
       =>{
         println("end of nbody:: " + end)

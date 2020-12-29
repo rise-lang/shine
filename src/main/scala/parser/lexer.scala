@@ -1706,13 +1706,18 @@ if '==' then two steps else only one step
         Span(fileReader,locStart, locEnd), fileReader)), pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
+      val span = Span(fileReader,locStart, locEnd)
     substring match {
+      case "Local" => (Left(AddrSpaceType(substring, span)),pos)
+      case "Global" => (Left(AddrSpaceType(substring, span)),pos)
+      case "Private" => (Left(AddrSpaceType(substring, span)),pos)
+      case "Constant" => (Left(AddrSpaceType(substring, span)),pos)
         //keywords are handled in the parser (matchPrimitiveOrIdentifier)
-      case s => {
-        if (s.matches("[a-z][a-zA-Z0-9_]*")){
-          (Left(Identifier(substring, Span(fileReader,locStart, locEnd))), pos)
+      case _ => {
+        if (substring.matches("[a-z][a-zA-Z0-9_]*")){
+          (Left(Identifier(substring, span )), pos)
         }else{
-          (Left(TypeIdentifier(substring, Span(fileReader,locStart, locEnd))), pos)
+          (Left(TypeIdentifier(substring, span)), pos)
         }
       }
     }
