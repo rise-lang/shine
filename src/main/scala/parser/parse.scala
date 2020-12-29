@@ -1,7 +1,8 @@
 package parser //old branch 17. Dezember 2020
 
 import rise.core.{Lambda, primitives => rp, semantics => rS, types => rt}
-import rise.{core => r}
+import rise.{core => r, openCL => o}
+import o.{primitives => op, TypedDSL => dsl}
 
 import scala.collection.mutable
 
@@ -107,6 +108,21 @@ object parse {
   def matchPrimitiveOrIdentifier(name:String): Either[r.Primitive, Either[Int=>r.Primitive, r.Identifier]]= {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     name match {
+        //openCL/primitives
+      case "mapGlobal" => Right(Left(op.mapGlobal(_).primitive))
+      case "mapLocal" => Right(Left(op.mapLocal(_).primitive))
+      case "mapWorkGroup" => Right(Left(op.mapWorkGroup(_).primitive))
+      case "oclToMem" => Left(op.oclToMem.primitive)
+      case "oclReduceSeq" => Left(op.oclReduceSeq.primitive)
+      case "oclReduceSeqUnroll" => Left(op.oclReduceSeqUnroll.primitive)
+      case "oclIterate" => Left(op.oclIterate.primitive)
+      case "oclCircularBuffer"=>Left(op.oclCircularBuffer.primitive)
+      case "oclRotateValues" => Left(op.oclRotateValues.primitive)
+
+      //openCL/TypedDSL
+//      case "toGlobal" => Left(dsl.toGlobal.)//Todo: I am not sure how to continue, maybe add ToBeTyped Type to my List or directly put it to an Expr with toExpr
+
+        //core/primitives
       case "makeArray" => Right(Left(rp.makeArray(_).primitive))
       case "cast" => Left(rp.cast.primitive)
       case "depJoin" => Left(rp.depJoin.primitive)

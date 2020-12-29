@@ -623,6 +623,12 @@ class LexerTest extends  AnyFlatSpec {
         RParentheses(_)::LParentheses(_)::
 
         Identifier("oclReduceSeq",_)::AddrSpaceType("Local",_)::LParentheses(_)::
+        Backslash(_)::Identifier("acc",_)::Colon(_)::
+        NatNumber(1,_)::Dot(_)::NatNumber(256,_)::Dot(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
+        Backslash(_)::Identifier("p2",_)::Colon(_)::
+        NatNumber(1,_)::Dot(_)::NatNumber(256,_)::Dot(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
+
+        Identifier("let", _)::LParentheses(_)::
         end
       =>{
         println("end of nbody:: " + end)
