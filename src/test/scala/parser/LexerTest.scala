@@ -573,13 +573,61 @@ class LexerTest extends  AnyFlatSpec {
       case BeginTypAnnotatedIdent(_):: Identifier("nbody", _)::
         DoubleColons(_) :: TypeIdentifier("N",_) :: Colon(_)::Kind(Nat(),_)::
         DepArrow(_) :: TypeIdentifier("N",_) :: Dot(_) :: VectorType(4,FloatTyp(),_)::
-        DepArrow(_) :: TypeIdentifier("N",_) :: Dot(_) :: VectorType(4,FloatTyp(),_)::
-        ScalarType(FloatTyp(),_)::Arrow(_)::
-        ScalarType(FloatTyp(),_)::Arrow(_)::
-        TypeIdentifier("N",_) :: Dot(_) :: LParentheses(_)::
+        Arrow(_) :: TypeIdentifier("N",_) :: Dot(_) :: VectorType(4,FloatTyp(),_)::
+        Arrow(_) :: ScalarType(FloatTyp(),_)::
+        Arrow(_) :: ScalarType(FloatTyp(),_)::
+        Arrow(_) :: TypeIdentifier("N",_) :: Dot(_) :: LParentheses(_)::
         VectorType(4,FloatTyp(),_)::Comma(_)::VectorType(4,FloatTyp(),_)::
         RParentheses(_)::
-        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) :: end => fail("First part is true, but end is: " + end)
+        EndTypAnnotatedIdent(_) ::BeginNamedExpr(_) ::
+
+        Identifier("nbody", _) ::
+        EqualsSign(_)::Backslash(_)::TypeIdentifier("N",_)::Colon(_)::
+        Kind(Nat(),_)::DepArrow(_)::Backslash(_)::Identifier("pos",_)::
+        Arrow(_)::Backslash(_)::Identifier("vel",_)::Arrow(_)::
+        Backslash(_)::Identifier("espSqr",_)::Arrow(_)::
+        Backslash(_)::Identifier("deltaT",_)::Arrow(_)::
+
+        Identifier("join", _)::LParentheses(_)::
+        Identifier("join", _)::LParentheses(_)::
+        Identifier("mapWorkGroup", _)::I32(1,_)::LParentheses(_)::
+
+        Identifier("join", _)::LParentheses(_)::
+        Identifier("mapWorkGroup", _)::I32(0,_)::LParentheses(_)::
+        Backslash(_)::Identifier("p1Chunk", _)::Colon(_)::LParentheses(_)::
+        NatNumber(256, _)::Dot(_)::LParentheses(_)::
+        VectorType(4, FloatTyp(),_)::Comma(_)::VectorType(4, FloatTyp(),_)::RParentheses(_)::Arrow(_)::
+        NatNumber(1,_)::Dot(_)::NatNumber(256,_)::Dot(_)::LParentheses(_)::
+        VectorType(4, FloatTyp(),_)::Comma(_)::VectorType(4, FloatTyp(),_)::
+        RParentheses(_)::RParentheses(_)::Arrow(_)::
+
+        Backslash(_)::Identifier("newP1Chunk", _)::Colon(_)::
+        NatNumber(256, _)::Dot(_)::LParentheses(_)::
+        VectorType(4, FloatTyp(),_)::Comma(_)::VectorType(4, FloatTyp(),_)::RParentheses(_)::Arrow(_)::
+
+        Identifier("mapLocal",_)::I32(1,_):: LParentheses(_)::
+        Backslash(_)::Identifier("bla",_)::Colon(_)::NatNumber(256,_)::Dot(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
+        Identifier("mapLocal",_)::I32(0,_):: LParentheses(_)::
+
+        Backslash(_)::Identifier("p1",_)::Colon(_)::LParentheses(_)::LParentheses(_)::
+        VectorType(4, FloatTyp(),_)::Comma(_)::VectorType(4, FloatTyp(),_)::RParentheses(_)::Comma(_)::
+        VectorType(4, FloatTyp(),_)::RParentheses(_)::Arrow(_)::
+
+        Identifier("update",_) :: LParentheses(_)::Identifier("fst",_)::LParentheses(_)::Identifier("fst",_)::
+        Identifier("p1",_)::RParentheses(_)::RParentheses(_)::LParentheses(_)::Identifier("fst",_)::LParentheses(_)::
+        Identifier("snd",_)::Identifier("p1",_)::RParentheses(_)::RParentheses(_)::
+        Identifier("deltaT",_)::LParentheses(_)::Identifier("snd",_)::Identifier("p1",_)::RParentheses(_)::
+        RParentheses(_)::
+
+        LParentheses(_)::Identifier("zip",_)::Identifier("newP1Chunk",_) ::Identifier("bla",_)::RParentheses(_)::
+        RParentheses(_)::LParentheses(_)::
+
+        Identifier("oclReduceSeq",_):://AddrSpaceType("Local",_)::LParentheses(_)::
+        end
+      =>{
+        println("end of nbody:: " + end)
+        true
+      }
       case a => fail(a.toString())
     }
   }

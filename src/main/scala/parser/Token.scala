@@ -262,17 +262,15 @@ import OpType.BinOpType._
       override def toString = s"<$number:nat>"
     }
 
-case class AddrSpaceType(addrSpace: String){
+// example: "Local" which is saved as <Local, Adressspace>
+final case class AddrSpaceType(addrSpace: String, span: Span) extends Token(span){
   require(addrSpace.equals("Global")||addrSpace.equals("Constant")||
     addrSpace.equals("Local")||addrSpace.equals("Private"), "not an accepted AddrSpaceType")
   val a:String = addrSpace
+  require(span.begin.column == span.end.column, "not in one column") //Todo: Check if the lenght of the span fits the lenght of "Local", "Private", "Global" or "Constant"
   override def toString = s"<$addrSpace: AddrSpace>"
 }
-  // example: "Local" which is saved as <Local, Adressspace>
-  final case class AdressSpace(addrSpaceType: AddrSpaceType, span: Span) extends Token(span){
-    require(span.begin.column == span.end.column, "not in one column") //Todo: Check if the lenght of the span fits the lenght of "Local", "Private", "Global" or "Constant"
-    override def toString = s"<$addrSpaceType: AddrSpace>"
-  }
+
 
 
 final case class BeginTypAnnotatedIdent(span: Span) extends Token(span){

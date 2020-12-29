@@ -154,18 +154,5 @@ class matchesToken extends  AnyFlatSpec {
     identifier should be ("PeterVogel_123")
   }
 
-  "AdresspaceType" should "be Global, Local, Private oder Constant" in {
-    val thrown = intercept[Exception] {
-      AddrSpaceType("Rick")
-    }
-    thrown.getMessage should equal ("requirement failed: not an accepted AddrSpaceType")
-  }
-
-  "AdresspaceType2" should "be Global, Local, Private oder Constant" in {
-    val addrSpace:AddrSpaceType = AddrSpaceType("Global")
-
-    addrSpace.addrSpace should equal ("Global")
-  }
-
 }
 
