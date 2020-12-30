@@ -1046,19 +1046,19 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_g.t match {
-      case rt.DepFunType(n,rt.FunType(
-      rt.ArrayType(n1: rt.NatIdentifier,rt.VectorType(n2:rt.NatIdentifier, rt.f32)),
+      case rt.DepFunType(n:rt.NatIdentifier,rt.FunType(
+      rt.ArrayType(n1: rt.NatIdentifier,rt.VectorType(num1:rt.Nat, rt.f32)),
       rt.FunType(
-      rt.ArrayType(n3: rt.NatIdentifier,rt.VectorType(n4:rt.NatIdentifier, rt.f32)),
-      rt.FunType(rt.f32, rt.FunType(rt.f32, rt.ArrayType(n5:rt.NatIdentifier,
-      rt.PairType(rt.VectorType(n6:rt.NatIdentifier, rt.f32),rt.VectorType(n7:rt.NatIdentifier, rt.f32)))))
+      rt.ArrayType(n2: rt.NatIdentifier,rt.VectorType(num2:rt.Nat, rt.f32)),
+      rt.FunType(rt.f32, rt.FunType(rt.f32, rt.ArrayType(n3:rt.NatIdentifier,
+      rt.PairType(rt.VectorType(num3:rt.Nat, rt.f32),rt.VectorType(num4:rt.Nat, rt.f32)))))
       )
       ))
 
         if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
-          && n3.name.equals(n.name) && n4.name.equals(n.name)
-          && n5.name.equals(n.name) && n6.name.equals(n.name)
-          && n7.name.equals(n.name)=> true
+          && n3.name.equals(n.name)
+      &&num1.eval.equals(4)&&num2.eval.equals(4)&&num3.eval.equals(4)&&num4.eval.equals(4)
+      => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 //Todo: finish match

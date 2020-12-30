@@ -623,26 +623,26 @@ class LexerTest extends  AnyFlatSpec {
         RParentheses(_)::LParentheses(_)::
 
         Identifier("oclReduceSeq",_)::AddrSpaceType("Local",_)::LParentheses(_)::
-        Backslash(_)::Identifier("acc",_)::Colon(_)::
+        Backslash(_)::Identifier("accA",_)::Colon(_)::
         NatNumber(1,_)::Dot(_)::NatNumber(256,_)::Dot(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
-        Backslash(_)::Identifier("p2",_)::Colon(_)::
+        Backslash(_)::Identifier("p2A",_)::Colon(_)::
         NatNumber(1,_)::Dot(_)::NatNumber(256,_)::Dot(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
 
         Identifier("let", _)::LParentheses(_):: Identifier("toLocal",_)::LParentheses(_)::
         Identifier("mapLocal",_)::I32(1,_):: LParentheses(_)::
         Identifier("mapLocal",_)::I32(0,_):: Identifier("id", _)::RParentheses(_)::RParentheses(_)::
-        Identifier("p2",_)::RParentheses(_)::LParentheses(_)::
+        Identifier("p2A",_)::RParentheses(_)::LParentheses(_)::
 
         Backslash(_)::Identifier("p2Local",_)::Arrow(_)::Identifier("mapLocal",_)::I32(1,_)::LParentheses(_)::
         Backslash(_)::Identifier("accDim",_)::Arrow(_)::Identifier("mapLocal",_)::I32(0,_)::LParentheses(_)::
         Backslash(_)::Identifier("p1B",_)::Arrow(_)::Identifier("oclReduceSeq",_)::
         AddrSpaceType("Private",_)::LParentheses(_)::
 
-        Backslash(_)::Identifier("acc",_)::Colon(_)::VectorType(4,FloatTyp(),_)::Arrow(_):://Todo: From here on comes the error if I make the match any longer
-//        Backslash(_)::Identifier("p2",_)::Colon(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
+        Backslash(_)::Identifier("accB",_)::Colon(_)::VectorType(4,FloatTyp(),_)::Arrow(_):://Todo: From here on comes the error if I make the match any longer
+//        Backslash(_)::Identifier("p2B",_)::Colon(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
 //        Identifier("calcAcc",_):: LParentheses(_)::Identifier("fst",_)::
-//        LParentheses(_)::Identifier("fst",_):: Identifier("p1",_)::RParentheses(_)::RParentheses(_)::
-//        Identifier("p2",_):: Identifier("deltaT",_)::Identifier("espSqr",_)::Identifier("acc",_)::
+//        LParentheses(_)::Identifier("fst",_):: Identifier("p1B",_)::RParentheses(_)::RParentheses(_)::
+//        Identifier("p2B",_):: Identifier("deltaT",_)::Identifier("espSqr",_)::Identifier("acc",_)::
         end
       =>{
         println("end of nbody:: " + end)
