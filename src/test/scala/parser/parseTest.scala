@@ -1033,6 +1033,50 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "be able to parse 'nbody.rise'" in {
+    val fileName: String = testFilePath + "nbody.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "nbody"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_g.t match {
+      case rt.DepFunType(n,rt.FunType(
+      rt.ArrayType(n1: rt.NatIdentifier,rt.VectorType(n2:rt.NatIdentifier, rt.f32)),
+      rt.FunType(
+      rt.ArrayType(n3: rt.NatIdentifier,rt.VectorType(n4:rt.NatIdentifier, rt.f32)),
+      rt.FunType(rt.f32, rt.FunType(rt.f32, rt.ArrayType(n5:rt.NatIdentifier,
+      rt.PairType(rt.VectorType(n6:rt.NatIdentifier, rt.f32),rt.VectorType(n7:rt.NatIdentifier, rt.f32)))))
+      )
+      ))
+
+        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
+          && n3.name.equals(n.name) && n4.name.equals(n.name)
+          && n5.name.equals(n.name) && n6.name.equals(n.name)
+          && n7.name.equals(n.name)=> true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+//Todo: finish match
+//    ex_g match {
+//      case r.DepLambda(n: rt.NatIdentifier, r.Lambda(r.Identifier("pos"), r.Lambda(
+//      r.Identifier("vel"), r.Lambda(r.Identifier("espSqr"), r.Lambda(r.Identifier("deltaT"),
+//      r.App(rp.join, r.App(rp.join, ???)))
+//      ))))
+//        if n.name.equals("N")
+//      => true
+//      case r.DepLambda(n, e) => {
+//        fail("Not correct deplambda: "
+//          +n.toString()+ " , " + e.toString())
+//      }
+//      case a => fail("Not a DepLambda: " + a)
+//    }
+  }
+
   "parser" should "be able to parse 'negation.rise'" in {
     val fileName: String = testFilePath + "negation.rise"
     val file: FileReader = new FileReader(fileName)
