@@ -4,10 +4,12 @@ import org.scalatest.flatspec.AnyFlatSpec
 //import parser.parse.ParseError
 //import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
-import rise.{core => r}
 import rise.core.{types => rt}
 import rise.core.{semantics => rS}
 import rise.core.{primitives => rp}
+import rise.{core => r, openCL => o}
+import o.{primitives => op, TypedDSL => dsl}
+
 
 
 class parseTest extends  AnyFlatSpec {
@@ -1062,19 +1064,61 @@ class parseTest extends  AnyFlatSpec {
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 //Todo: finish match
-//    ex_g match {
-//      case r.DepLambda(n: rt.NatIdentifier, r.Lambda(r.Identifier("pos"), r.Lambda(
-//      r.Identifier("vel"), r.Lambda(r.Identifier("espSqr"), r.Lambda(r.Identifier("deltaT"),
-//      r.App(rp.join, r.App(rp.join, ???)))
-//      ))))
-//        if n.name.equals("N")
-//      => true
-//      case r.DepLambda(n, e) => {
-//        fail("Not correct deplambda: "
-//          +n.toString()+ " , " + e.toString())
-//      }
-//      case a => fail("Not a DepLambda: " + a)
-//    }
+    ex_g match {
+      case r.DepLambda(n: rt.NatIdentifier, r.Lambda(r.Identifier("pos"), r.Lambda(
+      r.Identifier("vel"), r.Lambda(r.Identifier("espSqr"), r.Lambda(r.Identifier("deltaT"),
+      r.App(rp.join(), r.App(rp.join(), r.App(r.App(op.mapWorkGroup(1),r.App(rp.join(), r.App(
+      r.App(op.mapWorkGroup(0),
+
+      r.Lambda(r.Identifier("p1Chunk"), r.Lambda(r.Identifier("newP1Chunk"),
+      r.App(r.App(r.App(op.mapLocal(1),
+
+      r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0), r.Lambda(r.Identifier("p1A"),
+      r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(), r.App(rp.fst(), r.Identifier("p1A")))),
+      r.App(rp.fst(), r.App(rp.snd(), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(), r.Identifier("p1A"))))),
+      r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
+
+      ),
+      r.App(r.App(r.DepApp(op.oclReduceSeq(), l:rt.AddressSpace.Local.type ),
+      r.Lambda(r.Identifier("accA"), r.Lambda(r.Identifier("p2A"),
+
+      r.App(r.App(rp.let(), r.App(r.App(toLocal, r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id")))),
+      r.Identifier("p2A")
+      )),
+      r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1), r.Lambda(r.Identifier("accDim"),r.App(r.App(op.mapLocal(0),
+      r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(), p:rt.AddressSpace.Private.type ),
+
+      r.Lambda(r.Identifier("accB"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"), r.App(rp.fst(),
+      r.App(rp.fst(), r.Identifier("p1B")))),
+      r.Identifier("p2B")), r.Identifier("deltaT")), r.Identifier("espSqr")), r.Identifier("accB")))
+
+      ), r.App(rp.snd(), r.Identifier("p1B"))), r.App(rp.fst(), r.Identifier("accDim2")))))
+      , r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.App(rp.snd(), r.App(rp.snd(), r.Identifier("accDim"))))
+      ))),r.App(r.App(rp.zip(), r.Identifier("p2Local")), r.Identifier("accA")))
+
+      ))
+      ))),
+      r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id"))), r.App(r.Identifier("generate"),
+      r.App(rp.vectorFromScalar(), r.Literal(rS.FloatData(0.0))))))),
+
+      r.App(r.App(rp.split(), r.Literal(rS.IntData(1))), r.App(r.App(rp.split(), r.Literal(rS.IntData(256))),
+      r.Identifier("pos"))))
+      ))
+
+      ),r.App(rp.split(), r.Literal(rS.IntData(256)))
+      ))
+      ),
+      r.App(r.App(rp.split(), r.Identifier("n")), r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel")))
+      ))
+      ))))))
+        if n.name.equals("N") && toLocal.eq(dsl.toLocal.toExpr)
+      => true
+      case r.DepLambda(n, e) => {
+        fail("Not correct deplambda: "
+          +n.toString()+ " , " + e.toString())
+      }
+      case a => fail("Not a DepLambda: " + a)
+    }
   }
 
   "parser" should "be able to parse 'negation.rise'" in {
