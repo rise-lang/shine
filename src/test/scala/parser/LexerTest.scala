@@ -609,14 +609,14 @@ class LexerTest extends  AnyFlatSpec {
         Backslash(_)::Identifier("bla",_)::Colon(_)::NatNumber(256,_)::Dot(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
         Identifier("mapLocal",_)::I32(0,_):: LParentheses(_)::
 
-        Backslash(_)::Identifier("p1",_)::Colon(_)::LParentheses(_)::LParentheses(_)::
+        Backslash(_)::Identifier("p1A",_)::Colon(_)::LParentheses(_)::LParentheses(_)::
         VectorType(4, FloatTyp(),_)::Comma(_)::VectorType(4, FloatTyp(),_)::RParentheses(_)::Comma(_)::
         VectorType(4, FloatTyp(),_)::RParentheses(_)::Arrow(_)::
 
         Identifier("update",_) :: LParentheses(_)::Identifier("fst",_)::LParentheses(_)::Identifier("fst",_)::
-        Identifier("p1",_)::RParentheses(_)::RParentheses(_)::LParentheses(_)::Identifier("fst",_)::LParentheses(_)::
-        Identifier("snd",_)::Identifier("p1",_)::RParentheses(_)::RParentheses(_)::
-        Identifier("deltaT",_)::LParentheses(_)::Identifier("snd",_)::Identifier("p1",_)::RParentheses(_)::
+        Identifier("p1A",_)::RParentheses(_)::RParentheses(_)::LParentheses(_)::Identifier("fst",_)::LParentheses(_)::
+        Identifier("snd",_)::Identifier("p1A",_)::RParentheses(_)::RParentheses(_)::
+        Identifier("deltaT",_)::LParentheses(_)::Identifier("snd",_)::Identifier("p1A",_)::RParentheses(_)::
         RParentheses(_)::
 
         LParentheses(_)::Identifier("zip",_)::Identifier("newP1Chunk",_) ::Identifier("bla",_)::RParentheses(_)::
@@ -635,7 +635,7 @@ class LexerTest extends  AnyFlatSpec {
 
         Backslash(_)::Identifier("p2Local",_)::Arrow(_)::Identifier("mapLocal",_)::I32(1,_)::LParentheses(_)::
         Backslash(_)::Identifier("accDim",_)::Arrow(_)::Identifier("mapLocal",_)::I32(0,_)::LParentheses(_)::
-        Backslash(_)::Identifier("p1",_)::Arrow(_)::Identifier("oclReduceSeq",_)::
+        Backslash(_)::Identifier("p1B",_)::Arrow(_)::Identifier("oclReduceSeq",_)::
         AddrSpaceType("Private",_)::LParentheses(_)::
 
         Backslash(_)::Identifier("acc",_)::Colon(_)::VectorType(4,FloatTyp(),_)::Arrow(_):://Todo: From here on comes the error if I make the match any longer

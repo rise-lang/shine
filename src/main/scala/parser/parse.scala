@@ -45,6 +45,7 @@ object parse {
     final case class SIntToPrimitive(prim: Int=>r.Primitive) extends SyntaxElement
     final case class SNat(nat: NatElement) extends SyntaxElement
     final case class SData(data: DataElement) extends SyntaxElement
+    final case class SAddrSpace(addrSpace: rt.AddressSpace) extends SyntaxElement
 
   sealed trait RiseKind //Todo: Scoping einbauen, also Kind nennen und Token explizit immer hinzufügen
     final case class RData() extends RiseKind
@@ -534,6 +535,8 @@ object parse {
         synE = synE.tail.tail
         prim.apply(n)
       }
+      case SAddrSpace(addrSpace) => throw new RuntimeException(
+        "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
       case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
       case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
@@ -571,6 +574,10 @@ object parse {
           }
           synE = synE.tail.tail
           prim.apply(n)
+        }
+        case SAddrSpace(addrSpace) => {
+          e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder)
+          synE = synE.tail
         }
         case SType(t) => {
           if(t.isInstanceOf[rt.DataTypeIdentifier]){
@@ -702,6 +709,8 @@ object parse {
           case SIntToPrimitive(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+          case SAddrSpace(addrSpace) => throw new RuntimeException(
+            "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
         }
       }
     }
@@ -783,6 +792,8 @@ object parse {
           case SIntToPrimitive(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+          case SAddrSpace(addrSpace) => throw new RuntimeException(
+            "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
         }
       }
     }
@@ -833,6 +844,8 @@ object parse {
           case DType(data) => data :: getTypesInList(synElems.tail)
         }
         case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+        case SAddrSpace(addrSpace) => throw new RuntimeException(
+          "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       }
     }else{
       Nil
@@ -958,6 +971,8 @@ object parse {
           }
         }
         case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+        case SAddrSpace(addrSpace) => throw new RuntimeException(
+          "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       }
     val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
     val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder)
@@ -983,7 +998,7 @@ object parse {
     Left(parseState) |>
       (parseLambda _ || parseDepLambda || parseBracesExpr ||
         parseUnOperator || parseBinOperator || parseIdent ||
-        parseNumber || parseTypeinNoAppExpr//|| parseDependencies
+        parseNumber || parseAddrSpaceType || parseTypeinNoAppExpr//|| parseDependencies
         )
 
   }
@@ -1270,6 +1285,27 @@ object parse {
     Left(ParseState(remainderTokens, parsedExprs, map, mapDepL))
   }
 
+
+  def parseAddrSpaceType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    val nextToken :: remainderTokens = parseState.tokenStream
+
+    nextToken match {
+      case AddrSpaceType(addrSpace, _) => {
+        val p:rt.AddressSpace = addrSpace match {
+          case "Local" => rt.AddressSpace.Local
+          case "Global" => rt.AddressSpace.Global
+          case "Private" => rt.AddressSpace.Private
+          case "Constant" => rt.AddressSpace.Constant
+        }
+        Left(ParseState(remainderTokens,
+          SAddrSpace(p) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
+      }
+      case tok => {
+        println("AddrSpaceTypeWasExpected: "+ tok + ": " + remainderTokens)
+        Right(ParseError("failed to parse parseAddrSpaceType: " + tok + " is not an AddrSpaceType"))
+      }
+    }
+  }
 
   def parseUnOperator(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     val nextToken :: remainderTokens = parseState.tokenStream

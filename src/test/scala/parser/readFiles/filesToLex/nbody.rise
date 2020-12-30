@@ -16,8 +16,8 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
         mapLocal 1 (
           \bla:256.4xF32->
           mapLocal 0 (
-            \p1:((4xF32, 4xF32), 4xF32)->
-            update (fst (fst p1)) (fst (snd p1)) deltaT (snd p1)
+            \p1A:((4xF32, 4xF32), 4xF32)->
+            update (fst (fst p1A)) (fst (snd p1A)) deltaT (snd p1A)
           )
           (zip newP1Chunk bla)
         )
@@ -29,10 +29,10 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
           (
             \p2Local -> mapLocal 1 (
               \accDim-> mapLocal 0 (
-                \p1 -> oclReduceSeq Private (
+                \p1B -> oclReduceSeq Private (
                   \acc:4xF32->\p2:4xF32->
-                  calcAcc (fst (fst p1)) p2 deltaT espSqr acc
-                ) (snd p1) (fst accDim2)
+                  calcAcc (fst (fst p1B)) p2 deltaT espSqr acc
+                ) (snd p1B) (fst accDim2)
               ) (zip newP1Chunk (snd (snd accDim)))
             ) (zip p2Local acc)
           ) 
