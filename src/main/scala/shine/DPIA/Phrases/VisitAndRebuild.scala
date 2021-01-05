@@ -214,12 +214,8 @@ object VisitAndRebuild {
     def visit(v:VisitAndRebuild.Visitor, x:K#I): K#I
   }
 
-  implicit val natVisitable = new KindVisitable[NatKind] {
-    override def visit(v: Visitor, x: NatIdentifier): NatIdentifier = v.nat(x)
-  }
+  implicit val natVisitable: KindVisitable[NatKind] = (v: Visitor, x: NatIdentifier) => v.nat(x)
 
-  implicit val natCollectionVisitable = new KindVisitable[NatCollectionKind] {
-    override def visit(v: Visitor, x: NatCollectionIdentifier): NatCollectionIdentifier =
-        v.natCollection(x).asInstanceOf[NatCollectionIdentifier]
-  }
+  implicit val natCollectionVisitable: KindVisitable[NatCollectionKind] =
+    (v: Visitor, x: NatCollectionIdentifier) => v.natCollection(x).asInstanceOf[NatCollectionIdentifier]
 }

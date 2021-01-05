@@ -13,7 +13,7 @@ final class NatCollectionIndexing(val collection: NatCollection, val idxs: Seq[N
     new NatCollectionIndexing(collection, idxs.map(idx => subMap.getOrElse(idx, idx)))
 
   override def visitAndRebuild(f: Nat => Nat): Nat =
-    f(new NatCollectionIndexing(collection, idxs.map(idx => f(idx))))
+    f(new NatCollectionIndexing(collection, idxs.map(idx => idx.visitAndRebuild(f))))
 
   override def substitute(subs: scala.collection.Map[Nat, Nat]): Option[Nat] = {
     Some(new NatCollectionIndexing(this.collection, idxs.map(n => ArithExpr.substitute(n, subs))))

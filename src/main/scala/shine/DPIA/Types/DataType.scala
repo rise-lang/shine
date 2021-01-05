@@ -53,7 +53,7 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
   }
 }
 
-final case class DepPairType[K <: Kind: KindName:KindReified](x:K#I, elemT:DataType)
+final case class DepPairType[K <: Kind:KindName:KindReified](x:K#I, elemT:DataType)
   extends ComposedType {
 
   override def toString: String = s"($x:${implicitly[KindName[K]].get} ** $elemT)"
@@ -61,6 +61,7 @@ final case class DepPairType[K <: Kind: KindName:KindReified](x:K#I, elemT:DataT
   override def equals(other: Any): Boolean = other match {
     case DepPairType(x2, elemT2) =>
       /*
+      TODO: FIX
       implicitly[KindReified[K]].tryFrom(x2).exists(x2 => {
         val elemSubbed = implicitly[Types.KindReified[K]].substitute(this.x, x2, elemT2)
         this.elemT == elemSubbed
