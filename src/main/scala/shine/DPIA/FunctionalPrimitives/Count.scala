@@ -9,43 +9,28 @@ import shine.DPIA.Semantics.OperationalSemantics.Store
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.Types.DataType._
-
+import shine.OpenCL.FunctionalPrimitives.OpenCLReduceSeq
 
 import scala.xml.Elem
 
-final case class Count(n: Nat, elemT: DataType, f: Phrase[ExpType ->: ExpType], input:Phrase[ExpType])
+final case class Count(n: Nat, input:Phrase[ExpType])
   extends ExpPrimitive {
   override val t = expT(IndexType(n), read)
-  // Filter needs to allocate more memory than it's 'logical' type says
+
+  private val asReduction = {
+    NatAsIndex(n, ReduceSeq(n, bool, NatType,
+      λ(expT(NatType, read))(i =>
+        λ(expT(bool, read))(b =>
+          IfThenElse(b, i + Natural(1), i))
+      ), Natural(0), input))
+  }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
-    `new`(IndexType(n), output => {
-      // We just newed it, so we know output is an identifier. We will need to play some tricks
-      // here, and change it's type.
-      acceptorTranslation(output.wr) `;` C(output.rd)
-    })
+    asReduction.continuationTranslation(C)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
-    con(input)(λ(expT(ArrayType(n, elemT), read))(input => {
-      comment("COUNT: counter") `;`
-      `new`(IndexType(n), counter => {
-        `for`(n, idx => {
-          comment("COUNT: test local") `;`
-          `new`(bool, testLocal => {
-            acc(f(input `@` idx))(testLocal.wr) `;`
-              IfThenElse(testLocal.rd,
-                counter.wr :=| IndexType(n) | NatAsIndex(n, IndexAsNat(n, counter.rd) + Natural(1)),
-                Skip()
-              )
-          })
-        }) `;`
-          comment("COUNT: write out") `;`
-        (A :=|IndexType(n)| counter.rd)
-      })
-    }
-    ))
+    asReduction.acceptorTranslation(A)
   }
 
   override def eval(s: Store): OperationalSemantics.Data = ???
@@ -56,8 +41,41 @@ final case class Count(n: Nat, elemT: DataType, f: Phrase[ExpType ->: ExpType], 
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = Count(
     v.nat(n),
-    v.data(elemT),
-    VisitAndRebuild(f, v),
+    VisitAndRebuild(input, v)
+  )
+}
+
+
+final case class OclCount(n: Nat, addressSpace: AddressSpace, input:Phrase[ExpType])
+  extends ExpPrimitive {
+  override val t = expT(IndexType(n), read)
+  // Filter needs to allocate more memory than it's 'logical' type says
+
+  private val asReduction = {
+    NatAsIndex(n, OpenCLReduceSeq(n, addressSpace, bool, NatType,
+      λ(expT(NatType, read))(i =>
+        λ(expT(bool, read))(b =>
+          IfThenElse(b, i + Natural(1), i))
+      ), Natural(0), input, unroll = false))
+  }
+
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
+    this.asReduction.continuationTranslation(C)
+  }
+
+  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
+    this.asReduction.acceptorTranslation(A)
+  }
+
+  override def eval(s: Store): OperationalSemantics.Data = ???
+
+  override def prettyPrint: String = s"filter"
+
+  override def xmlPrinter: Elem = <filter></filter>
+
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = OclCount(
+    v.nat(n),
+    v.addressSpace(addressSpace),
     VisitAndRebuild(input, v)
   )
 }

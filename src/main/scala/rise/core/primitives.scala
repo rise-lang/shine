@@ -185,11 +185,11 @@ object primitives {
   }
 
   @primitive object count extends Primitive with Builder {
-    impl { n: Nat => impl { dt : DataType => (n `.` dt) ->: (dt ->: bool) ->: IndexType(n) }}
+    impl { n: Nat => n `.` bool ->: IndexType(n) }
   }
 
   @primitive object which extends Primitive with Builder {
-    impl { n: Nat => impl { dt : DataType => (n `.` dt) ->: expl((count: Nat) => (dt ->: bool) ->: (count `.` IndexType(n)))}}
+    impl { n: Nat =>  (n `.` bool) ->: expl((count: Nat) => count `.` IndexType(n))}
   }
 
   @primitive object liftN extends Primitive with Builder {

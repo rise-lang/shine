@@ -5,6 +5,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.primitives._
 import rise.core.semantics.NatData
+import rise.openCL.primitives.{oclCount, oclWhich}
 import util.Execute
 
 class dependentTypes extends test_util.Tests {
@@ -200,11 +201,12 @@ class dependentTypes extends test_util.Tests {
   test("List of list") {
     val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
       def pred = fun(x => x =/= l(0.0f))
-      def cnts = toMem(mapSeq(fun(row => indexAsNat(count(row)(pred))))(array))
+      def cnts = toMem(mapSeq(fun(row => map(pred)(row) |> count |> indexAsNat))(array))
+
       liftNats(cnts)(depFun((lengths:NatCollection) =>
         dpairNats(lengths)(toDepArray(array) |>
           depMapSeq(depFun((rowIdx:Nat) => fun(row =>
-            which(row)(lengths `@` rowIdx)(pred)
+            which(map(pred)(row))(lengths `@` rowIdx)
               |> mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` nnzIdx)))
           ))))
       ))
@@ -220,13 +222,17 @@ class dependentTypes extends test_util.Tests {
   test("Compressed sparse row") {
     val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
       def pred = fun(x => x =/= l(0.0f))
-      def offs = toMem(array |> map(fun(row =>
-        indexAsNat(count(row)(pred)))
-      ) |> scanSeq(fun(x => fun(y => x + y)))(Literal(NatData(0))))
+
+
+      def offs = toMem(array |>
+        map(fun(row => map(pred)(row) |> count |> indexAsNat))
+        |> scanSeq(fun(x => fun(y => x + y)))(Literal(NatData(0)))
+      )
+
       liftNats(offs)(depFun((offs:NatCollection) =>
         dpairNats(offs)(toDepArray(array) |>
           depMapSeq(depFun((rowIdx:Nat) => fun(row =>
-            which(row)((offs `@` (rowIdx + 1)) - (offs `@` rowIdx))(pred)
+            which(map(pred)(row))((offs `@` (rowIdx + 1)) - (offs `@` rowIdx))
               |> mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` nnzIdx)))
           ))))
       ))
@@ -236,5 +242,31 @@ class dependentTypes extends test_util.Tests {
     println(inferred)
     print(inferred.t)
     util.gen.CProgram(inferred, "Foo_foo")
+  }
+
+
+  test("Compressed sparse row OCL") {
+    val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
+      def pred = fun(x => x =/= l(0.0f))
+
+
+      def offs = toMem(array |>
+        map(fun(row => map(pred)(row) |> oclCount(AddressSpace.Global) |> indexAsNat))
+        |> scanSeq(fun(x => fun(y => x + y)))(Literal(NatData(0)))
+      )
+
+      liftNats(offs)(depFun((offs:NatCollection) =>
+        dpairNats(offs)(toDepArray(array) |>
+          depMapSeq(depFun((rowIdx:Nat) => fun(row =>
+            oclWhich(map(pred)(row))((offs `@` (rowIdx + 1)) - (offs `@` rowIdx))
+              |> mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` nnzIdx)))
+          ))))
+      ))
+    })))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.OpenCLKernel(inferred, "Foo_foo")
   }
 }

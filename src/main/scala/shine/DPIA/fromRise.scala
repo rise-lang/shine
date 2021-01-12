@@ -820,23 +820,30 @@ object fromRise {
       }
 
       case core.count() => fromType {
-        case expT(inputT@ArrayType(n, elemT), `read`) ->:
-          (expT(_, read) ->: expT(bool, `read`))->: expT(IndexType(n2), `read`) =>
-          fun[ExpType](ExpType(inputT, read), input =>
-            fun[ExpType ->: ExpType](
-              ExpType(elemT, read) ->: ExpType(bool, read), f =>
-                Count(n, elemT, f, input)))
+        case expT(ArrayType(n, _), `read`) ->: expT(IndexType(_), `read`) =>
+          fun[ExpType](ExpType(ArrayType(n, bool), read), input => Count(n, input))
       }
 
-      case core.which() => fromType {
-        case expT(inputT@ArrayType(n, elemT), `read`) ->:
-          nFunT(count,
-            (expT(_, read) ->: expT(bool, `read`))->: expT(_, `read`)) =>
+      case ocl.oclCount() => fromType {
+        case aFunT(addr, expT(ArrayType(n, _), `read`) ->: expT(IndexType(_), `read`)) =>
+          depFun[AddressSpaceKind](addr)(
+            fun[ExpType](ExpType(ArrayType(n, bool), read), input => OclCount(n, addr, input))
+          )
+
+      }
+
+      case core.which() | ocl.oclWhich() =>
+        val alloc = p match {
+          case core.which() => Alloc.CNew
+          case ocl.oclWhich() => Alloc.OpenCLNew(AddressSpace.Local)
+          case _ => ???
+        }
+        fromType {
+        case expT(inputT@ArrayType(n, _), `read`) ->:
+          nFunT(count, expT(_, `read`)) =>
 
           fun[ExpType](expT(inputT, read), input =>
-            depFun[NatKind](count)(
-            fun[ExpType ->: ExpType](
-              expT(elemT, read) ->: expT(bool, read), f => Which(n, elemT, count, f, input)))
+            depFun[NatKind](count)(Which(n, count, input, alloc))
           )
       }
 

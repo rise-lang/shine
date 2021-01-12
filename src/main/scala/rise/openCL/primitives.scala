@@ -1,7 +1,7 @@
 package rise.openCL
 
 import rise.core.TypeLevelDSL._
-import rise.core.types.{AddressSpace, DataType, Nat}
+import rise.core.types.{AddressSpace, DataType, IndexType, Nat, bool}
 import rise.core.{Builder, Primitive}
 import rise.macros.Primitive.primitive
 
@@ -46,6 +46,16 @@ object primitives {
         expl((k: Nat) => impl{ t: DataType =>
           expl((l: Nat) => ((l * n)`.`t) ->: (l`.`t)) ->:
             ((m * n.pow(k))`.`t) ->: (m`.`t) })}})
+  }
+
+  @primitive object oclCount extends Primitive with Builder {
+    expl((_: AddressSpace) =>
+      impl { n: Nat => (n `.` bool)  ->: IndexType(n) }
+    )
+  }
+
+  @primitive object oclWhich extends Primitive with Builder {
+    impl { n: Nat =>  (n `.` bool) ->: expl((count: Nat) => count `.` IndexType(n))}
   }
 
   @primitive object oclCircularBuffer extends Primitive with Builder {
