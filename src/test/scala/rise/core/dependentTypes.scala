@@ -5,7 +5,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.primitives._
 import rise.core.semantics.NatData
-import rise.openCL.primitives.{oclCount, oclWhich}
+import rise.openCL.primitives.{oclCount, oclScanSeq, oclToMem, oclWhich}
 import util.Execute
 
 class dependentTypes extends test_util.Tests {
@@ -250,9 +250,9 @@ class dependentTypes extends test_util.Tests {
       def pred = fun(x => x =/= l(0.0f))
 
 
-      def offs = toMem(array |>
+      def offs = oclToMem(AddressSpace.Global)(array |>
         map(fun(row => map(pred)(row) |> oclCount(AddressSpace.Global) |> indexAsNat))
-        |> scanSeq(fun(x => fun(y => x + y)))(Literal(NatData(0)))
+        |> oclScanSeq(AddressSpace.Global)(fun(x => fun(y => x + y)))(Literal(NatData(0)))
       )
 
       liftNats(offs)(depFun((offs:NatCollection) =>
