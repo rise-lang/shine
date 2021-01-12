@@ -117,7 +117,7 @@ class CPrinter extends Printer {
   private def printVarDecl(v: VarDecl): Unit = {
     if (v.t.const) print("const ")
     v.t match {
-      case b: BasicType => print(s"${b.name} ${v.name}")
+      case b: BasicType => print(s"${b.print} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")
       case _: UnionType => ???
       case a: ArrayType =>
@@ -139,7 +139,7 @@ class CPrinter extends Printer {
   private def printParamDecl(p: ParamDecl): Unit = {
     if (p.t.const) print("const ")
     p.t match {
-      case b: BasicType => print(s"${b.name} ${p.name}")
+      case b: BasicType => print(s"${b.print} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
       case a: ArrayType => print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {

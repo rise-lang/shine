@@ -8,7 +8,7 @@ import shine.OpenCL.AddressSpace
 case class VectorType(n: Nat,
                       elemType: BasicType,
                       override val const: Boolean = false)
-  extends BasicType(s"${elemType.name}$n")
+  extends BasicType(s"${elemType.print}$n")
 
 case class PointerType(a: AddressSpace, override val valueType: Type, override val const: Boolean = false)
   extends C.AST.PointerType(valueType, const) {

@@ -7,7 +7,7 @@ import shine.DPIA.{->:, Phrases}
 
 import scala.xml.Elem
 
-final case class ForFragmentElements(fragType: WmmaFragment,
+final case class ForFragmentElements(fragType: Fragment,
                                      in: Phrase[ExpType],
                                      out: Phrase[AccType],
                                      fun: Phrase[ExpType ->: AccType ->: CommType],

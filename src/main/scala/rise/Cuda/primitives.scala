@@ -32,48 +32,31 @@ object primitives {
     mapType
   }
 
-  @primitive case class toFragmentA(layout: MatrixLayout) extends Primitive with Builder {
-    impl{m: Nat =>
-      impl{n: Nat  =>
-        impl{k: Nat  =>
+  @primitive object toFragment extends Primitive with Builder {
+    impl{rows: Nat =>
+      impl{columns: Nat =>
+        impl{d3: Nat =>
           impl{dt: DataType =>
-            expl((_: Nat) =>
-              ArrayType(m, ArrayType(k, dt)) ->: WmmaAMatrix(m, n, k, dt, layout))}}}}
+            impl{fragType: FragmentType =>
+              impl{matrixLayout: MatrixLayout =>
+                ArrayType(rows, ArrayType(columns, dt)) ->: Fragment(rows, columns, d3, dt, fragType, matrixLayout)}}}}}}
   }
 
-  @primitive case class toFragmentB(layout: MatrixLayout) extends Primitive with Builder {
-    impl{m: Nat =>
-      impl{n: Nat  =>
-        impl{k: Nat  =>
+  @primitive object fromFragment extends Primitive with Builder {
+    impl{rows: Nat =>
+      impl{columns: Nat =>
+        impl{d3: Nat =>
           impl{dt: DataType =>
-            expl((_: Nat) =>
-              ArrayType(k, ArrayType(n, dt)) ->: WmmaBMatrix(m, n, k, dt, layout))}}}}
-  }
-
-  @primitive case class toFragmentAccumulator(layout: MatrixLayout) extends Primitive with Builder {
-      impl{m: Nat =>
-        impl{n: Nat  =>
-          impl{k: Nat  =>
-            impl{dt: DataType =>
-              expl((_: Nat) =>
-                ArrayType(m, ArrayType(n, dt)) ->: WmmaAccumulator(m, n, k, dt))}}}}
-  }
-
-  @primitive case class fromFragment(layout: MatrixLayout) extends Primitive with Builder {
-    impl{m: Nat =>
-      impl{n: Nat  =>
-        impl{k: Nat  =>
-          impl{dt: DataType =>
-            expl((_: Nat) =>
-              WmmaAccumulator(m, n, k, dt) ->: ArrayType(m, ArrayType(n, dt)))}}}}
+            Fragment(rows, columns, d3, dt) ->: ArrayType(rows, ArrayType(columns, dt))}}}}
   }
 
   @primitive object generateFragment extends Primitive with Builder {
-    impl{m: Nat =>
-      impl{n: Nat  =>
-        impl{k: Nat  =>
+    impl{rows: Nat =>
+      impl{columns: Nat =>
+        impl{d3: Nat =>
           impl{dt: DataType =>
-            dt ->: WmmaAccumulator(m, n, k, dt)}}}}
+            impl{fragType: FragmentType =>
+              dt ->: Fragment(rows, columns, d3, dt, fragType, MatrixLayout.Row_Major)}}}}}
   }
 
   @primitive object tensorMMA extends Primitive with Builder {
@@ -84,9 +67,9 @@ object primitives {
             impl{k: Nat =>
               impl{dt: DataType =>
                 impl{dt2: DataType =>
-                  WmmaAMatrix(m, n, k, dt, layoutA) ->:
-                    WmmaBMatrix(m, n, k, dt, layoutB) ->:
-                    WmmaAccumulator(m, n, k, dt2) ->: WmmaAccumulator(m, n, k, dt2)}}}}}}}
+                  Fragment(m, k, n, dt, FragmentType.AMatrix, layoutA) ->:
+                    Fragment(k, n, m, dt, FragmentType.BMatrix, layoutB) ->:
+                    Fragment(m, n, k, dt2) ->: Fragment(m, n, k, dt2)}}}}}}}
   }
 
   @primitive object toSharedMemoryShift extends Primitive with Builder {
@@ -97,16 +80,10 @@ object primitives {
             ArrayType(m, ArrayType(n, t)) ->: ArrayType(m, ArrayType(n, t))})}}
   }
 
-//  @primitive object MapFragmentElements extends Primitive with Builder {
-//      impl{fragType: WmmaFragment =>
-//        impl{dt: DataType =>
-//          (dt ->: dt) ->: fragType ->: fragType}}
-//  }
-
-  @primitive case class mapFragmentElements(fragType: WmmaFragment) extends Primitive with Builder {
-    //  impl{fragType: WmmaFragment =>
-    impl{dt: DataType =>
-      (dt ->: dt) ->: fragType ->: fragType}
+  @primitive object mapFragmentElements extends Primitive with Builder {
+      impl{fragmentType: DataType =>
+        impl{dt: DataType =>
+          (dt ->: dt) ->: fragmentType ->: fragmentType}}
   }
 
   @primitive object globalToShared extends Primitive with Builder {

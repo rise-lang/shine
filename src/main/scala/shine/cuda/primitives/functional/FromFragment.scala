@@ -12,29 +12,27 @@ import shine.cuda.primitives.imperative.WmmaStore
 
 import scala.xml.Elem
 
-case class FromFragment(ldm: Nat,
-                        m: Nat,
+case class FromFragment(m: Nat,
                         n: Nat,
                         k: Nat,
                         dataType: DataType,
-                        fragment: Phrase[ExpType],
-                        layout: MatrixLayout
+                        fragment: Phrase[ExpType]
                        ) extends ExpPrimitive {
 
-  fragment :: ExpType(WmmaAccumulator(m, n, k, dataType), read)
-  val fragArrayType = fragment.t.dataType.asInstanceOf[WmmaFragment].arrayType
+  fragment :: ExpType(Fragment(m, n, k, dataType), read)
+  val fragArrayType = fragment.t.dataType.asInstanceOf[Fragment].matrixType
   override val t: ExpType = ExpType(fragArrayType, write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    FromFragment(f.nat(ldm), f.nat(m), f.nat(n), f.nat(k), f.data(dataType),
-      VisitAndRebuild(fragment, f), layout)
+    FromFragment(f.nat(m), f.nat(n), f.nat(k), f.data(dataType),
+      VisitAndRebuild(fragment, f))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     con(fragment)(λ(ExpType(fragment.t.dataType, read))(fragment =>
-      WmmaStore(ldm, m, n, k,
-        dataType, fragment, A, layout)))
+      WmmaStore(m, n, k,
+        dataType, fragment, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
@@ -42,10 +40,10 @@ case class FromFragment(ldm: Nat,
 
   override def eval(s: Store): OperationalSemantics.Data = ???
 
-  override def prettyPrint: String = s"FromFragment($ldm, ${PrettyPhrasePrinter(fragment)}, $layout)"
+  override def prettyPrint: String = s"FromFragment(${PrettyPhrasePrinter(fragment)})"
 
   override def xmlPrinter: Elem =
-    <FromFragment ldm={ToString(ldm)} layout={ToString(layout)}>
+    <FromFragment>
       <fragment>
         {Phrases.xmlPrinter(fragment)}
       </fragment>

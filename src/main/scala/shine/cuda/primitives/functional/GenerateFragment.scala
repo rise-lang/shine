@@ -17,38 +17,36 @@ case class GenerateFragment(m: Nat,
                             n: Nat,
                             k: Nat,
                             dataType: DataType,
-                            fill: Phrase[ExpType]) extends ExpPrimitive {
+                            fill: Phrase[ExpType],
+                            fragmentType: FragmentType,
+                            layout: MatrixLayout) extends ExpPrimitive {
 
   fill :: ExpType(dataType, read)
 
-  override val t: ExpType = ExpType(WmmaAccumulator(m, n, k, dataType), read)
+  override val t: ExpType = ExpType(Fragment(m, n, k, dataType), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     GenerateFragment(f.nat(m), f.nat(n), f.nat(k), f.data(dataType),
-      VisitAndRebuild(fill, f))
+      VisitAndRebuild(fill, f), fragmentType, layout)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     con(fill)(λ(ExpType(dataType, read))(fill =>
-      WmmaFill(m, n, k, dataType, fill, A)))
+      WmmaFill(m, n, k, dataType, fill, fragmentType, layout, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
-    OpenCLNew(AddressSpace.Private, WmmaAccumulator(m, n, k, dataType),
-      λ(VarType(WmmaAccumulator(m, n, k, dataType)))(fragment =>
-        acceptorTranslation(fragment.wr) `;`
-          C(fragment.rd)))
-  }
+                                      (implicit context: TranslationContext): Phrase[CommType] = ???
 
   override def eval(s: Store): OperationalSemantics.Data = ???
 
   override def prettyPrint: String =
-    s"GenerateFragment($m, $n, $k, ${PrettyPhrasePrinter(fill)})"
+    s"GenerateFragment($m, $n, $k, ${PrettyPhrasePrinter(fill)}, $fragmentType, $layout)"
 
   override def xmlPrinter: Elem =
-    <GenerateFragment n={ToString(n)} m={ToString(m)} k={ToString(k)} dt1={ToString(dataType)}>
+    <GenerateFragment m={ToString(m)} n={ToString(n)} k={ToString(k)} dt={ToString(dataType)}
+                      fragType={ToString(fragmentType)} layout={ToString(layout)}>
       <fill>
         {Phrases.xmlPrinter(fill)}
       </fill>

@@ -25,11 +25,11 @@ final case class TensorMatMultAdd(m: Nat,
                                   cMatrix: Phrase[ExpType]) extends ExpPrimitive {
   Wmma.checkDimensionsAndTypes(m, n, k, dataType, dataTypeAcc)
 
-  aMatrix :: ExpType(WmmaAMatrix(m, n, k, dataType, layoutA), read)
-  bMatrix :: ExpType(WmmaBMatrix(m, n, k, dataType, layoutB), read)
-  cMatrix :: ExpType(WmmaAccumulator(m, n, k, dataTypeAcc), read)
+  aMatrix :: ExpType(Fragment(m, n, k, dataType, FragmentType.AMatrix, layoutA), read)
+  bMatrix :: ExpType(Fragment(m, n, k, dataType, FragmentType.BMatrix, layoutB), read)
+  cMatrix :: ExpType(Fragment(m, n, k, dataTypeAcc), read)
 
-  override val t: ExpType = ExpType(WmmaAccumulator(m, n, k, dataTypeAcc), write)
+  override val t: ExpType = ExpType(Fragment(m, n, k, dataTypeAcc), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     TensorMatMultAdd(f.nat(m), f.nat(n), f.nat(k), layoutA, layoutB,
@@ -39,28 +39,19 @@ final case class TensorMatMultAdd(m: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    con(aMatrix)(λ(ExpType(WmmaAMatrix(m, n, k, dataType, layoutA), read))(aMatrix =>
-      con(bMatrix)(λ(ExpType(WmmaBMatrix(m, n, k, dataType, layoutB), read))(bMatrix =>
-        con(cMatrix)(λ(ExpType(WmmaAccumulator(m, n, k, dataTypeAcc), read))(cMatrix =>
+    con(aMatrix)(λ(ExpType(Fragment(m, n, k, dataType, FragmentType.AMatrix, layoutA), read))(aMatrix =>
+      con(bMatrix)(λ(ExpType(Fragment(m, n, k, dataType, FragmentType.BMatrix, layoutB), read))(bMatrix =>
+        con(cMatrix)(λ(ExpType(Fragment(m, n, k, dataTypeAcc), read))(cMatrix =>
             WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
-    OpenCLNew(AddressSpace.Private, WmmaAccumulator(m, n, k, dataTypeAcc),
-      λ(VarType(WmmaAccumulator(m, n, k, dataTypeAcc)))(resultMatrix =>
-        acceptorTranslation(resultMatrix.wr) `;`
-          C(resultMatrix.rd)))
-  }
+                                      (implicit context: TranslationContext): Phrase[CommType] = ???
 
   override def eval(s: Store): Data = ???
 
   override def prettyPrint: String =
-    s"WmmaMM(${PrettyPhrasePrinter(aMatrix)}, ${PrettyPhrasePrinter(bMatrix)}, ${
-      PrettyPhrasePrinter {
-        cMatrix
-      }
-    })"
+    s"TensorMatMultAdd(${PrettyPhrasePrinter(aMatrix)}, ${PrettyPhrasePrinter(bMatrix)}, ${PrettyPhrasePrinter {cMatrix}})"
 
   override def xmlPrinter: Elem =
     <wmmaMM n={ToString(n)} m={ToString(m)} k={ToString(k)} dt1={ToString(dataType)} dt2={ToString(dataTypeAcc)}>

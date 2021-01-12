@@ -22,10 +22,10 @@ case class WmmaMMA(m: Nat,
                   ) extends CommandPrimitive {
   Wmma.checkDimensionsAndTypes(m, n, k, dataType, dataTypeAcc)
 
-  aMatrix :: ExpType(WmmaAMatrix(m, n, k, dataType, layoutA), read)
-  bMatrix :: ExpType(WmmaBMatrix(m, n, k, dataType, layoutB), read)
-  cMatrix :: ExpType(WmmaAccumulator(m, n, k, dataTypeAcc), read)
-  resultMatrix :: AccType(WmmaAccumulator(m, n, k, dataTypeAcc))
+  aMatrix :: ExpType(Fragment(m, n, k, dataType, FragmentType.AMatrix, layoutA), read)
+  bMatrix :: ExpType(Fragment(m, n, k, dataType, FragmentType.BMatrix, layoutB), read)
+  cMatrix :: ExpType(Fragment(m, n, k, dataTypeAcc), read)
+  resultMatrix :: AccType(Fragment(m, n, k, dataTypeAcc))
 
   override def eval(s: Store): Store = ???
 

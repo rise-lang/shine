@@ -4,7 +4,7 @@ import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.DefaultTypeImplementations.BasicType
 import shine.C.AST.{Decl, PointerType}
-import shine.C.CodeGeneration.CodeGenerator.CIntExpr
+import shine.C.CodeGeneration.CodeGenerator.{CIntExpr, PathExpr}
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGen}
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives.AsVectorAligned
@@ -45,16 +45,20 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
       case f@CudaParFor(n, dt, a, Lambda(i, Lambda(o, p)), _, _, _) =>
         CudaCodeGen.codeGenCudaParFor(f, n, dt, a, i, o, p, env)
 
-      case WmmaLoad(ldm, _, _, _, _, layout, matrix, fragmentAcc) =>
+      case WmmaLoad(m, n, k, _, matrix, fragmentAcc) =>
         exp(matrix, env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
           //Pointer to first element of the matrix
           val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
+
+          val (layout, ldm) = inferFragment(matrix, env, m, n, k, FragmentType.Acuumulator)
+          if (fragmentAcc.t.dataType.asInstanceOf[Fragment].layout.isInstanceOf[MatrixLayoutIdentifier])
+            fragmentAcc.t.dataType.asInstanceOf[Fragment].layout.asInstanceOf[MatrixLayoutIdentifier].setLayout(layout)
 
           acc(fragmentAcc, env, Nil, frag =>
             C.AST.ExprStmt(C.AST.FunCall(
               C.AST.DeclRef("nvcuda::wmma::load_matrix_sync"),
                 //only accumulator-fragments must specify their layout
-                if (!fragmentAcc.t.dataType.isInstanceOf[WmmaAccumulator])
+                if (fragmentAcc.t.dataType.asInstanceOf[Fragment].fragmentType != FragmentType.Acuumulator)
                   immutable.Seq(
                     frag,
                     matrixPtr,
@@ -67,11 +71,12 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
                     C.AST.ArithmeticExpr(ldm),
                     C.AST.DeclRef(toString(layout))))))})
 
-      case WmmaStore(ldm, _, _, _, _, fragment, matrixAcc, layout) =>
+      case WmmaStore(m, n, k, _, fragment, matrixAcc) =>
         exp(fragment, env, Nil, fragment =>
           acc(matrixAcc, env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
-            //Pointer to first element of the matrix
             val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
+
+            val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, FragmentType.Acuumulator)
 
             C.AST.ExprStmt(C.AST.FunCall(
               C.AST.DeclRef("nvcuda::wmma::store_matrix_sync"),
@@ -81,7 +86,7 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
                 C.AST.ArithmeticExpr(ldm),
                 C.AST.DeclRef(toString(layout)))))}))
 
-      case WmmaFill(_, _, _, _, fill, fragmentAcc) =>
+      case WmmaFill(_, _, _, _, fill, _, _, fragmentAcc) =>
         exp(fill, env, Nil, fill =>
           acc(fragmentAcc, env, Nil, fragment =>
             C.AST.ExprStmt(C.AST.FunCall(
@@ -156,6 +161,63 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
     }
   }
 
+  def inferFragment[T <: BasePhraseType](matrix: Phrase[T], env: Environment, m: Nat, n: Nat, k: Nat, fragmentType: FragmentType): (MatrixLayout, ArithExpr) = {
+    val rows = fragmentType match {
+      case FragmentType.AMatrix =>
+        m
+      case FragmentType.BMatrix =>
+        k
+      case FragmentType.Acuumulator =>
+        m
+    }
+
+    val index00 = matrixIndexAsNat(matrix, env, 0, 0)
+    val indexNextRowBlock_RowMajor = matrixIndexAsNat(matrix, env, rows, 0)
+    val indexNextRowBlock_ColumnMajor = matrixIndexAsNat(matrix, env, 0, rows)
+    val diffWithVars = (indexNextRowBlock_RowMajor - indexNextRowBlock_ColumnMajor).enforceSimplification
+
+    //Difference bewteen indices can containing variables, which must be a global matrix
+    //dimensions (dimension of the matrix in memory) and therefore greater than 1
+    val diff = diffWithVars.substitute(
+      diffWithVars.varList.map(globalMatrixDimension => globalMatrixDimension -> Cst(2)).toMap)
+      .getOrElse(diffWithVars).eval
+
+    val matrixLayout =
+      if (diff > 0)
+        MatrixLayout.Row_Major
+      else
+        MatrixLayout.Col_Major
+
+    val ldm =
+      (if (matrixLayout == MatrixLayout.Row_Major)
+        matrixIndexAsNat(matrix, env, 1, 0)
+      else
+        matrixIndexAsNat(matrix, env, 0, 1)) -
+      index00
+
+    (matrixLayout, ldm)
+  }
+
+  def matrixIndexAsNat[T <: BasePhraseType](matrix: Phrase[T], env: Environment, index1: Nat, index2: Nat): ArithExpr = {
+    var result: Expr = null
+
+    matrix.t match {
+      case AccType(_) =>
+        acc(matrix.asInstanceOf[Phrase[AccType]], env, List(CIntExpr(index1), CIntExpr(index2)), matrixAst => {
+          result = matrixAst.asInstanceOf[C.AST.ArraySubscript].index
+          C.AST.Comment("This should not be generated!")})
+      case ExpType(_, _) =>
+        exp(matrix.asInstanceOf[Phrase[ExpType]], env, List(CIntExpr(index1), CIntExpr(index2)), matrixAst => {
+          result = matrixAst.asInstanceOf[C.AST.ArraySubscript].index
+          C.AST.Comment("This should not be generated!")})
+      case _ =>
+        throw new Exception("This should not happen!")
+    }
+
+
+    result.asInstanceOf[C.AST.ArithmeticExpr].ae
+  }
+
   override def acc(phrase: Phrase[AccType],
                    env: Environment,
                    path: Path,
@@ -218,11 +280,11 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
   }
 
   override def typ(dt: DataType): Type = dt match {
-    case WmmaAMatrix(m, n, k, dataType, layout) =>
+    case Fragment(m, n, k, dataType, FragmentType.AMatrix, layout) =>
       cuda.ast.WmmaAMatrix(m, n, k, typ(dataType), layout)
-    case WmmaBMatrix(m, n, k, dataType, layout) =>
+    case Fragment(m, n, k, dataType, FragmentType.BMatrix, layout) =>
       cuda.ast.WmmaBMatrix(m, n, k, typ(dataType), layout)
-    case WmmaAccumulator(m, n, k, dataType) =>
+    case Fragment(m, n, k, dataType, FragmentType.Acuumulator, _) =>
       cuda.ast.WmmaAccumulator(m, n, k, typ(dataType))
     case shine.DPIA.Types.f16 =>
       cuda.ast.Type.half

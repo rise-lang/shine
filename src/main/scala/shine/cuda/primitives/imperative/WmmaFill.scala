@@ -12,11 +12,13 @@ case class WmmaFill(m: Nat,
                     k: Nat,
                     dataType: DataType,
                     fill: Phrase[ExpType],
+                    fragmentType: FragmentType,
+                    layout: MatrixLayout,
                     fragment: Phrase[AccType]
                    ) extends CommandPrimitive {
 
   fill :: ExpType(dataType, read)
-  fragment :: AccType(WmmaAccumulator(m, n, k, dataType))
+  fragment :: AccType(Fragment(m, n, k, dataType, fragmentType, layout))
 
   override def eval(s: Store): Store = ???
 
@@ -35,6 +37,6 @@ case class WmmaFill(m: Nat,
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
     WmmaFill(fun.nat(m), fun.nat(n), fun.nat(k), fun.data(dataType), VisitAndRebuild(fill, fun),
-      VisitAndRebuild(fragment, fun))
+      fragmentType, layout, VisitAndRebuild(fragment, fun))
   }
 }

@@ -9,7 +9,7 @@ import rise.core.types.{AddressSpace, _}
 import rise.core.types.MatrixLayout._
 import rise.openCL.primitives.{oclReduceSeq, oclReduceSeqUnroll}
 import rise.Cuda.TypedDSL._
-import rise.Cuda.primitives.{generateFragment, toSharedMemoryShift}
+import rise.Cuda.primitives.{fromFragment, generateFragment, toFragment, toSharedMemoryShift}
 import rise.openCL.TypedDSL.{toLocal, toPrivate}
 
 //Matrixmultiplications (mm) with tensor cores
@@ -51,12 +51,12 @@ object mmTensor {
       (mTileFrag `.` kTileFrag `.` f16) ->: (kTileFrag `.` nTileFrag `.` f16) ->: (mTileFrag `.` nTileFrag `.` f32)
     )((a, b) =>
       tensorMMA(
-        a |> toFragmentA(Row_Major, nTileFrag),
-        b |> toFragmentB(Row_Major, mTileFrag),
-        l(0f) |> generateFragment)
+        a |> toFragment |> toPrivate,
+        b |> toFragment |> toPrivate,
+        l(0f) |> generateFragment |> toPrivate)
         |> toPrivate
 
-        |> fromFragment(16)
+        |> fromFragment
     )
   }
 
@@ -84,12 +84,12 @@ object mmTensor {
             //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
             oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
               tensorMMA(
-                abTiles._1 |> transpose |> toFragmentA(Row_Major, k),
-                abTiles._2 |> toFragmentB(Row_Major, n),
+                abTiles._1 |> transpose |> toFragment |> toPrivate,
+                abTiles._2 |> toFragment |> toPrivate,
                 cTile)))
             (generateFragment(l(0f))) |>
 
-            fromFragment(n) |> // mTileFrag.nTileFrag.f32
+            fromFragment |> // mTileFrag.nTileFrag.f32
 
             transpose)) |> // n/nTileFrag.nTileFrag.mTileFrag.f32
           join |> // n.mTileFrag.f32
@@ -121,12 +121,12 @@ object mmTensor {
               //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
               oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                 tensorMMA(
-                  abTiles._1 |> transpose |> toFragmentA(Row_Major, k),
-                  abTiles._2 |> toFragmentB(Col_Major, k), // leading dimension is k cause the b matrix is transposed!
+                  abTiles._1 |> transpose |> toFragment |> toPrivate,
+                  abTiles._2 |> toFragment |> toPrivate, // leading dimension is k cause the b matrix is transposed!
                   cTile)))
               (generateFragment(l(0f))) |>
 
-              fromFragment(n) |> // mTileFrag.nTileFrag.f32
+              fromFragment |> // mTileFrag.nTileFrag.f32
 
               transpose)) |> // n/nTileFrag.nTileFrag.mTileFrag.f32
             join |> // n.mTileFrag.f32
@@ -157,12 +157,12 @@ object mmTensor {
               //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
               oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                 tensorMMA(
-                  abTiles._1 |> transpose |> toFragmentA(k),
-                  abTiles._2 |> toFragmentB(n),
+                  abTiles._1 |> transpose |> toFragment |> toPrivate,
+                  abTiles._2 |> toFragment |> toPrivate,
                   cTile)))
               (generateFragment(l(0f))) |>
 
-              fromFragment(n))) |> // m/mTileFrag.mTileFrag.nTileFrag.f32
+              fromFragment)) |> // m/mTileFrag.mTileFrag.nTileFrag.f32
 
             join |> // m.mTileFrag.f32
             transpose)) |> // n/nTileFrag.nTileFrag.m.f32
@@ -215,14 +215,14 @@ object mmTensor {
                 let(toPrivate(
                   abTilesWarp._1 |> transpose |> split(mTileFrag) |>
                     mapSeqUnroll(fun(aFragTile =>
-                      aFragTile |> toFragmentA(k)))))
+                      aFragTile |> toFragment))))
                 be(aFrags => // mTileWarp/mTileFrag.WmmaAMatrix
 
                   //Load tile of b-matrix into multiple fragments
                   let(toPrivate(
                     abTilesWarp._2 |> transpose |> split(nTileFrag) |>
                       mapSeqUnroll(fun(bFragTileT =>
-                        bFragTileT |> transpose |> toFragmentB(Col_Major, k)))))
+                        bFragTileT |> transpose |> toFragment))))
                   be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
 
                     //Do MMA instructions with tensor cores
@@ -242,7 +242,7 @@ object mmTensor {
                 cTiles |>
                 mapSeqUnroll(fun(cTile =>
                   cTile |>
-                  fromFragment(n) |>      // mTileFrag.nTileFrag.f32
+                  fromFragment |>      // mTileFrag.nTileFrag.f32
                   transpose)) |>          // nTileWarp/nTileFrag.nTileFrag.mTileFrag.f32
                 join |>                   // nTileWarp.mTileFrag.f32
                 transpose)) |>            // mTileWarp/mTileFrag.mTileFrag.nTileWarp.f32
@@ -335,14 +335,14 @@ object mmTensor {
                       let(toPrivate(
                         aTbTilesWarp._1 |> transpose |> split(mTileFrag) |>
                           mapSeqUnroll(fun(aFragTileT =>
-                            aFragTileT |> toFragmentA(kTileBlock)))))
+                            aFragTileT |> toFragment))))
                       be(aFrags => // mTileWarp/mTileFrag.WmmaAMatrix
 
                         //Load tile of b matrix to fragment
                         let(toPrivate(
                           aTbTilesWarp._2 |> transpose |> split(nTileFrag) |>
                             mapSeqUnroll(fun(bFragTileT =>
-                              bFragTileT |> transpose |> toFragmentB(nTileBlock)))))
+                              bFragTileT |> transpose |> toFragment))))
                         be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
 
                           //Do matrix multiplication and accumulate with tensor cores
@@ -357,7 +357,7 @@ object mmTensor {
                       mapSeqUnroll(fun(cTile =>
                         cTile |> transpose |> split(nTileFrag) |>
                         mapSeqUnroll(fun(cTileFragT =>
-                          cTileFragT |> transpose |> toFragmentAccumulator(nTileBlock))))))
+                          cTileFragT |> transpose |> toFragment)))))
                      |> // mTileWarp/mTileFrag.nTileWarp/nTileFrag.WmmaAccumulator
 
                     //This store into shared memory into fragments is unnecessary when reduce directly over fragments
@@ -365,7 +365,7 @@ object mmTensor {
                       cTiles |>
                       mapSeqUnroll(fun(cTile =>
                         cTile |>
-                        fromFragment(nTileBlock) |>   // mTileFrag.nTileFrag.f32
+                        fromFragment |>   // mTileFrag.nTileFrag.f32
                         transpose)) |>                // nTileWarp/nTileFrag.nTileFrag.mTileFrag.f32
                       join |>                         // nTileWarp.mTileFrag.f32
                       transpose)) |>                  // mTileWarp/mTileFrag.mTileFrag.nTileWarp.f32
@@ -581,7 +581,7 @@ object mmTensor {
                 aFragTile
               else
                 aFragTile |> transpose) |>
-              toFragmentA(layoutA, ldmA)))))
+              toFragment))))
           be(aFrags => // numberOfAFragments.WmmaAMatrix
 
             //Load tile of b-matrix into multiple fragments
@@ -594,7 +594,7 @@ object mmTensor {
                   bFragTile
                 else
                   bFragTile |> transpose) |>
-                toFragmentB(layoutB, ldmB)))))
+                toFragment))))
             be(bFrags => // numberOfBFragments.WmmaBMatrix
 
               //Do matrix multiplication and accumulate with tensor cores
@@ -716,7 +716,7 @@ object mmTensor {
 
   //Store matrix elements from fragments which are distributed over different warps (into global memory)
   //Simply use from-fragment-primitiv to load from fragments into global memory
-  private def epilog(ldmResult: Nat): ToBeTyped[Expr] =
+  private def epilog: ToBeTyped[Expr] =
     fun(resultFragsBlock =>
       resultFragsBlock |>
       mapWarp(fun(resultFragsWarp =>
@@ -725,7 +725,7 @@ object mmTensor {
         resultFragsWarp |>
         mapSeqUnroll(fun(resultFrag =>
           resultFrag |>
-          fromFragment(ldmResult) |> // mTileFrag.nTileFrag.f32
+          fromFragment |> // mTileFrag.nTileFrag.f32
           transpose)) |>             // (mTileWarp/mTileFrag)*(nTileWarp/nTileFrag).nTileFrag.mTileFrag.f32
         join |>                      // (mTileWarp/mTileFrag)*nTileWarp.mTileFrag.f32
         split(config.nTileWarp) |>
@@ -759,7 +759,7 @@ object mmTensor {
           resultFragsWarp |>
           mapSeqUnroll(fun(resultFrag =>
             resultFrag |>
-            fromFragment(config.nTileBlock) |>      // mTileFrag.nTileFrag.f32
+            fromFragment |>      // mTileFrag.nTileFrag.f32
             transpose)) |>                          // (mTileWarp/mTileFrag)*(nTileWarp/nTileFrag).nTileFrag.mTileFrag.f32
           join |>                                   // (mTileWarp/mTileFrag)*nTileWarp.mTileFrag.f32
           split(config.nTileWarp) |>
@@ -810,7 +810,7 @@ object mmTensor {
             fragsTile |>
             mapSeqUnroll(fun(resultFrag =>
               resultFrag |>
-              fromFragment(config.nTileBlock + 4) |>
+              fromFragment |>
               transpose)) |>
             join |>
             split(config.nTileWarp) |>
@@ -850,7 +850,7 @@ object mmTensor {
 
       mapBlock(fun(aRowsBlockBColumnBlock =>
 
-        blockMM(n)(
+        blockMM(
           aRowsBlockBColumnBlock._1,
           aRowsBlockBColumnBlock._2) |> //mTileBlock.nTileblock.f32
 
@@ -865,26 +865,26 @@ object mmTensor {
   //Kernel for mm using shared memory
   def matMulSharedMemory(config: mmConfig): Expr = {
     this.config = config
-    deviceMM(depFun((n: Nat) => blockMM(epilog(n))))
+    deviceMM(blockMM(epilog))
   }
 
   //Kernel for mm using shared memory avoiding bank conflicts while loading blockTiles into shared memory
   def matMulSharedMemoryV2(config: mmConfig): Expr = {
     this.config = config
-    deviceMM(depFun((n: Nat) => blockMMV2(epilog(n))))
+    deviceMM(blockMMV2(epilog))
   }
 
   //Kernel for mm using shared memory avoiding bank conflicts while loading blockTiles into shared memory
   //and better epilog
   def matMulSharedMemoryV3(config: mmConfig): Expr = {
     this.config = config
-    deviceMM(depFun((_: Nat) => blockMMV2(epilogV2)))
+    deviceMM(blockMMV2(epilogV2))
   }
 
   //Kernel for mm using shared memory avoiding bank conflicts while loading blockTiles into shared memory
   //and even better epilog
   def matMulSharedMemoryV4(config: mmConfig): Expr = {
     this.config = config
-    deviceMM(depFun((_: Nat) => blockMMV2(epilogV3)))
+    deviceMM(blockMMV2(epilogV3))
   }
 }

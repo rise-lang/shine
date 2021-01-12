@@ -55,6 +55,11 @@ object Wmma {
     layout match {
       case MatrixLayout.Row_Major => "nvcuda::wmma::row_major"
       case MatrixLayout.Col_Major => "nvcuda::wmma::col_major"
+      case i: MatrixLayoutIdentifier =>
+        if (i.layout.isDefined)
+          toString(i.layout.get)
+        else
+          throw new Exception(s"layout for $i is not infered")
       case _ => throw new Exception("this should not happen")
     }
   }
@@ -65,10 +70,12 @@ case class WmmaAMatrix(m: Nat,
                        k: Nat,
                        dataType: shine.C.AST.Type,
                        layout: MatrixLayout)
-  extends BasicType(s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType," +
-    s"${Wmma.toString(layout)}>") {
+  extends BasicType("this should not printed") {
 
   Wmma.checkFragmentAB(m, n, k, dataType)
+
+  override def print: String = s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType," +
+    s"${Wmma.toString(layout)}>"
 }
 
 case class WmmaBMatrix(m: Nat,
@@ -76,10 +83,12 @@ case class WmmaBMatrix(m: Nat,
                        k: Nat,
                        dataType: shine.C.AST.Type,
                        layout: MatrixLayout)
-  extends BasicType(s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType," +
-    s"${Wmma.toString(layout)}>") {
+  extends BasicType("this should not printed") {
 
   Wmma.checkFragmentAB(m, n, k, dataType)
+
+  override def print: String = s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType," +
+    s"${Wmma.toString(layout)}>"
 }
 
 case class WmmaAccumulator(m: Nat,

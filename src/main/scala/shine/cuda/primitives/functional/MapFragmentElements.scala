@@ -7,12 +7,11 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.Store
 import shine.DPIA.Types._
-import shine.DPIA.{->:, Phrases, VarType, expT, accT}
-import shine.OpenCL.ImperativePrimitives.OpenCLNew
+import shine.DPIA.{->:, Phrases, expT, accT}
 
 import scala.xml.Elem
 
-case class MapFragmentElements(fragType: WmmaFragment,
+case class MapFragmentElements(fragType: Fragment,
                                fragment: Phrase[ExpType],
                                fun: Phrase[ExpType ->: ExpType],
                               ) extends ExpPrimitive {
@@ -30,8 +29,6 @@ case class MapFragmentElements(fragType: WmmaFragment,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     val dt = fragType.dataType
 
-    //TODO what about continuationTranslation of a fragment with accesType write???
-    //maybe if accesType write allocate Memory with new?
     con(fragment)(λ(expT(fragType, read))(input =>
       shine.cuda.primitives.imperative.ForFragmentElements(fragType, input, A,
         λ(expT(dt, read))(x =>
@@ -39,22 +36,7 @@ case class MapFragmentElements(fragType: WmmaFragment,
             acc(fun(x))(o))))))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
-    val dt = fragType.dataType
-
-    OpenCLNew(AddressSpace.Private, fragType,
-      λ(VarType(fragType))(fragmentAcc =>
-        (if (fragment.t.accessType.toString == write.toString)
-          acc(fragment)(fragmentAcc.wr) `;`
-            shine.cuda.primitives.imperative.ForFragmentElements(fragType, fragmentAcc.rd, fragmentAcc.wr,
-              λ(expT(dt, read))(x =>
-                λ(accT(dt))(o =>
-                  acc(fun(x))(o))))
-        else
-          acceptorTranslation(fragmentAcc.wr)) `;`
-        C(fragmentAcc.rd)))
-  }
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = ???
 
   override def eval(s: Store): OperationalSemantics.Data = ???
 

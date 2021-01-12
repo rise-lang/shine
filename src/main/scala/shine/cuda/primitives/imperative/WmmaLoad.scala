@@ -7,33 +7,32 @@ import shine.DPIA.{Nat, Phrases}
 
 import scala.xml.Elem
 
-final case class WmmaLoad(ldm: Nat,
-                          m: Nat,
+final case class WmmaLoad(m: Nat,
                           n: Nat,
                           k: Nat,
                           dataType: DataType,
-                          layout: MatrixLayout,
                           matrixTile: Phrase[ExpType],
                           fragment: Phrase[AccType]
                          ) extends CommandPrimitive {
 
-  if (fragment.t.dataType != WmmaAMatrix(m, n, k, dataType, layout)
-    && fragment.t.dataType != WmmaBMatrix(m, n, k, dataType, layout)
-    && fragment.t.dataType != WmmaAccumulator(m, n, k, dataType))
-    throw new TypeException(s"Type error: found ${fragment.t.dataType} expected ${WmmaAMatrix(m, n, k, dataType, layout)}" +
-        s"or ${WmmaBMatrix(m, n, k, dataType, layout)} or ${WmmaAccumulator(m, n, k, dataType)}")
+  val layout = fragment.t.dataType.asInstanceOf[Fragment].layout
+  if (fragment.t.dataType != Fragment(m, n, k, dataType, FragmentType.AMatrix, layout)
+    && fragment.t.dataType != Fragment(m, n, k, dataType, FragmentType.BMatrix, layout)
+    && fragment.t.dataType != Fragment(m, n, k, dataType))
+    throw new TypeException(s"Type error: found ${fragment.t.dataType} expected" +
+      s"${Fragment(m, n, k, dataType, FragmentType.AMatrix, layout)} or" +
+      s"${Fragment(m, n, k, dataType, FragmentType.BMatrix, layout)} or ${Fragment(m, n, k, dataType)}")
 
-  val fragArrayType = fragment.t.dataType.asInstanceOf[WmmaFragment].arrayType
-  matrixTile :: ExpType(fragArrayType, read)
+  matrixTile :: ExpType(fragment.t.dataType.asInstanceOf[Fragment].matrixType, read)
 
   override def eval(s: Store): Store = ???
 
   override def prettyPrint: String = {
-    s"wmmaLoad($ldm, ${PrettyPhrasePrinter(matrixTile)}, ${PrettyPhrasePrinter(fragment)})"
+    s"wmmaLoad(${PrettyPhrasePrinter(matrixTile)}, ${PrettyPhrasePrinter(fragment)})"
   }
 
   override def xmlPrinter: Elem =
-    <wmmaLoad ldm={ToString(ldm)}>
+    <wmmaLoad>
       <matrixTile>
         {Phrases.xmlPrinter(matrixTile)}
       </matrixTile>
@@ -43,7 +42,7 @@ final case class WmmaLoad(ldm: Nat,
     </wmmaLoad>
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    WmmaLoad(fun.nat(ldm), fun.nat(m), fun.nat(n), fun.nat(k), fun.data(dataType), layout,
+    WmmaLoad(fun.nat(m), fun.nat(n), fun.nat(k), fun.data(dataType),
       VisitAndRebuild(matrixTile, fun), VisitAndRebuild(fragment, fun))
   }
 }

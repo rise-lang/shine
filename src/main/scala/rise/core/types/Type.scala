@@ -125,9 +125,8 @@ object FragmentType {
   object Acuumulator extends FragmentType { override def toString = "Acuumulator"}
 }
 
-final case class FragmentTypeIdentifier(
-                                         name: String,
-                                         override val isExplicit: Boolean = false
+final case class FragmentTypeIdentifier(name: String,
+                                        override val isExplicit: Boolean = false
                                        ) extends FragmentType
   with Kind.Identifier
   with Kind.Explicitness {
@@ -142,47 +141,35 @@ final case class FragmentTypeIdentifier(
   override def hashCode(): Int = this.name.hashCode()
 }
 
-
-
-sealed trait WmmaFragment extends DataType {
-  def m:Nat
-  def n:Nat
-  def k:Nat
-  def dataType: DataType
-
-  def arrayType: ArrayType
+object Fragment {
+  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): Fragment = {
+    Fragment(rows, columns, d3, dataType, FragmentType.Acuumulator, MatrixLayout.Row_Major)
+  }
 }
 
-final case class WmmaAMatrix(m: Nat,
-                             n: Nat,
-                             k: Nat,
-                             dataType: DataType,
-                             layout: MatrixLayout
-                            ) extends WmmaFragment {
-  override def arrayType: ArrayType = ArrayType(m, ArrayType(k, dataType))
+final case class Fragment(rows: Nat,
+                          columns: Nat,
+                          d3: Nat,
+                          dataType: DataType,
+                          fragmentType: FragmentType,
+                          layout: MatrixLayout) extends DataType {
+  override def toString: String =
+    if (fragmentType == FragmentType.Acuumulator)
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType]"
+    else
+      s"Fragment[$rows,$columns,$dataType,$fragmentType,$layout]"
 
-  override def toString: String = s"wmmaAMatrix[$m,$n,$k,$dataType $layout]"
-}
+  override def equals(o: Any): Boolean = {
+    if (!o.isInstanceOf[Fragment])
+      return false;
 
-final case class WmmaBMatrix(m: Nat,
-                             n: Nat,
-                             k: Nat,
-                             dataType: DataType,
-                             layout: MatrixLayout
-                            ) extends WmmaFragment {
-  override def arrayType: ArrayType = ArrayType(k, ArrayType(n, dataType))
-
-  override def toString: String = s"wmmaBMatrix[$m,$n,$k,$dataType $layout]"
-}
-
-final case class WmmaAccumulator(m: Nat,
-                                 n: Nat,
-                                 k: Nat,
-                                 dataType: DataType
-                                ) extends WmmaFragment {
-  override def arrayType: ArrayType = ArrayType(m, ArrayType(n, dataType))
-
-  override def toString: String = s"WmmaAccumulator[$m,$n,$k,$dataType]"
+    val f = o.asInstanceOf[Fragment]
+    if (fragmentType == FragmentType.Acuumulator && f.fragmentType == FragmentType.Acuumulator) {
+      f.rows.equals(rows) && f.columns.equals(columns) && f.dataType.equals(dataType)
+    } else {
+      super.equals(o);
+    }
+  }
 }
 
 

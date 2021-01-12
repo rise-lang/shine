@@ -101,15 +101,9 @@ object Constraint {
             decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
           case (VectorType(sa, ea), VectorType(sb, eb)) =>
             decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
-          case (WmmaAMatrix(ma, na, ka, dta, layouta), WmmaAMatrix(mb, nb, kb, dtb, layoutb)) =>
-            decomposed(Seq(NatConstraint(ma, mb), NatConstraint(na, nb), NatConstraint(ka, kb),
-              TypeConstraint(dta, dtb), MatrixLayoutConstraint(layouta, layoutb)))
-          case (WmmaBMatrix(ma, na, ka, dta, layouta), WmmaBMatrix(mb, nb, kb, dtb, layoutb)) =>
-            decomposed(Seq(NatConstraint(ma, mb), NatConstraint(na, nb), NatConstraint(ka, kb),
-              TypeConstraint(dta, dtb), MatrixLayoutConstraint(layouta, layoutb)))
-          case (WmmaAccumulator(ma, na, ka, dta), WmmaAccumulator(mb, nb, kb, dtb)) =>
-            decomposed(Seq(NatConstraint(ma, mb), NatConstraint(na, nb), NatConstraint(ka, kb),
-              TypeConstraint(dta, dtb)))
+          case (Fragment(rowsa, columnsa, d3a, dta, fragTypea, layouta), Fragment(rowsb, columnsb, d3b, dtb, fragTypeb, layoutb)) =>
+            decomposed(Seq(NatConstraint(rowsa, rowsb), NatConstraint(columnsa, columnsb), NatConstraint(d3a, d3b),
+              TypeConstraint(dta, dtb), FragmentTypeConstraint(fragTypea, fragTypeb), MatrixLayoutConstraint(layouta, layoutb)))
           case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
             decomposed(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb)))
           case (PairType(pa1, pa2), PairType(pb1, pb2)) =>

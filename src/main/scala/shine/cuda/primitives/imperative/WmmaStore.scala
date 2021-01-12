@@ -7,28 +7,26 @@ import shine.DPIA.{Nat, Phrases}
 
 import scala.xml.Elem
 
-final case class WmmaStore(ldm: Nat,
-                           m: Nat,
+final case class WmmaStore(m: Nat,
                            n: Nat,
                            k: Nat,
                            dataType: DataType,
                            fragment: Phrase[ExpType],
-                           matrixTile: Phrase[AccType],
-                           layout: MatrixLayout
+                           matrixTile: Phrase[AccType]
                           ) extends CommandPrimitive {
 
-  fragment :: ExpType(WmmaAccumulator(m, n, k, dataType), read)
-  val fragArrayType = fragment.t.dataType.asInstanceOf[WmmaFragment].arrayType
+  fragment :: ExpType(Fragment(m, n, k, dataType), read)
+  val fragArrayType = fragment.t.dataType.asInstanceOf[Fragment].matrixType
   matrixTile :: AccType(fragArrayType)
 
   override def eval(s: Store): Store = ???
 
   override def prettyPrint: String = {
-    s"wmmaStore($ldm, ${PrettyPhrasePrinter(fragment)}, ${PrettyPhrasePrinter(matrixTile)}, $layout)"
+    s"wmmaStore(${PrettyPhrasePrinter(fragment)}, ${PrettyPhrasePrinter(matrixTile)})"
   }
 
   override def xmlPrinter: Elem =
-    <wmmaStore ldm={ToString(ldm)} layout={ToString(layout)}>
+    <wmmaStore>
       <fragment>
         {Phrases.xmlPrinter(fragment)}
       </fragment>
@@ -38,8 +36,8 @@ final case class WmmaStore(ldm: Nat,
     </wmmaStore>
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    WmmaStore(fun.nat(ldm), fun.nat(m), fun.nat(n), fun.nat(k), fun.data(dataType), VisitAndRebuild(fragment, fun),
-      VisitAndRebuild(matrixTile, fun), layout)
+    WmmaStore(fun.nat(m), fun.nat(n), fun.nat(k), fun.data(dataType), VisitAndRebuild(fragment, fun),
+      VisitAndRebuild(matrixTile, fun))
   }
 }
 

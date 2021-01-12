@@ -824,62 +824,38 @@ object fromRise {
             GlobalToShared(dt, e))
       }
 
-      case cuda.toFragmentA(llayout) => fromType {
-        case nFunT(ldm, expT(ArrayType(m, ArrayType(k, dt)), `read`) ->:
-          expT(WmmaAMatrix(_, n, _, _, _), _)) =>
-
-        val fragT = WmmaAMatrix(m, n, k, dt, layout(llayout))
-        DepLambda[NatKind](ldm)(
+      case cuda.toFragment() => fromType {
+        case expT(ArrayType(m, ArrayType(k, dt)), `read`) ->: expT(Fragment(_, n, _, _, fragType, layout), _) =>
           fun[ExpType](expT(ArrayType(m, ArrayType(k, dt)), read), a =>
-            ToFragment(ldm, m, n, k, dt, fragT.layout, fragT, a)))
+            ToFragment(m, n, k, dt, fragType, a, layout))
       }
 
-      case cuda.toFragmentB(llayout) => fromType {
-        case nFunT(ldm, expT(ArrayType(k, ArrayType(n, dt)), `read`) ->:
-          expT(WmmaBMatrix(m, _, _, _, _), _)) =>
-
-          val fragT = WmmaBMatrix(m, n, k, dt, layout(llayout))
-          DepLambda[NatKind](ldm)(
-            fun[ExpType](expT(ArrayType(m, ArrayType(k, dt)), read), a =>
-              ToFragment(ldm, m, n, k, dt, fragT.layout, fragT, a)))
-      }
-
-      case cuda.toFragmentAccumulator(llayout) => fromType {
-        case nFunT(ldm, expT(ArrayType(m, ArrayType(n, dt)), `read`) ->:
-          expT(WmmaAccumulator(_, _, k, _), _)) =>
-          val fragT = WmmaAccumulator(m, n, k, dt)
-          DepLambda[NatKind](ldm)(
-            fun[ExpType](expT(ArrayType(m, ArrayType(k, dt)), read), a =>
-              ToFragment(ldm, m, n, k, dt, layout(llayout), fragT, a)))
-      }
-
-      case cuda.fromFragment(llayout) => fromType {
-        case nFunT(ldm, expT(WmmaAccumulator(m, n, k, dt), `read`) ->: expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
-          DepLambda[NatKind](ldm)(
-            fun[ExpType](expT(WmmaAccumulator(m, n, k, dt), read), dFrag =>
-              FromFragment(ldm, m, n, k, dt, dFrag, layout(llayout))))
+      case cuda.fromFragment() => fromType {
+        case expT(Fragment(m, n, k, dt, FragmentType.Acuumulator, layout), `read`) ->: expT(ArrayType(_, ArrayType(_, _)), `write`) =>
+          fun[ExpType](expT(Fragment(m, n, k, dt), read), dFrag =>
+            FromFragment(m, n, k, dt, dFrag))
       }
 
       case cuda.generateFragment() => fromType {
-        case expT(dt, `read`) ->: expT(WmmaAccumulator(m, n, k, _), read) =>
+        case expT(dt, `read`) ->: expT(Fragment(m, n, k, _, fragType, layout), read) =>
           fun[ExpType](expT(dt, read), fill =>
-            GenerateFragment(m, n, k, dt, fill))
+            GenerateFragment(m, n, k, dt, fill, fragType, layout))
       }
 
       case cuda.tensorMMA() => fromType {
-        case expT(WmmaAMatrix(m, n, k, dt, layoutA), `read`) ->: expT(WmmaBMatrix(_, _, _, _, layoutB), `read`) ->:
-          expT(WmmaAccumulator(_, _, _, dtResult), `read`) ->: expT(WmmaAccumulator(_, _, _, _), `write`) =>
-          fun[ExpType](expT(WmmaAMatrix(m, n, k, dt, layoutA), read), a =>
-            fun[ExpType](expT(WmmaBMatrix(m, n, k, dt, layoutB), read), b =>
-              fun[ExpType](expT(WmmaAccumulator(m, n, k, dtResult), read), c =>
+        case expT(Fragment(m, n, k, dt, FragmentType.AMatrix, layoutA), `read`) ->: expT(Fragment(_, _, _, _, FragmentType.BMatrix,layoutB), `read`) ->:
+          expT(Fragment(_, _, _, dtResult, FragmentType.Acuumulator, _), `read`) ->: expT(Fragment(_, _, _, _, FragmentType.Acuumulator, _), `write`) =>
+          fun[ExpType](expT(Fragment(m, n, k, dt, FragmentType.AMatrix, layoutA), read), a =>
+            fun[ExpType](expT(Fragment(m, n, k, dt, FragmentType.BMatrix, layoutB), read), b =>
+              fun[ExpType](expT(Fragment(m, n, k, dtResult), read), c =>
                 TensorMatMultAdd(m, n, k, layoutA, layoutB, dt, dtResult, a, b, c))))
       }
 
-      case cuda.mapFragmentElements(_) => fromType {
-        case expT(dt, `write`) ->: expT(fragType : WmmaFragment, `read`) ->: expT(_, _) =>
+      case cuda.mapFragmentElements() => fromType {
+        case expT(dt, `write`) ->: expT(fragType : Fragment, `read`) ->: expT(_, _) =>
           fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
             fun[ExpType](ExpType(fragType, read), fragment =>
-              MapFragmentElements(fragType.asInstanceOf[WmmaFragment], fragment, f)))
+              MapFragmentElements(fragType.asInstanceOf[Fragment], fragment, f)))
       }
 
       case cuda.toSharedMemoryShift() => fromType {
@@ -972,18 +948,19 @@ object fromRise {
       case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
       case _ => ???
     }
-    case f: rt.WmmaFragment => fragType(f)
-  }
-
-  def fragType(f: rt.WmmaFragment): WmmaFragment = f match {
-    case rt.WmmaAMatrix(m, n, k, dt, l) => WmmaAMatrix(m, n, k, dataType(dt), layout(l))
-    case rt.WmmaBMatrix(m, n, k, dt, l) => WmmaBMatrix(m, n, k, dataType(dt), layout(l))
-    case rt.WmmaAccumulator(m, n, k, dt) => WmmaAccumulator(m, n, k, dataType(dt))
+    case f: rt.Fragment =>
+      f.fragmentType match {
+        case rt.FragmentType.AMatrix => Fragment(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentType.AMatrix, layout(f.layout))
+        case rt.FragmentType.BMatrix => Fragment(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentType.BMatrix, layout(f.layout))
+        case rt.FragmentType.Acuumulator => Fragment(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentType.Acuumulator, layout(f.layout))
+        case _ => throw new Exception("this should not happen")
+      }
   }
 
   def layout(layout: rt.MatrixLayout): MatrixLayout = layout match {
     case rt.MatrixLayout.Row_Major => MatrixLayout.Row_Major
     case rt.MatrixLayout.Col_Major => MatrixLayout.Col_Major
+    case rt.MatrixLayoutIdentifier(name, _) => MatrixLayoutIdentifier(name)
     case _ => throw new Exception("this should not happen")
   }
 

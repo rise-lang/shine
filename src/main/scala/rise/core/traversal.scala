@@ -266,12 +266,9 @@ object traversal {
               case IndexType(n)     => IndexType(v.visitNat(n).value)
               case VectorType(n, e) =>
                 VectorType(v.visitNat(n).value, data(e, v))
-              case WmmaAMatrix(m, n, k, dt, layout) =>
-                WmmaAMatrix(v.visitNat(m).value, v.visitNat(n).value, v.visitNat(k).value, data(dt, v), v.visitMatrixLayout(layout).value)
-              case WmmaBMatrix(m, n, k, dt, layout) =>
-                WmmaBMatrix(v.visitNat(m).value, v.visitNat(n).value, v.visitNat(k).value, data(dt, v), v.visitMatrixLayout(layout).value)
-              case WmmaAccumulator(m, n, k, dt) =>
-                WmmaAccumulator(v.visitNat(m).value, v.visitNat(n).value, v.visitNat(k).value, data(dt, v))
+              case Fragment(rows, columns, d3, dt, fragType, layout) =>
+                Fragment(v.visitNat(rows).value, v.visitNat(columns).value, v.visitNat(d3).value, data(dt, v),
+                  v.visitFragmentType(fragType).value, v.visitMatrixLayout(layout).value)
               case NatToDataApply(ndtf, n) =>
                 NatToDataApply(natToData(ndtf, v), v.visitNat(n).value)
             }).asInstanceOf[DT]
