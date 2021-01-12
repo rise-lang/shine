@@ -35,8 +35,7 @@ final case class Which(n: Nat, elemT: DataType, count: Nat, f: Phrase[ExpType ->
                 acc(f(input `@` idx))(testLocal.wr) `;`
                   IfThenElse(testLocal.rd,
                     ((A `@` counter.rd) :=|IndexType(n)|idx) `;`
-                      (counter.wr :=| IndexType(count) | NatAsIndex(count, IndexAsNat(count, counter.rd) + Natural(1)))
-                    ,
+                      (counter.wr :=| IndexType(count) | NatAsIndex(count, IndexAsNat(count, counter.rd) + Natural(1))),
                     Skip()
                   )
               })
