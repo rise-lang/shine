@@ -6,6 +6,7 @@ import Type._
 import rise.core.types._
 import util.gen
 import HighLevelConstructs.reorderWithStride
+import util.gen.c.function
 
 //noinspection TypeAnnotation
 class gemv extends test_util.Tests {
@@ -119,7 +120,7 @@ class gemv extends test_util.Tests {
   }
 
   test("High level gemv compiles to syntactically correct C") {
-    gen.CProgram(high_level)
+    function.asStringFromExpr("gemv")(high_level)
   }
 
   test("OpenCL gemv versions type inference works") {
@@ -133,7 +134,7 @@ class gemv extends test_util.Tests {
   }
 
   test("OpenMP gemv versions compiles to syntactically correct OpenMP") {
-    gen.OpenMPProgram(omp.fullMatrixVectorFusedOpenMP)
+    gen.openmp.function.asStringFromExpr("fullMatrixVectorFusedOpenMP")(omp.fullMatrixVectorFusedOpenMP)
   }
 
 }

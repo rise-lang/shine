@@ -8,9 +8,10 @@ import rise.core.DSL._
 import rise.core.primitives._
 import Type._
 import HighLevelConstructs.reorderWithStride
-import util.{gen, SyntaxChecker}
-
+import util.{SyntaxChecker, gen}
 import rise.elevate.rules.traversal.default._
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelTranslationUnit
+import util.gen.c.function
 
 import scala.util.Random
 
@@ -38,7 +39,7 @@ class asum extends test_util.TestsWithExecutor {
 
   // C code gen
   test("High level asum compiles to syntactically correct C") {
-    gen.CProgram(high_level)
+    function.asStringFromExpr("asum")(high_level)
   }
 
   // OpenMP code gen
@@ -61,7 +62,7 @@ class asum extends test_util.TestsWithExecutor {
       )
     )
 
-    gen.OpenMPProgram(intelDerivedNoWarp1)
+    gen.openmp.function.asStringFromExpr("intelDerivedNoWrap1")(intelDerivedNoWarp1)
   }
 
   test(
@@ -79,7 +80,7 @@ class asum extends test_util.TestsWithExecutor {
       )
     )
 
-    gen.OpenMPProgram(intelDerived2)
+    gen.openmp.function.asStringFromExpr("intelDerived2")(intelDerived2)
   }
 
   test(
@@ -104,7 +105,7 @@ class asum extends test_util.TestsWithExecutor {
       )
     )
 
-    gen.OpenMPProgram(amdNvidiaDerived2)
+    gen.openmp.function.asStringFromExpr("amdNvidiaDerived2")(amdNvidiaDerived2)
   }
 
   { // OpenCL code gen
@@ -125,9 +126,8 @@ class asum extends test_util.TestsWithExecutor {
         globalSize: GlobalSize
     )(n: Int, input: Array[Float]): Array[Float] = {
       import shine.OpenCL._
-      val runKernel = gen
-        .OpenCLKernel(kernel)
-        .as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]
+      val k = gen.opencl.kernel.fromExpr()(kernel)
+      val runKernel = k.as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]
       val (output, _) = runKernel(localSize, globalSize)(n `,` input)
       output
     }
@@ -151,10 +151,9 @@ class asum extends test_util.TestsWithExecutor {
     test("Intel derived no warp compiles to syntactically correct OpenCL code") {
       val phrase = shine.DPIA.fromRise(intelDerivedNoWarp1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel.asStringFromPhrase("KERNEL", Some(LocalSize(128), GlobalSize(N)))(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("Intel derived no warp executes correctly") {
@@ -183,10 +182,9 @@ class asum extends test_util.TestsWithExecutor {
     ) {
       val phrase = shine.DPIA.fromRise(intelDerived2)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel.asStringFromPhrase("KERNEL", Some(LocalSize(128), GlobalSize(N)))(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("Second kernel of Intel derived executes correctly") {
@@ -219,10 +217,9 @@ class asum extends test_util.TestsWithExecutor {
     test("Nvidia kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = shine.DPIA.fromRise(nvidiaDerived1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel.asStringFromPhrase("KERNEL", Some(LocalSize(128), GlobalSize(N)))(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("Nvidia kernel derived executes correctly") {
@@ -262,10 +259,9 @@ class asum extends test_util.TestsWithExecutor {
     ) {
       val phrase = shine.DPIA.fromRise(amdNvidiaDerived2)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel.asStringFromPhrase("KERNEL", Some(LocalSize(128), GlobalSize(N)))(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("AMD/Nvidia second kernel executes correctly") {
@@ -300,10 +296,9 @@ class asum extends test_util.TestsWithExecutor {
     test("AMD kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = shine.DPIA.fromRise(amdDerived1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel.asStringFromPhrase("KERNEL", Some(LocalSize(128), GlobalSize(N)))(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("AMD kernel derived executes correctly") {

@@ -8,8 +8,10 @@ import rise.core.semantics.NatData
 import rise.core.types.{AddressSpace, _}
 import rise.core.{Expr, Literal}
 import rise.openCL.primitives.oclReduceSeq
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelTranslationUnit
 import shine.OpenCL._
 import util.gen
+import util.gen.c.function
 
 import scala.language.postfixOps
 
@@ -22,7 +24,7 @@ class Reduce extends test_util.TestsWithExecutor {
       depFun((n: Nat) => fun(ArrayType(n, f32))(a =>
         a |> reduceSeq(add)(l(0.0f))))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("reduce")(e)
 
     "for".r.findAllIn(code).length shouldBe 1
   }
@@ -35,7 +37,7 @@ class Reduce extends test_util.TestsWithExecutor {
           a |> map(reduceSeq(add)(l(0.0f))) |> mapSeq(fun(x => x))
         ))
 
-    gen.CProgram(e)
+    function.asStringFromExpr("reduce")(e)
   }
 
   test("Fusing a reduce into another should generate syntactically" +
@@ -46,7 +48,7 @@ class Reduce extends test_util.TestsWithExecutor {
           a |> map(reduceSeq(add)(l(0.0f))) |> reduceSeq(add)(l(0.0f))
       ))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("reduce")(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -74,7 +76,7 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val gold = A.reduce((row1, row2) => row1.zip(row2).map(in => in._1 + in._2))
 
-    val runKernel = gen.OpenCLKernel(e(m)(n)).as[ScalaFunction `(`
+    val runKernel = gen.opencl.kernel.fromExpr()(e(m)(n)).as[ScalaFunction `(`
       Array[Array[Float]] `)=>` Array[Float]]
     val (out, _)  = runKernel(LocalSize(1), GlobalSize(1))(A`;`)
 
@@ -94,9 +96,9 @@ class Reduce extends test_util.TestsWithExecutor {
         arr |> reduceSeq (fun(_ + _))  (init)))
 
     println("Fst:")
-    gen.CProgram(e(initRecordExp._1)).code
+    function.asStringFromExpr("fst")(e(initRecordExp._1))
     println("Snd:")
-    gen.CProgram(e(initRecordExp._2)).code
+    function.asStringFromExpr("snd")(e(initRecordExp._2))
   }
 
   test("Record access to specify initial accumulator value" +
@@ -117,7 +119,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val gold = A.sum
 
     def runKernel(initWithRecordAccess: ToBeTyped[Expr]) =
-      gen.OpenCLKernel(e(initWithRecordAccess))
+      gen.opencl.kernel.fromExpr()(e(initWithRecordAccess))
         .as[ScalaFunction `(`Int`,`Array[Float]`)=>`Array[Float]]
 
     val (out1, _) =

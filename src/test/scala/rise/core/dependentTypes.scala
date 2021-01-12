@@ -5,6 +5,7 @@ import Type._
 import rise.core.types._
 import rise.core.primitives._
 import util.Execute
+import util.gen.c.function
 
 class dependentTypes extends test_util.Tests {
   test("Infer int addition type") {
@@ -35,7 +36,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
     )
-    util.gen.CProgram(inferred, "Foo_foo")
+    function.asStringFromExpr("inferred")(inferred)
   }
 
   test("GEN: Dependent pair map increment") {
@@ -51,7 +52,7 @@ class dependentTypes extends test_util.Tests {
     )
 
     val cFunName = "foo"
-    val cFun = util.gen.CProgram(inferred, cFunName)
+    val cFun = function.asStringFromExpr(cFunName)(inferred)
 
     val testCode =
       s"""
@@ -59,7 +60,7 @@ class dependentTypes extends test_util.Tests {
          |#include<stdio.h>
          |#include<stdint.h>
          |
-         |${cFun.code}
+         |$cFun
          |
          |int main(int argc, char** argv) {
          |    const uint32_t x = 100;
@@ -106,7 +107,7 @@ class dependentTypes extends test_util.Tests {
     )
 
     val cFunName = "foo"
-    val cFun = util.gen.CProgram(inferred, cFunName)
+    val cFun = function.asStringFromExpr(cFunName)(inferred)
 
     val testCode =
       s"""
@@ -114,7 +115,7 @@ class dependentTypes extends test_util.Tests {
         |#include<stdio.h>
         |#include<stdint.h>
         |
-        | ${cFun.code}
+        | $cFun
         |
         |int main(int argc, char** argv) {
         |    const uint32_t x = 3;
@@ -152,7 +153,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       ((Nat `**` (n => n`.`f32)) ->: (5`.`f32))
     )
-    util.gen.CProgram(inferred, "Foo_foo")
+    function.asStringFromExpr("Foo_foo")(inferred)
   }
 
   test("Simple nested") {
@@ -166,7 +167,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => (m+1) `.` f32) ))
     )
-    util.gen.CProgram(inferred, "Foo_foo")
+    function.asStringFromExpr("Foo_foo")(inferred)
   }
 
   test("Simple reduce") {
@@ -180,7 +181,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => f32) ))
     )
-    util.gen.CProgram(inferred, "Foo_foo")
+    function.asStringFromExpr("Foo_foo")(inferred)
   }
 
 
@@ -206,6 +207,6 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
+    function.asStringFromExpr("Foo_foo")(inferred)
   }
 }

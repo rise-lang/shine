@@ -62,18 +62,18 @@ class circularBuffering extends test_util.Tests {
     )) >> transpose
 
   test("example outputs are consistent") {
-    val inlinedP = gen.CProgram(wrapExpr(inlined), "inlined")
-    val bufferedP = gen.CProgram(wrapExpr(buffered), "buffered")
-    val circBufP = gen.CProgram(wrapExpr(circBuf), "circularBuffered")
+    val inlinedFun = gen.c.function.asStringFromExpr("inlined")(wrapExpr(inlined))
+    val bufferedFun = gen.c.function.asStringFromExpr("buffered")(wrapExpr(buffered))
+    val circBufFun = gen.c.function.asStringFromExpr("circularBuffered")(wrapExpr(circBuf))
 
     val N = 20
     val testCode =
       s"""
          |#include <stdio.h>
          |
-         |${inlinedP.code}
-         |${bufferedP.code}
-         |${circBufP.code}
+         |$inlinedFun
+         |$bufferedFun
+         |$circBufFun
          |
          |int main(int argc, char** argv) {
          |  float input[$N+5];
@@ -197,16 +197,16 @@ class circularBuffering extends test_util.Tests {
     circularBuffer(2)(2)(sumSeq) >> iterateStream(sumSeq)
 
   test("example chain outputs are consistent") {
-    val inlinedP = gen.CProgram(wrapExprChain(inlinedChain), "inlined")
-    val circBufP = gen.CProgram(wrapExprChain(circBufChain), "circularBuffered")
+    val inlinedFun = gen.c.function.asStringFromExpr("inlined")(wrapExprChain(inlinedChain))
+    val circBufFun = gen.c.function.asStringFromExpr("circularBuffered")(wrapExprChain(circBufChain))
 
     val N = 20
     val testCode =
       s"""
          |#include <stdio.h>
          |
-         |${inlinedP.code}
-         |${circBufP.code}
+         |$inlinedFun
+         |$circBufFun
          |
          |int main(int argc, char** argv) {
          |  float input[$N+6];
@@ -277,8 +277,8 @@ class circularBuffering extends test_util.Tests {
     )
 
   test("example together outputs are consistent") {
-    val inlinedP = gen.CProgram(wrapExprTogether(inlinedTogether), "inlined")
-    val circBufP = gen.CProgram(wrapExprTogether(circBufTogether), "circularBuffered")
+    val inlinedFun = gen.c.function.asStringFromExpr("inlined")(wrapExprTogether(inlinedTogether))
+    val circBufFun = gen.c.function.asStringFromExpr("circularBuffered")(wrapExprTogether(circBufTogether))
 
     val N = 8
     val M = 12
@@ -286,8 +286,8 @@ class circularBuffering extends test_util.Tests {
       s"""
          |#include <stdio.h>
          |
-         |${inlinedP.code}
-         |${circBufP.code}
+         |$inlinedFun
+         |$circBufFun
          |
          |int main(int argc, char** argv) {
          |  float input[${N+2} * ${M+2}];

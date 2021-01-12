@@ -2,13 +2,14 @@ package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck._
 import shine.DPIA._
+import shine.DPIA.primitives.functional
+import shine.DPIA.primitives.functional.NatAsIndex
 
 sealed trait Phrase[T <: PhraseType] {
   val t: T // TODO? perform type checking at the same time
@@ -233,7 +234,7 @@ object Phrase {
     // it allows to leverage nat simplification but should not be used in any exp[_] before being converted back
     // this is because expression Identifiers are temporarily embedded as NamedVars
     def transientNatFromExpr(p: Phrase[ExpType]): TransientNat = {
-      import shine.DPIA.FunctionalPrimitives.IndexAsNat
+      import shine.DPIA.primitives.functional.IndexAsNat
 
       p match {
         case Natural(n) => TransientNat(n)
@@ -269,7 +270,7 @@ object Phrase {
           p.t match {
             case ExpType(IndexType(n), _) =>
               val v = NamedVar(name, RangeAdd(0, n, 1))
-              TransientNat(v, Map(v -> IndexAsNat(n, p)))
+              TransientNat(v, Map(v -> functional.IndexAsNat(n, p)))
             case ExpType(NatType, _) =>
               val v = NamedVar(name, RangeAdd(0, arithexpr.arithmetic.PosInf, 1))
               TransientNat(v, Map(v -> p))

@@ -1,13 +1,14 @@
 package shine.OpenCL
 
 import shine.DPIA.DSL.identifier
-import shine.DPIA.FunctionalPrimitives._
-import shine.DPIA.ImperativePrimitives._
+import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.FunctionalPrimitives._
-import shine.OpenCL.ImperativePrimitives._
+import shine.DPIA.primitives.functional
+import shine.DPIA.primitives.functional._
+import shine.OpenCL.primitives.functional._
+import shine.OpenCL.primitives.imperative._
 
 object AdjustArraySizesForAllocations {
   case class DataTypeAdjustment(accF: Phrase[AccType] => Phrase[AccType],
@@ -72,7 +73,7 @@ object AdjustArraySizesForAllocations {
       }
 
       case _: Identifier[_] | _: Literal | _: Natural |
-           _: VectorFromScalar | _: Cast | _: ForeignFunction |
+           _: VectorFromScalar | _: Cast | _: ForeignFunctionCall |
            _: BinOp | _: UnaryOp => parallInfo
 
       case pattern => throw new Exception(s"this should not happen for now: $pattern")
@@ -141,9 +142,9 @@ object AdjustArraySizesForAllocations {
 
         case (PairType(adjDt1, adjDt2), PairType(oldDt1, oldDt2)) =>
           parallInfo match {
-            case (ri: RecordInfo) :: _ => Pair(oldDt1, oldDt2, read,
-              adjustedExpr(ri.fst, adjDt1, oldDt1, addrSpace)(Fst(adjDt1, adjDt2, E)),
-              adjustedExpr(ri.snd, adjDt2, oldDt2, addrSpace)(Snd(adjDt1, adjDt2, E)))
+            case (ri: RecordInfo) :: _ => functional.Pair(oldDt1, oldDt2, read,
+              adjustedExpr(ri.fst, adjDt1, oldDt1, addrSpace)(functional.Fst(adjDt1, adjDt2, E)),
+              adjustedExpr(ri.snd, adjDt2, oldDt2, addrSpace)(functional.Snd(adjDt1, adjDt2, E)))
             case _ => throw new Exception("This should never happen.")
           }
 

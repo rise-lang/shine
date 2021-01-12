@@ -1,12 +1,14 @@
 package shine.DPIA.Compilation
 
-import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.DPIA.primitives.functional
+import shine.DPIA.primitives.functional.NatAsIndex
 
 object SimplifyNats {
-  def apply(p: Phrase[CommType]): Phrase[CommType] = {
+
+  def simplify: Phrase[CommType] => Phrase[CommType] = p => {
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
@@ -24,7 +26,7 @@ object SimplifyNats {
 
   def simplifyIndexAndNatExp(p: Phrase[ExpType]): Phrase[ExpType] = {
     p.t.dataType match {
-      case IndexType(n) => NatAsIndex(n, DSL.mapTransientNat(p, x => x))
+      case IndexType(n) => functional.NatAsIndex(n, DSL.mapTransientNat(p, x => x))
       case NatType => DSL.mapTransientNat(p, x => x)
       case _ => p
     }

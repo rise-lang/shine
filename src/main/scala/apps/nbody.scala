@@ -132,7 +132,7 @@ object nbody {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runKernel(k: KernelNoSizes,
+  def runKernel(k: KernelExecutor.KernelNoSizes,
                 localSize: LocalSize,
                 globalSize: GlobalSize,
                 pos: Array[Float],

@@ -5,7 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.ImperativePrimitives._
+import shine.OpenCL.primitives.imperative._
 
 package object DSL {
 

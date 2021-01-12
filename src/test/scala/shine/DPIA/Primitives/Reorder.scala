@@ -5,8 +5,8 @@ import rise.core.primitives._
 import rise.core.types._
 import HighLevelConstructs.reorderWithStride
 import util.gen
-
 import arithexpr.arithmetic.Cst
+import util.gen.c.function
 
 class Reorder extends test_util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {
@@ -14,7 +14,7 @@ class Reorder extends test_util.Tests {
       xs |> reorderWithStride(128) |> mapSeq(fun(x => x))
     ))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("reorder")(e)
 
     "for".r.findAllIn(code).length shouldBe 1
   }
@@ -24,7 +24,7 @@ class Reorder extends test_util.Tests {
       xs |> map(reorderWithStride(128)) |> mapSeq(mapSeq(fun(x => x)))
     ))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("reorder")(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -34,7 +34,7 @@ class Reorder extends test_util.Tests {
       xs |> mapSeq(fun(x => x)) |> reorderWithStride(Cst(128))
     ))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("reorder")(e)
 
     "for".r.findAllIn(code).length shouldBe 1
   }
@@ -44,7 +44,7 @@ class Reorder extends test_util.Tests {
       xs |> mapSeq(mapSeq(fun(x => x))) |> map(reorderWithStride(Cst(128)))
     ))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("reorder")(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }

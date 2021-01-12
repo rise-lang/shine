@@ -3,18 +3,19 @@ package shine.DPIA.Primitives
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
+import util.gen.c.function
 import util.{Execute, gen}
 
 class Transpose extends test_util.Tests {
   test("Simple transpose should produce the expected result on a test") {
     def checkResult(e: rise.core.Expr) = {
-      val p = gen.CProgram(e)
+      val transposeFun = function.asStringFromExpr("transpose")(e)
 
       val testCode =
         s"""
 #include <stdio.h>
 
-${p.code}
+$transposeFun
 
 int main(int argc, char** argv) {
   const int N = 6;
@@ -24,7 +25,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < (N * M); i++) { input[i] = i; }
 
   int output[M * N];
-  ${p.function.name}(output, N, M, input);
+  transpose(output, N, M, input);
 
   for (int i = 0; i < M; i++) {
     for (int j = 0; j < N; j++) {

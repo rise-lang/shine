@@ -4,6 +4,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
 import util.gen
+import util.gen.c.function
 
 class Map extends test_util.Tests {
   test("Simple 1D map example should generate syntactic valid C code with one for loop") {
@@ -11,7 +12,7 @@ class Map extends test_util.Tests {
       depFun((n: Nat) => fun(ArrayType(n, f32))(xs =>
         xs |> mapSeq(fun(x => x))))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("map")(e)
 
     "for".r.findAllIn(code).length shouldBe 1
   }
@@ -21,7 +22,7 @@ class Map extends test_util.Tests {
       depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
         xs |> mapSeq(mapSeq(fun(x => x)))))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("map")(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -32,7 +33,7 @@ class Map extends test_util.Tests {
         fun(ArrayType(n, ArrayType(m, ArrayType(o, f32))))(xs =>
           xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr("map")(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }

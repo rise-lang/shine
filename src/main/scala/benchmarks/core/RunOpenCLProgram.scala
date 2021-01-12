@@ -2,7 +2,7 @@ package benchmarks.core
 
 import rise.elevate.rules.traversal.default.RiseTraversable
 import shine.DPIA
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
+import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize}
 import rise.core.Expr
 import util.{Display, Time, TimeSpan}
 
@@ -23,8 +23,9 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
 
   protected def runScalaProgram(input:Input):Array[Float]
 
-  private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelWithSizes = {
-    val kernel = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromRise(this.expr)(RiseTraversable), "KERNEL")
+  private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelExecutor.KernelWithSizes = {
+    val ktu = util.gen.opencl.kernel.fromExpr("KERNEL", Some(localSize, globalSize))(this.expr)
+    val kernel = shine.OpenCL.KernelExecutor.KernelWithSizes(ktu, localSize, globalSize)
 
     if(verbose) {
       println(kernel.code)
@@ -32,7 +33,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
     kernel
   }
 
-  protected def runKernel(k: KernelWithSizes, input: Input): (Array[Float], TimeSpan[Time.ms])
+  protected def runKernel(k: KernelExecutor.KernelWithSizes, input: Input): (Array[Float], TimeSpan[Time.ms])
 
   final def run(localSize:LocalSize, globalSize:GlobalSize):Summary = {
     opencl.executor.Executor.loadAndInit()

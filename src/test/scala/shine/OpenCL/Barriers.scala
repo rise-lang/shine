@@ -23,8 +23,8 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(fun(x => x))
       ))
     )
-    val k = gen.OpenCLKernel(e)
-    "barrier".r.findAllIn(k.code).length shouldBe 0
+    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    "barrier".r.findAllIn(code).length shouldBe 0
   }
 
   // TODO? removing these barriers requires more fine grain analysis to
@@ -37,8 +37,8 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(fun(x => x))
       ))
     )
-    val k = gen.OpenCLKernel(e)
-    "barrier".r.findAllIn(k.code).length shouldBe 0
+    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    "barrier".r.findAllIn(code).length shouldBe 0
   }
 
   test("1D mapLocal toLocal seq with thread sharing") {
@@ -50,9 +50,9 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(sum)
       ))
     )
-    val k = gen.OpenCLKernel(e)
-    "barrier".r.findAllIn(k.code).length shouldBe 2
-    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(k.code).length shouldBe 2
+    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
 
   test("1D mapLocal toGlobal seq with thread sharing") {
@@ -64,9 +64,9 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(sum)
       ))
     )
-    val k = gen.OpenCLKernel(e)
-    "barrier".r.findAllIn(k.code).length shouldBe 2
-    """barrier\(CLK_GLOBAL_MEM_FENCE\)""".r.findAllIn(k.code).length shouldBe 2
+    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_GLOBAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
 
   test("2D mapLocal toLocal seq with thread sharing") {
@@ -90,9 +90,9 @@ class Barriers extends test_util.Tests {
     //    parForLocal
     //   barrier(LOCAL)
 
-    val k = gen.OpenCLKernel(e)
-    "barrier".r.findAllIn(k.code).length shouldBe 2
-    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(k.code).length shouldBe 2
+    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
 
   // FIXME: barriers might not be reached by all threads
@@ -118,9 +118,9 @@ class Barriers extends test_util.Tests {
     //    parForLocal
     //    barrier(LOCAL)
 
-    val k = gen.OpenCLKernel(e)
-    "barrier".r.findAllIn(k.code).length shouldBe 2
-    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(k.code).length shouldBe 2
+    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
 
   // FIXME: barriers might not be reached by all threads
@@ -150,9 +150,9 @@ class Barriers extends test_util.Tests {
     //   parForLocal
     //    parForLocal
 
-    val k = gen.OpenCLKernel(e)
-    "barrier".r.findAllIn(k.code).length shouldBe 2
-    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(k.code).length shouldBe 2
+    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
 
   // TODO? array sizes cannot be adjusted for allocation
@@ -165,8 +165,8 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(map(fst) >> sum)
       ))
     ))
-    val k = gen.OpenCLKernel(e)
-    "barrier".r.findAllIn(k.code).length shouldBe 2
-    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(k.code).length shouldBe 2
+    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
 }

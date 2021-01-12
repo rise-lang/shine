@@ -6,6 +6,7 @@ import rise.core.primitives._
 import Type._
 import rise.core.types._
 import util._
+import util.gen.c.function
 
 class Select extends test_util.Tests {
   val id: ToBeTyped[Lambda] = fun(x => x)
@@ -22,7 +23,7 @@ class Select extends test_util.Tests {
           )
       )) :: (6`.`int) |> mapSeq(id)
 
-    gen.CProgram(e)
+    function.asStringFromExpr("select")(e)
   }
 
   test("select from generate from gather") {
@@ -38,6 +39,6 @@ class Select extends test_util.Tests {
       ))) |> mapSeq(id)
     )
 
-    gen.CProgram(e)
+    function.asStringFromExpr("select")(e)
   }
 }

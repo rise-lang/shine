@@ -15,7 +15,6 @@ import rise.elevate.rules.traversal.default._
 import rise.elevate.rules.{checkType, lowering}
 import rise.elevate.strategies.traversal._
 import rise.elevate.util._
-
 import _root_.util.gen
 
 class algorithmic extends test_util.Tests {
@@ -288,7 +287,7 @@ class algorithmic extends test_util.Tests {
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
     val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
-    println(gen.CProgram(lower(typed).get).code)
+    println(gen.c.function.asStringFromExpr("foo")(lower(typed).get))
 
     /// TILE + REORDER
 
@@ -297,7 +296,7 @@ class algorithmic extends test_util.Tests {
 
     val reorder = tileReorder(mm).get
 
-    println(gen.CProgram(lower(reorder).get).code)
+    println(gen.c.function.asStringFromExpr("foo")(lower(reorder).get))
   }
 
   test("tile mm") {

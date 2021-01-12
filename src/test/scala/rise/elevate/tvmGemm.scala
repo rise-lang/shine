@@ -182,9 +182,9 @@ class tvmGemm extends test_util.Tests {
     // generate the C code
     val time2 = currentTimeSec
     val program = if(openMP) {
-      gen.OpenMPProgram(rewritten.get, version).code
+      gen.openmp.function.asStringFromExpr(version)(rewritten.get)
     } else {
-      gen.CProgram(rewritten.get, version).code
+      gen.c.function.asStringFromExpr(version)(rewritten.get)
     }
     val time3 = currentTimeSec
     println(s"[$versionUC] codegen time: ${time3 - time2}s")

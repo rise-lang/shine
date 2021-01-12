@@ -103,11 +103,13 @@ void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
     outputSize: Int, outputCty: String, outputPath: String,
     delta: Int,
   ): Unit = {
-    val prog = printTime("codegen", gen.OpenMPProgram(lowered))
+    val computeFun = printTime("codegen",
+      gen.openmp.function.asStringFromExpr("compute")(lowered)
+    )
     val testCode = s"""
 ${cHeader}
 
-${prog.code}
+$computeFun
 
 ${read_csv(inputCty)}
 ${if (inputCty != outputCty) read_csv(outputCty) else ""}
@@ -120,7 +122,7 @@ int main(int argc, char** argv) {
   read_csv_${inputCty}(${inputSize}, input, "golds/camera_pipe/${inputPath}");
   read_csv_${outputCty}(${outputSize}, gold, "golds/camera_pipe/${outputPath}");
 
-  ${callCFun(prog.function.name)}
+  ${callCFun("compute")}
 
   size_t differences = 0;
   size_t errors = 0;

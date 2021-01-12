@@ -37,7 +37,7 @@ class scal extends test_util.Tests {
       join
     )))
 
-    gen.OpenMPProgram(scalIntel)
+    gen.openmp.function.asStringFromExpr("scalIntel")(scalIntel)
   }
 
   test("scalIntel2 compiles to syntactically correct OpenMP") {
@@ -53,7 +53,7 @@ class scal extends test_util.Tests {
       ) |> join
     )))
 
-    gen.OpenMPProgram(scalIntel2)
+    gen.openmp.function.asStringFromExpr("scalIntel2")(scalIntel2)
   }
 
   // OpenCL
@@ -73,17 +73,17 @@ class scal extends test_util.Tests {
 
     test("vectorScal compiles to syntactically correct OpenCL") {
       val vectorScal = scalWgLcl(1024, 4)
-      gen.OpenCLKernel(vectorScal)
+      gen.opencl.kernel.fromExpr()(vectorScal)
     }
 
     test("scalAMD compiles to syntactically correct OpenCL") {
       val scalAMD = scalWgLcl(128, 1)
-      gen.OpenCLKernel(scalAMD)
+      gen.opencl.kernel.fromExpr()(scalAMD)
     }
 
     test("scalNvidia compiles to syntactically correct OpenCL") {
       val scalNvidia = scalWgLcl(2048, 1)
-      gen.OpenCLKernel(scalNvidia)
+      gen.opencl.kernel.fromExpr()(scalNvidia)
     }
 
     test("scalIntel compiles to syntactically correct OpenCL") {
@@ -99,7 +99,7 @@ class scal extends test_util.Tests {
         join
       )))
 
-      gen.OpenCLKernel(scalIntel)
+      gen.opencl.kernel.fromExpr()(scalIntel)
     }
   }
 }
