@@ -46,7 +46,7 @@ class dot extends test_util.Tests {
 
   // C
   test("Simple dot product compiles to syntactically correct C") {
-    println(function.asStringFromExpr("dot")(simpleDotProduct))
+    println(function.asStringFromExpr(simpleDotProduct))
   }
 
   // OpenMP
@@ -64,7 +64,7 @@ class dot extends test_util.Tests {
       ) |> join |> asScalar
     )))
 
-    gen.openmp.function.asStringFromExpr("dotCPUVector1")(dotCPUVector1)
+    gen.openmp.function.asStringFromExpr(dotCPUVector1)
   }
 
   test("Intel derived no warp dot product 1 compiles to" +
@@ -82,7 +82,7 @@ class dot extends test_util.Tests {
       ) |> join |> asScalar
     )))
 
-    gen.openmp.function.asStringFromExpr("intelDerivedNoWarpDot1")(intelDerivedNoWarpDot1)
+    gen.openmp.function.asStringFromExpr(intelDerivedNoWarpDot1)
   }
 
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
@@ -99,7 +99,7 @@ class dot extends test_util.Tests {
       ) |> join
     )))
 
-    gen.openmp.function.asStringFromExpr("dotCPU1")(dotCPU1)
+    gen.openmp.function.asStringFromExpr(dotCPU1)
   }
 
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
@@ -116,7 +116,7 @@ class dot extends test_util.Tests {
       ) |> join
     ))
 
-    gen.openmp.function.asStringFromExpr("dotCPU2")(dotCPU2)
+    gen.openmp.function.asStringFromExpr(dotCPU2)
   }
 
   { // OpenCL
@@ -137,7 +137,7 @@ class dot extends test_util.Tests {
         ) |> join |> asScalar
       )))
 
-      gen.opencl.kernel.fromExpr()(intelDerivedNoWarpDot1)
+      gen.opencl.kernel.fromExpr(intelDerivedNoWarpDot1)
     }
 
     test("Dot product CPU 1 compiles to syntactically correct OpenCL") {
@@ -154,7 +154,7 @@ class dot extends test_util.Tests {
         ) |> join
       )))
 
-      gen.opencl.kernel.fromExpr()(dotCPU1)
+      gen.opencl.kernel.fromExpr(dotCPU1)
     }
 
     test("Dot product CPU 2 compiles to syntactically correct OpenCL") {
@@ -171,7 +171,7 @@ class dot extends test_util.Tests {
         ) |> join
       ))
 
-      gen.opencl.kernel.fromExpr()(dotCPU2)
+      gen.opencl.kernel.fromExpr(dotCPU2)
     }
 
     test("Dot product 1 compiles to syntactically correct OpenCL") {
@@ -189,7 +189,7 @@ class dot extends test_util.Tests {
         ) |> join
       )))
 
-      gen.opencl.kernel.fromExpr()(dotProduct1)
+      gen.opencl.kernel.fromExpr(dotProduct1)
     }
 
     test("Dot product 2 compiles to syntactically correct OpenCL") {
@@ -209,7 +209,7 @@ class dot extends test_util.Tests {
         ) |> join
       ))
 
-      gen.opencl.kernel.fromExpr()(dotProduct2)
+      gen.opencl.kernel.fromExpr(dotProduct2)
     }
   }
 }

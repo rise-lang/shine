@@ -36,7 +36,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
     )
-    function.asStringFromExpr("inferred")(inferred)
+    function.asStringFromExpr(inferred)
   }
 
   test("GEN: Dependent pair map increment") {
@@ -52,7 +52,7 @@ class dependentTypes extends test_util.Tests {
     )
 
     val cFunName = "foo"
-    val cFun = function.asStringFromExpr(cFunName)(inferred)
+    val cFun = function(cFunName).asStringFromExpr(inferred)
 
     val testCode =
       s"""
@@ -107,7 +107,7 @@ class dependentTypes extends test_util.Tests {
     )
 
     val cFunName = "foo"
-    val cFun = function.asStringFromExpr(cFunName)(inferred)
+    val cFun = function(cFunName).asStringFromExpr(inferred)
 
     val testCode =
       s"""
@@ -153,7 +153,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       ((Nat `**` (n => n`.`f32)) ->: (5`.`f32))
     )
-    function.asStringFromExpr("Foo_foo")(inferred)
+    function.asStringFromExpr(inferred)
   }
 
   test("Simple nested") {
@@ -167,7 +167,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => (m+1) `.` f32) ))
     )
-    function.asStringFromExpr("Foo_foo")(inferred)
+    function.asStringFromExpr(inferred)
   }
 
   test("Simple reduce") {
@@ -181,7 +181,7 @@ class dependentTypes extends test_util.Tests {
     assert(inferred.t ==
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => f32) ))
     )
-    function.asStringFromExpr("Foo_foo")(inferred)
+    function.asStringFromExpr(inferred)
   }
 
 
@@ -207,6 +207,6 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
-    function.asStringFromExpr("Foo_foo")(inferred)
+    function.asStringFromExpr(inferred)
   }
 }

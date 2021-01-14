@@ -13,7 +13,7 @@ class Split extends test_util.Tests {
       depFun((n: Nat) => fun(ArrayType(n, f32))(xs =>
         xs |> split(2) |> mapSeq(mapSeq(fun(x => x)))))
 
-    val code = function.asStringFromExpr("split")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -25,7 +25,7 @@ class Split extends test_util.Tests {
           xs |> map(split(2)) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
         ))
 
-    val code = function.asStringFromExpr("split")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }
@@ -37,7 +37,7 @@ class Split extends test_util.Tests {
           xs |> mapSeq(split(2) >> mapSeq(mapSeq(fun(x => x))))
         ))
 
-    val code = function.asStringFromExpr("split")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }

@@ -62,9 +62,9 @@ class circularBuffering extends test_util.Tests {
     )) >> transpose
 
   test("example outputs are consistent") {
-    val inlinedFun = gen.c.function.asStringFromExpr("inlined")(wrapExpr(inlined))
-    val bufferedFun = gen.c.function.asStringFromExpr("buffered")(wrapExpr(buffered))
-    val circBufFun = gen.c.function.asStringFromExpr("circularBuffered")(wrapExpr(circBuf))
+    val inlinedFun = gen.c.function("inlined").asStringFromExpr(wrapExpr(inlined))
+    val bufferedFun = gen.c.function("buffered").asStringFromExpr(wrapExpr(buffered))
+    val circBufFun = gen.c.function("circularBuffered").asStringFromExpr(wrapExpr(circBuf))
 
     val N = 20
     val testCode =
@@ -197,8 +197,8 @@ class circularBuffering extends test_util.Tests {
     circularBuffer(2)(2)(sumSeq) >> iterateStream(sumSeq)
 
   test("example chain outputs are consistent") {
-    val inlinedFun = gen.c.function.asStringFromExpr("inlined")(wrapExprChain(inlinedChain))
-    val circBufFun = gen.c.function.asStringFromExpr("circularBuffered")(wrapExprChain(circBufChain))
+    val inlinedFun = gen.c.function("inlined").asStringFromExpr(wrapExprChain(inlinedChain))
+    val circBufFun = gen.c.function("circularBuffered").asStringFromExpr(wrapExprChain(circBufChain))
 
     val N = 20
     val testCode =
@@ -277,8 +277,8 @@ class circularBuffering extends test_util.Tests {
     )
 
   test("example together outputs are consistent") {
-    val inlinedFun = gen.c.function.asStringFromExpr("inlined")(wrapExprTogether(inlinedTogether))
-    val circBufFun = gen.c.function.asStringFromExpr("circularBuffered")(wrapExprTogether(circBufTogether))
+    val inlinedFun = gen.c.function("inlined").asStringFromExpr(wrapExprTogether(inlinedTogether))
+    val circBufFun = gen.c.function("circularBuffered").asStringFromExpr(wrapExprTogether(circBufTogether))
 
     val N = 8
     val M = 12

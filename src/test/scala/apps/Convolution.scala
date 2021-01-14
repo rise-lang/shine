@@ -19,14 +19,14 @@ class Convolution extends test_util.TestsWithExecutor {
     test_util.runsWithSameResult(Seq(
       ("originalX (CG017)", runOriginalKernel("CGO17_ConvolutionColumn_small.cl",
         N, lsX, gsX, matrix, weights)),
-      ("dpiaX", runKernel(gen.opencl.kernel.fromExpr("blurXTiled2D")(blurXTiled2D(N)),
+      ("dpiaX", runKernel(gen.opencl.kernel.fromExpr(blurXTiled2D(N)),
         lsX, gsX, matrix, weights))
     ))
     test_util.runsWithSameResult(Seq(
       ("originalY (CG017)", runOriginalKernel("CGO17_ConvolutionRow_small.cl",
         N, lsY, gsY, matrix, weights)),
       ("dpiaY", runKernel(
-        gen.opencl.kernel.fromExpr("blurYTiled2DTiledLoadingTransposed")(blurYTiled2DTiledLoadingTransposed(N)),
+        gen.opencl.kernel.fromExpr(blurYTiled2DTiledLoadingTransposed(N)),
         lsY, gsY, matrix, weights))
     ))
   }

@@ -10,7 +10,7 @@ class SlideSeq extends test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
   def check3pSum(e: rise.core.Expr): Unit = {
-    val sumFun = function.asStringFromExpr("sum")(e)
+    val sumFun = function("sum").asStringFromExpr(e)
     val testCode = s"""
 #include <stdio.h>
 

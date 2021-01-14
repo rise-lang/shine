@@ -287,7 +287,7 @@ class algorithmic extends test_util.Tests {
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
     val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
-    println(gen.c.function.asStringFromExpr("foo")(lower(typed).get))
+    println(gen.c.function.asStringFromExpr(lower(typed).get))
 
     /// TILE + REORDER
 
@@ -296,7 +296,7 @@ class algorithmic extends test_util.Tests {
 
     val reorder = tileReorder(mm).get
 
-    println(gen.c.function.asStringFromExpr("foo")(lower(reorder).get))
+    println(gen.c.function.asStringFromExpr(lower(reorder).get))
   }
 
   test("tile mm") {

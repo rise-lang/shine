@@ -15,7 +15,7 @@ class DepMap extends test_util.Tests {
 
     println(e)
 
-    val code = function.asStringFromExpr("foo")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -26,7 +26,7 @@ class DepMap extends test_util.Tests {
         fun(n`.`(m`.`(o`.`f32)))(xs =>
           xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))
 
-    val code = function.asStringFromExpr("foo")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }

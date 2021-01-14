@@ -16,7 +16,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val f: ToBeTyped[Expr] = depFun((n: Nat) => fun(ArrayType(n, int))(
       xs => xs |> mapSeq(fun(x => x + l(1)))))
 
-    val kernel = gen.opencl.kernel.fromExpr()(f)
+    val kernel = gen.opencl.kernel.fromExpr(f)
 
     val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(8)(0)
@@ -33,7 +33,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val f: Expr = fun(ArrayType(n, int))(
       xs => xs |> mapSeq(fun(x => x + l(1))))
 
-    val kernel = gen.opencl.kernel.fromExpr()(f)
+    val kernel = gen.opencl.kernel.fromExpr(f)
 
     val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(n)(0)
@@ -50,7 +50,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val f: ToBeTyped[Expr] = fun(ArrayType(n, int))(xs => depFun((s: Nat) =>
       xs |> split(s) |> mapSeq(mapSeq(fun(x => x + l(1)))) |> join))
 
-    val kernel = gen.opencl.kernel.fromExpr()(f)
+    val kernel = gen.opencl.kernel.fromExpr(f)
 
     val kernelF = kernel.as[ScalaFunction`(`Array[Int]`,`Int`)=>`Array[Int]]
     val xs = Array.fill(n)(0)
@@ -68,7 +68,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
       fun(ArrayType(m, ArrayType(n, int)))(xs =>
         xs |> mapSeq(mapSeq(fun(x => x + l(1))))))
 
-    val kernel = gen.opencl.kernel.fromExpr()(f)
+    val kernel = gen.opencl.kernel.fromExpr(f)
 
     val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Array[Array[Int]]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(m)(Array.fill(n)(0))
@@ -86,7 +86,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val f: Expr = depFun((n: Nat) => fun(ArrayType(n, int))(xs => depFun((s: Nat) =>
       xs |> split(s) |> mapSeq(mapSeq(fun(x => x + l(1)))) |> join)))
 
-    val kernel = gen.opencl.kernel.fromExpr()(f)
+    val kernel = gen.opencl.kernel.fromExpr(f)
 
     val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]]
 
@@ -102,7 +102,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val f: Expr = fun(ArrayType(n, int))(xs =>
       xs |> mapGlobal(fun(x => x + l(1))))
 
-    val kernel = gen.opencl.kernel.fromExpr()(f)
+    val kernel = gen.opencl.kernel.fromExpr(f)
 
     val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(n)(0)

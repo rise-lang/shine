@@ -219,11 +219,11 @@ class stencil extends test_util.Tests {
   ))
 
   test("Simple stencil compiles to syntactically correct C") {
-    function.asStringFromExpr("stencil")(simpleStencil)
+    function.asStringFromExpr(simpleStencil)
   }
 
   test("Simple scan compiles to syntactically correct OpenMP") {
-    gen.openmp.function.asStringFromExpr("stencil")(simpleStencil)
+    gen.openmp.function.asStringFromExpr(simpleStencil)
   }
 
   test("Basic 1D addition stencil") {

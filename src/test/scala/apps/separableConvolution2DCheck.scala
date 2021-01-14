@@ -30,7 +30,7 @@ class separableConvolution2DCheck extends test_util.Tests {
     val input = Array.fill(H, W)(random.nextFloat())
     val gold = computeGold(H, W, input, binomialWeights2d)
 
-    val compute = function.asStringFromExpr("compute")(wrapExpr(e))
+    val compute = function("compute").asStringFromExpr(wrapExpr(e))
     val testCode =
       s"""
 #include <stdio.h>
@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
     val input = Array.fill(H, W)(random.nextFloat())
     val gold = computeGold(H, W, input, binomialWeights2d).flatten
 
-    val kernel = gen.opencl.kernel.fromExpr()(wrapExpr(e))
+    val kernel = gen.opencl.kernel.fromExpr(wrapExpr(e))
     val run = kernel.as[ScalaFunction `(`
       Int `,` Int `,` Array[Array[Float]]
       `)=>` Array[Float]]
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
       rotateValues(3)(id) >>
       iterateStream(dotSeqUnroll(binomialWeightsH))
     )
-    val code = function.asStringFromExpr("blur")(wrapExpr(e))
+    val code = function.asStringFromExpr(wrapExpr(e))
     " % ".r.findAllIn(code).length shouldBe 0
     " / ".r.findAllIn(code).length shouldBe 0
   }
@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
       dotSeqPrivate(binomialWeightsH)
     ))
 
-    val code = gen.opencl.kernel.asStringFromExpr("blur")(wrapExpr(e))
+    val code = gen.opencl.kernel.asStringFromExpr(wrapExpr(e))
     "for \\(".r.findAllIn(code).length shouldBe 2
   }
 }

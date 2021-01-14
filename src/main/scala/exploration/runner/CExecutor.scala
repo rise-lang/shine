@@ -23,7 +23,7 @@ case class CExecutor(lowering: Strategy[Rise],
   var globalBest:Option[Double] = None
   val N: Int = inputSize
   var best:Option[Double] = None
-  var gold: C.TranslationUnit = gen.openmp.function.fromExpr("compute_gold")(goldExpression)
+  var gold: C.TranslationUnit = gen.openmp.function("compute_gold").fromExpr(goldExpression)
   var counter = 0
   var errorLevel:ExplorationErrorLevel = LoweringError
 
@@ -67,7 +67,7 @@ case class CExecutor(lowering: Strategy[Rise],
             case Some(value) =>
               if (returnValue.toDouble < value) {
                 best = Some(returnValue.toDouble)
-                gold = gen.openmp.function.fromExpr("compute_gold")(lowered.get)
+                gold = gen.openmp.function("compute_gold").fromExpr(lowered.get)
                 println("use new gold with runtime: " + best.get)
               }
             case _ => best = Some(returnValue.toDouble)
@@ -372,7 +372,7 @@ int compare_gold(float* C, float* GOLD){
   }
 
   def genExecutableCode(riseProgram:Rise):String = {
-    val p = gen.openmp.function.fromExpr("riseFun")(riseProgram)
+    val p = gen.openmp.function("riseFun").fromExpr(riseProgram)
 
     val preparation = prepareInput(p)
 

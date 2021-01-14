@@ -302,11 +302,11 @@ object harrisCornerDetection {
 
   object NoPipe {
     def create: NoPipe = NoPipe(
-      gen.opencl.kernel.fromExpr("sobelX")(sobelX),
-      gen.opencl.kernel.fromExpr("sobelY")(sobelY),
-      gen.opencl.kernel.fromExpr("mul")(mul),
-      gen.opencl.kernel.fromExpr("gaussian")(gaussian),
-      gen.opencl.kernel.fromExpr("coarsity")(coarsity)
+      gen.opencl.kernel.fromExpr(sobelX),
+      gen.opencl.kernel.fromExpr(sobelY),
+      gen.opencl.kernel.fromExpr(mul),
+      gen.opencl.kernel.fromExpr(gaussian),
+      gen.opencl.kernel.fromExpr(coarsity)
     )
   }
 
@@ -342,8 +342,8 @@ object harrisCornerDetection {
   object HalfPipe2 {
     def create: HalfPipe2 =
       HalfPipe2(
-        gen.opencl.kernel.fromExpr("sobelXYMuls")(sobelXYMuls),
-        gen.opencl.kernel.fromExpr("gaussianCoarsity")(gaussianCoarsity)
+        gen.opencl.kernel.fromExpr(sobelXYMuls),
+        gen.opencl.kernel.fromExpr(gaussianCoarsity)
       )
   }
 
@@ -379,8 +379,8 @@ object harrisCornerDetection {
   object HalfPipe1 {
     def create: HalfPipe1 =
       HalfPipe1(
-        gen.opencl.kernel.fromExpr("sobelXY")(sobelXY),
-        gen.opencl.kernel.fromExpr("mulGaussianCoarsity")(mulGaussianCoarsity)
+        gen.opencl.kernel.fromExpr(sobelXY),
+        gen.opencl.kernel.fromExpr(mulGaussianCoarsity)
       )
   }
 
@@ -406,7 +406,7 @@ object harrisCornerDetection {
 
   object FullPipe {
     def create: FullPipe =
-      FullPipe(gen.opencl.kernel.fromExpr("sobelXYMulGaussianCoarsity")(sobelXYMulGaussianCoarsity))
+      FullPipe(gen.opencl.kernel.fromExpr(sobelXYMulGaussianCoarsity))
   }
 
   private def zip2D[A, B](

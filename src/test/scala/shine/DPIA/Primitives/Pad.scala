@@ -17,7 +17,7 @@ class Pad extends test_util.Tests {
       xs |> padCst(2)(3)(l(5.0f)) |> mapSeq(fun(x => x))
     ))
 
-    function.asStringFromExpr("pad")(e)
+    function.asStringFromExpr(e)
   }
 
   test("Simple C clamp pad input and copy") {
@@ -25,7 +25,7 @@ class Pad extends test_util.Tests {
       xs |> padClamp(2)(3) |> mapSeq(fun(x => x))
     ))
 
-    function.asStringFromExpr("pad")(e)
+    function.asStringFromExpr(e)
   }
 
   test("2D C clamp pad input and copy") {
@@ -33,7 +33,7 @@ class Pad extends test_util.Tests {
       xs |> padClamp2D(2) |> mapSeq(mapSeq(fun(x => x)))
     ))
 
-    function.asStringFromExpr("pad")(e)
+    function.asStringFromExpr(e)
   }
 
   test("Simple OpenMP constant pad input and copy") {
@@ -43,7 +43,7 @@ class Pad extends test_util.Tests {
       xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
     ))
 
-    gen.openmp.function.asStringFromExpr("pad")(e)
+    gen.openmp.function.asStringFromExpr(e)
   }
 
   test("Simple OpenCL pad input and copy") {
@@ -53,7 +53,7 @@ class Pad extends test_util.Tests {
       xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
-    gen.opencl.kernel.fromExpr()(e)
+    gen.opencl.kernel.fromExpr(e)
   }
 
   test("OpenCL Pad only left") {
@@ -63,7 +63,7 @@ class Pad extends test_util.Tests {
       xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
-    gen.opencl.kernel.fromExpr()(e)
+    gen.opencl.kernel.fromExpr(e)
   }
 
   test("OpenCL Pad only right") {
@@ -73,19 +73,19 @@ class Pad extends test_util.Tests {
       xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
-    gen.opencl.kernel.fromExpr()(e)
+    gen.opencl.kernel.fromExpr(e)
   }
 
   test("OpenCL pad before or after transpose") {
     import rise.openCL.TypedDSL._
 
     val range = arithexpr.arithmetic.RangeAdd(1, arithexpr.arithmetic.PosInf, 1)
-    val k1 = gen.opencl.kernel.fromExpr()(depFun(range, (n: Nat) =>
+    val k1 = gen.opencl.kernel.fromExpr(depFun(range, (n: Nat) =>
       fun((4`.`n`.`int) ->: ((n+2)`.`4`.`int))(xs =>
         xs |> transpose |> padClamp(1)(1) |> mapGlobal(mapSeqUnroll(id))
       )
     ))
-    val k2 = gen.opencl.kernel.fromExpr()(depFun(range, (n: Nat) =>
+    val k2 = gen.opencl.kernel.fromExpr(depFun(range, (n: Nat) =>
       fun((4`.`n`.`int) ->: ((n+2)`.`4`.`int))(xs =>
         xs |> map(padClamp(1)(1)) |> transpose |> mapGlobal(mapSeqUnroll(id))
       )

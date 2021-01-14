@@ -24,7 +24,7 @@ class Reduce extends test_util.TestsWithExecutor {
       depFun((n: Nat) => fun(ArrayType(n, f32))(a =>
         a |> reduceSeq(add)(l(0.0f))))
 
-    val code = function.asStringFromExpr("reduce")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 1
   }
@@ -37,7 +37,7 @@ class Reduce extends test_util.TestsWithExecutor {
           a |> map(reduceSeq(add)(l(0.0f))) |> mapSeq(fun(x => x))
         ))
 
-    function.asStringFromExpr("reduce")(e)
+    function.asStringFromExpr(e)
   }
 
   test("Fusing a reduce into another should generate syntactically" +
@@ -48,7 +48,7 @@ class Reduce extends test_util.TestsWithExecutor {
           a |> map(reduceSeq(add)(l(0.0f))) |> reduceSeq(add)(l(0.0f))
       ))
 
-    val code = function.asStringFromExpr("reduce")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -76,7 +76,7 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val gold = A.reduce((row1, row2) => row1.zip(row2).map(in => in._1 + in._2))
 
-    val runKernel = gen.opencl.kernel.fromExpr()(e(m)(n)).as[ScalaFunction `(`
+    val runKernel = gen.opencl.kernel.fromExpr(e(m)(n)).as[ScalaFunction `(`
       Array[Array[Float]] `)=>` Array[Float]]
     val (out, _)  = runKernel(LocalSize(1), GlobalSize(1))(A`;`)
 
@@ -96,9 +96,9 @@ class Reduce extends test_util.TestsWithExecutor {
         arr |> reduceSeq (fun(_ + _))  (init)))
 
     println("Fst:")
-    function.asStringFromExpr("fst")(e(initRecordExp._1))
+    function.asStringFromExpr(e(initRecordExp._1))
     println("Snd:")
-    function.asStringFromExpr("snd")(e(initRecordExp._2))
+    function.asStringFromExpr(e(initRecordExp._2))
   }
 
   test("Record access to specify initial accumulator value" +
@@ -119,7 +119,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val gold = A.sum
 
     def runKernel(initWithRecordAccess: ToBeTyped[Expr]) =
-      gen.opencl.kernel.fromExpr()(e(initWithRecordAccess))
+      gen.opencl.kernel.fromExpr(e(initWithRecordAccess))
         .as[ScalaFunction `(`Int`,`Array[Float]`)=>`Array[Float]]
 
     val (out1, _) =

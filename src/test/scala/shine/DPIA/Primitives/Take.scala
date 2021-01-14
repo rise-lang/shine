@@ -12,13 +12,13 @@ class Take extends test_util.Tests {
     val e = fun(ArrayType(128, int))(a =>
       take(8)(a) |> mapSeq(fun(x => x)))
 
-    function.asStringFromExpr("take")(e)
+    function.asStringFromExpr(e)
   }
 
   ignore ("Trigger TakeAcc acceptor translation, what should happen?") {
     val e = fun(ArrayType(128, int))(a => take(8)(a))
 
-    function.asStringFromExpr("take")(e)
+    function.asStringFromExpr(e)
   }
 
 }

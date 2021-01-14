@@ -27,7 +27,7 @@ class Partition extends test_util.Tests {
 
     println("\n" + slideExample + "\n")
 
-    val code = function.asStringFromExpr("partition")(slideExample)
+    val code = function.asStringFromExpr(slideExample)
     SyntaxChecker(code)
   }
 

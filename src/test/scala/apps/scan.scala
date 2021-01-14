@@ -12,11 +12,11 @@ class scan extends test_util.Tests {
   )
 
   test("Simple scan compiles to syntactically correct C") {
-    function.asStringFromExpr("scan")(simpleScan)
+    function.asStringFromExpr(simpleScan)
   }
 
   test("Simple scan compiles to syntactically correct OpenMP") {
-    gen.openmp.function.asStringFromExpr("scan")(simpleScan)
+    gen.openmp.function.asStringFromExpr(simpleScan)
   }
 
   // currently fails do to a missing address space at a new

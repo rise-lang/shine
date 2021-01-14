@@ -104,7 +104,7 @@ void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
     delta: Int,
   ): Unit = {
     val computeFun = printTime("codegen",
-      gen.openmp.function.asStringFromExpr("compute")(lowered)
+      gen.openmp.function("compute").asStringFromExpr(lowered)
     )
     val testCode = s"""
 ${cHeader}

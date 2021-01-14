@@ -23,7 +23,7 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(fun(x => x))
       ))
     )
-    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "barrier".r.findAllIn(code).length shouldBe 0
   }
 
@@ -37,7 +37,7 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(fun(x => x))
       ))
     )
-    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "barrier".r.findAllIn(code).length shouldBe 0
   }
 
@@ -50,7 +50,7 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(sum)
       ))
     )
-    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "barrier".r.findAllIn(code).length shouldBe 2
     """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
@@ -64,7 +64,7 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(sum)
       ))
     )
-    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "barrier".r.findAllIn(code).length shouldBe 2
     """barrier\(CLK_GLOBAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
@@ -90,7 +90,7 @@ class Barriers extends test_util.Tests {
     //    parForLocal
     //   barrier(LOCAL)
 
-    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "barrier".r.findAllIn(code).length shouldBe 2
     """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
@@ -118,7 +118,7 @@ class Barriers extends test_util.Tests {
     //    parForLocal
     //    barrier(LOCAL)
 
-    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "barrier".r.findAllIn(code).length shouldBe 2
     """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
@@ -150,7 +150,7 @@ class Barriers extends test_util.Tests {
     //   parForLocal
     //    parForLocal
 
-    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "barrier".r.findAllIn(code).length shouldBe 2
     """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
@@ -165,7 +165,7 @@ class Barriers extends test_util.Tests {
         mapLocal(0)(map(fst) >> sum)
       ))
     ))
-    val code = gen.opencl.kernel.asStringFromExpr()(e)
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "barrier".r.findAllIn(code).length shouldBe 2
     """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }

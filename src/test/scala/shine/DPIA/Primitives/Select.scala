@@ -23,7 +23,7 @@ class Select extends test_util.Tests {
           )
       )) :: (6`.`int) |> mapSeq(id)
 
-    function.asStringFromExpr("select")(e)
+    function.asStringFromExpr(e)
   }
 
   test("select from generate from gather") {
@@ -39,6 +39,6 @@ class Select extends test_util.Tests {
       ))) |> mapSeq(id)
     )
 
-    function.asStringFromExpr("select")(e)
+    function.asStringFromExpr(e)
   }
 }

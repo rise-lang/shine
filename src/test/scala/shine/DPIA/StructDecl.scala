@@ -15,19 +15,19 @@ class StructDecl extends test_util.Tests {
   test("Program with tuples in output and tuple input, can be generated in C.") {
     val tupleOut = fun(ArrayType(8, PairType(f32, f32)))(xs => xs |> mapSeq(id))
 
-    function.asStringFromExpr("foo")(tupleOut)
+    function.asStringFromExpr(tupleOut)
   }
 
   test("Program with tuples in output and input, can be generated in OpenMP.") {
     val tupleOut = fun(ArrayType(8, PairType(f32, f32)))(xs => xs |> mapPar(id))
 
-    gen.openmp.function.asStringFromExpr("tupleOut")(tupleOut)
+    gen.openmp.function.asStringFromExpr(tupleOut)
   }
 
   test("Program with tuples in input and output, can be generated in OpenCL.") {
     val tupleOut = fun(ArrayType(8, PairType(f32, f32)))(xs => xs |> mapSeq(id))
 
-    gen.opencl.kernel.fromExpr()(tupleOut)
+    gen.opencl.kernel.fromExpr(tupleOut)
   }
 
   test(
@@ -38,7 +38,7 @@ class StructDecl extends test_util.Tests {
         zip(xs)(ys) |> toMemFun(mapSeq(id)) |> mapSeq(addT))
     )
 
-    function.asStringFromExpr("foo")(tupleOut)
+    function.asStringFromExpr(tupleOut)
   }
 
   test(
@@ -49,7 +49,7 @@ class StructDecl extends test_util.Tests {
         zip(xs)(ys) |> toMemFun(mapPar(id)) |> mapPar(addT))
     )
 
-    gen.openmp.function.asStringFromExpr("tupleOut")(tupleOut)
+    gen.openmp.function.asStringFromExpr(tupleOut)
   }
 
   test(
@@ -61,6 +61,6 @@ class StructDecl extends test_util.Tests {
       )
     )
 
-    gen.opencl.kernel.fromExpr()(tupleOut)
+    gen.opencl.kernel.fromExpr(tupleOut)
   }
 }

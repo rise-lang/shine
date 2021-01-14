@@ -14,6 +14,6 @@ class Iterate extends test_util.Tests {
     val e = fun(ArrayType(128, int))(a =>
       a |> iterate(6)(depFun((_: Nat) => split(2) >> mapSeq(reduceSeq(add)(l(0))))))
 
-    function.asStringFromExpr("iterate")(e)
+    function.asStringFromExpr(e)
   }
 }

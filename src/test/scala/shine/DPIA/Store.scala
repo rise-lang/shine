@@ -14,15 +14,15 @@ class Store extends test_util.Tests {
       "\\+".r.findAllIn(code).length shouldBe n
     }
     // this is surprising behaviour
-    plusNum(2, function.asStringFromExpr("foo")(fun(int)(x =>
+    plusNum(2, function.asStringFromExpr(fun(int)(x =>
       toMem(x + l(2)) |> fun(y => y * y)
     )))
     // this is surprising behaviour
-    plusNum(2, function.asStringFromExpr("foo")(fun(int)(x =>
+    plusNum(2, function.asStringFromExpr(fun(int)(x =>
       let(x + l(2)) be (y => y * y)
     )))
     // this is what we actually would expect
-    plusNum(1, function.asStringFromExpr("foo")(fun(int)(x =>
+    plusNum(1, function.asStringFromExpr(fun(int)(x =>
       (x + l(2)) |> store { y =>
         y * y
       }
@@ -30,7 +30,7 @@ class Store extends test_util.Tests {
   }
 
   test("array values") {
-    val code = function.asStringFromExpr("foo")(depFun((n: Nat) => fun(ArrayType(n, int))(xs =>
+    val code = function.asStringFromExpr(depFun((n: Nat) => fun(ArrayType(n, int))(xs =>
       xs |> store2(how = mapSeq(fun(x => x))) |> fun(xs =>
         xs |> mapSeq(fun(x => x))
       )
@@ -40,7 +40,7 @@ class Store extends test_util.Tests {
   }
 
   test("array of array values") {
-    val code = function.asStringFromExpr("foo")(depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, int)))(xs =>
+    val code = function.asStringFromExpr(depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, int)))(xs =>
       xs |> store(how = mapSeq(mapSeq(fun(x => x)))) { xs =>
         xs |> mapSeq(mapSeq(fun(x => x)))
       }

@@ -14,7 +14,7 @@ class Reorder extends test_util.Tests {
       xs |> reorderWithStride(128) |> mapSeq(fun(x => x))
     ))
 
-    val code = function.asStringFromExpr("reorder")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 1
   }
@@ -24,7 +24,7 @@ class Reorder extends test_util.Tests {
       xs |> map(reorderWithStride(128)) |> mapSeq(mapSeq(fun(x => x)))
     ))
 
-    val code = function.asStringFromExpr("reorder")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -34,7 +34,7 @@ class Reorder extends test_util.Tests {
       xs |> mapSeq(fun(x => x)) |> reorderWithStride(Cst(128))
     ))
 
-    val code = function.asStringFromExpr("reorder")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 1
   }
@@ -44,7 +44,7 @@ class Reorder extends test_util.Tests {
       xs |> mapSeq(mapSeq(fun(x => x))) |> map(reorderWithStride(Cst(128)))
     ))
 
-    val code = function.asStringFromExpr("reorder")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }

@@ -22,7 +22,7 @@ class Scatter extends test_util.Tests {
         natAsIndex(n)(l(n - 1) - indexAsNat(i)))))
     )
 
-    val k = gen.opencl.kernel.fromExpr()(e)
+    val k = gen.opencl.kernel.fromExpr(e)
     val lS = LocalSize(1)
     val gS = GlobalSize(2)
     val f = k.as[ScalaFunction `(` Array[Int] `)=>` Array[Int]]
@@ -49,7 +49,7 @@ class Scatter extends test_util.Tests {
       })))
     )
 
-    val k = gen.opencl.kernel.fromExpr()(e)
+    val k = gen.opencl.kernel.fromExpr(e)
     val lS = LocalSize(1)
     val gS = GlobalSize(2)
     val f = k.as[ScalaFunction `(` Array[Int] `)=>` Array[Int]]

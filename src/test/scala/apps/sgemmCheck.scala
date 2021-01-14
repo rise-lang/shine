@@ -33,7 +33,7 @@ class sgemmCheck extends test_util.TestsWithExecutor {
   }
 
   test("Sequential gemm compiles to syntactically correct C") {
-    function.asStringFromExpr("gemm")(c.sequential)
+    function.asStringFromExpr(c.sequential)
   }
 
   test("mali gemm type inference works") {
@@ -41,7 +41,7 @@ class sgemmCheck extends test_util.TestsWithExecutor {
   }
 
   test("mali gemm compiles to syntactically correct kernel") {
-    gen.opencl.kernel.fromExpr()(mali_GEMM)
+    gen.opencl.kernel.fromExpr(mali_GEMM)
   }
 
   test("Kepler best type inference works") {
@@ -49,7 +49,7 @@ class sgemmCheck extends test_util.TestsWithExecutor {
   }
 
   test("Kepler best compiles to syntactically correct kernel") {
-    gen.opencl.kernel.fromExpr("KERNEL", Some(LocalSize((32,8,1)), GlobalSize((256, 128, 1))))(keplerBest)
+    gen.opencl.kernel(LocalSize((32,8,1)), GlobalSize((256, 128, 1))).fromExpr(keplerBest)
   }
 
   test("OpenCL sequential gemm versions produce the expected result") {
@@ -61,7 +61,7 @@ class sgemmCheck extends test_util.TestsWithExecutor {
 
     val localSize = LocalSize(1)
     val globalSize = GlobalSize(1)
-    val kernel = gen.opencl.kernel.fromExpr("KERNEL", Some(localSize, globalSize))(sequential)
+    val kernel = gen.opencl.kernel(localSize, globalSize).fromExpr(sequential)
 
     val (flatOutput, _ ) = runSgemmKernel(KernelWithSizes(kernel, localSize, globalSize),
       aMat, bMat, cMat, alpha, beta, M, N, K)
@@ -78,7 +78,7 @@ class sgemmCheck extends test_util.TestsWithExecutor {
 
     val localSize = LocalSize((2, 2))
     val globalSize = GlobalSize((N/2, N/2))
-    val kernel = gen.opencl.kernel.fromExpr("KERNEL", Some(localSize, globalSize))(mali_GEMM)
+    val kernel = gen.opencl.kernel(localSize, globalSize).fromExpr(mali_GEMM)
 
     val runs = Seq(
       "dpia" -> runSgemmKernel(
@@ -103,7 +103,7 @@ class sgemmCheck extends test_util.TestsWithExecutor {
 
     val localSize = LocalSize((32,8,1))
     val globalSize = GlobalSize((256, 128, 1))
-    val kernel = gen.opencl.kernel.fromExpr("KERNEL", Some(localSize, globalSize))(keplerBest)
+    val kernel = gen.opencl.kernel(localSize, globalSize).fromExpr(keplerBest)
 
     val runs = Seq(
       "dpia" -> runSgemmKernel(

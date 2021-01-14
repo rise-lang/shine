@@ -21,15 +21,15 @@ class NBody extends test_util.TestsWithExecutor {
     test_util.runsWithSameResult(Seq(
       ("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
       ("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
-      ("dpia AMD", runKernel(gen.opencl.kernel.fromExpr("amd")(amd), localSizeAMD, globalSizeAMD, pos, vel)),
-      ("dpia NVIDIA", runKernel(gen.opencl.kernel.fromExpr("nvidia")(nvidia), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
+      ("dpia AMD", runKernel(gen.opencl.kernel.fromExpr(amd), localSizeAMD, globalSizeAMD, pos, vel)),
+      ("dpia NVIDIA", runKernel(gen.opencl.kernel.fromExpr(nvidia), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
     ))
   }
 
   // FIXME: generated code calls update too many times
   // related to pair assignment in the TranslationContext
   test("nbody AMD version calls update only once") {
-    val code = gen.opencl.kernel.asStringFromExpr("amd")(amd)
+    val code = gen.opencl.kernel.asStringFromExpr(amd)
     "update\\(".r.findAllIn(code).length shouldBe 2
   }
 }

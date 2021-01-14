@@ -14,7 +14,7 @@ class MRIQ extends test_util.TestsWithExecutor {
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalComputePhiMag("CGO17_ComputePhiMag.cl", phiR, phiI)),
-      ("dpia", runComputePhiMag(gen.opencl.kernel.fromExpr("computePhiMag")(computePhiMag), phiR, phiI))
+      ("dpia", runComputePhiMag(gen.opencl.kernel.fromExpr(computePhiMag), phiR, phiI))
     ))
   }
 
@@ -29,7 +29,7 @@ class MRIQ extends test_util.TestsWithExecutor {
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalComputeQ("CGO17_ComputeQ.cl", x, y, z, Qr, Qi, kvalues)),
-      ("dpia", runComputeQ(gen.opencl.kernel.fromExpr()(computeQ), x, y, z, Qr, Qi, kvalues))
+      ("dpia", runComputeQ(gen.opencl.kernel.fromExpr(computeQ), x, y, z, Qr, Qi, kvalues))
     ))
   }
 }

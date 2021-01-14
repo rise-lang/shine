@@ -32,10 +32,10 @@ class harrisCornerDetectionHalideCheck
 
   def checkOMP(lowered: Expr): Unit = {
     val dumbLowering = lowerOMP(omp.harrisSeqWrite)
-    val goldFun = gen.openmp.function.asStringFromExpr("harrisGold")(dumbLowering)
+    val goldFun = gen.openmp.function("harrisGold").asStringFromExpr(dumbLowering)
 
     val computeFun = util.printTime("codegen",
-      gen.openmp.function.asStringFromExpr("harris")(lowered))
+      gen.openmp.function("harris").asStringFromExpr(lowered))
 
     val testCode =
       s"""
@@ -92,10 +92,10 @@ class harrisCornerDetectionHalideCheck
   def checkOCL(lowered: Expr, ls: LocalSize, gs: GlobalSize): Unit = {
     assert(lowered.t == harris(1, 1).toExpr.t)
     val prog = util.printTime("codegen",
-      gen.opencl.kernel.fromExpr("harris")(lowered))
+      gen.opencl.kernel("harris").fromExpr(lowered))
 
     val dumbLowering = lowerOCL(ocl.harrisSeqWrite)
-    val goldProg = gen.opencl.kernel.fromExpr("harrisGold")(dumbLowering)
+    val goldProg = gen.opencl.kernel("harrisGold").fromExpr(dumbLowering)
 
     val random = new scala.util.Random()
     val input = Array.fill(3, Hi, Wi)(random.nextFloat() * 10.0f)

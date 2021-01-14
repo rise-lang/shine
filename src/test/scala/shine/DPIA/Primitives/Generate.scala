@@ -15,14 +15,14 @@ class Generate extends test_util.Tests {
 
   test("Very simple one-dimensional generate generates syntactically correct code in C.") {
     val e = depFun((n: Nat) => generate(fun(IndexType(n))(i => cast(i) + l(1.0))) |> mapSeq(id))
-    function.asStringFromExpr("generate")(e)
+    function.asStringFromExpr(e)
   }
 
   test("Very simplistic generate, using index and maximum index size" +
     "generates syntactically correct code in C.") {
     val e =
       depFun((n: Nat) => generate(fun(IndexType(n))(i => indexAsNat(i) + n)) |> mapSeq(id))
-    function.asStringFromExpr("generate")(e)
+    function.asStringFromExpr(e)
   }
 
   test("One-dimensional generate generates syntactically correct code in C.") {
@@ -30,7 +30,7 @@ class Generate extends test_util.Tests {
       zip(in)(generate(fun(IndexType(n))(i => cos(cast(indexAsNat(i) + n)))))
       |> mapSeq(addT)
     ))
-    function.asStringFromExpr("generate")(e)
+    function.asStringFromExpr(e)
   }
 
   test("Two-dimensional generate generates syntactically correct code in C.") {
@@ -42,7 +42,7 @@ class Generate extends test_util.Tests {
           )))))
         |> mapSeq(fun(t => zip(fst(t))(snd(t)) |> mapSeq(addT)))
     ))
-    function.asStringFromExpr("generate")(e)
+    function.asStringFromExpr(e)
   }
 
   ignore("Syntactically correct code for complex Generate can be generated in C.") {
@@ -64,6 +64,6 @@ class Generate extends test_util.Tests {
     val generateSth = fun(ArrayType(N, f32))(_ =>
       reorderedB >> mapSeq(mapSeq(mapSeq(id))))
 
-    gen.opencl.kernel.fromExpr()(generateSth)
+    gen.opencl.kernel.fromExpr(generateSth)
   }
 }

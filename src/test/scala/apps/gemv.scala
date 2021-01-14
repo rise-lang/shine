@@ -120,7 +120,7 @@ class gemv extends test_util.Tests {
   }
 
   test("High level gemv compiles to syntactically correct C") {
-    function.asStringFromExpr("gemv")(high_level)
+    function.asStringFromExpr(high_level)
   }
 
   test("OpenCL gemv versions type inference works") {
@@ -134,7 +134,7 @@ class gemv extends test_util.Tests {
   }
 
   test("OpenMP gemv versions compiles to syntactically correct OpenMP") {
-    gen.openmp.function.asStringFromExpr("fullMatrixVectorFusedOpenMP")(omp.fullMatrixVectorFusedOpenMP)
+    gen.openmp.function.asStringFromExpr(omp.fullMatrixVectorFusedOpenMP)
   }
 
 }

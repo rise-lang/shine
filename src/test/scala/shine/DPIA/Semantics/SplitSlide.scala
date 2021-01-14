@@ -17,7 +17,7 @@ class SplitSlide extends test_util.Tests {
       xs |> slide(sz)(sp) |> split(n) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
     )
 
-    val code = function.asStringFromExpr("slide_split")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }
@@ -29,7 +29,7 @@ class SplitSlide extends test_util.Tests {
       )
     )
 
-    val code = function.asStringFromExpr("slide_map_slide")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }

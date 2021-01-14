@@ -13,7 +13,7 @@ class Slide extends test_util.Tests {
       depFun((n: Nat) => fun(ArrayType(n, f32))(xs =>
         xs |> slide(3)(1) |> mapSeq(mapSeq(fun(x => x)))))
 
-    val code = function.asStringFromExpr("slide")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -25,7 +25,7 @@ class Slide extends test_util.Tests {
           xs |> map(slide(3)(1)) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
         ))
 
-    val code = function.asStringFromExpr("slide")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }
@@ -37,7 +37,7 @@ class Slide extends test_util.Tests {
           xs |> mapSeq(slide(3)(1) >> mapSeq(mapSeq(fun(x => x))))
         ))
 
-    val code = function.asStringFromExpr("slide")(e)
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }

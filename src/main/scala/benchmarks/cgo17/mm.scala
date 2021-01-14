@@ -24,12 +24,16 @@ object mm {
       GlobalSize((m /^ 4, n /^ 8))
     }
     // FIXME: input sizes should remain variable in globalSize during codegen
-    val amdKernel = gen.opencl.kernel.fromExpr("KERNEL",
-      phrase => (localSize, globalSizeGen(phrase))
-    )(amd)
-    val nvidiaKernel = gen.opencl.kernel.fromExpr("KERNEL",
-      phrase => (localSize, globalSizeGen(phrase))
-    )(nvidia)
+    val amdKernel = gen.opencl.kernel(
+      Some(gen.opencl.PhraseDepLocalAndGlobalSize(phrase =>
+        gen.opencl.LocalAndGlobalSize(localSize, globalSizeGen(phrase)))),
+      "KERNEL"
+    ).fromExpr(amd)
+    val nvidiaKernel = gen.opencl.kernel(
+      Some(gen.opencl.PhraseDepLocalAndGlobalSize(phrase =>
+        gen.opencl.LocalAndGlobalSize(localSize, globalSizeGen(phrase)))),
+      "KERNEL"
+    ).fromExpr(nvidia)
 
     val stats = Seq(
       ("original AMD", benchmark(sampleCount, runOriginal("CGO17_MMAMD.cl",
