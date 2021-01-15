@@ -16,7 +16,8 @@ final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
                          dt1: DataType, dt2: DataType,
                          processTiles: Phrase[ExpType ->: ExpType],
                          array: Phrase[ExpType])
-  extends ExpPrimitive {
+  extends ExpPrimitive
+{
   val allTiles = (n + tileSize - 1) / tileSize
   val fullTiles = n / tileSize
   val remainder = n % tileSize
@@ -26,9 +27,9 @@ final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
 
   processTiles :: (
     expT(allTiles `.d` (i => (depSize(i) + haloSize) `.` dt1), read) ->:
-      expT(allTiles `.d` (i => (depSize(i) `.` dt2)), write))
-  array :: expT((n + haloSize) `.` dt1, read)
-  override val t: ExpType = expT(n `.` dt2, write)
+    expT(allTiles `.d` (i => (depSize(i) `.` dt2)), write))
+  array :: expT((n + haloSize)`.`dt1, read)
+  override val t: ExpType = expT(n`.`dt2, write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     DepTile(f.nat(n), f.nat(tileSize), f.nat(haloSize), f.data(dt1), f.data(dt2),

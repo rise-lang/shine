@@ -16,7 +16,8 @@ final case class MapSnd(w: AccessType,
                         dt2: DataType,
                         dt3: DataType,
                         f: Phrase[ExpType ->: ExpType],
-                        record: Phrase[ExpType]) extends ExpPrimitive {
+                        record: Phrase[ExpType]) extends ExpPrimitive
+{
 
   f :: expT(dt2, w) ->: expT(dt3, w)
   record :: expT(dt1 x dt2, w)
@@ -31,9 +32,7 @@ final case class MapSnd(w: AccessType,
     }
   }
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     MapSnd(fun.access(w), fun.data(dt1), fun.data(dt2), fun.data(dt3),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(record, fun))
@@ -54,10 +53,10 @@ final case class MapSnd(w: AccessType,
     </mapSnd>
 
   override def fedeTranslation(
-                                env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]]
-                              )(
-                                C: Phrase[AccType ->: AccType]
-                              ): Phrase[AccType] = {
+    env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]]
+  )(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import TranslationToImperative._
 
     val x = Identifier(freshName("fede_x"), ExpType(dt2, read))

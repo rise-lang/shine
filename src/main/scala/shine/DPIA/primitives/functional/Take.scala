@@ -12,16 +12,14 @@ import scala.xml.Elem
 
 // this takes n many elements from an array of n + m elements
 final case class Take(
-                       n: Nat,
-                       m: Nat,
-                       dt: DataType,
-                       array: Phrase[ExpType])
+  n: Nat,
+  m: Nat,
+  dt: DataType,
+  array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  array :: expT({
-    n + m
-  } `.` dt, read)
-  override val t: ExpType = expT(n `.` dt, read)
+  array :: expT((n + m)`.`dt, read)
+  override val t: ExpType = expT(n`.`dt, read)
 
   override def eval(s: Store): Data = ???
 
@@ -39,9 +37,7 @@ final case class Take(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(expT({
-      n + m
-    } `.` dt, read))(x => C(Take(n, m, dt, x))))
+    con(array)(λ(expT((n + m)`.`dt, read))(x => C(Take(n, m, dt, x))))
   }
 
   override def xmlPrinter: Elem =

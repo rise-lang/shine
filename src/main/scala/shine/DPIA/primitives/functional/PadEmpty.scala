@@ -12,16 +12,14 @@ import shine.DPIA.{->:, Nat, Phrases, _}
 import scala.xml.Elem
 
 final case class PadEmpty(
-                           n: Nat,
-                           r: Nat,
-                           dt: DataType,
-                           array: Phrase[ExpType]
-                         ) extends ExpPrimitive {
+  n: Nat,
+  r: Nat,
+  dt: DataType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
   array :: expT(n `.` dt, write)
-  override val t: ExpType = expT({
-    n + r
-  } `.` dt, write)
+  override val t: ExpType = expT((n + r)`.`dt, write)
 
   override def eval(s: Store): Data = ???
 
@@ -41,9 +39,9 @@ final case class PadEmpty(
   ): Phrase[CommType] = ???
 
   override def fedeTranslation(
-                                env: Predef.Map[Identifier[ExpType], Identifier[AccType]])(
-                                C: Phrase[AccType ->: AccType]
-                              ): Phrase[AccType] = {
+    env: Predef.Map[Identifier[ExpType], Identifier[AccType]])(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import TranslationToImperative._
     val otype = C.t.inT.dataType
     fedAcc(env)(array)(fun(accT(otype))(o => TakeAcc(n, r, dt, C(o))))

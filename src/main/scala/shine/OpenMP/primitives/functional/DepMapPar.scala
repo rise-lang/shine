@@ -5,7 +5,7 @@ import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional.AbstractDepMap
 import shine.DPIA.{->:, Nat, `(nat)->:`}
-import shine.OpenMP.primitives.intermediate
+import shine.OpenMP.primitives.intermediate.DepMapParI
 
 //noinspection TypeAnnotation
 final case class DepMapPar(n: Nat,
@@ -24,5 +24,5 @@ final case class DepMapPar(n: Nat,
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext): Phrase[CommType] =
-    intermediate.DepMapParI(n, ft1, ft2, f, array, out)
+    DepMapParI(n, ft1, ft2, f, array, out)
 }

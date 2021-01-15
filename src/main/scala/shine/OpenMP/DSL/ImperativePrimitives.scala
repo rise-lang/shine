@@ -7,15 +7,14 @@ import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.OpenMP.primitives.imperative
-import shine.OpenMP.primitives.imperative.{ParFor, ParForNat}
+import shine.OpenMP.primitives.imperative._
 
 object parFor {
   def apply(n: Nat,
             dt: DataType,
             out: Phrase[AccType],
             f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ParFor =
-    imperative.ParFor(n, dt, out, λ(expT(idx(n), read))(i => λ(accT(dt))(o => f(i)(o) )))
+    ParFor(n, dt, out, λ(expT(idx(n), read))(i => λ(accT(dt))(o => f(i)(o) )))
 }
 
 object `parForVec` {
@@ -29,6 +28,6 @@ object `parForVec` {
 object parForNat {
   def apply(n: Nat, ft: NatToData, out: Phrase[AccType],
             f: NatIdentifier => Phrase[AccType] => Phrase[CommType]): ParForNat = {
-    imperative.ParForNat(n, ft, out, nFun(idx => λ(accT(ft(idx)))(o => f(idx)(o)), RangeAdd(0, n, 1)))
+    ParForNat(n, ft, out, nFun(idx => λ(accT(ft(idx)))(o => f(idx)(o)), RangeAdd(0, n, 1)))
   }
 }

@@ -36,8 +36,8 @@ final case class MkDPair(a: AccessType, fst: NatIdentifier, sndT: DataType, snd:
     import TranslationToImperative._
     // We have the acceptor already, so simply write the first element and then
     // the second element in sequentially
-    imperative.MkDPairFstI(fst, A) `;`
-      acc(snd)(imperative.MkDPairSndAcc(fst, sndT, A))
+    MkDPairFstI(fst, A) `;`
+      acc(snd)(MkDPairSndAcc(fst, sndT, A))
   }
 
   override def eval(s: Store): OperationalSemantics.Data = ???

@@ -1,8 +1,8 @@
 package shine.OpenMP.primitives.imperative
 
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{AccType, CommType, NatToData}
-import shine.DPIA.{->:, Nat, `(nat)->:`}
+import shine.DPIA.Types._
+import shine.DPIA._
 
 //noinspection TypeAnnotation
 final case class ParForNat(override val n: Nat,

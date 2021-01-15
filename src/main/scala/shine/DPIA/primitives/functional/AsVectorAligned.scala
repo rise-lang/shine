@@ -18,10 +18,8 @@ final case class AsVectorAligned(n: Nat,
                                  array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  array :: expT({
-    m * n
-  } `.` dt, w)
-  override val t: ExpType = expT(m `.` vec(n, dt), w)
+  array :: expT({m * n}`.`dt, w)
+  override val t: ExpType = expT(m`.`vec(n, dt), w)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVectorAligned(f.nat(n), f.nat(m), f.access(w),
@@ -52,6 +50,6 @@ final case class AsVectorAligned(n: Nat,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(array.t)(x => C(AsVectorAligned(n, m, w, dt, x))))
+    con(array)(λ(array.t)(x => C(AsVectorAligned(n, m, w, dt, x)) ))
   }
 }

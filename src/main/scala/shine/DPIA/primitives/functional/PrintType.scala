@@ -3,9 +3,9 @@ package shine.DPIA.primitives.functional
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
-import shine.DPIA.Types.{AccType, AccessType, CommType, DataType, ExpType}
-import shine.DPIA.{->:, Phrases, expT}
+import shine.DPIA.Semantics.OperationalSemantics._
+import shine.DPIA.Types._
+import shine.DPIA._
 
 import scala.xml.Elem
 
@@ -22,9 +22,7 @@ final case class PrintType(msg: String,
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     PrintType(msg, fun.data(dt), fun.access(access),
       VisitAndRebuild(input, fun))
   }

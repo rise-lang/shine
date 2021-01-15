@@ -6,7 +6,6 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.Drop
 
 object SlideSeqIValues {
@@ -40,7 +39,7 @@ object SlideSeqIValues {
           k(rs.rd) `;`
           // rotate
           MapSeqI(size - 1, dt1, dt2, load,
-            functional.Drop(1, size - 1, dt1, rs.rd),
+            Drop(1, size - 1, dt1, rs.rd),
             TakeAcc(size - 1, 1, dt2, rs.wr), unroll = true)
         ),
       arithexpr.arithmetic.RangeAdd(0, n, 1)))

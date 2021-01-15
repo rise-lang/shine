@@ -14,9 +14,7 @@ final case class MakeArray(dt: DataType,
                            elements: Vector[Phrase[ExpType]])
   extends ExpPrimitive {
 
-  override val t: ExpType = expT({
-    elements.length: Nat
-  } `.` dt, read)
+  override val t: ExpType = expT((elements.length: Nat)`.`dt, read)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${elements.flatMap(PrettyPhrasePrinter(_))})"

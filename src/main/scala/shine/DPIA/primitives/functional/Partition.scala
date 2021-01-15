@@ -17,8 +17,8 @@ final case class Partition(n: Nat,
                            array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  array :: expT(n `.` dt, read)
-  override val t: ExpType = expT(m `.d` { i => lenF(i) `.` dt }, read)
+  array :: expT(n`.`dt, read)
+  override val t: ExpType = expT(m`.d`{ i => lenF(i)`.`dt }, read)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Partition(fun.nat(n), fun.nat(m), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
@@ -42,6 +42,6 @@ final case class Partition(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(expT(n `.` dt, read))(x => C(Partition(n, m, lenF, dt, x))))
+    con(array)(λ(expT(n`.`dt, read))(x => C(Partition(n, m, lenF, dt, x))))
   }
 }

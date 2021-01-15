@@ -10,8 +10,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
-import shine.DPIA.primitives.functional
-import shine.DPIA.primitives.functional.{AsScalar, AsVector, AsVectorAligned, Cast, DMatch, DepJoin, DepMapSeq, DepTile, Drop, ForeignFunctionCall, Fst, Gather, Generate, Idx, IndexAsNat, Iterate, IterateStream, Join, Let, MakeArray, MapFst, MapSeq, MapSeqUnroll, MapSnd, MapStream, MkDPair, NatAsIndex, Pad, PadClamp, PadEmpty, Pair, PrintType, ReduceSeq, ReduceSeqUnroll, Reorder, ScanSeq, Scatter, Slide, SlideSeq, Snd, Split, Take, ToMem, Transpose, Unzip, VectorFromScalar, Zip}
+import shine.DPIA.primitives.functional._
 
 object fromRise {
   def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
@@ -132,7 +131,7 @@ object fromRise {
         =>
         depFun[NatKind](n)(
           fun[ExpType](expT(NatType, read), e =>
-            functional.NatAsIndex(n, e)))
+            NatAsIndex(n, e)))
       }
 
       case core.map() => fromType {

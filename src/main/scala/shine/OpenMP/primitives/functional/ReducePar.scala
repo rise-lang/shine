@@ -2,10 +2,10 @@ package shine.OpenMP.primitives.functional
 
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
+import shine.DPIA.Types._
 import shine.DPIA.primitives.functional.AbstractReduce
-import shine.DPIA.{->:, Nat}
-import shine.OpenMP.primitives.intermediate
+import shine.DPIA._
+import shine.OpenMP.primitives.intermediate.ReduceParI
 
 //noinspection TypeAnnotation
 final case class ReducePar(n: Nat,
@@ -13,7 +13,8 @@ final case class ReducePar(n: Nat,
                            f: Phrase[ExpType ->: ExpType ->: ExpType],
                            init: Phrase[ExpType],
                            array: Phrase[ExpType])
-  extends AbstractReduce(n, dt1, dt2, f, init, array) {
+  extends AbstractReduce(n, dt1, dt2, f, init, array)
+{
   override def makeReduce = ReducePar
 
   override def makeReduceI(n: Nat,
@@ -24,5 +25,5 @@ final case class ReducePar(n: Nat,
                            array: Phrase[ExpType],
                            out: Phrase[->:[ExpType, CommType]])
                           (implicit context: TranslationContext): Phrase[CommType] =
-    intermediate.ReduceParI(n, dt1, dt2, f, init, array, out)
+    ReduceParI(n, dt1, dt2, f, init, array, out)
 }

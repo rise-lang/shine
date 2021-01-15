@@ -20,9 +20,7 @@ final case class ToMem(dt: DataType,
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     ToMem(fun.data(dt), VisitAndRebuild(input, fun))
   }
 

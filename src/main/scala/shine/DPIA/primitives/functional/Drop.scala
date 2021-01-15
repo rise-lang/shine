@@ -12,22 +12,18 @@ import scala.xml.Elem
 
 // this drops n many elements from an array of n + m elements
 final case class Drop(
-                       n: Nat,
-                       m: Nat,
-                       dt: DataType,
-                       array: Phrase[ExpType]
-                     ) extends ExpPrimitive {
+  n: Nat,
+  m: Nat,
+  dt: DataType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  array :: expT({
-    n + m
-  } `.` dt, read)
-  override val t: ExpType = expT(m `.` dt, read)
+  array :: expT((n + m)`.`dt, read)
+  override val t: ExpType = expT(m`.`dt, read)
 
   override def eval(s: Store): Data = ???
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Drop(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
@@ -40,9 +36,7 @@ final case class Drop(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(expT({
-      n + m
-    } `.` dt, read))(x => C(Drop(n, m, dt, x))))
+    con(array)(λ(expT((n + m)`.` dt, read))(x => C(Drop(n, m, dt, x))))
   }
 
   override def xmlPrinter: Elem =

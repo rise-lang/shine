@@ -14,10 +14,11 @@ import scala.xml.Elem
 final case class Gather(n: Nat, m: Nat, dt: DataType,
                         indices: Phrase[ExpType],
                         input: Phrase[ExpType])
-  extends ExpPrimitive {
-  indices :: expT(m `.` idx(n), read)
-  input :: expT(n `.` dt, read)
-  override val t: ExpType = expT(m `.` dt, read)
+  extends ExpPrimitive
+{
+  indices :: expT(m`.`idx(n), read)
+  input :: expT(n`.`dt, read)
+  override val t: ExpType = expT(m`.`dt, read)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =
     Gather(f.nat(n), f.nat(m), f.data(dt),
@@ -32,8 +33,8 @@ final case class Gather(n: Nat, m: Nat, dt: DataType,
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import shine.DPIA.Compilation.TranslationToImperative._
 
-    con(indices)(fun(expT(m `.` idx(n), read))(y =>
-      con(input)(fun(expT(n `.` dt, read))(x =>
+    con(indices)(fun(expT(m`.`idx(n), read))(y =>
+      con(input)(fun(expT(n`.`dt, read))(x =>
         C(Gather(n, m, dt, y, x))
       ))
     ))
@@ -43,11 +44,7 @@ final case class Gather(n: Nat, m: Nat, dt: DataType,
 
   override def xmlPrinter: Elem =
     <gather>
-      <indices>
-        {Phrases.xmlPrinter(indices)}
-      </indices>
-      <input>
-        {Phrases.xmlPrinter(input)}
-      </input>
+      <indices>{Phrases.xmlPrinter(indices)}</indices>
+      <input>{Phrases.xmlPrinter(input)}</input>
     </gather>
 }

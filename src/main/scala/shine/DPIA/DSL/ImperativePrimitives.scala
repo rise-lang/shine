@@ -5,7 +5,6 @@ import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.{Fst, Snd}
 
 object `new` {
@@ -86,7 +85,7 @@ object comment {
 object fst {
   def apply(pair: Phrase[ExpType]): Fst = {
     pair.t match {
-      case ExpType(PairType(dt1, dt2), _) => functional.Fst(dt1, dt2, pair)
+      case ExpType(PairType(dt1, dt2), _) => Fst(dt1, dt2, pair)
       case x => error(x.toString, "ExpType(RecordType)")
     }
   }
@@ -95,7 +94,7 @@ object fst {
 object snd {
   def apply(pair: Phrase[ExpType]): Snd = {
     pair.t match {
-      case ExpType(PairType(dt1, dt2), _) => functional.Snd(dt1, dt2, pair)
+      case ExpType(PairType(dt1, dt2), _) => Snd(dt1, dt2, pair)
       case x => error(x.toString, "ExpType(RecordType)")
     }
   }

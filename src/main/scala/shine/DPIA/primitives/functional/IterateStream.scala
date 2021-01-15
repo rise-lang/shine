@@ -7,12 +7,13 @@ import shine.DPIA.Types._
 import shine.DPIA._
 
 final case class IterateStream(
-                                override val n: Nat,
-                                override val dt1: DataType,
-                                override val dt2: DataType,
-                                override val f: Phrase[ExpType ->: ExpType],
-                                override val array: Phrase[ExpType]
-                              ) extends AbstractMap(n, dt1, dt2, f, array) {
+  override val n: Nat,
+  override val dt1: DataType,
+  override val dt2: DataType,
+  override val f: Phrase[ExpType ->: ExpType],
+  override val array: Phrase[ExpType]
+) extends AbstractMap(n, dt1, dt2, f, array)
+{
   override def makeMap: (Nat, DataType, DataType,
     Phrase[ExpType ->: ExpType], Phrase[ExpType]) => AbstractMap = IterateStream
 

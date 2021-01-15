@@ -33,12 +33,12 @@ final case class VectorFromScalar(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(arg)(λ(expT(dt, read))(e => A :=| VectorType(n, dt) | VectorFromScalar(n, dt, e)))
+    con(arg)(λ(expT(dt, read))(e => A :=|VectorType(n, dt)| VectorFromScalar(n, dt, e)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(arg)(λ(expT(dt, read))(e => C(VectorFromScalar(n, dt, e))))
+    con(arg)(λ(expT(dt, read))(e => C(VectorFromScalar(n, dt, e)) ))
   }
 }

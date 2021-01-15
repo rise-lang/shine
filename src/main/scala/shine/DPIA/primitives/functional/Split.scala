@@ -13,21 +13,17 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class Split(
-                        n: Nat,
-                        m: Nat,
-                        w: AccessType,
-                        dt: DataType,
-                        array: Phrase[ExpType]
-                      ) extends ExpPrimitive {
+  n: Nat,
+  m: Nat,
+  w: AccessType,
+  dt: DataType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  array :: expT({
-    m * n
-  } `.` dt, w)
-  override val t: ExpType = expT(m `.` (n `.` dt), w)
+  array :: expT((m * n)`.`dt, w)
+  override val t: ExpType = expT(m`.`(n`.`dt), w)
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Split(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt),
       VisitAndRebuild(array, fun))
   }
@@ -60,11 +56,10 @@ final case class Split(
     </split>
 
   override def fedeTranslation(
-                                env: scala.Predef.Map[Identifier[ExpType],
-                                  Identifier[AccType]]
-                              )(
-                                C: Phrase[AccType ->: AccType]
-                              ): Phrase[AccType] = {
+    env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]]
+  )(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import TranslationToImperative._
 
     val otype = C.t.inT.dataType
@@ -84,8 +79,6 @@ final case class Split(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(expT({
-      m * n
-    } `.` dt, read))(x => C(Split(n, m, w, dt, x))))
+    con(array)(λ(expT((m * n)`.`dt, read))(x => C(Split(n, m, w, dt, x))))
   }
 }

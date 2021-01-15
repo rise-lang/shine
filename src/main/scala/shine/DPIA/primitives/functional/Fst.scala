@@ -11,10 +11,10 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class Fst(
-                      dt1: DataType,
-                      dt2: DataType,
-                      pair: Phrase[ExpType]
-                    ) extends ExpPrimitive {
+  dt1: DataType,
+  dt2: DataType,
+  pair: Phrase[ExpType]
+) extends ExpPrimitive {
 
   pair :: expT(dt1 x dt2, read)
   override val t: ExpType = expT(dt1, read)
@@ -26,9 +26,7 @@ final case class Fst(
     }
   }
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Fst(fun.data(dt1), fun.data(dt2), VisitAndRebuild(pair, fun))
   }
 

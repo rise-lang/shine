@@ -2,10 +2,10 @@ package shine.OpenMP.primitives.functional
 
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
+import shine.DPIA.Types._
 import shine.DPIA.primitives.functional.AbstractMapLoop
-import shine.DPIA.{->:, Nat}
-import shine.OpenMP.primitives.intermediate
+import shine.DPIA._
+import shine.OpenMP.primitives.intermediate.MapParI
 
 //noinspection TypeAnnotation
 final case class MapPar(override val n: Nat,
@@ -21,5 +21,5 @@ final case class MapPar(override val n: Nat,
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext): Phrase[CommType] =
-    intermediate.MapParI(n, dt1, dt2, f, array, out)
+    MapParI(n, dt1, dt2, f, array, out)
 }

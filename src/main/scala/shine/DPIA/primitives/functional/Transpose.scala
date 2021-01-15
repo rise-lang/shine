@@ -12,26 +12,25 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class Transpose(
-                            n: Nat,
-                            m: Nat,
-                            dt: DataType,
-                            access: AccessType,
-                            array: Phrase[ExpType]
-                          ) extends ExpPrimitive {
+  n: Nat,
+  m: Nat,
+  dt: DataType,
+  access: AccessType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  array :: expT(n `.` (m `.` dt), access)
-  override val t: ExpType = expT(m `.` (n `.` dt), access)
+  array :: expT(n`.`(m`.`dt), access)
+  override val t: ExpType = expT(m`.`(n`.`dt), access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =
     Transpose(f.nat(n), f.nat(m), f.data(dt), f.access(access),
       VisitAndRebuild(array, f))
 
   override def fedeTranslation(
-                                env: Predef.Map[Identifier[ExpType],
-                                  Identifier[AccType]]
-                              )(
-                                C: Phrase[AccType ->: AccType]
-                              ): Phrase[AccType] = {
+    env: Predef.Map[Identifier[ExpType], Identifier[AccType]]
+  )(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import shine.DPIA.Compilation.TranslationToImperative._
     fedAcc(env)(array)(fun(AccType(C.t.inT.dataType))(o =>
       TransposeAcc(n, m, dt, C(o))))

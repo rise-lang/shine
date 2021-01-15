@@ -12,21 +12,19 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class AsScalar(
-                           n: Nat,
-                           m: Nat,
-                           dt: ScalarType,
-                           access: AccessType,
-                           array: Phrase[ExpType]
-                         ) extends ExpPrimitive {
+  n: Nat,
+  m: Nat,
+  dt: ScalarType,
+  access: AccessType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
   array :: expT(n `.` vec(m, dt), access)
   override val t: ExpType = expT({
     n * m
   } `.` dt, access)
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), fun.access(access),
       VisitAndRebuild(array, fun))
   }
@@ -41,11 +39,11 @@ final case class AsScalar(
     </asScalar>
 
   override def fedeTranslation(
-                                env: Predef.Map[Identifier[ExpType],
-                                  Identifier[AccType]]
-                              )(
-                                C: Phrase[AccType ->: AccType]
-                              ): Phrase[AccType] = {
+    env: Predef.Map[Identifier[ExpType],
+      Identifier[AccType]]
+  )(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import TranslationToImperative._
     fedAcc(env)(array)(fun(accT(C.t.inT.dataType))(o =>
       AsScalarAcc(n, m, dt, C(o))))
@@ -62,6 +60,6 @@ final case class AsScalar(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(array.t)(x => C(AsScalar(n, m, dt, access, x))))
+    con(array)(λ(array.t)(x => C(AsScalar(n, m, dt, access, x)) ))
   }
 }

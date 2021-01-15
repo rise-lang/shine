@@ -21,18 +21,12 @@ final case class Iterate(n: Nat,
 
   {
     val l = f.t.x
-    f :: l ->: expT({
-      l * n
-    } `.` dt, read) ->: expT(l `.` dt, write)
-    array :: expT({
-      m * n.pow(k)
-    } `.` dt, read)
+    f :: l ->: expT((l * n)`.`dt, read) ->: expT(l`.`dt, write)
+    array :: expT((m * n.pow(k))`.`dt, read)
   }
-  override val t: ExpType = expT(m `.` dt, write)
+  override val t: ExpType = expT(m`.`dt, write)
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Iterate(fun.nat(n), fun.nat(m), fun.nat(k), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
@@ -73,14 +67,10 @@ final case class Iterate(n: Nat,
   ): Phrase[CommType] = {
     import shine.DPIA.Compilation.TranslationToImperative._
 
-    con(array)(λ(expT({
-      m * n.pow(k)
-    } `.` dt, read))(x =>
+    con(array)(λ(expT((m * n.pow(k))`.`dt, read))(x =>
       IterateIAcc(n, m, k, dt, A,
         _Λ_[NatKind]()(l => λ(accT(l `.` dt))(o =>
-          λ(expT({
-            l * n
-          } `.` dt, read))(x => acc(f(l)(x))(o)))),
+          λ(expT((l * n)`.`dt, read))(x => acc(f(l)(x))(o)))),
         x)))
   }
 

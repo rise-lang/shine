@@ -6,7 +6,6 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.NatAsIndex
 
 import scala.xml.Elem
@@ -19,7 +18,7 @@ final case class For(n: Nat,
   body :: expT(idx(n), read) ->: comm
 
   override def eval(s: Store): Store = {
-    val nE = evalIndexExp(s, functional.NatAsIndex(n, Natural(n)))
+    val nE = evalIndexExp(s, NatAsIndex(n, Natural(n)))
     val bodyE = OperationalSemantics.eval(s, body)
     (0 until nE.eval).foldLeft(s)((s1, i) =>
       OperationalSemantics.eval(s1, bodyE(Literal(i)))

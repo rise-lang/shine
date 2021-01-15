@@ -7,13 +7,12 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Types._
 import shine.DPIA._
 
-
 import scala.xml.Elem
 
 final case class Cast(
-                       dt1: BasicType,
-                       dt2: BasicType,
-                       e: Phrase[ExpType])
+  dt1: BasicType,
+  dt2: BasicType,
+  e: Phrase[ExpType])
   extends ExpPrimitive {
 
   e :: expT(dt1, read)

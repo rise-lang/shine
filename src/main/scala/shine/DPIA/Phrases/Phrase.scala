@@ -8,7 +8,6 @@ import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck._
 import shine.DPIA._
-import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.NatAsIndex
 
 sealed trait Phrase[T <: PhraseType] {
@@ -270,7 +269,7 @@ object Phrase {
           p.t match {
             case ExpType(IndexType(n), _) =>
               val v = NamedVar(name, RangeAdd(0, n, 1))
-              TransientNat(v, Map(v -> functional.IndexAsNat(n, p)))
+              TransientNat(v, Map(v -> IndexAsNat(n, p)))
             case ExpType(NatType, _) =>
               val v = NamedVar(name, RangeAdd(0, arithexpr.arithmetic.PosInf, 1))
               TransientNat(v, Map(v -> p))

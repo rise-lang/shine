@@ -12,31 +12,29 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class Map(
-                      n: Nat,
-                      dt1: DataType,
-                      dt2: DataType,
-                      access: AccessType,
-                      f: Phrase[ExpType ->: ExpType],
-                      array: Phrase[ExpType]
-                    ) extends ExpPrimitive {
+  n: Nat,
+  dt1: DataType,
+  dt2: DataType,
+  access: AccessType,
+  f: Phrase[ExpType ->: ExpType],
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  array :: expT(n `.` dt1, access)
+  array :: expT(n`.`dt1, access)
   f :: expT(dt1, access) ->: expT(dt2, access)
-  override val t: ExpType = expT(n `.` dt2, access)
+  override val t: ExpType = expT(n`.`dt2, access)
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Map(fun.nat(n), fun.data(dt1), fun.data(dt2), fun.access(access),
       VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def fedeTranslation(
-                                env: scala.Predef.Map[Identifier[ExpType],
-                                  Identifier[AccType]]
-                              )(
-                                C: Phrase[AccType ->: AccType]
-                              ): Phrase[AccType] = {
+    env: scala.Predef.Map[Identifier[ExpType],
+      Identifier[AccType]]
+  )(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import TranslationToImperative._
 
     val x = Identifier(freshName("fede_x"), ExpType(dt1, access))
@@ -70,7 +68,7 @@ final case class Map(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(expT(n `.` dt1, read))(x =>
+    con(array)(λ(expT(n`.`dt1, read))(x =>
       C(MapRead(n, dt1, dt2,
         fun(expT(dt1, read))(a =>
           fun(expT(dt2, read) ->: (comm: CommType))(cont =>

@@ -13,17 +13,15 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class Join(
-                       n: Nat,
-                       m: Nat,
-                       w: AccessType,
-                       dt: DataType,
-                       array: Phrase[ExpType]
-                     ) extends ExpPrimitive {
+  n: Nat,
+  m: Nat,
+  w: AccessType,
+  dt: DataType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  array :: expT(n `.` (m `.` dt), w)
-  override val t: ExpType = expT({
-    n * m
-  } `.` dt, w)
+  array :: expT(n`.`(m`.`dt), w)
+  override val t: ExpType = expT((n * m)`.`dt, w)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Join(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt), VisitAndRebuild(array, fun))
@@ -68,6 +66,6 @@ final case class Join(
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(expT(n `.` (m `.` dt), read))(x => C(Join(n, m, w, dt, x))))
+    con(array)(λ(expT(n`.`(m`.`dt), read))(x => C(Join(n, m, w, dt, x))))
   }
 }

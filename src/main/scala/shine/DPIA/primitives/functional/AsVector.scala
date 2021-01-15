@@ -12,17 +12,15 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class AsVector(
-                           n: Nat,
-                           m: Nat,
-                           dt: ScalarType,
-                           access: AccessType,
-                           array: Phrase[ExpType]
-                         ) extends ExpPrimitive {
+  n: Nat,
+  m: Nat,
+  dt: ScalarType,
+  access: AccessType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  array :: expT({
-    m * n
-  } `.` dt, access)
-  override val t: ExpType = expT(m `.` vec(n, dt), access)
+  array :: expT({m * n}`.`dt, access)
+  override val t: ExpType = expT(m`.`vec(n, dt), access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVector(f.nat(n), f.nat(m), f.data(dt), f.access(access),
@@ -51,6 +49,6 @@ final case class AsVector(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     TranslationToImperative.con(array)(λ(array.t)(x =>
-      C(AsVector(n, m, dt, access, x))))
+      C(AsVector(n, m, dt, access, x)) ))
   }
 }

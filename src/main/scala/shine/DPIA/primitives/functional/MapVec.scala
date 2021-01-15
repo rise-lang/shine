@@ -16,7 +16,8 @@ final case class MapVec(n: Nat,
                         dt2: ScalarType,
                         f: Phrase[ExpType ->: ExpType],
                         array: Phrase[ExpType])
-  extends ExpPrimitive {
+  extends ExpPrimitive
+{
 
   f :: expT(dt1, read) ->: expT(dt2, write)
   array :: expT(vec(n, dt1), read)

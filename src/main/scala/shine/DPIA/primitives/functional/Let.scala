@@ -11,12 +11,12 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class Let(
-                      dt1: DataType,
-                      dt2: DataType,
-                      access: AccessType,
-                      value: Phrase[ExpType],
-                      f: Phrase[ExpType ->: ExpType]
-                    ) extends ExpPrimitive {
+  dt1: DataType,
+  dt2: DataType,
+  access: AccessType,
+  value: Phrase[ExpType],
+  f: Phrase[ExpType ->: ExpType]
+) extends ExpPrimitive {
 
   value :: expT(dt1, read)
   f :: expT(dt1, read) ->: expT(dt2, access)
@@ -48,11 +48,7 @@ final case class Let(
 
   override def xmlPrinter: Elem =
     <let dt1={ToString(dt1)} dt2={ToString(dt2)} access={ToString(access)}>
-      <value>
-        {Phrases.xmlPrinter(value)}
-      </value>
-      <f>
-        {Phrases.xmlPrinter(f)}
-      </f>
+      <value>{Phrases.xmlPrinter(value)}</value>
+      <f>{Phrases.xmlPrinter(f)}</f>
     </let>
 }

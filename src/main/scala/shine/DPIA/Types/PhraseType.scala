@@ -109,7 +109,7 @@ object PhraseType {
         p match {
           case Identifier(name, _) =>
             if (`for`.name == name) {
-              Stop(functional.NatAsIndex(ae.max, Natural(ae)).asInstanceOf[Phrase[T2]])
+              Stop(NatAsIndex(ae.max, Natural(ae)).asInstanceOf[Phrase[T2]])
             } else {
               Continue(p, this)
             }

@@ -8,12 +8,12 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 final case class Slide(
-                        n: Nat,
-                        sz: Nat,
-                        sp: Nat,
-                        dt: DataType,
-                        input: Phrase[ExpType]
-                      ) extends AbstractSlide(n, sz, sp, dt, input) {
+  n: Nat,
+  sz: Nat,
+  sp: Nat,
+  dt: DataType,
+  input: Phrase[ExpType]
+) extends AbstractSlide(n, sz, sp, dt, input) {
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Slide(f.nat(n), f.nat(sz), f.nat(sp), f.data(dt), VisitAndRebuild(input, f))
@@ -24,7 +24,7 @@ final case class Slide(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(this)(λ(expT(n `.` (sz `.` dt), read))(x => A :=| (n `.` (sz `.` dt)) | x))
+    con(this)(λ(expT(n `.` (sz `.` dt), read))(x => A :=|(n `.` (sz `.` dt))| x))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
@@ -32,6 +32,6 @@ final case class Slide(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(input)(λ(expT(inputSize `.` dt, read))(x => C(Slide(n, sz, sp, dt, x))))
+    con(input)(λ(expT(inputSize`.`dt, read))(x => C(Slide(n, sz, sp, dt, x))))
   }
 }

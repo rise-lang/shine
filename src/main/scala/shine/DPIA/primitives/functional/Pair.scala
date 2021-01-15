@@ -11,12 +11,12 @@ import shine.DPIA._
 import scala.xml.Elem
 
 final case class Pair(
-                       dt1: DataType,
-                       dt2: DataType,
-                       access: AccessType,
-                       fst: Phrase[ExpType],
-                       snd: Phrase[ExpType]
-                     ) extends ExpPrimitive {
+  dt1: DataType,
+  dt2: DataType,
+  access: AccessType,
+  fst: Phrase[ExpType],
+  snd: Phrase[ExpType]
+) extends ExpPrimitive {
 
   fst :: expT(dt1, access)
   snd :: expT(dt2, access)
@@ -28,9 +28,7 @@ final case class Pair(
       OperationalSemantics.eval(s, snd))
   }
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Pair(fun.data(dt1), fun.data(dt2), fun.access(access),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
@@ -64,6 +62,6 @@ final case class Pair(
 
     con(fst)(λ(expT(dt1, read))(x =>
       con(snd)(λ(expT(dt2, read))(y =>
-        C(Pair(dt1, dt2, access, x, y))))))
+        C(Pair(dt1, dt2, access, x, y)) )) ))
   }
 }

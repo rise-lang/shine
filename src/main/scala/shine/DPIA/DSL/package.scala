@@ -5,7 +5,6 @@ import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Operators, _}
 import shine.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
 import shine.DPIA.Types._
-import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.{DepIdx, Idx, IdxVec, NatAsIndex}
 
 import scala.language.implicitConversions
@@ -45,7 +44,7 @@ package object DSL {
     }
 
     def `@d`(index: Nat):DepIdx = e.t match {
-      case ExpType(depArray:DepArrayType, _) => functional.DepIdx(depArray.size, depArray.elemFType, index, e)
+      case ExpType(depArray:DepArrayType, _) => DepIdx(depArray.size, depArray.elemFType, index, e)
       case x => error(x.toString, "exp[n.(i:Nat) -> dt, _]")
     }
   }
@@ -59,7 +58,7 @@ package object DSL {
 
     def `@`(index: Nat): IdxAcc = a.t match {
       case AccType(ArrayType(n, dt)) =>
-        IdxAcc(n, dt, functional.NatAsIndex(n, Natural(index)), a)
+        IdxAcc(n, dt, NatAsIndex(n, Natural(index)), a)
       case x => error(x.toString, "acc[n.dt]")
     }
 

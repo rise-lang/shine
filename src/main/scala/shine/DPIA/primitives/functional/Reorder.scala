@@ -22,8 +22,8 @@ final case class Reorder(n: Nat,
 
   idxF :: expT(idx(n), read) ->: expT(idx(n), read)
   idxFinv :: expT(idx(n), read) ->: expT(idx(n), read)
-  input :: expT(n `.` dt, access)
-  override val t: ExpType = expT(n `.` dt, access)
+  input :: expT(n`.`dt, access)
+  override val t: ExpType = expT(n`.`dt, access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Reorder(f.nat(n), f.data(dt), f.access(access),
@@ -47,11 +47,10 @@ final case class Reorder(n: Nat,
   }
 
   override def fedeTranslation(
-                                env: scala.Predef.Map[Identifier[ExpType],
-                                  Identifier[AccType]]
-                              )(
-                                C: Phrase[AccType ->: AccType]
-                              ): Phrase[AccType] = {
+    env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]]
+  )(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import TranslationToImperative._
 
     val otype = C.t.inT.dataType
@@ -71,7 +70,7 @@ final case class Reorder(n: Nat,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(input)(λ(expT(n `.` dt, read))(x =>
+    con(input)(λ(expT(n`.`dt, read))(x =>
       C(Reorder(n, dt, access, idxF, idxFinv, x))))
   }
 
