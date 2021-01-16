@@ -1,5 +1,6 @@
 package shine.DPIA.Compilation
 
+import shine.DPIA.Compilation.TranslateIndices
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.FunctionalPrimitives.Pair

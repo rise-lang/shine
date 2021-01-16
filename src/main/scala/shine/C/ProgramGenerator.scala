@@ -52,7 +52,6 @@ object ProgramGenerator {
       (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap,
       immutable.Map.empty, immutable.Map.empty, immutable.Map.empty
     )
-
     val (declarations, code) = gen.generate(p, topLevelLetNats, env)
 
     val params = makeParams(outParam, inputParams, gen)
@@ -93,12 +92,12 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    SimplifyNats(UnrollLoops(TranslationToImperative.acc(p)(output)(
-      new shine.C.TranslationContext) |> (p => {
+    implicit val context: TranslationContext = new shine.C.TranslationContext
+    SimplifyNats(UnrollLoops(TranslateIndices(TranslationToImperative.acc(p)(output) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
-    })))
+    }))))
   }
 
   def makeFunction(params: immutable.Seq[C.AST.ParamDecl],

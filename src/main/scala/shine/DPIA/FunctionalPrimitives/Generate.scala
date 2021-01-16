@@ -2,7 +2,7 @@ package shine.DPIA.FunctionalPrimitives
 
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
-import shine.DPIA.ImperativePrimitives.GenerateCont
+import shine.DPIA.ImperativePrimitives.Continuation
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Types._
@@ -45,12 +45,8 @@ final case class Generate(n: Nat,
                              (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    // note: would not be necessary if generate was defined as indices + map
-    C(GenerateCont(n, dt,
-      fun(expT(idx(n), read))(i =>
-        fun(expT(dt, read) ->: (comm: CommType))(cont =>
-          con(f(i))(fun(expT(dt, read))(g => Apply(cont, g)))
-        ))
-    ))
+    val fc = fun(expT(idx(n), read))(x =>
+      Continuation(dt, fun(expT(dt, read) ->: (comm : CommType))(Cf => con(f(x))(Cf))))
+    C(Generate(n, dt, fc))
   }
 }

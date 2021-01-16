@@ -336,8 +336,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Unexpected: $n $path")
       }
 
-      case Phrases.Natural(n) => cont(path match {
-        case Nil => C.AST.ArithmeticExpr(n)
+      case Natural(n) => cont(path match {
+        case Nil => CCodeGen.codeGenNatural(n, env)
         case _ => error(s"Expected the path to be empty.")
       })
 
@@ -531,6 +531,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
       case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
+
+      case Continuation(dt, k) =>
+        val continue_cmd =
+          Identifier[ExpType ->: CommType](freshName("continue"), ExpType(dt, read) ->: comm)
+        cmd(k(continue_cmd), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, path, cont))))
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive =>
@@ -838,6 +843,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             acc(a, env, CIntExpr(arithVar) :: ps, cont)
           ))
       })
+    }
+
+    def codeGenNatural(n : Nat, env : Environment) : Expr = {
+      C.AST.ArithmeticExpr(applySubstitutions(n, env.identEnv))
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {

@@ -97,11 +97,11 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    SimplifyNats(UnrollLoops(TranslationToImperative.acc(p)(output)(
-      new shine.OpenMP.TranslationContext) |> (p => {
+    implicit val context: TranslationContext = new shine.OpenMP.TranslationContext
+    SimplifyNats(UnrollLoops(TranslateIndices(TranslationToImperative.acc(p)(output) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
-    })))
+    }))))
   }
 }

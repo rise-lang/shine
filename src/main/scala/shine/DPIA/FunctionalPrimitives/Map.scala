@@ -2,7 +2,7 @@ package shine.DPIA.FunctionalPrimitives
 
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
-import shine.DPIA.ImperativePrimitives.{MapAcc, MapRead}
+import shine.DPIA.ImperativePrimitives.{MapAcc, Continuation}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
@@ -70,12 +70,11 @@ final case class Map(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
+    val fc = λ(expT(dt1, read))(x =>
+      Continuation(dt2, λ(expT(dt2, read) ->: (comm: CommType))(Cf =>
+        con(f(x))(Cf))))
     con(array)(λ(expT(n`.`dt1, read))(x =>
-      C(MapRead(n, dt1, dt2,
-        fun(expT(dt1, read))(a =>
-          fun(expT(dt2, read) ->: (comm: CommType))(cont =>
-            con(f(a))(fun(expT(dt2, read))(b => Apply(cont, b))))),
-        x))))
+      C(Map(n, dt1, dt2, read, fc, x))))
   }
 
   override def eval(s: Store): Data = ???
