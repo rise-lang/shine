@@ -6,6 +6,7 @@ import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.{Map => _, _}
 import shine.DPIA.primitives.imperative._
 import shine.OpenCL
+import shine.OpenCL.{Global, Local, WorkGroup}
 import shine.OpenCL.primitives.imperative._
 
 import scala.annotation.tailrec
@@ -64,19 +65,24 @@ object InsertMemoryBarriers {
           Stop(For(n, Lambda(x, visitLoopBody(body, allocs, metadata)), unroll))
         case ForNat(n, DepLambda(x, body), unroll) =>
           Stop(ForNat(n, DepLambda(x, visitLoopBody(body, allocs, metadata)), unroll))
-        case pf@OpenCLParFor(n, dt, out, Lambda(x, Lambda(o, body)), init, step, unroll) =>
-          pf match {
-            case ParForLocal(dim) =>
+        case pf@ParFor(Local, dim, unroll) =>
+          pf.loopBody match {
+            case Lambda(x, Lambda(o, body)) =>
               val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
-              collectWrites(out, allocs, outer_wg_writes)
-              val b2 = visitLoopBody(body, allocs, metadata, outer_wg_writes)
-              Stop(ParForLocal(dim)(n, dt, out, Lambda(x, Lambda(o, b2)), init, step, unroll))
-            case ParForWorkGroup(dim) =>
-              Stop(ParForWorkGroup(dim)(n, dt, out,
-                Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), init, step, unroll))
-            case ParForGlobal(dim) =>
-              Stop(ParForGlobal(dim)(n, dt, out,
-                Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), init, step, unroll))
+              collectWrites(pf.out, allocs, outer_wg_writes)
+              Stop(ParFor(Local, dim, unroll)(pf.n, pf.dt, pf.out,
+                Lambda(x, Lambda(o,
+                  visitLoopBody(body, allocs, metadata, outer_wg_writes))), pf.init, pf.step))
+            case _ =>
+              Continue(p, this)
+          }
+        case pf@ParFor(level, dim, unroll) =>
+          pf.loopBody match {
+            case Lambda(x, Lambda(o, body)) =>
+              Stop(ParFor(level, dim, unroll)(pf.n, pf.dt, pf.out,
+                Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
+            case _ =>
+              Continue(p, this)
           }
         case pfn: OpenCLParForNat => ???
         case OpenCLNew(addr, _, Lambda(x, _)) if addr != AddressSpace.Private =>
@@ -189,7 +195,7 @@ object InsertMemoryBarriers {
       case Drop(_, _, _, e) => collectReads(e, allocs, reads)
       case Take(_, _, _, e) => collectReads(e, allocs, reads)
       case Unzip(_, _, _, _, e) => collectReads(e, allocs, reads)
-      case Pair(_, _, _, e1, e2) =>
+      case MakePair(_, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Reorder(_, _, _, _, _, e) => collectReads(e, allocs, reads)
       case MakeArray(_, es) =>

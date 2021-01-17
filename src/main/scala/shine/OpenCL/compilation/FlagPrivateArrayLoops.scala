@@ -6,7 +6,7 @@ import shine.DPIA.Types.{CommType, PhraseType}
 import shine.DPIA.primitives.functional.{Idx, NatAsIndex}
 import shine.DPIA.primitives.imperative.{For, ForNat, IdxAcc}
 import shine.DPIA.{Nat, NatIdentifier}
-import shine.OpenCL.AddressSpace
+import shine.OpenCL.{AddressSpace, Global, Local, WorkGroup}
 import shine.OpenCL.primitives.imperative._
 
 import scala.collection.mutable
@@ -44,10 +44,13 @@ object FlagPrivateArrayLoops {
         case Literal(ArrayData(_)) =>
           eliminateVars ++= indexingIdents
           Stop(p)
-        case OpenCLParFor(_, _, out, Lambda(i: Identifier[_], Lambda(o: Identifier[_], _)), _, _, _)
-          if collectIdents(out).exists(privMemIdents(_)) =>
-          eliminateVars += i.name
-          Continue(p, this.copy(privMemIdents = privMemIdents + o))
+        case pf: ParFor if collectIdents(pf.out).exists(privMemIdents(_)) =>
+          pf.loopBody match {
+            case Lambda(i: Identifier[_], Lambda(o: Identifier[_], _)) =>
+              eliminateVars += i.name
+              Continue(p, this.copy(privMemIdents = privMemIdents + o))
+            case _ => throw new Exception("This should not happen")
+          }
         case _ =>
           Continue(p, this)
       }
@@ -67,16 +70,13 @@ object FlagPrivateArrayLoops {
         case ForNat(n, body@DepLambda(i: NatIdentifier, _), _) if eliminateVars(i.name) =>
           eliminateVars -= i.name
           Continue(ForNat(n, body, unroll = true), this)
-        case pf@OpenCLParFor(n, dt, out, body@Lambda(i: Identifier[_], _), init, step, _)
-          if eliminateVars(i.name) =>
-          eliminateVars -= i.name
-          pf match {
-            case ParForGlobal(dim) =>
-              Continue(ParForGlobal(dim)(n, dt, out, body, init, step, unroll = true), this)
-            case ParForLocal(dim) =>
-              Continue(ParForLocal(dim)(n, dt, out, body, init, step, unroll = true), this)
-            case ParForWorkGroup(dim) =>
-              Continue(ParForWorkGroup(dim)(n, dt, out, body, init, step, unroll = true), this)
+        case pf@ParFor(level, dim, _) =>
+          pf.loopBody match {
+            case body@Lambda(i: Identifier[_], _) if eliminateVars(i.name) =>
+              eliminateVars -= i.name
+              Continue(ParFor(level, dim, unroll = true)
+                (pf.n, pf.dt, pf.out, body, pf.init, pf.step), this)
+            case _ => Continue(p, this)
           }
         case pf@OpenCLParForNat(n, dt, out, body@DepLambda(i: NatIdentifier, _), init, step, _)
           if eliminateVars(i.name) =>

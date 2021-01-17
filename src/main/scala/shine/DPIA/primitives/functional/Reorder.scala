@@ -1,36 +1,29 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
+import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
-import shine.DPIA.primitives.imperative.ReorderAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
-import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
-import shine.DPIA.{Phrases, _}
+import shine.DPIA.Types._
+import shine.DPIA._
+import shine.DPIA.primitives.imperative.ReorderAcc
+import shine.macros.Primitive.expPrimitive
 
-import scala.xml.Elem
-
+@expPrimitive
 final case class Reorder(n: Nat,
                          dt: DataType,
                          access: AccessType,
                          idxF: Phrase[ExpType ->: ExpType],
                          idxFinv: Phrase[ExpType ->: ExpType],
                          input: Phrase[ExpType]
-                        ) extends ExpPrimitive {
-
+                        ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
   idxF :: expT(idx(n), read) ->: expT(idx(n), read)
   idxFinv :: expT(idx(n), read) ->: expT(idx(n), read)
   input :: expT(n`.`dt, access)
   override val t: ExpType = expT(n`.`dt, access)
-
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Reorder(f.nat(n), f.data(dt), f.access(access),
-      VisitAndRebuild(idxF, f),
-      VisitAndRebuild(idxFinv, f),
-      VisitAndRebuild(input, f))
-  }
 
   override def eval(s: Store): Data = {
     import shine.DPIA.Semantics.OperationalSemantics._
@@ -46,47 +39,16 @@ final case class Reorder(n: Nat,
     }
   }
 
-  override def fedeTranslation(
-    env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]]
-  )(
-    C: Phrase[AccType ->: AccType]
-  ): Phrase[AccType] = {
-    import TranslationToImperative._
+  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
+    fedAcc(env)(input)(λ(accT(C.t.inT.dataType))(o => ReorderAcc(n, dt, idxFinv, C(o))))
 
-    val otype = C.t.inT.dataType
-    fedAcc(env)(input)(λ(accT(otype))(o => ReorderAcc(n, dt, idxFinv, C(o))))
-  }
-
-  override def acceptorTranslation(A: Phrase[AccType])(
-    implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import TranslationToImperative._
-
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommType] =
     acc(input)(ReorderAcc(n, dt, idxFinv, A))
-  }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
-    implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import TranslationToImperative._
-
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] =
     con(input)(λ(expT(n`.`dt, read))(x =>
       C(Reorder(n, dt, access, idxF, idxFinv, x))))
-  }
-
-  override def prettyPrint: String =
-    s"(reorder idxF ${PrettyPhrasePrinter(input)})"
-
-  override def xmlPrinter: Elem =
-    <reorder access={ToString(access)}>
-      <idxF>
-        {Phrases.xmlPrinter(idxF)}
-      </idxF>
-      <idxFinv>
-        {Phrases.xmlPrinter(idxFinv)}
-      </idxFinv>
-      <input>
-        {Phrases.xmlPrinter(input)}
-      </input>
-    </reorder>
 }

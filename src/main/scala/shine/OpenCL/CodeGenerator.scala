@@ -14,7 +14,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative._
-import shine.OpenCL.primitives.functional.OpenCLFunction
+import shine.OpenCL.primitives.functional.OpenCLFunctionCall
 import shine.OpenCL.primitives.imperative._
 import shine.{C, _}
 
@@ -36,8 +36,12 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     new CodeGenerator(decls, ranges.updated(key, value))
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
-    case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p)), _, _, _) =>
-      OpenCLCodeGen.codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
+    case f: ParFor =>
+      f.loopBody match {
+        case Lambda(i, Lambda(o, p)) =>
+          OpenCLCodeGen.codeGenOpenCLParFor(f, f.n, f.dt, f.out, i, o, p, env)
+        case _ => throw new Exception("This should not happen")
+      }
 
     case f@OpenCLParForNat(n, _, a,
     DepLambda(i: NatIdentifier, Lambda(o, p)), _, _, _) =>
@@ -183,7 +187,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
     case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
 
-    case OpenCLFunction(name, _, _, args) =>
+    case OpenCLFunctionCall(name, _, _, args) =>
       CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
 
     case IdxDistribute(_, _, stride, _, _, e) => path match {
@@ -296,7 +300,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       ))
     }
 
-    def codeGenOpenCLParFor(f: OpenCLParFor,
+    def codeGenOpenCLParFor(f: ParFor,
                             n: Nat,
                             dt: DataType,
                             a: Phrase[AccType],

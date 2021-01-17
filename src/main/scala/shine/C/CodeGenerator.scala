@@ -370,7 +370,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
       case (i: CIntExpr) :: Nil =>
         val j = functional.NatAsIndex(n, Natural(i))
-        Pair(dt1, dt2, read, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)) |> exp(env, Nil, cont)
+        MakePair(dt1, dt2, read, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)) |> exp(env, Nil, cont)
       case _ => error(s"unexpected $path")
     }
 
@@ -388,7 +388,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
     }
 
-    case r@Pair(_, _, _, e1, e2) => path match {
+    case r@MakePair(_, _, _, e1, e2) => path match {
       case (xj: PairAccess) :: ps => xj match {
         case FstMember => e1 |> exp(env, ps, cont)
         case SndMember => e2 |> exp(env, ps, cont)

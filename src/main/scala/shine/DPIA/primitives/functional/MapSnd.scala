@@ -1,24 +1,24 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
+import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
-import shine.DPIA.primitives.imperative.MapSndAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.DPIA.primitives.imperative.MapSndAcc
+import shine.macros.Primitive.expPrimitive
 
-import scala.xml.Elem
-
+@expPrimitive
 final case class MapSnd(w: AccessType,
                         dt1: DataType,
                         dt2: DataType,
                         dt3: DataType,
                         f: Phrase[ExpType ->: ExpType],
-                        record: Phrase[ExpType]) extends ExpPrimitive
-{
-
+                        record: Phrase[ExpType]
+                       ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
   f :: expT(dt2, w) ->: expT(dt3, w)
   record :: expT(dt1 x dt2, w)
   override val t: ExpType = expT(dt1 x dt3, w)
@@ -32,33 +32,8 @@ final case class MapSnd(w: AccessType,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    MapSnd(fun.access(w), fun.data(dt1), fun.data(dt2), fun.data(dt3),
-      VisitAndRebuild(f, fun),
-      VisitAndRebuild(record, fun))
-  }
-
-  override def prettyPrint: String =
-    s"(mapSnd ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(record)})"
-
-  override def xmlPrinter: Elem =
-    <mapSnd w={ToString(w)}
-            dt1={ToString(dt1)} dt2={ToString(dt2)} dt3={ToString(dt3)}>
-      <f>
-        {Phrases.xmlPrinter(f)}
-      </f>
-      <record>
-        {Phrases.xmlPrinter(record)}
-      </record>
-    </mapSnd>
-
-  override def fedeTranslation(
-    env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]]
-  )(
-    C: Phrase[AccType ->: AccType]
-  ): Phrase[AccType] = {
-    import TranslationToImperative._
-
+  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
     val x = Identifier(freshName("fede_x"), ExpType(dt2, read))
 
     val otype = AccType(dt3)
@@ -70,11 +45,8 @@ final case class MapSnd(w: AccessType,
         C(y))))
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])(
-    implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import TranslationToImperative._
-
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommType] = {
     val x = Identifier(freshName("fede_x"), ExpType(dt2, write))
 
     val otype = AccType(dt3)
@@ -85,12 +57,8 @@ final case class MapSnd(w: AccessType,
       A))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
-    implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import TranslationToImperative._
-
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] =
     // assumption: f does not need to be translated, it does indexing only
     con(record)(fun(record.t)(x => C(MapSnd(w, dt1, dt2, dt3, f, x))))
-  }
 }

@@ -4,7 +4,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.DPIA.primitives.functional.Pair
+import shine.DPIA.primitives.functional.MakePair
 
 import scala.language.reflectiveCalls
 
@@ -39,7 +39,7 @@ object TranslationToImperative {
         // assignments to elements of pairs (structs), because the AMD SDK
         // cannot deal with literal struct assignments or definitions (C99).
         e match {
-          case Pair(dt1, dt2, _, fst, snd) =>
+          case MakePair(dt1, dt2, _, fst, snd) =>
             acc(fst)(pairAcc1(dt1, dt2, A)) `;`
               acc(snd)(pairAcc2(dt1, dt2, A))
           case _ =>
@@ -64,7 +64,8 @@ object TranslationToImperative {
           ))
         ))
 
-      case ep: ExpPrimitive => ep.acceptorTranslation(A)
+      case ep: ExpPrimitive with AcceptorTranslatable => ep.acceptorTranslation(A)
+      case ep: ExpPrimitive => throw new Exception(s"$ep does not support the Acceptor Translation")
 
       case LetNat(binder, defn, body) => LetNat(binder, defn, acc(body)(A))
 
@@ -133,7 +134,8 @@ object TranslationToImperative {
           ))
         ))
 
-      case ep: ExpPrimitive => ep.continuationTranslation(C)
+      case ep: ExpPrimitive with ContinuationTranslatable => ep.continuationTranslation(C)
+      case ep: ExpPrimitive => throw new Exception(s"$ep does not support the Continuation Translation")
 
       // on the fly beta-reduction
       case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)

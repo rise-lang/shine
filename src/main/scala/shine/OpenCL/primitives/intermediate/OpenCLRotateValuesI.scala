@@ -34,9 +34,9 @@ object OpenCLRotateValuesI {
           // use neighborhood
           k(rs.rd) `;`
           // rotate
-          MapSeqI(size - 1, dt, dt, write_dt,
+          MapSeqI(unroll = true)(size - 1, dt, dt, write_dt,
             Drop(1, size - 1, dt, rs.rd),
-            TakeAcc(size - 1, 1, dt, rs.wr), unroll = true)
+            TakeAcc(size - 1, 1, dt, rs.wr))
         ),
       arithexpr.arithmetic.RangeAdd(0, n, 1)))
     })

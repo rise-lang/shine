@@ -2,31 +2,20 @@ package shine.DPIA.primitives.intermediate
 
 import arithexpr.arithmetic.RangeAdd
 import shine.DPIA.DSL._
-import shine.DPIA.primitives.imperative.ForNat
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.DPIA.primitives.imperative.ForNat
 
 object DepMapSeqI {
-  def apply(n: Nat,
+  def apply(unroll: Boolean = false)
+           (n: Nat,
             ft1:NatToData,
             ft2:NatToData,
             f: Phrase[`(nat)->:`[ExpType ->: AccType ->: CommType]],
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommType] =
   {
-    ForNat(n, nFun(i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll = false)
-  }
-}
-
-object DepMapSeqIUnroll {
-  def apply(n: Nat,
-            ft1:NatToData,
-            ft2:NatToData,
-            f: Phrase[`(nat)->:`[ExpType ->: AccType ->: CommType]],
-            in: Phrase[ExpType],
-            out: Phrase[AccType]): Phrase[CommType] =
-  {
-    ForNat(n, nFun(i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll = true)
+    ForNat(n, nFun(i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll)
   }
 }

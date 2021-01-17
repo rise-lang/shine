@@ -105,11 +105,12 @@ object fromRise {
 
   private def primitive(p: r.Primitive,
                         t: PhraseType): Phrase[_ <: PhraseType] = {
-    import rise.openCL.{primitives => ocl}
-    import rise.openMP.{primitives => omp}
-    import shine.OpenCL.primitives.functional._
-    import shine.OpenMP.primitives.functional._
+    import rise.openCL.{primitives => rocl}
+    import rise.openMP.{primitives => romp}
+    import shine.OpenCL.primitives.{functional => ocl}
+    import shine.OpenMP.primitives.{functional => omp}
     import shine.DPIA.Types.MatchingDSL._
+    import shine.OpenCL.{Global, WorkGroup, Local}
 
     def fromType(f: PartialFunction[PhraseType, Phrase[_ <: PhraseType]]): Phrase[_ <: PhraseType] = {
       f.lift(t) match {
@@ -151,7 +152,7 @@ object fromRise {
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
-            MapSeq(n, s, t, f, e)))
+            MapSeq(unroll = false)(n, s, t, f, e)))
       }
 
       case core.mapStream() => fromType {
@@ -181,47 +182,47 @@ object fromRise {
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
-            MapSeqUnroll(n, s, t, f, e)))
+            MapSeq(unroll = true)(n, s, t, f, e)))
       }
 
-      case omp.mapPar() => fromType {
+      case romp.mapPar() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `write`)
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
-            MapPar(n, s, t, f, e)))
+            omp.MapPar(n, s, t, f, e)))
       }
 
-      case ocl.mapGlobal(dim) => fromType {
+      case rocl.mapGlobal(dim) => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `write`)
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
-            MapGlobal(dim)(n, s, t, f, e)))
+            ocl.Map(Global, dim)(n, s, t, f, e)))
       }
 
-      case ocl.mapLocal(dim) => fromType {
+      case rocl.mapLocal(dim) => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `write`)
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
-            MapLocal(dim)(n, s, t, f, e)))
+            ocl.Map(Local, dim)(n, s, t, f, e)))
       }
 
-      case ocl.mapWorkGroup(dim) => fromType {
+      case rocl.mapWorkGroup(dim) => fromType {
         case (expT(s, `read`) ->: expT(t, `write`)) ->:
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `write`)
         =>
           fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
             fun[ExpType](expT(n `.` s, read), e =>
-              MapWorkGroup(dim)(n, s, t, f, e)))
+              ocl.Map(WorkGroup, dim)(n, s, t, f, e)))
       }
 
       case core.depMapSeq() => fromType {
@@ -232,7 +233,7 @@ object fromRise {
         fun[`(nat)->:`[ExpType ->: ExpType]](
           k ->: (ExpType(ft1(k), read) ->: ExpType(ft2(k), write)), f =>
             fun[ExpType](ExpType(DepArrayType(n, ft1), read), e =>
-              DepMapSeq(n, ft1, ft2, f, e)))
+              DepMapSeq(unroll = false)(n, ft1, ft2, f, e)))
       }
 
       case core.reduceSeq() => fromType {
@@ -245,7 +246,7 @@ object fromRise {
           expT(t, read) ->: expT(s, read) ->: expT(t, write), f =>
             fun[ExpType](expT(t, write), i =>
               fun[ExpType](expT(n`.`s, read), e =>
-                ReduceSeq(n, s, t, f, i, e))))
+                ReduceSeq(unroll = false)(n, s, t, f, i, e))))
       }
 
       case core.reduceSeqUnroll() => fromType {
@@ -258,10 +259,10 @@ object fromRise {
           expT(t, read) ->: expT(s, read) ->: expT(t, write), f =>
             fun[ExpType](expT(t, write), i =>
               fun[ExpType](expT(n`.`s, read), e =>
-                ReduceSeqUnroll(n, s, t, f, i, e))))
+                ReduceSeq(unroll = true)(n, s, t, f, i, e))))
       }
 
-      case ocl.oclReduceSeq() => fromType {
+      case rocl.oclReduceSeq() => fromType {
         case aFunT(a,
         (expT(t, `read`) ->: expT(s, `read`) ->: expT(_, `write`)) ->:
           expT(_, `write`) ->:
@@ -273,10 +274,10 @@ object fromRise {
             expT(t, read) ->: expT(s, read) ->: expT(t, write), f =>
               fun[ExpType](expT(t, write), i =>
                 fun[ExpType](expT(n`.`s, read), e =>
-                  OpenCLReduceSeq(n, a, s, t, f, i, e, unroll = false)))))
+                  ocl.ReduceSeq(unroll = false)(n, a, s, t, f, i, e)))))
       }
 
-      case ocl.oclReduceSeqUnroll() => fromType {
+      case rocl.oclReduceSeqUnroll() => fromType {
         case aFunT(a,
         (expT(t, `read`) ->: expT(s, `read`) ->: expT(_, `write`)) ->:
           expT(_, `write`) ->:
@@ -288,7 +289,7 @@ object fromRise {
             expT(t, read) ->: expT(s, read) ->: expT(t, write), f =>
               fun[ExpType](expT(t, write), i =>
                 fun[ExpType](expT(n`.`s, read), e =>
-                  OpenCLReduceSeq(n, a, s, t, f, i, e, unroll = true)))))
+                  ocl.ReduceSeq(unroll = true)(n, a, s, t, f, i, e)))))
       }
 
       case core.scanSeq() => fromType {
@@ -352,8 +353,7 @@ object fromRise {
             fun[ExpType ->: ExpType](
               expT(s, read) ->: expT(t, write), load =>
                 fun[ExpType](expT(insz`.`s, read), e =>
-                  // TODO: alloc
-                  SlideSeq(SlideSeq.Indices, n, sz, 1, s, t, load, e)))))
+                  CircularBuffer(n, alloc, sz, s, t, load, e)))))
       }
 
       case core.depTile() => fromType {
@@ -378,10 +378,10 @@ object fromRise {
           fun[ExpType ->: ExpType](
             expT(s, read) ->: expT(s, write), wr =>
               fun[ExpType](expT(insz`.`s, read), e =>
-                SlideSeq(SlideSeq.Values, n, sz, 1, s, s, wr, e))))
+                RotateValues(n, sz, s, wr, e))))
       }
 
-      case ocl.oclCircularBuffer() => fromType {
+      case rocl.oclCircularBuffer() => fromType {
         case aFunT(a, nFunT(alloc, nFunT(sz,
         (expT(s, `read`) ->: expT(t, `write`)) ->:
           expT(ArrayType(insz, _), `read`) ->:
@@ -393,10 +393,10 @@ object fromRise {
               fun[ExpType ->: ExpType](
                 expT(s, read) ->: expT(t, write), load =>
                   fun[ExpType](expT(insz`.`s, read), e =>
-                    OpenCLCircularBuffer(a, n, alloc, sz, s, t, load, e))))))
+                    ocl.CircularBuffer(a, n, alloc, sz, s, t, load, e))))))
       }
 
-      case ocl.oclRotateValues() => fromType {
+      case rocl.oclRotateValues() => fromType {
         case aFunT(a, nFunT(sz,
         (expT(s, `read`) ->: expT(t, `write`)) ->:
           expT(ArrayType(insz, _), `read`) ->:
@@ -407,7 +407,7 @@ object fromRise {
               fun[ExpType ->: ExpType](
                 expT(t, read) ->: expT(t, write), write_t =>
                   fun[ExpType](expT(insz`.`t, read), e =>
-                    OpenCLRotateValues(a, n, sz, t, write_t, e)))))
+                    ocl.RotateValues(a, n, sz, t, write_t, e)))))
       }
 
       case core.reorder() => fromType {
@@ -555,7 +555,7 @@ object fromRise {
         =>
         fun[ExpType](expT(s, a), x =>
           fun[ExpType](expT(t, a), y =>
-            Pair(s, t, a, x, y)))
+            MakePair(s, t, a, x, y)))
         }
 
       case core.idx() => fromType {
@@ -728,7 +728,7 @@ object fromRise {
                 Iterate(ln /^ l, m, k, t, f, e))))
       }
 
-      case ocl.oclIterate() => fromType {
+      case rocl.oclIterate() => fromType {
         case aFunT(a, nFunT(k,
           nFunT(l, expT(ArrayType(ln, t), `read`) ->:
             expT(ArrayType(_, _), `write`)) ->:
@@ -739,7 +739,7 @@ object fromRise {
           fun[`(nat)->:`[ExpType ->: ExpType]](
             l ->: (expT(ln`.`t, read) ->: expT(l`.`t, write)), f =>
               fun[ExpType](expT(insz`.`t, read), e =>
-                OpenCLIterate(a, ln /^ l, m, k, t, f, e)))))
+                ocl.Iterate(a, ln /^ l, m, k, t, f, e)))))
       }
 
       case core.asVector() => fromType {
@@ -792,12 +792,12 @@ object fromRise {
         fun[ExpType](expT(t, write), e => ToMem(t, e))
       }
 
-      case ocl.oclToMem() => fromType {
+      case rocl.oclToMem() => fromType {
         case aFunT(a, expT(t, `write`) ->: expT(_, `read`))
         =>
         depFun[AddressSpaceKind](a)(
           fun[ExpType](expT(t, write), e =>
-            OclToMem(a, t, e)))
+            ocl.ToMem(a, t, e)))
       }
 
       case core.dmatch() => fromType {
@@ -813,7 +813,7 @@ object fromRise {
 
       case core.makeDepPair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
-          depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
+          depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MakeDepPair(a, fst, sndT, snd)))
       }
 
       case core.reduce() =>
