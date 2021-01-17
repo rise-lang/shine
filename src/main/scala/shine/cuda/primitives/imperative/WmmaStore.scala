@@ -7,17 +7,16 @@ import shine.DPIA.{Nat, Phrases}
 
 import scala.xml.Elem
 
-final case class WmmaStore(m: Nat,
-                           n: Nat,
-                           k: Nat,
+final case class WmmaStore(rows: Nat,
+                           columns: Nat,
+                           d3: Nat,
                            dataType: DataType,
                            fragment: Phrase[ExpType],
                            matrixTile: Phrase[AccType]
                           ) extends CommandPrimitive {
 
-  fragment :: ExpType(Fragment(m, n, k, dataType), read)
-  val fragArrayType = fragment.t.dataType.asInstanceOf[Fragment].matrixType
-  matrixTile :: AccType(fragArrayType)
+  fragment :: ExpType(Fragment(rows, columns, d3, dataType), read)
+  matrixTile :: AccType(ArrayType(rows, ArrayType(columns, dataType)))
 
   override def eval(s: Store): Store = ???
 
@@ -36,7 +35,7 @@ final case class WmmaStore(m: Nat,
     </wmmaStore>
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    WmmaStore(fun.nat(m), fun.nat(n), fun.nat(k), fun.data(dataType), VisitAndRebuild(fragment, fun),
+    WmmaStore(fun.nat(rows), fun.nat(columns), fun.nat(d3), fun.data(dataType), VisitAndRebuild(fragment, fun),
       VisitAndRebuild(matrixTile, fun))
   }
 }

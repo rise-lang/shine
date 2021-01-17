@@ -47,7 +47,5 @@ object TypedDSL {
     def apply(shift: Nat, array: Expr): Expr = primitives.toSharedMemoryShift(shift)(array)
   }
 
-  def mapFragmentElements: ToBeTyped[Primitive] = primitives.mapFragmentElements.primitive
-
   def h(f: Float): ToBeTyped[Literal] = literal(HalfData(f))
 }

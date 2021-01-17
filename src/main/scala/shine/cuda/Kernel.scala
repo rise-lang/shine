@@ -25,71 +25,68 @@ case class Kernel(decls: Seq[C.AST.Decl],
                  ) extends util.Kernel(decls, kernel, outputParam, inputParams, intermediateParams, printer) {
   //TODO remove this
   def replaceSecondUnnecessaryReduceAllocation(code: String): String = {
-    val codeNew = new StringBuffer(code.length)
-
     val lines = code.split("\n")
 
-    var firstReduce = -1
-    var secondReduce = -1
-    var endSecondReduce = -1
-    var firstVname = ""
-    var secondVName = ""
+    def serachOclReduceSeq(startIndex: Int): Int = {
+      var i = startIndex
+      while (i < lines.length){
+        if (lines(i).contains("/* oclReduceSeq */")) {
+          return i;
+        }
 
-    for (i <- lines.indices) {
+        i += 1
+      }
+
+      -1;
+    }
+
+    def getVName(decl: String): String = {
+      if (!decl.contains("wmma::fragment")) return null
+
+      val indexVNameStart = decl.indexOf(">") + 2
+      val indexVNameEnd = decl.indexOf("[")
+      decl.slice(indexVNameStart, indexVNameEnd)
+    }
+
+    val index1 = serachOclReduceSeq(0)
+    if (index1 == -1) return code;
+    val vname1 = getVName(lines(index1+2))
+
+    val index2 = serachOclReduceSeq(index1+3)
+    if (index2 == -1) return code
+    val vname2 = getVName(lines(index2+2))
+
+    val codeNew = new StringBuffer(code.length)
+
+    var i = 0
+
+    while (i < index2+2){
+      codeNew.append(lines(i)).append("\n")
+      i += 1
+    }
+
+    var brackets = 1
+    while (brackets > 0){
       val line = lines(i)
 
-      if (firstReduce >= 0) firstReduce += 1
-      if (secondReduce >= 0) secondReduce += 1
+      if (line.contains("{"))
+        brackets += 1
 
-      // name of first reduce variable
-      if (firstReduce == 2) {
-        if (!line.contains("wmma::fragment")) return code
-
-        val indexVNameStart = line.indexOf(">") + 2
-        val indexVNameEnd = line.indexOf("[")
-        firstVname = line.slice(indexVNameStart, indexVNameEnd)
-      }
-
-      if (endSecondReduce == -1 && secondReduce > 2 && line.contains("=")) {
-        endSecondReduce = 0
-      }
-
-      if (secondReduce == 2 || endSecondReduce == 0) {
-        if (secondReduce == 2) {
-          // name of second reduce variable
-          if (secondVName == "") {
-            if (!line.contains("wmma::fragment")) return code
-
-            val indexVNameStart = line.indexOf(">") + 2
-            val indexVNameEnd = line.indexOf("[")
-            secondVName = line.slice(indexVNameStart, indexVNameEnd)
-          }
-
-          // else if line not equals "{": init of second reduce variable
-          if (!line.contains("{")) {
-            secondReduce -= 1
-          } else {
-            codeNew.append(line)
-            codeNew.append("\n")
-          }
-        } else if (line.contains("}")) {
-          endSecondReduce += 1
-          codeNew.append(line)
-          codeNew.append("\n")
-        }
-      } else {
-        if (secondVName == "")
-          codeNew.append(line)
-        else
-          codeNew.append(line.replace(secondVName, firstVname).replace(secondVName, firstVname))
-
+      if (line.contains("#pragma unroll")) i += 5
+      if (brackets > 1) {
+        codeNew.append(line.replace(vname2, vname1))
         codeNew.append("\n")
       }
 
-      if (lines(i).contains("/* oclReduceSeq */")) {
-        if (firstReduce == -1) firstReduce = 0
-        else if (secondReduce == -1) secondReduce = 0
-      }
+      if (line.contains("}"))
+        brackets -= 1
+
+      i += 1
+    }
+
+    while (i < lines.length){
+      codeNew.append(lines(i)).append("\n")
+      i += 1
     }
 
     codeNew.toString

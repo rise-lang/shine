@@ -44,13 +44,13 @@ class MMTest extends test_util.TestsWithYACX {
               TensorMatMultAdd(mTile, nTile, kTile, Row_Major, Row_Major, f16, f32,
 
                 //load aMatrix into a fragment
-                OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, nTile, kTile, f16, FragmentType.AMatrix, Row_Major),
-                  ToFragment(mTile, nTile, kTile, f16, FragmentType.AMatrix,
+                OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, kTile, nTile, f16, FragmentType.AMatrix, Row_Major),
+                  ToFragment(mTile, kTile, nTile, f16, FragmentType.AMatrix,
                     matrixATile)),
 
                 //load bMatrix into a fragment
-                OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, nTile, kTile, f16, FragmentType.BMatrix, Row_Major),
-                  ToFragment(mTile, nTile, kTile, f16, FragmentType.BMatrix,
+                OclToMem(shine.cuda.AddressSpace.Private, Fragment(kTile, nTile, mTile, f16, FragmentType.BMatrix, Row_Major),
+                  ToFragment(kTile, nTile, mTile, f16, FragmentType.BMatrix,
                     matrixBTile)),
 
                 //add fragment with zeros
@@ -118,16 +118,16 @@ class MMTest extends test_util.TestsWithYACX {
                 Lambda[ExpType, FunType[ExpType, ExpType]](matrixCFrag,
                   Lambda[ExpType, ExpType](matrixABTiles,
                     TensorMatMultAdd(mTile, nTile, kTile, Row_Major, Row_Major, f16, f32,
-                      OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, nTile, kTile, f16, FragmentType.AMatrix, Row_Major),
-                        ToFragment(mTile, nTile, kTile, f16, FragmentType.AMatrix,
+                      OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, kTile, nTile, f16, FragmentType.AMatrix, Row_Major),
+                        ToFragment(mTile, kTile, nTile, f16, FragmentType.AMatrix,
                           Transpose(kTile, mTile, f16, read,
                             Fst(
                               ArrayType(kTile, ArrayType(mTile, f16)),
                               ArrayType(kTile, ArrayType(nTile, f16)),
                               matrixABTiles)))),
 
-                      OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, nTile, kTile, f16, FragmentType.BMatrix, Row_Major),
-                        ToFragment(mTile, nTile, kTile, f16, FragmentType.BMatrix,
+                      OclToMem(shine.cuda.AddressSpace.Private, Fragment(kTile, nTile, mTile, f16, FragmentType.BMatrix, Row_Major),
+                        ToFragment(kTile, nTile, mTile, f16, FragmentType.BMatrix,
                           Snd(
                             ArrayType(mTile, ArrayType(kTile, f16)),
                             ArrayType(kTile, ArrayType(nTile, f16)),
@@ -255,8 +255,8 @@ class MMTest extends test_util.TestsWithYACX {
                                       TensorMatMultAdd(mTile, nTile, kTile, Row_Major, Row_Major, f16, f32,
 
                                         //matrixATile as fragment
-                                        OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, nTile, kTile, f16, FragmentType.AMatrix, Row_Major),
-                                          ToFragment(mTile, nTile, kTile, f16, FragmentType.AMatrix,
+                                        OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, kTile, nTile, f16, FragmentType.AMatrix, Row_Major),
+                                          ToFragment(mTile, kTile, nTile, f16, FragmentType.AMatrix,
                                             Transpose(kTile, mTile, f16, read,
                                               Fst(
                                                 ArrayType(mTile, ArrayType(kTile, f16)),
@@ -264,8 +264,8 @@ class MMTest extends test_util.TestsWithYACX {
                                                 matrixABTiles)))),
 
                                         //matrixBTile as fragment
-                                        OclToMem(shine.cuda.AddressSpace.Private, Fragment(mTile, nTile, kTile, f16, FragmentType.BMatrix, Row_Major),
-                                          ToFragment(mTile, nTile, kTile, f16, FragmentType.BMatrix,
+                                        OclToMem(shine.cuda.AddressSpace.Private, Fragment(kTile, nTile, mTile, f16, FragmentType.BMatrix, Row_Major),
+                                          ToFragment(kTile, nTile, mTile, f16, FragmentType.BMatrix,
                                             Snd(
                                               ArrayType(mTile, ArrayType(kTile, f16)),
                                               ArrayType(kTile, ArrayType(nTile, f16)),

@@ -7,23 +7,18 @@ import shine.DPIA.{Nat, Phrases}
 
 import scala.xml.Elem
 
-final case class WmmaLoad(m: Nat,
-                          n: Nat,
-                          k: Nat,
+final case class WmmaLoad(rows: Nat,
+                          columns: Nat,
+                          d3: Nat,
                           dataType: DataType,
+                          fragType: FragmentType,
+                          layout: MatrixLayout,
                           matrixTile: Phrase[ExpType],
                           fragment: Phrase[AccType]
                          ) extends CommandPrimitive {
 
-  val layout = fragment.t.dataType.asInstanceOf[Fragment].layout
-  if (fragment.t.dataType != Fragment(m, n, k, dataType, FragmentType.AMatrix, layout)
-    && fragment.t.dataType != Fragment(m, n, k, dataType, FragmentType.BMatrix, layout)
-    && fragment.t.dataType != Fragment(m, n, k, dataType))
-    throw new TypeException(s"Type error: found ${fragment.t.dataType} expected" +
-      s"${Fragment(m, n, k, dataType, FragmentType.AMatrix, layout)} or" +
-      s"${Fragment(m, n, k, dataType, FragmentType.BMatrix, layout)} or ${Fragment(m, n, k, dataType)}")
-
-  matrixTile :: ExpType(fragment.t.dataType.asInstanceOf[Fragment].matrixType, read)
+  fragment :: ExpType(Fragment(rows, columns, d3, dataType, fragType, layout), write)
+  matrixTile :: ExpType(ArrayType(rows, ArrayType(columns, dataType)), read)
 
   override def eval(s: Store): Store = ???
 
@@ -42,7 +37,7 @@ final case class WmmaLoad(m: Nat,
     </wmmaLoad>
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    WmmaLoad(fun.nat(m), fun.nat(n), fun.nat(k), fun.data(dataType),
+    WmmaLoad(fun.nat(rows), fun.nat(columns), fun.nat(d3), fun.data(dataType), fragType, layout,
       VisitAndRebuild(matrixTile, fun), VisitAndRebuild(fragment, fun))
   }
 }

@@ -12,26 +12,25 @@ import shine.cuda.primitives.imperative.WmmaStore
 
 import scala.xml.Elem
 
-case class FromFragment(m: Nat,
-                        n: Nat,
-                        k: Nat,
+case class FromFragment(rows: Nat,
+                        columns: Nat,
+                        d3: Nat,
                         dataType: DataType,
                         fragment: Phrase[ExpType]
                        ) extends ExpPrimitive {
 
-  fragment :: ExpType(Fragment(m, n, k, dataType), read)
-  val fragArrayType = fragment.t.dataType.asInstanceOf[Fragment].matrixType
-  override val t: ExpType = ExpType(fragArrayType, write)
+  fragment :: ExpType(Fragment(rows, columns, d3, dataType), read)
+  override val t: ExpType = ExpType(ArrayType(rows, ArrayType(columns, dataType)), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    FromFragment(f.nat(m), f.nat(n), f.nat(k), f.data(dataType),
+    FromFragment(f.nat(rows), f.nat(columns), f.nat(d3), f.data(dataType),
       VisitAndRebuild(fragment, f))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     con(fragment)(λ(ExpType(fragment.t.dataType, read))(fragment =>
-      WmmaStore(m, n, k,
+      WmmaStore(rows, columns, d3,
         dataType, fragment, A)))
   }
 

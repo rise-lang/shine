@@ -7,9 +7,9 @@ import shine.DPIA.{Nat, Phrases}
 
 import scala.xml.Elem
 
-case class WmmaFill(m: Nat,
-                    n: Nat,
-                    k: Nat,
+case class WmmaFill(rows: Nat,
+                    columns: Nat,
+                    d3: Nat,
                     dataType: DataType,
                     fill: Phrase[ExpType],
                     fragmentType: FragmentType,
@@ -18,7 +18,7 @@ case class WmmaFill(m: Nat,
                    ) extends CommandPrimitive {
 
   fill :: ExpType(dataType, read)
-  fragment :: AccType(Fragment(m, n, k, dataType, fragmentType, layout))
+  fragment :: AccType(Fragment(rows, columns, d3, dataType, fragmentType, layout))
 
   override def eval(s: Store): Store = ???
 
@@ -36,7 +36,7 @@ case class WmmaFill(m: Nat,
     </wmmaFill>
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    WmmaFill(fun.nat(m), fun.nat(n), fun.nat(k), fun.data(dataType), VisitAndRebuild(fill, fun),
+    WmmaFill(fun.nat(rows), fun.nat(columns), fun.nat(d3), fun.data(dataType), VisitAndRebuild(fill, fun),
       fragmentType, layout, VisitAndRebuild(fragment, fun))
   }
 }

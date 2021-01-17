@@ -13,9 +13,9 @@ import shine.cuda.primitives.imperative.WmmaFill
 
 import scala.xml.Elem
 
-case class GenerateFragment(m: Nat,
-                            n: Nat,
-                            k: Nat,
+case class GenerateFragment(rows: Nat,
+                            columns: Nat,
+                            d3: Nat,
                             dataType: DataType,
                             fill: Phrase[ExpType],
                             fragmentType: FragmentType,
@@ -23,17 +23,17 @@ case class GenerateFragment(m: Nat,
 
   fill :: ExpType(dataType, read)
 
-  override val t: ExpType = ExpType(Fragment(m, n, k, dataType), write)
+  override val t: ExpType = ExpType(Fragment(rows, columns, d3, dataType), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    GenerateFragment(f.nat(m), f.nat(n), f.nat(k), f.data(dataType),
+    GenerateFragment(f.nat(rows), f.nat(columns), f.nat(d3), f.data(dataType),
       VisitAndRebuild(fill, f), fragmentType, layout)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     con(fill)(λ(ExpType(dataType, read))(fill =>
-      WmmaFill(m, n, k, dataType, fill, fragmentType, layout, A)))
+      WmmaFill(rows, columns, d3, dataType, fill, fragmentType, layout, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
@@ -42,10 +42,10 @@ case class GenerateFragment(m: Nat,
   override def eval(s: Store): OperationalSemantics.Data = ???
 
   override def prettyPrint: String =
-    s"GenerateFragment($m, $n, $k, ${PrettyPhrasePrinter(fill)}, $fragmentType, $layout)"
+    s"GenerateFragment($rows, $columns, $d3, ${PrettyPhrasePrinter(fill)}, $fragmentType, $layout)"
 
   override def xmlPrinter: Elem =
-    <GenerateFragment m={ToString(m)} n={ToString(n)} k={ToString(k)} dt={ToString(dataType)}
+    <GenerateFragment rows={ToString(rows)} columns={ToString(columns)} d3={ToString(d3)} dt={ToString(dataType)}
                       fragType={ToString(fragmentType)} layout={ToString(layout)}>
       <fill>
         {Phrases.xmlPrinter(fill)}

@@ -13,31 +13,29 @@ import shine.cuda.primitives.imperative.WmmaLoad
 import scala.xml.Elem
 
 object ToFragment{
-  def apply(m: Nat, n: Nat, k: Nat, dataType: DataType, fragmentType: FragmentType, matrix: Phrase[ExpType]):
-  ToFragment = ToFragment(m, n, k, dataType, fragmentType, matrix, MatrixLayoutIdentifier("ml"))
+  def apply(rows: Nat, columns: Nat, d3: Nat, dataType: DataType, fragmentType: FragmentType, matrix: Phrase[ExpType]):
+  ToFragment = ToFragment(rows, columns, d3, dataType, fragmentType, matrix, MatrixLayoutIdentifier("ml"))
 }
 
-case class ToFragment(m: Nat,
-                      n: Nat,
-                      k: Nat,
+case class ToFragment(rows: Nat,
+                      columns: Nat,
+                      d3: Nat,
                       dataType: DataType,
                       fragmentType: FragmentType,
                       matrix: Phrase[ExpType],
                       layout: MatrixLayout) extends ExpPrimitive {
 
-  private val fragType = Fragment(m, n, k, dataType, fragmentType, layout)
-  matrix :: ExpType(fragType.matrixType, write)
-  override val t: ExpType = ExpType(fragType, write)
+  matrix :: ExpType(ArrayType(rows, ArrayType(columns, dataType)), write)
+  override val t: ExpType = ExpType(Fragment(rows, columns, d3, dataType, fragmentType, layout), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    ToFragment(f.nat(m), f.nat(n), f.nat(k), f.data(dataType), fragmentType,
-      VisitAndRebuild(matrix, f), layout)
+    ToFragment(f.nat(rows), f.nat(columns), f.nat(d3), f.data(dataType), fragmentType, VisitAndRebuild(matrix, f), layout)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    con(matrix)(λ(ExpType(fragType.matrixType, read))(matrix =>
-      WmmaLoad(m, n, k, dataType, matrix, A)))
+    con(matrix)(λ(ExpType(ArrayType(rows, ArrayType(columns, dataType)), read))(matrix =>
+      WmmaLoad(rows, columns, d3, dataType, fragmentType, layout, matrix, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
@@ -45,10 +43,10 @@ case class ToFragment(m: Nat,
 
   override def eval(s: Store): OperationalSemantics.Data = ???
 
-  override def prettyPrint: String = s"toFragment($m, $n, $k, $dataType, $fragmentType, ${PrettyPhrasePrinter(matrix)})"
+  override def prettyPrint: String = s"toFragment($rows, $columns, $d3, $dataType, $fragmentType, ${PrettyPhrasePrinter(matrix)})"
 
   override def xmlPrinter: Elem =
-    <ToFragment m={ToString(m)} n={ToString(n)} k={ToString(k)}>
+    <ToFragment m={ToString(rows)} n={ToString(columns)} k={ToString(d3)}>
       <matrixTile>
         {Phrases.xmlPrinter(matrix)}
       </matrixTile>

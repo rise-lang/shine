@@ -389,7 +389,7 @@ object mmTensor {
 
 
 
-  //The following kernel can be run with different configs:
+  //The following kernels can be run with different configs:
   //  --dimension of block tile (size of the tile caluculated by a single thread block in one iteration)
   //    this tile will be loaded into shared memory
   //  --dimensions of warp tile (size of the tile caluculated by a single warp in one iteration)
@@ -435,12 +435,6 @@ object mmTensor {
 
   //config of the kernels
   var config: mmConfig = _
-  //layout a leading dimension of a-matrix
-  private val layoutA: MatrixLayout = Row_Major
-  var ldmA: Nat = 0 //set by blockMMA-function
-  //layout a leading dimension of b-matrix
-  private val layoutB: MatrixLayout = Col_Major
-  var ldmB: Nat = 0 //set by blockMMA-function
 
 
   //Example illustration how the kernel works
@@ -577,10 +571,7 @@ object mmTensor {
             transpose |>
             split(config.mTileFrag) |>
             mapSeqUnroll(fun(aFragTile =>
-              (if (layoutA == Row_Major)
-                aFragTile
-              else
-                aFragTile |> transpose) |>
+              aFragTile |>
               toFragment))))
           be(aFrags => // numberOfAFragments.WmmaAMatrix
 
@@ -590,10 +581,7 @@ object mmTensor {
               transpose |>
               split(config.nTileFrag) |>
               mapSeqUnroll(fun(bFragTile =>
-                (if (layoutB == Row_Major)
-                  bFragTile
-                else
-                  bFragTile |> transpose) |>
+                bFragTile |> transpose |>
                 toFragment))))
             be(bFrags => // numberOfBFragments.WmmaBMatrix
 
@@ -614,9 +602,6 @@ object mmTensor {
   //epilog: Load matrix elements from fragments which are distributed over different warps (into global memory)
   //Result: mTileBlock.nTileBlock.f32
   private def blockMM(epilog: ToBeTyped[Expr]): ToBeTyped[Expr] = {
-    ldmA = config.kTileBlock
-    ldmB = config.kTileBlock
-
     fun((aRowsBlock, bColumnsBlock) =>
       zip
         (aRowsBlock |> transpose |> split(config.kTileBlock))
@@ -666,9 +651,6 @@ object mmTensor {
   //Same as function before but avoid bank conflicts during load tiles into shared memory and use
   //better copy function to copy from global memory to shared memory (unroll all loops)
   private def blockMMV2(epilog: ToBeTyped[Expr]): ToBeTyped[Expr] = {
-    ldmA = config.kTileBlock + 8
-    ldmB = config.kTileBlock + 8
-
     fun((aRowsBlock, bColumnsBlock) =>
       zip
         (aRowsBlock |> transpose |> split(config.kTileBlock))

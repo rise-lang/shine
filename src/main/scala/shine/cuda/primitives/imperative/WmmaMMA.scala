@@ -20,10 +20,8 @@ case class WmmaMMA(m: Nat,
                    cMatrix: Phrase[ExpType],
                    resultMatrix: Phrase[AccType]
                   ) extends CommandPrimitive {
-  Wmma.checkDimensionsAndTypes(m, n, k, dataType, dataTypeAcc)
-
-  aMatrix :: ExpType(Fragment(m, n, k, dataType, FragmentType.AMatrix, layoutA), read)
-  bMatrix :: ExpType(Fragment(m, n, k, dataType, FragmentType.BMatrix, layoutB), read)
+  aMatrix :: ExpType(Fragment(m, k, n, dataType, FragmentType.AMatrix, layoutA), read)
+  bMatrix :: ExpType(Fragment(k, n, m, dataType, FragmentType.BMatrix, layoutB), read)
   cMatrix :: ExpType(Fragment(m, n, k, dataTypeAcc), read)
   resultMatrix :: AccType(Fragment(m, n, k, dataTypeAcc))
 

@@ -7,10 +7,9 @@ import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types.{AddressSpace, _}
 import rise.openCL.primitives.oclReduceSeq
-import rise.Cuda.primitives.{fromFragment, toFragment, toSharedMemoryShift}
+import rise.Cuda.primitives.{fromFragment, mapFragmentElements, toFragment, toSharedMemoryShift}
 import rise.openCL.TypedDSL.toPrivate
-import rise.core.types.MatrixLayout._
-import apps.mmTensor.{copyMatrix, crossProductOfMatrixTiles, ldmA, ldmB, mmConfig, warpMMA}
+import apps.mmTensor.{config, copyMatrix, crossProductOfMatrixTiles, mmConfig, warpMMA}
 import rise.Cuda.TypedDSL._
 
 //General Matrix Multiply (gemm) with tensor cores
@@ -64,9 +63,8 @@ object gemmTensor {
 
           (bColumnsTCT._2 |>
             transpose |>
-            toFragment
-//            mapFragmentElements(fun(x => x * (beta / alpha)))) |>
-          ) |>
+            toFragment |> toPrivate |>
+            mapFragmentElements(fun(x => x * (beta / alpha)))) |>
 
           mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
           fromFragment |> // mTileFrag.nTileFrag.f32
@@ -155,7 +153,7 @@ object gemmTensor {
                   cTiles |> transpose |> split(nTileFrag) |>
                   mapSeq(fun(cTileFragT =>
                     cTileFragT |> transpose |>
-                    toFragment |>
+                    toFragment |> toPrivate |>
                     mapFragmentElements(fun(x => x * (beta / alpha)))))))) |> // mTileWarp.nTileWarp.WmmaAcc
 
               //Write result from fragments to output
@@ -163,7 +161,7 @@ object gemmTensor {
                 dTiles |>
                 mapSeqUnroll(fun(dTiles =>
                   dTiles |>
-                  mapFragmentElements(fun(x => x * alpha)) |>
+                  mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
                   fromFragment |>      // mTileFrag.nTileFrag.f32
                   transpose)) |>          // nTileWarp/nTileFrag.nTileFrag.mTileFrag.f32
                 join |>                   // nTileWarp.mTileFrag.f32
@@ -182,7 +180,7 @@ object gemmTensor {
 
 
 
-  var config: mmConfig = _
+//  var config: mmConfig = _
 
   //Example illustration how the kernel works
   //Example dimensions:
@@ -264,9 +262,6 @@ object gemmTensor {
   //epilog: Load matrix elements from fragments which are distributed over different warps (into global memory)
   //Result: mTileBlock.nTileBlock.f32
   def blockMMA(loadMatrixFromCIntoFragments: ToBeTyped[Expr], epilog: ToBeTyped[Expr]): ToBeTyped[Expr] = {
-    ldmA = config.kTileBlock + 8
-    ldmB = config.kTileBlock + 8
-
     fun((alpha, beta, aRowsBlock, bColumnsBlock, cTileBlock) =>
       zip
         (aRowsBlock |> transpose |> split(config.kTileBlock))
@@ -322,7 +317,7 @@ object gemmTensor {
         mapSeqUnroll(fun(cTileFrag =>
 
           cTileFrag |>
-          toFragment |>
+          toFragment |> toPrivate |>
           mapFragmentElements(fun(x => x * factor)))))))
 
 
@@ -359,7 +354,7 @@ object gemmTensor {
           tiling2D(config.mTileFrag, config.nTileFrag) |>
           mapSeqUnroll(fun(frag =>
             frag |>
-            toFragment(config.nTileBlock + 4) |>
+            toFragment(config.nTileBlock + 4) |> toPrivate |>
             mapFragmentElements(fun(x => x * factor)))))) |>
         transpose)) |>
 
@@ -380,8 +375,8 @@ object gemmTensor {
         resultFragsWarp |>
         mapSeqUnroll(fun(resultFrag =>
           resultFrag |>
-          mapFragmentElements(fun(x => x * alpha)) |>
-          fromFragment |>  // mTileFrag.nTileFrag.f32
+          mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
+          fromFragment |>             // mTileFrag.nTileFrag.f32
           transpose)) |>              // (mTileWarp/mTileFrag)*(nTileWarp/nTileFrag).nTileFrag.mTileFrag.f32
         join |>                       // (mTileWarp/mTileFrag)*nTileWarp.mTileFrag.f32
         split(config.nTileWarp) |>
@@ -427,7 +422,7 @@ object gemmTensor {
             fragsTile |>
             mapSeqUnroll(fun(resultFrag =>
               resultFrag |>
-              mapFragmentElements(fun(x => x * alpha)) |>
+              mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
               fromFragment |>
               transpose)) |>
             join |>
@@ -485,14 +480,12 @@ object gemmTensor {
 
   //Kernel for gemm using shared memory
   def gemmSharedMemory(config: mmConfig): ToBeTyped[Expr] = {
-    this.config = config
     mmTensor.config = config
     deviceGEMM(blockMMA(loadMatrixFromCIntoFragments, epilog))
   }
 
   //More optimzed kernel for gemm using shared memory
   def gemmSharedMemoryV2(config: mmConfig): ToBeTyped[Expr] = {
-    this.config = config
     mmTensor.config = config
     deviceGEMM(blockMMA(loadMatrixFromCIntoFragmentsV2, epilogV2))
   }

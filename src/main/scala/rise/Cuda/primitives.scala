@@ -81,9 +81,9 @@ object primitives {
   }
 
   @primitive object mapFragmentElements extends Primitive with Builder {
-      impl{fragmentType: DataType =>
-        impl{dt: DataType =>
-          (dt ->: dt) ->: fragmentType ->: fragmentType}}
+    impl{dt: DataType =>
+      impl{fragType: DataType =>
+          (dt ->: dt) ->: fragType ->: fragType}}
   }
 
   @primitive object globalToShared extends Primitive with Builder {

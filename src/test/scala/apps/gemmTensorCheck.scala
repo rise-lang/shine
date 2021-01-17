@@ -48,7 +48,7 @@ class gemmTensorCheck extends test_util.TestsWithYACX {
   }
 
   //split this into two single tests to avoid TypeCheckerrors, when run a single test
-  test("gemm with tensor cores and shared memory produces expected result 6F") {//FAIL
+  test("gemm with tensor cores and shared memory produces expected result 6F") {
     executeGEMMWithSizes(gemmSharedMemoryV2(config6),16)
   }
 

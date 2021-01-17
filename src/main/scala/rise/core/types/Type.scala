@@ -157,7 +157,7 @@ final case class Fragment(rows: Nat,
     if (fragmentType == FragmentType.Acuumulator)
       s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType]"
     else
-      s"Fragment[$rows,$columns,$dataType,$fragmentType,$layout]"
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType,$layout]"
 
   override def equals(o: Any): Boolean = {
     if (!o.isInstanceOf[Fragment])

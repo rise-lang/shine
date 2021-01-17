@@ -2,55 +2,9 @@ package shine.cuda.ast
 
 import shine.C.AST.BasicType
 import shine.DPIA.Nat
-import shine.DPIA.Types.MatrixLayout
-import shine.cuda.codegen.CodeGenerator
+import shine.DPIA.Types.{MatrixLayout, MatrixLayoutIdentifier}
 
-//Helper class for TypeChecking for Wmma-DataTypes
 object Wmma {
-  import shine.DPIA.Types._
-
-  def typ(dt: DataType) = CodeGenerator.apply().typ(dt)
-
-  val d1 = (16: Nat, 16: Nat, 16: Nat)
-  val d2 = (32: Nat, 8: Nat, 16: Nat)
-  val d3 = (8: Nat, 32: Nat, 16: Nat)
-  val d4 = (8: Nat, 8: Nat, 4: Nat)
-
-  //Supported dimensions for wmma
-  val dimensions = Array(d1, d2, d3, d4)
-
-  //Supported dataTypes for wmma
-  val dataTypesDimensions: Array[Tuple2[Tuple2[DataType, DataType], Array[Tuple3[Nat, Nat, Nat]]]] = Array(
-    ((f16, f16), Array(d1, d2, d3)),
-    ((f16, f32), Array(d1, d2, d3)),
-    ((f64, f64), Array(d4)),
-    ((i8, i32), Array(d1, d2, d3)),
-    ((u8, i32), Array(d1, d2, d3)))
-
-  def checkDimensionsAndTypes(m: Nat, n: Nat, k: Nat, dataType: DataType, dataTypeAcc: DataType): Unit = {
-    dataTypesDimensions.foreach(dataTypeDimension =>
-      if (dataTypeDimension._1 == (dataType, dataTypeAcc) &&
-        dataTypeDimension._2.contains((m, n, k))) return)
-
-    throw new Exception(s"found invalid types ($dataType, $dataTypeAcc) and dimensions ($m, $n, $k) for wmma-api")
-  }
-
-  def checkFragmentAB(m: Nat, n: Nat, k: Nat, dataType: shine.C.AST.Type): Unit = {
-    dataTypesDimensions.foreach(dataTypeDimension =>
-      if (typ(dataTypeDimension._1._1) == dataType &&
-        dataTypeDimension._2.contains((m, n, k))) return)
-
-    throw new Exception(s"found invalid type $dataType and dimensions ($m, $n, $k) for wmma-api")
-  }
-
-  def checkFragmentAccumulator(m: Nat, n: Nat, k: Nat, dataType: shine.C.AST.Type): Unit = {
-    dataTypesDimensions.foreach(dataTypeDimension =>
-      if (typ(dataTypeDimension._1._2) == dataType &&
-        dataTypeDimension._2.contains((m, n, k))) return)
-
-    throw new Exception(s"found invalid type $dataType and dimensions ($m, $n, $k) for wmma-api")
-  }
-
   def toString(layout: MatrixLayout): String = {
     layout match {
       case MatrixLayout.Row_Major => "nvcuda::wmma::row_major"
@@ -59,7 +13,7 @@ object Wmma {
         if (i.layout.isDefined)
           toString(i.layout.get)
         else
-          throw new Exception(s"layout for $i is not infered")
+          throw new Exception(s"layout $i not infered!")
       case _ => throw new Exception("this should not happen")
     }
   }
@@ -72,8 +26,6 @@ case class WmmaAMatrix(m: Nat,
                        layout: MatrixLayout)
   extends BasicType("this should not printed") {
 
-  Wmma.checkFragmentAB(m, n, k, dataType)
-
   override def print: String = s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType," +
     s"${Wmma.toString(layout)}>"
 }
@@ -85,8 +37,6 @@ case class WmmaBMatrix(m: Nat,
                        layout: MatrixLayout)
   extends BasicType("this should not printed") {
 
-  Wmma.checkFragmentAB(m, n, k, dataType)
-
   override def print: String = s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType," +
     s"${Wmma.toString(layout)}>"
 }
@@ -96,8 +46,6 @@ case class WmmaAccumulator(m: Nat,
                            k: Nat,
                            dataType: shine.C.AST.Type)
   extends BasicType(s"nvcuda::wmma::fragment<nvcuda::wmma::accumulator, $m, $n, $k, $dataType>") {
-
-  Wmma.checkFragmentAccumulator(m, n, k, dataType)
 }
 
 case class ExternArrayType(override val elemType: shine.C.AST.Type) extends shine.C.AST.ArrayType(elemType, None, false) {

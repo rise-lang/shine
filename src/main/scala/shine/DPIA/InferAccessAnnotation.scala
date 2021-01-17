@@ -605,8 +605,8 @@ private class InferAccessAnnotation {
       }
 
       case rocup.mapFragmentElements() => p.t match {
-        case (dt: rt.DataType) ->: (fragType: rt.Fragment) ->: _ =>
-          expT(dt, write) ->: expT(fragType, read) ->: expT(fragType, read)
+        case ((dt: rt.DataType) ->: _) ->: (fragType: rt.Fragment) ->: _ =>
+          (expT(dt, read) ->: expT(dt, write)) ->: expT(fragType, read) ->: expT(fragType, write)
       }
     }
 

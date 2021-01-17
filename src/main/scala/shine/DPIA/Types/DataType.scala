@@ -41,21 +41,21 @@ object FragmentType {
 }
 
 object Fragment {
-  def apply(m: Nat, n:Nat, k: Nat, dataType: DataType): Fragment =
-    Fragment(m, n, k, dataType, FragmentType.Acuumulator, null)
+  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): Fragment =
+    Fragment(rows, columns, d3, dataType, FragmentType.Acuumulator, null)
 }
 
-final case class Fragment(m: Nat,
-                          n: Nat,
-                          k: Nat,
+final case class Fragment(rows: Nat,
+                          columns: Nat,
+                          d3: Nat,
                           dataType: DataType,
                           fragmentType: FragmentType,
                           layout: MatrixLayout) extends BasicType {
   override def toString: String =
     if (fragmentType == FragmentType.Acuumulator)
-      s"Fragment[$m,$n,$k,$dataType,$fragmentType]"
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType]"
     else
-      s"Fragment[$m,$n,$k,$dataType,$fragmentType,$layout]"
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType,$layout]"
 
   override def equals(o: Any): Boolean = {
     if (!o.isInstanceOf[Fragment])
@@ -63,20 +63,11 @@ final case class Fragment(m: Nat,
 
     val f = o.asInstanceOf[Fragment]
     if (fragmentType == FragmentType.Acuumulator && f.fragmentType == FragmentType.Acuumulator){
-      f.m.equals(m) && f.n.equals(n) && f.k.equals(k) && f.dataType.equals(dataType)
+      f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType)
     } else {
-      f.m.equals(m) && f.n.equals(n) && f.k.equals(k) && f.dataType.equals(dataType) &&
+      f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType) &&
         f.fragmentType.equals(fragmentType) && f.layout.equals(layout)
     }
-  }
-
-  def matrixType: ArrayType = fragmentType match {
-    case FragmentType.AMatrix =>
-      ArrayType(m, ArrayType(k, dataType))
-    case FragmentType.BMatrix =>
-      ArrayType(k, ArrayType(n, dataType))
-    case FragmentType.Acuumulator =>
-      ArrayType(m, ArrayType(n, dataType))
   }
 }
 
@@ -195,9 +186,9 @@ object DataType {
         ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
           substitute(ae, `for`, a.elemType))
       case f: Fragment =>
-        Fragment(ArithExpr.substitute(f.m, Map((`for`, ae))),
-          ArithExpr.substitute(f.n, Map((`for`, ae))),
-          ArithExpr.substitute(f.k, Map((`for`, ae))),
+        Fragment(ArithExpr.substitute(f.rows, Map((`for`, ae))),
+          ArithExpr.substitute(f.columns, Map((`for`, ae))),
+          ArithExpr.substitute(f.d3, Map((`for`, ae))),
           substitute(ae, `for`, f.dataType), f.fragmentType, f.layout)
       case a: DepArrayType =>
         val subMap = Map((`for`, ae))

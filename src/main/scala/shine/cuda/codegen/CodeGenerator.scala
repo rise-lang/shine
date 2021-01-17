@@ -13,6 +13,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.CodeGeneration.{CodeGenerator => OclCodeGen}
+import shine.OpenCL.ImperativePrimitives.OpenCLNew
 import shine._
 import shine.cuda.BuiltInAttribute
 import shine.cuda.primitives.imperative._
@@ -45,20 +46,20 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
       case f@CudaParFor(n, dt, a, Lambda(i, Lambda(o, p)), _, _, _) =>
         CudaCodeGen.codeGenCudaParFor(f, n, dt, a, i, o, p, env)
 
-      case WmmaLoad(m, n, k, _, matrix, fragmentAcc) =>
+      case WmmaLoad(m, n, k, _, fragType, layoutIdentifier, matrix, fragmentAcc) =>
         exp(matrix, env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
           //Pointer to first element of the matrix
           val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
           val (layout, ldm) = inferFragment(matrix, env, m, n, k, FragmentType.Acuumulator)
-          if (fragmentAcc.t.dataType.asInstanceOf[Fragment].layout.isInstanceOf[MatrixLayoutIdentifier])
-            fragmentAcc.t.dataType.asInstanceOf[Fragment].layout.asInstanceOf[MatrixLayoutIdentifier].setLayout(layout)
+          if (layoutIdentifier.isInstanceOf[MatrixLayoutIdentifier])
+            layoutIdentifier.asInstanceOf[MatrixLayoutIdentifier].setLayout(layout)
 
           acc(fragmentAcc, env, Nil, frag =>
             C.AST.ExprStmt(C.AST.FunCall(
               C.AST.DeclRef("nvcuda::wmma::load_matrix_sync"),
                 //only accumulator-fragments must specify their layout
-                if (fragmentAcc.t.dataType.asInstanceOf[Fragment].fragmentType != FragmentType.Acuumulator)
+                if (fragType != FragmentType.Acuumulator)
                   immutable.Seq(
                     frag,
                     matrixPtr,

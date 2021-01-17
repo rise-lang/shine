@@ -11,6 +11,8 @@ import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 
+import scala.collection.mutable
+
 object fromRise {
   def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
     if (!r.IsClosedForm(expr)) {
@@ -825,34 +827,34 @@ object fromRise {
       }
 
       case cuda.toFragment() => fromType {
-        case expT(ArrayType(m, ArrayType(k, dt)), `read`) ->: expT(Fragment(_, n, _, _, fragType, layout), _) =>
-          fun[ExpType](expT(ArrayType(m, ArrayType(k, dt)), read), a =>
-            ToFragment(m, n, k, dt, fragType, a, layout))
+        case expT(ArrayType(rows, ArrayType(columns, dt)), `read`) ->: expT(Fragment(_, _, d3, _, fragType, layout), _) =>
+          fun[ExpType](expT(ArrayType(rows, ArrayType(columns, dt)), read), a =>
+            ToFragment(rows, columns, d3, dt, fragType, a, layout))
       }
 
       case cuda.fromFragment() => fromType {
-        case expT(Fragment(m, n, k, dt, FragmentType.Acuumulator, layout), `read`) ->: expT(ArrayType(_, ArrayType(_, _)), `write`) =>
-          fun[ExpType](expT(Fragment(m, n, k, dt), read), dFrag =>
-            FromFragment(m, n, k, dt, dFrag))
+        case expT(Fragment(rows, columns, d3, dt, FragmentType.Acuumulator, _), `read`) ->: expT(ArrayType(_, ArrayType(_, _)), `write`) =>
+          fun[ExpType](expT(Fragment(rows, columns, d3, dt), read), dFrag =>
+            FromFragment(rows, columns, d3, dt, dFrag))
       }
 
       case cuda.generateFragment() => fromType {
-        case expT(dt, `read`) ->: expT(Fragment(m, n, k, _, fragType, layout), read) =>
+        case expT(dt, `read`) ->: expT(Fragment(rows, columns, d3, _, fragType, layout), read) =>
           fun[ExpType](expT(dt, read), fill =>
-            GenerateFragment(m, n, k, dt, fill, fragType, layout))
+            GenerateFragment(rows, columns, d3, dt, fill, fragType, layout))
       }
 
       case cuda.tensorMMA() => fromType {
-        case expT(Fragment(m, n, k, dt, FragmentType.AMatrix, layoutA), `read`) ->: expT(Fragment(_, _, _, _, FragmentType.BMatrix,layoutB), `read`) ->:
-          expT(Fragment(_, _, _, dtResult, FragmentType.Acuumulator, _), `read`) ->: expT(Fragment(_, _, _, _, FragmentType.Acuumulator, _), `write`) =>
-          fun[ExpType](expT(Fragment(m, n, k, dt, FragmentType.AMatrix, layoutA), read), a =>
-            fun[ExpType](expT(Fragment(m, n, k, dt, FragmentType.BMatrix, layoutB), read), b =>
+        case expT(Fragment(_, _, _, dt, FragmentType.AMatrix, layoutA), `read`) ->: expT(Fragment(_, _, _, _, FragmentType.BMatrix,layoutB), `read`) ->:
+          expT(Fragment(m, n, k, dtResult, FragmentType.Acuumulator, _), `read`) ->: expT(Fragment(_, _, _, _, FragmentType.Acuumulator, _), `write`) =>
+          fun[ExpType](expT(Fragment(m, k, n, dt, FragmentType.AMatrix, layoutA), read), a =>
+            fun[ExpType](expT(Fragment(k, n, m, dt, FragmentType.BMatrix, layoutB), read), b =>
               fun[ExpType](expT(Fragment(m, n, k, dtResult), read), c =>
                 TensorMatMultAdd(m, n, k, layoutA, layoutB, dt, dtResult, a, b, c))))
       }
 
       case cuda.mapFragmentElements() => fromType {
-        case expT(dt, `write`) ->: expT(fragType : Fragment, `read`) ->: expT(_, _) =>
+        case (expT(dt: DataType, `read`) ->: expT(_, `write`)) ->: expT(fragType : Fragment, `read`) ->: expT(_, _) =>
           fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
             fun[ExpType](ExpType(fragType, read), fragment =>
               MapFragmentElements(fragType.asInstanceOf[Fragment], fragment, f)))
@@ -957,10 +959,12 @@ object fromRise {
       }
   }
 
+  private val layouts: mutable.HashMap[String, MatrixLayoutIdentifier] = mutable.HashMap.empty
+
   def layout(layout: rt.MatrixLayout): MatrixLayout = layout match {
     case rt.MatrixLayout.Row_Major => MatrixLayout.Row_Major
     case rt.MatrixLayout.Col_Major => MatrixLayout.Col_Major
-    case rt.MatrixLayoutIdentifier(name, _) => MatrixLayoutIdentifier(name)
+    case rt.MatrixLayoutIdentifier(name, _) => layouts.getOrElseUpdate(name, MatrixLayoutIdentifier(name))
     case _ => throw new Exception("this should not happen")
   }
 
