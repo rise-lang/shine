@@ -7,8 +7,10 @@ import rise.core.primitives._
 import rise.core.DSL.Type._
 import HighLevelConstructs._
 
-// algorithm taken from Halide (halide-lang.org)
-object cameraPipe {
+// in Halide: https://github.com/halide/Halide/blob/e8acdea/apps/camera_pipe
+// in PolyMage: https://bitbucket.org/udayb/polymage/src/e28327c/sandbox/apps/python/img_proc/campipe
+// FIXME: check if PolyMage's algorithm is different?
+object cameraPipeline {
   // iN -> iN -> uN
   val abs_diff: ToBeTyped[Expr] = foreignFun("abs_diff_i16", i16 ->: i16 ->: u16)
   def clamp(dt: DataType): ToBeTyped[Expr] =

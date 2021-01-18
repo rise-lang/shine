@@ -1,6 +1,6 @@
 package apps
 
-import cameraPipe._
+import cameraPipeline._
 import util._
 import rise.core._
 import rise.core.types._
@@ -15,7 +15,31 @@ import elevate.core.strategies.traversal._
 import rise.elevate.rules.traversal.alternative
 import rise.elevate.rules.traversal.alternative._
 
-class cameraPipeCheck extends test_util.TestsWithExecutor {
+object cameraPipelineCheck {
+  val ctyToFormat: String => String = {
+    case "uint16_t" => "%hu"
+    case "int16_t" => "%hd"
+    case "uint8_t" => "%hhu"
+    case "float" => "%f"
+  }
+
+  def read_csv(cty: String): String = s"""
+void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
+  FILE* f = fopen(path, "r");
+
+  for (size_t i = 0; i < n; i++) {
+    if (fscanf(f, " ${ctyToFormat(cty)}", &buf[i]) != 1) {
+      fprintf(stderr, "could not read csv file\\n");
+      exit(1);
+    }
+  }
+
+  fclose(f);
+}
+"""
+}
+
+class cameraPipelineCheck extends test_util.TestsWithExecutor {
   val H = 99
   val W = 146
 
@@ -73,27 +97,6 @@ float clamp_f32(float v, float l, float h) {
 #define pow_f32 powf
 """
 
-  val ctyToFormat: String => String = {
-    case "uint16_t" => "%hu"
-    case "int16_t" => "%hd"
-    case "uint8_t" => "%hhu"
-  }
-
-  def read_csv(cty: String): String = s"""
-void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
-  FILE* f = fopen(path, "r");
-
-  for (size_t i = 0; i < n; i++) {
-    if (fscanf(f, " ${ctyToFormat(cty)}", &buf[i]) != 1) {
-      fprintf(stderr, "could not read csv file\\n");
-      exit(1);
-    }
-  }
-
-  fclose(f);
-}
-"""
-
   val DFNF = rise.elevate.strategies.normalForm.DFNF()(alternative.RiseTraversable)
   val CNF = rise.elevate.strategies.normalForm.CNF()(alternative.RiseTraversable)
 
@@ -109,16 +112,16 @@ ${cHeader}
 
 ${prog.code}
 
-${read_csv(inputCty)}
-${if (inputCty != outputCty) read_csv(outputCty) else ""}
+${cameraPipelineCheck.read_csv(inputCty)}
+${if (inputCty != outputCty) cameraPipelineCheck.read_csv(outputCty) else ""}
 
 int main(int argc, char** argv) {
   ${inputCty}* input = malloc(${inputSize} * sizeof(${inputCty}));
   ${outputCty}* gold = malloc(${outputSize} * sizeof(${outputCty}));
   ${outputCty}* output = malloc(${outputSize} * sizeof(${outputCty}));
 
-  read_csv_${inputCty}(${inputSize}, input, "golds/camera_pipe/${inputPath}");
-  read_csv_${outputCty}(${outputSize}, gold, "golds/camera_pipe/${outputPath}");
+  read_csv_${inputCty}(${inputSize}, input, "data/golds/camera_pipe/${inputPath}");
+  read_csv_${outputCty}(${outputSize}, gold, "data/golds/camera_pipe/${outputPath}");
 
   ${callCFun(prog.function.name)}
 
@@ -224,8 +227,8 @@ int main(int argc, char** argv) {
   }
 
   test("demosaic passes checks with circular buffers") {
-    checkDemosaic(cameraPipeRewrite.demosaicCircularBuffers(
-      printTime("infer", cameraPipe.demosaic.toExpr)
+    checkDemosaic(cameraPipelineRewrite.demosaicCircularBuffers(
+      printTime("infer", cameraPipeline.demosaic.toExpr)
     ).get)
   }
 
@@ -334,7 +337,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   }
 
   test("camera pipe passes checks with circular buffers") {
-    cameraPipeRewrite.circularBuffers(
+    cameraPipelineRewrite.circularBuffers(
       printTime("infer", camera_pipe.toExpr)
     ).get
     // TODO: check output
