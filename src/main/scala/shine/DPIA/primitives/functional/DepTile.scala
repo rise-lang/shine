@@ -23,7 +23,7 @@ final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
   val fullTiles = n / tileSize
   val remainder = n % tileSize
 
-  def depSize(i: Nat): Nat =
+  private def depSize(i: Nat): Nat =
     IfThenElse(arithPredicate(i, fullTiles, Operator.<), tileSize, remainder)
 
   processTiles :: (

@@ -15,7 +15,7 @@ object SyntaxChecker {
       case _: Throwable =>
         Console.err.println("==========")
         Console.err.println("SyntaxChecker failed for code:")
-        Console.err.println(code)
+        Console.err.println(code.take(500 * 160))
         Console.err.println("==========")
         throw Exception(s"Code: `$code' did not pass syntax check")
     }
