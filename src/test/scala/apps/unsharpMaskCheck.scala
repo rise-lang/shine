@@ -35,8 +35,8 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
          |   float* gold = malloc(${3 * H * W} * sizeof(float));
          |   float* output = malloc(${3 * H * W} * sizeof(float));
          |
-         |   read_csv_float(${3 * H * W}, input, "golds/unsharp/input.dump");
-         |   read_csv_float(${3 * H * W}, gold, "golds/unsharp/output.dump");
+         |   read_csv_float(${3 * H * W}, input, "data/golds/unsharp/input.dump");
+         |   read_csv_float(${3 * H * W}, gold, "data/golds/unsharp/output.dump");
          |
          |   ${prog.function.name}(output, $H, $W, input);
          |

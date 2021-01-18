@@ -37,8 +37,8 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
          |   float* gold = malloc(${co * ho * wo} * sizeof(float));
          |   float* output = malloc(${co * ho * wo} * sizeof(float));
          |
-         |   read_csv_float(${ci * hi * wi}, input, "golds/interpolate/input.dump");
-         |   read_csv_float(${co * ho * wo}, gold, "golds/interpolate/output.dump");
+         |   read_csv_float(${ci * hi * wi}, input, "data/golds/interpolate/input.dump");
+         |   read_csv_float(${co * ho * wo}, gold, "data/golds/interpolate/output.dump");
          |
          |   ${prog.function.name}(output, $hi, $wi, input);
          |

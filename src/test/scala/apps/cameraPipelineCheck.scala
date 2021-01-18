@@ -120,8 +120,8 @@ int main(int argc, char** argv) {
   ${outputCty}* gold = malloc(${outputSize} * sizeof(${outputCty}));
   ${outputCty}* output = malloc(${outputSize} * sizeof(${outputCty}));
 
-  read_csv_${inputCty}(${inputSize}, input, "golds/camera_pipe/${inputPath}");
-  read_csv_${outputCty}(${outputSize}, gold, "golds/camera_pipe/${outputPath}");
+  read_csv_${inputCty}(${inputSize}, input, "data/golds/camera_pipe/${inputPath}");
+  read_csv_${outputCty}(${outputSize}, gold, "data/golds/camera_pipe/${outputPath}");
 
   ${callCFun(prog.function.name)}
 

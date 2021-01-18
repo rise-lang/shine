@@ -58,8 +58,8 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          |   uint16_t* gold = malloc(${3 * H * W} * sizeof(uint16_t));
          |   uint16_t* output = malloc(${3 * H * W} * sizeof(uint16_t));
          |
-         |   read_csv_uint16_t(${3 * H * W}, input, "golds/local_laplacian/input.dump");
-         |   read_csv_uint16_t(${3 * H * W}, gold, "golds/local_laplacian/output.dump");
+         |   read_csv_uint16_t(${3 * H * W}, input, "data/golds/local_laplacian/input.dump");
+         |   read_csv_uint16_t(${3 * H * W}, gold, "data/golds/local_laplacian/output.dump");
          |
          |   ${prog.function.name}(output, $levels, $H, $W, $alpha, $beta, input);
          |
@@ -115,7 +115,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          |   float* gold = malloc($elems * sizeof(float));
          |   float* output = malloc($elems * sizeof(float));
          |
-         |   read_csv_float($elems, gold, "golds/local_laplacian/remap.dump");
+         |   read_csv_float($elems, gold, "data/golds/local_laplacian/remap.dump");
          |
          |   ${prog.function.name}(output, $levels, $alpha);
          |
@@ -167,8 +167,8 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          |   float* gold = malloc(${levels * H * W} * sizeof(float));
          |   float* output = malloc(${levels * H * W} * sizeof(float));
          |
-         |   read_csv_uint16_t(${3 * H * W}, input, "golds/local_laplacian/input.dump");
-         |   read_csv_float(${levels * H * W}, gold, "golds/local_laplacian/gPyramid_init.dump");
+         |   read_csv_uint16_t(${3 * H * W}, input, "data/golds/local_laplacian/input.dump");
+         |   read_csv_float(${levels * H * W}, gold, "data/golds/local_laplacian/gPyramid_init.dump");
          |
          |   ${prog.function.name}(output, $levels, $H, $W, $alpha, $beta, input);
          |
