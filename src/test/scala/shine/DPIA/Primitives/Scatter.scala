@@ -4,7 +4,7 @@ import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.types._
 import rise.core.DSL.Type._
-import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelTranslationUnit
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
 import scala.language.postfixOps

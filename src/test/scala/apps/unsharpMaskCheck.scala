@@ -18,7 +18,7 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
     harrisCornerDetectionHalideRewrite.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOMP(lowered: Expr): Unit = {
-    val prog = util.printTime("codegen", gen.OpenMPProgram(lowered, "unsharp"))
+    val unsharp = util.printTime("codegen", gen.openmp.function("unsharp").asStringFromExpr(lowered))
 
     val testCode =
       s"""
@@ -26,7 +26,7 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
          | #include <stdio.h>
          | #include <math.h>
          |
-         | ${prog.code}
+         | $unsharp
          |
          | ${cameraPipelineCheck.read_csv("float")}
          |
@@ -38,7 +38,7 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
          |   read_csv_float(${3 * H * W}, input, "data/golds/unsharp/input.dump");
          |   read_csv_float(${3 * H * W}, gold, "data/golds/unsharp/output.dump");
          |
-         |   ${prog.function.name}(output, $H, $W, input);
+         |   unsharp(output, $H, $W, input);
          |
          |   int exit_status = 0;
          |   for (int c = 0; c < 3; c++) {

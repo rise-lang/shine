@@ -21,7 +21,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
     harrisCornerDetectionHalideRewrite.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOMP(lowered: Expr): Unit = {
-    val prog = util.printTime("codegen", gen.OpenMPProgram(lowered, "localLaplacian"))
+    val localLaplacian = util.printTime("codegen", gen.openmp.function("localLaplacian").asStringFromExpr(lowered))
 
     val testCode =
       s"""
@@ -49,7 +49,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          |   return min_f32(max_f32(v, l), h);
          | }
          |
-         | ${prog.code}
+         | $localLaplacian
          |
          | ${cameraPipelineCheck.read_csv("uint16_t")}
          |
@@ -61,7 +61,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          |   read_csv_uint16_t(${3 * H * W}, input, "data/golds/local_laplacian/input.dump");
          |   read_csv_uint16_t(${3 * H * W}, gold, "data/golds/local_laplacian/output.dump");
          |
-         |   ${prog.function.name}(output, $levels, $H, $W, $alpha, $beta, input);
+         |   localLaplacian(output, $levels, $H, $W, $alpha, $beta, input);
          |
          |   int errors = 0;
          |   for (int c = 0; c < 3; c++) {
@@ -97,7 +97,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
 
   test("remap generates OpenMP code") {
     val lowered = omp.remapNaivePar
-    val prog = util.printTime("codegen", gen.OpenMPProgram(lowered, "remap"))
+    val remap = util.printTime("codegen", gen.openmp.function("remap").asStringFromExpr(lowered))
 
     val elems = (levels-1)*256*2 + 1
     val testCode =
@@ -107,7 +107,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          | #include <stdint.h>
          | #include <math.h>
          |
-         | ${prog.code}
+         | $remap
          |
          | ${cameraPipelineCheck.read_csv("float")}
          |
@@ -117,7 +117,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          |
          |   read_csv_float($elems, gold, "data/golds/local_laplacian/remap.dump");
          |
-         |   ${prog.function.name}(output, $levels, $alpha);
+         |   remap(output, $levels, $alpha);
          |
          |   int exit_status = 0;
          |   for (int i = 0; i < $elems; i++) {
@@ -138,7 +138,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
 
   test("lookup generates OpenMP code") {
     val lowered = lowerOMP(omp.lookupNaivePar)
-    val prog = util.printTime("codegen", gen.OpenMPProgram(lowered, "lookup"))
+    val lookup = util.printTime("codegen", gen.openmp.function("lookup").asStringFromExpr(lowered))
 
     val testCode =
       s"""
@@ -157,7 +157,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          |   return min_int(max_int(v, l), h);
          | }
          |
-         | ${prog.code}
+         | $lookup
          |
          | ${cameraPipelineCheck.read_csv("uint16_t")}
          | ${cameraPipelineCheck.read_csv("float")}
@@ -170,7 +170,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
          |   read_csv_uint16_t(${3 * H * W}, input, "data/golds/local_laplacian/input.dump");
          |   read_csv_float(${levels * H * W}, gold, "data/golds/local_laplacian/gPyramid_init.dump");
          |
-         |   ${prog.function.name}(output, $levels, $H, $W, $alpha, $beta, input);
+         |   lookup(output, $levels, $H, $W, $alpha, $beta, input);
          |
          |   int exit_status = 0;
          |   for (int l = 0; l < $levels; l++) {

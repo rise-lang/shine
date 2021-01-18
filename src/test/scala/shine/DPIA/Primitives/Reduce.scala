@@ -8,7 +8,7 @@ import rise.core.semantics.NatData
 import rise.core.types.{AddressSpace, _}
 import rise.core.{Expr, Literal}
 import rise.openCL.primitives.oclReduceSeq
-import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelTranslationUnit
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import shine.OpenCL._
 import util.gen
 import util.gen.c.function

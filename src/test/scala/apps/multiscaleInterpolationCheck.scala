@@ -18,7 +18,7 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
     harrisCornerDetectionHalideRewrite.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOMP(lowered: Expr): Unit = {
-    val prog = util.printTime("codegen", gen.OpenMPProgram(lowered, "interpolate"))
+    val interpolate = util.printTime("codegen", gen.openmp.function("interpolate").asStringFromExpr(lowered))
 
     val (ci, hi, wi) = (4, H, W)
     val (co, ho, wo) = (3, H, W)
@@ -28,7 +28,7 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
          | #include <stdio.h>
          | #include <math.h>
          |
-         | ${prog.code}
+         | $interpolate
          |
          | ${cameraPipelineCheck.read_csv("float")}
          |
@@ -40,7 +40,7 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
          |   read_csv_float(${ci * hi * wi}, input, "data/golds/interpolate/input.dump");
          |   read_csv_float(${co * ho * wo}, gold, "data/golds/interpolate/output.dump");
          |
-         |   ${prog.function.name}(output, $hi, $wi, input);
+         |   interpolate(output, $hi, $wi, input);
          |
          |   int exit_status = 0;
          |   for (int c = 0; c < $co; c++) {

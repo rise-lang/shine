@@ -43,7 +43,7 @@ class partialCompiler extends test_util.Tests {
   }
 
   object DPIA {
-    type C_Compiler = Compiler[Phrase[_], C.TranslationUnit]
-    type OpenCL_Compiler = Compiler[Phrase[_], OpenCL.KernelTranslationUnit]
+    type C_Compiler = Compiler[Phrase[_], C.Module]
+    type OpenCL_Compiler = Compiler[Phrase[_], OpenCL.KernelModule]
   }
 }

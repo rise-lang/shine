@@ -15,7 +15,7 @@ import rise.elevate.rules._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
-import cameraPipelineRewrite.{afterTopLevel, anyMapOutsideZip, depFunction, isAppliedMap, isAppliedZip, stronglyReducedForm}
+import cameraPipelineRewrite._
 import rise.elevate.strategies.predicate.isEqualToUntyped
 
 object harrisCornerDetectionHalideRewrite {

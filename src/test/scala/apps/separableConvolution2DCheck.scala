@@ -8,7 +8,7 @@ import rise.core.primitives._
 import Type._
 import HighLevelConstructs._
 import rise.core.DSL.ToBeTyped
-import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelTranslationUnit
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 import util.gen.c.function
 

@@ -5,7 +5,7 @@ import rise.core.primitives._
 import Type._
 import rise.core.types._
 import HighLevelConstructs.padClamp2D
-import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelTranslationUnit
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 import util.gen.c.function
 
