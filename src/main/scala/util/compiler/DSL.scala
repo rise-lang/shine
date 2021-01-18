@@ -34,7 +34,7 @@ object DSL {
 //        rewriteToImperative(outParam) andThen
 //        (   generateCode(gen, outParam, cFunDef) _
 //          ▼▲
-//          makeTranslationUnit(gen, outParam, cFunDef)
+//          makeModule(gen, outParam, cFunDef)
 //          )
   }
 

@@ -18,11 +18,11 @@ import scala.util.{Failure, Success, Try}
 
 object KernelExecutor {
 
-  sealed case class KernelWithSizes(ktu: KernelTranslationUnit,
+  sealed case class KernelWithSizes(ktu: KernelModule,
                                     localSize: LocalSize,
                                     globalSize: GlobalSize) {
     def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
-      FromKernelTranslationUnit(ktu).as[F](localSize, globalSize)
+      FromKernelModule(ktu).as[F](localSize, globalSize)
     }
 
     def code: String = util.gen.opencl.kernel.asString(ktu)
@@ -30,7 +30,7 @@ object KernelExecutor {
     def forgetSizes: KernelNoSizes = KernelNoSizes(ktu)
   }
 
-  sealed case class KernelNoSizes(ktu: KernelTranslationUnit) {
+  sealed case class KernelNoSizes(ktu: KernelModule) {
     //noinspection TypeAnnotation
     def as[F <: FunctionHelper](implicit ev: F#T <:< HList): Object {
       def apply(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[ms])
@@ -38,11 +38,11 @@ object KernelExecutor {
       def withSizes(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[ms])
     } = new {
       def apply(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[Time.ms]) = {
-        FromKernelTranslationUnit(ktu).as[F](localSize, globalSize)
+        FromKernelModule(ktu).as[F](localSize, globalSize)
       }
 
       def withSizes(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[Time.ms]) = {
-        FromKernelTranslationUnit(ktu).as[F](localSize, globalSize)
+        FromKernelModule(ktu).as[F](localSize, globalSize)
       }
     }
 
@@ -50,11 +50,11 @@ object KernelExecutor {
   }
 
   object KernelNoSizes {
-    implicit def fromKernelTranslationUnit(ktu: KernelTranslationUnit): KernelNoSizes =
+    implicit def fromKernelModule(ktu: KernelModule): KernelNoSizes =
       KernelNoSizes(ktu)
   }
 
-  case class FromKernelTranslationUnit(ktu: KernelTranslationUnit) {
+  case class FromKernelModule(ktu: KernelModule) {
 
     assert(ktu.kernels.size == 1)
 

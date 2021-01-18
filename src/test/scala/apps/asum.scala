@@ -10,7 +10,7 @@ import Type._
 import HighLevelConstructs.reorderWithStride
 import util.{SyntaxChecker, gen}
 import rise.elevate.rules.traversal.default._
-import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelTranslationUnit
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen.c.function
 
 import scala.util.Random

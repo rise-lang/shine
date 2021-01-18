@@ -11,23 +11,23 @@ object gen {
 
   type Expr     = rise.core.Expr
   type Phrase   = DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType]
-  type C_TU     = C.TranslationUnit
+  type Module     = C.Module
   type CFunDef  = CFunctionDefinition
 
   object c {
     object function {
-      def fromExpr: Expr => C_TU =
+      def fromExpr: Expr => Module =
         gen.c.function().fromExpr
 
       def asStringFromExpr: Expr => String =
         gen.c.function().asStringFromExpr
 
-      def asString: C_TU => String =
+      def asString: Module => String =
         gen.functionAsString
     }
 
     case class function(name: String = "foo") {
-      def fromExpr: Expr => C_TU =
+      def fromExpr: Expr => Module =
         gen.functionFromExpr(name, C.CodeGenerator())
 
       def asStringFromExpr: Expr => String =
@@ -39,19 +39,19 @@ object gen {
     import shine.OpenMP
 
     object function {
-      def fromExpr: Expr => C_TU =
+      def fromExpr: Expr => Module =
         gen.openmp.function().fromExpr
 
       def asStringFromExpr: Expr => String = {
         gen.openmp.function().asStringFromExpr
       }
 
-      def asString: C_TU => String =
+      def asString: Module => String =
         gen.functionAsString
     }
 
     case class function(name: String = "foo") {
-      def fromExpr: Expr => C_TU =
+      def fromExpr: Expr => Module =
         gen.functionFromExpr(name, OpenMP.CodeGenerator())
 
       def asStringFromExpr: Expr => String =
@@ -64,7 +64,7 @@ object gen {
     import shine.OpenCL.primitives.imperative.OpenCLKernelDefinition
 
     type KernelDef = OpenCLKernelDefinition
-    type Kernel_TU = OpenCL.KernelTranslationUnit
+    type KernelModule = OpenCL.KernelModule
 
     sealed trait WorkGroupConfig
     case class LocalAndGlobalSize(localSize: LocalSize, globalSize: GlobalSize) extends WorkGroupConfig
@@ -80,10 +80,10 @@ object gen {
       def apply(localSize: LocalSize, globalSize: GlobalSize, name: String): kernel =
         new kernel(Some(LocalAndGlobalSize(localSize, globalSize)), name)
 
-      def fromExpr: Expr => Kernel_TU =
+      def fromExpr: Expr => KernelModule =
         gen.opencl.kernel().fromExpr
 
-      def fromPhrase: Phrase => Kernel_TU =
+      def fromPhrase: Phrase => KernelModule =
         gen.opencl.kernel().fromPhrase
 
       def asStringFromExpr: Expr => String =
@@ -92,16 +92,16 @@ object gen {
       def asStringFromPhrase: Phrase => String =
         gen.opencl.kernel().asStringFromPhrase
 
-      def asString: Kernel_TU => String =
-        OpenCL.KernelTranslationUnit.translationToString
+      def asString: KernelModule => String =
+        OpenCL.KernelModule.translationToString
     }
 
     case class kernel(wgConfig: Option[WorkGroupConfig], name: String) {
-      def fromExpr: Expr => Kernel_TU =
+      def fromExpr: Expr => KernelModule =
         exprToPhrase andThen
           fromPhrase
 
-      def fromPhrase: Phrase => Kernel_TU = wgConfig match {
+      def fromPhrase: Phrase => KernelModule = wgConfig match {
         case Some(PhraseDepLocalAndGlobalSize(f)) => p => p |> (
           phraseToKernelDef(name) andThen
             kernelDefToKernel(Some(f(p))))
@@ -125,11 +125,11 @@ object gen {
     def phraseToKernelDef(name: String): Phrase => KernelDef =
       OpenCLKernelDefinition.fromPhrase(name)
 
-    def kernelDefToKernel(wgConfig: Option[LocalAndGlobalSize]): KernelDef => Kernel_TU = wgConfig match {
+    def kernelDefToKernel(wgConfig: Option[LocalAndGlobalSize]): KernelDef => KernelModule = wgConfig match {
       case Some(LocalAndGlobalSize(localSize, globalSize)) =>
-        shine.OpenCL.KernelTranslationUnit.fromKernelDef(Some(localSize, globalSize))
+        shine.OpenCL.KernelModule.fromKernelDef(Some(localSize, globalSize))
       case None =>
-        shine.OpenCL.KernelTranslationUnit.fromKernelDef(None)
+        shine.OpenCL.KernelModule.fromKernelDef(None)
     }
   }
 
@@ -139,11 +139,11 @@ object gen {
   private def phraseToFunDef(name: String): Phrase => CFunDef =
     CFunctionDefinition.fromPhrase(name)
 
-  private def funDefToFunction(gen: shine.C.CodeGenerator): CFunDef => C_TU =
-    shine.C.TranslationUnit.fromCFunDef(gen)
+  private def funDefToFunction(gen: shine.C.CodeGenerator): CFunDef => Module =
+    shine.C.Module.fromCFunDef(gen)
 
   private def functionFromExpr(name: String = "foo",
-                               gen: shine.C.CodeGenerator = shine.C.CodeGenerator()): Expr => C_TU =
+                               gen: shine.C.CodeGenerator = shine.C.CodeGenerator()): Expr => Module =
     exprToPhrase andThen
       phraseToFunDef(name) andThen
         funDefToFunction(gen)
@@ -151,10 +151,10 @@ object gen {
   private def functionAsStringFromExpr(name: String = "foo",
                                        gen: shine.C.CodeGenerator = shine.C.CodeGenerator()): Expr => String =
     functionFromExpr(name, gen) andThen
-      C.TranslationUnit.translateToString andThen
+      C.Module.translateToString andThen
         run(SyntaxChecker(_))
 
-  private def functionAsString: C_TU => String =
-    C.TranslationUnit.translateToString _ andThen
+  private def functionAsString: Module => String =
+    C.Module.translateToString _ andThen
       run(SyntaxChecker(_))
 }

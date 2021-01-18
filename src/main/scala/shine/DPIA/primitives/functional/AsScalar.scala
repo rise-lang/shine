@@ -20,9 +20,7 @@ final case class AsScalar(
 ) extends ExpPrimitive {
 
   array :: expT(n `.` vec(m, dt), access)
-  override val t: ExpType = expT({
-    n * m
-  } `.` dt, access)
+  override val t: ExpType = expT((n * m) `.` dt, access)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), fun.access(access),

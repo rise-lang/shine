@@ -4,7 +4,7 @@ import apps.harrisCornerDetectionHalide._
 import apps.{harrisCornerDetectionHalideRewrite => rewrite}
 import rise.core.DSL.ToBeTyped
 import rise.core._
-import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelTranslationUnit
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
 class harrisCornerDetectionHalideCheck

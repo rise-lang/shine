@@ -23,7 +23,7 @@ case class CExecutor(lowering: Strategy[Rise],
   var globalBest:Option[Double] = None
   val N: Int = inputSize
   var best:Option[Double] = None
-  var gold: C.TranslationUnit = gen.openmp.function("compute_gold").fromExpr(goldExpression)
+  var gold: C.Module = gen.openmp.function("compute_gold").fromExpr(goldExpression)
   var counter = 0
   var errorLevel:ExplorationErrorLevel = LoweringError
 
@@ -207,7 +207,7 @@ case class CExecutor(lowering: Strategy[Rise],
     (solution.expression, performanceValue)
   }
 
-  def prepareInput(tu: C.TranslationUnit):(String,String,String,String) ={
+  def prepareInput(tu: C.Module):(String,String,String,String) ={
 
     val fun: C.Function = tu.functions.head
 

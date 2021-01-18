@@ -23,9 +23,7 @@ final case class Take(
 
   override def eval(s: Store): Data = ???
 
-  override def visitAndRebuild(
-                                fun: VisitAndRebuild.Visitor
-                              ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Take(fun.nat(n), fun.nat(m), fun.data(dt),
       VisitAndRebuild(array, fun))
   }

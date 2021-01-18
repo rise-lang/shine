@@ -42,8 +42,8 @@ final case class OpenCLKernelDefinition(name: String,
 
   type CodeGenerator = OpenCL.CodeGenerator
 
-  def translateToTranslationUnit(gen: CodeGenerator)
-                                (wgConfig: Option[(LocalSize, GlobalSize)]): KernelTranslationUnit = {
+  def translateToModule(gen: CodeGenerator)
+                       (wgConfig: Option[(LocalSize, GlobalSize)]): KernelModule = {
     val outParam = cFunDef.createOutputParam(outT = body.t)
 
     body |>
@@ -56,18 +56,18 @@ final case class OpenCLKernelDefinition(name: String,
             phrase |>
               ( generateCode(gen)(outParam, params, temps) _ andThen { case (decls, code) =>
                 (decls, AdaptKernelBody.adapt(C.AST.Block(immutable.Seq(code)))) } andThen
-                makeTranslationUnit(gen)(outParam, temps, kernelParams, wgConfig) )
+                makeModule(gen)(outParam, temps, kernelParams, wgConfig) )
       } )
   }
 
-  private def makeTranslationUnit(gen: CodeGenerator)
-                                 (outputParam: Identifier[AccType],
-                                  temps: Seq[AllocationInfo],
-                                  kernelParams: Seq[C.AST.ParamDecl],
-                                  wgConfig: Option[(LocalSize, GlobalSize)]
-                                 ): ((immutable.Seq[gen.Decl], gen.Stmt)) => KernelTranslationUnit = {
+  private def makeModule(gen: CodeGenerator)
+                        (outputParam: Identifier[AccType],
+                         temps: Seq[AllocationInfo],
+                         kernelParams: Seq[C.AST.ParamDecl],
+                         wgConfig: Option[(LocalSize, GlobalSize)]
+                        ): ((immutable.Seq[gen.Decl], gen.Stmt)) => KernelModule = {
     case (declarations, code) =>
-      KernelTranslationUnit(
+      KernelModule(
         decls = CFunctionDefinition.collectTypeDeclarations(code, kernelParams) ++ declarations,
         kernels = immutable.Seq(
           OpenCL.Kernel(

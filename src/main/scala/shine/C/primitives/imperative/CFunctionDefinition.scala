@@ -1,7 +1,7 @@
 package shine.C.primitives.imperative
 
 import arithexpr.arithmetic.Cst
-import shine.C.{ParamMetaData, TranslationUnit}
+import shine.C.{ParamMetaData, Module}
 import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
@@ -53,14 +53,14 @@ final case class CFunctionDefinition(name: String,
 
   type CodeGenerator = shine.C.CodeGenerator
 
-  def translateToTranslationUnit(gen: CodeGenerator): TranslationUnit = {
+  def translateToModule(gen: CodeGenerator): Module = {
     val outParam = createOutputParam(outT = body.t)
 
     body |>
       ( run(TypeCheck(_: Phrase[ExpType])) andThen
         rewriteToImperative(gen)(outParam) andThen
         generateCode(gen)(outParam) andThen
-        makeTranslationUnit(gen)(outParam) )
+        makeModule(gen)(outParam) )
   }
 
   def createOutputParam(outT: ExpType): Identifier[AccType] = outT.dataType match {
@@ -100,12 +100,11 @@ final case class CFunctionDefinition(name: String,
     gen.generate(topLevelLetNats, env)
   }
 
-  private def makeTranslationUnit(gen: CodeGenerator)
-                                 (outParam: Identifier[AccType]
-                                 ): ((immutable.Seq[gen.Decl], gen.Stmt)) => TranslationUnit = {
+  private def makeModule(gen: CodeGenerator)
+                         (outParam: Identifier[AccType]): ((immutable.Seq[gen.Decl], gen.Stmt)) => Module = {
     case (declarations, code) =>
       val params = (outParam +: this.params).map(C.AST.makeParam(gen))
-      TranslationUnit(
+      Module(
         decls = CFunctionDefinition.collectTypeDeclarations(code, params) ++ declarations,
         functions = immutable.Seq(
           C.Function(
