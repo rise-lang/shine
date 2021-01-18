@@ -7,6 +7,9 @@ import rise.core.DSL.Type._
 import rise.core.types._
 import HighLevelConstructs._
 
+// in Halide: https://github.com/halide/Halide/blob/e8acdea/apps/harris
+// in PolyMage: https://bitbucket.org/udayb/polymage/src/e28327c/sandbox/apps/python/img_proc/harris
+// FIXME: PolyMage's algorithm is different
 object harrisCornerDetectionHalide {
   private val C2D = separableConvolution2D
   private val mulT = C2D.mulT
