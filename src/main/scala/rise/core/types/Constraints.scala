@@ -377,6 +377,10 @@ object Constraint {
         case Mod(p, m) if p == pivot =>
           val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
           Some(Solution.subs(pivot, k*m + value))
+        /* FIXME: leads to some nat equality issues
+        case IntDiv(x, n) if x == pivot =>
+          val k = NatIdentifier("k", RangeAdd(0, n, 1))
+          Some(Solution.subs(pivot, n * value + k)) */
         case _               =>
           None
       }
