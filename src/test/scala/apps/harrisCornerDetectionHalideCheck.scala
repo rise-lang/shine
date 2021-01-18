@@ -23,6 +23,9 @@ class harrisCornerDetectionHalideCheck
   val strip = 32
   assert(Ho % strip == 0)
 
+  val tileX = 8
+  val tileY = 8
+
   def lowerOMP(e: ToBeTyped[Expr]): Expr =
     rewrite.unrollDots(util.printTime("infer", e.toExpr)).get
 
@@ -182,6 +185,25 @@ class harrisCornerDetectionHalideCheck
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 8,
       ocl.harrisBufferedRegRotVecAligned(3, 8))),
       LocalSize(1), GlobalSize(Ho / strip))
+  }
+
+  test("harrisTileShiftInwardsGParVecUnaligned(4) generates valid OpenCL") {
+    import rise.openCL.TypedDSL._
+    import rise.core.primitives.mapSeq
+
+    checkOCL(lowerOCL(
+      ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
+      ocl.harrisVecUnaligned2(4, _ => mapSeq, toPrivate))),
+      LocalSize((1, 1)), GlobalSize((32, 32)))
+  }
+
+  test("harrisTileShiftInwardsWLParVecUnaligned(4) generates valid OpenCL") {
+    import rise.openCL.TypedDSL._
+
+    checkOCL(lowerOCL(
+      ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
+        ocl.harrisVecUnaligned2(4, mapLocal(_), toLocal))),
+      LocalSize((16, 16)), GlobalSize((64, 64)))
   }
 
   test("harrisBuffered rewrite generates valid OpenCL") {
