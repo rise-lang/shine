@@ -21,12 +21,6 @@ final case class MakePair(dt1: DataType,
   snd :: expT(dt2, access)
   override val t: ExpType = expT(dt1 x dt2, access)
 
-  override def eval(s: Store): Data = {
-    PairData(
-      OperationalSemantics.eval(s, fst),
-      OperationalSemantics.eval(s, snd))
-  }
-
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     acc(fst)(pairAcc1(dt1, dt2, A)) `;`
@@ -37,4 +31,10 @@ final case class MakePair(dt1: DataType,
     con(fst)(λ(expT(dt1, read))(x =>
       con(snd)(λ(expT(dt2, read))(y =>
         C(MakePair(dt1, dt2, access, x, y))))))
+
+  override def eval(s: Store): Data = {
+    PairData(
+      OperationalSemantics.eval(s, fst),
+      OperationalSemantics.eval(s, snd))
+  }
 }

@@ -18,10 +18,6 @@ final case class Generate(n: Nat,
   f :: expT(idx(n), read) ->: expT(dt, read)
   override val t: ExpType = expT(n`.`dt, read)
 
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
     // note: would not be necessary if generate was defined as indices + map

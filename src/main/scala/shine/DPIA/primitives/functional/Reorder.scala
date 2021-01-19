@@ -25,6 +25,19 @@ final case class Reorder(n: Nat,
   input :: expT(n`.`dt, access)
   override val t: ExpType = expT(n`.`dt, access)
 
+  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
+    fedAcc(env)(input)(λ(accT(C.t.inT.dataType))(o => ReorderAcc(n, dt, idxFinv, C(o))))
+
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommType] =
+    acc(input)(ReorderAcc(n, dt, idxFinv, A))
+
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] =
+    con(input)(λ(expT(n`.`dt, read))(x =>
+      C(Reorder(n, dt, access, idxF, idxFinv, x))))
+
   override def eval(s: Store): Data = {
     import shine.DPIA.Semantics.OperationalSemantics._
     val idxFE = OperationalSemantics.eval(s, idxF)
@@ -38,17 +51,4 @@ final case class Reorder(n: Nat,
       case _ => throw new Exception("This should not happen")
     }
   }
-
-  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
-                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
-    fedAcc(env)(input)(λ(accT(C.t.inT.dataType))(o => ReorderAcc(n, dt, idxFinv, C(o))))
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(input)(ReorderAcc(n, dt, idxFinv, A))
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(input)(λ(expT(n`.`dt, read))(x =>
-      C(Reorder(n, dt, access, idxF, idxFinv, x))))
 }

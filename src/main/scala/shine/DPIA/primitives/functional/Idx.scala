@@ -21,6 +21,12 @@ final case class Idx(n: Nat,
   array :: expT(n`.`dt, read)
   override val t: ExpType = expT(dt, read)
 
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] =
+    con(array)(λ(expT(n`.`dt, read))(e =>
+      con(index)(fun(index.t)(i =>
+        C(Idx(n, dt, i, e))))))
+
   override def eval(s: Store): Data = {
     (OperationalSemantics.eval(s, array),
      OperationalSemantics.eval(s, index)) match {
@@ -28,10 +34,4 @@ final case class Idx(n: Nat,
       case _ => throw new Exception("This should not happen")
     }
   }
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(array)(λ(expT(n`.`dt, read))(e =>
-      con(index)(fun(index.t)(i =>
-        C(Idx(n, dt, i, e))))))
 }

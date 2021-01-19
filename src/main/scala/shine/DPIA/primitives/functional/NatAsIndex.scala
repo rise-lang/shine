@@ -18,19 +18,15 @@ final case class NatAsIndex(n: Nat,
   e :: expT(NatType, read)
   override val t: ExpType = expT(idx(n), read)
 
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] =
+    con(e)(λ(e.t)(x =>
+      C(NatAsIndex(n, x))))
+
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, e) match {
       case NatData(m) => IndexData(m, n)
       case d => throw new Exception(s"Expected NatData but found $d.")
     }
   }
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] =
-    con(e)(λ(e.t)(x =>
-      C(NatAsIndex(n, x))))
 }

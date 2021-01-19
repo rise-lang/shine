@@ -6,7 +6,7 @@ import shine.DPIA.Types.{CommType, PhraseType}
 import shine.DPIA.primitives.functional.{Idx, NatAsIndex}
 import shine.DPIA.primitives.imperative.{For, ForNat, IdxAcc}
 import shine.DPIA.{Nat, NatIdentifier}
-import shine.OpenCL.{AddressSpace, Global, Local, WorkGroup}
+import shine.OpenCL.AddressSpace
 import shine.OpenCL.primitives.imperative._
 
 import scala.collection.mutable
@@ -72,10 +72,10 @@ object FlagPrivateArrayLoops {
           Continue(ForNat(n, body, unroll = true), this)
         case pf@ParFor(level, dim, _) =>
           pf.loopBody match {
-            case body@Lambda(i: Identifier[_], _) if eliminateVars(i.name) =>
+            case Lambda(i: Identifier[_], _) if eliminateVars(i.name) =>
               eliminateVars -= i.name
               Continue(ParFor(level, dim, unroll = true)
-                (pf.n, pf.dt, pf.out, body, pf.init, pf.step), this)
+                (pf.n, pf.dt, pf.out, pf.loopBody, pf.init, pf.step), this)
             case _ => Continue(p, this)
           }
         case pf@OpenCLParForNat(n, dt, out, body@DepLambda(i: NatIdentifier, _), init, step, _)

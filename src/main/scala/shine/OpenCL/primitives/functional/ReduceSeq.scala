@@ -13,7 +13,7 @@ import shine.macros.Primitive.expPrimitive
 @expPrimitive
 final case class ReduceSeq(unroll: Boolean)
                           (n: Nat,
-                           initAddrSpace: shine.DPIA.Types.AddressSpace,
+                           initAddrSpace: AddressSpace,
                            dt1: DataType,
                            dt2: DataType,
                            f: Phrase[ExpType ->: ExpType ->: ExpType],

@@ -22,19 +22,6 @@ final case class Join(n: Nat,
   array :: expT(n`.`(m`.`dt), w)
   override val t: ExpType = expT((n * m)`.`dt, w)
 
-  override def eval(s: Store): Data = {
-    OperationalSemantics.eval(s, array) match {
-      case ArrayData(outer) =>
-        val arrays = outer.map {
-          case ArrayData(inner) => inner
-          case _ => throw new Exception("This should not happen")
-        }
-        ArrayData(arrays.flatten)
-
-      case _ => throw new Exception("This should not happen")
-    }
-  }
-
   override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
                               (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
     fedAcc(env)(array)(λ(accT(C.t.inT.dataType))(o => JoinAcc(n, m, dt, C(o))))
@@ -47,4 +34,17 @@ final case class Join(n: Nat,
                              (implicit context: TranslationContext): Phrase[CommType] =
     con(array)(λ(expT(n`.`(m`.`dt), read))(x =>
       C(Join(n, m, w, dt, x))))
+
+  override def eval(s: Store): Data = {
+    OperationalSemantics.eval(s, array) match {
+      case ArrayData(outer) =>
+        val arrays = outer.map {
+          case ArrayData(inner) => inner
+          case _ => throw new Exception("This should not happen")
+        }
+        ArrayData(arrays.flatten)
+
+      case _ => throw new Exception("This should not happen")
+    }
+  }
 }

@@ -24,16 +24,6 @@ final case class Zip(n: Nat,
   e2 :: expT(n`.`dt2, access)
   override val t: ExpType = expT(n`.`(dt1 x dt2), access)
 
-  override def eval(s: Store): Data = {
-    (OperationalSemantics.eval(s, e1), OperationalSemantics.eval(s, e2)) match {
-      case (ArrayData(lhsE), ArrayData(rhsE)) =>
-        ArrayData((lhsE zip rhsE) map { p =>
-          PairData(p._1, p._2)
-        })
-      case _ => throw new Exception("This should not happen")
-    }
-  }
-
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;`
@@ -63,5 +53,15 @@ final case class Zip(n: Nat,
         ))))
       ), arithexpr.arithmetic.RangeAdd(0, n, 1)))
     ))))
+  }
+
+  override def eval(s: Store): Data = {
+    (OperationalSemantics.eval(s, e1), OperationalSemantics.eval(s, e2)) match {
+      case (ArrayData(lhsE), ArrayData(rhsE)) =>
+        ArrayData((lhsE zip rhsE) map { p =>
+          PairData(p._1, p._2)
+        })
+      case _ => throw new Exception("This should not happen")
+    }
   }
 }

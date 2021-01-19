@@ -20,8 +20,6 @@ final case class PrintType(msg: String,
   input :: expT(dt, access)
   override val t: ExpType = expT(dt, access)
 
-  override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
-
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     acc(input)(A)
@@ -29,4 +27,6 @@ final case class PrintType(msg: String,
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
     con(input)(C)
+
+  override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 }

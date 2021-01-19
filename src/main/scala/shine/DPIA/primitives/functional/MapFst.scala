@@ -23,15 +23,6 @@ final case class MapFst(w: AccessType,
   record :: expT(dt1 x dt2, w)
   override val t: ExpType = expT(dt3 x dt2, w)
 
-  override def eval(s: Store): Data = {
-    val fE = OperationalSemantics.eval(s, f)
-    OperationalSemantics.eval(s, record) match {
-      case r: PairData =>
-        PairData(OperationalSemantics.eval(s, fE(Literal(r.fst))), r.snd)
-      case _ => throw new Exception("This should not happen")
-    }
-  }
-
   override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
                               (C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
     val x = Identifier(freshName("fede_x"), ExpType(dt1, write))
@@ -61,4 +52,13 @@ final case class MapFst(w: AccessType,
                              (implicit context: TranslationContext): Phrase[CommType] =
     // assumption: f does not need to be translated, it does indexing only
     con(record)(fun(record.t)(x => C(MapFst(w, dt1, dt2, dt3, f, x))))
+
+  override def eval(s: Store): Data = {
+    val fE = OperationalSemantics.eval(s, f)
+    OperationalSemantics.eval(s, record) match {
+      case r: PairData =>
+        PairData(OperationalSemantics.eval(s, fE(Literal(r.fst))), r.snd)
+      case _ => throw new Exception("This should not happen")
+    }
+  }
 }

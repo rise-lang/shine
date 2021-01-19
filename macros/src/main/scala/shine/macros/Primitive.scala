@@ -375,7 +375,9 @@ object Primitive {
          """
       }).asInstanceOf[ClassDef]
 
-      println(comClass)
+      c.info(c.enclosingPosition,
+        s"generated `${name.toString}'\n$comClass", force = false)
+
       comClass
     }
 

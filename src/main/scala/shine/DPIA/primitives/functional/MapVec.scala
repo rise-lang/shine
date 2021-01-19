@@ -22,18 +22,6 @@ final case class MapVec(n: Nat,
   array :: expT(vec(n, dt1), read)
   override val t: ExpType = expT(vec(n, dt2), write)
 
-  override def eval(s: Store): Data = {
-    val fE = OperationalSemantics.eval(s, f)
-    OperationalSemantics.eval(s, array) match {
-      case ArrayData(xs) =>
-        ArrayData(xs.map { x =>
-          OperationalSemantics.eval(s, fE(Literal(x)))
-        })
-
-      case _ => throw new Exception("This should not happen")
-    }
-  }
-
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     con(array)(λ(expT(vec(n, dt1), read))(x =>
@@ -48,5 +36,17 @@ final case class MapVec(n: Nat,
         acc(this)(tmp.wr) `;`
           C(tmp.rd))
     )
+  }
+
+  override def eval(s: Store): Data = {
+    val fE = OperationalSemantics.eval(s, f)
+    OperationalSemantics.eval(s, array) match {
+      case ArrayData(xs) =>
+        ArrayData(xs.map { x =>
+          OperationalSemantics.eval(s, fE(Literal(x)))
+        })
+
+      case _ => throw new Exception("This should not happen")
+    }
   }
 }

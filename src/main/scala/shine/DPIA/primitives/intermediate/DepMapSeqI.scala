@@ -8,7 +8,7 @@ import shine.DPIA._
 import shine.DPIA.primitives.imperative.ForNat
 
 object DepMapSeqI {
-  def apply(unroll: Boolean = false)
+  def apply(unroll: Boolean)
            (n: Nat,
             ft1:NatToData,
             ft2:NatToData,

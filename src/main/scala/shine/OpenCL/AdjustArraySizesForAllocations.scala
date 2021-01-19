@@ -28,7 +28,7 @@ object AdjustArraySizesForAllocations {
   }
 
   private def visitAndGatherInformation[T <: PhraseType](p: Phrase[T],
-                                                 parallInfo: List[ParallelismInfo]): List[ParallelismInfo] = {
+                                                         parallInfo: List[ParallelismInfo]): List[ParallelismInfo] = {
     p match {
       case mG@ocl.functional.Map(Global, dim) =>
         visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)

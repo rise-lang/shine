@@ -22,6 +22,15 @@ final case class DepJoin(n: Nat,
   array :: expT(n`.d`{ i => lenF(i) `.` dt }, read)
   override val t: ExpType = expT(BigSum(from = 0, upTo = n - 1, i => lenF(i))`.`dt, read)
 
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommType] =
+    acc(array)(DepJoinAcc(n, lenF, dt, A))
+
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] =
+    con(array)(λ(expT(n `.d` { i => lenF(i)`.`dt }, read))(x =>
+      C(DepJoin(n, lenF, dt, x))))
+
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, array) match {
       case ArrayData(outer) =>
@@ -34,13 +43,4 @@ final case class DepJoin(n: Nat,
       case _ => throw new Exception("This should not happen")
     }
   }
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(array)(DepJoinAcc(n, lenF, dt, A))
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(array)(λ(expT(n `.d` { i => lenF(i)`.`dt }, read))(x =>
-      C(DepJoin(n, lenF, dt, x))))
 }

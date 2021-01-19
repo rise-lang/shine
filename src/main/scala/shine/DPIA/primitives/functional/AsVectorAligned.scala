@@ -17,7 +17,7 @@ final case class AsVectorAligned(n: Nat,
                                  dt: ScalarType,
                                  array: Phrase[ExpType]
                                 ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
-  array :: expT({m * n}`.`dt, w)
+  array :: expT((m * n)`.`dt, w)
   override val t: ExpType = expT(m`.`vec(n, dt), w)
 
   def acceptorTranslation(A: Phrase[AccType])

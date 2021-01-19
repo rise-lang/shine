@@ -23,13 +23,6 @@ final case class IdxVec(n: Nat,
   vector :: expT(vec(n, st), read)
   override val t: ExpType = expT(st, read)
 
-  override def eval(s: Store): Data = {
-    (OperationalSemantics.eval(s, vector), OperationalSemantics.eval(s, index)) match {
-      case (VectorData(xs), IntData(i)) => xs(i)
-      case _ => throw new Exception("This should not happen")
-    }
-  }
-
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     con(vector)(λ(expT(vec(n, st), read))(x =>
@@ -39,4 +32,11 @@ final case class IdxVec(n: Nat,
                              (implicit context: TranslationContext): Phrase[CommType] =
     con(vector)(λ(expT(vec(n, st), read))(e =>
       C(IdxVec(n, st, index, e))))
+
+  override def eval(s: Store): Data = {
+    (OperationalSemantics.eval(s, vector), OperationalSemantics.eval(s, index)) match {
+      case (VectorData(xs), IntData(i)) => xs(i)
+      case _ => throw new Exception("This should not happen")
+    }
+  }
 }
