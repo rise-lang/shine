@@ -13,58 +13,6 @@ import shine.DPIA.{ImperativePrimitives, _}
 
 import scala.xml.Elem
 
-final case class Filter(a: AccessType, n: Nat, elemT: DataType, f: Phrase[ExpType ->: ExpType], input:Phrase[ExpType])
-  extends ExpPrimitive {
-  private val binder: NatIdentifier = NatIdentifier(freshName("n"), arithexpr.arithmetic.GoesToRange(n))
-  private val sndT = ArrayType(binder,  IndexType(n))
-  override val t = expT(DepPairType[NatKind](binder, sndT), a)
-  // Filter needs to allocate more memory than it's 'logical' type says
-
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
-      `new`(DepPairType[NatKind](binder, sndT), output => {
-        // We just newed it, so we know output is an identifier. We will need to play some tricks
-        // here, and change it's type.
-        acceptorTranslation(output.wr) `;` C(output.rd)
-      })
-  }
-
-  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
-    con(input)(λ(expT(ArrayType(n, elemT), read))(input => {
-      `new`(u32, counter => {
-        val fst = NatIdentifier(counter.asInstanceOf[Identifier[_]].name)
-        `for`(n, idx => {
-          `new`(bool, testLocal => {
-            acc(f(input `@` idx))(testLocal.wr) `;`
-            IfThenElse(testLocal.rd,
-            {
-              ((MkDPairSndAcc[NatKind](fst, sndT, A) `@` fst) :=| IndexType(n)| idx) `;`
-                (counter.wr :=| u32 | counter.rd + Literal(U32Data(1)))
-            },
-            Skip()
-          ) `;` MkDPairFstI[NatKind](fst, A)
-          })
-        })
-      })
-    }
-    ))
-  }
-
-  override def eval(s: Store): OperationalSemantics.Data = ???
-
-  override def prettyPrint: String = s"filter"
-
-  override def xmlPrinter: Elem = <filter></filter>
-
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = Filter(
-    v.access(a),
-    v.nat(n),
-    v.data(elemT),
-    VisitAndRebuild(f, v),
-    VisitAndRebuild(input, v)
-  )
-}
-
 final case class MkDPair[K <: Kind: KindName: KindReified:KindVisitable](a: AccessType, fst: K#I, sndT: DataType, snd: Phrase[ExpType])
   extends ExpPrimitive {
   override val t: ExpType = expT(DepPairType[K](fst, sndT), a)
@@ -78,11 +26,13 @@ final case class MkDPair[K <: Kind: KindName: KindReified:KindVisitable](a: Acce
     // TODO(federico) - This is allocating eagerly. Make it allocate lazily by adding a suitable primitive:
     //  ideally Dmatch(..,..., MkDPair(x, y))
     // should not allocate
+
     con(snd)(λ(expT(sndT, read))(snd => `new`(t.dataType, outVar => {
       MkDPairFstI(fst, outVar.wr) `;`
         acc(snd)(MkDPairSndAcc(fst, sndT, outVar.wr)) `;`
         C(outVar.rd)
     })))
+    //con(snd)(λ(expT(sndT, read))(snd => C(MkDPair(a, fst, sndT, snd))))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {

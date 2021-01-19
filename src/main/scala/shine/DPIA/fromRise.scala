@@ -824,6 +824,26 @@ object fromRise {
           }
       }
 
+      case core.dmatchNats() => fromType {
+        case expT(DepPairType(x, elemT), aIn1) ->:
+          nsFunT(i, expT(elem_iT, aIn2) ->: expT(outT, aOut1))
+          ->: expT(_, aOut2) =>
+          assert(aIn1 == aIn2)
+          assert(aOut1 == aOut2)
+          val aIn = aIn1
+          val aOut = aOut1
+
+          x match {
+            case x: NatCollectionIdentifier =>
+              fun[ExpType](ExpType(DepPairType[NatCollectionKind](x, elemT), aIn), pair =>
+                fun[`(natCollection)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, aIn) ->: ExpType(outT, aOut)),f =>
+                  DMatchNats(x, elemT, outT, aIn, aOut, f, pair)
+                )
+              )
+            case _ => ???
+          }
+      }
+
       case core.dpair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair[NatKind](a, fst, sndT, snd)))

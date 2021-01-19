@@ -206,7 +206,7 @@ object PhraseType {
     }
 
     new Phrases.VisitAndRebuild.Visitor {
-      override def natCollection(w: NatCollection): NatCollection = if (w == `for`) ns else w
+      override def natCollection[NS <: NatCollection](w: NS): NS = (if (w == `for`) ns else w).asInstanceOf[NS]
 
       override def nat[N <: Nat](n: N): N = n.visitAndRebuild({ n => replaceOnNat(n)}).asInstanceOf[N]
 

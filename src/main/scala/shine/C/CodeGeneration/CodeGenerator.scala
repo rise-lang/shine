@@ -195,6 +195,39 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           ))
         })
 
+      case DMatchNatsI(xs, inT, _, f, dPair) =>
+        /** We are attempting to feed the components of dPair into the function f.
+            The steps to follow are:
+
+            1) get the number of elements in the first element
+
+            2) make a pointer of integers into the buffer, this is the first element
+
+            3) offset into the buffer where the seconde element starts
+
+            4) generate f(fst)(snd)
+         */
+
+        exp(dPair, env, List(), buffer => {
+          val bufferOfNats = C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), buffer)
+          val elemCount = freshName("count")
+          val nats = xs.name
+          val dataElementType = getBaseType(typ(inT))
+          val data = freshName("data")
+
+          C.AST.Block(Vector(
+            C.AST.DeclStmt(C.AST.VarDecl(elemCount, C.AST.Type.u32, Some(C.AST.ArraySubscript(bufferOfNats, C.AST.Literal("0"))))),
+            C.AST.DeclStmt(C.AST.VarDecl(nats, C.AST.PointerType(C.AST.Type.u32), Some(C.AST.BinaryExpr(bufferOfNats, C.AST.BinaryOperator.+, C.AST.Literal("1"))))),
+            C.AST.DeclStmt(C.AST.VarDecl(data, C.AST.PointerType(dataElementType),
+              Some(C.AST.Cast(C.AST.PointerType(dataElementType), C.AST.BinaryExpr(C.AST.DeclRef(nats), C.AST.BinaryOperator.+, C.AST.DeclRef(elemCount)))))),
+            {
+              val fst = NatCollectionIdentifier(nats)
+              val snd = Identifier[ExpType](data, expT(inT, `read`))
+              cmd(f(fst)(snd), env.updatedIdentEnv(snd, C.AST.DeclRef(snd.name)))
+            }
+          ))
+        })
+
       case LiftNI(input, f) =>
         exp(input, env, List(), input => {
 

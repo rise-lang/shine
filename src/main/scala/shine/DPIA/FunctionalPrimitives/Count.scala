@@ -51,12 +51,12 @@ final case class OclCount(n: Nat, addressSpace: AddressSpace, input:Phrase[ExpTy
   override val t = expT(IndexType(n), read)
   // Filter needs to allocate more memory than it's 'logical' type says
 
-  private val asReduction = {
-    NatAsIndex(n, OpenCLReduceSeq(n, addressSpace, bool, NatType,
-      λ(expT(NatType, read))(i =>
+  val asReduction = {
+    Transmute(read, int, IndexType(n), OpenCLReduceSeq(n, addressSpace, bool, int,
+      λ(expT(int, read))(i =>
         λ(expT(bool, read))(b =>
-          IfThenElse(b, i + Natural(1), i))
-      ), Natural(0), input, unroll = false))
+          IfThenElse(b, i + toLiteralInt(1), i))
+      ), toLiteralInt(0), input, unroll = false))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {

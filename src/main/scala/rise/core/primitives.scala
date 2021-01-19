@@ -184,6 +184,11 @@ object primitives {
       (Nat `**` ft) ->: expl((m: Nat) => ft(m) ->: tOut) ->: tOut }}
   }
 
+  @primitive object dmatchNats extends Primitive with Builder {
+    impl{ ft: NatCollectionToData => impl{ tOut: DataType =>
+      (NatCollection `**` ft) ->: expl((m: NatCollection) => ft(m) ->: tOut) ->: tOut }}
+  }
+
   @primitive object count extends Primitive with Builder {
     impl { n: Nat => n `.` bool ->: IndexType(n) }
   }

@@ -539,9 +539,30 @@ private class InferAccessAnnotation {
               case fdt:rt.NatToDataLambda =>
                 assert(i.isInstanceOf[rt.NatIdentifier])
                 val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
+                //TODO: FIX THE SUBSTITUTION PROBLEM!
                 expT(DepPairType[NatKind](natIdentifier(fdt.x), dataType(fdt.body)), aIn) ->:
                   nFunT(i_, expT(dataType(app1), aIn) ->: expT(dataType(outT), aOut)) ->:
                     expT(dataType(retT), aOut)
+              case _ => ???
+            }
+          case _ => error(s"did not expect t")
+        }
+        buildType(p.t)
+
+      case rp.dmatchNats() =>
+        val aIn = accessTypeIdentifier()
+        val aOut = accessTypeIdentifier()
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(rt.DepPairType(fdt),
+          rt.FunType(rt.DepFunType(i, rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
+            fdt match {
+              case fdt:rt.NatCollectionToDataLambda =>
+                assert(i.isInstanceOf[rt.NatCollectionIdentifier])
+                val i_ = natCollectionIdentifier(i.asInstanceOf[rt.NatCollectionIdentifier])
+                //TODO: FIX THE SUBSTITUTION PROBLEM!
+                expT(DepPairType[NatCollectionKind](natCollectionIdentifier(fdt.x), dataType(fdt.body)), aIn) ->:
+                  nsFunT(i_, expT(dataType(app1), aIn) ->: expT(dataType(outT), aOut)) ->:
+                  expT(dataType(retT), aOut)
               case _ => ???
             }
           case _ => error(s"did not expect t")
@@ -681,7 +702,8 @@ private class InferAccessAnnotation {
       )
     case (DepFunType(lx, la), DepFunType(rx, ra)) if lx == rx =>
       subUnifyPhraseType(la, ra)
-    case _ => Try(error(s"Cannot subunify $less and $larger."))
+    case _ =>
+      Try(error(s"Cannot subunify $less and $larger."))
   }
 
   def `type`(ty: rt.Type): PhraseType = ty match {

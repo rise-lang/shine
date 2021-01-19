@@ -10,7 +10,7 @@ object VisitAndRebuild {
 
     def nat[N <: Nat](n: N): N = n
 
-    def natCollection(ns: NatCollection): NatCollection = ns
+    def natCollection[NS <: NatCollection](ns: NS): NS = ns
 
     def data[T <: DataType](dt: T): T = dt
 

@@ -26,7 +26,6 @@ object OpenCLScanSeqI {
         acc(init)(adj.accF(accumulator.wr)) `;`
           `for`(n, i =>
             f(in `@` i)(adj.exprF(accumulator.rd))(adj.accF(accumulator.wr)) `;`
-              //FIXME remove general assignment
               ((out `@` i) :=| dt2 | adj.exprF(accumulator.rd))
           )
       )

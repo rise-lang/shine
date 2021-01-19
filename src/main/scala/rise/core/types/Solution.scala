@@ -38,18 +38,22 @@ case class Solution(ts: Map[Type, Type],
   import traversal.{Continue, Result, Stop}
 
   case class Visitor(sol: Solution) extends traversal.Visitor {
-    override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
+    override def visitNat(ae: Nat): Result[Nat] =
+      Stop(sol(ae))
     override def visitNatCollection(nc: NatCollection): Result[NatCollection] =
       Stop(sol(nc))
     override def visitType[T <: Type](t: T): Result[T] =
       Stop(sol(t).asInstanceOf[T])
     override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
       Stop(sol(a))
-    override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
+    override def visitN2D(n2d: NatToData): Result[NatToData] =
+      Stop(sol(n2d))
 
-    override def visitN2N(n2n: NatToNat): Result[NatToNat] = Stop(sol(n2n))
+    override def visitN2N(n2n: NatToNat): Result[NatToNat] =
+      Stop(sol(n2n))
 
-    override def visitNS2D(ns2d: NatCollectionToData): Result[NatCollectionToData] = Stop(sol(ns2d))
+    override def visitNS2D(ns2d: NatCollectionToData): Result[NatCollectionToData] =
+      Stop(sol(ns2d))
   }
 
   def apply(e: Expr): Expr = {

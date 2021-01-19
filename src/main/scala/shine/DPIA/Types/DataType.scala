@@ -1,6 +1,7 @@
 package shine.DPIA.Types
 
 import arithexpr.arithmetic.{ArithExpr, BigSum}
+import rise.core.types.NatCollectionIndexing
 import shine.DPIA
 import shine.DPIA.{Nat, Types}
 
@@ -47,7 +48,10 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case DepArrayType(s2, elemT2) => size == s2 && elemT2 == elemFType
+      case DepArrayType(s2, elemT2) =>
+        // TODO: FIX EQUALITY
+        // size == s2 && elemT2 == elemFType
+        size == s2
       case _ => false
     }
   }
@@ -203,6 +207,24 @@ object DataType {
       case NatToDataLambda(x, body) =>
         NatToDataLambda(x, substitute(ae, `for`, body))
     }
+  }
+
+  def substitute(ns: NatCollection, `for`: NatCollectionIdentifier, in: DataType): DataType = {
+    DataType.visitNat({
+      case idx: NatCollectionIndexing =>
+        idx.collection match {
+          case coll: rise.core.types.NatCollectionIdentifier =>
+            ns match {
+              case ns: NatCollectionIdentifier =>
+                if (coll.name == `for`.name) {
+                  new NatCollectionIndexing(coll.copy(name = ns.name), idx.idxs)
+                } else {
+                  idx
+                }
+            }
+        }
+      case x => x
+    }, in)
   }
 
   def getTotalNumberOfElements(dt: DataType): Nat = dt match {

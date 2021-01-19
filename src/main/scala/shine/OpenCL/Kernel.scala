@@ -7,6 +7,7 @@ import shine.C.SizeInByte
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.OpenCL.Kernel.PREAMBLE
 import shine.{C, OpenCL}
 import util.{Time, TimeSpan}
 
@@ -22,9 +23,15 @@ case class Kernel(decls: Seq[C.AST.Decl],
                   inputParams: Seq[Identifier[ExpType]],
                   intermediateParams: Seq[Identifier[VarType]]) {
 
-  def code: String = decls.map(OpenCL.AST.Printer(_)).mkString("\n") +
-    "\n\n" +
-    OpenCL.AST.Printer(kernel)
+  def code: String = {
+    val sb = new StringBuilder
+    sb ++= Kernel.PREAMBLE
+    sb ++= "\n\n"
+    sb ++= decls.map(OpenCL.AST.Printer(_)).mkString("\n")
+    sb ++= "\n\n"
+    sb ++= OpenCL.AST.Printer(kernel)
+    sb.toString()
+  }
 
   /** This method will return a Scala function which executed the kernel via OpenCL and returns its
   // result and the time it took to execute the kernel.
@@ -371,4 +378,10 @@ sealed case class KernelNoSizes(kernel: Kernel) {
 object Kernel {
   implicit def forgetSizes(k: KernelWithSizes): KernelNoSizes =
     KernelNoSizes(k.kernel)
+
+  val PREAMBLE:String =
+    """
+      |#define uint8_t uint8
+      |#define uint32_t uint
+      |""".stripMargin
 }

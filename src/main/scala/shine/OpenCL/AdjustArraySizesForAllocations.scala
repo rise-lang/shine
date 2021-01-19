@@ -37,16 +37,20 @@ object AdjustArraySizesForAllocations {
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
       case mS: MapSeqUnroll => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
 
+
+      case dms: DepMapSeq =>
+        visitAndGatherInformation(dms.f, BasicInfo(Sequential, -1)::parallInfo)
       case scan: OpenCLScanSeq => visitAndGatherInformation(scan.f,BasicInfo(Sequential, -1) :: parallInfo)
 
       // FIXME: works for scalars
       case _: OpenCLReduceSeq | _: OpenCLIterate => parallInfo
+      case oclCount: OclCount =>
+        visitAndGatherInformation(oclCount.asReduction, parallInfo)
 
-      case t: Pair => {
+      case t: Pair =>
         val fstInfo = visitAndGatherInformation(t.fst, List.empty)
         val sndInfo = visitAndGatherInformation(t.snd, List.empty)
         RecordInfo(fstInfo, sndInfo) :: parallInfo
-      }
 
       case Apply(f, _) => visitAndGatherInformation(f, parallInfo)
       case Lambda(_, p) => visitAndGatherInformation(p, parallInfo)

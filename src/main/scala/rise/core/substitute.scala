@@ -139,14 +139,12 @@ object substitute {
         }
       }
 
-      override def visitNat(ae: Nat): Result[Nat] = ae match {
-        case NatCollectionIndexing(oldNs, idxs) =>
-          Continue(
-            NatCollectionIndexing(natCollectionInNatCollection(Map(`for` -> ns), oldNs), idxs),
-            this
-          )
-        case _ => Continue(ae, this)
-      }
+      override def visitNat(ae: Nat): Result[Nat] =
+        Stop(ae.visitAndRebuild({
+          case NatCollectionIndexing(oldNs, idxs) =>
+              NatCollectionIndexing(natCollectionInNatCollection(Map(`for` -> ns), oldNs), idxs)
+        case x => x
+      }))
     }
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }

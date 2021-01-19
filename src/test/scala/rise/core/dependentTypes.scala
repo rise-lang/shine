@@ -5,7 +5,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.primitives._
 import rise.core.semantics.NatData
-import rise.openCL.primitives.{oclCount, oclScanSeq, oclToMem, oclWhich}
+import rise.openCL.primitives._
 import util.Execute
 
 class dependentTypes extends test_util.Tests {
@@ -27,6 +27,20 @@ class dependentTypes extends test_util.Tests {
   test("Dependent pair construct") {
     val e = depFun((n: Nat) =>
       fun(n `.` f32)(xs => dpair(n)(mapSeq(fun(x => x))(xs)))
+    )
+    val inferred: Expr = TDSL.inferDependent(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.CProgram(inferred, "Foo_foo")
+  }
+
+  test("Dependent pair take and untake") {
+    val e = depFun((n: Nat) =>
+      fun(n `.` f32)(xs =>
+        dmatch(dpair(n)(xs))(
+          depFun((_:Nat) => fun(xs => xs |> take(5) |> mapSeq(fun(x => x))))
+        )
+      )
     )
     val inferred: Expr = TDSL.inferDependent(e)
     println(inferred)
@@ -85,7 +99,7 @@ class dependentTypes extends test_util.Tests {
          Execute(testCode)
   }
 
-  test("Dependent pair match with reduction") {
+  test("GEN: Dependent pair match with reduction") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((_: Nat) => fun(xs =>
         reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))(xs))
@@ -130,6 +144,20 @@ class dependentTypes extends test_util.Tests {
 
     Execute(testCode)
   }
+
+  test("GENOCL: Dependent pair map increment") {
+    val e = fun(Nat `**` (n => n`.`f32))(pair =>
+      dmatch(pair)(depFun((n:Nat) => fun(xs =>
+        dpair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
+      ))))
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+
+    val cFunName = "foo"
+    val cFun = util.gen.OpenCLKernel(inferred, cFunName)
+  }
+
 
   test("Dependent pair match with taking") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
@@ -244,6 +272,25 @@ class dependentTypes extends test_util.Tests {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
+  test("List of list OCL") {
+    val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
+      def pred = fun(x => x =/= l(0.0f))
+      def cnts = toMem(mapSeq(fun(row => map(pred)(row) |> oclCount(AddressSpace.Global) |> indexAsNat))(array))
+
+      liftNats(cnts)(depFun((lengths:NatCollection) =>
+        dpairNats(lengths)(toDepArray(array) |>
+          depMapSeq(depFun((rowIdx:Nat) => fun(row =>
+            oclWhich(map(pred)(row))(lengths `@` rowIdx)
+              |> mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` nnzIdx)))
+          ))))
+      ))
+    })))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.OpenCLKernel(inferred, "Foo_foo")
+  }
 
   test("Compressed sparse row OCL") {
     val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
@@ -269,4 +316,70 @@ class dependentTypes extends test_util.Tests {
     print(inferred.t)
     util.gen.OpenCLKernel(inferred, "Foo_foo")
   }
+
+  test("C filter even numbers") {
+    val e = depFun((n: Nat) => fun(n `.` int)(array => {
+      def pred = fun(x => (x % l(2)) =:= l(0))
+      liftN(array |> map(pred) |> count |> indexAsNat)(depFun((count:Nat) =>
+        dpair(count)(which(array |> map(pred))(count)
+          |> mapSeq(fun(idx => array `@` idx)))
+      ))
+    }))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val program = util.gen.CProgram(inferred, "kernel")
+
+    val code = s"""
+      |
+      |#include<stdlib.h>
+      |#include<stdio.h>
+      |#include<stdint.h>
+      |
+      |${program.code}
+
+      |int main(int argc, char** argv) {
+      |   const uint32_t input_size = 10000;
+      |
+      |   int input[input_size];
+      |
+      |   for (int i = 0; i < input_size; i++) {
+      |       input[i] = i;
+      |   }
+      |
+      |   int output[1 + input_size/2];
+      |
+      |   kernel((uint8_t*)output, input_size, input);
+      |
+      |   int ret = 0;
+      |   for(uint32_t i = 0; i < input_size/2; i++) {
+      |       uint32_t value = output[1 + i];
+      |       if(value != i * 2) {
+      |           printf("Error, expected %d, but %d found", 2*i, value);
+      |           i += 1
+      |       }
+      |   }
+      |   return ret;
+      |}""".stripMargin
+
+    Execute(code)
+  }
+
+  test("filter even numbers") {
+    val e = depFun((n: Nat) => fun(n `.` int)(array => {
+      def pred = fun(x => (x % l(2)) =:= l(0))
+      liftN(array |> map(pred) |> oclCount(AddressSpace.Global) |> indexAsNat)(depFun((count:Nat) =>
+        dpair(count)(which(array |> map(pred))(count)
+          |> mapSeq(fun(idx => array `@` idx)))
+      ))
+    }))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    util.gen.OpenCLKernel(inferred, "Foo_foo")
+  }
+
+
 }

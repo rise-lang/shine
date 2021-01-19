@@ -152,5 +152,4 @@ object KernelGenerator {
     OpenCL.AST.KernelDecl(name, params = params, body = body,
                           attribute = if (localSize.isEmpty) None else Some(RequiredWorkGroupSize(localSize.get.size)))
   }
-
 }

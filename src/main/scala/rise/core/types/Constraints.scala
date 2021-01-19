@@ -50,7 +50,8 @@ object Constraint {
   def solveOne(c: Constraint, trace: Seq[Constraint])
     (implicit explDep: Flags.ExplicitDependence): Solution = {
     implicit val _trace: Seq[Constraint] = trace
-    def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace)
+    def decomposed(cs: Seq[Constraint]) =
+      solve(cs, c +: trace)
 
 
     c match {
@@ -241,6 +242,13 @@ object Constraint {
         (a,b) match {
           case (i: NatCollectionToDataIdentifier, _) => ns2d.unifyIdent(i, b)
           case (_, i: NatCollectionToDataIdentifier) => ns2d.unifyIdent(i, a)
+          case (NatCollectionToDataLambda(x1, dt1), NatCollectionToDataLambda(x2, dt2)) =>
+            val n = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
+            decomposed(Seq(
+              NatCollectionConstraint(n, x1.asImplicit),
+              NatCollectionConstraint(n, x2.asImplicit),
+              TypeConstraint(dt1, dt2)
+            ))
           case _ if a == b                    => Solution()
         }
 
@@ -474,7 +482,8 @@ object Constraint {
         } else {
           error(s"cannot unify $i and $j")
         }
-      case _       => error(s"cannot unify $i and $n")
+      case l:NatCollectionToDataLambda =>
+        Solution.subs(i, l)
     }
   }
 

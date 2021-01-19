@@ -59,6 +59,11 @@ object AdaptKernelParameters {
           ParamDecl(paramDecl.name, OpenCL.AST.PointerType(aSpace, at.getBaseType,
             // ... and make input parameters const
             const = inputParams.map(_.name).contains(paramDecl.name)))
+        case ptr: C.AST.PointerType =>
+          // Pointer types must be given address spaces
+          ParamDecl(paramDecl.name, OpenCL.AST.PointerType(aSpace, ptr.valueType,
+            const = inputParams.map(_.name).contains(paramDecl.name))
+          )
 
         case _ => paramDecl
       }
@@ -143,7 +148,7 @@ object AdaptKernelParameters {
       case _: DepArrayType => makeGlobalParam(i, gen)
       case _: BasicType => makePrivateParam(i, gen)
       case _: PairType => makePrivateParam(i, gen)
-      case _: DepPairType[_] => makePrivateParam(i, gen)
+      case _: DepPairType[_] => makeGlobalParam(i, gen)
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
       case _: NatToDataApply =>  throw new Exception("This should not happen")
     }
