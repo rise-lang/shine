@@ -909,6 +909,13 @@ object fromRise {
           fun[ExpType](expT(inT, a), input => Transmute(a, inT, outT, input))
       }
 
+      case core.updateAtIdx() => fromType {
+        case expT(inT@ArrayType(n, et), `read`) ->: expT(index, `read`) ->: expT(data, `write`) ->: expT(_, `write`)
+          => fun[ExpType](expT(inT, read), input => fun[ExpType](expT(index, read), index =>
+            fun[ExpType](expT(data, write), data => UpdatedAt(n, et, input, index, data)))
+        )
+      }
+
       case core.reduce() =>
         throw new Exception(s"$p has no implementation")
 

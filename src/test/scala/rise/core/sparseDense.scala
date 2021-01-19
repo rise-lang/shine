@@ -29,8 +29,26 @@ class sparseDense extends test_util.Tests {
     val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
+    util.gen.CProgram(inferred, "dense_to_sparse")
+  }
+
+  test("Sparse to dense") {
+    val e = depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => {
+      dmatchNats(matrixWrap)(
+        depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
+          matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
+            (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
+              reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
+              |> mapSeq(fun(x => x)) // Can this be removed? Is there a fundamental reason the reduction accumulator can not be passed down in place?
+          ))) |> unDepArray)))
+    })))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
     util.gen.CProgram(inferred, "sparse_to_dense")
   }
+
 
   test("Dense matrix vector product") {
     val e = depFun((n:Nat) => depFun((m:Nat) => fun(n `.` m `.` f32)(matrix => fun(m `.` f32)(vector => {
@@ -43,12 +61,12 @@ class sparseDense extends test_util.Tests {
     util.gen.CProgram(inferred, "dense_mv")
   }
 
-  def csrMatrix(rows: Nat, cols:Nat, ns: NatCollection):DataType = rows `*.` (i => ((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(cols)))
-  def wrappedCsrMatrix(rows: Nat, cols: Nat): Type = NatCollection ** (ns => csrMatrix(rows, cols, ns))
+  def csrMatrix(rows: Nat, cols:Nat, ns: NatCollection, et:ScalarType):DataType = rows `*.` (i => ((ns `@` (i+1)) - (ns `@` i)) `.` (et x IndexType(cols)))
+  def wrappedCsrMatrix(rows: Nat, cols: Nat, et:ScalarType): Type = NatCollection ** (ns => csrMatrix(rows, cols, ns, et))
 
   test("Sparse matrix vector product") {
-    val e = depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m))(matrixWrap => fun(m `.`f32)(vector => {
-      dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns))(matrix =>
+    val e = depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.`f32)(vector => {
+      dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
         (matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
           (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
               reduceSeq(fun(acc => fun(y => acc + (y._1 * (vector `@` y._2)))))(l(0.0f))
@@ -62,33 +80,32 @@ class sparseDense extends test_util.Tests {
   }
 
   test("Dense matrix matrix product") {
-    val e = depFun((n:Nat) => depFun((m:Nat) => fun(n `.` m `.` f32)(matrix1 => fun(n `.` m `.` f32)(matrix2 => {
-      matrix1 |> mapSeq(fun(row1 => matrix2 |> mapSeq(fun(row2 =>
+    val e = depFun((n:Nat) => depFun((m:Nat) => depFun((k:Nat)=> fun(n `.` m `.` f32)(matrix1 => fun(m `.` k `.` f32)(matrix2 => {
+      matrix2 |> transpose |> mapSeq(fun(row2 => matrix1 |> mapSeq(fun(row1 =>
         zip(row1)(row2) |> reduceSeq(fun(acc => fun(pair => acc + (pair._1 * pair._2))))(l(0.0f))))
       ))
-    }))))
+    })))))
 
     val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(inferred, "dense_mm")
+    util.gen.CProgram(inferred, "dense_dense_mm")
  }
 
   test("Sparse matrix dense matrix product") {
-    val e = depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m))(matrixWrap => fun(n `.` m `.`f32)(dense => {
-
-      dense |> mapSeq(fun(vector =>
-        dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns))(matrix =>
+    val e = depFun((n:Nat) => depFun((m:Nat) => depFun((k:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.` k `.`f32)(dense => {
+      dense |> transpose |> mapSeq(fun(vector =>
+        dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
           (matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
             (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
               reduceSeq(fun(acc => fun(y => acc + (y._1 * (vector `@` y._2)))))(l(0.0f))
           )))) |> unDepArray)))
       ))
-    }))))
+    })))))
 
     val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(inferred, "sparse_mm")
+    util.gen.CProgram(inferred, "sparse_dense_mm")
   }
 }

@@ -197,6 +197,10 @@ object primitives {
     impl { n: Nat =>  (n `.` bool) ->: expl((count: Nat) => count `.` IndexType(n))}
   }
 
+  @primitive object updateAtIdx extends Primitive with Builder {
+    impl { n: Nat => impl { dt: DataType => (n `.` dt) ->: IndexType(n) ->: dt ->: (n `.` dt)}}
+  }
+
   @primitive object liftN extends Primitive with Builder {
     impl { dt: DataType => NatType ->: expl {(_: Nat) => dt } ->: dt }
   }

@@ -627,6 +627,15 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
+      case rp.updateAtIdx() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(input:rt.ArrayType, rt.FunType(index:rt.IndexType, rt.FunType(data:rt.DataType, result:rt.DataType))) =>
+            assert(input == result)
+            expT(dataType(input), read) ->: expT(dataType(index), read) ->: expT(dataType(data), write) ->: expT(dataType(result), write)
+          case _ => ???
+        }
+        buildType(p.t)
+
       case rp.liftN() =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.NatType, rt.FunType(rt.DepFunType(n: rt.NatIdentifier, dt:rt.DataType), outT:rt.DataType)) =>
