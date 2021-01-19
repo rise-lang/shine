@@ -18,22 +18,23 @@ final case class MapFst(w: AccessType,
                         dt3: DataType,
                         f: Phrase[ExpType ->: ExpType],
                         record: Phrase[ExpType]
-                       ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                       ) extends ExpPrimitive with ConT with AccT with FedeT {
   f :: expT(dt1, w) ->: expT(dt3, w)
   record :: expT(dt1 x dt2, w)
   override val t: ExpType = expT(dt3 x dt2, w)
 
-  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
-                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
-    val x = Identifier(freshName("fede_x"), ExpType(dt1, write))
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] =
+  // assumption: f does not need to be translated, it does indexing only
+    con(record)(fun(record.t)(x => C(MapFst(w, dt1, dt2, dt3, f, x))))
 
-    val otype = AccType(dt3)
-    val o = Identifier(freshName("fede_o"), otype)
-
-    fedAcc(env)(record)(fun(env.toList.head._2.t)(y =>
-      MapFstAcc(dt1, dt2, dt3,
-        Lambda(o, fedAcc(scala.Predef.Map(x -> o))(f(x))(fun(otype)(x => x))),
-        C(y))))
+  override def eval(s: Store): Data = {
+    val fE = OperationalSemantics.eval(s, f)
+    OperationalSemantics.eval(s, record) match {
+      case r: PairData =>
+        PairData(OperationalSemantics.eval(s, fE(Literal(r.fst))), r.snd)
+      case _ => throw new Exception("This should not happen")
+    }
   }
 
   def acceptorTranslation(A: Phrase[AccType])
@@ -48,17 +49,16 @@ final case class MapFst(w: AccessType,
       A))
   }
 
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    // assumption: f does not need to be translated, it does indexing only
-    con(record)(fun(record.t)(x => C(MapFst(w, dt1, dt2, dt3, f, x))))
+  def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
+    val x = Identifier(freshName("fede_x"), ExpType(dt1, write))
 
-  override def eval(s: Store): Data = {
-    val fE = OperationalSemantics.eval(s, f)
-    OperationalSemantics.eval(s, record) match {
-      case r: PairData =>
-        PairData(OperationalSemantics.eval(s, fE(Literal(r.fst))), r.snd)
-      case _ => throw new Exception("This should not happen")
-    }
+    val otype = AccType(dt3)
+    val o = Identifier(freshName("fede_o"), otype)
+
+    fedAcc(env)(record)(fun(env.toList.head._2.t)(y =>
+      MapFstAcc(dt1, dt2, dt3,
+        Lambda(o, fedAcc(scala.Predef.Map(x -> o))(f(x))(fun(otype)(x => x))),
+        C(y))))
   }
 }

@@ -17,7 +17,7 @@ final case class MapVec(n: Nat,
                         dt2: ScalarType,
                         f: Phrase[ExpType ->: ExpType],
                         array: Phrase[ExpType]
-                       ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                       ) extends ExpPrimitive with ConT with AccT {
   f :: expT(dt1, read) ->: expT(dt2, write)
   array :: expT(vec(n, dt1), read)
   override val t: ExpType = expT(vec(n, dt2), write)

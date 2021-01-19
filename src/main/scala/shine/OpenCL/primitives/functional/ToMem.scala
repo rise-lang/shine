@@ -16,7 +16,7 @@ import shine.macros.Primitive.expPrimitive
 final case class ToMem(addrSpace: AddressSpace,
                        dt: DataType,
                        input: Phrase[ExpType]
-                      ) extends ExpPrimitive with ContinuationTranslatable {
+                      ) extends ExpPrimitive with ConT {
   input :: expT(dt, write)
   override val t: ExpType = expT(dt, read)
 

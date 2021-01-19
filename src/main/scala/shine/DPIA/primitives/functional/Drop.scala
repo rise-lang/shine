@@ -15,7 +15,7 @@ final case class Drop(n: Nat,
                       m: Nat,
                       dt: DataType,
                       array: Phrase[ExpType]
-                     ) extends ExpPrimitive with ContinuationTranslatable {
+                     ) extends ExpPrimitive with ConT {
   array :: expT((n + m)`.`dt, read)
   override val t: ExpType = expT(m`.`dt, read)
 

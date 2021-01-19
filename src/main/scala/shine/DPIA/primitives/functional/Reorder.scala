@@ -19,24 +19,24 @@ final case class Reorder(n: Nat,
                          idxF: Phrase[ExpType ->: ExpType],
                          idxFinv: Phrase[ExpType ->: ExpType],
                          input: Phrase[ExpType]
-                        ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                        ) extends ExpPrimitive with ConT with AccT with FedeT {
   idxF :: expT(idx(n), read) ->: expT(idx(n), read)
   idxFinv :: expT(idx(n), read) ->: expT(idx(n), read)
   input :: expT(n`.`dt, access)
   override val t: ExpType = expT(n`.`dt, access)
 
-  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
-                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
-    fedAcc(env)(input)(λ(accT(C.t.inT.dataType))(o => ReorderAcc(n, dt, idxFinv, C(o))))
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] =
+    con(input)(λ(expT(n`.`dt, read))(x =>
+      C(Reorder(n, dt, access, idxF, idxFinv, x))))
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     acc(input)(ReorderAcc(n, dt, idxFinv, A))
 
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(input)(λ(expT(n`.`dt, read))(x =>
-      C(Reorder(n, dt, access, idxF, idxFinv, x))))
+  def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
+    fedAcc(env)(input)(λ(accT(C.t.inT.dataType))(o => ReorderAcc(n, dt, idxFinv, C(o))))
 
   override def eval(s: Store): Data = {
     import shine.DPIA.Semantics.OperationalSemantics._

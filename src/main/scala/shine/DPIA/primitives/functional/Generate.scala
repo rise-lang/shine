@@ -14,7 +14,7 @@ import shine.macros.Primitive.expPrimitive
 final case class Generate(n: Nat,
                           dt: DataType,
                           f: Phrase[ExpType ->: ExpType]
-                         ) extends ExpPrimitive with ContinuationTranslatable {
+                         ) extends ExpPrimitive with ConT {
   f :: expT(idx(n), read) ->: expT(dt, read)
   override val t: ExpType = expT(n`.`dt, read)
 

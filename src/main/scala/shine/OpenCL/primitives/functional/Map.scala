@@ -21,7 +21,7 @@ final case class Map(level: ParallelismLevel,
                      val dt2: DataType,
                      val f: Phrase[ExpType ->: ExpType],
                      val array: Phrase[ExpType]
-                    ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                    ) extends ExpPrimitive with ConT with AccT {
   f :: expT(dt1, read) ->: expT(dt2, write)
   array :: expT(n `.` dt1, read)
   override val t: ExpType = expT(n `.` dt2, write)

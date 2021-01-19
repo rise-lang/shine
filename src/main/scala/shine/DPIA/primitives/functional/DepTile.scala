@@ -18,7 +18,7 @@ final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
                          dt1: DataType, dt2: DataType,
                          processTiles: Phrase[ExpType ->: ExpType],
                          array: Phrase[ExpType]
-                        ) extends ExpPrimitive with AcceptorTranslatable {
+                        ) extends ExpPrimitive with AccT {
   val allTiles = (n + tileSize - 1) / tileSize
   val fullTiles = n / tileSize
   val remainder = n % tileSize

@@ -14,7 +14,7 @@ import shine.macros.Primitive.expPrimitive
 final case class Scatter(n: Nat, m: Nat, dt: DataType,
                          indices: Phrase[ExpType],
                          input: Phrase[ExpType]
-                        ) extends ExpPrimitive with AcceptorTranslatable {
+                        ) extends ExpPrimitive with AccT {
   indices :: expT(n`.`idx(m), read)
   input :: expT(n`.`dt, write)
   override val t: ExpType = expT(m`.`dt, write)

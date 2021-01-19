@@ -16,13 +16,13 @@ final case class RotateValues(n: Nat,
                               dt: DataType,
                               write: Phrase[ExpType ->: ExpType],
                               input: Phrase[ExpType]
-                             ) extends ExpPrimitive {
+                             ) extends ExpPrimitive with StreamT {
   write :: expT(dt, read) ->: expT(dt, shine.DPIA.Types.write)
   input :: expT((n - 1 + sz)`.`dt, read)
   override val t: ExpType = expT(n`.`(sz`.`dt), read)
 
-  override def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                                (implicit context: TranslationContext): Phrase[CommType] = {
+  def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
+                       (implicit context: TranslationContext): Phrase[CommType] = {
     val i = NatIdentifier(freshName("i"))
     str(input)(fun((i: NatIdentifier) ->:
       (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)

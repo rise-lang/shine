@@ -12,7 +12,7 @@ import shine.macros.Primitive.expPrimitive
 final case class VectorFromScalar(n: Nat,
                                   dt: ScalarType,
                                   arg: Phrase[ExpType]
-                                 ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                                 ) extends ExpPrimitive with ConT with AccT {
   arg :: expT(dt, read)
   override val t: ExpType = expT(vec(n, dt), read)
 

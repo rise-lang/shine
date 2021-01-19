@@ -14,7 +14,7 @@ final case class DepIdx(n: Nat,
                         ft: NatToData,
                         index: Nat,
                         array: Phrase[ExpType]
-                       ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                       ) extends ExpPrimitive with ConT with AccT {
   array :: expT(n`.d`ft, read)
   override val t: ExpType = expT(ft(index), read)
 

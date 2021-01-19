@@ -18,7 +18,7 @@ final case class DepJoin(n: Nat,
                          lenF: NatToNat,
                          dt: DataType,
                          array: Phrase[ExpType]
-                        ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                        ) extends ExpPrimitive with ConT with AccT {
   array :: expT(n`.d`{ i => lenF(i) `.` dt }, read)
   override val t: ExpType = expT(BigSum(from = 0, upTo = n - 1, i => lenF(i))`.`dt, read)
 

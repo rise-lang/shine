@@ -16,7 +16,7 @@ final case class AsVectorAligned(n: Nat,
                                  w: AccessType,
                                  dt: ScalarType,
                                  array: Phrase[ExpType]
-                                ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                                ) extends ExpPrimitive with ConT with AccT {
   array :: expT((m * n)`.`dt, w)
   override val t: ExpType = expT(m`.`vec(n, dt), w)
 

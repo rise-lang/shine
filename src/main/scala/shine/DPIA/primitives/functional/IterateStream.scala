@@ -15,7 +15,7 @@ final case class IterateStream(n: Nat,
                                dt2: DataType,
                                f: Phrase[ExpType ->: ExpType],
                                array: Phrase[ExpType]
-                              ) extends ExpPrimitive with AcceptorTranslatable {
+                              ) extends ExpPrimitive with AccT {
   f :: expT(dt1, read) ->: expT(dt2, write)
   array :: expT(n`.`dt1, read)
   override val t: ExpType = expT(n`.`dt2, write)

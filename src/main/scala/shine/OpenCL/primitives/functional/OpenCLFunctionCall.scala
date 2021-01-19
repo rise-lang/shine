@@ -15,7 +15,7 @@ final case class OpenCLFunctionCall(name: String,
                                     inTs: Seq[DataType],
                                     outT: DataType,
                                     args: Seq[Phrase[ExpType]]
-                                   ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                                   ) extends ExpPrimitive with ConT with AccT {
   (inTs zip args).foreach{
     case (inT, arg) => arg :: expT(inT, read)
   }

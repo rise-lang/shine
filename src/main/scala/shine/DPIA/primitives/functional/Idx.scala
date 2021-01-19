@@ -16,7 +16,7 @@ final case class Idx(n: Nat,
                      dt: DataType,
                      index: Phrase[ExpType],
                      array: Phrase[ExpType]
-                    ) extends ExpPrimitive with ContinuationTranslatable {
+                    ) extends ExpPrimitive with ConT {
   index :: expT(idx(n), read)
   array :: expT(n`.`dt, read)
   override val t: ExpType = expT(dt, read)

@@ -18,23 +18,23 @@ final case class Split(n: Nat,
                        w: AccessType,
                        dt: DataType,
                        array: Phrase[ExpType]
-                      ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                      ) extends ExpPrimitive with ConT with AccT with FedeT {
   array :: expT((m * n)`.`dt, w)
   override val t: ExpType = expT(m`.`(n`.`dt), w)
-
-  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
-                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
-    fedAcc(env)(array)(λ(accT(C.t.inT.dataType))(o =>
-      SplitAcc(n, m, dt, C(o))))
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(array)(SplitAcc(n, m, dt, A))
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
     con(array)(λ(expT((m * n)`.`dt, read))(x =>
       C(Split(n, m, w, dt, x))))
+
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommType] =
+    acc(array)(SplitAcc(n, m, dt, A))
+
+  def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
+    fedAcc(env)(array)(λ(accT(C.t.inT.dataType))(o =>
+      SplitAcc(n, m, dt, C(o))))
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, array) match {

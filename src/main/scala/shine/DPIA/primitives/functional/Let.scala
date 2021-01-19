@@ -14,7 +14,7 @@ final case class Let(dt1: DataType,
                      access: AccessType,
                      value: Phrase[ExpType],
                      f: Phrase[ExpType ->: ExpType]
-                    ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                    ) extends ExpPrimitive with ConT with AccT {
   value :: expT(dt1, read)
   f :: expT(dt1, read) ->: expT(dt2, access)
   override val t: ExpType = expT(dt2, access)

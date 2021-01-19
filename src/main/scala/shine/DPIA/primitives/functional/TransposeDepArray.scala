@@ -14,7 +14,7 @@ final case class TransposeDepArray(n: Nat,
                                    m: Nat,
                                    f: NatToData,
                                    array: Phrase[ExpType]
-                                  ) extends ExpPrimitive with ContinuationTranslatable {
+                                  ) extends ExpPrimitive with ConT {
   array :: expT(n`.`(m`.d`f), read)
   override val t: ExpType = expT(m`.d`{ k => n`.`f(k) }, read)
 

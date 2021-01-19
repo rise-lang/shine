@@ -17,7 +17,7 @@ final case class Cycle(n: Nat,
                        m: Nat,
                        dt: DataType,
                        input: Phrase[ExpType]
-                      ) extends ExpPrimitive with ContinuationTranslatable {
+                      ) extends ExpPrimitive with ConT {
   input :: expT(m`.`dt, read)
   override val t: ExpType = expT(n`.`dt, read)
 

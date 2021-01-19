@@ -18,7 +18,7 @@ final case class ReducePar(n: Nat,
                            f: Phrase[ExpType ->: ExpType ->: ExpType],
                            init: Phrase[ExpType],
                            array: Phrase[ExpType]
-                          ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                          ) extends ExpPrimitive with ConT with AccT {
   f :: expT(dt2, read) ->: expT(dt1, read) ->: expT(dt2, write)
   init :: expT(dt2, write)
   array :: expT(n`.`dt1, read)

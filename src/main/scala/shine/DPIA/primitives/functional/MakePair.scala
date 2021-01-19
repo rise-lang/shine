@@ -16,7 +16,7 @@ final case class MakePair(dt1: DataType,
                           access: AccessType,
                           fst: Phrase[ExpType],
                           snd: Phrase[ExpType]
-                         ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                         ) extends ExpPrimitive with ConT with AccT {
   fst :: expT(dt1, access)
   snd :: expT(dt2, access)
   override val t: ExpType = expT(dt1 x dt2, access)

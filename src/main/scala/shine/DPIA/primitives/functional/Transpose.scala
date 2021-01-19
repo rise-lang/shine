@@ -16,21 +16,21 @@ final case class Transpose(n: Nat,
                            dt: DataType,
                            access: AccessType,
                            array: Phrase[ExpType]
-                          ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                          ) extends ExpPrimitive with ConT with AccT with FedeT {
   array :: expT(n`.`(m`.`dt), access)
   override val t: ExpType = expT(m`.`(n`.`dt), access)
-
-  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
-                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
-    fedAcc(env)(array)(fun(AccType(C.t.inT.dataType))(o =>
-      TransposeAcc(n, m, dt, C(o))))
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(array)(TransposeAcc(n, m, dt, A))
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
     con(array)(fun(array.t)(x =>
       C(Transpose(n, m, dt, access, x))))
+
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommType] =
+    acc(array)(TransposeAcc(n, m, dt, A))
+
+  def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
+    fedAcc(env)(array)(fun(AccType(C.t.inT.dataType))(o =>
+      TransposeAcc(n, m, dt, C(o))))
 }

@@ -12,7 +12,7 @@ import shine.macros.Primitive.expPrimitive
 final case class Cast(dt1: BasicType,
                       dt2: BasicType,
                       e: Phrase[ExpType]
-                     )extends ExpPrimitive with ContinuationTranslatable {
+                     )extends ExpPrimitive with ConT {
   e :: expT(dt1, read)
   override val t: ExpType = expT(dt2, read)
 

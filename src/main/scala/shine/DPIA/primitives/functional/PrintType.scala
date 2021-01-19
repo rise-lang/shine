@@ -14,7 +14,7 @@ final case class PrintType(msg: String,
                            dt: DataType,
                            access: AccessType,
                            input: Phrase[ExpType]
-                          ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                          ) extends ExpPrimitive with ConT with AccT {
   println(s"$msg : $dt (DPIA level)")
 
   input :: expT(dt, access)

@@ -15,7 +15,7 @@ final case class DepZip(n: Nat,
                         ft2: NatToData,
                         e1: Phrase[ExpType],
                         e2: Phrase[ExpType]
-                       ) extends ExpPrimitive with ContinuationTranslatable {
+                       ) extends ExpPrimitive with ConT {
   e1 :: expT(n`.d`ft1, read)
   e2 :: expT(n`.d`ft2, read)
   override val t: ExpType = expT(n`.d`{ i => PairType(ft1(i), ft2(i)) }, read)

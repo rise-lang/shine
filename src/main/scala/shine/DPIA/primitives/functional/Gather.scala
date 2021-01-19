@@ -15,7 +15,7 @@ final case class Gather(n: Nat,
                         dt: DataType,
                         indices: Phrase[ExpType],
                         input: Phrase[ExpType]
-                       ) extends ExpPrimitive with ContinuationTranslatable {
+                       ) extends ExpPrimitive with ConT {
   indices :: expT(m`.`idx(n), read)
   input :: expT(n`.`dt, read)
   override val t: ExpType = expT(m`.`dt, read)

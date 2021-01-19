@@ -16,7 +16,7 @@ final case class AsScalar(n: Nat,
                           dt: ScalarType,
                           access: AccessType,
                           array: Phrase[ExpType]
-                         ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                         ) extends ExpPrimitive with ConT with AccT with FedeT {
   array :: expT(n `.` vec(m, dt), access)
   override val t: ExpType = expT((n * m) `.` dt, access)
 

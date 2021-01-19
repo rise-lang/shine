@@ -12,7 +12,7 @@ import shine.macros.Primitive.expPrimitive
 @expPrimitive
 final case class IndexAsNat(n: Nat,
                             e: Phrase[ExpType]
-                           ) extends ExpPrimitive with ContinuationTranslatable {
+                           ) extends ExpPrimitive with ConT {
   e :: expT(idx(n), read)
   override val t: ExpType = expT(NatType, read)
 

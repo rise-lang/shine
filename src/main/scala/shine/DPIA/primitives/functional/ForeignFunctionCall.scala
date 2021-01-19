@@ -22,7 +22,7 @@ final case class ForeignFunctionCall(funDecl: ForeignFunction.Declaration,
                                      inTs: Seq[DataType],
                                      outT: DataType,
                                      args: Seq[Phrase[ExpType]]
-                                    )extends ExpPrimitive with ContinuationTranslatable {
+                                    ) extends ExpPrimitive with ConT {
   (inTs zip args).foreach {
     case (inT, arg) => arg :: expT(inT, read)
   }

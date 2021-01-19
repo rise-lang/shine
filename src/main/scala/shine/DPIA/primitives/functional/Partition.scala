@@ -15,7 +15,7 @@ final case class Partition(n: Nat,
                            lenF: NatToNat,
                            dt: DataType,
                            array: Phrase[ExpType]
-                          ) extends ExpPrimitive with ContinuationTranslatable {
+                          ) extends ExpPrimitive with ConT {
   array :: expT(n`.`dt, read)
   override val t: ExpType = expT(m`.d`{ i => lenF(i)`.`dt }, read)
 

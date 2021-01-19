@@ -12,7 +12,7 @@ import shine.macros.Primitive.expPrimitive
 @expPrimitive
 final case class MakeArray(dt: DataType,
                            elements: Vector[Phrase[ExpType]]
-                          ) extends ExpPrimitive with ContinuationTranslatable {
+                          ) extends ExpPrimitive with ConT {
   override val t: ExpType = expT((elements.length: Nat)`.`dt, read)
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])

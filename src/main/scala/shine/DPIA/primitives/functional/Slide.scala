@@ -20,7 +20,7 @@ final case class Slide(n: Nat,
                        sp: Nat,
                        dt: DataType,
                        input: Phrase[ExpType]
-                      ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                      ) extends ExpPrimitive with ConT with AccT {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
   input :: expT(inputSize`.`dt, read)

@@ -16,7 +16,7 @@ final case class Pad(n: Nat,
                      dt: DataType,
                      padExp: Phrase[ExpType],
                      array: Phrase[ExpType]
-                    ) extends ExpPrimitive with ContinuationTranslatable {
+                    ) extends ExpPrimitive with ConT {
   padExp :: expT(dt, read)
   array :: expT(n `.` dt, read)
   override val t: ExpType = expT((l + n + r)`.`dt, read)

@@ -19,15 +19,10 @@ final case class Zip(n: Nat,
                      access: AccessType,
                      e1: Phrase[ExpType],
                      e2: Phrase[ExpType]
-                    ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                    ) extends ExpPrimitive with ConT with AccT with StreamT {
   e1 :: expT(n`.`dt1, access)
   e2 :: expT(n`.`dt2, access)
   override val t: ExpType = expT(n`.`(dt1 x dt2), access)
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;`
-      acc(e2)(ZipAcc2(n, dt1, dt2, A))
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
@@ -35,8 +30,13 @@ final case class Zip(n: Nat,
       con(e2)(λ(expT(n`.`dt2, read))(y =>
         C(Zip(n, dt1, dt2, access, x, y)) )) ))
 
-  override def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                                (implicit context: TranslationContext): Phrase[CommType] = {
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommType] =
+    acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;`
+      acc(e2)(ZipAcc2(n, dt1, dt2, A))
+
+  def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
+                       (implicit context: TranslationContext): Phrase[CommType] = {
     val i = NatIdentifier("i")
     str(e1)(fun((i: NatIdentifier) ->:
       (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)

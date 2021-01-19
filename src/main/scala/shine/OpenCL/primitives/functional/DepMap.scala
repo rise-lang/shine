@@ -19,7 +19,7 @@ final case class DepMap(level: ParallelismLevel,
                         val ft2:NatToData,
                         val f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                         val array: Phrase[ExpType]
-                       ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                       ) extends ExpPrimitive with ConT with AccT {
   f :: f.t.x ->: expT(ft1(f.t.x), read) ->: expT(ft2(f.t.x), write)
   array :: expT(n `.d` ft1, read)
   override val t: ExpType = expT(n`.d`ft2, write)

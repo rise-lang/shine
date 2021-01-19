@@ -16,7 +16,7 @@ final case class DMatch(x: NatIdentifier,
                         a: AccessType,
                         f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                         input: Phrase[ExpType]
-                       ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                       ) extends ExpPrimitive with ConT with AccT {
   override val t: ExpType = expT(outT, a)
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])

@@ -18,23 +18,23 @@ final case class Unzip(n: Nat,
                        dt2: DataType,
                        access: AccessType,
                        e: Phrase[ExpType]
-                      ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                      ) extends ExpPrimitive with ConT with AccT with FedeT {
   e :: expT(n`.`(dt1 x dt2), access)
   override val t: ExpType = expT((n`.`dt1) x (n`.`dt2), access)
-
-  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
-                              (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
-    fedAcc(env)(e)(fun(accT(C.t.inT.dataType))(o =>
-      UnzipAcc(n, dt1, dt2, C(o))))
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(e)(UnzipAcc(n, dt1, dt2, A))
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
     con(e)(λ(expT(n`.`(dt1 x dt2), read))(x =>
       C(Unzip(n, dt1, dt2, access, x))))
+
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommType] =
+    acc(e)(UnzipAcc(n, dt1, dt2, A))
+
+  def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
+    fedAcc(env)(e)(fun(accT(C.t.inT.dataType))(o =>
+      UnzipAcc(n, dt1, dt2, C(o))))
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, e) match {

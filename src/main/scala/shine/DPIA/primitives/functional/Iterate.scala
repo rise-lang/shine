@@ -17,7 +17,7 @@ final case class Iterate(n: Nat,
                          dt: DataType,
                          f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                          array: Phrase[ExpType]
-                        ) extends ExpPrimitive with AcceptorTranslatable {
+                        ) extends ExpPrimitive with AccT {
   {
     val l = f.t.x
     f :: l ->: expT((l * n)`.`dt, read) ->: expT(l`.`dt, write)

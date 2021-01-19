@@ -19,7 +19,7 @@ final case class ReduceSeq(unroll: Boolean)
                            f: Phrase[ExpType ->: ExpType ->: ExpType],
                            init: Phrase[ExpType],
                            array: Phrase[ExpType]
-                          ) extends ExpPrimitive with ContinuationTranslatable {
+                          ) extends ExpPrimitive with ConT {
   f :: expT(dt2, read) ->: expT(dt1, read) ->: expT(dt2, write)
   init :: expT(dt2, write)
   array :: expT(n`.`dt1, read)

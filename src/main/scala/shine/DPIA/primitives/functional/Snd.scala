@@ -14,7 +14,7 @@ import shine.macros.Primitive.expPrimitive
 final case class Snd(dt1: DataType,
                      dt2: DataType,
                      pair: Phrase[ExpType]
-                    ) extends ExpPrimitive with ContinuationTranslatable {
+                    ) extends ExpPrimitive with ConT {
   pair :: expT(dt1 x dt2, read)
   override val t: ExpType = expT(dt2, read)
 

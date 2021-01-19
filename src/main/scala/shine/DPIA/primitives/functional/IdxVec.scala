@@ -18,7 +18,7 @@ final case class IdxVec(n: Nat,
                         st: ScalarType,
                         index: Phrase[ExpType],
                         vector: Phrase[ExpType]
-                       ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                       ) extends ExpPrimitive with ConT with AccT {
   index :: expT(idx(n), read)
   vector :: expT(vec(n, st), read)
   override val t: ExpType = expT(st, read)

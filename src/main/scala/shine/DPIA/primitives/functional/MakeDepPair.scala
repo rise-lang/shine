@@ -14,7 +14,7 @@ final case class MakeDepPair(a: AccessType,
                              fst: NatIdentifier,
                              sndT: DataType,
                              snd: Phrase[ExpType]
-                        ) extends ExpPrimitive with ContinuationTranslatable with AcceptorTranslatable {
+                        ) extends ExpPrimitive with ConT with AccT {
   override val t: ExpType = expT(DepPairType(fst, sndT), a)
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
