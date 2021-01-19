@@ -16,6 +16,6 @@ object DepMapSeqI {
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommType] =
   {
-    ForNat(n, nFun(i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll)
+    ForNat(unroll)(n, nFun(i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)))
   }
 }

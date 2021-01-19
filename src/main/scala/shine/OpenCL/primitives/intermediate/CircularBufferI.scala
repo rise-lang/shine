@@ -9,7 +9,7 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Cycle, Drop, Zip}
 
-object OpenCLCircularBufferI {
+object CircularBufferI {
   def apply(
     a: AddressSpace,
     n: Nat,

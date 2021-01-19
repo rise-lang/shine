@@ -10,7 +10,7 @@ import shine.DPIA._
 import shine.DPIA.primitives.functional.{NatAsIndex, Take}
 import shine.OpenCL.DSL.newDoubleBuffer
 
-object OpenCLIterateIAcc {
+object IterateIAcc {
   def apply(a: AddressSpace,
             n: Nat,
             m: Nat,

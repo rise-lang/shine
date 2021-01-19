@@ -17,10 +17,15 @@ final case class ParFor(level: ParallelismLevel,
                         val loopBody: Phrase[ExpType ->: AccType ->: CommType],
                         val init: Nat = ParFor.initInit(level, dim),
                         val step: Nat = ParFor.initStep(level, dim),
-                        val name: String = ParFor.initName(level, dim)
+                        val name: String = ParFor.initName(level)
                        ) extends CommandPrimitive {
   out :: accT(n`.`dt)
   loopBody :: expT(idx(n), read) ->: accT(dt) ->: comm
+
+  lazy val unwrapBody: (Identifier[ExpType], Identifier[AccType], Phrase[CommType]) = loopBody match {
+    case Lambda(i, Lambda(o, body)) => (i, o, body)
+    case _ => throw new Exception("This should not happen")
+  }
 }
 
 object ParFor {
@@ -38,7 +43,7 @@ object ParFor {
     case Sequential => throw new Exception("This should not happen")
   }
 
-  def initName(level: ParallelismLevel, dim: Int): String = level match {
+  def initName(level: ParallelismLevel): String = level match {
     case Global     => freshName("gl_id_")
     case Local      => freshName( "l_id_")
     case WorkGroup  => freshName("wg_id_")

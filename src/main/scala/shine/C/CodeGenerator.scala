@@ -112,9 +112,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case NewDoubleBuffer(_, _, dt, n, in, out, Lambda(ps, p)) =>
         CCodeGen.codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
-      case For(n, Lambda(i, p), unroll) => CCodeGen.codeGenFor(n, i, p, unroll, env)
+      case f@For(unroll) =>
+        val (i, p) = f.unwrapBody
+        CCodeGen.codeGenFor(f.n, i, p, unroll, env)
 
-      case ForNat(n, DepLambda(i: NatIdentifier, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
+      case f@ForNat(unroll) =>
+        val (i, p) = f.unwrapBody
+        CCodeGen.codeGenForNat(f.n, i, p, unroll, env)
 
       case Proj1(pair) => Lifting.liftPair(pair)._1 |> cmd(env)
       case Proj2(pair) => Lifting.liftPair(pair)._2 |> cmd(env)

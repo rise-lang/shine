@@ -32,7 +32,7 @@ object FlagPrivateArrayLoops {
         // FIXME: we would like this primitive to be eliminated before this pass?
         case shine.DPIA.primitives.imperative.MapRead(_, _, _, f, in) =>
           Stop(p)
-        case OpenCLNew(AddressSpace.Private, _, Lambda(i: Identifier[_], _)) =>
+        case New(AddressSpace.Private, _, Lambda(i: Identifier[_], _)) =>
           Continue(p, this.copy(privMemIdents = privMemIdents + i))
         case Idx(_, _, i, _) =>
           Continue(p, this.copy(indexingIdents = indexingIdents ++ collectIndexingIdents(i)))
@@ -45,12 +45,9 @@ object FlagPrivateArrayLoops {
           eliminateVars ++= indexingIdents
           Stop(p)
         case pf: ParFor if collectIdents(pf.out).exists(privMemIdents(_)) =>
-          pf.loopBody match {
-            case Lambda(i: Identifier[_], Lambda(o: Identifier[_], _)) =>
-              eliminateVars += i.name
-              Continue(p, this.copy(privMemIdents = privMemIdents + o))
-            case _ => throw new Exception("This should not happen")
-          }
+          val (i, o, _) = pf.unwrapBody
+          eliminateVars += i.name
+          Continue(p, this.copy(privMemIdents = privMemIdents + o))
         case _ =>
           Continue(p, this)
       }
@@ -64,31 +61,24 @@ object FlagPrivateArrayLoops {
                                 eliminateVars: mutable.Set[String]): Phrase[CommType] = {
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case For(n, body@Lambda(i: Identifier[_], _), _) if eliminateVars(i.name) =>
+        case f@For(_) if (eliminateVars(f.unwrapBody._1.name)) =>
+          val (i, _) = f.unwrapBody
           eliminateVars -= i.name
-          Continue(For(n, body, unroll = true), this)
-        case ForNat(n, body@DepLambda(i: NatIdentifier, _), _) if eliminateVars(i.name) =>
+          Continue(For(unroll = true)(f.n, f.loopBody), this)
+        case f@ForNat(_) if (eliminateVars(f.unwrapBody._1.name)) =>
+          val (i, _) = f.unwrapBody
           eliminateVars -= i.name
-          Continue(ForNat(n, body, unroll = true), this)
-        case pf@ParFor(level, dim, _) =>
-          pf.loopBody match {
-            case Lambda(i: Identifier[_], _) if eliminateVars(i.name) =>
-              eliminateVars -= i.name
-              Continue(ParFor(level, dim, unroll = true)
-                (pf.n, pf.dt, pf.out, pf.loopBody, pf.init, pf.step), this)
-            case _ => Continue(p, this)
-          }
-        case pf@OpenCLParForNat(n, dt, out, body@DepLambda(i: NatIdentifier, _), init, step, _)
-          if eliminateVars(i.name) =>
+          Continue(ForNat(unroll = true)(f.n, f.loopBody), this)
+        case pf@ParFor(level, dim, _) if (eliminateVars(pf.unwrapBody._1.name)) =>
+          val (i, _, _) = pf.unwrapBody
           eliminateVars -= i.name
-          pf match {
-            case ParForNatGlobal(dim) =>
-              Continue(ParForNatGlobal(dim)(n, dt, out, body, init, step, unroll = true), this)
-            case ParForNatLocal(dim) =>
-              Continue(ParForNatLocal(dim)(n, dt, out, body, init, step, unroll = true), this)
-            case ParForNatWorkGroup(dim) =>
-              Continue(ParForNatWorkGroup(dim)(n, dt, out, body, init, step, unroll = true), this)
-          }
+          Continue(ParFor(level, dim, unroll = true)
+            (pf.n, pf.dt, pf.out, pf.loopBody, pf.init, pf.step), this)
+        case pf@ParForNat(level, dim, _) if (eliminateVars(pf.unwrapBody._1.name)) =>
+          val (i, _, _) = pf.unwrapBody
+          eliminateVars -= i.name
+          Continue(ParForNat(level, dim, unroll = true)
+            (pf.n, pf.ft, pf.out, pf.loopBody, pf.init, pf.step), this)
         case _ =>
           Continue(p, this)
       }

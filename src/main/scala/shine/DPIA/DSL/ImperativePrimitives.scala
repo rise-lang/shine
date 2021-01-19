@@ -51,7 +51,7 @@ object `if` {
 object `for` {
   def apply(n: Nat,
             f: Identifier[ExpType] => Phrase[CommType], unroll:Boolean = false): For =
-    For(n, λ(expT(idx(n), read))( i => f(i) ), unroll)
+    For(unroll)(n, λ(expT(idx(n), read))( i => f(i) ))
 }
 
 object forNat {
@@ -61,7 +61,7 @@ object forNat {
     unroll: Boolean = false
   ): ForNat = {
     import arithexpr.arithmetic.RangeAdd
-    ForNat(n, nFun(i => f(i), RangeAdd(0, n, 1)), unroll)
+    ForNat(unroll)(n, nFun(i => f(i), RangeAdd(0, n, 1)))
   }
 }
 

@@ -7,7 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.primitives.intermediate.OpenCLIterateIAcc
+import shine.OpenCL.primitives.intermediate.IterateIAcc
 import shine.macros.Primitive.expPrimitive
 
 @expPrimitive
@@ -29,7 +29,7 @@ final case class Iterate(a: AddressSpace,
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x =>
-      OpenCLIterateIAcc(a, n, m, k, dt, A,
+      IterateIAcc(a, n, m, k, dt, A,
         _Λ_[NatKind]()(l => λ(accT(l`.`dt))(o =>
           λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
         x) ))

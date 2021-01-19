@@ -152,10 +152,10 @@ object Primitive {
 
       q"""
        override def xmlPrinter: scala.xml.Elem = {
-         val attributes = $attributes
-         val body = $body
-         scala.xml.Elem(null, $lowerCaseName, attributes, scala.xml.TopScope,
-                        minimizeEmpty = false, body:_*)
+         val attributes_ = $attributes
+         val body_ = $body
+         scala.xml.Elem(null, $lowerCaseName, attributes_, scala.xml.TopScope,
+                        minimizeEmpty = false, (body_):_*)
        }
        """
     }

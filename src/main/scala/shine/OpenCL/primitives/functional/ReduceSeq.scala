@@ -7,7 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.primitives.intermediate.OpenCLReduceSeqI
+import shine.OpenCL.primitives.intermediate.ReduceSeqI
 import shine.macros.Primitive.expPrimitive
 
 @expPrimitive
@@ -28,7 +28,7 @@ final case class ReduceSeq(unroll: Boolean)
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
     con(array)(λ(expT(n`.`dt1, read))(X =>
-      OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
+      ReduceSeqI(n, initAddrSpace, dt1, dt2,
         λ(expT(dt2, read))(x =>
           λ(expT(dt1, read))(y =>
             λ(accT(dt2))(o => acc( f(x)(y) )( o )))),

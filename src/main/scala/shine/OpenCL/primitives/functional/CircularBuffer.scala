@@ -9,7 +9,7 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.Slide
-import shine.OpenCL.primitives.intermediate.OpenCLCircularBufferI
+import shine.OpenCL.primitives.intermediate.CircularBufferI
 import shine.macros.Primitive.expPrimitive
 
 @expPrimitive
@@ -32,7 +32,7 @@ final case class CircularBuffer(a: AddressSpace,
     str(input)(fun((i: NatIdentifier) ->:
       (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
     )(nextIn =>
-      OpenCLCircularBufferI(a, n, alloc, sz, dt1, dt2,
+      CircularBufferI(a, n, alloc, sz, dt1, dt2,
         fun(expT(dt1, read))(x =>
           fun(accT(dt2))(o => acc(load(x))(o))),
         nextIn, C)

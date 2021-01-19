@@ -1,5 +1,6 @@
 package shine.OpenCL.compilation
 
+import shine.DPIA.->:
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional
@@ -7,7 +8,7 @@ import shine.DPIA.primitives.functional.{Map => _, _}
 import shine.DPIA.primitives.imperative._
 import shine.OpenCL
 import shine.OpenCL.Local
-import shine.OpenCL.primitives.imperative._
+import shine.OpenCL.primitives.imperative.{New => OclNew, NewDoubleBuffer => OclNewDoubleBuffer, _}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -61,37 +62,38 @@ object InsertMemoryBarriers {
                              metadata: Metadata) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {
-        case For(n, Lambda(x, body), unroll) =>
-          Stop(For(n, Lambda(x, visitLoopBody(body, allocs, metadata)), unroll))
-        case ForNat(n, DepLambda(x, body), unroll) =>
-          Stop(ForNat(n, DepLambda(x, visitLoopBody(body, allocs, metadata)), unroll))
+        case f@For(unroll) =>
+          val (x, body) = f.unwrapBody
+          Stop(For(unroll)(f.n, Lambda(x, visitLoopBody(body, allocs, metadata))))
+        case f@ForNat(unroll) =>
+          val (x, body) = f.unwrapBody
+          Stop(ForNat(unroll)(f.n,
+            DepLambda[NatKind, CommType](x, visitLoopBody(body, allocs, metadata))))
         case pf@ParFor(Local, dim, unroll) =>
-          pf.loopBody match {
-            case Lambda(x, Lambda(o, body)) =>
-              val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
-              collectWrites(pf.out, allocs, outer_wg_writes)
-              Stop(ParFor(Local, dim, unroll)(pf.n, pf.dt, pf.out,
-                Lambda(x, Lambda(o,
-                  visitLoopBody(body, allocs, metadata, outer_wg_writes))), pf.init, pf.step))
-            case _ => throw new Exception("This should not happen")
-          }
+          val (x, o, body) = pf.unwrapBody
+          val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
+          collectWrites(pf.out, allocs, outer_wg_writes)
+          Stop(ParFor(Local, dim, unroll)(pf.n, pf.dt, pf.out,
+            Lambda(x, Lambda(o,
+              visitLoopBody(body, allocs, metadata, outer_wg_writes))), pf.init, pf.step))
         case pf@ParFor(level, dim, unroll) =>
-          pf.loopBody match {
-            case Lambda(x, Lambda(o, body)) =>
-              Stop(ParFor(level, dim, unroll)(pf.n, pf.dt, pf.out,
-                Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
-            case _ => throw new Exception("This should not happen")
-          }
-        case pfn: OpenCLParForNat => ???
-        case OpenCLNew(addr, _, Lambda(x, _)) if addr != AddressSpace.Private =>
+          val (x, o, body) = pf.unwrapBody
+          Stop(ParFor(level, dim, unroll)(pf.n, pf.dt, pf.out,
+            Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
+        case pf@ParForNat(level, dim, unroll) =>
+          val (x, o, body) = pf.unwrapBody
+          Stop(ParForNat(level, dim, unroll)(pf.n, pf.ft, pf.out,
+            DepLambda[NatKind, AccType ->: CommType](x,
+              Lambda(o, visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
+        case OclNew(addr, _, Lambda(x, _)) if addr != AddressSpace.Private =>
           Continue(p, Visitor(allocs + (x -> addr), metadata))
-        case OpenCLNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body))
+        case OclNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body))
         if addr != AddressSpace.Private =>
           val (b2, m) = analyzeAndInsertBarriers(body, allocs + (x -> addr))
           collectReads(in, allocs, metadata.reads)
           metadata.reads ++= m.reads
           metadata.reads ++= m.reads
-          Stop(OpenCLNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, b2)))
+          Stop(OclNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, b2)))
         case Assign(_, _, rhs) =>
           collectReads(rhs, allocs, metadata.reads)
           Stop(p)

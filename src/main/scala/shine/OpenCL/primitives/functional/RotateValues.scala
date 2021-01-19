@@ -8,7 +8,7 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.primitives.intermediate.OpenCLRotateValuesI
+import shine.OpenCL.primitives.intermediate.RotateValuesI
 import shine.macros.Primitive.expPrimitive
 
 @expPrimitive
@@ -29,7 +29,7 @@ final case class RotateValues(a: AddressSpace,
     str(input)(fun((i: NatIdentifier) ->:
       (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)
     )(nextIn =>
-      OpenCLRotateValuesI(a, n, sz, dt,
+      RotateValuesI(a, n, sz, dt,
         fun(expT(dt, read))(x =>
           fun(accT(dt))(o => acc(write(x))(o))),
         nextIn, C)

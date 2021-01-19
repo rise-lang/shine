@@ -36,9 +36,11 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
-    case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) => OpenMPCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
-    case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) => OpenMPCodeGen.codeGenParForVec(n, dt, a, i, o, p, env)
-    case ParForNat(n, _, a, DepLambda(i: NatIdentifier, Lambda(o, p))) =>
+    case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
+      OpenMPCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
+    case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) =>
+      OpenMPCodeGen.codeGenParForVec(n, dt, a, i, o, p, env)
+    case ParForNat(n, _, a, DepLambda(i, Lambda(o, p))) =>
       OpenMPCodeGen.codeGenParForNat(n, a, i, o, p, env)
     case phrase => phrase |> super.cmd(env)
   }

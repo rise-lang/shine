@@ -9,7 +9,7 @@ import shine.DPIA._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
 
-object OpenCLReduceSeqI {
+object ReduceSeqI {
   def apply(n: Nat,
             initAddrSpace: shine.DPIA.Types.AddressSpace,
             dt1: DataType, dt2: DataType,
