@@ -98,7 +98,7 @@ object mriQ {
   }
 
   def runComputePhiMag(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     phiR: Array[Float],
     phiI: Array[Float]
   ): (Array[Float], TimeSpan[Time.ms]) = {
@@ -162,7 +162,7 @@ object mriQ {
   }
 
   def runComputeQ(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     x: Array[Float],
     y: Array[Float],
     z: Array[Float],

@@ -2,9 +2,9 @@ package shine.DPIA.Compilation
 
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.FunctionalPrimitives.Pair
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.DPIA.primitives.functional.Pair
 
 import scala.language.reflectiveCalls
 

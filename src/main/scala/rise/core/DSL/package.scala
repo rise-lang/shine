@@ -37,15 +37,11 @@ package object DSL {
 
   def toMemFun(f: ToBeTyped[Expr]): ToBeTyped[Expr] = fun(x => toMem(f(x)))
 
-  object `if` {
-    def apply(b: ToBeTyped[Expr]): Object {
-      def `then`(tE: ToBeTyped[Expr]): Object {
-        def `else` (eE: ToBeTyped[Expr] ): ToBeTyped[Expr]
-      }
-    } = new {
-      def `then`(tE: ToBeTyped[Expr]): Object {
-        def `else`(eE: ToBeTyped[Expr]): ToBeTyped[Expr]
-      } = new {
+  case class `if`(b: ToBeTyped[Expr]) {
+    def `then`(tE: ToBeTyped[Expr]): Object {
+      def `else` (eE: ToBeTyped[Expr] ): ToBeTyped[Expr]
+    } = {
+      new {
         def `else`(eE: ToBeTyped[Expr]): ToBeTyped[Expr] = {
           select(b)(tE)(eE)
         }

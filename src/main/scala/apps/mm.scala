@@ -186,7 +186,7 @@ object mm {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runKernel(kernel: KernelNoSizes,
+  def runKernel(kernel: KernelExecutor.KernelNoSizes,
                 localSize: LocalSize,
                 globalSize: GlobalSize,
                 At: Array[Array[Float]],

@@ -10,6 +10,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.primitives.functional._
 
 object fromRise {
   def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
@@ -62,7 +63,7 @@ object fromRise {
 
     case r.Literal(d) => d match {
       case rs.NatData(n) => Natural(n)
-      case rs.IndexData(i, n) => FunctionalPrimitives.NatAsIndex(n, Natural(i))
+      case rs.IndexData(i, n) => NatAsIndex(n, Natural(i))
       case _ => Literal(data(d))
     }
 
@@ -82,7 +83,7 @@ object fromRise {
   }
 
   import rise.core.{primitives => core}
-  import shine.DPIA.FunctionalPrimitives._
+  import shine.DPIA.primitives.functional._
 
   def fun[T <: PhraseType](
     t: T,
@@ -106,8 +107,8 @@ object fromRise {
                         t: PhraseType): Phrase[_ <: PhraseType] = {
     import rise.openCL.{primitives => ocl}
     import rise.openMP.{primitives => omp}
-    import shine.OpenCL.FunctionalPrimitives._
-    import shine.OpenMP.FunctionalPrimitives._
+    import shine.OpenCL.primitives.functional._
+    import shine.OpenMP.primitives.functional._
     import shine.DPIA.Types.MatchingDSL._
 
     def fromType(f: PartialFunction[PhraseType, Phrase[_ <: PhraseType]]): Phrase[_ <: PhraseType] = {
@@ -564,7 +565,7 @@ object fromRise {
         =>
         fun[ExpType](expT(idx(n), read), i =>
           fun[ExpType](expT(n`.`t, read), e =>
-            FunctionalPrimitives.Idx(n, t, i, e)))
+            Idx(n, t, i, e)))
       }
 
       case core.select() => fromType {
@@ -682,17 +683,17 @@ object fromRise {
         }
         val (inTs, outT) = collectTypes(t)
 
-        def buildFFPrimitive(args: Vector[Phrase[ExpType]]
+        def buildFFCall(args: Vector[Phrase[ExpType]]
                             ): Phrase[_ <: PhraseType] = {
           val i = args.length
           if (i < inTs.length) {
             fun[ExpType](ExpType(inTs(i), read), a =>
-              buildFFPrimitive(args :+ a))
+              buildFFCall(args :+ a))
           } else {
-            ForeignFunction(decl, inTs, outT, args)
+            ForeignFunctionCall(decl, inTs, outT, args)
           }
         }
-        buildFFPrimitive(Vector())
+        buildFFCall(Vector())
 
       case core.generate() => fromType {
         case (expT(IndexType(n), `read`) ->: expT(t, `read`)) ->:

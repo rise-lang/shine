@@ -44,7 +44,7 @@ class Acoustic3D extends test_util.TestsWithExecutor {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runKernel(k: KernelNoSizes,
+  def runKernel(k: KernelExecutor.KernelNoSizes,
                 mat1: Array[Array[Array[Float]]],
                 mat2: Array[Array[Array[Float]]]): (Array[Float], TimeSpan[Time.ms]) = {
     val f = k.as[ScalaFunction `(`
@@ -63,8 +63,8 @@ class Acoustic3D extends test_util.TestsWithExecutor {
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("acoustic3D.cl", mat1, mat2)),
       ("originalMSS", runOriginalKernel("acoustic3DMSS.cl", mat1, mat2)),
-      ("dpia", runKernel(gen.OpenCLKernel(stencil), mat1, mat2)),
-      ("dpiaMSS", runKernel(gen.OpenCLKernel(stencilMSS), mat1, mat2))
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(stencil), mat1, mat2)),
+      ("dpiaMSS", runKernel(gen.opencl.kernel.fromExpr(stencilMSS), mat1, mat2))
     ))
   }
 }

@@ -106,11 +106,13 @@ float clamp_f32(float v, float l, float h) {
     outputSize: Int, outputCty: String, outputPath: String,
     delta: Int,
   ): Unit = {
-    val prog = printTime("codegen", gen.OpenMPProgram(lowered))
+    val computeFun = printTime("codegen",
+      gen.openmp.function("compute").asStringFromExpr(lowered)
+    )
     val testCode = s"""
 ${cHeader}
 
-${prog.code}
+$computeFun
 
 ${cameraPipelineCheck.read_csv(inputCty)}
 ${if (inputCty != outputCty) cameraPipelineCheck.read_csv(outputCty) else ""}
@@ -123,7 +125,7 @@ int main(int argc, char** argv) {
   read_csv_${inputCty}(${inputSize}, input, "data/golds/camera_pipe/${inputPath}");
   read_csv_${outputCty}(${outputSize}, gold, "data/golds/camera_pipe/${outputPath}");
 
-  ${callCFun(prog.function.name)}
+  ${callCFun("compute")}
 
   size_t differences = 0;
   size_t errors = 0;
