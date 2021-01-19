@@ -261,7 +261,6 @@ object primitives {
       impl{ s: DataType => impl{ t: DataType =>
         (s ->: t) ->: // function to load an input
           ((n - 1 + sz) `.` s) ->: (n `.` sz `.` t) }}))}
-          // ((n + sz) `.` s) ->: ((1 + n) `.` sz `.` t) }}))}
   }
 
   // mainly to achieve register rotation
@@ -270,7 +269,6 @@ object primitives {
     impl{ n: Nat => expl((sz: Nat) => impl{ s: DataType =>
       (s ->: s) ->: // function to write a value
         ((n - 1 + sz) `.` s) ->: (n `.` sz `.` s) })}
-        // ((n + sz) `.` s) ->: ((1 + n) `.` sz `.` s) })}
   }
 
   @primitive object snd extends Primitive with Builder {
