@@ -277,7 +277,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.toMem() => p.t match {
+      case rp.toMem() | roclp.oclRun() => p.t match {
         case (t: rt.DataType) ->: (_: rt.DataType) =>
           expT(t, write) ->: expT(t, read)
         case _ => error()

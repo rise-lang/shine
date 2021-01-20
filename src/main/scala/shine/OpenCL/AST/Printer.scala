@@ -34,7 +34,17 @@ class Printer extends shine.C.AST.CPrinter {
     case _ => super.printStmt(s)
   }
 
-  override def typeName(t: Type): String = super.typeName(t)
+  override def typeName(t: Type): String = t match {
+    case Type.i8 => "char"
+    case Type.u8 => "uchar"
+    case Type.i16 => "short"
+    case Type.u16 => "ushort"
+    case Type.i32 => "int"
+    case Type.u32 => "uint"
+    case Type.i64 => "long"
+    case Type.u64 => "ulong"
+    case _ => super.typeName(t)
+  }
 
   override def toString(e: ArithExpr): String = e match {
     case of: BuiltInFunctionCall => of.toString
@@ -73,7 +83,7 @@ class Printer extends shine.C.AST.CPrinter {
 //          case Some(s) => s
 //        }
 //        print(s"$addr${a.getBaseType} ${p.name}[$size]")
-      case pt: OpenCL.AST.PointerType => print(s"${toString(pt.a)} ${pt.valueType}* restrict ${p.name}")
+      case pt: OpenCL.AST.PointerType => print(s"${toString(pt.a)} ${typeName(pt.valueType)}* restrict ${p.name}")
       case _: shine.C.AST.PointerType => throw new Exception("Pointer without address space unsupported in OpenCL")
     }
   }
@@ -86,11 +96,11 @@ class Printer extends shine.C.AST.CPrinter {
       case s: StructType => print(s"struct ${s.name} ${v.name}")
       case a: ArrayType =>
         // float name[s];
-        print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
+        print(s"${typeName(a.getBaseType)} ${v.name}[${ a.getSizes match {
           case None => ""
           case Some(s) => s
         } }]")
-      case p: shine.OpenCL.AST.PointerType => print(s"${toString(p.a)} ${p.valueType}* ${v.name}")
+      case p: shine.OpenCL.AST.PointerType => print(s"${toString(p.a)} ${typeName(p.valueType)}* ${v.name}")
       case _: shine.C.AST.PointerType => throw new Exception("This should not happen")
       case _: shine.C.AST.UnionType => ???
     }
@@ -123,7 +133,7 @@ class Printer extends shine.C.AST.CPrinter {
 
   def printVectorLiteral(vl: VectorLiteral): Unit = {
     val VectorType(m, dt, _) = vl.t
-    print(s"($dt$m)")
+    print(s"(${typeName(dt)}$m)")
     print("(")
     printExpr(vl.values.head)
     for (v <- vl.values.tail) {

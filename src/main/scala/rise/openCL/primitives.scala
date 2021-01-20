@@ -64,4 +64,8 @@ object primitives {
         (s ->: s) ->: // function to write a value
           ((n + sz)`.`s) ->: ((1 + n)`.`sz`.`s) })})
   }
+
+  @primitive object oclRun extends Primitive with Builder {
+    impl{ t: DataType => t ->: t }
+  }
 }

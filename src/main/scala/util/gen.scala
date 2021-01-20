@@ -93,7 +93,8 @@ object gen {
         gen.opencl.kernel().asStringFromPhrase
 
       def asString: KernelModule => String =
-        OpenCL.KernelModule.translationToString
+        OpenCL.KernelModule.translationToString _ andThen
+        run(SyntaxChecker.checkOpenCL)
     }
 
     case class kernel(wgConfig: Option[WorkGroupConfig], name: String) {
@@ -130,6 +131,18 @@ object gen {
         shine.OpenCL.KernelModule.fromKernelDef(Some(localSize, globalSize))
       case None =>
         shine.OpenCL.KernelModule.fromKernelDef(None)
+    }
+
+    object hosted {
+      def apply(name: String = "foo"): hosted = new hosted(name)
+
+      def fromExpr: Expr => OpenCL.Module = gen.opencl.hosted().fromExpr
+      def fromPhrase: Phrase => OpenCL.Module = gen.opencl.hosted().fromPhrase
+    }
+
+    case class hosted(name: String) {
+      def fromExpr: Expr => OpenCL.Module = exprToPhrase andThen fromPhrase
+      def fromPhrase: Phrase => OpenCL.Module = OpenCL.Module.fromPhrase(C.CodeGenerator(), name)
     }
   }
 

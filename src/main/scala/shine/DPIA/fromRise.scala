@@ -800,6 +800,12 @@ object fromRise {
             OclToMem(a, t, e)))
       }
 
+      case ocl.oclRun() => fromType {
+        case expT(t, `write`) ->: expT(_, `read`)
+        =>
+          fun[ExpType](expT(t, write), e => Run(t, e))
+      }
+
       case core.dmatch() => fromType {
         case expT(DepPairType(x, elemT), `read`) ->:
           nFunT(i, expT(elem_iT, `read`) ->: expT(outT, a))
