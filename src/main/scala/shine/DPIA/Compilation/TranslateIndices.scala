@@ -46,7 +46,6 @@ object TranslateIndices {
     LetNat(identifier, exp, f(identifier()))
   }
  */
-
   private def nat2idx(i : Nat, n : Nat) : Phrase[ExpType] = {
     NatAsIndex(n, Natural(i))
   }
@@ -55,66 +54,97 @@ object TranslateIndices {
     = Lifting.liftFunction(fun).reducing(arg)
 
   def idx(p : Phrase[ExpType], path : List[PathExpr]) : Phrase[ExpType] = {
-    (p, path) match {
-      case (Idx(_, _, i, e), ps) => idx(e, CIntExpr(idx2nat(i)) :: ps)
-      //case (Idx(_, _, i, e), ps) => letNat(i, in => idx(e, CIntExpr(in) :: ps))
-      case (Fst(_, _, e), ps) => idx(e, FstMember :: ps)
-      case (Snd(_, _, e), ps) => idx(e, SndMember :: ps)
-      case (Split(n, _, _, _, e), CIntExpr(i) :: CIntExpr(j) :: ps) => idx(e, CIntExpr(n * i + j) :: ps)
-      case (Join(_, m, _, _, e), CIntExpr(i) :: ps) => idx(e, CIntExpr(i / m) :: CIntExpr(i % m) :: ps)
-      case (Map(n, dt1, _, _, f, e), CIntExpr(i) :: ps) => idx(reduce(f, Idx(n, dt1, nat2idx(i, n), e)), ps)
-      case (Generate(n, _, f), CIntExpr(i) :: ps) => idx(reduce(f, nat2idx(i, n)), ps)
-      case (Zip(_, _, _, _, e1, e2), CIntExpr(i) :: (xj: PairAccess) :: ps) => xj match {
-        case FstMember => idx(e1, CIntExpr(i) :: ps)
-        case SndMember => idx(e2, CIntExpr(i) :: ps) }
-      case (Zip(n, dt1, dt2, _, e1, e2), CIntExpr(i) :: Nil) =>
-        idx(Pair(dt1, dt2, read, Idx(n, dt1, nat2idx(n, i), e1), Idx(n, dt2, nat2idx(n, i), e2)), Nil)
-      case (DepZip(_, _, _, e1, e2), CIntExpr(i) :: (xj : PairAccess) :: ps) => xj match {
-        case FstMember => idx(e1, CIntExpr(i) :: ps)
-        case SndMember => idx(e2, CIntExpr(i) :: ps)
+    def fromPath[T](f: PartialFunction[List[PathExpr],  T]): T = {
+      f.lift(path) match {
+        case Some(p) => p
+        case None => throw new Exception(s"Unexpected path for $p : $path")
       }
-      case (Gather(n, m, dt, y, e), CIntExpr(i) :: ps) => {
-          val yi = Idx(m, IndexType(n), nat2idx(m, i), y)
-          idx(Idx(n, dt, yi, e), ps)
-      }
-      case (Transpose(_, _, _, _, e), CIntExpr(i) :: CIntExpr(j) :: ps) => idx(e, CIntExpr(j) :: CIntExpr(i) :: ps)
-      case (TransposeDepArray(_, _, _, e), CIntExpr(i) :: CIntExpr(j) :: ps) => idx(e, CIntExpr(j) :: CIntExpr(i) :: ps)
-      case (Unzip(_, _, _, _, e), (xj : PairAccess) :: CIntExpr(i) :: ps) => idx(e, CIntExpr(i) :: xj :: ps)
-      case (Pair(_, _, _, e1, e2), (xj: PairAccess) :: ps) => xj match {
-        case FstMember => idx(e1, ps)
-        case SndMember => idx(e2, ps) }
-      case (Take(_, _, _, e), ps) => idx(e, ps)
-      case (Drop(n, _, _, e), CIntExpr(i) :: ps) => idx(e, CIntExpr(i + n) :: ps)
-      case (Cycle(_, m, _, e), CIntExpr(i) :: ps) => idx(e, CIntExpr(i % m) :: ps)
-      case (part@Partition(_, _, _, _, e), CIntExpr(i) :: CIntExpr(j) :: ps) =>
-        idx(e, CIntExpr(BigSum(0, i - 1, x => part.lenF(x)) + j) :: ps)
-      case (Reorder(n, _, _, idxF, _, e), CIntExpr(i) :: ps) =>
-        idx(e, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: ps)
-      case (Slide(_, _, s2, _, e), CIntExpr(i) :: CIntExpr(j) :: ps) => idx(e, CIntExpr(i * s2 + j) :: ps)
-      case (UnaryOp(op, e), Nil) => UnaryOp(op, idx(e, Nil))
-      case (BinOp(op, e1, e2), Nil) => BinOp(op, idx(e1, Nil), idx(e2, Nil))
+    }
 
-      case (Continuation(dt, Lambda(cont, body)), ps) =>
-        def continuationDataType(dt: DataType) : Int => DataType = {
+    p match {
+      // Traverse AST
+      case Idx(_, _, i, e)    => idx(e, CIntExpr(idx2nat(i)) :: path)
+      case DepIdx(_, _, i, e) => idx(e, CIntExpr(i) :: path)
+      case Fst(_, _, e)       => idx(e, FstMember :: path)
+      case Snd(_, _, e)       => idx(e, SndMember :: path)
+      case UnaryOp(op, e)     => fromPath { case Nil => UnaryOp(op, idx(e, Nil)) }
+      case BinOp(op, e1, e2)  => fromPath { case Nil => BinOp(op, idx(e1, Nil), idx(e2, Nil)) }
+      case Continuation(dt, Lambda(cont, body)) =>
+        def continuationDataType(dt: DataType): Int => DataType = {
           case 0 => dt
           case n => dt match {
-            case ArrayType(_, edt) => continuationDataType(edt)(n-1)
+            case ArrayType(_, edt) => continuationDataType(edt)(n - 1)
             case _ => ???
           }
         }
-        val dt2 = continuationDataType(dt)(ps.length)
+        val dt2 = continuationDataType(dt)(path.length)
         val cont2 = Identifier(freshName("k"), ExpType(dt2, read) ->: (comm: CommType))
         val body2 = VisitAndRebuild(body, new VisitAndRebuild.Visitor {
           override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
             case Apply(f, e) if f == cont =>
-              Stop(Apply(cont2, idx(e.asInstanceOf[Phrase[ExpType]], ps))
+              Stop(Apply(cont2, idx(e.asInstanceOf[Phrase[ExpType]], path))
                 .asInstanceOf[Phrase[T]])
             case _ => Continue(p, this)
           }
         })
         Continuation(dt2, Lambda(cont2, body2))
 
-      case (e, ps) => ps.foldLeft(e)({
+      // Eliminate index transforming primitives
+      case Split(n, _, _, _, e) => fromPath {
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(n * i + j) :: ps) }
+      case Join(_, m, _, _, e) => fromPath {
+        case CIntExpr(i) :: ps => idx(e, CIntExpr(i / m) :: CIntExpr(i % m) :: ps) }
+      case Map(n, dt1, _, _, f, e) => fromPath {
+        case CIntExpr(i) :: ps => idx(reduce(f, Idx(n, dt1, nat2idx(i, n), e)), ps) }
+      case Generate(n, _, f) => fromPath {
+        case CIntExpr(i) :: ps => idx(reduce(f, nat2idx(i, n)), ps) }
+      case Zip(n, dt1, dt2, _, e1, e2) => fromPath {
+        case CIntExpr(i) :: FstMember :: ps => idx(e1, CIntExpr(i) :: ps)
+        case CIntExpr(i) :: SndMember :: ps => idx(e2, CIntExpr(i) :: ps)
+        case CIntExpr(i) :: Nil =>
+          val idx1 = Idx(n, dt1, nat2idx(n, i), e1)
+          val idx2 = Idx(n, dt2, nat2idx(n, i), e2)
+          idx(Pair(dt1, dt2, read, idx1, idx2), Nil) }
+      case DepZip(_, _, _, e1, e2) => fromPath {
+        case CIntExpr(i) :: FstMember :: ps => idx(e1, CIntExpr(i) :: ps)
+        case CIntExpr(i) :: SndMember :: ps => idx(e2, CIntExpr(i) :: ps) }
+      case Gather(n, m, dt, y, e) => fromPath {
+        case CIntExpr(i) :: ps =>
+          val yi = Idx(m, IndexType(n), nat2idx(m, i), y)
+          idx(Idx(n, dt, yi, e), ps) }
+      case Transpose(_, _, _, _, e) => fromPath {
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(j) :: CIntExpr(i) :: ps) }
+      case TransposeDepArray(_, _, _, e) => fromPath {
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(j) :: CIntExpr(i) :: ps) }
+      case Unzip(_, _, _, _, e) => fromPath {
+        case (xj : PairAccess) :: CIntExpr(i) :: ps => idx(e, CIntExpr(i) :: xj :: ps) }
+      case Pair(_, _, _, e1, e2) => fromPath {
+        case FstMember :: ps => idx(e1, ps)
+        case SndMember :: ps => idx(e2, ps) }
+      case Take(_, _, _, e) => idx(e, path)
+      case Drop(n, _, _, e) => fromPath {
+        case CIntExpr(i) :: ps => idx(e, CIntExpr(i + n) :: ps) }
+      case Cycle(_, m, _, e) => fromPath {
+        case CIntExpr(i) :: ps => idx(e, CIntExpr(i % m) :: ps) }
+      case part@Partition(_, _, _, _, e) => fromPath {
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(BigSum(0, i - 1, x => part.lenF(x)) + j) :: ps) }
+      case Reorder(n, _, _, idxF, _, e) => fromPath {
+        case CIntExpr(i) :: ps => idx(e, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: ps) }
+      case Slide(_, _, s2, _, e) => fromPath {
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(i * s2 + j) :: ps) }
+
+      case Identifier(_ , _)
+         | Literal(_)
+         | Natural(_)
+         | Cast(_, _, _)
+         | Apply(_, _)
+         | Proj1(_)
+         | Proj2(_)
+         | DepApply(_, _)
+         | IfThenElse(_, _, _)
+         | LetNat(_, _, _)
+         | _ : ExpPrimitive
+      => path.foldLeft(p)({
           case (e, CIntExpr(i)) => e.t match {
             case ExpType(ArrayType(n, dt), _) => Idx(n, dt, nat2idx(i, n), e)
             // TODO: do we need to add anything else here? dependent arrays?
@@ -135,35 +165,35 @@ object TranslateIndices {
 
   def idxAcc(p : Phrase[AccType], path : List[PathExpr]) : Phrase[AccType] = {
     (p, path) match {
-      case (IdxAcc(_, _, i, a), ps) => idxAcc(a, CIntExpr(idx2nat(i)) :: ps)
-      //case (IdxAcc(_, _, i, a), ps) => letNat(i , in => idxAcc(a, CIntExpr(in) :: ps))
-      case (SplitAcc(n, _, _, a), CIntExpr(i) :: ps) => idxAcc(a, CIntExpr(i / n) :: CIntExpr(i % n) :: ps)
-      case (JoinAcc(_, m, _, a), CIntExpr(i) :: CIntExpr(j) :: ps) => idxAcc(a, CIntExpr(i * m + j) :: ps)
-      case (TakeAcc(_, _, _, a), ps) => idxAcc(a, path)
-      case (DropAcc(n, _, _, a), CIntExpr(i) :: ps) => idxAcc(a, CIntExpr(i + n) :: ps)
-      case (ReorderAcc(n, _, idxF, a), CIntExpr(i) :: ps) =>
-        idxAcc(a, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: ps)
-      case (depJ@DepJoinAcc(_, _, _, a), CIntExpr(i) :: CIntExpr(j) :: ps) =>
-        idxAcc(a, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps)
-      case (TransposeAcc(_, _, _, a), CIntExpr(i) :: CIntExpr(j) :: ps) =>
-        idxAcc(a, CIntExpr(j) :: CIntExpr(i) :: ps)
-      case (CycleAcc(_, m, _, a), CIntExpr(i) :: ps) => idxAcc(a, CIntExpr(i % m) :: ps)
-      case (MapAcc(n, dt, _, f, a), CIntExpr(i) :: ps) => idxAcc(reduce(f, IdxAcc(n, dt, nat2idx(n, i), a) ), ps)
-      case (MapFstAcc(_, dt2, dt3, f, a), (xi : PairAccess) :: ps) => xi match {
-        case FstMember => idxAcc(reduce(f, PairAcc1(dt3, dt2, a)), ps)
-        case SndMember => idxAcc(          PairAcc2(dt3, dt2, a) , ps)
+      case (IdxAcc(_, _, i, a), path) => idxAcc(a, CIntExpr(idx2nat(i)) :: path)
+      //case (IdxAcc(_, _, i, a), path) => letNat(i , in => idxAcc(a, CIntExpr(in) :: path))
+      case (SplitAcc(n, _, _, a), CIntExpr(i) :: path) => idxAcc(a, CIntExpr(i / n) :: CIntExpr(i % n) :: path)
+      case (JoinAcc(_, m, _, a), CIntExpr(i) :: CIntExpr(j) :: path) => idxAcc(a, CIntExpr(i * m + j) :: path)
+      case (TakeAcc(_, _, _, a), path) => idxAcc(a, path)
+      case (DropAcc(n, _, _, a), CIntExpr(i) :: path) => idxAcc(a, CIntExpr(i + n) :: path)
+      case (ReorderAcc(n, _, idxF, a), CIntExpr(i) :: path) =>
+        idxAcc(a, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: path)
+      case (depJ@DepJoinAcc(_, _, _, a), CIntExpr(i) :: CIntExpr(j) :: path) =>
+        idxAcc(a, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: path)
+      case (TransposeAcc(_, _, _, a), CIntExpr(i) :: CIntExpr(j) :: path) =>
+        idxAcc(a, CIntExpr(j) :: CIntExpr(i) :: path)
+      case (CycleAcc(_, m, _, a), CIntExpr(i) :: path) => idxAcc(a, CIntExpr(i % m) :: path)
+      case (MapAcc(n, dt, _, f, a), CIntExpr(i) :: path) => idxAcc(reduce(f, IdxAcc(n, dt, nat2idx(n, i), a) ), path)
+      case (MapFstAcc(_, dt2, dt3, f, a), (xi : PairAccess) :: path) => xi match {
+        case FstMember => idxAcc(reduce(f, PairAcc1(dt3, dt2, a)), path)
+        case SndMember => idxAcc(          PairAcc2(dt3, dt2, a) , path)
       }
-      case (MapSndAcc(dt1, _, dt3, f, a), (xi : PairAccess) :: ps) => xi match {
-        case FstMember => idxAcc(          PairAcc1(dt1, dt3, a) , ps)
-        case SndMember => idxAcc(reduce(f, PairAcc2(dt1, dt3, a)), ps)
+      case (MapSndAcc(dt1, _, dt3, f, a), (xi : PairAccess) :: path) => xi match {
+        case FstMember => idxAcc(          PairAcc1(dt1, dt3, a) , path)
+        case SndMember => idxAcc(reduce(f, PairAcc2(dt1, dt3, a)), path)
       }
-      case (DepIdxAcc(_, _, i, a), ps) => idxAcc(a, CIntExpr(i) :: ps)
-      case (MkDPairSndAcc(_, _, a), ps) => idxAcc(a, DPairSnd :: ps)
+      case (DepIdxAcc(_, _, i, a), path) => idxAcc(a, CIntExpr(i) :: path)
+      case (MkDPairSndAcc(_, _, a), path) => idxAcc(a, DPairSnd :: path)
 
 
 
 
-      case (a, ps) => ps.foldLeft(a)({
+      case (a, path) => path.foldLeft(a)({
         case (a, CIntExpr(i)) => a.t match {
           case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, nat2idx(i, n), a)
           case _ => throw new Exception("this should not happen") }

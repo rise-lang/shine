@@ -239,7 +239,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) |  _: AccPrimitive =>
-        error(s"Don't know how to generate code for $phrase")
+        error(s"Don't know how to generate code for path $path and phrase $phrase")
     }
   }
 
@@ -346,6 +346,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
 
       case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
+      case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
+      case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
 
       case DepIdx(_, _, i, e) => exp(e, env, CIntExpr(i) :: path, cont)
 
@@ -364,7 +366,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive =>
-        error(s"Don't know how to generate code for $phrase")
+        error(s"Don't know how to generate code for path $path and phrase $phrase")
     }
   }
 
