@@ -1,11 +1,13 @@
 package rise.core
 
+import arithexpr.arithmetic.Cst
 import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.primitives._
 import rise.core.semantics.NatData
 import rise.openCL.primitives._
+import shine.C.SizeInByte
 import shine.OpenCL
 import shine.OpenCL.{GlobalSize, HNilHelper, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
 import util.Execute
@@ -447,6 +449,17 @@ class dependentTypes extends test_util.TestsWithExecutor {
     println(inferred)
     print(inferred.t)
 
-    val kernel = util.gen.OpenCLKernel(inferred, "ocl_filter")
+    {
+      val kernelWrap = util.gen.OpenCLKernel(inferred, "ocl_filter")
+
+      val kernel = kernelWrap.copy(kernel = kernelWrap.kernel.withFallbackOutputSize(SizeInByte(1024 * 1024)))
+      val n = 1000
+      val array = Array.tabulate(n)(i => i)
+      val even = array.filter(_ % 2 == 0)
+      val kernelF = kernel.as[ScalaFunction `(` Int `,` Array[Int] `)=>` (Int, Array[Int])].withSizes(LocalSize(1), GlobalSize(1))
+
+      val (dpair, _) = kernelF(n `,` array)
+      val (count, data) = dpair
+    }
   }
 }

@@ -88,7 +88,8 @@ object KernelGenerator {
             kernel = makeKernelFunction(name, kernelParams, adaptKernelBody(C.AST.Block(immutable.Seq(code))), localSize),
             outputParam = outParam,
             inputParams = inputParams,
-            intermediateParams = intermediateAllocations.map (_.identifier))
+            intermediateParams = intermediateAllocations.map (_.identifier),
+        fallbackOutputSize = None)
 
       (localSize, globalSize) match {
         case (None, None) => Left(KernelNoSizes(oclKernel))

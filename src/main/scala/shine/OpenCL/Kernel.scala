@@ -11,6 +11,7 @@ import shine.OpenCL.Kernel.PREAMBLE
 import shine.{C, OpenCL}
 import util.{Time, TimeSpan}
 
+import java.nio.ByteBuffer
 import scala.collection.immutable.List
 import scala.collection.Seq
 import scala.language.implicitConversions
@@ -21,7 +22,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
                   kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
-                  intermediateParams: Seq[Identifier[VarType]]) {
+                  intermediateParams: Seq[Identifier[VarType]],
+                  fallbackOutputSize:Option[SizeInByte]) {
 
   def code: String = {
     val sb = new StringBuilder
@@ -271,8 +273,21 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
+  def withFallbackOutputSize(sizeInByte: SizeInByte): Kernel =
+    this.copy(
+      fallbackOutputSize = Some(sizeInByte)
+    )
+
   private def createOutputKernelArg(sizeVariables:Map[Nat,Nat]):GlobalArg = {
-    val rawSize = SizeInByte(this.outputParam.t.dataType).value
+    val rawSize = try {
+      SizeInByte(this.outputParam.t.dataType).value
+    } catch {
+      case ex: Throwable => this.fallbackOutputSize match {
+        case Some(defined) => defined.value
+        case None => throw ex
+      }
+    }
+
     val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
     Try(cleanSize.evalLong) match {
       case Success(actualSize) => createGlobalArg(actualSize)
@@ -321,14 +336,54 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
-    assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
-    (getOutputType(dt) match {
-      case shine.DPIA.Types.int => output.asIntArray()
-      case shine.DPIA.Types.f32 => output.asFloatArray()
-      case shine.DPIA.Types.f64 => output.asDoubleArray()
-      case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
-        "not supported: " + dt.toString)
-    }).asInstanceOf[R]
+    dt match {
+      case _:ArrayType | _:DepArrayType =>
+        (getOutputType(dt) match {
+          case shine.DPIA.Types.int => output.asIntArray()
+          case shine.DPIA.Types.f32 => output.asFloatArray()
+          case shine.DPIA.Types.f64 => output.asDoubleArray()
+          case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
+            "not supported: " + dt.toString)
+        }).asInstanceOf[R]
+      case pair: DepPairType[_] =>
+        // Bit-frobbing in scala.Yay!
+        val rawData = output.asIntArray()
+        val bytes = ByteBuffer.allocate(rawData.length * 4)
+        rawData.foreach(x => bytes.putInt(x))
+        bytes.position(0)
+        // We gotta read the data out. First, we are going to have an int or many ints - depending on the type
+        // of the dep pair fst
+
+        val (fst, readSoFar):(Any, Int) = pair.x match {
+          case _:Nat => (bytes.getInt(), 1)
+          case _:NatCollection =>
+            val len = bytes.getInt()
+            val data = Array.tabulate(len)(_ => {
+              bytes.getInt()
+            })
+            (data, len + 1)
+        }
+        // The rest of the data is the second element...here we dont have much choice of types, only simple
+        // cases for now
+        val snd: Any = getOutputType(pair.elemT) match {
+          case shine.DPIA.Types.int =>
+            val len = rawData.length - readSoFar
+            val data = Array.tabulate(len)(_ => {
+              bytes.getInt()
+            })
+            data
+          case shine.DPIA.Types.f32 =>
+            val len = rawData.length - readSoFar
+            val data = Array.tabulate(len)(_ => {
+              bytes.getFloat()
+            })
+            data
+          case _ => ???
+        }
+
+        (fst, snd).asInstanceOf[R]
+      case _ => ???
+    }
   }
 
   private def getOutputType(dt: DataType): DataType = dt match {
