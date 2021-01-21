@@ -1,6 +1,7 @@
 package shine.DPIA.Compilation
 
 import arithexpr.arithmetic.BigSum
+import rise.core.freshName
 import shine.C.CodeGeneration.CodeGenerator._
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives._
@@ -66,6 +67,8 @@ object TranslateIndices {
       case (Zip(_, _, _, _, e1, e2), CIntExpr(i) :: (xj: PairAccess) :: ps) => xj match {
         case FstMember => idx(e1, CIntExpr(i) :: ps)
         case SndMember => idx(e2, CIntExpr(i) :: ps) }
+      case (Zip(n, dt1, dt2, _, e1, e2), CIntExpr(i) :: Nil) =>
+        idx(Pair(dt1, dt2, read, Idx(n, dt1, nat2idx(n, i), e1), Idx(n, dt2, nat2idx(n, i), e2)), Nil)
       case (DepZip(_, _, _, e1, e2), CIntExpr(i) :: (xj : PairAccess) :: ps) => xj match {
         case FstMember => idx(e1, CIntExpr(i) :: ps)
         case SndMember => idx(e2, CIntExpr(i) :: ps)
@@ -90,6 +93,26 @@ object TranslateIndices {
       case (Slide(_, _, s2, _, e), CIntExpr(i) :: CIntExpr(j) :: ps) => idx(e, CIntExpr(i * s2 + j) :: ps)
       case (UnaryOp(op, e), Nil) => UnaryOp(op, idx(e, Nil))
       case (BinOp(op, e1, e2), Nil) => BinOp(op, idx(e1, Nil), idx(e2, Nil))
+
+      case (Continuation(dt, Lambda(cont, body)), ps) =>
+        def continuationDataType(dt: DataType) : Int => DataType = {
+          case 0 => dt
+          case n => dt match {
+            case ArrayType(_, edt) => continuationDataType(edt)(n-1)
+            case _ => ???
+          }
+        }
+        val dt2 = continuationDataType(dt)(ps.length)
+        val cont2 = Identifier(freshName("k"), ExpType(dt2, read) ->: (comm: CommType))
+        val body2 = VisitAndRebuild(body, new VisitAndRebuild.Visitor {
+          override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
+            case Apply(f, e) if f == cont =>
+              Stop(Apply(cont2, idx(e.asInstanceOf[Phrase[ExpType]], ps))
+                .asInstanceOf[Phrase[T]])
+            case _ => Continue(p, this)
+          }
+        })
+        Continuation(dt2, Lambda(cont2, body2))
 
       case (e, ps) => ps.foldLeft(e)({
           case (e, CIntExpr(i)) => e.t match {

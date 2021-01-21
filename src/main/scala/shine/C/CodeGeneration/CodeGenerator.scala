@@ -4,6 +4,7 @@ import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
+import shine.DPIA.Compilation.SimplifyNats
 import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
