@@ -331,7 +331,9 @@ class dependentTypes extends test_util.Tests {
     print(inferred.t)
     val program = util.gen.CProgram(inferred, "kernel")
 
-    val code = s"""
+    println(program.code)
+
+    val code = raw"""
       |
       |#include<stdlib.h>
       |#include<stdio.h>
@@ -339,6 +341,7 @@ class dependentTypes extends test_util.Tests {
       |
       |${program.code}
 
+      |
       |int main(int argc, char** argv) {
       |   const uint32_t input_size = 10000;
       |
@@ -355,12 +358,14 @@ class dependentTypes extends test_util.Tests {
       |   int ret = 0;
       |   for(uint32_t i = 0; i < input_size/2; i++) {
       |       uint32_t value = output[1 + i];
-      |       if(value != i * 2) {
-      |           printf("Error, expected %d, but %d found", 2*i, value);
-      |           i += 1
+      |       if (value != i*2) {
+      |         printf("!!!!!{%d, %d}", i, value);
+      |         return 1;
       |       }
+      |       printf("(%d,%d)", i, value);
+      |
       |   }
-      |   return ret;
+      |   return 0;
       |}""".stripMargin
 
     Execute(code)

@@ -5,7 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.Skip
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics.Store
+import shine.DPIA.Semantics.OperationalSemantics.{IndexData, Store}
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.Types.DataType._
@@ -38,14 +38,16 @@ final case class Which(n: Nat, count: Nat, input:Phrase[ExpType], alloc: Alloc)
     import TranslationToImperative._
     con(input)(λ(expT(ArrayType(n, bool), read))(input => {
       comment("WHICH: counter") `;`
-        alloc(IndexType(count), counter => {
-          `for`(n, idx => {
-              IfThenElse(input `@` idx,
-                ((A `@` counter.rd) :=|IndexType(n)|idx) `;`
-                  (counter.wr :=| IndexType(count) | NatAsIndex(count, IndexAsNat(count, counter.rd) + Natural(1))),
-                Skip()
-              )
-          })
+        alloc(IndexType(count),
+          counter => {
+             (counter.wr :=|IndexType(count)| NatAsIndex(count, Natural(0)))`;`
+             `for`(n, idx => {
+                IfThenElse(input `@` idx,
+                  ((A `@` counter.rd) :=|IndexType(n)|idx) `;`
+                    (counter.wr :=| IndexType(count) | NatAsIndex(count, IndexAsNat(count, counter.rd) + Natural(1))),
+                  Skip()
+                )
+            })
         })
     }
     ))
