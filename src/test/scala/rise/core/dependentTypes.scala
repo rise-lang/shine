@@ -6,9 +6,11 @@ import rise.core.types._
 import rise.core.primitives._
 import rise.core.semantics.NatData
 import rise.openCL.primitives._
+import shine.OpenCL
+import shine.OpenCL.{GlobalSize, HNilHelper, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
 import util.Execute
 
-class dependentTypes extends test_util.Tests {
+class dependentTypes extends test_util.TestsWithExecutor {
   test("Infer int addition type") {
     val e =
       depFun((n: Nat) =>
@@ -371,20 +373,80 @@ class dependentTypes extends test_util.Tests {
     Execute(code)
   }
 
-  test("filter even numbers") {
+  test("OCL count numbers") {
     val e = depFun((n: Nat) => fun(n `.` int)(array => {
+      array |> map(fun(x => (x % l(2)) =:= l(0))) |> oclCount(AddressSpace.Global)
+    }))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val kernel = util.gen.OpenCLKernel(inferred, "count")
+
+    // Testing it
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+    val n = 1000
+    val array = Array.tabulate(n)(i => i)
+    val (result, _) = kernelF(n `,` array)
+    assert(result(0) == n / 2)
+  }
+
+  test("OCL count numbers parallel") {
+    val e = depFun((n: Nat) => fun(n `.` int)(array => {
+      array |> split(8) |> mapGlobal(0)(
+        map(fun(x => (x % l(2)) =:= l(0))) >> split(8) >> mapSeqUnroll(oclCount(AddressSpace.Private))
+      )
+    }))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val kernel = util.gen.OpenCLKernel(inferred, "ocl_par_count")
+
+    // Testing it
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+    val power = 10
+    val n = Math.pow(2, power).toInt
+    val array = Array.tabulate(n)(i => i)
+    val (result, _) = kernelF(n `,` array)
+    val total = result.sum
+    assert(total == n / 2)
+  }
+
+  test("OCL filter even numbers with outside count") {
+    val e = depFun((n: Nat) => depFun((count:Nat) =>  fun(n `.` int)(array => {
       def pred = fun(x => (x % l(2)) =:= l(0))
-      liftN(array |> map(pred) |> oclCount(AddressSpace.Global) |> indexAsNat)(depFun((count:Nat) =>
-        dpair(count)(which(array |> map(pred))(count)
-          |> mapSeq(fun(idx => array `@` idx)))
+      oclWhich(array |> map(pred))(count) |> oclToMem(AddressSpace.Global) |> mapSeq(fun(idx => array `@` idx))
+    })))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+
+    val kernel = util.gen.OpenCLKernel(inferred, "ocl_filter")
+
+    val n = 1000
+    val array = Array.tabulate(n)(i => i)
+    val even = array.filter(_ % 2 == 0)
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int `,` Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+
+    val (oclEven, _) = kernelF(n `,` even.length `,` array)
+    assert(even.length == oclEven.length)
+    assert(even.zip(oclEven).forall( { case (x, y) => x == y} ))
+  }
+
+  test("OCL filter even number bringing it with me") {
+    val e = depFun((n: Nat) =>  fun(n `.` int)(array => {
+      def pred = fun(x => (x % l(2)) =:= l(0))
+      liftN(array |> map(fun(x => (x % l(2)) =:= l(0))) |> oclCount(AddressSpace.Private) |> indexAsNat)(
+        depFun((count:Nat) => dpair(count)(array |> mapSeq(fun(x => x)))
       ))
     }))
 
     val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
-    util.gen.OpenCLKernel(inferred, "Foo_foo")
+
+    val kernel = util.gen.OpenCLKernel(inferred, "ocl_filter")
   }
-
-
 }

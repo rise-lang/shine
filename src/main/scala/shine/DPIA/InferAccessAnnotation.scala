@@ -616,12 +616,23 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.which() | roclp.oclWhich() =>
+      case rp.which() =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(input:rt.ArrayType, rt.DepFunType(count, rt.ArrayType(_, rt.IndexType(_)))) =>
             val _count = natIdentifier(count.asInstanceOf[rt.NatIdentifier])
             val _input = dataType(input).asInstanceOf[ArrayType]
             expT(_input, read) ->: nFunT(_count, expT(ArrayType(_count, IndexType(_input.size)), read))
+
+          case _ => ???
+        }
+        buildType(p.t)
+
+      case roclp.oclWhich() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(input:rt.ArrayType, rt.DepFunType(count, rt.ArrayType(_, rt.IndexType(_)))) =>
+            val _count = natIdentifier(count.asInstanceOf[rt.NatIdentifier])
+            val _input = dataType(input).asInstanceOf[ArrayType]
+            expT(_input, read) ->: nFunT(_count, expT(ArrayType(_count, IndexType(_input.size)), write))
 
           case _ => ???
         }

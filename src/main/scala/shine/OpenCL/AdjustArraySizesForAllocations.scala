@@ -44,8 +44,8 @@ object AdjustArraySizesForAllocations {
 
       // FIXME: works for scalars
       case _: OpenCLReduceSeq | _: OpenCLIterate => parallInfo
-      case oclCount: OclCount =>
-        visitAndGatherInformation(oclCount.asReduction, parallInfo)
+      case _: OclCount => parallInfo
+      case _: OclWhich => parallInfo
 
       case t: Pair =>
         val fstInfo = visitAndGatherInformation(t.fst, List.empty)
@@ -67,6 +67,8 @@ object AdjustArraySizesForAllocations {
         case pi => error(s"did not expect $pi")
       }
       case AsScalar(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)
+      case NatAsIndex(_, e) => visitAndGatherInformation(e, parallInfo)
+      case Transmute(_, _, _, e) => visitAndGatherInformation(e, parallInfo)
 
       // TODO: think more thoroughly about split and join
       case Split(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)

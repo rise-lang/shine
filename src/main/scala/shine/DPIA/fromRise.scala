@@ -868,20 +868,25 @@ object fromRise {
 
       }
 
-      case core.which() | ocl.oclWhich() =>
-        val alloc = p match {
-          case core.which() => Alloc.CNew
-          case ocl.oclWhich() => Alloc.OpenCLNew(AddressSpace.Local)
-          case _ => ???
-        }
+      case core.which() =>
         fromType {
         case expT(inputT@ArrayType(n, _), `read`) ->:
           nFunT(count, expT(_, `read`)) =>
 
           fun[ExpType](expT(inputT, read), input =>
-            depFun[NatKind](count)(Which(n, count, input, alloc))
+            depFun[NatKind](count)(Which(n, count, input))
           )
       }
+
+      case  ocl.oclWhich() =>
+        fromType {
+          case expT(inputT@ArrayType(n, _), `read`) ->:
+            nFunT(count, expT(_, `write`)) =>
+
+            fun[ExpType](expT(inputT, read), input =>
+              depFun[NatKind](count)(OclWhich(n, count, input))
+            )
+        }
 
       case core.liftN() => fromType {
         case expT(NatType, `read`) ->:

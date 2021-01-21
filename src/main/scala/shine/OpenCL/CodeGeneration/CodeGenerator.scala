@@ -79,6 +79,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         throw new Exception("NewDoubleBuffer without address space" +
           "found in OpenCL program.")
 
+
+
       case _ => super.cmd(phrase, env)
     }
   }
@@ -461,4 +463,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
     }
   }
+
+  override def natCollectionNatCType(const: Boolean): Type = OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, C.AST.Type.u32)
+
+  override def natCollectionElemCType(elemT: Type, const: Boolean): Type = OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, elemT)
 }

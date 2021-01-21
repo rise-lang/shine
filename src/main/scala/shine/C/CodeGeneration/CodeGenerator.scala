@@ -3,7 +3,8 @@ package shine.C.CodeGeneration
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import rise.core.types.NatCollectionIndexing
-import shine.C.AST.Block
+import shine.C.AST
+import shine.C.AST.{Block, PointerType}
 import shine.C.AST.Type.getBaseType
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
@@ -259,14 +260,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         fst match {
           case fst: NatIdentifier =>
             genNat(fst, env, fst => {
-              acc(a, env, List(), expr => C.AST.ExprStmt(C.AST.Assignment(
-                C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), expr), C.AST.Literal("0")
-                ) , fst)))
+              acc(a, env, List(), expr =>
+                  C.AST.ExprStmt(C.AST.Assignment(
+                    C.AST.ArraySubscript(C.AST.Cast(this.natCollectionNatCType(), expr), C.AST.Literal("0")
+                    ) , fst))
+                )
             })
           case id: NatCollectionIdentifier =>
             val (length, storage) = env.natCollLenEnv(id)
             genNat(length, env, length => {
               acc(a, env, List(), fstAcc => {
+                // TODO: OUTDATED FORMAT! MUST INJECT THE NUMBER-OF-NATS TAG at index 0
                 val byteLength = C.AST.BinaryExpr(length, C.AST.BinaryOperator.*, C.AST.Literal("sizeof(uint32_t)"))
                 C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memcpy"), List(fstAcc, storage, byteLength)))
               })
@@ -379,7 +383,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case MkDPairSndAcc(fst, _, a) =>
         val length = fst match {
           case _: NatIdentifier => Cst(1)
-          case id: NatCollectionIdentifier => env.natCollLenEnv(id)._1
+          case id: NatCollectionIdentifier => env.natCollLenEnv(id)._1 + Cst(1) // Extra 1 is due to the tag
           case _ => ???
         }
         acc(a, env, DPairSnd(length)::path, cont)
@@ -706,10 +710,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         dt match {
           case DepPairType(_, sndT) =>
             genNat(length, env, length => {
-              val fstSize = C.AST.BinaryExpr(C.AST.Literal("sizeof(uint32_t)"), C.AST.BinaryOperator.*, length)
+              val numFst =  C.AST.BinaryExpr(C.AST.Literal("1"), C.AST.BinaryOperator.+, length)
+              val fstSize = C.AST.BinaryExpr(C.AST.Literal(s"sizeof(${this.natBaseType.name})"), C.AST.BinaryOperator.*, numFst)
+
 
               generateAccess(sndT,
-                C.AST.Cast(C.AST.PointerType(C.AST.Type.getBaseType(typ(sndT))),
+                C.AST.Cast(this.natCollectionElemCType(C.AST.Type.getBaseType(typ(sndT))),
                   C.AST.BinaryExpr(expr, C.AST.BinaryOperator.+, fstSize)
                 ), ps, env, cont)
             })
@@ -930,7 +936,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                       cont: Expr => Stmt): Stmt = {
       exp(i, env, Nil, {
         case C.AST.Literal(text) => acc(a, env, CIntExpr(Cst(text.toInt)) :: ps, cont)
-        case C.AST.DeclRef(name) => acc(a, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
+        case C.AST.DeclRef(name) =>
+          acc(a, env, CIntExpr(NamedVar(name, ranges.getOrElse(name, arithexpr.arithmetic.RangeUnknown))) :: ps, cont)
         case C.AST.ArithmeticExpr(ae) => acc(a, env, CIntExpr(ae) :: ps, cont)
         case cExpr:C.AST.Expr =>
           val arithVar = NamedVar(freshName("idxAcc"))
@@ -1364,5 +1371,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       cont(genBranch(i, l, ArithPredicate.Operator.<, left, genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, right)))
     })
   }
+
+  def natBaseType: AST.BasicType = C.AST.Type.u32
+  def natCollectionNatCType(const:Boolean = false): C.AST.Type = C.AST.PointerType(this.natBaseType, const)
+  def natCollectionElemCType(elemT: C.AST.Type, const:Boolean = false): C.AST.Type =
+    C.AST.PointerType(elemT, const)
 }
 
