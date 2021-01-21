@@ -3,8 +3,8 @@ package shine.OpenMP.CodeGeneration
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.{ArraySubscript, Decl}
-import shine.C.CodeGeneration.CodeGenerator.CIntExpr
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
+import shine.DPIA.Compilation.CIntExpr
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives._

@@ -4,7 +4,7 @@ import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
-import shine.DPIA.Compilation.SimplifyNats
+import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives._
@@ -54,15 +54,6 @@ object CodeGenerator {
       immutable.Map()
     )
   }
-
-  sealed trait PathExpr
-  sealed trait PairAccess extends PathExpr
-  final case object FstMember extends PairAccess
-  final case object SndMember extends PairAccess
-  final case class CIntExpr(num: Nat) extends PathExpr
-  final case object DPairSnd extends PathExpr
-
-  implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
 
   type Path = immutable.List[PathExpr]
 
@@ -211,25 +202,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env, cont)
 
-      case SplitAcc(n, _, _, a) => path match {
-        case (i : CIntExpr) :: ps  => acc(a, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-      case JoinAcc(_, m, _, a) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps => acc(a, env, CIntExpr(i * m + j) :: ps, cont)
-        case _ => error(s"Expected two C-Integer-Expressions on the path.")
-      }
-      case depJ@DepJoinAcc(_, _, _, a) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
-          acc(a, env, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps, cont)
-        case _ => error(s"Expected two C-Integer-Expressions on the path.")
-      }
-
-      case TransposeAcc(_, _, _, a) => path match {
-        case (i: CIntExpr) :: (j: CIntExpr) :: ps => acc(a, env, j :: i :: ps, cont)
-        case _ => error(s"did not expect $path")
-      }
-
       case PairAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
       case PairAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
       case PairAcc(_, _, fst, snd) => path match {
@@ -259,46 +231,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"unexpected $path")
       }
 
-      case TakeAcc(_, _, _, a) => acc(a, env, path, cont)
-      case DropAcc(n, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i + n) ::ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-
-      case CycleAcc(_, m, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i % m) :: ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-
-      case ReorderAcc(n, _, idxF, a) => path match {
-        case (i : CIntExpr) :: ps =>
-          acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(NatAsIndex(n, Natural(i))))) :: ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-
-      case MapAcc(n, dt, _, f, a) => path match {
-        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, NatAsIndex(n, Natural(i)), a) ), env, ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-      case MapFstAcc(_, dt2, dt3, f, a) => path match {
-        case FstMember :: ps => acc(f(PairAcc1(dt3, dt2, a)), env, ps, cont)
-        case SndMember :: ps => acc(  PairAcc2(dt3, dt2, a) , env, ps, cont)
-        case _ => error(s"unexpected $path")
-      }
-      case MapSndAcc(dt1, _, dt3, f, a) => path match {
-        case FstMember :: ps => acc(  PairAcc1(dt1, dt3, a) , env, ps, cont)
-        case SndMember :: ps => acc(f(PairAcc2(dt1, dt3, a)), env, ps, cont)
-        case _ => error(s"unexpected $path")
-      }
-
       case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
-
-      case DepIdxAcc(_, _, i, a) => acc(a, env, CIntExpr(i) :: path, cont)
 
       case Proj1(pair) => acc(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
-
-      case MkDPairSndAcc(fst, sndT, a) => acc(a, env, DPairSnd::path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) |  _: AccPrimitive =>
@@ -372,85 +308,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case NatAsIndex(_, e) => exp(e, env, path, cont)
 
-      case Split(n, _, _, _, e) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i + j) :: ps, cont)
-        case _ => error(s"Expected two C-Integer-Expressions on the path.")
-      }
-      case Join(_, m, _, _, e) => path match {
-        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
-        case _ => error(s"Expected two C-Integer-Expressions on the path.")
-      }
-
-      case part@Partition(_, _, _, _, e) => path match {
-        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-          exp(e, env, CIntExpr(BigSum(0, i - 1, x => part.lenF(x)) + j) :: ps, cont)
-        case _ => error(s"Expected path to contain at least two elements")
-      }
-
-      case Zip(n, dt1, dt2, _, e1, e2) => path match {
-        case (i: CIntExpr) :: (xj : PairAccess) :: ps => xj match {
-          case FstMember => exp(e1, env, i :: ps, cont)
-          case SndMember => exp(e2, env, i :: ps, cont)
-        }
-        case (i: CIntExpr) :: Nil =>
-          val j = NatAsIndex(n, Natural(i))
-          exp(Pair(dt1, dt2, read, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
-        case _ => error(s"unexpected $path")
-      }
-
-      case Unzip(_, _, _, _, e) => path match {
-        case (xj : PairAccess) :: (i: CIntExpr) :: ps =>
-          exp(e, env, i :: xj :: ps, cont)
-        case _ => error("Expected a tuple access followed by a C-Integer-Expression on the path.")
-      }
-
-      case DepZip(_, _, _, e1, e2) => path match {
-        case (i: CIntExpr) :: (xj : PairAccess) :: ps => xj match {
-          case FstMember => exp(e1, env, i :: ps, cont)
-          case SndMember => exp(e2, env, i :: ps, cont)
-        }
-        case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
-      }
-
       case r @ Pair(_, _, _, e1, e2) => path match {
-        case (xj : PairAccess) :: ps => xj match {
-          case FstMember => exp(e1, env, ps, cont)
-          case SndMember => exp(e2, env, ps, cont)
-        }
         case Nil =>
           exp(e1, env, Nil, ec1 =>
             exp(e2, env, Nil, ec2 => cont(C.AST.RecordLiteral(typ(r.t.dataType), ec1, ec2))))
         case _ => error(s"unexpected $path")
       }
-      case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
-      case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
       case DMatch(x, _, _, _, f, e) => exp(e, env, path, cont)
 
-      case Take(_, _, _, e) => exp(e, env, path, cont)
-
-      case Drop(n, _, _, e) => path match {
-        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i + n) :: ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-
-      case Cycle(_, m, _, e) => path match {
-        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i % m) :: ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-
-      case Reorder(n, _, _, idxF, _, a) => path match {
-        case (i : CIntExpr) :: ps =>
-          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(NatAsIndex(n, Natural(i))))) :: ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-
-      case Gather(n, m, dt, y, e) => path match {
-        case (i: CIntExpr) :: ps =>
-          val yi = Idx(m, IndexType(n), NatAsIndex(m, Natural(i)), y)
-          exp(Idx(n, dt, yi, e), env, ps, cont)
-        case _ => error(s"unexpected $path")
-      }
-
+      // TODO: can we move to TranslateIndices?
       case PadClamp(n, l, r, _, e) => path match {
         case (i: CIntExpr) :: ps =>
           exp(e, env, CIntExpr(0) :: ps, left =>
@@ -459,6 +325,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to be not empty")
       }
 
+      // TODO: can we move to TranslateIndices?
       case Pad(n, l, r, _, pad, array) => path match {
         case (i: CIntExpr) :: ps =>
           exp(pad, env, ps, padExpr =>
@@ -467,50 +334,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to be not empty")
       }
 
-      case Slide(_, _, s2, _, e) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(i * s2 + j) :: ps, cont)
-        case _ => error(s"Expected two C-Integer-Expressions on the path.")
-      }
-
-      case Transpose(_, _, _, _, e) => path match {
-        case (i: CIntExpr) :: (j: CIntExpr) :: ps => exp(e, env, j :: i :: ps, cont)
-        case _ => error(s"did not expect $path")
-      }
-
-      case TransposeDepArray(_, _, _, e) => path match {
-        case (i : CIntExpr)::(j : CIntExpr) :: ps => exp(e, env, CIntExpr(j) :: CIntExpr(i) :: ps , cont)
-        case _ => error(s"Expected two C-Integer-Expressions on the path.")
-      }
-
-      case Map(n, dt, _, _, f, e) => path match {
-        case (i : CIntExpr) :: ps => exp( f( Idx(n, dt, NatAsIndex(n, Natural(i)), e) ), env, ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-
-      // TODO: we could get rid of that
-      case MapRead(n, dt1, dt2, f, e) => path match {
-        case (i : CIntExpr) :: ps =>
-          val continue_cmd =
-            Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt2, read) ->: comm)
-
-          cmd(f(
-            Idx(n, dt1, NatAsIndex(n, Natural(i)), e)
-          )(
-            continue_cmd
-          ), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
-        case _ => error(s"Expected path to be not empty")
-      }
-
-      case GenerateCont(n, dt, f) => path match {
-        case (i : CIntExpr) :: ps =>
-          val continue_cmd =
-            Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt, read) ->: comm)
-
-          cmd(f(NatAsIndex(n, Natural(i)))(continue_cmd),
-            env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
-        case _ => error(s"Expected path to be not empty")
-      }
-
+      // TODO: can we move to TranslateIndices?
       case MakeArray(_, elems) => path match {
         case (i: CIntExpr) :: ps => try {
           exp(elems(i.eval), env, ps, cont)

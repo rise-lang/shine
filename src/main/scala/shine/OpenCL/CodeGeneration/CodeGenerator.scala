@@ -3,7 +3,7 @@ package shine.OpenCL.CodeGeneration
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.{BasicType, Decl}
-import shine.C.CodeGeneration.CodeGenerator.CIntExpr
+import shine.DPIA.Compilation.CIntExpr
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._

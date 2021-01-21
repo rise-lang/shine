@@ -1,6 +1,7 @@
 package shine.DPIA.Compilation
 
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
+
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
 import shine.DPIA.{LetNatIdentifier, Nat}
