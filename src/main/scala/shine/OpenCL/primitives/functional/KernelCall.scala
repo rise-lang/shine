@@ -7,19 +7,23 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.DSL._
 import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.primitives.functional.{ForeignFunction, ForeignFunctionCall}
+import shine.OpenCL.{GlobalSize, LocalSize}
+import shine.OpenCL.primitives.imperative.KernelCallCmd
 
 case class KernelCall(name: String,
+                      localSize: LocalSize,
+                      globalSize: GlobalSize,
                       inTs: Seq[DataType],
                       outT: DataType,
                       args: Seq[Phrase[ExpType]]) extends ExpPrimitive {
   (inTs zip args).foreach{
     case (inT, arg) => arg :: expT(inT, read)
   }
-  override val t: ExpType = expT(outT, read)
+  override val t: ExpType = expT(outT, write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    KernelCall(name, inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))
+    KernelCall(name, localSize.visitAndRebuild(f), globalSize.visitAndRebuild(f),
+      inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
   override def prettyPrint: String = ???
@@ -27,18 +31,13 @@ case class KernelCall(name: String,
 
   override def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
-  ): Phrase[CommType] = ???
-
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
-    val decl = ForeignFunction.Declaration(name, None)
+  ): Phrase[CommType] = {
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 es: Seq[Phrase[ExpType]],
                 inTs: Seq[DataType]): Phrase[CommType] = {
       ts match {
         case Nil =>
-          // FIXME: should not use an ForeignFunctionCall, for prototyping only
-          C(ForeignFunctionCall(decl, inTs, outT, es))
+          KernelCallCmd(name, localSize, globalSize, inTs, outT, A, es)
         case Seq( (arg, inT), tail@_* ) =>
           con(arg)(λ(expT(inT, read))(e => recurse(tail, es :+ e, inTs :+ inT) ))
       }
@@ -46,4 +45,8 @@ case class KernelCall(name: String,
 
     recurse(args zip inTs, Seq(), Seq())
   }
+
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = ???
 }

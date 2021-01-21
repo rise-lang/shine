@@ -5,13 +5,19 @@ import shine.DPIA._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.Semantics.OperationalSemantics
+import shine.OpenCL.{GlobalSize, LocalSize}
 
-final case class Run(dt: DataType, input: Phrase[ExpType]) extends ExpPrimitive {
+final case class Run(localSize: LocalSize,
+                     globalSize: GlobalSize,
+                     dt: DataType,
+                     input: Phrase[ExpType]
+                    ) extends ExpPrimitive {
   input :: expT(dt, write)
-  override val t: ExpType = expT(dt, read)
+  override val t: ExpType = expT(dt, write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Run(f.data(dt), VisitAndRebuild(input, f))
+    Run(localSize.visitAndRebuild(f), globalSize.visitAndRebuild(f),
+      f.data(dt), VisitAndRebuild(input, f))
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
   override def prettyPrint: String = ???

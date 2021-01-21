@@ -18,23 +18,24 @@ object Module {
                  hostFunName: String): Phrase[_ <: PhraseType] => Module = { p =>
     val (host, kernels) = separateDefinitions(hostFunName)(p)
     Module(shine.C.Module.fromCFunDef(hostGen)(host),
-      kernels.map(shine.OpenCL.KernelModule.fromKernelDef(None)))
+      kernels.map(k => shine.OpenCL.KernelModule.fromKernelDef(Some((k._1, k._2)))(k._3)))
   }
 
+  type KernelSizedDef = (LocalSize, GlobalSize, OpenCLKernelDefinition)
   private def separateDefinitions(hostFunName: String
-                                 ): Phrase[_ <: PhraseType] => (CFunctionDefinition, Seq[OpenCLKernelDefinition])
+                                 ): Phrase[_ <: PhraseType] => (CFunctionDefinition, Seq[KernelSizedDef])
   = p => {
     var kernelNum = 0
-    var kernelDefinitions = scala.collection.mutable.ArrayBuffer[OpenCLKernelDefinition]()
+    var kernelDefinitions = scala.collection.mutable.ArrayBuffer[KernelSizedDef]()
     val hostDefinition = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case Run(_, value) =>
+        case Run(localSize, globalSize, _, value) =>
           val name = s"k$kernelNum"
           kernelNum += 1
           val (closedDefinition, args) = closeDefinition(value)
           val kernelDef = OpenCLKernelDefinition(name, closedDefinition)
-          kernelDefinitions += kernelDef
-          Stop(KernelCall(name,
+          kernelDefinitions += Tuple3(localSize, globalSize, kernelDef)
+          Stop(KernelCall(name, localSize, globalSize,
             kernelDef.paramTypes.map(_.dataType),
             kernelDef.returnType.dataType,
             args).asInstanceOf[Phrase[T]])

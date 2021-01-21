@@ -142,7 +142,7 @@ object gen {
 
     case class hosted(name: String) {
       def fromExpr: Expr => OpenCL.Module = exprToPhrase andThen fromPhrase
-      def fromPhrase: Phrase => OpenCL.Module = OpenCL.Module.fromPhrase(C.CodeGenerator(), name)
+      def fromPhrase: Phrase => OpenCL.Module = OpenCL.Module.fromPhrase(OpenCL.HostCodeGenerator(), name)
     }
   }
 

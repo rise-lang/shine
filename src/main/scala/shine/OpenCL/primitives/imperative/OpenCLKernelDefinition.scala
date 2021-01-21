@@ -67,6 +67,11 @@ final case class OpenCLKernelDefinition(name: String,
                          wgConfig: Option[(LocalSize, GlobalSize)]
                         ): ((immutable.Seq[gen.Decl], gen.Stmt)) => KernelModule = {
     case (declarations, code) =>
+      val attribute = wgConfig match {
+        case Some((LocalSize(cstSize @ NDRange(Cst(_), Cst(_), Cst(_))), _)) =>
+          Some(RequiredWorkGroupSize(cstSize))
+        case _ => None
+      }
       KernelModule(
         decls = CFunctionDefinition.collectTypeDeclarations(code, kernelParams) ++ declarations,
         kernels = immutable.Seq(
@@ -74,7 +79,7 @@ final case class OpenCLKernelDefinition(name: String,
             code = OpenCL.AST.KernelDecl(name,
               params = kernelParams,
               body = code,
-              attribute = wgConfig.map(_._1).map(localSize => RequiredWorkGroupSize(localSize.size))),
+              attribute = attribute),
               paramKinds = ParamMetaData(outputParam.`type`.dataType, C.ParamMetaData.Kind.output) +:
                 ( this.params.map(p => ParamMetaData(p.`type`.dataType, C.ParamMetaData.Kind.input)) ++
                   temps.map(t => ParamMetaData(t.identifier.`type`.t1.dataType, C.ParamMetaData.Kind.temporary))),

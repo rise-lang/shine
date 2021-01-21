@@ -66,6 +66,10 @@ object primitives {
   }
 
   @primitive object oclRun extends Primitive with Builder {
-    impl{ t: DataType => t ->: t }
+    // the local sizes for execution
+    expl((ls1: Nat) => expl((ls2: Nat) => expl((ls3: Nat) =>
+    // the global sizes for execution
+      expl((gs1: Nat) => expl((gs2: Nat) => expl((gs3: Nat) =>
+      impl{ t: DataType => t ->: t }))))))
   }
 }
