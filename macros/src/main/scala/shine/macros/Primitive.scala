@@ -185,15 +185,10 @@ object Primitive {
     }
 
     def makePrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
-      var visitAndRebuildMissing = true
-      var xmlPrinterMissing = true
-      body.foreach {
-        case DefDef(_, TermName("visitAndRebuild"), _, _, _, _) =>
-          visitAndRebuildMissing = false
-        case DefDef(_, TermName("xmlPrinter"), _, _, _, _) =>
-          xmlPrinterMissing = false
-        case _ =>
-      }
+      val visitAndRebuildMissing =
+        body.collectFirst({ case DefDef(_, TermName("visitAndRebuild"), _, _, _, _) => ()}).isEmpty
+      val xmlPrinterMissing =
+        body.collectFirst({ case DefDef(_, TermName("xmlPrinter"), _, _, _, _) => ()}).isEmpty
 
       val generated = q"""
           ${if (visitAndRebuildMissing)
