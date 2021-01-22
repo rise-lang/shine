@@ -346,8 +346,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           Identifier[ExpType ->: CommType](freshName("continue"), ExpType(dt, read) ->: comm)
         cmd(k(continue_cmd), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, path, cont))))
 
-      case Apply(_, _) | DepApply(_, _) |
-           Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive =>
+      case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, env) => gen.exp(body, env, path, cont))
+      case Phrases.IfThenElse(cond, thenP, elseP) =>
+        exp(cond, env, Nil, cond => C.AST.IfThenElse(cond, exp(thenP, env, path, cont), Some(exp(elseP, env, path, cont))))
+
+      case Apply(_, _) | DepApply(_, _) | _: ExpPrimitive =>
         error(s"Don't know how to generate code for path $path and phrase $phrase")
     }
   }
