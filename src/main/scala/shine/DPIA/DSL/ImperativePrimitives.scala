@@ -1,11 +1,11 @@
 package shine.DPIA.DSL
 
-import shine.DPIA.FunctionalPrimitives.{Fst, Snd}
-import shine.DPIA.ImperativePrimitives._
+import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
+import shine.DPIA.primitives.functional.{Fst, Snd}
 
 object `new` {
   def apply(dt: DataType,

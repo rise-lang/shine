@@ -135,7 +135,7 @@ object molecularDynamics {
   }
 
   def runKernel(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     particles: Array[Float],
     neighbours: Array[Array[Int]]
   ): (Array[Float], TimeSpan[Time.ms]) = {

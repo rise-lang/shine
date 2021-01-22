@@ -9,6 +9,7 @@ import rise.openCL.primitives.oclReduceSeqUnroll
 import rise.openCL.TypedDSL._
 import rise.core._
 import rise.core.types._
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
 class convolution1D extends test_util.Tests {
@@ -84,8 +85,8 @@ class convolution1D extends test_util.Tests {
     val random = new scala.util.Random()
     val input = Array.fill(N+2)(random.nextFloat())
 
-    val goldKernel = gen.OpenCLKernel(wrapExpr(binomialSeq))
-    val kernel = gen.OpenCLKernel(wrapExpr(e))
+    val goldKernel = gen.opencl.kernel.fromExpr(wrapExpr(binomialSeq))
+    val kernel = gen.opencl.kernel.fromExpr(wrapExpr(e))
 
     val goldRun = goldKernel.as[ScalaFunction `(`
       Int `,` Array[Float]

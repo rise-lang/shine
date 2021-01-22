@@ -1,10 +1,8 @@
 package benchmarks.core
 
-import rise.elevate.rules.traversal.default.RiseTraversable
-import shine.DPIA
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
+import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize}
 import rise.core.Expr
-import util.{Display, Time, TimeSpan}
+import util.{Display, Time, TimeSpan, gen}
 
 import scala.util.Random
 
@@ -19,12 +17,14 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
 
   protected def makeInput(random:Random):Input
 
-  def makeSummary(localSize:LocalSize, globalSize:GlobalSize, code:String, runtimeMs:Double, correctness: CorrectnessCheck):Summary
+  def makeSummary(localSize:LocalSize, globalSize:GlobalSize,
+                  code:String, runtimeMs:Double, correctness: CorrectnessCheck):Summary
 
   protected def runScalaProgram(input:Input):Array[Float]
 
-  private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelWithSizes = {
-    val kernel = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromRise(this.expr)(RiseTraversable), "KERNEL")
+  private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelExecutor.KernelWithSizes = {
+    val ktu = gen.opencl.kernel(localSize, globalSize).fromExpr(this.expr)
+    val kernel = shine.OpenCL.KernelExecutor.KernelWithSizes(ktu, localSize, globalSize)
 
     if(verbose) {
       println(kernel.code)
@@ -32,7 +32,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
     kernel
   }
 
-  protected def runKernel(k: KernelWithSizes, input: Input): (Array[Float], TimeSpan[Time.ms])
+  protected def runKernel(k: KernelExecutor.KernelWithSizes, input: Input): (Array[Float], TimeSpan[Time.ms])
 
   final def run(localSize:LocalSize, globalSize:GlobalSize):Summary = {
     opencl.executor.Executor.loadAndInit()
@@ -74,6 +74,7 @@ abstract class SimpleRunOpenCLProgram(override val verbose: Boolean)
       s" correct = ${correctness.display}"
   }
 
-  override def makeSummary(localSize: LocalSize, globalSize: GlobalSize, code: String, runtimeMs: Double, correctness: CorrectnessCheck): Result =
+  override def makeSummary(localSize: LocalSize, globalSize: GlobalSize,
+                           code: String, runtimeMs: Double, correctness: CorrectnessCheck): Result =
     Result(localSize, globalSize, code, runtimeMs, correctness)
 }
