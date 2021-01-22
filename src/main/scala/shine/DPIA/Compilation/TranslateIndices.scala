@@ -36,7 +36,7 @@ object TranslateIndices {
     case NatAsIndex(_, Natural(i)) => i
     case Identifier(i, ExpType(IndexType(n), _)) =>
       arithmetic.NamedVar(i, arithmetic.RangeAdd(0, n, 1))
-    case _ => throw new Exception("could not use index expression as nat")
+    case p => throw new Exception(s"Could not use index expression $p as nat")
   }
   /*
   // FIXME: why do we need to introduce a let binding?
@@ -66,8 +66,11 @@ object TranslateIndices {
       case DepIdx(_, _, i, e) => idx(e, CIntExpr(i) :: path)
       case Fst(_, _, e)       => idx(e, FstMember :: path)
       case Snd(_, _, e)       => idx(e, SndMember :: path)
+      case IndexAsNat(n, e)   => IndexAsNat(n, idx(e, path))
+      case NatAsIndex(n, e)   => NatAsIndex(n, idx(e, path))
       case UnaryOp(op, e)     => fromPath { case Nil => UnaryOp(op, idx(e, Nil)) }
       case BinOp(op, e1, e2)  => fromPath { case Nil => BinOp(op, idx(e1, Nil), idx(e2, Nil)) }
+      case ff@ForeignFunction(_, _, _, _) => ff
       case Continuation(dt, Lambda(cont, body)) =>
         def continuationDataType(dt: DataType): Int => DataType = {
           case 0 => dt
