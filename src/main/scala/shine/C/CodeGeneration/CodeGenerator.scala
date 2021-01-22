@@ -346,7 +346,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           Identifier[ExpType ->: CommType](freshName("continue"), ExpType(dt, read) ->: comm)
         cmd(k(continue_cmd), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, path, cont))))
 
-      case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, env) => gen.exp(body, env, path, cont))
+      case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, envU) => gen.exp(body, envU, path, cont))
       case Phrases.IfThenElse(cond, thenP, elseP) =>
         exp(cond, env, Nil, cond => C.AST.IfThenElse(cond, exp(thenP, env, path, cont), Some(exp(elseP, env, path, cont))))
 

@@ -1,6 +1,6 @@
 package shine.DPIA.Compilation
 
-import arithexpr.arithmetic.BigSum
+import arithexpr.arithmetic
 import rise.core.freshName
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives._
@@ -35,7 +35,7 @@ object TranslateIndices {
   private def idx2nat : Phrase[ExpType] => Nat = {
     case NatAsIndex(_, Natural(i)) => i
     case Identifier(i, ExpType(IndexType(n), _)) =>
-      arithexpr.arithmetic.NamedVar(i, arithexpr.arithmetic.RangeAdd(0, n, 1))
+      arithmetic.NamedVar(i, arithmetic.RangeAdd(0, n, 1))
     case _ => throw new Exception("could not use index expression as nat")
   }
   /*
@@ -126,27 +126,23 @@ object TranslateIndices {
       case Cycle(_, m, _, e) => fromPath {
         case CIntExpr(i) :: ps => idx(e, CIntExpr(i % m) :: ps) }
       case part@Partition(_, _, _, _, e) => fromPath {
-        case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(BigSum(0, i - 1, x => part.lenF(x)) + j) :: ps) }
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(arithmetic.BigSum(0, i - 1, x => part.lenF(x)) + j) :: ps) }
       case Reorder(n, _, _, idxF, _, e) => fromPath {
         case CIntExpr(i) :: ps => idx(e, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: ps) }
       case Slide(_, _, s2, _, e) => fromPath {
         case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(i * s2 + j) :: ps) }
       case PadClamp(n, l, r, _, e) => fromPath {
         case CIntExpr(i) :: ps =>
-          val ident = NatIdentifier(freshName("i"))
-          val branch = IfThenElse(BinOp(LT, Natural(i), Natural(l)),
-            nat2idx(0, n),
-            IfThenElse(BinOp(LT, Natural(r), Natural(i + 1)),
-              nat2idx(n - 1, n),
-              nat2idx(i - l, n)))
-          LetNat(LetNatIdentifier(ident), branch, idx(e, CIntExpr(ident) :: ps))
+          val lt : Nat => Nat => arithmetic.BoolExpr = l => r =>
+            arithmetic.BoolExpr.ArithPredicate(l, r, arithmetic.BoolExpr.ArithPredicate.Operator.<)
+          val j = arithmetic.IfThenElse(l `lt` r, 0, arithmetic.IfThenElse(r `lt` (i + 1), n - 1, i - l))
+          idx(e, CIntExpr(j) :: ps)
       }
       case Pad(n, l, r, _, pad, e) => fromPath {
         case CIntExpr(i) :: ps =>
-          IfThenElse(BinOp(LT, Natural(i), Natural(l)),
-            idx(pad, ps),
-            IfThenElse(BinOp(LT, Natural(r), Natural(i + 1)),
-              idx(pad, ps),
+          val rec = idx(pad, ps)
+          IfThenElse(BinOp(LT, Natural(i), Natural(l)), rec,
+            IfThenElse(BinOp(LT, Natural(r), Natural(i + 1)), rec,
               idx(e, CIntExpr(i - l) :: ps)))
       }
 
@@ -191,7 +187,7 @@ object TranslateIndices {
       case (ReorderAcc(n, _, idxF, a), CIntExpr(i) :: path) =>
         idxAcc(a, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: path)
       case (depJ@DepJoinAcc(_, _, _, a), CIntExpr(i) :: CIntExpr(j) :: path) =>
-        idxAcc(a, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: path)
+        idxAcc(a, CIntExpr(arithmetic.BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: path)
       case (TransposeAcc(_, _, _, a), CIntExpr(i) :: CIntExpr(j) :: path) =>
         idxAcc(a, CIntExpr(j) :: CIntExpr(i) :: path)
       case (CycleAcc(_, m, _, a), CIntExpr(i) :: path) => idxAcc(a, CIntExpr(i % m) :: path)
