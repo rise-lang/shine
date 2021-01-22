@@ -163,7 +163,12 @@ object InsertMemoryBarriers {
       case FunctionalPrimitives.Map(_, _, _, _, _, e) => collectReads(e, allocs, reads)
       case IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
       case MapRead(_, _, _, _, e) => collectReads(e, allocs, reads)
-      case GenerateCont(_, _, _) => giveUp()
+      case GenerateCont(_, _, _) => giveUp() // No GenerateCont should make it this far
+      case IfThenElse(b, l, r) =>
+        collectReads(b, allocs, reads)
+        collectReads(l, allocs, reads)
+        collectReads(r, allocs, reads)
+      case Continuation(_, _) => giveUp() // No Continuation should make it this far
       case FunctionalPrimitives.AsScalar(_, _, _, _, e) => collectReads(e, allocs, reads)
       case FunctionalPrimitives.AsVectorAligned(_, _, _, _, e) => collectReads(e, allocs, reads)
       case FunctionalPrimitives.AsVector(_, _, _, _, e) => collectReads(e, allocs, reads)
