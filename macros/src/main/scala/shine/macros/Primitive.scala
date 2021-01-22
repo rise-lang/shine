@@ -24,32 +24,16 @@ object Primitive {
   class Impl(val c: blackbox.Context) {
     import c.universe._
 
-    def expPrimitive(annottees: c.Expr[Any]*): c.Expr[Any] = {
-      annottees.map(_.tree) match {
-        case (cdef: ClassDef) :: Nil =>
-          c.Expr(expPrimitivesFromClassDef(cdef))
-        case (cdef: ClassDef) :: (md: ModuleDef) :: Nil =>
-          c.Expr(q"{${expPrimitivesFromClassDef(cdef)}; $md}")
-        case _ => c.abort(c.enclosingPosition, "expected a class definition")
-      }
-    }
+    def expPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makeExpPrimitiveClass(primitivesFromClassDef(c)))(annottees)
+    def accPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makeAccPrimitiveClass(primitivesFromClassDef(c)))(annottees)
+    def comPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makeComPrimitiveClass(primitivesFromClassDef(c)))(annottees)
 
-    def accPrimitive(annottees: c.Expr[Any]*): c.Expr[Any] = {
+    def primitive(transform : ClassDef => ClassDef)(annottees: Seq[c.Expr[Any]]): c.Expr[Any] = {
       annottees.map(_.tree) match {
         case (cdef: ClassDef) :: Nil =>
-          c.Expr(accPrimitivesFromClassDef(cdef))
+          c.Expr(transform(cdef))
         case (cdef: ClassDef) :: (md: ModuleDef) :: Nil =>
-          c.Expr(q"{${accPrimitivesFromClassDef(cdef)}; $md}")
-        case _ => c.abort(c.enclosingPosition, "expected a class definition")
-      }
-    }
-
-    def comPrimitive(annottees: c.Expr[Any]*): c.Expr[Any] = {
-      annottees.map(_.tree) match {
-        case (cdef: ClassDef) :: Nil =>
-          c.Expr(comPrimitivesFromClassDef(cdef))
-        case (cdef: ClassDef) :: (md: ModuleDef) :: Nil =>
-          c.Expr(q"{${comPrimitivesFromClassDef(cdef)}; $md}")
+          c.Expr(q"{${transform(cdef)}; $md}")
         case _ => c.abort(c.enclosingPosition, "expected a class definition")
       }
     }
@@ -160,11 +144,48 @@ object Primitive {
        """
     }
 
-    def makeExpPrimitiveClass(name: TypeName,
-                              additionalParams: List[ValDef],
-                              params: List[ValDef],
-                              body: List[Tree],
-                              parents: List[Tree]): ClassDef = {
+    case class ClassInfo(name: TypeName,
+                         additionalParams: List[ValDef],
+                         params: List[ValDef],
+                         body: List[Tree],
+                         parents: List[Tree])
+
+    def primitivesFromClassDef: ClassDef => ClassInfo = {
+      case q"case class $name(..$params) extends { ..$_ } with ..$parents {..$body} " =>
+        ClassInfo(
+          name.asInstanceOf[c.TypeName],
+          List(),
+          params.asInstanceOf[List[ValDef]],
+          body.asInstanceOf[List[Tree]],
+          parents.asInstanceOf[List[Tree]])
+      case q"final case class $name(..$params) extends { ..$_ } with ..$parents {..$body} " =>
+        ClassInfo(
+          name.asInstanceOf[c.TypeName],
+          List(),
+          params.asInstanceOf[List[ValDef]],
+          body.asInstanceOf[List[Tree]],
+          parents.asInstanceOf[List[Tree]])
+      case q"""case class $name(..$additionalParams)
+                               (..$params) extends { ..$_ } with ..$parents {..$body} """ =>
+        ClassInfo(
+          name.asInstanceOf[c.TypeName],
+          additionalParams.asInstanceOf[List[ValDef]],
+          params.asInstanceOf[List[ValDef]],
+          body.asInstanceOf[List[Tree]],
+          parents.asInstanceOf[List[Tree]])
+      case q"""final case class $name(..$additionalParams)
+                                     (..$params) extends { ..$_ } with ..$parents {..$body} """ =>
+        ClassInfo(
+          name.asInstanceOf[c.TypeName],
+          additionalParams.asInstanceOf[List[ValDef]],
+          params.asInstanceOf[List[ValDef]],
+          body.asInstanceOf[List[Tree]],
+          parents.asInstanceOf[List[Tree]])
+      case _ =>
+        c.abort(c.enclosingPosition, "expected a case class extends Primitive")
+    }
+
+    def makeExpPrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
       var visitAndRebuildMissing = true
       var xmlPrinterMissing = true
       body.foreach {
@@ -213,45 +234,7 @@ object Primitive {
       expClass
     }
 
-    def expPrimitivesFromClassDef: ClassDef => ClassDef = {
-      case q"case class $name(..$params) extends { ..$_ } with ..$parents {..$body} " =>
-        makeExpPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          List(),
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]],
-          parents.asInstanceOf[List[Tree]])
-      case q"final case class $name(..$params) extends { ..$_ } with ..$parents {..$body} " =>
-        makeExpPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          List(),
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]],
-          parents.asInstanceOf[List[Tree]])
-      case q"""case class $name(..$additionalParams)
-                               (..$params) extends { ..$_ } with ..$parents {..$body} """ =>
-        makeExpPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          additionalParams.asInstanceOf[List[ValDef]],
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]],
-          parents.asInstanceOf[List[Tree]])
-      case q"""final case class $name(..$additionalParams)
-                                     (..$params) extends { ..$_ } with ..$parents {..$body} """ =>
-        makeExpPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          additionalParams.asInstanceOf[List[ValDef]],
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]],
-          parents.asInstanceOf[List[Tree]])
-      case _ =>
-        c.abort(c.enclosingPosition, "expected a case class extends Primitive")
-    }
-
-    def makeAccPrimitiveClass(name: TypeName,
-                              additionalParams: List[ValDef],
-                              params: List[ValDef],
-                              body: List[Tree]): ClassDef = {
+    def makeAccPrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
       var visitAndRebuildMissing = true
       var xmlPrinterMissing = true
       body.foreach {
@@ -294,45 +277,10 @@ object Primitive {
          """
       }).asInstanceOf[ClassDef]
 
-      //      println(accClass)
       accClass
     }
 
-    def accPrimitivesFromClassDef: ClassDef => ClassDef = {
-      case q"case class $name(..$params) extends $_ {..$body} " =>
-        makeAccPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          List(),
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]])
-      case q"final case class $name(..$params) extends $_ {..$body} " =>
-        makeAccPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          List(),
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]])
-      case q"""case class $name(..$additionalParams)
-                               (..$params) extends $_ {..$body} """ =>
-        makeAccPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          additionalParams.asInstanceOf[List[ValDef]],
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]])
-      case q"""final case class $name(..$additionalParams)
-                                     (..$params) extends $_ {..$body} """ =>
-        makeAccPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          additionalParams.asInstanceOf[List[ValDef]],
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]])
-      case _ =>
-        c.abort(c.enclosingPosition, "expected a case class extends Primitive")
-    }
-
-    def makeComPrimitiveClass(name: TypeName,
-                              additionalParams: List[ValDef],
-                              params: List[ValDef],
-                              body: List[Tree]): ClassDef = {
+    def makeComPrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
       var visitAndRebuildMissing = true
       var xmlPrinterMissing = true
       body.foreach {
@@ -380,37 +328,5 @@ object Primitive {
 
       comClass
     }
-
-    def comPrimitivesFromClassDef: ClassDef => ClassDef = {
-      case q"case class $name(..$params) extends $_ {..$body} " =>
-        makeComPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          List(),
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]])
-      case q"final case class $name(..$params) extends $_ {..$body} " =>
-        makeComPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          List(),
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]])
-      case q"""case class $name(..$additionalParams)
-                               (..$params) extends $_ {..$body} """ =>
-        makeComPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          additionalParams.asInstanceOf[List[ValDef]],
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]])
-      case q"""final case class $name(..$additionalParams)
-                                     (..$params) extends $_ {..$body} """ =>
-        makeComPrimitiveClass(
-          name.asInstanceOf[c.TypeName],
-          additionalParams.asInstanceOf[List[ValDef]],
-          params.asInstanceOf[List[ValDef]],
-          body.asInstanceOf[List[Tree]])
-      case _ =>
-        c.abort(c.enclosingPosition, "expected a case class extends Primitive")
-    }
   }
-
 }
