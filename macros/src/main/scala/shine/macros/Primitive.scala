@@ -5,7 +5,6 @@ import scala.reflect.macros.blackbox
 import scala.language.experimental.macros
 
 object Primitive {
-
   @compileTimeOnly("ExpPrimitive macro")
   class expPrimitive extends StaticAnnotation {
     def macroTransform(annottees: Any*): Any = macro Impl.expPrimitive
@@ -24,9 +23,9 @@ object Primitive {
   class Impl(val c: blackbox.Context) {
     import c.universe._
 
-    def expPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makeExpPrimitiveClass(primitivesFromClassDef(c)))(annottees)
-    def accPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makeAccPrimitiveClass(primitivesFromClassDef(c)))(annottees)
-    def comPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makeComPrimitiveClass(primitivesFromClassDef(c)))(annottees)
+    def expPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makePrimitiveClass(primitivesFromClassDef(c)))(annottees)
+    def accPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makePrimitiveClass(primitivesFromClassDef(c)))(annottees)
+    def comPrimitive(annottees : c.Expr[Any]*): c.Expr[Any] = primitive(c => makePrimitiveClass(primitivesFromClassDef(c)))(annottees)
 
     def primitive(transform : ClassDef => ClassDef)(annottees: Seq[c.Expr[Any]]): c.Expr[Any] = {
       annottees.map(_.tree) match {
@@ -185,7 +184,7 @@ object Primitive {
         c.abort(c.enclosingPosition, "expected a case class extends Primitive")
     }
 
-    def makeExpPrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
+    def makePrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
       var visitAndRebuildMissing = true
       var xmlPrinterMissing = true
       body.foreach {
@@ -232,101 +231,6 @@ object Primitive {
         s"generated `${name.toString}'\n$expClass", force = false)
 
       expClass
-    }
-
-    def makeAccPrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
-      var visitAndRebuildMissing = true
-      var xmlPrinterMissing = true
-      body.foreach {
-        case DefDef(_, TermName("visitAndRebuild"), _, _, _, _) =>
-          visitAndRebuildMissing = false
-        case DefDef(_, TermName("xmlPrinter"), _, _, _, _) =>
-          xmlPrinterMissing = false
-        case _ =>
-      }
-
-      val generated = q"""
-          ${if (visitAndRebuildMissing)
-        makeVisitAndRebuild(name, additionalParams, params)
-      else q""}
-
-          ${if (xmlPrinterMissing)
-        makeXMLPrinter(name, additionalParams, params)
-      else q""}
-         """
-
-      val accClass = (additionalParams match {
-        case List() =>
-          q"""
-          final case class $name(..$params) extends AccPrimitive {
-            ..$body
-            ..$generated
-          }
-         """
-        case _ =>
-          val newParams = params map {
-            case ValDef(_, name, tpt, rhs) if rhs.isEmpty => q"val $name : $tpt"
-            case ValDef(_, name, tpt, rhs) => q"val $name : $tpt = $rhs"
-          }
-          q"""
-          final case class $name(..$additionalParams)
-                                (..$newParams) extends AccPrimitive {
-            ..$body
-            ..$generated
-          }
-         """
-      }).asInstanceOf[ClassDef]
-
-      accClass
-    }
-
-    def makeComPrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
-      var visitAndRebuildMissing = true
-      var xmlPrinterMissing = true
-      body.foreach {
-        case DefDef(_, TermName("visitAndRebuild"), _, _, _, _) =>
-          visitAndRebuildMissing = false
-        case DefDef(_, TermName("xmlPrinter"), _, _, _, _) =>
-          xmlPrinterMissing = false
-        case _ =>
-      }
-
-      val generated = q"""
-          ${if (visitAndRebuildMissing)
-        makeVisitAndRebuild(name, additionalParams, params)
-      else q""}
-
-          ${if (xmlPrinterMissing)
-        makeXMLPrinter(name, additionalParams, params)
-      else q""}
-         """
-
-      val comClass = (additionalParams match {
-        case List() =>
-          q"""
-          final case class $name(..$params) extends CommandPrimitive {
-            ..$body
-            ..$generated
-          }
-         """
-        case _ =>
-          val newParams = params map {
-            case ValDef(_, name, tpt, rhs) if rhs.isEmpty => q"val $name : $tpt"
-            case ValDef(_, name, tpt, rhs) => q"val $name : $tpt = $rhs"
-          }
-          q"""
-          final case class $name(..$additionalParams)
-                                (..$newParams) extends CommandPrimitive {
-            ..$body
-            ..$generated
-          }
-         """
-      }).asInstanceOf[ClassDef]
-
-      c.info(c.enclosingPosition,
-        s"generated `${name.toString}'\n$comClass", force = false)
-
-      comClass
     }
   }
 }
