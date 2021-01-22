@@ -13,7 +13,7 @@ final case class Continuation(dt: DataType,
                               cont: Phrase[(ExpType ->: CommType) ->: CommType])
   extends ExpPrimitive
 {
-  cont :: expT(dt, read) ->: comm ->: comm
+  cont :: (expT(dt, read) ->: comm) ->: comm
   override val t: ExpType = expT(dt, read)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
