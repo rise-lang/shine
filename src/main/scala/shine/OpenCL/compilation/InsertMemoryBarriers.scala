@@ -8,7 +8,7 @@ import shine.DPIA.primitives.functional.{Map => _, _}
 import shine.DPIA.primitives.imperative._
 import shine.OpenCL
 import shine.OpenCL.Local
-import shine.OpenCL.primitives.imperative.{New => OclNew, NewDoubleBuffer => OclNewDoubleBuffer, _}
+import shine.OpenCL.primitives.{imperative => ocl}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -69,31 +69,38 @@ object InsertMemoryBarriers {
           val (x, body) = f.unwrapBody
           Stop(ForNat(unroll)(f.n,
             DepLambda[NatKind, CommType](x, visitLoopBody(body, allocs, metadata))))
-        case pf@ParFor(Local, dim, unroll) =>
+        case pf@ocl.ParFor(Local, dim, unroll) =>
           val (x, o, body) = pf.unwrapBody
           val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
           collectWrites(pf.out, allocs, outer_wg_writes)
-          Stop(ParFor(Local, dim, unroll)(pf.n, pf.dt, pf.out,
+          Stop(ocl.ParFor(Local, dim, unroll)(pf.n, pf.dt, pf.out,
             Lambda(x, Lambda(o,
               visitLoopBody(body, allocs, metadata, outer_wg_writes))), pf.init, pf.step))
-        case pf@ParFor(level, dim, unroll) =>
+        case pf@ocl.ParFor(level, dim, unroll) =>
           val (x, o, body) = pf.unwrapBody
-          Stop(ParFor(level, dim, unroll)(pf.n, pf.dt, pf.out,
+          Stop(ocl.ParFor(level, dim, unroll)(pf.n, pf.dt, pf.out,
             Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
-        case pf@ParForNat(level, dim, unroll) =>
+        case pf@ocl.ParForNat(Local, dim, unroll) =>
           val (x, o, body) = pf.unwrapBody
-          Stop(ParForNat(level, dim, unroll)(pf.n, pf.ft, pf.out,
-            DepLambda[NatKind, AccType ->: CommType](x,
-              Lambda(o, visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
-        case OclNew(addr, _, Lambda(x, _)) if addr != AddressSpace.Private =>
+          val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
+          collectWrites(pf.out, allocs, outer_wg_writes)
+          Stop(ocl.ParForNat(Local, dim, unroll)(pf.n, pf.ft, pf.out,
+            DepLambda[NatKind, AccType ->: CommType](x, Lambda(o,
+              visitLoopBody(body, allocs, metadata, outer_wg_writes))), pf.init, pf.step))
+        case pf@ocl.ParForNat(level, dim, unroll) =>
+          val (x, o, body) = pf.unwrapBody
+          Stop(ocl.ParForNat(level, dim, unroll)(pf.n, pf.ft, pf.out,
+            DepLambda[NatKind, AccType ->: CommType](x, Lambda(o,
+              visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
+        case ocl.New(addr, _, Lambda(x, _)) if addr != AddressSpace.Private =>
           Continue(p, Visitor(allocs + (x -> addr), metadata))
-        case OclNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body))
+        case ocl.NewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body))
         if addr != AddressSpace.Private =>
           val (b2, m) = analyzeAndInsertBarriers(body, allocs + (x -> addr))
           collectReads(in, allocs, metadata.reads)
           metadata.reads ++= m.reads
           metadata.reads ++= m.reads
-          Stop(OclNewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, b2)))
+          Stop(ocl.NewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, b2)))
         case Assign(_, _, rhs) =>
           collectReads(rhs, allocs, metadata.reads)
           Stop(p)
@@ -137,7 +144,7 @@ object InsertMemoryBarriers {
       case JoinAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case SplitAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case AsScalarAcc(_, _, _, a) => collectWrites(a, allocs, writes)
-      case IdxDistributeAcc(_, _, _, _, _, a) => collectWrites(a, allocs, writes)
+      case ocl.IdxDistributeAcc(_, _, _, _, _, a) => collectWrites(a, allocs, writes)
       case PairAcc1(_, _, a) => collectWrites(a, allocs, writes)
       case PairAcc2(_, _, a) => collectWrites(a, allocs, writes)
       case TakeAcc(_, _, _, a) => collectWrites(a, allocs, writes)
@@ -168,7 +175,7 @@ object InsertMemoryBarriers {
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Slide(_, _, _, _, e) => collectReads(e, allocs, reads)
       case functional.Map(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
+      case ocl.IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
       case MapRead(_, _, _, _, e) => collectReads(e, allocs, reads)
       case GenerateCont(_, _, _) => giveUp()
       case AsScalar(_, _, _, _, e) => collectReads(e, allocs, reads)

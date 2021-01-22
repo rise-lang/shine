@@ -8,7 +8,7 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Cycle, Drop, Take, Zip}
 
-object SlideSeqIIndices {
+object CircularBufferI {
   def apply(
     n: Nat,
     size: Nat,

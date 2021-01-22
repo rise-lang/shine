@@ -8,7 +8,7 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.Drop
 
-object SlideSeqIValues {
+object RotateValuesI {
   def apply(
     n: Nat,
     size: Nat,

@@ -7,7 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.DPIA.primitives.intermediate.SlideSeqIValues
+import shine.DPIA.primitives.intermediate.RotateValuesI
 import shine.macros.Primitive.expPrimitive
 
 @expPrimitive
@@ -27,7 +27,7 @@ final case class RotateValues(n: Nat,
     str(input)(fun((i: NatIdentifier) ->:
       (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)
     )(nextIn =>
-      SlideSeqIValues(n, sz, 1, dt, dt,
+      RotateValuesI(n, sz, 1, dt, dt,
         fun(expT(dt, read))(x =>
           fun(accT(dt))(o => acc(write(x))(o))),
         nextIn, C)

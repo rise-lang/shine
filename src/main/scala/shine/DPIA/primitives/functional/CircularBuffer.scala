@@ -7,7 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.DPIA.primitives.intermediate.SlideSeqIIndices
+import shine.DPIA.primitives.intermediate.CircularBufferI
 import shine.macros.Primitive.expPrimitive
 
 @expPrimitive
@@ -29,7 +29,7 @@ final case class CircularBuffer(n: Nat,
     str(input)(fun((i: NatIdentifier) ->:
       (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
     )(nextIn =>
-      SlideSeqIIndices(n, sz, 1, dt1, dt2,
+      CircularBufferI(n, sz, 1, dt1, dt2,
         fun(expT(dt1, read))(x =>
           fun(accT(dt2))(o => acc(load(x))(o))),
         nextIn, C)
