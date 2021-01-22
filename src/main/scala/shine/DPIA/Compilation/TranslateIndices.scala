@@ -156,7 +156,6 @@ object TranslateIndices {
          | DepApply(_, _)
          | IfThenElse(_, _, _)
          | LetNat(_, _, _)
-         | _ : ExpPrimitive
       => path.foldLeft(p)({
           case (e, CIntExpr(i)) => e.t match {
             case ExpType(ArrayType(n, dt), _) => Idx(n, dt, nat2idx(i, n), e)
@@ -173,6 +172,8 @@ object TranslateIndices {
           // TODO: other path expressions
           case _ => ???
         })
+
+      case _ : ExpPrimitive => throw new Exception(s"Cannot index-translate primitive $p")
     }
   }
 
