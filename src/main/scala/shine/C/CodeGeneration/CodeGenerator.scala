@@ -318,24 +318,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case DMatch(x, _, _, _, f, e) => exp(e, env, path, cont)
 
       // TODO: can we move to TranslateIndices?
-      case PadClamp(n, l, r, _, e) => path match {
-        case (i: CIntExpr) :: ps =>
-          exp(e, env, CIntExpr(0) :: ps, left =>
-            exp(e, env, CIntExpr(n-1) :: ps, right =>
-              genPad(n, l, r, left, right, i, ps, e, env, cont)))
-        case _ => error(s"Expected path to be not empty")
-      }
-
-      // TODO: can we move to TranslateIndices?
-      case Pad(n, l, r, _, pad, array) => path match {
-        case (i: CIntExpr) :: ps =>
-          exp(pad, env, ps, padExpr =>
-            genPad(n, l, r, padExpr, padExpr, i, ps, array, env, cont))
-
-        case _ => error(s"Expected path to be not empty")
-      }
-
-      // TODO: can we move to TranslateIndices?
       case MakeArray(_, elems) => path match {
         case (i: CIntExpr) :: ps => try {
           exp(elems(i.eval), env, ps, cont)
@@ -1062,36 +1044,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
              })
          case otherwise => throw new Exception(s"Don't know how to print $otherwise")
        }
-  }
-
-  protected def genPad(n: Nat, l: Nat, r: Nat,
-                       left: Expr, right: Expr,
-                       i: CIntExpr, ps: Path,
-                       array: Phrase[ExpType],
-                       env: Environment,
-                       cont: Expr => Stmt): Stmt = {
-    // FIXME: we should know that (i - l) is in [0; n[ here
-    exp(array, env, CIntExpr(i - l) :: ps, arrayExpr => {
-
-      def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
-        case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
-        case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
-        case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
-        case _ => null
-      }
-
-      def genBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
-        import BoolExpr._
-        arithPredicate(lhs, rhs, operator) match {
-          case True => taken
-          case False => notTaken
-          case _ => C.AST.TernaryExpr(
-            C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
-            taken, notTaken)
-        }
-      }
-      cont(genBranch(i, l, ArithPredicate.Operator.<, left, genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, right)))
-    })
   }
 }
 

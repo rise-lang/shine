@@ -2,14 +2,13 @@ package shine.DPIA.Compilation
 
 import arithexpr.arithmetic.BigSum
 import rise.core.freshName
-import shine.C.CodeGeneration.CodeGenerator._
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives._
-import shine.DPIA.{LetNatIdentifier, Nat}
+import shine.DPIA.{LetNatIdentifier, Lifting, Nat, NatIdentifier}
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.Lifting
+import shine.DPIA.Phrases.Operators.Binary.LT
 
 /*
 Translates transformations on index accessed arrays into transformations on the
@@ -132,6 +131,24 @@ object TranslateIndices {
         case CIntExpr(i) :: ps => idx(e, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: ps) }
       case Slide(_, _, s2, _, e) => fromPath {
         case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(i * s2 + j) :: ps) }
+      case PadClamp(n, l, r, _, e) => fromPath {
+        case CIntExpr(i) :: ps =>
+          val ident = NatIdentifier(freshName("i"))
+          val branch = IfThenElse(BinOp(LT, Natural(i), Natural(l)),
+            nat2idx(0, n),
+            IfThenElse(BinOp(LT, Natural(r), Natural(i + 1)),
+              nat2idx(n - 1, n),
+              nat2idx(i - l, n)))
+          LetNat(LetNatIdentifier(ident), branch, idx(e, CIntExpr(ident) :: ps))
+      }
+      case Pad(n, l, r, _, pad, e) => fromPath {
+        case CIntExpr(i) :: ps =>
+          IfThenElse(BinOp(LT, Natural(i), Natural(l)),
+            idx(pad, ps),
+            IfThenElse(BinOp(LT, Natural(r), Natural(i + 1)),
+              idx(pad, ps),
+              idx(e, CIntExpr(i - l) :: ps)))
+      }
 
       case Identifier(_ , _)
          | Literal(_)
