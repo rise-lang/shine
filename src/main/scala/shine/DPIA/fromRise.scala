@@ -658,6 +658,14 @@ object fromRise {
               BinOp(Operators.Binary.NEQ, e1, e2)))
       }
 
+      case core.and() => fromType {
+        case expT(`bool`, `read`) ->: expT(`bool`, `read`) ->: expT(`bool`, `read`) =>
+          fun[ExpType](expT(bool, read), e1 =>
+            fun[ExpType](expT(bool, read), e2 =>
+              BinOp(Operators.Binary.AND, e1, e2)
+          ))
+      }
+
       case core.cast() => fromType {
         case expT(s: BasicType, `read`) ->: expT(t: BasicType, `read`)
         =>

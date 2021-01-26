@@ -109,7 +109,8 @@ final case class BinOp(op: Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Ph
       case Operators.Binary.GT |
            Operators.Binary.LT |
            Operators.Binary.EQ |
-           Operators.Binary.NEQ => expT(bool, read)
+           Operators.Binary.NEQ |
+           Operators.Binary.AND => expT(bool, read)
       case _ => (lhs.t.dataType, rhs.t.dataType) match {
         case (t1, t2) if t1 == t2 => ExpType(t1, read)
         case (lhsT, rhsT) =>
@@ -412,5 +413,6 @@ object Operators {
     val LT: Binary.Value = Value("<")
     val EQ: Binary.Value = Value("==")
     val NEQ: Binary.Value = Value("!=")
+    val AND: Binary.Value = Value("&&")
   }
 }

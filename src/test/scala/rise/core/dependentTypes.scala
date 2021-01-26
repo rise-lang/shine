@@ -415,7 +415,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
     assert(total == n / 2)
   }
 
-  test("OCL filter even numbers with outside count") {
+  test("OCL filter even numbers with external count") {
     val e = depFun((n: Nat) => depFun((count:Nat) =>  fun(n `.` int)(array => {
       def pred = fun(x => (x % l(2)) =:= l(0))
       oclWhich(array |> map(pred))(count) |> oclToMem(AddressSpace.Global) |> mapSeq(fun(idx => array `@` idx))
@@ -432,7 +432,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
     val even = array.filter(_ % 2 == 0)
     val kernelF = kernel.as[ScalaFunction`(`Int`,`Int `,` Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
 
-    val (oclEven, _) = kernelF(n `,` even.length `,` array)
+    val (oclEven, time) = kernelF(n `,` even.length `,` array)
     assert(even.length == oclEven.length)
     assert(even.zip(oclEven).forall( { case (x, y) => x == y} ))
   }
@@ -440,9 +440,10 @@ class dependentTypes extends test_util.TestsWithExecutor {
   test("OCL filter even number bringing it with me") {
     val e = depFun((n: Nat) =>  fun(n `.` int)(array => {
       def pred = fun(x => (x % l(2)) =:= l(0))
-      liftN(array |> map(fun(x => (x % l(2)) =:= l(0))) |> oclCount(AddressSpace.Private) |> indexAsNat)(
-        depFun((count:Nat) => dpair(count)(array |> mapSeq(fun(x => x)))
-      ))
+      liftN(array |> map(fun(x => (x % l(2)) =:= l(0))) |> oclCount(AddressSpace.Global) |> indexAsNat)(depFun((count:Nat) =>
+      dpair(count)(
+              oclWhich(array |> map(pred))(count) |>  oclToMem(AddressSpace.Global) |> mapSeq(fun(idx => array `@` idx))
+      )))
     }))
 
     val inferred: Expr = TDSL.infer(e)
@@ -460,6 +461,24 @@ class dependentTypes extends test_util.TestsWithExecutor {
 
       val (dpair, _) = kernelF(n `,` array)
       val (count, data) = dpair
+      assert(count == even.length)
+      assert(even.zip(data).forall({ case (x, y) => x == y }))
     }
+  }
+
+  test("bin-centric histogram")  {
+    val e =  depFun((numBins: Nat) => depFun((n:Nat) =>
+      fun(numBins`.` (f32 x f32))(bins =>
+        fun(n `.` f32)(data => bins |> mapGlobal(0)(fun(range =>
+          data |> mapSeq(fun(x => (x > range._1) && (x < range._2)))
+        )))
+      )
+    ))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val kernel = util.gen.OpenCLKernel(inferred, "histogram")
+    println(kernel.code)
   }
 }

@@ -318,7 +318,9 @@ object primitives {
   @primitive object gt extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
   @primitive object lt extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
   @primitive object equal extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
-  @primitive object notEqual extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool } }
+  @primitive object notEqual extends Primitive with Builder { impl{ t: DataType => t ->: t ->: bool }}
+
+  @primitive object and extends Primitive with Builder { bool ->: bool ->: bool }
 
   // TODO: should vectorisation be in the core or not?
 

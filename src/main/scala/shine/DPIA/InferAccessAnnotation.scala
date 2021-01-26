@@ -339,6 +339,12 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
+      case rp.and() => p.t match {
+        case rt.bool ->: rt.bool ->: rt.bool =>
+          expT(bool, read) ->: expT(bool, read) ->: expT(bool, read)
+        case _ => error()
+      }
+
       case rp.natAsIndex() | rp.take() | rp.drop() => p.t match {
         case n `(Nat)->:` ((dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
           nFunT(n, expT(dt1, read) ->: expT(dt2, read))
@@ -615,6 +621,7 @@ private class InferAccessAnnotation {
             aFunT(a, expT(dataType(input), read) ->: expT(dataType(outputT), read))
         }
         buildType(p.t)
+
 
       case rp.which() =>
         def buildType(t: rt.Type): PhraseType = t match {

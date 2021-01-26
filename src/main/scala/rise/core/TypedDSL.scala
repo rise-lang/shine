@@ -496,6 +496,8 @@ object TypedDSL {
     def =:=(rhs: ToBeTyped[Expr]): ToBeTyped[App] = equal(lhs)(rhs)
     def =/=(rhs: ToBeTyped[Expr]): ToBeTyped[App] = notEqual(lhs)(rhs)
 
+    def &&(rhs: ToBeTyped[Expr]): ToBeTyped[App] = and(lhs)(rhs)
+
     // scalastyle:off disallow.space.before.token
     // unary
     def unary_- : ToBeTyped[App] = neg(lhs)

@@ -132,8 +132,8 @@ object TranslationToImperative {
         ))
 
       case b@BinOp(op, e1, e2) =>
-        con(e1)(λ(b.t)(x =>
-          con(e2)(λ(b.t)(y =>
+        con(e1)(λ(e1.t)(x =>
+          con(e2)(λ(e2.t)(y =>
             C(BinOp(op, x, y))
           ))
         ))

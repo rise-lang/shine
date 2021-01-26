@@ -232,8 +232,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case LiftNI(input, f) =>
         exp(input, env, List(), input => {
 
-          val name = freshName("lN")
-
+          val name = f match {
+            case DepLambda(x, _) => x.name
+            case _ => ???
+          }
 
           val range = RangeUnknown
           val freshNat = NatIdentifier(name, range)
@@ -1117,6 +1119,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case LT => C.AST.BinaryOperator.<
         case EQ => C.AST.BinaryOperator.==
         case NEQ => C.AST.BinaryOperator.!=
+        case AND => C.AST.BinaryOperator.&&
       }
     }
 
