@@ -2,24 +2,17 @@ package rise.elevate
 
 import elevate.core._
 import elevate.core.strategies.basic._
-import rise.core.HighLevelConstructs.{padClamp2D, padCst2D, slide2D}
-//import elevate.core.strategies.debug.peek
-//import rise.core.IsClosedForm
+import rise.core.HighLevelConstructs.{padClamp2D, slide2D}
+import rise.elevate.rules.lowering.lowerToC
 import _root_.util.gen
-import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
 import rise.core.TypedDSL._
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
-//import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
-import rise.elevate.strategies.algorithmic.reorder
-import rise.elevate.strategies.lowering._
 import rise.elevate.strategies.normalForm._
-import rise.elevate.strategies.predicate._
-import rise.elevate.strategies.tiling._
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
 
@@ -33,7 +26,7 @@ class gauss extends test_util.Tests {
 
   //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
 
-  val weights = List(
+  val gaussWeights = List(
     List(2,4,5,4,2),
     List(4,9,12,9,4),
     List(5,12,15,12,5),
@@ -49,121 +42,27 @@ class gauss extends test_util.Tests {
     fun(ArrayType(N, ArrayType(M, f32)))(in =>
       fun(ArrayType(5, ArrayType(5, f32)))(weights =>
         in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
-          |> slide2D(5,2) // -> M*Nx5x5, Matrix of 5x5 slides, each centered around original value
-          |> mapSeq(fun(sector => // sector:
-            zip(sector)(weights) //
-            |> mapSeq(fun(iwrowPair =>
-              zip(fst(iwrowPair))(snd(iwrowPair))
-              |> mapSeq(fun(iwpair =>
-                fst(iwpair) * snd(iwpair)
-              )) |> reduceSeq(add)(l(0.0f))
-            )) |> reduceSeq(add)(l(0.0f))
-        ))
+          |> slide2D(5,2) // -> MxN of 5x5 slides
+          |> map(map(fun(sector => // sector:5x5
+            zip(sector)(weights) //(v,w)
+            |> map(fun(rowPair =>
+              zip(fst(rowPair))(snd(rowPair))
+              |> map(fun(pair =>
+                fst(pair) * snd(pair)
+              )) |> reduce(add)(l(0.0f))
+            )) |> reduce(add)(l(0.0f))
+        )))
       )
     )
 
-  //// ICFP'20 TVM - STRATEGIES ////////////////////////////////////////////////
   // -- BASELINE ---------------------------------------------------------------
 
   val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
     normalize.apply(fuseReduceMap `@` topDown[Rise])
 
   test("baseline") {
-    //val tmp = DFNF()(default.RiseTraversable).apply(gauss)
-    //println(tmp)
-    //val tmp2 = normalize.apply(fuseReduceMap).apply(tmp.get)
-    //println(tmp2)
-    //run("baseline",  lowerToC, openMP = false)
-
-    println(gen.CProgram(gauss))
+    run("baseline",  lowerToC, openMP = false)
   }
-/*
-  // -- BLOCKING ---------------------------------------------------------------
-
-  val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
-  val blocking: Strategy[Rise] =
-    baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
-      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1,2,5,6,3,4))
-
-  test("blocking") {
-    run("blocking", blocking `;` lowerToC, openMP = false)
-  }
-
-  // -- VECTORIZATION ----------------------------------------------------------
-
-  val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
-  val vectorization: Strategy[Rise] =
-    blocking `;;`
-      (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
-
-  test("vectorization") {
-    run("vectorization", (vectorization `;` lowerToC), openMP = true)
-  }
-
-  // -- LOOP PERMUTATION -------------------------------------------------------
-
-  val loopPerm: Strategy[Rise] = baseline `;`
-    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
-    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-    (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-    reorder(List(1,2,5,3,6,4)) `;;`
-    (vectorize(32) `@` innermost(isFullyAppliedMap))
-
-  test("loop permutation") {
-    run("loop_permutation", (loopPerm `;` lowerToC), openMP = true)
-  }
-
-  // -- ARRAY PACKING ----------------------------------------------------------
-
-  val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
-  val permuteB: Strategy[Rise] =
-      splitJoin2(32) `;` DFNF() `;` argument(idAfter) `;`
-      topDown(liftId()) `;` topDown(createTransposePair) `;` RNF() `;`
-      argument(argument(idAfter)) `;` normalize.apply(liftId()) `;`
-      topDown(idToCopy)
-
-  val packB: Strategy[Rise] =
-    storeInMemory(isTransposedB,
-      permuteB `;;`
-        (vectorize(32) `@` innermost(isFullyAppliedMap)) `;;`
-        (parallel()    `@` outermost(isApplied(isMap)))
-    ) `@` inLambda
-
-  def inLambda(s: Strategy[Rise]): Strategy[Rise] =
-    isLambda `;` ( (e: Rise) => body(inLambda(s))(e) ) <+ s
-
-  val arrayPacking: Strategy[Rise] = packB `;;` loopPerm
-  test("array packing") {
-    run("array_packing", arrayPacking `;` lowerToC, openMP = true)
-  }
-
-  // -- CACHE BLOCKS -----------------------------------------------------------
-
-  val cacheBlocks: Strategy[Rise] = (
-    arrayPacking `;;` debug[Rise]("after arrayPacking") `;`
-      (unroll `@` innermost(isReduceSeq))
-    )
-
-  test("cache blocks") {
-    run("cache_blocks", cacheBlocks `;` lowerToC, openMP = true)
-  }
-
-  // -- PARALLEL ---------------------------------------------------------------
-
-  val par = (
-    arrayPacking `;;`
-      ((parallel() `@` outermost(isApplied(isMap))) `@`
-        outermost(isApplied(isLet))) `;;`
-      (unroll `@` innermost(isReduceSeq))
-    )
-
-  test("parallel") {
-    run("parallel", par `;` lowerToC, openMP = true)
-  }
-*/
 
   /// UTILS ////////////////////////////////////////////////////////////////////
 
