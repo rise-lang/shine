@@ -63,7 +63,7 @@ object harrisCornerDetectionHalideRewrite {
 
   object storeToPrivate {
     import rise.core.DSL._
-    import rise.openCL.TypedDSL.toPrivate
+    import rise.openCL.DSL.toPrivate
     import rise.elevate.rules.lowering.typeHasTrivialCopy
 
     def apply(find: Strategy[Rise]): Strategy[Rise] =

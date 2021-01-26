@@ -800,7 +800,7 @@ object fromRise {
             OclToMem(a, t, e)))
       }
 
-      case ocl.oclRun() => fromType {
+      case ocl.oclRunP() => fromType {
         case nFunT(ls1, nFunT(ls2, nFunT(ls3,
           nFunT(gs1, nFunT(gs2, nFunT(gs3,
           expT(t, `write`) ->: _))))))

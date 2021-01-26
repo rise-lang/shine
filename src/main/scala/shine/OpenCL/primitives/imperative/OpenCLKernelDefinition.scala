@@ -129,7 +129,7 @@ final case class OpenCLKernelDefinition(name: String,
 
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       identMap ++ tempsIdentMap,
-      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
+      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
     gen.generate(topLevelLetNats, env)(p)
   }

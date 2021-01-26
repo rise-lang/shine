@@ -296,7 +296,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case roclp.oclRun() => p.t match {
+      case roclp.oclRunP() => p.t match {
         case ls1 `(Nat)->:` (ls2 `(Nat)->:` (ls3 `(Nat)->:`
           (gs1 `(Nat)->:` (gs2 `(Nat)->:` (gs3 `(Nat)->:`
           ((t: rt.DataType) ->: (_: rt.DataType))

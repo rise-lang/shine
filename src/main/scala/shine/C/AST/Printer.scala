@@ -118,6 +118,7 @@ class CPrinter extends Printer {
     if (v.t.const) print("const ")
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")
+      case o: OpaqueType => print(s"${o.name} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")
       case _: UnionType => ???
       case a: ArrayType =>
@@ -140,6 +141,7 @@ class CPrinter extends Printer {
     if (p.t.const) print("const ")
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
+      case o: OpaqueType => print(s"${o.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
       case a: ArrayType => print(s"${typeName(a.getBaseType)} ${p.name}[${ a.getSizes match {

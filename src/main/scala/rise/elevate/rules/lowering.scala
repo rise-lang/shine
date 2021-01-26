@@ -46,7 +46,7 @@ object lowering {
   }
 
   @rule def mapGlobal(dim: Int = 0): Strategy[Rise] = {
-    case m@map() => Success(rise.openCL.TypedDSL.mapGlobal(dim) !: m.t)
+    case m@map() => Success(rise.openCL.DSL.mapGlobal(dim) !: m.t)
   }
 
   @rule def reduceSeq: Strategy[Rise] = {

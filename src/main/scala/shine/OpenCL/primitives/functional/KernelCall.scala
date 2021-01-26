@@ -32,18 +32,17 @@ case class KernelCall(name: String,
   override def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
-    def recurse(ts: Seq[(Phrase[ExpType], DataType)],
-                es: Seq[Phrase[ExpType]],
-                inTs: Seq[DataType]): Phrase[CommType] = {
+    def recurse(ts: Seq[Phrase[ExpType]],
+                es: Seq[Phrase[ExpType]]): Phrase[CommType] = {
       ts match {
         case Nil =>
-          KernelCallCmd(name, localSize, globalSize, inTs, outT, A, es)
-        case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(expT(inT, read))(e => recurse(tail, es :+ e, inTs :+ inT) ))
+          KernelCallCmd(name, localSize, globalSize, A, es)
+        case Seq(arg, tail@_* ) =>
+          con(arg)(λ(expT(arg.t.dataType, read))(e => recurse(tail, es :+ e)))
       }
     }
 
-    recurse(args zip inTs, Seq(), Seq())
+    recurse(args, Seq())
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(

@@ -32,7 +32,7 @@ class gemv extends test_util.Tests {
   ))
 
   object ocl {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
 
     val fullMatrixVectorFusedOpenCL = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:

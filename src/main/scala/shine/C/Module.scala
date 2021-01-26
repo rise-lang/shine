@@ -13,8 +13,9 @@ object Module {
   def compose(ms: Seq[Module]): Module = ms.reduce(_ compose _)
 
   def translateToString(m: Module): String =
+    // TODO: include hacked for host cost instead of '#include <stdint.h>'
       s"""
-         |#include <stdint.h>
+         |#include "runtime.h"
          |${m.decls.map(C.AST.Printer(_)).mkString("\n")}
          |
          |${m.functions.map(f => C.AST.Printer(f.code)).mkString("\n")}

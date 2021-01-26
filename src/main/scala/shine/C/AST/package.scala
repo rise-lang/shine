@@ -9,6 +9,9 @@ package object AST {
   def makeParam(gen: CodeGenerator)(i: Identifier[_]): C.AST.ParamDecl = {
     // Turn array types into pointer types
     val paramType = getDataType(i) match {
+      // TODO: this function should not know about Buffer?
+      case _: DPIA.Types.ManagedBufferType =>
+        C.AST.OpaqueType("Buffer")
       case DPIA.Types.ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
         C.AST.PointerType(gen.typ(baseDt))
