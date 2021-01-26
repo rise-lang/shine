@@ -66,12 +66,10 @@ class mmTensorCheck extends test_util.TestsWithYACX {
 
   test("matrix multiplication with tensor cores and shared memory produces expected result 3"){
     executeMMWithSizes(matMulSharedMemory(config7),16)
-    //Expected to find `(output : acc[n14478.n14479.f32])' in the environment: `HashMap(..., (output : acc[(2*n14478*n14479*(1/^((2*n14479)))).n14479.f32]) -> DeclRef(output), ...)'
     executeMMWithSizes(matMulSharedMemory(config6),16)
   }
 
   test("matrix multiplication with tensor cores and shared memory produces expected result 4") {
-    //Same Bug...
     executeMMWithSizes(matMulSharedMemoryV2(config1),4)
     executeMMWithSizes(matMulSharedMemoryV2(config2),4)
   }

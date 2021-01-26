@@ -51,10 +51,12 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val index1 = serachOclReduceSeq(0)
     if (index1 == -1) return code;
     val vname1 = getVName(lines(index1+2))
+    if (vname1 == null) return code
 
     val index2 = serachOclReduceSeq(index1+3)
     if (index2 == -1) return code
     val vname2 = getVName(lines(index2+2))
+    if (vname2 == null) return code
 
     val codeNew = new StringBuffer(code.length)
 
@@ -65,6 +67,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       i += 1
     }
 
+    i += 1
     var brackets = 1
     while (brackets > 0){
       val line = lines(i)
@@ -73,7 +76,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
         brackets += 1
 
       if (line.contains("#pragma unroll")) i += 5
-      if (brackets > 1) {
+      else {
         codeNew.append(line.replace(vname2, vname1))
         codeNew.append("\n")
       }
