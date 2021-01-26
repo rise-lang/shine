@@ -6,28 +6,29 @@ import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.NatAsIndex
-import shine.OpenCL.primitives.imperative.OpenCLParFor
+import shine.OpenCL.primitives.imperative.ParFor
 
 object UnrollLoops {
 
   def unroll: Phrase[CommType] => Phrase[CommType] = p => {
     val r = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case For(n, Lambda(ident: Identifier[_], body), true) =>
-          Continue(unrollLoop(n, init=0, step=1, i =>
-            Phrase.substitute(functional.NatAsIndex(n, Natural(i)), `for`=ident, in=body)), this)
-        case ForNat(n, DepLambda(ident: NatIdentifier, body), true) =>
-          Continue(unrollLoop(n, init=0, step=1, i => PhraseType.substitute(i, `for`=ident, in=body)), this)
-        case OpenCLParFor(n, _, out,
-                Lambda(ident: Identifier[_], Lambda(identOut: Identifier[_], body)), init, step, true) =>
-          out.t.dataType match {
+        case f@For(true) =>
+          val (ident, body) = f.unwrapBody
+          Continue(unrollLoop(f.n, init=0, step=1, i =>
+            Phrase.substitute(NatAsIndex(f.n, Natural(i)), `for`=ident, in=body)), this)
+        case f@ForNat(true) =>
+          val (ident, body) = f.unwrapBody
+          Continue(unrollLoop(f.n, init=0, step=1, i => PhraseType.substitute(i, `for`=ident, in=body)), this)
+        case pf@ParFor(_, _, true) =>
+          val (ident, identOut, body) = pf.unwrapBody
+          pf.out.t.dataType match {
             case ArrayType(_, elemType) =>
-              Continue(unrollLoop(n, init, step, i =>
-                Phrase.substitute(IdxAcc(n, elemType, functional.NatAsIndex(n, Natural(i)), out),
-                `for`=identOut,
-                Phrase.substitute(functional.NatAsIndex(n, Natural(i)), `for`=ident, in=body))), this)
+              Continue(unrollLoop(pf.n, pf.init, pf.step, i =>
+                Phrase.substitute(IdxAcc(pf.n, elemType, NatAsIndex(pf.n, Natural(i)), pf.out),
+                  `for`=identOut,
+                  Phrase.substitute(NatAsIndex(pf.n, Natural(i)), `for`=ident, in=body))), this)
             case _ => throw new Exception("OpenCLParFor acceptor has to be of ArrayType.")
           }
         case _ =>

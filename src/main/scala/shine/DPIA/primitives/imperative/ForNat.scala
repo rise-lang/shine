@@ -1,32 +1,19 @@
 package shine.DPIA.primitives.imperative
 
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.macros.Primitive.comPrimitive
 
-import scala.xml.Elem
+@comPrimitive
+final case class ForNat(unroll: Boolean)
+                       (val n: Nat,
+                        val loopBody: Phrase[`(nat)->:`[CommType]]
+                       ) extends CommandPrimitive {
+  loopBody :: loopBody.t.x ->: comm
 
-final case class ForNat(n: Nat,
-                        body: Phrase[`(nat)->:`[CommType]],
-                        unroll:Boolean)
-  extends CommandPrimitive {
-
-  {
-    val k = body.t.x
-    body :: k ->: comm
+  lazy val unwrapBody: (NatIdentifier, Phrase[CommType]) = loopBody match {
+    case DepLambda(i, body) => (i, body)
+    case _ => throw new Exception("This should not happen")
   }
-
-  override def eval(s: Store): Store = ???
-
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    ForNat(fun.nat(n), VisitAndRebuild(body, fun), unroll)
-  }
-
-  override def prettyPrint: String = s"(forNat 0..$n ${PrettyPhrasePrinter(body)})"
-
-  override def xmlPrinter: Elem =
-    <forNat n={ToString(n)}>
-      {Phrases.xmlPrinter(body)}
-    </forNat>
 }

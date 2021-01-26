@@ -6,8 +6,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
-import shine.OpenCL.primitives.functional._
-import shine.OpenCL.primitives.imperative._
+import shine.OpenCL.{primitives => ocl}
 
 object AdjustArraySizesForAllocations {
   case class DataTypeAdjustment(accF: Phrase[AccType] => Phrase[AccType],
@@ -29,18 +28,20 @@ object AdjustArraySizesForAllocations {
   }
 
   private def visitAndGatherInformation[T <: PhraseType](p: Phrase[T],
-                                                 parallInfo: List[ParallelismInfo]): List[ParallelismInfo] = {
+                                                         parallInfo: List[ParallelismInfo]): List[ParallelismInfo] = {
     p match {
-      case mG@MapGlobal(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
-      case mWG@MapWorkGroup(dim) => visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
-      case mL@MapLocal(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
+      case mG@ocl.functional.Map(Global, dim) =>
+        visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
+      case mWG@ocl.functional.Map(WorkGroup, dim) =>
+        visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
+      case mL@ocl.functional.Map(Local, dim) =>
+        visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
-      case mS: MapSeqUnroll => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
 
       // FIXME: works for scalars
-      case _: OpenCLReduceSeq | _: OpenCLIterate => parallInfo
+      case _: ocl.functional.ReduceSeq | _: ocl.functional.Iterate => parallInfo
 
-      case t: Pair => {
+      case t: MakePair => {
         val fstInfo = visitAndGatherInformation(t.fst, List.empty)
         val sndInfo = visitAndGatherInformation(t.snd, List.empty)
         RecordInfo(fstInfo, sndInfo) :: parallInfo
@@ -95,7 +96,7 @@ object AdjustArraySizesForAllocations {
           }
           val stride = determineStride(parallLevel, dim, addrSpace)
 
-          val outerDimension = IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
+          val outerDimension = ocl.imperative.IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
 
           val arr = identifier(freshName("x"), accT(adjElemT))
           val mapFunBody = adjustedAcceptor(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
@@ -131,7 +132,7 @@ object AdjustArraySizesForAllocations {
           }
           val stride = determineStride(parallLevel, dim, addrSpace)
 
-          val outerDimension = IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E)
+          val outerDimension = ocl.imperative.IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E)
 
           val arr = identifier(freshName("arr"), expT(adjElemT, read))
           val mapFunBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
@@ -141,7 +142,7 @@ object AdjustArraySizesForAllocations {
 
         case (PairType(adjDt1, adjDt2), PairType(oldDt1, oldDt2)) =>
           parallInfo match {
-            case (ri: RecordInfo) :: _ => Pair(oldDt1, oldDt2, read,
+            case (ri: RecordInfo) :: _ => MakePair(oldDt1, oldDt2, read,
               adjustedExpr(ri.fst, adjDt1, oldDt1, addrSpace)(Fst(adjDt1, adjDt2, E)),
               adjustedExpr(ri.snd, adjDt2, oldDt2, addrSpace)(Snd(adjDt1, adjDt2, E)))
             case _ => throw new Exception("This should never happen.")

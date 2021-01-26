@@ -8,7 +8,7 @@ import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.NatAsIndex
 import shine.OpenCL.CodeGenerator
 import shine.OpenCL.compilation.HoistMemoryAllocations._
-import shine.OpenCL.primitives.functional.OpenCLFunction
+import shine.OpenCL.primitives.functional.OpenCLFunctionCall
 import shine.{C, DPIA, OpenCL}
 
 import scala.collection.mutable
@@ -110,7 +110,7 @@ object AdaptKernelParameters {
               identifierAsSingletonArray(i.asInstanceOf[Identifier[AccType]]) `@` zero
           }).asInstanceOf[Phrase[T]])
 
-        case f: OpenCLFunction => Continue(p, this)
+        case f: OpenCLFunctionCall => Continue(p, this)
 
         case _ => Continue(p, this)
       }
