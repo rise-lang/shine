@@ -318,6 +318,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case p: Array[(_, _)] => p.head match {
           case (_: Int, _: Float) =>
             GlobalArg.createInput(flattenToArrayOfInts(p.asInstanceOf[Array[(Int, Float)]]))
+          case (_: Float, _: Float) =>
+            GlobalArg.createInput(p.asInstanceOf[Array[(Float, Float)]].iterator.flatten(x => Iterator(x._1, x._2)).toArray)
           case _ => ???
         }
       case pp: Array[Array[(_, _)]] => pp.head.head match {
@@ -342,6 +344,11 @@ case class Kernel(decls: Seq[C.AST.Decl],
           case shine.DPIA.Types.int => output.asIntArray()
           case shine.DPIA.Types.f32 => output.asFloatArray()
           case shine.DPIA.Types.f64 => output.asDoubleArray()
+          case shine.DPIA.Types.PairType(e1, e2)
+            if e1 == shine.DPIA.Types.f32 && e2 == e1 =>
+            val flat = output.asFloatArray()
+            assert(flat.length % 2 == 0)
+            Array.tabulate(flat.length/2)(i => (flat(i), flat(i + 1)))
           case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
             "not supported: " + dt.toString)
         }).asInstanceOf[R]

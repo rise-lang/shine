@@ -12,6 +12,8 @@ import shine.OpenCL
 import shine.OpenCL.{GlobalSize, HNilHelper, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
 import util.Execute
 
+import scala.util.Random
+
 class dependentTypes extends test_util.TestsWithExecutor {
   test("Infer int addition type") {
     val e =
@@ -396,7 +398,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
   test("OCL count numbers parallel") {
     val e = depFun((n: Nat) => fun(n `.` int)(array => {
       array |> split(8) |> mapGlobal(0)(
-        map(fun(x => (x % l(2)) =:= l(0))) >> split(8) >> mapSeqUnroll(oclCount(AddressSpace.Private))
+        map(fun(x => (x % l(2)) =:= l(0))) >> (oclCount(AddressSpace.Private))
       )
     }))
 
@@ -406,7 +408,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
     val kernel = util.gen.OpenCLKernel(inferred, "ocl_par_count")
 
     // Testing it
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(4), GlobalSize(8))
     val power = 10
     val n = Math.pow(2, power).toInt
     val array = Array.tabulate(n)(i => i)
@@ -457,7 +459,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
       val n = 1000
       val array = Array.tabulate(n)(i => i)
       val even = array.filter(_ % 2 == 0)
-      val kernelF = kernel.as[ScalaFunction `(` Int `,` Array[Int] `)=>` (Int, Array[Int])].withSizes(LocalSize(1), GlobalSize(1))
+      val kernelF = kernel.as[ScalaFunction `(` Int `,` Array[Int] `)=>` (Int, Array[Int])].withSizes(LocalSize(4), GlobalSize(16))
 
       val (dpair, _) = kernelF(n `,` array)
       val (count, data) = dpair
@@ -470,7 +472,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
     val e =  depFun((numBins: Nat) => depFun((n:Nat) =>
       fun(numBins`.` (f32 x f32))(bins =>
         fun(n `.` f32)(data => bins |> mapGlobal(0)(fun(range =>
-          data |> mapSeq(fun(x => (x > range._1) && (x < range._2)))
+          data |> map(fun(x => (x > range._1) && (x < range._2))) |> oclCount(AddressSpace.Private)
         )))
       )
     ))
@@ -479,6 +481,23 @@ class dependentTypes extends test_util.TestsWithExecutor {
     println(inferred)
     print(inferred.t)
     val kernel = util.gen.OpenCLKernel(inferred, "histogram")
-    println(kernel.code)
+
+    {
+      val kernelF =
+        kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Float, Float)] `,` Array[Float] `)=>` Array[Int]]
+          .withSizes(LocalSize(1), GlobalSize(1))
+      val n = 1024
+      val numBins = 32
+      val elem = 1.0f/(numBins + 1)
+      val bins = Array.tabulate(numBins)(i => (elem * i, elem * (i + 1)))
+
+      val rng = new Random(4)
+      val data = Array.tabulate(n)(_ => rng.nextFloat())
+
+      val (output, _) = kernelF(numBins `,` n `,` bins `,` data)
+      val golden = bins.map { case (low, high) => data.count(x => x > low && x < high)}
+      assert(golden.length == output.length)
+      golden.zip(output).map( { case (x, y) => assert(x == y)})
+    }
   }
 }
