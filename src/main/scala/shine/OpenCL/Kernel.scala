@@ -23,7 +23,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
                   intermediateParams: Seq[Identifier[VarType]],
-                  fallbackOutputSize:Option[SizeInByte]) {
+                  fallbackOutputSize:Option[SizeInByte],
+                  manualIntermediateBufferSize: scala.collection.immutable.Map[Int, SizeInByte]) {
 
   def code: String = {
     val sb = new StringBuilder
@@ -126,11 +127,16 @@ case class Kernel(decls: Seq[C.AST.Decl],
     * @param parameter The OpenCL parameter as appearing in the generated kernel
     * @param argValue For non-intermediate input parameters, this carries the scala value to pass in the executor
     */
-  private case class Argument(identifier: Identifier[ExpType], parameter: ParamDecl, argValue: Option[Any])
+  private case class Argument(identifier: Identifier[ExpType], parameter: ParamDecl, argValue: Option[Any],
+                              sizeOverride: Option[SizeInByte])
 
   private def constructArguments(inputs: Seq[(Identifier[ExpType], Any)],
                                  intermediateParams: Seq[Identifier[VarType]],
-                                 oclParams: Seq[ParamDecl]): List[Argument] = {
+                                 oclParams: Seq[ParamDecl],
+                                 intermediateParameterIdx: Int = 0 // This tracks the index of the intermediate parameter we
+                                //will see next. It's 0 at first, and it stays so until all input parameters are parsed.
+                                // It is used to recover the manual size override.
+                                ): List[Argument] = {
     // For each input ...
     inputs.headOption match {
           // ... if we have no more, we look at the intermediates ...
@@ -142,13 +148,15 @@ case class Kernel(decls: Seq[C.AST.Decl],
           case Some(param) =>
             // We must have an OpenCl parameter
             assert(oclParams.nonEmpty, "Not enough opencl parameters")
-            Argument(Identifier(param.name, param.t.t1), oclParams.head, None) ::
-              constructArguments(inputs, intermediateParams.tail, oclParams.tail)
+            val overrideSize = this.manualIntermediateBufferSize.get(intermediateParameterIdx)
+
+            Argument(Identifier(param.name, param.t.t1), oclParams.head, None, overrideSize) ::
+              constructArguments(inputs, intermediateParams.tail, oclParams.tail, intermediateParameterIdx + 1)
         }
         case Some((param, arg)) =>
           // We must have an OpenCl parameter
           assert(oclParams.nonEmpty, "Not enough opencl parameters")
-          Argument(param, oclParams.head, Some(arg)) :: constructArguments(inputs.tail, intermediateParams, oclParams.tail)
+          Argument(param, oclParams.head, Some(arg), sizeOverride = None) :: constructArguments(inputs.tail, intermediateParams, oclParams.tail)
       }
   }
 
@@ -240,23 +248,27 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
     //Helper for the creation of intermdiate arguments
     def createIntermediateArg(arg: Argument, sizeVariables: Map[Nat, Nat]): KernelArg = {
-      //Get the size of bytes, potentially with free variables
-      val rawSize = SizeInByte(arg.identifier.t.dataType)
-      //Try to substitue away all the free variables
-      val cleanSize = ArithExpr.substitute(rawSize.value, sizeVariables)
-      Try(cleanSize.evalLong) match {
-        case Success(actualSize) =>
-          arg.parameter.t match {
-            case OpenCL.AST.PointerType(a, _, _) => a match {
-              case AddressSpace.Private => throw new Exception ("'Private memory' is an invalid memory for opencl parameter")
-              case AddressSpace.Local => createLocalArg(actualSize)
-              case AddressSpace.Global =>  createGlobalArg(actualSize)
-              case AddressSpace.Constant => ???
-              case AddressSpaceIdentifier(_) => throw new Exception ("This shouldn't happen")
-            }
-            case _ => throw new Exception ("This shouldn't happen")
+      val actualSize = arg.sizeOverride match {
+        case Some(bytes) => bytes.value.eval
+        case None =>
+          //Get the size of bytes, potentially with free variables
+          val rawSize = SizeInByte(arg.identifier.t.dataType)
+          //Try to substitue away all the free variables
+          val cleanSize = ArithExpr.substitute(rawSize.value, sizeVariables)
+          Try(cleanSize.evalLong) match {
+            case Success(actualSize) => actualSize
+            case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")
           }
-        case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")
+      }
+      arg.parameter.t match {
+        case OpenCL.AST.PointerType(a, _, _) => a match {
+          case AddressSpace.Private => throw new Exception ("'Private memory' is an invalid memory for opencl parameter")
+          case AddressSpace.Local => createLocalArg(actualSize)
+          case AddressSpace.Global =>  createGlobalArg(actualSize)
+          case AddressSpace.Constant => ???
+          case AddressSpaceIdentifier(_) => throw new Exception ("This shouldn't happen")
+        }
+        case _ => throw new Exception ("This shouldn't happen")
       }
     }
 
@@ -276,6 +288,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
   def withFallbackOutputSize(sizeInByte: SizeInByte): Kernel =
     this.copy(
       fallbackOutputSize = Some(sizeInByte)
+    )
+  def setIntermediateBufferSize(idx: Int, sizeInByte: SizeInByte): Kernel =
+    this.copy(
+      manualIntermediateBufferSize = manualIntermediateBufferSize + (idx -> sizeInByte)
     )
 
   private def createOutputKernelArg(sizeVariables:Map[Nat,Nat]):GlobalArg = {

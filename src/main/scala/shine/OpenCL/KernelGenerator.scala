@@ -89,7 +89,8 @@ object KernelGenerator {
             outputParam = outParam,
             inputParams = inputParams,
             intermediateParams = intermediateAllocations.map (_.identifier),
-        fallbackOutputSize = None)
+        fallbackOutputSize = None,
+        manualIntermediateBufferSize = immutable.Map())
 
       (localSize, globalSize) match {
         case (None, None) => Left(KernelNoSizes(oclKernel))

@@ -455,7 +455,9 @@ class dependentTypes extends test_util.TestsWithExecutor {
     {
       val kernelWrap = util.gen.OpenCLKernel(inferred, "ocl_filter")
 
-      val kernel = kernelWrap.copy(kernel = kernelWrap.kernel.withFallbackOutputSize(SizeInByte(1024 * 1024)))
+      val kernel = kernelWrap.copy(kernel = kernelWrap.kernel
+        .withFallbackOutputSize(SizeInByte(1024 * 1024)).setIntermediateBufferSize(0, SizeInByte(1024 * 1024)))
+
       val n = 1000
       val array = Array.tabulate(n)(i => i)
       val even = array.filter(_ % 2 == 0)
