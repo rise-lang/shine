@@ -5,9 +5,6 @@ import rise.core.TypedDSL._
 import rise.core.primitives._
 import rise.core.semantics.NatData
 import rise.core.types._
-import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{ExpType, PhraseType}
-import util.SyntaxChecker
 
 
 class sparseDense extends test_util.Tests {
@@ -18,10 +15,10 @@ class sparseDense extends test_util.Tests {
   def wrappedCsrMatrix(rows: Nat, cols: Nat, et:ScalarType): Type =
     NatCollection ** (ns => csrMatrix(rows, cols, ns, et))
 
-  val dense_to_sparse:ToBeTyped[Expr] = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
+  def dense_to_sparse(n:Nat, m:Nat):ToBeTyped[Expr] = fun(n `.` m `.` f32)(array => {
     def pred = fun(x => x =/= l(0.0f))
 
-    toMem(array |>
+    (toMem(array |>
       map(fun(row => map(pred)(row) |> count |> indexAsNat))
       |> scanSeq(fun(x => fun(y => x + y)))(Literal(NatData(0)))
     ) |> fun(offs => liftNats(offs)(depFun((offs:NatCollection) =>
@@ -30,17 +27,17 @@ class sparseDense extends test_util.Tests {
           which(map(pred)(row))((offs `@` (rowIdx + 1)) - (offs `@` rowIdx))
             |> mapSeq(fun(nnzIdx => pair(row `@` nnzIdx)(nnzIdx)))
         )))))
-    ))
-  })))
+    )))::(wrappedCsrMatrix(n, m, f32))
+  })
 
-  val sparse_to_dense = depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => {
-      dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
-          matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
-            (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
-              reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
-              |> mapSeq(fun(x => x))
-          ))) |> unDepArray)))
-    })))
+  def sparse_to_dense(n: Nat, m: Nat) = fun(wrappedCsrMatrix(n, m, f32))(f = matrixWrap => {
+    dmatchNats(matrixWrap)(depFun((ns: NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
+      matrix |> depMapSeq(depFun((i: Nat) => fun(row =>
+        (row :: (((ns `@` (i + 1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
+          reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
+          |> mapSeq(fun(x => x))
+      ))) |> unDepArray))) ::(n `.` m `.` f32)
+  })
 
   val dense_mv = depFun((n:Nat) => depFun((m:Nat) => fun(n `.` m `.` f32)(matrix => fun(m `.` f32)(vector => {
     matrix |>
@@ -146,14 +143,14 @@ class sparseDense extends test_util.Tests {
   // sparse_to_dense >> dense_mv >> dense_to_sparse
 
   test("Dense to sparse") {
-    val inferred: Expr = TDSL.infer(dense_to_sparse)
+    val inferred: Expr = TDSL.infer(depFun((n:Nat) => depFun((m:Nat) => dense_to_sparse(n, m))))
     println(inferred)
     print(inferred.t)
     util.gen.CProgram(inferred, "dense_to_sparse")
   }
 
   test("Sparse to dense") {
-    val inferred: Expr = TDSL.infer(sparse_to_dense)
+    val inferred: Expr = TDSL.infer(depFun((n:Nat) => depFun((m:Nat) => sparse_to_dense(n, m))))
     println(inferred)
     print(inferred.t)
     util.gen.CProgram(inferred, "sparse_to_dense")
@@ -161,8 +158,8 @@ class sparseDense extends test_util.Tests {
 
   test("there and back again") {
     val e =  depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array =>
-      array |> dense_to_sparse(n)(m)) |> sparse_to_dense(n)(m)
-    ))
+      (array |> dense_to_sparse(n,m))::wrappedCsrMatrix(n, m, f32) |> toMem |> sparse_to_dense(n, m)
+    )))
     val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
