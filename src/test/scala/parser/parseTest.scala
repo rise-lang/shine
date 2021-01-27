@@ -1146,7 +1146,9 @@ class parseTest extends  AnyFlatSpec {
 //                        rt.AddressSpace.Local)(rt.TypePlaceholder),
 //                        r.Lambda(r.Identifier("accA")(rt.TypePlaceholder), r.Lambda(r.Identifier("p2A")(rt.TypePlaceholder),
 //
-//                          r.App(r.App(rp.let.primitive, r.App(r.App(dsl.toLocal, r.App(op.mapLocal(1), r.App(op.mapLocal(0),
+//                          r.App(r.App(rp.let.primitive, r.App(r.App(r.DepApp(op.oclToMem,
+//                            rt.AddressSpace.Local
+//                          ), r.App(op.mapLocal(1), r.App(op.mapLocal(0),
 //                            r.Identifier("id")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
 //                            r.Identifier("p2A")(rt.TypePlaceholder)
 //                          )(rt.TypePlaceholder))(rt.TypePlaceholder),
@@ -1203,6 +1205,103 @@ class parseTest extends  AnyFlatSpec {
       }
       case a => fail("Not a DepLambda: " + a)
     }
+  }
+
+  "parser" should "print nbody" in {
+    val e = r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.Lambda(r.Identifier("pos")(rt.TypePlaceholder),
+      r.Lambda(
+                r.Identifier("vel")(rt.TypePlaceholder), r.Lambda(r.Identifier("espSqr")(rt.TypePlaceholder),
+                  r.Lambda(r.Identifier("deltaT")(rt.TypePlaceholder),
+                  r.App(rp.join.primitive, r.App(rp.join.primitive, r.App(r.App(op.mapWorkGroup(1).primitive,
+                    r.App(rp.join.primitive, r.App(
+                      r.Identifier("PlaceholderFor_e2")(rt.TypePlaceholder)
+                      ,r.App(rp.split.primitive, r.Literal(rS.IntData(256)))(rt.TypePlaceholder)
+                  )(rt.TypePlaceholder))(rt.TypePlaceholder)
+                  )(rt.TypePlaceholder),
+                    r.App(r.App(rp.split.primitive, r.Identifier("n")(rt.TypePlaceholder))(rt.TypePlaceholder),
+                      r.App(r.App(rp.zip.primitive, r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder),
+                        r.Identifier("vel")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+                  )(rt.TypePlaceholder))(rt.TypePlaceholder)
+                  )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+    )(rt.TypePlaceholder))(rt.TypePlaceholder)
+    println(e)
+    val e2 =                     r.App(op.mapWorkGroup(0).primitive,
+
+      r.Lambda(r.Identifier("p1Chunk")(rt.TypePlaceholder), r.Lambda(r.Identifier("newP1Chunk")(rt.TypePlaceholder),
+        r.App(r.App(r.App(op.mapLocal(1).primitive,
+
+          r.Lambda(r.Identifier("bla")(rt.TypePlaceholder), r.App(r.App(op.mapLocal(0).primitive,
+            r.Lambda(r.Identifier("p1A")(rt.TypePlaceholder),
+              r.App(r.App(r.App(r.App(r.Identifier("update")(rt.TypePlaceholder), r.App(rp.fst.primitive,
+                r.App(rp.fst.primitive, r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder)
+              )(rt.TypePlaceholder))(rt.TypePlaceholder),
+                r.App(rp.fst.primitive, r.App(rp.snd.primitive,
+                  r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder)
+                )(rt.TypePlaceholder))(rt.TypePlaceholder),
+                r.Identifier("deltaT")(rt.TypePlaceholder))(rt.TypePlaceholder), r.App(rp.snd.primitive,
+                r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+          )(rt.TypePlaceholder),
+            r.App(r.App(rp.zip.primitive, r.Identifier("newP1Chunk")(rt.TypePlaceholder))(rt.TypePlaceholder),
+              r.Identifier("bla")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+        )(rt.TypePlaceholder),
+          r.App(
+            r.Identifier("PlaceHolderFor_E3")(rt.TypePlaceholder)
+            ,
+            r.App(r.App(op.mapLocal(1).primitive, r.App(op.mapLocal(0).primitive,
+              r.Identifier("id")(rt.TypePlaceholder))(rt.TypePlaceholder)
+            )(rt.TypePlaceholder), r.App(r.Identifier("generate")(rt.TypePlaceholder),
+              r.App(rp.vectorFromScalar.primitive, r.Literal(rS.FloatData(0.0f)))(rt.TypePlaceholder)
+            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+
+          r.App(r.App(rp.split.primitive, r.Literal(rS.IntData(1)))(rt.TypePlaceholder),
+            r.App(r.App(rp.split.primitive, r.Literal(rS.IntData(256)))(rt.TypePlaceholder),
+              r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+      )(rt.TypePlaceholder))(rt.TypePlaceholder)
+
+    )(rt.TypePlaceholder)
+
+    println(e2)
+
+    val e3 = r.App(r.DepApp[rt.AddressSpaceKind](op.oclReduceSeq.primitive,
+      rt.AddressSpace.Local)(rt.TypePlaceholder),
+      r.Lambda(r.Identifier("accA")(rt.TypePlaceholder), r.Lambda(r.Identifier("p2A")(rt.TypePlaceholder),
+
+        r.App(r.App(rp.let.primitive, r.App(r.App(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
+          rt.AddressSpace.Local
+        )(rt.TypePlaceholder), r.App(op.mapLocal(1).primitive, r.App(op.mapLocal(0).primitive,
+          r.Identifier("id")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+          r.Identifier("p2A")(rt.TypePlaceholder)
+        )(rt.TypePlaceholder))(rt.TypePlaceholder),
+          r.Lambda(r.Identifier("p2Local")(rt.TypePlaceholder), r.App(r.App(op.mapLocal(1).primitive,
+            r.Lambda(r.Identifier("accDim")(rt.TypePlaceholder),r.App(r.App(op.mapLocal(0).primitive,
+              r.Lambda(r.Identifier("p1B")(rt.TypePlaceholder), r.App(r.App(r.App(
+                r.DepApp[rt.AddressSpaceKind](op.oclReduceSeq.primitive,
+                  rt.AddressSpace.Private)(rt.TypePlaceholder),
+
+                r.Lambda(r.Identifier("accB")(rt.TypePlaceholder), r.App(r.App(r.App(r.App(r.App(
+                  r.Identifier("calcAcc")(rt.TypePlaceholder), r.App(rp.fst.primitive,
+                    r.App(rp.fst.primitive, r.Identifier("p1B")(rt.TypePlaceholder)
+                    )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+                  r.Identifier("p2B")(rt.TypePlaceholder))(rt.TypePlaceholder),
+                  r.Identifier("deltaT")(rt.TypePlaceholder))(rt.TypePlaceholder),
+                  r.Identifier("espSqr")(rt.TypePlaceholder))(rt.TypePlaceholder),
+                  r.Identifier("accB")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+
+              )(rt.TypePlaceholder), r.App(rp.snd.primitive,
+                r.Identifier("p1B")(rt.TypePlaceholder))(rt.TypePlaceholder)
+              )(rt.TypePlaceholder), r.App(rp.fst.primitive, r.Identifier("accDim2")(rt.TypePlaceholder)
+              )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+              , r.App(r.App(rp.zip.primitive, r.Identifier("newP1Chunk")(rt.TypePlaceholder))(rt.TypePlaceholder)
+                , r.App(rp.snd.primitive,
+                  r.App(rp.snd.primitive, r.Identifier("accDim")(rt.TypePlaceholder))(rt.TypePlaceholder)
+                )(rt.TypePlaceholder))(rt.TypePlaceholder)
+            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),r.App(r.App(rp.zip.primitive, r.Identifier("p2Local")(rt.TypePlaceholder))(rt.TypePlaceholder),
+            r.Identifier("accA")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+
+          )(rt.TypePlaceholder))(rt.TypePlaceholder)
+      )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+
+    println(e3)
   }
 
   "parser" should "be able to parse 'negation.rise'" in {
