@@ -52,13 +52,16 @@ object TranslateIndices {
   private def reduce[T1 <: PhraseType, T2 <: PhraseType](fun : Phrase[FunType[T1, T2]], arg : Phrase[T1]) : Phrase[T2]
     = Lifting.liftFunction(fun).reducing(arg)
 
-  def idx(p : Phrase[ExpType], path : List[PathExpr]) : Phrase[ExpType] = {
-    def fromPath[T](f: PartialFunction[List[PathExpr],  T]): T = {
-      f.lift(path) match {
-        case Some(p) => p
-        case None => throw new Exception(s"Unexpected path for $p : $path")
-      }
+  def fromPathT[T](p : T, path : List[PathExpr])(f: PartialFunction[List[PathExpr],  T]): T = {
+    f.lift(path) match {
+      case Some(p) => p
+      case None => throw new Exception(s"Unexpected path for $p : $path")
     }
+  }
+
+  def idx(p : Phrase[ExpType], path : List[PathExpr]) : Phrase[ExpType] = {
+    println(s"EXP $p PATH $path")
+    def fromPath(f : PartialFunction[List[PathExpr], Phrase[ExpType]]) : Phrase[ExpType] = fromPathT(p, path)(f)
 
     p match {
       // Traverse AST
@@ -181,41 +184,58 @@ object TranslateIndices {
   }
 
   def idxAcc(p : Phrase[AccType], path : List[PathExpr]) : Phrase[AccType] = {
-    (p, path) match {
-      case (IdxAcc(_, _, i, a), path) => idxAcc(a, CIntExpr(idx2nat(i)) :: path)
-      //case (IdxAcc(_, _, i, a), path) => letNat(i , in => idxAcc(a, CIntExpr(in) :: path))
-      case (SplitAcc(n, _, _, a), CIntExpr(i) :: path) => idxAcc(a, CIntExpr(i / n) :: CIntExpr(i % n) :: path)
-      case (JoinAcc(_, m, _, a), CIntExpr(i) :: CIntExpr(j) :: path) => idxAcc(a, CIntExpr(i * m + j) :: path)
-      case (TakeAcc(_, _, _, a), path) => idxAcc(a, path)
-      case (DropAcc(n, _, _, a), CIntExpr(i) :: path) => idxAcc(a, CIntExpr(i + n) :: path)
-      case (ReorderAcc(n, _, idxF, a), CIntExpr(i) :: path) =>
-        idxAcc(a, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: path)
-      case (depJ@DepJoinAcc(_, _, _, a), CIntExpr(i) :: CIntExpr(j) :: path) =>
-        idxAcc(a, CIntExpr(arithmetic.BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: path)
-      case (TransposeAcc(_, _, _, a), CIntExpr(i) :: CIntExpr(j) :: path) =>
-        idxAcc(a, CIntExpr(j) :: CIntExpr(i) :: path)
-      case (CycleAcc(_, m, _, a), CIntExpr(i) :: path) => idxAcc(a, CIntExpr(i % m) :: path)
-      case (MapAcc(n, dt, _, f, a), CIntExpr(i) :: path) => idxAcc(reduce(f, IdxAcc(n, dt, nat2idx(n, i), a) ), path)
-      case (MapFstAcc(_, dt2, dt3, f, a), (xi : PairAccess) :: path) => xi match {
-        case FstMember => idxAcc(reduce(f, PairAcc1(dt3, dt2, a)), path)
-        case SndMember => idxAcc(          PairAcc2(dt3, dt2, a) , path)
-      }
-      case (MapSndAcc(dt1, _, dt3, f, a), (xi : PairAccess) :: path) => xi match {
-        case FstMember => idxAcc(          PairAcc1(dt1, dt3, a) , path)
-        case SndMember => idxAcc(reduce(f, PairAcc2(dt1, dt3, a)), path)
-      }
-      case (DepIdxAcc(_, _, i, a), path) => idxAcc(a, CIntExpr(i) :: path)
-      case (MkDPairSndAcc(_, _, a), path) => idxAcc(a, DPairSnd :: path)
+    println(s"ACC $p PATH $path")
+    def fromPath(f : PartialFunction[List[PathExpr], Phrase[AccType]]) : Phrase[AccType] = fromPathT(p, path)(f)
 
+    p match {
+      case IdxAcc(_, _, i, a) => idxAcc(a, CIntExpr(idx2nat(i)) :: path)
+      case DepIdxAcc(_, _, i, a) => idxAcc(a, CIntExpr(i) :: path)
+      case MkDPairSndAcc(_, _, a) => idxAcc(a, DPairSnd :: path)
 
+      case TakeAcc(_, _, _, a) => idxAcc(a, path)
+      case SplitAcc(n, _, _, a) => fromPath {
+        case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i / n) :: CIntExpr(i % n) :: ps) }
+      case JoinAcc(_, m, _, a) => fromPath {
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idxAcc(a, CIntExpr(i * m + j) :: ps) }
+      case DropAcc(n, _, _, a) => fromPath {
+        case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i + n) :: ps) }
+      case ReorderAcc(n, _, idxF, a) => fromPath {
+        case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(OperationalSemantics.evalIndexExp(reduce(idxF, nat2idx(i, n)))) :: ps) }
+      case depJ@DepJoinAcc(_, _, _, a) => fromPath {
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idxAcc(a, CIntExpr(arithmetic.BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps) }
+      case TransposeAcc(_, _, _, a) => fromPath {
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idxAcc(a, CIntExpr(j) :: CIntExpr(i) :: ps) }
+      case CycleAcc(_, m, _, a) => fromPath {
+        case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i % m) :: ps) }
+      case MapAcc(n, dt, _, f, a) => fromPath {
+        case CIntExpr(i) :: ps => idxAcc(reduce(f, IdxAcc(n, dt, nat2idx(n, i), a) ), ps) }
+      case MapFstAcc(_, dt2, dt3, f, a) => fromPath {
+        case FstMember :: ps => idxAcc(reduce(f, PairAcc1(dt3, dt2, a)), ps)
+        case SndMember :: ps => idxAcc(          PairAcc2(dt3, dt2, a) , ps) }
+      case MapSndAcc(dt1, _, dt3, f, a) => fromPath {
+        case FstMember :: ps => idxAcc(          PairAcc1(dt1, dt3, a) , ps)
+        case SndMember :: ps => idxAcc(reduce(f, PairAcc2(dt1, dt3, a)), ps) }
 
-
-      case (a, path) => path.foldLeft(a)({
-        case (a, CIntExpr(i)) => a.t match {
-          case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, nat2idx(i, n), a)
-          case _ => throw new Exception("this should not happen") }
-        case _ => ??? // TODO
-      })
+      case Identifier(_ , _)
+           | Apply(_, _)
+           | Proj1(_)
+           | Proj2(_)
+           | DepApply(_, _)
+           | IfThenElse(_, _, _)
+           | LetNat(_, _, _)
+        => path.foldLeft(p)({
+          case (a, CIntExpr(i)) => a.t match {
+            case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, nat2idx(i, n), a)
+            case _ => throw new Exception("this should not happen") }
+          case (e, p: PairAccess) => e.t match {
+            case AccType(PairType(l, r)) => p match {
+              case FstMember => PairAcc1(l, r, e)
+              case SndMember => PairAcc2(l, r, e) }
+            case _ => throw new Exception("this should not happen")
+          }
+          case _ => ??? // TODO
+        })
+      case _ : AccPrimitive => throw new Exception(s"Cannot index-translate primitive $p")
     }
   }
 }
