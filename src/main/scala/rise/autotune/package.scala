@@ -10,7 +10,7 @@ package object autotune {
 
   def search(e: Expr): Seq[Sample] = ???
 
-  private def collectParameters(e: Expr): Parameters = ???
+  def collectParameters(e: Expr): Parameters = ???
 
   private def generateJSON(p: Parameters): String = ???
 
