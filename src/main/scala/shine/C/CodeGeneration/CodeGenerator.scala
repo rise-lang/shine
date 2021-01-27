@@ -317,16 +317,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
       case DMatch(x, _, _, _, f, e) => exp(e, env, path, cont)
 
-      // TODO: can we move to TranslateIndices?
-      case MakeArray(_, elems) => path match {
-        case (i: CIntExpr) :: ps => try {
-          exp(elems(i.eval), env, ps, cont)
-        } catch {
-          case NotEvaluableException() => error(s"could not evaluate $i")
-        }
-        case _ => error(s"did not expect $path")
-      }
-
       case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
       case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
       case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)

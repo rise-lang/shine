@@ -30,21 +30,16 @@ object TranslateIndices {
     })
   }
 
-  // FIXME: This might already exist, and should probably return an Option[Nat]
   // Interprets both naturals-as-indices and index variables as type level nats
   private def idx2nat : Phrase[ExpType] => Nat = {
-    case NatAsIndex(_, Natural(i)) => i
+    case Natural(n) => n
+    case NatAsIndex(_, n) => idx2nat(n)
+    case Idx(_, _, i, _) => idx2nat(i)
     case Identifier(i, ExpType(IndexType(n), _)) =>
       arithmetic.NamedVar(i, arithmetic.RangeAdd(0, n, 1))
     case p => throw new Exception(s"Could not use index expression $p as nat")
   }
-  /*
-  // FIXME: why do we need to introduce a let binding?
-  private def letNat[T <: PhraseType](exp: Phrase[ExpType], f: Nat => Phrase[T]): Phrase[T] = {
-    val identifier = LetNatIdentifier()
-    LetNat(identifier, exp, f(identifier()))
-  }
- */
+
   private def nat2idx(i : Nat, n : Nat) : Phrase[ExpType] = {
     NatAsIndex(n, Natural(i))
   }
@@ -142,15 +137,17 @@ object TranslateIndices {
           val lt : Nat => Nat => arithmetic.BoolExpr = l => r =>
             arithmetic.BoolExpr.ArithPredicate(l, r, arithmetic.BoolExpr.ArithPredicate.Operator.<)
           val j = arithmetic.IfThenElse(l `lt` r, 0, arithmetic.IfThenElse(r `lt` (i + 1), n - 1, i - l))
-          idx(e, CIntExpr(j) :: ps)
-      }
+          idx(e, CIntExpr(j) :: ps) }
       case Pad(n, l, r, _, pad, e) => fromPath {
         case CIntExpr(i) :: ps =>
           val rec = idx(pad, ps)
           IfThenElse(BinOp(LT, Natural(i), Natural(l)), rec,
             IfThenElse(BinOp(LT, Natural(r), Natural(i + 1)), rec,
-              idx(e, CIntExpr(i - l) :: ps)))
-      }
+              idx(e, CIntExpr(i - l) :: ps))) }
+      case VectorFromScalar(_, _, e) => fromPath {
+        case CIntExpr(i) :: ps => idx(e, ps) }
+      case MakeArray(_, elems) => fromPath {
+        case (i: CIntExpr) :: ps => idx(elems(i.eval), ps) }
 
       case Identifier(_ , _)
          | Literal(_)
