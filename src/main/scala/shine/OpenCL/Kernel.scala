@@ -459,7 +459,7 @@ object Kernel {
 
   val PREAMBLE:String =
     """
-      |#define uint8_t uint8
+      |#define uint8_t uchar
       |#define uint32_t uint
       |""".stripMargin
 }

@@ -461,12 +461,12 @@ class dependentTypes extends test_util.TestsWithExecutor {
       val n = 1000
       val array = Array.tabulate(n)(i => i)
       val even = array.filter(_ % 2 == 0)
-      val kernelF = kernel.as[ScalaFunction `(` Int `,` Array[Int] `)=>` (Int, Array[Int])].withSizes(LocalSize(4), GlobalSize(16))
+      val kernelF = kernel.as[ScalaFunction `(` Int `,` Array[Int] `)=>` (Int, Array[Int])].withSizes(LocalSize(1), GlobalSize(1))
 
       val (dpair, _) = kernelF(n `,` array)
       val (count, data) = dpair
       assert(count == even.length)
-      assert(even.zip(data).forall({ case (x, y) => x == y }))
+      even.zip(data).foreach({ case (x, y) => assert(x == y) })
     }
   }
 

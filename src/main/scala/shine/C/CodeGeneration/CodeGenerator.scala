@@ -712,9 +712,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         dt match {
           case DepPairType(_, sndT) =>
             genNat(length, env, length => {
-              val numFst =  C.AST.BinaryExpr(C.AST.Literal("1"), C.AST.BinaryOperator.+, length)
-              val fstSize = C.AST.BinaryExpr(C.AST.Literal(s"sizeof(${this.natBaseType.name})"), C.AST.BinaryOperator.*, numFst)
-
+              val fstSize = C.AST.BinaryExpr(C.AST.Literal(s"sizeof(${this.natBaseType.name})"), C.AST.BinaryOperator.*, length)
 
               generateAccess(sndT,
                 C.AST.Cast(this.natCollectionElemCType(C.AST.Type.getBaseType(typ(sndT))),
