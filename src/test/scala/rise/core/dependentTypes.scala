@@ -1,14 +1,12 @@
 package rise.core
 
-import arithexpr.arithmetic.Cst
-import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
-import rise.core.types._
+import rise.core.TypedDSL._
 import rise.core.primitives._
 import rise.core.semantics.NatData
+import rise.core.types._
 import rise.openCL.primitives._
 import shine.C.SizeInByte
-import shine.OpenCL
 import shine.OpenCL.{GlobalSize, HNilHelper, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
 import util.Execute
 
@@ -151,20 +149,6 @@ class dependentTypes extends test_util.TestsWithExecutor {
     Execute(testCode)
   }
 
-  test("GENOCL: Dependent pair map increment") {
-    val e = fun(Nat `**` (n => n`.`f32))(pair =>
-      dmatch(pair)(depFun((n:Nat) => fun(xs =>
-        dpair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
-      ))))
-    val inferred: Expr = TDSL.infer(e)
-    println(inferred)
-    print(inferred.t)
-
-    val cFunName = "foo"
-    val cFun = util.gen.OpenCLKernel(inferred, cFunName)
-  }
-
-
   test("Dependent pair match with taking") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((_:Nat) => fun(xs => mapSeq(fun(x => x))(take(5)(xs)))))
@@ -178,149 +162,13 @@ class dependentTypes extends test_util.TestsWithExecutor {
 
   test("Simple count") {
     val e = depFun((n: Nat) =>
-      fun(n `.` f32)(array => count(array)(fun(x => x =:= l(0.0f))))
+      fun(n `.` f32)(array => array |> map(fun(x => x =:= l(0.0f))) |> count)
     )
 
     val inferred: Expr = TDSL.infer(e)
     println(inferred)
     print(inferred.t)
     util.gen.CProgram(inferred, "Foo_foo")
-  }
-
-  test("Simple which") {
-    val e = depFun((n: Nat) => depFun((count:Nat) =>
-      fun(n `.` f32)(array => mapSeq(fun(x => x))(which(array)(count)(fun(x => x =:= l(0.0f)))))
-    ))
-
-    val inferred: Expr = TDSL.infer(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
-  }
-
-  test("Filter and sum") {
-    val e = depFun((n: Nat) =>
-      fun(n `.` f32)(array => {
-        def pred = fun(x => x =/= l(0.0f))
-        val cnt = count(array)(pred)
-        liftN(indexAsNat(cnt))(depFun((cnt: Nat) =>
-          reduceSeq(fun(x => fun(_ => x)))(lidx(0, n))(which(array)(cnt)(pred))
-        ))
-      })
-    )
-
-    val inferred: Expr = TDSL.infer(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
-  }
-
-  test("List of list one row") {
-    val e = depFun((n: Nat) =>
-      fun(n `.` f32)(array => {
-        def pred = fun(x => x =/= l(0.0f))
-        val cnt = count(array)(pred)
-        liftN(indexAsNat(cnt))(depFun((cnt: Nat) =>
-           dpair(cnt)(mapSeq(fun(idx => pair(array `@` idx)(idx)))(which(array)(cnt)(pred)))
-        ))
-      })
-    )
-
-    val inferred: Expr = TDSL.infer(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
-  }
-
-  test("List of list") {
-    val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
-      def pred = fun(x => x =/= l(0.0f))
-      def cnts = toMem(mapSeq(fun(row => map(pred)(row) |> count |> indexAsNat))(array))
-
-      liftNats(cnts)(depFun((lengths:NatCollection) =>
-        dpairNats(lengths)(toDepArray(array) |>
-          depMapSeq(depFun((rowIdx:Nat) => fun(row =>
-            which(map(pred)(row))(lengths `@` rowIdx)
-              |> mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` nnzIdx)))
-          ))))
-      ))
-    })))
-
-    val inferred: Expr = TDSL.infer(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
-  }
-
-
-  test("Compressed sparse row") {
-    val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
-      def pred = fun(x => x =/= l(0.0f))
-
-
-      def offs = toMem(array |>
-        map(fun(row => map(pred)(row) |> count |> indexAsNat))
-        |> scanSeq(fun(x => fun(y => x + y)))(Literal(NatData(0)))
-      )
-
-      liftNats(offs)(depFun((offs:NatCollection) =>
-        dpairNats(offs)(toDepArray(array) |>
-          depMapSeq(depFun((rowIdx:Nat) => fun(row =>
-            which(map(pred)(row))((offs `@` (rowIdx + 1)) - (offs `@` rowIdx))
-              |> mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` nnzIdx)))
-          ))))
-      ))
-    })))
-
-    val inferred: Expr = TDSL.infer(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
-  }
-
-  test("List of list OCL") {
-    val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
-      def pred = fun(x => x =/= l(0.0f))
-      def cnts = toMem(mapSeq(fun(row => map(pred)(row) |> oclCount(AddressSpace.Global) |> indexAsNat))(array))
-
-      liftNats(cnts)(depFun((lengths:NatCollection) =>
-        dpairNats(lengths)(toDepArray(array) |>
-          depMapSeq(depFun((rowIdx:Nat) => fun(row =>
-            oclWhich(map(pred)(row))(lengths `@` rowIdx)
-              |> mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` nnzIdx)))
-          ))))
-      ))
-    })))
-
-    val inferred: Expr = TDSL.infer(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.OpenCLKernel(inferred, "Foo_foo")
-  }
-
-  test("Compressed sparse row OCL") {
-    val e = depFun((n: Nat) => depFun((m: Nat)=> fun(n `.` m `.` f32)(array => {
-      def pred = fun(x => x =/= l(0.0f))
-
-
-      def offs = oclToMem(AddressSpace.Global)(array |>
-        map(fun(row => map(pred)(row) |> oclCount(AddressSpace.Global) |> indexAsNat))
-        |> oclScanSeq(AddressSpace.Global)(fun(x => fun(y => x + y)))(Literal(NatData(0)))
-      )
-
-      liftNats(offs)(depFun((offs:NatCollection) =>
-        dpairNats(offs)(toDepArray(array) |>
-          depMapSeq(depFun((rowIdx:Nat) => fun(row =>
-            oclWhich(map(pred)(row))((offs `@` (rowIdx + 1)) - (offs `@` rowIdx))
-              |> mapSeq(fun(nnzIdx => pair(nnzIdx)(row `@` nnzIdx)))
-          ))))
-      ))
-    })))
-
-    val inferred: Expr = TDSL.infer(e)
-    println(inferred)
-    print(inferred.t)
-    util.gen.OpenCLKernel(inferred, "Foo_foo")
   }
 
   test("C filter even numbers") {
