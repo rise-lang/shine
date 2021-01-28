@@ -93,7 +93,7 @@ object ProgramGenerator {
     }
 
     implicit val context: TranslationContext = new shine.C.TranslationContext
-    SimplifyNats(TranslateIndices(UnrollLoops(TranslationToImperative.acc(p)(output) |> (p => {
+    SimplifyNats(UnrollLoops(TranslateIndices(TranslationToImperative.acc(p)(output) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
