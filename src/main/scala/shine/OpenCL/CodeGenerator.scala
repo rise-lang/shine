@@ -82,14 +82,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def acc(env: Environment,
                    path: Path,
                    cont: Expr => Stmt): Phrase[AccType] => Stmt = {
-    case AsVectorAcc(n, _, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i / n) :: ps, cont)
-      case _ => error(s"Expected path to be not empty")
-    }
     case AsScalarAcc(_, m, dt, a) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr((i * m) + j) :: ps, cont)
-
       case (i: CIntExpr) :: Nil =>
         // TODO: check alignment and use pointer with correct address space
         a |> acc(env, CIntExpr(i * m) :: Nil, array => {
@@ -100,15 +93,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         })
       case _ => error(s"Expected path to be not empty")
     }
-    case IdxVecAcc(_, _, i, a) =>
-      CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
-
-    case ocl.IdxDistributeAcc(_, _, stride, _, _, a) => path match {
-      // TODO: ensure that i % stride == init ?
-      case (i: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr(i / stride) :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
+    case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
 
     case phrase => phrase |> super.acc(env, path, cont)
   }

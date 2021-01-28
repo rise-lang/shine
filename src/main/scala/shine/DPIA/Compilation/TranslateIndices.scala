@@ -40,6 +40,7 @@ object TranslateIndices {
     case Natural(n) => n
     case NatAsIndex(_, n) => idx2nat(n)
     case Idx(_, _, i, _) => idx2nat(i)
+    case Cast(_, _, i) => idx2nat(i)
     case Identifier(i, ExpType(IndexType(n), _)) =>
       arithmetic.NamedVar(i, arithmetic.RangeAdd(0, n, 1))
     case p => throw new Exception(s"Could not use index expression $p as nat")
@@ -60,12 +61,12 @@ object TranslateIndices {
   }
 
   @tailrec
-  def continuationDataType(dt : DataType, path : List[PathExpr]) : DataType =
+  def zoomIntoType(dt : DataType, path : List[PathExpr]) : DataType =
     (dt, path) match {
       case (_, Nil) => dt
-      case (ArrayType(_, edt), CIntExpr(_) :: ps) => continuationDataType(edt, ps)
-      case (PairType(fst, _), FstMember :: ps) => continuationDataType(fst, ps)
-      case (PairType(_, snd), SndMember :: ps) => continuationDataType(snd, ps)
+      case (ArrayType(_, edt), CIntExpr(_) :: ps) => zoomIntoType(edt, ps)
+      case (PairType(fst, _), FstMember :: ps) => zoomIntoType(fst, ps)
+      case (PairType(_, snd), SndMember :: ps) => zoomIntoType(snd, ps)
       case _ => throw new Exception(s"Cannot compute the datatype in $dt at path $path.")
     }
 
@@ -74,20 +75,20 @@ object TranslateIndices {
 
     p match {
       // Traverse AST
-      case Idx(_, _, i, e)    => idx(e, CIntExpr(idx2nat(i)) :: path)
-      case DepIdx(_, _, i, e) => idx(e, CIntExpr(i) :: path)
-      case Fst(_, _, e)       => idx(e, FstMember :: path)
-      case Snd(_, _, e)       => idx(e, SndMember :: path)
-      case IndexAsNat(n, e)   => IndexAsNat(n, idx(e, path))
-      case NatAsIndex(n, e)   => NatAsIndex(n, idx(e, path))
-      case UnaryOp(op, e)     => fromPath { case Nil => UnaryOp(op, idx(e, Nil)) }
-      case BinOp(op, e1, e2)  => fromPath { case Nil => BinOp(op, idx(e1, Nil), idx(e2, Nil)) }
+      case Idx(_, _, i, e)     => idx(e, CIntExpr(idx2nat(i)) :: path)
+      case DepIdx(_, _, i, e)  => idx(e, CIntExpr(i) :: path)
+      case Fst(_, _, e)        => idx(e, FstMember :: path)
+      case Snd(_, _, e)        => idx(e, SndMember :: path)
+      case IndexAsNat(n, e)    => IndexAsNat(n, idx(e, path))
+      case NatAsIndex(n, e)    => NatAsIndex(n, idx(e, path))
+      case IfThenElse(t, l, r) => IfThenElse(t, idx(l, path), idx(r, path))
+      case Natural(n)          => fromPath { case Nil => Natural(n) }
+      case Cast(m, n, e)       => fromPath { case Nil => Cast(m, n, idx(e, path)) }
+      case UnaryOp(op, e)      => fromPath { case Nil => UnaryOp(op, idx(e, Nil)) }
+      case BinOp(op, e1, e2)   => fromPath { case Nil => BinOp(op, idx(e1, Nil), idx(e2, Nil)) }
       case ff@ForeignFunctionCall(_, _, _, _) => ff
-      case IdxDistribute(_, _, s, _, _, e) => fromPath {
-        // TODO: ensure that i % s == init ?
-        case CIntExpr(i) :: ps => idx(e, CIntExpr(i / s) :: ps) }
       case Continuation(dt, Lambda(cont, body)) =>
-        val dt2 = continuationDataType(dt, path)
+        val dt2 = zoomIntoType(dt, path)
         val cont2 = Identifier(freshName("k"), ExpType(dt2, read) ->: (comm: CommType))
         val body2 = VisitAndRebuild(body, new VisitAndRebuild.Visitor {
           override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
@@ -102,6 +103,9 @@ object TranslateIndices {
       // Eliminate index transforming primitives
       case Split(n, _, _, _, e) => fromPath {
         case CIntExpr(i) :: CIntExpr(j) :: ps => idx(e, CIntExpr(n * i + j) :: ps) }
+      case IdxDistribute(_, _, s, _, _, e) => fromPath {
+        // TODO: ensure that i % s == init ?
+        case CIntExpr(i) :: ps => idx(e, CIntExpr(i / s) :: ps) }
       case Join(_, m, _, _, e) => fromPath {
         case CIntExpr(i) :: ps => idx(e, CIntExpr(i / m) :: CIntExpr(i % m) :: ps) }
       case Map(n, dt1, _, _, f, e) => fromPath {
@@ -161,19 +165,16 @@ object TranslateIndices {
 
       case Identifier(_ , _)
          | Literal(_)
-         | Natural(_)
-         | Cast(_, _, _)
-         | Apply(_, _)
          | Proj1(_)
          | Proj2(_)
+         | Apply(_, _)
          | DepApply(_, _)
-         | IfThenElse(_, _, _)
          | LetNat(_, _, _)
       // Write back Idx, Fst, Snd: code generation will need to deal with these
       => path.foldLeft(p)({
           case (e, CIntExpr(i)) => e.t match {
             case ExpType(ArrayType(n, dt), _) => Idx(n, dt, nat2idx(i, n), e)
-            // TODO: do we need to add anything else here? dependent arrays?
+            case ExpType(DepArrayType(n, dt), _) => DepIdx(n, dt, i, e)
             case _ => throw new Exception("this should not happen")
           }
           case (e, p: PairAccess) => e.t match {
@@ -195,11 +196,12 @@ object TranslateIndices {
     def fromPath(f : PartialFunction[List[PathExpr], Phrase[AccType]]) : Phrase[AccType] = fromPathT(p, path)(f)
 
     p match {
-      case IdxAcc(_, _, i, a) => idxAcc(a, CIntExpr(idx2nat(i)) :: path)
-      case DepIdxAcc(_, _, i, a) => idxAcc(a, CIntExpr(i) :: path)
+      case IdxAcc(_, _, i, a)     => idxAcc(a, CIntExpr(idx2nat(i)) :: path)
+      case DepIdxAcc(_, _, i, a)  => idxAcc(a, CIntExpr(i) :: path)
       case MkDPairSndAcc(_, _, a) => idxAcc(a, DPairSnd :: path)
-      case PairAcc1(_, _, a) => idxAcc(a, FstMember :: path)
-      case PairAcc2(_, _, a) => idxAcc(a, SndMember :: path)
+      case PairAcc1(_, _, a)      => idxAcc(a, FstMember :: path)
+      case PairAcc2(_, _, a)      => idxAcc(a, SndMember :: path)
+      case IfThenElse(t, l, r)    => IfThenElse(t, idxAcc(l, path), idxAcc(r, path))
       case ScatterAcc(n, m, d, y, a) => ScatterAcc(n, m, d, y, idxAcc(a, path))
 
       case ZipAcc1(_, _, _, a) => fromPath {
@@ -235,13 +237,18 @@ object TranslateIndices {
       case IdxDistributeAcc(_, _, s, _, _, a) => fromPath {
         // TODO: ensure that i % s == init ?
         case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i / s) :: ps) }
+      case AsVectorAcc(n, _, _, a) => fromPath {
+        case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i / n) :: ps) }
+      case AsScalarAcc(_, m, _, a) => fromPath {
+        // TODO: deal with the single path element case
+        case CIntExpr(i) :: CIntExpr(j) :: ps => idxAcc(a, CIntExpr((i * m) + j) :: ps) }
 
-      case Identifier(_ , _)
+
+        case Identifier(_ , _)
          | Apply(_, _)
          | Proj1(_)
          | Proj2(_)
          | DepApply(_, _)
-         | IfThenElse(_, _, _)
          | LetNat(_, _, _)
       // Write back IdxAcc, PairAcc1, PairAcc2: code generation will need to deal with these
       => path.foldLeft(p)({
