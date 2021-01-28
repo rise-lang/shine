@@ -204,7 +204,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
             2) make a pointer of integers into the buffer, this is the first element
 
-            3) offset into the buffer where the seconde element starts
+            3) offset into the buffer where the second element starts
 
             4) generate f(fst)(snd)
          */
@@ -272,9 +272,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             val (length, storage) = env.natCollLenEnv(id)
             genNat(length, env, length => {
               acc(a, env, List(), fstAcc => {
-                // TODO: OUTDATED FORMAT! MUST INJECT THE NUMBER-OF-NATS TAG at index 0
                 val byteLength = C.AST.BinaryExpr(length, C.AST.BinaryOperator.*, C.AST.Literal("sizeof(uint32_t)"))
-                C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memcpy"), List(fstAcc, storage, byteLength)))
+                C.AST.Stmts(
+                  C.AST.ExprStmt(C.AST.Assignment(
+                    //* (uint32_t*)fstAcc[0] = length;
+                    C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), fstAcc), C.AST.Literal("0")), length)),
+                  //* memcpy((fstAcc + sizeof(uint32_t), storage, length * sizeof(uint32_t));
+                  C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memcpy"), List(
+                    C.AST.BinaryExpr(fstAcc, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)")), storage, byteLength)))
+                )
               })
             })
         }

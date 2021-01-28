@@ -5,6 +5,7 @@ import rise.core.TypedDSL._
 import rise.core.primitives._
 import rise.core.semantics.NatData
 import rise.core.types._
+import util.Execute
 
 
 class sparseDense extends test_util.Tests {
@@ -20,7 +21,7 @@ class sparseDense extends test_util.Tests {
 
     (toMem(array |>
       map(fun(row => map(pred)(row) |> count |> indexAsNat))
-      |> scanSeq(fun(x => fun(y => x + y)))(Literal(NatData(0)))
+      |> scanSeqInclusive(fun(x => fun(y => x + y)))(Literal(NatData(0)))
     ) |> fun(offs => liftNats(offs)(depFun((offs:NatCollection) =>
       dpairNats(offs)(toDepArray(array) |>
         depMapSeq(depFun((rowIdx:Nat) => fun(row =>
@@ -146,7 +147,56 @@ class sparseDense extends test_util.Tests {
     val inferred: Expr = TDSL.infer(depFun((n:Nat) => depFun((m:Nat) => dense_to_sparse(n, m))))
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(inferred, "dense_to_sparse")
+    val cFun = util.gen.CProgram(inferred, "dense_to_sparse")
+
+    val testCode =
+      s"""
+        |
+        |#include<stdlib.h>
+        |#include<stdio.h>
+        |#include<stdint.h>
+        |#include<string.h>
+        |${cFun.code}
+        |
+        |struct Pair {
+        |  float fst;
+        |  int snd;
+        |};
+        |
+        |int main() {
+        |  int n = 8;
+        |  int m = 8;
+        |
+        |  float matrix[n * m];
+        |  for (int i = 0; i < n; i++) {
+        |    for (int j = 0; j < m; j++) {
+        |      int idx = i + j * n;
+        |      float value = (idx % 2 == 0 || j == 3) ? 0.0:((float)j);
+        |      matrix[idx] = value;
+        |    }
+        |  }
+        |
+        |  uint8_t output[sizeof(float) * n * m + sizeof(uint32_t) * 2];
+        |  dense_to_sparse(output, n, m, matrix);
+        |
+        |  uint32_t* idx_output = (uint32_t*)output;
+        |  struct Pair* data_output = (struct Pair*)(idx_output + 2 + n);
+        |  for (int i = 0; i < idx_output[0] - 1; i++) {
+        |    int len = idx_output[i + 2] - idx_output[i + 1];
+        |    for (int j = 0; j < len; j++) {
+        |      int offset = idx_output[i + 1] + j;
+        |      struct Pair data = data_output[offset];
+        |      if (data.snd != 2*j + 1 || data.fst != (float)i) {
+        |        return 1;
+        |      }
+        |    }
+        |  }
+        |
+        |
+        |  return 0;
+        |}""".stripMargin
+
+        Execute(testCode)
   }
 
   test("Sparse to dense") {

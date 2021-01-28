@@ -245,6 +245,11 @@ object primitives {
       (s ->: t ->: t) ->: t ->: (n `.` s) ->: (n `.` t) }}}
   }
 
+  @primitive object scanSeqInclusive extends Primitive with Builder {
+    impl{ n: Nat => impl{ s: DataType => impl{ t: DataType =>
+      (s ->: t ->: t) ->: t ->: (n `.` s) ->: ((n+1) `.` t) }}}
+  }
+
   @primitive object slide extends Primitive with Builder {
     impl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
       ((sp * n + sz) `.` t) ->: ((1 + n) `.` sz `.` t) }))}
