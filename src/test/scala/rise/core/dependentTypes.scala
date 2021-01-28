@@ -1,5 +1,6 @@
 package rise.core
 
+import arithexpr.arithmetic.{GoesToRange, RangeAdd}
 import rise.core.TypeLevelDSL._
 import rise.core.TypedDSL._
 import rise.core.primitives._
@@ -320,6 +321,34 @@ class dependentTypes extends test_util.TestsWithExecutor {
     }
   }
 
+  test("OCL filter even numbers in parallel") {
+    val NUM_THREADS = 1024
+    val e = depFun((n: Nat) =>  fun(n `.` int)(array => array |> split(n/NUM_THREADS) |> mapGlobal(0)(fun(array => {
+      def pred = fun(x => (x % l(2)) =:= l(0))
+      liftN(array |> map(fun(x => (x % l(2)) =:= l(0))) |> oclCount(AddressSpace.Private) |> indexAsNat)(
+        depFun(GoesToRange((n/NUM_THREADS)+1), (count:Nat) => dpair(count)(
+          oclWhich(array |> map(pred))(count) |>  oclToMem(AddressSpace.Global) |> mapSeq(fun(idx => array `@` idx))
+        )))
+    }))))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val kernelWrap = util.gen.OpenCLKernel(e)
+
+    val n = Math.pow(2, 22).toInt
+    val numbers = Array.tabulate(n)(i => i)
+
+    val kernel = kernelWrap.copy(kernel = kernelWrap.kernel.withFallbackOutputSize(SizeInByte((NUM_THREADS + n) * 4)).setIntermediateBufferSize(0, SizeInByte(n * 4)))
+    val kernelF = kernel.as[ScalaFunction `(` Int `,` Array[Int] `)=>` Array[Int]].withSizes(LocalSize(64), GlobalSize(NUM_THREADS))
+
+
+    val (result, time) = kernelF(n `,` numbers)
+
+    println(result)
+    println(time)
+  }
+
   test("bin-centric histogram")  {
     val e =  depFun((numBins: Nat) => depFun((n:Nat) =>
       fun(numBins`.` (f32 x f32))(bins =>
@@ -335,21 +364,25 @@ class dependentTypes extends test_util.TestsWithExecutor {
     val kernel = util.gen.OpenCLKernel(inferred, "histogram")
 
     {
+      val n = Math.pow(2, 22).toInt
+      val numBins = 128
+
       val kernelF =
         kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Float, Float)] `,` Array[Float] `)=>` Array[Int]]
-          .withSizes(LocalSize(1), GlobalSize(1))
-      val n = 1024
-      val numBins = 32
+          .withSizes(LocalSize(128), GlobalSize(numBins))
+
       val elem = 1.0f/(numBins + 1)
       val bins = Array.tabulate(numBins)(i => (elem * i, elem * (i + 1)))
 
       val rng = new Random(4)
       val data = Array.tabulate(n)(_ => rng.nextFloat())
 
-      val (output, _) = kernelF(numBins `,` n `,` bins `,` data)
+      val (output, time) = kernelF(numBins `,` n `,` bins `,` data)
       val golden = bins.map { case (low, high) => data.count(x => x > low && x < high)}
       assert(golden.length == output.length)
       golden.zip(output).map( { case (x, y) => assert(x == y)})
+
+      println(time)
     }
   }
 }

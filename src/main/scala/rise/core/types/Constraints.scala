@@ -166,14 +166,14 @@ object Constraint {
             NatToDataApply(f: NatToDataIdentifier, n: NatIdentifier),
             dt: DataType
             ) =>
-            Solution.subs(f, n2dtFun(
+            Solution.subs(f, n2dtFun(n.range)(
               fresh => substitute.natInDataType(fresh, n, dt)
             ))
           case (
             dt: DataType,
             NatToDataApply(f: NatToDataIdentifier, n: NatIdentifier)
             ) =>
-            Solution.subs(f, n2dtFun(
+            Solution.subs(f, n2dtFun(n.range)(
               fresh => substitute.natInDataType(fresh, n, dt)
             ))
           case (_: NatToDataApply, dt: DataType) =>

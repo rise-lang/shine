@@ -3,7 +3,7 @@ package shine.C.CodeGeneration
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import rise.core.types.NatCollectionIndexing
-import shine.C.AST
+import shine.C.{AST, SizeInByte}
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
 import shine.DPIA.DSL._
@@ -670,7 +670,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _: shine.DPIA.Types.IndexType => C.AST.Type.int
         case _: shine.DPIA.Types.VectorType =>throw new Exception("Vector types in C are not supported")
       }
-      case a: shine.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
+      case a: shine.DPIA.Types.ArrayType =>
+        a.elemType match {
+          case shine.DPIA.Types.DepPairType(_,_) => C.AST.PointerType(C.AST.Type.u8)
+          case _ => C.AST.ArrayType(typ(a.elemType), Some(a.size))
+
+        }
       case a: shine.DPIA.Types.DepArrayType =>
         a.elemFType match {
           case NatToDataLambda(_, body) =>
@@ -707,7 +712,20 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         dt match {
           case at: ArrayType =>
             val (dt2, k, ps) = CCodeGen.flattenArrayIndices(at, path)
-            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env, cont)
+            DataType.getBaseDataType(at) match {
+              case dpair@DepPairType(n, _) => n match {
+                case n:NatIdentifier =>
+                  val sb = SizeInByte(dpair)
+                  val maxSb = sb.value.substitute(immutable.Map(n -> n.range.max)).getOrElse(sb.value)
+                  genNat(maxSb, env, idExpr => {
+                    val idx = C.AST.BinaryExpr(C.AST.ArithmeticExpr(k), C.AST.BinaryOperator.*, idExpr)
+                    generateAccess(dt2, C.AST.BinaryExpr(expr, C.AST.BinaryOperator.+, idx), ps, env, cont)
+                  })
+                case _ => ???
+              }
+              case _ =>
+                generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env, cont)
+            }
 
           case dat: DepArrayType =>
             val (dt2, k, ps) = CCodeGen.flattenArrayIndices(dat, path)

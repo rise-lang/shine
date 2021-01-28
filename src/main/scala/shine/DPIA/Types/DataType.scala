@@ -3,7 +3,7 @@ package shine.DPIA.Types
 import arithexpr.arithmetic.{ArithExpr, BigSum}
 import rise.core.types.NatCollectionIndexing
 import shine.DPIA
-import shine.DPIA.{Nat, Types}
+import shine.DPIA.{Nat, NatIdentifier, Types}
 
 sealed trait DataType
 

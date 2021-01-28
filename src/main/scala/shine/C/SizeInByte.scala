@@ -30,12 +30,8 @@ object SizeInByte {
           throw new Exception("This should not happen")
       }
     case DepPairType(x, dt) => x match {
-      case x: NatIdentifier =>
-        x.range match {
-          case GoesToRange(end) =>
-            SizeInByte(shine.DPIA.Types.NatType) + SizeInByte(DataType.substitute(end, x, dt))
-          case _ => throw new Exception(s"Invalid range ${x.range} for computing size in byte of dependent pair")
-        }
+      case _: NatIdentifier =>
+        SizeInByte(shine.DPIA.Types.NatType) + SizeInByte(dt)
       case _ => ???
     }
     case _: NatToDataApply =>  throw new Exception("This should not happen")

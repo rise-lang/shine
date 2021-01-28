@@ -295,19 +295,16 @@ case class Kernel(decls: Seq[C.AST.Decl],
     )
 
   private def createOutputKernelArg(sizeVariables:Map[Nat,Nat]):GlobalArg = {
-    val rawSize = try {
-      SizeInByte(this.outputParam.t.dataType).value
-    } catch {
-      case ex: Throwable => this.fallbackOutputSize match {
-        case Some(defined) => defined.value
-        case None => throw ex
-      }
-    }
+    val rawSize = SizeInByte(this.outputParam.t.dataType).value
 
     val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
-    Try(cleanSize.evalLong) match {
-      case Success(actualSize) => createGlobalArg(actualSize)
-      case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")
+    if (cleanSize.isEvaluable) {
+      createGlobalArg(cleanSize.evalLong)
+    } else {
+      this.fallbackOutputSize match {
+        case Some(value) => createGlobalArg(value.value.evalLong)
+        case None => throw new Exception(s"Could not evaluate $cleanSize")
+      }
     }
   }
 
@@ -365,6 +362,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
             val flat = output.asFloatArray()
             assert(flat.length % 2 == 0)
             Array.tabulate(flat.length/2)(i => (flat(i), flat(i + 1)))
+          case shine.DPIA.Types.DepPairType(n, et) => n match {
+            case n:NatIdentifier => output.asIntArray()
+            case _ => ???
+          }
           case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
             "not supported: " + dt.toString)
         }).asInstanceOf[R]
@@ -427,7 +428,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       getOutputType(elemType)
     case DepArrayType(_, _) | _: NatToDataApply =>
       throw new Exception("This should not happen")
-    case _:DepPairType[_] => throw new Exception("Dependent pair not supported as output type")
+    case x:DepPairType[_] => x
   }
 }
 
