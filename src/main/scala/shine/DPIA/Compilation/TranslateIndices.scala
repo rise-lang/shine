@@ -222,7 +222,7 @@ object TranslateIndices {
       case CycleAcc(_, m, _, a) => fromPath {
         case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i % m) :: ps) }
       case MapAcc(n, dt, _, f, a) => fromPath {
-        case CIntExpr(i) :: ps => idxAcc(reduce(f, IdxAcc(n, dt, nat2idx(n, i), a) ), ps) }
+        case CIntExpr(i) :: ps => idxAcc(reduce(f, IdxAcc(n, dt, nat2idx(i, n), a) ), ps) }
       case MapFstAcc(_, dt2, dt3, f, a) => fromPath {
         case FstMember :: ps => idxAcc(reduce(f, PairAcc1(dt3, dt2, a)), ps)
         case SndMember :: ps => idxAcc(          PairAcc2(dt3, dt2, a) , ps) }
