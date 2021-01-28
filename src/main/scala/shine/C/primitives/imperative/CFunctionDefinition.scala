@@ -87,6 +87,7 @@ final case class CFunctionDefinition(name: String,
     output |>
       ( TranslationToImperative.acc(p) _ andThen
         run(TypeCheck(_)) andThen
+        TranslateIndices.translate andThen
         UnrollLoops.unroll andThen
         SimplifyNats.simplify )
   }

@@ -5,13 +5,13 @@ import arithexpr.arithmetic.{NamedVar, _}
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
 import shine.DPIA.Compilation.SimplifyNats
+import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
-import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional._
 import shine.DPIA.{error, _}
 import shine._
@@ -21,15 +21,6 @@ import scala.collection.{immutable, mutable}
 import scala.language.implicitConversions
 
 object CodeGenerator {
-  sealed trait PathExpr
-  sealed trait PairAccess extends PathExpr
-  final case object FstMember extends PairAccess
-  final case object SndMember extends PairAccess
-  final case class CIntExpr(num: Nat) extends PathExpr
-  final case object DPairSnd extends PathExpr
-
-  implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
-
   type Declarations = mutable.ListBuffer[C.AST.Decl]
   type Ranges = immutable.Map[String, arithexpr.arithmetic.Range]
 
@@ -41,8 +32,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                     val ranges: CodeGenerator.Ranges)
   extends DPIA.Compilation.CodeGenerator {
 
-  import CodeGenerator._
-
   type Path = immutable.List[PathExpr]
 
   type Stmt = C.AST.Stmt
@@ -52,8 +41,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   type Type = C.AST.Type
 
   override def name: String = "C"
-
-  override def translationContext: Compilation.TranslationContext = new TranslationContext()
+  override def translationContext: TranslationContext = new C.TranslationContext()
 
   def addDeclaration(decl: Decl): Unit = {
     if (decls.exists(_.name == decl.name)) {
@@ -180,25 +168,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
       }), path, env, cont)
 
-    case SplitAcc(n, _, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-    case JoinAcc(_, m, _, a) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps => a |> acc(env, CIntExpr(i * m + j) :: ps, cont)
-      case _ => error(s"Expected two C-Integer-Expressions on the path.")
-    }
-    case depJ@DepJoinAcc(_, _, _, a) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps, cont)
-      case _ => error(s"Expected two C-Integer-Expressions on the path.")
-    }
-
-    case TransposeAcc(_, _, _, a) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps => a |> acc(env, j :: i :: ps, cont)
-      case _ => error(s"did not expect $path")
-    }
-
+    case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
     case PairAcc1(_, _, a) => a |> acc(env, FstMember :: path, cont)
     case PairAcc2(_, _, a) => a |> acc(env, SndMember :: path, cont)
     case PairAcc(_, _, fst, snd) => path match {
@@ -213,80 +183,28 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           })})
       case _ => error(s"did not expect $path")
     }
-
-    case ZipAcc1(_, _, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, i :: FstMember :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-    case ZipAcc2(_, _, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, i :: SndMember :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-    case UnzipAcc(_, _, _, a) => path match {
-      case (i: CIntExpr) :: FstMember :: ps => a |> acc(env, FstMember :: i :: ps, cont)
-      case (i: CIntExpr) :: SndMember :: ps => a |> acc(env, SndMember :: i :: ps, cont)
-      case _ => error(s"unexpected $path")
-    }
-
-    case TakeAcc(_, _, _, a) => a |> acc(env, path, cont)
-    case DropAcc(n, _, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i + n) :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-
-    case CycleAcc(_, m, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i % m) :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-
-    case ReorderAcc(n, _, idxF, a) => path match {
-      case (i: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(NatAsIndex(n, Natural(i))))) :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-
     case ScatterAcc(n, m, _, y, a) => path match {
       case (i: CIntExpr) :: ps =>
         val id = NatIdentifier(freshName("i"))
-        Idx(n, IndexType(m), functional.NatAsIndex(n, Natural(i)), y) |>
-          exp(env, Nil, yic => {
-            C.AST.Block(immutable.Seq(
-              C.AST.DeclStmt(C.AST.VarDecl(
-                id.name, C.AST.Type.int, Some(yic)
-              )),
-              a |> acc(env, CIntExpr(id) :: ps, cont)
-            ))
-          })
+        val yi = Idx(n, IndexType(m), NatAsIndex(n, Natural(i)), y)
+        yi |> exp(env, Nil, yic => {
+          C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(
+              id.name, C.AST.Type.int, Some(yic)
+            )),
+            a |> acc(env, CIntExpr(id) :: ps, cont)
+          ))
+        })
       case _ => error(s"Expected a C-Integer-Expression on the path.")
     }
 
-    case MapAcc(n, dt, _, f, a) => path match {
-      case (i: CIntExpr) :: ps => f(IdxAcc(n, dt, functional.NatAsIndex(n, Natural(i)), a)) |> acc(env, ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-    case MapFstAcc(_, dt2, dt3, f, a) => path match {
-      case FstMember :: ps => f(PairAcc1(dt3, dt2, a)) |> acc(env, ps, cont)
-      case SndMember :: ps => PairAcc2(dt3, dt2, a) |> acc(env, ps, cont)
-      case _ => error(s"unexpected $path")
-    }
-    case MapSndAcc(dt1, _, dt3, f, a) => path match {
-      case FstMember :: ps => PairAcc1(dt1, dt3, a) |> acc(env, ps, cont)
-      case SndMember :: ps => f(PairAcc2(dt1, dt3, a)) |> acc(env, ps, cont)
-      case _ => error(s"unexpected $path")
-    }
-
-    case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
-
-    case DepIdxAcc(_, _, i, a) => a |> acc(env, CIntExpr(i) :: path, cont)
-
+    // Cannot be moved to code translation
     case Proj1(pair) => Lifting.liftPair(pair)._1 |> acc(env, path, cont)
     case Proj2(pair) => Lifting.liftPair(pair)._2 |> acc(env, path, cont)
 
-    case MkDPairSndAcc(_, _, a) => a |> acc(env, DPairSnd :: path, cont)
-
-    case phrase@(Apply(_, _) | DepApply(_, _) |
-                 Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: AccPrimitive) =>
-      error(s"Don't know how to generate code for $phrase")
+    case phrase@(Apply(_, _) | DepApply(_, _) | Phrases.IfThenElse(_, _, _) |
+                 LetNat(_, _, _) |  _: AccPrimitive) =>
+      error(s"Don't know how to generate code for path $path and phrase $phrase")
   }
 
   override def exp(env: Environment,
@@ -313,11 +231,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           }
           case _ => error("Expected an ArrayType.")
         }
-      case _ => error(s"Unexpected: $n $path")
+      case _ => error(s"Unexpected path $path")
     }
 
-    case Phrases.Natural(n) => cont(path match {
-      case Nil => C.AST.ArithmeticExpr(n)
+    case NatAsIndex(_, e) => e |> exp(env, path, cont)
+
+    case Natural(n) => cont(path match {
+      case Nil => CCodeGen.codeGenNatural(n, env)
       case _ => error(s"Expected the path to be empty.")
     })
 
@@ -327,7 +247,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           cont(CCodeGen.codeGenUnaryOp(op, e)))
         case _ => error(s"Expected path to be empty")
       }
-      case _ => error(s"Expected scalar types")
+      case dt => error(s"Unexpected datatype $dt.")
     }
 
     case bop@BinOp(op, e1, e2) => bop.t.dataType match {
@@ -350,157 +270,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case IndexAsNat(_, e) => e |> exp(env, path, cont)
 
-    case NatAsIndex(_, e) => e |> exp(env, path, cont)
-
-    case Split(n, _, _, _, e) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps => e |> exp(env, CIntExpr(n * i + j) :: ps, cont)
-      case _ => error(s"Expected two C-Integer-Expressions on the path.")
-    }
-    case Join(_, m, _, _, e) => path match {
-      case (i: CIntExpr) :: ps => e |> exp(env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
-      case _ => error(s"Expected two C-Integer-Expressions on the path.")
-    }
-
-    case part@Partition(_, _, _, _, e) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-        e |> exp(env, CIntExpr(BigSum(0, i - 1, x => part.lenF(x)) + j) :: ps, cont)
-      case _ => error(s"Expected path to contain at least two elements")
-    }
-
-    case Zip(n, dt1, dt2, _, e1, e2) => path match {
-      case (i: CIntExpr) :: (xj: PairAccess) :: ps => xj match {
-        case FstMember => e1 |> exp(env, i :: ps, cont)
-        case SndMember => e2 |> exp(env, i :: ps, cont)
-      }
-      case (i: CIntExpr) :: Nil =>
-        val j = functional.NatAsIndex(n, Natural(i))
-        MakePair(dt1, dt2, read, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)) |> exp(env, Nil, cont)
-      case _ => error(s"unexpected $path")
-    }
-
-    case Unzip(_, _, _, _, e) => path match {
-      case (xj: PairAccess) :: (i: CIntExpr) :: ps =>
-        e |> exp(env, i :: xj :: ps, cont)
-      case _ => error("Expected a tuple access followed by a C-Integer-Expression on the path.")
-    }
-
-    case DepZip(_, _, _, e1, e2) => path match {
-      case (i: CIntExpr) :: (xj: PairAccess) :: ps => xj match {
-        case FstMember => e1 |> exp(env, i :: ps, cont)
-        case SndMember => e2 |> exp(env, i :: ps, cont)
-      }
-      case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
-    }
-
     case r@MakePair(_, _, _, e1, e2) => path match {
-      case (xj: PairAccess) :: ps => xj match {
-        case FstMember => e1 |> exp(env, ps, cont)
-        case SndMember => e2 |> exp(env, ps, cont)
-      }
       case Nil =>
         e1 |> exp(env, Nil, ec1 =>
           e2 |> exp(env, Nil, ec2 => cont(C.AST.RecordLiteral(typ(r.t.dataType), ec1, ec2))))
       case _ => error(s"unexpected $path")
     }
-    case Fst(_, _, e) => e |> exp(env, FstMember :: path, cont)
-    case Snd(_, _, e) => e |> exp(env, SndMember :: path, cont)
-    case DMatch(_, _, _, _, _, e) => e |> exp(env, path, cont)
-
-    case Take(_, _, _, e) => e |> exp(env, path, cont)
-
-    case Drop(n, _, _, e) => path match {
-      case (i: CIntExpr) :: ps => e |> exp(env, CIntExpr(i + n) :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-
-    case Cycle(_, m, _, e) => path match {
-      case (i: CIntExpr) :: ps => e |> exp(env, CIntExpr(i % m) :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-
-    case Reorder(n, _, _, idxF, _, a) => path match {
-      case (i: CIntExpr) :: ps =>
-        a |> exp(env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(functional.NatAsIndex(n, Natural(i))))) :: ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-
-    case Gather(n, m, dt, y, e) => path match {
-      case (i: CIntExpr) :: ps =>
-        functional.Idx(n, dt, functional.Idx(m, IndexType(n), functional.NatAsIndex(m, Natural(i)), y), e) |>
-          exp(env, ps, cont)
-      case _ => error(s"unexpected $path")
-    }
-
-    case PadClamp(n, l, r, _, e) => path match {
-      case (i: CIntExpr) :: ps =>
-        e |> exp(env, CIntExpr(0) :: ps, left =>
-          e |> exp(env, CIntExpr(n - 1) :: ps, right =>
-            genPad(n, l, r, left, right, i, ps, e, env, cont)))
-      case _ => error(s"Expected path to be not empty")
-    }
-
-    case Pad(n, l, r, _, pad, array) => path match {
-      case (i: CIntExpr) :: ps =>
-        pad |> exp(env, ps, padExpr =>
-          genPad(n, l, r, padExpr, padExpr, i, ps, array, env, cont))
-
-      case _ => error(s"Expected path to be not empty")
-    }
-
-    case Slide(_, _, s2, _, e) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps => e |> exp(env, CIntExpr(i * s2 + j) :: ps, cont)
-      case _ => error(s"Expected two C-Integer-Expressions on the path.")
-    }
-
-    case Transpose(_, _, _, _, e) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps => e |> exp(env, j :: i :: ps, cont)
-      case _ => error(s"did not expect $path")
-    }
-
-    case TransposeDepArray(_, _, _, e) => path match {
-      case (i: CIntExpr) :: (j: CIntExpr) :: ps => e |> exp(env, CIntExpr(j) :: CIntExpr(i) :: ps, cont)
-      case _ => error(s"Expected two C-Integer-Expressions on the path.")
-    }
-
-    case Map(n, dt, _, _, f, e) => path match {
-      case (i: CIntExpr) :: ps => f(Idx(n, dt, functional.NatAsIndex(n, Natural(i)), e)) |> exp(env, ps, cont)
-      case _ => error(s"Expected a C-Integer-Expression on the path.")
-    }
-
-    // TODO: we could get rid of that
-    case MapRead(n, dt1, dt2, f, e) => path match {
-      case (i: CIntExpr) :: ps =>
-        val continue_cmd =
-          Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt2, read) ->: CommType())
-
-        f(
-          Idx(n, dt1, functional.NatAsIndex(n, Natural(i)), e)
-        )(
-          continue_cmd
-        ) |> cmd(env updatedContEnv (continue_cmd -> (e => env => e |> exp(env, ps, cont))))
-      case _ => error(s"Expected path to be not empty")
-    }
-
-    case GenerateCont(n, dt, f) => path match {
-      case (i: CIntExpr) :: ps =>
-        val continue_cmd =
-          Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt, read) ->: CommType())
-
-        f(functional.NatAsIndex(n, Natural(i)))(continue_cmd) |>
-          cmd(env updatedContEnv (continue_cmd -> (e => env => e |> exp(env, ps, cont))))
-      case _ => error(s"Expected path to be not empty")
-    }
-
-    case MakeArray(_, elems) => path match {
-      case (i: CIntExpr) :: ps => try {
-        elems(i.eval) |> exp(env, ps, cont)
-      } catch {
-        case NotEvaluableException() => error(s"could not evaluate $i")
-      }
-      case _ => error(s"did not expect $path")
-    }
+    case DMatch(x, _, _, _, f, e) => e |> exp(env, path, cont)
 
     case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
+    case Fst(_, _, e) => e |> exp(env, FstMember :: path, cont)
+    case Snd(_, _, e) => e |> exp(env, SndMember :: path, cont)
 
     case DepIdx(_, _, i, e) => e |> exp(env, CIntExpr(i) :: path, cont)
 
@@ -512,9 +292,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     case Proj1(pair) => SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1) |> exp(env, path, cont)
     case Proj2(pair) => SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2) |> exp(env, path, cont)
 
-    case phrase@(Apply(_, _) | DepApply(_, _) |
-                 Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive) =>
-      error(s"Don't know how to generate code for $phrase")
+    case Continuation(dt, k) =>
+      val continue_cmd =
+        Identifier[ExpType ->: CommType](freshName("continue"), ExpType(dt, read) ->: CommType())
+      k(continue_cmd) |> cmd(env updatedContEnv (continue_cmd -> (e => env => e |> exp(env, path, cont))))
+
+    case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, envU) => body |> gen.exp(envU, path, cont))
+    case Phrases.IfThenElse(cond, thenP, elseP) =>
+      cond |> exp(env, Nil, cond => C.AST.IfThenElse(cond, thenP |> exp(env, path, cont), Some(elseP |> exp(env, path, cont))))
+
+    case phrase@(Apply(_, _) | DepApply(_, _) | _ : ExpPrimitive) =>
+      error(s"Don't know how to generate code for path $path and phrase $phrase")
   }
 
   override def typ(dt: DataType): Type = {
@@ -815,6 +603,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             a |> acc(env, CIntExpr(arithVar) :: ps, cont)
           ))
       })
+    }
+
+    def codeGenNatural(n : Nat, env : Environment) : Expr = {
+      C.AST.ArithmeticExpr(applySubstitutions(n, env.identEnv))
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
@@ -1202,39 +994,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
              })
          case otherwise => throw new Exception(s"Don't know how to print $otherwise")
        }
-  }
-
-  protected def genPad(n: Nat, l: Nat, r: Nat,
-                       left: Expr, right: Expr,
-                       i: CIntExpr, ps: Path,
-                       array: Phrase[ExpType],
-                       env: Environment,
-                       cont: Expr => Stmt): Stmt = {
-    // FIXME: we should know that (i - l) is in [0; n[ here
-    array |> exp(env, CIntExpr(i - l) :: ps, arrayExpr => {
-
-      def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
-        case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
-        case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
-        case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
-        case _ => null
-      }
-
-      def genBranch(lhs:ArithExpr, rhs:ArithExpr,
-                    operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr): Expr = {
-        import BoolExpr._
-        arithPredicate(lhs, rhs, operator) match {
-          case True => taken
-          case False => notTaken
-          case _ => C.AST.TernaryExpr(
-            C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
-            taken, notTaken)
-        }
-      }
-      cont(
-        genBranch(i, l, ArithPredicate.Operator.<, left,
-          genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, right)))
-    })
   }
 }
 

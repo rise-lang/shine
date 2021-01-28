@@ -177,7 +177,11 @@ object InsertMemoryBarriers {
       case functional.Map(_, _, _, _, _, e) => collectReads(e, allocs, reads)
       case ocl.IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
       case MapRead(_, _, _, _, e) => collectReads(e, allocs, reads)
-      case GenerateCont(_, _, _) => giveUp()
+      case Continuation(_, _) => giveUp() // No Continuation should make it this far
+      case IfThenElse(b, l, r) =>
+        collectReads(b, allocs, reads)
+        collectReads(l, allocs, reads)
+        collectReads(r, allocs, reads)
       case AsScalar(_, _, _, _, e) => collectReads(e, allocs, reads)
       case AsVectorAligned(_, _, _, _, e) => collectReads(e, allocs, reads)
       case AsVector(_, _, _, _, e) => collectReads(e, allocs, reads)

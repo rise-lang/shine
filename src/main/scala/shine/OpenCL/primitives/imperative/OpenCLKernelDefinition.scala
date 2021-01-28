@@ -94,6 +94,7 @@ final case class OpenCLKernelDefinition(name: String,
     output |>
       ( TranslationToImperative.acc(p) _ andThen
         run(TypeCheck(_)) andThen
+        TranslateIndices.translate andThen
         InjectWorkItemSizes.inject(localSize, globalSize) andThen
         FlagPrivateArrayLoops.flag andThen
         UnrollLoops.unroll andThen

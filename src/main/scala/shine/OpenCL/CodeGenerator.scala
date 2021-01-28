@@ -3,9 +3,8 @@ package shine.OpenCL
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.{BasicType, Decl}
-import shine.C.CodeGenerator.CIntExpr
 import shine.C.{CodeGenerator => CCodeGenerator}
-import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.Compilation.{CIntExpr, TranslationContext}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
