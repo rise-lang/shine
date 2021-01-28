@@ -4,7 +4,7 @@ import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import rise.core.types.NatCollectionIndexing
 import shine.C.AST
-import shine.C.AST.{Block, PointerType}
+import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
@@ -252,7 +252,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         exp(input, env, List(), input => {
           C.AST.Block(immutable.Seq(
             C.AST.Comment(s"Started scope of lifted nat collection ${f.t.x.name}, of size $n"),
-            C.AST.DeclStmt(C.AST.VarDecl(f.t.x.name, C.AST.PointerType(typ(NatType)), Some(input))),
+            C.AST.DeclStmt(this.natCollectionVarDecl(f.t.x.name, C.AST.Cast(this.natCollectionNatCType(), input))),
               cmd(f(f.t.x), env.updatedNatCollLengthEnv(f.t.x -> (n, C.AST.DeclRef(f.t.x.name)))),
             C.AST.Comment(s"Ended scope of lifted nat collection ${f.t.x.name}"),
           ))
@@ -276,7 +276,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                 C.AST.Stmts(
                   C.AST.ExprStmt(C.AST.Assignment(
                     //* (uint32_t*)fstAcc[0] = length;
-                    C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), fstAcc), C.AST.Literal("0")), length)),
+
+                    C.AST.ArraySubscript(C.AST.Cast(this.natCollectionNatCType(), fstAcc), C.AST.Literal("0")), length)),
                   //* memcpy((fstAcc + sizeof(uint32_t), storage, length * sizeof(uint32_t));
                   C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memcpy"), List(
                     C.AST.BinaryExpr(fstAcc, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)")), storage, byteLength)))
@@ -1383,5 +1384,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   def natCollectionNatCType(const:Boolean = false): C.AST.Type = C.AST.PointerType(this.natBaseType, const)
   def natCollectionElemCType(elemT: C.AST.Type, const:Boolean = false): C.AST.Type =
     C.AST.PointerType(elemT, const)
+
+  def natCollectionVarDecl(name: String, expr: Expr): C.AST.VarDecl = C.AST.VarDecl(name, natCollectionNatCType(), Some(expr))
 }
 

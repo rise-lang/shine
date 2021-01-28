@@ -334,6 +334,21 @@ object fromRise {
           )
       }
 
+      case ocl.oclScanSeqInclusive() => fromType {
+        case aFunT(a, (expT(s, `read`) ->: expT(t, `read`) ->: expT(_, `write`)) ->:
+          expT(_, `write`) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`))
+        =>
+          depFun[AddressSpaceKind](a)(
+            fun[ExpType ->: ExpType ->: ExpType](
+              expT(s, read) ->: expT(t, read) ->: expT(t, write), f =>
+                fun[ExpType](expT(t, write), i =>
+                  fun[ExpType](expT(n`.`s, read), e =>
+                    OpenCLScanSeqInclusive(n, a, s, t, f, i, e))))
+          )
+      }
+
 
       case core.depJoin() => fromType {
         case expT(DepArrayType(n, n2d), `read`) ->:

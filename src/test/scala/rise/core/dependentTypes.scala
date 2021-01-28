@@ -3,7 +3,6 @@ package rise.core
 import rise.core.TypeLevelDSL._
 import rise.core.TypedDSL._
 import rise.core.primitives._
-import rise.core.semantics.NatData
 import rise.core.types._
 import rise.openCL.primitives._
 import shine.C.SizeInByte
@@ -38,7 +37,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
     util.gen.CProgram(inferred, "Foo_foo")
   }
 
-  test("Dependent pair take and untake") {
+  ignore("Dependent pair take and untake") {
     val e = depFun((n: Nat) =>
       fun(n `.` f32)(xs =>
         dmatch(dpair(n)(xs))(

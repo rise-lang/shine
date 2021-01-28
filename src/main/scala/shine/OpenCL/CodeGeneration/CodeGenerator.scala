@@ -2,7 +2,7 @@ package shine.OpenCL.CodeGeneration
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
-import shine.C.AST.{BasicType, Decl}
+import shine.C.AST.{BasicType, Decl, VarDecl}
 import shine.C.CodeGeneration.CodeGenerator.CIntExpr
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
@@ -467,4 +467,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def natCollectionNatCType(const: Boolean): Type = OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, C.AST.Type.u32)
 
   override def natCollectionElemCType(elemT: Type, const: Boolean): Type = OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, elemT)
+
+  override def natCollectionVarDecl(name: String, expr: Expr): VarDecl = OpenCL.AST.VarDecl(name, C.AST.PointerType(this.natBaseType), OpenCL.AddressSpace.Global, Some(expr))
 }

@@ -5,6 +5,7 @@ import rise.core.TypedDSL._
 import rise.core.primitives._
 import rise.core.semantics.NatData
 import rise.core.types._
+import rise.openCL.primitives._
 import util.Execute
 
 
@@ -39,6 +40,28 @@ class sparseDense extends test_util.Tests {
           |> mapSeq(fun(x => x))
       ))) |> unDepArray))) ::(n `.` m `.` f32)
   })
+
+
+  def dense_to_sparse_ocl_1(n:Nat, m:Nat):ToBeTyped[Expr] = fun(n `.` m `.` f32)(array => {
+    def pred = fun(x => x =/= l(0.0f))
+
+    (array |>
+      map(fun(row => map(pred)(row) |> count |> indexAsNat))
+      |> scanSeqInclusive(fun(x => fun(y => x + y)))(Literal(NatData(0)))
+    )::((n+1) `.` NatType)
+  })
+
+  def dense_to_sparse_ocl_2(n:Nat, m:Nat):ToBeTyped[Expr] = fun((n + 1) `.` NatType)(offs => fun(n `.` m `.` f32)(array => {
+    def pred = fun(x => x =/= l(0.0f))
+
+    liftNats(offs)(depFun((offs: NatCollection) =>
+      dpairNats(offs)(toDepArray(array) |>
+        depMapSeq(depFun((rowIdx:Nat) => fun(row =>
+        oclWhich(row |> map(pred))((offs `@` (rowIdx + 1)) - (offs `@` rowIdx))
+          |> oclToMem(AddressSpace.Global) |> mapSeq(fun(nnzIdx => pair(row `@` nnzIdx)(nnzIdx)))
+        )
+        )))))
+  }))
 
   val dense_mv = depFun((n:Nat) => depFun((m:Nat) => fun(n `.` m `.` f32)(matrix => fun(m `.` f32)(vector => {
     matrix |>
@@ -197,6 +220,14 @@ class sparseDense extends test_util.Tests {
         |}""".stripMargin
 
         Execute(testCode)
+  }
+
+  test("Dense to sparse ocl") {
+    val e1 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_ocl_1(n, m)))
+    val e2 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_ocl_2(n, m)))
+
+   //util.gen.CProgram(e1, "dense_to_sparse_1")
+    util.gen.OpenCLKernel(e2, "dense_to_sparse_2")
   }
 
   test("Sparse to dense") {

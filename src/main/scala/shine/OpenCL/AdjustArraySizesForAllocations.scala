@@ -41,6 +41,7 @@ object AdjustArraySizesForAllocations {
       case dms: DepMapSeq =>
         visitAndGatherInformation(dms.f, BasicInfo(Sequential, -1)::parallInfo)
       case scan: OpenCLScanSeq => visitAndGatherInformation(scan.f,BasicInfo(Sequential, -1) :: parallInfo)
+      case scan: OpenCLScanSeqInclusive => visitAndGatherInformation(scan.f,BasicInfo(Sequential, -1) :: parallInfo)
 
       // FIXME: works for scalars
       case _: OpenCLReduceSeq | _: OpenCLIterate => parallInfo

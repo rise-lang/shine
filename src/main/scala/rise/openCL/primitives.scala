@@ -46,6 +46,12 @@ object primitives {
     )
   }
 
+  @primitive object oclScanSeqInclusive extends Primitive with Builder {
+    expl((_: AddressSpace) => impl{ n: Nat => impl{ s: DataType => impl{ t: DataType =>
+      (s ->: t ->: t) ->: t ->: (n `.` s) ->: ((n+1) `.` t) }}}
+    )
+  }
+
   @primitive object oclIterate extends Primitive with Builder {
     expl((_: AddressSpace) =>
       impl{ n: Nat => impl{ m: Nat =>

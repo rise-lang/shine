@@ -91,7 +91,7 @@ class Printer extends shine.C.AST.CPrinter {
           case Some(s) => s
         } }]")
       case p: shine.OpenCL.AST.PointerType => print(s"${toString(p.a)} ${p.valueType}* ${v.name}")
-      case _: shine.C.AST.PointerType => throw new Exception("This should not happen")
+      case p: shine.C.AST.PointerType => print(s"${p.valueType}* ${v.name}") // Now it shall happen, for I need Variable Declarations of local pointers. throw new Exception("This should not happen")
       case _: shine.C.AST.UnionType => ???
     }
     v.init match {
