@@ -52,7 +52,7 @@ object traversal {
               x match {
                 case n: NatIdentifier =>
                   DepLambda[NatKind]((v.visitNat(n).value: @unchecked) match {
-                    case a: NamedVar => NatIdentifier(a, isExplicit = true)
+                    case a: NamedVar => NatIdentifier(a, isExplicit = true, isTuningParam = false)
                   }, apply(e, v))(v.visitType(dl.t).value)
                 case dt: DataTypeIdentifier =>
                   DepLambda[DataKind](v.visitType(dt).value, apply(e, v))(
@@ -146,7 +146,7 @@ object traversal {
                       case ((x, e), t) =>
                         DepLambda[NatKind]((x: @unchecked) match {
                           case a: NamedVar =>
-                            NatIdentifier(a, isExplicit = true)
+                            NatIdentifier(a, isExplicit = true, isTuningParam = false)
                         }, e)(t)
                     }
                 case dt: DataTypeIdentifier =>

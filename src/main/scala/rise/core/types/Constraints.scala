@@ -313,12 +313,12 @@ object Constraint {
         case (arithexpr.arithmetic.Mod(x1, m1),
           arithexpr.arithmetic.Mod(x2: NatIdentifier, m2))
           if m1 == m2 && !x2.isExplicit =>
-          val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
+          val k = NatIdentifier("k", RangeAdd(0, PosInf, 1), isExplicit = false)
           Solution.subs(x2, k*m1 + x1%m1)
         case (arithexpr.arithmetic.Mod(x2: NatIdentifier, m2),
           arithexpr.arithmetic.Mod(x1, m1))
           if m1 == m2 && !x2.isExplicit =>
-          val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
+          val k = NatIdentifier("k", RangeAdd(0, PosInf, 1), isExplicit = false)
           Solution.subs(x2, k*m1 + x1%m1)
         case _ => error(s"cannot unify $a and $b")
       }
@@ -375,7 +375,7 @@ object Constraint {
           }
         case Pow(b, Cst(-1)) => pivotSolution(pivot, b, Cst(1) /^ value)
         case Mod(p, m) if p == pivot =>
-          val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
+          val k = NatIdentifier("k", RangeAdd(0, PosInf, 1), isExplicit = false)
           Some(Solution.subs(pivot, k*m + value))
         case _               =>
           None

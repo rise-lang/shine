@@ -32,7 +32,7 @@ final case class NatToNatLambda private (x: NatIdentifier, body: Nat)
   // sure this property is respected, we ignore the identifier variable, and
   // just take the hash of the body evaluated at a known point
   override def hashCode(): Int =
-    this(NatIdentifier("comparisonDummy")).hashCode()
+    this(NatIdentifier("comparisonDummy", isExplicit = false)).hashCode()
 
   override def apply(l: Nat): Nat = ArithExpr.substitute(body, Map((x, l)))
 
