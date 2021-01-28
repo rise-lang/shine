@@ -11,6 +11,8 @@ import shine.DPIA.Types._
 import shine.DPIA.Phrases.Operators.Binary.LT
 import shine.OpenCL.ImperativePrimitives.{IdxDistribute, IdxDistributeAcc}
 
+import scala.annotation.tailrec
+
 /*
 Translates transformations on index accessed arrays into transformations on the
 indices, e.g, drop(3, xs)[5] is rewritten into xs[8]. The translation is
@@ -51,9 +53,19 @@ object TranslateIndices {
   def fromPathT[T](p : T, path : List[PathExpr])(f: PartialFunction[List[PathExpr],  T]): T = {
     f.lift(path) match {
       case Some(p) => p
-      case None => throw new Exception(s"Unexpected path for $p : $path")
+      case None => throw new Exception(s"Unexpected path $path for phrase $p.")
     }
   }
+
+  @tailrec
+  def continuationDataType(dt : DataType, path : List[PathExpr]) : DataType =
+    (dt, path) match {
+      case (_, Nil) => dt
+      case (ArrayType(_, edt), CIntExpr(_) :: ps) => continuationDataType(edt, ps)
+      case (PairType(fst, _), FstMember :: ps) => continuationDataType(fst, ps)
+      case (PairType(_, snd), SndMember :: ps) => continuationDataType(snd, ps)
+      case _ => throw new Exception(s"Cannot compute the datatype in $dt at path $path.")
+    }
 
   def idx(p : Phrase[ExpType], path : List[PathExpr]) : Phrase[ExpType] = {
     def fromPath(f : PartialFunction[List[PathExpr], Phrase[ExpType]]) : Phrase[ExpType] = fromPathT(p, path)(f)
@@ -73,14 +85,7 @@ object TranslateIndices {
         // TODO: ensure that i % s == init ?
         case CIntExpr(i) :: ps => idx(e, CIntExpr(i / s) :: ps) }
       case Continuation(dt, Lambda(cont, body)) =>
-        def continuationDataType(dt: DataType): Int => DataType = {
-          case 0 => dt
-          case n => dt match {
-            case ArrayType(_, edt) => continuationDataType(edt)(n - 1)
-            case _ => ???
-          }
-        }
-        val dt2 = continuationDataType(dt)(path.length)
+        val dt2 = continuationDataType(dt, path)
         val cont2 = Identifier(freshName("k"), ExpType(dt2, read) ->: (comm: CommType))
         val body2 = VisitAndRebuild(body, new VisitAndRebuild.Visitor {
           override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
