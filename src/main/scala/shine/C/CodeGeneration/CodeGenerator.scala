@@ -203,6 +203,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env, cont)
 
+      case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
       case PairAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
       case PairAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
       case PairAcc(_, _, fst, snd) => path match {
@@ -217,23 +218,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             })})
         case _ => error(s"did not expect $path")
       }
-
-      case ZipAcc1(_, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-      case ZipAcc2(_, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
-      case UnzipAcc(_, _, _, a) => path match {
-        case (i: CIntExpr) :: FstMember :: ps => acc(a, env, FstMember :: i :: ps, cont)
-        case (i: CIntExpr) :: SndMember :: ps => acc(a, env, SndMember :: i :: ps, cont)
-        case _ => error(s"unexpected $path")
-      }
-
-      case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
-
+      // Cannot be moved to code translation
       case Proj1(pair) => acc(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
 

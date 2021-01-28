@@ -162,6 +162,7 @@ object TranslateIndices {
          | DepApply(_, _)
          | IfThenElse(_, _, _)
          | LetNat(_, _, _)
+      // Write back Idx, Fst, Snd: code generation will need to deal with these
       => path.foldLeft(p)({
           case (e, CIntExpr(i)) => e.t match {
             case ExpType(ArrayType(n, dt), _) => Idx(n, dt, nat2idx(i, n), e)
@@ -190,7 +191,16 @@ object TranslateIndices {
       case IdxAcc(_, _, i, a) => idxAcc(a, CIntExpr(idx2nat(i)) :: path)
       case DepIdxAcc(_, _, i, a) => idxAcc(a, CIntExpr(i) :: path)
       case MkDPairSndAcc(_, _, a) => idxAcc(a, DPairSnd :: path)
+      case PairAcc1(_, _, a) => idxAcc(a, FstMember :: path)
+      case PairAcc2(_, _, a) => idxAcc(a, SndMember :: path)
 
+      case ZipAcc1(_, _, _, a) => fromPath {
+        case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i) :: FstMember :: ps) }
+      case ZipAcc2(_, _, _, a) => fromPath {
+        case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i) :: SndMember :: ps) }
+      case UnzipAcc(_, _, _, a) => fromPath {
+        case CIntExpr(i) :: FstMember :: ps => idxAcc(a, FstMember :: CIntExpr(i) :: ps)
+        case CIntExpr(i) :: SndMember :: ps => idxAcc(a, SndMember :: CIntExpr(i) :: ps) }
       case TakeAcc(_, _, _, a) => idxAcc(a, path)
       case SplitAcc(n, _, _, a) => fromPath {
         case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i / n) :: CIntExpr(i % n) :: ps) }
@@ -225,6 +235,7 @@ object TranslateIndices {
            | DepApply(_, _)
            | IfThenElse(_, _, _)
            | LetNat(_, _, _)
+        // Write back IdxAcc, PairAcc1, PairAcc2: code generation will need to deal with these
         => path.foldLeft(p)({
           case (a, CIntExpr(i)) => a.t match {
             case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, nat2idx(i, n), a)
