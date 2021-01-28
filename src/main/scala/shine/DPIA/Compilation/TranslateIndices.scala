@@ -9,6 +9,7 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.Phrases.Operators.Binary.LT
+import shine.OpenCL.ImperativePrimitives.{IdxDistribute, IdxDistributeAcc}
 
 /*
 Translates transformations on index accessed arrays into transformations on the
@@ -55,7 +56,6 @@ object TranslateIndices {
   }
 
   def idx(p : Phrase[ExpType], path : List[PathExpr]) : Phrase[ExpType] = {
-    println(s"EXP $p PATH $path")
     def fromPath(f : PartialFunction[List[PathExpr], Phrase[ExpType]]) : Phrase[ExpType] = fromPathT(p, path)(f)
 
     p match {
@@ -69,6 +69,9 @@ object TranslateIndices {
       case UnaryOp(op, e)     => fromPath { case Nil => UnaryOp(op, idx(e, Nil)) }
       case BinOp(op, e1, e2)  => fromPath { case Nil => BinOp(op, idx(e1, Nil), idx(e2, Nil)) }
       case ff@ForeignFunction(_, _, _, _) => ff
+      case IdxDistribute(_, _, s, _, _, e) => fromPath {
+        // TODO: ensure that i % s == init ?
+        case CIntExpr(i) :: ps => idx(e, CIntExpr(i / s) :: ps) }
       case Continuation(dt, Lambda(cont, body)) =>
         def continuationDataType(dt: DataType): Int => DataType = {
           case 0 => dt
@@ -147,7 +150,7 @@ object TranslateIndices {
       case VectorFromScalar(_, _, e) => fromPath {
         case CIntExpr(i) :: ps => idx(e, ps) }
       case MakeArray(_, elems) => fromPath {
-        case (i: CIntExpr) :: ps => idx(elems(i.eval), ps) }
+        case CIntExpr(i) :: ps => idx(elems(i.eval), ps) }
 
       case Identifier(_ , _)
          | Literal(_)
@@ -181,7 +184,6 @@ object TranslateIndices {
   }
 
   def idxAcc(p : Phrase[AccType], path : List[PathExpr]) : Phrase[AccType] = {
-    println(s"ACC $p PATH $path")
     def fromPath(f : PartialFunction[List[PathExpr], Phrase[AccType]]) : Phrase[AccType] = fromPathT(p, path)(f)
 
     p match {
@@ -212,8 +214,11 @@ object TranslateIndices {
       case MapSndAcc(dt1, _, dt3, f, a) => fromPath {
         case FstMember :: ps => idxAcc(          PairAcc1(dt1, dt3, a) , ps)
         case SndMember :: ps => idxAcc(reduce(f, PairAcc2(dt1, dt3, a)), ps) }
+      case IdxDistributeAcc(_, _, s, _, _, a) => fromPath {
+        // TODO: ensure that i % s == init ?
+        case CIntExpr(i) :: ps => idxAcc(a, CIntExpr(i / s) :: ps) }
 
-      case Identifier(_ , _)
+  case Identifier(_ , _)
            | Apply(_, _)
            | Proj1(_)
            | Proj2(_)
