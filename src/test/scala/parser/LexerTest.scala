@@ -590,10 +590,10 @@ class LexerTest extends  AnyFlatSpec {
 
         Identifier("join", _)::LParentheses(_)::
         Identifier("join", _)::LParentheses(_)::
-        Identifier("mapWorkGroup", _)::I32(1,_)::LParentheses(_)::
+        Identifier("mapWorkGroup", _)::NatNumber(1,_)::LParentheses(_)::
 
         Identifier("join", _)::LParentheses(_)::
-        Identifier("mapWorkGroup", _)::I32(0,_)::LParentheses(_)::
+        Identifier("mapWorkGroup", _)::NatNumber(0,_)::LParentheses(_)::
         Backslash(_)::Identifier("p1Chunk", _)::Colon(_)::LParentheses(_)::
         NatNumber(256, _)::Dot(_)::LParentheses(_)::
         VectorType(4, FloatTyp(),_)::Comma(_)::VectorType(4, FloatTyp(),_)::RParentheses(_)::Arrow(_)::
@@ -605,9 +605,9 @@ class LexerTest extends  AnyFlatSpec {
         NatNumber(256, _)::Dot(_)::LParentheses(_)::
         VectorType(4, FloatTyp(),_)::Comma(_)::VectorType(4, FloatTyp(),_)::RParentheses(_)::Arrow(_)::
 
-        Identifier("mapLocal",_)::I32(1,_):: LParentheses(_)::
+        Identifier("mapLocal",_)::NatNumber(1,_):: LParentheses(_)::
         Backslash(_)::Identifier("bla",_)::Colon(_)::NatNumber(256,_)::Dot(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
-        Identifier("mapLocal",_)::I32(0,_):: LParentheses(_)::
+        Identifier("mapLocal",_)::NatNumber(0,_):: LParentheses(_)::
 
         Backslash(_)::Identifier("p1A",_)::Colon(_)::LParentheses(_)::LParentheses(_)::
         VectorType(4, FloatTyp(),_)::Comma(_)::VectorType(4, FloatTyp(),_)::RParentheses(_)::Comma(_)::
@@ -629,12 +629,12 @@ class LexerTest extends  AnyFlatSpec {
         NatNumber(1,_)::Dot(_)::NatNumber(256,_)::Dot(_)::VectorType(4,FloatTyp(),_)::Arrow(_)::
 
         Identifier("let", _)::LParentheses(_):: Identifier("toLocal",_)::LParentheses(_)::
-        Identifier("mapLocal",_)::I32(1,_):: LParentheses(_)::
-        Identifier("mapLocal",_)::I32(0,_):: Identifier("id", _)::RParentheses(_)::RParentheses(_)::
+        Identifier("mapLocal",_)::NatNumber(1,_):: LParentheses(_)::
+        Identifier("mapLocal",_)::NatNumber(0,_):: Identifier("id", _)::RParentheses(_)::RParentheses(_)::
         Identifier("p2A",_)::RParentheses(_)::LParentheses(_)::
 
-        Backslash(_)::Identifier("p2Local",_)::Arrow(_)::Identifier("mapLocal",_)::I32(1,_)::LParentheses(_)::
-        Backslash(_)::Identifier("accDim",_)::Arrow(_)::Identifier("mapLocal",_)::I32(0,_)::LParentheses(_)::
+        Backslash(_)::Identifier("p2Local",_)::Arrow(_)::Identifier("mapLocal",_)::NatNumber(1,_)::LParentheses(_)::
+        Backslash(_)::Identifier("accDim",_)::Arrow(_)::Identifier("mapLocal",_)::NatNumber(0,_)::LParentheses(_)::
         Backslash(_)::Identifier("p1B",_)::Arrow(_)::Identifier("oclReduceSeq",_)::
         AddrSpaceType("Private",_)::LParentheses(_)::
 

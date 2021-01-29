@@ -1804,6 +1804,10 @@ private def lexNumberComplexMatch(column: Int, row: Int,  arr: Array[String], su
       (Right(a._1),a._2)
     }
   }
+  case 'N' => {
+    val loc = Location(column, pos+1)
+    (Left(NatNumber(substring.toInt, new Span(fileReader, loc))),pos+1)
+  }
   case a => {
     if(a.isLetter){
       val a= createIdentifierBeginsWithAF32Number(column, row, pos, locStart)

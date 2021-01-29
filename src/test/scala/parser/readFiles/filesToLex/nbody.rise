@@ -7,15 +7,15 @@ nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
 nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
  join (
  join (
-   mapWorkGroup 1
+   mapWorkGroup 1N
    (
       join (
-      mapWorkGroup 0 (
+      mapWorkGroup 0N (
         \p1Chunk:(256.(4xF32, 4xF32)->1.256.(4xF32, 4xF32)) ->
         \newP1Chunk:256.(4xF32, 4xF32)->
-        mapLocal 1 (
+        mapLocal 1N (
           \bla:256.4xF32->
-          mapLocal 0 (
+          mapLocal 0N (
             \p1A:((4xF32, 4xF32), 4xF32)->
             update (fst (fst p1A)) (fst (snd p1A)) deltaT (snd p1A)
           )
@@ -25,10 +25,10 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
           oclReduceSeq Local --I have to add AddrSpace.Local in matchPrimitiveAndIdentifier, because there it is easy
           (
           \accA:1.256.4xF32->\p2A:1.256.4xF32->
-          let (toLocal (mapLocal 1 (mapLocal 0 id)) p2A) --toLocal adden
+          let (toLocal (mapLocal 1N (mapLocal 0N id)) p2A) --toLocal adden
           (
-            \p2Local -> mapLocal 1 (
-              \accDim-> mapLocal 0 (
+            \p2Local -> mapLocal 1N (
+              \accDim-> mapLocal 0N (
                 \p1B -> oclReduceSeq Private (
                   \accB:4xF32->\p2B:4xF32->
                   calcAcc (fst (fst p1B)) p2B deltaT espSqr accB
@@ -37,10 +37,10 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
             ) (zip p2Local accA)
           ) 
           )
-          (mapLocal 1 (mapLocal 0 id) (generate (vectorFromScalar 0.0F32)))
+          (mapLocal 1 (mapLocal 0N id) (generate (vectorFromScalar 0.0F32)))
         )
-        (split 1 ( split 256 pos))
-      ) (split 256)
+        (split 1N ( split 256N pos))
+      ) (split 256N)
       )
    )
     (split n ( zip pos vel))
