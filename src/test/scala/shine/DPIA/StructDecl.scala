@@ -1,10 +1,12 @@
 package shine.DPIA
 
-import rise.core.DSL.{fun, _}
+import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.DSL._
-import rise.openMP.DSL._
+import rise.openCL.TypedDSL._
+import rise.openMP.primitives._
 import util.gen
+import util.gen.c.function
 
 class StructDecl extends test_util.Tests {
   val id = fun(x => x)
@@ -13,19 +15,19 @@ class StructDecl extends test_util.Tests {
   test("Program with tuples in output and tuple input, can be generated in C.") {
     val tupleOut = fun(ArrayType(8, PairType(f32, f32)))(xs => xs |> mapSeq(id))
 
-    gen.CProgram(tupleOut)
+    function.asStringFromExpr(tupleOut)
   }
 
   test("Program with tuples in output and input, can be generated in OpenMP.") {
     val tupleOut = fun(ArrayType(8, PairType(f32, f32)))(xs => xs |> mapPar(id))
 
-    gen.OpenMPProgram(tupleOut)
+    gen.openmp.function.asStringFromExpr(tupleOut)
   }
 
   test("Program with tuples in input and output, can be generated in OpenCL.") {
     val tupleOut = fun(ArrayType(8, PairType(f32, f32)))(xs => xs |> mapSeq(id))
 
-    gen.OpenCLKernel(tupleOut)
+    gen.opencl.kernel.fromExpr(tupleOut)
   }
 
   test(
@@ -33,10 +35,10 @@ class StructDecl extends test_util.Tests {
   ) {
     val tupleOut = fun(ArrayType(8, f32))(xs =>
       fun(ArrayType(8, f32))(ys =>
-        zip(xs, ys) |> toMemFun(mapSeq(id)) |> mapSeq(addT))
+        zip(xs)(ys) |> toMemFun(mapSeq(id)) |> mapSeq(addT))
     )
 
-    gen.CProgram(tupleOut)
+    function.asStringFromExpr(tupleOut)
   }
 
   test(
@@ -44,10 +46,10 @@ class StructDecl extends test_util.Tests {
   ) {
     val tupleOut = fun(ArrayType(8, f32))(xs =>
       fun(ArrayType(8, f32))(ys =>
-        zip(xs, ys) |> toMemFun(mapPar(id)) |> mapPar(addT))
+        zip(xs)(ys) |> toMemFun(mapPar(id)) |> mapPar(addT))
     )
 
-    gen.OpenMPProgram(tupleOut)
+    gen.openmp.function.asStringFromExpr(tupleOut)
   }
 
   test(
@@ -55,10 +57,10 @@ class StructDecl extends test_util.Tests {
   ) {
     val tupleOut = fun(ArrayType(8, f32))(xs =>
       fun(ArrayType(8, f32))(ys =>
-        zip(xs, ys) |> mapSeq(id) |> fun(x => toGlobal(x)) |> mapSeq(addT)
+        zip(xs)(ys) |> mapSeq(id) |> fun(x => toGlobal(x)) |> mapSeq(addT)
       )
     )
 
-    gen.OpenCLKernel(tupleOut)
+    gen.opencl.kernel.fromExpr(tupleOut)
   }
 }

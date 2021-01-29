@@ -1,8 +1,8 @@
 package shine.C
 
 import shine.DPIA.DSL._
-import shine.DPIA.ImperativePrimitives.Assign
-import shine.DPIA.IntermediatePrimitives.DepMapSeqI
+import shine.DPIA.primitives.imperative.Assign
+import shine.DPIA.primitives.intermediate.DepMapSeqI
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 

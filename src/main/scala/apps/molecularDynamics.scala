@@ -2,9 +2,11 @@ package apps
 
 import rise.core._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives.{let => _, _}
+import rise.core.DSL.Type._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeq
 
 object molecularDynamics {
   private val mdCompute = foreignFun("updateF",
@@ -30,7 +32,7 @@ object molecularDynamics {
       f32 ->: f32 ->: f32 ->:
       vec(4, f32))
 
-  val shoc: Expr = nFun(n => nFun(m => fun(
+  val shoc: Expr = depFun((n: Nat, m: Nat) => fun(
     (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
       f32 ->: f32 ->: f32 ->:
       (n`.`vec(4, f32))
@@ -48,7 +50,7 @@ object molecularDynamics {
           )
         ))
       ) |> join
-  )))
+  ))
 
   def buildNeighbourList(
     position: Array[(Float, Float, Float, Float)],
@@ -133,7 +135,7 @@ object molecularDynamics {
   }
 
   def runKernel(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     particles: Array[Float],
     neighbours: Array[Array[Int]]
   ): (Array[Float], TimeSpan[Time.ms]) = {

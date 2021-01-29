@@ -1,7 +1,6 @@
 package benchmarks.cgo17
 
 import apps.convolution._
-import rise.core.DSL._
 import benchmarks.core._
 import util._
 
@@ -13,8 +12,8 @@ object convolution {
 
     val (lsX, gsX) = blurXTiled2DSizes(N)
     val (lsY, gsY) = blurYTiled2DTiledLoadingTransposedSizes(N)
-    val kernelX = gen.OpenCLKernel(blurXTiled2D(N))
-    val kernelY = gen.OpenCLKernel(blurYTiled2DTiledLoadingTransposed(N))
+    val kernelX = gen.opencl.kernel.fromExpr(blurXTiled2D(N))
+    val kernelY = gen.opencl.kernel.fromExpr(blurYTiled2DTiledLoadingTransposed(N))
 
     val stats = Seq(
       ("original X", benchmark(sampleCount, runOriginalKernel(s"CGO17_ConvolutionColumn_$originalSuffix.cl",

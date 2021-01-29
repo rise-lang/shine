@@ -1,13 +1,13 @@
 package shine.OpenCL
 
 import shine.DPIA.DSL.identifier
-import shine.DPIA.FunctionalPrimitives._
-import shine.DPIA.ImperativePrimitives._
+import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.FunctionalPrimitives._
-import shine.OpenCL.ImperativePrimitives._
+import shine.DPIA.primitives.functional._
+import shine.OpenCL.primitives.functional._
+import shine.OpenCL.primitives.imperative._
 
 object AdjustArraySizesForAllocations {
   case class DataTypeAdjustment(accF: Phrase[AccType] => Phrase[AccType],
@@ -72,7 +72,7 @@ object AdjustArraySizesForAllocations {
       }
 
       case _: Identifier[_] | _: Literal | _: Natural |
-           _: VectorFromScalar | _: Cast | _: ForeignFunction |
+           _: VectorFromScalar | _: Cast | _: ForeignFunctionCall |
            _: BinOp | _: UnaryOp => parallInfo
 
       case pattern => throw new Exception(s"this should not happen for now: $pattern")

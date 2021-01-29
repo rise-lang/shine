@@ -1,13 +1,15 @@
 package rise.core
 
-import rise.openCL.DSL._
-import rise.core.DSL._
-import rise.core.TypeLevelDSL._
-import rise.core.primitives._
 import rise.core.DrawTree._
-import rise.core.HighLevelConstructs._
-import rise.core.types._
+import rise.core.DSL.HighLevelConstructs._
 import rise.core.ShowRise._
+import rise.core.DSL.Type._
+import rise.core.DSL._
+import rise.core.primitives._
+import rise.core.types._
+import rise.openCL.TypedDSL._
+import rise.openCL.primitives.oclReduceSeqUnroll
+import shine.DPIA.Nat
 
 class showRise extends test_util.Tests {
   private val id = fun(x => x)
@@ -17,10 +19,10 @@ class showRise extends test_util.Tests {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
-    }))(l(0.0f))(DSL.zip(DSL.join(elem))(weights))
+    }))(l(0.0f))(zip(join(elem))(weights))
   )
 
-  private val blurXTiled2D: Expr = nFun(n =>
+  private val blurXTiled2D: Expr = depFun((n: Nat) =>
     fun(
       (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
     )((matrix, weights) =>

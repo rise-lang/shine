@@ -4,6 +4,8 @@ import sgemm._
 import util.gen
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.types._
+import shine.OpenCL.KernelExecutor.KernelWithSizes
+import util.gen.c.function
 
 //noinspection TypeAnnotation
 class sgemmCheck extends test_util.TestsWithExecutor {
@@ -27,27 +29,27 @@ class sgemmCheck extends test_util.TestsWithExecutor {
   }
 
   test("Sequential gemm type inference works") {
-    infer(c.sequential)
+    c.sequential.t
   }
 
   test("Sequential gemm compiles to syntactically correct C") {
-    gen.CProgram(c.sequential)
+    function.asStringFromExpr(c.sequential)
   }
 
   test("mali gemm type inference works") {
-    infer(mali_GEMM)
+    mali_GEMM.t
   }
 
   test("mali gemm compiles to syntactically correct kernel") {
-    gen.OpenCLKernel(mali_GEMM)
+    gen.opencl.kernel.fromExpr(mali_GEMM)
   }
 
   test("Kepler best type inference works") {
-    infer(keplerBest)
+    keplerBest.t
   }
 
   test("Kepler best compiles to syntactically correct kernel") {
-    gen.OpenCLKernel(LocalSize((32,8,1)), GlobalSize((256, 128, 1)))(keplerBest, "KERNEL")
+    gen.opencl.kernel(LocalSize((32,8,1)), GlobalSize((256, 128, 1))).fromExpr(keplerBest)
   }
 
   test("OpenCL sequential gemm versions produce the expected result") {
@@ -57,8 +59,11 @@ class sgemmCheck extends test_util.TestsWithExecutor {
 
     val (aMat, bMat, cMat, alpha, beta, goldMat) = randomSgemmGold(M, N, K)
 
-    val (flatOutput, _ ) = runSgemmKernel(
-      gen.OpenCLKernel(LocalSize(1), GlobalSize(1))(sequential, "KERNEL"),
+    val localSize = LocalSize(1)
+    val globalSize = GlobalSize(1)
+    val kernel = gen.opencl.kernel(localSize, globalSize).fromExpr(sequential)
+
+    val (flatOutput, _ ) = runSgemmKernel(KernelWithSizes(kernel, localSize, globalSize),
       aMat, bMat, cMat, alpha, beta, M, N, K)
 
     assert(flatOutput sameElements goldMat)
@@ -71,9 +76,13 @@ class sgemmCheck extends test_util.TestsWithExecutor {
 
     val (aMat, bMat, cMat, alpha, beta, goldMat) = randomSgemmGold(M, N, K)
 
+    val localSize = LocalSize((2, 2))
+    val globalSize = GlobalSize((N/2, N/2))
+    val kernel = gen.opencl.kernel(localSize, globalSize).fromExpr(mali_GEMM)
+
     val runs = Seq(
       "dpia" -> runSgemmKernel(
-        gen.OpenCLKernel(LocalSize((2, 2)), GlobalSize((N/2, N/2)))(mali_GEMM, "KERNEL"),
+        KernelWithSizes(kernel, localSize, globalSize),
         aMat, bMat.transpose, cMat, alpha, beta, M, N, K),
       "original" -> runOriginalSgemm("maliSgemm.cl", LocalSize((2, 2)), GlobalSize((M/2, N/2)),
         aMat, bMat.transpose, cMat, alpha, beta, M, N, K, isMaliKernel = true))
@@ -92,9 +101,13 @@ class sgemmCheck extends test_util.TestsWithExecutor {
 
     val (aMat, bMat, cMat, alpha, beta, goldMat) = randomSgemmGold(M, N, K)
 
+    val localSize = LocalSize((32,8,1))
+    val globalSize = GlobalSize((256, 128, 1))
+    val kernel = gen.opencl.kernel(localSize, globalSize).fromExpr(keplerBest)
+
     val runs = Seq(
       "dpia" -> runSgemmKernel(
-        gen.OpenCLKernel(LocalSize((32,8,1)), GlobalSize((256, 128, 1)))(keplerBest, "KERNEL"),
+        KernelWithSizes(kernel, localSize, globalSize),
         aMat.transpose, bMat, cMat, alpha, beta, M, N, K),
       //TODO Original code injects work-item sizes as well as input size dimensions.
       // How are input dimensions injected and why? Variables for the input size dimensions appear in the code as well.

@@ -1,8 +1,9 @@
 package shine.DPIA.Types
 
-import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA._
+import shine.DPIA.primitives.functional
+import shine.DPIA.primitives.functional.NatAsIndex
 
 sealed trait PhraseType
 

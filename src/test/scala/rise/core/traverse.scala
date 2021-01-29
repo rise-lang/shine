@@ -1,15 +1,16 @@
 package rise.core
 
 import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.traversal._
 import rise.core.types._
 
 import scala.collection.mutable
 
 class traverse extends test_util.Tests {
-  val e: DepLambda[NatKind] = nFun(h =>
-    nFun(w =>
-      fun(ArrayType(h, ArrayType(w, f32)))(input => DSL.map(DSL.map(fun(x => x)))(input)
+  val e: ToBeTyped[DepLambda[NatKind]] = depFun((h: Nat) =>
+    depFun((w: Nat) =>
+      fun(ArrayType(h, ArrayType(w, f32)))(input => map(map(fun(x => x)))(input)
       )
     )
   )
@@ -43,28 +44,28 @@ class traverse extends test_util.Tests {
         { case _: NatIdentifier                          => () },
         { case _: Lambda                                 => () },
         { case _: Identifier                             => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
         { case _: App                                    => () },
         { case _: App                                    => () },
         { case primitives.map()                          => () },
-        { case TypePlaceholder                           => () },
+        { case _: FunType[_, _]                          => () },
         { case _: App                                    => () },
         { case primitives.map()                          => () },
-        { case TypePlaceholder                           => () },
+        { case _: FunType[_, _]                          => () },
         { case _: Lambda                                 => () },
         { case _: Identifier                             => () },
-        { case TypePlaceholder                           => () },
+        { case `f32`                                     => () },
         { case _: Identifier                             => () },
-        { case TypePlaceholder                           => () },
-        { case TypePlaceholder                           => () },
-        { case TypePlaceholder                           => () },
-        { case TypePlaceholder                           => () },
+        { case `f32`                                     => () },
+        { case _: FunType[_, _]                          => () },
+        { case _: FunType[_, _]                          => () },
+        { case _: FunType[_, _]                          => () },
         { case _: Identifier                             => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
-        { case TypePlaceholder                           => () },
-        { case TypePlaceholder                           => () },
-        { case TypePlaceholder                           => () },
-        { case TypePlaceholder                           => () }
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
+        { case _: FunType[_, _]                          => () },
+        { case _: DepFunType[NatKind, _] @unchecked      => () },
+        { case _: DepFunType[NatKind, _] @unchecked      => () }
       ): Seq[Any => Unit]
     }
 
@@ -72,16 +73,11 @@ class traverse extends test_util.Tests {
     val result = DepthFirstLocalResult(e, new TraceVisitor(trace))
 
     // the expression should not have changed
-    assert(result == e)
+    assert(result == e.toExpr)
     // the trace should match expectations
     trace.length shouldBe expected.length
     trace.zip(expected).foreach({ case (x, e) => e(x) })
   }
-
-  /* TODO?
-  test("traverse an expression depth-first with types") {
-  }
-   */
 
   test("traverse an expression depth-first with stop and update") {
     val expected = {
@@ -101,7 +97,7 @@ class traverse extends test_util.Tests {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
           case App(App(primitives.map(), _), e) =>
-            val r = app(fun(x => x), e)
+            val r = app(fun(x => x), preserveType(e))
             println(r)
             Stop(r)
           case _ => super.visitExpr(expr)
@@ -116,13 +112,13 @@ class traverse extends test_util.Tests {
       case traversal.Stop(r) =>
         assert(
           r ==
-            nFun(h =>
-              nFun(w =>
+            depFun((h: Nat) =>
+              depFun((w: Nat) =>
                 fun(ArrayType(h, ArrayType(w, f32)))(input =>
                   app(fun(x => x), input)
                 )
               )
-            )
+            ).toExpr
         )
       case _ => throw new Exception("the traversal should have stopped")
     }
@@ -132,9 +128,9 @@ class traverse extends test_util.Tests {
   }
 
   test("traverse an expression depth-first with global stop") {
-    val e = nFun(n =>
+    val e = depFun((n: Nat) =>
       fun(ArrayType(n, f32))(input =>
-        input |> DSL.map(fun(x => x)) |> DSL.map(fun(x => x))
+        input |> map(fun(x => x)) |> map(fun(x => x))
       )
     )
 
@@ -154,13 +150,15 @@ class traverse extends test_util.Tests {
     // the expression should have changed
     (result: @unchecked) match {
       case traversal.Stop(r) =>
-        val expected = nFun(n =>
+        val expected = depFun((n: Nat) =>
           fun(ArrayType(n, f32))(input => {
             val x = identifier(freshName("x"))
-            app(lambda(x, x), input |> DSL.map(fun(x => x)))
+            app(lambda(x, x), input |> map(fun(x => x)))
           })
         )
-        assert(r == expected)
+        // TODO: establish proper equality checking
+        // assert(r == expected.toExpr)
+        assert(r.toUntypedExpr == expected.toUntypedExpr)
     }
   }
 }

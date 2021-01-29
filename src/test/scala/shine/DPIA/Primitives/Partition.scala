@@ -3,14 +3,16 @@ package shine.DPIA.Primitives
 import benchmarks.core.SimpleRunOpenCLProgram
 import shine.DPIA
 import shine.DPIA.Nat
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
+import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize}
 import util.{SyntaxChecker, Time, TimeSpan}
 import arithexpr.arithmetic._
 import rise.elevate.rules.traversal.default
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import Type._
 import rise.core._
 import rise.core.types._
+import util.gen.c.function
 
 import scala.util.Random
 
@@ -20,13 +22,12 @@ class Partition extends test_util.Tests {
     val lenF = n2nFun((i: NatIdentifier) => i + 1)
 
     val slideExample =
-      nFun(n =>
+      depFun((n: Nat) =>
         fun(ArrayType(n, f32))(xs => xs |> partition.apply(3)(lenF) |> depMapSeq(mapSeq(fun(x => x)))))
 
     println("\n" + slideExample + "\n")
 
-    val p = shine.C.ProgramGenerator.makeCode(DPIA.fromRise(infer(slideExample))(default.RiseTraversable))
-    val code = p.code
+    val code = function.asStringFromExpr(slideExample)
     SyntaxChecker(code)
   }
 
@@ -35,7 +36,7 @@ class Partition extends test_util.Tests {
 
     def lenF(n: Nat) = n2nFun((i: NatIdentifier) => SteppedCase(3, n, 3)(i))
 
-    val padAndPartition: Expr = nFun(n =>
+    val padAndPartition: Expr = depFun((n: Nat) =>
       fun(ArrayType(n, f32))(xs => xs |>
         padCst(padAmount)(padAmount)(l(0.0f)) |>
         partition(3)(lenF(n)) |>
@@ -56,7 +57,8 @@ class Partition extends test_util.Tests {
         (Array.fill(padAmount)(0.0f) ++ input ++ Array.fill(padAmount)(0.0f)).map(x => x + 1.0f)
       }
 
-      override protected def runKernel(k: KernelWithSizes, input: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
+      override protected def runKernel(k: KernelExecutor.KernelWithSizes,
+                                       input: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
         import shine.OpenCL._
 
         val kernelFun = k.as[ScalaFunction `(` Int `,` Input `)=>` Array[Float]]

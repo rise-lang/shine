@@ -3,11 +3,11 @@ package rise.elevate
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.core.{RewriteResult, Strategy}
-import rise.core.TypeLevelDSL._
-import rise.core.TypedDSL._
+import rise.core.DSL.Type._
+import rise.core.DSL._
 import rise.core.primitives._
 import rise.core._
-import rise.core.types.{ArrayType, NatKind, f32, infer, _}
+import rise.core.types.{ArrayType, NatKind, f32, _}
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.traversal._
@@ -34,7 +34,7 @@ class tiling extends test_util.Tests {
   def betaEtaEquals(a: Rise, b: Rise): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toBeTyped(na) :: nb.t
+    val uab: Rise = toBeTyped(na) !: nb.t
     makeClosed(uab) == makeClosed(nb)
   }
   // Check that DSL makes sense
@@ -264,11 +264,11 @@ class tiling extends test_util.Tests {
   val floatId: Expr = identity(f32)
 
   test("codegen 1D tiles") {
-    val highLevel = infer(wrapInLambda(1, i => *(floatId) $ i, inputT(1, _)))
-    val tiled = infer(one(body(tileND(1)(tileSize))).apply(highLevel).get)
+    val highLevel = wrapInLambda(1, i => *(floatId) $ i, inputT(1, _)).toExpr
+    val tiled = one(body(tileND(1)(tileSize))).apply(highLevel).get
 
-    println(gen.CProgram(lower(highLevel)))
-    println(gen.CProgram(lower(tiled)))
+    println(gen.c.function.asStringFromExpr(lower(highLevel)))
+    println(gen.c.function.asStringFromExpr(lower(tiled)))
   }
 
   //TODO make this work without implicit array assignments
@@ -276,8 +276,8 @@ class tiling extends test_util.Tests {
     val highLevel = wrapInLambda(2, i => **!(floatId) $ i, inputT(2, _))
     val tiled = one(one(body(tileND(2)(tileSize)))).apply(highLevel).get
 
-    println(gen.CProgram(lower(highLevel)))
-    println(gen.CProgram(lower(tiled)))
+    println(gen.c.function.asStringFromExpr(lower(highLevel)))
+    println(gen.c.function.asStringFromExpr(lower(tiled)))
   }
 
   //TODO make this work without implicit array assignments
@@ -285,8 +285,8 @@ class tiling extends test_util.Tests {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
     val tiled = one(one(one(body(tileNDList(List(4,8,16)))))).apply(highLevel).get
 
-    println(gen.CProgram(lower(highLevel)))
-    println(gen.CProgram(lower(tiled)))
+    println(gen.c.function.asStringFromExpr(lower(highLevel)))
+    println(gen.c.function.asStringFromExpr(lower(tiled)))
   }
 
   //TODO make this work without implicit array assignments
@@ -295,8 +295,8 @@ class tiling extends test_util.Tests {
     val tiled = one(one(one(body(fmap(tileND(2)(tileSize)))))).apply(highLevel).get
 
 
-    println(gen.CProgram(lower(highLevel)))
-    println(gen.CProgram(lower(tiled)))
+    println(gen.c.function.asStringFromExpr(lower(highLevel)))
+    println(gen.c.function.asStringFromExpr(lower(tiled)))
   }
 
  // Tests related to fixing some development issues
@@ -309,13 +309,13 @@ class tiling extends test_util.Tests {
 
     val simple = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs)(ys) |> map(mulT)
-    )))
+    ))).toExpr
 
     // we can't fission the map
-    assert(betaEtaEquals(infer((RNF)(simple)), infer(simple)))
+    assert(betaEtaEquals(RNF(simple), simple))
     // and tiling it doesn't break it either
-    infer((topDown(splitJoin(4)) `;` RNF `;` DFNF)(simple))
-    infer((topDown(tileND(1)(4)) `;` RNF `;` DFNF)(simple))
+    (topDown(splitJoin(4)) `;` RNF `;` DFNF)(simple)
+    (topDown(tileND(1)(4)) `;` RNF `;` DFNF)(simple)
   }
 
   test("normalform actually normalizes") {

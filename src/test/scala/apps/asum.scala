@@ -5,29 +5,31 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core._
 import rise.core.types._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
-import rise.core.HighLevelConstructs.reorderWithStride
-import util.{gen, SyntaxChecker}
-
+import rise.core.primitives._
+import Type._
+import HighLevelConstructs.reorderWithStride
+import util.{SyntaxChecker, gen}
 import rise.elevate.rules.traversal.default._
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
+import util.gen.c.function
 
 import scala.util.Random
 
 //noinspection TypeAnnotation
 class asum extends test_util.TestsWithExecutor {
 
-  def inputT(n: NatIdentifier) = ArrayType(n, f32)
+  def inputT(n: Nat) = ArrayType(n, f32)
   val abs =
-    dtFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
+    depFun((t: DataType) => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
   val fabs = abs(f32)
   val add = fun(x => fun(a => x + a))
 
-  val high_level = nFun(n =>
+  val high_level = depFun((n: Nat) =>
     fun(inputT(n))(input => input |> map(fabs) |> reduceSeq(add)(l(0.0f)))
   )
 
   test("High level asum type inference works") {
-    val typed = infer(high_level)
+    val typed = high_level.toExpr
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
     assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N), f32))) {
@@ -37,14 +39,14 @@ class asum extends test_util.TestsWithExecutor {
 
   // C code gen
   test("High level asum compiles to syntactically correct C") {
-    gen.CProgram(high_level)
+    function.asStringFromExpr(high_level)
   }
 
   // OpenMP code gen
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
-    import rise.openMP.DSL._
+    import rise.openMP.primitives._
 
-    val intelDerivedNoWarp1 = nFun(n =>
+    val intelDerivedNoWarp1 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
         input |>
           split(32768) |>
@@ -60,15 +62,15 @@ class asum extends test_util.TestsWithExecutor {
       )
     )
 
-    gen.OpenMPProgram(intelDerivedNoWarp1)
+    gen.openmp.function.asStringFromExpr(intelDerivedNoWarp1)
   }
 
   test(
     "Second kernel of Intel derived compiles to syntactically correct OpenMP code"
   ) {
-    import rise.openMP.DSL._
+    import rise.openMP.primitives._
 
-    val intelDerived2 = nFun(n =>
+    val intelDerived2 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
         input |>
           split(2048) |>
@@ -78,15 +80,15 @@ class asum extends test_util.TestsWithExecutor {
       )
     )
 
-    gen.OpenMPProgram(intelDerived2)
+    gen.openmp.function.asStringFromExpr(intelDerived2)
   }
 
   test(
     "AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code"
   ) {
-    import rise.openMP.DSL._
+    import rise.openMP.primitives._
 
-    val amdNvidiaDerived2 = nFun(n =>
+    val amdNvidiaDerived2 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
         input |>
           split(8192) |>
@@ -94,7 +96,7 @@ class asum extends test_util.TestsWithExecutor {
             split(128) >>
               toMemFun(mapSeq(reduceSeq(add)(l(0.0f)))) >>
               iterate(6)(
-                nFun(_ =>
+                depFun((_: Nat) =>
                   split(2) >>
                     mapSeq(reduceSeq(add)(l(0.0f)))
                 )
@@ -103,11 +105,12 @@ class asum extends test_util.TestsWithExecutor {
       )
     )
 
-    gen.OpenMPProgram(amdNvidiaDerived2)
+    gen.openmp.function.asStringFromExpr(amdNvidiaDerived2)
   }
 
   { // OpenCL code gen
-    import rise.openCL.DSL._
+    import rise.openCL.TypedDSL._
+    import rise.openCL.primitives.{oclReduceSeq, oclIterate}
     import shine.OpenCL
 
     val random = new Random()
@@ -123,14 +126,13 @@ class asum extends test_util.TestsWithExecutor {
         globalSize: GlobalSize
     )(n: Int, input: Array[Float]): Array[Float] = {
       import shine.OpenCL._
-      val runKernel = gen
-        .OpenCLKernel(kernel)
-        .as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]
+      val k = gen.opencl.kernel.fromExpr(kernel)
+      val runKernel = k.as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]
       val (output, _) = runKernel(localSize, globalSize)(n `,` input)
       output
     }
 
-    val intelDerivedNoWarp1 = nFun(n =>
+    val intelDerivedNoWarp1 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
         input |>
           split(32768) |>
@@ -147,12 +149,11 @@ class asum extends test_util.TestsWithExecutor {
     )
 
     test("Intel derived no warp compiles to syntactically correct OpenCL code") {
-      val phrase = shine.DPIA.fromRise(infer(intelDerivedNoWarp1))
+      val phrase = shine.DPIA.fromRise(intelDerivedNoWarp1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("Intel derived no warp executes correctly") {
@@ -166,7 +167,7 @@ class asum extends test_util.TestsWithExecutor {
       assert(computeAsum(output) == gold)
     }
 
-    val intelDerived2 = nFun(n =>
+    val intelDerived2 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
         input |>
           split(2048) |>
@@ -179,12 +180,11 @@ class asum extends test_util.TestsWithExecutor {
     test(
       "Second kernel of Intel derived compiles to syntactically correct OpenCL code"
     ) {
-      val phrase = shine.DPIA.fromRise(infer(intelDerived2))
+      val phrase = shine.DPIA.fromRise(intelDerived2)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("Second kernel of Intel derived executes correctly") {
@@ -198,7 +198,7 @@ class asum extends test_util.TestsWithExecutor {
       assert(output.head == gold)
     }
 
-    val nvidiaDerived1 = nFun(n =>
+    val nvidiaDerived1 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
         input |>
           split(2048 * 128) |>
@@ -215,12 +215,11 @@ class asum extends test_util.TestsWithExecutor {
     )
 
     test("Nvidia kernel derived compiles to syntactically correct OpenCL code") {
-      val phrase = shine.DPIA.fromRise(infer(nvidiaDerived1))
+      val phrase = shine.DPIA.fromRise(nvidiaDerived1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("Nvidia kernel derived executes correctly") {
@@ -233,7 +232,7 @@ class asum extends test_util.TestsWithExecutor {
       assert(computeAsum(output) == gold)
     }
 
-    val amdNvidiaDerived2 = nFun(n =>
+    val amdNvidiaDerived2 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
         input |>
           split(8192) |>
@@ -244,7 +243,7 @@ class asum extends test_util.TestsWithExecutor {
               ) >>
               toLocalFun(
                 oclIterate(AddressSpace.Local)(6)(
-                  nFun(_ =>
+                  depFun((_: Nat) =>
                     split(2) >> mapLocal(
                       oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
                     )
@@ -258,12 +257,11 @@ class asum extends test_util.TestsWithExecutor {
     test(
       "AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code"
     ) {
-      val phrase = shine.DPIA.fromRise(infer(amdNvidiaDerived2))
+      val phrase = shine.DPIA.fromRise(amdNvidiaDerived2)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("AMD/Nvidia second kernel executes correctly") {
@@ -278,7 +276,7 @@ class asum extends test_util.TestsWithExecutor {
       assert(output.head == gold)
     }
 
-    val amdDerived1 = nFun(n =>
+    val amdDerived1 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
         input |>
           split(4096 * 128) |>
@@ -296,12 +294,11 @@ class asum extends test_util.TestsWithExecutor {
     )
 
     test("AMD kernel derived compiles to syntactically correct OpenCL code") {
-      val phrase = shine.DPIA.fromRise(infer(amdDerived1))
+      val phrase = shine.DPIA.fromRise(amdDerived1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
-        .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
+      println(code)
+      SyntaxChecker.checkOpenCL(code)
     }
 
     test("AMD kernel derived executes correctly") {

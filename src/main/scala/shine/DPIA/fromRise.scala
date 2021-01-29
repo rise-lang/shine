@@ -10,6 +10,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.primitives.functional._
 
 object fromRise {
   def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
@@ -62,7 +63,7 @@ object fromRise {
 
     case r.Literal(d) => d match {
       case rs.NatData(n) => Natural(n)
-      case rs.IndexData(i, n) => FunctionalPrimitives.NatAsIndex(n, Natural(i))
+      case rs.IndexData(i, n) => NatAsIndex(n, Natural(i))
       case _ => Literal(data(d))
     }
 
@@ -82,7 +83,7 @@ object fromRise {
   }
 
   import rise.core.{primitives => core}
-  import shine.DPIA.FunctionalPrimitives._
+  import shine.DPIA.primitives.functional._
 
   def fun[T <: PhraseType](
     t: T,
@@ -106,8 +107,8 @@ object fromRise {
                         t: PhraseType): Phrase[_ <: PhraseType] = {
     import rise.openCL.{primitives => ocl}
     import rise.openMP.{primitives => omp}
-    import shine.OpenCL.FunctionalPrimitives._
-    import shine.OpenMP.FunctionalPrimitives._
+    import shine.OpenCL.primitives.functional._
+    import shine.OpenMP.primitives.functional._
     import shine.DPIA.Types.MatchingDSL._
 
     def fromType(f: PartialFunction[PhraseType, Phrase[_ <: PhraseType]]): Phrase[_ <: PhraseType] = {
@@ -355,6 +356,18 @@ object fromRise {
                   SlideSeq(SlideSeq.Indices, n, sz, 1, s, t, load, e)))))
       }
 
+      case core.depTile() => fromType {
+        case nFunT(tile,
+          ((fa: ExpType) ->: (fb: ExpType)) ->:
+          (inT @ expT(ArrayType(m, s), `read`)) ->:
+          expT(ArrayType(n, t), `write`))
+        =>
+          depFun[NatKind](tile)(
+            fun[ExpType ->: ExpType](fa ->: fb, f =>
+              fun[ExpType](inT, e =>
+                DepTile(n, tile, m-n, s, t, f, e))))
+      }
+
       case core.rotateValues() => fromType {
         case nFunT(sz,
           (expT(s, `read`) ->: expT(_, `write`)) ->:
@@ -418,6 +431,16 @@ object fromRise {
         fun[ExpType](expT(m`.`idx(n), read), y =>
           fun[ExpType](expT(n`.`t, read), x =>
             Gather(n, m, t, y, x)))
+      }
+
+      case core.scatter() => fromType {
+        case expT(ArrayType(n, IndexType(m)), `read`) ->:
+          expT(ArrayType(_, t), `write`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType](expT(n`.`idx(m), read), y =>
+            fun[ExpType](expT(n`.`t, write), x =>
+              Scatter(n, m, t, y, x)))
       }
 
       case core.transpose() => fromType {
@@ -525,7 +548,7 @@ object fromRise {
           fun[ExpType](expT(s x t, a), e => MapSnd(a, s, t, t2, f, e)))
       }
 
-      case core.pair() => fromType {
+      case core.makePair() => fromType {
         case expT(s, a) ->:
           expT(t, _) ->:
           expT(PairType(_, _), _)
@@ -542,7 +565,7 @@ object fromRise {
         =>
         fun[ExpType](expT(idx(n), read), i =>
           fun[ExpType](expT(n`.`t, read), e =>
-            FunctionalPrimitives.Idx(n, t, i, e)))
+            Idx(n, t, i, e)))
       }
 
       case core.select() => fromType {
@@ -660,17 +683,17 @@ object fromRise {
         }
         val (inTs, outT) = collectTypes(t)
 
-        def buildFFPrimitive(args: Vector[Phrase[ExpType]]
+        def buildFFCall(args: Vector[Phrase[ExpType]]
                             ): Phrase[_ <: PhraseType] = {
           val i = args.length
           if (i < inTs.length) {
             fun[ExpType](ExpType(inTs(i), read), a =>
-              buildFFPrimitive(args :+ a))
+              buildFFCall(args :+ a))
           } else {
-            ForeignFunction(decl, inTs, outT, args)
+            ForeignFunctionCall(decl, inTs, outT, args)
           }
         }
-        buildFFPrimitive(Vector())
+        buildFFCall(Vector())
 
       case core.generate() => fromType {
         case (expT(IndexType(n), `read`) ->: expT(t, `read`)) ->:
@@ -788,7 +811,7 @@ object fromRise {
           )
       }
 
-      case core.dpair() => fromType {
+      case core.makeDepPair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }

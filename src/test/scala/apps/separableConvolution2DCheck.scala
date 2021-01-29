@@ -4,34 +4,38 @@ import separableConvolution2D._
 import rise.core._
 import rise.core.types._
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
-import rise.core.HighLevelConstructs._
+import rise.core.primitives._
+import Type._
+import HighLevelConstructs._
+import rise.core.DSL.ToBeTyped
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
+import util.gen.c.function
 
 class separableConvolution2DCheck extends test_util.Tests {
-  private def wrapExpr(e: Expr): Expr = {
+  private def wrapExpr(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
-    nFun(RangeAdd(3, PosInf, 1), h =>
-      nFun(RangeAdd(12, PosInf, 4), w =>
+    depFun(RangeAdd(3, PosInf, 1), (h: Nat) =>
+      depFun(RangeAdd(12, PosInf, 4), (w: Nat) =>
         fun(h`.`w`.`f32)(a => e(a))))
   }
 
   private val H = 20
   private val W = 80
 
-  private def checkC(e: Expr): Unit = {
+  private def checkC(e: ToBeTyped[Expr]): Unit = {
     val random = new scala.util.Random()
     val input = Array.fill(H, W)(random.nextFloat())
     val gold = computeGold(H, W, input, binomialWeights2d)
 
-    val prog = gen.CProgram(wrapExpr(e))
+    val compute = function("compute").asStringFromExpr(wrapExpr(e))
     val testCode =
       s"""
 #include <stdio.h>
 
-${prog.code}
+$compute
 
 int main(int argc, char** argv) {
   float input[$H * $W] = { ${input.flatten.mkString(", ")} };
@@ -39,7 +43,7 @@ int main(int argc, char** argv) {
   float gold[$H * $W] = { ${gold.flatten.mkString(", ")} };
 
   float output[$H * $W];
-  ${prog.function.name}(output, $H, $W, input);
+  compute(output, $H, $W, input);
 
   for (int i = 0; i < ($H * $W); i++) {
     float delta = gold[i] - output[i];
@@ -76,7 +80,7 @@ int main(int argc, char** argv) {
   private def checkOCL(
     localSize: LocalSize,
     globalSize: GlobalSize,
-    e: Expr
+    e: ToBeTyped[Expr]
   ): Unit = {
     import shine.OpenCL._
 
@@ -84,7 +88,7 @@ int main(int argc, char** argv) {
     val input = Array.fill(H, W)(random.nextFloat())
     val gold = computeGold(H, W, input, binomialWeights2d).flatten
 
-    val kernel = gen.OpenCLKernel(wrapExpr(e))
+    val kernel = gen.opencl.kernel.fromExpr(wrapExpr(e))
     val run = kernel.as[ScalaFunction `(`
       Int `,` Int `,` Array[Array[Float]]
       `)=>` Array[Float]]
@@ -118,21 +122,22 @@ int main(int argc, char** argv) {
   test(
     "register rotation binomial with unroll should contain no modulo or division"
   ) {
-    val id: Expr = fun(x => x)
+    val id = fun(x => x)
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
       rotateValues(3)(id) >>
       iterateStream(dotSeqUnroll(binomialWeightsH))
     )
-    val code = gen.CProgram(wrapExpr(e), "blur").code
+    val code = function.asStringFromExpr(wrapExpr(e))
     " % ".r.findAllIn(code).length shouldBe 0
     " / ".r.findAllIn(code).length shouldBe 0
   }
 
   // FIXME: code generation cannot evaluate index literal
   ignore("compiling OpenCL private arrays should unroll loops") {
-    import rise.openCL.DSL._
+    import rise.openCL.TypedDSL._
+    import rise.openCL.primitives.oclReduceSeq
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
@@ -143,7 +148,7 @@ int main(int argc, char** argv) {
       dotSeqPrivate(binomialWeightsH)
     ))
 
-    val code = gen.OpenCLKernel(wrapExpr(e), "blur").code
+    val code = gen.opencl.kernel.asStringFromExpr(wrapExpr(e))
     "for \\(".r.findAllIn(code).length shouldBe 2
   }
 }

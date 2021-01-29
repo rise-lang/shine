@@ -1,9 +1,10 @@
 package shine.DPIA.Semantics
 
 import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.types._
-
 import util.gen
+import util.gen.c.function
 
 class SplitSlide extends test_util.Tests {
 
@@ -16,7 +17,7 @@ class SplitSlide extends test_util.Tests {
       xs |> slide(sz)(sp) |> split(n) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
     )
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }
@@ -28,7 +29,7 @@ class SplitSlide extends test_util.Tests {
       )
     )
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }

@@ -1,10 +1,11 @@
 package rise.core
 
-import rise.core.TypedDSL._
-import rise.core.TypeLevelDSL._
+import rise.core.DSL._
+import Type._
 import rise.core.types._
 import rise.core.primitives._
 import util.Execute
+import util.gen.c.function
 
 class dependentTypes extends test_util.Tests {
   test("Infer int addition type") {
@@ -15,34 +16,43 @@ class dependentTypes extends test_util.Tests {
             n,
             n2dtFun(i => (i + 1) `.` f32)
           )
-        )(xs => xs |> depMapSeq(depFun((i: Nat) => fun(xs => mapSeq(fun(x => x))(xs::((i+1)`.`f32)))))
-      ))
-    val inferred: Expr = TDSL.infer(e)
+        )(xs => xs |> depMapSeq(depFun((i: Nat) => fun(xs => mapSeq(fun(x => x))(xs::((i+1)`.`f32))))))
+      )
+    val inferred: Expr = e.toExpr
     println(inferred)
     println(inferred.t)
+    assert(inferred.t ==
+      expl((n: Nat) => (n `*.`n2dtFun(i => (i + 1) `.` f32)) ->: (n `*.`n2dtFun(i => (i + 1) `.` f32)))
+    )
   }
 
   test("Dependent pair construct") {
     val e = depFun((n: Nat) =>
-      fun(n `.` f32)(xs => dpair(n)(mapSeq(fun(x => x))(xs)))
+      fun(n `.` f32)(xs => makeDepPair(n)(mapSeq(fun(x => x))(xs)))
     )
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = e.toExpr
     println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
+    println(inferred.t)
+    assert(inferred.t ==
+      expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
+    )
+    function.asStringFromExpr(inferred)
   }
 
   test("GEN: Dependent pair map increment") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((n:Nat) => fun(xs =>
-        dpair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
+        makeDepPair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
       ))))
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = e.toExpr
     println(inferred)
-    print(inferred.t)
+    println(inferred.t)
+    assert(inferred.t ==
+      ((Nat `**` (n => n`.`f32)) ->: (Nat `**` (m => m `.` f32)))
+    )
 
     val cFunName = "foo"
-    val cFun = util.gen.CProgram(inferred, cFunName)
+    val cFun = function(cFunName).asStringFromExpr(inferred)
 
     val testCode =
       s"""
@@ -50,7 +60,7 @@ class dependentTypes extends test_util.Tests {
          |#include<stdio.h>
          |#include<stdint.h>
          |
-         |${cFun.code}
+         |$cFun
          |
          |int main(int argc, char** argv) {
          |    const uint32_t x = 100;
@@ -89,11 +99,15 @@ class dependentTypes extends test_util.Tests {
         reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))(xs))
       ))
     )
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = e.toExpr
     println(inferred)
-    print(inferred.t)
+    println(inferred.t)
+    assert(inferred.t ==
+      ((Nat `**` (n => n`.`f32)) ->: f32)
+    )
+
     val cFunName = "foo"
-    val cFun = util.gen.CProgram(inferred, cFunName)
+    val cFun = function(cFunName).asStringFromExpr(inferred)
 
     val testCode =
       s"""
@@ -101,7 +115,7 @@ class dependentTypes extends test_util.Tests {
         |#include<stdio.h>
         |#include<stdint.h>
         |
-        | ${cFun.code}
+        | $cFun
         |
         |int main(int argc, char** argv) {
         |    const uint32_t x = 3;
@@ -133,10 +147,13 @@ class dependentTypes extends test_util.Tests {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((_:Nat) => fun(xs => mapSeq(fun(x => x))(take(5)(xs)))))
     )
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = e.toExpr
     println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
+    println(inferred.t)
+    assert(inferred.t ==
+      ((Nat `**` (n => n`.`f32)) ->: (5`.`f32))
+    )
+    function.asStringFromExpr(inferred)
   }
 
   test("Simple nested") {
@@ -144,10 +161,13 @@ class dependentTypes extends test_util.Tests {
         depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))(array)
       ))
 
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
+    println(inferred.t)
+    assert(inferred.t ==
+      expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => (m+1) `.` f32) ))
+    )
+    function.asStringFromExpr(inferred)
   }
 
   test("Simple reduce") {
@@ -155,10 +175,13 @@ class dependentTypes extends test_util.Tests {
       depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
     ))
 
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
-    print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
+    println(inferred.t)
+    assert(inferred.t ==
+      expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => f32) ))
+    )
+    function.asStringFromExpr(inferred)
   }
 
 
@@ -181,9 +204,9 @@ class dependentTypes extends test_util.Tests {
       }
     ))))
 
-    val inferred: Expr = TDSL.inferDependent(e)
+    val inferred: Expr = inferDependent(e)
     println(inferred)
     print(inferred.t)
-    util.gen.CProgram(inferred, "Foo_foo")
+    function.asStringFromExpr(inferred)
   }
 }

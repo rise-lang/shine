@@ -6,7 +6,7 @@ import elevate.core.strategies.basic._
 //import rise.core.IsClosedForm
 import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
-import rise.core.TypedDSL._
+import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
@@ -182,9 +182,9 @@ class tvmGemm extends test_util.Tests {
     // generate the C code
     val time2 = currentTimeSec
     val program = if(openMP) {
-      gen.OpenMPProgram(rewritten.get, version).code
+      gen.openmp.function(version).asStringFromExpr(rewritten.get)
     } else {
-      gen.CProgram(rewritten.get, version).code
+      gen.c.function(version).asStringFromExpr(rewritten.get)
     }
     val time3 = currentTimeSec
     println(s"[$versionUC] codegen time: ${time3 - time2}s")

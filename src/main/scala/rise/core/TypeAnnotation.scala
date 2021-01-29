@@ -8,5 +8,5 @@ case class TypeAnnotation(e: Expr, annotation: Type) extends Primitive {
     throw TypeException("cannot get the type scheme of an annotated Expr")
   override def setType(t: Type): TypeAnnotation =
     throw TypeException("cannot set the type of an annotated Expr")
-  override def name: String = s"Annotated Expr: $annotation"
+  override def name: String = s"$e: $annotation"
 }

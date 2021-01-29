@@ -1,19 +1,21 @@
 package shine.DPIA.Primitives
 
 import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.types._
+import util.gen.c.function
 import util.{Execute, gen}
 
 class Transpose extends test_util.Tests {
   test("Simple transpose should produce the expected result on a test") {
     def checkResult(e: rise.core.Expr) = {
-      val p = gen.CProgram(e)
+      val transposeFun = function("transpose").asStringFromExpr(e)
 
       val testCode =
         s"""
 #include <stdio.h>
 
-${p.code}
+$transposeFun
 
 int main(int argc, char** argv) {
   const int N = 6;
@@ -23,7 +25,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < (N * M); i++) { input[i] = i; }
 
   int output[M * N];
-  ${p.function.name}(output, N, M, input);
+  transpose(output, N, M, input);
 
   for (int i = 0; i < M; i++) {
     for (int j = 0; j < N; j++) {
@@ -44,19 +46,19 @@ int main(int argc, char** argv) {
       Execute(testCode)
     }
 
-    val gatherExp = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, int)))(a =>
+    val gatherExp = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, int)))(a =>
       a |> transpose |> mapSeq(mapSeq(fun(x => x)))
-    )))
-    val scatterExp = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, int)))(a =>
+    ))
+    val scatterExp = depFun((n: Nat, m: Nat) => fun(ArrayType(n, ArrayType(m, int)))(a =>
       a |> mapSeq(mapSeq(fun(x => x))) |> transpose
-    )))
+    ))
     checkResult(gatherExp)
     checkResult(scatterExp)
   }
 
 /* TODO
   test("'Type level transposition' with join->split (OpenCL 2D)") {
-    val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> join :>> split(m))))
+    val f = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> join :>> split(m))))
 
     val actualN = 9
     val actualM = 6
@@ -86,7 +88,7 @@ int main(int argc, char** argv) {
   }
 
   test("Transpose 2D array (OpenCL)") {
-    val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> transpose)))
+    val f = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> transpose)))
 
     val actualN = 9
     val actualM = 6
@@ -116,7 +118,7 @@ int main(int argc, char** argv) {
   }
 
   test("TransposeArrayDep (OpenCL)") {
-    val f = nFun(n => nFun(m => fun(ArrayType(n, DepArrayType(m, i => ArrayType(i + 1, float))))(xs => xs :>> transpose :>> depMapSeq(fun(x => x)))))
+    val f = depFun((n: Nat) => depFun((m: Nat) => fun(ArrayType(n, DepArrayType(m, i => ArrayType(i + 1, float))))(xs => xs :>> transpose :>> depMapSeq(fun(x => x)))))
 
     val actualN = 9
     val actualM = 6
