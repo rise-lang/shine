@@ -123,9 +123,15 @@ object parse {
       case "oclRotateValues" => SExpr(op.oclRotateValues.primitive)
 
       //openCL/TypedDSL //Todo: not sure if this with .toExpr is working. Test with nBody
-      case "toGlobal" => SExpr(dsl.toGlobal.toExpr)
-      case "toLocal" => SExpr(dsl.toLocal.toExpr)
-      case "toPrivate" => SExpr(dsl.toPrivate.toExpr)
+      case "toGlobal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
+        rt.AddressSpace.Global
+      )(rt.TypePlaceholder))
+      case "toLocal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
+        rt.AddressSpace.Local
+      )(rt.TypePlaceholder))
+      case "toPrivate" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
+        rt.AddressSpace.Private
+      )(rt.TypePlaceholder))
 
         //core/primitives
       case "makeArray" => SIntToPrimitive(rp.makeArray(_).primitive)
