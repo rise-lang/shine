@@ -5,7 +5,7 @@ import elevate.core.strategies.basic._
 import rise.elevate.rules.lowering.lowerToC
 import _root_.util.gen
 import elevate.core.strategies.traversal._
-import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D}
+import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D, zipND}
 import rise.core.DSL.{fun, l}
 import rise.core.primitives._
 import rise.core.types._
@@ -37,6 +37,7 @@ class gauss extends test_util.Tests {
   val N = 1024
   val M = 1024
 
+  val zip2D = zipND(2)
 
   val gauss: Rise = //infer(
     fun(ArrayType(N, ArrayType(M, f32)))(in =>
@@ -61,60 +62,66 @@ class gauss extends test_util.Tests {
     normalize.apply(fuseReduceMap `@` topDown[Rise])
 
   test("baseline") {
-    run("baseline",  lowerToC, openMP = false)
+    println("gauss: " + gauss)
+
+    val lowered = lowerToC.apply(gauss)
+    println("lowered: " + lowered)
+
+    val code = gen.openmp.function("riseFun").fromExpr(lowered.get)
+    println("code: " + code)
   }
 
   /// UTILS ////////////////////////////////////////////////////////////////////
 
-  def run(version: String,
-          strategy: Strategy[Rise],
-          openMP: Boolean // generate C or OpenMP code?
-         ): Unit = {
-
-    val generateFiles = false
-    val kernelsFolder: String = "/home/artifact/kernels"
-    val plotsFolder: String = "/home/artifact/results/fig10/steps"
-
-    def writeToFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
-      import java.io._
-      val w =new PrintWriter(new File(s"$path/$name$ending"))
-      w.write(content)
-      w.flush()
-      w.close()
-    }
-
-    def currentTimeSec: Long = System.currentTimeMillis / 1000
-
-    val versionUC = version.toUpperCase()
-    // reset rewrite step counter
-    Success.rewriteCount = 0
-
-    // rewrite the matmul input expresssion
-    val time0 = currentTimeSec
-    val rewritten = strategy(gauss)
-    val time1 = currentTimeSec
-    println(s"[$versionUC] rewrite time: ${time1 - time0}s")
-    if (generateFiles) {
-      val steps = Success.rewriteCount
-      println(s"[$versionUC] required rewrite steps: $steps\n")
-      writeToFile(plotsFolder, version, s"$version,$steps", ".csv")
-    }
-
-    // generate the C code
-    val time2 = currentTimeSec
-    val program = if(openMP) {
-      gen.OpenMPProgram(rewritten.get, version).code
-    } else {
-      gen.CProgram(rewritten.get, version).code
-    }
-    val time3 = currentTimeSec
-    println(s"[$versionUC] codegen time: ${time3 - time2}s")
-    println(s"Program:\n${program}")
-
-    // store the C code
-    if (generateFiles) {
-      println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
-      writeToFile(kernelsFolder, version, program)
-    }
-  }
+//  def run(version: String,
+//          strategy: Strategy[Rise],
+//          openMP: Boolean // generate C or OpenMP code?
+//         ): Unit = {
+//
+//    val generateFiles = false
+//    val kernelsFolder: String = "/home/artifact/kernels"
+//    val plotsFolder: String = "/home/artifact/results/fig10/steps"
+//
+//    def writeToFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
+//      import java.io._
+//      val w =new PrintWriter(new File(s"$path/$name$ending"))
+//      w.write(content)
+//      w.flush()
+//      w.close()
+//    }
+//
+//    def currentTimeSec: Long = System.currentTimeMillis / 1000
+//
+//    val versionUC = version.toUpperCase()
+//    // reset rewrite step counter
+//    Success.rewriteCount = 0
+//
+//    // rewrite the matmul input expresssion
+//    val time0 = currentTimeSec
+//    val rewritten = strategy(gauss)
+//    val time1 = currentTimeSec
+//    println(s"[$versionUC] rewrite time: ${time1 - time0}s")
+//    if (generateFiles) {
+//      val steps = Success.rewriteCount
+//      println(s"[$versionUC] required rewrite steps: $steps\n")
+//      writeToFile(plotsFolder, version, s"$version,$steps", ".csv")
+//    }
+//
+//    // generate the C code
+//    val time2 = currentTimeSec
+//    val program = if(openMP) {
+////      gen.OpenMPProgram(rewritten.get, version).code
+//    } else {
+////      gen.CProgram(rewritten.get, version).code
+//    }
+//    val time3 = currentTimeSec
+//    println(s"[$versionUC] codegen time: ${time3 - time2}s")
+//    println(s"Program:\n${program}")
+//
+//    // store the C code
+//    if (generateFiles) {
+//      println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
+//      writeToFile(kernelsFolder, version, program)
+//    }
+//  }
 }
