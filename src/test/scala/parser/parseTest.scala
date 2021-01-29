@@ -1102,7 +1102,7 @@ class parseTest extends  AnyFlatSpec {
       ))
       ))),
       r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id"))), r.App(r.Identifier("generate"),
-      r.DepApp(rp.vectorFromScalar(), r.Literal(rS.IntData(0))))))),
+      r.DepApp(rp.vectorFromScalar(), r.Literal(rS.IntData(0))))))), //probably has the 0 of the Type Nat
 
       r.App(r.App(rp.split(), r.Literal(rS.IntData(1))), r.App(r.DepApp(rp.split(), r.Literal(rS.IntData(256))),
       r.Identifier("pos"))))
@@ -1111,7 +1111,7 @@ class parseTest extends  AnyFlatSpec {
       ),r.DepApp(rp.split(), r.Literal(rS.IntData(256)))
       ))
       ),
-      r.App(r.App(rp.split(), r.Identifier("n")), r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel")))
+      r.App(r.DepApp(rp.split(), rt.TypeIdentifier("N")), r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel")))
       ))
       ))))))
         if n.name.equals("N")
@@ -1208,7 +1208,7 @@ class parseTest extends  AnyFlatSpec {
                 ,r.App(rp.split.primitive, r.Literal(rS.IntData(256)))(rt.TypePlaceholder)
               )(rt.TypePlaceholder))(rt.TypePlaceholder)
             )(rt.TypePlaceholder),
-              r.App(r.App(rp.split.primitive, r.Identifier("n")(rt.TypePlaceholder))(rt.TypePlaceholder),
+              r.App(r.DepApp[rt.NatKind](rp.split.primitive, rt.NatIdentifier("N"))(rt.TypePlaceholder),
                 r.App(r.App(rp.zip.primitive, r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder),
                   r.Identifier("vel")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
             )(rt.TypePlaceholder))(rt.TypePlaceholder)

@@ -2,7 +2,7 @@ package parser //old branch 17. Dezember 2020
 
 import rise.core.{Lambda, primitives => rp, semantics => rS, types => rt}
 import rise.{core => r, openCL => o}
-import o.{primitives => op, TypedDSL => dsl}
+import o.{primitives => op}
 
 import scala.collection.mutable
 
@@ -207,9 +207,29 @@ object parse {
     nextToken match {
       case Identifier(name, _) => {
         matchPrimitiveOrIdentifier(name) match {
-          case SIntToPrimitive(prim) =>  Left(ParseState(remainderTokens, SIntToPrimitive(prim) :: parsedSynElems, map,
+          case SIntToPrimitive(prim) => Left(ParseState(remainderTokens, SIntToPrimitive(prim) :: parsedSynElems, map,
             mapDepL))
-          case SExpr(prim) =>  Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems, map, mapDepL))
+          case SExpr(prim) => prim match {
+            case rp.split() => {
+              if (remainderTokens.nonEmpty) {
+                val length :: remainderTokens2 = remainderTokens
+                length match {
+                  case NatNumber(n, _) => Left(ParseState(remainderTokens2, SExpr(rp.split(n)) :: parsedSynElems, map, mapDepL))
+                  case TypeIdentifier(t,_) => Left(ParseState(remainderTokens2, SExpr(r.DepApp[rt.NatKind](rp.split.primitive, rt.NatIdentifier(t))(rt.TypePlaceholder) ):: parsedSynElems, map, mapDepL))
+                  case other => {
+//                    throw new IllegalStateException("please delete this error")
+                    Right(ParseError("split expects a lenght as Nat, but " + other + " is not a correct lenght"))
+                  }
+                }
+              } else {
+//                throw new IllegalStateException("please delete this error2")
+                Right(ParseError("split has no length"))
+              }
+            }
+            case _ => {
+              Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems, map, mapDepL))
+            }
+          }
           case otherSyntaxElement => throw new IllegalStateException("The Syntax Element '" + otherSyntaxElement +
             "' was not expected from matchPrimitiveOrIdentifer")
         }
@@ -1004,7 +1024,7 @@ object parse {
     Left(parseState) |>
       (parseLambda _ || parseDepLambda || parseBracesExpr ||
         parseUnOperator || parseBinOperator || parseIdent ||
-        parseNumber || parseAddrSpaceType || parseTypeinNoAppExpr//|| parseDependencies
+        parseNumber || parseAddrSpaceType || parseTypeinNoAppExpr|| parseNat //|| parseDependencies
         )
 
   }
