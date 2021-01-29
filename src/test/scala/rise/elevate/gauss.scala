@@ -2,11 +2,11 @@ package rise.elevate
 
 import elevate.core._
 import elevate.core.strategies.basic._
-import rise.core.HighLevelConstructs.{padClamp2D, slide2D}
 import rise.elevate.rules.lowering.lowerToC
 import _root_.util.gen
 import elevate.core.strategies.traversal._
-import rise.core.TypedDSL._
+import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D}
+import rise.core.DSL.{fun, l}
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
