@@ -1116,6 +1116,128 @@ class parseTest extends  AnyFlatSpec {
       ))))))
         if n.name.equals("N")
       => true
+          case r.DepLambda(n: rt.NatIdentifier,
+          r.Lambda(r.Identifier("pos"), r.Lambda(r.Identifier("vel"),
+                    r.Lambda(r.Identifier("espSqr"), r.Lambda(r.Identifier("deltaT"),
+          r.App(rp.join(), r.App(rp.join(), r.App(r.App(op.mapWorkGroup(1),r.App(rp.join(), r.App(
+          r.App(op.mapWorkGroup(0),
+
+
+          r.Lambda(r.Identifier("p1Chunk"), r.Lambda(r.Identifier("newP1Chunk"),
+          r.App(r.App(r.App(op.mapLocal(1),
+
+          r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0), r.Lambda(r.Identifier("p1A"),
+          r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(), r.App(rp.fst(), r.Identifier("p1A")))),
+          r.App(rp.fst(), r.App(rp.snd(), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(), r.Identifier("p1A"))))),
+          r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
+
+          ),
+          r.App(r.App(r.DepApp(op.oclReduceSeq(), l:rt.AddressSpace.Local.type ),
+          r.Lambda(r.Identifier("accA"), r.Lambda(r.Identifier("p2A"),
+
+          r.App(r.App(rp.let(), r.App(r.App(r.DepApp(op.oclToMem(),
+          l1:rt.AddressSpace.Local.type
+          ), r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id")))),
+          r.Identifier("p2A")
+          )),
+          rest)))),rest2)),rest3)))),rest4))),rest5))
+//////          r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1), r.Lambda(r.Identifier("accDim"),r.App(r.App(op.mapLocal(0),
+//////          r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(), p:rt.AddressSpace.Private.type ),
+//////
+//////          r.Lambda(r.Identifier("accB"), r.Lambda(r.Identifier("p2B"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"), r.App(rp.fst(),
+//////          r.App(rp.fst(), r.Identifier("p1B")))),
+//////          r.Identifier("p2B")), r.Identifier("deltaT")), r.Identifier("espSqr")), r.Identifier("accB")))
+//////
+//////          )), r.App(rp.snd(), r.Identifier("p1B"))), r.App(rp.fst(), r.Identifier("accDim2")))))
+//////          , r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.App(rp.snd(), r.App(rp.snd(), r.Identifier("accDim"))))
+//////          ))),r.App(r.App(rp.zip(), r.Identifier("p2Local")), r.Identifier("accA")))
+//////
+//////          )
+////
+////          )
+////          ))),
+////          r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id"))), r.App(r.Identifier("generate"),
+////          r.DepApp(rp.vectorFromScalar(), r.Literal(rS.IntData(0))))))), //probably has the 0 of the Type Nat
+////
+////          r.App(r.App(rp.split(), r.Literal(rS.IntData(1))), r.App(r.DepApp(rp.split(), r.Literal(rS.IntData(256))),
+////          r.Identifier("pos"))))
+////          ))
+//
+//          ),r.DepApp(rp.split(), r.Literal(rS.IntData(256)))
+//          ))
+//          ),
+//          r.App(r.DepApp(rp.split(), rt.TypeIdentifier("N")), r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel")))
+//
+//          ))
+          )))
+
+
+                    ))
+
+          )
+          => fail("almost: " + rest)
+      case r.DepLambda(n: rt.NatIdentifier,
+      r.Lambda(r.Identifier("pos"), r.Lambda(r.Identifier("vel"),
+      r.Lambda(r.Identifier("espSqr"), r.Lambda(r.Identifier("deltaT"),
+      r.App(rp.join(), r.App(rp.join(), r.App(r.App(op.mapWorkGroup(1),r.App(rp.join(), r.App(
+      r.App(op.mapWorkGroup(0),
+
+
+      r.Lambda(r.Identifier("p1Chunk"), r.Lambda(r.Identifier("newP1Chunk"),
+      r.App(r.App(r.App(op.mapLocal(1),
+
+      r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0), r.Lambda(r.Identifier("p1A"),
+      r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(), r.App(rp.fst(), r.Identifier("p1A")))),
+      r.App(rp.fst(), r.App(rp.snd(), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(), r.Identifier("p1A"))))),
+      r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
+
+      ),
+      r.App(rest
+//      r.App(r.DepApp(op.oclReduceSeq(), l:rt.AddressSpace.Local.type ),
+//      r.Lambda(r.Identifier("accA"), r.Lambda(r.Identifier("p2A"),
+//
+//      r.App(r.App(rp.let(), r.App(r.App(r.DepApp(op.oclToMem(),
+//      l1:rt.AddressSpace.Local.type
+//      ), r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id")))),
+//      r.Identifier("p2A")
+//      )),
+//      rest))))
+      ,rest2)),rest3)))),rest4))),rest5))
+      //////          r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1), r.Lambda(r.Identifier("accDim"),r.App(r.App(op.mapLocal(0),
+      //////          r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(), p:rt.AddressSpace.Private.type ),
+      //////
+      //////          r.Lambda(r.Identifier("accB"), r.Lambda(r.Identifier("p2B"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"), r.App(rp.fst(),
+      //////          r.App(rp.fst(), r.Identifier("p1B")))),
+      //////          r.Identifier("p2B")), r.Identifier("deltaT")), r.Identifier("espSqr")), r.Identifier("accB")))
+      //////
+      //////          )), r.App(rp.snd(), r.Identifier("p1B"))), r.App(rp.fst(), r.Identifier("accDim2")))))
+      //////          , r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.App(rp.snd(), r.App(rp.snd(), r.Identifier("accDim"))))
+      //////          ))),r.App(r.App(rp.zip(), r.Identifier("p2Local")), r.Identifier("accA")))
+      //////
+      //////          )
+      ////
+      ////          )
+      ////          ))),
+      ////          r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id"))), r.App(r.Identifier("generate"),
+      ////          r.DepApp(rp.vectorFromScalar(), r.Literal(rS.IntData(0))))))), //probably has the 0 of the Type Nat
+      ////
+      ////          r.App(r.App(rp.split(), r.Literal(rS.IntData(1))), r.App(r.DepApp(rp.split(), r.Literal(rS.IntData(256))),
+      ////          r.Identifier("pos"))))
+      ////          ))
+      //
+      //          ),r.DepApp(rp.split(), r.Literal(rS.IntData(256)))
+      //          ))
+      //          ),
+      //          r.App(r.DepApp(rp.split(), rt.TypeIdentifier("N")), r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel")))
+      //
+      //          ))
+      )))
+
+
+      ))
+
+      )
+      => fail("almost2: " + rest)
       case r.DepLambda(n, e) => {
         print_nbody()
         fail("Not correct deplambda: "
