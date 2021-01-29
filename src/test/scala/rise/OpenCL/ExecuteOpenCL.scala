@@ -3,15 +3,16 @@ package rise.OpenCL
 import shine.OpenCL._
 import rise.core._
 import rise.core.DSL._
+import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.DSL._
+import rise.openCL.TypedDSL._
 import util.gen
 
 import scala.language.{postfixOps, reflectiveCalls}
 
 class ExecuteOpenCL extends test_util.TestsWithExecutor {
   test("Running a simple kernel with generic input size") {
-    val f: Expr = nFun(n => fun(ArrayType(n, int))(
+    val f: ToBeTyped[Expr] = depFun((n: Nat) => fun(ArrayType(n, int))(
       xs => xs |> mapSeq(fun(x => x + l(1)))))
 
     val kernel = gen.OpenCLKernel(f)
@@ -45,8 +46,8 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
 
   test("Running a simple kernel with nat-dependent split") {
     val n = 8
-    val f: Expr = fun(ArrayType(n, int))(
-      xs => nFun(s => xs |> split(s) |> mapSeq(mapSeq(fun(x => x + l(1)))) |> join))
+    val f: ToBeTyped[Expr] = fun(ArrayType(n, int))(xs => depFun((s: Nat) =>
+      xs |> split(s) |> mapSeq(mapSeq(fun(x => x + l(1)))) |> join))
 
     val kernel = gen.OpenCLKernel(f)
 
@@ -62,8 +63,9 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
   test("Running a simple kernel with multiple generic input sizes") {
     val m = 4
     val n = 8
-    val f: Expr = nFun(m => nFun(n => fun(ArrayType(m, ArrayType(n, int)))(xs =>
-      xs |> mapSeq(mapSeq(fun(x => x + l(1)))))))
+    val f: ToBeTyped[Expr] = depFun((m: Nat, n: Nat) =>
+      fun(ArrayType(m, ArrayType(n, int)))(xs =>
+        xs |> mapSeq(mapSeq(fun(x => x + l(1))))))
 
     val kernel = gen.OpenCLKernel(f)
 
@@ -80,7 +82,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
   test("Running a simple kernel mixing nat-dependent with normal functions") {
     val n = 8
     val s = 2
-    val f: Expr = nFun(n => fun(ArrayType(n, int))(xs => nFun(s =>
+    val f: Expr = depFun((n: Nat) => fun(ArrayType(n, int))(xs => depFun((s: Nat) =>
       xs |> split(s) |> mapSeq(mapSeq(fun(x => x + l(1)))) |> join)))
 
     val kernel = gen.OpenCLKernel(f)

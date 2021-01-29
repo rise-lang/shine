@@ -355,6 +355,18 @@ object fromRise {
                   SlideSeq(SlideSeq.Indices, n, sz, 1, s, t, load, e)))))
       }
 
+      case core.depTile() => fromType {
+        case nFunT(tile,
+          ((fa: ExpType) ->: (fb: ExpType)) ->:
+          (inT @ expT(ArrayType(m, s), `read`)) ->:
+          expT(ArrayType(n, t), `write`))
+        =>
+          depFun[NatKind](tile)(
+            fun[ExpType ->: ExpType](fa ->: fb, f =>
+              fun[ExpType](inT, e =>
+                DepTile(n, tile, m-n, s, t, f, e))))
+      }
+
       case core.rotateValues() => fromType {
         case nFunT(sz,
           (expT(s, `read`) ->: expT(_, `write`)) ->:
@@ -418,6 +430,16 @@ object fromRise {
         fun[ExpType](expT(m`.`idx(n), read), y =>
           fun[ExpType](expT(n`.`t, read), x =>
             Gather(n, m, t, y, x)))
+      }
+
+      case core.scatter() => fromType {
+        case expT(ArrayType(n, IndexType(m)), `read`) ->:
+          expT(ArrayType(_, t), `write`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType](expT(n`.`idx(m), read), y =>
+            fun[ExpType](expT(n`.`t, write), x =>
+              Scatter(n, m, t, y, x)))
       }
 
       case core.transpose() => fromType {
@@ -525,7 +547,7 @@ object fromRise {
           fun[ExpType](expT(s x t, a), e => MapSnd(a, s, t, t2, f, e)))
       }
 
-      case core.pair() => fromType {
+      case core.makePair() => fromType {
         case expT(s, a) ->:
           expT(t, _) ->:
           expT(PairType(_, _), _)
@@ -788,7 +810,7 @@ object fromRise {
           )
       }
 
-      case core.dpair() => fromType {
+      case core.makeDepPair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MkDPair(a, fst, sndT, snd)))
       }

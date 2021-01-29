@@ -143,7 +143,7 @@ final case class DepArrayType(size: Nat, fdt: NatToData) extends DataType {
 
 object DepArrayType {
   def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
+    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1), isExplicit = true)
     DepArrayType(size, NatToDataLambda(n, f(n)))
   }
 }

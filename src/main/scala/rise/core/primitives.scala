@@ -1,7 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.BigSum
-import rise.core.TypeLevelDSL._
+import rise.core.DSL.Type._
 import rise.core.types._
 import rise.macros.Primitive.primitive
 
@@ -57,6 +57,12 @@ object primitives {
       (m`.`IndexType(n)) ->: (n`.`t) ->: (m`.`t)  }}}
   }
 
+  @primitive object scatter extends Primitive with Builder {
+    impl{ n: Nat => impl{ m: Nat => impl { t: DataType =>
+      (n `.` IndexType(m)) ->: (n `.` t) ->: (m `.` t)
+    }}}
+  }
+
   @primitive object generate extends Primitive with Builder {
     impl{ n: Nat => impl{ t: DataType =>
       (IndexType(n) ->: t) ->: ArrayType(n, t) }}
@@ -84,6 +90,12 @@ object primitives {
   @primitive object join extends Primitive with Builder {
     impl{ n: Nat => impl{ m: Nat => impl{ t: DataType =>
       (n`.`m`.`t) ->: ((n * m)`.`t) }}}
+  }
+
+  @primitive object concat extends Primitive with Builder {
+    impl{ n: Nat => impl{ m: Nat => impl{ t: DataType =>
+      (n`.`t) ->: (m`.`t) ->: ((n + m)`.`t)
+    }}}
   }
 
   @primitive object let extends Primitive with Builder {
@@ -163,12 +175,12 @@ object primitives {
           (n`.`dt) ->: (m`*.`(i => lenF(i)`.`dt))))}}
   }
 
-  @primitive object pair extends Primitive with Builder {
+  @primitive object makePair extends Primitive with Builder {
     impl{ s: DataType => impl{ t: DataType =>
       s ->: t ->: (s x t) }}
   }
 
-  @primitive object dpair extends Primitive with Builder {
+  @primitive object makeDepPair extends Primitive with Builder {
     impl{ fdt: NatToData => expl((n: Nat) =>
       fdt(n) ->: (Nat `**` (fdt(_))))}
   }
@@ -208,6 +220,39 @@ object primitives {
   @primitive object slide extends Primitive with Builder {
     impl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
       ((sp * n + sz) `.` t) ->: ((1 + n) `.` sz `.` t) }))}
+  }
+
+  @primitive object depSlide extends Primitive with Builder {
+    expl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
+      import arithexpr.arithmetic.IfThenElse
+      import arithexpr.arithmetic.BoolExpr.arithPredicate
+      import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
+
+      val halo = sz - sp
+      val allWindows = (n - halo + sp - 1) / sp
+      val fullWindows = (n - halo) / sp
+      val remainder = (n - halo) % sp
+      (n `.` t) ->: (allWindows`*.`(i =>
+        (IfThenElse(arithPredicate(i, fullWindows, Operator.<), sp, remainder) + halo) `.` t))
+    }))}
+  }
+
+  @primitive object depTile extends Primitive with Builder {
+    impl{ n: Nat => expl((tile: Nat) => impl{ halo: Nat =>
+    impl{ s: DataType => impl{ t: DataType =>
+      import arithexpr.arithmetic.IfThenElse
+      import arithexpr.arithmetic.BoolExpr.arithPredicate
+      import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
+
+      val allTiles = (n + tile - 1) / tile
+      val fullTiles = n / tile
+      val remainder = n % tile
+      def depSize(i: Nat) =
+        IfThenElse(arithPredicate(i, fullTiles, Operator.<), tile, remainder)
+      ((allTiles `*.` (i => (depSize(i) + halo) `.` s)) ->:
+        (allTiles `*.` (i => (depSize(i) `.` t)))) ->:
+        ((n + halo) `.` s) ->: (n `.` t)
+    }}})}
   }
 
   @primitive object circularBuffer extends Primitive with Builder {
@@ -307,11 +352,11 @@ object primitives {
   }
 
   @primitive case class printType(msg: String = "") extends Primitive with Builder {
-    impl{ t: DataType => t ->: t }
+    impl{ t: TypeIdentifier => t ->: t }
   }
 
   @primitive case class typeHole(msg: String = "") extends Primitive with Builder {
-    impl{ t: DataType => t }
+    impl{ t: TypeIdentifier => t }
   }
 }
 // scalastyle:on number.of.methods

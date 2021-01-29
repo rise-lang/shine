@@ -1,10 +1,11 @@
 package apps
 
 import rise.core.DSL._
-import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import Type._
 import rise.core.types._
 import util.gen
-import rise.core.HighLevelConstructs.reorderWithStride
+import HighLevelConstructs.reorderWithStride
 
 //noinspection TypeAnnotation
 class gemv extends test_util.Tests {
@@ -14,96 +15,93 @@ class gemv extends test_util.Tests {
   val add = fun(x => fun(y => x + y))
   val scal = impl { n: Nat =>
     fun(xs => fun(a =>
-      mapSeq(fun(x => a * x), xs)
+      mapSeq(fun(x => a * x))(xs)
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
   }
   val dot = fun(xs => fun(ys =>
-    zip(xs, ys) |> toMemFun(mapSeq(mult)) |> reduceSeq(add, l(0.0f))
+    zip(xs)(ys) |> toMemFun(mapSeq(mult)) |> reduceSeq(add)(l(0.0f))
   ))
 
-  val high_level = nFun((n, m) => fun(
+  val high_level = depFun((n: Nat, m: Nat) => fun(
     (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
-    toMem(zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta))) |>
+    toMem(zip(mapSeq(fun(row => alpha * dot(row, xs)))(mat))(scal(ys, beta))) |>
       mapSeq(fun(x => x._1 + x._2))
   ))
 
   object ocl {
-    import rise.openCL.DSL._
+    import rise.openCL.TypedDSL._
 
-    val fullMatrixVectorFusedOpenCL = nFun((n, m) => fun(
+    val fullMatrixVectorFusedOpenCL = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
-      zip(mat, ys) |>
+      zip(mat)(ys) |>
       mapWorkGroup(fun(t =>
-        zip(xs, t._1) |>
+        zip(xs)(t._1) |>
         split(n) |>
         toLocalFun(mapLocal(
-          reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f))
+          reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
         )) |>
         mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
-      )) |>
-      join
+      )) |> join
     ))
 
-    val fullMatrixVectorFusedOpenCLAMD = nFun((n, m) => fun(
+    val fullMatrixVectorFusedOpenCLAMD = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->: (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
-      zip(mat, ys) |>
+      zip(mat)(ys) |>
       mapWorkGroup(fun(t =>
-        zip(xs, t._1) |>
+        zip(xs)(t._1) |>
         reorderWithStride(128) |>
         split(n /^ 128) |>
         toLocalFun(mapLocal(
-          reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f))
+          reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
         )) |>
         split(128) |>
-        toLocalFun(mapLocal(reduceSeq(add, l(0.0f)))) |>
+        toLocalFun(mapLocal(reduceSeq(add)(l(0.0f)))) |>
         mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
-      )) |>
-      join
+      )) |> join
     ))
 
-    val keplerBest = nFun((n, m) => fun(
+    val keplerBest = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
-      zip(mat, ys) |>
+      zip(mat)(ys) |>
       mapWorkGroup(fun(t =>
-        zip(xs, t._1) |>
+      zip(xs)(t._1) |>
         reorderWithStride(128) |>
         split(n /^ 128) |>
         toLocalFun(mapLocal(
-          reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f))
+          reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
         )) |>
-        toLocalFun(reduceSeq(add, l(0.0f))) |>
+        toLocalFun(reduceSeq(add)(l(0.0f))) |>
         fun(x => (alpha * x) + (t._2 * beta))
       ))
     ))
   }
 
   object omp {
-    import rise.openMP.DSL._
+    import rise.openMP.primitives._
 
-    val fullMatrixVectorFusedOpenMP = nFun((n, m) => fun(
+    val fullMatrixVectorFusedOpenMP = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
-      zip(mat, ys) |>
+      zip(mat)(ys) |>
       mapPar(fun(t =>
-        zip(xs, t._1) |>
+      zip(xs)(t._1) |>
         split(n) |>
-        toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f)))) |>
+        toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f)))) |>
         mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
-      )) |>
-      join
+      )) |> join
     ))
   }
 
   test("High level gemv type inference works") {
-    val typed = infer(high_level)
+    val typed = high_level.toExpr
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
     val M = typed.t
@@ -125,13 +123,13 @@ class gemv extends test_util.Tests {
   }
 
   test("OpenCL gemv versions type inference works") {
-    infer(ocl.fullMatrixVectorFusedOpenCL)
-    infer(ocl.fullMatrixVectorFusedOpenCLAMD)
-    infer(ocl.keplerBest)
+    ocl.fullMatrixVectorFusedOpenCL.toExpr
+    ocl.fullMatrixVectorFusedOpenCLAMD.toExpr
+    ocl.keplerBest.toExpr
   }
 
   test("OpenMP gemv versions type inference works") {
-    infer(omp.fullMatrixVectorFusedOpenMP)
+    omp.fullMatrixVectorFusedOpenMP.toExpr
   }
 
   test("OpenMP gemv versions compiles to syntactically correct OpenMP") {

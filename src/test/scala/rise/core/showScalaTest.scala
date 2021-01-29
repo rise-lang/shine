@@ -1,22 +1,24 @@
 package rise.core
 
-import rise.core.types._
 import rise.core.DSL._
-import rise.openCL.DSL._
+import rise.core.primitives._
+import rise.core.types._
+import rise.openCL.primitives.oclReduceSeqUnroll
 
 class showScalaTest extends test_util.Tests {
   def prefixImports(code: String): String =
     s"""
-      |import rise.core._
-      |import rise.core.types._
-      |import rise.core.semantics._
-      |import rise.core.DSL._
-      |import rise.openCL.DSL._
-      |import AddressSpace._
-      |import arithexpr.arithmetic._
-      |
-      |$code
-      |""".stripMargin
+       |import rise.core._
+       |import rise.core.types._
+       |import rise.core.semantics._
+       |import rise.core.primitives._
+       |import rise.openCL.TypedDSL._
+       |import rise.openCL.primitives.oclReduceSeqUnroll
+       |import AddressSpace._
+       |import arithexpr.arithmetic._
+       |
+       |$code
+       |""".stripMargin
 
   private val dotElemWeights = fun((weights, elem) =>
     oclReduceSeqUnroll(AddressSpace.Private)(fun((acc, pair) => {
@@ -30,7 +32,7 @@ class showScalaTest extends test_util.Tests {
     import scala.reflect.runtime.universe
     import scala.tools.reflect.ToolBox
 
-    val typedDotElemWeights = infer(dotElemWeights)
+    val typedDotElemWeights = dotElemWeights.toExpr
 
     val untypedScala = prefixImports(showScala.expr(dotElemWeights))
     val typedScala = prefixImports(showScala.expr(typedDotElemWeights))
@@ -45,7 +47,7 @@ class showScalaTest extends test_util.Tests {
     println(expr)
     println(typedExpr)
 
-    assert(expr == dotElemWeights)
+    assert(expr == dotElemWeights.toUntypedExpr)
     assert(typedExpr == typedDotElemWeights)
   }
 }
