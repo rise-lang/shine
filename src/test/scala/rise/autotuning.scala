@@ -27,8 +27,19 @@ class autotuning extends test_util.Tests {
 
   test("collect parameters") {
     val params = autotune.collectParameters(convolution)
+
     assert(params.find(_.name == "vec").get.range == RangeUnknown)
     assert(params.find(_.name == "tile").get.range == RangeAdd(4, 32, NamedVar("vec")))
     assert(params.size == 2)
+  }
+
+  test("generateJSON"){
+    // throws exception
+    val json = autotune.generateJSON(autotune.collectParameters(convolution))
+
+    // create gold
+    // check against gold
+
+    println("json: \n" + json)
   }
 }
