@@ -38,23 +38,36 @@ class gauss extends test_util.Tests {
   val M = 1024
 
   val zip2D = zipND(2)
+  val mulPair = fun(pair => fst(pair) * snd(pair))
 
-  val gauss: Rise = //infer(
+  val gauss: Rise = { //infer(
     fun(ArrayType(N, ArrayType(M, f32)))(in =>
       fun(ArrayType(5, ArrayType(5, f32)))(weights =>
         in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
           |> slide2D(5,2) // -> MxN of 5x5 slides
           |> map(map(fun(sector => // sector:5x5
-            zip(sector)(weights) //(v,w)
-            |> map(fun(rowPair =>
-              zip(fst(rowPair))(snd(rowPair))
-              |> map(fun(pair =>
-                fst(pair) * snd(pair)
-              )) |> reduce(add)(l(0.0f))
-            )) |> reduce(add)(l(0.0f))
+            zip2D(sector, weights)
+            |> map(
+              map(mulPair) |> reduce(add)(l(0.0f))
+            ) |> reduce(add)(l(0.0f))
         )))
       )
     )
+/*
+  fun(ArrayType(N, ArrayType(M, f32)))(in =>
+    fun(ArrayType(5, ArrayType(5, f32)))(weights =>
+      in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
+        |> slide2D(5,2) // -> MxN of 5x5 slides
+        |> map(map(fun(sector => // sector:5x5
+        zip(sector)(weights) //(v,w)
+          |> map(fun(rowPair =>
+          zip(fst(rowPair))(snd(rowPair))
+            |> map(mulPair) |> reduce(add)(l(0.0f))
+        )) |> reduce(add)(l(0.0f))
+      )))
+    )
+  )
+*/
 
   // -- BASELINE ---------------------------------------------------------------
 
