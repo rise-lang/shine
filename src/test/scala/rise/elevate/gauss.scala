@@ -46,10 +46,7 @@ class gauss extends test_util.Tests {
         in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
           |> slide2D(5,2) // -> MxN of 5x5 slides
           |> map(map(fun(sector => // sector:5x5
-            zip2D(sector, weights)
-            |> map(
-              map(mulPair) |> reduce(add)(l(0.0f))
-            ) |> reduce(add)(l(0.0f))
+            zip2D(sector, weights) |> join |> map(mulPair) |> reduce(add)(l(0.0))
         )))
       )
     )
