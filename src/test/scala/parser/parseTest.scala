@@ -1085,7 +1085,7 @@ class parseTest extends  AnyFlatSpec {
 
       r.App(r.App(rp.let(), r.App(r.App(r.DepApp(op.oclToMem(),
       l1:rt.AddressSpace.Local.type
-      ), r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id")))),
+      ), r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Lambda(r.Identifier("x1"),r.Identifier("x1"))))),
       r.Identifier("p2A")
       )),
       r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1), r.Lambda(r.Identifier("accDim"),r.App(r.App(op.mapLocal(0),
@@ -1101,82 +1101,33 @@ class parseTest extends  AnyFlatSpec {
 
       ))
       ))),
-      r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0),r.Lambda(r.Identifier("x"),r.Identifier("x")))), r.App(r.Identifier("generate"),
-      r.DepApp(rp.vectorFromScalar(), r.Literal(rS.IntData(0))))))), //probably has the 0 of the Type Nat
+      r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0),r.Lambda(r.Identifier("x2"),r.Identifier("x2")))), r.App(rp.generate(),
 
-      r.App(r.App(rp.split(), r.Literal(rS.IntData(1))), r.App(r.DepApp(rp.split(), r.Literal(rS.IntData(256))),
-      r.Identifier("pos"))))
+      r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(0)))
+
+      ))
+      )), //probably has the 0 of the Type Nat
+
+      r.App(r.DepApp(rp.split(), n1:rt.Nat), r.App(r.DepApp(rp.split(), n2:rt.Nat),
+      r.Identifier("pos")))
+      )
+
       ))
 
-      ),r.DepApp(rp.split(), r.Literal(rS.IntData(256)))
+      ),
+      r.DepApp(rp.split(), n3:rt.Nat)
       ))
       ),
-      r.App(r.DepApp(rp.split(), rt.TypeIdentifier("N")), r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel")))
+      r.App(r.DepApp(rp.split(), n4:rt.NatIdentifier),
+      r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel"))
+
+      )
       ))
       ))))))
-        if n.name.equals("N")
-      => true
-          case r.DepLambda(n: rt.NatIdentifier,
-          r.Lambda(r.Identifier("pos"), r.Lambda(r.Identifier("vel"),
-                    r.Lambda(r.Identifier("espSqr"), r.Lambda(r.Identifier("deltaT"),
-          r.App(rp.join(), r.App(rp.join(), r.App(r.App(op.mapWorkGroup(1),r.App(rp.join(), r.App(
-          r.App(op.mapWorkGroup(0),
-
-
-          r.Lambda(r.Identifier("p1Chunk"), r.Lambda(r.Identifier("newP1Chunk"),
-          r.App(r.App(r.App(op.mapLocal(1),
-
-          r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0), r.Lambda(r.Identifier("p1A"),
-          r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(), r.App(rp.fst(), r.Identifier("p1A")))),
-          r.App(rp.fst(), r.App(rp.snd(), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(), r.Identifier("p1A"))))),
-          r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
-
-          ),
-          r.App(r.App(r.DepApp(op.oclReduceSeq(), l:rt.AddressSpace.Local.type ),
-          r.Lambda(r.Identifier("accA"), r.Lambda(r.Identifier("p2A"),
-
-          r.App(r.App(rp.let(), r.App(r.App(r.DepApp(op.oclToMem(),
-          l1:rt.AddressSpace.Local.type
-          ), r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Lambda(r.Identifier("x"),r.Identifier("x"))))),
-          r.Identifier("p2A")
-          )),
-          r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1), r.Lambda(r.Identifier("accDim"),r.App(r.App(op.mapLocal(0),
-          r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(), p:rt.AddressSpace.Private.type ),
-
-          r.Lambda(r.Identifier("accB"), r.Lambda(r.Identifier("p2B"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"), r.App(rp.fst(),
-          r.App(rp.fst(), r.Identifier("p1B")))),
-          r.Identifier("p2B")), r.Identifier("deltaT")), r.Identifier("espSqr")), r.Identifier("accB")))
-
-          )),
-          rest),rest2))),rest3))),rest4)))))),rest5)),rest6)))),rest7))),rest8))
-          // r.App(rp.snd(), r.Identifier("p1B"))), r.App(rp.fst(), r.Identifier("accDim2")))))
-//////          , r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.App(rp.snd(), r.App(rp.snd(), r.Identifier("accDim"))))
-//////          ))),r.App(r.App(rp.zip(), r.Identifier("p2Local")), r.Identifier("accA")))
-//////
-//////          )
-////
-////          )
-////          ))),
-////          r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Identifier("id"))), r.App(r.Identifier("generate"),
-////          r.DepApp(rp.vectorFromScalar(), r.Literal(rS.IntData(0))))))), //probably has the 0 of the Type Nat
-////
-////          r.App(r.App(rp.split(), r.Literal(rS.IntData(1))), r.App(r.DepApp(rp.split(), r.Literal(rS.IntData(256))),
-////          r.Identifier("pos"))))
-////          ))
-//
-//          ),r.DepApp(rp.split(), r.Literal(rS.IntData(256)))
-//          ))
-//          ),
-//          r.App(r.DepApp(rp.split(), rt.TypeIdentifier("N")), r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel")))
-//
-//          ))
-          )))
-
-
-                    ))
-
-          )
-          => fail("almost: " + rest)
+        if n.name.equals("N") &&n4.name.equals(n.name)&& n1.eval.equals(1) &&n2.eval.equals(256)&&n3.eval.equals(256)
+      => {
+        true
+      }
       case r.DepLambda(n, e) => {
         print_nbody()
         fail("Not correct deplambda: "
@@ -1186,7 +1137,7 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
-  def print_nbody(): Unit ={
+  def print_nbody(): Unit ={ //Todo:not completly correct is this constructed nbody, it was only for debugging first created
     val e = r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.Lambda(r.Identifier("pos")(rt.TypePlaceholder),
       r.Lambda(
         r.Identifier("vel")(rt.TypePlaceholder), r.Lambda(r.Identifier("espSqr")(rt.TypePlaceholder),
@@ -1220,7 +1171,7 @@ class parseTest extends  AnyFlatSpec {
                             r.App(r.App(rp.let.primitive, r.App(r.App(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
                               rt.AddressSpace.Local
                             )(rt.TypePlaceholder), r.App(op.mapLocal(1).primitive, r.App(op.mapLocal(0).primitive,
-                              r.Lambda(r.Identifier("x")(rt.TypePlaceholder),r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder)
+                              r.Lambda(r.Identifier("x1")(rt.TypePlaceholder),r.Identifier("x1")(rt.TypePlaceholder))(rt.TypePlaceholder)
                             )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
                               r.Identifier("p2A")(rt.TypePlaceholder)
                             )(rt.TypePlaceholder))(rt.TypePlaceholder),
@@ -1256,8 +1207,9 @@ class parseTest extends  AnyFlatSpec {
                           )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
                         ,
                         r.App(r.App(op.mapLocal(1).primitive, r.App(op.mapLocal(0).primitive,
-                          r.Identifier("id")(rt.TypePlaceholder))(rt.TypePlaceholder)
-                        )(rt.TypePlaceholder), r.App(r.Identifier("generate")(rt.TypePlaceholder),
+                          r.Lambda(r.Identifier("x")(rt.TypePlaceholder),r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder)
+                        )(rt.TypePlaceholder)
+                        )(rt.TypePlaceholder), r.App(rp.generate.primitive,
                           r.App(rp.vectorFromScalar.primitive, r.Literal(rS.NatData(0)))(rt.TypePlaceholder)
                         )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
 
