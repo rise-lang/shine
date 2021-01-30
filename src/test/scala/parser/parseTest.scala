@@ -957,6 +957,20 @@ class parseTest extends  AnyFlatSpec {
     //assert(r.uniqueNames.check(rt.infer(ex_f))) //Todo:This still fails
   }
 
+  "parser" should "be able to parse 'matMulOpenCL.rise'" in {
+    val fileName: String = testFilePath + "matMulOpenCL.rise"
+    val file: FileReader = FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "matMul"
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+    print(ex_f)
+  }
+
   "parser" should "be able to parse 'matrixMultWithComments.rise'" in {
     val fileName: String = testFilePath + "matrixMultWithComments.rise"
     val file: FileReader = FileReader(fileName)
