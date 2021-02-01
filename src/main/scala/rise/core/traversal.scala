@@ -4,6 +4,76 @@ import arithexpr.arithmetic.NamedVar
 import rise.core.semantics._
 import rise.core.types._
 
+object Traverse {
+  trait Traversal {
+    def id[E] : E => E = e => e
+
+    def nat : Nat => Nat = id[Nat]
+    def addressSpace : AddressSpace => AddressSpace = id[AddressSpace]
+    def natToNat : NatToNat => NatToNat = id[NatToNat]
+    def natToData : NatToData => NatToData = id[NatToData]
+
+    def identifier[I <: Identifier] : I => I = id
+
+    def typeIdentifier[I <: Kind.Identifier] : I => I = i => (i match {
+      case n: NatIdentifier => nat(n)
+      case dt: DataTypeIdentifier => datatype(dt)
+      case a: AddressSpaceIdentifier => addressSpace(a)
+      case n2n: NatToNatIdentifier => natToNat(n2n)
+      case n2d: NatToDataIdentifier => natToData(n2d)
+    }).asInstanceOf[I]
+
+    def datatype : DataType => DataType = id[DataType]
+
+    def data : Data => Data = {
+      case NatData(n) => NatData(nat(n))
+      case IndexData(i, n) => IndexData(nat(i), nat(n))
+      case d => d // Todo
+    }
+
+    def primitive : Primitive => Expr = p => p.setType(etype(p.t))
+
+    def etype[T <: Type ] : T => T = t => (t match {
+      case dt: DataType => datatype(dt)
+      case FunType(a, b) => FunType(etype(a), etype(b))
+      case DepFunType(x, t) => x match {
+        case n: NatIdentifier => DepFunType[NatKind, Type](typeIdentifier(n), etype(t))
+        case dt: DataTypeIdentifier => DepFunType[DataKind, Type](typeIdentifier(dt), etype(t))
+        case a: AddressSpaceIdentifier => DepFunType[AddressSpaceKind, Type](typeIdentifier(a), etype(t))
+        case n2n: NatToNatIdentifier => DepFunType[NatToNatKind, Type](typeIdentifier(n2n), etype(t))
+        case n2d: NatToDataIdentifier => DepFunType[NatToDataKind, Type](typeIdentifier(n2d), etype(t))
+      }
+      case i: TypeIdentifier => i
+      case TypePlaceholder => TypePlaceholder
+    }).asInstanceOf[T]
+
+    def expr : Expr => Expr = {
+      case i : Identifier => identifier(i)
+      case l@Lambda(x, e) => Lambda(identifier(x), expr(e))(etype(l.t))
+      case a@App(f, e) => App(expr(f), expr(e))(etype(a.t))
+      case dl@DepLambda(x,e) => x match {
+        case n: NatIdentifier => DepLambda[NatKind](typeIdentifier(n), expr(e))(etype(dl.t))
+        case dt: DataTypeIdentifier => DepLambda[DataKind](typeIdentifier(dt), expr(e))(etype(dl.t))
+      }
+      case da@DepApp(f, x) => x match {
+        case n: Nat => DepApp[NatKind](expr(f), nat(n))(etype(da.t))
+        case dt: DataType => DepApp[DataKind](expr(f), etype(dt))(etype(da.t))
+        case a: AddressSpace => DepApp[AddressSpaceKind](expr(f), addressSpace(a))(etype(da.t))
+        case n2n: NatToNat => DepApp[NatToNatKind](expr(f), natToNat(n2n))(etype(da.t))
+        case n2d: NatToData => DepApp[NatToDataKind](expr(f), natToData(n2d))(etype(da.t))
+      }
+      case Literal(d) => Literal(data(d))
+      case p : Primitive => primitive(p)
+    }
+  }
+
+  trait ExprTraversal extends Traversal {
+    override def etype[T <: Type] : T => T = id
+  }
+
+  def apply(e : Expr, t : Traversal) : Expr = t.expr(e)
+}
+
 object traversal {
   sealed abstract class Result[+T](val value: T) {
     def map[U](f: T => U): Result[U]

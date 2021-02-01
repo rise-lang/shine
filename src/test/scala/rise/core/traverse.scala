@@ -1,6 +1,7 @@
 package rise.core
 
 import rise.core.DSL._
+import rise.core.Traverse.Traversal
 import rise.core.primitives._
 import rise.core.traversal._
 import rise.core.types._
@@ -15,23 +16,32 @@ class traverse extends test_util.Tests {
     )
   )
 
-  class TraceVisitor(var trace: mutable.ArrayBuffer[Any]) extends Visitor {
-    override def visitExpr(e: Expr): Result[Expr] = {
-      println(e)
+  class TraceVisitor(var trace: mutable.ArrayBuffer[Any]) extends Traversal {
+    override def typeIdentifier[I <: Kind.Identifier] : I => I = i => {
+      trace += i
+      super.typeIdentifier(i)
+    }
+
+    override def identifier[I <: Identifier] : I => I = i => {
+      trace += i
+      super.identifier(i)
+    }
+
+    override def expr : Expr => Expr = e => {
       trace += e
-      Continue(e, this)
+      super.expr(e)
     }
 
-    override def visitNat(ae: Nat): Result[Nat] = {
-      println(ae)
-      trace += ae
-      Continue(ae, this)
+/*
+    override def nat : Nat => Nat = n => {
+      trace += n
+      super.nat(n)
     }
+ */
 
-    override def visitType[T <: Type](t: T): Result[T] = {
-      println(t)
+    override def etype[T <: Type] : T => T = t => {
       trace += t
-      Continue(t, this)
+      super.etype(t)
     }
   }
 
@@ -44,33 +54,61 @@ class traverse extends test_util.Tests {
         { case _: NatIdentifier                          => () },
         { case _: Lambda                                 => () },
         { case _: Identifier                             => () },
+        { case _: App                                    => () },
+        { case _: App                                    => () },
+        { case primitives.map()                          => () },
+        { case _: FunType[_, _]                          => () },
+        { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, `f32`)                       => () },
+        { case ArrayType(_, `f32`)                       => () },
+        { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
         { case ArrayType(_, ArrayType(_, `f32`))         => () },
         { case _: App                                    => () },
-        { case _: App                                    => () },
         { case primitives.map()                          => () },
         { case _: FunType[_, _]                          => () },
-        { case _: App                                    => () },
-        { case primitives.map()                          => () },
         { case _: FunType[_, _]                          => () },
+        { case `f32`                                     => () },
+        { case `f32`                                     => () },
+        { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, `f32`)                       => () },
+        { case ArrayType(_, `f32`)                       => () },
         { case _: Lambda                                 => () },
         { case _: Identifier                             => () },
-        { case `f32`                                     => () },
         { case _: Identifier                             => () },
+        { case _: Identifier                             => () },
+        { case _: FunType[_, _]                          => () },
+        { case `f32`                                     => () },
         { case `f32`                                     => () },
         { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, `f32`)                       => () },
+        { case ArrayType(_, `f32`)                       => () },
         { case _: FunType[_, _]                          => () },
-        { case _: FunType[_, _]                          => () },
-        { case _: Identifier                             => () },
         { case ArrayType(_, ArrayType(_, `f32`))         => () },
         { case ArrayType(_, ArrayType(_, `f32`))         => () },
+        { case _: Identifier                             => () },
+        { case _: Identifier                             => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
         { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
         { case _: DepFunType[NatKind, _] @unchecked      => () },
-        { case _: DepFunType[NatKind, _] @unchecked      => () }
+        { case _: Kind.Identifier                        => () },
+        { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
+        { case _: DepFunType[NatKind, _] @unchecked      => () },
+        { case _: Kind.Identifier                        => () },
+        { case _: DepFunType[NatKind, _] @unchecked      => () },
+        { case _: Kind.Identifier                        => () },
+        { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
+        { case ArrayType(_, ArrayType(_, `f32`))         => () },
       ): Seq[Any => Unit]
     }
 
     val trace = mutable.ArrayBuffer[Any]()
-    val result = DepthFirstLocalResult(e, new TraceVisitor(trace))
+    val result = Traverse(e, new TraceVisitor(trace))
 
     // the expression should not have changed
     assert(result == e.toExpr)
@@ -88,40 +126,43 @@ class traverse extends test_util.Tests {
         { case _: NatIdentifier                          => () },
         { case _: Lambda                                 => () },
         { case _: Identifier                             => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () }
+        { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
+        { case _: DepFunType[NatKind, _] @unchecked      => () },
+        { case _: Kind.Identifier                        => () },
+        { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
+        { case _: DepFunType[NatKind, _] @unchecked      => () },
+        { case _: Kind.Identifier                        => () },
+        { case _: DepFunType[NatKind, _] @unchecked      => () },
+        { case _: Kind.Identifier                        => () },
+        { case _: FunType[_, _]                          => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
       ): Seq[Any => Unit]
     }
 
     val trace = mutable.ArrayBuffer[Any]()
     class Visitor extends TraceVisitor(trace) {
-      override def visitExpr(expr: Expr): Result[Expr] = {
-        expr match {
-          case App(App(primitives.map(), _), e) =>
-            val r = app(fun(x => x), preserveType(e))
-            println(r)
-            Stop(r)
-          case _ => super.visitExpr(expr)
-        }
+      override def expr : Expr => Expr = {
+        case App(App(primitives.map(), _), e) => app(fun(x => x), preserveType(e))
+        case e => super.expr(e)
       }
     }
 
-    val result = DepthFirstGlobalResult(e, new Visitor)
+    val result = Traverse(e, new Visitor)
 
     // the expression should have changed
-    result match {
-      case traversal.Stop(r) =>
-        assert(
-          r ==
+    assert(result ==
             depFun((h: Nat) =>
               depFun((w: Nat) =>
                 fun(ArrayType(h, ArrayType(w, f32)))(input =>
                   app(fun(x => x), input)
                 )
               )
-            ).toExpr
-        )
-      case _ => throw new Exception("the traversal should have stopped")
-    }
+            ).toExpr)
     // the trace should match expectations
     trace.length shouldBe expected.length
     trace.zip(expected).foreach({ case (x, e) => e(x) })
@@ -134,31 +175,24 @@ class traverse extends test_util.Tests {
       )
     )
 
-    class Visitor extends traversal.Visitor {
-      override def visitExpr(expr: Expr): Result[Expr] = {
-        expr match {
-          case App(primitives.map(), f) =>
-            println(f)
-            Stop(f)
-          case _ => Continue(expr, this)
-        }
+    class Visitor extends Traversal {
+      override def expr : Expr => Expr = {
+          case App(primitives.map(), f) => expr(f)
+          case e => super.expr(e)
       }
     }
 
-    val result = DepthFirstGlobalResult(e, new Visitor)
+    val result = Traverse(e, new Visitor)
 
     // the expression should have changed
-    (result: @unchecked) match {
-      case traversal.Stop(r) =>
-        val expected = depFun((n: Nat) =>
-          fun(ArrayType(n, f32))(input => {
-            val x = identifier(freshName("x"))
-            app(lambda(x, x), input |> map(fun(x => x)))
-          })
-        )
-        // TODO: establish proper equality checking
-        // assert(r == expected.toExpr)
-        assert(r.toUntypedExpr == expected.toUntypedExpr)
-    }
+    val expected = depFun((n: Nat) =>
+      fun(ArrayType(n, f32))(input => {
+        val x = identifier(freshName("x"))
+        app(lambda(x, x), input |> map(fun(x => x)))
+      })
+    )
+    // TODO: establish proper equality checking
+    // assert(r == expected.toExpr)
+    assert(result.toUntypedExpr == expected.toUntypedExpr)
   }
 }
