@@ -37,19 +37,19 @@ class gauss extends test_util.Tests {
   val N = 1024
   val M = 1024
 
-  val zip2D = zipND(2)
   val mulPair = fun(pair => fst(pair) * snd(pair))
 
   val gauss: Rise = { //infer(
-    fun(ArrayType(N, ArrayType(M, f32)))(in =>
-      fun(ArrayType(5, ArrayType(5, f32)))(weights =>
+    fun(ArrayType(N, ArrayType(M, f64)))(in =>
+      fun(ArrayType(5, ArrayType(5, f64)))(weights =>
         in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
-          |> slide2D(5,2) // -> MxN of 5x5 slides
+          |> slide2D(5, 2) // -> MxN of 5x5 slides
           |> map(map(fun(sector => // sector:5x5
-            zip2D(sector, weights) |> join |> map(mulPair) |> reduce(add)(l(0.0))
+          zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0.0))
         )))
       )
     )
+  }
 /*
   fun(ArrayType(N, ArrayType(M, f32)))(in =>
     fun(ArrayType(5, ArrayType(5, f32)))(weights =>
