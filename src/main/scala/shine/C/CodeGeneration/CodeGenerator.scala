@@ -279,8 +279,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
                     C.AST.ArraySubscript(C.AST.Cast(this.natCollectionNatCType(), fstAcc), C.AST.Literal("0")), length)),
                   //* memcpy((fstAcc + sizeof(uint32_t), storage, length * sizeof(uint32_t));
-                  C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memcpy"), List(
-                    C.AST.BinaryExpr(fstAcc, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)")), storage, byteLength)))
+                  this.memcpy(C.AST.BinaryExpr(fstAcc, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)")), storage, byteLength)
                 )
               })
             })
@@ -1404,5 +1403,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     C.AST.PointerType(elemT, const)
 
   def natCollectionVarDecl(name: String, expr: Expr): C.AST.VarDecl = C.AST.VarDecl(name, natCollectionNatCType(), Some(expr))
+
+
+  def memcpy(acc: Expr, tgt: Expr, byteLength:Expr): C.AST.Stmt = {
+    C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memcpy"), List(
+      acc, tgt, byteLength)))
+  }
 }
 

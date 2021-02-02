@@ -226,7 +226,7 @@ class sparseDense extends test_util.Tests {
     val e1 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_ocl_1(n, m)))
     val e2 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_ocl_2(n, m)))
 
-   //util.gen.CProgram(e1, "dense_to_sparse_1")
+    util.gen.CProgram(e1, "dense_to_sparse_1")
     util.gen.OpenCLKernel(e2, "dense_to_sparse_2")
   }
 
