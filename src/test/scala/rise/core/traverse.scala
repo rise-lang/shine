@@ -1,12 +1,9 @@
 package rise.core
 
 import rise.core.DSL._
-import rise.core.Traverse.Traversal
+import rise.core.Traverse.{Monad, PureTraversal, Traversal, Wrap}
 import rise.core.primitives._
-import rise.core.traversal._
 import rise.core.types._
-
-import scala.collection.mutable
 
 class traverse extends test_util.Tests {
   val e: ToBeTyped[DepLambda[NatKind]] = depFun((h: Nat) =>
@@ -16,33 +13,30 @@ class traverse extends test_util.Tests {
     )
   )
 
-  class TraceVisitor(var trace: mutable.ArrayBuffer[Any]) extends Traversal {
-    override def typeIdentifier[I <: Kind.Identifier] : I => I = i => {
-      trace += i
-      super.typeIdentifier(i)
+  case class Trace[T](unwrap : T) { val trace : Seq[Any] = Seq() }
+  implicit object TraceMonad extends Monad[Trace] {
+    def write[T] : T => Trace[T] = t => new Trace(t) { override val trace : Seq[Any] = Seq(t)}
+    override def return_[T] : T => Trace[T] = t => Trace(t)
+    override def bind[T,S] : Trace[T] => (T => Trace[S]) => Trace[S] = t1 => f => {
+      val t2 = f(t1.unwrap)
+      new Trace(t2.unwrap) { override val trace : Seq[Any] = t1.trace ++ t2.trace}
     }
+  }
 
-    override def identifier[I <: Identifier] : I => I = i => {
-      trace += i
-      super.identifier(i)
-    }
+  class TraceVisitor extends Traversal[Trace] {
+    override def monad = TraceMonad
 
-    override def expr : Expr => Expr = e => {
-      trace += e
-      super.expr(e)
-    }
+    override def typeIdentifier[I <: Kind.Identifier] : I => Trace[I] = i =>
+      monad.bind(monad.write(i))(super.typeIdentifier)
 
-/*
-    override def nat : Nat => Nat = n => {
-      trace += n
-      super.nat(n)
-    }
- */
+    override def identifier[I <: Identifier] : I => Trace[I] = i =>
+      monad.bind(monad.write(i))(super.identifier)
 
-    override def etype[T <: Type] : T => T = t => {
-      trace += t
-      super.etype(t)
-    }
+    override def expr : Expr => Trace[Expr] = e =>
+      monad.bind(monad.write(e))(super.expr)
+
+    override def etype[T <: Type] : T => Trace[T] = t =>
+    monad.bind(monad.write(t))(super.etype)
   }
 
   test("traverse an expression depth-first") {
@@ -107,14 +101,13 @@ class traverse extends test_util.Tests {
       ): Seq[Any => Unit]
     }
 
-    val trace = mutable.ArrayBuffer[Any]()
-    val result = Traverse(e, new TraceVisitor(trace))
+    val result = Traverse(e, new TraceVisitor())
 
     // the expression should not have changed
-    assert(result == e.toExpr)
+    assert(result.unwrap == e.toExpr)
     // the trace should match expectations
-    trace.length shouldBe expected.length
-    trace.zip(expected).foreach({ case (x, e) => e(x) })
+    result.trace.length shouldBe expected.length
+    result.trace.zip(expected).foreach({ case (x, e) => e(x) })
   }
 
   test("traverse an expression depth-first with stop and update") {
@@ -144,10 +137,9 @@ class traverse extends test_util.Tests {
       ): Seq[Any => Unit]
     }
 
-    val trace = mutable.ArrayBuffer[Any]()
-    class Visitor extends TraceVisitor(trace) {
-      override def expr : Expr => Expr = {
-        case App(App(primitives.map(), _), e) => app(fun(x => x), preserveType(e))
+    class Visitor extends TraceVisitor {
+      override def expr : Expr => Trace[Expr] = {
+        case App(App(primitives.map(), _), e) => monad.return_(app(fun(x => x), preserveType(e)))
         case e => super.expr(e)
       }
     }
@@ -155,7 +147,7 @@ class traverse extends test_util.Tests {
     val result = Traverse(e, new Visitor)
 
     // the expression should have changed
-    assert(result ==
+    assert(result.unwrap ==
             depFun((h: Nat) =>
               depFun((w: Nat) =>
                 fun(ArrayType(h, ArrayType(w, f32)))(input =>
@@ -164,8 +156,8 @@ class traverse extends test_util.Tests {
               )
             ).toExpr)
     // the trace should match expectations
-    trace.length shouldBe expected.length
-    trace.zip(expected).foreach({ case (x, e) => e(x) })
+    result.trace.length shouldBe expected.length
+    result.trace.zip(expected).foreach({ case (x, e) => e(x) })
   }
 
   test("traverse an expression depth-first with global stop") {
@@ -175,9 +167,9 @@ class traverse extends test_util.Tests {
       )
     )
 
-    class Visitor extends Traversal {
-      override def expr : Expr => Expr = {
-          case App(App(primitives.map(), _), e) => app(fun(x => x), preserveType(e))
+    class Visitor extends PureTraversal {
+      override def expr : Expr => Wrap[Expr] = {
+          case App(App(primitives.map(), _), e) => monad.return_(app(fun(x => x), preserveType(e)))
           case e => super.expr(e)
       }
     }
