@@ -24,10 +24,48 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), output, args) =>
-      output |> acc(env, Nil, output =>
-        expSeq(args, env, args =>
-          C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(name),
-            NDRangeToAST(ls) ++ NDRangeToAST(gs) ++ Seq(output) ++ args))))
+      output |> acc(env, Nil, outputC =>
+        expSeq(args, env, argsC =>
+          C.AST.Block(
+            Seq(
+              C.AST.DeclStmt(C.AST.VarDecl(name, C.AST.OpaqueType("Kernel"), Some(
+                C.AST.FunCall(C.AST.DeclRef("loadKernel"), Seq(
+                  C.AST.DeclRef("ctx"),
+                  C.AST.Literal(s"${'"'}${name}${'"'}"),
+                  C.AST.Literal(s"${'"'}${name}.cl${'"'}") // TODO: kernel path
+                ))
+              ))),
+              targetBufferSync("b0", outputC, output.t.dataType, TARGET_WRITE)
+            ) ++ (args zip argsC).zipWithIndex.flatMap { case ((arg, argC), i) =>
+              arg.t.dataType match {
+                case _: ManagedBufferType =>
+                  Some(targetBufferSync(s"b${i+1}", argC, arg.t.dataType, TARGET_READ))
+                case _ => None
+              }
+            } ++ Seq(
+              clSetKernelArg(name, 0, output.t.dataType, outputC)
+            ) ++ (args zip argsC).zipWithIndex.map { case ((arg, argC), i) =>
+              clSetKernelArg(name, i+1, arg.t.dataType, argC)
+            } ++ Seq(
+              C.AST.DeclStmt(C.AST.VarDecl("global_size", C.AST.ArrayType(C.AST.Type.usize, Some(3), true), Some(
+                ArrayLiteral(C.AST.ArrayType(C.AST.Type.usize, Some(3), true), NDRangeToAST(gs))
+              ))),
+              C.AST.DeclStmt(C.AST.VarDecl("local_size", C.AST.ArrayType(C.AST.Type.usize, Some(3), true), Some(
+                ArrayLiteral(C.AST.ArrayType(C.AST.Type.usize, Some(3), true), NDRangeToAST(ls))
+              ))),
+              C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("launchKernel"), Seq(
+                C.AST.DeclRef("ctx"),
+                C.AST.DeclRef(name),
+                C.AST.DeclRef("global_size"),
+                C.AST.DeclRef("local_size")
+              ))),
+              C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("destroyKernel"), Seq(
+                C.AST.DeclRef("ctx"),
+                C.AST.DeclRef(name)
+              )))
+            )
+          )
+        ))
     case NewManagedBuffer(dt, access, Lambda(v, p)) =>
       // FIXME: the constructed substitutions and environment are convoluted
       val ve = Identifier(s"${v.name}_e", v.t.t1)
@@ -117,5 +155,33 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
       }
 
     iter(ps, new mutable.ArrayBuffer[Expr]())
+  }
+
+  private def targetBufferSync(varName: String, buffer: Expr, dt: DataType, access: AccessFlags): Stmt = {
+    C.AST.DeclStmt(C.AST.VarDecl(varName, C.AST.OpaqueType("cl_mem"), Some(
+      C.AST.FunCall(C.AST.DeclRef("targetBufferSync"), Seq(
+        C.AST.DeclRef("ctx"),
+        buffer,
+        C.AST.Literal(KernelExecutor.sizeInByte(dt).value.toString),
+        C.AST.Literal(accessToString(access))
+      ))
+    )))
+  }
+
+  private def clSetKernelArg(kName: String, i: Int, dt: DataType, e: Expr): Stmt = {
+    val (argSize, argValue) = dt match {
+      case _: ManagedBufferType =>
+        (C.AST.Literal("sizeof(cl_mem)"),
+          C.AST.UnaryExpr(UnaryOperator.&, C.AST.DeclRef(s"b$i")))
+      case _ =>
+        (C.AST.Literal(KernelExecutor.sizeInByte(dt).value.toString),
+          C.AST.UnaryExpr(UnaryOperator.&, e))
+    }
+    C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("clSetKernelArg"), Seq(
+      C.AST.DeclRef(kName),
+      C.AST.Literal(s"$i"),
+      argSize,
+      argValue
+    )))
   }
 }

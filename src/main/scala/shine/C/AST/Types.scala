@@ -88,6 +88,9 @@ object Type {
   val i32 = BasicType("int32_t")
   val i64 = BasicType("int64_t")
 
+  val usize = BasicType("size_t")
+  val isize = BasicType("ptrdiff_t")
+
   val float = BasicType("float")
   val const_float = BasicType("float", const = true)
 

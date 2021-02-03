@@ -12,6 +12,8 @@ package object AST {
       // TODO: this function should not know about Buffer?
       case _: DPIA.Types.ManagedBufferType =>
         C.AST.OpaqueType("Buffer")
+      case DPIA.Types.ContextType =>
+        C.AST.OpaqueType("Context")
       case DPIA.Types.ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
         C.AST.PointerType(gen.typ(baseDt))
