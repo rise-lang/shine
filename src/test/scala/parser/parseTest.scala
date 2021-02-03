@@ -988,13 +988,34 @@ class parseTest extends  AnyFlatSpec {
 
       r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal(0),
 
-      rest
+      r.Lambda(r.Identifier("rowA"),
+      r.App(r.App(op.mapLocal(1),
+
+      r.Lambda(r.Identifier("columnB"),
+      r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(), l:rt.AddressSpace.Local.type ),
+      r.Lambda(r.Identifier("acc"), r.Lambda(r.Identifier("arg"),
+      r.App(r.App(rp.add(), r.Identifier("acc")), r.Identifier("arg"))))),
+      rp.let()),
+
+      r.App(r.DepApp(op.oclToMem(), l1:rt.AddressSpace.Local.type),
+
+      r.App(r.App(rp.mapSeq(), r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(), r.App(rp.fst(), r.Identifier("x"))),
+      r.App(rp.snd(), r.Identifier("x"))))),
+
+      r.App(r.App(rp.zip(), r.Identifier("rowA")), r.Identifier("columnB"))
+
+      )
+
+      )
+
+      ))
+      ), r.App(rp.transpose(), r.Identifier("matrixB"))))
 
       ),
       r.Identifier("matrixA")
       ))
 
-      ))))) => println("\nrest: "+rest)
+      ))))) => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
