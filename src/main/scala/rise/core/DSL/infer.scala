@@ -1,6 +1,7 @@
 package rise.core.DSL
 
 import Type.freshTypeIdentifier
+import rise.core.Traverse.{Pure, PureTraversal}
 import rise.core._
 import rise.core.traversal.{Continue, Result, Stop}
 import rise.core.types.InferenceException.error
@@ -15,7 +16,7 @@ object infer {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
-    val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
+    val res = Traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
     }
@@ -23,23 +24,20 @@ object infer {
   }
 
   def printTypesAndTypeHoles(expr: Expr): Unit = {
+    // TODO: move holeFound state into the traverse
     var holeFound = false
-    traversal.DepthFirstLocalResult(
-      expr,
-      new traversal.Visitor {
-        override def visitExpr(e: Expr): traversal.Result[Expr] = {
-          e match {
-            case h@primitives.typeHole(msg) =>
-              println(s"found type hole ${msg}: ${h.t}")
-              holeFound = true
-            case p@primitives.printType(msg) =>
-              println(s"$msg : ${p.t} (Rise level)")
-            case _ =>
-          }
-          traversal.Continue(e, this)
-        }
+    Traverse(expr, new PureTraversal {
+      override def expr : Expr => Pure[Expr] = {
+        case h@primitives.typeHole(msg) =>
+          println(s"found type hole ${msg}: ${h.t}")
+          holeFound = true
+          return_(h.asInstanceOf[Expr])
+        case p@primitives.printType(msg) =>
+          println(s"$msg : ${p.t} (Rise level)")
+          return_(p.asInstanceOf[Expr])
+        case e => super.expr(e)
       }
-    )
+    })
     if (holeFound) {
       error("type holes were found")(Seq())
     }
@@ -246,22 +244,17 @@ object infer {
     }
   }
 
-  private case class Visitor(sol: Solution) extends traversal.Visitor {
-    override def visitExpr(e: Expr): Result[Expr] = e match {
-      case Opaque(x, _) => Stop(x)
-      case TopLevel(x, inst) =>
-        Stop(traversal.DepthFirstLocalResult(x, TopLevel.Visitor(inst, sol)))
-      case _ => Continue(e, this)
+  private case class Visitor(sol: Solution) extends PureTraversal {
+    override def expr : Expr => Pure[Expr] = {
+      case Opaque(x, _) => return_(x)
+      case TopLevel(x, inst) => TopLevel.Visitor(inst, sol).expr(x)
+      case e => super.expr(e)
     }
-    override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
-    override def visitType[T <: Type](t: T): Result[T] =
-      Stop(sol(t).asInstanceOf[T])
-    override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
-      Stop(sol(a))
-    override def visitN2D(n2d: NatToData): Result[NatToData] =
-      Stop(sol(n2d))
-    override def visitN2N(n2n: NatToNat): Result[NatToNat] =
-      Stop(sol(n2n))
+    override def nat : Nat => Pure[Nat] = n => return_(sol(n))
+    override def etype[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
+    override def addressSpace : AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
+    override def natToData : NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
+    override def natToNat : NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
   }
 }
 

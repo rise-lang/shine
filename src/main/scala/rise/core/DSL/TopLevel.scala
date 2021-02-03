@@ -1,9 +1,10 @@
 package rise.core.DSL
 
 import Type.impl
+import rise.core.Traverse.{Pure, PureTraversal}
 import rise.core.traversal.{Continue, Result, Stop}
 import rise.core.types._
-import rise.core.{DSL, Expr, Primitive, traversal}
+import rise.core.{DSL, Expr, Primitive, Traverse, traversal}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
   override val t: Type = e.t
@@ -45,38 +46,26 @@ object TopLevel {
     )
   }
 
-  case class Visitor(ftvSubs: Solution, sol: Solution)
-    extends traversal.Visitor {
-    override def visitExpr(e: Expr): Result[Expr] = Continue(e, this)
-    override def visitNat(ae: Nat): Result[Nat] =
-      Stop(cascadedApply(ftvSubs, sol, ae))
-    override def visitType[T <: Type](t: T): Result[T] =
-      Stop(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
-    override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
-      Stop(cascadedApply(ftvSubs, sol, a))
-    override def visitN2D(n2d: NatToData): Result[NatToData] =
-      Stop(cascadedApply(ftvSubs, sol, n2d))
+  case class Visitor(ftvSubs: Solution, sol: Solution) extends PureTraversal {
+    override def nat : Nat => Pure[Nat] = n => return_(cascadedApply(ftvSubs, sol, n))
+    override def etype[T <: Type] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
+    override def addressSpace : AddressSpace => Pure[AddressSpace] = a => return_(cascadedApply(ftvSubs, sol, a))
+    override def natToData : NatToData => Pure[NatToData] = n2d => return_(cascadedApply(ftvSubs, sol, n2d))
   }
 
-  private def cascadedApply(
-                             ftvSubs: Solution,
-                             sol: Solution,
-                             t: Type
-                           ): Type = {
-    traversal.types.DepthFirstLocalResult(
-      t,
-      new Visitor(ftvSubs, sol) {
-        override def visitType[T <: Type](t: T): Result[T] = t match {
+  private def cascadedApply(ftvSubs: Solution, sol: Solution, t: Type): Type = {
+    Traverse(t, new Visitor(ftvSubs, sol) {
+        override def etype[T <: Type] : T => Pure[T] = {
           case i: TypeIdentifier =>
             ftvSubs.ts.get(i) match {
+              case None => etype(t.asInstanceOf[T])
               case Some(i) =>
                 sol.ts.get(i.asInstanceOf[TypeIdentifier]) match {
-                  case Some(x) => Stop(x.asInstanceOf[T])
-                  case None    => Continue(t, this)
+                  case Some(x) => return_(x.asInstanceOf[T])
+                  case None    => etype(t.asInstanceOf[T])
                 }
-              case None => Continue(t, this)
             }
-          case _ => Continue(t, this)
+          case _ => etype(t.asInstanceOf[T])
         }
       }
     )

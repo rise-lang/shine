@@ -24,11 +24,13 @@ object Traverse {
 
     def nat : Nat => M[Nat] = return_
     def addressSpace : AddressSpace => M[AddressSpace] = return_
-    def identifier[I <: Identifier] : I => M[I] = return_
     def binding[I <: Identifier] : I => M[I] = identifier
     def reference[I <: Identifier] : I => M[I] = identifier
     def depBinding[I <: Kind.Identifier] : I => M[I] = typeIdentifier
     def depReference[I <: Kind.Identifier] : I => M[I] = typeIdentifier
+    def identifier[I <: Identifier] : I => M[I] = i =>
+      for { t1 <- etype(i.t) }
+        yield i.setType(t1).asInstanceOf[I]
 
     def datatype : DataType => M[DataType] = {
       case NatType               => return_(NatType.asInstanceOf[DataType])
