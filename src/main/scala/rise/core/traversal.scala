@@ -35,7 +35,7 @@ object Traverse {
     def datatype : DataType => M[DataType] = {
       case NatType               => return_(NatType.asInstanceOf[DataType])
       case s : ScalarType        => return_(s.asInstanceOf[DataType])
-      case i: DataTypeIdentifier => depReference(i).asInstanceOf[M[DataType]]
+      case i: DataTypeIdentifier => return_(i.asInstanceOf[DataType])
       case ArrayType(n, d) =>
         for {n1 <- nat(n); d1 <- datatype(d)}
           yield ArrayType(n1, d1)
