@@ -27,7 +27,9 @@ Buffer createBuffer(Context ctx, size_t byte_size, AccessFlags access) {
     b->host_mem = NULL;
   }
   if ((access & TARGET_READ) || (access & TARGET_WRITE)) {
-    b->target_mem = clCreateBuffer(ctx->ocl, accessToMemFlags(access), byte_size, NULL, &ocl_err);
+    cl_error ocl_err;
+    b->target_mem = clCreateBuffer(ctx->inner, accessToMemFlags(access), byte_size, NULL, &ocl_err);
+    oclFatalError(ocl_err, "could not create buffer");
   } else {
     b->target_mem = 0;
   }
@@ -38,14 +40,18 @@ Buffer createBuffer(Context ctx, size_t byte_size, AccessFlags access) {
 
 void destroyBuffer(Context ctx, Buffer b) {
   if (b->host_mem != NULL) { free(b->host_mem); }
-  if (b->target_mem != 0) { clReleaseMemObject(b->target_mem); }
+  if (b->target_mem != 0) {
+    oclReportError(clReleaseMemObject(b->target_mem), "buffer release");
+  }
   free(b);
 }
 
 void* hostBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access) {
   if ((access & HOST_READ) && b->target_dirty) {
-    clEnqueueReadBuffer(ctx->queue, b->target_mem, CL_TRUE, 0, byte_size,
-      b->host_mem, 0, NULL, NULL);
+    oclFatalError(clEnqueueReadBuffer(ctx->queue, b->target_mem, CL_TRUE, 0, byte_size,
+      b->host_mem, 0, NULL, NULL),
+      "could not download buffer data to host"
+    );
   }
   if (access & HOST_WRITE) {
     b->host_dirty = true;
@@ -53,12 +59,15 @@ void* hostBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access
   return host_mem;
 }
 
-void targetBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access) {
+cl_mem targetBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access) {
   if ((access & TARGET_READ) && b->host_dirty) {
-    clEnqueueWriteBuffer(ctx->queue, b->target_mem, CL_FALSE, 0, byte_size,
-      b->host_mem, 0, NULL, NULL);
+    oclFatalError(clEnqueueWriteBuffer(ctx->queue, b->target_mem, CL_FALSE, 0, byte_size,
+      b->host_mem, 0, NULL, NULL),
+      "could not upload buffer data to host"
+    );
   }
   if (access & TARGET_WRITE) {
     b->target_dirty = true;
   }
+  return b->target_mem;
 }

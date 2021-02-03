@@ -21,14 +21,16 @@ cl_mem_flags accessToMemFlags(AccessFlags in) {
 Buffer createBuffer(Context ctx, size_t byte_size, AccessFlags access) {
   cl_mem_flags mf = accessToMemFlags(access) | CL_MEM_ALLOC_HOST_PTR;
   Buffer b = malloc(sizeof(BufferImpl));
-  b->mem = clCreateBuffer(ctx->ocl, mf, byte_size, NULL, NULL);
+  cl_error ocl_err;
+  b->mem = clCreateBuffer(ctx->inner, mf, byte_size, NULL, &ocl_err);
+  oclFatalError(ocl_err, "could not create buffer");
   b->mapped = NULL;
   b->worstCaseAccess = access;
   return b;
 }
 
 void destroyBuffer(Context ctx, Buffer b) {
-  clReleaseMemObject(b->mem);
+  oclReportError(clReleaseMemObject(b->mem), "buffer release");
   free(b);
 }
 
@@ -45,16 +47,20 @@ void* hostBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access
     // the map flags consider the worst case access
     // otherwise a map(READ) followed by a map(WRITE) would require re-mapping
     // TODO: is this a good design choice?
+    cl_error ocl_err;
     b->mapped = clEnqueueMapBuffer(ctx->queue, b->mem, CL_TRUE,
-      accessToMapFlags(b->worstCaseAccess), 0, byte_size, 0, NULL, NULL, NULL);
+      accessToMapFlags(b->worstCaseAccess), 0, byte_size, 0, NULL, NULL, &cl_err);
+    oclFatalError(ocl_err, "could not map buffer on host");
     b->mapped = true;
   }
   return b->mapped;
 }
 
-void targetBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access) {
+cl_mem targetBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access) {
   if (b->mapped != NULL) {
-    clEnqueueUnmapMemObject(ctx->queue, b->mem, b->mapped, 0, NULL, NULL);
+    oclFatalError(clEnqueueUnmapMemObject(ctx->queue, b->mem, b->mapped, 0, NULL, NULL),
+      "could not unmap buffer on host");
     b->mapped = NULL;
   }
+  return b->mem;
 }

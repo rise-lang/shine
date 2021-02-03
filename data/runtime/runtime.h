@@ -1,23 +1,14 @@
 #ifndef SHINE_RUNTIME_H
 #define SHINE_RUNTIME_H
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-#define CL_TARGET_OPENCL_VERSION 120
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
-#ifdef __APPLE__
-    #include "OpenCL/opencl.h"
-#else
-    #include "CL/cl.h"
-#endif
-
-struct ContextImpl {
-  cl_context ocl;
-  cl_command_queue queue;
-};
+#include <stdio.h>
+#include "ocl.h"
 
 typedef struct ContextImpl* Context;
+typedef struct KernelImpl* Kernel;
 typedef struct BufferImpl* Buffer;
 
 enum AccessFlags {
@@ -28,9 +19,13 @@ enum AccessFlags {
 };
 
 Buffer createBuffer(Context ctx, size_t byte_size, AccessFlags access);
-destroyBuffer(Context ctx, Buffer b);
+void destroyBuffer(Context ctx, Buffer b);
 
 void* hostBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access);
-void targetBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access);
+cl_mem targetBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access);
+
+Kernel loadKernel(Context ctx, const char* path);
+void launchKernel(Context ctx, Kernel k, const size_t* global_size, const size_t* local_size);
+void destroyKernel(Context ctx, Kernel k);
 
 #endif
