@@ -42,28 +42,4 @@ object IsClosedForm {
       case Some(e) => true
     }
   }
-
-
-  private case class TraceType(target: Type, trace: Seq[Expr])
-    extends traversal.Visitor
-  {
-    override def visitExpr(e: Expr): Result[Expr] = {
-      Continue(e, TraceType(target, e +: trace))
-    }
-
-    override def visitType[T <: Type](t: T): Result[T] =
-      traversal.Stop(traversal.types.DepthFirstLocalResult(t,
-        new traversal.Visitor {
-          override def visitType[U <: Type](t: U): Result[U] = {
-            if (t == target) {
-              println(trace.headOption.map(_.t))
-              println("-- trace --")
-              println(trace.mkString("\n"))
-              println("----")
-              throw new Exception("")
-            }
-            Continue(t, this)
-          }
-        }))
-  }
 }
