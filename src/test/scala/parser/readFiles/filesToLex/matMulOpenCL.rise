@@ -16,6 +16,7 @@ matMul=\R:Nat=>\M:Nat=>\N:Nat=>\D:Data=>
         \columnB-> oclReduceSeq Local (\acc:I32->\arg:I32-> + acc arg)
         let (toLocal (
         (mapSeq (\x:(I32,I32)->* (fst x) (snd x)) (zip rowA columnB))
+        ))
       )
       (transpose matrixB)
    ) 

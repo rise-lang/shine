@@ -1,5 +1,6 @@
 package parser
 import org.scalatest.flatspec.AnyFlatSpec
+import rise.core.types.NatIdentifier
 import rise.openCL.TypedDSL.toMem
 
 //import parser.parse.ParseError
@@ -968,7 +969,36 @@ class parseTest extends  AnyFlatSpec {
       case Left(lambda) => lambda
       case Right(types) => fail("no definition is in map: " + types)
     }
-    print(ex_f)
+    ex_f.t match {
+      case rt.DepFunType(r, rt.DepFunType(m, rt.DepFunType(n,rt.DepFunType(d, rt.FunType(
+      rt.ArrayType(n1:rt.NatIdentifier, rt.ArrayType(m1:rt.NatIdentifier, d1:rt.DataTypeIdentifier)),
+      rt.FunType(rt.ArrayType(m2:rt.NatIdentifier, rt.ArrayType(r1:rt.NatIdentifier, d2:rt.DataTypeIdentifier)),
+      rt.ArrayType(n2:rt.NatIdentifier, rt.ArrayType(r2:rt.NatIdentifier, d3:rt.DataTypeIdentifier)))
+      )))))
+        if r.name.equals("R") && m.name.equals("M") && n.name.equals("N") && d.name.equals("D")
+        && n1.name.equals(n.name) && n2.name.equals(n.name) &&m1.name.equals(m.name)&&m2.name.equals(m.name)
+          &&r1.name.equals(r.name)&&r2.name.equals(r.name)
+        &&d1.name.equals(d.name)&&d2.name.equals(d.name)&&d3.name.equals(d.name)
+        => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+
+    ex_f match {
+      case r.DepLambda(r1, r.DepLambda(m, r.DepLambda(n, r.DepLambda(d, r.Lambda(r.Identifier("matrixA"),
+
+      r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal(0),
+
+      rest
+
+      ),
+      r.Identifier("matrixA")
+      ))
+
+      ))))) => println("\nrest: "+rest)
+      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+        +n.toString()+ " , " + e.toString())
+      case a => fail("Not a DepLambda: " + a)
+    }
   }
 
   "parser" should "be able to parse 'matrixMultWithComments.rise'" in {
