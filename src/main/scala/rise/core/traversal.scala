@@ -10,10 +10,17 @@ object Traverse {
 
     def nat : Nat => Nat = id[Nat]
     def addressSpace : AddressSpace => AddressSpace = id[AddressSpace]
-    def natToNat : NatToNat => NatToNat = id[NatToNat]
-    def natToData : NatToData => NatToData = id[NatToData]
-
+    def datatype : DataType => DataType = id[DataType]
     def identifier[I <: Identifier] : I => I = id
+
+    def natToNat : NatToNat => NatToNat = {
+      case i : NatToNatIdentifier => typeIdentifier(i)
+      case NatToNatLambda(x, e) => NatToNatLambda(typeIdentifier(x), nat(e))
+    }
+    def natToData : NatToData => NatToData = {
+      case i : NatToDataIdentifier => typeIdentifier(i)
+      case NatToDataLambda(x, e) => NatToDataLambda(typeIdentifier(x), datatype(e))
+    }
 
     def typeIdentifier[I <: Kind.Identifier] : I => I = i => (i match {
       case n: NatIdentifier => nat(n)
@@ -22,8 +29,6 @@ object Traverse {
       case n2n: NatToNatIdentifier => natToNat(n2n)
       case n2d: NatToDataIdentifier => natToData(n2d)
     }).asInstanceOf[I]
-
-    def datatype : DataType => DataType = id[DataType]
 
     def data : Data => Data = {
       case NatData(n) => NatData(nat(n))
