@@ -177,7 +177,7 @@ class traverse extends test_util.Tests {
 
     class Visitor extends Traversal {
       override def expr : Expr => Expr = {
-          case App(primitives.map(), f) => expr(f)
+          case App(App(primitives.map(), _), e) => app(fun(x => x), preserveType(e))
           case e => super.expr(e)
       }
     }
@@ -188,7 +188,7 @@ class traverse extends test_util.Tests {
     val expected = depFun((n: Nat) =>
       fun(ArrayType(n, f32))(input => {
         val x = identifier(freshName("x"))
-        app(lambda(x, x), input |> map(fun(x => x)))
+        input |> map(fun(x => x)) |> fun(x => x)
       })
     )
     // TODO: establish proper equality checking
