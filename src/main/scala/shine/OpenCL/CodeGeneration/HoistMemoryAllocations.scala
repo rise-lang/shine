@@ -52,7 +52,10 @@ object HoistMemoryAllocations {
             val t = pf.step
             Continue(pf,
               Visitor(ParForInfo(pf.parallelismLevel, Min(t, pf.n), Right(pf.init)) :: parForInfos))
-          case pfn: OpenCLParForNat => ???
+          case pfn: OpenCLParForNat =>
+            Continue(pfn,
+              Visitor(ParForInfo(pfn.parallelismLevel, Min(pfn.step, pfn.n), Right(pfn.init)) :: parForInfos))
+
 
           case OpenCLNew(addressSpace, _, Lambda(variable, body))  if addressSpace != AddressSpace.Private =>
             Stop( // TODO? there might be fors and news in the body

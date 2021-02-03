@@ -32,7 +32,7 @@ object SizeInByte {
     case DepPairType(x, dt) => x match {
       case _: NatIdentifier =>
         SizeInByte(shine.DPIA.Types.NatType) + SizeInByte(dt)
-      case _ => ???
+      case _ => SizeInByte(arithexpr.arithmetic.PosInf)
     }
     case _: NatToDataApply =>  throw new Exception("This should not happen")
     case _: DataTypeIdentifier => throw new Exception("This should not happen")

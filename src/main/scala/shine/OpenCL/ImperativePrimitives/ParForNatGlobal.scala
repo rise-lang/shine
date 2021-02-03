@@ -1,6 +1,6 @@
 package shine.OpenCL.ImperativePrimitives
 
-import shine.DPIA.Phrases.Phrase
+import shine.DPIA.Phrases.{Phrase, VisitAndRebuild}
 import shine.DPIA.Types.{AccType, CommType, NatToData}
 import shine.DPIA.{->:, Nat, `(nat)->:`, freshName}
 import shine.OpenCL
@@ -15,6 +15,19 @@ final case class ParForNatGlobal(dim:Int)(override val n:Nat,
                                           step: Nat = get_global_size(dim),
                                           unroll: Boolean = false)
   extends OpenCLParForNat(n, ft, out, body, init, step, unroll) {
+
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
+    ParForNatGlobal(dim)(
+      fun.nat(n),
+      fun.natToData(ft),
+      VisitAndRebuild(out, fun),
+      VisitAndRebuild(body, fun),
+      fun.nat(init),
+      fun.nat(step),
+      unroll
+    )
+  }
+
 
   def makeParForNat =
     (n, ft, out, body) => ParForNatGlobal(dim)(n, ft, out, body, init, step, unroll)

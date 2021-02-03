@@ -237,6 +237,17 @@ object fromRise {
               DepMapSeq(n, ft1, ft2, f, e)))
       }
 
+      case ocl.depMapGlobal(dim) => fromType {
+        case nFunT(k, expT(_, `read`) ->: expT(_, `write`)) ->:
+          expT(DepArrayType(n, ft1), `read`) ->:
+          expT(DepArrayType(_, ft2), `write`)
+        =>
+          fun[`(nat)->:`[ExpType ->: ExpType]](
+            k ->: (ExpType(ft1(k), read) ->: ExpType(ft2(k), write)), f =>
+              fun[ExpType](ExpType(DepArrayType(n, ft1), read), e =>
+                DepMapGlobal(dim)(n, ft1, ft2, f, e)))
+      }
+
       case core.reduceSeq() => fromType {
         case (expT(t, `read`) ->: expT(s, `read`) ->: expT(_, `write`)) ->:
           expT(_, `write`) ->:

@@ -543,7 +543,7 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.depMapSeq() =>
+      case rp.depMapSeq() | roclp.depMapGlobal(_) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.DepFunType(i, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
             rt.FunType(inArr@rt.DepArrayType(_, _), outArr@rt.DepArrayType(_, _))) =>

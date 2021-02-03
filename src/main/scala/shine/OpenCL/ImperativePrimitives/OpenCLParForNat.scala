@@ -16,7 +16,7 @@ abstract class OpenCLParForNat(n: Nat,
 
   // TODO: This should not extend OpenMP's par for
   // it should include init and step in visitAndRebuild
-  assert(false)
+  //assert(false)
 
   def parallelismLevel: shine.OpenCL.ParallelismLevel
 

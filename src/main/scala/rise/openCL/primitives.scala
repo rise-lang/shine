@@ -1,7 +1,7 @@
 package rise.openCL
 
 import rise.core.TypeLevelDSL._
-import rise.core.types.{AddressSpace, DataType, IndexType, Nat, bool}
+import rise.core.types.{AddressSpace, DataType, IndexType, Nat, NatToData, bool}
 import rise.core.{Builder, Primitive}
 import rise.macros.Primitive.primitive
 
@@ -22,6 +22,13 @@ object primitives {
   @primitive case class mapWorkGroup(dim: Int) extends Primitive with Builder {
     impl{ n: Nat => impl{ s: DataType => impl{ t: DataType =>
       (s ->: t) ->: (n`.`s) ->: (n`.`t) }}}
+  }
+
+
+  @primitive case class depMapGlobal(dim: Int) extends Primitive with Builder {
+    impl{ n: Nat =>
+      impl{ ft1: NatToData => impl{ ft2: NatToData =>
+        expl((k: Nat) => ft1(k) ->: ft2(k)) ->: (n`*.`ft1) ->: (n`*.`ft2)}}}
   }
 
   @primitive object oclToMem extends Primitive with Builder {
