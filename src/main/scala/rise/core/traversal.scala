@@ -14,12 +14,12 @@ object Traverse {
     def identifier[I <: Identifier] : I => I = id
 
     def natToNat : NatToNat => NatToNat = {
-      case i : NatToNatIdentifier => typeIdentifier(i)
-      case NatToNatLambda(x, e) => NatToNatLambda(typeIdentifier(x), nat(e))
+      case i : NatToNatIdentifier => depReference(i)
+      case NatToNatLambda(x, e) => NatToNatLambda(depBinding(x), nat(e))
     }
     def natToData : NatToData => NatToData = {
-      case i : NatToDataIdentifier => typeIdentifier(i)
-      case NatToDataLambda(x, e) => NatToDataLambda(typeIdentifier(x), datatype(e))
+      case i : NatToDataIdentifier => depReference(i)
+      case NatToDataLambda(x, e) => NatToDataLambda(depBinding(x), datatype(e))
     }
 
     def typeIdentifier[I <: Kind.Identifier] : I => I = i => (i match {
@@ -38,27 +38,32 @@ object Traverse {
 
     def primitive : Primitive => Expr = p => p.setType(etype(p.t))
 
+    def binding[I <: Identifier] : I => I = identifier
+    def reference[I <: Identifier] : I => I = identifier
+    def depBinding[I <: Kind.Identifier] : I => I = typeIdentifier
+    def depReference[I <: Kind.Identifier] : I => I = typeIdentifier
+
     def etype[T <: Type ] : T => T = t => (t match {
+      case i: TypeIdentifier => depReference(i)
+      case TypePlaceholder => TypePlaceholder
       case dt: DataType => datatype(dt)
       case FunType(a, b) => FunType(etype(a), etype(b))
       case DepFunType(x, t) => x match {
-        case n: NatIdentifier => DepFunType[NatKind, Type](typeIdentifier(n), etype(t))
-        case dt: DataTypeIdentifier => DepFunType[DataKind, Type](typeIdentifier(dt), etype(t))
-        case a: AddressSpaceIdentifier => DepFunType[AddressSpaceKind, Type](typeIdentifier(a), etype(t))
-        case n2n: NatToNatIdentifier => DepFunType[NatToNatKind, Type](typeIdentifier(n2n), etype(t))
-        case n2d: NatToDataIdentifier => DepFunType[NatToDataKind, Type](typeIdentifier(n2d), etype(t))
+        case n: NatIdentifier => DepFunType[NatKind, Type](depBinding(n), etype(t))
+        case dt: DataTypeIdentifier => DepFunType[DataKind, Type](depBinding(dt), etype(t))
+        case a: AddressSpaceIdentifier => DepFunType[AddressSpaceKind, Type](depBinding(a), etype(t))
+        case n2n: NatToNatIdentifier => DepFunType[NatToNatKind, Type](depBinding(n2n), etype(t))
+        case n2d: NatToDataIdentifier => DepFunType[NatToDataKind, Type](depBinding(n2d), etype(t))
       }
-      case i: TypeIdentifier => i
-      case TypePlaceholder => TypePlaceholder
     }).asInstanceOf[T]
 
     def expr : Expr => Expr = {
-      case i : Identifier => identifier(i)
-      case l@Lambda(x, e) => Lambda(identifier(x), expr(e))(etype(l.t))
+      case i : Identifier => reference(i)
+      case l@Lambda(x, e) => Lambda(binding(x), expr(e))(etype(l.t))
       case a@App(f, e) => App(expr(f), expr(e))(etype(a.t))
       case dl@DepLambda(x,e) => x match {
-        case n: NatIdentifier => DepLambda[NatKind](typeIdentifier(n), expr(e))(etype(dl.t))
-        case dt: DataTypeIdentifier => DepLambda[DataKind](typeIdentifier(dt), expr(e))(etype(dl.t))
+        case n: NatIdentifier => DepLambda[NatKind](depBinding(n), expr(e))(etype(dl.t))
+        case dt: DataTypeIdentifier => DepLambda[DataKind](depBinding(dt), expr(e))(etype(dl.t))
       }
       case da@DepApp(f, x) => x match {
         case n: Nat => DepApp[NatKind](expr(f), nat(n))(etype(da.t))
