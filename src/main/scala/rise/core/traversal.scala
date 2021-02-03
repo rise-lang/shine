@@ -24,8 +24,38 @@ object Traverse {
 
     def nat : Nat => M[Nat] = return_
     def addressSpace : AddressSpace => M[AddressSpace] = return_
-    def datatype : DataType => M[DataType] = return_
     def identifier[I <: Identifier] : I => M[I] = return_
+    def binding[I <: Identifier] : I => M[I] = identifier
+    def reference[I <: Identifier] : I => M[I] = identifier
+    def depBinding[I <: Kind.Identifier] : I => M[I] = typeIdentifier
+    def depReference[I <: Kind.Identifier] : I => M[I] = typeIdentifier
+
+    def datatype : DataType => M[DataType] = {
+      case NatType               => return_(NatType.asInstanceOf[DataType])
+      case s : ScalarType        => return_(s.asInstanceOf[DataType])
+      case i: DataTypeIdentifier => depReference(i).asInstanceOf[M[DataType]]
+      case ArrayType(n, d) =>
+        for {n1 <- nat(n); d1 <- datatype(d)}
+          yield ArrayType(n1, d1)
+      case DepArrayType(n, n2d) =>
+        for {n1 <- nat(n); n2d1 <- natToData(n2d)}
+          yield DepArrayType(n1, n2d1)
+      case PairType(p1, p2) =>
+        for {p11 <- datatype(p1); p21 <- datatype(p2)}
+          yield PairType(p11, p21)
+      case pair@DepPairType(x, e) =>
+        for {x1 <- depBinding(x); e1 <- datatype(e)}
+          yield DepPairType(x1, e1)(pair.kindName)
+      case IndexType(n) =>
+        for {n1 <- nat(n)}
+          yield IndexType(n1)
+      case VectorType(n, e) =>
+        for {n1 <- nat(n); e1 <- datatype(e)}
+          yield VectorType(n1, e1)
+      case NatToDataApply(ntdf, n) =>
+        for {ntdf1 <- natToData(ntdf); n1 <- nat(n)}
+          yield NatToDataApply(ntdf1, n1)
+    }
 
     def natToNat : NatToNat => M[NatToNat] = {
       case i : NatToNatIdentifier =>
@@ -35,6 +65,7 @@ object Traverse {
         for { x1 <- depBinding(x); e1 <- nat(e) }
           yield NatToNatLambda(x1, e1)
     }
+
     def natToData : NatToData => M[NatToData] = {
       case i : NatToDataIdentifier =>
         for { i1 <- depReference(i) }
@@ -65,11 +96,6 @@ object Traverse {
     def primitive : Primitive => M[Expr] = p =>
       for { t1 <- etype(p.t) }
         yield p.setType(t1)
-
-    def binding[I <: Identifier] : I => M[I] = identifier
-    def reference[I <: Identifier] : I => M[I] = identifier
-    def depBinding[I <: Kind.Identifier] : I => M[I] = typeIdentifier
-    def depReference[I <: Kind.Identifier] : I => M[I] = typeIdentifier
 
     def etype[T <: Type ] : T => M[T] = t => (t match {
       case TypePlaceholder => return_(TypePlaceholder)
@@ -152,6 +178,11 @@ object Traverse {
     override def return_[T] : T => Wrap[T] = t => Wrap(t)
     override def bind[T,S] : Wrap[T] => (T => Wrap[S]) => Wrap[S] =
       v => f => v match { case Wrap(v) => f(v) }
+  }
+
+  implicit object OptionMonad extends Monad[Option] {
+    def return_[T]: T => Option[T] = Some(_)
+    def bind[T, S]: Option[T] => (T => Option[S]) => Option[S] = v => v.flatMap
   }
 
   trait PureTraversal extends Traversal[Wrap] { override def monad = WrapMonad }
