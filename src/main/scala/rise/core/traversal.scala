@@ -173,11 +173,11 @@ object Traverse {
     override def etype[T <: Type] : T => M[T] = return_
   }
 
-  case class Wrap[T](unwrap : T)
-  implicit object WrapMonad extends Monad[Wrap] {
-    override def return_[T] : T => Wrap[T] = t => Wrap(t)
-    override def bind[T,S] : Wrap[T] => (T => Wrap[S]) => Wrap[S] =
-      v => f => v match { case Wrap(v) => f(v) }
+  case class Pure[T](unwrap : T)
+  implicit object PureMonad extends Monad[Pure] {
+    override def return_[T] : T => Pure[T] = t => Pure(t)
+    override def bind[T,S] : Pure[T] => (T => Pure[S]) => Pure[S] =
+      v => f => v match { case Pure(v) => f(v) }
   }
 
   implicit object OptionMonad extends Monad[Option] {
@@ -185,11 +185,13 @@ object Traverse {
     def bind[T, S]: Option[T] => (T => Option[S]) => Option[S] = v => v.flatMap
   }
 
-  trait PureTraversal extends Traversal[Wrap] { override def monad = WrapMonad }
-  trait PureExpTraversal extends PureTraversal with ExprTraversal[Wrap]
+  trait PureTraversal extends Traversal[Pure] { override def monad = PureMonad }
+  trait PureExpTraversal extends PureTraversal with ExprTraversal[Pure]
 
-  def apply(e : Expr, t : PureTraversal) : Expr = t.expr(e).unwrap
-  def apply[M[_]](e : Expr, t : Traversal[M]) : M[Expr] = t.expr(e)
+  def apply                  (e : Expr, f : PureTraversal) : Expr    = f.expr(e).unwrap
+  def apply[T <: Type]       (t : T   , f : PureTraversal) : T       = f.etype(t).unwrap
+  def apply[M[_]]            (e : Expr, f : Traversal[M])  : M[Expr] = f.expr(e)
+  def apply[T <: Type, M[_]] (e : T   , f : Traversal[M])  : M[T]    = f.etype(e)
 }
 
 object traversal {

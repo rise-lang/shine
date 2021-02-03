@@ -1,6 +1,6 @@
 package rise.core.DSL
 
-import rise.core.Traverse.Wrap
+import rise.core.Traverse.Pure
 import rise.core.semantics.Data
 import rise.core.traversal.{Continue, Stop}
 import rise.core.types.{Flags, TypePlaceholder}
@@ -9,8 +9,8 @@ import rise.core.{Expr, Literal, Primitive, Traverse, TypeAnnotation, TypeAssert
 final case class ToBeTyped[+T <: Expr](private val e: T) {
   def toExpr: Expr = infer(e)
   def toUntypedExpr: Expr = Traverse(e, new Traverse.PureTraversal {
-    override def data : Data => Wrap[Data] = return_
-    override def primitive : Primitive => Wrap[Expr] = {
+    override def data : Data => Pure[Data] = return_
+    override def primitive : Primitive => Pure[Expr] = {
       case Opaque(x, t) => expr(x)
       case tl@TopLevel(x, t) => expr(x)
       case TypeAnnotation(e, t) => expr(e)

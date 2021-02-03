@@ -1,7 +1,7 @@
 package rise.core
 
 import rise.core.DSL._
-import rise.core.Traverse.{Monad, PureTraversal, Traversal, Wrap}
+import rise.core.Traverse.{Monad, PureTraversal, Traversal, Pure}
 import rise.core.primitives._
 import rise.core.types._
 
@@ -168,7 +168,7 @@ class traverse extends test_util.Tests {
     )
 
     class Visitor extends PureTraversal {
-      override def expr : Expr => Wrap[Expr] = {
+      override def expr : Expr => Pure[Expr] = {
           case App(App(primitives.map(), _), e) => monad.return_(app(fun(x => x), preserveType(e)))
           case e => super.expr(e)
       }
