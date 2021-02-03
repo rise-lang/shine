@@ -11,7 +11,8 @@
 
 struct ContextImpl {
   cl_context inner;
-  cl_device device;
+  cl_platform_id platform;
+  cl_device_id device;
   cl_command_queue queue;
 };
 

@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include <string.h>
 
 const char* oclErrorToString(cl_int error) {
   switch (error) {
@@ -66,7 +67,7 @@ const char* oclErrorToString(cl_int error) {
 
 bool oclReportError(cl_int error, const char* msg) {
   if (error != CL_SUCCESS) {
-    fprintf(stderr, "%s: %s\n", msg, ocl_error_to_string(error));
+    fprintf(stderr, "%s: %s\n", msg, oclErrorToString(error));
     return true;
   }
   return false;
@@ -76,6 +77,89 @@ void oclFatalError(cl_int error, const char* msg) {
   if (oclReportError(error, msg)) {
     exit(EXIT_FAILURE);
   }
+}
+
+static
+cl_platform_id find_platform(cl_uint platform_count, const cl_platform_id* platform_ids, const char* subname) {
+  for (cl_uint i = 0; i < platform_count; i++) {
+    char name_buf[512];
+    size_t name_size;
+    oclFatalError(clGetPlatformInfo(platform_ids[i], CL_PLATFORM_NAME, sizeof(name_buf), name_buf, &name_size),
+      "could not get platform info");
+    if (name_size > sizeof(name_buf)) {
+      fprintf(stderr, "did not expect such a long OpenCL platform name (%zu)\n", name_size);
+      name_buf[511] = '\0';
+    }
+
+    if (strstr(name_buf, subname) != NULL) {
+      fprintf(stderr, "using OpenCL platform '%s'\n", name_buf);
+      return platform_ids[i];
+    }
+  }
+
+  fprintf(stderr, "did not find any OpenCL platform with subname '%s'\n", subname);
+  exit(EXIT_FAILURE);
+}
+
+Context createContext(const char* platform_subname, const char* device_type_str) {
+  cl_device_type device_type;
+  if (strcmp(device_type_str, "cpu") == 0) {
+    device_type = CL_DEVICE_TYPE_CPU;
+  } else if (strcmp(device_type_str, "gpu") == 0) {
+    device_type = CL_DEVICE_TYPE_GPU;
+  } else {
+    fprintf(stderr, "unexpected device type string: %s\n", device_type_str);
+    exit(EXIT_FAILURE);
+  }
+
+  const cl_uint platform_entries = 256;
+  cl_platform_id platform_ids[platform_entries];
+  cl_uint platform_count = 0;
+  oclFatalError(clGetPlatformIDs(platform_entries, platform_ids, &platform_count),
+   "could not get platform IDs");
+  if (platform_count > platform_entries) {
+    fprintf(stderr, "did not expected that many OpenCL platforms (%u)\n", platform_count);
+    platform_count = platform_entries;
+  }
+
+  cl_platform_id platform_id = find_platform(platform_count, platform_ids, platform_subname);
+
+  const cl_uint device_entries = 1;
+  cl_uint device_count = 0;
+  cl_device_id device_id;
+  oclFatalError(clGetDeviceIDs(platform_id, device_type, device_entries, &device_id, &device_count),
+    "could not get device IDs");
+  if (device_count == 0) {
+    fprintf(stderr, "did not find any OpenCL device\n");
+    exit(EXIT_FAILURE);
+  }
+  //fprintf(stderr, "OpenCL device: %u\n", device_index);
+
+  const cl_context_properties ctx_props[] = {
+    CL_CONTEXT_PLATFORM, (cl_context_properties)(platform_id),
+    0
+  };
+
+  cl_int err;
+  cl_context ctx = clCreateContext(ctx_props, 1, &device_id, NULL, NULL, &err);
+  oclFatalError(err, "could not create context");
+
+  // 2.0: clCreateCommandQueueWithProperties
+  cl_command_queue queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_PROFILING_ENABLE, &err);
+  oclFatalError(err, "could not create command queue");
+
+  Context context = malloc(sizeof(struct ContextImpl));
+  context->inner = ctx;
+  context->platform = platform_id;
+  context->device = device_id;
+  context->queue = queue;
+  return context;
+}
+
+void destroyContext(Context ctx) {
+  oclReportError(clReleaseCommandQueue(ctx->queue), "release queue");
+  oclReportError(clReleaseContext(ctx->inner), "release context");
+  free(ctx);
 }
 
 Kernel loadKernel(Context ctx, const char* name, const char* path) {
@@ -121,7 +205,7 @@ Kernel loadKernel(Context ctx, const char* name, const char* path) {
   cl_kernel kernel = clCreateKernel(program, name, &err);
   oclFatalError(err, "could not create kernel");
 
-  Kernel k = malloc(sizeof(KernelImpl));
+  Kernel k = malloc(sizeof(struct KernelImpl));
   k->program = program;
   k->inner = kernel;
   return k;
@@ -131,7 +215,7 @@ void launchKernel(Context ctx, Kernel k, const size_t* global_size, const size_t
   oclFatalError(
     clEnqueueNDRangeKernel(ctx->queue, k->inner, 3, NULL, global_size, local_size, 0, NULL, NULL),
     "could not launch kernel"
-  )
+  );
 }
 
 void destroyKernel(Context ctx, Kernel k) {

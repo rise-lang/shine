@@ -81,7 +81,7 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
           C.AST.FunCall(C.AST.DeclRef("createBuffer"), Seq(
             C.AST.DeclRef("ctx"),
             C.AST.Literal(KernelExecutor.sizeInByte(dt).value.toString),
-            C.AST.Literal(accessToString(access) + "/* TODO */")
+            C.AST.Literal(accessToString(access))
           ))
         ))),
         Phrase.substitute(Map(
@@ -105,8 +105,8 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
         HostManagedBuffers.optionallyManaged(ident) match {
           case Some((mident, dt)) =>
             env2 = ident match {
-              case Identifier(_, _: PhrasePairType[_, _]) => env2 updatedVarEnv (ident.asInstanceOf[Identifier[VarType]] -> C.AST.DeclRef(mident.name))
-              case Identifier(_, _: BasePhraseType) => env2 updatedIdentEnv (ident.asInstanceOf[Identifier[_ <: BasePhraseType]] -> C.AST.DeclRef(mident.name))
+              case Identifier(_, _: PhrasePairType[_, _]) => env2 updatedVarEnv (ident.asInstanceOf[Identifier[VarType]] -> C.AST.DeclRef(ident.name))
+              case Identifier(_, _: BasePhraseType) => env2 updatedIdentEnv (ident.asInstanceOf[Identifier[_ <: BasePhraseType]] -> C.AST.DeclRef(ident.name))
               case _ => throw new Exception("this should not happen")
             }
             stmts :+ C.AST.DeclStmt(C.AST.VarDecl(ident.name, managedTyp(dt), Some(
@@ -178,7 +178,9 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
           C.AST.UnaryExpr(UnaryOperator.&, e))
     }
     C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("clSetKernelArg"), Seq(
-      C.AST.DeclRef(kName),
+      C.AST.StructMemberAccess(
+        C.AST.UnaryExpr(UnaryOperator.*, C.AST.DeclRef(kName)),
+        C.AST.DeclRef("inner")),
       C.AST.Literal(s"$i"),
       argSize,
       argValue

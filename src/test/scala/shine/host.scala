@@ -14,32 +14,89 @@ class host extends test_util.Tests {
     println(gen.c.function.asString(m.host))
   }
 
+  private def checkOutput(m: shine.OpenCL.Module): Unit = {
+    val main =
+      """
+        | #include "host.c"
+        |
+        | const int N = 64;
+        | int main(int argc, char** argv) {
+        |   Context ctx = createContext("Portable Computing Language", "cpu");
+        |   Buffer input = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | TARGET_READ);
+        |   Buffer output = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | TARGET_WRITE);
+        |
+        |   int32_t* in = hostBufferSync(ctx, input, N * sizeof(int32_t), HOST_WRITE);
+        |   for (int i = 0; i < N; i++) {
+        |     in[i] = 0;
+        |   }
+        |
+        |   foo(ctx, output, N, input);
+        |
+        |   int32_t* out = hostBufferSync(ctx, output, N * sizeof(int32_t), HOST_READ);
+        |
+        |   for (int i = 0; i < N; i++) {
+        |     if (out[i] != 3) {
+        |       fprintf(stderr, "wrong output: %i\n", out[i]);
+        |       exit(EXIT_FAILURE);
+        |     }
+        |   }
+        |
+        |   destroyBuffer(ctx, input);
+        |   destroyBuffer(ctx, output);
+        |   destroyContext(ctx);
+        |   return EXIT_SUCCESS;
+        | }
+        |""".stripMargin
+    util.ExecuteOpenCL(m, "zero_copy", main)
+    util.ExecuteOpenCL(m, "one_copy", main)
+  }
+
   test("no kernel call") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
-      mapSeq(add(li32(1)))(in)
+      mapSeq(add(li32(3)))(in)
     ))
-    dumpModule(gen.opencl.hosted.fromExpr(e))
+    val m = gen.opencl.hosted.fromExpr(e)
+    dumpModule(m)
+    checkOutput(m)
   }
 
   test("basic kernel call with fixed size") {
     val n: Nat = 128
     val e = fun((n`.`i32) ->: (n`.`i32))(in =>
-      oclRun(LocalSize(2), GlobalSize(32))(mapGlobal(add(li32(1)))(in))
+      oclRun(LocalSize(2), GlobalSize(32))(mapGlobal(add(li32(3)))(in))
     )
     dumpModule(gen.opencl.hosted.fromExpr(e))
   }
 
   test("basic kernel call with variable size and post-process") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
-      oclRun(LocalSize(2), GlobalSize(n/2))(mapGlobal(add(li32(1)))(in)) |> toMem |> mapSeq(mul(li32(2)))
+      oclRun(LocalSize(2), GlobalSize(n/2))(mapGlobal(add(li32(1)))(in)) |> toMem |> mapSeq(add(li32(2)))
     ))
-    dumpModule(gen.opencl.hosted.fromExpr(e))
+    val m = gen.opencl.hosted.fromExpr(e)
+    dumpModule(m)
+    checkOutput(m)
   }
 
   test("two kernel calls") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
       oclRun(LocalSize(2), GlobalSize(n/2))(mapGlobal(add(li32(1)))(in)) |> store(x =>
       oclRun(LocalSize(4), GlobalSize(n/2))(mapGlobal(add(li32(2)))(x)))
+    ))
+    val m = gen.opencl.hosted.fromExpr(e)
+    dumpModule(m)
+    checkOutput(m)
+  }
+
+  test("local memory") {
+    // TODO: clSetKernelArg(k, i, localMemSize, NULL);
+    val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
+      oclRun(LocalSize(16), GlobalSize(n))(
+        in |> split(16) |> mapWorkGroup(0)(
+          mapLocal(0)(add(li32(1))) >>
+          toLocal >>
+          mapLocal(0)(add(li32(2)))
+        ) |> join
+      )
     ))
     dumpModule(gen.opencl.hosted.fromExpr(e))
   }

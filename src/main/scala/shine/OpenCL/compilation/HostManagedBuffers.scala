@@ -137,8 +137,9 @@ object HostManagedBuffers {
         case i: Identifier[_] =>
           Stop(managed.getOrElse(i, p).asInstanceOf[Phrase[T]])
         case New(dt, Lambda(x, body)) if managed.contains(x) =>
-          // TODO: access
-          Continue(NewManagedBuffer(dt, 0, Lambda(managed(x).asInstanceOf[Identifier[VarType]], body)), this)
+          // TODO: infer tighter access
+          val access = TARGET_READ | TARGET_WRITE | HOST_READ | HOST_WRITE
+          Continue(NewManagedBuffer(dt, access, Lambda(managed(x).asInstanceOf[Identifier[VarType]], body)), this)
         case _: New | _: Lambda[_, _] | _: Seq | _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
           Continue(p, this)
         case _: KernelCallCmd => Continue(p, this)

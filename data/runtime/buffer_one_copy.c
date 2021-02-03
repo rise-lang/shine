@@ -20,16 +20,16 @@ cl_mem_flags accessToMemFlags(AccessFlags in) {
 }
 
 Buffer createBuffer(Context ctx, size_t byte_size, AccessFlags access) {
-  Buffer b = malloc(sizeof(BufferImpl));
+  Buffer b = malloc(sizeof(struct BufferImpl));
   if ((access & HOST_READ) || (access & HOST_WRITE)) {
     b->host_mem = malloc(byte_size);
   } else {
     b->host_mem = NULL;
   }
   if ((access & TARGET_READ) || (access & TARGET_WRITE)) {
-    cl_error ocl_err;
-    b->target_mem = clCreateBuffer(ctx->inner, accessToMemFlags(access), byte_size, NULL, &ocl_err);
-    oclFatalError(ocl_err, "could not create buffer");
+    cl_int err;
+    b->target_mem = clCreateBuffer(ctx->inner, accessToMemFlags(access), byte_size, NULL, &err);
+    oclFatalError(err, "could not create buffer");
   } else {
     b->target_mem = 0;
   }
@@ -56,7 +56,7 @@ void* hostBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access
   if (access & HOST_WRITE) {
     b->host_dirty = true;
   }
-  return host_mem;
+  return b->host_mem;
 }
 
 cl_mem targetBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access) {

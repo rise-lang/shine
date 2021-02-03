@@ -327,6 +327,7 @@ class CPrinter extends Printer {
 
   private def printArrayLiteral(al: ArrayLiteral): Unit = {
     print("((")
+    if (al.t.const) { print("const ") }
     print(s"${typeName(al.t.getBaseType)}[${ al.t.getSizes match {
       case None => ""
       case Some(s) => toString(s)
