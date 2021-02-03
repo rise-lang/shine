@@ -3,7 +3,6 @@ package rise.core.DSL
 import Type.freshTypeIdentifier
 import rise.core.Traverse.{Pure, PureTraversal}
 import rise.core._
-import rise.core.traversal.{Continue, Result, Stop}
 import rise.core.types.InferenceException.error
 import rise.core.types._
 
@@ -106,49 +105,15 @@ object infer {
 
   def getFTVs(t: Type): Seq[Kind.Identifier] = {
     val ftvs = mutable.ListBuffer[Kind.Identifier]()
-    traversal.types.DepthFirstLocalResult(
-      t,
-      new traversal.Visitor {
-        override def visitType[T <: Type](t: T): Result[T] = {
-          t match {
-            case i: DataTypeIdentifier if !i.isExplicit => ftvs += i
-            case i: TypeIdentifier                      => ftvs += i
-            case _                                      =>
+    Traverse(t, new PureTraversal {
+        override def typeIdentifier[I <: Kind.Identifier]: I => Pure[I] = i => {
+          i match {
+            case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
+            case i => ftvs += i
           }
-          Continue(t, this)
+          return_(i)
         }
-        override def visitNat(ae: Nat): Result[Nat] =
-          Stop(ae.visitAndRebuild({
-            case i: NatIdentifier if !i.isExplicit =>
-              ftvs += i
-              i
-            case n => n
-          }))
-        override def visitAddressSpace(
-                                        a: AddressSpace
-                                      ): Result[AddressSpace] = {
-          a match {
-            case i: AddressSpaceIdentifier if !i.isExplicit => ftvs += i
-            case _                                          =>
-          }
-          Continue(a, this)
-        }
-        override def visitN2N(n2n: NatToNat): Result[NatToNat] = {
-          n2n match {
-            case i: NatToNatIdentifier if !i.isExplicit => ftvs += i
-            case _                                      =>
-          }
-          Continue(n2n, this)
-        }
-        override def visitN2D(n2d: NatToData): Result[NatToData] = {
-          n2d match {
-            case i: NatToDataIdentifier if !i.isExplicit => ftvs += i
-            case _                                       =>
-          }
-          Continue(n2d, this)
-        }
-      }
-    )
+    })
     ftvs.distinct.toSeq
   }
 

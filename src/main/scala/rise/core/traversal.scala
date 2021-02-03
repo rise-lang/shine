@@ -23,7 +23,6 @@ object Traverse {
     def bind[T,S] : M[T] => (T => M[S]) => M[S] = monad.bind
 
     def nat : Nat => M[Nat] = return_
-    def addressSpace : AddressSpace => M[AddressSpace] = return_
     def binding[I <: Identifier] : I => M[I] = identifier
     def reference[I <: Identifier] : I => M[I] = identifier
     def depBinding[I <: Kind.Identifier] : I => M[I] = typeIdentifier
@@ -32,10 +31,16 @@ object Traverse {
       for { t1 <- etype(i.t) }
         yield i.setType(t1).asInstanceOf[I]
 
+    def addressSpace : AddressSpace => M[AddressSpace] = {
+      case i : AddressSpaceIdentifier =>
+        for { i1 <- typeIdentifier(i) }
+          yield i1
+      case a => return_(a)
+    }
     def datatype : DataType => M[DataType] = {
+      case i: DataTypeIdentifier => return_(i).asInstanceOf[M[DataType]]
       case NatType               => return_(NatType.asInstanceOf[DataType])
       case s : ScalarType        => return_(s.asInstanceOf[DataType])
-      case i: DataTypeIdentifier => return_(i.asInstanceOf[DataType])
       case ArrayType(n, d) =>
         for {n1 <- nat(n); d1 <- datatype(d)}
           yield ArrayType(n1, d1)
