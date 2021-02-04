@@ -29,7 +29,7 @@ object Traverse {
     def depReference[I <: Kind.Identifier] : I => M[I] = typeIdentifier
     def identifier[I <: Identifier] : I => M[I] = i =>
       for { t1 <- etype(i.t) }
-        yield i.setType(t1)
+        yield i.setType(t1).asInstanceOf[I]
 
     def addressSpace : AddressSpace => M[AddressSpace] = {
       case i : AddressSpaceIdentifier =>
@@ -104,10 +104,10 @@ object Traverse {
       for { t1 <- etype(p.t) }
         yield p.setType(t1)
 
-    def etype[T <: Type ] : T => M[T] = {
-      case TypePlaceholder => return_(TypePlaceholder.asInstanceOf[T])
-      case i: TypeIdentifier => for { i1 <- depReference(i) } yield i1
-      case dt: DataType => for {dt1 <- datatype(dt) } yield dt1
+    def etype[T <: Type ] : T => M[T] = t => (t match {
+      case TypePlaceholder => return_(TypePlaceholder)
+      case i: TypeIdentifier => depReference(i)
+      case dt: DataType => datatype(dt)
       case FunType(a, b) =>
         for {a1 <- etype(a); b1 <- etype(b)}
           yield FunType(a1, b1)
@@ -128,7 +128,7 @@ object Traverse {
           for { n2d1 <- depBinding(n2d); t1 <- etype(t) }
             yield DepFunType[NatToDataKind, Type](n2d1, t1)
       }
-    }
+    }).asInstanceOf[M[T]]
 
     def expr : Expr => M[Expr] = {
       case i : Identifier => for { r <- reference(i) } yield r

@@ -52,11 +52,11 @@ object uniqueNames {
     }
 
     def renameInExpr(e: Expr)(values: Map[Identifier, Identifier],
-                              types: Map[Kind.Identifier, Kind.Identifier]): Expr =
-      Renaming(values, types).expr(e).unwrap
+                              types: Map[Kind.Identifier, Kind.Identifier]): Pure[Expr] =
+      Renaming(values, types).expr(e)
 
-    def renameInTypes[T <: Type](t: T)(types: Map[Kind.Identifier, Kind.Identifier]): T =
-      Renaming(Map(), types).etype(t).unwrap
+    def renameInTypes[T <: Type](t: T)(types: Map[Kind.Identifier, Kind.Identifier]): Pure[T] =
+      Renaming(Map(), types).etype(t)
 
     def renameInNat(n: Nat)(types: Map[Kind.Identifier, Kind.Identifier]): Nat = {
       n.visitAndRebuild({
@@ -73,60 +73,65 @@ object uniqueNames {
       types: Map[Kind.Identifier, Kind.Identifier]
     ) extends PureTraversal {
       override def nat : Nat => Pure[Nat] = n => return_(renameInNat(n)(types))
-      override def expr : Expr => Pure[Expr] = e => (e match {
-        case x: Identifier => return_(values(x))
+      override def expr : Expr => Pure[Expr] = {
+        case x: Identifier => return_(values(x) : Expr)
 
-        case l@Lambda(x, b) =>
-          val x2 = x.copy(s"x$nextValN")(renameInTypes(x.t)(types))
-          val b2 = renameInExpr(b)(values + (x -> x2), types)
-          val t2 = renameInTypes(l.t)(types)
-          return_(Lambda(x2, b2)(t2))
+        case l@Lambda(x, b) => for {
+          xt2 <- renameInTypes(x.t)(types)
+          x2 = x.copy(s"x$nextValN")(xt2)
+          b2 <- renameInExpr(b)(values + (x -> x2), types)
+          t2 <- renameInTypes(l.t)(types)
+        } yield Lambda(x2, b2)(t2)
 
         case d@DepLambda(x: NatIdentifier, b) =>
           val x2 = NatIdentifier(s"n$nextNatN", x.range, x.isExplicit)
-          val b2 = renameInExpr(b)(values, types + (x -> x2))
-          val t2 = renameInTypes(d.t)(types + (x -> x2))
-          return_(DepLambda[NatKind](x2, b2)(t2))
+          for {
+            b2 <- renameInExpr(b)(values, types + (x -> x2))
+            t2 <- renameInTypes(d.t)(types + (x -> x2))
+          } yield DepLambda[NatKind](x2, b2)(t2)
 
         case d@DepLambda(x: DataTypeIdentifier, b) =>
           val x2 = DataTypeIdentifier(s"dt$nextDtN", x.isExplicit)
-          val b2 = renameInExpr(b)(values, types + (x -> x2))
-          val t2 = renameInTypes(d.t)(types)
-          return_(DepLambda[DataKind](x2, b2)(t2))
+          for {
+            b2 <- renameInExpr(b)(values, types + (x -> x2))
+            t2 <- renameInTypes(d.t)(types)
+          } yield DepLambda[DataKind](x2, b2)(t2)
 
         case d@DepLambda(x: AddressSpaceIdentifier, b) =>
           val x2 = AddressSpaceIdentifier(s"a$nextAN", x.isExplicit)
-          val b2 = renameInExpr(b)(values, types + (x -> x2))
-          val t2 = renameInTypes(d.t)(types)
-          return_(DepLambda[AddressSpaceKind](x2, b2)(t2))
+          for {
+            b2 <- renameInExpr(b)(values, types + (x -> x2))
+            t2 <- renameInTypes(d.t)(types)
+          } yield DepLambda[AddressSpaceKind](x2, b2)(t2)
 
         case e => super.expr(e)
-      }).asInstanceOf[Pure[Expr]]
+      }
 
-      override def etype[T <: Type] : T => Pure[T] = t => (t match {
+      override def etype[T <: Type] : T => Pure[T] = {
         case i: DataTypeIdentifier =>
-          return_(types.get(i).map(_.asInstanceOf[DataTypeIdentifier]).getOrElse(i))
+          return_(types.getOrElse(i, i).asInstanceOf[T])
 
         case DepFunType(x: NatIdentifier, b) =>
           val x2 = types.getOrElse(x,
-            NatIdentifier(s"n$nextNatN", x.range, x.isExplicit)).asInstanceOf[NatIdentifier]
-          val b2 = renameInTypes(b)(types + (x -> x2))
-          return_(DepFunType[NatKind, Type](x2, b2))
+            NatIdentifier(s"n$nextNatN", x.range, x.isExplicit))
+            .asInstanceOf[NatIdentifier with Kind.Explicitness]
+          for { b2 <- renameInTypes(b)(types + (x -> x2)) }
+            yield DepFunType[NatKind, Type](x2, b2).asInstanceOf[T]
 
         case DepFunType(x: DataTypeIdentifier, b) =>
           val x2 = types.getOrElse(x,
             DataTypeIdentifier(s"dt$nextDtN", x.isExplicit)).asInstanceOf[DataTypeIdentifier]
-          val b2 = renameInTypes(b)(types + (x -> x2))
-          return_(DepFunType[DataKind, Type](x2, b2))
+          for { b2 <- renameInTypes(b)(types + (x -> x2)) }
+            yield DepFunType[DataKind, Type](x2, b2).asInstanceOf[T]
 
         case DepFunType(x: AddressSpaceIdentifier, b) =>
           val x2 = types.getOrElse(x,
             AddressSpaceIdentifier(s"dt$nextAN", x.isExplicit)).asInstanceOf[AddressSpaceIdentifier]
-          val b2 = renameInTypes(b)(types + (x -> x2))
-          return_(DepFunType[AddressSpaceKind, Type](x2, b2))
+          for { b2 <- renameInTypes(b)(types + (x -> x2)) }
+            yield DepFunType[AddressSpaceKind, Type](x2, b2).asInstanceOf[T]
 
         case e => super.etype(e)
-      }).asInstanceOf[Pure[T]]
+      }
     }
 
     Renaming(Map(), Map()).expr(e).unwrap
