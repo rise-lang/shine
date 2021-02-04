@@ -1,7 +1,6 @@
 package rise.core
 
 import scala.language.implicitConversions
-
 import arithexpr.arithmetic.NamedVar
 import rise.core.semantics._
 import rise.core.types._
@@ -10,6 +9,9 @@ object Traverse {
   trait Monad[M[_]] {
     def return_[T] : T => M[T]
     def bind[T,S] : M[T] => (T => M[S]) => M[S]
+    def traverse[A] : Seq[M[A]] => M[Seq[A]] =
+      _.foldRight(return_(Nil : Seq[A]))({case (mx, mxs) =>
+        bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
   }
 
   implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]) = new {
@@ -91,13 +93,20 @@ object Traverse {
     }).asInstanceOf[M[I]]
 
     def data : Data => M[Data] = {
+      case (sd : ScalarData) => return_(sd : Data)
+      case VectorData(vd) => return_(VectorData(vd) : Data)
       case NatData(n) =>
         for { n1 <- nat(n) }
           yield NatData(n1)
       case IndexData(i, n) =>
         for { i1 <- nat(i); n1 <- nat(n) }
           yield IndexData(i1, n1)
-      case d => return_(d) // TODO
+      case ArrayData(ad) =>
+        for { ad1 <- monad.traverse(ad.map(data)) }
+          yield ArrayData(ad1)
+      case PairData(l, r) =>
+        for { l1 <- data(l); r1 <- data(r) }
+          yield PairData(l1, r1)
     }
 
     def primitive : Primitive => M[Expr] = p =>
