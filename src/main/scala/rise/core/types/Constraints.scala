@@ -524,19 +524,19 @@ object dependence {
       private val sols = Seq.newBuilder[Solution]
 
       override def nat: Nat => Pure[Nat] = {
-        case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n.asInstanceOf[Nat])
+        case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n : Nat)
         case ident: NatIdentifier if ident != depVar && !ident.isExplicit =>
           sols += Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
-          return_(ident.asImplicit.asInstanceOf[Nat])
+          return_(ident.asImplicit : Nat)
         case n => super.nat(n)
       }
 
       override def etype[T <: Type] : T => Pure[T] = {
-        case n2d@NatToDataApply(_, x) if x == depVar => return_(n2d.asInstanceOf[T])
+        case n2d@NatToDataApply(_, x) if x == depVar => return_(n2d : T)
         case ident@TypeIdentifier(_) =>
           val application = NatToDataApply(NatToDataIdentifier(freshName("nnf")), depVar)
           sols += Solution.subs(ident, application)
-          return_(ident.asInstanceOf[T])
+          return_(ident : T)
         case e => super.etype(e)
       }
 

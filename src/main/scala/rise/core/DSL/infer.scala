@@ -30,10 +30,10 @@ object infer {
         case h@primitives.typeHole(msg) =>
           println(s"found type hole ${msg}: ${h.t}")
           holeFound = true
-          return_(h.asInstanceOf[Expr])
+          return_(h : Expr)
         case p@primitives.printType(msg) =>
           println(s"$msg : ${p.t} (Rise level)")
-          return_(p.asInstanceOf[Expr])
+          return_(p : Expr)
         case e => super.expr(e)
       }
     })
