@@ -1,10 +1,9 @@
 package rise.core.DSL
 
 import Type.impl
-import rise.core.Traverse.{Pure, PureTraversal}
-import rise.core.traversal.{Continue, Result, Stop}
+import rise.core.Traverse._
 import rise.core.types._
-import rise.core.{DSL, Expr, Primitive, Traverse, traversal}
+import rise.core.{DSL, Expr, Primitive, Traverse}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
   override val t: Type = e.t

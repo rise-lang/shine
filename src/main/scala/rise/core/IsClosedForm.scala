@@ -2,7 +2,6 @@ package rise.core
 
 import arithexpr.arithmetic.NamedVar
 import rise.core.Traverse._
-import rise.core.traversal.{Continue, Result}
 import rise.core.types._
 
 object IsClosedForm {

@@ -2,9 +2,8 @@ package rise.core.DSL
 
 import rise.core.Traverse.Pure
 import rise.core.semantics.Data
-import rise.core.traversal.{Continue, Stop}
-import rise.core.types.{Flags, TypePlaceholder}
-import rise.core.{Expr, Literal, Primitive, Traverse, TypeAnnotation, TypeAssertion, traversal}
+import rise.core.types.{TypePlaceholder}
+import rise.core.{Expr, Primitive, Traverse, TypeAnnotation, TypeAssertion}
 
 final case class ToBeTyped[+T <: Expr](private val e: T) {
   def toExpr: Expr = infer(e)

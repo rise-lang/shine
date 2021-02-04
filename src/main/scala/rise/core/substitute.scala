@@ -1,9 +1,8 @@
 package rise.core
 
-import rise.core.Traverse.{Pure, PureExprTraversal, PureTraversal, Traversal}
+import rise.core.Traverse.{Pure, PureExprTraversal, PureTraversal}
 import rise.core.types._
 import rise.core.semantics.NatData
-import traversal.{Continue, Result, Stop}
 
 object substitute {
 

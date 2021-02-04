@@ -511,9 +511,6 @@ object Constraint {
 }
 
 object dependence {
-
-  import rise.core.traversal._
-
   /*
    * Given a type t which is in the scope of a natIdentifier depVar,
    * explicitly represent the dependence by replacing identifiers in t
