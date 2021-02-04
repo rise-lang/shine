@@ -90,6 +90,7 @@ object Traverse {
       case a: AddressSpaceIdentifier => addressSpace(a)
       case n2n: NatToNatIdentifier => natToNat(n2n)
       case n2d: NatToDataIdentifier => natToData(n2d)
+      case t: TypeIdentifier => `type`(t)
     }).asInstanceOf[M[I]]
 
     def data : Data => M[Data] = {
