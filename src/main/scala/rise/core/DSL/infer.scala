@@ -216,7 +216,7 @@ object infer {
       case e => super.expr(e)
     }
     override def nat : Nat => Pure[Nat] = n => return_(sol(n))
-    override def etype[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
+    override def `type`[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
     override def addressSpace : AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
     override def natToData : NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
     override def natToNat : NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))

@@ -35,8 +35,8 @@ class traverse extends test_util.Tests {
     override def expr : Expr => Trace[Expr] = e =>
       monad.bind(monad.write(e))(super.expr)
 
-    override def etype[T <: Type] : T => Trace[T] = t =>
-    monad.bind(monad.write(t))(super.etype)
+    override def `type`[T <: Type] : T => Trace[T] = t =>
+    monad.bind(monad.write(t))(super.`type`)
   }
 
   test("traverse an expression depth-first") {

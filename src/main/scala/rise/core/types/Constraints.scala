@@ -531,13 +531,13 @@ object dependence {
         case n => super.nat(n)
       }
 
-      override def etype[T <: Type] : T => Pure[T] = {
+      override def `type`[T <: Type] : T => Pure[T] = {
         case n2d@NatToDataApply(_, x) if x == depVar => return_(n2d : T)
         case ident@TypeIdentifier(i) =>
           val application = NatToDataApply(NatToDataIdentifier(freshName("nnf")), depVar)
           sols += Solution.subs(ident, application)
           return_(ident.asInstanceOf[T])
-        case e => super.etype(e)
+        case e => super.`type`(e)
       }
 
       def apply(t: Type): (Type, Solution) = {

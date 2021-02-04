@@ -48,24 +48,24 @@ object TopLevel {
 
   case class Visitor(ftvSubs: Solution, sol: Solution) extends PureTraversal {
     override def nat : Nat => Pure[Nat] = n => return_(cascadedApply(ftvSubs, sol, n))
-    override def etype[T <: Type] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
+    override def `type`[T <: Type] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
     override def addressSpace : AddressSpace => Pure[AddressSpace] = a => return_(cascadedApply(ftvSubs, sol, a))
     override def natToData : NatToData => Pure[NatToData] = n2d => return_(cascadedApply(ftvSubs, sol, n2d))
   }
 
   private def cascadedApply(ftvSubs: Solution, sol: Solution, t: Type): Type = {
     Traverse(t, new Visitor(ftvSubs, sol) {
-        override def etype[T <: Type] : T => Pure[T] = {
+        override def `type`[T <: Type] : T => Pure[T] = {
           case i: TypeIdentifier =>
             ftvSubs.ts.get(i) match {
-              case None => etype(t.asInstanceOf[T])
+              case None => `type`(t.asInstanceOf[T])
               case Some(i) =>
                 sol.ts.get(i.asInstanceOf[TypeIdentifier]) match {
                   case Some(x) => return_(x.asInstanceOf[T])
-                  case None    => etype(t.asInstanceOf[T])
+                  case None    => `type`(t.asInstanceOf[T])
                 }
             }
-          case _ => etype(t.asInstanceOf[T])
+          case _ => `type`(t.asInstanceOf[T])
         }
       }
     )

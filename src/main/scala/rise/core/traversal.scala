@@ -28,7 +28,7 @@ object Traverse {
     def depBinding[I <: Kind.Identifier] : I => M[I] = typeIdentifier
     def depReference[I <: Kind.Identifier] : I => M[I] = typeIdentifier
     def identifier[I <: Identifier] : I => M[I] = i =>
-      for { t1 <- etype(i.t) }
+      for { t1 <- `type`(i.t)}
         yield i.setType(t1).asInstanceOf[I]
 
     def addressSpace : AddressSpace => M[AddressSpace] = {
@@ -101,31 +101,31 @@ object Traverse {
     }
 
     def primitive : Primitive => M[Expr] = p =>
-      for { t1 <- etype(p.t) }
+      for { t1 <- `type`(p.t)}
         yield p.setType(t1)
 
-    def etype[T <: Type ] : T => M[T] = t => (t match {
+    def `type`[T <: Type ] : T => M[T] = t => (t match {
       case TypePlaceholder => return_(TypePlaceholder)
       case i: TypeIdentifier => depReference(i)
       case dt: DataType => datatype(dt)
       case FunType(a, b) =>
-        for {a1 <- etype(a); b1 <- etype(b)}
+        for {a1 <- `type`(a); b1 <- `type`(b)}
           yield FunType(a1, b1)
       case DepFunType(x, t) => x match {
         case n: NatIdentifier =>
-          for { n1 <- depBinding(n); t1 <- etype(t) }
+          for { n1 <- depBinding(n); t1 <- `type`(t)}
             yield DepFunType[NatKind, Type](n1, t1)
         case dt: DataTypeIdentifier =>
-          for { dt1 <- depBinding(dt); t1 <- etype(t) }
+          for { dt1 <- depBinding(dt); t1 <- `type`(t)}
             yield DepFunType[DataKind, Type](dt1, t1)
         case a: AddressSpaceIdentifier =>
-          for { a1 <- depBinding(a); t1 <- etype(t) }
+          for { a1 <- depBinding(a); t1 <- `type`(t)}
             yield DepFunType[AddressSpaceKind, Type](a1, t1)
         case n2n: NatToNatIdentifier =>
-          for { n2n1 <- depBinding(n2n); t1 <- etype(t) }
+          for { n2n1 <- depBinding(n2n); t1 <- `type`(t)}
             yield DepFunType[NatToNatKind, Type](n2n1, t1)
         case n2d: NatToDataIdentifier =>
-          for { n2d1 <- depBinding(n2d); t1 <- etype(t) }
+          for { n2d1 <- depBinding(n2d); t1 <- `type`(t)}
             yield DepFunType[NatToDataKind, Type](n2d1, t1)
       }
     }).asInstanceOf[M[T]]
@@ -136,37 +136,37 @@ object Traverse {
         for {
           x1 <- binding(x)
           e1 <- expr(e)
-          t1 <- etype(l.t)
+          t1 <- `type`(l.t)
         } yield Lambda(x1, e1)(t1)
       case a@App(f, e) =>
         for {
           f1 <- expr(f)
           e1 <- expr(e)
-          t1 <- etype(a.t)
+          t1 <- `type`(a.t)
         } yield App(f1, e1)(t1)
       case dl@DepLambda(x,e) => x match {
         case n: NatIdentifier =>
-          for {n1 <- depBinding(n); e1 <- expr(e); t1 <- etype(dl.t)}
+          for {n1 <- depBinding(n); e1 <- expr(e); t1 <- `type`(dl.t)}
             yield DepLambda[NatKind](n1, e1)(t1)
         case dt: DataTypeIdentifier =>
-          for {dt1 <- depBinding(dt); e1 <- expr(e); t1 <- etype(dl.t)}
+          for {dt1 <- depBinding(dt); e1 <- expr(e); t1 <- `type`(dl.t)}
             yield DepLambda[DataKind](dt1, e1)(t1)
       }
       case da@DepApp(f, x) => x match {
         case n: Nat =>
-          for {f1 <- expr(f); n1 <- nat(n); t1 <- etype(da.t)}
+          for {f1 <- expr(f); n1 <- nat(n); t1 <- `type`(da.t)}
             yield DepApp[NatKind](f1, n1)(t1)
         case dt: DataType =>
-          for {f1 <- expr(f); dt1 <- datatype(dt); t1 <- etype(da.t)}
+          for {f1 <- expr(f); dt1 <- datatype(dt); t1 <- `type`(da.t)}
             yield DepApp[DataKind](f1, dt1)(t1)
         case a: AddressSpace =>
-          for {f1 <- expr(f); a1 <- addressSpace(a); t1 <- etype(da.t)}
+          for {f1 <- expr(f); a1 <- addressSpace(a); t1 <- `type`(da.t)}
             yield DepApp[AddressSpaceKind](f1, a1)(t1)
         case n2n: NatToNat =>
-          for {f1 <- expr(f); n2n1 <- natToNat(n2n); t1 <- etype(da.t)}
+          for {f1 <- expr(f); n2n1 <- natToNat(n2n); t1 <- `type`(da.t)}
             yield DepApp[NatToNatKind](f1, n2n1)(t1)
         case n2d: NatToData =>
-          for {f1 <- expr(f); n2d1 <- natToData(n2d); t1 <- etype(da.t)}
+          for {f1 <- expr(f); n2d1 <- natToData(n2d); t1 <- `type`(da.t)}
             yield DepApp[NatToDataKind](f1, n2d1)(t1)
       }
       case Literal(d) =>
@@ -177,7 +177,7 @@ object Traverse {
   }
 
   trait ExprTraversal[M[_]] extends Traversal[M] {
-    override def etype[T <: Type] : T => M[T] = return_
+    override def `type`[T <: Type] : T => M[T] = return_
   }
 
   case class Pure[T](unwrap : T)
@@ -197,8 +197,8 @@ object Traverse {
 
   def apply(e : Expr, f : PureTraversal) : Expr = f.expr(e).unwrap
   def apply[M[_]](e : Expr, f : Traversal[M]) : M[Expr] = f.expr(e)
-  def apply[T <: Type](t : T, f : PureTraversal) : T = f.etype(t).unwrap
-  def apply[T <: Type, M[_]](e : T, f : Traversal[M]) : M[T] = f.etype(e)
+  def apply[T <: Type](t : T, f : PureTraversal) : T = f.`type`(t).unwrap
+  def apply[T <: Type, M[_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
 }
 
 object traversal {

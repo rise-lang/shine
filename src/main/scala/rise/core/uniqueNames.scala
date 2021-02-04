@@ -56,7 +56,7 @@ object uniqueNames {
       Renaming(values, types).expr(e)
 
     def renameInTypes[T <: Type](t: T)(types: Map[Kind.Identifier, Kind.Identifier]): Pure[T] =
-      Renaming(Map(), types).etype(t)
+      Renaming(Map(), types).`type`(t)
 
     def renameInNat(n: Nat)(types: Map[Kind.Identifier, Kind.Identifier]): Nat = {
       n.visitAndRebuild({
@@ -107,7 +107,7 @@ object uniqueNames {
         case e => super.expr(e)
       }
 
-      override def etype[T <: Type] : T => Pure[T] = {
+      override def `type`[T <: Type] : T => Pure[T] = {
         case i: DataTypeIdentifier =>
           return_(types.getOrElse(i, i).asInstanceOf[T])
 
@@ -130,7 +130,7 @@ object uniqueNames {
           for { b2 <- renameInTypes(b)(types + (x -> x2)) }
             yield DepFunType[AddressSpaceKind, Type](x2, b2).asInstanceOf[T]
 
-        case e => super.etype(e)
+        case e => super.`type`(e)
       }
     }
 
