@@ -80,7 +80,7 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
         C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(ManagedBufferType(dt)), Some(
           C.AST.FunCall(C.AST.DeclRef("createBuffer"), Seq(
             C.AST.DeclRef("ctx"),
-            C.AST.Literal(KernelExecutor.sizeInByte(dt).value.toString),
+            bufferSize(dt),
             C.AST.Literal(accessToString(access))
           ))
         ))),
@@ -113,7 +113,7 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
               C.AST.Cast(managedTyp(dt), C.AST.FunCall(C.AST.DeclRef("hostBufferSync"), Seq(
                 C.AST.DeclRef("ctx"),
                 C.AST.DeclRef(mident.name),
-                C.AST.Literal(KernelExecutor.sizeInByte(dt).value.toString),
+                bufferSize(dt),
                 C.AST.Literal(accessToString(access))
               )))
             )))
@@ -142,6 +142,18 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
     }
   }
 
+  private def bufferSize(dt: DataType): Expr =
+    dt match {
+      case ManagedBufferType(dt) => bufferSize(dt)
+      case _: ScalarType | _: IndexType | _: VectorType | _: PairType =>
+        C.AST.Literal(s"sizeof(${typ(dt)})")
+      case a: shine.DPIA.Types.ArrayType =>
+        C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
+      case a: DepArrayType => ??? // TODO
+      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | ContextType =>
+        throw new Exception(s"did not expect ${dt}")
+    }
+
   private def NDRangeToAST(r: NDRange): Seq[Expr] =
     Seq(C.AST.ArithmeticExpr(r.x), C.AST.ArithmeticExpr(r.y), C.AST.ArithmeticExpr(r.z))
 
@@ -162,7 +174,7 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
       C.AST.FunCall(C.AST.DeclRef("targetBufferSync"), Seq(
         C.AST.DeclRef("ctx"),
         buffer,
-        C.AST.Literal(KernelExecutor.sizeInByte(dt).value.toString),
+        bufferSize(dt),
         C.AST.Literal(accessToString(access))
       ))
     )))
@@ -174,8 +186,7 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
         (C.AST.Literal("sizeof(cl_mem)"),
           C.AST.UnaryExpr(UnaryOperator.&, C.AST.DeclRef(s"b$i")))
       case _ =>
-        (C.AST.Literal(KernelExecutor.sizeInByte(dt).value.toString),
-          C.AST.UnaryExpr(UnaryOperator.&, e))
+        (bufferSize(dt), C.AST.UnaryExpr(UnaryOperator.&, e))
     }
     C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("clSetKernelArg"), Seq(
       C.AST.StructMemberAccess(

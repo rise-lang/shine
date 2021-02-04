@@ -6,6 +6,14 @@ import shine.DPIA.Types._
 import shine.DPIA
 
 package object AST {
+  sealed trait IncludeDirective
+  case class IncludeHeader(name: String) extends IncludeDirective {
+    override def toString: String = s"#include <$name>"
+  }
+  case class IncludeSource(path: String) extends IncludeDirective {
+    override def toString: String = s"#include ${'"'}$path${'"'}"
+  }
+
   def makeParam(gen: CodeGenerator)(i: Identifier[_]): C.AST.ParamDecl = {
     // Turn array types into pointer types
     val paramType = getDataType(i) match {

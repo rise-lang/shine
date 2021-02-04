@@ -13,17 +13,17 @@ import scala.language.existentials
 case class Module(host: shine.C.Module, kernels: Seq[KernelModule]) {}
 
 object Module {
-  def fromPhrase(hostGen: shine.C.CodeGenerator,
+  def fromPhrase(hostGen: shine.OpenCL.HostCodeGenerator,
                  // kernelGen: shine.OpenCL.CodeGenerator,
                  hostFunName: String): Phrase[_ <: PhraseType] => Module = { p =>
     val (host, kernels) = separateDefinitions(hostFunName)(p)
-    Module(shine.C.Module.fromCFunDef(hostGen)(host),
+    Module(host.translateToModule(hostGen),
       kernels.map(k => shine.OpenCL.KernelModule.fromKernelDef(Some((k._1, k._2)))(k._3)))
   }
 
   type KernelSizedDef = (LocalSize, GlobalSize, OpenCLKernelDefinition)
   private def separateDefinitions(hostFunName: String
-                                 ): Phrase[_ <: PhraseType] => (CFunctionDefinition, Seq[KernelSizedDef])
+                                 ): Phrase[_ <: PhraseType] => (HostFunctionDefinition, Seq[KernelSizedDef])
   = p => {
     var kernelNum = 0
     var kernelDefinitions = scala.collection.mutable.ArrayBuffer[KernelSizedDef]()
@@ -56,7 +56,7 @@ object Module {
         case _ => Continue(p, this)
       }
     })
-    (CFunctionDefinition(hostFunName, hostDefinition), kernelDefinitions.toSeq)
+    (HostFunctionDefinition(hostFunName, hostDefinition), kernelDefinitions.toSeq)
   }
 
   private def closeDefinition(definition: Phrase[_ <: PhraseType]

@@ -22,7 +22,7 @@ object ExecuteOpenCL {
         writeToPath(s"${genDir.getAbsolutePath}/$fileName.cl",
           gen.opencl.kernel.asString(km))
       }
-      // hostPath is directly included in the main
+      // host.c is directly included in the main
       (s"clang -O2 $mainPath data/runtime/buffer_${buffer_impl}.c data/runtime/ocl.c -I data/runtime/ -o $binPath -lm -lOpenCL -Wno-parentheses-equality" !!)
       (Process(s"$binPath", new java.io.File(genDir.getAbsolutePath)) !!)
     } catch {

@@ -377,12 +377,11 @@ object KernelExecutor {
     case ArrayType(_, elemType) => getOutputType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getOutputType(elemType)
-    case DepArrayType(_, _) | _: NatToDataApply =>
-      throw new Exception("This should not happen")
-    case _: DepPairType | _: ManagedBufferType => throw new Exception("Dependent pair not supported as output type")
+    case DepArrayType(_, _) | _: NatToDataApply => throw new Exception("This should not happen")
+    case _: DepPairType | _: ManagedBufferType | ContextType => throw new Exception(s"${dt} not supported as output type")
   }
 
-  def sizeInByte(dt: DataType): SizeInByte = dt match {
+  private def sizeInByte(dt: DataType): SizeInByte = dt match {
     case s: ScalarType => s match {
       case shine.DPIA.Types.bool => SizeInByte(1)
       case shine.DPIA.Types.int | shine.DPIA.Types.NatType => SizeInByte(4)
@@ -398,7 +397,6 @@ object KernelExecutor {
     case _: IndexType => SizeInByte(4) // == sizeof(int)
     case v: VectorType => sizeInByte(v.elemType) * v.size
     case r: PairType => sizeInByte(r.fst) + sizeInByte(r.snd)
-    case ManagedBufferType(dt) => sizeInByte(dt)
     case a: ArrayType => sizeInByte(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
@@ -407,9 +405,9 @@ object KernelExecutor {
         case _: NatToDataIdentifier =>
           throw new Exception("This should not happen")
       }
-    case _: DepPairType => throw new Exception("This should not happen")
-    case _: NatToDataApply =>  throw new Exception("This should not happen")
-    case _: DataTypeIdentifier => throw new Exception("This should not happen")
+    case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier |
+         _: ManagedBufferType | ContextType =>
+      throw new Exception(s"the byte size of ${dt} should not be requested")
   }
 
   case class SizeInByte(value: Nat) {
