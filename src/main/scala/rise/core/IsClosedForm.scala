@@ -5,8 +5,14 @@ import rise.core.Traverse._
 import rise.core.types._
 
 object IsClosedForm {
-  case class Visitor (var boundV: Set[Identifier], var boundT: Set[Kind.Identifier]) extends Traversal[Option] {
+  case class Visitor(boundV: Set[Identifier], boundT: Set[Kind.Identifier]) extends Traversal[Option] {
     override implicit def monad = OptionMonad
+
+    override def reference[I <: Identifier]: I => Option[I] = i =>
+      if (boundV(i)) Some(i) else None
+
+    override def depReference[I <: Kind.Identifier]: I => Option[I] = i =>
+      if (boundT(i)) Some(i) else None
 
     override def nat: Nat => Option[Nat] = n => {
       val closed = n.varList.foldLeft(true) {
@@ -16,22 +22,27 @@ object IsClosedForm {
       if (closed) Some(n) else None
     }
 
-    override def binding[I <: Identifier]: I => Option[I] = i => {
-      this.boundV = this.boundV + i
-      Some(i)
+    override def expr: Expr => Option[Expr] = {
+      case Lambda(x, b) => this.copy(boundV = boundV + x).expr(b)
+      case DepLambda(x, b) => this.copy(boundT = boundT + x).expr(b)
+      case e => super.expr(e)
     }
 
-    override def depBinding[I <: Kind.Identifier]: I => Option[I] = i => {
-      this.boundT = this.boundT + i
-      Some(i)
+    override def natToData : NatToData => Option[NatToData] = {
+      case d@NatToDataLambda(x, e) =>
+        for { _ <- this.copy(boundT = boundT + x).`type`(e) }
+          yield d
+      case t => super.natToData(t)
     }
 
-    override def reference[I <: Identifier]: I => Option[I] = i => {
-      if (boundV(i)) Some(i) else None
-    }
-
-    override def depReference[I <: Kind.Identifier]: I => Option[I] = i => {
-      if (boundT(i)) Some(i) else None
+    override def `type`[T <: Type]: T => Option[T] = {
+      case d@DepFunType(x, t) =>
+        for { _ <- this.copy(boundT = boundT + x).`type`(t) }
+          yield d.asInstanceOf[T]
+      case d@DepPairType(x, dt) =>
+        for { _ <- this.copy(boundT = boundT + x).datatype(dt) }
+          yield d.asInstanceOf[T]
+      case t => super.`type`(t)
     }
   }
 
