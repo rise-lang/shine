@@ -195,10 +195,10 @@ object Traverse {
   trait PureTraversal extends Traversal[Pure] { override def monad = PureMonad }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
 
-  def apply                  (e : Expr, f : PureTraversal) : Expr    = f.expr(e).unwrap
-  def apply[T <: Type]       (t : T   , f : PureTraversal) : T       = f.etype(t).unwrap
-  def apply[M[_]]            (e : Expr, f : Traversal[M])  : M[Expr] = f.expr(e)
-  def apply[T <: Type, M[_]] (e : T   , f : Traversal[M])  : M[T]    = f.etype(e)
+  def apply(e : Expr, f : PureTraversal) : Expr = f.expr(e).unwrap
+  def apply[M[_]](e : Expr, f : Traversal[M]) : M[Expr] = f.expr(e)
+  def apply[T <: Type](t : T, f : PureTraversal) : T = f.etype(t).unwrap
+  def apply[T <: Type, M[_]](e : T, f : Traversal[M]) : M[T] = f.etype(e)
 }
 
 object traversal {
