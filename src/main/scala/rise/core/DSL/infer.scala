@@ -1,7 +1,7 @@
 package rise.core.DSL
 
 import Type.freshTypeIdentifier
-import rise.core.Traverse.{Pure, PureTraversal}
+import rise.core.Traverse.{Pure, PureExprTraversal, PureTraversal}
 import rise.core._
 import rise.core.types.InferenceException.error
 import rise.core.types._
@@ -25,7 +25,7 @@ object infer {
   def printTypesAndTypeHoles(expr: Expr): Unit = {
     // TODO: move holeFound state into the traverse
     var holeFound = false
-    Traverse(expr, new PureTraversal {
+    Traverse(expr, new PureExprTraversal {
       override def expr : Expr => Pure[Expr] = {
         case h@primitives.typeHole(msg) =>
           println(s"found type hole ${msg}: ${h.t}")
