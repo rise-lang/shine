@@ -115,6 +115,7 @@ object Traverse {
 
     def `type`[T <: Type ] : T => M[T] = t => (t match {
       case TypePlaceholder => return_(TypePlaceholder)
+      case i: DataTypeIdentifier => depReference(i)
       case i: TypeIdentifier => depReference(i)
       case dt: DataType => datatype(dt)
       case FunType(a, b) =>

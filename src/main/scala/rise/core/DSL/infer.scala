@@ -106,13 +106,18 @@ object infer {
   def getFTVs(t: Type): Seq[Kind.Identifier] = {
     val ftvs = mutable.ListBuffer[Kind.Identifier]()
     Traverse(t, new PureTraversal {
-        override def typeIdentifier[I <: Kind.Identifier]: I => Pure[I] = i => {
-          i match {
-            case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
-            case i => ftvs += i
-          }
-          return_(i)
+      override def typeIdentifier[I <: Kind.Identifier]: I => Pure[I] = i => {
+        i match {
+          case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
+          case i => ftvs += i
         }
+        return_(i)
+      }
+      override def nat: Nat => Pure[Nat] = ae =>
+        return_(ae.visitAndRebuild({
+          case i: NatIdentifier if !i.isExplicit => ftvs += i; i
+          case n => n
+        }))
     })
     ftvs.distinct.toSeq
   }
