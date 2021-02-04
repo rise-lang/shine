@@ -17,7 +17,7 @@ object Solution {
     Solution(Map(), Map(), Map(aa -> ab), Map(), Map(), Map(), Map(), Map())
   def subs(ma: MatrixLayoutIdentifier, mb: MatrixLayout): Solution =
     Solution(Map(), Map(), Map(), Map(ma -> mb), Map(), Map(),  Map(), Map())
-  def subs(fa: FragmentTypeIdentifier, fb: FragmentType): Solution =
+  def subs(fa: FragmentKindIdentifier, fb: FragmentKind): Solution =
     Solution(Map(), Map(), Map(), Map(), Map(fa -> fb), Map(),  Map(), Map())
   def subs(na: NatToDataIdentifier, nb: NatToData): Solution =
     Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb), Map(), Map())
@@ -31,7 +31,7 @@ case class Solution(ts: Map[Type, Type],
                     ns: Map[NatIdentifier, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
                     ms: Map[MatrixLayoutIdentifier, MatrixLayout],
-                    fs: Map[FragmentTypeIdentifier, FragmentType],
+                    fs: Map[FragmentKindIdentifier, FragmentKind],
                     n2ds: Map[NatToDataIdentifier, NatToData],
                     n2ns: Map[NatToNatIdentifier, NatToNat],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
@@ -46,7 +46,7 @@ case class Solution(ts: Map[Type, Type],
       Stop(sol(a))
     override def visitMatrixLayout(m: MatrixLayout): Result[MatrixLayout] =
       Stop(sol(m))
-    override def visitFragmentType(f: FragmentType): Result[FragmentType] =
+    override def visitFragmentType(f: FragmentKind): Result[FragmentKind] =
       Stop(sol(f))
     override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
 
@@ -81,7 +81,7 @@ case class Solution(ts: Map[Type, Type],
   def apply(m: MatrixLayout): MatrixLayout =
     substitute.matrixLayoutsInMatrixLayout(ms, m)
 
-  def apply(f: FragmentType): FragmentType =
+  def apply(f: FragmentKind): FragmentKind =
     substitute.fragmentTypesInFragmentType(fs, f)
 
   def apply(a: NatCollection): NatCollection =

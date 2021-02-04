@@ -18,12 +18,12 @@ case class GenerateFragment(rows: Nat,
                             d3: Nat,
                             dataType: DataType,
                             fill: Phrase[ExpType],
-                            fragmentType: FragmentType,
+                            fragmentType: FragmentKind,
                             layout: MatrixLayout) extends ExpPrimitive {
 
   fill :: ExpType(dataType, read)
 
-  override val t: ExpType = ExpType(Fragment(rows, columns, d3, dataType), write)
+  override val t: ExpType = ExpType(FragmentType(rows, columns, d3, dataType), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     GenerateFragment(f.nat(rows), f.nat(columns), f.nat(d3), f.data(dataType),

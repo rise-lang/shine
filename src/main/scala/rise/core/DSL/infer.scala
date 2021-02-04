@@ -70,7 +70,7 @@ object infer {
       ftvSubs.ms.view.mapValues(m =>
         m.asInstanceOf[MatrixLayoutIdentifier].asExplicit).toMap,
       ftvSubs.fs.view.mapValues(f =>
-        f.asInstanceOf[FragmentTypeIdentifier].asExplicit).toMap,
+        f.asInstanceOf[FragmentKindIdentifier].asExplicit).toMap,
       ftvSubs.n2ds.view.mapValues(n2d =>
         n2d.asInstanceOf[NatToDataIdentifier].asExplicit).toMap,
       ftvSubs.n2ns.view.mapValues(n2n =>
@@ -105,7 +105,7 @@ object infer {
             case i: NatIdentifier           => s.copy(ns = ns ++ Map(i -> i))
             case i: AddressSpaceIdentifier  => s.copy(as = as ++ Map(i -> i))
             case i: MatrixLayoutIdentifier  => s.copy(ms = ms ++ Map(i -> i))
-            case i: FragmentTypeIdentifier  => s.copy(fs = fs ++ Map(i -> i))
+            case i: FragmentKindIdentifier  => s.copy(fs = fs ++ Map(i -> i))
             case i: NatToDataIdentifier     => s.copy(n2ds = n2ds ++ Map(i -> i))
             case i: NatToNatIdentifier      => s.copy(n2ns = n2ns ++ Map(i -> i))
             case i: NatCollectionIdentifier => s.copy(natColls = natColls ++ Map(i -> i))

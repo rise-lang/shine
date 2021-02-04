@@ -3,7 +3,7 @@ package shine.cuda.ast
 import arithexpr.arithmetic.ArithExpr
 import shine.C.AST._
 import shine.DPIA.Types.AddressSpace
-import shine.OpenCL
+import shine.{OpenCL, cuda}
 import shine.OpenCL.AST.KernelDecl
 import shine.cuda.BuiltInAttribute
 

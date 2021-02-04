@@ -12,24 +12,24 @@ import shine.cuda.primitives.imperative.WmmaLoad
 
 import scala.xml.Elem
 
-object ToFragment{
-  def apply(rows: Nat, columns: Nat, d3: Nat, dataType: DataType, fragmentType: FragmentType, matrix: Phrase[ExpType]):
-  ToFragment = ToFragment(rows, columns, d3, dataType, fragmentType, matrix, MatrixLayoutIdentifier("ml"))
+object AsFragment{
+  def apply(rows: Nat, columns: Nat, d3: Nat, dataType: DataType, fragmentType: FragmentKind, matrix: Phrase[ExpType]):
+  AsFragment = AsFragment(rows, columns, d3, dataType, fragmentType, matrix, MatrixLayoutIdentifier("ml"))
 }
 
-case class ToFragment(rows: Nat,
+case class AsFragment(rows: Nat,
                       columns: Nat,
                       d3: Nat,
                       dataType: DataType,
-                      fragmentType: FragmentType,
+                      fragmentType: FragmentKind,
                       matrix: Phrase[ExpType],
                       layout: MatrixLayout) extends ExpPrimitive {
 
   matrix :: ExpType(ArrayType(rows, ArrayType(columns, dataType)), write)
-  override val t: ExpType = ExpType(Fragment(rows, columns, d3, dataType, fragmentType, layout), write)
+  override val t: ExpType = ExpType(FragmentType(rows, columns, d3, dataType, fragmentType, layout), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    ToFragment(f.nat(rows), f.nat(columns), f.nat(d3), f.data(dataType), fragmentType, VisitAndRebuild(matrix, f), layout)
+    AsFragment(f.nat(rows), f.nat(columns), f.nat(d3), f.data(dataType), fragmentType, VisitAndRebuild(matrix, f), layout)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

@@ -15,7 +15,7 @@ final case class WmmaStore(rows: Nat,
                            matrixTile: Phrase[AccType]
                           ) extends CommandPrimitive {
 
-  fragment :: ExpType(Fragment(rows, columns, d3, dataType), read)
+  fragment :: ExpType(FragmentType(rows, columns, d3, dataType), read)
   matrixTile :: AccType(ArrayType(rows, ArrayType(columns, dataType)))
 
   override def eval(s: Store): Store = ???

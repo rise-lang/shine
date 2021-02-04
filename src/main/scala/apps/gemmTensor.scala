@@ -7,7 +7,7 @@ import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types.{AddressSpace, _}
 import rise.openCL.primitives.oclReduceSeq
-import rise.Cuda.primitives.{fromFragment, generateFragment, mapFragmentElements, toFragment, toSharedMemoryShift}
+import rise.Cuda.primitives.{asMatrix, generateFragment, mapFragmentElements, asFragment, toSharedMemoryShift}
 import rise.openCL.TypedDSL.toPrivate
 import apps.mmTensor.{config, copyMatrix, crossProductOfMatrixTiles, generate2D, mmConfig, warpMMA}
 import rise.Cuda.TypedDSL._
@@ -57,17 +57,17 @@ object gemmTensor {
 
                 oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                   tensorMMA(
-                    abTiles._1 |> transpose |> toFragment |> toPrivate,
-                    abTiles._2 |> toFragment |> toPrivate,
+                    abTiles._1 |> transpose |> asFragment,
+                    abTiles._2 |> asFragment,
                     cTile)))
 
                 (bColumnsTCT._2 |>
                   transpose |>
-                  toFragment |> toPrivate |>
+                  asFragment |>
                   mapFragmentElements(fun(x => x * (beta / alpha)))) |>
 
                 mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
-                fromFragment |> // mTileFrag.nTileFrag.f32
+                asMatrix |> // mTileFrag.nTileFrag.f32
 
                 transpose)) |> // n/nTileFrag.nTileFrag.mTileFrag.f32
             join |> // n.mTileFrag.f32
@@ -131,14 +131,14 @@ object gemmTensor {
                           let(toPrivate(
                             abTilesWarp._1 |> transpose |> split(mTileFrag) |>
                               mapSeqUnroll(fun(aFragTile =>
-                                aFragTile |> toFragment))))
+                                aFragTile |> asFragment))))
                             be(aFrags => // mTileWarp/mTileFrag.WmmaAMatrix
 
                             //Load tiles of b-matrix into fragments
                             let(toPrivate(
                               abTilesWarp._2 |> transpose |> split(nTileFrag) |>
                                 mapSeqUnroll(fun(bFragTileT =>
-                                  bFragTileT |> transpose |> toFragment))))
+                                  bFragTileT |> transpose |> asFragment))))
                               be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
 
                               //Do matrix multiplication and accumulate with tensor cores
@@ -153,7 +153,7 @@ object gemmTensor {
                             cTiles |> transpose |> split(nTileFrag) |>
                               mapSeq(fun(cTileFragT =>
                                 cTileFragT |> transpose |>
-                                  toFragment |> toPrivate |>
+                                  asFragment |>
                                   mapFragmentElements(fun(x => x * (beta / alpha)))))))) |> // mTileWarp.nTileWarp.WmmaAcc
 
                         //Write result from fragments to output
@@ -162,7 +162,7 @@ object gemmTensor {
                             mapSeqUnroll(fun(dTiles =>
                               dTiles |>
                                 mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
-                                fromFragment |>      // mTileFrag.nTileFrag.f32
+                                asMatrix |>      // mTileFrag.nTileFrag.f32
                                 transpose)) |>          // nTileWarp/nTileFrag.nTileFrag.mTileFrag.f32
                             join |>                   // nTileWarp.mTileFrag.f32
                             transpose)) |>            // mTileWarp/mTileFrag.mTileFrag.nTileWarp.f32
@@ -322,7 +322,7 @@ object gemmTensor {
             mapSeqUnroll(fun(cTileFrag =>
 
               cTileFrag |>
-                toFragment |> toPrivate |>
+                asFragment |>
                 mapFragmentElements(fun(x => x * factor)))))))
 
 
@@ -359,7 +359,7 @@ object gemmTensor {
                 tiling2D(config.mTileFrag, config.nTileFrag) |>
                 mapSeqUnroll(fun(frag =>
                   frag |>
-                    toFragment |> toPrivate |>
+                    asFragment |>
                     mapFragmentElements(fun(x => x * factor)))))) |>
             transpose)) |>
 
@@ -381,7 +381,7 @@ object gemmTensor {
             mapSeqUnroll(fun(resultFrag =>
               resultFrag |>
                 mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
-                fromFragment |>             // mTileFrag.nTileFrag.f32
+                asMatrix |>             // mTileFrag.nTileFrag.f32
                 transpose)) |>              // (mTileWarp/mTileFrag)*(nTileWarp/nTileFrag).nTileFrag.mTileFrag.f32
             join |>                       // (mTileWarp/mTileFrag)*nTileWarp.mTileFrag.f32
             split(config.nTileWarp) |>
@@ -428,7 +428,7 @@ object gemmTensor {
                   mapSeqUnroll(fun(resultFrag =>
                     resultFrag |>
                       mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
-                      fromFragment |>
+                      asMatrix |>
                       transpose)) |>
                   join |>
                   split(config.nTileWarp) |>

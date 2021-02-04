@@ -12,18 +12,17 @@ import shine.cuda.primitives.imperative.WmmaStore
 
 import scala.xml.Elem
 
-case class FromFragment(rows: Nat,
-                        columns: Nat,
-                        d3: Nat,
-                        dataType: DataType,
-                        fragment: Phrase[ExpType]
-                       ) extends ExpPrimitive {
+case class AsMatrix(rows: Nat,
+                    columns: Nat,
+                    d3: Nat,
+                    dataType: DataType,
+                    fragment: Phrase[ExpType]) extends ExpPrimitive {
 
-  fragment :: ExpType(Fragment(rows, columns, d3, dataType), read)
+  fragment :: ExpType(FragmentType(rows, columns, d3, dataType), read)
   override val t: ExpType = ExpType(ArrayType(rows, ArrayType(columns, dataType)), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    FromFragment(f.nat(rows), f.nat(columns), f.nat(d3), f.data(dataType),
+    AsMatrix(f.nat(rows), f.nat(columns), f.nat(d3), f.data(dataType),
       VisitAndRebuild(fragment, f))
   }
 

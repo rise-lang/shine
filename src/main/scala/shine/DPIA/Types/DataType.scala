@@ -32,41 +32,41 @@ final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with 
   }
 }
 
-sealed trait FragmentType
+sealed trait FragmentKind
+
+object FragmentKind {
+  object AMatrix extends FragmentKind { override def toString = "AMatrix"}
+  object BMatrix extends FragmentKind { override def toString = "BMatrix"}
+  object Acuumulator extends FragmentKind { override def toString = "Acuumulator"}
+}
 
 object FragmentType {
-  object AMatrix extends FragmentType { override def toString = "AMatrix"}
-  object BMatrix extends FragmentType { override def toString = "BMatrix"}
-  object Acuumulator extends FragmentType { override def toString = "Acuumulator"}
+  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType =
+    FragmentType(rows, columns, d3, dataType, FragmentKind.Acuumulator, null)
 }
 
-object Fragment {
-  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): Fragment =
-    Fragment(rows, columns, d3, dataType, FragmentType.Acuumulator, null)
-}
-
-final case class Fragment(rows: Nat,
-                          columns: Nat,
-                          d3: Nat,
-                          dataType: DataType,
-                          fragmentType: FragmentType,
-                          layout: MatrixLayout) extends BasicType {
+final case class FragmentType(rows: Nat,
+                              columns: Nat,
+                              d3: Nat,
+                              dataType: DataType,
+                              fragmentKind: FragmentKind,
+                              layout: MatrixLayout) extends BasicType {
   override def toString: String =
-    if (fragmentType == FragmentType.Acuumulator)
-      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType]"
+    if (fragmentKind == FragmentKind.Acuumulator)
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
     else
-      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType,$layout]"
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
 
   override def equals(o: Any): Boolean = {
-    if (!o.isInstanceOf[Fragment])
+    if (!o.isInstanceOf[FragmentType])
       return false;
 
-    val f = o.asInstanceOf[Fragment]
-    if (fragmentType == FragmentType.Acuumulator && f.fragmentType == FragmentType.Acuumulator){
+    val f = o.asInstanceOf[FragmentType]
+    if (fragmentKind == FragmentKind.Acuumulator && f.fragmentKind == FragmentKind.Acuumulator){
       f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType)
     } else {
       f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType) &&
-        f.fragmentType.equals(fragmentType) && f.layout.equals(layout)
+        f.fragmentKind.equals(fragmentKind) && f.layout.equals(layout)
     }
   }
 }
@@ -185,11 +185,11 @@ object DataType {
       case a: ArrayType =>
         ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
           substitute(ae, `for`, a.elemType))
-      case f: Fragment =>
-        Fragment(ArithExpr.substitute(f.rows, Map((`for`, ae))),
+      case f: FragmentType =>
+        FragmentType(ArithExpr.substitute(f.rows, Map((`for`, ae))),
           ArithExpr.substitute(f.columns, Map((`for`, ae))),
           ArithExpr.substitute(f.d3, Map((`for`, ae))),
-          substitute(ae, `for`, f.dataType), f.fragmentType, f.layout)
+          substitute(ae, `for`, f.dataType), f.fragmentKind, f.layout)
       case a: DepArrayType =>
         val subMap = Map((`for`, ae))
         val newSize = ArithExpr.substitute(a.size, subMap)

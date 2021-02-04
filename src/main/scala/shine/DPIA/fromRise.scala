@@ -826,38 +826,38 @@ object fromRise {
             GlobalToShared(dt, e))
       }
 
-      case cuda.toFragment() => fromType {
-        case expT(ArrayType(rows, ArrayType(columns, dt)), `read`) ->: expT(Fragment(_, _, d3, _, fragType, layout), _) =>
+      case cuda.asFragment() => fromType {
+        case expT(ArrayType(rows, ArrayType(columns, dt)), `read`) ->: expT(FragmentType(_, _, d3, _, fragType, layout), _) =>
           fun[ExpType](expT(ArrayType(rows, ArrayType(columns, dt)), read), a =>
-            ToFragment(rows, columns, d3, dt, fragType, a, layout))
+            AsFragment(rows, columns, d3, dt, fragType, a, layout))
       }
 
-      case cuda.fromFragment() => fromType {
-        case expT(Fragment(rows, columns, d3, dt, FragmentType.Acuumulator, _), `read`) ->: expT(ArrayType(_, ArrayType(_, _)), `write`) =>
-          fun[ExpType](expT(Fragment(rows, columns, d3, dt), read), dFrag =>
-            FromFragment(rows, columns, d3, dt, dFrag))
+      case cuda.asMatrix() => fromType {
+        case expT(FragmentType(rows, columns, d3, dt, FragmentKind.Acuumulator, _), `read`) ->: expT(ArrayType(_, ArrayType(_, _)), `write`) =>
+          fun[ExpType](expT(FragmentType(rows, columns, d3, dt), read), dFrag =>
+            AsMatrix(rows, columns, d3, dt, dFrag))
       }
 
       case cuda.generateFragment() => fromType {
-        case expT(dt, `read`) ->: expT(Fragment(rows, columns, d3, _, fragType, layout), read) =>
+        case expT(dt, `read`) ->: expT(FragmentType(rows, columns, d3, _, fragType, layout), read) =>
           fun[ExpType](expT(dt, read), fill =>
             GenerateFragment(rows, columns, d3, dt, fill, fragType, layout))
       }
 
       case cuda.tensorMMA() => fromType {
-        case expT(Fragment(_, _, _, dt, FragmentType.AMatrix, layoutA), `read`) ->: expT(Fragment(_, _, _, _, FragmentType.BMatrix,layoutB), `read`) ->:
-          expT(Fragment(m, n, k, dtResult, FragmentType.Acuumulator, _), `read`) ->: expT(Fragment(_, _, _, _, FragmentType.Acuumulator, _), `write`) =>
-          fun[ExpType](expT(Fragment(m, k, n, dt, FragmentType.AMatrix, layoutA), read), a =>
-            fun[ExpType](expT(Fragment(k, n, m, dt, FragmentType.BMatrix, layoutB), read), b =>
-              fun[ExpType](expT(Fragment(m, n, k, dtResult), read), c =>
+        case expT(FragmentType(_, _, _, dt, FragmentKind.AMatrix, layoutA), `read`) ->: expT(FragmentType(_, _, _, _, FragmentKind.BMatrix,layoutB), `read`) ->:
+          expT(FragmentType(m, n, k, dtResult, FragmentKind.Acuumulator, _), `read`) ->: expT(FragmentType(_, _, _, _, FragmentKind.Acuumulator, _), `write`) =>
+          fun[ExpType](expT(FragmentType(m, k, n, dt, FragmentKind.AMatrix, layoutA), read), a =>
+            fun[ExpType](expT(FragmentType(k, n, m, dt, FragmentKind.BMatrix, layoutB), read), b =>
+              fun[ExpType](expT(FragmentType(m, n, k, dtResult), read), c =>
                 TensorMatMultAdd(m, n, k, layoutA, layoutB, dt, dtResult, a, b, c))))
       }
 
       case cuda.mapFragmentElements() => fromType {
-        case (expT(dt: DataType, `read`) ->: expT(_, `write`)) ->: expT(fragType : Fragment, `read`) ->: expT(_, _) =>
+        case (expT(dt: DataType, `read`) ->: expT(_, `write`)) ->: expT(fragType : FragmentType, `read`) ->: expT(_, _) =>
           fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
             fun[ExpType](ExpType(fragType, read), fragment =>
-              MapFragmentElements(fragType.asInstanceOf[Fragment], fragment, f)))
+              MapFragmentElements(fragType.asInstanceOf[FragmentType], fragment, f)))
       }
 
       case cuda.toSharedMemoryShift() => fromType {
@@ -950,11 +950,11 @@ object fromRise {
       case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
       case _ => ???
     }
-    case f: rt.Fragment =>
-      f.fragmentType match {
-        case rt.FragmentType.AMatrix => Fragment(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentType.AMatrix, layout(f.layout))
-        case rt.FragmentType.BMatrix => Fragment(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentType.BMatrix, layout(f.layout))
-        case rt.FragmentType.Acuumulator => Fragment(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentType.Acuumulator, layout(f.layout))
+    case f: rt.FragmentType =>
+      f.fragmentKind match {
+        case rt.FragmentKind.AMatrix => FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentKind.AMatrix, layout(f.layout))
+        case rt.FragmentKind.BMatrix => FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentKind.BMatrix, layout(f.layout))
+        case rt.FragmentKind.Acuumulator => FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentKind.Acuumulator, layout(f.layout))
         case _ => throw new Exception("this should not happen")
       }
   }

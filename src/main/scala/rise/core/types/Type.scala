@@ -117,54 +117,54 @@ final case class MatrixLayoutIdentifier(
   override def hashCode(): Int = this.name.hashCode()
 }
 
-sealed trait FragmentType
+sealed trait FragmentKind
 
-object FragmentType {
-  object AMatrix extends FragmentType { override def toString = "AMatrix"}
-  object BMatrix extends FragmentType { override def toString = "BMatrix"}
-  object Acuumulator extends FragmentType { override def toString = "Acuumulator"}
+object FragmentKind {
+  object AMatrix extends FragmentKind { override def toString = "AMatrix"}
+  object BMatrix extends FragmentKind { override def toString = "BMatrix"}
+  object Acuumulator extends FragmentKind { override def toString = "Acuumulator"}
 }
 
-final case class FragmentTypeIdentifier(name: String,
+final case class FragmentKindIdentifier(name: String,
                                         override val isExplicit: Boolean = false
-                                       ) extends FragmentType
+                                       ) extends FragmentKind
   with Kind.Identifier
   with Kind.Explicitness {
   override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: FragmentTypeIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: FragmentTypeIdentifier =
+  override def asExplicit: FragmentKindIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: FragmentKindIdentifier =
     this.copy(isExplicit = false)
   override def equals(that: Any): Boolean = that match {
-    case a: FragmentTypeIdentifier => this.name == a.name
+    case a: FragmentKindIdentifier => this.name == a.name
     case _                         => false
   }
   override def hashCode(): Int = this.name.hashCode()
 }
 
-object Fragment {
-  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): Fragment = {
-    Fragment(rows, columns, d3, dataType, FragmentType.Acuumulator, MatrixLayout.Row_Major)
+object FragmentType {
+  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType = {
+    FragmentType(rows, columns, d3, dataType, FragmentKind.Acuumulator, MatrixLayout.Row_Major)
   }
 }
 
-final case class Fragment(rows: Nat,
-                          columns: Nat,
-                          d3: Nat,
-                          dataType: DataType,
-                          fragmentType: FragmentType,
-                          layout: MatrixLayout) extends DataType {
+final case class FragmentType(rows: Nat,
+                              columns: Nat,
+                              d3: Nat,
+                              dataType: DataType,
+                              fragmentKind: FragmentKind,
+                              layout: MatrixLayout) extends DataType {
   override def toString: String =
-    if (fragmentType == FragmentType.Acuumulator)
-      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType]"
+    if (fragmentKind == FragmentKind.Acuumulator)
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
     else
-      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentType,$layout]"
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
 
   override def equals(o: Any): Boolean = {
-    if (!o.isInstanceOf[Fragment])
+    if (!o.isInstanceOf[FragmentType])
       return false;
 
-    val f = o.asInstanceOf[Fragment]
-    if (fragmentType == FragmentType.Acuumulator && f.fragmentType == FragmentType.Acuumulator) {
+    val f = o.asInstanceOf[FragmentType]
+    if (fragmentKind == FragmentKind.Acuumulator && f.fragmentKind == FragmentKind.Acuumulator) {
       f.rows.equals(rows) && f.columns.equals(columns) && f.dataType.equals(dataType)
     } else {
       super.equals(o);

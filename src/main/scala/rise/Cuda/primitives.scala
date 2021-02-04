@@ -32,22 +32,22 @@ object primitives {
     mapType
   }
 
-  @primitive object toFragment extends Primitive with Builder {
+  @primitive object asFragment extends Primitive with Builder {
     impl{rows: Nat =>
       impl{columns: Nat =>
         impl{d3: Nat =>
           impl{dt: DataType =>
-            impl{fragType: FragmentType =>
+            impl{fragType: FragmentKind =>
               impl{matrixLayout: MatrixLayout =>
-                ArrayType(rows, ArrayType(columns, dt)) ->: Fragment(rows, columns, d3, dt, fragType, matrixLayout)}}}}}}
+                ArrayType(rows, ArrayType(columns, dt)) ->: FragmentType(rows, columns, d3, dt, fragType, matrixLayout)}}}}}}
   }
 
-  @primitive object fromFragment extends Primitive with Builder {
+  @primitive object asMatrix extends Primitive with Builder {
     impl{rows: Nat =>
       impl{columns: Nat =>
         impl{d3: Nat =>
           impl{dt: DataType =>
-            Fragment(rows, columns, d3, dt) ->: ArrayType(rows, ArrayType(columns, dt))}}}}
+            FragmentType(rows, columns, d3, dt) ->: ArrayType(rows, ArrayType(columns, dt))}}}}
   }
 
   @primitive object generateFragment extends Primitive with Builder {
@@ -55,8 +55,8 @@ object primitives {
       impl{columns: Nat =>
         impl{d3: Nat =>
           impl{dt: DataType =>
-            impl{fragType: FragmentType =>
-              dt ->: Fragment(rows, columns, d3, dt, fragType, MatrixLayout.Row_Major)}}}}}
+            impl{fragType: FragmentKind =>
+              dt ->: FragmentType(rows, columns, d3, dt, fragType, MatrixLayout.Row_Major)}}}}}
   }
 
   @primitive object tensorMMA extends Primitive with Builder {
@@ -67,9 +67,9 @@ object primitives {
             impl{k: Nat =>
               impl{dt: DataType =>
                 impl{dt2: DataType =>
-                  Fragment(m, k, n, dt, FragmentType.AMatrix, layoutA) ->:
-                    Fragment(k, n, m, dt, FragmentType.BMatrix, layoutB) ->:
-                    Fragment(m, n, k, dt2) ->: Fragment(m, n, k, dt2)}}}}}}}
+                  FragmentType(m, k, n, dt, FragmentKind.AMatrix, layoutA) ->:
+                    FragmentType(k, n, m, dt, FragmentKind.BMatrix, layoutB) ->:
+                    FragmentType(m, n, k, dt2) ->: FragmentType(m, n, k, dt2)}}}}}}}
   }
 
   @primitive object toSharedMemoryShift extends Primitive with Builder {

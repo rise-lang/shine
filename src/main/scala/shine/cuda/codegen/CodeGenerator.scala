@@ -51,7 +51,7 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
           //Pointer to first element of the matrix
           val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
-          val (layout, ldm) = inferFragment(matrix, env, m, n, k, FragmentType.Acuumulator)
+          val (layout, ldm) = inferFragment(matrix, env, m, n, k, FragmentKind.Acuumulator)
           if (layoutIdentifier.isInstanceOf[MatrixLayoutIdentifier])
             layoutIdentifier.asInstanceOf[MatrixLayoutIdentifier].setLayout(layout)
 
@@ -59,7 +59,7 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
             C.AST.ExprStmt(C.AST.FunCall(
               C.AST.DeclRef("nvcuda::wmma::load_matrix_sync"),
                 //only accumulator-fragments must specify their layout
-                if (fragType != FragmentType.Acuumulator)
+                if (fragType != FragmentKind.Acuumulator)
                   immutable.Seq(
                     frag,
                     matrixPtr,
@@ -77,7 +77,7 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
           acc(matrixAcc, env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
             val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
-            val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, FragmentType.Acuumulator)
+            val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, FragmentKind.Acuumulator)
 
             C.AST.ExprStmt(C.AST.FunCall(
               C.AST.DeclRef("nvcuda::wmma::store_matrix_sync"),
@@ -158,24 +158,19 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
         exp(pipe, env, Nil, pipe =>
           C.AST.ExprStmt(C.AST.StructMemberAccess(pipe, C.AST.DeclRef("commit_and_wait()"))))
 
+//      case OpenCLNew(AddressSpace.Fragment, dt, Lambda(v, p)) =>
+//        OpenCLCodeGen.codeGenOpenCLNew(a, dt, v, p, env)
+
       case _ => super.cmd(phrase, env)
     }
   }
 
-  def inferFragment[T <: BasePhraseType](matrix: Phrase[T], env: Environment, m: Nat, n: Nat, k: Nat, fragmentType: FragmentType): (MatrixLayout, ArithExpr) = {
-    val rows = fragmentType match {
-      case FragmentType.AMatrix =>
-        m
-      case FragmentType.BMatrix =>
-        k
-      case FragmentType.Acuumulator =>
-        m
-    }
-
+  def inferFragment[T <: BasePhraseType](matrix: Phrase[T], env: Environment, m: Nat, n: Nat, k: Nat, fragmentType: FragmentKind): (MatrixLayout, ArithExpr) = {
     val index00 = matrixIndexAsNat(matrix, env, 0, 0)
-    val indexNextRowBlock_RowMajor = matrixIndexAsNat(matrix, env, rows, 0)
-    val indexNextRowBlock_ColumnMajor = matrixIndexAsNat(matrix, env, 0, rows)
-    val diffWithVars = (indexNextRowBlock_RowMajor - indexNextRowBlock_ColumnMajor).enforceSimplification
+    val index01 = matrixIndexAsNat(matrix, env, 0, 1)
+    val index10 = matrixIndexAsNat(matrix, env, 1, 0)
+
+    val diffWithVars = (index10 - index01).enforceSimplification
 
     //Difference bewteen indices can containing variables, which must be a global matrix
     //dimensions (dimension of the matrix in memory) and therefore greater than 1
@@ -191,9 +186,9 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
 
     val ldm =
       (if (matrixLayout == MatrixLayout.Row_Major)
-        matrixIndexAsNat(matrix, env, 1, 0)
+        index10
       else
-        matrixIndexAsNat(matrix, env, 0, 1)) -
+        index01) -
       index00
 
     (matrixLayout, ldm)
@@ -281,11 +276,11 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
   }
 
   override def typ(dt: DataType): Type = dt match {
-    case Fragment(m, n, k, dataType, FragmentType.AMatrix, layout) =>
+    case FragmentType(m, n, k, dataType, FragmentKind.AMatrix, layout) =>
       cuda.ast.WmmaAMatrix(m, n, k, typ(dataType), layout)
-    case Fragment(m, n, k, dataType, FragmentType.BMatrix, layout) =>
+    case FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layout) =>
       cuda.ast.WmmaBMatrix(m, n, k, typ(dataType), layout)
-    case Fragment(m, n, k, dataType, FragmentType.Acuumulator, _) =>
+    case FragmentType(m, n, k, dataType, FragmentKind.Acuumulator, _) =>
       cuda.ast.WmmaAccumulator(m, n, k, typ(dataType))
     case shine.DPIA.Types.f16 =>
       cuda.ast.Type.half

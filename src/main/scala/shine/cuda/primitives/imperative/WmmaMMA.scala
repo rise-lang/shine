@@ -20,10 +20,10 @@ case class WmmaMMA(m: Nat,
                    cMatrix: Phrase[ExpType],
                    resultMatrix: Phrase[AccType]
                   ) extends CommandPrimitive {
-  aMatrix :: ExpType(Fragment(m, k, n, dataType, FragmentType.AMatrix, layoutA), read)
-  bMatrix :: ExpType(Fragment(k, n, m, dataType, FragmentType.BMatrix, layoutB), read)
-  cMatrix :: ExpType(Fragment(m, n, k, dataTypeAcc), read)
-  resultMatrix :: AccType(Fragment(m, n, k, dataTypeAcc))
+  aMatrix :: ExpType(FragmentType(m, k, n, dataType, FragmentKind.AMatrix, layoutA), read)
+  bMatrix :: ExpType(FragmentType(k, n, m, dataType, FragmentKind.BMatrix, layoutB), read)
+  cMatrix :: ExpType(FragmentType(m, n, k, dataTypeAcc), read)
+  resultMatrix :: AccType(FragmentType(m, n, k, dataTypeAcc))
 
   override def eval(s: Store): Store = ???
 

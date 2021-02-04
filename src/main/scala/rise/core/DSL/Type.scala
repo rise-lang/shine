@@ -85,8 +85,8 @@ object Type {
   implicit def toMatrixLayoutWrapper[A](f: MatrixLayout => A): MatrixLayoutWrapper[A] =
     MatrixLayoutWrapper(f)
 
-  case class FragementTypeWrapper[A](f: FragmentType => A)
-  implicit def toFragmentTypeWrapper[A](f: FragmentType => A): FragementTypeWrapper[A] =
+  case class FragementTypeWrapper[A](f: FragmentKind => A)
+  implicit def toFragmentTypeWrapper[A](f: FragmentKind => A): FragementTypeWrapper[A] =
     FragementTypeWrapper(f)
 
   case class TypeFunctionWrapper[A](f: TypeIdentifier => A)
@@ -152,7 +152,7 @@ object Type {
     }
 
     def apply[A](w: FragementTypeWrapper[A]): A = {
-      w.f(FragmentTypeIdentifier(freshName("ft")))
+      w.f(FragmentKindIdentifier(freshName("ft")))
     }
 
     def apply[A](w: TypeFunctionWrapper[A]): A = {

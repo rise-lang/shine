@@ -274,11 +274,11 @@ object substitute {
   //substitue in FragmentType
 
   def fragmentTypesInFragmentType(
-      subs: Map[FragmentTypeIdentifier, FragmentType],
-      in: FragmentType
-  ): FragmentType = {
+                                   subs: Map[FragmentKindIdentifier, FragmentKind],
+                                   in: FragmentKind
+  ): FragmentKind = {
     in match {
-      case i: FragmentTypeIdentifier =>
+      case i: FragmentKindIdentifier =>
         subs.get(i) match {
           case Some(a) => a
           case None    => i
@@ -288,10 +288,10 @@ object substitute {
   }
 
   def fragmentTypeInFragmentType(
-      a: FragmentType,
-     `for`: FragmentTypeIdentifier,
-      in: FragmentType
-  ): FragmentType = {
+                                  a: FragmentKind,
+                                  `for`: FragmentKindIdentifier,
+                                  in: FragmentKind
+  ): FragmentKind = {
     if (in == `for`) {
       a
     } else {

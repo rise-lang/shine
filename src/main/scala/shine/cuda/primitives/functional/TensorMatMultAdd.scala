@@ -23,11 +23,11 @@ final case class TensorMatMultAdd(m: Nat,
                                   aMatrix: Phrase[ExpType],
                                   bMatrix: Phrase[ExpType],
                                   cMatrix: Phrase[ExpType]) extends ExpPrimitive {
-  aMatrix :: ExpType(Fragment(m, k, n, dataType, FragmentType.AMatrix, layoutA), read)
-  bMatrix :: ExpType(Fragment(k, n, m, dataType, FragmentType.BMatrix, layoutB), read)
-  cMatrix :: ExpType(Fragment(m, n, k, dataTypeAcc), read)
+  aMatrix :: ExpType(FragmentType(m, k, n, dataType, FragmentKind.AMatrix, layoutA), read)
+  bMatrix :: ExpType(FragmentType(k, n, m, dataType, FragmentKind.BMatrix, layoutB), read)
+  cMatrix :: ExpType(FragmentType(m, n, k, dataTypeAcc), read)
 
-  override val t: ExpType = ExpType(Fragment(m, n, k, dataTypeAcc), write)
+  override val t: ExpType = ExpType(FragmentType(m, n, k, dataTypeAcc), write)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     TensorMatMultAdd(f.nat(m), f.nat(n), f.nat(k), layoutA, layoutB,
@@ -37,9 +37,9 @@ final case class TensorMatMultAdd(m: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    con(aMatrix)(λ(ExpType(Fragment(m, n, k, dataType, FragmentType.AMatrix, layoutA), read))(aMatrix =>
-      con(bMatrix)(λ(ExpType(Fragment(m, n, k, dataType, FragmentType.BMatrix, layoutB), read))(bMatrix =>
-        con(cMatrix)(λ(ExpType(Fragment(m, n, k, dataTypeAcc), read))(cMatrix =>
+    con(aMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.AMatrix, layoutA), read))(aMatrix =>
+      con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layoutB), read))(bMatrix =>
+        con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc), read))(cMatrix =>
             WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
   }
 

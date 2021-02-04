@@ -34,8 +34,8 @@ object TopLevel {
               s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
             case i: MatrixLayoutIdentifier =>
               s.copy(ms = ms ++ Map(i -> impl{ x: MatrixLayout => x }))
-            case i: FragmentTypeIdentifier =>
-              s.copy(fs = fs ++ Map(i -> impl{ x: FragmentType => x }))
+            case i: FragmentKindIdentifier =>
+              s.copy(fs = fs ++ Map(i -> impl{ x: FragmentKind => x }))
             case i: NatToDataIdentifier =>
               s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
             case i: NatToNatIdentifier =>

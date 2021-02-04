@@ -28,7 +28,7 @@ case class MatrixLayoutConstraint(a: MatrixLayout, b: MatrixLayout)
   extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
-case class FragmentTypeConstraint(a: FragmentType, b: FragmentType)
+case class FragmentTypeConstraint(a: FragmentKind, b: FragmentKind)
   extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
@@ -101,7 +101,7 @@ object Constraint {
             decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
           case (VectorType(sa, ea), VectorType(sb, eb)) =>
             decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
-          case (Fragment(rowsa, columnsa, d3a, dta, fragTypea, layouta), Fragment(rowsb, columnsb, d3b, dtb, fragTypeb, layoutb)) =>
+          case (FragmentType(rowsa, columnsa, d3a, dta, fragTypea, layouta), FragmentType(rowsb, columnsb, d3b, dtb, fragTypeb, layoutb)) =>
             decomposed(Seq(NatConstraint(rowsa, rowsb), NatConstraint(columnsa, columnsb), NatConstraint(d3a, d3b),
               TypeConstraint(dta, dtb), FragmentTypeConstraint(fragTypea, fragTypeb), MatrixLayoutConstraint(layouta, layoutb)))
           case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
@@ -267,8 +267,8 @@ object Constraint {
 
       case FragmentTypeConstraint(a, b) =>
         (a, b) match {
-          case (i: FragmentTypeIdentifier, _) if (!i.isExplicit) => Solution.subs(i, b)
-          case (_, i: FragmentTypeIdentifier) if (!i.isExplicit) => Solution.subs(i, a)
+          case (i: FragmentKindIdentifier, _) if (!i.isExplicit) => Solution.subs(i, b)
+          case (_, i: FragmentKindIdentifier) if (!i.isExplicit) => Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
         }

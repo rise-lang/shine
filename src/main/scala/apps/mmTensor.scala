@@ -9,7 +9,7 @@ import rise.core.types.{AddressSpace, _}
 import rise.core.types.MatrixLayout._
 import rise.openCL.primitives.{oclReduceSeq, oclReduceSeqUnroll}
 import rise.Cuda.TypedDSL._
-import rise.Cuda.primitives.{fromFragment, generateFragment, toFragment, toSharedMemoryShift}
+import rise.Cuda.primitives.{asMatrix, generateFragment, asFragment, toSharedMemoryShift}
 import rise.openCL.TypedDSL.{toLocal, toPrivate}
 
 //Matrixmultiplications (mm) with tensor cores
@@ -51,12 +51,12 @@ object mmTensor {
       (mTileFrag `.` kTileFrag `.` f16) ->: (kTileFrag `.` nTileFrag `.` f16) ->: (mTileFrag `.` nTileFrag `.` f32)
     )((a, b) =>
       tensorMMA(
-        a |> toFragment |> toPrivate,
-        b |> toFragment |> toPrivate,
+        a |> asFragment |> toPrivate,
+        b |> asFragment |> toPrivate,
         l(0f) |> generateFragment |> toPrivate)
         |> toPrivate
 
-        |> fromFragment
+        |> asMatrix
     )
   }
 
@@ -84,12 +84,12 @@ object mmTensor {
             //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
             oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
               tensorMMA(
-                abTiles._1 |> transpose |> toFragment |> toPrivate,
-                abTiles._2 |> toFragment |> toPrivate,
+                abTiles._1 |> transpose |> asFragment |> toPrivate,
+                abTiles._2 |> asFragment |> toPrivate,
                 cTile)))
             (generateFragment(l(0f))) |>
 
-            fromFragment |> // mTileFrag.nTileFrag.f32
+            asMatrix |> // mTileFrag.nTileFrag.f32
 
             transpose)) |> // n/nTileFrag.nTileFrag.mTileFrag.f32
           join |> // n.mTileFrag.f32
@@ -121,12 +121,12 @@ object mmTensor {
               //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
               oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                 tensorMMA(
-                  abTiles._1 |> transpose |> toFragment |> toPrivate,
-                  abTiles._2 |> toFragment |> toPrivate, // leading dimension is k cause the b matrix is transposed!
+                  abTiles._1 |> transpose |> asFragment |> toPrivate,
+                  abTiles._2 |> asFragment |> toPrivate, // leading dimension is k cause the b matrix is transposed!
                   cTile)))
               (generateFragment(l(0f))) |>
 
-              fromFragment |> // mTileFrag.nTileFrag.f32
+              asMatrix |> // mTileFrag.nTileFrag.f32
 
               transpose)) |> // n/nTileFrag.nTileFrag.mTileFrag.f32
             join |> // n.mTileFrag.f32
@@ -157,12 +157,12 @@ object mmTensor {
               //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
               oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                 tensorMMA(
-                  abTiles._1 |> transpose |> toFragment |> toPrivate,
-                  abTiles._2 |> toFragment |> toPrivate,
+                  abTiles._1 |> transpose |> asFragment |> toPrivate,
+                  abTiles._2 |> asFragment |> toPrivate,
                   cTile)))
               (generateFragment(l(0f))) |>
 
-              fromFragment)) |> // m/mTileFrag.mTileFrag.nTileFrag.f32
+              asMatrix)) |> // m/mTileFrag.mTileFrag.nTileFrag.f32
 
             join |> // m.mTileFrag.f32
             transpose)) |> // n/nTileFrag.nTileFrag.m.f32
@@ -215,14 +215,14 @@ object mmTensor {
                 let(toPrivate(
                   abTilesWarp._1 |> transpose |> split(mTileFrag) |>
                     mapSeqUnroll(fun(aFragTile =>
-                      aFragTile |> toFragment))))
+                      aFragTile |> asFragment))))
                 be(aFrags => // mTileWarp/mTileFrag.WmmaAMatrix
 
                   //Load tile of b-matrix into multiple fragments
                   let(toPrivate(
                     abTilesWarp._2 |> transpose |> split(nTileFrag) |>
                       mapSeqUnroll(fun(bFragTileT =>
-                        bFragTileT |> transpose |> toFragment))))
+                        bFragTileT |> transpose |> asFragment))))
                   be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
 
                     //Do MMA instructions with tensor cores
@@ -242,7 +242,7 @@ object mmTensor {
                 cTiles |>
                 mapSeqUnroll(fun(cTile =>
                   cTile |>
-                  fromFragment |>      // mTileFrag.nTileFrag.f32
+                  asMatrix |>      // mTileFrag.nTileFrag.f32
                   transpose)) |>          // nTileWarp/nTileFrag.nTileFrag.mTileFrag.f32
                 join |>                   // nTileWarp.mTileFrag.f32
                 transpose)) |>            // mTileWarp/mTileFrag.mTileFrag.nTileWarp.f32
@@ -335,14 +335,14 @@ object mmTensor {
                       let(toPrivate(
                         aTbTilesWarp._1 |> transpose |> split(mTileFrag) |>
                           mapSeqUnroll(fun(aFragTileT =>
-                            aFragTileT |> toFragment))))
+                            aFragTileT |> asFragment))))
                       be(aFrags => // mTileWarp/mTileFrag.WmmaAMatrix
 
                         //Load tile of b matrix to fragment
                         let(toPrivate(
                           aTbTilesWarp._2 |> transpose |> split(nTileFrag) |>
                             mapSeqUnroll(fun(bFragTileT =>
-                              bFragTileT |> transpose |> toFragment))))
+                              bFragTileT |> transpose |> asFragment))))
                         be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
 
                           //Do matrix multiplication and accumulate with tensor cores
@@ -357,7 +357,7 @@ object mmTensor {
                       mapSeqUnroll(fun(cTile =>
                         cTile |> transpose |> split(nTileFrag) |>
                         mapSeqUnroll(fun(cTileFragT =>
-                          cTileFragT |> transpose |> toFragment)))))
+                          cTileFragT |> transpose |> asFragment)))))
                      |> // mTileWarp/mTileFrag.nTileWarp/nTileFrag.WmmaAccumulator
 
                     //This store into shared memory into fragments is unnecessary when reduce directly over fragments
@@ -365,7 +365,7 @@ object mmTensor {
                       cTiles |>
                       mapSeqUnroll(fun(cTile =>
                         cTile |>
-                        fromFragment |>   // mTileFrag.nTileFrag.f32
+                        asMatrix |>   // mTileFrag.nTileFrag.f32
                         transpose)) |>                // nTileWarp/nTileFrag.nTileFrag.mTileFrag.f32
                       join |>                         // nTileWarp.mTileFrag.f32
                       transpose)) |>                  // mTileWarp/mTileFrag.mTileFrag.nTileWarp.f32
@@ -572,7 +572,7 @@ object mmTensor {
             split(config.mTileFrag) |>
             mapSeqUnroll(fun(aFragTile =>
               aFragTile |>
-              toFragment))))
+              asFragment))))
           be(aFrags => // numberOfAFragments.WmmaAMatrix
 
             //Load tile of b-matrix into multiple fragments
@@ -582,7 +582,7 @@ object mmTensor {
               split(config.nTileFrag) |>
               mapSeqUnroll(fun(bFragTile =>
                 bFragTile |> transpose |>
-                toFragment))))
+                asFragment))))
             be(bFrags => // numberOfBFragments.WmmaBMatrix
 
               //Do matrix multiplication and accumulate with tensor cores
@@ -707,7 +707,7 @@ object mmTensor {
         resultFragsWarp |>
         mapSeqUnroll(fun(resultFrag =>
           resultFrag |>
-          fromFragment |> // mTileFrag.nTileFrag.f32
+          asMatrix |>            // mTileFrag.nTileFrag.f32
           transpose)) |>             // (mTileWarp/mTileFrag)*(nTileWarp/nTileFrag).nTileFrag.mTileFrag.f32
         join |>                      // (mTileWarp/mTileFrag)*nTileWarp.mTileFrag.f32
         split(config.nTileWarp) |>
@@ -741,7 +741,7 @@ object mmTensor {
           resultFragsWarp |>
           mapSeqUnroll(fun(resultFrag =>
             resultFrag |>
-            fromFragment |>      // mTileFrag.nTileFrag.f32
+            asMatrix |>                         // mTileFrag.nTileFrag.f32
             transpose)) |>                          // (mTileWarp/mTileFrag)*(nTileWarp/nTileFrag).nTileFrag.mTileFrag.f32
           join |>                                   // (mTileWarp/mTileFrag)*nTileWarp.mTileFrag.f32
           split(config.nTileWarp) |>
@@ -792,7 +792,7 @@ object mmTensor {
             fragsTile |>
             mapSeqUnroll(fun(resultFrag =>
               resultFrag |>
-              fromFragment |>
+              asMatrix |>
               transpose)) |>
             join |>
             split(config.nTileWarp) |>

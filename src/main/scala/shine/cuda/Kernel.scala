@@ -125,9 +125,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val blocksX = ArithExpr.substitute(globalSize.size.x /^ localSize.size.x, sizeVarMapping).eval
     val blocksY = ArithExpr.substitute(globalSize.size.y /^ localSize.size.y, sizeVarMapping).eval
     val blocksZ = ArithExpr.substitute(globalSize.size.z /^ localSize.size.z, sizeVarMapping).eval
-    val threadsX = ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval
-    val threadsY = ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval
-    val threadsZ = ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval
+    val threadsX = ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval
+    val threadsY = ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval
+    val threadsZ = ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval
 
     val device = Devices.findDevice()
     println(device)

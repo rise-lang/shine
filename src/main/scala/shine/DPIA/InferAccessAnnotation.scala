@@ -573,24 +573,24 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rocup.toFragment() => p.t match {
-        case (aMatrix: rt.ArrayType) ->: (resultMatrix: rt.Fragment) =>
+      case rocup.asFragment() => p.t match {
+        case (aMatrix: rt.ArrayType) ->: (resultMatrix: rt.FragmentType) =>
           expT(aMatrix, read) ->: expT(resultMatrix, read)
       }
 
-      case rocup.fromFragment() => p.t match {
-        case (accMatrix: rt.Fragment) ->: (resultArray: rt.ArrayType) =>
+      case rocup.asMatrix() => p.t match {
+        case (accMatrix: rt.FragmentType) ->: (resultArray: rt.ArrayType) =>
           expT(accMatrix, read) ->: expT(resultArray, write)
       }
 
       case rocup.generateFragment() => p.t match {
-        case (dt: rt.DataType) ->: (resultMatrix: rt.Fragment) =>
+        case (dt: rt.DataType) ->: (resultMatrix: rt.FragmentType) =>
           expT(dt, read) ->: expT(resultMatrix, read)
       }
 
       case rocup.tensorMMA() => p.t match {
-        case (aMatrix: rt.Fragment) ->: (bMatrix: rt.Fragment) ->:
-          (cMatrix: rt.Fragment) ->: (resultMatrix: rt.Fragment) =>
+        case (aMatrix: rt.FragmentType) ->: (bMatrix: rt.FragmentType) ->:
+          (cMatrix: rt.FragmentType) ->: (resultMatrix: rt.FragmentType) =>
           expT(aMatrix, read) ->: expT(bMatrix, read) ->: expT(cMatrix, read) ->: expT(resultMatrix, write)
       }
 
@@ -605,7 +605,7 @@ private class InferAccessAnnotation {
       }
 
       case rocup.mapFragmentElements() => p.t match {
-        case ((dt: rt.DataType) ->: _) ->: (fragType: rt.Fragment) ->: _ =>
+        case ((dt: rt.DataType) ->: _) ->: (fragType: rt.FragmentType) ->: _ =>
           (expT(dt, read) ->: expT(dt, write)) ->: expT(fragType, read) ->: expT(fragType, write)
       }
     }

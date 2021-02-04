@@ -12,13 +12,13 @@ case class WmmaFill(rows: Nat,
                     d3: Nat,
                     dataType: DataType,
                     fill: Phrase[ExpType],
-                    fragmentType: FragmentType,
+                    fragmentType: FragmentKind,
                     layout: MatrixLayout,
                     fragment: Phrase[AccType]
                    ) extends CommandPrimitive {
 
   fill :: ExpType(dataType, read)
-  fragment :: AccType(Fragment(rows, columns, d3, dataType, fragmentType, layout))
+  fragment :: AccType(FragmentType(rows, columns, d3, dataType, fragmentType, layout))
 
   override def eval(s: Store): Store = ???
 

@@ -29,7 +29,7 @@ object traversal {
       Continue(a, this)
     def visitMatrixLayout(m: MatrixLayout): Result[MatrixLayout] =
       Continue(m, this)
-    def visitFragmentType(f: FragmentType): Result[FragmentType] =
+    def visitFragmentType(f: FragmentKind): Result[FragmentKind] =
       Continue(f, this)
     def visitN2N(n2n: NatToNat): Result[NatToNat] = Continue(n2n, this)
     def visitN2D(n2d: NatToData): Result[NatToData] = Continue(n2d, this)
@@ -266,8 +266,8 @@ object traversal {
               case IndexType(n)     => IndexType(v.visitNat(n).value)
               case VectorType(n, e) =>
                 VectorType(v.visitNat(n).value, data(e, v))
-              case Fragment(rows, columns, d3, dt, fragType, layout) =>
-                Fragment(v.visitNat(rows).value, v.visitNat(columns).value, v.visitNat(d3).value, data(dt, v),
+              case FragmentType(rows, columns, d3, dt, fragType, layout) =>
+                FragmentType(v.visitNat(rows).value, v.visitNat(columns).value, v.visitNat(d3).value, data(dt, v),
                   v.visitFragmentType(fragType).value, v.visitMatrixLayout(layout).value)
               case NatToDataApply(ndtf, n) =>
                 NatToDataApply(natToData(ndtf, v), v.visitNat(n).value)

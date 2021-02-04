@@ -11,7 +11,7 @@ import shine.DPIA.{->:, Phrases, expT, accT}
 
 import scala.xml.Elem
 
-case class MapFragmentElements(fragType: Fragment,
+case class MapFragmentElements(fragType: FragmentType,
                                fragment: Phrase[ExpType],
                                fun: Phrase[ExpType ->: ExpType],
                               ) extends ExpPrimitive {

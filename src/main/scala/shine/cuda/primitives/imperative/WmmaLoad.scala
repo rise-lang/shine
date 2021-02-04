@@ -11,13 +11,13 @@ final case class WmmaLoad(rows: Nat,
                           columns: Nat,
                           d3: Nat,
                           dataType: DataType,
-                          fragType: FragmentType,
+                          fragType: FragmentKind,
                           layout: MatrixLayout,
                           matrixTile: Phrase[ExpType],
                           fragment: Phrase[AccType]
                          ) extends CommandPrimitive {
 
-  fragment :: ExpType(Fragment(rows, columns, d3, dataType, fragType, layout), write)
+  fragment :: ExpType(FragmentType(rows, columns, d3, dataType, fragType, layout), write)
   matrixTile :: ExpType(ArrayType(rows, ArrayType(columns, dataType)), read)
 
   override def eval(s: Store): Store = ???

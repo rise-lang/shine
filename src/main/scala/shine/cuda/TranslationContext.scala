@@ -3,7 +3,7 @@ package shine.cuda
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.Assign
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, Fragment, read}
+import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, FragmentType, read}
 import shine.DPIA.{accT, expT}
 import shine.cuda.primitives.imperative.ForFragmentElements
 
@@ -12,7 +12,7 @@ class TranslationContext() extends shine.OpenCL.TranslationContext {
                       lhs: Phrase[AccType],
                       rhs: Phrase[ExpType]): Phrase[CommType] = {
     dt match {
-      case f: Fragment =>
+      case f: FragmentType =>
         ForFragmentElements(f, rhs, lhs,
           λ(expT(dt, read))(x =>
             λ(accT(dt))(o =>
