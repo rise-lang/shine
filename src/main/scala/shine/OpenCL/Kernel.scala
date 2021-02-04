@@ -419,7 +419,14 @@ case class Kernel(decls: Seq[C.AST.Decl],
       val fstO = getOutputType(fst)
       val sndO = getOutputType(snd)
       if (fstO != sndO) {
-        throw new IllegalArgumentException("no supported output type " +
+        val szFst = SizeInByte(fst)
+        val szSnd = SizeInByte(snd)
+        if (szFst.value == szSnd.value) {
+          szFst.value.eval match {
+            case 4 => i32
+            case _ => throw new IllegalArgumentException(s"No supported heterogeneous pair type ${dt}: elements have size ${szFst}")
+          }
+        } else throw new IllegalArgumentException("no supported output type " +
           s"for heterogeneous pair: ${dt}")
       }
       fstO

@@ -481,7 +481,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         C.AST.Block(Vector(
           C.AST.ExprStmt(C.AST.Assignment(
             C.AST.ArraySubscript(acc, C.AST.DeclRef(i)),
-            C.AST.ArraySubscript(tgt, C.AST.DeclRef(i))
+            C.AST.ArraySubscript(C.AST.Cast(OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, C.AST.Type.u8), tgt), C.AST.DeclRef(i))
           ))
         ))
       )

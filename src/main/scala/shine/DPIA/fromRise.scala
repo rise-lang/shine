@@ -935,6 +935,20 @@ object fromRise {
             )
         }
 
+      case  ocl.oclWhichMap() =>
+        fromType {
+          case expT(inputT@ArrayType(n, _), `read`) ->:
+            (expT(idxT, _) ->: expT(dt, _)) ->:
+            nFunT(count, expT(_, `write`)) =>
+
+            fun[ExpType](expT(inputT, read), input =>
+              fun[ExpType ->: ExpType](
+                expT(idxT, read) ->: expT(dt, write), f =>
+                  depFun[NatKind](count)(OclWhichMap(n, dt, count, input, f))
+              )
+            )
+        }
+
       case core.liftN() => fromType {
         case expT(NatType, `read`) ->:
             nFunT(n, expT(outT, a)) ->: expT(_, _) =>

@@ -40,6 +40,7 @@ object AdjustArraySizesForAllocations {
 
       case dms: DepMapSeq =>
         visitAndGatherInformation(dms.f, BasicInfo(Sequential, -1)::parallInfo)
+      case mg@DepMapGlobal(dim) => visitAndGatherInformation(mg.f, BasicInfo(Global, dim):: parallInfo)
       case scan: OpenCLScanSeq => visitAndGatherInformation(scan.f,BasicInfo(Sequential, -1) :: parallInfo)
       case scan: OpenCLScanSeqInclusive => visitAndGatherInformation(scan.f,BasicInfo(Sequential, -1) :: parallInfo)
 

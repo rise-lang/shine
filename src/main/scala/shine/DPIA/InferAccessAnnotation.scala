@@ -335,6 +335,7 @@ private class InferAccessAnnotation {
       case rp.idx() | rp.add() | rp.sub() | rp.mul() | rp.div() | rp.gt()
            | rp.lt() | rp.equal() | rp.notEqual() | rp.mod() | rp.gather() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
+          val a1 = accessTypeIdentifier()
           expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read)
         case _ => error()
       }
@@ -659,6 +660,21 @@ private class InferAccessAnnotation {
             val _count = natIdentifier(count.asInstanceOf[rt.NatIdentifier])
             val _input = dataType(input).asInstanceOf[ArrayType]
             expT(_input, read) ->: nFunT(_count, expT(ArrayType(_count, IndexType(_input.size)), write))
+
+          case _ => ???
+        }
+        buildType(p.t)
+
+      case roclp.oclWhichMap() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(input:rt.ArrayType, rt.FunType(rt.FunType(rt.IndexType(_), dt:rt.DataType),rt.DepFunType(count, rt.ArrayType(_, _)))) =>
+            val _count = natIdentifier(count.asInstanceOf[rt.NatIdentifier])
+            val _input = dataType(input).asInstanceOf[ArrayType]
+            val n = _input.size
+            val outDt = dataType(dt)
+            expT(_input, read) ->:
+              (expT(IndexType(n), read) ->: expT(outDt, write)) ->:
+              nFunT(_count, expT(ArrayType(_count, outDt), write))
 
           case _ => ???
         }

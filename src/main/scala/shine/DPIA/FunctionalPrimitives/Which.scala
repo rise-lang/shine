@@ -107,4 +107,51 @@ final case class OclWhich(n: Nat, count: Nat, input:Phrase[ExpType])
 
 
 
+final case class OclWhichMap(n: Nat, dt:DataType, count: Nat, input:Phrase[ExpType], f:Phrase[ExpType ->: ExpType])
+  extends ExpPrimitive {
+  override val t = expT(count `.` dt, write)
 
+  // Filter needs to allocate more memory than it's 'logical' type says
+
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = ???
+
+  /**
+    * Continuation tranlsation would allocate. If you really want to, call oclToMem by yourself
+    * @param A
+    * @param context
+    * @return
+    */
+
+  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
+    import TranslationToImperative._
+    con(input)(λ(expT(ArrayType(n, bool), read))(input => {
+      comment("WHICH: counter") `;`
+        shine.OpenCL.DSL.`new`(AddressSpace.Private)(int,
+          counter => {
+            (counter.wr :=|int| toLiteralInt(0))`;`
+              `for`(n, idx => {
+                IfThenElse(input `@` idx,
+                  acc(f(idx))(A `@` Transmute(read, int, IndexType(count), counter.rd)) `;`
+                    (counter.wr :=| int | counter.rd + toLiteralInt(1)),
+                  Skip()
+                )
+              })
+          })
+    }
+    ))
+  }
+
+  override def eval(s: Store): OperationalSemantics.Data = ???
+
+  override def prettyPrint: String = s"which"
+
+  override def xmlPrinter: Elem = <which></which>
+
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = OclWhichMap(
+    v.nat(n),
+    v.data(dt),
+    v.nat(count),
+    VisitAndRebuild(input, v),
+    VisitAndRebuild(f, v)
+  )
+}

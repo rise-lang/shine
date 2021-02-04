@@ -77,6 +77,10 @@ object primitives {
     impl { n: Nat =>  (n `.` bool) ->: expl((count: Nat) => count `.` IndexType(n))}
   }
 
+  @primitive object oclWhichMap extends Primitive with Builder {
+    impl { n: Nat => impl { dt: DataType => (n `.` bool) ->: (IndexType(n) ->: dt) ->: expl((count: Nat) => count `.` dt) } }
+  }
+
   @primitive object oclCircularBuffer extends Primitive with Builder {
     // TODO: should return a stream / sequential array, not an array
     expl((_: AddressSpace) => impl{ n: Nat =>

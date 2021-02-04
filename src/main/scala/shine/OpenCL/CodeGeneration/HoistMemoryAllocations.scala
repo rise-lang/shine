@@ -102,7 +102,7 @@ object HoistMemoryAllocations {
                                  oldBody: Phrase[CommType],
                                  i: Either[Identifier[ExpType],Nat],
                                  n: Nat): (Identifier[VarType], Phrase[CommType]) = {
-        // Create `newVariable' with `n` times more memory ...
+        // Create `newVariable' with `n` times more memory .
         val newVariable = Identifier(oldVariable.name, varT(n`.`oldVariable.t.t1.dataType))
         // ... and substitute all occurrences of `oldVariable` with
         // `newVariable` indexed by the index `i`, ...
