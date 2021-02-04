@@ -2,7 +2,7 @@ package rise.core
 
 import rise.core.primitives._
 import rise.core.semantics._
-import rise.core.traversal.{Continue, Result}
+import rise.core.Traverse._
 import rise.core.types._
 
 import scala.language.implicitConversions
@@ -484,17 +484,14 @@ package object DSL {
     toBeTyped(topLevel(toExpr(d)))
 
   def eraseTypeFromExpr[T <: Expr](e: T): T =
-    traversal
-      .DepthFirstLocalResult(
-        e,
-        new traversal.Visitor {
-          override def visitExpr(e: Expr): Result[Expr] = e match {
-            case l: Literal => Continue(l, this)
-            case _          => Continue(e.setType(TypePlaceholder), this)
-          }
-        }
-      )
-      .asInstanceOf[T]
+    Traverse(e, new PureExprTraversal {
+      override def identifier[I <: Identifier]: I => Pure[I] = i =>
+        return_(i.setType(TypePlaceholder).asInstanceOf[I])
+      override def expr : Expr => Pure[Expr] = {
+        case l : Literal => super.expr(l : Expr)
+        case e => super.expr(e.setType(TypePlaceholder))
+      }
+    }).asInstanceOf[T]
 
   def eraseType[T <: Expr](e: T): ToBeTyped[T] = toBeTyped(eraseTypeFromExpr(e))
 }
