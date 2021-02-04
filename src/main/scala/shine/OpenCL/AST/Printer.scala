@@ -2,7 +2,7 @@ package shine.OpenCL.AST
 
 import arithexpr.arithmetic.ArithExpr
 import shine.C.AST._
-import shine.DPIA.Types.AddressSpaceIdentifier
+import shine.DPIA.Types.{AddressSpaceIdentifier, ManagedBufferType}
 import shine.OpenCL
 import shine.OpenCL.{AddressSpace, BuiltInFunctionCall, NDRange}
 
@@ -85,6 +85,7 @@ class Printer extends shine.C.AST.CPrinter {
 //        print(s"$addr${a.getBaseType} ${p.name}[$size]")
       case pt: OpenCL.AST.PointerType => print(s"${toString(pt.a)} ${typeName(pt.valueType)}* restrict ${p.name}")
       case _: shine.C.AST.PointerType => throw new Exception("Pointer without address space unsupported in OpenCL")
+      case _: OpaqueType => throw new Exception("did not expect opaque parameter type")
     }
   }
 
@@ -103,6 +104,7 @@ class Printer extends shine.C.AST.CPrinter {
       case p: shine.OpenCL.AST.PointerType => print(s"${toString(p.a)} ${typeName(p.valueType)}* ${v.name}")
       case _: shine.C.AST.PointerType => throw new Exception("This should not happen")
       case _: shine.C.AST.UnionType => ???
+      case _: OpaqueType => throw new Exception("did not expect opaque variable type")
     }
     v.init match {
       case None =>
