@@ -61,6 +61,9 @@ object substitute {
 
   def dataTypeInExpr(dt: DataType, `for`: DataTypeIdentifier, in: Expr ): Expr = {
     object Visitor extends PureTraversal {
+      override def datatype : DataType => Pure[DataType] = in1 =>
+        super.datatype(substitute.typeInType(dt, `for`, in1))
+
       override def `type`[T <: Type] : T => Pure[T] = in1 =>
         super.`type`(substitute.typeInType(dt, `for`, in1))
     }
@@ -112,7 +115,9 @@ object substitute {
   def typeInType[B <: Type](ty: Type, `for`: Type, in: B): B = {
     object Visitor extends PureTraversal {
       override def datatype: DataType => Pure[DataType] = t => {
-        if (`for` == t) { return_(ty.asInstanceOf[DataType]) } else super.datatype(t)
+        if (`for` == t) { return_(ty.asInstanceOf[DataType]) } else {
+          super.datatype(t)
+        }
       }
       override def `type`[T <: Type]: T => Pure[T] = t => {
         if (`for` == t) { return_(ty.asInstanceOf[T]) } else super.`type`(t)
