@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.core.Traverse.{Pure, PureTraversal}
+import rise.core.Traverse._
 import rise.core.types._
 
 object uniqueNames {
@@ -8,13 +8,18 @@ object uniqueNames {
     var values: Map[Identifier, Int],
     var types: Map[Kind.Identifier, Int]
   ) extends PureTraversal {
-    override def binding[I <: Identifier]: I => Pure[I] = i => {
-      values = values + (i -> (values.getOrElse(i, 0) + 1))
-      return_(i)
+    override def identifier[I <: Identifier]: VarType => I => Pure[I] = {
+      case Binding => i =>
+        values = values + (i -> (values.getOrElse(i, 0) + 1))
+        return_(i)
+      case _ => return_
     }
-    override def depBinding[I <: Kind.Identifier]: I => Pure[I] = i => {
-      types = types + (i -> (types.getOrElse(i, 0) + 1))
-      return_(i)
+
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = {
+      case Binding => i =>
+        types = types + (i -> (types.getOrElse(i, 0) + 1))
+        return_(i)
+      case _ => return_
     }
   }
 

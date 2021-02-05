@@ -125,7 +125,6 @@ object substitute {
     object Visitor extends PureTraversal {
       override def nat: Nat => Pure[Nat] = in1 =>
         super.nat(substitute.natInNat(n, `for`, in1))
-      override def natToData: NatToData => Pure[NatToData] = return_
     }
     Traverse(in, Visitor)
   }

@@ -485,7 +485,7 @@ package object DSL {
 
   def eraseTypeFromExpr[T <: Expr](e: T): T =
     Traverse(e, new PureExprTraversal {
-      override def identifier[I <: Identifier]: I => Pure[I] = i =>
+      override def identifier[I <: Identifier] : VarType => I => Pure[I] = vt => i =>
         return_(i.setType(TypePlaceholder).asInstanceOf[I])
       override def expr : Expr => Pure[Expr] = {
         case l : Literal => super.expr(l : Expr)

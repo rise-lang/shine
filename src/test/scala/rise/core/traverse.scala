@@ -1,7 +1,7 @@
 package rise.core
 
 import rise.core.DSL._
-import rise.core.Traverse.{Monad, PureTraversal, Traversal, Pure}
+import rise.core.Traverse._
 import rise.core.primitives._
 import rise.core.types._
 
@@ -26,11 +26,11 @@ class traverse extends test_util.Tests {
   class TraceVisitor extends Traversal[Trace] {
     override def monad = TraceMonad
 
-    override def typeIdentifier[I <: Kind.Identifier] : I => Trace[I] = i =>
-      monad.bind(monad.write(i))(super.typeIdentifier)
+    override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Trace[I] = vt => i =>
+      monad.bind(monad.write(i))(super.typeIdentifier(vt)(_))
 
-    override def identifier[I <: Identifier] : I => Trace[I] = i =>
-      monad.bind(monad.write(i))(super.identifier)
+    override def identifier[I <: Identifier] : VarType => I => Trace[I] = vt => i =>
+      monad.bind(monad.write(i))(super.identifier(vt)(_))
 
     override def expr : Expr => Trace[Expr] = e =>
       monad.bind(monad.write(e))(super.expr)

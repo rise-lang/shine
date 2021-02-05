@@ -1,7 +1,7 @@
 package rise.core.DSL
 
 import Type.freshTypeIdentifier
-import rise.core.Traverse.{Pure, PureExprTraversal, PureTraversal}
+import rise.core.Traverse._
 import rise.core._
 import rise.core.types.InferenceException.error
 import rise.core.types._
@@ -106,7 +106,7 @@ object infer {
   def getFTVs(t: Type): Seq[Kind.Identifier] = {
     val ftvs = mutable.ListBuffer[Kind.Identifier]()
     Traverse(t, new PureTraversal {
-      override def typeIdentifier[I <: Kind.Identifier]: I => Pure[I] = i => {
+      override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = _ => i => {
         i match {
           case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
           case i => ftvs += i

@@ -7,7 +7,7 @@ import rise.core.{Expr, Primitive, Traverse, TypeAnnotation, TypeAssertion}
 
 final case class ToBeTyped[+T <: Expr](private val e: T) {
   def toExpr: Expr = infer(e)
-  def toUntypedExpr: Expr = Traverse(e, new Traverse.PureTraversal {
+  def toUntypedExpr: Expr = new Traverse.PureTraversal {
     override def data : Data => Pure[Data] = return_
     override def primitive : Primitive => Pure[Expr] = {
       case Opaque(x, t) => expr(x)
@@ -16,6 +16,6 @@ final case class ToBeTyped[+T <: Expr](private val e: T) {
       case TypeAssertion(e, t) => expr(e)
       case p => super.primitive(p.setType(TypePlaceholder))
     }
-  })
+  }.expr(e).unwrap
   def >>=[X <: Expr](f: T => ToBeTyped[X]): ToBeTyped[X] = f(e)
 }

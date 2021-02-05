@@ -8,11 +8,15 @@ object IsClosedForm {
   case class Visitor(boundV: Set[Identifier], boundT: Set[Kind.Identifier]) extends Traversal[Option] {
     override implicit def monad = OptionMonad
 
-    override def reference[I <: Identifier]: I => Option[I] = i =>
-      if (boundV(i)) Some(i) else None
+    override def identifier[I <: Identifier] : VarType => I => Option[I] = {
+      case Reference => i => if (boundV(i)) Some(i) else None
+      case _ => return_
+    }
 
-    override def depReference[I <: Kind.Identifier]: I => Option[I] = i =>
-      if (boundT(i)) Some(i) else None
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Option[I] = {
+      case Reference => i => if (boundT(i)) Some(i) else None
+      case _ => return_
+    }
 
     override def nat: Nat => Option[Nat] = n => {
       val closed = n.varList.foldLeft(true) {
