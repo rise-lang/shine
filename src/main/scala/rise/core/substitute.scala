@@ -62,10 +62,10 @@ object substitute {
   def dataTypeInExpr(dt: DataType, `for`: DataTypeIdentifier, in: Expr ): Expr = {
     object Visitor extends PureTraversal {
       override def datatype : DataType => Pure[DataType] = in1 =>
-        super.datatype(substitute.typeInType(dt, `for`, in1))
+        return_(substitute.typeInType(dt, `for`, in1))
 
       override def `type`[T <: Type] : T => Pure[T] = in1 =>
-        super.`type`(substitute.typeInType(dt, `for`, in1))
+        return_(substitute.typeInType(dt, `for`, in1))
     }
     Visitor.expr(in).unwrap
   }
@@ -78,10 +78,10 @@ object substitute {
       }
 
       override def nat: Nat => Pure[Nat] = e =>
-        super.nat(substitute.natInNat(ae, `for`, e))
+        return_(substitute.natInNat(ae, `for`, e))
 
       override def `type`[T <: Type]: T => Pure[T] = t =>
-        super.`type`(substitute.natInType(ae, `for`, t))
+        return_(substitute.natInType(ae, `for`, t))
     }
     Visitor.expr(in).unwrap
   }
@@ -115,9 +115,7 @@ object substitute {
   def typeInType[B <: Type](ty: Type, `for`: Type, in: B): B = {
     object Visitor extends PureTraversal {
       override def datatype: DataType => Pure[DataType] = t => {
-        if (`for` == t) { return_(ty.asInstanceOf[DataType]) } else {
-          super.datatype(t)
-        }
+        if (`for` == t) { return_(ty.asInstanceOf[DataType]) } else super.datatype(t)
       }
       override def `type`[T <: Type]: T => Pure[T] = t => {
         if (`for` == t) { return_(ty.asInstanceOf[T]) } else super.`type`(t)
@@ -129,7 +127,7 @@ object substitute {
   def natInType[T <: Type](n: Nat, `for`: NatIdentifier, in: T): T = {
     object Visitor extends PureTraversal {
       override def nat: Nat => Pure[Nat] = in1 =>
-        super.nat(substitute.natInNat(n, `for`, in1))
+        return_(substitute.natInNat(n, `for`, in1))
     }
     Traverse(in, Visitor)
   }
@@ -137,7 +135,7 @@ object substitute {
   def natInDataType(n: Nat, `for`: NatIdentifier, in: DataType): DataType = {
     object Visitor extends PureTraversal {
       override def nat: Nat => Pure[Nat] = in1 =>
-        super.nat(substitute.natInNat(n, `for`, in1))
+        return_(substitute.natInNat(n, `for`, in1))
     }
     Visitor.datatype(in).unwrap
   }
