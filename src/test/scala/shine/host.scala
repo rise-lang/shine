@@ -21,7 +21,7 @@ class host extends test_util.Tests {
 
 const int N = 64;
 int main(int argc, char** argv) {
-  Context ctx = createContext("Portable Computing Language", "cpu");
+  Context ctx = createDefaultContext();
   Buffer input = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | TARGET_READ);
   Buffer output = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | TARGET_WRITE);
 

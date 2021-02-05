@@ -79,20 +79,21 @@ void oclFatalError(cl_int error, const char* msg) {
   }
 }
 
+const size_t NAME_BUF_SIZE = 512;
+
 static
 cl_platform_id find_platform(cl_uint platform_count, const cl_platform_id* platform_ids, const char* subname) {
   for (cl_uint i = 0; i < platform_count; i++) {
-    char name_buf[512];
+    char name_buf[NAME_BUF_SIZE];
     size_t name_size;
     oclFatalError(clGetPlatformInfo(platform_ids[i], CL_PLATFORM_NAME, sizeof(name_buf), name_buf, &name_size),
       "could not get platform info");
     if (name_size > sizeof(name_buf)) {
       fprintf(stderr, "did not expect such a long OpenCL platform name (%zu)\n", name_size);
-      name_buf[511] = '\0';
+      name_buf[NAME_BUF_SIZE - 1] = '\0';
     }
 
     if (strstr(name_buf, subname) != NULL) {
-      fprintf(stderr, "using OpenCL platform '%s'\n", name_buf);
       return platform_ids[i];
     }
   }
@@ -101,12 +102,75 @@ cl_platform_id find_platform(cl_uint platform_count, const cl_platform_id* platf
   exit(EXIT_FAILURE);
 }
 
+static
+Context createContextWithIDs(cl_platform_id platform_id, cl_device_id device_id) {
+  char name_buf[NAME_BUF_SIZE];
+  size_t name_size;
+  oclFatalError(clGetPlatformInfo(platform_id, CL_PLATFORM_NAME, sizeof(name_buf), name_buf, &name_size),
+    "could not get platform info");
+  if (name_size > sizeof(name_buf)) {
+    fprintf(stderr, "did not expect such a long OpenCL platform name (%zu)\n", name_size);
+    name_buf[NAME_BUF_SIZE - 1] = '\0';
+  }
+  fprintf(stderr, "using OpenCL platform '%s'\n", name_buf);
+
+  oclFatalError(clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(name_buf), name_buf, &name_size),
+    "could not get device info");
+  if (name_size > sizeof(name_buf)) {
+    fprintf(stderr, "did not expect such a long OpenCL device name (%zu)\n", name_size);
+    name_buf[NAME_BUF_SIZE - 1] = '\0';
+  }
+  fprintf(stderr, "using OpenCL device '%s'\n", name_buf);
+
+  cl_int err;
+  cl_context ctx;
+  if (platform_id == NULL) {
+    ctx = clCreateContext(NULL, 1, &device_id, NULL, NULL, &err);
+  } else {
+    const cl_context_properties ctx_props[] = {
+      CL_CONTEXT_PLATFORM, (cl_context_properties)(platform_id),
+      0
+    };
+
+    ctx = clCreateContext(ctx_props, 1, &device_id, NULL, NULL, &err);
+  }
+  oclFatalError(err, "could not create context");
+
+  // 2.0: clCreateCommandQueueWithProperties
+  cl_command_queue queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_PROFILING_ENABLE, &err);
+  oclFatalError(err, "could not create command queue");
+
+  Context context = malloc(sizeof(struct ContextImpl));
+  context->inner = ctx;
+  context->platform = platform_id;
+  context->device = device_id;
+  context->queue = queue;
+  return context;
+}
+
+Context createDefaultContext() {
+  cl_platform_id platform_id = NULL;
+
+  cl_device_id device_id;
+  cl_uint device_count = 0;
+  oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &device_count),
+    "could not get device IDs");
+  if (device_count == 0) {
+    fprintf(stderr, "did not find any OpenCL device\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return createContextWithIDs(platform_id, device_id);
+}
+
 Context createContext(const char* platform_subname, const char* device_type_str) {
   cl_device_type device_type;
   if (strcmp(device_type_str, "cpu") == 0) {
     device_type = CL_DEVICE_TYPE_CPU;
   } else if (strcmp(device_type_str, "gpu") == 0) {
     device_type = CL_DEVICE_TYPE_GPU;
+  } else if (strcmp(device_type_str, "any") == 0) {
+    device_type = CL_DEVICE_TYPE_ALL;
   } else {
     fprintf(stderr, "unexpected device type string: %s\n", device_type_str);
     exit(EXIT_FAILURE);
@@ -118,7 +182,7 @@ Context createContext(const char* platform_subname, const char* device_type_str)
   oclFatalError(clGetPlatformIDs(platform_entries, platform_ids, &platform_count),
    "could not get platform IDs");
   if (platform_count > platform_entries) {
-    fprintf(stderr, "did not expected that many OpenCL platforms (%u)\n", platform_count);
+    fprintf(stderr, "did not expect that many OpenCL platforms (%u)\n", platform_count);
     platform_count = platform_entries;
   }
 
@@ -133,27 +197,8 @@ Context createContext(const char* platform_subname, const char* device_type_str)
     fprintf(stderr, "did not find any OpenCL device\n");
     exit(EXIT_FAILURE);
   }
-  //fprintf(stderr, "OpenCL device: %u\n", device_index);
 
-  const cl_context_properties ctx_props[] = {
-    CL_CONTEXT_PLATFORM, (cl_context_properties)(platform_id),
-    0
-  };
-
-  cl_int err;
-  cl_context ctx = clCreateContext(ctx_props, 1, &device_id, NULL, NULL, &err);
-  oclFatalError(err, "could not create context");
-
-  // 2.0: clCreateCommandQueueWithProperties
-  cl_command_queue queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_PROFILING_ENABLE, &err);
-  oclFatalError(err, "could not create command queue");
-
-  Context context = malloc(sizeof(struct ContextImpl));
-  context->inner = ctx;
-  context->platform = platform_id;
-  context->device = device_id;
-  context->queue = queue;
-  return context;
+  return createContextWithIDs(platform_id, device_id);
 }
 
 void destroyContext(Context ctx) {

@@ -18,6 +18,7 @@ typedef enum {
   TARGET_WRITE = 1 << 3,
 } AccessFlags;
 
+Context createDefaultContext();
 Context createContext(const char* platform_subname, const char* device_type_str);
 void destroyContext(Context ctx);
 
