@@ -378,7 +378,8 @@ object KernelExecutor {
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getOutputType(elemType)
     case DepArrayType(_, _) | _: NatToDataApply => throw new Exception("This should not happen")
-    case _: DepPairType | _: ManagedBufferType | ContextType => throw new Exception(s"${dt} not supported as output type")
+    case _: DepPairType | _: ManagedBufferType | ContextType =>
+      throw new Exception(s"${dt} not supported as output type")
   }
 
   private def sizeInByte(dt: DataType): SizeInByte = dt match {

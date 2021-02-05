@@ -12,9 +12,11 @@ import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
 
 object HostManagedBuffers {
-  def populate(params: immutable.Seq[Identifier[ExpType]], outParam: Identifier[AccType]): Phrase[CommType] => Phrase[CommType] = { p =>
+  def populate(params: immutable.Seq[Identifier[ExpType]], outParam: Identifier[AccType])
+  : Phrase[CommType] => Phrase[CommType] = { p =>
     def outsideParams() = mutable.Set[Identifier[_ <: PhraseType]]() ++ (params :+ outParam)
-    val worstCasePrevious = Metadata(outsideParams(), outsideParams(), outsideParams(), outsideParams())
+    val worstCasePrevious =
+      Metadata(outsideParams(), outsideParams(), outsideParams(), outsideParams())
     val managed = mutable.Map[Identifier[_ <: PhraseType], AccessFlags]()
     insertHostExecutions(worstCasePrevious, outsideParams().toSet, managed, p)._1 |>
     insertManagedBuffers(managed)
@@ -25,7 +27,9 @@ object HostManagedBuffers {
     execute :: comm
 
     override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommType] =
-      HostExecution(env.map({ case (k, v) => VisitAndRebuild(k, f).asInstanceOf[Identifier[_ <: PhraseType]] -> v }),
+      HostExecution(
+        env.map({ case (k, v) =>
+          VisitAndRebuild(k, f).asInstanceOf[Identifier[_ <: PhraseType]] -> v }),
         VisitAndRebuild(execute, f))
 
     override def eval(s: OperationalSemantics.Store): OperationalSemantics.Store = ???
@@ -122,7 +126,9 @@ object HostManagedBuffers {
       }
   }
 
-  def optionallyManaged(i: Identifier[_ <: PhraseType]): Option[(Identifier[_ <: PhraseType], DataType)] = i.`type` match {
+  def optionallyManaged(i: Identifier[_ <: PhraseType])
+  : Option[(Identifier[_ <: PhraseType], DataType)]
+  = i.`type` match {
     case ExpType(_: ScalarType, _) | ExpType(_: IndexType, _) => None
     case ExpType(dt, a) => Some(Identifier("m" + i.name, ExpType(ManagedBufferType(dt), a)), dt)
     case AccType(_: ScalarType) => None
@@ -151,8 +157,8 @@ object HostManagedBuffers {
           Stop(managed.get(i).map(_._2).getOrElse(p).asInstanceOf[Phrase[T]])
         case New(dt, Lambda(x, body)) if managed.contains(x) =>
           val access = managed(x)._1
-          val x2 = managed(x)._2
-          Continue(NewManagedBuffer(dt, access, Lambda(x2.asInstanceOf[Identifier[VarType]], body)), this)
+          val x2 = managed(x)._2.asInstanceOf[Identifier[VarType]]
+          Continue(NewManagedBuffer(dt, access, Lambda(x2, body)), this)
         case _: New | _: Lambda[_, _] | _: Seq | _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
           Continue(p, this)
         case _: KernelCallCmd => Continue(p, this)

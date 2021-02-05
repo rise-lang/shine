@@ -32,11 +32,12 @@ final case class HostFunctionDefinition(name: String,
   def translateToModule(gen: CodeGenerator): Module = {
     val outParam = createOutputParam(outT = body.t)
 
-    body |>
-      ( run(TypeCheck(_: Phrase[ExpType])) andThen
-        rewriteToImperative(gen)(outParam) andThen
-        generateCode(gen)(outParam) andThen
-        makeModule(gen)(outParam) )
+    body |> (
+      run(TypeCheck(_: Phrase[ExpType])) andThen
+      rewriteToImperative(gen)(outParam) andThen
+      generateCode(gen)(outParam) andThen
+      makeModule(gen)(outParam)
+    )
   }
 
   def createOutputParam(outT: ExpType): Identifier[AccType] = outT.dataType match {
@@ -46,7 +47,8 @@ final case class HostFunctionDefinition(name: String,
       identifier("output", AccType(outT.dataType))
     case _: PairType => throw new Exception("Pairs as output parameters currently not supported")
     case _: DepPairType => identifier("output", AccType(outT.dataType))
-    case _: DataTypeIdentifier | _: NatToDataApply | ContextType => throw new Exception("This should not happen")
+    case _: DataTypeIdentifier | _: NatToDataApply | ContextType =>
+      throw new Exception("This should not happen")
   }
 
   private def rewriteToImperative(gen: CodeGenerator)
@@ -60,20 +62,25 @@ final case class HostFunctionDefinition(name: String,
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    output |>
-      ( TranslationToImperative.acc(p) _ andThen
-        HostManagedBuffers.populate(params, a.asInstanceOf[Identifier[AccType]]) andThen
-        run(TypeCheck(_)) andThen
-        UnrollLoops.unroll andThen
-        SimplifyNats.simplify )
+    output |> (
+      TranslationToImperative.acc(p) _ andThen
+      HostManagedBuffers.populate(params, a.asInstanceOf[Identifier[AccType]]) andThen
+      run(TypeCheck(_)) andThen
+      UnrollLoops.unroll andThen
+      SimplifyNats.simplify
+    )
   }
 
-  private def optionallyManagedParams(outParam: Identifier[AccType]): Seq[Identifier[_ <: BasePhraseType]] =
+  private def optionallyManagedParams(
+    outParam: Identifier[AccType]
+  ): Seq[Identifier[_ <: BasePhraseType]] =
     (outParam +: params).map(p => HostManagedBuffers.optionallyManaged(p)
       .map(_._1.asInstanceOf[Identifier[_ <: BasePhraseType]]).getOrElse(p))
 
-  private def generateCode(gen: CodeGenerator)
-                          (outParam: Identifier[AccType]): Phrase[CommType] => (immutable.Seq[gen.Decl], gen.Stmt) = {
+  private def generateCode
+    (gen: CodeGenerator)
+    (outParam: Identifier[AccType])
+  : Phrase[CommType] => (immutable.Seq[gen.Decl], gen.Stmt) = {
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       optionallyManagedParams(outParam).map(p => p -> C.AST.DeclRef(p.name)).toMap,
       immutable.Map.empty, immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
@@ -81,23 +88,25 @@ final case class HostFunctionDefinition(name: String,
     gen.generate(topLevelLetNats, env)
   }
 
-  private def makeModule(gen: CodeGenerator)
-                         (outParam: Identifier[AccType]): ((immutable.Seq[gen.Decl], gen.Stmt)) => Module = {
+  private def makeModule
+    (gen: CodeGenerator)
+    (outParam: Identifier[AccType])
+  : ((immutable.Seq[gen.Decl], gen.Stmt)) => Module = {
     case (declarations, code) =>
       val params = C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")) +:
         optionallyManagedParams(outParam).map(C.AST.makeParam(gen))
+      val function = C.Function(
+        code = C.AST.FunDecl(name, returnType = C.AST.Type.void, params,
+          C.AST.Block(immutable.Seq(code))),
+        paramMetaData =
+          ParamMetaData(ContextType, C.ParamMetaData.Kind.input) +:
+          ParamMetaData(outParam.`type`.dataType, C.ParamMetaData.Kind.output) +:
+          this.params.map(p => ParamMetaData(p.`type`.dataType, C.ParamMetaData.Kind.input))
+      )
       Module(
         includes = immutable.Seq(IncludeSource("runtime.h")),
         decls = CFunctionDefinition.collectTypeDeclarations(code, params) ++ declarations,
-        functions = immutable.Seq(
-          C.Function(
-            code = C.AST.FunDecl(name, returnType = C.AST.Type.void, params, C.AST.Block(immutable.Seq(code))),
-            paramMetaData =
-              ParamMetaData(ContextType, C.ParamMetaData.Kind.input) +:
-              ParamMetaData(outParam.`type`.dataType, C.ParamMetaData.Kind.output) +:
-                this.params.map(p => ParamMetaData(p.`type`.dataType, C.ParamMetaData.Kind.input))
-          )
-        )
+        functions = immutable.Seq(function)
       )
   }
 }

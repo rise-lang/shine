@@ -10,7 +10,7 @@ import shine.OpenCL.primitives.imperative.OpenCLKernelDefinition
 
 import scala.language.existentials
 
-case class Module(host: shine.C.Module, kernels: Seq[KernelModule]) {}
+case class Module(host: shine.C.Module, kernels: Seq[KernelModule])
 
 object Module {
   def fromPhrase(hostGen: shine.OpenCL.HostCodeGenerator,
@@ -22,8 +22,8 @@ object Module {
   }
 
   type KernelSizedDef = (LocalSize, GlobalSize, OpenCLKernelDefinition)
-  private def separateDefinitions(hostFunName: String
-                                 ): Phrase[_ <: PhraseType] => (HostFunctionDefinition, Seq[KernelSizedDef])
+  private def separateDefinitions(hostFunName: String)
+  : Phrase[_ <: PhraseType] => (HostFunctionDefinition, Seq[KernelSizedDef])
   = p => {
     var kernelNum = 0
     var kernelDefinitions = scala.collection.mutable.ArrayBuffer[KernelSizedDef]()
@@ -68,7 +68,7 @@ object Module {
       freeNats match {
         case v +: rest => iterNats(
           DepLambda[NatKind](NatIdentifier(v.name, v.range))(definition),
-          Natural(v) +: args , rest)
+          Natural(v) +: args, rest)
         case Nil => (definition, args)
       }
     }
@@ -92,7 +92,8 @@ object Module {
   }
 
   // TODO: collect free nat identifiers?
-  private def freeVariables(p: Phrase[_ <: PhraseType]): (Set[Identifier[ExpType]], Set[NamedVar]) = {
+  private def freeVariables(p: Phrase[_ <: PhraseType])
+  : (Set[Identifier[ExpType]], Set[NamedVar]) = {
     var idents = scala.collection.mutable.Set[Identifier[ExpType]]()
     var natIdents = scala.collection.mutable.Set[NamedVar]()
 

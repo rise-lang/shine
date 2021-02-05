@@ -37,7 +37,7 @@ case class KernelCall(name: String,
       ts match {
         case Nil =>
           KernelCallCmd(name, localSize, globalSize, A, es)
-        case Seq(arg, tail@_* ) =>
+        case Seq(arg, tail@_*) =>
           con(arg)(λ(expT(arg.t.dataType, read))(e => recurse(tail, es :+ e)))
       }
     }

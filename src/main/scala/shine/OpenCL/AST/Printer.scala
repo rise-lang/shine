@@ -83,8 +83,10 @@ class Printer extends shine.C.AST.CPrinter {
 //          case Some(s) => s
 //        }
 //        print(s"$addr${a.getBaseType} ${p.name}[$size]")
-      case pt: OpenCL.AST.PointerType => print(s"${toString(pt.a)} ${typeName(pt.valueType)}* restrict ${p.name}")
-      case _: shine.C.AST.PointerType => throw new Exception("Pointer without address space unsupported in OpenCL")
+      case pt: OpenCL.AST.PointerType =>
+        print(s"${toString(pt.a)} ${typeName(pt.valueType)}* restrict ${p.name}")
+      case _: shine.C.AST.PointerType =>
+        throw new Exception("Pointer without address space unsupported in OpenCL")
       case _: OpaqueType => throw new Exception("did not expect opaque parameter type")
     }
   }
