@@ -124,6 +124,12 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
     case phrase => phrase |> super.cmd(env)
   }
 
+  override def typ(dt: DataType): Type = dt match {
+    case ManagedBufferType(_) => C.AST.OpaqueType("Buffer")
+    case ContextType => C.AST.OpaqueType("Context")
+    case _ => super.typ(dt)
+  }
+
   private def managedTyp(dt: DataType): C.AST.Type = dt match {
     case shine.DPIA.Types.ArrayType(_, elemType) => C.AST.PointerType(typ(elemType))
     case _ => throw new Exception(s"did not expect $dt")

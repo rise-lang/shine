@@ -542,10 +542,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _: shine.DPIA.Types.IndexType => C.AST.Type.int
         case _: shine.DPIA.Types.VectorType => throw new Exception("Vector types in C are not supported")
       }
-      // TODO: move to HostCodeGenerator
-      case DPIA.Types.ManagedBufferType(_) => C.AST.OpaqueType("Buffer")
-      case DPIA.Types.ContextType => C.AST.OpaqueType("Context")
-
       case a: shine.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
       case a: shine.DPIA.Types.DepArrayType =>
         a.elemFType match {
@@ -559,8 +555,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             (typ(r.fst), "_fst"),
             (typ(r.snd), "_snd")))
       case shine.DPIA.Types.DepPairType(_, _) => C.AST.PointerType(C.AST.Type.u8)
-      case _: shine.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
-      case _: shine.DPIA.Types.NatToDataApply => throw new Exception("This should not happen")
+      case _: shine.DPIA.Types.DataTypeIdentifier | _: shine.DPIA.Types.NatToDataApply |
+           DPIA.Types.ManagedBufferType(_) | DPIA.Types.ContextType =>
+        throw new Exception(s"did not expect $dt")
     }
   }
 

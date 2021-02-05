@@ -15,7 +15,7 @@ object HostManagedBuffers {
   def populate(params: immutable.Seq[Identifier[ExpType]], outParam: Identifier[AccType]): Phrase[CommType] => Phrase[CommType] = { p =>
     def outsideParams() = mutable.Set[Identifier[_ <: PhraseType]]() ++ (params :+ outParam)
     val worstCasePrevious = Metadata(outsideParams(), outsideParams(), outsideParams(), outsideParams())
-    val managed = mutable.Set[Identifier[_ <: PhraseType]]()
+    val managed = mutable.Map[Identifier[_ <: PhraseType], AccessFlags]()
     insertHostExecutions(worstCasePrevious, outsideParams().toSet, managed, p)._1 |>
     insertManagedBuffers(managed)
   }
@@ -44,9 +44,17 @@ object HostManagedBuffers {
     def empty: Metadata = Metadata(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
   }
 
+  private def recordManagedAccess(
+    managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
+    ident: Identifier[_ <: PhraseType],
+    access: AccessFlags
+  ): Unit = {
+    managed.updateWith(ident)(prev => Some(prev.getOrElse(0) | access))
+  }
+
   private def insertHostExecutions(previous: Metadata,
                                    allocs: Set[Identifier[_ <: PhraseType]],
-                                   managed: mutable.Set[Identifier[_ <: PhraseType]],
+                                   managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
                                    p: Phrase[CommType]): (Phrase[CommType], Metadata) = {
     val (p2, current) = analyzeAndInsertHostExecution(p, allocs, managed)
     val syncAccesses = previous.target_reads.union(previous.target_writes)
@@ -60,14 +68,14 @@ object HostManagedBuffers {
     } else {
       assert(current.target_reads.isEmpty)
       assert(current.target_writes.isEmpty)
-      val managedEnv = (current.host_reads ++ current.host_writes).filter(optionallyManaged(_).isDefined).toSeq
-      managed ++= managedEnv
-      val env = managedEnv.map(i => {
+      val env = (current.host_reads ++ current.host_writes)
+        .filter(optionallyManaged(_).isDefined).map(i => {
         var access = 0
         if (current.host_reads.contains(i)) { access |= HOST_READ }
         if (current.host_writes.contains(i)) { access |= HOST_WRITE }
         i -> access
       }).toMap
+      env.foreach { case (i, a) => recordManagedAccess(managed, i, a) }
       (HostExecution(env, p2), Metadata.empty)
     }
   }
@@ -75,7 +83,7 @@ object HostManagedBuffers {
   private def analyzeAndInsertHostExecution(
     p: Phrase[CommType],
     allocs: Set[Identifier[_ <: PhraseType]],
-    managed: mutable.Set[Identifier[_ <: PhraseType]]
+    managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags]
   ): (Phrase[CommType], Metadata) = {
     val meta = Metadata(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
     val p2 = VisitAndRebuild(p, Visitor(allocs, managed, meta))
@@ -83,7 +91,7 @@ object HostManagedBuffers {
   }
 
   private case class Visitor(allocs: Set[Identifier[_ <: PhraseType]],
-                             managed: mutable.Set[Identifier[_ <: PhraseType]],
+                             managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
                              metadata: Metadata) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
       p match {
@@ -94,12 +102,12 @@ object HostManagedBuffers {
         case KernelCallCmd(_, _, _, out, in) =>
           in.foreach(collectReads(_, allocs, metadata.target_reads))
           collectWrites(out, metadata.target_writes)
-          (out +: in).foreach {
-            case i: Identifier[_] => managed += i
-            case Proj1(i: Identifier[_]) => managed += i
-            case Proj2(i: Identifier[_]) => managed += i
-            case Natural(_) =>
-            case unexpected => throw new Exception(s"did not expect $unexpected")
+          ((out, TARGET_WRITE) +: in.map(_ -> TARGET_READ)).foreach {
+            case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
+            case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
+            case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
+            case (Natural(_), _) =>
+            case (unexpected, _) => throw new Exception(s"did not expect $unexpected")
           }
           Stop(p)
         case Seq(a, b) =>
@@ -126,20 +134,25 @@ object HostManagedBuffers {
   }
 
   private def insertManagedBuffers(
-    managed: mutable.Set[Identifier[_ <: PhraseType]]
+    managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags]
   ): Phrase[CommType] => Phrase[CommType] = p => {
-    VisitAndRebuild(p, Visitor2(managed.iterator.flatMap(i => optionallyManaged(i).map(i -> _._1)).toMap))
+    val managed2 = managed.iterator.flatMap { case (i, a) =>
+      optionallyManaged(i).map(om => i -> (a, om._1))
+    }.toMap
+    VisitAndRebuild(p, Visitor2(managed2))
   }
 
-  private case class Visitor2(managed: Map[Identifier[_ <: PhraseType], Identifier[_ <: PhraseType]]) extends VisitAndRebuild.Visitor {
+  private case class Visitor2(
+    managed: Map[Identifier[_ <: PhraseType], (AccessFlags, Identifier[_ <: PhraseType])]
+  ) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
       p match {
         case i: Identifier[_] =>
-          Stop(managed.getOrElse(i, p).asInstanceOf[Phrase[T]])
+          Stop(managed.get(i).map(_._2).getOrElse(p).asInstanceOf[Phrase[T]])
         case New(dt, Lambda(x, body)) if managed.contains(x) =>
-          // TODO: infer tighter access
-          val access = TARGET_READ | TARGET_WRITE | HOST_READ | HOST_WRITE
-          Continue(NewManagedBuffer(dt, access, Lambda(managed(x).asInstanceOf[Identifier[VarType]], body)), this)
+          val access = managed(x)._1
+          val x2 = managed(x)._2
+          Continue(NewManagedBuffer(dt, access, Lambda(x2.asInstanceOf[Identifier[VarType]], body)), this)
         case _: New | _: Lambda[_, _] | _: Seq | _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
           Continue(p, this)
         case _: KernelCallCmd => Continue(p, this)
