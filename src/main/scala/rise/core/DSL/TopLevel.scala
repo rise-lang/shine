@@ -64,7 +64,7 @@ object TopLevel {
                   case None    => `type`(t.asInstanceOf[T])
                 }
             }
-          case _ => `type`(t.asInstanceOf[T])
+          case _ => super.`type`(t.asInstanceOf[T])
         }
       }
     )
