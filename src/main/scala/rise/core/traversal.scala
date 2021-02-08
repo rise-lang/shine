@@ -103,10 +103,6 @@ object Traverse {
           yield PairData(l1, r1)
     }
 
-    def primitive : Primitive => M[Expr] = p =>
-      for { t1 <- `type`(p.t)}
-        yield p.setType(t1)
-
     def `type`[T <: Type ] : T => M[T] = t => (t match {
       case TypePlaceholder => return_(TypePlaceholder)
       case i: DataTypeIdentifier => typeIdentifierDispatch(Reference)(i)
@@ -176,7 +172,10 @@ object Traverse {
       case Literal(d) =>
         for { d1 <- data(d) }
           yield Literal(d1)
-      case p : Primitive => primitive(p)
+      case p : Primitive =>
+        for { t1 <- `type`(p.t)}
+          yield p.setType(t1)
+
     }
   }
 

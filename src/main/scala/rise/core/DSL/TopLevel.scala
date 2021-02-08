@@ -57,14 +57,14 @@ object TopLevel {
         override def `type`[T <: Type] : T => Pure[T] = {
           case i: TypeIdentifier =>
             ftvSubs.ts.get(i) match {
-              case None => `type`(t.asInstanceOf[T])
+              case None => super.`type`(t.asInstanceOf[T])
               case Some(i) =>
                 sol.ts.get(i.asInstanceOf[TypeIdentifier]) match {
                   case Some(x) => return_(x.asInstanceOf[T])
-                  case None    => `type`(t.asInstanceOf[T])
+                  case None    => super.`type`(t.asInstanceOf[T])
                 }
             }
-          case _ => super.`type`(t.asInstanceOf[T])
+          case t => super.`type`(t.asInstanceOf[T])
         }
       }
     )
