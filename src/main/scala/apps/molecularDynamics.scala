@@ -7,7 +7,6 @@ import rise.core.DSL.Type._
 import rise.core.types._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
-import util.KernelNoSizes
 
 object molecularDynamics {
   private val mdCompute = foreignFun("updateF",
@@ -136,7 +135,7 @@ object molecularDynamics {
   }
 
   def runKernel(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     particles: Array[Float],
     neighbours: Array[Array[Int]]
   ): (Array[Float], TimeSpan[Time.ms]) = {

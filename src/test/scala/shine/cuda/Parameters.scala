@@ -6,10 +6,10 @@ import util.gen
 
 class Parameters extends test_util.Tests {
   test("Output scalar OpenCL") {
-    gen.OpenCLKernel(fun(f32)(vs => vs))
+    gen.opencl.kernel.fromExpr(fun(f32)(vs => vs))
   }
 
   test("Output scalar CUDA") {
-    gen.cuKernel(fun(f32)(vs => vs))
+    gen.cuda.kernel.fromExpr(fun(f32)(vs => vs))
   }
 }

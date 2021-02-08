@@ -1,6 +1,6 @@
 package shine.OpenMP
 import shine.DPIA.DSL.λ
-import shine.DPIA.IntermediatePrimitives.MapVecI
+import shine.DPIA.primitives.intermediate.MapVecI
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, VectorType, read}
 

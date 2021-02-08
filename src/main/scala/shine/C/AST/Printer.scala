@@ -124,7 +124,7 @@ class CPrinter extends Printer {
         // float name[s];
         print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
           case None => ""
-          case Some(s) => s
+          case Some(s) => toString(s)
         } }]")
       case p: PointerType => print(s"${p.valueType}* ${v.name}")
     }
@@ -144,7 +144,7 @@ class CPrinter extends Printer {
       case _: UnionType => ???
       case a: ArrayType => print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
         case None => ""
-        case Some(s) => s}
+        case Some(s) => toString(s)}
       }]")
       case pt: PointerType => print(s"${pt.valueType}* ${p.name}")
     }
@@ -333,7 +333,7 @@ class CPrinter extends Printer {
     print("((")
     print(s"${al.t.getBaseType}[${ al.t.getSizes match {
       case None => ""
-      case Some(s) => s
+      case Some(s) => toString(s)
     } }]")
     print("){")
     var first = true

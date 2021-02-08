@@ -4,6 +4,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
 import util.gen
+import util.gen.c.function
 
 class Slide extends test_util.Tests {
 
@@ -12,7 +13,7 @@ class Slide extends test_util.Tests {
       depFun((n: Nat) => fun(ArrayType(n, f32))(xs =>
         xs |> slide(3)(1) |> mapSeq(mapSeq(fun(x => x)))))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -24,7 +25,7 @@ class Slide extends test_util.Tests {
           xs |> map(slide(3)(1)) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
         ))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }
@@ -36,7 +37,7 @@ class Slide extends test_util.Tests {
           xs |> mapSeq(slide(3)(1) >> mapSeq(mapSeq(fun(x => x))))
         ))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }

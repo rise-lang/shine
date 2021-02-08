@@ -7,3 +7,4 @@ case object Local extends ParallelismLevel
 case object Sequential extends ParallelismLevel
 
 case object Warp extends ParallelismLevel
+case object Lane extends ParallelismLevel

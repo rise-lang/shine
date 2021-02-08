@@ -7,7 +7,6 @@ import rise.core.DSL.Type._
 import rise.core.types._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
-import util.KernelNoSizes
 
 object nbody {
   private val id = fun(x => x)
@@ -133,7 +132,7 @@ object nbody {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runKernel(k: KernelNoSizes,
+  def runKernel(k: KernelExecutor.KernelNoSizes,
                 localSize: LocalSize,
                 globalSize: GlobalSize,
                 pos: Array[Float],

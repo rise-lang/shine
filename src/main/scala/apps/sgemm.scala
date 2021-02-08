@@ -10,7 +10,7 @@ import rise.core.DSL.Type._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
 import rise.core.types._
-import util.{KernelWithSizes, Time, TimeSpan}
+import util.{Time, TimeSpan}
 
 import scala.collection.parallel.CollectionConverters._
 
@@ -285,7 +285,7 @@ object sgemm {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runSgemmKernel(kernel: KernelWithSizes,
+  def runSgemmKernel(kernel: KernelExecutor.KernelWithSizes,
                      A: Array[Array[Float]],
                      B: Array[Array[Float]],
                      C: Array[Array[Float]],

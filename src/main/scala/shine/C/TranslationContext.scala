@@ -1,8 +1,8 @@
 package shine.C
 
 import shine.DPIA.DSL._
-import shine.DPIA.ImperativePrimitives.Assign
-import shine.DPIA.IntermediatePrimitives.DepMapSeqI
+import shine.DPIA.primitives.imperative.Assign
+import shine.DPIA.primitives.intermediate.DepMapSeqI
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 
@@ -24,7 +24,7 @@ class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
 
       //TODO makes a decision. Not allowed!
       case DepArrayType(n, ft) =>
-        DepMapSeqI(n, ft, ft,
+        DepMapSeqI(unroll = false)(n, ft, ft,
           depFun[NatKind]()(k =>
             λ(ExpType(ft(k), read))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)

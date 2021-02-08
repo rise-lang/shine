@@ -6,7 +6,8 @@ import Type._
 import rise.core.types._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclRotateValues
-import util.{KernelNoSizes, gen}
+import util.gen
+import shine.OpenCL.KernelExecutor._
 
 import scala.reflect.ClassTag
 
@@ -301,11 +302,11 @@ object harrisCornerDetection {
 
   object NoPipe {
     def create: NoPipe = NoPipe(
-      gen.OpenCLKernel(sobelX),
-      gen.OpenCLKernel(sobelY),
-      gen.OpenCLKernel(mul),
-      gen.OpenCLKernel(gaussian),
-      gen.OpenCLKernel(coarsity)
+      gen.opencl.kernel.fromExpr(sobelX),
+      gen.opencl.kernel.fromExpr(sobelY),
+      gen.opencl.kernel.fromExpr(mul),
+      gen.opencl.kernel.fromExpr(gaussian),
+      gen.opencl.kernel.fromExpr(coarsity)
     )
   }
 
@@ -341,8 +342,8 @@ object harrisCornerDetection {
   object HalfPipe2 {
     def create: HalfPipe2 =
       HalfPipe2(
-        gen.OpenCLKernel(sobelXYMuls),
-        gen.OpenCLKernel(gaussianCoarsity)
+        gen.opencl.kernel.fromExpr(sobelXYMuls),
+        gen.opencl.kernel.fromExpr(gaussianCoarsity)
       )
   }
 
@@ -378,8 +379,8 @@ object harrisCornerDetection {
   object HalfPipe1 {
     def create: HalfPipe1 =
       HalfPipe1(
-        gen.OpenCLKernel(sobelXY),
-        gen.OpenCLKernel(mulGaussianCoarsity)
+        gen.opencl.kernel.fromExpr(sobelXY),
+        gen.opencl.kernel.fromExpr(mulGaussianCoarsity)
       )
   }
 
@@ -405,7 +406,7 @@ object harrisCornerDetection {
 
   object FullPipe {
     def create: FullPipe =
-      FullPipe(gen.OpenCLKernel(sobelXYMulGaussianCoarsity))
+      FullPipe(gen.opencl.kernel.fromExpr(sobelXYMulGaussianCoarsity))
   }
 
   private def zip2D[A, B](

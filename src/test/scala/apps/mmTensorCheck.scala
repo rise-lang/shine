@@ -3,6 +3,7 @@ package apps
 import apps.mmTensor._
 import rise.core.Expr
 import shine.OpenCL._
+import shine.cuda.KernelExecutor.{KernelNoSizes, KernelWithSizes}
 import util._
 
 class mmTensorCheck extends test_util.TestsWithYACX {
@@ -15,11 +16,12 @@ class mmTensorCheck extends test_util.TestsWithYACX {
   test("matrix multiplication a single fragment and tensor cores produces expected result") {
     val (a, b, gold) = generateGold(16, 16, 16)
 
-    val kernel = gen.cuKernel(simpleMatMulTile)
-    compilerOptions.foreach(option => kernel.kernel.addCompilerOption(option))
+    val kernel = gen.cuda.kernel("mm").fromExpr(simpleMatMulTile)
 
     try {
-      val run = kernel.as[ScalaFunction `(`
+      println(shine.cuda.KernelModule.translationToString(kernel))
+
+      val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
         Array[Array[Float]] `,` Array[Array[Float]]
         `)=>` Array[Float]]
 
@@ -94,6 +96,8 @@ class mmTensorCheck extends test_util.TestsWithYACX {
     executeMMWithSizes(matMulSharedMemoryV3(config4),8)
   }
 
+  //TODO TypeCheckBug
+  //Expected to find `(output : acc[n39476.n39477.f32])' in the environment: `HashMap(...,(output : acc[(2*n39476*n39477*(1/^((2*n39477)))).n39477.f32]) -> DeclRef(output), ...)'
   test("matrix multiplication with tensor cores and shared memory produces expected result 9") {
     executeMMWithSizes(matMulSharedMemoryV4(config1),4)
     executeMMWithSizes(matMulSharedMemoryV4(config2),4)
@@ -113,11 +117,12 @@ class mmTensorCheck extends test_util.TestsWithYACX {
   private def executeMM(mmKernel: Expr, matrixBTranspose: Boolean = false, matrixATranspose: Boolean = false) : Unit = {
     val (a, b, gold) = generateGold(m, n, k)
 
-    val kernel = gen.cuKernel(mmKernel, "mm")
-    compilerOptions.foreach(option => kernel.kernel.addCompilerOption(option))
+    val kernel = gen.cuda.kernel("mm").fromExpr(mmKernel)
 
     try {
-        val run = kernel.as[ScalaFunction `(`
+        println(shine.cuda.KernelModule.translationToString(kernel))
+
+        val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
           Int `,` Int `,` Int `,`
           Array[Array[Float]] `,` Array[Array[Float]]
           `)=>` Array[Float]]
@@ -138,13 +143,19 @@ class mmTensorCheck extends test_util.TestsWithYACX {
                                  matrixATranspose: Boolean = false) : Unit = {
     val (a, b, gold) = generateGold(m, n, k)
 
-    val kernel = gen.cuKernel(LocalSize(numberOfWarps * 32), GlobalSize(numberOfWarps * 32))(mmKernel, "mm")
-    compilerOptions.foreach(option => kernel.kernel.addCompilerOption(option))
-    if (numberOfWarps == 16)
-      kernel.kernel.addCompilerOption("-maxrregcount=80")
+    val (localSize, globalSize) = (LocalSize(numberOfWarps * 32), GlobalSize(numberOfWarps * 32))
+    val kernel = gen.cuda.kernel(localSize, globalSize, "mm").fromExpr(mmKernel)
+
+    val compilerOptions =
+      if (numberOfWarps < 16)
+        mmCheckUtils.compilerOptions
+      else
+        mmCheckUtils.compilerOptions.appended("-maxrregcount=80")
 
     try {
-      val run = kernel.as[ScalaFunction `(`
+      println(shine.cuda.KernelModule.translationToString(kernel))
+
+      val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[ScalaFunction `(`
         Int `,` Int `,` Int `,`
         Array[Array[Float]] `,` Array[Array[Float]]
         `)=>` Array[Float]]
@@ -196,10 +207,7 @@ class mmTensorCheck extends test_util.TestsWithYACX {
 }
 
 object mmCheckUtils {
-  val compilerOptions = Array("--gpu-architecture=compute_75",
-    //TODO only for on specific device...
-    "--include-path=/Applic.HPC/Easybuild/skylake/2019a/software/CUDA/10.1.105-GCC-8.2.0-2.31.1/targets/x86_64-linux/include",
-    "--include-path=/opt/cuda/targets/x86_64-linux/include")
+  val compilerOptions = List("--gpu-architecture=compute_70")
 
   var m = 256
   var n = 512

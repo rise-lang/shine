@@ -14,7 +14,7 @@ class NearestNeighbour extends test_util.TestsWithExecutor {
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("NearestNeighbour.cl", locations, lat, lng)),
-      ("dpia", runKernel(gen.OpenCLKernel(nn), locations, lat, lng))
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(nn), locations, lat, lng))
     ))
   }
 }

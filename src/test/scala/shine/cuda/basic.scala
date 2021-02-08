@@ -1,12 +1,10 @@
 package shine.cuda
 
-import rise.core.freshName
-import shine.DPIA.FunctionalPrimitives.{Split, Transpose, Zip}
 import shine.DPIA.NatIdentifier
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.OpenCL.FunctionalPrimitives.MapGlobal
-import shine.cuda.primitives.functional.MapThreads
+import shine.OpenCL.{Global, Local}
+import util.gen
 
 class basic extends test_util.Tests {
 
@@ -17,10 +15,10 @@ class basic extends test_util.Tests {
     val mapId =
       DepLambda[NatKind](n)(
         Lambda(arr,
-          MapThreads('x')(n, f32, f32, Lambda(x, x), arr)
+          shine.cuda.primitives.functional.Map(Local, 'x')(n, f32, f32, Lambda(x, x), arr)
       ))
 
-    val code = KernelGenerator().makeCode(mapId).code
+    val code = gen.cuda.kernel.asStringFromPhrase(mapId)
     println(code)
   }
 
@@ -31,10 +29,10 @@ class basic extends test_util.Tests {
     val mapId =
       DepLambda[NatKind](n)(
         Lambda(arr,
-          MapGlobal('x')(n, f32, f32, Lambda(x, x), arr)
+          shine.cuda.primitives.functional.Map(Global, 'x')(n, f32, f32, Lambda(x, x), arr)
         ))
 
-    val code = KernelGenerator().makeCode(mapId).code
+    val code = gen.cuda.kernel.asStringFromPhrase(mapId)
     println(code)
   }
 }

@@ -7,7 +7,6 @@ import rise.core.DSL.Type._
 import rise.core.types._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
-import util.KernelNoSizes
 
 object mriQ {
   private val phiMag = foreignFun("phiMag",
@@ -99,7 +98,7 @@ object mriQ {
   }
 
   def runComputePhiMag(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     phiR: Array[Float],
     phiI: Array[Float]
   ): (Array[Float], TimeSpan[Time.ms]) = {
@@ -163,7 +162,7 @@ object mriQ {
   }
 
   def runComputeQ(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     x: Array[Float],
     y: Array[Float],
     z: Array[Float],

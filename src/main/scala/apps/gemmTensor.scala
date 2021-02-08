@@ -57,13 +57,13 @@ object gemmTensor {
 
                 oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                   tensorMMA(
-                    abTiles._1 |> transpose |> asFragment,
-                    abTiles._2 |> asFragment,
+                    abTiles._1 |> transpose |> asFragment |> toPrivate,
+                    abTiles._2 |> asFragment |> toPrivate,
                     cTile)))
 
                 (bColumnsTCT._2 |>
                   transpose |>
-                  asFragment |>
+                  asFragment |> toPrivate |>
                   mapFragmentElements(fun(x => x * (beta / alpha)))) |>
 
                 mapFragmentElements(fun(x => x * alpha)) |> toPrivate |>
@@ -153,7 +153,7 @@ object gemmTensor {
                             cTiles |> transpose |> split(nTileFrag) |>
                               mapSeq(fun(cTileFragT =>
                                 cTileFragT |> transpose |>
-                                  asFragment |>
+                                  asFragment |> toPrivate |>
                                   mapFragmentElements(fun(x => x * (beta / alpha)))))))) |> // mTileWarp.nTileWarp.WmmaAcc
 
                         //Write result from fragments to output
@@ -293,18 +293,12 @@ object gemmTensor {
                     abWarpC._1._2,
                     abWarpC._2 |> split(config.nNumberOfFragsWarp)) |>
 
-                    mapSeq(mapSeq(fun(x => x))) |>
-                    transpose)) |>
+                    mapSeq(mapSeq(fun(x => x))))) |>
                 join |>
                 join |>
                 split(config.mNumberOfFragsWarp * config.nNumberOfFragsWarp)))))
 
-//        TODO
-//        (loadMatrixFromCIntoFragments(beta / alpha)(cTileBlock)) |>
-          (generate2D |>
-            mapWarp(
-              mapSeqUnroll(fun(z =>
-                generateFragment(z))))) |>
+        (loadMatrixFromCIntoFragments(beta / alpha)(cTileBlock)) |>
 
         epilog(alpha))
   }
@@ -461,7 +455,6 @@ object gemmTensor {
   //b-matrix is transposed
   private def deviceGEMM(blockGEMM: ToBeTyped[Expr]): ToBeTyped[Expr] =
     depFun((m: Nat, n: Nat, k: Nat) => fun(
-      //TODO why does this not work?
       f32 ->: f32 ->: (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32) ->: (m `.` n `.` f32)
     )((alpha, beta, a, bT, c) =>
       zip
@@ -474,20 +467,6 @@ object gemmTensor {
           aRowsBlockBColumnBlockCTileBlock._1._1, //aRowsBlockBColumnBlockCTileBlock._1._1
           aRowsBlockBColumnBlockCTileBlock._1._2, //aRowsBlockBColumnBlockCTileBlock._1._2
           aRowsBlockBColumnBlockCTileBlock._2) |>     //mTileBlock.nTilcblock.f32
-
-       //This works (without c-matrix)
-//      f32 ->: f32 ->: (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32)
-//    )((alpha, beta, a, bT) =>
-//      crossProductOfMatrixTiles(config.mTileBlock, config.nTileBlock)(a, bT |> transpose) |>
-//
-//        mapBlock(fun(aRowsBlockBColumnBlockCTileBlock =>
-//
-//          blockGEMM(
-//            alpha, beta,
-//            aRowsBlockBColumnBlockCTileBlock._1, //aRowsBlockBColumnBlockCTileBlock._1._1
-//            aRowsBlockBColumnBlockCTileBlock._2, //aRowsBlockBColumnBlockCTileBlock._1._2
-//            aRowsBlockBColumnBlockCTileBlock._2) |>     //mTileBlock.nTilcblock.f32
-
             transpose)) |>                                //m/mTileBlock*n/nTileBlock.nTileBlock.mTilcblock.f32
         join |>                                         //m/mTileBlock*n.mTilcblock.f32
         split(n) |>                                     //m/mTileBlock.n.mTilcblock.f32

@@ -20,7 +20,9 @@ class OclToMem extends test_util.Tests {
                 |> toPrivateFun(mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (fun(x => x))))))
                 |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (fun(x => x))))) ))
 
-    gen.OpenCLKernel(LocalSize((4, 2, 1)), GlobalSize((4, 2, 1)))(e(4)(4)(2)(2), "KERNEL")
+    val localSize = LocalSize((4, 2, 1))
+    val globalSize = GlobalSize((4, 2, 1))
+    gen.opencl.kernel(localSize, globalSize).fromExpr(e(4)(4)(2)(2))
 
     //Expected: Outer-most 2 dimensions have size of the ceiling of dividing by get_local_size(dim).
     // Inner dimensions stay the same.
@@ -33,7 +35,9 @@ class OclToMem extends test_util.Tests {
           |> toPrivateFun(mapGlobal(1) (mapGlobal(0) (fun(x => x))))
           |> mapGlobal(1) (mapGlobal(0) (fun(x => x)))))
 
-    gen.OpenCLKernel(LocalSize((1, 1, 1)), GlobalSize((4, 2, 1)))(e(4)(4), "KERNEL")
+    val localSize = LocalSize((1, 1, 1))
+    val globalSize = GlobalSize((4, 2, 1))
+    gen.opencl.kernel(localSize, globalSize).fromExpr(e(4)(4))
 
     //Expected: Dimensions have size of the ceiling of dividing by get_global_size(dim)
   }
@@ -46,7 +50,9 @@ class OclToMem extends test_util.Tests {
           |> toPrivateFun(mapLocal(1) (fun(x => makePair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
           |> mapLocal(1) (fun(t => makePair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
 
-    gen.OpenCLKernel(LocalSize((4, 4, 1)), GlobalSize((4, 8, 1)))(e(4)(8), "KERNEL")
+    val localSize = LocalSize((4, 4, 1))
+    val globalSize = GlobalSize((4, 8, 1))
+    gen.opencl.kernel(localSize, globalSize).fromExpr(e(4)(8))
 
     //Expected: Outer dimension has size of the ceiling of dividing by get_local_size(dim).
     // In RecordType dimensions are adapted as well.
@@ -59,7 +65,7 @@ class OclToMem extends test_util.Tests {
           |> toLocalFun(mapLocal(1) (fun(x => makePair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
           |> mapLocal(1) (fun(t => makePair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
 
-    gen.OpenCLKernel(e(4)(8))
+    gen.opencl.kernel.fromExpr(e(4)(8))
 
     //Expected: No changes.
   }
@@ -85,7 +91,9 @@ class OclToMem extends test_util.Tests {
         (zeros(m)(n)(o)(p) |> mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(fun(x => x))))))
           |> mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(fun(x => x)))))))
 
-    gen.OpenCLKernel(LocalSize((2, 2, 1)), GlobalSize((8, 8, 1)))(e(8)(4)(4)(2)(2), "KERNEL")
+    val localSize = LocalSize((2, 2, 1))
+    val globalSize = GlobalSize((8, 8, 1))
+    gen.opencl.kernel(localSize, globalSize).fromExpr(e(8)(4)(4)(2)(2))
 
     //Expected: Outer-most 2 dimensions have size of the ceiling of dividing by get_local_size(dim).
     // Inner dimensions stay the same.
@@ -96,7 +104,7 @@ class OclToMem extends test_util.Tests {
       a |> mapGlobal(toPrivateFun(mapSeq(add1)) >> mapSeq(id))
     ))
 
-    val code = gen.OpenCLKernel(e).code
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "for \\(".r.findAllIn(code).length shouldBe 1
   }
 
@@ -106,7 +114,7 @@ class OclToMem extends test_util.Tests {
     ))
 
     //val code =
-      gen.OpenCLKernel(e).code
+      gen.opencl.kernel.asStringFromExpr(e)
     // `3.f32` should be allocated, indexing should not depend on the outer loop
     // this assumes that there is only one thread running because there is no parallel map
   }
@@ -117,7 +125,7 @@ class OclToMem extends test_util.Tests {
     ))
 
     //val code =
-      gen.OpenCLKernel(e).code
+      gen.opencl.kernel.asStringFromExpr(e)
     // `max(nthreads, n).3.f32` should be allocated, indexing should depend on get_global_id(0)
   }
 
@@ -130,7 +138,7 @@ class OclToMem extends test_util.Tests {
     ))
 
     //val code =
-      gen.OpenCLKernel(e).code
+      gen.opencl.kernel.asStringFromExpr(e)
     // first inner loop, first memory write:
     // `max(nthreads, n).f32` should be allocated, indexing should depend on get_global_id(0)
     // first inner loop, second memory write:
@@ -142,7 +150,7 @@ class OclToMem extends test_util.Tests {
       a |> padCst(1)(1)(l(1.0f)) |> toPrivateFun(mapSeq(id)) |> mapSeq(id)
     )
 
-    val code = gen.OpenCLKernel(e).code
+    val code = gen.opencl.kernel.asStringFromExpr(e)
     "for \\(".r.findAllIn(code).length shouldBe 0
     " \\? ".r.findAllIn(code).length shouldBe 0
   }

@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
 import util.gen
+import util.gen.c.function
 
 class DepMap extends test_util.Tests {
   ignore("Simple triangle depMap example should generate syntactic valid C code with two for loop") {
@@ -14,7 +15,7 @@ class DepMap extends test_util.Tests {
 
     println(e)
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 2
   }
@@ -25,7 +26,7 @@ class DepMap extends test_util.Tests {
         fun(n`.`(m`.`(o`.`f32)))(xs =>
           xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))
 
-    val code = gen.CProgram(e).code
+    val code = function.asStringFromExpr(e)
 
     "for".r.findAllIn(code).length shouldBe 3
   }

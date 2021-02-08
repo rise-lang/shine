@@ -5,7 +5,6 @@ import rise.core.DSL._
 import rise.core._
 import rise.core.types._
 import rise.openCL.TypedDSL._
-import util.KernelNoSizes
 
 object nearestNeighbour {
   private val distance = foreignFun("distance_",
@@ -64,7 +63,7 @@ object nearestNeighbour {
   }
 
   def runKernel(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     locations: Array[Float],
     lat: Float,
     lng: Float

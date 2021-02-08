@@ -1,16 +1,16 @@
 package exploration.runner
 
-import java.io.{File, FileOutputStream, PrintWriter}
-
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{IOHelper, Solution}
-import exploration.explorationUtil.ExplorationErrorLevel.ExplorationErrorLevel
+import exploration.explorationUtil.ExplorationErrorLevel.{ExplorationErrorLevel, _}
 import rise.elevate.Rise
-import shine.OpenMP.Program
+import shine.C
+import shine.C.AST.ParamDecl
+import util.gen.c.function
 import util.{createTempFile, gen, writeToTempFile}
-import exploration.explorationUtil.ExplorationErrorLevel._
 
+import java.io.{File, FileOutputStream, PrintWriter}
 import scala.language.postfixOps
 import scala.sys.process._
 
@@ -23,7 +23,7 @@ case class CExecutor(lowering: Strategy[Rise],
   var globalBest:Option[Double] = None
   val N: Int = inputSize
   var best:Option[Double] = None
-  var gold: Program = gen.OpenMPProgram(goldExpression, "compute_gold")
+  var gold: C.Module = gen.openmp.function("compute_gold").fromExpr(goldExpression)
   var counter = 0
   var errorLevel:ExplorationErrorLevel = LoweringError
 
@@ -67,8 +67,7 @@ case class CExecutor(lowering: Strategy[Rise],
             case Some(value) =>
               if (returnValue.toDouble < value) {
                 best = Some(returnValue.toDouble)
-//                gold = gen.CProgram(lowered.get, "compute_gold")
-                gold = gen.OpenMPProgram(lowered.get, "compute_gold")
+                gold = gen.openmp.function("compute_gold").fromExpr(lowered.get)
                 println("use new gold with runtime: " + best.get)
               }
             case _ => best = Some(returnValue.toDouble)
@@ -208,7 +207,9 @@ case class CExecutor(lowering: Strategy[Rise],
     (solution.expression, performanceValue)
   }
 
-  def prepareInput(riseProgram:Program):(String,String,String,String) ={
+  def prepareInput(tu: C.Module):(String,String,String,String) ={
+
+    val fun: C.Function = tu.functions.head
 
     val arrayTwo = "(.)+[.](.)+[.]f32".r
     val arrayOne = "(.)+[.]f32".r
@@ -222,20 +223,20 @@ case class CExecutor(lowering: Strategy[Rise],
       s"""
        //free memory"""
 
-    var call = s"""${riseProgram.function.name}(output"""
-    var callGold = s"""${gold.function.name}(gold"""
+    var call = s"""${fun.name}(output"""
+    var callGold = s"""${gold.functions.head.name}(gold"""
 
     codeBeg +=
       s"""
         //inputs""".stripMargin
-    riseProgram.inputParams.foreach(elem => {
-      if (elem.`type`.dataType.toString.equals("int")) {
+    fun.inputParams.foreach{ case (elem, _) =>
+      if (elem.t.toString.equals("int")) {
         codeBeg +=
           s"""
         const int ${elem.name} = N; """
         call += s""", ${elem.name}"""
         callGold += s""", ${elem.name}"""
-      } else if (arrayTwo.findFirstIn(elem.`type`.dataType.toString).isDefined) {
+      } else if (arrayTwo.findFirstIn(elem.t.toString).isDefined) {
         codeBeg +=
           s"""
         float* ${elem.name} = (float*) malloc(sizeof(float)*N*N);
@@ -249,7 +250,7 @@ case class CExecutor(lowering: Strategy[Rise],
         free(${elem.name});"""
         call += s""", ${elem.name}"""
         callGold += s""", ${elem.name}"""
-      } else if (arrayOne.findFirstIn(elem.`type`.dataType.toString).isDefined) {
+      } else if (arrayOne.findFirstIn(elem.t.toString).isDefined) {
         codeBeg +=
           s"""
         float* ${elem.name} = (float*) malloc(sizeof(float)*N);
@@ -263,7 +264,7 @@ case class CExecutor(lowering: Strategy[Rise],
         free(${elem.name});"""
         call += s""", ${elem.name}"""
         callGold += s""", ${elem.name}"""
-      } else if (elemOne.findFirstIn(elem.`type`.dataType.toString).isDefined) {
+      } else if (elemOne.findFirstIn(elem.t.toString).isDefined) {
         codeBeg +=
           s"""
         float ${elem.name} = 5;
@@ -271,44 +272,46 @@ case class CExecutor(lowering: Strategy[Rise],
         call += s""", ${elem.name}"""
         callGold += s""", ${elem.name}"""
       }
-    })
+    }
+
+    val outputParam = fun.outputParams.head._1
 
     codeBeg += s"""
 
         //output"""
 
-    if(riseProgram.outputParam.`type`.dataType.toString.equals("int")) {
+    if(outputParam.t.toString.equals("int")) {
       codeBeg +=
         s"""
-        const int ${riseProgram.outputParam.name} = N; """
-    } else if (arrayTwo.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).isDefined) {
+        const int ${outputParam.name} = N; """
+    } else if (arrayTwo.findFirstIn(outputParam.t.toString).isDefined) {
       codeBeg += s"""
-        float* ${riseProgram.outputParam.name} = (float*) malloc(sizeof(float)*N*N);
+        float* ${outputParam.name} = (float*) malloc(sizeof(float)*N*N);
         float* gold = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
-          ${riseProgram.outputParam.name}[i] = 0;
+          ${outputParam.name}[i] = 0;
           gold[i] = 0;
         }
         """
       codeEnd += s"""
         free(gold);
-        free(${riseProgram.outputParam.name});"""
-    } else if (arrayOne.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).isDefined) {
+        free(${outputParam.name});"""
+    } else if (arrayOne.findFirstIn(outputParam.t.toString).isDefined) {
       codeBeg += s"""
-        float* ${riseProgram.outputParam.name} = (float*) malloc(sizeof(float)*N);
+        float* ${outputParam.name} = (float*) malloc(sizeof(float)*N);
         float* gold = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
-          ${riseProgram.outputParam.name}[i] = 0;
+          ${outputParam.name}[i] = 0;
           gold[i] = 0;
         }
         """
       codeEnd += s"""
         free(gold);
-        free(${riseProgram.outputParam.name});"""
+        free(${outputParam.name});"""
 
-    } else if (elemOne.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).isDefined) {
+    } else if (elemOne.findFirstIn(outputParam.t.toString).isDefined) {
       codeBeg += s"""
-        float ${riseProgram.outputParam.name} = N;
+        float ${outputParam.name} = N;
         float gold = N;
         """
     }
@@ -330,9 +333,11 @@ case class CExecutor(lowering: Strategy[Rise],
 int compare_gold(float* C, float* GOLD){
   int valid = 1;"""
 
-    if(gold.outputParam.`type`.dataType.toString.equals("int")) {
+    val goldOutputParam = gold.functions.head.outputParams.head._1
+
+    if(goldOutputParam.t.toString.equals("int")) {
       throw new Exception("Should not reach this point")
-    } else if (arrayTwo.findFirstIn(gold.outputParam.`type`.dataType.toString).isDefined) {
+    } else if (arrayTwo.findFirstIn(goldOutputParam.t.toString).isDefined) {
       codeBeg += s"""
         for(int i = 0; i < SIZE*SIZE; i++){
     		  if(C[i] != GOLD[i]){
@@ -341,7 +346,7 @@ int compare_gold(float* C, float* GOLD){
     		  }
     	  }
         """
-    } else if (arrayOne.findFirstIn(gold.outputParam.`type`.dataType.toString).isDefined) {
+    } else if (arrayOne.findFirstIn(goldOutputParam.t.toString).isDefined) {
       codeBeg += s"""
         for(int i = 0; i < SIZE; i++){
           if(C[i] != GOLD[i]){
@@ -350,7 +355,7 @@ int compare_gold(float* C, float* GOLD){
     		  }
     	  }
         """
-    } else if (elemOne.findFirstIn(gold.outputParam.`type`.dataType.toString).isDefined) {
+    } else if (elemOne.findFirstIn(goldOutputParam.t.toString).isDefined) {
       codeBeg += s"""
         if(C[0] != GOLD[0]){
     			  valid = 0;
@@ -367,9 +372,7 @@ int compare_gold(float* C, float* GOLD){
   }
 
   def genExecutableCode(riseProgram:Rise):String = {
-
-//    val p = gen.CProgram(riseProgram)
-    val p = gen.OpenMPProgram(riseProgram)
+    val p = gen.openmp.function("riseFun").fromExpr(riseProgram)
 
     val preparation = prepareInput(p)
 
@@ -380,9 +383,9 @@ int compare_gold(float* C, float* GOLD){
 #include <stdlib.h>
 #include <time.h>
 int SIZE = $N;
-${p.code}
+${function.asString(p)}
 
-${gold.code}
+${function.asString(gold)}
 
 $goldCheck
 

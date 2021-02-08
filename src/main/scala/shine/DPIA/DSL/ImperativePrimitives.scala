@@ -1,11 +1,11 @@
 package shine.DPIA.DSL
 
-import shine.DPIA.FunctionalPrimitives.{Fst, Snd}
-import shine.DPIA.ImperativePrimitives._
+import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
+import shine.DPIA.primitives.functional.{Fst, Snd}
 
 object `new` {
   def apply(dt: DataType,
@@ -51,7 +51,7 @@ object `if` {
 object `for` {
   def apply(n: Nat,
             f: Identifier[ExpType] => Phrase[CommType], unroll:Boolean = false): For =
-    For(n, λ(expT(idx(n), read))( i => f(i) ), unroll)
+    For(unroll)(n, λ(expT(idx(n), read))( i => f(i) ))
 }
 
 object forNat {
@@ -61,7 +61,7 @@ object forNat {
     unroll: Boolean = false
   ): ForNat = {
     import arithexpr.arithmetic.RangeAdd
-    ForNat(n, nFun(i => f(i), RangeAdd(0, n, 1)), unroll)
+    ForNat(unroll)(n, nFun(i => f(i), RangeAdd(0, n, 1)))
   }
 }
 

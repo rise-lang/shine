@@ -8,7 +8,8 @@ import rise.core.primitives._
 import rise.core.types._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeqUnroll
-import util.{KernelNoSizes, Time, TimeSpan}
+import util.{Time, TimeSpan}
+import shine.OpenCL.KernelExecutor._
 
 object convolution {
   private val id = fun(x => x)
