@@ -18,5 +18,3 @@ final case class GlobalToSharedAcc(dt: DataType,
   override def prettyPrint: String =
     s"(GlobalToSharedAcc $pipe, ${PrettyPhrasePrinter(outputShared)})"
 }
-
-

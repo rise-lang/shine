@@ -11,7 +11,6 @@ import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
 import rise.core.types._
 import util.{Time, TimeSpan}
-
 import scala.collection.parallel.CollectionConverters._
 
 object sgemm {

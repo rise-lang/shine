@@ -6,7 +6,6 @@ import shine.DPIA.Types.MatrixLayout._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Fst, Join, Snd, Split, Transpose, Zip}
-import shine.OpenCL.KernelModule.translationToString
 import shine.OpenCL._
 import shine.cuda.primitives.functional._
 import shine.OpenCL.primitives.functional.{ReduceSeq, ToMem}
@@ -19,11 +18,7 @@ class MMTest extends test_util.TestsWithYACX {
   val m = NatIdentifier(freshName("m"))
   val k = NatIdentifier(freshName("k"))
 
-  val compilerOptions = List("--gpu-architecture=compute_70",
-//    TODO only for run on palma
-    "--include-path=/Applic.HPC/Easybuild/skylake/2019a/software/CUDA/10.1.105-GCC-8.2.0-2.31.1/targets/x86_64-linux/include",
-    //doris
-    "--include-path=/opt/cuda/targets/x86_64-linux/include")
+  val compilerOptions = List("--gpu-architecture=compute_70")
 
 
   //Simple 16x16 matrix multiplication

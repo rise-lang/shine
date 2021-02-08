@@ -18,7 +18,7 @@ import scala.collection.Seq
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
-//TODO: refator
+//TODO: refactor
 object FunctionExecutor {
 
   case class FromKernelModule(ktu: KernelModule) {
