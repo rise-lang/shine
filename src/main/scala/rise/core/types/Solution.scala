@@ -1,7 +1,7 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr
-import rise.core.Traverse._
+import rise.core.traverse._
 import rise.core.{Expr, substitute}
 
 object Solution {

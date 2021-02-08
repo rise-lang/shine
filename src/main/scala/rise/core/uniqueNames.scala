@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.core.Traverse._
+import rise.core.traverse._
 import rise.core.types._
 
 object uniqueNames {
@@ -25,7 +25,7 @@ object uniqueNames {
 
   def check(e: Expr): Boolean = {
     val cv = CountingVisitor(Map(), Map())
-    Traverse(e, cv)
+    traverse(e, cv)
     val valuesDup = cv.values.filter({ case (_, n) => n > 1 })
     val typesDup = cv.types.filter({ case (_, n) => n > 1 })
     valuesDup.isEmpty && typesDup.isEmpty

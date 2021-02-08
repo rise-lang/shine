@@ -2,8 +2,8 @@ package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.core.DSL.Type.n2dtFun
-import rise.core.Traverse.{Pure, PureTraversal}
-import rise.core.{Traverse, freshName, substitute}
+import rise.core.traverse.{Pure, PureTraversal}
+import rise.core.{traverse, freshName, substitute}
 import rise.core.lifting.liftDependentFunctionType
 import rise.core.types.Flags.ExplicitDependence
 import rise.core.types.InferenceException.error
@@ -538,7 +538,7 @@ object dependence {
       }
 
       def apply(t: Type): (Type, Solution) = {
-        val rewrittenT = Traverse(t, this)
+        val rewrittenT = traverse(t, this)
         val solution = this.sols.result().foldLeft(Solution())(_ ++ _)
         (solution.apply(rewrittenT), solution)
       }

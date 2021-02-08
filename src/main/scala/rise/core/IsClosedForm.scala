@@ -1,7 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.NamedVar
-import rise.core.Traverse._
+import rise.core.traverse._
 import rise.core.types._
 
 object IsClosedForm {
@@ -51,7 +51,7 @@ object IsClosedForm {
   }
 
   def apply(expr: Expr): Boolean = {
-    Traverse(expr, Visitor(Set(), Set())) match {
+    traverse(expr, Visitor(Set(), Set())) match {
       case None => false
       case Some(e) => true
     }

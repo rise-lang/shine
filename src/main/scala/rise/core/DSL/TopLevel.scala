@@ -1,9 +1,9 @@
 package rise.core.DSL
 
 import Type.impl
-import rise.core.Traverse._
+import rise.core.traverse._
 import rise.core.types._
-import rise.core.{DSL, Expr, Primitive, Traverse}
+import rise.core.{DSL, Expr, Primitive, traverse}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
   override val t: Type = e.t
@@ -53,7 +53,7 @@ object TopLevel {
   }
 
   private def cascadedApply(ftvSubs: Solution, sol: Solution, t: Type): Type = {
-    Traverse(t, new Visitor(ftvSubs, sol) {
+    traverse(t, new Visitor(ftvSubs, sol) {
         override def `type`[T <: Type] : T => Pure[T] = {
           case i: TypeIdentifier =>
             ftvSubs.ts.get(i) match {

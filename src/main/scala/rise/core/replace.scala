@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.core.Traverse._
+import rise.core.traverse._
 
 object replace {
   def exprInExpr(expression: Expr, `for`: Expr, in: Expr): Expr = {

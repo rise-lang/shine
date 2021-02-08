@@ -1,11 +1,11 @@
 package rise.core
 
 import rise.core.DSL._
-import rise.core.Traverse._
+import rise.core.traverse._
 import rise.core.primitives._
 import rise.core.types._
 
-class traverse extends test_util.Tests {
+class traverseTest extends test_util.Tests {
   val e: ToBeTyped[DepLambda[NatKind]] = depFun((h: Nat) =>
     depFun((w: Nat) =>
       fun(ArrayType(h, ArrayType(w, f32)))(input => map(map(fun(x => x)))(input)
@@ -105,7 +105,7 @@ class traverse extends test_util.Tests {
       ): Seq[Any => Unit]
     }
 
-    val result = Traverse(e, new TraceVisitor())
+    val result = traverse(e, new TraceVisitor())
 
     // the expression should not have changed
     assert(result.unwrap == e.toExpr)
@@ -149,7 +149,7 @@ class traverse extends test_util.Tests {
       }
     }
 
-    val result = Traverse(e, new Visitor)
+    val result = traverse(e, new Visitor)
 
     // the expression should have changed
     assert(result.unwrap ==
@@ -179,7 +179,7 @@ class traverse extends test_util.Tests {
       }
     }
 
-    val result = Traverse(e, new Visitor)
+    val result = traverse(e, new Visitor)
 
     // the expression should have changed
     val expected = depFun((n: Nat) =>

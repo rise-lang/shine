@@ -1,12 +1,12 @@
 package rise.core.DSL
 
-import rise.core.Traverse.Pure
+import rise.core.traverse.Pure
 import rise.core.types._
 import rise.core._
 
 final case class ToBeTyped[+T <: Expr](private val e: T) {
   def toExpr: Expr = infer(e)
-  def toUntypedExpr: Expr = new Traverse.PureTraversal {
+  def toUntypedExpr: Expr = new traverse.PureTraversal {
     override def expr : Expr => Pure[Expr] = {
       case l@Literal(_) => return_(l : Expr)
       case Opaque(x, t) => expr(x)

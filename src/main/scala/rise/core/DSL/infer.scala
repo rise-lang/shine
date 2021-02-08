@@ -1,7 +1,7 @@
 package rise.core.DSL
 
 import Type.freshTypeIdentifier
-import rise.core.Traverse._
+import rise.core.traverse._
 import rise.core._
 import rise.core.types.InferenceException.error
 import rise.core.types._
@@ -15,7 +15,7 @@ object infer {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
-    val res = Traverse(typed_e, Visitor(solution))
+    val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
     }
@@ -25,7 +25,7 @@ object infer {
   def printTypesAndTypeHoles(expr: Expr): Unit = {
     // TODO: move holeFound state into the traverse
     var holeFound = false
-    Traverse(expr, new PureExprTraversal {
+    traverse(expr, new PureExprTraversal {
       override def expr : Expr => Pure[Expr] = {
         case h@primitives.typeHole(msg) =>
           println(s"found type hole ${msg}: ${h.t}")
@@ -105,7 +105,7 @@ object infer {
 
   def getFTVs(t: Type): Seq[Kind.Identifier] = {
     val ftvs = mutable.ListBuffer[Kind.Identifier]()
-    Traverse(t, new PureTraversal {
+    traverse(t, new PureTraversal {
       override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = _ => i => {
         i match {
           case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)

@@ -2,7 +2,7 @@ package rise.core
 
 import rise.core.primitives._
 import rise.core.semantics._
-import rise.core.Traverse._
+import rise.core.traverse._
 import rise.core.types._
 
 import scala.language.implicitConversions
@@ -484,7 +484,7 @@ package object DSL {
     toBeTyped(topLevel(toExpr(d)))
 
   def eraseTypeFromExpr[T <: Expr](e: T): T =
-    Traverse(e, new PureExprTraversal {
+    traverse(e, new PureExprTraversal {
       override def identifier[I <: Identifier] : VarType => I => Pure[I] = vt => i =>
         return_(i.setType(TypePlaceholder).asInstanceOf[I])
       override def expr : Expr => Pure[Expr] = {

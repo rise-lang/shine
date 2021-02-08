@@ -5,7 +5,7 @@ import arithexpr.arithmetic.NamedVar
 import rise.core.semantics._
 import rise.core.types._
 
-object Traverse {
+object traverse {
   trait Monad[M[_]] {
     def return_[T] : T => M[T]
     def bind[T,S] : M[T] => (T => M[S]) => M[S]
