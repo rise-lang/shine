@@ -41,8 +41,8 @@ object HostManagedBuffers {
   private case class Metadata(
     host_reads: mutable.Set[Identifier[_ <: PhraseType]],
     host_writes: mutable.Set[Identifier[_ <: PhraseType]],
-    target_reads: mutable.Set[Identifier[_ <: PhraseType]],
-    target_writes: mutable.Set[Identifier[_ <: PhraseType]])
+    device_reads: mutable.Set[Identifier[_ <: PhraseType]],
+    device_writes: mutable.Set[Identifier[_ <: PhraseType]])
 
   private object Metadata {
     def empty: Metadata = Metadata(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
@@ -61,17 +61,17 @@ object HostManagedBuffers {
                                    managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
                                    p: Phrase[CommType]): (Phrase[CommType], Metadata) = {
     val (p2, current) = analyzeAndInsertHostExecution(p, allocs, managed)
-    val syncAccesses = previous.target_reads.union(previous.target_writes)
+    val syncAccesses = previous.device_reads.union(previous.device_writes)
       .intersect(current.host_reads.union(current.host_writes))
     if (syncAccesses.isEmpty) {
       current.host_reads ++= previous.host_reads
       current.host_writes ++= previous.host_writes
-      current.target_reads ++= previous.target_reads
-      current.target_writes ++= previous.target_writes
+      current.device_reads ++= previous.device_reads
+      current.device_writes ++= previous.device_writes
       (p2, current)
     } else {
-      assert(current.target_reads.isEmpty)
-      assert(current.target_writes.isEmpty)
+      assert(current.device_reads.isEmpty)
+      assert(current.device_writes.isEmpty)
       val env = (current.host_reads ++ current.host_writes)
         .filter(optionallyManaged(_).isDefined).map(i => {
         var access = 0
@@ -104,9 +104,9 @@ object HostManagedBuffers {
           collectReads(rhs, allocs, metadata.host_reads)
           Stop(p)
         case KernelCallCmd(_, _, _, out, in) =>
-          in.foreach(collectReads(_, allocs, metadata.target_reads))
-          collectWrites(out, metadata.target_writes)
-          ((out, TARGET_WRITE) +: in.map(_ -> TARGET_READ)).foreach {
+          in.foreach(collectReads(_, allocs, metadata.device_reads))
+          collectWrites(out, metadata.device_writes)
+          ((out, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
             case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
             case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
             case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
@@ -119,8 +119,8 @@ object HostManagedBuffers {
           val (b2, bm) = insertHostExecutions(am, allocs, managed, b)
           metadata.host_writes ++= bm.host_writes
           metadata.host_reads ++= bm.host_reads
-          metadata.target_writes ++= bm.target_writes
-          metadata.target_reads ++= bm.target_reads
+          metadata.device_writes ++= bm.device_writes
+          metadata.device_reads ++= bm.device_reads
           Stop(Seq(a2, b2))
         case _ => Continue(p, this)
       }

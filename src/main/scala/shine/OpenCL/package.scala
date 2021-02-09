@@ -9,8 +9,8 @@ package object OpenCL {
   type AccessFlags = Int
   val HOST_READ = 1 << 0
   val HOST_WRITE = 1 << 1
-  val TARGET_READ = 1 << 2
-  val TARGET_WRITE = 1 << 3
+  val DEVICE_READ = 1 << 2
+  val DEVICE_WRITE = 1 << 3
 
   val AddressSpace: shine.DPIA.Types.AddressSpace.type = shine.DPIA.Types.AddressSpace
   type AddressSpace = shine.DPIA.Types.AddressSpace

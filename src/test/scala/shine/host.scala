@@ -22,8 +22,8 @@ class host extends test_util.Tests {
 const int N = 64;
 int main(int argc, char** argv) {
   Context ctx = createDefaultContext();
-  Buffer input = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | TARGET_READ);
-  Buffer output = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | TARGET_WRITE);
+  Buffer input = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_READ);
+  Buffer output = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_WRITE);
 
   int32_t* in = hostBufferSync(ctx, input, N * sizeof(int32_t), HOST_WRITE);
   for (int i = 0; i < N; i++) {
@@ -76,8 +76,8 @@ int main(int argc, char** argv) {
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.host)
     // println(hostCode)
-    findCount(1, """targetBufferSync\(.*, TARGET_WRITE\)""".r, hostCode)
-    findCount(1, """targetBufferSync\(.*, TARGET_READ\)""".r, hostCode)
+    findCount(1, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, hostCode)
+    findCount(1, """deviceBufferSync\(.*, DEVICE_READ\)""".r, hostCode)
     // m.kernels.foreach(km => println(gen.opencl.kernel.asString(km)))
   }
 
@@ -89,9 +89,9 @@ int main(int argc, char** argv) {
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.host)
     // println(hostCode)
-    findCount(1, """createBuffer\(.*, HOST_READ \| TARGET_WRITE\)""".r, hostCode)
-    findCount(1, """targetBufferSync\(.*, TARGET_WRITE\)""".r, hostCode)
-    findCount(1, """targetBufferSync\(.*, TARGET_READ\)""".r, hostCode)
+    findCount(1, """createBuffer\(.*, HOST_READ \| DEVICE_WRITE\)""".r, hostCode)
+    findCount(1, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, hostCode)
+    findCount(1, """deviceBufferSync\(.*, DEVICE_READ\)""".r, hostCode)
     findCount(1, """hostBufferSync\(.*, HOST_WRITE\)""".r, hostCode)
     findCount(1, """hostBufferSync\(.*, HOST_READ\)""".r, hostCode)
     checkOutput(m)
@@ -105,9 +105,9 @@ int main(int argc, char** argv) {
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.host)
     // println(hostCode)
-    findCount(1, """createBuffer\(.*, TARGET_WRITE \| TARGET_READ\)""".r, hostCode)
-    findCount(2, """targetBufferSync\(.*, TARGET_WRITE\)""".r, hostCode)
-    findCount(2, """targetBufferSync\(.*, TARGET_READ\)""".r, hostCode)
+    findCount(1, """createBuffer\(.*, DEVICE_WRITE \| DEVICE_READ\)""".r, hostCode)
+    findCount(2, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, hostCode)
+    findCount(2, """deviceBufferSync\(.*, DEVICE_READ\)""".r, hostCode)
     checkOutput(m)
   }
 
@@ -125,8 +125,8 @@ int main(int argc, char** argv) {
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.host)
     // println(hostCode)
-    findCount(1, """targetBufferSync\(.*, TARGET_WRITE\)""".r, hostCode)
-    findCount(1, """targetBufferSync\(.*, TARGET_READ\)""".r, hostCode)
+    findCount(1, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, hostCode)
+    findCount(1, """deviceBufferSync\(.*, DEVICE_READ\)""".r, hostCode)
     checkOutput(m)
   }
 }

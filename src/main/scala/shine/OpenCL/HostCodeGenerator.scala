@@ -24,6 +24,7 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), output, args) =>
+      val arg_count = 1 + args.size
       output |> acc(env, Nil, outputC =>
         expSeq(args, env, argsC =>
           C.AST.Block(
@@ -31,21 +32,16 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
               C.AST.DeclStmt(C.AST.VarDecl(name, C.AST.OpaqueType("Kernel"), Some(
                 C.AST.FunCall(C.AST.DeclRef("loadKernel"), Seq(
                   C.AST.DeclRef("ctx"),
-                  C.AST.Literal(s"${'"'}${name}${'"'}"),
-                  C.AST.Literal(s"${'"'}${name}.cl${'"'}") // TODO: kernel path
+                  C.AST.DeclRef(name)
                 ))
               ))),
-              targetBufferSync("b0", outputC, output.t.dataType, TARGET_WRITE)
+              deviceBufferSync("b0", outputC, output.t.dataType, DEVICE_WRITE)
             ) ++ (args zip argsC).zipWithIndex.flatMap { case ((arg, argC), i) =>
               arg.t.dataType match {
                 case _: ManagedBufferType =>
-                  Some(targetBufferSync(s"b${i+1}", argC, arg.t.dataType, TARGET_READ))
+                  Some(deviceBufferSync(s"b${i+1}", argC, arg.t.dataType, DEVICE_READ))
                 case _ => None
               }
-            } ++ Seq(
-              clSetKernelArg(name, 0, output.t.dataType, outputC)
-            ) ++ (args zip argsC).zipWithIndex.map { case ((arg, argC), i) =>
-              clSetKernelArg(name, i+1, arg.t.dataType, argC)
             } ++ Seq(
               C.AST.DeclStmt(C.AST.VarDecl("global_size", C.AST.ArrayType(C.AST.Type.usize, Some(3), true), Some(
                 ArrayLiteral(C.AST.ArrayType(C.AST.Type.usize, Some(3), true), NDRangeToAST(gs))
@@ -53,11 +49,21 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
               C.AST.DeclStmt(C.AST.VarDecl("local_size", C.AST.ArrayType(C.AST.Type.usize, Some(3), true), Some(
                 ArrayLiteral(C.AST.ArrayType(C.AST.Type.usize, Some(3), true), NDRangeToAST(ls))
               ))),
+              C.AST.DeclStmt(C.AST.VarDecl("args", C.AST.ArrayType(C.AST.OpaqueType("KernelArg"), Some(arg_count), true), Some(
+                ArrayLiteral(C.AST.ArrayType(C.AST.OpaqueType("KernelArg"), Some(arg_count), true),
+                  kernelArg(0, output.t.dataType, outputC) +:
+                  (args zip argsC).zipWithIndex.map { case ((arg, argC), i) =>
+                    kernelArg(i+1, arg.t.dataType, argC)
+                  }
+                )
+              ))),
               C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("launchKernel"), Seq(
                 C.AST.DeclRef("ctx"),
                 C.AST.DeclRef(name),
                 C.AST.DeclRef("global_size"),
-                C.AST.DeclRef("local_size")
+                C.AST.DeclRef("local_size"),
+                C.AST.Literal(s"$arg_count"),
+                C.AST.DeclRef("args")
               ))),
               C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("destroyKernel"), Seq(
                 C.AST.DeclRef("ctx"),
@@ -139,8 +145,8 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
     var res = ""
     if ((a & HOST_WRITE) != 0) { res += "HOST_WRITE | " }
     if ((a & HOST_READ) != 0) { res += "HOST_READ | " }
-    if ((a & TARGET_WRITE) != 0) { res += "TARGET_WRITE | " }
-    if ((a & TARGET_READ) != 0) { res += "TARGET_READ | " }
+    if ((a & DEVICE_WRITE) != 0) { res += "DEVICE_WRITE | " }
+    if ((a & DEVICE_READ) != 0) { res += "DEVICE_READ | " }
     if (res == "") {
       "0"
     } else {
@@ -175,9 +181,9 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
     iter(ps, new mutable.ArrayBuffer[Expr]())
   }
 
-  private def targetBufferSync(varName: String, buffer: Expr, dt: DataType, access: AccessFlags): Stmt = {
-    C.AST.DeclStmt(C.AST.VarDecl(varName, C.AST.OpaqueType("cl_mem"), Some(
-      C.AST.FunCall(C.AST.DeclRef("targetBufferSync"), Seq(
+  private def deviceBufferSync(varName: String, buffer: Expr, dt: DataType, access: AccessFlags): Stmt = {
+    C.AST.DeclStmt(C.AST.VarDecl(varName, C.AST.OpaqueType("DeviceBuffer"), Some(
+      C.AST.FunCall(C.AST.DeclRef("deviceBufferSync"), Seq(
         C.AST.DeclRef("ctx"),
         buffer,
         bufferSize(dt),
@@ -186,21 +192,9 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
     )))
   }
 
-  private def clSetKernelArg(kName: String, i: Int, dt: DataType, e: Expr): Stmt = {
-    val (argSize, argValue) = dt match {
-      case _: ManagedBufferType =>
-        (C.AST.Literal("sizeof(cl_mem)"),
-          C.AST.UnaryExpr(UnaryOperator.&, C.AST.DeclRef(s"b$i")))
-      case _ =>
-        (bufferSize(dt), C.AST.UnaryExpr(UnaryOperator.&, e))
-    }
-    C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("clSetKernelArg"), Seq(
-      C.AST.StructMemberAccess(
-        C.AST.UnaryExpr(UnaryOperator.*, C.AST.DeclRef(kName)),
-        C.AST.DeclRef("inner")),
-      C.AST.Literal(s"$i"),
-      argSize,
-      argValue
-    )))
-  }
+  private def kernelArg(i: Int, dt: DataType, e: Expr): Expr =
+    C.AST.FunCall(C.AST.DeclRef("KARG"), Seq(dt match {
+      case _: ManagedBufferType => C.AST.DeclRef(s"b$i")
+      case _ => e
+    }))
 }

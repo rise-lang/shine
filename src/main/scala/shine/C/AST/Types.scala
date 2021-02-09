@@ -38,7 +38,7 @@ abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr], overri
       case _: PointerType => elemType
       case _: UnionType => elemType
       case a: ArrayType => a.getBaseType
-      case _: OpaqueType => ???
+      case _: OpaqueType => elemType
     }
   }
 

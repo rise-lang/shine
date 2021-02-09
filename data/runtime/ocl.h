@@ -21,8 +21,12 @@ struct KernelImpl {
   cl_program program;
 };
 
+typedef cl_mem DeviceBuffer;
+
 const char* oclErrorToString(cl_int error);
 bool oclReportError(cl_int error, const char* msg);
 void oclFatalError(cl_int error, const char* msg);
+
+#define KARG(val) { sizeof(val), &val }
 
 #endif

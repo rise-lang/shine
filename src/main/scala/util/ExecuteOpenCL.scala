@@ -16,7 +16,9 @@ object ExecuteOpenCL {
       val hostPath = s"${genDir.getAbsolutePath}/host.c"
       val runtimePath = "data/runtime/"
       writeToPath(mainPath, mainSource)
-      writeToPath(hostPath, gen.c.function.asString(module.host))
+      writeToPath(hostPath,
+        """#define loadKernel(ctx, ident) loadKernelFromFile(ctx, #ident, #ident ".cl")""" +
+        gen.c.function.asString(module.host))
       module.kernels.foreach { km =>
         // assumes a single kernel per module
         val fileName = km.kernels(0).code.name

@@ -207,27 +207,11 @@ void destroyContext(Context ctx) {
   free(ctx);
 }
 
-Kernel loadKernel(Context ctx, const char* name, const char* path) {
-  FILE* f = fopen(path, "rb");
-  if (!f) {
-      fprintf(stderr, "could not open kernel source\n");
-      exit(EXIT_FAILURE);
-  }
-  fseek(f, 0, SEEK_END);
-  size_t length = ftell(f);
-  rewind(f);
-  char* source = (char*) malloc(length * sizeof(char));
-  if (fread(source, sizeof(char), length, f) != length) {
-      fprintf(stderr, "could not read kernel source\n");
-      exit(EXIT_FAILURE);
-  }
-  fclose(f);
-
+Kernel loadKernelFromSource(Context ctx, const char* name, const char* source, size_t length) {
   cl_int err;
   const char* sources[] = { source };
   const size_t lengths[] = { length };
   cl_program program = clCreateProgramWithSource(ctx->inner, 1, sources, lengths, &err);
-  free(source);
   oclFatalError(err, "could not create program");
 
   // 2.0: -cl-uniform-work-group-size
@@ -256,7 +240,35 @@ Kernel loadKernel(Context ctx, const char* name, const char* path) {
   return k;
 }
 
-void launchKernel(Context ctx, Kernel k, const size_t* global_size, const size_t* local_size) {
+Kernel loadKernelFromFile(Context ctx, const char* name, const char* path) {
+  FILE* f = fopen(path, "rb");
+  if (!f) {
+      fprintf(stderr, "could not open kernel source\n");
+      exit(EXIT_FAILURE);
+  }
+  fseek(f, 0, SEEK_END);
+  size_t length = ftell(f);
+  rewind(f);
+  char* source = (char*) malloc(length * sizeof(char));
+  if (fread(source, sizeof(char), length, f) != length) {
+      fprintf(stderr, "could not read kernel source\n");
+      exit(EXIT_FAILURE);
+  }
+  fclose(f);
+
+  Kernel k = loadKernelFromSource(ctx, name, source, length);
+  free(source);
+  return k;
+}
+
+void launchKernel(
+  Context ctx, Kernel k,
+  const size_t* global_size, const size_t* local_size,
+  size_t arg_count, const KernelArg* args
+) {
+  for (int i = 0; i < arg_count; i++) {
+    clSetKernelArg(k->inner, i, args[i].size, args[i].value);
+  }
   oclFatalError(
     clEnqueueNDRangeKernel(ctx->queue, k->inner, 3, NULL, global_size, local_size, 0, NULL, NULL),
     "could not launch kernel"
