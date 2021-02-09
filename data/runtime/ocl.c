@@ -123,17 +123,11 @@ Context createContextWithIDs(cl_platform_id platform_id, cl_device_id device_id)
   fprintf(stderr, "using OpenCL device '%s'\n", name_buf);
 
   cl_int err;
-  cl_context ctx;
-  if (platform_id == NULL) {
-    ctx = clCreateContext(NULL, 1, &device_id, NULL, NULL, &err);
-  } else {
-    const cl_context_properties ctx_props[] = {
-      CL_CONTEXT_PLATFORM, (cl_context_properties)(platform_id),
-      0
-    };
-
-    ctx = clCreateContext(ctx_props, 1, &device_id, NULL, NULL, &err);
-  }
+  const cl_context_properties ctx_props[] = {
+    CL_CONTEXT_PLATFORM, (cl_context_properties)(platform_id),
+    0
+  };
+  cl_context ctx = clCreateContext(ctx_props, 1, &device_id, NULL, NULL, &err);
   oclFatalError(err, "could not create context");
 
   // 2.0: clCreateCommandQueueWithProperties
@@ -149,7 +143,14 @@ Context createContextWithIDs(cl_platform_id platform_id, cl_device_id device_id)
 }
 
 Context createDefaultContext() {
-  cl_platform_id platform_id = NULL;
+  cl_platform_id platform_id;
+  cl_uint platform_count = 0;
+  oclFatalError(clGetPlatformIDs(1, &platform_id, &platform_count),
+    "could not get platform IDs");
+  if (platform_count == 0) {
+    fprintf(stderr, "did not find any OpenCL platform\n");
+    exit(EXIT_FAILURE);
+  }
 
   cl_device_id device_id;
   cl_uint device_count = 0;
