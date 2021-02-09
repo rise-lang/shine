@@ -25,7 +25,7 @@ class Printer extends shine.OpenCL.AST.Printer {
   }
 
   override def printKernelDecl(k: KernelDecl): Unit = {
-    //TODO
+    //TODO this include statement is not necessary for every CUDA-Kernel
     println("#include <mma.h>")
 
     print("extern \"C\" __global__")

@@ -167,11 +167,6 @@ class CPrinter extends Printer {
     println("};")
   }
 
-  private def printIncludeDecl(decl: IncludeDecl) : Unit = {
-    print("#include ")
-    print(decl.name)
-  }
-
   // Smts
   private def printStmts(s: Stmts): Unit = {
     printStmt(s.fst)
