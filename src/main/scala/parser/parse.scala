@@ -571,10 +571,11 @@ object parse {
     while(!synE.isEmpty){
       synE.head match {
         case SExpr(expr1) => {
-          e = r.App(e, expr1)(rt.TypePlaceholder)
+          val span = Span(e.span.head.file, e.span.head.begin, expr1.span.head.end) //Todo: check if span is in the same file
+          e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
           synE = synE.tail
         }
-        case SData(DIdentifier(rt.DataTypeIdentifier(name,_))) => {
+        case SData(DIdentifier(rt.DataTypeIdentifier(name, _))) => { //Todo: Add span!!!
           mapDepL.get(name) match {
             case None => {
               //Todo: Bessere Fehlermeldung!!!
@@ -1001,8 +1002,9 @@ object parse {
           "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       }
     val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
-    val span = None //Todo:dummy
-    val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder, span)
+    val spanOfBackslash = parseState.tokenStream.head.s
+    val span = Span(spanOfBackslash.file,spanOfBackslash.begin, expr.span.head.end)
+    val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder, Some(span))
     println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
 
     //local variables are in the list, so that not two same localVariables are declared
