@@ -31,11 +31,8 @@ class dependentTypes extends test_util.Tests {
       fun(n `.` f32)(xs => makeDepPair(n)(mapSeq(fun(x => x))(xs)))
     )
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
-    assert(inferred.t ==
-      expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
-    )
+    val expected = expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
+    assert(inferred.t == expected)
     function.asStringFromExpr(inferred)
   }
 
