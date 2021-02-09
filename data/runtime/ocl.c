@@ -143,6 +143,8 @@ Context createContextWithIDs(cl_platform_id platform_id, cl_device_id device_id)
 }
 
 Context createDefaultContext() {
+  // NULL platform does not work with the AMD APP SDK
+  // we take the first returned platform as the default
   cl_platform_id platform_id;
   cl_uint platform_count = 0;
   oclFatalError(clGetPlatformIDs(1, &platform_id, &platform_count),
@@ -154,7 +156,9 @@ Context createDefaultContext() {
 
   cl_device_id device_id;
   cl_uint device_count = 0;
-  oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &device_count),
+  // using CL_DEVICE_TYPE_DEFAULT does not work with the AMD APP SDK
+  // we take the first returned device as the default instead
+  oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 1, &device_id, &device_count),
     "could not get device IDs");
   if (device_count == 0) {
     fprintf(stderr, "did not find any OpenCL device\n");
