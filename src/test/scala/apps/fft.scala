@@ -52,7 +52,7 @@ class fft extends test_util.Tests {
           )
         )
       }))) |> join |> split(LPrevIter) |>
-        mapSeq(transpose.apply |> join) |> transpose |> join
+        mapSeq(transpose.apply() |> join) |> transpose |> join
     )
   }
 

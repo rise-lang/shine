@@ -172,7 +172,7 @@ object traversal {
             case addr: AddressSpace =>
               Some(s(f).mapSuccess(DepApp[AddressSpaceKind](_, addr)(da.t)))
           }
-          case Literal(_) => None
+          case Literal(_, _) => None
           case _: ForeignFunction => None
           case _: Primitive => None
         }

@@ -54,7 +54,7 @@ object substitute {
     case App(f, e) => FV(f) ++ FV(e)
     case DepLambda(_, e) => FV(e)
     case DepApp(f, _) => FV(f)
-    case Literal(_) => Set()
+    case Literal(_, _) => Set()
     case TypeAnnotation(e, _) => FV(e)
     case TypeAssertion(e, _) => FV(e)
     case _: Primitive => Set()

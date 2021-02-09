@@ -42,7 +42,7 @@ object parse {
   sealed trait SyntaxElement
     final case class SExpr(expr: r.Expr) extends SyntaxElement
     final case class SType(t: rt.Type) extends SyntaxElement
-    final case class SIntToPrimitive(prim: Int=>r.Primitive) extends SyntaxElement
+    final case class SIntToExpr(prim: Int=>r.Expr) extends SyntaxElement
     final case class SNat(nat: NatElement) extends SyntaxElement
     final case class SData(data: DataElement) extends SyntaxElement
     final case class SAddrSpace(addrSpace: rt.AddressSpace) extends SyntaxElement
@@ -108,91 +108,91 @@ object parse {
 
 
 
-  def matchPrimitiveOrIdentifier(name:String): SyntaxElement= {
+  def matchPrimitiveOrIdentifier(name:String, span:Span): SyntaxElement= {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     name match {
         //openCL/primitives
-      case "mapGlobal" => SIntToPrimitive(op.mapGlobal(_).primitive)
-      case "mapLocal" => SIntToPrimitive(op.mapLocal(_).primitive)
-      case "mapWorkGroup" => SIntToPrimitive(op.mapWorkGroup(_).primitive)
-      case "oclToMem" => SExpr(op.oclToMem.primitive)
-      case "oclReduceSeq" => SExpr(op.oclReduceSeq.primitive)
-      case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll.primitive)
-      case "oclIterate" => SExpr(op.oclIterate.primitive)
-      case "oclCircularBuffer"=>SExpr(op.oclCircularBuffer.primitive)
-      case "oclRotateValues" => SExpr(op.oclRotateValues.primitive)
+      case "mapGlobal" => SIntToExpr(op.mapGlobal(_)( Some(span)).toExpr) //Todo: add span to everything
+      case "mapLocal" => SIntToExpr(op.mapLocal(_)( Some(span)).toExpr)
+      case "mapWorkGroup" => SIntToExpr(op.mapWorkGroup(_)( Some(span)).toExpr)
+      case "oclToMem" => SExpr(op.oclToMem( Some(span)))
+      case "oclReduceSeq" => SExpr(op.oclReduceSeq( Some(span)))
+      case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll( Some(span)))
+      case "oclIterate" => SExpr(op.oclIterate( Some(span)))
+      case "oclCircularBuffer"=>SExpr(op.oclCircularBuffer( Some(span)))
+      case "oclRotateValues" => SExpr(op.oclRotateValues( Some(span)))
 
       //openCL/TypedDSL //Todo: not sure if this with .toExpr is working. Test with nBody
-      case "toGlobal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
+      case "toGlobal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem( Some(span)),
         rt.AddressSpace.Global
-      )(rt.TypePlaceholder))
-      case "toLocal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
+      )(rt.TypePlaceholder, Some(span)))
+      case "toLocal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem( Some(span)),
         rt.AddressSpace.Local
-      )(rt.TypePlaceholder))
-      case "toPrivate" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
+      )(rt.TypePlaceholder, Some(span)))
+      case "toPrivate" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem( Some(span)),
         rt.AddressSpace.Private
-      )(rt.TypePlaceholder))
+      )(rt.TypePlaceholder, Some(span)))
 
         //core/primitives
-      case "makeArray" => SIntToPrimitive(rp.makeArray(_).primitive)
-      case "cast" => SExpr(rp.cast.primitive)
-      case "depJoin" => SExpr(rp.depJoin.primitive)
-      case "depMapSeq" => SExpr(rp.depMapSeq.primitive)
-      case "depZip" => SExpr(rp.depZip.primitive)
-      case "drop" => SExpr(rp.drop.primitive)
-      case "fst" => SExpr(rp.fst.primitive)
-      case "gather" => SExpr(rp.gather.primitive)
-      case "generate" => SExpr(rp.generate.primitive)
-      case "idx" => SExpr(rp.idx.primitive)
-      case "id" => SExpr(rp.id.primitive)
-      case "indexAsNat" => SExpr(rp.indexAsNat.primitive)
-      case "iterate" => SExpr(rp.iterate.primitive)
-      case "join" => SExpr(rp.join.primitive)
-      case "let" => SExpr(rp.let.primitive)
-      case "map" => SExpr(rp.map.primitive)
-      case "mapFst" => SExpr(rp.mapFst.primitive)
-      case "mapSnd" => SExpr(rp.mapSnd.primitive)
-      case "mapSeq" => SExpr(rp.mapSeq.primitive)
-      case "mapStream" => SExpr(rp.mapStream.primitive)
-      case "iterateStream" => SExpr(rp.iterateStream.primitive)
-      case "mapSeqUnroll" => SExpr(rp.mapSeqUnroll.primitive)
-      case "toMem" => SExpr(rp.toMem.primitive)
-      case "natAsIndex" => SExpr(rp.natAsIndex.primitive)
-      case "padEmpty" => SExpr(rp.padEmpty.primitive)
-      case "padClamp" => SExpr(rp.padClamp.primitive)
-      case "partition" => SExpr(rp.partition.primitive)
-      case "makePair" => SExpr(rp.makePair.primitive)
-      case "reduce" => SExpr(rp.reduce.primitive)
-      case "reduceSeq" => SExpr(rp.reduceSeq.primitive)
-      case "reduceSeqUnroll" => SExpr(rp.reduceSeqUnroll.primitive)
-      case "reorder" => SExpr(rp.reorder.primitive)
-      case "scanSeq" => SExpr(rp.scanSeq.primitive)
-      case "slide" => SExpr(rp.slide.primitive)
-      case "circularBuffer" => SExpr(rp.circularBuffer.primitive)
-      case "rotateValues" => SExpr(rp.rotateValues.primitive)
-      case "snd" => SExpr(rp.snd.primitive)
-      case "split" => SExpr(rp.split.primitive)
-      case "take" => SExpr(rp.take.primitive)
-      case "transpose" => SExpr(rp.transpose.primitive)
-      case "select" => SExpr(rp.select.primitive)
-      case "zip" => SExpr(rp.zip.primitive)
-      case "neg" => SExpr(rp.neg.primitive)
-      case "not" => SExpr(rp.not.primitive)
-      case "add" => SExpr(rp.add.primitive)
-      case "sub" => SExpr(rp.sub.primitive)
-      case "mul" => SExpr(rp.mul.primitive)
-      case "div" => SExpr(rp.div.primitive)
-      case "mod" => SExpr(rp.mod.primitive)
-      case "gt" => SExpr(rp.gt.primitive)
-      case "lt" => SExpr(rp.lt.primitive)
-      case "equal" => SExpr(rp.equal.primitive)
-      case "asVectorAligned" => SExpr(rp.asVectorAligned.primitive)
-      case "asVector" => SExpr(rp.asVector.primitive)
-      case "asScalar" => SExpr(rp.asScalar.primitive)
-      case "vectorFromScalar" => SExpr(rp.vectorFromScalar.primitive)
-      case "printType" => SExpr(rp.printType().primitive)
-      case "typeHole" => SExpr(rp.typeHole().primitive)
-      case _ => SExpr(r.Identifier(name)(rt.TypePlaceholder))
+      case "makeArray" => SIntToExpr(rp.makeArray(_)( Some(span)).toExpr)
+      case "cast" => SExpr(rp.cast(Some(span)))
+      case "depJoin" => SExpr(rp.depJoin( Some(span)))
+      case "depMapSeq" => SExpr(rp.depMapSeq( Some(span)))
+      case "depZip" => SExpr(rp.depZip( Some(span)))
+      case "drop" => SExpr(rp.drop( Some(span)))
+      case "fst" => SExpr(rp.fst( Some(span)))
+      case "gather" => SExpr(rp.gather( Some(span)))
+      case "generate" => SExpr(rp.generate( Some(span)))
+      case "idx" => SExpr(rp.idx( Some(span)))
+      case "id" => SExpr(rp.id( Some(span)))
+      case "indexAsNat" => SExpr(rp.indexAsNat( Some(span)))
+      case "iterate" => SExpr(rp.iterate( Some(span)))
+      case "join" => SExpr(rp.join( Some(span)))
+      case "let" => SExpr(rp.let( Some(span)))
+      case "map" => SExpr(rp.map( Some(span)))
+      case "mapFst" => SExpr(rp.mapFst( Some(span)))
+      case "mapSnd" => SExpr(rp.mapSnd( Some(span)))
+      case "mapSeq" => SExpr(rp.mapSeq( Some(span)))
+      case "mapStream" => SExpr(rp.mapStream( Some(span)))
+      case "iterateStream" => SExpr(rp.iterateStream( Some(span)))
+      case "mapSeqUnroll" => SExpr(rp.mapSeqUnroll( Some(span)))
+      case "toMem" => SExpr(rp.toMem( Some(span)))
+      case "natAsIndex" => SExpr(rp.natAsIndex( Some(span)))
+      case "padEmpty" => SExpr(rp.padEmpty( Some(span)))
+      case "padClamp" => SExpr(rp.padClamp( Some(span)))
+      case "partition" => SExpr(rp.partition( Some(span)))
+      case "makePair" => SExpr(rp.makePair( Some(span)))
+      case "reduce" => SExpr(rp.reduce( Some(span)))
+      case "reduceSeq" => SExpr(rp.reduceSeq( Some(span)))
+      case "reduceSeqUnroll" => SExpr(rp.reduceSeqUnroll( Some(span)))
+      case "reorder" => SExpr(rp.reorder( Some(span)))
+      case "scanSeq" => SExpr(rp.scanSeq( Some(span)))
+      case "slide" => SExpr(rp.slide( Some(span)))
+      case "circularBuffer" => SExpr(rp.circularBuffer( Some(span)))
+      case "rotateValues" => SExpr(rp.rotateValues( Some(span)))
+      case "snd" => SExpr(rp.snd( Some(span)))
+      case "split" => SExpr(rp.split( Some(span)))
+      case "take" => SExpr(rp.take( Some(span)))
+      case "transpose" => SExpr(rp.transpose( Some(span)))
+      case "select" => SExpr(rp.select( Some(span)))
+      case "zip" => SExpr(rp.zip( Some(span)))
+      case "neg" => SExpr(rp.neg( Some(span)))
+      case "not" => SExpr(rp.not( Some(span)))
+      case "add" => SExpr(rp.add( Some(span)))
+      case "sub" => SExpr(rp.sub( Some(span)))
+      case "mul" => SExpr(rp.mul( Some(span)))
+      case "div" => SExpr(rp.div( Some(span)))
+      case "mod" => SExpr(rp.mod( Some(span)))
+      case "gt" => SExpr(rp.gt( Some(span)))
+      case "lt" => SExpr(rp.lt( Some(span)))
+      case "equal" => SExpr(rp.equal( Some(span)))
+      case "asVectorAligned" => SExpr(rp.asVectorAligned( Some(span)))
+      case "asVector" => SExpr(rp.asVector( Some(span)))
+      case "asScalar" => SExpr(rp.asScalar( Some(span)))
+      case "vectorFromScalar" => SExpr(rp.vectorFromScalar( Some(span)))
+      case "printType" => SExpr(rp.printType("")( Some(span))) //Todo: I was forced to delete span in printType and typeHole because of the error with wrong number of arguments
+      case "typeHole" => SExpr(rp.typeHole("")( Some(span)))
+      case _ => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
     }
   }
 
@@ -205,17 +205,17 @@ object parse {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case Identifier(name, _) => {
-        matchPrimitiveOrIdentifier(name) match {
-          case SIntToPrimitive(prim) => Left(ParseState(remainderTokens, SIntToPrimitive(prim) :: parsedSynElems, map,
+      case Identifier(name, span) => {
+        matchPrimitiveOrIdentifier(name, span) match {
+          case SIntToExpr(prim) => Left(ParseState(remainderTokens, SIntToExpr(prim) :: parsedSynElems, map,
             mapDepL))
           case SExpr(prim) => prim match {
-            case rp.split() => {
+            case sp @ rp.split() => {
               if (remainderTokens.nonEmpty) {
                 val length :: remainderTokens2 = remainderTokens
                 length match {
-                  case NatNumber(n, _) => Left(ParseState(remainderTokens2, SExpr(rp.split(n)) :: parsedSynElems, map, mapDepL))
-                  case TypeIdentifier(t,_) => Left(ParseState(remainderTokens2, SExpr(r.DepApp[rt.NatKind](rp.split.primitive, rt.NatIdentifier(t))(rt.TypePlaceholder) ):: parsedSynElems, map, mapDepL))
+                  case NatNumber(n, _) => Left(ParseState(remainderTokens2, SExpr(rp.split(sp.span)(n)) :: parsedSynElems, map, mapDepL))
+                  case TypeIdentifier(t,_) => Left(ParseState(remainderTokens2, SExpr(r.DepApp[rt.NatKind](sp, rt.NatIdentifier(t))(rt.TypePlaceholder) ):: parsedSynElems, map, mapDepL))
                   case other => {
 //                    throw new IllegalStateException("please delete this error")
                     Right(ParseError("split expects a lenght as Nat, but " + other + " is not a correct lenght"))
@@ -391,7 +391,7 @@ object parse {
               if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
               val depLam:SExpr = pS.parsedSynElems.head match {
                 case SExpr(outT) => {
-                  concreteKind match {
+                  concreteKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
                     case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier),
                       outT)(rt.TypePlaceholder))
                     case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier),
@@ -550,12 +550,12 @@ object parse {
         synE = synE.tail
         expr
       }
-      case SIntToPrimitive(prim) => {
+      case SIntToExpr(prim) => {
         if(synE.tail.isEmpty){
           throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
         }
         val n = synE.tail.head match{
-          case SExpr(r.Literal(rS.IntData(len))) => len
+          case SExpr(r.Literal(rS.IntData(len), _)) => len
           case _ => throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
         }
         synE = synE.tail.tail
@@ -589,12 +589,12 @@ object parse {
           }
           synE = synE.tail
         }
-        case SIntToPrimitive(prim) => {
+        case SIntToExpr(prim) => {
           if(synE.tail.isEmpty){
             throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
           }
           val n = synE.tail.head match{
-            case SExpr(r.Literal(rS.IntData(len))) => len
+            case SExpr(r.Literal(rS.IntData(len), _)) => len
             case _ => throw new IllegalStateException("For this Primitive '" + prim +
               "' we expect to see an lenght in Int")
           }
@@ -717,7 +717,7 @@ object parse {
       case Right(e) => return Right(e)
       case Left(p) => {
         p.parsedSynElems.head match {
-          case SExpr(r.Identifier(n))=>
+          case SExpr(id @ r.Identifier(n))=>
             p.mapFkt.get(n) match {
               case None => {
                 println("Identifier doesn't exist: " + n + " , " + psLambdaOld)
@@ -727,12 +727,12 @@ object parse {
               case Some(Left(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: "+ e)
               case Some(Right(typeFkt)) =>
                 (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapFkt, p.mapDepL),
-                  r.Identifier(n)(typeFkt), typeFkt)
+                  id.setType(typeFkt), typeFkt)
             }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
-          case SIntToPrimitive(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
+          case SIntToExpr(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
           case SAddrSpace(addrSpace) => throw new RuntimeException(
@@ -802,7 +802,7 @@ object parse {
       case Right(e) => return Right(e)
       case Left(p) => {
         p.parsedSynElems.head match {
-          case SExpr(r.Identifier(n))=> if(p.mapFkt.contains(n)){
+          case SExpr(id @ r.Identifier(n))=> if(p.mapFkt.contains(n)){
             println("Identifier does already exist: " + n + " , " + psLambdaOld)
             throw new IllegalStateException("We want to parse an TypAnnotatedIdent for " + n
               + " but this Identifier is already declared!")
@@ -810,12 +810,12 @@ object parse {
             throw new IllegalArgumentException("We want to parse an TypAnnotatedIdent for " + n
               + " but it exists already an DepLambda with this Name")
           }else{
-            (p, r.Identifier(n)(rt.TypePlaceholder))
+            (p, id)
           }
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
-          case SIntToPrimitive(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
+          case SIntToExpr(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
           case SAddrSpace(addrSpace) => throw new RuntimeException(
@@ -863,7 +863,7 @@ object parse {
       synElems.head match {
         case SType(typ) => typ :: getTypesInList(synElems.tail)
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
-        case SIntToPrimitive(e) => throw new IllegalArgumentException(
+        case SIntToExpr(e) => throw new IllegalArgumentException(
           "in getTypesInList we have as head a not Type: "+ e)
         case SData(t) => t match {
           case DIdentifier(data) => data :: getTypesInList(synElems.tail)
@@ -984,7 +984,7 @@ object parse {
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
           }
         case SExpr(i) => (i, synElemListExpr.tail)
-        case SIntToPrimitive(prim) => throw new RuntimeException("Here is an Expression expected, but " + prim +
+        case SIntToExpr(prim) => throw new RuntimeException("Here is an Expression expected, but " + prim +
           " is not an Expression!")
         case SData(t) => t match {
           case DIdentifier(data) => synElemListExpr.tail.head match {
@@ -1001,7 +1001,8 @@ object parse {
           "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       }
     val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
-    val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder)
+    val span = None //Todo:dummy
+    val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder, span)
     println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
 
     //local variables are in the list, so that not two same localVariables are declared
@@ -1337,11 +1338,11 @@ object parse {
     val nextToken :: remainderTokens = parseState.tokenStream
 
     val p = nextToken match {
-      case UnOp(un, _) => un match {
+      case UnOp(un, span) => un match {
         case OpType.UnaryOpType.NEG => Left(ParseState(remainderTokens,
-          SExpr(r.primitives.neg.primitive) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
+          SExpr(r.primitives.neg(Some(span))) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
         case OpType.UnaryOpType.NOT => Left(ParseState(remainderTokens,
-          SExpr(r.primitives.not.primitive) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
+          SExpr(r.primitives.not(Some(span))) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
       }
       case tok => {
         println("UnaryOperatorWasExpected: "+ tok + ": " + remainderTokens)
@@ -1360,14 +1361,14 @@ object parse {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case I8(number, _) =>
-        Left(ParseState(remainderTokens, SExpr(r.Literal(rS.IntData(number))) :: parsedSynElems, map, mapDepL))
-      case I32(number, _) =>
-        Left(ParseState(remainderTokens, SExpr(r.Literal(rS.IntData(number))) :: parsedSynElems, map, mapDepL))
-      case F32(number, _) =>
-        Left(ParseState(remainderTokens, SExpr(r.Literal(rS.FloatData(number))) :: parsedSynElems, map, mapDepL))
-      case F64(number, _) =>
-        Left(ParseState(remainderTokens, SExpr(r.Literal(rS.DoubleData(number))) :: parsedSynElems, map, mapDepL))
+      case I8(number, span) =>
+        Left(ParseState(remainderTokens, SExpr(r.Literal(rS.IntData(number), Some(span))) :: parsedSynElems, map, mapDepL))
+      case I32(number, span) =>
+        Left(ParseState(remainderTokens, SExpr(r.Literal(rS.IntData(number),Some(span))) :: parsedSynElems, map, mapDepL))
+      case F32(number, span) =>
+        Left(ParseState(remainderTokens, SExpr(r.Literal(rS.FloatData(number),Some(span))) :: parsedSynElems, map, mapDepL))
+      case F64(number, span) =>
+        Left(ParseState(remainderTokens, SExpr(r.Literal(rS.DoubleData(number),Some(span))) :: parsedSynElems, map, mapDepL))
       case tok => Right(ParseError("failed to parse Number: " + tok + " is not an accepted Integer of Float"))
     }
   }
@@ -1379,23 +1380,23 @@ object parse {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case BinOp(op, _) => op match {
+      case BinOp(op, span) => op match {
         case OpType.BinOpType.ADD =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.add.primitive) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.add(Some(span))) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.DIV =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.div.primitive) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.div(Some(span))) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.EQ =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.equal.primitive) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.equal(Some(span))) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.GT =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.gt.primitive) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.gt(Some(span))) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.LT =>
-          Left(ParseState(remainderTokens, SExpr(r.primitives.lt.primitive) :: parsedSynElems, map, mapDepL))
+          Left(ParseState(remainderTokens, SExpr(r.primitives.lt(Some(span))) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.MOD => Left(ParseState(remainderTokens, SExpr(
-          r.primitives.mod.primitive) :: parsedSynElems, map, mapDepL))
+          r.primitives.mod(Some(span))) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.MUL => Left(ParseState(remainderTokens, SExpr(
-          r.primitives.mul.primitive) :: parsedSynElems, map, mapDepL))
+          r.primitives.mul(Some(span))) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.SUB => Left(ParseState(remainderTokens, SExpr(
-          r.primitives.sub.primitive) :: parsedSynElems, map, mapDepL))
+          r.primitives.sub(Some(span))) :: parsedSynElems, map, mapDepL))
         case tok => {
           println("Das hier kann nicht sein, weil alle Operatoren müsste ich abgedeckt haben. BinOp: '" + tok +
             "' is no BinOperator!")

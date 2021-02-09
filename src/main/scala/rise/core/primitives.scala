@@ -4,6 +4,7 @@ import arithexpr.arithmetic.BigSum
 import rise.core.DSL.Type._
 import rise.core.types._
 import rise.macros.Primitive.primitive
+import parser.Span
 
 // noinspection DuplicatedCode
 // scalastyle:off number.of.methods

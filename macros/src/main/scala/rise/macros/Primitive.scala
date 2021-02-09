@@ -49,7 +49,7 @@ object Primitive {
       val makeInstance = q"${TermName(className)}()"
 
       val generated = q"""
-        final case class ${TypeName(className)}()
+        final case class ${TypeName(className)}(override val span: Option[Span] = None)
           (override val t: rise.core.types.Type =
               rise.core.types.TypePlaceholder) extends Primitive
         {
@@ -66,7 +66,7 @@ object Primitive {
 
         object ${TermName{name}}  extends Builder {
           override def primitive: ${TypeName(className)} = $makeInstance()
-          override def apply: rise.core.DSL.ToBeTyped[${TypeName(className)}] =
+          override def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
             rise.core.DSL.toBeTyped($makeInstance())
           override def unapply(arg: rise.core.Expr): Boolean = arg match {
             case _: ${TypeName(className)} => true
@@ -80,7 +80,7 @@ object Primitive {
       }
       generated
     }
-
+//Todo: unapply mehtods of class and object has to be modified with Span!
     def makePrimitiveClass(name: String,
                            params: List[ValDef],
                            typeScheme: Tree): Tree = {
@@ -88,7 +88,7 @@ object Primitive {
       val makeInstance = q"${TermName(className)}(..${getArgs(params)})"
 
       val generated = q"""
-        final case class ${TypeName(className)}(..$params)
+        final case class ${TypeName(className)}(..$params, override val span: Option[Span] = None)
             (override val t: rise.core.types.Type =
                 rise.core.types.TypePlaceholder) extends Primitive
         {
@@ -107,7 +107,7 @@ object Primitive {
 
         final case class ${TypeName(name)}(..$params) extends Builder {
           override def primitive: ${TypeName(className)} = $makeInstance()
-          override def apply: rise.core.DSL.ToBeTyped[${TypeName(className)}] =
+          override def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
             rise.core.DSL.toBeTyped($makeInstance())
         }
 

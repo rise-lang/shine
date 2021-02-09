@@ -4,6 +4,7 @@ import rise.core.DSL.Type._
 import rise.core.types.{DataType, Nat}
 import rise.core.{Builder, Primitive}
 import rise.macros.Primitive.primitive
+import parser.Span
 
 // noinspection DuplicatedCode
 object primitives {

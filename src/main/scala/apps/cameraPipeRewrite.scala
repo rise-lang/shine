@@ -223,7 +223,7 @@ object cameraPipeRewrite {
         ) `;` argument(traverse)
       ) <+ {
         case p @ App(
-          App(idx(), Literal(IndexData(Cst(i), _))),
+          App(idx(), Literal(IndexData(Cst(i), _), _)),
           _
         ) =>
           // FIXME: could go wrong

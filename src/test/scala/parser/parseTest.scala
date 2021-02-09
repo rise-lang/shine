@@ -75,7 +75,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -316,7 +316,7 @@ class parseTest extends  AnyFlatSpec {
     ex match {
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(),
       r.App(r.App(rp.add(), r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.App(r.App(rp.mod(), r.Literal(rS.IntData(42))), r.Literal(rS.IntData(5))))))) => true
+      r.App(r.App(rp.mod(), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
         r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive,
           r.App(r.App(rp.add.primitive, r.App(r.App(rp.mul.primitive, r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
@@ -340,7 +340,7 @@ class parseTest extends  AnyFlatSpec {
     ex match {
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(),
       r.App(r.App(rp.add(), r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.App(r.App(rp.mod(), r.Literal(rS.IntData(42))), r.Literal(rS.IntData(5))))))) => true
+      r.App(r.App(rp.mod(), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
         r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive,
           r.App(r.App(rp.add.primitive, r.App(r.App(rp.mul.primitive, r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
@@ -362,7 +362,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("c"), r.Literal(rS.IntData(42))) => true
+      case r.Lambda(r.Identifier("c"), r.Literal(rS.IntData(42), _)) => true
       case a => fail("not a lambda: " + a)
     }
   }
@@ -480,7 +480,7 @@ class parseTest extends  AnyFlatSpec {
 
     ex_u match {
       case r.DepLambda(d:rt.DataTypeIdentifier,
-      r.Lambda(r.Identifier("fkt"), r.Literal(rS.IntData(1))))
+      r.Lambda(r.Identifier("fkt"), r.Literal(rS.IntData(1), _)))
         if d.name.equals("D1")
       => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
@@ -866,13 +866,13 @@ class parseTest extends  AnyFlatSpec {
       r.Lambda(y@r.Identifier("y"),
       r.App(r.App(rp.add(),
       r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.Literal(rS.IntData(42)))
+      r.Literal(rS.IntData(42), _))
       )) if x.t == rt.i32 && y.t == rt.i32 => true
       case r.Lambda(x@r.Identifier("x"),
       r.Lambda(y@r.Identifier("y"),
       r.App(r.App(rp.add(),
       r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.Literal(rS.IntData(42)))
+      r.Literal(rS.IntData(42), _))
       )) => fail("almost correct, but Types don't match!  " + x.t + " != rt.i32 oder/und " + y.t + " != rt.i32")
       case r.Lambda(x, r.Lambda(y, e)) => fail("not correct Identifier or not correct expression: " + "Lambda(" + x + ",Lambda," + y + " , " + e + " , x.t= " + x.t + " , y.t= " + y.t)
       case a => fail("not a lambda: " + a)
@@ -1095,7 +1095,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.sub(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.sub(), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1168,7 +1168,7 @@ class parseTest extends  AnyFlatSpec {
       ))),
       r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0),r.Lambda(r.Identifier("x2"),r.Identifier("x2")))), r.App(rp.generate(),
 
-      r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(0)))
+      r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(0), _))
 
       ))
       )), //probably has the 0 of the Type Nat
@@ -1383,7 +1383,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(), r.Identifier("x")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1693,7 +1693,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(), r.Identifier("y")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(), r.Identifier("y")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1743,7 +1743,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(), r.Identifier("y")), r.Literal(rS.IntData(5)))) => true
+      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(), r.Identifier("y")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1778,7 +1778,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(4))), i:rt.f32.type) => true
+      case r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(4), _)), i:rt.f32.type) => true
       case e => fail("not correct expression: " + e)
     }
   }
@@ -1801,7 +1801,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(4))), i:rt.f32.type) => true
+      case r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(4), _)), i:rt.f32.type) => true
       case e => fail("not correct expression: " + e)
     }
   }
@@ -1826,8 +1826,8 @@ class parseTest extends  AnyFlatSpec {
 
     ex match {
       case r.App(rp.makeArray(2),
-      r.App(r.App(rp.makePair(), r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(16))), i1:rt.i32.type)),
-      r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(2))), i2: rt.bool.type)))
+      r.App(r.App(rp.makePair(), r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(16), _)), i1:rt.i32.type)),
+      r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(2), _)), i2: rt.bool.type)))
       => true
       case e => fail("not correct expression: " + e)
     }
@@ -1853,8 +1853,8 @@ class parseTest extends  AnyFlatSpec {
 
     ex match {
       case r.App(rp.makeArray(2),
-      r.App(r.App(rp.makePair(), r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(16))), i1:rt.i32.type)),
-      r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(2))), i2: rt.bool.type)))
+      r.App(r.App(rp.makePair(), r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(16), _)), i1:rt.i32.type)),
+      r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(2), _)), i2: rt.bool.type)))
       => true
       case e => fail("not correct expression: " + e)
     }
@@ -1895,11 +1895,11 @@ class parseTest extends  AnyFlatSpec {
       ,
 
       r.App(r.App(rp.div(), r.App(r.App(rp.sub(),
-      r.Literal(rS.IntData(25))), r.Literal(rS.FloatData(a)))
-      ), r.Literal(rS.FloatData(b)))
+      r.Literal(rS.IntData(25), _)), r.Literal(rS.FloatData(a), _))
+      ), r.Literal(rS.FloatData(b), _))
 
-      ))))),r.Literal(rS.IntData(42)))),
-      r.Literal(rS.IntData(0))))
+      ))))),r.Literal(rS.IntData(42), _))),
+      r.Literal(rS.IntData(0), _)))
       )) if a == 10.5000 && b == 2.3000f=> true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)

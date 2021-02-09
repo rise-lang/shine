@@ -209,7 +209,7 @@ object separableConvolution2D {
   ): Array[Array[Float]] = {
     import rise.core.semantics._
     weights match {
-      case ToBeTyped(Literal(ArrayData(a))) =>
+      case ToBeTyped(Literal(ArrayData(a), _)) =>
         computeGold(h, w, input,
           a.map(r =>
             r.asInstanceOf[ArrayData].a.map(x =>

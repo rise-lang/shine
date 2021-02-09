@@ -99,7 +99,7 @@ object uniqueNames {
           traversal.Stop(values(x))
 
         case l@Lambda(x, b) =>
-          val x2 = x.copy(s"x$nextValN")(renameInTypes(x.t)(others))
+          val x2 = x.copy(s"x$nextValN")(renameInTypes(x.t)(others), x.span)
           val b2 = renameInExpr(b)(values + (x -> x2), others)
           val t2 = renameInTypes(l.t)(others)
           traversal.Stop(Lambda(x2, b2)(t2))

@@ -10,7 +10,7 @@ final case class ToBeTyped[+T <: Expr](private val e: T) {
     override def visitExpr(e: Expr): traversal.Result[Expr] = e match {
       case Opaque(x, _) => Continue(x, this)
       case TopLevel(x, _) => Continue(x, this)
-      case Literal(_) => Stop(e)
+      case Literal(_, _) => Stop(e)
       case TypeAnnotation(e, _) => Continue(e, this)
       case TypeAssertion(e, _) => Continue(e, this)
       case _ => Continue(e.setType(TypePlaceholder), this)

@@ -37,7 +37,7 @@ package object core {
           case dt: DataType =>
             s"DepApply[DataKind](${toEvaluableString(f)}, $dt)"
         }
-      case Literal(d)          => s"Literal($d)"
+      case Literal(d, _)          => s"Literal($d)"
       case ff: ForeignFunction => ff.toString
       case p: Primitive        => p.toString
     }
@@ -45,5 +45,5 @@ package object core {
 
   implicit def primitiveBuilderToPrimitive(pb: Builder
                                           ): DSL.ToBeTyped[Primitive] =
-    pb.apply
+    pb.apply()
 }

@@ -223,7 +223,7 @@ object movement {
   def transposeBeforeSlide: Strategy[Rise] = `T >> S -> *S >> T >> *T`
   @rule def `T >> S -> *S >> T >> *T`: Strategy[Rise] = {
     case e@App(s, App(transpose(), y)) if isSplitOrSlide(s) =>
-      Success((preserveType(y) |> map(eraseType(s)) |> transpose.apply |> map(transpose)) !: e.t)
+      Success((preserveType(y) |> map(eraseType(s)) |> transpose.apply() |> map(transpose)) !: e.t)
   }
 
   def transposeBeforeMapSlide: Strategy[Rise] = `T >> *S -> S >> *T >> T`
@@ -235,7 +235,7 @@ object movement {
   def mapSlideBeforeTranspose: Strategy[Rise] = `*S >> T -> T >> S >> *T`
   @rule def `*S >> T -> T >> S >> *T`: Strategy[Rise] = {
     case e@App(transpose(), App(App(map(), s), y)) if isSplitOrSlide(s) =>
-      Success((preserveType(y) |> transpose.apply |> eraseType(s) |> map(transpose)) !: e.t)
+      Success((preserveType(y) |> transpose.apply() |> eraseType(s) |> map(transpose)) !: e.t)
   }
 
   // transpose + join

@@ -4,26 +4,32 @@ import rise.core.types._
 import rise.core.DSL.Type.TypeEqual
 import rise.core.ShowRise._
 
+import parser.{Span => Span}
+
 sealed abstract class Expr {
   val t: Type
+  val span: Option[Span]
   def setType(t: Type): Expr
   override def toString: String = showRise(this)
 }
 
 final case class Identifier(name: String)(
-    override val t: Type
+    override val t: Type,
+    override val span:Option[Span] = None
 ) extends Expr {
-  override def setType(t: Type): Identifier = this.copy(name)(t)
+  override def setType(t: Type): Identifier = this.copy(name)(t, span)
   override def equals(obj: Any): Boolean = obj match {
-    case other: Identifier => (other.name == name) && (other.t =~= t)
+    case other: Identifier => (other.name == name) && (other.t =~= t) //Todo: Do we want that they are in the same
+                                                                      //Todo: Position too? '&& (other.span = span)'
     case _                 => false
   }
 }
 
 final case class Lambda(x: Identifier, e: Expr)(
-    override val t: Type
+    override val t: Type,
+    override val span:Option[Span] = None
 ) extends Expr {
-  override def setType(t: Type): Lambda = this.copy(x, e)(t)
+  override def setType(t: Type): Lambda = this.copy(x, e)(t, span)
   override def equals(obj: Any): Boolean = obj match {
     case other: Lambda =>
       (other.x.t =~= x.t) && (other.t =~= t) &&
@@ -34,9 +40,12 @@ final case class Lambda(x: Identifier, e: Expr)(
   }
 }
 
-final case class App(f: Expr, e: Expr)(override val t: Type)
+final case class App(f: Expr, e: Expr)(
+  override val t: Type,
+  override val span:Option[Span] = None
+)
     extends Expr {
-  override def setType(t: Type): App = this.copy(f, e)(t)
+  override def setType(t: Type): App = this.copy(f, e)(t, span)
   override def equals(obj: Any): Boolean = obj match {
     case other: App => (other.f == f) && (other.e == e) && (other.t =~= t)
     case _          => false
@@ -46,10 +55,13 @@ final case class App(f: Expr, e: Expr)(override val t: Type)
 final case class DepLambda[K <: Kind: KindName](
     x: K#I with Kind.Explicitness,
     e: Expr
-)(override val t: Type)
+)(
+  override val t: Type,
+  override val span:Option[Span] = None
+)
     extends Expr {
   val kindName: String = implicitly[KindName[K]].get
-  override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
+  override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t, span)
   override def equals(obj: Any): Boolean = obj match {
     case other: DepLambda[_] =>
       val otherWithX = (x, other.x) match {
@@ -71,16 +83,18 @@ final case class DepLambda[K <: Kind: KindName](
 }
 
 final case class DepApp[K <: Kind](f: Expr, x: K#T)(
-    override val t: Type
+    override val t: Type,
+    override val span:Option[Span] = None
 ) extends Expr {
-  override def setType(t: Type): DepApp[K] = this.copy(f, x)(t)
+  override def setType(t: Type): DepApp[K] = this.copy(f, x)(t, span)
   override def equals(obj: Any): Boolean = obj match {
     case other: DepApp[K] => (other.f == f) && (other.x == x) && (other.t =~= t)
     case _                => false
   }
 }
 
-final case class Literal(d: semantics.Data) extends Expr {
+final case class Literal(d: semantics.Data, override val span:Option[Span] = None
+) extends Expr {
   override val t: Type = d.dataType
   override def setType(t: Type): Literal =
     throw TypeException(
@@ -88,7 +102,7 @@ final case class Literal(d: semantics.Data) extends Expr {
     )
 }
 
-abstract class Primitive extends Expr {
+abstract class Primitive(override val span:Option[Span] = None) extends Expr {
   override val t: Type = TypePlaceholder
   def typeScheme: Type =
     throw TypeException("typeScheme method must be overridden")
