@@ -2,7 +2,8 @@ package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.core.DSL.Type.n2dtFun
-import rise.core.{freshName, substitute}
+import rise.core.traverse.{Pure, PureTraversal}
+import rise.core.{traverse, freshName, substitute}
 import rise.core.lifting.liftDependentFunctionType
 import rise.core.types.Flags.ExplicitDependence
 import rise.core.types.InferenceException.error
@@ -536,39 +537,34 @@ object Constraint {
 }
 
 object dependence {
-
-  import rise.core.traversal._
-
   /*
    * Given a type t which is in the scope of a natIdentifier depVar,
    * explicitly represent the dependence by replacing identifiers in t
    * with applied nat-to-X functions.
    */
   def explicitlyDependent(t: Type, depVar: NatIdentifier): (Type, Solution) = {
-    val visitor = new Visitor {
+    val visitor = new PureTraversal {
       private val sols = Seq.newBuilder[Solution]
 
-      override def visitNat(ae: Nat): Result[Nat] = ae match {
+      override def nat: Nat => Pure[Nat] = {
+        case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n : Nat)
         case ident: NatIdentifier if ident != depVar && !ident.isExplicit =>
           sols += Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
-          Continue(ident.asImplicit, this)
-        case n2n@NatToNatApply(_, n) if n == depVar =>
-          Continue(n2n, this)
-        case other => Continue(other, this)
+          return_(ident.asImplicit : Nat)
+        case n => super.nat(n)
       }
 
-      override def visitType[T <: Type](t: T): Result[T] = t match {
-        case ident@TypeIdentifier(_) =>
+      override def `type`[T <: Type] : T => Pure[T] = {
+        case n2d@NatToDataApply(_, x) if x == depVar => return_(n2d : T)
+        case ident@TypeIdentifier(i) =>
           val application = NatToDataApply(NatToDataIdentifier(freshName("nnf")), depVar)
           sols += Solution.subs(ident, application)
-          Continue(ident.asInstanceOf[T], this)
-        case n2d@NatToDataApply(_, x) if x == depVar =>
-          Continue(n2d, this)
-        case other => Continue(other, this)
+          return_(ident.asInstanceOf[T])
+        case e => super.`type`(e)
       }
 
       def apply(t: Type): (Type, Solution) = {
-        val rewrittenT = types.DepthFirstGlobalResult(t, this).value
+        val rewrittenT = traverse(t, this)
         val solution = this.sols.result().foldLeft(Solution())(_ ++ _)
         (solution.apply(rewrittenT), solution)
       }

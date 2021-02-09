@@ -1,7 +1,8 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr
-import rise.core.{Expr, substitute, traversal}
+import rise.core.traverse._
+import rise.core.{Expr, substitute}
 
 object Solution {
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
@@ -36,36 +37,32 @@ case class Solution(ts: Map[Type, Type],
                     n2ns: Map[NatToNatIdentifier, NatToNat],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
                    ) {
-  import traversal.{Continue, Result, Stop}
 
-  case class Visitor(sol: Solution) extends traversal.Visitor {
-    override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
-    override def visitType[T <: Type](t: T): Result[T] =
-      Stop(sol(t).asInstanceOf[T])
-    override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
-      Stop(sol(a))
-    override def visitMatrixLayout(m: MatrixLayout): Result[MatrixLayout] =
-      Stop(sol(m))
-    override def visitFragmentType(f: FragmentKind): Result[FragmentKind] =
-      Stop(sol(f))
-    override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
-
-    override def visitN2N(n2n: NatToNat): Result[NatToNat] = Stop(sol(n2n))
+  abstract class Visitor(sol: Solution) extends PureTraversal {
+    override def nat: Nat => Pure[Nat] = ae => return_(sol(ae))
+    override def addressSpace: AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
+    override def matrixLayout: MatrixLayout => Pure[MatrixLayout] = m => return_(sol(m))
+    override def fragmentKind: FragmentKind => Pure[FragmentKind] = f => return_(sol(f))
+    override def natToData: NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
+    override def natToNat: NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
   }
 
-  def apply(e: Expr): Expr = {
-    traversal.DepthFirstLocalResult(e, Visitor(this))
+  case class V(sol: Solution) extends Visitor(sol) {
+    override def `type`[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
   }
+  def apply(e: Expr): Expr = V(this).expr(e).unwrap
 
-  def apply(t: Type): Type = {
-    traversal.types.DepthFirstLocalResult(t, new Visitor(this) {
-      override def visitType[T <: Type](t: T): Result[T] =
-        sol.ts.get(t) match {
-          case Some(x) => Stop(x.asInstanceOf[T])
-          case None    => Continue(t, this)
-        }
-    })
+  case class T(sol: Solution) extends Visitor(sol) {
+    override def datatype: DataType => Pure[DataType] = {
+      case t: DataTypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[DataType])
+      case t => super.datatype(t)
+    }
+    override def `type`[T <: Type]: T => Pure[T] = {
+      case t : TypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[T])
+      case t => super.`type`(t)
+    }
   }
+  def apply(t: Type): Type = T(this).`type`(t).unwrap
 
   def apply(n: Nat): Nat =
     (substitute.natsInNat(ns, _)).andThen(substitute.n2nsInNat(n2ns, _))(n)

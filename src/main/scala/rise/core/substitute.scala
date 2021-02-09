@@ -1,8 +1,8 @@
 package rise.core
 
+import rise.core.traverse.{Pure, PureExprTraversal, PureTraversal}
 import rise.core.types._
 import rise.core.semantics.NatData
-import traversal.{Continue, Result, Stop}
 
 object substitute {
 
@@ -22,30 +22,29 @@ object substitute {
       case (_, _) => ???
     }
 
-  def exprInExpr(expr: Expr, `for`: Expr, in: Expr): Expr = {
-    object Visitor extends traversal.Visitor {
-      override def visitExpr(e: Expr): Result[Expr] = {
+  def exprInExpr(expression : Expr, `for`: Expr, in: Expr): Expr = {
+    object Visitor extends PureExprTraversal {
+      override def expr: Expr => Pure[Expr] = e => {
         if (`for` == e) {
-          Stop(expr)
+          return_(expression)
         } else {
           e match {
             case Lambda(x, b) =>
               // See https://www.cs.cornell.edu/courses/cs3110/2019sp/textbook/interp/subst_lambda.html
-              if (x == `for`) Stop(e)
+              if (x == `for`) return_(e)
               if (!(FV(b) contains x))
-                Continue(e, this)
+                super.expr(e)
               else {
                 val newX = Identifier(freshName(x.name.substring(0, 1)))(x.t)
                 val newB = replace.exprInExpr(newX, `for`=x, in=b)
-                Continue(Lambda(newX, newB)(e.t), this)
+                super.expr(Lambda(newX, newB)(e.t))
               }
-            case _ => Continue(e, this)
+            case _ => super.expr(e)
           }
         }
       }
     }
-
-    traversal.DepthFirstLocalResult(in, Visitor)
+    Visitor.expr(in).unwrap
   }
 
   def FV(expr: Expr): Set[Identifier] = expr match {
@@ -60,43 +59,31 @@ object substitute {
     case _: Primitive => Set()
   }
 
-  def dataTypeInExpr(
-      dt: DataType,
-      `for`: DataTypeIdentifier,
-      in: Expr
-  ): Expr = {
+  def dataTypeInExpr(dt: DataType, `for`: DataTypeIdentifier, in: Expr ): Expr = {
+    object Visitor extends PureTraversal {
+      override def datatype : DataType => Pure[DataType] = in1 =>
+        return_(substitute.typeInType(dt, `for`, in1))
 
-    object Visitor extends traversal.Visitor {
-      override def visitType[T <: Type](in: T): Result[T] =
-        Continue(substitute.typeInType(dt, `for`, in), this)
+      override def `type`[T <: Type] : T => Pure[T] = in1 =>
+        return_(substitute.typeInType(dt, `for`, in1))
     }
-
-    traversal.DepthFirstLocalResult(in, Visitor)
+    Visitor.expr(in).unwrap
   }
 
   def natInExpr(ae: Nat, `for`: NatIdentifier, in: Expr): Expr = {
-
-    object Visitor extends traversal.Visitor {
-      override def visitExpr(e: Expr): Result[Expr] = {
-        e match {
-          case Identifier(name) =>
-            if (`for`.name == name) {
-              Stop(Literal(NatData(ae)))
-            } else {
-              Continue(e, this)
-            }
-          case _ => Continue(e, this)
-        }
+    object Visitor extends PureTraversal {
+      override def expr: Expr => Pure[Expr] = {
+        case Identifier(name) if (`for`.name == name) => return_(Literal(NatData(ae)) : Expr)
+        case e => super.expr(e)
       }
 
-      override def visitNat(e: Nat): Result[Nat] =
-        Continue(substitute.natInNat(ae, `for`, e), this)
+      override def nat: Nat => Pure[Nat] = e =>
+        return_(substitute.natInNat(ae, `for`, e))
 
-      override def visitType[T <: Type](t: T): Result[T] =
-        Continue(substitute.natInType(ae, `for`, t), this)
+      override def `type`[T <: Type]: T => Pure[T] = t =>
+        return_(substitute.natInType(ae, `for`, t))
     }
-
-    traversal.DepthFirstLocalResult(in, Visitor)
+    Visitor.expr(in).unwrap
   }
 
   def addressSpaceInExpr(a: AddressSpace,
@@ -126,83 +113,55 @@ object substitute {
     }
 
   def typeInType[B <: Type](ty: Type, `for`: Type, in: B): B = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitType[T <: Type](t: T): traversal.Result[T] = {
-        if (`for` == t) {
-          Stop(ty.asInstanceOf[T])
-        } else {
-          Continue(t, this)
-        }
+    object Visitor extends PureTraversal {
+      override def datatype: DataType => Pure[DataType] = t => {
+        if (`for` == t) { return_(ty.asInstanceOf[DataType]) } else super.datatype(t)
+      }
+      override def `type`[T <: Type]: T => Pure[T] = t => {
+        if (`for` == t) { return_(ty.asInstanceOf[T]) } else super.`type`(t)
       }
     }
-    traversal.types.DepthFirstLocalResult(in, Visitor())
+    traverse(in, Visitor)
   }
 
   def natInType[T <: Type](n: Nat, `for`: NatIdentifier, in: T): T = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitNat(in: Nat): Result[Nat] =
-        Continue(substitute.natInNat(n, `for`, in), this)
+    object Visitor extends PureTraversal {
+      override def nat: Nat => Pure[Nat] = in1 =>
+        return_(substitute.natInNat(n, `for`, in1))
     }
-
-    traversal.types.DepthFirstLocalResult(in, Visitor())
+    traverse(in, Visitor)
   }
 
   def natInDataType(n: Nat, `for`: NatIdentifier, in: DataType): DataType = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitNat(in: Nat): Result[Nat] =
-        Continue(substitute.natInNat(n, `for`, in), this)
+    object Visitor extends PureTraversal {
+      override def nat: Nat => Pure[Nat] = in1 =>
+        return_(substitute.natInNat(n, `for`, in1))
     }
-
-    traversal.types.DepthFirstLocalResult.data(in, Visitor())
+    Visitor.datatype(in).unwrap
   }
 
-  def addressSpaceInType[T <: Type](
-      a: AddressSpace,
-      `for`: AddressSpaceIdentifier,
-      in: T
-  ): T = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitAddressSpace(b: AddressSpace): Result[AddressSpace] =
-        if (`for` == b) {
-          Stop(a)
-        } else {
-          Continue(b, this)
-        }
+  def addressSpaceInType[T <: Type](a: AddressSpace, `for`: AddressSpaceIdentifier, in: T): T = {
+    object Visitor extends PureTraversal {
+      override def addressSpace: AddressSpace => Pure[AddressSpace] = b =>
+        if (`for` == b) return_(a) else super.addressSpace(b)
     }
-
-    traversal.types.DepthFirstLocalResult(in, Visitor())
+    traverse(in, Visitor)
   }
 
-  def n2nInType[T <: Type](
-      n2n: NatToNat,
-      `for`: NatToNatIdentifier,
-      in: T
-  ): T = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitN2N(n: NatToNat): Result[NatToNat] =
-        if (`for` == n) {
-          Stop(n2n)
-        } else {
-          Continue(n, this)
-        }
+  def n2nInType[T <: Type](n2n: NatToNat, `for`: NatToNatIdentifier, in: T ): T = {
+    object Visitor extends PureTraversal {
+      override def natToNat: NatToNat => Pure[NatToNat] = n =>
+        if (`for` == n) return_(n2n) else super.natToNat(n)
     }
-    traversal.types.DepthFirstLocalResult(in, Visitor())
+    traverse(in, Visitor)
   }
 
-  def n2dInType[T <: Type](
-      n2d: NatToData,
-      `for`: NatToDataIdentifier,
-      in: T
-  ): T = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitN2D(n: NatToData): Result[NatToData] =
-        if (`for` == n) {
-          Stop(n2d)
-        } else {
-          Continue(n, this)
-        }
+  def n2dInType[T <: Type](n2d: NatToData, `for`: NatToDataIdentifier, in: T): T = {
+    object Visitor extends PureTraversal {
+      override def natToData: NatToData => Pure[NatToData] = n =>
+        if (`for` == n) return_(n2d) else super.natToData(n)
     }
-    traversal.types.DepthFirstLocalResult(in, Visitor())
+    traverse(in, Visitor)
   }
 
   // substitute in Nat
