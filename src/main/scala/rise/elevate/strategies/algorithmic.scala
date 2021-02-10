@@ -29,21 +29,21 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> *(.. >> f)
   @strategy def mapFirstFission: Strategy[Rise] = e => {
     // TODO: this should be expressed with elevate strategies
-    @nowarn("msg=match may not be exhaustive")
     @scala.annotation.tailrec
-    def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): ToBeTyped[Rise] = {
+    def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): elevate.core.RewriteResult[Rise] = {
       gx match {
         case App(f2, gx2) =>
           if (gx2 == x) {
-            map(f2) >> map(f)
+            Success(map(f2) >> map(f) !: e.t)
           } else {
             mapFirstFissionRec(x, fun(e => f(preserveType(f2)(e))), gx2)
           }
+        case _ => Failure(mapFirstFission)
       }
     }
 
     e match {
-      case App(primitives.map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx) !: e.t)
+      case App(primitives.map(), Lambda(x, gx)) => mapFirstFissionRec(x, fun(e => e), gx)
       case _                                    => Failure(mapFirstFission)
     }
   }
@@ -52,21 +52,24 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> .. >> *f
   @strategy def mapFullFission: Strategy[Rise] = e => {
     // TODO: this should be expressed with elevate strategies
-    @nowarn("msg=match may not be exhaustive")
-    def mapFullFissionRec(x: Identifier, gx: Rise): ToBeTyped[Rise] = {
+    def mapFullFissionRec(x: Identifier, gx: Rise): Option[ToBeTyped[Rise]] = {
       gx match {
         case App(f, gx2) =>
           if (gx2 == x) {
-            map(f)
+            Some(map(f))
           } else {
-            mapFullFissionRec(x, gx2) >> map(f)
+            mapFullFissionRec(x, gx2).map(p => p >> map(f))
           }
+        case _ => None
       }
     }
 
     e match {
-      case App(primitives.map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx) !: e.t)
-      case _                                    => Failure(mapFullFission)
+      case App(primitives.map(), Lambda(x, gx)) => mapFullFissionRec(x, gx) match {
+        case Some(p) => Success(p !: e.t)
+        case None => Failure(mapFullFission)
+      }
+      case _ => Failure(mapFullFission)
     }
   }
 
