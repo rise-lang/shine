@@ -6,7 +6,7 @@ import shine.DPIA.Types._
 
 import scala.xml.Elem
 
-// not final because of DSL.typed.skip
+// not final (and not using the macro) because of DSL.typed.skip
 case class Skip() extends CommandPrimitive {
 
   override val t: CommType = comm

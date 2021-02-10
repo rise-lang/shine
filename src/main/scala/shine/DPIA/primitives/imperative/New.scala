@@ -6,13 +6,12 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.macros.Primitive.comPrimitive
 
-import scala.xml.Elem
-
+@comPrimitive
 final case class New(dt: DataType,
-                     f: Phrase[VarType ->: CommType])
-  extends CommandPrimitive {
-
+                     f: Phrase[VarType ->: CommType]
+                    ) extends CommandPrimitive {
   f :: varT(dt) ->: comm
 
   override def eval(s: Store): Store = {
@@ -21,15 +20,4 @@ final case class New(dt: DataType,
     val newStore = OperationalSemantics.eval(s + (arg.name -> 0), f_(arg))
     newStore - arg.name
   }
-
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    New(fun.data(dt), VisitAndRebuild(f, fun))
-  }
-
-  override def prettyPrint: String = s"(new ${PrettyPhrasePrinter(f)})"
-
-  override def xmlPrinter: Elem =
-    <new dt={ToString(dt)}>
-      {Phrases.xmlPrinter(f)}
-    </new>
 }

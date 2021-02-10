@@ -14,8 +14,8 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative._
-import shine.OpenCL.primitives.functional.OpenCLFunction
-import shine.OpenCL.primitives.imperative._
+import shine.OpenCL.primitives.functional.OpenCLFunctionCall
+import shine.OpenCL.primitives.{imperative => ocl}
 import shine.{C, _}
 
 import scala.collection.{immutable, mutable}
@@ -36,12 +36,13 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     new CodeGenerator(decls, ranges.updated(key, value))
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
-    case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p)), _, _, _) =>
-      OpenCLCodeGen.codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
+    case f: ocl.ParFor =>
+      val (i, o, p) = f.unwrapBody
+      OpenCLCodeGen.codeGenOpenCLParFor(f, f.n, f.dt, f.out, i, o, p, env)
 
-    case f@OpenCLParForNat(n, _, a,
-    DepLambda(i: NatIdentifier, Lambda(o, p)), _, _, _) =>
-      OpenCLCodeGen.codeGenOpenCLParForNat(f, n, a, i, o, p, env)
+    case f: ocl.ParForNat =>
+      val (i, o, p) = f.unwrapBody
+      OpenCLCodeGen.codeGenOpenCLParForNat(f, f.n, f.out, i, o, p, env)
 
     case phrase@Assign(dt, a, e) => dt match {
       case VectorType(_, _) =>
@@ -58,18 +59,18 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case _ => phrase |> super.cmd(env)
     }
 
-    case OpenCLNew(a, dt, Lambda(v, p)) =>
+    case ocl.New(a, dt, Lambda(v, p)) =>
       OpenCLCodeGen.codeGenOpenCLNew(a, dt, v, p, env)
     case _: New =>
       throw new Exception("New without address space found in" +
         "OpenCL program.")
 
-    case OpenCLNewDoubleBuffer(a, _, _, dt, n, in, out, Lambda(ps, p)) =>
+    case ocl.NewDoubleBuffer(a, _, _, dt, n, in, out, Lambda(ps, p)) =>
       OpenCLCodeGen
         .codeGenOpenCLNewDoubleBuffer(a, ArrayType(n, dt),
           in, out, ps, p, env)
 
-    case Barrier(localMemFence, globalMemFence) =>
+    case ocl.Barrier(localMemFence, globalMemFence) =>
       OpenCL.AST.Barrier(localMemFence, globalMemFence)
 
     case _: NewDoubleBuffer =>
@@ -103,7 +104,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     case IdxVecAcc(_, _, i, a) =>
       CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
 
-    case IdxDistributeAcc(_, _, stride, _, _, a) => path match {
+    case ocl.IdxDistributeAcc(_, _, stride, _, _, a) => path match {
       // TODO: ensure that i % stride == init ?
       case (i: CIntExpr) :: ps =>
         a |> acc(env, CIntExpr(i / stride) :: ps, cont)
@@ -183,10 +184,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
     case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
 
-    case OpenCLFunction(name, _, _, args) =>
+    case OpenCLFunctionCall(name, _, _, args) =>
       CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
 
-    case IdxDistribute(_, _, stride, _, _, e) => path match {
+    case ocl.IdxDistribute(_, _, stride, _, _, e) => path match {
       // TODO: ensure that i % stride == init ?
       case (i: CIntExpr) :: ps
       => e |> exp(env, CIntExpr(i / stride) :: ps, cont)
@@ -296,7 +297,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       ))
     }
 
-    def codeGenOpenCLParFor(f: OpenCLParFor,
+    def codeGenOpenCLParFor(f: ocl.ParFor,
                             n: Nat,
                             dt: DataType,
                             a: Phrase[AccType],
@@ -353,7 +354,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         }}))})
     }
 
-    def codeGenOpenCLParForNat(f: OpenCLParForNat,
+    def codeGenOpenCLParForNat(f: ocl.ParForNat,
                                n: Nat,
                                a: Phrase[AccType],
                                i: NatIdentifier,

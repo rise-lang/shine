@@ -5,16 +5,17 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.macros.Primitive.comPrimitive
 
-import scala.xml.Elem
-
+@comPrimitive
 case class Assign(dt: DataType,
                   lhs: Phrase[AccType],
-                  rhs: Phrase[ExpType])
-  extends CommandPrimitive {
-
+                  rhs: Phrase[ExpType]
+                 ) extends CommandPrimitive {
   lhs :: accT(dt)
   rhs :: expT(dt, read)
+
+  override def prettyPrint: String = s"(${PrettyPhrasePrinter(lhs)} := ${PrettyPhrasePrinter(rhs)})"
 
   override def eval(s: Store): Store = {
     def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data,
@@ -56,23 +57,5 @@ case class Assign(dt: DataType,
       s + Tuple2(identifier, value)
     })
   }
-
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    Assign(fun.data(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
-  }
-
-  override def prettyPrint: String = s"(${PrettyPhrasePrinter(lhs)} := ${PrettyPhrasePrinter(rhs)})"
-
-  override def xmlPrinter: Elem =
-    <assign dt={ToString(dt)}>
-      <lhs>
-        {Phrases.xmlPrinter(lhs)}
-      </lhs>
-      <rhs>
-        {Phrases.xmlPrinter(rhs)}
-      </rhs>
-    </assign>
-
-  override def toString: String = s"Assign(${dt.toString}, ${lhs.toString}, ${rhs.toString})"
 }
 

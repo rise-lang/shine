@@ -1,43 +1,22 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
+import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
+import shine.DPIA.Types._
 import shine.DPIA._
+import shine.macros.Primitive.expPrimitive
 
-import scala.xml.Elem
-
+@expPrimitive
 final case class MakeArray(dt: DataType,
-                           elements: Vector[Phrase[ExpType]])
-  extends ExpPrimitive {
-
+                           elements: Vector[Phrase[ExpType]]
+                          ) extends ExpPrimitive with ConT {
   override val t: ExpType = expT((elements.length: Nat)`.`dt, read)
-
-  def prettyPrint: String =
-    s"${this.getClass.getSimpleName} (${elements.flatMap(PrettyPhrasePrinter(_))})"
-
-  override def xmlPrinter: Elem =
-    <array dt={ToString(dt)}>
-      elements.flatMap(Phrases.xmlPrinter(_))
-    </array>
-
-  def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    MakeArray(fun.data(dt), elements.map(VisitAndRebuild(_, fun)))
-
-  def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] = {
-    ???
-  }
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
-
     def rec(func: Vector[Phrase[ExpType]], imp: Vector[Phrase[ExpType]]): Phrase[CommType] = {
       func match {
         case xf +: func => con(xf)(fun(expT(dt, read))(xi =>

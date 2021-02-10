@@ -6,20 +6,20 @@ import shine.C.primitives.imperative.CFunctionDefinition
 import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional
 import shine.OpenCL.AST.RequiredWorkGroupSize
+import shine.OpenCL._
 import shine.OpenCL.compilation.HoistMemoryAllocations.AllocationInfo
 import shine.OpenCL.compilation._
-import shine.OpenCL._
+import shine.macros.Primitive.comPrimitive
 import shine.{C, DPIA, OpenCL}
 import util.compiler.DSL.run
 
 import scala.collection.immutable
-import scala.xml.Elem
 
+@comPrimitive
 final case class OpenCLKernelDefinition(name: String,
                                         definition: Phrase[_ <: PhraseType]) extends CommandPrimitive {
   private val cFunDef = CFunctionDefinition(name, definition)
@@ -32,13 +32,6 @@ final case class OpenCLKernelDefinition(name: String,
   val paramTypes: Seq[ExpType] = cFunDef.paramTypes
 
   override def prettyPrint: String = cFunDef.prettyPrint
-
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommType] =
-    OpenCLKernelDefinition(name, VisitAndRebuild(definition, f))
-
-  override def eval(s: OperationalSemantics.Store): OperationalSemantics.Store = ???
-
-  override def xmlPrinter: Elem = ???
 
   type CodeGenerator = OpenCL.CodeGenerator
 
