@@ -56,6 +56,12 @@ int main(int argc, char** argv) {
   private def findCount(c: Int, r: Regex, in: String): Unit =
     r.findAllIn(in).length shouldBe c
 
+  private def findDeviceBufferSyncWrite(c: Int, in: String): Unit =
+    findCount(c, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, in)
+
+  private def findDeviceBufferSyncRead(c: Int, in: String): Unit =
+    findCount(c, """deviceBufferSync\(.*, DEVICE_READ\)""".r, in)
+
   test("no kernel call") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
       mapSeq(add(li32(3)))(in)
@@ -76,8 +82,8 @@ int main(int argc, char** argv) {
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.host)
     // println(hostCode)
-    findCount(1, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, hostCode)
-    findCount(1, """deviceBufferSync\(.*, DEVICE_READ\)""".r, hostCode)
+    findDeviceBufferSyncWrite(1, hostCode)
+    findDeviceBufferSyncRead(1, hostCode)
     // m.kernels.foreach(km => println(gen.opencl.kernel.asString(km)))
   }
 
@@ -90,8 +96,8 @@ int main(int argc, char** argv) {
     val hostCode = gen.c.function.asString(m.host)
     // println(hostCode)
     findCount(1, """createBuffer\(.*, HOST_READ \| DEVICE_WRITE\)""".r, hostCode)
-    findCount(1, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, hostCode)
-    findCount(1, """deviceBufferSync\(.*, DEVICE_READ\)""".r, hostCode)
+    findDeviceBufferSyncWrite(1, hostCode)
+    findDeviceBufferSyncRead(1, hostCode)
     findCount(1, """hostBufferSync\(.*, HOST_WRITE\)""".r, hostCode)
     findCount(1, """hostBufferSync\(.*, HOST_READ\)""".r, hostCode)
     checkOutput(m)
@@ -106,8 +112,8 @@ int main(int argc, char** argv) {
     val hostCode = gen.c.function.asString(m.host)
     // println(hostCode)
     findCount(1, """createBuffer\(.*, DEVICE_WRITE \| DEVICE_READ\)""".r, hostCode)
-    findCount(2, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, hostCode)
-    findCount(2, """deviceBufferSync\(.*, DEVICE_READ\)""".r, hostCode)
+    findDeviceBufferSyncWrite(2, hostCode)
+    findDeviceBufferSyncRead(2, hostCode)
     checkOutput(m)
   }
 
@@ -125,8 +131,8 @@ int main(int argc, char** argv) {
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.host)
     // println(hostCode)
-    findCount(1, """deviceBufferSync\(.*, DEVICE_WRITE\)""".r, hostCode)
-    findCount(1, """deviceBufferSync\(.*, DEVICE_READ\)""".r, hostCode)
+    findDeviceBufferSyncWrite(1, hostCode)
+    findDeviceBufferSyncRead(1, hostCode)
     checkOutput(m)
   }
 }

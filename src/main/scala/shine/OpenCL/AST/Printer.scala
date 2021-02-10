@@ -103,7 +103,8 @@ class Printer extends shine.C.AST.CPrinter {
           case None => ""
           case Some(s) => s
         } }]")
-      case p: shine.OpenCL.AST.PointerType => print(s"${toString(p.a)} ${typeName(p.valueType)}* ${v.name}")
+      case p: shine.OpenCL.AST.PointerType =>
+        print(s"${toString(p.a)} ${typeName(p.valueType)}* ${v.name}")
       case _: shine.C.AST.PointerType => throw new Exception("This should not happen")
       case _: shine.C.AST.UnionType => ???
       case _: OpaqueType => throw new Exception("did not expect opaque variable type")

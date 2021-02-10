@@ -4,9 +4,9 @@ import shine.DPIA._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Types._
-import shine.DPIA.primitives.imperative._
+import shine.DPIA.primitives.{imperative => dpia}
 import shine.OpenCL._
-import shine.OpenCL.primitives.imperative._
+import shine.OpenCL.primitives.{imperative => ocl}
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
@@ -99,11 +99,11 @@ object HostManagedBuffers {
                              metadata: Metadata) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
       p match {
-        case Assign(_, lhs, rhs) =>
+        case dpia.Assign(_, lhs, rhs) =>
           collectWrites(lhs, metadata.host_writes)
           collectReads(rhs, allocs, metadata.host_reads)
           Stop(p)
-        case KernelCallCmd(_, _, _, out, in) =>
+        case ocl.KernelCallCmd(_, _, _, out, in) =>
           in.foreach(collectReads(_, allocs, metadata.device_reads))
           collectWrites(out, metadata.device_writes)
           ((out, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
@@ -114,14 +114,14 @@ object HostManagedBuffers {
             case (unexpected, _) => throw new Exception(s"did not expect $unexpected")
           }
           Stop(p)
-        case Seq(a, b) =>
+        case dpia.Seq(a, b) =>
           val (a2, am) = analyzeAndInsertHostExecution(a, allocs, managed)
           val (b2, bm) = insertHostExecutions(am, allocs, managed, b)
           metadata.host_writes ++= bm.host_writes
           metadata.host_reads ++= bm.host_reads
           metadata.device_writes ++= bm.device_writes
           metadata.device_reads ++= bm.device_reads
-          Stop(Seq(a2, b2))
+          Stop(dpia.Seq(a2, b2))
         case _ => Continue(p, this)
       }
   }
@@ -155,13 +155,13 @@ object HostManagedBuffers {
       p match {
         case i: Identifier[_] =>
           Stop(managed.get(i).map(_._2).getOrElse(p).asInstanceOf[Phrase[T]])
-        case New(dt, Lambda(x, body)) if managed.contains(x) =>
+        case dpia.New(dt, Lambda(x, body)) if managed.contains(x) =>
           val access = managed(x)._1
           val x2 = managed(x)._2.asInstanceOf[Identifier[VarType]]
-          Continue(NewManagedBuffer(dt, access, Lambda(x2, body)), this)
-        case _: New | _: Lambda[_, _] | _: Seq | _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
+          Continue(ocl.NewManagedBuffer(dt, access, Lambda(x2, body)), this)
+        case _: dpia.New | _: Lambda[_, _] | _: dpia.Seq | _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
           Continue(p, this)
-        case _: KernelCallCmd => Continue(p, this)
+        case _: ocl.KernelCallCmd => Continue(p, this)
         case _: HostExecution => Stop(p)
         case unexpected => throw new Exception(s"did not expect $unexpected")
       }
@@ -170,6 +170,8 @@ object HostManagedBuffers {
   @tailrec
   private def collectWrites(a: Phrase[AccType],
                             writes: mutable.Set[Identifier[_ <: PhraseType]]): Unit = {
+    import shine.DPIA.primitives.imperative._
+
     def addIdent(i: Identifier[_ <: PhraseType]): Unit =
       writes += i
 
@@ -183,7 +185,7 @@ object HostManagedBuffers {
       case JoinAcc(_, _, _, a) => collectWrites(a, writes)
       case SplitAcc(_, _, _, a) => collectWrites(a, writes)
       case AsScalarAcc(_, _, _, a) => collectWrites(a, writes)
-      case IdxDistributeAcc(_, _, _, _, _, a) => collectWrites(a, writes)
+      case ocl.IdxDistributeAcc(_, _, _, _, _, a) => collectWrites(a, writes)
       case PairAcc1(_, _, a) => collectWrites(a, writes)
       case PairAcc2(_, _, a) => collectWrites(a, writes)
       case TakeAcc(_, _, _, a) => collectWrites(a, writes)
@@ -215,9 +217,9 @@ object HostManagedBuffers {
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Slide(_, _, _, _, e) => collectReads(e, allocs, reads)
       case Map(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case MapRead(_, _, _, _, e) => collectReads(e, allocs, reads)
-      case GenerateCont(_, _, _) => giveUp()
+      case ocl.IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
+      case dpia.MapRead(_, _, _, _, e) => collectReads(e, allocs, reads)
+      case dpia.GenerateCont(_, _, _) => giveUp()
       case AsScalar(_, _, _, _, e) => collectReads(e, allocs, reads)
       case AsVectorAligned(_, _, _, _, e) => collectReads(e, allocs, reads)
       case AsVector(_, _, _, _, e) => collectReads(e, allocs, reads)
@@ -242,7 +244,7 @@ object HostManagedBuffers {
       case Drop(_, _, _, e) => collectReads(e, allocs, reads)
       case Take(_, _, _, e) => collectReads(e, allocs, reads)
       case Unzip(_, _, _, _, e) => collectReads(e, allocs, reads)
-      case Pair(_, _, _, e1, e2) =>
+      case MakePair(_, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Reorder(_, _, _, _, _, e) => collectReads(e, allocs, reads)
       case MakeArray(_, es) =>
