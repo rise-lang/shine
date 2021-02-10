@@ -10,6 +10,7 @@ import rise.core.DSL.{fun, l}
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
+import rise.elevate.rules.lowering
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.normalForm._
@@ -43,9 +44,9 @@ class gauss extends test_util.Tests {
     fun(ArrayType(N, ArrayType(M, f64)))(in =>
       fun(ArrayType(5, ArrayType(5, f64)))(weights =>
         in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
-          |> slide2D(5, 2) // -> MxN of 5x5 slides
+          |> slide2D(5, 1) // -> MxN of 5x5 slides
           |> map(map(fun(sector => // sector:5x5
-          zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0.0))
+            zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0.0))
         )))
       )
     )
@@ -74,12 +75,17 @@ class gauss extends test_util.Tests {
   test("baseline") {
     println("gauss: " + gauss)
 
-    val lowered = lowerToC.apply(gauss)
+    val base = baseline.apply(gauss)
+    println("base: " + base)
+
+    val lowered = lowerToC.apply(base.get)
     println("lowered: " + lowered)
 
-    val code = gen.openmp.function("riseFun").fromExpr(lowered.get)
+    val code = gen.openmp.function("gaussian").asStringFromExpr(lowered.get)
     println("code: " + code)
   }
+
+
 
   /// UTILS ////////////////////////////////////////////////////////////////////
 
