@@ -67,22 +67,26 @@ class MMTest extends test_util.TestsWithYACX {
     val resultTest = computeGold(matrixATest, matrixBTest)
 
     //Execute kernel
-    val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` scala.Array[scala.Array[Float]] `,`
-      scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
+    try {
+      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` scala.Array[scala.Array[Float]] `,`
+        scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
-    val (result, _) = scalaFun(matrixATest `,` matrixBTest)
+      val (result, _) = scalaFun(matrixATest `,` matrixBTest)
 
-    val resultMatrix = result.sliding(mTile, nTile).toArray
+      val resultMatrix = result.sliding(mTile, nTile).toArray
 
-    //Check result
-    if (!similar(resultTest, resultMatrix)) {
-      println("Expected:")
-      print(resultTest.map(_.mkString(" ")).mkString("\n"))
-      println()
-      println("\nFound:")
-      print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-      println()
-      throw new Exception("False Result")
+      //Check result
+      if (!similar(resultTest, resultMatrix)) {
+        println("Expected:")
+        print(resultTest.map(_.mkString(" ")).mkString("\n"))
+        println()
+        println("\nFound:")
+        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
+        println()
+        throw new Exception("False Result")
+      }
+    } catch {
+      case _: UnsatisfiedLinkError => System.err.println("Yacx not builded")
     }
   }
 
@@ -159,22 +163,26 @@ class MMTest extends test_util.TestsWithYACX {
     val resultTest = computeGold(matrixATest, matrixBTest)
 
     //Execute kernel
-    val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` Int `,` scala.Array[scala.Array[Float]] `,`
-      scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
+    try {
+      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` Int `,` scala.Array[scala.Array[Float]] `,`
+        scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
-    val (result, _) = scalaFun(kTest `,` matrixATest `,` matrixBTest)
+      val (result, _) = scalaFun(kTest `,` matrixATest `,` matrixBTest)
 
-    val resultMatrix = result.sliding(mTile, nTile).toArray
+      val resultMatrix = result.sliding(mTile, nTile).toArray
 
-    //Check result
-    if (!similar(resultTest, resultMatrix)) {
-      println("Expected:")
-      print(resultTest.map(_.mkString(" ")).mkString("\n"))
-      println()
-      println("\nFound:")
-      print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-      println()
-      throw new Exception("False Result")
+      //Check result
+      if (!similar(resultTest, resultMatrix)) {
+        println("Expected:")
+        print(resultTest.map(_.mkString(" ")).mkString("\n"))
+        println()
+        println("\nFound:")
+        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
+        println()
+        throw new Exception("False Result")
+      }
+    } catch {
+    case _: UnsatisfiedLinkError => System.err.println("Yacx not builded")
     }
   }
 
@@ -309,22 +317,26 @@ class MMTest extends test_util.TestsWithYACX {
     val resultTest = computeGold(matrixATest, matrixBTest)
 
     //Execute kernel
-    val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,`
-      scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
+    try {
+      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,`
+        scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
-    val (result, _) = scalaFun(mTest `,` nTest `,` kTest `,` matrixATest `,` matrixBTest)
+      val (result, _) = scalaFun(mTest `,` nTest `,` kTest `,` matrixATest `,` matrixBTest)
 
-    val resultMatrix = result.sliding(mTest, nTest).toArray
+      val resultMatrix = result.sliding(mTest, nTest).toArray
 
-    //Check result
-    if (!similar(resultTest, resultMatrix)) {
-      println("Expected:")
-      print(resultTest.map(_.mkString(" ")).mkString("\n"))
-      println()
-      println("\nFound:")
-      print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-      println()
-      throw new Exception("False Result")
+      //Check result
+      if (!similar(resultTest, resultMatrix)) {
+        println("Expected:")
+        print(resultTest.map(_.mkString(" ")).mkString("\n"))
+        println()
+        println("\nFound:")
+        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
+        println()
+        throw new Exception("False Result")
+      }
+    } catch {
+      case _: UnsatisfiedLinkError => System.err.println("Yacx not builded")
     }
   }
 
