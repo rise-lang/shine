@@ -139,7 +139,7 @@ class CPrinter extends Printer {
   private def printParamDecl(p: ParamDecl): Unit = {
     if (p.t.const) print("const ")
     p.t match {
-      case b: BasicType => print(s"${b.print} ${p.name}")
+      case b: BasicType => print(s"${b.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
       case a: ArrayType => print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
@@ -262,11 +262,13 @@ class CPrinter extends Printer {
   private def printFunCall(f: FunCall): Unit = {
     printDeclRef(f.fun)
     print("(")
-    f.args.take(f.args.length-1).foreach(a => {
-      printExpr(a)
-      print(", ")
-    })
-    printExpr(f.args.last)
+    if (f.args.nonEmpty) {
+      f.args.take(f.args.length - 1).foreach(a => {
+        printExpr(a)
+        print(", ")
+      })
+      printExpr(f.args.last)
+    }
     print(")")
   }
 
