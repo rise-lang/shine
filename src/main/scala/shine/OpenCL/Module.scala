@@ -20,7 +20,7 @@ case class Module(host: shine.C.Module, kernels: Seq[KernelModule]) {
              |"${util.gen.opencl.kernel.asString(km).linesIterator.toArray.mkString(s"${'"'}\n${'"'}")}";
              |""".stripMargin
         }.mkString("\n")}
-       |#define loadKernel(ctx, ident) loadKernelFromSource(ctx, #ident, ident##_source, sizeof(ident##_source))
+       |#define loadKernel(ctx, ident) loadKernelFromSource(ctx, #ident, ident##_source, sizeof(ident##_source) - 1)
        |${util.gen.c.function.asString(host)}
        |""".stripMargin
 
