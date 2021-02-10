@@ -6,28 +6,21 @@ import scala.sys.process._
 object ExecuteOpenCL {
   case class Exception(msg: String) extends Throwable
 
+  val runtimePath = "data/runtime/"
+  val libs = "-lm -lOpenCL"
+
   // noinspection ScalaUnnecessaryParentheses
   @throws[Exception]
-  def apply(module: shine.OpenCL.Module, buffer_impl: String, mainSource: String): String = {
+  def usingDirectory(module: shine.OpenCL.Module, buffer_impl: String, mainSource: String): String = {
     val genDir = java.nio.file.Files.createTempDirectory("shine-gen").toFile();
     try {
+      module.dumpToDirectory(genDir)
       val binPath = s"${genDir.getAbsolutePath}/main"
       val mainPath = s"${genDir.getAbsolutePath}/main.c"
-      val hostPath = s"${genDir.getAbsolutePath}/host.c"
-      val runtimePath = "data/runtime/"
-      writeToPath(mainPath, mainSource)
-      writeToPath(hostPath,
-        """#define loadKernel(ctx, ident) loadKernelFromFile(ctx, #ident, #ident ".cl")""" +
-        gen.c.function.asString(module.host))
-      module.kernels.foreach { km =>
-        // assumes a single kernel per module
-        val fileName = km.kernels(0).code.name
-        writeToPath(s"${genDir.getAbsolutePath}/$fileName.cl",
-          gen.opencl.kernel.asString(km))
-      }
-      // host.c is directly included in the main
+      writeToPath(mainPath,
+        s"""#include "host.c"
+           |${mainSource}""".stripMargin)
       val sources = s"$mainPath $runtimePath/buffer_${buffer_impl}.c $runtimePath/ocl.c"
-      val libs = "-lm -lOpenCL"
       (s"clang -O2 $sources -I $runtimePath -o $binPath $libs -Wno-parentheses-equality" !!)
       (Process(s"$binPath", new java.io.File(genDir.getAbsolutePath)) !!)
     } catch {
@@ -37,6 +30,21 @@ object ExecuteOpenCL {
     } finally {
       new scala.reflect.io.Directory(new java.io.File(genDir.getAbsolutePath))
           .deleteRecursively()
+    }
+  }
+
+  @throws[Exception]
+  def apply(code: String, buffer_impl: String): String = {
+    try {
+      val src = writeToTempFile("code-", ".c", code).getAbsolutePath
+      val bin = createTempFile("bin-", "").getAbsolutePath
+      val sources = s"$src $runtimePath/buffer_${buffer_impl}.c $runtimePath/ocl.c"
+      (s"clang -O2 $sources -I $runtimePath -o $bin $libs -Wno-parentheses-equality" !!)
+      (s"$bin" !!)
+    } catch {
+      case e: Throwable =>
+        Console.err.println(s"execution failed: $e")
+        throw Exception(s"execution failed: $e")
     }
   }
 }

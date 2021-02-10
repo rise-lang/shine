@@ -138,6 +138,7 @@ object gen {
 
       def fromExpr: Expr => OpenCL.Module = gen.opencl.hosted().fromExpr
       def fromPhrase: Phrase => OpenCL.Module = gen.opencl.hosted().fromPhrase
+      def asString: OpenCL.Module => String = m => m.toCString
     }
 
     case class hosted(name: String) {

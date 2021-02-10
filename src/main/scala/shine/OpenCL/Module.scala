@@ -10,7 +10,33 @@ import shine.OpenCL.primitives.imperative.OpenCLKernelDefinition
 
 import scala.language.existentials
 
-case class Module(host: shine.C.Module, kernels: Seq[KernelModule])
+case class Module(host: shine.C.Module, kernels: Seq[KernelModule]) {
+  def toCString: String =
+    s"""
+       |${kernels.map { km =>
+          // assumes a single kernel per module
+          val name = km.kernels(0).code.name
+          s"""const char ${name}_source[] =
+             |"${util.gen.opencl.kernel.asString(km).linesIterator.toArray.mkString(s"${'"'}\n${'"'}")}";
+             |""".stripMargin
+        }.mkString("\n")}
+       |#define loadKernel(ctx, ident) loadKernelFromSource(ctx, #ident, ident##_source, sizeof(ident##_source))
+       |${util.gen.c.function.asString(host)}
+       |""".stripMargin
+
+  def dumpToDirectory(dir: java.io.File) = {
+    util.writeToPath(s"${dir.getAbsolutePath}/host.c",
+      s"""#define loadKernel(ctx, ident) loadKernelFromFile(ctx, #ident, #ident ".cl")
+         |util.gen.c.function.asString(host)
+         |""".stripMargin)
+    kernels.foreach { km =>
+      // assumes a single kernel per module
+      val fileName = km.kernels(0).code.name
+      util.writeToPath(s"${dir.getAbsolutePath}/$fileName.cl",
+        util.gen.opencl.kernel.asString(km))
+    }
+  }
+}
 
 object Module {
   def fromPhrase(hostGen: shine.OpenCL.HostCodeGenerator,

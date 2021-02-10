@@ -11,14 +11,7 @@ import util.gen
 import scala.util.matching.Regex
 
 class host extends test_util.Tests {
-  private def dumpModule(m: shine.OpenCL.Module): Unit = {
-    m.kernels.foreach(km => println(gen.opencl.kernel.asString(km)))
-    println(gen.c.function.asString(m.host))
-  }
-
   private val main = """
-#include "host.c"
-
 const int N = 64;
 int main(int argc, char** argv) {
   Context ctx = createDefaultContext();
@@ -49,8 +42,9 @@ int main(int argc, char** argv) {
 """
 
   private def checkOutput(m: shine.OpenCL.Module): Unit = {
-    util.ExecuteOpenCL(m, "zero_copy", main)
-    util.ExecuteOpenCL(m, "one_copy", main)
+    val prog = m.toCString + main
+    util.ExecuteOpenCL(prog, "zero_copy")
+    util.ExecuteOpenCL(prog, "one_copy")
   }
 
   private def findCount(c: Int, r: Regex, in: String): Unit =
