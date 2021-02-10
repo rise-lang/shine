@@ -1,6 +1,6 @@
 package rise
 
-import arithexpr.arithmetic.{NamedVar, PosInf, RangeAdd, RangeUnknown}
+import arithexpr.arithmetic.{NamedVar, PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types._
 import rise.core.primitives._
@@ -13,8 +13,8 @@ import apps.separableConvolution2D.weightsSeqVecUnroll
 
 class autotuning extends test_util.Tests {
   val convolution: ToBeTyped[Expr] =
-    tuningParam("vec", (vec: Nat) =>
-    tuningParam("tile", RangeAdd(4, 32, vec), (tile: Nat) =>
+      tuningParam("vec", RangeMul(1, 32, 2), (vec:Nat) =>
+        tuningParam("tile", RangeAdd(4, 32, vec), (tile: Nat) =>
     depFun(RangeAdd(1, PosInf, vec), (n: Nat) =>
     fun(3`.`f32)(weights =>
     fun(((n+2)`.`f32) ->: (n`.`f32))(input =>
@@ -34,12 +34,17 @@ class autotuning extends test_util.Tests {
   }
 
   test("generateJSON"){
-    // throws exception
     val json = autotune.generateJSON(autotune.collectParameters(convolution))
 
     // create gold
     // check against gold
 
     println("json: \n" + json)
+  }
+
+  test("generate constraints"){
+    val constraints = autotune.generateConstraints(autotune.collectParameters(convolution))
+
+    println("constraints: \n" + constraints)
   }
 }

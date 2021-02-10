@@ -1,6 +1,6 @@
 package rise
 
-import arithexpr.arithmetic.{RangeAdd, RangeUnknown}
+import arithexpr.arithmetic.{RangeAdd, RangeMul, RangeUnknown}
 import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
@@ -44,60 +44,105 @@ package object autotune {
     params.toSet
   }
 
+  def generateConstraints(p: Parameters): String = {
+    // generate constraints as String to be evaluated in python
+
+    var output = ""
+
+    p.foreach(elem => {
+      // check if evaluable
+      val test = elem.range match{
+        case RangeAdd(start, stop, step) => {
+          val constraint = step.isEvaluable match {
+            case true => ""
+            case false => elem.name + " % " + step.toString + " == 0" + " && "
+          }
+
+          constraint
+        }
+        case RangeMul(start, stop, step) => {
+          val constraint = step.isEvaluable match {
+            case true => ""
+            case false => "math.log(" + elem.name + ", "+ step.toString + ") % 1 == 0" + " && "
+          }
+
+          constraint
+        }
+        case _ => // no constraint
+      }
+      output += test.toString
+    })
+
+    output.dropRight(3)
+  }
+
   def generateJSON(p: Parameters): String = {
 
     // create header for hypermapper configuration file
+    // WARNING: configuration is partially hard coded
     val header =
-      """{
-        | "application_name" : "rise",
-        | "optimization_objectives" : ["runtime"],
-        | "feasible_output" : {
-        |   "enable_feasible_predictor" : false
-        | },
-        | "design_of_experiment" : {
-        |   "doe_type" : "random sampling",
-        |   "number_of_samples" : 100
-        | },
-        | "optimization_iterations" : 100,
-        | "input_parameters" : {
-        |""".stripMargin
+    """{
+      | "application_name" : "rise",
+      | "optimization_objectives" : ["runtime"],
+      | "feasible_output" : {
+      |   "enable_feasible_predictor" : true
+      | },
+      | "design_of_experiment" : {
+      |   "doe_type" : "random sampling",
+      |   "number_of_samples" : 100
+      | },
+      | "optimization_iterations" : 100,
+      | "input_parameters" : {
+      |""".stripMargin
 
     // create entry foreach parameter
     var parameter = ""
+
     p.foreach(elem => {
 
-      // translate range to hypermapper
-      // WARNING: currently, no interdependencies possible
-      // rangeUnknow to range? PowersOfTwo?
-
-      elem.range match {
-        case RangeUnknown => {
-          println("range unknow")
-          // create what?
-          // just an entry?
-          // what are the possible values?
-        }
+      val parameterRange = elem.range match {
         case RangeAdd(start, stop, step) =>  {
-          println("range add")
-          println("start: " + start)
-          println("stop: " + stop)
-          println("step: " + step)
+          // check if all elements are evaluable
+          // Todo check start and stop
 
-          // create filtered list
+          // HACK
+          // if step is not evaluable use 1 instead
+          val stepWidth = step.isEvaluable match{
+            case true => step.eval
+            case false => 1
+          }
+
           val x = List.range(start.evalInt, stop.evalInt+1)
-          val list = x.filter(_ % step.evalInt == 0) // step not evaluable
-          println("list: " + list)
+          val values = x.filter(_ % stepWidth == 0)
 
-          // translate list to hypermapper json array
-          // rangeAdd to ordinal Array with valid entries
+          listToString(values)
         }
-        case _ => println("Not yet implemented")
+        case RangeMul(start, stop, mul) => {
+          // check if all elements are evaluable
+          // Todo check start and stop
+
+          mul.isEvaluable match {
+            case true => {
+              val maxVal = scala.math.log(stop.evalInt)/scala.math.log(mul.evalDouble)
+              val powers:List[Int] = List.range(start.evalInt, maxVal.toInt+1)
+              val values:List[Int] = powers.map(power => scala.math.pow(mul.evalInt, power).toInt)
+
+              listToString(values)
+            }
+            case false =>
+              listToString(List.range(start.evalInt, stop.evalInt+1))
+          }
+        }
+        case _ => {
+          println("Not yet implemented")
+          ""
+        }
       }
 
       val parameterEntry =
         s"""   "${elem.name}" : {
-           |       "parameter_type" : "integer",
-           |       "values" : "${elem.range}"
+           |       "parameter_type" : "ordinal",
+           |       "values" : "${parameterRange}"
            |   },
            |""".stripMargin
 
@@ -116,4 +161,17 @@ package object autotune {
   }
 
   def applyBest(e: Expr, samples: Seq[Sample]): Expr = ???
+
+  def listToString(list: List[Int]): String = {
+
+    var valueString = "["
+    list.foreach(value => {
+      valueString += "" + value + ", "
+    })
+
+    var valueStringFinal= valueString.dropRight(2)
+    valueStringFinal += "]"
+
+    valueStringFinal
+  }
 }
