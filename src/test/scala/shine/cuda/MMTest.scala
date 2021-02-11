@@ -53,7 +53,7 @@ class MMTest extends test_util.TestsWithYACX {
 
                 //add fragment with zeros
                 ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, nTile, kTile, f16),
-                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Acuumulator, Row_Major))))))
+                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Accumulator, Row_Major))))))
       )
 
     val kernel = gen.cuda.kernel("matrixMult").fromPhrase(simpleMatMulTile)
@@ -135,7 +135,7 @@ class MMTest extends test_util.TestsWithYACX {
 
                       matrixCFrag))),
 
-                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Acuumulator, Row_Major),
+                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Accumulator, Row_Major),
 
                 Zip(k /^ kTile,
                   ArrayType(mTile, ArrayType(kTile, f16)),
@@ -274,7 +274,7 @@ class MMTest extends test_util.TestsWithYACX {
                                         matrixCFrag))),
 
                                   //Neutral Element for Reduce: fragment initialized with zeros
-                                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Acuumulator, Row_Major),
+                                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Accumulator, Row_Major),
 
                                   //Zip transposed, splited row of matrixA and splited column of matrixB
                                   Zip(k /^ kTile,

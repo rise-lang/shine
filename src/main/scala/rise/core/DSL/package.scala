@@ -444,6 +444,7 @@ package object DSL {
 
   def l(i: Int): ToBeTyped[Literal] = literal(IntData(i))
   def l(f: Float): ToBeTyped[Literal] = literal(FloatData(f))
+  def h(f: Float): ToBeTyped[Literal] = literal(HalfData(f))
   def l(d: Double): ToBeTyped[Literal] = literal(DoubleData(d))
   def l(n: Nat): ToBeTyped[Literal] = literal(NatData(n))
   def lidx(i: Nat, n: Nat): ToBeTyped[Literal] = literal(IndexData(i, n))

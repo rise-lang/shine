@@ -46,6 +46,4 @@ object TypedDSL {
     def apply(shift: Nat): Expr = primitives.toSharedMemoryShift(shift)
     def apply(shift: Nat, array: Expr): Expr = primitives.toSharedMemoryShift(shift)(array)
   }
-
-  def h(f: Float): ToBeTyped[Literal] = literal(HalfData(f))
 }

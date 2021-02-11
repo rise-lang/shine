@@ -37,12 +37,12 @@ sealed trait FragmentKind
 object FragmentKind {
   object AMatrix extends FragmentKind { override def toString = "AMatrix"}
   object BMatrix extends FragmentKind { override def toString = "BMatrix"}
-  object Acuumulator extends FragmentKind { override def toString = "Acuumulator"}
+  object Accumulator extends FragmentKind { override def toString = "Accumulator"}
 }
 
 object FragmentType {
   def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType =
-    FragmentType(rows, columns, d3, dataType, FragmentKind.Acuumulator, null)
+    FragmentType(rows, columns, d3, dataType, FragmentKind.Accumulator, null)
 }
 
 final case class FragmentType(rows: Nat,
@@ -52,21 +52,22 @@ final case class FragmentType(rows: Nat,
                               fragmentKind: FragmentKind,
                               layout: MatrixLayout) extends BasicType {
   override def toString: String =
-    if (fragmentKind == FragmentKind.Acuumulator)
+    if (fragmentKind == FragmentKind.Accumulator)
       s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
     else
       s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
 
   override def equals(o: Any): Boolean = {
-    if (!o.isInstanceOf[FragmentType])
-      return false;
-
-    val f = o.asInstanceOf[FragmentType]
-    if (fragmentKind == FragmentKind.Acuumulator && f.fragmentKind == FragmentKind.Acuumulator){
-      f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType)
-    } else {
-      f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType) &&
-        f.fragmentKind.equals(fragmentKind) && f.layout.equals(layout)
+    o match {
+      case f: FragmentType =>
+        f.fragmentKind match {
+          case FragmentKind.Accumulator =>
+            f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType)
+          case _ =>
+            f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType) &&
+              f.fragmentKind.equals(fragmentKind) && f.layout.equals(layout)
+        }
+      case _ => false
     }
   }
 }

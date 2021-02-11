@@ -53,7 +53,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         //Pointer to first element of the matrix
         val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
-        val (layout, ldm) = inferFragment(matrix, env, m, n, k, FragmentKind.Acuumulator)
+        val (layout, ldm) = inferFragment(matrix, env, m, n, k, FragmentKind.Accumulator)
         if (layoutIdentifier.isInstanceOf[MatrixLayoutIdentifier])
           layoutIdentifier.asInstanceOf[MatrixLayoutIdentifier].setLayout(layout)
 
@@ -61,7 +61,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           C.AST.ExprStmt(C.AST.FunCall(
             C.AST.DeclRef("nvcuda::wmma::load_matrix_sync"),
               //only accumulator-fragments must specify their layout
-              if (fragType != FragmentKind.Acuumulator)
+              if (fragType != FragmentKind.Accumulator)
                 immutable.Seq(
                   frag,
                   matrixPtr,
@@ -79,7 +79,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         matrixAcc |> acc(env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
           val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
-          val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, FragmentKind.Acuumulator)
+          val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, FragmentKind.Accumulator)
 
           C.AST.ExprStmt(C.AST.FunCall(
             C.AST.DeclRef("nvcuda::wmma::store_matrix_sync"),
@@ -277,7 +277,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       cuda.ast.WmmaAMatrix(m, n, k, typ(dataType), layout)
     case FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layout) =>
       cuda.ast.WmmaBMatrix(m, n, k, typ(dataType), layout)
-    case FragmentType(m, n, k, dataType, FragmentKind.Acuumulator, _) =>
+    case FragmentType(m, n, k, dataType, FragmentKind.Accumulator, _) =>
       cuda.ast.WmmaAccumulator(m, n, k, typ(dataType))
     case shine.DPIA.Types.f16 =>
       cuda.ast.Type.half
