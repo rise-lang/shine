@@ -7,7 +7,11 @@ object monad {
     def return_[T] : T => M[T]
     def bind[T,S] : M[T] => (T => M[S]) => M[S]
     def traverse[A] : Seq[M[A]] => M[Seq[A]] =
-      _.foldRight(return_(Nil : Seq[A]))({case (mx, mxs) =>
+      _.foldRight(return_(Seq() : Seq[A]))({case (mx, mxs) =>
+        bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
+    // FIXME: We should be able to use S[_] <: Seq[_] for both
+    def traverseV[A] : Vector[M[A]] => M[Vector[A]] =
+      _.foldRight(return_(Vector() : Vector[A]))({case (mx, mxs) =>
         bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
   }
 

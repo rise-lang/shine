@@ -44,6 +44,7 @@ final case class DepFunType[K <: Kind, +R <: PhraseType](x: K#I, t: R)
                                                         (implicit val kn: KindName[K])
   extends PhraseType {
   override def toString = s"(${x.name}: ${kn.get}) -> $t"
+  val kindName = implicitly(kn)
 }
 
 object PhraseType {

@@ -8,6 +8,7 @@ import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck._
 import shine.DPIA._
+import shine.DPIA.Phrases.traverse._
 import shine.DPIA.primitives.functional.NatAsIndex
 
 sealed trait Phrase[T <: PhraseType] {
@@ -46,6 +47,7 @@ final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
   extends Phrase[K `()->:` T] {
   override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
   override def toString: String = s"Λ(${x.name} : ${kn.get}). $body"
+  val kindName = implicitly(kn)
 }
 
 object DepLambda {
@@ -366,6 +368,9 @@ sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
 
   def xmlPrinter: xml.Elem =
     throw new Exception("xmlPrinter should be implemented by a macro")
+
+  def traverse[M[_]](f: Traversal[M]): M[Phrase[T]] =
+    throw new Exception("traverse should be implemented by a macro")
 
   def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T] =
     throw new Exception("visitAndRebuild should be implemented by a macro")
