@@ -40,6 +40,49 @@ object Primitive {
     def makeLowerCaseName(s: String): String =
       s"${Character.toLowerCase(s.charAt(0))}${s.substring(1)}"
 
+    def makeTraverse(name: TypeName,
+                     additionalParams: List[ValDef],
+                     params: List[ValDef]): Tree = {
+
+      val paramNames = params.map { case ValDef(_, name, _, _) => q"$name" }
+      val additionalParamNames = additionalParams.map { case ValDef(_, name, _, _) => q"$name" }
+
+      def forLoopBindings(v : Tree) : List[Tree] = params.map {
+        case ValDef(_, name, tpt, _) => fq"${name} <- ${traverseCall(v, name)(tpt)}"
+      }
+
+      def traverseCall(v : Tree, name : TermName) : Tree => Tree = {
+        case Ident(TypeName("DataType")) | Ident(TypeName("ScalarType")) |
+             Ident(TypeName("BasicType")) => q"$v.datatype($name)"
+        case Ident(TypeName("Data")) => q"$v.data($name)"
+        case Ident(TypeName("Nat")) => q"$v.nat($name)"
+        case Ident(TypeName("NatIdentifier")) => q"$v.nat($name)"
+        case Ident(TypeName("NatToNat")) => q"$v.natToNat($name)"
+        case Ident(TypeName("NatToData")) => q"$v.natToData($name)"
+        case Ident(TypeName("AccessType")) => q"$v.accessType($name)"
+        case Ident(TypeName("AddressSpace")) => q"$v.addressSpace($name)"
+        // Phrase[ExpType]
+        case AppliedTypeTree((Ident(TypeName("Phrase")), _)) => q"$v.phrase($name)"
+        // Vector[Phrase[ExpType]]
+        case AppliedTypeTree((Ident(TypeName("Vector")),
+        List(AppliedTypeTree((Ident(TypeName("Phrase")), _)))))
+             |   AppliedTypeTree((Ident(TypeName("Seq")),
+        List(AppliedTypeTree((Ident(TypeName("Phrase")), _))))) => q"$name.map($v.phrase(_))"
+        case _ =>
+          c.error(c.enclosingPosition, s"could not translate `${name.toString}'\n")
+          q"$name"
+      }
+
+      val v = q"v"
+      q"""
+        override def traverse[M[_]]($v: shine.DPIA.Phrases.traverse.Traversal[M]): M[$name] = {
+          import shine.DPIA.Phrases.traverse._
+          import scala.language.implicitConversions
+          for (..${forLoopBindings(v)}) yield new $name (..${additionalParamNames}, ..${paramNames})
+        }
+      """
+    }
+
     def makeVisitAndRebuild(name: TypeName,
                             additionalParams: List[ValDef],
                             params: List[ValDef]): Tree = {
@@ -185,12 +228,16 @@ object Primitive {
     }
 
     def makePrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
+      val traverseMissinng =
+        body.collectFirst({ case DefDef(_, TermName("traverseMissing"), _, _, _, _) => ()}).isEmpty
       val visitAndRebuildMissing =
         body.collectFirst({ case DefDef(_, TermName("visitAndRebuild"), _, _, _, _) => ()}).isEmpty
       val xmlPrinterMissing =
         body.collectFirst({ case DefDef(_, TermName("xmlPrinter"), _, _, _, _) => ()}).isEmpty
 
       val generated = q"""
+          ${if (traverseMissinng) makeTraverse(name, additionalParams, params) else q""}
+
           ${if (visitAndRebuildMissing)
         makeVisitAndRebuild(name, additionalParams, params)
       else q""}

@@ -47,7 +47,6 @@ final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
   extends Phrase[K `()->:` T] {
   override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
   override def toString: String = s"Λ(${x.name} : ${kn.get}). $body"
-  val kindName = implicitly(kn)
 }
 
 object DepLambda {

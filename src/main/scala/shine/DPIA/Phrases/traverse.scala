@@ -1,5 +1,6 @@
 package shine.DPIA.Phrases
 
+import scala.language.implicitConversions
 import util.monad
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -15,15 +16,15 @@ object traverse {
   val OptionMonad = monad.OptionMonad
 
   trait ExprTraversal[M[_]] extends Traversal[M] {
-    override def `type` : PhraseType => M[PhraseType] = return_
+    override def `type`[T <: PhraseType] : T => M[T] = return_
   }
   trait PureTraversal extends Traversal[Pure] { override def monad = PureMonad }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
 
   def apply[T <: PhraseType](e : Phrase[T], f : PureTraversal) : Phrase[T] = f.phrase(e).unwrap
   def apply[T <: PhraseType, M[_]](e : Phrase[T], f : Traversal[M]) : M[Phrase[T]] = f.phrase(e)
-  def apply(t : PhraseType, f : PureTraversal) : PhraseType = f.`type`(t).unwrap
-  def apply[M[_]](e : PhraseType, f : Traversal[M]) : M[PhraseType] = f.`type`(e)
+  def apply[T <: PhraseType] (t : T, f : PureTraversal) : T = f.`type`(t).unwrap
+  def apply[T <: PhraseType, M[_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
 
   sealed trait VarType
   case object Binding extends VarType
@@ -53,22 +54,23 @@ object traverse {
     def data: Data => M[Data] = {
       case VectorData(vd) => return_(VectorData(vd) : Data)
       case NatData(n) =>
-      for { n1 <- nat(n) }
-        yield NatData(n1)
+        for { n1 <- nat(n) }
+          yield NatData(n1)
       case IndexData(i, n) =>
-      for { i1 <- nat(i); n1 <- nat(n) }
-        yield IndexData(i1, n1)
+        for { i1 <- nat(i); n1 <- nat(n) }
+          yield IndexData(i1, n1)
       case ArrayData(ad) =>
-      for { ad1 <- monad.traverseV(ad.map(data)) }
-        yield ArrayData(ad1)
+        for { ad1 <- monad.traverseV(ad.map(data)) }
+          yield ArrayData(ad1)
       case PairData(l, r) =>
-      for { l1 <- data(l); r1 <- data(r) }
-        yield PairData(l1, r1)
+        for { l1 <- data(l); r1 <- data(r) }
+          yield PairData(l1, r1)
+      case d => return_(d)
     }
 
-    def datatype[D <: DataType] : D => M[D] = {
-      case NatType => return_(NatType.asInstanceOf[D])
-      case s : ScalarType => return_(s : D)
+    def datatype : DataType => M[DataType] = {
+      case NatType => return_(NatType : DataType)
+      case s : ScalarType => return_(s : DataType)
       case IndexType(size) =>
         for {n1 <- nat(size)}
           yield IndexType(n1)
@@ -80,7 +82,7 @@ object traverse {
           yield DepArrayType(n1, n2d1)
       case VectorType(size, dt) =>
         for {n1 <- nat(size); dt1 <- datatype(dt)}
-          yield VectorType(n1, dt1)
+          yield VectorType(n1, dt1.asInstanceOf[ScalarType])
       case PairType(l, r) =>
         for {l1 <- datatype(l); r1 <- datatype(r)}
           yield PairType(l1, l1)
@@ -92,15 +94,15 @@ object traverse {
           yield NatToDataApply(ntdf1, n1)
     }
 
-    def natToNat[N <: NatToNat]: N => M[N] = {
-      case i: NatToNatIdentifier => return_(i: N)
+    def natToNat: NatToNat => M[NatToNat] = {
+      case i: NatToNatIdentifier => return_(i : NatToNat)
       case NatToNatLambda(n, body) =>
         for {n1 <- typeIdentifierDispatch(Binding)(n); body1 <- nat(body)}
           yield NatToNatLambda(n1, body1)
     }
 
-    def natToData[N <: NatToData]: N => M[N] = {
-      case i: NatToDataIdentifier => return_(i: N)
+    def natToData: NatToData => M[NatToData] = {
+      case i: NatToDataIdentifier => return_(i)
       case NatToDataLambda(n, body) =>
         for {n1 <- typeIdentifierDispatch(Binding)(n); body1 <- datatype(body)}
           yield NatToDataLambda(n1, body1)
@@ -117,12 +119,26 @@ object traverse {
       case dl@DepLambda(i, p) =>
         for {i1 <- typeIdentifierDispatch(Binding)(i); p1 <- phrase(p)}
           yield DepLambda(i1, p1)(dl.kindName)
-      case DepApply(p, i) =>
-        for {p1 <- phrase(p); i1 <- typeIdentifierDispatch(Reference)(i)}
-          yield DepApply(p1, i1)
-      case LetNat(i, defn, body) =>
-        for {i1 <- typeIdentifierDispatch(Binding)(i); defn1 <- phrase(defn); body1 <- phrase(body)}
-          yield LetNat(i1, defn1, body1)
+      case da@DepApply(f, x) => x match {
+        case n: Nat =>
+          for {f1 <- phrase(f); n1 <- nat(n)}
+            yield DepApply[NatKind, T](f1.asInstanceOf[Phrase[NatKind `()->:` T]], n1)
+        case dt: DataType =>
+          for {f1 <- phrase(f); dt1 <- datatype(dt)}
+            yield DepApply[DataKind, T](f1.asInstanceOf[Phrase[DataKind `()->:` T]], dt1)
+        case a: AddressSpace =>
+          for {f1 <- phrase(f); a1 <- addressSpace(a)}
+            yield DepApply[AddressSpaceKind, T](f1.asInstanceOf[Phrase[AddressSpaceKind `()->:` T]], a1)
+        case n2n: NatToNat =>
+          for {f1 <- phrase(f); n2n1 <- natToNat(n2n)}
+            yield DepApply[NatToNatKind, T](f1.asInstanceOf[Phrase[NatToNatKind `()->:` T]], n2n1)
+        case n2d: NatToData =>
+          for {f1 <- phrase(f); n2d1 <- natToData(n2d)}
+            yield DepApply[NatToDataKind, T](f1.asInstanceOf[Phrase[NatToDataKind `()->:` T]], n2d1)
+      }
+      case LetNat(binder, defn, body) =>
+        for {defn1 <- phrase(defn); body1 <- phrase(body)}
+          yield LetNat(binder, defn1, body1)
       case PhrasePair(p, q) =>
         for {p1 <- phrase(p); q1 <- phrase(q)}
           yield PhrasePair(p1, q1)
@@ -150,8 +166,8 @@ object traverse {
       case c: Primitive[T] => c.traverse(this)
     }
 
-    def `type`: PhraseType => M[PhraseType] = {
-      case CommType() => return_(CommType(): PhraseType)
+    def `type`[T <: PhraseType] : T => M[T] = t => (t match {
+      case CommType() => return_(CommType())
       case ExpType(dt, w) =>
         for {dt1 <- datatype(dt); w1 <- accessType(w)}
           yield ExpType(dt1, w1)
@@ -170,6 +186,6 @@ object traverse {
       case df@DepFunType(x, t) =>
         for {x1 <- typeIdentifierDispatch(Binding)(x); t1 <- `type`(t)}
           yield DepFunType(x1, t1)(df.kindName)
-    }
+    }).asInstanceOf[M[T]]
   }
 }
