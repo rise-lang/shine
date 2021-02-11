@@ -7,9 +7,9 @@ import scala.language.implicitConversions
 
 object traverse {
   // Reexport util.monad.*
-  type Monad[M[_]] = monad.Monad[M]
-  type Pure[T] = monad.Pure[T]
-  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: monad.Monad[M]) = monad.monadicSyntax(m)(tc)
+  type Monad[M[+_]] = monad.Monad[M]
+  type Pure[+T] = monad.Pure[T]
+  implicit def monadicSyntax[M[+_], A](m: M[A])(implicit tc: monad.Monad[M]) = monad.monadicSyntax(m)(tc)
   val PureMonad = monad.PureMonad
   val OptionMonad = monad.OptionMonad
 
@@ -17,7 +17,7 @@ object traverse {
   case object Binding extends VarType
   case object Reference extends VarType
 
-  trait Traversal[M[_]] {
+  trait Traversal[M[+_]] {
     protected[this] implicit def monad : Monad[M]
     def return_[T] : T => M[T] = monad.return_
     def bind[T,S] : M[T] => (T => M[S]) => M[S] = monad.bind
@@ -173,7 +173,7 @@ object traverse {
     }
   }
 
-  trait ExprTraversal[M[_]] extends Traversal[M] {
+  trait ExprTraversal[M[+_]] extends Traversal[M] {
     override def `type`[T <: Type] : T => M[T] = return_
   }
 
@@ -181,7 +181,7 @@ object traverse {
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
 
   def apply(e : Expr, f : PureTraversal) : Expr = f.expr(e).unwrap
-  def apply[M[_]](e : Expr, f : Traversal[M]) : M[Expr] = f.expr(e)
+  def apply[M[+_]](e : Expr, f : Traversal[M]) : M[Expr] = f.expr(e)
   def apply[T <: Type](t : T, f : PureTraversal) : T = f.`type`(t).unwrap
-  def apply[T <: Type, M[_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
+  def apply[T <: Type, M[+_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
 }

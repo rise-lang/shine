@@ -8,14 +8,14 @@ import shine.DPIA.Semantics.OperationalSemantics._
 
 object traverse {
   // Reexport util.monad.*
-  type Monad[M[_]] = monad.Monad[M]
-  type Pure[T] = monad.Pure[T]
-  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: monad.Monad[M])
+  type Monad[M[+_]] = monad.Monad[M]
+  type Pure[+T] = monad.Pure[T]
+  implicit def monadicSyntax[M[+_], A](m: M[A])(implicit tc: monad.Monad[M])
     = monad.monadicSyntax(m)(tc)
   val PureMonad = monad.PureMonad
   val OptionMonad = monad.OptionMonad
 
-  trait ExprTraversal[M[_]] extends Traversal[M] {
+  trait ExprTraversal[M[+_]] extends Traversal[M] {
     override def `type`[T <: PhraseType] : T => M[T] = return_
   }
   trait PureTraversal extends Traversal[Pure] {
@@ -28,15 +28,15 @@ object traverse {
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
 
   def apply[T <: PhraseType](e : Phrase[T], f : PureTraversal) : Phrase[T] = f.phrase(e).unwrap
-  def apply[T <: PhraseType, M[_]](e : Phrase[T], f : Traversal[M]) : M[Phrase[T]] = f.phrase(e)
+  def apply[T <: PhraseType, M[+_]](e : Phrase[T], f : Traversal[M]) : M[Phrase[T]] = f.phrase(e)
   def apply[T <: PhraseType] (t : T, f : PureTraversal) : T = f.`type`(t).unwrap
-  def apply[T <: PhraseType, M[_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
+  def apply[T <: PhraseType, M[+_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
 
   sealed trait VarType
   case object Binding extends VarType
   case object Reference extends VarType
 
-  trait Traversal[M[_]] {
+  trait Traversal[M[+_]] {
     implicit def monad: Monad[M]
     def return_[T]: T => M[T] = monad.return_
     def bind[T, S]: M[T] => (T => M[S]) => M[S] = monad.bind
