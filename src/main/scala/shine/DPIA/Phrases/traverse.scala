@@ -31,7 +31,7 @@ object traverse {
   case object Reference extends VarType
 
   trait Traversal[M[_]] {
-    protected[this] implicit def monad: Monad[M]
+    implicit def monad: Monad[M]
     def return_[T]: T => M[T] = monad.return_
     def bind[T, S]: M[T] => (T => M[S]) => M[S] = monad.bind
 
