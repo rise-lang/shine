@@ -18,7 +18,13 @@ object traverse {
   trait ExprTraversal[M[_]] extends Traversal[M] {
     override def `type`[T <: PhraseType] : T => M[T] = return_
   }
-  trait PureTraversal extends Traversal[Pure] { override def monad = PureMonad }
+  trait PureTraversal extends Traversal[Pure] {
+    override def monad = PureMonad
+    override def phrase[T <: PhraseType]: Phrase[T] => Pure[Phrase[T]] = {
+      case c: Primitive[T] => return_(c.traverse(this))
+      case p => super.phrase(p)
+    }
+  }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
 
   def apply[T <: PhraseType](e : Phrase[T], f : PureTraversal) : Phrase[T] = f.phrase(e).unwrap
@@ -68,9 +74,9 @@ object traverse {
       case d => return_(d)
     }
 
-    def datatype : DataType => M[DataType] = {
-      case NatType => return_(NatType : DataType)
-      case s : ScalarType => return_(s : DataType)
+    def datatype[ D <:DataType] : D => M[D] = d => (d match {
+      case NatType => return_(NatType)
+      case s : ScalarType => return_(s)
       case IndexType(size) =>
         for {n1 <- nat(size)}
           yield IndexType(n1)
@@ -85,14 +91,14 @@ object traverse {
           yield VectorType(n1, dt1.asInstanceOf[ScalarType])
       case PairType(l, r) =>
         for {l1 <- datatype(l); r1 <- datatype(r)}
-          yield PairType(l1, l1)
+          yield PairType(l1, r1)
       case pair@DepPairType(x, e) =>
         for {x1 <- typeIdentifierDispatch(Binding)(x); e1 <- datatype(e)}
           yield DepPairType(x1, e1)
       case NatToDataApply(ntdf, n) =>
         for {ntdf1 <- natToData(ntdf); n1 <- nat(n)}
           yield NatToDataApply(ntdf1, n1)
-    }
+    }).asInstanceOf[M[D]]
 
     def natToNat: NatToNat => M[NatToNat] = {
       case i: NatToNatIdentifier => return_(i : NatToNat)
@@ -163,7 +169,7 @@ object traverse {
       case BinOp(op, lhs, rhs) =>
         for {lhs1 <- phrase(lhs); rhs1 <- phrase(rhs)}
           yield BinOp(op, lhs1, rhs1)
-      case c: Primitive[T] => c.traverse(this)
+      case c: Primitive[T] => return_(c)
     }
 
     def `type`[T <: PhraseType] : T => M[T] = t => (t match {
