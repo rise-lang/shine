@@ -1,5 +1,6 @@
 package rise.core
 
+import semantics._
 import rise.core.types._
 import rise.core.DSL.Type.TypeEqual
 import rise.core.ShowRise._
@@ -8,6 +9,19 @@ sealed abstract class Expr {
   val t: Type
   def setType(t: Type): Expr
   override def toString: String = showRise(this)
+  override def hashCode(): Int = this match {
+    case _: Identifier => 17
+    case Lambda(_, e) => 3 * e.hashCode() + 1
+    case App(f, e) => 5 * f.hashCode() + -7 * e.hashCode() + 2
+    case DepLambda(_, e) => 4 * e.hashCode() + 3
+    case DepApp(f, _) => 6 * f.hashCode() + 4
+    case l@Literal(_: ScalarData | _: VectorData) => l.d.hashCode()
+    case Literal(_: NatData) => 91
+    case Literal(_: IndexData) => 93
+    case Literal(_: ArrayData) => 95
+    case Literal(_: PairData) => 97
+    case p: Primitive => p.getClass.hashCode()
+  }
 }
 
 final case class Identifier(name: String)(
