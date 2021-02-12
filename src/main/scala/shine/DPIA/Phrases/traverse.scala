@@ -82,7 +82,7 @@ object traverse {
           yield DepArrayType(n1, n2d1)
       case VectorType(size, dt) =>
         for {n1 <- nat(size); dt1 <- datatype(dt)}
-          yield VectorType(n1, dt1.asInstanceOf[ScalarType])
+          yield VectorType(n1, dt1)
       case PairType(l, r) =>
         for {l1 <- datatype(l); r1 <- datatype(r)}
           yield PairType(l1, r1)
