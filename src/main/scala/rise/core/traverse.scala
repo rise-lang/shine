@@ -40,7 +40,7 @@ object traverse {
     def nat : Nat => M[Nat] = return_
     def addressSpace : AddressSpace => M[AddressSpace] = return_
     def datatype : DataType => M[DataType] = {
-      case i: DataTypeIdentifier => return_(i.asInstanceOf[DataType])
+      case i: DataTypeIdentifier => return_(i)
       case NatType               => return_(NatType : DataType)
       case s : ScalarType        => return_(s : DataType)
       case ArrayType(n, d) =>
@@ -67,14 +67,14 @@ object traverse {
     }
 
     def natToNat : NatToNat => M[NatToNat] = {
-      case i : NatToNatIdentifier => return_(i.asInstanceOf[NatToNat])
+      case i : NatToNatIdentifier => return_(i)
       case NatToNatLambda(x, e) =>
         for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- nat(e) }
           yield NatToNatLambda(x1, e1)
     }
 
     def natToData : NatToData => M[NatToData] = {
-      case i : NatToDataIdentifier => return_(i.asInstanceOf[NatToData])
+      case i : NatToDataIdentifier => return_(i)
       case NatToDataLambda(x, e) =>
         for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- datatype(e) }
           yield NatToDataLambda(x1, e1)
