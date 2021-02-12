@@ -55,7 +55,7 @@ package object autotune {
         case RangeAdd(start, stop, step) => {
           val constraint = step.isEvaluable match {
             case true => ""
-            case false => elem.name + " % " + step.toString + " == 0" + " && "
+            case false => "X['" + elem.name +  "']" + " % " + "X['" + step.toString + "']" + " == 0" + " && "
           }
 
           constraint
@@ -142,7 +142,7 @@ package object autotune {
       val parameterEntry =
         s"""   "${elem.name}" : {
            |       "parameter_type" : "ordinal",
-           |       "values" : "${parameterRange}"
+           |       "values" : ${parameterRange}
            |   },
            |""".stripMargin
 
@@ -158,6 +158,20 @@ package object autotune {
         |""".stripMargin
 
     header + parameterSection + foot
+  }
+
+  def createCall(json:String, constraints:String, path:String):String = {
+    // write json to file to path
+
+    // copy hypermapper driver to path
+
+    // change current directory to path ones
+
+    // call hypermapper script with constraint
+    // add argument rise executable ?
+    val call = "./hypermapper_driver.py --configuration_file " + path + " " + "--constraints " + constraints
+
+    call
   }
 
   def applyBest(e: Expr, samples: Seq[Sample]): Expr = ???
