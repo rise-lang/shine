@@ -3,7 +3,15 @@ package rise.core.types
 import arithexpr.arithmetic.RangeAdd
 import rise.core._
 
-sealed trait Type
+sealed trait Type {
+  override def hashCode(): Int = this match {
+    case TypePlaceholder => 5
+    case TypeIdentifier(n) => 7 * n.hashCode()
+    case FunType(inT, outT) => 11 * inT.hashCode() + 13 * outT.hashCode() + 1
+    case DepFunType(_, t) => 17 * t.hashCode()
+    case dataType: DataType => 19 * dataType.hashCode()
+  }
+}
 
 object TypePlaceholder extends Type {
   override def toString: String = "?"
