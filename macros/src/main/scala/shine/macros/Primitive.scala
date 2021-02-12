@@ -43,7 +43,7 @@ object Primitive {
            Ident(TypeName("BasicType"))                       => Some(fq"${name} <- $v.datatype($name)")
       case Ident(TypeName("Data"))                            => Some(fq"${name} <- $v.data($name)")
       case Ident(TypeName("Nat"))                             => Some(fq"${name} <- $v.nat($name)")
-      case Ident(TypeName("NatIdentifier"))                   => Some(fq"${name} <- $v.typeIdentifierDispatch(shine.DPIA.Phrases.traverse.Reference)($name)") // FIXME: icky
+      case Ident(TypeName("NatIdentifier"))                   => Some(fq"${name} <- $v.nat($name)")
       case Ident(TypeName("NatToNat"))                        => Some(fq"${name} <- $v.natToNat($name)")
       case Ident(TypeName("NatToData"))                       => Some(fq"${name} <- $v.natToData($name)")
       case Ident(TypeName("AccessType"))                      => Some(fq"${name} <- $v.accessType($name)")

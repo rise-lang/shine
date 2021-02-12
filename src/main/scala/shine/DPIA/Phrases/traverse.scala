@@ -48,7 +48,7 @@ object traverse {
       case n2d: NatToDataIdentifier => bind(typeIdentifier(vt)(n2d))(natToData)
     }).asInstanceOf[M[I]]
 
-    def nat: Nat => M[Nat] = return_
+    def nat[N <: Nat] : N => M[N] = return_
     def addressSpace: AddressSpace => M[AddressSpace] = return_
     def accessType: AccessType => M[AccessType] = return_
     def data: Data => M[Data] = {
