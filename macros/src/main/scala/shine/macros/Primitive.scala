@@ -67,13 +67,13 @@ object Primitive {
       }
       val construct = if (additionalParamNames.isEmpty) q"new $name(..$paramNames)"
                       else q"new $name(..$additionalParamNames)(..$paramNames)"
-      val forloop = if (forLoopBindings.isEmpty) q"$construct"
-                    else q"(for (..${forLoopBindings}) yield $construct).unwrap"
+      val forloop = if (forLoopBindings.isEmpty) q"monad.return_($construct)"
+                    else q"for (..${forLoopBindings}) yield $construct"
 
       q"""
-        override def traverse($v: shine.DPIA.Phrases.traverse.PureTraversal): $name = {
+        override def traverse[M[+_]]($v: shine.DPIA.Phrases.traverse.Traversal[M]): M[$name] = {
           import util.monad._
-          implicit val monad: Monad[Pure] = implicitly($v.monad)
+          implicit val monad: Monad[M] = implicitly($v.monad)
           $forloop
         }
       """

@@ -369,7 +369,7 @@ sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
   def xmlPrinter: xml.Elem =
     throw new Exception("xmlPrinter should be implemented by a macro")
 
-  def traverse(f: PureTraversal): Phrase[T] =
+  def traverse[M[+_]](f: Traversal[M]): M[Phrase[T]] =
     throw new Exception("traverse should be implemented by a macro")
 
   def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T] =

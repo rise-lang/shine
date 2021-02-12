@@ -18,13 +18,7 @@ object traverse {
   trait ExprTraversal[M[+_]] extends Traversal[M] {
     override def `type`[T <: PhraseType] : T => M[T] = return_
   }
-  trait PureTraversal extends Traversal[Pure] {
-    override def monad = PureMonad
-    override def phrase[T <: PhraseType]: Phrase[T] => Pure[Phrase[T]] = {
-      case c: Primitive[T] => return_(c.traverse(this))
-      case p => super.phrase(p)
-    }
-  }
+  trait PureTraversal extends Traversal[Pure] { override def monad = PureMonad }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
 
   def apply[T <: PhraseType](e : Phrase[T], f : PureTraversal) : Phrase[T] = f.phrase(e).unwrap
@@ -169,7 +163,7 @@ object traverse {
       case BinOp(op, lhs, rhs) =>
         for {lhs1 <- phrase(lhs); rhs1 <- phrase(rhs)}
           yield BinOp(op, lhs1, rhs1)
-      case c: Primitive[T] => return_(c)
+      case c: Primitive[T] => c.traverse(this)
     }
 
     def `type`[T <: PhraseType] : T => M[T] = t => (t match {
