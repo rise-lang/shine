@@ -21,25 +21,14 @@ package object autotune {
 
   def collectParameters(e: Expr): Parameters = {
     var params = scala.collection.mutable.Set[NatIdentifier]()
-    class NatVisitor extends traversal.Visitor {
-      override def visitNat(n: Nat): traversal.Result[Nat] = {
-        n match {
+    traverse(e, new traverse.PureTraversal {
+      override def nat: Nat => traverse.Pure[Nat] = n =>
+        return_(n.visitAndRebuild({
           case n: NatIdentifier if n.isTuningParam =>
             params += n
-            traversal.Stop(n)
-          case _ =>
-            traversal.Stop(n.visitAndRebuild({
-              case n: NatIdentifier if n.isTuningParam =>
-                params += n
-                n
-              case ae => ae
-            }))
-        }
-      }
-    }
-    traversal.DepthFirstLocalResult(e, new NatVisitor {
-      override def visitType[T <: Type](t: T): traversal.Result[T] =
-        traversal.Stop(traversal.types.DepthFirstLocalResult(t, new NatVisitor))
+            n
+          case ae => ae
+        }))
     })
     params.toSet
   }
