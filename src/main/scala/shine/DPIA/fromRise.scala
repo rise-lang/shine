@@ -77,7 +77,6 @@ object fromRise {
     case rs.PairData(a, b) => OpSem.PairData(data(a), data(b))
     case rs.BoolData(b) => OpSem.BoolData(b)
     case rs.IntData(i) => OpSem.IntData(i)
-    case rs.HalfData(f) => OpSem.HalfData(f)
     case rs.FloatData(f) => OpSem.FloatData(f)
     case rs.DoubleData(d) => OpSem.DoubleData(d)
     case rs.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)

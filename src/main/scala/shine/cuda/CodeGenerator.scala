@@ -10,7 +10,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.DPIA.primitives.functional.AsVectorAligned
+import shine.DPIA.primitives.functional.{AsVectorAligned, Cast}
 import shine.DPIA.primitives.imperative.{AsScalarAcc, Assign}
 import shine.OpenCL.{CodeGenerator => OclCodeGenerator}
 import shine._
@@ -268,6 +268,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       case _ => error(s"unexpected $path")
     }
+
+    case Cast(_, dt, e) if (dt == f16)=>
+      path match {
+        case Nil =>
+          e |> exp(env, Nil, e =>
+            cont(C.AST.FunCall(C.AST.DeclRef("__float2half"), Seq(e))))
+        case _ => error(s"Expected path to be empty")
+      }
 
     case phrase => phrase |> super.exp(env, path, cont)
   }

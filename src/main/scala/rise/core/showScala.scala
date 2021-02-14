@@ -32,7 +32,6 @@ object showScala {
     d match {
       case BoolData(b) => s"BoolData($b)"
       case IntData(i) => s"IntData($i)"
-      case HalfData(f) => s"HalfData(${f}f)"
       case FloatData(f) => s"FloatData(${f}f)"
       case DoubleData(d) => s"DoubleData($d)"
       case NatData(n) => s"NataData(${nat(n)})"
