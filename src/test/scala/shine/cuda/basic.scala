@@ -1,36 +1,28 @@
 package shine.cuda
 
-import shine.DPIA.NatIdentifier
-import shine.DPIA.Phrases._
-import shine.DPIA.Types._
+import shine.DPIA.DSL.{depFun, λ}
+import shine.DPIA.Types.Kind.NatIdentifierMaker
+import shine.DPIA.Types.{NatKind, _}
 import shine.OpenCL.{Global, Local}
 import util.gen
 
 class basic extends test_util.Tests {
 
-  test("id with mapGlobal compiles to syntactically correct Cuda") {
-    val n = NatIdentifier("n")
-    val arr = Identifier("arr", ExpType(ArrayType(n, f32), read))
-    val x = Identifier("x", ExpType(f32, read))
-    val mapId =
-      DepLambda[NatKind](n)(
-        Lambda(arr,
-          shine.cuda.primitives.functional.Map(Local, 'x')(n, f32, f32, Lambda(x, x), arr)
-      ))
+  test("id with mapThreads compiles to syntactically correct Cuda") {
+    val mapId = depFun[NatKind]()(n =>
+      λ(ExpType(ArrayType(n, f32), read))(array =>
+        shine.cuda.primitives.functional.Map(Local, 'x')(n, f32, f32, λ(ExpType(f32, read))(x => x), array))
+    )
 
     val code = gen.cuda.kernel.asStringFromPhrase(mapId)
     println(code)
   }
 
   test("id with mapGlobal compiles to syntactically correct CUDA") {
-    val n = NatIdentifier("n")
-    val arr = Identifier("arr", ExpType(ArrayType(n, f32), read))
-    val x = Identifier("x", ExpType(f32, read))
-    val mapId =
-      DepLambda[NatKind](n)(
-        Lambda(arr,
-          shine.cuda.primitives.functional.Map(Global, 'x')(n, f32, f32, Lambda(x, x), arr)
-        ))
+    val mapId = depFun[NatKind]()(n =>
+      λ(ExpType(ArrayType(n, f32), read))(array =>
+        shine.cuda.primitives.functional.Map(Global, 'x')(n, f32, f32, λ(ExpType(f32, read))(x => x), array))
+    )
 
     val code = gen.cuda.kernel.asStringFromPhrase(mapId)
     println(code)
