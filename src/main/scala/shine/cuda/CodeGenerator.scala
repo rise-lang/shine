@@ -281,12 +281,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   override def typ(dt: DataType): Type = dt match {
-    case FragmentType(m, n, k, dataType, FragmentKind.AMatrix, layout) =>
-      cuda.ast.WmmaAMatrix(m, n, k, typ(dataType), layout)
-    case FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layout) =>
-      cuda.ast.WmmaBMatrix(m, n, k, typ(dataType), layout)
-    case FragmentType(m, n, k, dataType, FragmentKind.Accumulator, _) =>
-      cuda.ast.WmmaAccumulator(m, n, k, typ(dataType))
+    case FragmentType(m, n, k, dataType, fragmentKind, layout) =>
+      cuda.ast.FragmentType(m, n, k, typ(dataType), fragmentKind, layout)
     case shine.DPIA.Types.f16 =>
       cuda.ast.Type.half
     case shine.DPIA.Types.pipeline =>

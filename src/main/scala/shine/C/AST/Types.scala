@@ -3,7 +3,7 @@ package shine.C.AST
 import arithexpr.arithmetic._
 import shine.C
 
-sealed abstract class Type(val const: Boolean) {
+abstract class Type(val const: Boolean) {
   def print: String
 
   override def toString: String = {

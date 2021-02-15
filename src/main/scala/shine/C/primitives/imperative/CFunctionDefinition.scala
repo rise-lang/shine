@@ -127,7 +127,7 @@ object CFunctionDefinition {
     def visitor(decls: mutable.ArrayBuffer[C.AST.Decl]): C.AST.Nodes.VisitAndRebuild.Visitor = {
       new C.AST.Nodes.VisitAndRebuild.Visitor {
         def collect(t: C.AST.Type): Unit = t match {
-          case _: C.AST.BasicType =>
+          case _: C.AST.BasicType | _: shine.cuda.ast.FragmentType =>
           case s: C.AST.StructType =>
             s.fields.foreach { case (ty, _) => collect(ty) }
             decls += C.AST.StructTypeDecl(

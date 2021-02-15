@@ -2,7 +2,7 @@ package shine.cuda.ast
 
 import shine.C.AST.BasicType
 import shine.DPIA.Nat
-import shine.DPIA.Types.{MatrixLayout, MatrixLayoutIdentifier}
+import shine.DPIA.Types.{FragmentKind, MatrixLayout, MatrixLayoutIdentifier}
 
 object Wmma {
   def toString(layout: MatrixLayout): String = {
@@ -19,33 +19,23 @@ object Wmma {
   }
 }
 
-case class WmmaAMatrix(m: Nat,
-                       n: Nat,
-                       k: Nat,
-                       dataType: shine.C.AST.Type,
-                       layout: MatrixLayout)
-  extends BasicType("this should not printed") {
-
-  override def print: String = s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType," +
-    s"${Wmma.toString(layout)}>"
-}
-
-case class WmmaBMatrix(m: Nat,
-                       n: Nat,
-                       k: Nat,
-                       dataType: shine.C.AST.Type,
-                       layout: MatrixLayout)
-  extends BasicType("this should not printed") {
-
-  override def print: String = s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType," +
-    s"${Wmma.toString(layout)}>"
-}
-
-case class WmmaAccumulator(m: Nat,
-                           n: Nat,
-                           k: Nat,
-                           dataType: shine.C.AST.Type)
-  extends BasicType(s"nvcuda::wmma::fragment<nvcuda::wmma::accumulator, $m, $n, $k, $dataType>") {
+case class FragmentType(m: Nat,
+                   n: Nat,
+                   k: Nat,
+                   dataType: shine.C.AST.Type,
+                   fragmentKind: FragmentKind,
+                   layout: MatrixLayout) extends shine.C.AST.Type(false) {
+  override def print: String = {
+    fragmentKind match {
+      case FragmentKind.AMatrix =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
+      case FragmentKind.BMatrix =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
+      case FragmentKind.Accumulator =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::accumulator, $m, $n, $k, $dataType>"
+      case _ => throw new Exception("this should not happen")
+    }
+  }
 }
 
 case class ExternArrayType(override val elemType: shine.C.AST.Type) extends shine.C.AST.ArrayType(elemType, None, false) {

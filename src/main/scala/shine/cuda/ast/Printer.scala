@@ -54,7 +54,7 @@ class Printer extends shine.OpenCL.AST.Printer {
   override def printParamDecl(p: ParamDecl): Unit = {
     if (p.t.const) print("const ")
     p.t match {
-      case b: BasicType => print(s"${b.print} ${p.name}")
+      case b: BasicType => print(s"${b.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
       case _: ArrayType =>
@@ -66,6 +66,17 @@ class Printer extends shine.OpenCL.AST.Printer {
       case _: shine.C.AST.PointerType =>
         throw new Exception(
           "Pointer without address space unsupported in OpenCL")
+    }
+  }
+
+  override def printVarDecl(v: shine.OpenCL.AST.VarDecl): Unit = {
+    v.t match {
+      case f: FragmentType =>
+        if (v.addressSpace != shine.cuda.AddressSpace.Private)
+          throw new Exception("fragments only be stored in private memory!")
+          
+        print(s"${f.print} ${v.name}")
+      case _ => super.printVarDecl(v)
     }
   }
 
