@@ -299,7 +299,7 @@ object lowering {
 
   @rule def untype: Strategy[Rise] = p => Success(p.setType(TypePlaceholder))
 
-  def parallel()(implicit ev: Traversable[Rise]): Strategy[Rise] = mapParCompute
+  def parallel()(implicit ev: Traversable[Rise]): Strategy[Rise] = mapParCompute()
   @rule def mapParCompute()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case e@App(map(), f) if containsComputation()(ev)(f) => Success(omp.mapPar(f) !: e.t)
   }
