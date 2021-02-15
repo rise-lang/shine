@@ -2,8 +2,9 @@ package shine.C.AST
 
 import arithexpr.arithmetic._
 import shine.C
+import shine.cuda.ast.FragmentType
 
-abstract class Type(val const: Boolean) {
+sealed abstract class Type(val const: Boolean) {
   def print: String
 
   override def toString: String = {
@@ -29,7 +30,7 @@ abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr], overri
 
   def getBaseType: Type = {
     elemType match {
-      case _: BasicType => elemType
+      case _: BasicType | _: FragmentType => elemType
       case _: StructType => elemType
       case _: PointerType => elemType
       case _: UnionType => elemType

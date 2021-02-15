@@ -74,7 +74,7 @@ class Printer extends shine.OpenCL.AST.Printer {
       case f: FragmentType =>
         if (v.addressSpace != shine.cuda.AddressSpace.Private)
           throw new Exception("fragments only be stored in private memory!")
-          
+
         print(s"${f.print} ${v.name}")
       case _ => super.printVarDecl(v)
     }
