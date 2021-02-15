@@ -1,9 +1,8 @@
 package rise.Cuda
 
 import rise.core.DSL._
-import rise.core.semantics.HalfData
-import rise.core.{DepApp, Expr, Literal, Primitive}
 import rise.core.types.Nat
+import rise.core.{Expr, Primitive}
 
 object TypedDSL {
   object mapBlock {
