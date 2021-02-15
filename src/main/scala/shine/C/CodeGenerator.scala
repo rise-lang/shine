@@ -821,7 +821,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       d match {
         case NatData(n)       => C.AST.ArithmeticExpr(n)
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
-        case _: IntData | _: FloatData | _: DoubleData | _: BoolData | _: HalfData =>
+        case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {
           case ArrayType(_, ArrayType(_, _)) =>
