@@ -20,7 +20,7 @@ class gemv extends test_util.Tests {
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
   }
   val dot = fun(xs => fun(ys =>
-    zip(xs)(ys) |> toMemFun(mapSeq(mult)) |> reduceSeq(add)(l(0.0f))
+    zip(xs)(ys) |> toMemFun(mapSeq(mult)) |> reduceSeq(add)(lf32(0.0f))
   ))
 
   val high_level = depFun((n: Nat, m: Nat) => fun(
@@ -43,7 +43,7 @@ class gemv extends test_util.Tests {
         zip(xs)(t._1) |>
         split(n) |>
         toLocalFun(mapLocal(
-          reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
+          reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
         )) |>
         mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
       )) |> join
@@ -58,10 +58,10 @@ class gemv extends test_util.Tests {
         reorderWithStride(128) |>
         split(n /^ 128) |>
         toLocalFun(mapLocal(
-          reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
+          reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
         )) |>
         split(128) |>
-        toLocalFun(mapLocal(reduceSeq(add)(l(0.0f)))) |>
+        toLocalFun(mapLocal(reduceSeq(add)(lf32(0.0f)))) |>
         mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
       )) |> join
     ))
@@ -76,9 +76,9 @@ class gemv extends test_util.Tests {
         reorderWithStride(128) |>
         split(n /^ 128) |>
         toLocalFun(mapLocal(
-          reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
+          reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
         )) |>
-        toLocalFun(reduceSeq(add)(l(0.0f))) |>
+        toLocalFun(reduceSeq(add)(lf32(0.0f))) |>
         fun(x => (alpha * x) + (t._2 * beta))
       ))
     ))
@@ -95,7 +95,7 @@ class gemv extends test_util.Tests {
       mapPar(fun(t =>
       zip(xs)(t._1) |>
         split(n) |>
-        toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f)))) |>
+        toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f)))) |>
         mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
       )) |> join
     ))

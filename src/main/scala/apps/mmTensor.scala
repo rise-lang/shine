@@ -17,7 +17,7 @@ import rise.openCL.TypedDSL.{toLocal, toPrivate}
 object mmTensor {
 
   def id: ToBeTyped[Expr] = fun(x => x)
-  def generate2D: ToBeTyped[Expr] = generate(fun(_ => generate(fun(_ => l(0f)))))
+  def generate2D: ToBeTyped[Expr] = generate(fun(_ => generate(fun(_ => lf32(0f)))))
 
   val simpleMatMulWithoutTensorCores: Expr = {
     val dotproduct =
@@ -25,7 +25,7 @@ object mmTensor {
         zip(aRow)(bColumn) |>
           oclReduceSeq(AddressSpace.Private)(fun((n, abPair) =>
             abPair._1 * abPair._2 + n))
-          (l(0.0f)))
+          (lf32(0.0f)))
 
     depFun((m: Nat, n: Nat, k: Nat) => fun(
       (m `.` k `.` f32) ->: (k `.` n `.` f32) ->: (m `.` n `.` f32)
@@ -53,7 +53,7 @@ object mmTensor {
       tensorMMA(
         a |> asFragment |> toPrivate,
         b |> asFragment |> toPrivate,
-        l(0f) |> generateFragment |> toPrivate)
+        lf32(0f) |> generateFragment |> toPrivate)
         |> toPrivate
 
         |> asMatrix
@@ -87,7 +87,7 @@ object mmTensor {
                 abTiles._1 |> transpose |> asFragment |> toPrivate,
                 abTiles._2 |> asFragment |> toPrivate,
                 cTile)))
-            (generateFragment(l(0f))) |>
+            (generateFragment(lf32(0f))) |>
 
             asMatrix |> // mTileFrag.nTileFrag.f32
 
@@ -124,7 +124,7 @@ object mmTensor {
                   abTiles._1 |> transpose |> asFragment |> toPrivate,
                   abTiles._2 |> asFragment |> toPrivate, // leading dimension is k cause the b matrix is transposed!
                   cTile)))
-              (generateFragment(l(0f))) |>
+              (generateFragment(lf32(0f))) |>
 
               asMatrix |> // mTileFrag.nTileFrag.f32
 
@@ -160,7 +160,7 @@ object mmTensor {
                   abTiles._1 |> transpose |> asFragment |> toPrivate,
                   abTiles._2 |> asFragment |> toPrivate,
                   cTile)))
-              (generateFragment(l(0f))) |>
+              (generateFragment(lf32(0f))) |>
 
               asMatrix)) |> // m/mTileFrag.mTileFrag.nTileFrag.f32
 
@@ -235,7 +235,7 @@ object mmTensor {
               (generate2D |>
                 mapSeq(
                   mapSeq(fun(_ =>
-                    generateFragment(l(0f)))))) |> // mTileWarp/mTileFrag.nTileWarp/nTileFrag.WmmaAccumulator
+                    generateFragment(lf32(0f)))))) |> // mTileWarp/mTileFrag.nTileWarp/nTileFrag.WmmaAccumulator
 
               //Write result from fragments to output
               mapSeqUnroll(fun(cTiles =>

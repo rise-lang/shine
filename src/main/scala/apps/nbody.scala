@@ -48,7 +48,7 @@ object nbody {
       update(fst(p1))(snd(p1))(deltaT) o
         oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
           calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
-        ))(vectorFromScalar(l(0.0f))) $ pos
+        ))(vectorFromScalar(lf32(0.0f))) $ pos
     )) $ zip(pos)(vel)
   ))
 
@@ -79,7 +79,7 @@ object nbody {
                     )) $ zip(newP1Chunk)(accDim2._2)
                   )) $ zip(p2Local)(acc)
                 )
-              )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(l(0.0f))))))))
+              )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(lf32(0.0f))))))))
             o split(tileY) o split(tileX) $ pos
           // TODO: toPrivate when it works..
         ) $ zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)

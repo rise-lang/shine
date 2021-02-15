@@ -109,9 +109,9 @@ class stencil extends test_util.Tests {
     override def expr: Expr = {
       depFun((n: Nat) => fun(ArrayType(n, f32))(input =>
         input |>
-        padCst(padSize)(padSize)(l(0.0f)) |>
+        padCst(padSize)(padSize)(lf32(0.0f)) |>
         slide(stencilSize)(1) |>
-        mapGlobal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+        mapGlobal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
       ))
     }
   }
@@ -122,7 +122,7 @@ class stencil extends test_util.Tests {
     override def expr: Expr = {
       depFun((n: Nat) => fun(ArrayType(n, f32))(input =>
         input |>
-        padCst(padSize)(padSize)(l(0.0f)) |>
+        padCst(padSize)(padSize)(lf32(0.0f)) |>
         slide(stencilSize)(1) |>
         partition(3)(n2nFun(m =>
           SteppedCase(m,
@@ -130,7 +130,7 @@ class stencil extends test_util.Tests {
           )
         )) |>
         depMapSeq(mapGlobal(fun(nbh =>
-          oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))(nbh)
+          oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))(nbh)
         ))) |>
         join
       ))
@@ -169,7 +169,7 @@ class stencil extends test_util.Tests {
       }
 
     protected def tileStencil: Expr = {
-      fun(xs => xs |> join |> reduceSeq(add)(l(0.0f)))
+      fun(xs => xs |> join |> reduceSeq(add)(lf32(0.0f)))
     }
   }
 
@@ -179,10 +179,10 @@ class stencil extends test_util.Tests {
     override def expr: Expr = {
       depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, f32)))(input =>
         input |>
-        padCst2D(padSize)(l(0.0f)) |>
+        padCst2D(padSize)(lf32(0.0f)) |>
         slide2D(stencilSize, 1) |>
         mapGlobal(1)(mapGlobal(0)(fun(nbh =>
-          join(nbh) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+          join(nbh) |> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
         )))
       ))
     }
@@ -195,7 +195,7 @@ class stencil extends test_util.Tests {
     override def expr: Expr = {
       depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, f32)))(input =>
         input |>
-        padCst2D(padSize)(l(0.0f)) |>
+        padCst2D(padSize)(lf32(0.0f)) |>
         slide2D(stencilSize, 1) |>
         // partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
         partition(3)(n2nFun(m =>
@@ -204,7 +204,7 @@ class stencil extends test_util.Tests {
         depMapSeq(
           // mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
           mapGlobal(1)(mapGlobal(0)(
-            join >> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+            join >> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
           ))
         ) |>
         join
@@ -214,7 +214,7 @@ class stencil extends test_util.Tests {
 
   private val simpleStencil = depFun((n: Nat) => fun(ArrayType(n, f32))(xs =>
     xs |> slide(3)(1) |> mapSeq(fun(nbh =>
-      nbh |> reduceSeq(fun(a => fun(x => a + x)))(l(0.0f))
+      nbh |> reduceSeq(fun(a => fun(x => a + x)))(lf32(0.0f))
     ))
   ))
 

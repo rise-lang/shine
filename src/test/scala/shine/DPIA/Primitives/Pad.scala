@@ -14,7 +14,7 @@ class Pad extends test_util.Tests {
 
   test("Simple C constant pad input and copy") {
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))(xs =>
-      xs |> padCst(2)(3)(l(5.0f)) |> mapSeq(fun(x => x))
+      xs |> padCst(2)(3)(lf32(5.0f)) |> mapSeq(fun(x => x))
     ))
 
     function.asStringFromExpr(e)
@@ -40,7 +40,7 @@ class Pad extends test_util.Tests {
     import rise.openMP.primitives._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
-      xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
+      xs |> padCst(2)(3)(lf32(5.0f)) |> mapPar(fun(x => x))
     ))
 
     gen.openmp.function.asStringFromExpr(e)
@@ -50,7 +50,7 @@ class Pad extends test_util.Tests {
     import rise.openCL.TypedDSL._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
-      xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
+      xs |> padCst(2)(3)(lf32(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
     gen.opencl.kernel.fromExpr(e)
@@ -60,7 +60,7 @@ class Pad extends test_util.Tests {
     import rise.openCL.TypedDSL._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
-      xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
+      xs |> padCst(2)(0)(lf32(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
     gen.opencl.kernel.fromExpr(e)
@@ -70,7 +70,7 @@ class Pad extends test_util.Tests {
     import rise.openCL.TypedDSL._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
-      xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
+      xs |> padCst(0)(3)(lf32(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
     gen.opencl.kernel.fromExpr(e)

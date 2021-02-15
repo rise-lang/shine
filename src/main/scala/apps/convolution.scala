@@ -19,7 +19,7 @@ object convolution {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
-    }))(l(0.0f))(zip(join(elem))(weights)))
+    }))(lf32(0.0f))(zip(join(elem))(weights)))
 
   val blurXTiled2D: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)

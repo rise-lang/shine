@@ -11,7 +11,7 @@ import rise.openCL.TypedDSL._
 
 // scalastyle:off org.scalastyle.scalariform.MultipleStringLiteralsChecker
 class Barriers extends test_util.Tests {
-  private val sum = oclReduceSeq(Private)(add)(l(0.0f))
+  private val sum = oclReduceSeq(Private)(add)(lf32(0.0f))
 
   // TODO? removing these barriers requires more fine grain analysis to
   // notice that the threads do not actually communicate through the memory

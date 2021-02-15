@@ -25,7 +25,7 @@ class asum extends test_util.TestsWithExecutor {
   val add = fun(x => fun(a => x + a))
 
   val high_level = depFun((n: Nat) =>
-    fun(inputT(n))(input => input |> map(fabs) |> reduceSeq(add)(l(0.0f)))
+    fun(inputT(n))(input => input |> map(fabs) |> reduceSeq(add)(lf32(0.0f)))
   )
 
   test("High level asum type inference works") {
@@ -55,7 +55,7 @@ class asum extends test_util.TestsWithExecutor {
               split(8192) >>
               mapSeq(
                 reduceSeq(fun(a => fun(x => abs(vec(4, f32))(x) + a)))(
-                  vectorFromScalar(l(0.0f))
+                  vectorFromScalar(lf32(0.0f))
                 )
               ) >> asScalar
           ) |> join
@@ -75,7 +75,7 @@ class asum extends test_util.TestsWithExecutor {
         input |>
           split(2048) |>
           mapPar(
-            split(2048) >> mapSeq(reduceSeq(add)(l(0.0f)))
+            split(2048) >> mapSeq(reduceSeq(add)(lf32(0.0f)))
           ) |> join
       )
     )
@@ -94,11 +94,11 @@ class asum extends test_util.TestsWithExecutor {
           split(8192) |>
           mapPar(
             split(128) >>
-              toMemFun(mapSeq(reduceSeq(add)(l(0.0f)))) >>
+              toMemFun(mapSeq(reduceSeq(add)(lf32(0.0f)))) >>
               iterate(6)(
                 depFun((_: Nat) =>
                   split(2) >>
-                    mapSeq(reduceSeq(add)(l(0.0f)))
+                    mapSeq(reduceSeq(add)(lf32(0.0f)))
                 )
               )
           ) |> join
@@ -142,7 +142,7 @@ class asum extends test_util.TestsWithExecutor {
               mapLocal(
                 oclReduceSeq(AddressSpace.Private)(
                   fun(a => fun(x => abs(vec(4, f32))(x) + a))
-                )(vectorFromScalar(l(0.0f)))
+                )(vectorFromScalar(lf32(0.0f)))
               ) >> asScalar
           ) |> join
       )
@@ -173,7 +173,7 @@ class asum extends test_util.TestsWithExecutor {
           split(2048) |>
           mapWorkGroup(
             split(2048) >>
-              mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+              mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
           ) |> join
       )
     )
@@ -208,7 +208,7 @@ class asum extends test_util.TestsWithExecutor {
               mapLocal(
                 oclReduceSeq(AddressSpace.Private)(
                   fun(a => fun(x => abs(f32)(x) + a))
-                )(l(0.0f))
+                )(lf32(0.0f))
               )
           ) |> join
       )
@@ -239,13 +239,13 @@ class asum extends test_util.TestsWithExecutor {
           mapWorkGroup(
             split(128) >>
               toLocalFun(
-                mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+                mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
               ) >>
               toLocalFun(
                 oclIterate(AddressSpace.Local)(6)(
                   depFun((_: Nat) =>
                     split(2) >> mapLocal(
-                      oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+                      oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
                     )
                   )
                 )
@@ -287,7 +287,7 @@ class asum extends test_util.TestsWithExecutor {
               mapLocal(
                 oclReduceSeq(AddressSpace.Private)(
                   fun(a => fun(x => abs(vec(2, f32))(x) + a))
-                )(vectorFromScalar(l(0.0f)))
+                )(vectorFromScalar(lf32(0.0f)))
               ) >> asScalar
           ) |> join
       )

@@ -443,9 +443,9 @@ package object DSL {
   implicit def wrapInNatExpr(n: Nat): ToBeTyped[Literal] = literal(NatData(n))
 
   def l(i: Int): ToBeTyped[Literal] = literal(IntData(i))
-  def l(f: Float): ToBeTyped[Literal] = literal(FloatData(f))
-  def lf16(f: Float): ToBeTyped[Expr] = cast(l(f)) :: f16
-  def l(d: Double): ToBeTyped[Literal] = literal(DoubleData(d))
+  def lf16(f: Float): ToBeTyped[Expr] = cast(lf32(f)) :: f16
+  def lf32(f: Float): ToBeTyped[Literal] = literal(FloatData(f))
+  def lf64(d: Double): ToBeTyped[Literal] = literal(DoubleData(d))
   def l(n: Nat): ToBeTyped[Literal] = literal(NatData(n))
   def lidx(i: Nat, n: Nat): ToBeTyped[Literal] = literal(IndexData(i, n))
   def lvec(v: Seq[ScalarData]): ToBeTyped[Literal] = literal(VectorData(v))
