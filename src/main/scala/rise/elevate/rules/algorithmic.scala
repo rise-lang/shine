@@ -62,6 +62,7 @@ object algorithmic {
       Success(padEmpty(n+m)(in) !: e.t)
   }
 
+  def `map >> reduce |-> reduce`: Strategy[Rise] = reduceMapFusion
   // *g >> reduce f init -> reduce (acc, x => f acc (g x)) init
   @rule def reduceMapFusion: Strategy[Rise] = {
     case e @ App(App(App(r @ ReduceX(), f), init), App(App(map(), g), in)) =>
