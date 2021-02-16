@@ -58,6 +58,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
     steps.foldLeft[Expr](a)({ case (e, (s, expected)) =>
       val debug = BENF(e).get
       val result = s(debug).get
+      //util.dotPrintTmp("rewrite", BENF(result))
       assert_ben_eq(result, expected)
       result
     })
@@ -103,6 +104,25 @@ class separableConvolution2DRewrite extends test_util.Tests {
       idS
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       repeatNTimes(2)(topDown(mapFirstFission))
+        -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
+      skip(1)(mapFusion)
+        -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),
+      idS
+        -> separated(weightsV)(weightsH)
+    ))
+  }
+
+  test("scanline to separated (mapLastFission)") {
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
+      idS
+        -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
+      skip(0)(mapLastFission())
+        -> (P >> Sv >> *(T >> *(Dv) >> Sh) >> *(*(Dh))),
+      skip(1)(mapLastFission())
+        -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh) >> *(*(Dh))),
+      skip(1)(mapLastFission())
+        -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh) >> *(*(Dh))),
+      skip(0)(mapFusion)
         -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
       skip(1)(mapFusion)
         -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),

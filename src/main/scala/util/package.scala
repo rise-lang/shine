@@ -75,13 +75,21 @@ package object util {
   }
 
   def dotPrintTmp(prefix: String, e: rise.core.Expr): Unit = {
-    import scala.language.postfixOps
-    import scala.sys.process._
-
     val dotString = rise.core.dotPrinter.generateDotString(e,
       printTypes = false,
       inlineLambdaIdentifier = true,
       applyNodes = false)
+    dotPrintTmp(prefix, dotString)
+  }
+
+  def dotPrintTmp(prefix: String, s: rise.eqsat.ExprSet): Unit = {
+    dotPrintTmp(prefix, s.generateDotString())
+  }
+
+  def dotPrintTmp(prefix: String, dotString: String): Unit = {
+    import scala.language.postfixOps
+    import scala.sys.process._
+
     val dotFile = File.createTempFile(prefix, ".dot")
     writeToFile(dotFile, dotString)
     val dotPath = dotFile.getPath()
