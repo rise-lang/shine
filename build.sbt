@@ -54,3 +54,7 @@ lazy val arithExpr = (project in file("lib/arithexpr"))
 lazy val executor   = (project in file("lib/executor"))
 
 lazy val elevate    = (project in file("lib/elevate"))
+
+lazy val docs = (project in file("riseAndShine-docs"))
+  .dependsOn(riseAndShine)
+  .enablePlugins(MdocPlugin)
