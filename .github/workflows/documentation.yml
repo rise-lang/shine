@@ -10,13 +10,16 @@ jobs:
   checks:
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
-    container: michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
+
     steps:
       - uses: actions/checkout@v1
       - name: Checkout submodules
         uses: textbook/git-checkout-submodule-action@2.0.0
       - name: Check documentation
-        run: sbt docs/mdoc
+        uses: docker://michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
+        with:
+          entrypoint: sbt
+          args: docs/mdoc
       - uses: actions/setup-node@v2
         with:
           node-version: '12'
