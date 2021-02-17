@@ -9,7 +9,7 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    container: michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
+    container: michelsteuwer/docker-scala-opencl:latest
 
     steps:
       - uses: actions/checkout@v2

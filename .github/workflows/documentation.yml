@@ -16,7 +16,7 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
       - name: Check documentation
-        uses: docker://michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
+        uses: docker://michelsteuwer/docker-scala-opencl:latest
         with:
           entrypoint: sbt
           args: docs/mdoc
@@ -36,7 +36,7 @@ jobs:
           npm run build
 
   deploy-documentation:
-#    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
@@ -44,7 +44,7 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
       - name: Check documentation
-        uses: docker://michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
+        uses: docker://michelsteuwer/docker-scala-opencl:latest
         with:
           entrypoint: sbt
           args: docs/mdoc
