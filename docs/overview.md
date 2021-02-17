@@ -1,5 +1,7 @@
-# Tutorial
-
+---
+title: An overview of the RISE language, and the Shine compiler
+sidebar_label: Overview
+---
 ```scala mdoc:invisible
 import elevate.core._
 import rise.core.DSL.Type._
@@ -15,7 +17,6 @@ import rise.elevate.strategies.traversal._
 import util.gen
 ```
 
-### An overview of the RISE language and the Shine compiler
 Starting from a High-Level RISE Program, and an ELEVATE Optimization
 Strategy the Shine compiler rewrites the high-level program as specified
 by the optimization strategy into a Low-Level RISE Program that encodes 
@@ -24,7 +25,7 @@ all implementation and optimization decisions explicitly.
 The code generator processes the low-level program to generate
 the final Optimized C, OpenMP, OpenCL, or CUDA Program.
 
-### High-Level Program
+## High-Level Program
 This is an example of a high-Level program written in RISE.
 The shown example is the multiplication of a `nxk`-matrix called `A`
 and a mxk-matrix called `B`.
@@ -77,7 +78,7 @@ We can easily print the internal representation of the high-level program:
 println(highLevelProgram.toExpr)
 ```
 
-### Optimization Strategy
+## Optimization Strategy
 This is an example of an optimization strategy written in ELEVATE.
 It describes that the outermost map computation will be performed in
 parallel as well as that the nested map computation and the reduction
@@ -145,7 +146,7 @@ val yetAnotherOptimizationStrategy: Strategy[Rise] =
     optimizationStrategy
 ```
 
-### Rewriting
+## Rewriting
 This function performs the rewriting by applying the given
 optimization strategy to the given program.
 ```scala mdoc:silent
@@ -156,7 +157,7 @@ def rewriting(program: Rise, strategy: Strategy[Rise]): Rise = {
   }
 ```
 
-### Low-Level Program
+## Low-Level Program
 This is the low-level RISE program that is produced by rewriting the
 high-level program using one of the optimization strategies
 ```scala mdoc:silent
@@ -164,7 +165,7 @@ val lowLevelProgram: Rise =
     rewriting(highLevelProgram, optimizationStrategy)
 ```
 
-### Code Generation
+## Code Generation
 This function performs the code generation translating the given
 low-level program to optimized code.
 ```scala mdoc:silent
@@ -176,7 +177,7 @@ def codeGeneration(program: Rise): String = {
   }
 ```
 
-### Optimized Program
+## Optimized Program
 The final optimized program in C, OpenMP, or OpenCL.
 ```scala mdoc
 val optimizedProgram: String =

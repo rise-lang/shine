@@ -1,0 +1,21 @@
+name: Scala CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    container: michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodulues: recursive
+      - name: Compile
+        run: sbt compile
+      - name: Run tests
+        run: sbt test
