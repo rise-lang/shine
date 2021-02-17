@@ -7,14 +7,14 @@ on:
   pull_request:
 
 jobs:
-  checks:
+  check-documentation:
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Checkout submodules
-        uses: textbook/git-checkout-submodule-action@2.0.0
+        run: git submodule update --init --recursive
       - name: Check documentation
         uses: docker://michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
         with:
@@ -34,3 +34,50 @@ jobs:
           npm i
           fi
           npm run build
+
+  deploy-documentation:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+      - name: Check documentation
+        uses: docker://michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
+        with:
+          entrypoint: sbt
+          args: docs/mdoc
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '12'
+      - name: Add key to allow access to repository
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          echo "${{ secrets.GH_PAGES_DEPLOY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          cat <<EOT >> ~/.ssh/config
+          Host github.com
+          HostName github.com
+          IdentityFile ~/.ssh/id_rsa
+          EOT
+      - name: Release to Documentation to GitHub Pages
+        working-directory: docs-website
+        env:
+          USE_SSH: true
+          GIT_USER: git
+          DEPLOYMENT_BRANCH: gh-pages
+        run: |
+          git config --global user.email "actions@gihub.com"
+          git config --global user.name "gh-actions"
+          if [ -e yarn.lock ]; then
+          yarn install --frozen-lockfile
+          elif [ -e package-lock.json ]; then
+          npm ci
+          else
+          npm i
+          fi
+          yarn deploy
