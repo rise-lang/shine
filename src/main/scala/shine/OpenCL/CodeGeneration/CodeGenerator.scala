@@ -468,7 +468,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def natCollectionElemCType(elemT: Type, const: Boolean): Type = OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, elemT)
 
-  override def natCollectionVarDecl(name: String, expr: Expr): VarDecl = OpenCL.AST.VarDecl(name, C.AST.PointerType(this.natBaseType), OpenCL.AddressSpace.Global, Some(expr))
+  override def natCollectionVarDecl(name: String, expr: Expr, const:Boolean = false): VarDecl = OpenCL.AST.VarDecl(name, C.AST.PointerType(this.natBaseType, const), OpenCL.AddressSpace.Global, Some(expr), restrict = true)
+
+  override def natCollectionElemDecl(name: String, elemT: Type, expr: Expr): VarDecl =
+    OpenCL.AST.VarDecl(name, C.AST.PointerType(elemT, const = true), OpenCL.AddressSpace.Global, Some(expr), restrict = true)
 
   override def memcpy(acc: Expr, tgt: Expr, byteLength: Expr): Stmt = {
     val i = freshName("i")

@@ -5,7 +5,7 @@ import shine.DPIA.FunctionalPrimitives.AbstractDepMap
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.IntermediatePrimitives.DepMapGlobalI
+import shine.OpenCL.IntermediatePrimitives.{DepMapGlobalI, DepMapWorkGroupI}
 
 final case class DepMapGlobal(dim:Int)(val n: Nat,
                                        val ft1:NatToData,

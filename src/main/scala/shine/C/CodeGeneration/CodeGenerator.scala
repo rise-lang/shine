@@ -210,7 +210,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          */
 
         exp(dPair, env, List(), buffer => {
-          val bufferOfNats = C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), buffer)
+          val bufferOfNats = C.AST.Cast(natCollectionNatCType(), buffer)
           val elemCount = freshName("count")
           val nats = xs.name
           val dataElementType = getBaseType(typ(inT))
@@ -218,9 +218,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
           C.AST.Block(Vector(
             C.AST.DeclStmt(C.AST.VarDecl(elemCount, C.AST.Type.u32, Some(C.AST.ArraySubscript(bufferOfNats, C.AST.Literal("0"))))),
-            C.AST.DeclStmt(C.AST.VarDecl(nats, C.AST.PointerType(C.AST.Type.u32), Some(C.AST.BinaryExpr(bufferOfNats, C.AST.BinaryOperator.+, C.AST.Literal("1"))))),
-            C.AST.DeclStmt(C.AST.VarDecl(data, C.AST.PointerType(dataElementType),
-              Some(C.AST.Cast(C.AST.PointerType(dataElementType), C.AST.BinaryExpr(C.AST.DeclRef(nats), C.AST.BinaryOperator.+, C.AST.DeclRef(elemCount)))))),
+            C.AST.DeclStmt(
+              natCollectionVarDecl(nats, C.AST.BinaryExpr(bufferOfNats, C.AST.BinaryOperator.+, C.AST.Literal("1")), const = true)
+            ),
+            C.AST.DeclStmt(natCollectionElemDecl(data, dataElementType,
+              C.AST.Cast(natCollectionElemCType(dataElementType), C.AST.BinaryExpr(C.AST.DeclRef(nats), C.AST.BinaryOperator.+, C.AST.DeclRef(elemCount))))),
             {
               val fst = NatCollectionIdentifier(nats)
               val snd = Identifier[ExpType](data, expT(inT, `read`))
@@ -1363,7 +1365,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          case NatCollectionIndexing(ns, idxs) =>
            assert(idxs.length == 1)
            genNat(idxs.head, env, idx => cont(C.AST.ArraySubscript(C.AST.Literal(s"$ns"), idx)))
-         case otherwise => throw new Exception(s"Don't know how to print $otherwise")
+         case otherwise =>
+           throw new Exception(s"Don't know how to print $otherwise")
        }
   }
 
@@ -1402,8 +1405,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   def natCollectionElemCType(elemT: C.AST.Type, const:Boolean = false): C.AST.Type =
     C.AST.PointerType(elemT, const)
 
-  def natCollectionVarDecl(name: String, expr: Expr): C.AST.VarDecl = C.AST.VarDecl(name, natCollectionNatCType(), Some(expr))
-
+  def natCollectionVarDecl(name: String, expr: Expr, const:Boolean = false): C.AST.VarDecl = C.AST.VarDecl(name, natCollectionNatCType(const), Some(expr))
+  def natCollectionElemDecl(name: String, elemT: C.AST.Type, expr: Expr): C.AST.VarDecl = C.AST.VarDecl(name, natCollectionElemCType(elemT), Some(expr))
 
   def memcpy(acc: Expr, tgt: Expr, byteLength:Expr): C.AST.Stmt = {
     C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memcpy"), List(

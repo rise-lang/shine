@@ -4,7 +4,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.DSL.{barrier, parForNatLocal}
+import shine.OpenCL.DSL.{barrier, parForNatLocal, parForNatWorkGroup}
 
 final case class DepMapLocalI(dim:Int) {
   def apply(n: Nat,

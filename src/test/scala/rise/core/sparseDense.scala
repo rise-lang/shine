@@ -2,7 +2,7 @@ package rise.core
 
 import rise.core.TypeLevelDSL._
 import rise.core.TypedDSL._
-import rise.core.primitives._
+import rise.core.primitives.{scanSeqInclusive, _}
 import rise.core.semantics.NatData
 import rise.core.types._
 import rise.openCL.primitives._
@@ -65,9 +65,8 @@ class sparseDense extends test_util.TestsWithExecutor {
         ))))))
   }))
 
-  def dense_to_sparse_ocl_2(n:Nat, m:Nat):ToBeTyped[Expr] = fun((n + 1) `.` NatType)(offs => fun(n `.` m `.` f32)(array => {
-
-    liftNats(offs)(depFun((offs: NatCollection) => // Scope offs at the nat collection level
+  def dense_to_sparse_ocl_parallel(n:Nat, m:Nat):ToBeTyped[Expr] = fun((n + 1) `.` NatType)(offsExpression => fun(n `.` m `.` f32)(array => {
+    liftNats(offsExpression)(depFun((offs: NatCollection) => // Scope offs at the nat collection level
       dpairNats(offs)( // We track the offset as the first element
         array |> // Second element: the matrix
           fun(array => toDepArray(array) |>  // Make the array dependent, to track the position
@@ -95,92 +94,6 @@ class sparseDense extends test_util.TestsWithExecutor {
           reduceSeq(fun(acc => fun(y => acc + (y._1 * (vector `@` y._2)))))(l(0.0f))
       )))|> unDepArray)))
   }))))
-
-
-  val souped_up =  depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.` f32)(vector => {
-    dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
-      matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
-        (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
-          reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
-          |> mapSeq(fun(x => x))
-      ))) |> unDepArray |> mapSeq(fun(row => zip(row)(vector) |>
-        reduceSeq(fun(acc => fun(pair => acc + (pair._1 * pair._2))))(l(0.0f))
-      ))
-    )))
-  }))))
-
-  val souped_up2=  depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.` f32)(vector => {
-    dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
-      matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
-        (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
-          reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
-          |> mapSeq(fun(x => x))
-      ))) |> depMapSeq(depFun((_:Nat) => fun(row => zip(row)(vector) |>
-        reduceSeq(fun(acc => fun(pair => acc + (pair._1 * pair._2))))(l(0.0f))
-      ))) |> unDepArray
-    )))
-  }))))
-
-  val souped_up3 =  depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.` f32)(vector => {
-    dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
-      matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
-        (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
-          reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
-          |> mapSeq(fun(x => x))
-      )) >> depFun((_:Nat) => fun(row => zip(row)(vector) |>
-        reduceSeq(fun(acc => fun(pair => acc + (pair._1 * pair._2))))(l(0.0f))
-      ))) |> unDepArray
-    )))
-  }))))
-
-  val souped_up4=  depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.` f32)(vector => {
-    dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
-      matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
-        (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
-          reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
-          |> mapSeq(fun(x => x))
-          |> fun(x => zip(x)(vector))
-          |> reduceSeq(fun(acc => fun(pair => acc + (pair._1 * pair._2))))(l(0.0f))
-      ))) |> unDepArray
-    )))
-  }))))
-
-  val souped_up5 =  depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.` f32)(vector => {
-    dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
-      matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
-        (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m)))) |>
-          reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
-          |> fun(row => zip(row |> mapSeq(fun(x => x)))(vector))
-          |> reduceSeq(fun(acc => fun(pair => acc + (pair._1 * pair._2))))(l(0.0f))
-      ))) |> unDepArray
-    )))
-  }))))
-
-  val souped_up6 =  depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.` f32)(vector => {
-    dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
-      matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
-        (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m))))
-          |> fun(row => zip(row |> reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
-                |> mapSeq(fun(x => x)))(vector)
-          )
-          |> reduceSeq(fun(acc => fun(pair => acc + (pair._1 * pair._2))))(l(0.0f))
-      ))) |> unDepArray
-    )))
-  }))))
-
-  val souped_up7 =  depFun((n:Nat) => depFun((m:Nat) => fun(wrappedCsrMatrix(n, m, f32))(matrixWrap => fun(m `.` f32)(vector => {
-    dmatchNats(matrixWrap)(depFun((ns:NatCollection) => fun(csrMatrix(n, m, ns, f32))(matrix =>
-      matrix |> depMapSeq(depFun((i:Nat) => fun(row =>
-        (row::(((ns `@` (i+1)) - (ns `@` i)) `.` (f32 x IndexType(m))))
-          |> zip(
-            row |> reduceSeq(fun(acc => fun(y => updateAtIdx(acc)(y._2)(y._1))))(generate(fun(IndexType(m))(_ => l(0.0f))) |> mapSeq(fun(x => x)))
-                |> mapSeq(fun(x => x))
-        )(vector)
-          |> reduceSeq(fun(acc => fun(pair => acc + (pair._1 * pair._2))))(l(0.0f))
-      ))) |> unDepArray
-    )))
-  }))))
-
 
   // sparse_to_dense >> dense_mv >> dense_to_sparse
 
@@ -253,37 +166,127 @@ class sparseDense extends test_util.TestsWithExecutor {
     println(output)
   }
 
-  test("Dense to sparse ocl") {
-    val e1 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_compute_offsetts(n, m)))
-    val e2 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_ocl_2_sequential(n, m)))
+  def runDenseToSparse(logicalSizes: Iterable[Int], filterEach: Int): Iterable[(Int, String)]= {
+    val e2 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_ocl_parallel(n, m)))
 
-    util.gen.CProgram(e1, "dense_to_sparse_1")
+    logicalSizes.map(logicalSize => {
+      val n = logicalSize
+      val m = logicalSize
+      val matrix = Array.tabulate(n)(_ => Array.tabulate(m)(j => if(j % filterEach != 0) 0.0f else j.toFloat))
+      val nonzero = matrix.map(_.filter(_ != 0.0f))
+      val offsets = nonzero.map(_.length).scanLeft(0)(_ + _)
+      val numNNz = nonzero.map(_.length).sum
 
-    val n = 4
-    val m = 4
-    val matrix = Array.tabulate(n)(_ => Array.tabulate(m)(j => if(j % 2 == 0) 0.0f else j.toFloat))
-    val nonzero = matrix.map(_.filter(_ != 0.0f))
-    val offsets = nonzero.map(_.length).scanLeft(0)(_ + _)
-    val numNNz = nonzero.map(_.length).sum
+      val kernelW = util.gen.OpenCLKernel(e2, "dense_to_sparse_2")
+      val kernel = kernelW.copy(
+        kernel = kernelW.kernel
+          .withFallbackOutputSize(SizeInByte((n + 2) * 4 + numNNz * 8))
 
-    val kernelW = util.gen.OpenCLKernel(e2, "dense_to_sparse_2")
-    val kernel = kernelW.copy(
-      kernel = kernelW.kernel
-        .setIntermediateBufferSize(0, SizeInByte(offsets.last * 4))
-        .withFallbackOutputSize(SizeInByte((n + 2) * 4 + numNNz * 8))
-
-    )
-    val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[Float]] `)=>` (Array[Int], Array[Float])]
-      .withSizes(LocalSize(1), GlobalSize(2))
+      )
+      val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[Float]] `)=>` (Array[Int], Array[Float])]
+        .withSizes(LocalSize(256), GlobalSize(2048))
 
 
-    val ((_, nnzpairs), time) =  kernelF(n `,` m `,` offsets `,` matrix)
-    val nnzValues = Array.tabulate(nnzpairs.length/2)(idx => nnzpairs(idx * 2)) // Even indexed elements are the data
-    nnzValues.zip(nonzero.iterator.flatten).map {
-      case (found, expected) => assert(found == expected)
-    }
-    println(time)
+      val ((_, nnzpairs), time) =  kernelF(n `,` m `,` offsets `,` matrix)
+      val nnzValues = Array.tabulate(nnzpairs.length/2)(idx => nnzpairs(idx * 2)) // Even indexed elements are the data
+      nnzValues.zip(nonzero.iterator.flatten).map {
+        case (found, expected) => assert(found == expected)
+      }
+      (logicalSize, time.toString)
+    })
   }
+
+  test("BENCH: Dense to sparse ocl") {
+    val control = List(
+      2 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
+      4 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
+      8 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
+      16 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
+    )
+    val results = control.map {
+      case (density, sizes) =>
+        val results = runDenseToSparse(sizes,  density)
+        density -> results
+    }
+
+    results.foreach {
+      case (density, results) =>
+        println(s"Density: ${1.0/density}")
+        results.foreach(x => println(x))
+    }
+  }
+
+
+  def dense_to_sparse_ocl_parallel_all_steps(n:Nat, m:Nat):ToBeTyped[Expr] =
+    fun(n `.` m `.` f32)(array => {
+      array |>
+        mapGlobal(0)(fun(row => map(fun(x => x =/= l(0.0f)))(row) |> oclCount(AddressSpace.Private) |> indexAsNat)) |>
+        oclToMem(AddressSpace.Global) |>
+        split(n) |>
+           mapGlobal(0)(oclScanSeqInclusive(AddressSpace.Private)(fun(x => fun(y => x + y)))(Literal(NatData(0)))) |>
+        join |>
+        oclToMem(AddressSpace.Global) |>
+        fun(offsExpression =>
+          liftNats(offsExpression)(depFun((offs: NatCollection) =>
+              dpairNats(offs)(
+                array |> toDepArray |>
+                  depMapGlobal(0)(depFun((rowIdx:Nat) => fun(row =>
+                    oclWhichMap(row |> map(fun(x => x =/= l(0.0f))))
+                    (fun(nnzIdx => pair(row `@` nnzIdx)(nnzIdx)))
+                    ((offs `@` (rowIdx + 1)) - (offs `@` rowIdx))
+                  )
+                  ))))))
+  })
+
+  def runDenseToSparseAllInOne(logicalSizes: Iterable[Int], filterEach: Int): Iterable[(Int, String)]= {
+    val e2 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_ocl_parallel_all_steps(n, m)))
+
+    logicalSizes.map(logicalSize => {
+      val n = logicalSize
+      val m = logicalSize
+      val matrix = Array.tabulate(n)(_ => Array.tabulate(m)(j => if(j % filterEach != 0) 0.0f else j.toFloat))
+      val nonzero = matrix.map(_.filter(_ != 0.0f))
+      val numNNz = nonzero.map(_.length).sum
+
+      val kernelW = util.gen.OpenCLKernel(e2, "dense_to_sparse_2")
+      val kernel = kernelW.copy(
+        kernel = kernelW.kernel
+          .withFallbackOutputSize(SizeInByte((n + 2) * 4 + numNNz * 8))
+
+      )
+      val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `)=>` (Array[Int], Array[Float])]
+        .withSizes(LocalSize(256), GlobalSize(2048))
+
+
+      val ((_, nnzpairs), time) =  kernelF(n `,` m `,` matrix)
+      val nnzValues = Array.tabulate(nnzpairs.length/2)(idx => nnzpairs(idx * 2)) // Even indexed elements are the data
+      nnzValues.zip(nonzero.iterator.flatten).map {
+        case (found, expected) => assert(found == expected)
+      }
+      (logicalSize, time.toString)
+    })
+  }
+
+  test("BENCH: Dense to sparse ocl all in one") {
+    val control = List(
+      2 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
+      4 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
+      8 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
+      16 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
+    )
+    val results = control.map {
+      case (density, sizes) =>
+        val results = runDenseToSparseAllInOne(sizes,  density)
+        density -> results
+    }
+
+    results.foreach {
+      case (density, results) =>
+        println(s"Density: ${1.0/density}")
+        results.foreach(x => println(x))
+    }
+  }
+
 
   test("Sparse to dense") {
     val inferred: Expr = TDSL.infer(depFun((n:Nat) => depFun((m:Nat) => sparse_to_dense(n, m))))

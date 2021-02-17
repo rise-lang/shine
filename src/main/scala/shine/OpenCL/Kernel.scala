@@ -11,6 +11,7 @@ import shine.OpenCL.Kernel.PREAMBLE
 import shine.{C, OpenCL}
 import util.{Time, TimeSpan}
 
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import scala.collection.immutable.List
 import scala.collection.Seq
@@ -333,13 +334,26 @@ case class Kernel(decls: Seq[C.AST.Decl],
             GlobalArg.createInput(flattenToArrayOfInts(p.asInstanceOf[Array[(Int, Float)]]))
           case (_: Float, _: Float) =>
             GlobalArg.createInput(p.asInstanceOf[Array[(Float, Float)]].iterator.flatten(x => Iterator(x._1, x._2)).toArray)
+          case (_:Int, _: Int) =>
+            GlobalArg.createInput(p.asInstanceOf[Array[(Int, Int)]].iterator.flatten(x => Iterator(x._1, x._2)).toArray)
           case _ => ???
         }
       case pp: Array[Array[(_, _)]] => pp.head.head match {
         case (_: Int, _: Float) =>
-          GlobalArg.createInput(pp.flatMap(a => flattenToArrayOfInts(a.asInstanceOf[Array[(Int, Float)]])))
+          val flattened = pp.flatMap(a => flattenToArrayOfInts(a.asInstanceOf[Array[(Int, Float)]]))
+          createGlobalArg(flattened)
         case _ => ???
       }
+
+      case dp: KernelScalaInterop.Puttable[_] =>
+        val size = dp.sizeInByte
+        val byteBuffer = ByteBuffer.allocate(size)
+        dp.put(byteBuffer)
+        byteBuffer.flip()
+        val intBuffer = byteBuffer.asIntBuffer()
+        val array = new Array[Int](intBuffer.remaining())
+        intBuffer.get(array)
+        createGlobalArg(array)
 
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
         arg.getClass.getName)
@@ -347,7 +361,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def flattenToArrayOfInts(a: Array[(Int, Float)]): Array[Int] = {
-    a.flatMap{ case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y)) }
+    val result = a.flatMap{ case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y)) }
+
+    result
   }
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
@@ -470,4 +486,70 @@ object Kernel {
       |#define uint8_t uchar
       |#define uint32_t uint
       |""".stripMargin
+}
+
+object KernelScalaInterop {
+  final case class DependentPair[T](fst: Array[Int], data:T)
+  final case class Puttable[T:Put](x:T) {
+    def put(bb: ByteBuffer): Unit = {
+      implicitly[Put[T]].write(this.x, bb)
+    }
+    def sizeInByte: Int = implicitly[Put[T]].sizeInByte(this.x)
+  }
+
+  trait Put[T] {
+    def write(x:T, b: ByteBuffer): Unit
+    def sizeInByte(x: T): Int
+  }
+
+  implicit val writeInt = new Put[Int] {
+    override def write(x: Int, b: ByteBuffer): Unit = b.putInt(x)
+
+    override def sizeInByte(x: Int): Int = 4
+  }
+
+  implicit val writeFloat = new Put[Float] {
+    override def write(x: Float, b: ByteBuffer): Unit = b.putFloat(x)
+
+    override def sizeInByte(x: Float): Int = 4
+  }
+
+  implicit def putPair[A: Put, B: Put] = new Put[(A,B)] {
+    override def write(x: (A, B), b: ByteBuffer): Unit = {
+      implicitly[Put[A]].write(x._1, b)
+      implicitly[Put[B]].write(x._2, b)
+    }
+
+    override def sizeInByte(x: (A, B)): Int =
+      implicitly[Put[A]].sizeInByte(x._1) + implicitly[Put[B]].sizeInByte(x._2)
+  }
+
+  implicit def putArray[A: Put] = new Put[Array[A]] {
+    override def write(x: Array[A], b: ByteBuffer): Unit =
+      x.foreach(implicitly[Put[A]].write(_, b))
+
+    override def sizeInByte(x: Array[A]): Int = {
+      var total = 0
+      for {
+        item <- x
+      } {
+        total += implicitly[Put[A]].sizeInByte(item)
+      }
+      total
+    }
+  }
+
+  implicit def putDepPair[T: Put] = new Put[DependentPair[T]]{
+    override def write(x: DependentPair[T], b: ByteBuffer): Unit = {
+      implicitly[Put[Int]].write(x.fst.length, b)
+      implicitly[Put[Array[Int]]].write(x.fst, b)
+      implicitly[Put[T]].write(x.data, b)
+    }
+
+    override def sizeInByte(x: DependentPair[T]): Int = {
+      val fstSize =  implicitly[Put[Array[Int]]].sizeInByte(x.fst)
+      val dataSize = implicitly[Put[T]].sizeInByte(x.data)
+      4 + fstSize + dataSize
+    }
+  }
 }

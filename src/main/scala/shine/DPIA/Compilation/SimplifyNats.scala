@@ -6,6 +6,8 @@ import shine.DPIA.Types._
 import shine.DPIA._
 
 object SimplifyNats {
+  def apply(p: Phrase[CommType]): Phrase[CommType] = p
+  /*
   def apply(p: Phrase[CommType]): Phrase[CommType] = {
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
@@ -20,7 +22,7 @@ object SimplifyNats {
         }
       }
     })
-  }
+  }*/
 
   def simplifyIndexAndNatExp(p: Phrase[ExpType]): Phrase[ExpType] = {
     p.t.dataType match {

@@ -31,6 +31,13 @@ object primitives {
         expl((k: Nat) => ft1(k) ->: ft2(k)) ->: (n`*.`ft1) ->: (n`*.`ft2)}}}
   }
 
+  @primitive case class depMapWorkgroup(dim: Int) extends Primitive with Builder {
+    impl{ n: Nat =>
+      impl{ ft1: NatToData => impl{ ft2: NatToData =>
+        expl((k: Nat) => ft1(k) ->: ft2(k)) ->: (n`*.`ft1) ->: (n`*.`ft2)}}}
+  }
+
+
   @primitive object oclToMem extends Primitive with Builder {
     impl{ t: DataType => expl((_: AddressSpace) => t ->: t) }
   }

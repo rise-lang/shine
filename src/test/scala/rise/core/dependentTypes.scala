@@ -303,8 +303,6 @@ class dependentTypes extends test_util.TestsWithExecutor {
     {
       val kernelWrap = util.gen.OpenCLKernel(inferred, "ocl_filter")
 
-
-
       val n = 1000
       val array = Array.tabulate(n)(i => i)
       val even = array.filter(_ % 2 == 0)
@@ -349,6 +347,160 @@ class dependentTypes extends test_util.TestsWithExecutor {
     println(time)
   }
 
+  test("OCL filter even numbers in parallel no alloc") {
+    val NUM_THREADS = 4096
+    val e = depFun((n: Nat) =>  fun(n `.` int)(array => array |> split(n/NUM_THREADS) |> mapGlobal(0)(fun(array => {
+      def pred = fun(x => (x % l(2)) =:= l(0))
+      liftN(array |> map(fun(x => (x % l(2)) =:= l(0))) |> oclCount(AddressSpace.Private) |> indexAsNat)(
+        depFun(GoesToRange((n/NUM_THREADS)+1), (count:Nat) => dpair(count)(
+          oclWhichMap(array |> map(pred))(fun(idx => array `@` idx))(count)
+        )))
+    }))))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val kernelWrap = util.gen.OpenCLKernel(e)
+
+    val n = Math.pow(2, 28).toInt
+    val numbers = Array.tabulate(n)(i => i)
+
+    val kernel = kernelWrap.copy(kernel = kernelWrap.kernel.withFallbackOutputSize(SizeInByte((NUM_THREADS + n) * 4)).setIntermediateBufferSize(0, SizeInByte(n * 4)))
+    val kernelF = kernel.as[ScalaFunction `(` Int `,` Array[Int] `)=>` Array[Int]].withSizes(LocalSize(256), GlobalSize(NUM_THREADS))
+
+
+    val (result, time) = kernelF(n `,` numbers)
+
+    //println(result)
+    println(time)
+  }
+
+  def benchmarkSelectQuery(numThreads:Int, inputSize:Int, localSize:Int, pred: ToBeTyped[Expr]): String = {
+    val e = depFun((n: Nat) =>  fun(n `.` int)(array => array |> split(n/numThreads) |> mapGlobal(0)(fun(array => {
+      liftN(array |> map(fun(x => (x % l(2)) =:= l(0))) |> oclCount(AddressSpace.Private) |> indexAsNat)(
+        depFun(GoesToRange((n/numThreads)+1), (count:Nat) => dpair(count)(
+          oclWhichMap(array |> map(pred))(fun(idx => array `@` idx))(count)
+        )))
+    }))))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val kernelWrap = util.gen.OpenCLKernel(e)
+
+    val n = inputSize
+    val numbers = Array.tabulate(n)(i => i)
+
+    val kernel = kernelWrap.copy(kernel = kernelWrap.kernel.withFallbackOutputSize(SizeInByte((numThreads + n) * 4)).setIntermediateBufferSize(0, SizeInByte(n * 4)))
+    val kernelF = kernel.as[ScalaFunction `(` Int `,` Array[Int] `)=>` Array[Int]].withSizes(LocalSize(localSize), GlobalSize(numThreads))
+
+    val (result, time) = kernelF(n `,` numbers)
+
+    //println(result)
+    time.toString
+  }
+
+  test("BENCH: Select query even") {
+    val exponents = List(22, 23, 24, 25, 26, 27)
+    val results = exponents.map(exp => {
+      val inputSize = Math.pow(2, exp).toInt
+      val timing = benchmarkSelectQuery(4096, inputSize, localSize = 256, fun(x => (x % l(2)) =:= l(0)))
+      exp -> timing
+    })
+
+    results.foreach { case (exp, timing) =>
+      println(s"2^${exp} (${Math.pow(2, exp).toInt}: $timing")
+    }
+  }
+
+  test("OCL inner join query") {
+    val NUM_THREADS = 1024
+
+    val e = depFun((n: Nat) => depFun((m: Nat) =>
+      fun(n `.` (int x int))(tableA =>
+        fun(m `.` (int x int))(tableB =>
+          tableA |> mapGlobal(0)(fun(a =>
+            liftN(tableB |> map(fun(b => a._1 =:= b._1)) |> oclCount(AddressSpace.Private) |> indexAsNat)(
+              depFun(GoesToRange(m), (numMatches: Nat) =>
+                dpair(numMatches)(
+                  oclWhichMap(tableB |> map(fun(b => a._1 =:= b._1)))(fun(idx => pair(a._2)(tableB `@` idx)._2))(numMatches)
+                )
+              )
+            )))))))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val kernelWrap = util.gen.OpenCLKernel(e)
+
+    val numItems = Math.pow(2, 14).toInt
+
+    val n = numItems / 2
+    val m = numItems / 2
+    val table1 = Array.tabulate(n)(i => (i, i))
+    val table2 = Array.tabulate(m)(i => (i * 2, 52 + i))
+
+    val kernel = kernelWrap.copy(kernel = kernelWrap.kernel
+      .withFallbackOutputSize(SizeInByte(n * m * 8)))
+
+    val kernelF = kernel.as[ScalaFunction `(` Int `,` `Int` `,` Array[(Int, Int)] `,` Array[(Int, Int)] `)=>` Array[Int]].withSizes(LocalSize(256), GlobalSize(NUM_THREADS))
+
+
+    val (result, time) = kernelF(n `,` m `,` table1 `,` table2)
+
+    println(result)
+    println(time)
+  }
+
+  def benchmarkInnerJoin(n: Int, m: Int, threads: Int, localSize:Int): String = {
+    val NUM_THREADS = threads
+
+    val e = depFun((n: Nat) => depFun((m: Nat) =>
+      fun(n `.` (int x int))(tableA =>
+        fun(m `.` (int x int))(tableB =>
+          tableA |> mapGlobal(0)(fun(a =>
+            liftN(tableB |> map(fun(b => a._1 =:= b._1)) |> oclCount(AddressSpace.Private) |> indexAsNat)(
+              depFun(GoesToRange(m), (numMatches: Nat) =>
+                dpair(numMatches)(
+                  oclWhichMap(tableB |> map(fun(b => a._1 =:= b._1)))(fun(idx => pair(a._2)(tableB `@` idx)._2))(numMatches)
+                )
+              )
+            )))))))
+
+    val inferred: Expr = TDSL.infer(e)
+    println(inferred)
+    print(inferred.t)
+    val kernelWrap = util.gen.OpenCLKernel(e)
+
+    val table1 = Array.tabulate(n)(i => (i, i))
+    val table2 = Array.tabulate(m)(i => (i * 2, 52 + i))
+
+    val kernel = kernelWrap.copy(kernel = kernelWrap.kernel
+      .withFallbackOutputSize(SizeInByte(n * m * 8)))
+
+    val kernelF = kernel.as[ScalaFunction `(` Int `,` `Int` `,` Array[(Int, Int)] `,` Array[(Int, Int)] `)=>` Array[Int]].withSizes(LocalSize(localSize), GlobalSize(NUM_THREADS))
+
+
+    val (_, time) = kernelF(n `,` m `,` table1 `,` table2)
+
+    time.toString
+  }
+
+  test("BENCH: Inner join") {
+    val exponents = List(14)
+    val results = exponents.map(exp => {
+      val inputSize = Math.pow(2, exp).toInt
+      val n = inputSize/2
+      val m = inputSize/2
+      val timing = benchmarkInnerJoin(n, m, 4096, 256)
+      (n, m) -> timing
+    })
+
+    results.foreach { case ((n, m), timing) =>
+      println(s"n x m: $n x $m: $timing")
+    }
+  }
+
   test("bin-centric histogram")  {
     val e =  depFun((numBins: Nat) => depFun((n:Nat) =>
       fun(numBins`.` (f32 x f32))(bins =>
@@ -385,4 +537,68 @@ class dependentTypes extends test_util.TestsWithExecutor {
       println(time)
     }
   }
+
+  test("bfsOcl") {
+    val nextFrontier = depFun((n:Nat) => depFun((m: Nat) => fun(n `.` (NatType x NatType))(nodes =>
+      fun(m `.` NatType)(edges =>
+        depFun((frontierLen: Nat) =>
+          fun(frontierLen `.` NatType)(frontierItems => {
+            fun(n `.` bool)(notSeen =>
+            frontierItems |>
+              mapGlobal(0)(fun(parentIdx =>
+                let(nodes `@` natAsIndex(n)(parentIdx))(fun(parent => {
+                  liftN(parent._1)(depFun(GoesToRange(m), (childOffset: Nat) =>
+                    liftN(parent._2)(depFun(GoesToRange(m), (numChildren: Nat) => {
+                      def myEdges = edges |> drop(childOffset) |> take(numChildren)
+                      def myEdgesCond = myEdges |> map(fun(childIdx => notSeen `@` natAsIndex(n)(childIdx)))
+                      liftN(
+                        myEdgesCond |> oclCount(AddressSpace.Private) |> indexAsNat
+                      )(depFun(GoesToRange(n), (count:Nat) =>
+                        dpair(count)(
+                           oclWhichMap(myEdgesCond)(fun(edgeIdx => myEdges `@` edgeIdx))(count)
+                        )
+                      ))}
+                    ))))
+                })))))
+          })))
+    )))
+
+    val inferred: Expr = TDSL.infer(nextFrontier)
+    println(inferred)
+    print(inferred.t)
+    val program = util.gen.OpenCLKernel(inferred, "bfs")
+  }
+
+  test("bfsMaxDegree") {
+    val nextFrontier = depFun((n:Nat) => depFun((m: Nat) =>
+      depFun((maxDeg:Nat) =>
+        fun(n `.` (NatType x NatType))(nodes =>
+          fun(m `.` NatType)(edges =>
+            depFun((frontierLen: Nat) =>
+              fun(frontierLen `.` NatType)(frontierItems => {
+                fun(n `.` bool)(notSeen => frontierItems |>
+                mapGlobal(0)(fun(parentIdx =>
+                  let(nodes `@` natAsIndex(n)(parentIdx))(fun(parent => {
+                    liftN(parent._1)(depFun((childOffset: Nat) =>
+                      liftN(parent._2)(depFun((numChildren: Nat) => {
+                        def myEdges = edges |> drop(childOffset) |> take(numChildren)
+                        def myEdgesCond = myEdges |> map(fun(childIdx => notSeen `@` natAsIndex(n)(childIdx)))
+                        liftN(
+                          myEdgesCond |> oclCount(AddressSpace.Private) |> indexAsNat
+                        )(depFun(GoesToRange(maxDeg), (count:Nat) =>
+                          dpair(count)(
+                            oclWhichMap(myEdgesCond)(fun(edgeIdx => myEdges `@` edgeIdx))(count)
+                          )
+                        ))}
+                      ))))
+                  })))))
+          })))
+    ))))
+
+    val inferred: Expr = TDSL.infer(nextFrontier)
+    println(inferred)
+    print(inferred.t)
+    val program = util.gen.OpenCLKernel(inferred, "bfs")
+  }
+
 }

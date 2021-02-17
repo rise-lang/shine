@@ -81,6 +81,7 @@ class Printer extends shine.C.AST.CPrinter {
   private def printVarDecl(v: shine.OpenCL.AST.VarDecl): Unit = {
     if (v.addressSpace != AddressSpace.Private) print(s"${v.addressSpace} ")
     if (v.t.const) print("const ")
+    val restrict = ""
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")
@@ -90,8 +91,11 @@ class Printer extends shine.C.AST.CPrinter {
           case None => ""
           case Some(s) => s
         } }]")
-      case p: shine.OpenCL.AST.PointerType => print(s"${toString(p.a)} ${p.valueType}* ${v.name}")
-      case p: shine.C.AST.PointerType => print(s"${p.valueType}* ${v.name}") // Now it shall happen, for I need Variable Declarations of local pointers. throw new Exception("This should not happen")
+      case p: shine.OpenCL.AST.PointerType =>
+        print(s"${toString(p.a)} ${p.valueType}* $restrict ${v.name}")
+      case p: shine.C.AST.PointerType =>
+        val text = s"${p.valueType}* $restrict ${v.name}"
+        print(text) // Now it shall happen, for I need Variable Declarations of local pointers. throw new Exception("This should not happen")
       case _: shine.C.AST.UnionType => ???
     }
     v.init match {

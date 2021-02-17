@@ -20,11 +20,12 @@ case class KernelDecl(override val name: String,
 case class VarDecl(override val name: String,
                    override val t: Type,
                    addressSpace: OpenCL.AddressSpace,
-                   override val init: Option[Expr] = None)
+                   override val init: Option[Expr] = None,
+                   restrict: Boolean = false)
   extends C.AST.VarDecl(name, t, init)
 {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): VarDecl =
-    OpenCL.AST.VarDecl(name, v(t), addressSpace, init.map(VisitAndRebuild(_, v)))
+    OpenCL.AST.VarDecl(name, v(t), addressSpace, init.map(VisitAndRebuild(_, v)), this.restrict)
 }
 
 //case class ParamDecl(override val name: String,

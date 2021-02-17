@@ -38,7 +38,7 @@ object AdaptKernelBody {
                          loopVars: mutable.Set[String]) extends C.AST.Nodes.VisitAndRebuild.Visitor {
         override def pre(n: Node): Result = {
           n match {
-            case OpenCL.AST.VarDecl(name, _: ArrayType, AddressSpace.Private, _) =>
+            case OpenCL.AST.VarDecl(name, _: ArrayType, AddressSpace.Private, _, _) =>
               privateArrayVars.add(name)
 
             case ArraySubscript(DeclRef(name), index) if privateArrayVars.contains(name) =>
@@ -79,7 +79,7 @@ object AdaptKernelBody {
       object Visitor extends C.AST.Nodes.VisitAndRebuild.Visitor
       {
         override def pre(n: Node): Result = n match {
-          case DeclStmt(v@OpenCL.AST.VarDecl(_, _, AddressSpace.Local, _)) =>
+          case DeclStmt(v@OpenCL.AST.VarDecl(_, _, AddressSpace.Local, _, _)) =>
             localVars += v
             Continue(C.AST.Comment(s"${v.name} moved"), this)
           case _ => Continue(n, this)

@@ -159,16 +159,16 @@ object TypeLevelDSL {
 
   // dependent pairs
   object Nat {
-    def `**`(fdt:NatToData): Type = {
+    def `**`(fdt:NatToData): DataType = {
       DepPairType[NatKind](fdt)
     }
 
-    def `**`(f: Nat => DataType): Type = {
+    def `**`(f: Nat => DataType): DataType = {
       val n = NatIdentifier(freshName("n"))
       DepPairType[NatKind](NatToDataLambda(n, f(n)))
     }
 
-    def `**`(x:NatIdentifier, t: DataType): Type = {
+    def `**`(x:NatIdentifier, t: DataType): DataType = {
       DepPairType[NatKind](NatToDataLambda(x, t))
     }
   }
