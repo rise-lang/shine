@@ -1,6 +1,5 @@
 package shine.C
 
-import shine.C.primitives.imperative.CFunctionDefinition
 import shine.C
 
 case class Module(includes: Seq[C.AST.IncludeDirective],
@@ -22,7 +21,4 @@ object Module {
        |${m.decls.map(C.AST.Printer(_)).mkString("\n")}
        |${m.functions.map(f => C.AST.Printer(f.code)).mkString("\n")}
        |""".stripMargin
-
-  def fromCFunDef(gen: C.CodeGenerator)(cFunDef: CFunctionDefinition): Module =
-    cFunDef.translateToModule(gen)
 }

@@ -11,10 +11,12 @@ object ExecuteOpenCL {
 
   // noinspection ScalaUnnecessaryParentheses
   @throws[Exception]
-  def usingDirectory(module: shine.OpenCL.Module, buffer_impl: String, mainSource: String): String = {
-    val genDir = java.nio.file.Files.createTempDirectory("shine-gen").toFile();
+  def usingDirectory(module: shine.OpenCL.Module,
+                     buffer_impl: String,
+                     mainSource: String): String = {
+    val genDir = java.nio.file.Files.createTempDirectory("shine-gen").toFile;
     try {
-      module.dumpToDirectory(genDir)
+      shine.OpenCL.Module.dumpToDirectory(genDir)(module)
       val binPath = s"${genDir.getAbsolutePath}/main"
       val mainPath = s"${genDir.getAbsolutePath}/main.c"
       writeToPath(mainPath,

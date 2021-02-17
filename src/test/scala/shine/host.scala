@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 """
 
   private def checkOutput(m: shine.OpenCL.Module): Unit = {
-    val prog = m.toCString + main
+    val prog = shine.OpenCL.Module.translateToString(m) + main
     util.ExecuteOpenCL(prog, "zero_copy")
     util.ExecuteOpenCL(prog, "one_copy")
   }

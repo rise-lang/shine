@@ -1,6 +1,6 @@
 package util.compiler
 
-import util.compiler.PartialCompiler.{idPC, fullPartialCompiler}
+import util.compiler.PartialCompiler.idPC
 
 object Operations {
   // Composition: PC<<C>>
@@ -44,7 +44,7 @@ object Operations {
   }
 
   // Star: C*
-  def star[S, T](c: S => T): Seq[S] => Seq[T] = ss => ss.map(c(_))
+  def `*`[S, T](c: S => T): Seq[S] => Seq[T] = ss => ss.map(c(_))
 
   // Conditional: COND
   def condC[S, T](pred: S => Boolean,
@@ -75,12 +75,6 @@ object Operations {
       case Left(s1) => pc1(s1)
       case Right(s2) => pc2(s2)
     }
-
-  // Functor: PC_Func
-  def PC_func[S, T, S_, T_](f: S => S_, g: T_ => T): S => (S_, T_ => T) =
-    fullPartialCompiler(f, {
-      case (_, t_) => g(t_)
-    })
 
   // Iteration: DO
   def iterate[S, T](pc: S => (S, T => T),

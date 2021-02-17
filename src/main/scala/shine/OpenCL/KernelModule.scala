@@ -1,7 +1,6 @@
 package shine.OpenCL
 
 import shine.{C, OpenCL}
-import shine.OpenCL.primitives.imperative.OpenCLKernelDefinition
 
 case class KernelModule(decls: Seq[C.AST.Decl],
                         kernels: Seq[OpenCL.Kernel]) {
@@ -18,8 +17,4 @@ object KernelModule {
        |
        |${m.kernels.map(k => OpenCL.AST.Printer(k.code)).mkString("\n")}
        |""".stripMargin
-
-  def fromKernelDef(wgConfig: Option[(LocalSize, GlobalSize)])
-                   (kernelDef: OpenCLKernelDefinition): KernelModule =
-    kernelDef.translateToModule(shine.OpenCL.CodeGenerator())(wgConfig)
 }
