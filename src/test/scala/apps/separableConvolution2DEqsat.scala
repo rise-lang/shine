@@ -13,6 +13,9 @@ import rise.elevate.rules.traversal._
 import rise.elevate.rules.movement._
 import rise.elevate.util.makeClosed
 
+import rise.eqsat.{rules => eqr}
+import rise.eqsat.{strategies => eqs}
+
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
 
@@ -119,29 +122,28 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   private def findRewritePath2(start: Rise, goal: Rise,
-                               rules: immutable.Seq[rise.eqsat.rules.Rule],
-                               // TODO?
-                               // filter: immutable.Seq[rise.eqsat.rules.Rule],
+                               strat: eqs.Strategy,
                                initS: Strategy[Rise] = BENF): Unit = {
     import rise.eqsat.ExprSet
     // FIXME: ad-hoc closing mechanism
     val closedStart = makeClosed(initS(start).get !: start.t)._1
     val closedGoal = makeClosed(eraseType(initS(goal).get) !: start.t)._1
-
+    //util.dotPrintTmp("start", closedStart)
+    //util.dotPrintTmp("goal", closedGoal)
     val set = ExprSet.init(closedStart)
     @tailrec
     def expand(fuel: Int): Unit = {
-      util.printTime("apply everywhere time", rules.foreach { set.applyEverywhere(_) })
+      val modified = util.printTime(s"strat $fuel", strat(set))
       println(s"${set.countRepresentations()} representations using ${set.countNodes()} nodes")
-      //util.dotPrintTmp("set", set)
-      if (/*expansion > 0 &&*/ fuel > 0 && !util.printTime("represents time", set.represents(closedGoal))) {
+      util.dotPrintTmp("set", set)
+      if (modified && fuel > 0 && !util.printTime("represents time", set.represents(closedGoal))) {
         expand(fuel - 1)
       } else {
         println(s"fuel left: $fuel")
       }
     }
 
-    util.printTime("expansion time", expand(5))
+    util.printTime("expansion time", expand(10))
     assert(set.represents(closedGoal), "could not find rewrite path")
   }
 
@@ -149,18 +151,18 @@ class separableConvolution2DEqsat extends test_util.Tests {
 
   test("BENF additive eqsat") {
     val benf = util.printTime("elevate", BENF(base(weights2d)).get)
-    findRewritePath2(base(weights2d), benf, immutable.Seq(
-      rise.eqsat.rules.additiveBetaReduction,
-      rise.eqsat.rules.additiveEtaReduction
-    ), strategies.basic.id)
+    findRewritePath2(base(weights2d), benf, eqs.normalize(eqs.any(
+      eqs.applyTopDown(eqr.betaReduction),
+      eqs.applyTopDown(eqr.etaReduction)
+    )), strategies.basic.id)
   }
 
   test("BENF destructive") {
     val benf = util.printTime("elevate", BENF(base(weights2d)).get)
-    findRewritePath2(base(weights2d), benf, immutable.Seq(
-      rise.eqsat.rules.destructiveBetaReduction,
-      rise.eqsat.rules.destructiveEtaReduction
-    ), strategies.basic.id)
+    findRewritePath2(base(weights2d), benf, eqs.normalize(eqs.any(
+      eqs.applyTopDown(eqr.betaReduction, destructive = true),
+      eqs.applyTopDown(eqr.etaReduction, destructive = true)
+    )), strategies.basic.id)
   }
 
   test("base to factorise") {
@@ -170,9 +172,9 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("base to factorise 2") {
-    findRewritePath2(base(weights2d), factorised(weightsV)(weightsH), immutable.Seq(
-      rise.eqsat.rules.separateDotHV(weights2d, weightsH, weightsV)
-    ))
+    findRewritePath2(base(weights2d), factorised(weightsV)(weightsH),
+      eqs.applyTopDown(eqr.separateDotHV(weights2d, weightsH, weightsV))
+    )
   }
 
   // FIXME: does not terminate given 5mn
@@ -191,9 +193,9 @@ class separableConvolution2DEqsat extends test_util.Tests {
       maxTriggers(10)(isEqualTo(primitives.map.primitive)) `;`
       maxTriggers(3)(isEqualTo(primitives.transpose.primitive)))
   }
-
+/*
   // FIXME: something is not working
-  ignore("base to scanline 2") {
+  test("base to scanline 2") {
     findRewritePath2(base(weights2d), scanline(weightsV)(weightsH), immutable.Seq(
       rise.eqsat.rules.separateDotVH(weights2d, weightsH, weightsV),
       rise.eqsat.rules.slideBeforeMap,
@@ -206,7 +208,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
       rise.eqsat.rules.destructiveEtaReduction
     ))
   }
-
+*/
   test("scanline to separated") {
     find_rewrite_path(scanline(weightsV)(weightsH), separated(weightsV)(weightsH), immutable.Seq(
       everywhere(mapLastFission()(default.RiseTraversable)),
@@ -216,11 +218,13 @@ class separableConvolution2DEqsat extends test_util.Tests {
 
   // FIXME: something is not working
   ignore("scanline to separated 2") {
-    findRewritePath2(scanline(weightsV)(weightsH), separated(weightsV)(weightsH), immutable.Seq(
-      rise.eqsat.rules.mapFission,
-      rise.eqsat.rules.destructiveBetaReduction,
-      rise.eqsat.rules.destructiveEtaReduction,
-      rise.eqsat.rules.mapFusion
+    findRewritePath2(scanline(weightsV)(weightsH), separated(weightsV)(weightsH), eqs.seqWithNorm(
+      eqs.normalize(eqs.any(
+        eqs.applyTopDown(eqr.betaReduction, destructive = true),
+        eqs.applyTopDown(eqr.etaReduction, destructive = true)
+      )),
+      eqs.applyTopDown(eqr.mapFission),
+      eqs.applyTopDown(eqr.mapFusion)
     ))
   }
 
@@ -235,9 +239,9 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("base to baseSeq 2") {
-    findRewritePath2(base(weights2d), baseSeq(weights2d), immutable.Seq(
-      rise.eqsat.rules.lowering.reduceSeqUnroll,
-      rise.eqsat.rules.lowering.mapSeq
+    findRewritePath2(base(weights2d), baseSeq(weights2d), eqs.seq(
+      eqs.applyTopDown(eqr.lowering.reduceSeqUnroll),
+      eqs.applyTopDown(eqr.lowering.mapSeq)
     ))
   }
 
@@ -249,9 +253,9 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("factorised to factorisedSeq 2") {
-    findRewritePath2(factorised(weightsV)(weightsH), factorisedSeq(weightsV)(weightsH), immutable.Seq(
-      rise.eqsat.rules.lowering.reduceSeqUnroll,
-      rise.eqsat.rules.lowering.mapSeq
+    findRewritePath2(factorised(weightsV)(weightsH), factorisedSeq(weightsV)(weightsH), eqs.seq(
+      eqs.applyTopDown(eqr.lowering.reduceSeqUnroll),
+      eqs.applyTopDown(eqr.lowering.mapSeq)
     ))
   }
 
@@ -269,10 +273,10 @@ class separableConvolution2DEqsat extends test_util.Tests {
 
   // expansion time: 47ms
   test("separated to separatedSeq 2") {
-    findRewritePath2(separated(weightsV)(weightsH), separatedSeq(weightsV)(weightsH), immutable.Seq(
-      rise.eqsat.rules.lowering.reduceSeqUnroll,
-      rise.eqsat.rules.lowering.mapSeq,
-      rise.eqsat.rules.lowering.toMemAfterMapSeq
+    findRewritePath2(separated(weightsV)(weightsH), separatedSeq(weightsV)(weightsH), eqs.seq(
+      eqs.applyTopDown(eqr.lowering.reduceSeqUnroll),
+      eqs.applyTopDown(eqr.lowering.mapSeq),
+      eqs.applyTopDown(eqr.lowering.toMemAfterMapSeq)
     ))
   }
 
@@ -284,9 +288,9 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("scanline to scanlineSeq 2") {
-    findRewritePath2(scanline(weightsV)(weightsH), scanlineSeq(weightsV)(weightsH), immutable.Seq(
-      rise.eqsat.rules.lowering.reduceSeqUnroll,
-      rise.eqsat.rules.lowering.mapSeq
+    findRewritePath2(scanline(weightsV)(weightsH), scanlineSeq(weightsV)(weightsH), eqs.seq(
+      eqs.applyTopDown(eqr.lowering.reduceSeqUnroll),
+      eqs.applyTopDown(eqr.lowering.mapSeq),
     ))
   }
 
@@ -303,11 +307,11 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("scanline to regRotSeq 2") {
-    findRewritePath2(scanline(weightsV)(weightsH), regRotSeq(weightsV)(weightsH), immutable.Seq(
-      rise.eqsat.rules.lowering.reduceSeqUnroll,
-      rise.eqsat.rules.lowering.mapSeq,
-      rise.eqsat.rules.lowering.rotateValues(fun(x => x)),
-      rise.eqsat.rules.lowering.iterateStream
+    findRewritePath2(scanline(weightsV)(weightsH), regRotSeq(weightsV)(weightsH), eqs.seq(
+      eqs.applyTopDown(eqr.lowering.reduceSeqUnroll),
+      eqs.applyTopDown(eqr.lowering.mapSeq),
+      eqs.applyTopDown(eqr.lowering.rotateValues(fun(x => x))),
+      eqs.applyTopDown(eqr.lowering.iterateStream)
     ))
   }
 }

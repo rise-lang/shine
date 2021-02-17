@@ -6,7 +6,8 @@ import rise.core.types._
 
 import scala.collection.mutable
 
-// TODO: does it make sense use a Set/Map of alternatives?
+// TODO: we could use something like a Map of alternatives/Exprs to quickly find a pattern (e.g. all app nodes)
+// TODO: could we avoid re-applying rules that already triggered?
 final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
   import ExprSet._
 
@@ -14,24 +15,57 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
   override def hashCode(): Int = System.identityHashCode(this)
   override def toString(): String = s"ExprSet ${System.identityHashCode(this)}"
 
-  def add(other: ExprSet, visited: mutable.Set[ExprSet] = mutable.Set.empty): Unit = {
+  // returns whether something was added to the set
+  def add(other: ExprSet, visited: mutable.Set[ExprSet] = mutable.Set.empty): Boolean = {
+    var modified = false
     if (!visited.contains(this)) {
       visited += this
-      if (this == other) { return }
+      if (this == other) { return false }
       assert(this.t == other.t)
-      other.alternatives.foreach { a =>
-        if (!alternatives.exists(_.merge(a, visited))) {
-          alternatives += a
+      other.alternatives.foreach { oa =>
+        val merged = alternatives.exists { ta =>
+          val (merge_success, set_modified) = ta.merge(oa, visited)
+          if (set_modified) modified = true
+          merge_success
+        }
+        if (!merged) {
+          alternatives += oa
+          modified = true
         }
       }
     }
+    modified
   }
 
-  def replace(other: ExprSet): Unit = {
-    if (this == other) { return }
-    assert(this.t == other.t)
-    alternatives.clear()
-    alternatives ++= other.alternatives
+  // calling this can create dead-ends (empty program sets)
+  def remove(trace: Seq[Expr]): Unit = {
+    def exprSetRec(es: ExprSet, trace: Seq[Expr], remove: Boolean = true): Boolean = {
+      trace match {
+        case alternative +: rest =>
+          val idx = es.alternatives.indexOf(alternative)
+          if (idx < 0) {
+            false
+          } else {
+            val e = es.alternatives(idx)
+            if (remove) {
+              es.alternatives.remove(idx)
+            }
+            exprRec(e, rest)
+          }
+        case Nil => true
+      }
+    }
+    def exprRec(e: Expr, trace: Seq[Expr]): Boolean = {
+      e match {
+        case _: Identifier | Literal(_) | Primitive(_) => trace.isEmpty
+        case Lambda(_, _, e) => exprSetRec(e, trace)
+        case App(f, e) => exprSetRec(f, trace) || exprSetRec(e, trace)
+        case DepLambda(_, e) => exprSetRec(e, trace)
+        case DepApp(f, _) => exprSetRec(f, trace)
+      }
+    }
+    // do not remove the first node of the trace
+    assert(exprSetRec(this, trace, false))
   }
 
   def filtered(predicate: Expr => Boolean): ExprSet = {
@@ -56,20 +90,45 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
     }
   }
 
-  def substituteIdent(x: Identifier, v: ExprSet,
-                      visited: mutable.Map[ExprSet, ExprSet] = mutable.Map.empty): ExprSet = {
+  def substituteIdent(x: Identifier, v: ExprSet): ExprSet = {
+    // collect free identifiers upfront, we will need them
+    val freeIdents = mutable.Map[ExprSet, Set[String]]()
+    def exprSetRec(es: ExprSet): Set[String] = {
+      if (!freeIdents.contains(es)) {
+        freeIdents += es -> Set()
+        freeIdents(es) = es.alternatives.iterator.flatMap(exprRec).toSet
+      }
+      freeIdents(es)
+    }
+    def exprRec: Expr => Set[String] = {
+      case i: Identifier => Set(i.name)
+      case Lambda(x, _, e) => exprSetRec(e) - x.name
+      case App(f, e) =>
+        exprSetRec(f) ++ exprSetRec(e)
+      case DepLambda(_, e) => exprSetRec(e)
+      case DepApp(f, _) => exprSetRec(f)
+      case Literal(_) => Set()
+      case Primitive(_) => Set()
+    }
+    exprSetRec(this)
+    substituteIdentRec(x, v, freeIdents, mutable.Map.empty)
+  }
+
+  def substituteIdentRec(x: Identifier, v: ExprSet,
+                         freeIdents: mutable.Map[ExprSet, Set[String]],
+                         visited: mutable.Map[ExprSet, ExprSet]): ExprSet = {
     if (!visited.contains(this)) {
-      if (containsIdent(x.name)) {
+      if (!freeIdents(this)(x.name)) { // avoid rebuilding expressions that are not impacted
+        visited += this -> this
+      } else {
         val alts = mutable.ArrayBuffer[Expr]()
         visited += this -> ExprSet(alts, t)
         alternatives.foreach {
-          _.substituteIdent(x, v, visited) match {
+          _.substituteIdentRec(x, v, freeIdents, visited) match {
             case Left(es) => alts ++= es.alternatives
             case Right(e) => alts += e
           }
         }
-      } else { // avoid rebuilding expressions that are not impacted
-        visited += this -> this
       }
     }
     visited(this)
@@ -85,14 +144,6 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
     }
   }
 
-  def applyEverywhere(r: rules.Rule, visited: mutable.Set[ExprSet] = mutable.Set.empty): Unit = {
-    if (!visited.contains(this)) {
-      visited += this
-      r(this)
-      alternatives.foreach { _.applyEverywhere(r, visited) }
-    }
-  }
-
   def countRepresentations(visited: mutable.Map[ExprSet, Double] = mutable.Map.empty): Double = {
     if (!visited.contains(this)) {
       visited += this -> (1.0/0.0) // recursion creates infinite representations
@@ -101,6 +152,32 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
       }
     }
     visited(this)
+  }
+
+  def removeEmptySets(): Unit = {
+    val counts = mutable.Map.empty[ExprSet, Double]
+    countRepresentations(counts)
+
+    val visited = mutable.Set.empty[ExprSet]
+    def exprSetRec(es: ExprSet): Unit = {
+      if (!visited.contains(es)) {
+        visited += es
+        es.alternatives.filterInPlace { e =>
+          e.countRepresentations(counts) > 0.0
+        }
+        es.alternatives.foreach(exprRec)
+      }
+    }
+    def exprRec: Expr => Unit = {
+      case _: Identifier => ()
+      case Lambda(_, _, e) => exprSetRec(e)
+      case App(f, e) => exprSetRec(f); exprSetRec(e)
+      case DepLambda(_, e) => exprSetRec(e)
+      case DepApp(f, _) => exprSetRec(f)
+      case Literal(_) => ()
+      case Primitive(_) => ()
+    }
+    exprSetRec(this)
   }
 
   def countNodes(visited: mutable.Set[ExprSet] = mutable.Set.empty): Int = {
@@ -142,10 +219,10 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
 
 sealed abstract class Expr {
   import ExprSet._
-
+/*
   override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
   override def hashCode(): Int = System.identityHashCode(this)
-
+*/
   def represents(b: rc.Expr, env: AlphaEqEnv = AlphaEqEnv.empty): Boolean = {
     (this, b) match {
       case (ia: Identifier, ib: rc.Identifier) => env.identifiers.get(ia.name).contains(ib)
@@ -172,7 +249,9 @@ sealed abstract class Expr {
     }
   }
 
-  def substituteIdent(x: Identifier, v: ExprSet, visited: mutable.Map[ExprSet, ExprSet]): Either[ExprSet, Expr] = {
+  def substituteIdentRec(x: Identifier, v: ExprSet,
+                         freeIdents: mutable.Map[ExprSet, Set[String]],
+                         visited: mutable.Map[ExprSet, ExprSet]): Either[ExprSet, Expr] = {
     this match {
       case ia: Identifier =>
         if (ia.name == x.name) {
@@ -181,29 +260,32 @@ sealed abstract class Expr {
           Right(ia)
         }
       case Lambda(xa, t, ea) =>
-        Right(Lambda(xa, t, ea.substituteIdent(x, v, visited)))
+        Right(Lambda(xa, t, ea.substituteIdentRec(x, v, freeIdents, visited)))
       case App(fa, ea) =>
-        Right(App(fa.substituteIdent(x, v, visited), ea.substituteIdent(x, v, visited)))
+        Right(App(fa.substituteIdentRec(x, v, freeIdents, visited),
+          ea.substituteIdentRec(x, v, freeIdents, visited)))
       case DepLambda(xa: NatIdentifier, ea) =>
-        Right(DepLambda[NatKind](xa, ea.substituteIdent(x, v, visited)))
+        Right(DepLambda[NatKind](xa, ea.substituteIdentRec(x, v, freeIdents, visited)))
       case DepLambda(xa: DataTypeIdentifier, ea) =>
-        Right(DepLambda[DataKind](xa, ea.substituteIdent(x, v, visited)))
+        Right(DepLambda[DataKind](xa, ea.substituteIdentRec(x, v, freeIdents, visited)))
       case DepLambda(xa: AddressSpaceIdentifier, ea) =>
-        Right(DepLambda[AddressSpaceKind](xa, ea.substituteIdent(x, v, visited)))
+        Right(DepLambda[AddressSpaceKind](xa, ea.substituteIdentRec(x, v, freeIdents, visited)))
       case DepLambda(_, ea) => ???
-      case DepApp(fa, xa) => Right(DepApp(fa.substituteIdent(x, v, visited), xa))
-      case Literal(da) => Right(this)
+      case DepApp(fa, xa) => Right(DepApp(fa.substituteIdentRec(x, v, freeIdents, visited), xa))
+      case Literal(_) => Right(this)
       case Primitive(_) => Right(this)
     }
   }
 
-  def substituteTypeIdent(x: Kind#I, v: Kind#T, visited: mutable.Map[ExprSet, ExprSet]): Expr = {
+  def substituteTypeIdent(x: Kind#I, v: Kind#T,
+                          visited: mutable.Map[ExprSet, ExprSet]): Expr = {
     this match {
       case ia: Identifier => ia
       case Lambda(xa, t, ea) =>
         Lambda(xa, rc.substitute.kindInType(v, x, t), ea.substituteTypeIdent(x, v, visited))
       case App(fa, ea) =>
-        App(fa.substituteTypeIdent(x, v, visited), ea.substituteTypeIdent(x, v, visited))
+        App(fa.substituteTypeIdent(x, v, visited),
+          ea.substituteTypeIdent(x, v, visited))
       case DepLambda(xa: NatIdentifier, ea) =>
         DepLambda[NatKind](xa, ea.substituteTypeIdent(x, v, visited))
       case DepLambda(xa: DataTypeIdentifier, ea) =>
@@ -218,45 +300,26 @@ sealed abstract class Expr {
     }
   }
 
-  // returns how many alternatives were added
-  def applyEverywhere(r: rules.Rule, visited: mutable.Set[ExprSet]): Unit = {
-    this match {
-      case _: Identifier => ()
-      case Lambda(_, _, ea) => ea.applyEverywhere(r, visited)
-      case App(fa, ea) => fa.applyEverywhere(r, visited); ea.applyEverywhere(r, visited)
-      case DepLambda(_, ea) => ea.applyEverywhere(r, visited)
-      case DepApp(fa, _) => fa.applyEverywhere(r, visited)
-      case Literal(da) => ()
-      case Primitive(_) => ()
-    }
-  }
-
-  def merge(other: Expr, visited: mutable.Set[ExprSet]): Boolean = {
+  // returns (merge_success, set modified)
+  def merge(other: Expr, visited: mutable.Set[ExprSet]): (Boolean, Boolean) = {
     (this, other) match {
-      case (ia: Identifier, ib: Identifier) if ia.name == ib.name => true
+      case (ia: Identifier, ib: Identifier) if ia.name == ib.name => (true, false)
       case (Lambda(xa, ta, ea), Lambda(xb, tb, eb)) if ta == tb =>
-         ea.add(eb.substituteIdent(xb, ExprSet.one(xa, ta)), visited)
-         true
+        (true, ea.add(eb.substituteIdent(xb, ExprSet.one(xa, ta)), visited))
       case (App(fa, ea), App(fb, eb)) if ea.t == eb.t =>
         // implies fa.t == fb.t
-        fa.add(fb, visited)
-        ea.add(eb, visited)
-        true
+        (true, fa.add(fb, visited) | ea.add(eb, visited))
       case (DepLambda(xa: NatIdentifier, ea), DepLambda(xb: NatIdentifier, eb)) =>
-        ea.add(eb.substituteTypeIdent[NatKind](xb, xa), visited)
-        true
+        (true, ea.add(eb.substituteTypeIdent[NatKind](xb, xa), visited))
       case (DepLambda(xa: DataTypeIdentifier, ea), DepLambda(xb: DataTypeIdentifier, eb)) =>
-        ea.add(eb.substituteTypeIdent[DataKind](xb, xa), visited)
-        true
+        (true, ea.add(eb.substituteTypeIdent[DataKind](xb, xa), visited))
       case (DepLambda(xa: AddressSpaceIdentifier, ea), DepLambda(xb: AddressSpaceIdentifier, eb)) =>
-        ea.add(eb.substituteTypeIdent[AddressSpaceKind](xb, xa), visited)
-        true
+        (true, ea.add(eb.substituteTypeIdent[AddressSpaceKind](xb, xa), visited))
       case (DepApp(fa, xa), DepApp(fb, xb)) if (xa == xb) =>
-        fa.add(fb, visited)
-        true
-      case (Literal(da), Literal(db)) if da == db => true
-      case (Primitive(pa), Primitive(pb)) if pa == pb => true
-      case _ => false
+        (true, fa.add(fb, visited))
+      case (Literal(da), Literal(db)) if da == db => (true, false)
+      case (Primitive(pa), Primitive(pb)) if pa == pb => (true, false)
+      case _ => (false, false)
     }
   }
 
@@ -317,16 +380,14 @@ sealed abstract class Expr {
            |""".stripMargin
       case DepApp(f, v) =>
         val vid = s"${id}_v"
-        s"""$id [fillcolor=white, label=depApp]
+        s"""$id [fillcolor=white, label=<depApp $v>]
            |${f.generateDotRec(visited)}
-           |$vid [fillcolor=white, label=$v]
-           |$id -> ${visited(f)} [label=fun]
-           |$id -> $vid [label=arg]
+           |$id -> ${visited(f)}
            |""".stripMargin
       case Literal(d) =>
         s"$id [fillcolor=white, label=<$d>]"
       case Primitive(p) =>
-        s"$id [fillcolor=gray, label=${p.toString.trim}]"
+        s"$id [fillcolor=${"\"#e6e2de\""}, label=${p.toString.trim}]"
     })
   }
 }
