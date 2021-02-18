@@ -31,42 +31,42 @@ object lowering {
     case _ => false
   }
 
-  def `map |-> mapSeq`: Strategy[Rise] = mapSeq
+  def `map -> mapSeq`: Strategy[Rise] = mapSeq
   @rule def mapSeq: Strategy[Rise] = {
     case m@map() => Success(p.mapSeq !: m.t)
   }
 
-  def `map |-> mapPar`: Strategy[Rise] = mapPar
+  def `map -> mapPar`: Strategy[Rise] = mapPar
   @rule def mapPar: Strategy[Rise] = {
     case m@map() => Success(omp.mapPar !: m.t)
   }
 
-  def `map |-> mapStream`: Strategy[Rise] = mapStream
+  def `map -> mapStream`: Strategy[Rise] = mapStream
   @rule def mapStream: Strategy[Rise] = {
     case m@map() => Success(p.mapStream !: m.t)
   }
 
-  def `map |-> iterateStream`: Strategy[Rise] = iterateStream
+  def `map -> iterateStream`: Strategy[Rise] = iterateStream
   @rule def iterateStream: Strategy[Rise] = {
     case m@map() => Success(p.iterateStream !: m.t)
   }
 
-  def `map |-> mapSeqUnroll`: Strategy[Rise] = mapSeqUnroll
+  def `map -> mapSeqUnroll`: Strategy[Rise] = mapSeqUnroll
   @rule def mapSeqUnroll: Strategy[Rise] = {
     case m@map() => Success(p.mapSeqUnroll !: m.t)
   }
 
-  def `map |-> mapGlobal`(dim: Int = 0): Strategy[Rise] = mapGlobal(dim)
+  def `map -> mapGlobal`(dim: Int = 0): Strategy[Rise] = mapGlobal(dim)
   @rule def mapGlobal(dim: Int = 0): Strategy[Rise] = {
     case m@map() => Success(rise.openCL.TypedDSL.mapGlobal(dim) !: m.t)
   }
 
-  def `reduce |-> reduceSeq`: Strategy[Rise] = reduceSeq
+  def `reduce -> reduceSeq`: Strategy[Rise] = reduceSeq
   @rule def reduceSeq: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeq !: e.t)
   }
 
-  def `reduce |-> reduceSeqUnroll`: Strategy[Rise] = reduceSeqUnroll
+  def `reduce -> reduceSeqUnroll`: Strategy[Rise] = reduceSeqUnroll
   @rule def reduceSeqUnroll: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeqUnroll !: e.t)
   }
@@ -267,7 +267,7 @@ object lowering {
   def storeTempAsVectors: Strategy[Rise] =
     innermost(isApplied(isPrimitive(asScalar)))(toMemBefore)
 
-  def `map(f) |-> asVector >> map(f_vec) >> asScalar`(n: Nat): Strategy[Rise] =
+  def `map(f) -> asVector >> map(f_vec) >> asScalar`(n: Nat): Strategy[Rise] =
     vectorize(n)(default.RiseTraversable)
 
   @rule def vectorize(n: Nat)(implicit ev: Traversable[Rise]): Strategy[Rise] = {
