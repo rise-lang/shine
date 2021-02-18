@@ -86,9 +86,9 @@ will be performed sequentially.
 
 ```scala mdoc:silent
 val optimizationStrategy: Strategy[Rise] =
-    (`map |-> mapPar`       `@` outermost(isPrimitive(map)))  `;`
-    (`map |-> mapSeq`       `@` outermost(isPrimitive(map)))  `;`
-    (`reduce |-> reduceSeq` `@` everywhere)
+    (`map -> mapPar`       `@` outermost(isPrimitive(map)))  `;`
+    (`map -> mapSeq`       `@` outermost(isPrimitive(map)))  `;`
+    (`reduce -> reduceSeq` `@` everywhere)
 ```
 
 The shown example demonstrates one possible way to rewrite the high-level
@@ -127,9 +127,9 @@ patterns. It then turns every remaining map into a sequential map, and the
 remaining reduce into a sequential reduction.
 ```scala mdoc:silent
 val anotherOptimizationStrategy: Strategy[Rise] =
-    (`map >> reduce |-> reduce` `@` everywhere) `;`
-    (`map |-> mapSeq`           `@` everywhere) `;`
-    (`reduce |-> reduceSeq`     `@` everywhere)
+    (`map >> reduce -> reduce` `@` everywhere) `;`
+    (`map -> mapSeq`           `@` everywhere) `;`
+    (`reduce -> reduceSeq`     `@` everywhere)
 ```
 
 This strategy vectorizes the computation of the innermost map pattern
@@ -139,8 +139,8 @@ described in the initial optimization strategy.
 ```scala mdoc:silent
 val yetAnotherOptimizationStrategy: Strategy[Rise] =
     innermost(isAppliedMap)(
-      `map(f) |-> asVector >> map(f_vec) >> asScalar`(4) `;`
-      (`map |-> mapSeq` `@` innermost(isPrimitive(map))) `;`
+      `map(f) -> asVector >> map(f_vec) >> asScalar`(4) `;`
+      (`map -> mapSeq` `@` innermost(isPrimitive(map))) `;`
       storeTempAsVectors
     ) `;`
     optimizationStrategy
