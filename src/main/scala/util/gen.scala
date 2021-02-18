@@ -63,9 +63,8 @@ object gen {
       run(SyntaxChecker(_))
 
   private def functionAsString: CModule => String =
-    // FIXME: SyntaxChecker disabled for host code prototype
-    C.Module.translateToString /*_ andThen
-      run(SyntaxChecker(_))*/
+    C.Module.translateToString _ andThen
+      run(SyntaxChecker(_))
 
   object openmp {
     import shine.OpenMP

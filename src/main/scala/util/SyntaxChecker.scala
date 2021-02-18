@@ -4,13 +4,22 @@ import scala.language.postfixOps
 import scala.sys.process._
 
 object SyntaxChecker {
-
   case class Exception(msg: String) extends Throwable
 
+  val defaultOptions = Seq(
+    "-Werror",
+    "-Wno-implicit-function-declaration",
+    "-Wno-parentheses-equality",
+    "-Wno-unused-command-line-argument",
+    "-Iruntime/").mkString(" ")
+
   @throws[SyntaxChecker.Exception]("if code doesn't pass the syntax check")
-  def apply(code: String, extension: String = ".c", options: String = "-Werror -Wno-implicit-function-declaration -Wno-parentheses-equality -Wno-unused-command-line-argument"): Unit = {
+  def apply(code: String, extension: String = ".c", options: String = defaultOptions): Unit = {
     try {
-      s"clang -fsyntax-only $options ${writeToTempFile("code-", extension, code).getAbsolutePath}" !!
+      val f = writeToTempFile("code-", extension,
+      // define loadKernel for syntax checking
+      """#define loadKernel(ctx, k) loadKernelFromFile(ctx, "", "")""" + '\n' + code)
+      s"clang -fsyntax-only $options ${f.getAbsolutePath}" !!
     } catch {
       case _: Throwable =>
         Console.err.println("==========")

@@ -6,7 +6,7 @@ import scala.sys.process._
 object ExecuteOpenCL {
   case class Exception(msg: String) extends Throwable
 
-  val runtimePath = "data/runtime/"
+  val runtimePath = "runtime/"
   val libs = "-lm -lOpenCL"
 
   // noinspection ScalaUnnecessaryParentheses
