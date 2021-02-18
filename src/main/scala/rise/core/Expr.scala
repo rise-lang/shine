@@ -5,11 +5,36 @@ import rise.core.types._
 import rise.core.DSL.Type.TypeEqual
 import rise.core.ShowRise._
 
-sealed abstract class Expr {
-  val t: Type
-  def setType(t: Type): Expr
-  override def toString: String = showRise(this)
-  override def hashCode(): Int = this match {
+object alphaEquiv {
+  val equiv : Expr => Expr => Boolean = a => b => {
+    a.t =~= b.t && ((a, b) match {
+      case (Identifier(na), Identifier(nb)) => na == nb
+      case (Literal(da), Literal(db)) => da == db
+      case (a : Primitive, b : Primitive) => a.name == b.name
+      // Application compares structurally
+      case (App(fa, ea), App(fb, eb)) => equiv(fa)(fb) && equiv(ea)(eb)
+      case (DepApp(fa, xa), DepApp(fb, xb)) => equiv(fa)(fb) && xa == xb
+      // Abstraction compares after substitution
+      case (Lambda(xa, ta), other@Lambda(xb, _)) =>
+        xa.t =~= xb.t && equiv(ta)(typedLifting.liftFunExpr(other).value(xa))
+      case (DepLambda(xa, ea), other@DepLambda(xb, _)) => (xa, xb) match {
+        case (n: NatIdentifier, _: NatIdentifier) =>
+          equiv(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n))
+        case (dt: DataTypeIdentifier, _: DataTypeIdentifier) =>
+          equiv(ea)(typedLifting.liftDepFunExpr[DataKind](other).value(dt))
+        case (addr: AddressSpaceIdentifier, _: AddressSpaceIdentifier) =>
+          equiv(ea)(typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr))
+        case (n2n: NatToNatIdentifier, _: NatToNatIdentifier) =>
+          equiv(ea)(typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n))
+        case (n2d: NatToDataIdentifier, _: NatToDataIdentifier) =>
+          equiv(ea)(typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d))
+        case _ => false
+      }
+      case _ => false
+    })
+  }
+
+  val hash : Expr => Int = {
     case _: Identifier => 17
     case Lambda(_, e) => 3 * e.hashCode() + 1
     case App(f, e) => 5 * f.hashCode() + -7 * e.hashCode() + 2
@@ -24,37 +49,32 @@ sealed abstract class Expr {
   }
 }
 
+sealed abstract class Expr {
+  val t: Type
+  def setType(t: Type): Expr
+  override def toString: String = showRise(this)
+  override def hashCode(): Int = alphaEquiv.hash(this)
+  override def equals(obj : Any) : Boolean = obj match {
+    case other : Expr => alphaEquiv.equiv(this)(other)
+    case _ => true
+  }
+}
+
 final case class Identifier(name: String)(
     override val t: Type
 ) extends Expr {
   override def setType(t: Type): Identifier = this.copy(name)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: Identifier => (other.name == name) && (other.t =~= t)
-    case _                 => false
-  }
 }
 
 final case class Lambda(x: Identifier, e: Expr)(
     override val t: Type
 ) extends Expr {
   override def setType(t: Type): Lambda = this.copy(x, e)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: Lambda =>
-      (other.x.t =~= x.t) && (other.t =~= t) &&
-        (e == typedLifting
-          .liftFunExpr(other)
-          .value(x))
-    case _ => false
-  }
 }
 
 final case class App(f: Expr, e: Expr)(override val t: Type)
     extends Expr {
   override def setType(t: Type): App = this.copy(f, e)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: App => (other.f == f) && (other.e == e) && (other.t =~= t)
-    case _          => false
-  }
 }
 
 final case class DepLambda[K <: Kind: KindName](
@@ -64,34 +84,12 @@ final case class DepLambda[K <: Kind: KindName](
     extends Expr {
   val kindName: String = implicitly[KindName[K]].get
   override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: DepLambda[_] =>
-      val otherWithX = (x, other.x) match {
-        case (n: NatIdentifier, _: NatIdentifier) =>
-          typedLifting.liftDepFunExpr[NatKind](other).value(n)
-        case (dt: DataTypeIdentifier, _: DataTypeIdentifier) =>
-          typedLifting.liftDepFunExpr[DataKind](other).value(dt)
-        case (addr: AddressSpaceIdentifier, _: AddressSpaceIdentifier) =>
-          typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr)
-        case (n2n: NatToNatIdentifier, _: NatToNatIdentifier) =>
-          typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n)
-        case (n2d: NatToDataIdentifier, _: NatToDataIdentifier) =>
-          typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d)
-        case _ => false
-      }
-      e == otherWithX && (other.t =~= t)
-    case _ => false
-  }
 }
 
 final case class DepApp[K <: Kind](f: Expr, x: K#T)(
     override val t: Type
 ) extends Expr {
   override def setType(t: Type): DepApp[K] = this.copy(f, x)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: DepApp[K] => (other.f == f) && (other.x == x) && (other.t =~= t)
-    case _                => false
-  }
 }
 
 final case class Literal(d: semantics.Data) extends Expr {
