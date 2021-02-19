@@ -5,6 +5,7 @@ import rise.core._
 
 object alphaEquiv {
   val equiv : Type => Type => Boolean = a => b => {
+    // TODO: match against normally
     (a.getClass == b.getClass && b.getClass == TypePlaceholder.getClass) ||
     (a.getClass == b.getClass && b.getClass == NatType.getClass) ||
       ((a, b) match {
@@ -36,11 +37,11 @@ object alphaEquiv {
 
 
 sealed trait Type {
-  override def hashCode(): Int = alphaEquiv.hash(this)
-
-  override def equals(o: Any): Boolean = o match {
-    case other : Type => alphaEquiv.equiv(this)(other)
-    case _ => false
+  def =~~=(b: Type): Boolean = alphaEquiv.equiv(this)(b)
+  def =~=(b: Type): Boolean = (this, b) match {
+    case (TypePlaceholder, _) => true
+    case (_, TypePlaceholder) => true
+    case _ => alphaEquiv.equiv(this)(b)
   }
 }
 

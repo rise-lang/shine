@@ -8,7 +8,7 @@ import shine.DPIA.Nat
 
 class structuralEquality extends test_util.Tests {
   test("identity") {
-    assert(fun(x => x).toUntypedExpr == fun(y => y).toUntypedExpr)
+    assert(fun(x => x).toUntypedExpr =~~= fun(y => y).toUntypedExpr)
   }
 
   test("reduce") {
@@ -16,7 +16,7 @@ class structuralEquality extends test_util.Tests {
       depFun((n: Nat) =>
         fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))
       ).toUntypedExpr
-        ==
+        =~=
           depFun((m: Nat) =>
             fun(ArrayType(m, int))(b =>
               reduceSeq(fun(y => fun(x => y + x)))(0)(b)
@@ -79,7 +79,7 @@ class structuralEquality extends test_util.Tests {
   test("dependent function type using an array") {
     assert(
       expl((n: Nat) => expl((a: DataType) => expl((t: DataType) => ArrayType(n, a) ->: t)))
-        ==
+        =~~=
           expl((m: Nat) => expl((b: DataType) => expl((t: DataType) => ArrayType(m, b) ->: t)))
     )
   }

@@ -2,7 +2,6 @@ package rise.core
 
 import semantics._
 import rise.core.types._
-import rise.core.DSL.Type.TypeEqual
 import rise.core.ShowRise._
 
 object alphaEquiv {
@@ -55,11 +54,8 @@ sealed abstract class Expr {
   val t: Type
   def setType(t: Type): Expr
   override def toString: String = showRise(this)
-  override def hashCode(): Int = alphaEquiv.hash(this)
-  override def equals(obj : Any) : Boolean = obj match {
-    case other : Expr => alphaEquiv.equiv(a => b => a =~= b)(this)(other)
-    case _ => true
-  }
+  def =~~=(b : Expr) : Boolean = alphaEquiv.equiv(a => b => a =~~= b)(this)(b)
+  def =~=(b : Expr) : Boolean = alphaEquiv.equiv(a => b => a =~= b)(this)(b)
 }
 
 final case class Identifier(name: String)(
