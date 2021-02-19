@@ -3,13 +3,44 @@ package rise.core.types
 import arithexpr.arithmetic.RangeAdd
 import rise.core._
 
-sealed trait Type {
-  override def hashCode(): Int = this match {
+object alphaEquiv {
+  val equiv : Type => Type => Boolean = a => b => {
+    (a.getClass == b.getClass && b.getClass == TypePlaceholder.getClass) ||
+    (a.getClass == b.getClass && b.getClass == NatType.getClass) ||
+      ((a, b) match {
+      case (TypeIdentifier(na), TypeIdentifier(nb)) => na == nb
+      case (DataTypeIdentifier(na, _), DataTypeIdentifier(nb, _)) => na == nb
+      case (FunType(sa, ta), FunType(sb, tb)) => equiv(sa)(sb) && equiv(ta)(tb)
+      case (DepFunType(xa, ta), other@DepFunType(_, _)) =>
+        equiv(ta)(lifting.liftDependentFunctionType(other)(xa))
+      case (sa : ScalarType, sb : ScalarType) => sa.getClass == sb.getClass
+      case (VectorType(sa, da), VectorType(sb, db)) => sa == sb && equiv(da)(db)
+      case (IndexType(sa), IndexType(sb)) => sa == sb
+      case (DepPairType(xa, ta), other@DepPairType(xb, tb)) =>
+        equiv(ta)(substitute.kindInType(xa, `for` = xb, in = tb))
+      case (NatToDataApply(fa, na), NatToDataApply(fb, nb)) => fa == fb && na == nb
+      case (ArrayType(sa, da), ArrayType(sb, db)) => sa == sb && equiv(da)(db)
+      case (DepArrayType(sa, da), DepArrayType(sb, db)) => sa == sb && da == db
+      case _ => false
+    })
+  }
+
+  val hash : Type => Int = {
     case TypePlaceholder => 5
     case TypeIdentifier(n) => 7 * n.hashCode()
     case FunType(inT, outT) => 11 * inT.hashCode() + 13 * outT.hashCode() + 1
     case DepFunType(_, t) => 17 * t.hashCode()
     case dataType: DataType => 19 * dataType.hashCode()
+  }
+}
+
+
+sealed trait Type {
+  override def hashCode(): Int = alphaEquiv.hash(this)
+
+  override def equals(o: Any): Boolean = o match {
+    case other : Type => alphaEquiv.equiv(this)(other)
+    case _ => false
   }
 }
 
@@ -34,12 +65,6 @@ final case class DepFunType[K <: Kind: KindName, T <: Type](
 ) extends Type {
   override def toString: String =
     s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
-
-  override def equals(obj: Any): Boolean = obj match {
-    case other: DepFunType[K, _] =>
-      t == lifting.liftDependentFunctionType[K](other)(x)
-    case _ => false
-  }
 }
 
 // == Data types ==============================================================
@@ -54,10 +79,6 @@ final case class DataTypeIdentifier(name: String,
   override def toString: String = if (isExplicit) name else "_" + name
   override def asExplicit: DataTypeIdentifier = this.copy(isExplicit = true)
   override def asImplicit: DataTypeIdentifier = this.copy(isExplicit = false)
-  override def equals(that: Any): Boolean = that match {
-    case d: DataTypeIdentifier => this.name == d.name
-    case _                     => false
-  }
   override def hashCode(): Int = this.name.hashCode()
 }
 
@@ -114,14 +135,6 @@ final case class DepPairType[K <: Kind: KindName](
 
   override def toString: String =
     s"(${x.name}: ${kindName.get} ** $t)"
-
-  override def equals(obj: Any): Boolean = obj match {
-    case other: DepPairType[K] =>
-      t == substitute.kindInType[K, DataType](
-        this.x, `for` = other.x, in = other.t
-      )
-    case _ => false
-  }
 
   override def hashCode(): Int = super.hashCode()
 }

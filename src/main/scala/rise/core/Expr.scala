@@ -18,7 +18,7 @@ object alphaEquiv {
       case (DepApp(fa, xa), DepApp(fb, xb)) => equiv(typeEq)(fa)(fb) && xa == xb
       // Abstraction compares after substitution
       case (Lambda(xa, ta), other@Lambda(xb, _)) =>
-        xa.t =~= xb.t && equiv(typeEq)(ta)(typedLifting.liftFunExpr(other).value(xa))
+        typeEq(xa.t)(xb.t) && equiv(typeEq)(ta)(typedLifting.liftFunExpr(other).value(xa))
       case (DepLambda(xa, ea), other@DepLambda(xb, _)) => (xa, xb) match {
         case (n: NatIdentifier, _: NatIdentifier) =>
           equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n))
