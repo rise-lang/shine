@@ -6,28 +6,30 @@ import rise.core.DSL.Type.TypeEqual
 import rise.core.ShowRise._
 
 object alphaEquiv {
-  val equiv : Expr => Expr => Boolean = a => b => {
-    a.t =~= b.t && ((a, b) match {
+  type TYPEEQ = Type => Type => Boolean
+
+  val equiv : TYPEEQ => Expr => Expr => Boolean = typeEq => a => b => {
+    typeEq(a.t)(b.t) && ((a, b) match {
       case (Identifier(na), Identifier(nb)) => na == nb
       case (Literal(da), Literal(db)) => da == db
       case (a : Primitive, b : Primitive) => a.name == b.name
       // Application compares structurally
-      case (App(fa, ea), App(fb, eb)) => equiv(fa)(fb) && equiv(ea)(eb)
-      case (DepApp(fa, xa), DepApp(fb, xb)) => equiv(fa)(fb) && xa == xb
+      case (App(fa, ea), App(fb, eb)) => equiv(typeEq)(fa)(fb) && equiv(typeEq)(ea)(eb)
+      case (DepApp(fa, xa), DepApp(fb, xb)) => equiv(typeEq)(fa)(fb) && xa == xb
       // Abstraction compares after substitution
       case (Lambda(xa, ta), other@Lambda(xb, _)) =>
-        xa.t =~= xb.t && equiv(ta)(typedLifting.liftFunExpr(other).value(xa))
+        xa.t =~= xb.t && equiv(typeEq)(ta)(typedLifting.liftFunExpr(other).value(xa))
       case (DepLambda(xa, ea), other@DepLambda(xb, _)) => (xa, xb) match {
         case (n: NatIdentifier, _: NatIdentifier) =>
-          equiv(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n))
+          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n))
         case (dt: DataTypeIdentifier, _: DataTypeIdentifier) =>
-          equiv(ea)(typedLifting.liftDepFunExpr[DataKind](other).value(dt))
+          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[DataKind](other).value(dt))
         case (addr: AddressSpaceIdentifier, _: AddressSpaceIdentifier) =>
-          equiv(ea)(typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr))
+          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr))
         case (n2n: NatToNatIdentifier, _: NatToNatIdentifier) =>
-          equiv(ea)(typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n))
+          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n))
         case (n2d: NatToDataIdentifier, _: NatToDataIdentifier) =>
-          equiv(ea)(typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d))
+          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d))
         case _ => false
       }
       case _ => false
@@ -55,7 +57,7 @@ sealed abstract class Expr {
   override def toString: String = showRise(this)
   override def hashCode(): Int = alphaEquiv.hash(this)
   override def equals(obj : Any) : Boolean = obj match {
-    case other : Expr => alphaEquiv.equiv(this)(other)
+    case other : Expr => alphaEquiv.equiv(a => b => a =~= b)(this)(other)
     case _ => true
   }
 }
