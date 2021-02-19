@@ -4,26 +4,23 @@ import arithexpr.arithmetic.RangeAdd
 import rise.core._
 
 object alphaEquiv {
-  val equiv : Type => Type => Boolean = a => b => {
-    // TODO: match against normally
-    (a.getClass == b.getClass && b.getClass == TypePlaceholder.getClass) ||
-    (a.getClass == b.getClass && b.getClass == NatType.getClass) ||
-      ((a, b) match {
-      case (TypeIdentifier(na), TypeIdentifier(nb)) => na == nb
-      case (DataTypeIdentifier(na, _), DataTypeIdentifier(nb, _)) => na == nb
-      case (FunType(sa, ta), FunType(sb, tb)) => equiv(sa)(sb) && equiv(ta)(tb)
-      case (DepFunType(xa, ta), other@DepFunType(_, _)) =>
-        equiv(ta)(lifting.liftDependentFunctionType(other)(xa))
-      case (sa : ScalarType, sb : ScalarType) => sa.getClass == sb.getClass
-      case (VectorType(sa, da), VectorType(sb, db)) => sa == sb && equiv(da)(db)
-      case (IndexType(sa), IndexType(sb)) => sa == sb
-      case (DepPairType(xa, ta), other@DepPairType(xb, tb)) =>
-        equiv(ta)(substitute.kindInType(xa, `for` = xb, in = tb))
-      case (NatToDataApply(fa, na), NatToDataApply(fb, nb)) => fa == fb && na == nb
-      case (ArrayType(sa, da), ArrayType(sb, db)) => sa == sb && equiv(da)(db)
-      case (DepArrayType(sa, da), DepArrayType(sb, db)) => sa == sb && da == db
-      case _ => false
-    })
+  val equiv : Type => Type => Boolean = a => b => (a, b) match {
+    case (TypePlaceholder, TypePlaceholder) => true
+    case (NatType, NatType) => true
+    case (TypeIdentifier(na), TypeIdentifier(nb)) => na == nb
+    case (DataTypeIdentifier(na, _), DataTypeIdentifier(nb, _)) => na == nb
+    case (FunType(sa, ta), FunType(sb, tb)) => equiv(sa)(sb) && equiv(ta)(tb)
+    case (DepFunType(xa, ta), other@DepFunType(_, _)) =>
+      equiv(ta)(lifting.liftDependentFunctionType(other)(xa))
+    case (sa : ScalarType, sb : ScalarType) => sa.getClass == sb.getClass
+    case (VectorType(sa, da), VectorType(sb, db)) => sa == sb && equiv(da)(db)
+    case (IndexType(sa), IndexType(sb)) => sa == sb
+    case (DepPairType(xa, ta), other@DepPairType(xb, tb)) =>
+      equiv(ta)(substitute.kindInType(xa, `for` = xb, in = tb))
+    case (NatToDataApply(fa, na), NatToDataApply(fb, nb)) => fa == fb && na == nb
+    case (ArrayType(sa, da), ArrayType(sb, db)) => sa == sb && equiv(da)(db)
+    case (DepArrayType(sa, da), DepArrayType(sb, db)) => sa == sb && da == db
+    case _ => false
   }
 
   val hash : Type => Int = {
