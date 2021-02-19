@@ -18,6 +18,7 @@ object alphaEquiv {
       case (IndexType(sa), IndexType(sb)) => sa == sb
       case (DepPairType(xa, ta), other@DepPairType(xb, tb)) =>
         equiv(ta)(substitute.kindInType(xa, `for` = xb, in = tb))
+      case (PairType(la, ra), PairType(lb, rb)) => equiv(la)(lb) && equiv(ra)(rb)
       case (NatToDataApply(fa, na), NatToDataApply(fb, nb)) => fa == fb && na == nb
       case (ArrayType(sa, da), ArrayType(sb, db)) => sa == sb && equiv(da)(db)
       case (DepArrayType(sa, da), DepArrayType(sb, db)) => sa == sb && da == db
