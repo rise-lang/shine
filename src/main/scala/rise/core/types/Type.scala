@@ -5,6 +5,7 @@ import rise.core._
 
 object alphaEquiv {
   val equiv : Type => Type => Boolean = a => b => (a, b) match {
+    // TODO: defensive programming, make sure we list all cases
     case (TypePlaceholder, TypePlaceholder) => true
     case (NatType, NatType) => true
     case (TypeIdentifier(na), TypeIdentifier(nb)) => na == nb
@@ -15,6 +16,7 @@ object alphaEquiv {
     case (sa : ScalarType, sb : ScalarType) => sa.getClass == sb.getClass
     case (VectorType(sa, da), VectorType(sb, db)) => sa == sb && equiv(da)(db)
     case (IndexType(sa), IndexType(sb)) => sa == sb
+    case (PairType(la, ra), PairType(lb, rb)) => equiv(la)(lb) && equiv(ra)(rb)
     case (DepPairType(xa, ta), other@DepPairType(xb, tb)) =>
       equiv(ta)(substitute.kindInType(xa, `for` = xb, in = tb))
     case (NatToDataApply(fa, na), NatToDataApply(fb, nb)) => fa == fb && na == nb

@@ -8,6 +8,7 @@ object alphaEquiv {
   type TYPEEQ = Type => Type => Boolean
 
   val equiv : TYPEEQ => Expr => Expr => Boolean = typeEq => a => b => {
+    // TODO: defensive programming, make sure we list all cases
     typeEq(a.t)(b.t) && ((a, b) match {
       case (Identifier(na), Identifier(nb)) => na == nb
       case (Literal(da), Literal(db)) => da == db
