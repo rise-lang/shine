@@ -135,7 +135,7 @@ class algorithmic extends test_util.Tests {
     val typedGold = goldMKNAlternative.toExpr
     val loopMKN = (topDown(liftReduce) `;` DFNF `;` topDown(removeTransposePair)).apply(mm).get
 
-    assert(loopMKN == typedGold)
+    assert(loopMKN =~= typedGold)
   }
 
   // This one just serves as documentation for different mm-rise-expressions
@@ -238,7 +238,7 @@ class algorithmic extends test_util.Tests {
 
     val loopKMN = topDown(liftReduce).apply(mmMKN.toExpr).get
 
-    assert(goldKMNAlternative2.toExpr == loopKMN)
+    assert(goldKMNAlternative2.toExpr =~= loopKMN)
 
     /*
     val goldKMNAlternative2LowLevel =

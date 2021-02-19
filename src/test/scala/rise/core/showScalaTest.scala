@@ -37,17 +37,11 @@ class showScalaTest extends test_util.Tests {
     val untypedScala = prefixImports(showScala.expr(dotElemWeights))
     val typedScala = prefixImports(showScala.expr(typedDotElemWeights))
 
-    println(untypedScala)
-    println(typedScala)
-
     val toolbox = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
     val expr = toolbox.eval(toolbox.parse(untypedScala)).asInstanceOf[Expr]
     val typedExpr = toolbox.eval(toolbox.parse(typedScala)).asInstanceOf[Expr]
 
-    println(expr)
-    println(typedExpr)
-
-    assert(expr == dotElemWeights.toUntypedExpr)
-    assert(typedExpr == typedDotElemWeights)
+    assert(expr =~= dotElemWeights.toUntypedExpr)
+    assert(typedExpr =~= typedDotElemWeights)
   }
 }

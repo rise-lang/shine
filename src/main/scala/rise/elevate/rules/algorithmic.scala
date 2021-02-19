@@ -66,7 +66,7 @@ object algorithmic {
   @rule def reduceMapFusion: Strategy[Rise] = {
     case e @ App(App(App(r @ ReduceX(), f), init), App(App(map(), g), in)) =>
       val red = (r, g.t) match {
-        case (reduce(), FunType(i, o)) if i == o => reduce
+        case (reduce(), FunType(i, o)) if i =~~= o => reduce
         case _ => reduceSeq
       }
       Success(red(fun(acc => fun(x =>
@@ -79,7 +79,7 @@ object algorithmic {
       App(App(map(), f), mapArg)     // map
     ) =>
       val red = op.t match {
-        case FunType(_, yToOutT) if f.t == yToOutT => reduce
+        case FunType(_, yToOutT) if f.t =~~= yToOutT => reduce
         case _ => reduceSeq
       }
       Success(
@@ -90,7 +90,7 @@ object algorithmic {
   @rule def reduceMapFission()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case e @ App(App(ReduceX(), Lambda(acc, Lambda(y,
         App(App(op, acc2), f@App(_, y2))))), init)
-      if acc == acc2 && contains[Rise](y).apply(y2) =>
+      if acc =~= acc2 && contains[Rise](y).apply(y2) =>
       Success((reduce(op)(init) o
         map(lambda(ToBeTyped[Identifier](y), preserveType(f)))) !: e.t
       )
@@ -121,7 +121,7 @@ object algorithmic {
 
   @rule def idToCopy: Strategy[Rise] = {
     case App(id() ::: FunType(in: ScalarType, out: ScalarType), arg ::: (argT: ScalarType))
-      if in == out && in == argT =>
+      if in =~~= out && in =~~= argT =>
       Success(fun(x => x) $ arg)
   }
 
@@ -185,7 +185,7 @@ object algorithmic {
   }
 
   @rule def mapIdentity: Strategy[Rise] = {
-    case expr @ App(map(), Lambda(x1, x2)) if x1 == x2 => Success(fun(x => x) !: expr.t)
+    case expr @ App(map(), Lambda(x1, x2)) if x1 =~= x2 => Success(fun(x => x) !: expr.t)
   }
 
   // x -> join (slide 1 1 x)
@@ -250,7 +250,7 @@ object algorithmic {
       case App(makeArray(_), App(App(map(), _), e)) => Some(e)
       case App(f, App(App(map(), _), e2)) =>
         matchExpectedMakeArray(f).flatMap(e =>
-          if (e == e2) { Some(e) } else { None })
+          if (e =~= e2) { Some(e) } else { None })
       case _ => None
     }
 
@@ -275,7 +275,7 @@ object algorithmic {
     case expr @ App(generate(), Lambda(i, App(App(App(select(), t),
       App(App(map(), f), e1)),
       App(App(map(), g), e2))))
-    if e1 == e2 && !contains[Rise](i).apply(e1) =>
+    if e1 =~= e2 && !contains[Rise](i).apply(e1) =>
       Success(transpose(map(
         fun(x => generate(lambda(eraseType(i), select(t)(app(f, x), app(g, x))))))(
         e1
@@ -284,7 +284,7 @@ object algorithmic {
 
   // select t (f a) (f b) -> f (select t a b)
   @rule def fOutsideSelect: Strategy[Rise] = {
-    case expr @ App(App(App(select(), t), App(f1, a)), App(f2, b)) if f1 == f2 =>
+    case expr @ App(App(App(select(), t), App(f1, a)), App(f2, b)) if f1 =~= f2 =>
       f1.t match {
         case FunType(_: DataType, _: DataType) => Success(app(f1, select(t)(a)(b)) !: expr.t)
         case _ => Failure(fOutsideSelect)
@@ -301,7 +301,7 @@ object algorithmic {
         }
       case App(mka, App(f2, _)) =>
         matchExpectedMakeArray(mka).flatMap { case (n, f) =>
-          if (f == f2) { Some((n - 1, f)) } else { None }
+          if (f =~= f2) { Some((n - 1, f)) } else { None }
         }
       case _ => None
     }
@@ -334,7 +334,7 @@ object algorithmic {
 
   // zip a a -> map (x => pair(x, x)) a
   @rule def zipSame: Strategy[Rise] = {
-    case expr @ App(App(zip(), a), a2) if a == a2 =>
+    case expr @ App(App(zip(), a), a2) if a =~= a2 =>
       Success(map(fun(x => makePair(x)(x)))(a) !: expr.t)
   }
 
@@ -407,7 +407,7 @@ object algorithmic {
         App(f, App(fst(), x2))),
         App(g, App(snd(), x3))))),
       App(App(zip(), a), b)
-    ) if x == x2 && x == x3 =>
+    ) if x =~= x2 && x =~= x3 =>
       Success(app(
         map(fun(x => zip(fst(x))(snd(x)))),
         zip(map(f)(a))(map(g)(b))
@@ -433,7 +433,7 @@ object algorithmic {
   @rule def unzipZipIdentity: Strategy[Rise] = {
     case e @ App(unzip(), App(Lambda(p,
       App(App(zip(), App(fst(), p2)), App(snd(), p3))), in))
-    if p == p2 && p == p3 =>
+    if p =~= p2 && p =~= p3 =>
       Success(in !: e.t)
   }
 
@@ -444,7 +444,7 @@ object algorithmic {
     case e @ App(App(zip(),
       App(a1 @ (fst() | snd()), App(unzip(), e1))),
       App(a2 @ (fst() | snd()), App(unzip(), e2))
-    ) if e1 == e2 =>
+    ) if e1 =~= e2 =>
       Success(map(fun(p => makePair(eraseType(a1)(p))(eraseType(a2)(p))))(e1) !: e.t)
   }
 
@@ -455,7 +455,7 @@ object algorithmic {
         App(DepApp(asVector(), v: Nat), App(fst(), x2))),
         App(DepApp(asVector(), v2: Nat), App(snd(), x3)))),
       App(unzip(), in)
-    ) if x == x2 && x == x3 && v == v2 =>
+    ) if x =~= x2 && x =~= x3 && v == v2 =>
       println(in.t)
       println(e.t)
       val r = preserveType(in) |>
@@ -473,8 +473,8 @@ object algorithmic {
       App(App(zip(),
         App(a1 @ (fst() | snd()), e1)),
         App(a2 @ (fst() | snd()), e2)))
-    if e1 == e2 && p == p1 && p == p2 &&
-      a1 == a2 && !contains[Rise](p).apply(g)
+    if e1 =~= e2 && p =~= p1 && p =~= p2 &&
+      a1 =~= a2 && !contains[Rise](p).apply(g)
     =>
       Success(map(fun(p => preserveType(g)(eraseType(a1)(p), eraseType(a2)(p))))(
         zip(fst(e1))(snd(e1))) !: e.t)
@@ -506,7 +506,7 @@ object algorithmic {
     }
 
     @rule def replaceIdentifier(curr: Identifier, newId: Identifier): Strategy[Rise] = {
-      case x: Identifier if curr == x => Success(newId)
+      case x: Identifier if curr =~= x => Success(newId)
     }
 
     e match {
@@ -522,7 +522,7 @@ object algorithmic {
   def splitStrategy(n: Nat)(implicit ev: Traversable[Rise]): Strategy[Rise] = blockedReduce(n)
   @rule def blockedReduce(n: Nat)(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case App(App(App(reduce(), op ::: FunType(yT, FunType(initT, outT))),
-      init), arg) if yT == outT =>
+      init), arg) if yT =~~= outT =>
       // avoid having two lambdas using the same identifiers
       val freshOp = tryAll(freshLambdaIdentifier()).apply(op).get
       DFNF()(ev)(
@@ -543,10 +543,10 @@ object algorithmic {
   @rule def separateDotHV(weights2d: Expr, wH: Expr, wV: Expr): Strategy[Rise] = {
     case e @ App(App(App(reduce(), rf), init), App(App(map(), mf),
       App(App(zip(), App(join(), weights)), App(join(), nbh))
-    )) if rf == ((add !: rf.t): Expr) &&
-      init == (l(0.0f): Expr) &&
-      mf == ((mulT !: mf.t): Expr) &&
-      weights == weights2d
+    )) if rf =~= ((add !: rf.t): Expr) &&
+      init =~= (l(0.0f): Expr) &&
+      mf =~= ((mulT !: mf.t): Expr) &&
+      weights =~= weights2d
       =>
       Success((preserveType(nbh) |> map(dot(wH)) |> dot(wV)) !: e.t)
   }
@@ -554,21 +554,21 @@ object algorithmic {
   @rule def separateDotVH(weights2d: Expr, wV: Expr, wH: Expr): Strategy[Rise] = {
     case e @ App(App(App(reduce(), rf), init), App(App(map(), mf),
     App(App(zip(), App(join(), weights)), App(join(), nbh))
-    )) if rf == ((add !: rf.t): Expr) &&
-      init == (l(0.0f): Expr) &&
-      mf == ((mulT !: mf.t): Expr) &&
-      weights == weights2d
+    )) if rf =~= ((add !: rf.t): Expr) &&
+      init =~= (l(0.0f): Expr) &&
+      mf =~= ((mulT !: mf.t): Expr) &&
+      weights =~= weights2d
     =>
       Success((preserveType(nbh) |> transpose |> map(dot(wV)) |> dot(wH)) !: e.t)
   }
 
   @rule def separateSumHV: Strategy[Rise] = {
-    case e @ App(sum2, App(join(), in)) if sum2 == ((sum !: sum2.t): Expr) =>
+    case e @ App(sum2, App(join(), in)) if sum2 =~= ((sum !: sum2.t): Expr) =>
       Success((preserveType(in) |> map(sum) |> sum) !: e.t)
   }
 
   @rule def separateSumVH: Strategy[Rise] = {
-    case e @ App(sum2, App(join(), in)) if sum2 == ((sum !: sum2.t): Expr) =>
+    case e @ App(sum2, App(join(), in)) if sum2 =~= ((sum !: sum2.t): Expr) =>
       Success((preserveType(in) |> transpose |> map(sum) |> sum) !: e.t)
   }
 }

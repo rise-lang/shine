@@ -15,7 +15,7 @@ class scal extends test_util.Tests {
   test("Simple scal type inference works") {
     assert(
       expl((n: Nat) => ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
-        ==
+        =~~=
         simpleScal.t
     )
   }

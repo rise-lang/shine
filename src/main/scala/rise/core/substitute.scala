@@ -25,13 +25,13 @@ object substitute {
   def exprInExpr(expression : Expr, `for`: Expr, in: Expr): Expr = {
     object Visitor extends PureExprTraversal {
       override def expr: Expr => Pure[Expr] = e => {
-        if (`for` == e) {
+        if (`for` =~= e) {
           return_(expression)
         } else {
           e match {
             case Lambda(x, b) =>
               // See https://www.cs.cornell.edu/courses/cs3110/2019sp/textbook/interp/subst_lambda.html
-              if (x == `for`) return_(e)
+              if (x =~= `for`) return_(e)
               if (!(FV(b) contains x))
                 super.expr(e)
               else {
@@ -115,10 +115,10 @@ object substitute {
   def typeInType[B <: Type](ty: Type, `for`: Type, in: B): B = {
     object Visitor extends PureTraversal {
       override def datatype: DataType => Pure[DataType] = t => {
-        if (`for` == t) { return_(ty.asInstanceOf[DataType]) } else super.datatype(t)
+        if (`for` =~~= t) { return_(ty.asInstanceOf[DataType]) } else super.datatype(t)
       }
       override def `type`[T <: Type]: T => Pure[T] = t => {
-        if (`for` == t) { return_(ty.asInstanceOf[T]) } else super.`type`(t)
+        if (`for` =~~= t) { return_(ty.asInstanceOf[T]) } else super.`type`(t)
       }
     }
     traverse(in, Visitor)

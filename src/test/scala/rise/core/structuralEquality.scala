@@ -8,7 +8,7 @@ import shine.DPIA.Nat
 
 class structuralEquality extends test_util.Tests {
   test("identity") {
-    assert(fun(x => x).toUntypedExpr =~~= fun(y => y).toUntypedExpr)
+    assert(fun(x => x).toUntypedExpr =~= fun(y => y).toUntypedExpr)
   }
 
   test("reduce") {

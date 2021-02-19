@@ -38,7 +38,7 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType)
   override def toString: String = s"($x: nat |-> $body)"
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: NatToDataLambda => body == other.apply(x)
+    case other: NatToDataLambda => body =~~= other.apply(x)
     case _                      => false
   }
 }

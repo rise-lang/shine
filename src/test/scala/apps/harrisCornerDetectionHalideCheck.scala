@@ -90,7 +90,7 @@ class harrisCornerDetectionHalideCheck
     rewrite.ocl.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOCL(lowered: Expr, ls: LocalSize, gs: GlobalSize): Unit = {
-    assert(lowered.t == harris(1, 1).toExpr.t)
+    assert(lowered.t =~~= harris(1, 1).toExpr.t)
     val prog = util.printTime("codegen",
       gen.opencl.kernel("harris").fromExpr(lowered))
 

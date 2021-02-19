@@ -40,7 +40,7 @@ package object rules {
 
   //TODO @rule
   def etaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
-    case e@Lambda(x1, App(f, x2)) if x1 == x2 && !contains[Rise](x1).apply(f) => Success(f !: e.t)
+    case e@Lambda(x1, App(f, x2)) if x1 =~= x2 && !contains[Rise](x1).apply(f) => Success(f !: e.t)
     case _ => Failure(etaReduction())
   }
 

@@ -174,7 +174,7 @@ object lowering {
   }
 
   @rule def isId: Strategy[Rise] = {
-    case l@Lambda(x1, x2) if x1 == x2 => Success(l)
+    case l@Lambda(x1, x2) if x1 =~= x2 => Success(l)
   }
 
   // requires expr to be in LCNF

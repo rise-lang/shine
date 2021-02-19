@@ -17,12 +17,12 @@ class halide extends test_util.Tests {
     val (closedB, nB) = makeClosed(b)
     val na = DFNF(closedA).get
     val nb = DFNF(closedB).get
-    assert(position(nA)(s).apply(na).get == nb)
+    assert(position(nA)(s).apply(na).get =~= nb)
   }
 
   test("generic reorder 1D") {
     val expr = toExpr(λ(i => λ(f => *!(f) $ i)))
-    assert(body(body(reorder(Seq(1))))(expr).get == expr)
+    assert(body(body(reorder(Seq(1))))(expr).get =~= expr)
 
     try(body(body(reorder(Seq(1,2))))(expr).get) catch {
       case NotApplicable(_) => assert(true)

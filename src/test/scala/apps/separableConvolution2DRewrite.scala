@@ -39,7 +39,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
     val na = BENF(a).get
     val nb = BENF(b).get
     val uab: Rise = toBeTyped(na) !: nb.t
-    makeClosed(uab)._1 == makeClosed(nb)._1
+    makeClosed(uab)._1 =~= makeClosed(nb)._1
   }
 
   private val separateDot: Strategy[Rise] =

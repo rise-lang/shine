@@ -108,7 +108,7 @@ class traverseTest extends test_util.Tests {
     val result = traverse(e, new TraceVisitor())
 
     // the expression should not have changed
-    assert(result.unwrap =~~= e.toExpr)
+    assert(result.unwrap =~= e.toExpr)
     // the trace should match expectations
     result.trace.length shouldBe expected.length
     result.trace.zip(expected).foreach({ case (x, e) => e(x) })
@@ -152,7 +152,7 @@ class traverseTest extends test_util.Tests {
     val result = traverse(e, new Visitor)
 
     // the expression should have changed
-    assert(result.unwrap =~~=
+    assert(result.unwrap =~=
             depFun((h: Nat) =>
               depFun((w: Nat) =>
                 fun(ArrayType(h, ArrayType(w, f32)))(input =>
@@ -188,6 +188,6 @@ class traverseTest extends test_util.Tests {
         input |> map(fun(x => x)) |> fun(x => x)
       })
     )
-    assert(result =~~= expected)
+    assert(result =~= expected)
   }
 }

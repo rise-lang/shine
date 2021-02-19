@@ -130,12 +130,12 @@ object infer {
     def constrained(e: Expr): (Expr, Solution) =
       constrainTypes(e, constraints, env)
     def genType(e: Expr): Type =
-      if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
+      if (e.t =~~= TypePlaceholder) freshTypeIdentifier else e.t
 
     expr match {
       case i: Identifier =>
         val t = env.getOrElseUpdate(i.name,
-          if (i.t == TypePlaceholder) {
+          if (i.t =~~= TypePlaceholder) {
             error(s"$i has no type")(Seq())
           } else {
             i.t
