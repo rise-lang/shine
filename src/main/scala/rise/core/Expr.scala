@@ -8,31 +8,35 @@ object alphaEquiv {
   type TYPEEQ = Type => Type => Boolean
 
   val equiv : TYPEEQ => Expr => Expr => Boolean = typeEq => a => b => {
-    // TODO: defensive programming, make sure we list all cases
-    typeEq(a.t)(b.t) && ((a, b) match {
-      case (Identifier(na), Identifier(nb)) => na == nb
-      case (Literal(da), Literal(db)) => da == db
-      case (a : Primitive, b : Primitive) => a.name == b.name
+    // Make the match exhaustive
+    val and : PartialFunction[Expr,  Boolean] => Boolean = f => {
+      f.lift(b) match { case Some(p) => p case None => false } }
+    typeEq(a.t)(b.t) && (a match {
+      case Identifier(na) => and { case Identifier(nb) => na == nb }
+      case Literal(da) => and { case Literal(db) => da == db }
+      case a : Primitive => and { case b : Primitive => a.name == b.name }
       // Application compares structurally
-      case (App(fa, ea), App(fb, eb)) => equiv(typeEq)(fa)(fb) && equiv(typeEq)(ea)(eb)
-      case (DepApp(fa, xa), DepApp(fb, xb)) => equiv(typeEq)(fa)(fb) && xa == xb
+      case App(fa, ea) => and { case App(fb, eb) => equiv(typeEq)(fa)(fb) && equiv(typeEq)(ea)(eb) }
+      case DepApp(fa, xa) => and { case DepApp(fb, xb) => equiv(typeEq)(fa)(fb) && xa == xb }
       // Abstraction compares after substitution
-      case (Lambda(xa, ta), other@Lambda(xb, _)) =>
-        typeEq(xa.t)(xb.t) && equiv(typeEq)(ta)(typedLifting.liftFunExpr(other).value(xa))
-      case (DepLambda(xa, ea), other@DepLambda(xb, _)) => (xa, xb) match {
-        case (n: NatIdentifier, _: NatIdentifier) =>
-          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n))
-        case (dt: DataTypeIdentifier, _: DataTypeIdentifier) =>
-          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[DataKind](other).value(dt))
-        case (addr: AddressSpaceIdentifier, _: AddressSpaceIdentifier) =>
-          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr))
-        case (n2n: NatToNatIdentifier, _: NatToNatIdentifier) =>
-          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n))
-        case (n2d: NatToDataIdentifier, _: NatToDataIdentifier) =>
-          equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d))
-        case _ => false
-      }
-      case _ => false
+      case Lambda(xa, ta) => and { case other@Lambda(xb, _) =>
+        typeEq(xa.t)(xb.t) && equiv(typeEq)(ta)(typedLifting.liftFunExpr(other).value(xa)) }
+      case DepLambda(xa, ea) => and { case other@DepLambda(xb, _) =>
+        // Make the match exhaustive
+        val and : PartialFunction[Kind#I,  Boolean] => Boolean = f => {
+          f.lift(xb) match { case Some(p) => p case None => false } }
+        xa match {
+          case n: NatIdentifier => and { case _: NatIdentifier =>
+            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n)) }
+          case dt: DataTypeIdentifier => and { case _: DataTypeIdentifier =>
+            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[DataKind](other).value(dt)) }
+          case addr: AddressSpaceIdentifier => and { case _: AddressSpaceIdentifier =>
+            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr)) }
+          case n2n: NatToNatIdentifier => and { case _: NatToNatIdentifier =>
+            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n)) }
+          case n2d: NatToDataIdentifier => and { case _: NatToDataIdentifier =>
+            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d)) }
+      }}
     })
   }
 

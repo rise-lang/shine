@@ -4,25 +4,29 @@ import arithexpr.arithmetic.RangeAdd
 import rise.core._
 
 object alphaEquiv {
-  val equiv : Type => Type => Boolean = a => b => (a, b) match {
-    // TODO: defensive programming, make sure we list all cases
-    case (TypePlaceholder, TypePlaceholder) => true
-    case (NatType, NatType) => true
-    case (TypeIdentifier(na), TypeIdentifier(nb)) => na == nb
-    case (DataTypeIdentifier(na, _), DataTypeIdentifier(nb, _)) => na == nb
-    case (FunType(sa, ta), FunType(sb, tb)) => equiv(sa)(sb) && equiv(ta)(tb)
-    case (DepFunType(xa, ta), other@DepFunType(_, _)) =>
-      equiv(ta)(lifting.liftDependentFunctionType(other)(xa))
-    case (sa : ScalarType, sb : ScalarType) => sa.getClass == sb.getClass
-    case (VectorType(sa, da), VectorType(sb, db)) => sa == sb && equiv(da)(db)
-    case (IndexType(sa), IndexType(sb)) => sa == sb
-    case (PairType(la, ra), PairType(lb, rb)) => equiv(la)(lb) && equiv(ra)(rb)
-    case (DepPairType(xa, ta), other@DepPairType(xb, tb)) =>
-      equiv(ta)(substitute.kindInType(xa, `for` = xb, in = tb))
-    case (NatToDataApply(fa, na), NatToDataApply(fb, nb)) => fa == fb && na == nb
-    case (ArrayType(sa, da), ArrayType(sb, db)) => sa == sb && equiv(da)(db)
-    case (DepArrayType(sa, da), DepArrayType(sb, db)) => sa == sb && da == db
-    case _ => false
+
+  val equiv : Type => Type => Boolean = a => b => {
+    // Make the match exhaustive
+    val and : PartialFunction[Type,  Boolean] => Boolean = f => {
+      f.lift(b) match { case Some(p) => p case None => false } }
+    a match {
+      case TypePlaceholder => and { case TypePlaceholder => true }
+      case NatType => and { case NatType => true }
+      case TypeIdentifier(na) => and { case TypeIdentifier(nb) => na == nb }
+      case DataTypeIdentifier(na, _) => and { case DataTypeIdentifier(nb, _) => na == nb }
+      case FunType(sa, ta) => and { case FunType(sb, tb) => equiv(sa)(sb) && equiv(ta)(tb) }
+      case DepFunType(xa, ta) => and { case other@DepFunType(_, _) =>
+        equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
+      case sa: ScalarType => and { case sb: ScalarType => sa.getClass == sb.getClass }
+      case VectorType(sa, da) => and { case VectorType(sb, db) => sa == sb && equiv(da)(db) }
+      case IndexType(sa) => and { case IndexType(sb) => sa == sb }
+      case DepPairType(xa, ta) => and { case other@DepPairType(xb, tb) =>
+        equiv(ta)(substitute.kindInType(xa, `for` = xb, in = tb)) }
+      case PairType(la, ra) => and { case PairType(lb, rb) => equiv(la)(lb) && equiv(ra)(rb) }
+      case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) => fa == fb && na == nb }
+      case ArrayType(sa, da) => and { case ArrayType(sb, db) => sa == sb && equiv(da)(db) }
+      case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => sa == sb && da == db }
+    }
   }
 
   val hash : Type => Int = {
