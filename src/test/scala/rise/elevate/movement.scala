@@ -26,7 +26,7 @@ class movement extends test_util.Tests {
     val uab: Rise = eraseType(na) :: nb.t
     val ca = makeClosed(uab)
     val cb = makeClosed(nb)
-    ca == cb
+    ca._1 =~~= cb._1
   }
 
   test("**f >> T -> T >> **f") {

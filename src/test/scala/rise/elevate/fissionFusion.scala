@@ -17,8 +17,8 @@ class fissionFusion extends test_util.Tests {
   val BENF = rise.elevate.strategies.normalForm.BENF()(RiseTraversable)
 
   def eq(a: Expr, b: Expr): Unit = {
-    if (BENF(a).get != BENF(b).get) {
-      throw new Exception(s"expected structural equality:\n$a\n$b")
+    if (! (BENF(a).get =~~= BENF(b).get)) {
+      throw new Exception(s"expected alpha equivalence:\n$a\n$b")
     }
   }
 

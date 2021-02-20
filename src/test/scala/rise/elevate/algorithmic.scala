@@ -83,7 +83,7 @@ class algorithmic extends test_util.Tests {
     val typedGold = DFNF(reduceMap)
     val typedRewrite = DFNF(rewrite)
 
-    assert(typedRewrite == typedGold)
+    assert(typedRewrite.get =~~= typedGold.get)
   }
 
 
