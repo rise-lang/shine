@@ -23,6 +23,7 @@ object alphaEquiv {
   /** Alpha equivalence on types
     * Datatype identifier explicitness is ignored.
     * Short circuits in the event of syntactic equality.
+    * Kind equality is checked on dependent functions and pairs.
     * @param env Pairs of identifiers to be considered equal.
     */
   def equiv(env : Env) : Type => Type => Boolean = a => b => {
@@ -34,17 +35,19 @@ object alphaEquiv {
       case sa: ScalarType => and { case sb: ScalarType => sa == sb }
 
       // Base cases -> identifier lookup
-      case na : TypeIdentifier => and { case nb : TypeIdentifier => na == nb || env.contains((na, nb)) }
-      case na : DataTypeIdentifier => and { case nb : DataTypeIdentifier => na.asExplicit == nb.asExplicit || env.contains((na.asExplicit, nb.asExplicit)) }
+      case na : TypeIdentifier => and { case nb : TypeIdentifier => env.contains((na, nb)) }
+      case na : DataTypeIdentifier => and { case nb : DataTypeIdentifier =>
+        na.asExplicit == nb.asExplicit || env.contains((na.asExplicit, nb.asExplicit)) }
 
       // Base cases -> identifier lookup in nat expressions
       case IndexType(sa) => and { case IndexType(sb) => equivNat(env)(sa)(sb) }
       case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => equivNat(env)(sa)(sb) && da == db }
 
+      // Should we move this into its own equality check?
       case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
         val and = PatternMatching.matchWithDefault(fb, false)
         equivNat(env)(na)(nb) && (fa match {
-          case na : NatToDataIdentifier => and { case nb : NatToDataIdentifier => na == nb || env.contains((na, nb)) }
+          case na : NatToDataIdentifier => and { case nb : NatToDataIdentifier => env.contains((na, nb)) }
           case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equiv((xa , xb) :: env)(ba)(bb) }
         })
        }
