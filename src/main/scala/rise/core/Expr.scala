@@ -3,14 +3,14 @@ package rise.core
 import semantics._
 import rise.core.types._
 import rise.core.ShowRise._
+import util.PatternMatching
 
 object alphaEquiv {
   type TYPEEQ = Type => Type => Boolean
 
   val equiv : TYPEEQ => Expr => Expr => Boolean = typeEq => a => b => {
     // Make the match exhaustive
-    val and : PartialFunction[Expr,  Boolean] => Boolean = f => {
-      f.lift(b) match { case Some(p) => p case None => false } }
+    val and = PatternMatching.matchWithDefault(b, false)
     typeEq(a.t)(b.t) && (a match {
       case Identifier(na) => and { case Identifier(nb) => na == nb }
       case Literal(da) => and { case Literal(db) => da == db }
@@ -22,9 +22,7 @@ object alphaEquiv {
       case Lambda(xa, ta) => and { case other@Lambda(xb, _) =>
         typeEq(xa.t)(xb.t) && equiv(typeEq)(ta)(typedLifting.liftFunExpr(other).value(xa)) }
       case DepLambda(xa, ea) => and { case other@DepLambda(xb, _) =>
-        // Make the match exhaustive
-        val and : PartialFunction[Kind#I,  Boolean] => Boolean = f => {
-          f.lift(xb) match { case Some(p) => p case None => false } }
+        val and = PatternMatching.matchWithDefault(xb, false)
         xa match {
           case n: NatIdentifier => and { case _: NatIdentifier =>
             equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n)) }

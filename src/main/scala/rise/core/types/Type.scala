@@ -2,6 +2,7 @@ package rise.core.types
 
 import arithexpr.arithmetic.RangeAdd
 import rise.core._
+import util.PatternMatching
 
 object alphaEquiv {
   type Env = List[(Kind.Identifier , Kind.Identifier)]
@@ -14,9 +15,7 @@ object alphaEquiv {
 
   def equiv : Type => Type => Boolean = equiv(Nil)
   def equiv(env : Env) : Type => Type => Boolean = a => b => {
-    // Make the match exhaustive
-    val and : PartialFunction[Type,  Boolean] => Boolean = f => {
-      f.lift(b) match { case Some(p) => p case None => false } }
+    val and = PatternMatching.matchWithDefault(b, false)
     a match {
       // Base cases
       case TypePlaceholder => and { case TypePlaceholder => true }
@@ -32,10 +31,8 @@ object alphaEquiv {
       case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => equivNat(env)(sa)(sb) && da == db }
 
       case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
-        // Make the match exhaustive
-        val and : PartialFunction[NatToData,  Boolean] => Boolean = f => {
-          f.lift(fb) match { case Some(p) => p case None => false } }
-        na == nb && (fa match {
+        val and = PatternMatching.matchWithDefault(fb, false)
+        equivNat(env)(na)(nb) && (fa match {
           case na : NatToDataIdentifier => and { case nb : NatToDataIdentifier => na == nb || env.contains((na, nb)) }
           case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equiv((xa , xb) :: env)(ba)(bb) }
         })
