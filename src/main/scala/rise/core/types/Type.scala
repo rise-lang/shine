@@ -13,10 +13,21 @@ object alphaEquiv {
     substitute.natsInNat(natEnv.toMap, a) == b
   }
 
+  def makeExplicit[K <: Kind.Identifier] : K => K = {
+    case t : DataTypeIdentifier => t.asExplicit.asInstanceOf[K]
+    case t => t
+  }
+
   def equiv : Type => Type => Boolean = equiv(Nil)
+
+  /** Alpha equivalence on types
+    * Datatype identifier explicitness is ignored.
+    * Short circuits in the event of syntactic equality.
+    * @param env Pairs of identifiers to be considered equal.
+    */
   def equiv(env : Env) : Type => Type => Boolean = a => b => {
     val and = PatternMatching.matchWithDefault(b, false)
-    a match {
+    a == b || (a match {
       // Base cases
       case TypePlaceholder => and { case TypePlaceholder => true }
       case NatType => and { case NatType => true }
@@ -24,7 +35,7 @@ object alphaEquiv {
 
       // Base cases -> identifier lookup
       case na : TypeIdentifier => and { case nb : TypeIdentifier => na == nb || env.contains((na, nb)) }
-      case na : DataTypeIdentifier => and { case nb : DataTypeIdentifier => na == nb || env.contains((na, nb)) }
+      case na : DataTypeIdentifier => and { case nb : DataTypeIdentifier => na.asExplicit == nb.asExplicit || env.contains((na.asExplicit, nb.asExplicit)) }
 
       // Base cases -> identifier lookup in nat expressions
       case IndexType(sa) => and { case IndexType(sb) => equivNat(env)(sa)(sb) }
@@ -46,10 +57,10 @@ object alphaEquiv {
 
       // Recursive cases -> binding tracking
       case DepFunType(xa, ta) => and { case DepFunType(xb, tb) =>
-        (xa.getClass == xb.getClass) && equiv((xa, xb) :: env)(ta)(tb) }
+        xa.getClass == xb.getClass && equiv((makeExplicit(xa), makeExplicit(xb)) :: env)(ta)(tb) }
       case DepPairType(xa, ta) => and { case DepPairType(xb, tb) =>
-        (xa.getClass == xb.getClass) && equiv((xa, xb) :: env)(ta)(tb) }
-    }
+        xa.getClass == xb.getClass && equiv((makeExplicit(xa), makeExplicit(xb)) :: env)(ta)(tb) }
+    })
   }
 
   val hash : Type => Int = {
