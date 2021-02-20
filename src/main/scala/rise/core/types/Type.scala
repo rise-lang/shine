@@ -15,9 +15,24 @@ object alphaEquiv {
       case TypeIdentifier(na) => and { case TypeIdentifier(nb) => na == nb }
       case DataTypeIdentifier(na, _) => and { case DataTypeIdentifier(nb, _) => na == nb }
       case FunType(sa, ta) => and { case FunType(sb, tb) => equiv(sa)(sb) && equiv(ta)(tb) }
-      case DepFunType(xa, ta) => and { case other@DepFunType(_, _) =>
-        equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
-      case sa: ScalarType => and { case sb: ScalarType => sa.getClass == sb.getClass }
+      case DepFunType(xa, ta) => and { case other@DepFunType(xb, _) =>
+        //equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
+        // Make the match exhaustive
+        val and : PartialFunction[Kind#I,  Boolean] => Boolean = f => {
+          f.lift(xb) match { case Some(p) => p case None => false } }
+        xa match {
+          case n: NatIdentifier => and { case _: NatIdentifier =>
+            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
+          case dt: DataTypeIdentifier => and { case _: DataTypeIdentifier =>
+            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
+          case addr: AddressSpaceIdentifier => and { case _: AddressSpaceIdentifier =>
+            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
+          case n2n: NatToNatIdentifier => and { case _: NatToNatIdentifier =>
+            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
+          case n2d: NatToDataIdentifier => and { case _: NatToDataIdentifier =>
+            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
+        }}
+      case sa: ScalarType => and { case sb: ScalarType => sa == sb }
       case VectorType(sa, da) => and { case VectorType(sb, db) => sa == sb && equiv(da)(db) }
       case IndexType(sa) => and { case IndexType(sb) => sa == sb }
       case DepPairType(xa, ta) => and { case other@DepPairType(xb, tb) =>
