@@ -3,6 +3,7 @@ package rise.core
 import rise.core.DSL._
 import rise.core.primitives._
 import Type._
+import org.junit.Assert.assertFalse
 import rise.core.types._
 import shine.DPIA.Nat
 
@@ -26,11 +27,11 @@ class structuralEquality extends test_util.Tests {
   }
 
   test("reduce different init") {
-    assert(
+    assertFalse(
       depFun((n: Nat) =>
         fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))
       ).toUntypedExpr
-        !=
+        =~=
           depFun((m: Nat) =>
             fun(ArrayType(m, int))(b =>
               reduceSeq(fun(y => fun(x => y + x)))(1)(b)
@@ -40,11 +41,11 @@ class structuralEquality extends test_util.Tests {
   }
 
   test("reduce different function structure") {
-    assert(
+    assertFalse(
       depFun((n: Nat) =>
         fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))
       ).toUntypedExpr
-        !=
+        =~=
           depFun((m: Nat) =>
             fun(ArrayType(m, int))(b =>
               reduceSeq(fun(y => fun(x => x + y)))(0)(b)
@@ -55,11 +56,11 @@ class structuralEquality extends test_util.Tests {
 
   // TODO: implement equality properly
   ignore("reduce different type") {
-    assert(
+    assertFalse(
       depFun((n: Nat) =>
         fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))
       )
-        !=
+        =~=
           depFun((m: Nat) =>
             fun(ArrayType(m, f32))(b =>
               reduceSeq(fun(y => fun(x => y + x)))(0)(b)
@@ -69,9 +70,9 @@ class structuralEquality extends test_util.Tests {
   }
 
   test("map different implementations") {
-    assert(
+    assertFalse(
       depFun((n: Nat) => fun(ArrayType(n, int))(a => map(fun(x => x))(a))).toUntypedExpr
-        !=
+        =~=
           depFun((m: Nat) => fun(ArrayType(m, int))(b => mapSeq(fun(x => x))(b))).toUntypedExpr
     )
   }

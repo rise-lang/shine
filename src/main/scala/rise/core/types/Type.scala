@@ -4,43 +4,54 @@ import arithexpr.arithmetic.RangeAdd
 import rise.core._
 
 object alphaEquiv {
+  type Env = List[(Kind.Identifier , Kind.Identifier)]
 
-  val equiv : Type => Type => Boolean = a => b => {
+  def equivNat(env : Env) : Nat => Nat => Boolean = a => b => {
+    val natEnv = env.collect {case (i : NatIdentifier, n : Nat) => (i , n)}
+    // substitutes elements on the left with elements on the right
+    substitute.natsInNat(natEnv.toMap, a) == b
+  }
+
+  def equiv : Type => Type => Boolean = equiv(Nil)
+  def equiv(env : Env) : Type => Type => Boolean = a => b => {
     // Make the match exhaustive
     val and : PartialFunction[Type,  Boolean] => Boolean = f => {
       f.lift(b) match { case Some(p) => p case None => false } }
     a match {
+      // Base cases
       case TypePlaceholder => and { case TypePlaceholder => true }
       case NatType => and { case NatType => true }
-      case TypeIdentifier(na) => and { case TypeIdentifier(nb) => na == nb }
-      case DataTypeIdentifier(na, _) => and { case DataTypeIdentifier(nb, _) => na == nb }
-      case FunType(sa, ta) => and { case FunType(sb, tb) => equiv(sa)(sb) && equiv(ta)(tb) }
-      case DepFunType(xa, ta) => and { case other@DepFunType(xb, _) =>
-        //equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
-        // Make the match exhaustive
-        val and : PartialFunction[Kind#I,  Boolean] => Boolean = f => {
-          f.lift(xb) match { case Some(p) => p case None => false } }
-        xa match {
-          case n: NatIdentifier => and { case _: NatIdentifier =>
-            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
-          case dt: DataTypeIdentifier => and { case _: DataTypeIdentifier =>
-            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
-          case addr: AddressSpaceIdentifier => and { case _: AddressSpaceIdentifier =>
-            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
-          case n2n: NatToNatIdentifier => and { case _: NatToNatIdentifier =>
-            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
-          case n2d: NatToDataIdentifier => and { case _: NatToDataIdentifier =>
-            equiv(ta)(lifting.liftDependentFunctionType(other)(xa)) }
-        }}
       case sa: ScalarType => and { case sb: ScalarType => sa == sb }
-      case VectorType(sa, da) => and { case VectorType(sb, db) => sa == sb && equiv(da)(db) }
-      case IndexType(sa) => and { case IndexType(sb) => sa == sb }
-      case DepPairType(xa, ta) => and { case other@DepPairType(xb, tb) =>
-        equiv(ta)(substitute.kindInType(xa, `for` = xb, in = tb)) }
-      case PairType(la, ra) => and { case PairType(lb, rb) => equiv(la)(lb) && equiv(ra)(rb) }
-      case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) => fa == fb && na == nb }
-      case ArrayType(sa, da) => and { case ArrayType(sb, db) => sa == sb && equiv(da)(db) }
-      case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => sa == sb && da == db }
+
+      // Base cases -> identifier lookup
+      case na : TypeIdentifier => and { case nb : TypeIdentifier => na == nb || env.contains((na, nb)) }
+      case na : DataTypeIdentifier => and { case nb : DataTypeIdentifier => na == nb || env.contains((na, nb)) }
+
+      // Base cases -> identifier lookup in nat expressions
+      case IndexType(sa) => and { case IndexType(sb) => equivNat(env)(sa)(sb) }
+      case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => equivNat(env)(sa)(sb) && da == db }
+
+      case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
+        // Make the match exhaustive
+        val and : PartialFunction[NatToData,  Boolean] => Boolean = f => {
+          f.lift(fb) match { case Some(p) => p case None => false } }
+        na == nb && (fa match {
+          case na : NatToDataIdentifier => and { case nb : NatToDataIdentifier => na == nb || env.contains((na, nb)) }
+          case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equiv((xa , xb) :: env)(ba)(bb) }
+        })
+       }
+
+      // Recursive cases
+      case FunType(sa, ta) => and { case FunType(sb, tb) => equiv(env)(sa)(sb) && equiv(env)(ta)(tb) }
+      case PairType(la, ra) => and { case PairType(lb, rb) => equiv(env)(la)(lb) && equiv(env)(ra)(rb) }
+      case VectorType(sa, da) => and { case VectorType(sb, db) => equivNat(env)(sa)(sb) && equiv(env)(da)(db) }
+      case ArrayType(sa, da) => and { case ArrayType(sb, db) => equivNat(env)(sa)(sb) && equiv(env)(da)(db) }
+
+      // Recursive cases -> binding tracking
+      case DepFunType(xa, ta) => and { case DepFunType(xb, tb) =>
+        (xa.getClass == xb.getClass) && equiv((xa, xb) :: env)(ta)(tb) }
+      case DepPairType(xa, ta) => and { case DepPairType(xb, tb) =>
+        (xa.getClass == xb.getClass) && equiv((xa, xb) :: env)(ta)(tb) }
     }
   }
 
