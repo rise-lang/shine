@@ -53,7 +53,7 @@ object equality {
 
           // Base cases -> identifier lookup in nat expressions
           case IndexType(sa) => and { case IndexType(sb) => equivNat(env)(sa)(sb) }
-          case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => equivNat(env)(sa)(sb) && da == db }
+          case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => da == db && equivNat(env)(sa)(sb) }
 
           // Should we move this into its own equality check?
           case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
@@ -94,7 +94,6 @@ object equality {
     object alphaEquivalence {
       val equiv: ExprEq = typeEq => typeEnv => exprEnv => a => b => {
         val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
-        // Note: we cannot short circuit with a syntactic comparison as that would compare types syntactically
         typeEq(typeEnv)(a.t)(b.t) && (a match {
           case Identifier(na) => and { case Identifier(nb) => na == nb || exprEnv.contains((na, nb))}
           case Literal(da) => and { case Literal(db) => da == db }
@@ -102,11 +101,11 @@ object equality {
           case App(fa, ea) => and { case App(fb, eb) =>
             equiv(typeEq)(typeEnv)(exprEnv)(fa)(fb) && equiv(typeEq)(typeEnv)(exprEnv)(ea)(eb) }
           case DepApp(fa, xa) => and { case DepApp(fb, xb) =>
-            xa.getClass == xb.getClass && (xa == xb || exprEnv.contains((xa, xb))) && equiv(typeEq)(typeEnv)(exprEnv)(fa)(fb)}
+            (xa == xb || exprEnv.contains((xa, xb))) && equiv(typeEq)(typeEnv)(exprEnv)(fa)(fb)}
           case Lambda(xa, ta) => and { case Lambda(xb, tb) =>
             typeEq(typeEnv)(xa.t)(xb.t) && equiv(typeEq)(typeEnv)((xa.name, xb.name) :: exprEnv)(ta)(tb) }
           case DepLambda(xa, ea) => and { case DepLambda(xb, eb) =>
-            xa.getClass == xb.getClass && equiv(typeEq)((xa, xb) :: typeEnv)(exprEnv)(ea)(eb) }
+            xa.getClass == xb.getClass && equiv(typeEq)((makeExplicit(xa), makeExplicit(xb)) :: typeEnv)(exprEnv)(ea)(eb) }
         })
       }
 
