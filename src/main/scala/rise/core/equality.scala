@@ -1,9 +1,11 @@
 package rise.core
 
-import rise.core.equality.typeEq.alphaEquivalence.equiv
-import rise.core.semantics.{ArrayData, IndexData, NatData, PairData, ScalarData, VectorData}
+import elevate.core.{Strategy, Success}
 import rise.core.types._
+import rise.elevate.strategies.normalForm.BENF
 import util.PatternMatching
+import elevate.core.strategies.Traversable
+import rise.core.DSL.{TypeAssertionHelper, toBeTyped}
 
 object equality {
   type TypeEnv = List[(Kind.Identifier, Kind.Identifier)]
@@ -24,12 +26,14 @@ object equality {
 
   object typeEq {
     object typeErasure {
-      val equiv: TypeEnv => Type => Type => Boolean = _ => _ => _ => true
+      def apply(a : Type, b : Type) : Boolean = equiv(Nil)(a)(b)
+      val equiv: TypeEq = _ => _ => _ => true
       val hash: Type => Int = _ => 0
     }
     
     object unificationAlphaEquivalence {
-      val equiv: TypeEnv => Type => Type => Boolean = env => a => b => (a, b) match {
+      def apply(a : Type, b : Type) : Boolean = equiv(Nil)(a)(b)
+      val equiv: TypeEq = env => a => b => (a, b) match {
         case (TypePlaceholder, _) => true
         case (_, TypePlaceholder) => true
         case _ => alphaEquivalence.equiv(env)(a)(b)
@@ -38,6 +42,8 @@ object equality {
     }
 
     object alphaEquivalence {
+      def apply(a : Type, b : Type) : Boolean = equiv(Nil)(a)(b)
+
       /** Alpha equivalence on types.
         * Datatype identifier explicitness is ignored.
         * Short circuits in the event of syntactic equality.
@@ -115,6 +121,8 @@ object equality {
       * Kind equality is checked on dependent functions and pairs.
       */
     object alphaEquivalence {
+      def apply(typeEq : TypeEq, a : Expr, b : Expr) : Boolean = equiv(typeEq)(Nil)(Nil)(a)(b)
+
       val equiv: ExprEq = typeEq => typeEnv => exprEnv => a => b => {
         val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
         typeEq(typeEnv)(a.t)(b.t) && (a match {
@@ -136,7 +144,7 @@ object equality {
         * Parametrised by a hash function on types.
         * All identifiers are considered equal and therefore ignored.
         */
-      val hash: (Type => Int) => Expr => Int = typeHash => e => e match {
+      val hash: (Type => Int) => Expr => Int = typeHash => {
         case i: Identifier => 5 + typeHash(i.t)
         case Lambda(x, e) => 7 * e.hashCode() + typeHash(x.t) + typeHash(e.t)
         case App(f, e) => 11 * f.hashCode() + 13 * e.hashCode() + typeHash(f.t) + typeHash(e.t)
