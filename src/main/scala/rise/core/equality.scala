@@ -1,11 +1,26 @@
 package rise.core
 
+import rise.core.equality.typeEq.alphaEquivalence.equiv
 import rise.core.semantics.{ArrayData, IndexData, NatData, PairData, ScalarData, VectorData}
 import rise.core.types._
 import util.PatternMatching
 
 object equality {
   type TypeEnv = List[(Kind.Identifier, Kind.Identifier)]
+  type TypeEq = TypeEnv => Type => Type => Boolean
+  type ExprEnv = List[(String, String)]
+  type ExprEq = TypeEq => TypeEnv => ExprEnv => Expr => Expr => Boolean
+
+  // TODO: move to utils?
+  private def makeExplicit[K <: Kind.Identifier]: K => K = {
+    case t: DataTypeIdentifier => t.asExplicit.asInstanceOf[K]
+    case t => t
+  }
+  val equivNat: TypeEnv => Nat => Nat => Boolean = env => a => b => {
+    val natEnv = env.collect { case (i: NatIdentifier, n: Nat) => (i, n) }
+    // substitutes elements on the left with elements on the right
+    substitute.natsInNat(natEnv.toMap, a) == b
+  }
 
   object typeEq {
     object unificationAlphaEquivalence {
@@ -17,24 +32,12 @@ object equality {
       val hash: Type => Int = _ => 0
     }
     object alphaEquivalence {
-      // TODO: move to utils?
-      private def makeExplicit[K <: Kind.Identifier]: K => K = {
-        case t: DataTypeIdentifier => t.asExplicit.asInstanceOf[K]
-        case t => t
-      }
-
-      val equivNat: TypeEnv => Nat => Nat => Boolean = env => a => b => {
-        val natEnv = env.collect { case (i: NatIdentifier, n: Nat) => (i, n) }
-        // substitutes elements on the left with elements on the right
-        substitute.natsInNat(natEnv.toMap, a) == b
-      }
-
       /** Alpha equivalence on types
         * Datatype identifier explicitness is ignored.
         * Short circuits in the event of syntactic equality.
         * Kind equality is checked on dependent functions and pairs.
         */
-      val equiv: TypeEnv => Type => Type => Boolean = env => a => b => {
+      val equiv: TypeEq = env => a => b => {
         val and = PatternMatching.matchWithDefault(b, false)
         a == b || (a match {
           // Base cases
@@ -88,43 +91,22 @@ object equality {
   }
 
   object exprEq {
-    type TypeEq = Type => Type => Boolean
-
     object alphaEquivalence {
-      val equiv: TypeEq => Expr => Expr => Boolean = typeEq => a => b => {
-        // Make the match exhaustive
-        val and = PatternMatching.matchWithDefault(b, false)
-        typeEq(a.t)(b.t) && (a match {
-          case Identifier(na) => and { case Identifier(nb) => na == nb }
+      val equiv: ExprEq = typeEq => typeEnv => exprEnv => a => b => {
+        val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
+        // Note: we cannot short circuit with a syntactic comparison as that would compare types syntactically
+        typeEq(typeEnv)(a.t)(b.t) && (a match {
+          case Identifier(na) => and { case Identifier(nb) => na == nb || exprEnv.contains((na, nb))}
           case Literal(da) => and { case Literal(db) => da == db }
           case a: Primitive => and { case b: Primitive => a.name == b.name }
-          // Application compares structurally
-          case App(fa, ea) => and { case App(fb, eb) => equiv(typeEq)(fa)(fb) && equiv(typeEq)(ea)(eb) }
-          case DepApp(fa, xa) => and { case DepApp(fb, xb) => equiv(typeEq)(fa)(fb) && xa == xb }
-          // Abstraction compares after substitution
-          case Lambda(xa, ta) => and { case other@Lambda(xb, _) =>
-            typeEq(xa.t)(xb.t) && equiv(typeEq)(ta)(typedLifting.liftFunExpr(other).value(xa))
-          }
-          case DepLambda(xa, ea) => and { case other@DepLambda(xb, _) =>
-            val and = PatternMatching.matchWithDefault(xb, false)
-            xa match {
-              case n: NatIdentifier => and { case _: NatIdentifier =>
-                equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n))
-              }
-              case dt: DataTypeIdentifier => and { case _: DataTypeIdentifier =>
-                equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[DataKind](other).value(dt))
-              }
-              case addr: AddressSpaceIdentifier => and { case _: AddressSpaceIdentifier =>
-                equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr))
-              }
-              case n2n: NatToNatIdentifier => and { case _: NatToNatIdentifier =>
-                equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n))
-              }
-              case n2d: NatToDataIdentifier => and { case _: NatToDataIdentifier =>
-                equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d))
-              }
-            }
-          }
+          case App(fa, ea) => and { case App(fb, eb) =>
+            equiv(typeEq)(typeEnv)(exprEnv)(fa)(fb) && equiv(typeEq)(typeEnv)(exprEnv)(ea)(eb) }
+          case DepApp(fa, xa) => and { case DepApp(fb, xb) =>
+            xa.getClass == xb.getClass && (xa == xb || exprEnv.contains((xa, xb))) && equiv(typeEq)(typeEnv)(exprEnv)(fa)(fb)}
+          case Lambda(xa, ta) => and { case Lambda(xb, tb) =>
+            typeEq(typeEnv)(xa.t)(xb.t) && equiv(typeEq)(typeEnv)((xa.name, xb.name) :: exprEnv)(ta)(tb) }
+          case DepLambda(xa, ea) => and { case DepLambda(xb, eb) =>
+            xa.getClass == xb.getClass && equiv(typeEq)((xa, xb) :: typeEnv)(exprEnv)(ea)(eb) }
         })
       }
 
