@@ -186,7 +186,7 @@ object gen {
       def fromExpr: Expr => HostedModule = exprToPhrase andThen fromPhrase
 
       def fromPhrase: Phrase => HostedModule =
-        partialHostCompiler(name) <<>>:
+        partialHostCompiler(name) composeWith
           (   hostFunDefToFunction()
             x map(sizedKernelDefToKernel) )
     }
@@ -199,7 +199,7 @@ object gen {
     private def partialHostCompiler(hostFunName: String): PartialCompiler[
       Phrase, HostedModule,
       (HostFunDef, Seq[SizedKernelDef]),
-      (CModule, Seq[KernelModule])] =
+      (CModule,    Seq[KernelModule])] =
         PartialCompiler.functor(
           OpenCL.SeparateHostAndKernelCode.separate(hostFunName),
           (OpenCL.Module.apply _).tupled )

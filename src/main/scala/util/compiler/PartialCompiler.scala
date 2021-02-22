@@ -46,5 +46,5 @@ object PartialCompiler {
 
   def stagedPC[S1, S2, S3, T](trans1: S1 => S2,
                               trans2: S2 => S3): PartialCompiler[S1, T, S3, T] =
-    stage[S1, S2](trans1)[T] <<>> stage[S2, S3](trans2)[T]
+    stage[S1, S2](trans1)[T] composeWithPC stage[S2, S3](trans2)[T]
 }

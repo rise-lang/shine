@@ -2,6 +2,8 @@ package util.compiler
 
 import util.compiler.PartialCompiler.idPC
 
+// The notation in the comments is inspired by
+// "The Compiler Forest" by Mihai Budiu, Joel Galenson, and Gordon D. Plotkin
 object Operations {
   // Composition: PC<<C>>
   def composeC[S, T, S_, T_](pc: S => (S_, T_ => T),
@@ -44,7 +46,7 @@ object Operations {
   }
 
   // Star: C*
-  def `*`[S, T](c: S => T): Seq[S] => Seq[T] = ss => ss.map(c(_))
+  def star[S, T](c: S => T): Seq[S] => Seq[T] = ss => ss.map(c(_))
 
   // Conditional: COND
   def condC[S, T](pred: S => Boolean,
