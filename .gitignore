@@ -5,6 +5,7 @@ modules.xml
 .vscode
 .metals
 .bloop
+.bsp
 
 *.aux
 *.bbl

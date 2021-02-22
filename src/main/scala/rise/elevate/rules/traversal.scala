@@ -69,12 +69,24 @@ object traversal {
     implicit object RiseTraversable extends implementation.DefaultTraversal {
       override protected def oneHandlingState: Boolean => Strategy[Rise] => Strategy[Rise] =
         carryOverState => s => {
-          // (option 1) traverse to argument first
-          case a @ App(f, e) => s(e) match {
-            case Success(x: Rise) => Success(App(f, x)(a.t))
-            case Failure(state)   => if (carryOverState)
-              state(f).mapSuccess(App(_, e)(a.t)) else
-              s(f).mapSuccess(App(_, e)(a.t))
+          // To achieve a traversal that most closely corresponds to the execution order we ...
+          case a @ App(f, e) => e.t match {
+            // ... traverse arguments with a function type after the called function ...
+            case FunType(_, _) | DepFunType(_, _) =>
+              s(f) match {
+                case Success(x: Rise) => Success(App(x, e)(a.t))
+                case Failure(state)   => if (carryOverState)
+                  state(e).mapSuccess(App(f, _)(a.t)) else
+                  s(e).mapSuccess(App(f, _)(a.t))
+              }
+            // ... traverse arguments with a non-function type before the called function.
+            case _ =>
+              s(e) match {
+                case Success(x: Rise) => Success(App(f, x)(a.t))
+                case Failure(state)   => if (carryOverState)
+                  state(f).mapSuccess(App(_, e)(a.t)) else
+                  s(f).mapSuccess(App(_, e)(a.t))
+              }
           }
 
           // Push s further down the AST.

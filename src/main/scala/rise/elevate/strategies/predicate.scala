@@ -1,8 +1,8 @@
 package rise.elevate.strategies
 
 import elevate.core._
-import elevate.core.strategies.Traversable
 import elevate.core.strategies.predicate._
+import elevate.core.strategies.{Traversable, basic}
 import rise.core.DSL.ToBeTyped
 import rise.core._
 import rise.core.primitives._
@@ -15,159 +15,77 @@ object predicate {
 
   // Matching Single Nodes
 
-  case object isLambda extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case l: Lambda => Success(l)
-      case _         => Failure(isLambda)
-    }
-    override def toString: String = "isLambda"
+  case class is(pred: Expr => Boolean, name: String) extends Strategy[Rise] {
+    override def apply(e: Rise): RewriteResult[Rise] =
+      if (pred(e)) {
+        Success(e)
+      } else {
+        Failure(this)
+      }
+    override def toString(): String = s"is($name)"
   }
 
-  case object isDepLambda extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case l: DepLambda[_] => Success(l)
-      case _               => Failure(isDepLambda)
-    }
-    override def toString: String = "isDepLambda"
-  }
+  def isLambda: is = is(_.isInstanceOf[Lambda], "Lambda")
+  def isDepLambda: is = is(_.isInstanceOf[DepLambda[_]], "DepLambda")
+  def isIdentifier: is = is(_.isInstanceOf[Identifier], "Identifier")
+  def isApply: is = is(_.isInstanceOf[App], "Apply")
 
-  case object isMakeArray extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case m@makeArray(_) => Success(m)
-      case _            => Failure(isMakeArray)
-    }
-    override def toString: String = "isMakeArray"
-  }
+  def isArray: is = is(_.t.isInstanceOf[ArrayType], "Array")
 
-  case object isIdentifier extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case i: Identifier => Success[Rise](i)
-      case _             => Failure[Rise](isIdentifier)
-    }
-    override def toString: String = "isIdentifier"
-  }
+  def isPrimitive(p: Builder): is = is(p.unapply, p.toString)
 
-  case object isReduce extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case r@reduce() => Success(r)
-      case _          => Failure(isReduce)
-    }
-    override def toString: String = "isReduce"
-  }
+  def isLet: is = isPrimitive(let)
 
-  case object isTranspose extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case t@transpose() => Success(t)
-      case _             => Failure(isTranspose)
-    }
-    override def toString = "isTranspose"
-  }
+  def isMap: is = isPrimitive(map)
 
-  case object isReduceSeq extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case r@reduceSeq() => Success(r)
-      case _             => Failure(isReduceSeq)
-    }
-    override def toString = "isReduce"
-  }
+  def isGenerate: is = isPrimitive(generate)
 
-  case object isReduceSeqUnroll extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case r@reduceSeqUnroll() => Success(r)
-      case _                   => Failure(isReduceSeqUnroll)
-    }
-    override def toString = "isReduce"
-  }
+  def isReduce: is = isPrimitive(reduce)
+  def isReduceSeq: is = isPrimitive(reduceSeq)
+  def isReduceSeqUnroll: is = isPrimitive(reduceSeqUnroll)
+  def isReduceX: Strategy[Rise] = isReduce <+ isReduceSeq <+ isReduceSeqUnroll
 
-  def isReduceX: Strategy[Rise] = (isReduce <+ isReduceSeq <+ isReduceSeqUnroll)
+  def isTranspose: is = isPrimitive(transpose)
 
-  case object isArray extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case e ::: ArrayType(_,_) => Success(e)
-      case _ => Failure(isArray)
-    }
-  }
-
-  case object isGenerate extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case g@generate() => Success(g)
-      case _            => Failure(isGenerate)
-    }
-    override def toString: String = "isGenerate"
-  }
-
-  case object isApply extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case a:App => Success(a)
-      case _     => Failure(isApply)
-    }
-    override def toString: String = "isApply"
-  }
-
-  case object isMap extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case m@map() => Success(m)
-      case _       => Failure(isMap)
-    }
-    override def toString: String = "isMap"
-  }
-
-  case object isLet extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case l@let() => Success(l)
-      case _       => Failure(isLet)
-    }
-    override def toString = "isLet"
-  }
+  def isMakeArray: is = is({  case _@makeArray(_) => true
+                              case _ => false }, "MakeArray" )
 
   // Matching Applied Primitives
 
-//  case class isApplied(s: Strategy[Rise]) extends Strategy[Rise] {
-//    def apply(e: Rise): RewriteResult[Rise] = e match {
-//      case App(f, _) => s(f)
-//      case _         => Failure(isAppliedLet)
-//    }
-//    override def toString: String = "isAppliedLet"
-//  }
+  def isApplied(fp: Strategy[Rise]): Strategy[Rise] =
+    isApp(fp, basic.id)
 
-  case object isAppliedLet extends Strategy[Rise] {
+  case class isApp(fp: Strategy[Rise], ep: Strategy[Rise]) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case a@App(App(let(), _), _) => Success(a)
-      case _                       => Failure(isAppliedLet)
-    }
-    override def toString: String = "isAppliedLet"
-  }
-
-  case object isAppliedMap extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case m@App(App(map(), f), arg) => Success(m)
-      case _                         => Failure(isMap)
-    }
-    override def toString: String = "isAppliedMap"
-  }
-
-  case object isAppliedZip extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case z@App(App(zip(), a), b) => Success(z)
-      case _                       => Failure(isAppliedZip)
-    }
-    override def toString: String = "isAppliedZip"
-  }
-
-  case object isAppliedReduce extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case r@App(App(App(reduce(), op), init), arg) => Success(r)
-      case _                                        => Failure(isMap)
-    }
-    override def toString: String = "isAppliedReduce"
-  }
-
-  case class isApplied(s: Strategy[Rise]) extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case a@App(f,e) => s(f).mapSuccess(_ => a)
-      case _          => Failure(isApplied(s))
+      case a@App(f, e) =>
+        fp(f).flatMapSuccess(_ =>
+          ep(e).mapSuccess(_ =>
+            a))
+      case _          => Failure(isApp(fp, ep))
     }
   }
+
+  def isAppliedBinaryFun(pred: Expr => Boolean,
+                         name: String): is =
+    is({
+      case App(App(f, _), _) if pred(f) => true
+      case _ => false
+    }, s"Applied$name")
+
+  def isAppliedTernaryFun(pred: Expr => Boolean,
+                          name: String): is =
+    is({
+      case App(App(App(f, _), _), _) if pred(f) => true
+      case _ => false
+    }, s"Applied$name")
+
+  def isAppliedLet: is = isAppliedBinaryFun(let.unapply, "Let")
+
+  def isAppliedMap: is = isAppliedBinaryFun(map.unapply, "Map")
+
+  def isAppliedZip: is = isAppliedBinaryFun(zip.unapply, "Zip")
+
+  def isAppliedReduce: is = isAppliedBinaryFun(reduce.unapply, "Reduce")
 
   case class isVectorizeablePrimitive()(implicit ev: Traversable[Rise]) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
