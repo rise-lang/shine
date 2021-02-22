@@ -32,7 +32,7 @@ object equality {
       val hash: Type => Int = _ => 0
     }
     object alphaEquivalence {
-      /** Alpha equivalence on types
+      /** Alpha equivalence on types.
         * Datatype identifier explicitness is ignored.
         * Short circuits in the event of syntactic equality.
         * Kind equality is checked on dependent functions and pairs.
@@ -80,17 +80,34 @@ object equality {
         })
       }
 
+      /** Alpha renaming respecting hash function on types.
+        * All identifiers are considered equal and therefore ignored.
+        */
       val hash: Type => Int = {
         case TypePlaceholder => 5
-        case TypeIdentifier(n) => 7 * n.hashCode()
-        case FunType(inT, outT) => 11 * inT.hashCode() + 13 * outT.hashCode() + 1
-        case DepFunType(_, t) => 17 * t.hashCode()
-        case dataType: DataType => 19 * dataType.hashCode()
+        case TypeIdentifier(_) => 7
+        case DataTypeIdentifier(_, _) => 11
+        case FunType(inT, outT) => 13 * inT.hashCode() + 17 * outT.hashCode()
+        case DepFunType(_, t) => 19 * t.hashCode()
+        case st: ScalarType => 29 * st.hashCode()
+        case NatType => 23
+        case VectorType(size, elemType) => 31 * size.hashCode() + 37 * elemType.hashCode()
+        case IndexType(size) => 41 * size.hashCode()
+        case PairType(dt1, dt2) => 43 * dt1.hashCode() + 47 * dt2.hashCode()
+        case DepPairType(x, t) => 53 * t.hashCode()
+        case NatToDataApply(f, n) => 59 * f.hashCode() + 61 * n.hashCode()
+        case ArrayType(size, elemType) => 67 * size.hashCode() + 71 * elemType.hashCode()
+        case DepArrayType(size, fdt) => 73 * size.hashCode() + 79 * fdt.hashCode()
       }
     }
   }
 
   object exprEq {
+    /** Alpha equivalence on expressions.
+      * Parametrised by an equality relation on type.
+      * Datatype identifier explicitness is ignored.
+      * Kind equality is checked on dependent functions and pairs.
+      */
     object alphaEquivalence {
       val equiv: ExprEq = typeEq => typeEnv => exprEnv => a => b => {
         val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
@@ -109,18 +126,21 @@ object equality {
         })
       }
 
+      /** Alpha renaming respecting hash function on expressions.
+        * All identifiers are considered equal and therefore ignored.
+        */
       val hash: Expr => Int = {
-        case _: Identifier => 17
-        case Lambda(_, e) => 3 * e.hashCode() + 1
-        case App(f, e) => 5 * f.hashCode() + -7 * e.hashCode() + 2
-        case DepLambda(_, e) => 4 * e.hashCode() + 3
-        case DepApp(f, _) => 6 * f.hashCode() + 4
+        case _: Identifier => 5
+        case Lambda(_, e) => 7 * e.hashCode()
+        case App(f, e) => 11 * f.hashCode() + 13 * e.hashCode()
+        case DepLambda(_, e) => 17 * e.hashCode()
+        case DepApp(f, _) => 19 * f.hashCode()
         case l@Literal(_: ScalarData | _: VectorData) => l.d.hashCode()
-        case Literal(_: NatData) => 91
-        case Literal(_: IndexData) => 93
-        case Literal(_: ArrayData) => 95
-        case Literal(_: PairData) => 97
-        case p: Primitive => p.getClass.hashCode()
+        case Literal(_: NatData) => 23
+        case Literal(_: IndexData) => 29
+        case Literal(_: ArrayData) => 31
+        case Literal(_: PairData) => 37
+        case p: Primitive => p.name.hashCode()
       }
     }
   }
