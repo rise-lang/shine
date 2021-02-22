@@ -23,6 +23,11 @@ object equality {
   }
 
   object typeEq {
+    object typeErasure {
+      val equiv: TypeEnv => Type => Type => Boolean = _ => _ => _ => true
+      val hash: Type => Int = _ => 0
+    }
+    
     object unificationAlphaEquivalence {
       val equiv: TypeEnv => Type => Type => Boolean = env => a => b => (a, b) match {
         case (TypePlaceholder, _) => true
@@ -31,6 +36,7 @@ object equality {
       }
       val hash: Type => Int = _ => 0
     }
+
     object alphaEquivalence {
       /** Alpha equivalence on types.
         * Datatype identifier explicitness is ignored.
