@@ -14,66 +14,90 @@ object rules {
   case class Environment(visitedES: mutable.Set[ExprSet],
                          visitedE: mutable.Set[Expr])
 
-  // the matching Expr traceback, and the resulting ExprSet
-  // TODO: should the traceback be a tree instead of a sequence?
-  type Matches = (Seq[Expr], ExprSet)
-  type Rule = ExprSet => Seq[Matches]
+  // An expression trace that matched a rule
+  // TODO: should the trace be a tree instead of a sequence?
+  type Match = Seq[Expr]
+  type Result = Seq[(Match, ExprSet)]
+  type Rule = (Expr, Type) => Result
 
-  private trait Result {
-    def withMatch(m: Expr): Seq[Matches]
+/* TODO: generic rules?
+  type GRule[P, R[_]] = P => R[P]
+  type ExprSetResult[T] = Seq[(Match, T)]
+  type ExprSetRule = GRule[ExprSet, ExprSetResult]
+  type ExprRule = GRule[Expr, elevate.core.RewriteResult]
+*/
+
+  private trait IntoResult {
+    def withMatch(m: Expr): Result
   }
 
-  private implicit def funm(f: ExprSet => Seq[Matches]): ExprSet => Result = es => f(es)
-  private implicit def seqm(r: Seq[Matches]): Result = new Result {
-    def withMatch(m: Expr): Seq[Matches] =
+  private implicit def seqm(r: Result): IntoResult = new IntoResult {
+    def withMatch(m: Expr): Result =
       r.map { case (ms, r) => (m +: ms, r) }
   }
-  private implicit def resm(r: ExprSet): Result = new Result {
-    def withMatch(m: Expr): Seq[Matches] =
+  private implicit def resm(r: ExprSet): IntoResult = new IntoResult {
+    def withMatch(m: Expr): Result =
       Seq((Seq(m), r))
   }
 
-  private def when(f: Expr => Result): Rule = { es =>
-    es.alternatives.iterator.flatMap { e =>
+  private type SubRule = ExprMaybeSet => Result
+  private trait ExprMaybeSet {
+    def alternatives(): Iterator[Expr]
+  }
+
+  private implicit def exprEMS(e: Expr): ExprMaybeSet = new ExprMaybeSet {
+    override def alternatives(): Iterator[Expr] = Iterator(e)
+  }
+  private implicit def setEMS(s: ExprSet): ExprMaybeSet = new ExprMaybeSet {
+    override def alternatives(): Iterator[Expr] = s.alternatives.iterator
+  }
+
+  private implicit def topRule1(f: Expr => Result): Rule = { case (e, _) => f(e) }
+  private implicit def topRule2(f: SubRule): Rule = { case (e, _) => f(e) }
+  private implicit def topRule3(f: SubRule): Expr => Result = e => f(e)
+  private implicit def subRule(f: ExprMaybeSet => Result): ExprSet => IntoResult = es => f(es)
+
+  private def when(f: Expr => IntoResult): SubRule = { ems =>
+    ems.alternatives().flatMap { e =>
       f(e).withMatch(e)
     }.toSeq
   }
 
-  private def whenLambda(f: (Identifier, Type, ExprSet) => Result): Rule = when {
+  private def whenLambda(f: (Identifier, Type, ExprSet) => IntoResult): SubRule = when {
     case Lambda(x, t, e) => f(x, t, e)
     case _ => Nil
   }
 
-  private def whenApp(f: (ExprSet, ExprSet) => Result): Rule = when {
+  private def whenApp(f: (ExprSet, ExprSet) => IntoResult): SubRule = when {
     case App(g, e) => f(g, e)
     case _ => Nil
   }
 
-  private def whenDepLambda(f: (Kind#I with Kind.Explicitness, ExprSet) => Result): Rule =
+  private def whenDepLambda(f: (Kind#I with Kind.Explicitness, ExprSet) => IntoResult): SubRule =
     when {
       case DepLambda(x, e) => f(x, e)
       case _ => Nil
     }
 
-  private def whenDepApp(f: (ExprSet, Kind#T) => Result): Rule = when {
+  private def whenDepApp(f: (ExprSet, Kind#T) => IntoResult): SubRule = when {
     case DepApp(g, e) => f(g, e)
     case _ => Nil
   }
 
-  private def whenNatApp(f: (ExprSet, Nat) => Result): Rule = when {
+  private def whenNatApp(f: (ExprSet, Nat) => IntoResult): SubRule = when {
     case DepApp(g, e: Nat) => f(g, e)
     case _ => Nil
   }
 
-  private def whenPrim(p: rc.Primitive)(f: => Result): Rule = when {
+  private def whenPrim(p: rc.Primitive)(f: => IntoResult): SubRule = when {
     case Primitive(p2) if p == p2 => f
     case _ => Nil
   }
 
-  private def whenAny(rs: Rule*): Rule = es =>
+  private def whenAny(rs: SubRule*): SubRule = es =>
     rs.flatMap(r => r(es))
 
-  private def matchIf(b: Boolean)(f: => Result): Result =
+  private def matchIf(b: Boolean)(f: => IntoResult): IntoResult =
     if (b) { f } else { Nil }
 
   def betaReduction: Rule = whenAny(
@@ -111,15 +135,15 @@ object rules {
     ExprSet.one(Lambda(id, inT, body), inT ->: body.t)
   }
 
-  def mapFusion: Rule = { es =>
-    es |> whenApp { case (e1, e2) =>
+  def mapFusion: Rule = { case (e, t) =>
+    e |> whenApp { case (e1, e2) =>
     e1 |> whenApp { case (map1, f) =>
     e2 |> whenApp { case (e3, arg) =>
     e3 |> whenApp { case (map2, g) => matchIf (
       map1.represents(rcp.map.primitive) &&
       map2.represents(rcp.map.primitive)
     ) {
-      (arg.t, es.t) match {
+      (arg.t, t) match {
         case (ArrayType(n, s), ArrayType(_, u)) =>
           ExprSet.init(rcp.map !: (s ->: u) ->: (n`.`s) ->: (n`.`u))(lambda(s, x => f(g(x))))(arg)
         case _ => ???
@@ -128,23 +152,24 @@ object rules {
   }
 
   // "mapLastFission"
-  def mapFission: Rule = { es =>
-    es |> whenApp { case (map, e1) =>
+  def mapFission: Rule = { case (e, t) =>
+    e |> whenApp { case (map, e1) =>
     e1 |> whenLambda { case (x, xt, e2) =>
     e2 |> whenApp { case (f, gx) =>
       matchIf (map.represents(rcp.map.primitive)) {
-        (es.t, f.t, xt) match {
+        (t, f.t, xt) match {
           case (FunType(_, ArrayType(n, dt3)), FunType(dt2: DataType, _), dt1: DataType) =>
-            val notX: Expr => Boolean = {
-              case Identifier(name) if name == x.name => false
+            val notIdent: Expr => Boolean = {
+              case Identifier(_) => false
               case _ => true
             }
-          /*
+            /*
+            // TODO: we should filter `f` deeper than one level?
             val f2 = f.filtered(!_.containsIdent(x.name))
-            val gx2 = gx.filtered(notX)
-            if (f2.alternatives.nonEmpty && gx2.alternatives.nonEmpty) {
+            val gx2 = gx.filtered(notIdent)
+            matchIf (f2.alternatives.nonEmpty && gx2.alternatives.nonEmpty) {
              */
-            matchIf (!f.containsIdent(x.name) && gx.alternatives.forall(notX)) {
+            matchIf (!f.containsIdent(x.name) && gx.alternatives.exists(notIdent)) {
               lambda(n`.`dt1, input =>
                 ExprSet.init(rcp.map !: (dt2 ->: dt3) ->: (n`.`dt2) ->: (n`.`dt3))(f)(
                   ExprSet.init(rcp.map !: (dt1 ->: dt2) ->: (n`.`dt1) ->: (n`.`dt2))(
@@ -171,8 +196,8 @@ object rules {
     ??? // TODO
   }
 
-  def mapSlideBeforeTranspose: Rule = { es =>
-    es |> whenApp { case (transpose, e1) =>
+  def mapSlideBeforeTranspose: Rule = { case (e, t) =>
+    e |> whenApp { case (transpose, e1) =>
     e1 |> whenApp { case (e2, y) =>
     e2 |> whenApp { case (map, s) =>
       val sopt = extractSplitOrSlide(s)
@@ -181,7 +206,7 @@ object rules {
         map.represents(rcp.map.primitive) &&
         sopt.isDefined
       ) {
-        (y.t, es.t) match {
+        (y.t, t) match {
           case (ArrayType(n, ArrayType(m, t)), ArrayType(mo, ArrayType(mi, ArrayType(_, _)))) =>
             val mt = (mi`.`n`.`t) ->: (n`.`mi`.`t)
             ExprSet.init(rcp.map !: mt ->: (mo`.`mi`.`n`.`t) ->: (mo`.`n`.`mi`.`t))(
@@ -192,8 +217,8 @@ object rules {
         }
     }}}}}
 
-  def slideBeforeMapMapF: Rule = { es =>
-    es |> whenApp { case (e1, e2) =>
+  def slideBeforeMapMapF: Rule = { case (e, t) =>
+    e |> whenApp { case (e1, e2) =>
       e1 |> whenApp { case (map1, e3) =>
        e3 |> whenApp { case (map2, f) =>
          e2 |> whenApp { case (s, y) =>
@@ -203,7 +228,7 @@ object rules {
              map2.represents(rcp.map.primitive) &&
              sopt.isDefined
            ) {
-             (y.t, es.t) match {
+             (y.t, t) match {
                case (ArrayType(n, s), ArrayType(no, ArrayType(ni, t))) =>
                  ExprSet.init(sopt.get !: (n`.`t) ->: (no`.`ni`.`t))(
                    ExprSet.init(rcp.map !: (s ->: t) ->: (n`.`s) ->: (n`.`t))(f)(y))
@@ -213,8 +238,8 @@ object rules {
          }}}}
   }
 
-  def removeTransposePair: Rule = { es =>
-    es |> whenApp { case (trans1, e1) =>
+  def removeTransposePair: Rule = { case (e, _) =>
+    e |> whenApp { case (trans1, e1) =>
       e1 |> whenApp { case (trans2, x) =>
         matchIf (
           trans1.represents(rcp.transpose.primitive) &&
@@ -225,8 +250,8 @@ object rules {
       }}
   }
 
-  def slideBeforeMap: Rule = { es =>
-    es |> whenApp { case (s, e1) =>
+  def slideBeforeMap: Rule = { case (e, t) =>
+    e |> whenApp { case (s, e1) =>
     s |> whenNatApp { case (e2, sp) =>
     e2 |> whenNatApp { case (slide, sz) =>
     e1 |> whenApp { case (e3, y) =>
@@ -235,7 +260,7 @@ object rules {
         slide.represents(rcp.slide.primitive) &&
         map.represents(rcp.map.primitive)
       ) {
-        (y.t, es.t) match {
+        (y.t, t) match {
           case (ArrayType(_, s), ArrayType(n, ArrayType(m, t))) =>
             ExprSet.init(rcp.map !: ((m`.`s) ->: (m`.`t)) ->: (n`.`m`.`s) ->: (n`.`m`.`t))(
               ExprSet.init(rcp.map !: (s ->: t) ->: (m`.`s) ->: (m`.`t))(f))(
@@ -252,8 +277,8 @@ object rules {
     ExprSet.init(sum !: (n`.`dt) ->: dt)(
       ExprSet.init(rcp.map(mulT) !: (n`.`(dt x dt)) ->: (n`.`dt))(
         ExprSet.init(rcp.zip !: (n`.`dt) ->: (n`.`dt) ->: (n`.`(dt x dt)))(a)(b)))
-  def separateDotVH(weights2d: rc.Expr, wV: rc.Expr, wH: rc.Expr): Rule = { es =>
-    es |> whenApp { case (e1, e2) =>
+  def separateDotVH(weights2d: rc.Expr, wV: rc.Expr, wH: rc.Expr): Rule = { case (e, t) =>
+    e |> whenApp { case (e1, e2) =>
     e1 |> whenApp { case (e3, init) =>
     e3 |> whenApp { case (reduce, add) =>
     e2 |> whenApp { case (e4, e5) =>
@@ -284,8 +309,8 @@ object rules {
         }
       }
     }}}}}}}}}}
-  def separateDotHV(weights2d: rc.Expr, wV: rc.Expr, wH: rc.Expr): Rule = { es =>
-    es |> whenApp { case (e1, e2) =>
+  def separateDotHV(weights2d: rc.Expr, wV: rc.Expr, wH: rc.Expr): Rule = { case (e, t) =>
+    e |> whenApp { case (e1, e2) =>
     e1 |> whenApp { case (e3, init) =>
     e3 |> whenApp { case (reduce, add) =>
     e2 |> whenApp { case (e4, e5) =>
@@ -317,39 +342,39 @@ object rules {
     }}}}}}}}}}
 
   object lowering {
-    def reduceSeqUnroll: Rule = { es =>
-      es |> whenPrim(rcp.reduce.primitive) {
-        ExprSet.init(rcp.reduceSeqUnroll !: es.t)
+    def reduceSeqUnroll: Rule = { case (e, t) =>
+      e |> whenPrim(rcp.reduce.primitive) {
+        ExprSet.init(rcp.reduceSeqUnroll !: t)
       }
     }
 
-    def mapSeq: Rule = { es =>
-      es |> whenPrim(rcp.map.primitive) {
-        ExprSet.init(rcp.mapSeq !: es.t)
+    def mapSeq: Rule = { case (e, t) =>
+      e |> whenPrim(rcp.map.primitive) {
+        ExprSet.init(rcp.mapSeq !: t)
       }
     }
 
-    def iterateStream: Rule = { es =>
-      es |> whenPrim(rcp.map.primitive) {
-        ExprSet.init(rcp.iterateStream !: es.t)
+    def iterateStream: Rule = { case (e, t) =>
+      e |> whenPrim(rcp.map.primitive) {
+        ExprSet.init(rcp.iterateStream !: t)
       }
     }
 
-    def toMemAfterMapSeq: Rule = { es =>
-      es |> whenApp { case (e1, _) =>
+    def toMemAfterMapSeq: Rule = { case (e, t) =>
+      e |> whenApp { case (e1, _) =>
         e1 |> whenApp { case (mapSeq, _) =>
           matchIf (mapSeq.represents(rcp.mapSeq.primitive)) {
-            ExprSet.init(rcp.toMem !: es.t ->: es.t)(es)
+            ExprSet.init(rcp.toMem !: t ->: t)(ExprSet.one(e, t))
           }
         }}}
 
-    def rotateValues(write: rc.DSL.ToBeTyped[rc.Expr]): Rule = { es =>
-      es |> whenNatApp { case (e1, sp) =>
+    def rotateValues(write: rc.DSL.ToBeTyped[rc.Expr]): Rule = { case (e, t) =>
+      e |> whenNatApp { case (e1, sp) =>
        e1 |> whenNatApp { case (slide, sz) =>
          matchIf (slide.represents(rcp.slide.primitive) && sp == (1: Nat)) {
-           es.t match {
+           t match {
              case FunType(ArrayType(_, s), _) =>
-               ExprSet.init(rcp.rotateValues(sz) !: (s ->: s) ->: es.t)(
+               ExprSet.init(rcp.rotateValues(sz) !: (s ->: s) ->: t)(
                  ExprSet.init(write !: s ->: s)
              )
              case _ => ???

@@ -8,6 +8,7 @@ import scala.collection.mutable
 
 // TODO: we could use something like a Map of alternatives/Exprs to quickly find a pattern (e.g. all app nodes)
 // TODO: could we avoid re-applying rules that already triggered?
+// TODO: investigate benefits of hashconsing or full-fledged e-graph
 final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
   import ExprSet._
 
@@ -39,7 +40,7 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
 
   // calling this can create dead-ends (empty program sets)
   def remove(trace: Seq[Expr]): Unit = {
-    def exprSetRec(es: ExprSet, trace: Seq[Expr], remove: Boolean = true): Boolean = {
+    def exprSetRec(es: ExprSet, trace: Seq[Expr]): Boolean = {
       trace match {
         case alternative +: rest =>
           val idx = es.alternatives.indexOf(alternative)
@@ -47,9 +48,8 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
             false
           } else {
             val e = es.alternatives(idx)
-            if (remove) {
-              es.alternatives.remove(idx)
-            }
+            // TODO: is this safe to do?
+            es.alternatives.remove(idx)
             exprRec(e, rest)
           }
         case Nil => true
@@ -64,8 +64,7 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
         case DepApp(f, _) => exprSetRec(f, trace)
       }
     }
-    // do not remove the first node of the trace
-    assert(exprSetRec(this, trace, false))
+    assert(exprSetRec(this, trace))
   }
 
   def filtered(predicate: Expr => Boolean): ExprSet = {
@@ -154,6 +153,104 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
     visited(this)
   }
 
+  // FIXME: this starts to look a lot like e-graphs rebuilding,
+  //  but less efficient / formal
+  def removeDuplicates(): Unit = {
+    val (eParents, esParents) = collectParents()
+    def rec(): Unit = {
+      val toUnify = eParents.iterator.flatMap { case (e, eps) =>
+        if (eps.size > 1) { Some(e, eps.toSeq) } else { None }
+      }.toSeq
+      if (toUnify.isEmpty) { return }
+
+      toUnify.foreach { case (expr, eps) =>
+        // all the `eps` are the same, we unify them to `eps.head`
+        val unified = eps.head
+        eps.tail.foreach { es =>
+          esParents(es).foreach { e =>
+            val r = e match {
+              case Lambda(x, xt, e) =>
+                assert(e == es)
+                Lambda(x, xt, unified)
+              case App(f, e) =>
+                assert(f == es || e == es)
+                App(if (f == es) unified else f, if (e == es) unified else e)
+              case DepLambda(x, e) => ??? // DepLambda(x, if (e == es) eps.head else e)
+              case DepApp(f, x) =>
+                assert(f == es)
+                DepApp(unified, x)
+              case _ => throw new Exception(s"did not expect $e")
+            }
+            eParents(e).foreach { es =>
+              val idx = es.alternatives.indexOf(e)
+              assert(idx > 0)
+              es.alternatives.remove(idx)
+            }
+            eParents.getOrElseUpdate(r, mutable.Set.empty[ExprSet]) ++= eParents(e)
+          }
+          esParents(unified) ++= esParents(es)
+          esParents(es).clear()
+          eParents(expr) -= es
+        }
+      }
+
+      rec()
+    }
+    util.dotPrintTmp("before", this)
+    rec()
+    util.dotPrintTmp("after", this)
+  }
+
+  private def collectParents(): (
+    mutable.Map[Expr, mutable.Set[ExprSet]],
+    mutable.Map[ExprSet, mutable.Set[Expr]],
+    ) = {
+    val eParents = mutable.Map.empty[Expr, mutable.Set[ExprSet]]
+    val esParents = mutable.Map.empty[ExprSet, mutable.Set[Expr]]
+    def EToES(e: Expr, es: ExprSet): Unit = {
+      val ps = esParents.getOrElseUpdate(es, mutable.Set.empty)
+      ps += e
+    }
+    def ESToE(es: ExprSet, e: Expr): Unit = {
+      val ps = eParents.getOrElseUpdate(e, mutable.Set.empty)
+      ps += es
+    }
+
+    val visited = mutable.Set.empty[ExprSet]
+
+    def exprSetRec(es: ExprSet): Unit = {
+      if (!visited.contains(es)) {
+        visited += es
+        es.alternatives.foreach(exprRec(es))
+      }
+    }
+
+    def exprRec(parent: ExprSet): Expr => Unit = { expr =>
+      ESToE(parent, expr)
+      expr match {
+        case _: Identifier => ()
+        case Lambda(_, _, e) =>
+          EToES(expr, e)
+          exprSetRec(e)
+        case App(f, e) =>
+          EToES(expr, f)
+          EToES(expr, e)
+          exprSetRec(f); exprSetRec(e)
+        case DepLambda(_, e) =>
+          EToES(expr, e)
+          exprSetRec(e)
+        case DepApp(f, _) =>
+          EToES(expr, f)
+          exprSetRec(f)
+        case Literal(_) => ()
+        case Primitive(_) => ()
+      }
+    }
+
+    exprSetRec(this)
+    (eParents, esParents)
+  }
+
   def removeEmptySets(): Unit = {
     val counts = mutable.Map.empty[ExprSet, Double]
     countRepresentations(counts)
@@ -192,28 +289,33 @@ final case class ExprSet(alternatives: mutable.ArrayBuffer[Expr], t: Type) {
   }
 
   def generateDotString(): String = {
-    val visited = mutable.Map.empty[ExprSet, String]
+    val visitedES = mutable.Map.empty[ExprSet, String]
+    // FIXME: the fact that we need to keep track of visitedE
+    //  shows an issue for rewriting
+    val visitedE = mutable.Map.empty[Expr, String]
     s"""digraph g
        |{
        |graph [fontname = "FiraCode"]
        |node [fontname = "FiraCode"]
        |edge [fontname = "FiraCode"]
        |node [shape="record", style="rounded, filled"]
-       |${generateDotRec(visited)}
+       |${generateDotRec(visitedES, visitedE)}
        |}
        |""".stripMargin
   }
 
-  def generateDotRec(visited: mutable.Map[ExprSet, String]): String = {
-    if (!visited.contains(this)) {
-      val id = s"es${visited.size}"
-      visited += this -> id
-      s"""$id [fillcolor=black, shape=point]
-         |${alternatives.zipWithIndex.map { case (a, i) => a.generateDotRec(id, i, visited) }.mkString("") }
-         |""".stripMargin
-    } else {
-      s""
+  def generateDotRec(visitedES: mutable.Map[ExprSet, String],
+                     visitedE: mutable.Map[Expr, String]): String = {
+    if (visitedES.contains(this)) {
+      return ""
     }
+    val id = s"es${visitedES.size}"
+    visitedES += this -> id
+    s"""$id [fillcolor=black, shape=point]
+       |${alternatives.zipWithIndex.map {
+            case (a, i) => a.generateDotRec(id, i, visitedES, visitedE)
+          }.mkString("")}
+       |""".stripMargin
   }
 }
 
@@ -225,14 +327,16 @@ sealed abstract class Expr {
 */
   def represents(b: rc.Expr, env: AlphaEqEnv = AlphaEqEnv.empty): Boolean = {
     (this, b) match {
-      case (ia: Identifier, ib: rc.Identifier) => env.identifiers.get(ia.name).contains(ib)
+      case (ia: Identifier, ib: rc.Identifier) =>
+        (ia.name == ib.name) || env.identifiers.get(ia.name).contains(ib)
       case (Lambda(xa, ta, ea), rc.Lambda(xb, eb)) =>
         typeEquals(ta, xb.t, env) && ea.represents(eb, env withIdent (xa.name -> xb))
       case (App(fa, ea), rc.App(fb, eb)) => fa.represents(fb, env) && ea.represents(eb, env)
       case (DepLambda(xa, ea), rc.DepLambda(xb, eb)) => ea.represents(eb, env withTIdent (xa -> xb))
       case (DepApp(fa, xa), rc.DepApp(fb, xb)) => (xa == xb) && fa.represents(fb, env)
       case (Literal(da), rc.Literal(db)) => da == db
-      case (Primitive(pa), pb: rc.Primitive) => pa == pb
+      case (Primitive(pa), pb: rc.Primitive) =>
+        typeEquals(pa.t, pb.t, env) && pa == pb.setType(TypePlaceholder)
       case _ => false
     }
   }
@@ -318,7 +422,8 @@ sealed abstract class Expr {
       case (DepApp(fa, xa), DepApp(fb, xb)) if (xa == xb) =>
         (true, fa.add(fb, visited))
       case (Literal(da), Literal(db)) if da == db => (true, false)
-      case (Primitive(pa), Primitive(pb)) if pa == pb => (true, false)
+      case (Primitive(pa), Primitive(pb)) if pa == pb =>
+        (true, false)
       case _ => (false, false)
     }
   }
@@ -356,33 +461,38 @@ sealed abstract class Expr {
     }
   }
 
-  def generateDotRec(pid: String, i: Int, visited: mutable.Map[ExprSet, String]): String = {
+  def generateDotRec(pid: String, i: Int,
+                     visitedES: mutable.Map[ExprSet, String],
+                     visitedE: mutable.Map[Expr, String]): String = {
+    if (visitedE.contains(this)) {
+      return s"$pid -> ${visitedE(this)}\n"
+    }
     val id = s"${pid}_$i"
+    visitedE += this -> id
     s"$pid -> $id\n" + (this match {
       case Identifier(name) =>
         s"$id [fillcolor=white, label=$name]"
       case Lambda(Identifier(name), _, e) =>
         s"""$id [fillcolor=white, label=λ$name]
-           |${e.generateDotRec(visited)}
-           |$id -> ${visited(e)}
+           |${e.generateDotRec(visitedES, visitedE)}
+           |$id -> ${visitedES(e)}
            |""".stripMargin
       case App(f, e) =>
         s"""$id [fillcolor=white, label=app]
-           |${f.generateDotRec(visited)}
-           |${e.generateDotRec(visited)}
-           |$id -> ${visited(f)} [label=fun]
-           |$id -> ${visited(e)} [label=arg]
+           |${f.generateDotRec(visitedES, visitedE)}
+           |${e.generateDotRec(visitedES, visitedE)}
+           |$id -> ${visitedES(f)} [label=fun]
+           |$id -> ${visitedES(e)} [label=arg]
            |""".stripMargin
       case DepLambda(x, e) =>
         s"""$id [fillcolor=white, label=Λ${x.name}]
-           |${e.generateDotRec(visited)}
-           |$id -> ${visited(e)}
+           |${e.generateDotRec(visitedES, visitedE)}
+           |$id -> ${visitedES(e)}
            |""".stripMargin
       case DepApp(f, v) =>
-        val vid = s"${id}_v"
         s"""$id [fillcolor=white, label=<depApp $v>]
-           |${f.generateDotRec(visited)}
-           |$id -> ${visited(f)}
+           |${f.generateDotRec(visitedES, visitedE)}
+           |$id -> ${visitedES(f)}
            |""".stripMargin
       case Literal(d) =>
         s"$id [fillcolor=white, label=<$d>]"
@@ -443,7 +553,7 @@ object ExprSet {
       case (DepFunType(xa, ta), DepFunType(xb, tb)) =>
         typeEquals(ta, tb, env withTIdent (xa -> xb))
       case (dta: DataTypeIdentifier, dtb: DataTypeIdentifier) =>
-        env.typeIdentifiers.get(dta).contains(dtb)
+        (dta == dtb) || env.typeIdentifiers.get(dta).contains(dtb)
       case (sa: ScalarType, sb: ScalarType) =>
         sa == sb
       case (NatType, NatType) =>
