@@ -23,8 +23,8 @@ class fissionFusion extends test_util.Tests {
   }
 
   def check(a: Expr, fis: Strategy[Rise], b: Expr, fus: Strategy[Rise]): Unit = {
-    val (closedA, nA) = makeClosed(a)
-    val (closedB, nB) = makeClosed(b)
+    val (closedA, nA) = makeClosed.withCount(a)
+    val (closedB, nB) = makeClosed.withCount(b)
     val na = BENF(closedA).get
     val nb = BENF(closedB).get
     eq(position(nA)(fis).apply(na).get, nb)
