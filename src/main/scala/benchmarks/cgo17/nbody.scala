@@ -17,8 +17,8 @@ object nbody {
     val globalSizeAMD = GlobalSize(N)
     val localSizeNVIDIA = LocalSize((tileX, tileY))
     val globalSizeNVIDIA = GlobalSize((N, tileY))
-    val kernelAMD = gen.OpenCLKernel(amd)
-    val kernelNVIDIA = gen.OpenCLKernel(nvidia)
+    val kernelAMD = gen.opencl.kernel.fromExpr(amd)
+    val kernelNVIDIA = gen.opencl.kernel.fromExpr(nvidia)
 
     withExecutor {
       val sampleCount = 10

@@ -4,6 +4,7 @@ import apps.harrisCornerDetectionHalide._
 import apps.{harrisCornerDetectionHalideRewrite => rewrite}
 import rise.core.DSL.ToBeTyped
 import rise.core._
+import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
 class harrisCornerDetectionHalideCheck
@@ -23,15 +24,18 @@ class harrisCornerDetectionHalideCheck
   val strip = 32
   assert(Ho % strip == 0)
 
+  val tileX = 8
+  val tileY = 8
+
   def lowerOMP(e: ToBeTyped[Expr]): Expr =
     rewrite.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOMP(lowered: Expr): Unit = {
     val dumbLowering = lowerOMP(omp.harrisSeqWrite)
-    val goldProg = gen.OpenMPProgram(dumbLowering, "harrisGold")
+    val goldFun = gen.openmp.function("harrisGold").asStringFromExpr(dumbLowering)
 
-    val prog = util.printTime("codegen",
-      gen.OpenMPProgram(lowered, "harris"))
+    val computeFun = util.printTime("codegen",
+      gen.openmp.function("harris").asStringFromExpr(lowered))
 
     val testCode =
       s"""
@@ -39,9 +43,9 @@ class harrisCornerDetectionHalideCheck
          | #include <stdio.h>
          | #include <math.h>
          |
-         | ${goldProg.code}
+         | $goldFun
          |
-         | ${prog.code}
+         | $computeFun
          |
          | int main(int argc, char** argv) {
          |   float* input = malloc(${3 * Hi * Wi} * sizeof(float));
@@ -52,8 +56,8 @@ class harrisCornerDetectionHalideCheck
          |     input[i] = (float)((i + 179) % 256) / 25.6f;
          |   }
          |
-         |   ${goldProg.function.name}(gold, $Ho, $Wo, input);
-         |   ${prog.function.name}(output, $Ho, $Wo, input);
+         |   harrisGold(gold, $Ho, $Wo, input);
+         |   harris(output, $Ho, $Wo, input);
          |
          |   int exit_status = 0;
          |   for (int y = 0; y < $Ho; y++) {
@@ -88,10 +92,10 @@ class harrisCornerDetectionHalideCheck
   def checkOCL(lowered: Expr, ls: LocalSize, gs: GlobalSize): Unit = {
     assert(lowered.t == harris(1, 1).toExpr.t)
     val prog = util.printTime("codegen",
-      gen.OpenCLKernel(lowered, "harris"))
+      gen.opencl.kernel("harris").fromExpr(lowered))
 
     val dumbLowering = lowerOCL(ocl.harrisSeqWrite)
-    val goldProg = gen.OpenCLKernel(dumbLowering, "harrisGold")
+    val goldProg = gen.opencl.kernel("harrisGold").fromExpr(dumbLowering)
 
     val random = new scala.util.Random()
     val input = Array.fill(3, Hi, Wi)(random.nextFloat() * 10.0f)
@@ -182,6 +186,25 @@ class harrisCornerDetectionHalideCheck
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 8,
       ocl.harrisBufferedRegRotVecAligned(3, 8))),
       LocalSize(1), GlobalSize(Ho / strip))
+  }
+
+  test("harrisTileShiftInwardsGParVecUnaligned(4) generates valid OpenCL") {
+    import rise.openCL.TypedDSL._
+    import rise.core.primitives.mapSeq
+
+    checkOCL(lowerOCL(
+      ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
+      ocl.harrisVecUnaligned2(4, _ => mapSeq, toPrivate))),
+      LocalSize((1, 1)), GlobalSize((32, 32)))
+  }
+
+  test("harrisTileShiftInwardsWLParVecUnaligned(4) generates valid OpenCL") {
+    import rise.openCL.TypedDSL._
+
+    checkOCL(lowerOCL(
+      ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
+        ocl.harrisVecUnaligned2(4, mapLocal(_), toLocal))),
+      LocalSize((16, 16)), GlobalSize((64, 64)))
   }
 
   test("harrisBuffered rewrite generates valid OpenCL") {

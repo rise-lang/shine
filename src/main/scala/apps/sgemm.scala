@@ -284,7 +284,7 @@ object sgemm {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runSgemmKernel(kernel: KernelWithSizes,
+  def runSgemmKernel(kernel: KernelExecutor.KernelWithSizes,
                      A: Array[Array[Float]],
                      B: Array[Array[Float]],
                      C: Array[Array[Float]],

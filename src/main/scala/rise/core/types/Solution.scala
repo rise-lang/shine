@@ -1,6 +1,8 @@
 package rise.core.types
 
-import rise.core.{Expr, substitute, traversal}
+import arithexpr.arithmetic.BoolExpr
+import rise.core.traverse._
+import rise.core.{Expr, substitute}
 
 object Solution {
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
@@ -29,36 +31,38 @@ case class Solution(ts: Map[Type, Type],
                     n2ns: Map[NatToNatIdentifier, NatToNat],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
                    ) {
-  import traversal.{Continue, Result, Stop}
 
-  case class Visitor(sol: Solution) extends traversal.Visitor {
-    override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
-    override def visitType[T <: Type](t: T): Result[T] =
-      Stop(sol(t).asInstanceOf[T])
-    override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
-      Stop(sol(a))
-    override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
-
-    override def visitN2N(n2n: NatToNat): Result[NatToNat] = Stop(sol(n2n))
+  abstract class Visitor(sol: Solution) extends PureTraversal {
+    override def nat: Nat => Pure[Nat] = ae => return_(sol(ae))
+    override def addressSpace: AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
+    override def natToData: NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
+    override def natToNat: NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
   }
 
-  def apply(e: Expr): Expr = {
-    traversal.DepthFirstLocalResult(e, Visitor(this))
+  case class V(sol: Solution) extends Visitor(sol) {
+    override def `type`[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
   }
+  def apply(e: Expr): Expr = V(this).expr(e).unwrap
 
-  def apply(t: Type): Type = {
-    traversal.types.DepthFirstLocalResult(t, new Visitor(this) {
-      override def visitType[T <: Type](t: T): Result[T] =
-        sol.ts.get(t) match {
-          case Some(x) => Stop(x.asInstanceOf[T])
-          case None    => Continue(t, this)
-        }
-    })
+  case class T(sol: Solution) extends Visitor(sol) {
+    override def datatype: DataType => Pure[DataType] = {
+      case t: DataTypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[DataType])
+      case t => super.datatype(t)
+    }
+    override def `type`[T <: Type]: T => Pure[T] = {
+      case t : TypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[T])
+      case t => super.`type`(t)
+    }
   }
+  def apply(t: Type): Type = T(this).`type`(t).unwrap
 
   def apply(n: Nat): Nat =
     (substitute.natsInNat(ns, _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
 
+  def apply(b: BoolExpr): BoolExpr = {
+    import arithexpr.arithmetic.ArithExpr
+    b.substitute(ns.asInstanceOf[Map[ArithExpr, ArithExpr]]).getOrElse(b)
+  }
 
   def apply(a: AddressSpace): AddressSpace =
     substitute.addressSpacesInAddressSpace(as, a)
@@ -72,6 +76,7 @@ case class Solution(ts: Map[Type, Type],
       case lambda@NatToDataLambda(x, body) =>
         val xSub = apply(x) match {
           case n: NatIdentifier => n
+          case n: arithexpr.arithmetic.NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
           case other => throw NonIdentifierInBinderException(lambda, other)
         }
         NatToDataLambda(xSub, apply(body).asInstanceOf[DataType])
@@ -117,6 +122,8 @@ case class Solution(ts: Map[Type, Type],
         AddressSpaceConstraint(apply(a), apply(b))
       case NatConstraint(a, b) =>
         NatConstraint(apply(a), apply(b))
+      case BoolConstraint(a, b) =>
+        BoolConstraint(apply(a), apply(b))
       case NatToDataConstraint(a, b) =>
         NatToDataConstraint(apply(a), apply(b))
       case DepConstraint(df, arg: Nat, t) =>

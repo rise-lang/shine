@@ -2,7 +2,7 @@ package rise.core
 
 import rise.core.primitives._
 import rise.core.semantics._
-import rise.core.traversal.{Continue, Result}
+import rise.core.traverse._
 import rise.core.types._
 
 import scala.language.implicitConversions
@@ -37,15 +37,11 @@ package object DSL {
 
   def toMemFun(f: ToBeTyped[Expr]): ToBeTyped[Expr] = fun(x => toMem(f(x)))
 
-  object `if` {
-    def apply(b: ToBeTyped[Expr]): Object {
-      def `then`(tE: ToBeTyped[Expr]): Object {
-        def `else` (eE: ToBeTyped[Expr] ): ToBeTyped[Expr]
-      }
-    } = new {
-      def `then`(tE: ToBeTyped[Expr]): Object {
-        def `else`(eE: ToBeTyped[Expr]): ToBeTyped[Expr]
-      } = new {
+  case class `if`(b: ToBeTyped[Expr]) {
+    def `then`(tE: ToBeTyped[Expr]): Object {
+      def `else` (eE: ToBeTyped[Expr] ): ToBeTyped[Expr]
+    } = {
+      new {
         def `else`(eE: ToBeTyped[Expr]): ToBeTyped[Expr] = {
           select(b)(tE)(eE)
         }
@@ -390,6 +386,9 @@ package object DSL {
     def apply(in: ToBeTyped[Expr]): ToBeTyped[Expr] = {
       fun(e => primitives.let(e)(in))
     }
+
+    implicit def toLetf(l: letf.type): ToBeTyped[Expr] =
+      fun(e => fun(in => primitives.let(e)(in)))
   }
 
   case class NatFunction1Wrapper[A](f: Nat => A)
@@ -485,17 +484,14 @@ package object DSL {
     toBeTyped(topLevel(toExpr(d)))
 
   def eraseTypeFromExpr[T <: Expr](e: T): T =
-    traversal
-      .DepthFirstLocalResult(
-        e,
-        new traversal.Visitor {
-          override def visitExpr(e: Expr): Result[Expr] = e match {
-            case l: Literal => Continue(l, this)
-            case _          => Continue(e.setType(TypePlaceholder), this)
-          }
-        }
-      )
-      .asInstanceOf[T]
+    traverse(e, new PureExprTraversal {
+      override def identifier[I <: Identifier] : VarType => I => Pure[I] = vt => i =>
+        return_(i.setType(TypePlaceholder).asInstanceOf[I])
+      override def expr : Expr => Pure[Expr] = {
+        case l : Literal => super.expr(l : Expr)
+        case e => super.expr(e.setType(TypePlaceholder))
+      }
+    }).asInstanceOf[T]
 
   def eraseType[T <: Expr](e: T): ToBeTyped[T] = toBeTyped(eraseTypeFromExpr(e))
 }

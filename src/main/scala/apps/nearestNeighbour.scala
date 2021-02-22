@@ -63,7 +63,7 @@ object nearestNeighbour {
   }
 
   def runKernel(
-    k: KernelNoSizes,
+    k: KernelExecutor.KernelNoSizes,
     locations: Array[Float],
     lat: Float,
     lng: Float

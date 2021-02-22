@@ -1,19 +1,13 @@
 package rise.core
 
-import rise.core.traversal.{Continue, Result, Stop}
+import rise.core.traverse._
 
 object replace {
-  def exprInExpr(expr: Expr, `for`: Expr, in: Expr): Expr = {
-    object Visitor extends traversal.Visitor {
-      override def visitExpr(e: Expr): Result[Expr] = {
-        if (`for` == e) {
-          Stop(expr)
-        } else {
-          Continue(e, this)
-        }
-      }
+  def exprInExpr(expression: Expr, `for`: Expr, in: Expr): Expr = {
+    object Visitor extends PureExprTraversal {
+      override def expr: Expr => Pure[Expr] = e =>
+        if (`for` == e) return_(expression) else super.expr(e)
     }
-
-    traversal.DepthFirstLocalResult(in, Visitor)
+    Visitor.expr(in).unwrap
   }
 }

@@ -7,6 +7,7 @@ import rise.core.primitives._
 import rise.core.types._
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
+import shine.OpenCL.KernelExecutor._
 
 object kmeans {
   private val update = fun(f32 ->: (f32 x f32) ->: f32)((dist, pair) =>

@@ -14,6 +14,61 @@ object HighLevelConstructs {
   val unslide2D: ToBeTyped[Expr] =
     map(transpose >> map(join)) >> join
 
+  // Halide::TailStrategy::ShiftInwards:
+  // Prevent evaluation beyond the original extent by shifting the tail case inwards,
+  // re-evaluating some points near the end.
+  // WARNING: data-races will happen if processing tiles in parallel
+  def tileShiftInwards(tileSize: Nat): ToBeTyped[Expr] =
+    impl{ n: Nat => impl{ haloSize: Nat =>
+    impl{ s: DataType => impl{ t: DataType =>
+    fun(processTiles =>
+    fun(input => {
+      val tiles = (n + tileSize - 1) / tileSize
+      generate(fun(tile =>
+        (input :: ((n + haloSize) `.` s)) |>
+        gather(generate(fun(i => {
+          val endRegularTile = lidx(n / tileSize, tiles)
+          val startRegular = indexAsNat(tile) * tileSize
+          val startShifted = l(n - tileSize)
+          val start = select(tile < endRegularTile)(startRegular)(startShifted)
+          natAsIndex(n + haloSize)(start + indexAsNat(i))
+        })))
+      )) |>
+      (processTiles ::
+        (tiles `.` (tileSize + haloSize) `.` s) ->: (tiles `.` tileSize `.` t)) >>
+      join >>
+      scatter(generate(fun(i => {
+        val tile = indexAsNat(i) / tileSize
+        val endRegularTile = n / tileSize
+        val regularPos = indexAsNat(i)
+        val recomputed = tileSize - (n % tileSize)
+        val shiftedPos = indexAsNat(i) - recomputed
+        val pos = select(tile < endRegularTile)(regularPos)(shiftedPos)
+        natAsIndex(n)(pos)
+      })))
+    } :: (n `.` t)))}}}}
+
+  def tileEpilogue(tileSize: Nat): ToBeTyped[Expr] =
+    impl{ n: Nat => impl{ haloSize: Nat =>
+    impl{ s: DataType => impl{ t: DataType =>
+    fun(f => fun(g => fun(a =>
+      (concat(
+        (a :: ((n + haloSize) `.` s)) |>
+        take((n / tileSize) * tileSize + haloSize) |>
+        slide(tileSize + haloSize)(tileSize) |>
+        impl{ sza: Nat => f ::
+          (sza`.`(tileSize + haloSize)`.`s) ->: (sza`.`tileSize`.`t) } |>
+        join
+      )(
+        (a :: ((n + haloSize) `.` s)) |>
+        drop((n / tileSize) * tileSize) |>
+        slide(n % tileSize + haloSize)(n % tileSize) |>
+        impl{ szb: Nat => g ::
+          (szb`.`(n % tileSize + haloSize)`.`s) ->: (szb`.`(n % tileSize)`.`t) } |>
+        join
+      )) :: (n`.`t)
+    )))}}}}
+
   def slide3D(sz: Nat, st: Nat): ToBeTyped[Expr] =
     map(slide2D(sz, st)) >> slide(sz)(st) >> map(transpose >> map(transpose))
 
@@ -41,8 +96,10 @@ object HighLevelConstructs {
 
   def padCst2D(n: Nat): ToBeTyped[Expr] = padCst2D(n, n)
 
-  def padCst2D(n: Nat, b: Nat): ToBeTyped[Expr] =
-    fun(x => padCst(n)(b)(generate(fun(_ => x))) >> map(padCst(n)(b)(x)))
+  def padCst2D(l: Nat, r: Nat): ToBeTyped[Expr] = padCst2D(l, r, l, r)
+
+  def padCst2D(lOuter: Nat, rOuter: Nat, lInner: Nat, rInner: Nat): ToBeTyped[Expr] =
+    fun(x => padCst(lOuter)(rOuter)(generate(fun(_ => x))) >> map(padCst(lInner)(rInner)(x)))
 
   def zipND(n: Int): ToBeTyped[Expr] = {
     def rec(n: Int, a: ToBeTyped[Expr], b: ToBeTyped[Expr]): ToBeTyped[Expr] =
@@ -55,6 +112,17 @@ object HighLevelConstructs {
       }
 
     fun(a => fun(b => rec(n, a, b)))
+  }
+
+  def mapND(n: Int): ToBeTyped[Expr] = {
+    def rec(n: Int, e: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      if (n > 0) {
+        map(rec(n - 1, e))
+      } else {
+        e
+      }
+
+    fun(e => rec(n, e))
   }
 
   def dropLast: ToBeTyped[Expr] = depFun((n: Nat) => impl { m: Nat =>

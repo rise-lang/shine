@@ -7,6 +7,9 @@ import rise.core.DSL.Type._
 import rise.core.types._
 import HighLevelConstructs._
 
+// in Halide: https://github.com/halide/Halide/blob/e8acdea/apps/harris
+// in PolyMage: https://bitbucket.org/udayb/polymage/src/e28327c/sandbox/apps/python/img_proc/harris
+// FIXME: PolyMage's algorithm is different
 object harrisCornerDetectionHalide {
   private val C2D = separableConvolution2D
   private val mulT = C2D.mulT
@@ -214,6 +217,36 @@ object harrisCornerDetectionHalide {
         ) >> join
       )))
 
+    def harrisTilePar(tileX: Int, tileY: Int, mapPar: Int => ToBeTyped[Expr],
+                      innerHarris: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
+        (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
+      )(input => input |>
+        slide2D(tileY+4, tileY, tileX+4, tileX) >>
+        mapPar(1)(mapPar(0)(
+          map(transpose) >> transpose >>
+          innerHarris(tileY)(tileX)
+        )) >> unslide2D >> map(padEmpty(4))
+      ))
+
+    def harrisTileShiftInwardsPar(tileX: Int, tileY: Int, mapPar: Int => ToBeTyped[Expr],
+                                  innerHarris: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      depFun((h: Nat, w: Nat) => fun(
+        (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
+      )(input => input |>
+        transpose >> map(transpose) >> // H.W.3.
+        tileShiftInwards(tileY)(mapPar(1)( // tY.W.3.
+          transpose >> // W.tY.3.
+          tileShiftInwards(tileX)(mapPar(0)( // tX.tY.3.
+            map(transpose) >> transpose >> map(transpose) >> // 3.tY.tX.
+            innerHarris(tileY)(tileX) >> // tY.tX.
+            transpose // tX.tY.
+          )) >> // W.tY.
+          transpose // ty.W.
+        )) >> // H.W.
+        map(padEmpty(4))
+      ))
+
     def harrisVecUnaligned(v: Int): ToBeTyped[Expr] =
       depFun((h: Nat) => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
@@ -252,6 +285,50 @@ object harrisCornerDetectionHalide {
               coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
             )))))))))
           )) >> write1DSeq >> asScalar // W.f
+        )))
+      )))
+
+    // limitations:
+    // - v <= 4
+    // - if toMem = toPrivate, loop unrolling can fail due to blowup
+    def harrisVecUnaligned2(v: Int,
+                            mapPar: Int => ToBeTyped[Expr],
+                            toMem: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      depFun((h: Nat) => nModFun(v, w => fun(
+        (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+      )(input => input |>
+        map(map(asVectorAligned(v))) >>
+        transpose >> map(transpose) >>
+        mapPar(1)(
+          mapPar(0)(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f)))) >>
+          asScalar >> padEmpty(2)
+        ) >> toMem >> letf(
+        slide(3)(1) >> mapPar(1)(
+          map(slideVectors(v) >> slide(3)(v)) >> transpose >>
+          mapPar(0)(fun(nbh => makeArray(2)(
+            dotWeightsVec(join(sobelXWeights2d), join(nbh)))(
+            dotWeightsVec(join(sobelYWeights2d), join(nbh))
+          ) |> mapSeqUnroll(id))) >> transpose >>
+          map(asScalar)
+        ) >> toMem >> letf(
+        slide(3)(1) >> mapPar(1)(
+          map(map(dropLast(2) >> slideVectors(v) >> slide(3)(v))) >>
+          map(transpose) >> transpose >> map(map(transpose)) >>
+          mapPar(0)(fun(ixiy =>
+            ixiy |> map(map(fun(p => (p `@` lidx(0, 2)) * (p `@` lidx(0, 2)))))
+            |> fun(ixx =>
+            ixiy |> map(map(fun(p => (p `@` lidx(0, 2)) * (p `@` lidx(1, 2)))))
+            |> fun(ixy =>
+            ixiy |> map(map(fun(p => (p `@` lidx(1, 2)) * (p `@` lidx(1, 2)))))
+            |> fun(iyy =>
+            // ^ 3.3.<v>f
+            ixx |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(sxx =>
+            ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(sxy =>
+            iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(syy =>
+              // ^ <v>f
+              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+            )))))))))
+          )) >> asScalar // W.f
         )))
       )))
 

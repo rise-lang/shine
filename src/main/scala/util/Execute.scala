@@ -18,7 +18,7 @@ object Execute {
       case e: Throwable =>
         Console.err.println("==========")
         Console.err.println(s"execution failed ($e) for code:")
-        Console.err.println(code)
+        Console.err.println(code.take(500 * 160))
         Console.err.println("==========")
         throw Exception(s"execution failed ($e) for: `$code'")
     }

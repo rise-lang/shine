@@ -24,13 +24,5 @@ The source code for the compiler is organised into sub-packages of the `shine` p
     This package also defines extensions in form of additional patterns
     added to the RISE language and `DPIA`.
 
-### Setup
-Prerequisits: Java 8+ SDK, `git`
-1. Clone the `shine` repository to a directory of your choice that we call `$SHINE_ROOT`.
-2. In `$SHINE_ROOT`, run `setup.sh` to download all required submodules.
-3. Then run `sbt compile` (even if you want to use IDEA IntelliJ, because IntelliJ does not execute subproject dependencies correctly and the Executor needs to be built once in the beginning).
-
-#### Configuring IntelliJ
-4. Download IDEA IntelliJ (http://www.jetbrains.com/idea/) and choose to install the Scala Plugin during setup.
-5. Launch IntelliJ. From the menu choose `File` -> `Open...`. Then, select `$SHINE_ROOT` and press `OK`.
-6. From the menu bar choose `Run` -> `Edit Configurations...`. Under `Templates` choose `ScalaTest` and add the following line to `VM parameters`: `-Djava.library.path=lib/executor/lib/Executor/build -Xss26m` (this will tell IntelliJ where to find the Executor library and use 26MB of thread stack size which is needed for arithmetic simplifactions sometimes).
+### Setup and Documentation
+Please have a look at: https://rise-lang.org/doc/

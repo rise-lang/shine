@@ -1,8 +1,8 @@
 package apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import util.{gen, Display, TimeSpan}
+import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize}
+import util.{Display, TimeSpan, gen}
 import util.Time.ms
 import rise.openCL.TypedDSL._
 import rise.openCL.primitives.oclReduceSeq
@@ -13,6 +13,7 @@ import Type._
 import rise.core.Expr
 import rise.core.types._
 import HighLevelConstructs._
+import util.gen.c.function
 
 import scala.util.Random
 
@@ -66,7 +67,7 @@ class stencil extends test_util.Tests {
     }
 
     override protected def runKernel(
-      k: KernelWithSizes,
+      k: KernelExecutor.KernelWithSizes,
       input: Input
     ): (Array[Float], TimeSpan[ms]) = {
       import shine.OpenCL._
@@ -218,11 +219,11 @@ class stencil extends test_util.Tests {
   ))
 
   test("Simple stencil compiles to syntactically correct C") {
-    gen.CProgram(simpleStencil)
+    function.asStringFromExpr(simpleStencil)
   }
 
   test("Simple scan compiles to syntactically correct OpenMP") {
-    gen.OpenMPProgram(simpleStencil)
+    gen.openmp.function.asStringFromExpr(simpleStencil)
   }
 
   test("Basic 1D addition stencil") {

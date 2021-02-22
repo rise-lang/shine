@@ -304,6 +304,12 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
+      case rp.concat() => p.t match {
+        case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
+          expT(dt1, write) ->: expT(dt2, write) ->: expT(dt3, write)
+        case _ => error()
+      }
+
       case rp.let() => p.t match {
         case (s: rt.DataType) ->:
           ((_: rt.DataType) ->: (t: rt.DataType)) ->: (_: rt.DataType) =>
@@ -333,6 +339,12 @@ private class InferAccessAnnotation {
            | rp.lt() | rp.equal() | rp.mod() | rp.gather() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
           expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read)
+        case _ => error()
+      }
+
+      case rp.scatter() => p.t match {
+        case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
+          expT(dt1, read) ->: expT(dt2, write) ->: expT(dt3, write)
         case _ => error()
       }
 
@@ -368,6 +380,16 @@ private class InferAccessAnnotation {
           aFunT(a,
             (expT(t, read) ->: expT(s, read) ->: expT(t, write)) ->:
             expT(t, write) ->: expT(n`.`s, read) ->: expT(t, read))
+        case _ => error()
+      }
+
+      case rp.depTile() => p.t match {
+        case tile `(Nat)->:`
+          (((s: rt.DataType) ->: (t: rt.DataType)) ->:
+            (inT: rt.ArrayType) ->: (outT: rt.ArrayType)) =>
+          nFunT(tile,
+            (expT(s, read) ->: expT(t, write)) ->:
+            expT(inT, read) ->: expT(outT, write))
         case _ => error()
       }
 

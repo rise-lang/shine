@@ -1,6 +1,6 @@
 package shine.OpenCL
 
-import shine.DPIA.ImperativePrimitives.Assign
+import shine.DPIA.primitives.imperative.Assign
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, VectorType}
 
