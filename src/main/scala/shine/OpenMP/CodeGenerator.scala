@@ -111,7 +111,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
     case AsScalar(_, m, _, _, e) => path match {
-      case (i: CIntExpr) :: ps => e |> exp(env, CIntExpr(i / m) :: ps, cont)
+      case (i: CIntExpr) :: ps => e |> exp(env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
       case _ => error(s"Expected path to be not empty")
     }
     // TODO: this has to be refactored

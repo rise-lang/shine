@@ -7,6 +7,7 @@ import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal._
 import elevate.core.{Failure, Strategy, Success}
 import elevate.macros.RuleMacro.rule
+import elevate.macros.StrategyMacro.strategy
 import rise.core.DSL._
 import rise.core.{primitives => p, _}
 import rise.core.primitives.{not => _, _}
@@ -15,7 +16,8 @@ import rise.elevate._
 import rise.elevate.rules.traversal._
 import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate.{isVectorArray, _}
-import rise.openMP.primitives.mapPar
+import rise.elevate.strategies.traversal._
+import rise.openMP.{primitives => omp, _}
 
 object lowering {
 
@@ -29,34 +31,44 @@ object lowering {
     case _ => false
   }
 
+  def `map -> mapSeq`: Strategy[Rise] = mapSeq
   @rule def mapSeq: Strategy[Rise] = {
     case m@map() => Success(p.mapSeq !: m.t)
   }
 
+  def `map -> mapPar`: Strategy[Rise] = mapPar
+  @rule def mapPar: Strategy[Rise] = {
+    case m@map() => Success(omp.mapPar !: m.t)
+  }
+
+  def `map -> mapStream`: Strategy[Rise] = mapStream
   @rule def mapStream: Strategy[Rise] = {
     case m@map() => Success(p.mapStream !: m.t)
   }
 
+  def `map -> iterateStream`: Strategy[Rise] = iterateStream
   @rule def iterateStream: Strategy[Rise] = {
     case m@map() => Success(p.iterateStream !: m.t)
   }
 
+  def `map -> mapSeqUnroll`: Strategy[Rise] = mapSeqUnroll
   @rule def mapSeqUnroll: Strategy[Rise] = {
     case m@map() => Success(p.mapSeqUnroll !: m.t)
   }
 
+  def `map -> mapGlobal`(dim: Int = 0): Strategy[Rise] = mapGlobal(dim)
   @rule def mapGlobal(dim: Int = 0): Strategy[Rise] = {
     case m@map() => Success(rise.openCL.DSL.mapGlobal(dim) !: m.t)
   }
 
+  def `reduce -> reduceSeq`: Strategy[Rise] = reduceSeq
   @rule def reduceSeq: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeq !: e.t)
   }
 
-  // TODO shall we allow lowering from an already lowered reduceSeq?
+  def `reduce -> reduceSeqUnroll`: Strategy[Rise] = reduceSeqUnroll
   @rule def reduceSeqUnroll: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeqUnroll !: e.t)
-    case e@p.reduceSeq() => Success(p.reduceSeqUnroll !: e.t)
   }
 
   // Specialized Lowering
@@ -236,6 +248,28 @@ object lowering {
     }
   }
 
+  @rule def toMemAfterAsScalar: Strategy[Rise] = {
+    case a@App(asScalar(), _) => Success((preserveType(a) |> p.toMem) !: a.t)
+  }
+
+  @rule def toMemAfter: Strategy[Rise] =
+    e => Success((preserveType(e) |> p.toMem) !: e.t)
+
+  @rule def toMemBefore: Strategy[Rise] = {
+    case a@App(f, e) => Success((p.toMem(e) |> preserveType(f)) !: a.t)
+  }
+
+  @strategy
+  def storeTempsAsScalars: Strategy[Rise] =
+    innermost(isApplied(isPrimitive(asScalar)))(toMemAfter)
+
+  @strategy
+  def storeTempAsVectors: Strategy[Rise] =
+    innermost(isApplied(isPrimitive(asScalar)))(toMemBefore)
+
+  def `map(f) -> asVector >> map(f_vec) >> asScalar`(n: Nat): Strategy[Rise] =
+    vectorize(n)(default.RiseTraversable)
+
   @rule def vectorize(n: Nat)(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case a@App(App(map(), f), input) if
       isComputation()(ev)(f) && !isVectorArray(a.t) =>
@@ -265,8 +299,9 @@ object lowering {
 
   @rule def untype: Strategy[Rise] = p => Success(p.setType(TypePlaceholder))
 
-  @rule def parallel()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
-    case e@App(map(), f) if containsComputation()(ev)(f) => Success(mapPar(f) !: e.t)
+  def parallel()(implicit ev: Traversable[Rise]): Strategy[Rise] = mapParCompute()
+  @rule def mapParCompute()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
+    case e@App(map(), f) if containsComputation()(ev)(f) => Success(omp.mapPar(f) !: e.t)
   }
 
   @rule def unroll: Strategy[Rise] = {
