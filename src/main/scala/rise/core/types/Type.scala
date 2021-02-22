@@ -2,87 +2,11 @@ package rise.core.types
 
 import arithexpr.arithmetic.RangeAdd
 import rise.core._
-import util.PatternMatching
-
-object alphaEquiv {
-  type Env = List[(Kind.Identifier , Kind.Identifier)]
-
-  def equivNat(env : Env) : Nat => Nat => Boolean = a => b => {
-    val natEnv = env.collect {case (i : NatIdentifier, n : Nat) => (i , n)}
-    // substitutes elements on the left with elements on the right
-    substitute.natsInNat(natEnv.toMap, a) == b
-  }
-
-  def makeExplicit[K <: Kind.Identifier] : K => K = {
-    case t : DataTypeIdentifier => t.asExplicit.asInstanceOf[K]
-    case t => t
-  }
-
-  def equiv : Type => Type => Boolean = equiv(Nil)
-
-  /** Alpha equivalence on types
-    * Datatype identifier explicitness is ignored.
-    * Short circuits in the event of syntactic equality.
-    * Kind equality is checked on dependent functions and pairs.
-    * @param env Pairs of identifiers to be considered equal.
-    */
-  def equiv(env : Env) : Type => Type => Boolean = a => b => {
-    val and = PatternMatching.matchWithDefault(b, false)
-    a == b || (a match {
-      // Base cases
-      case TypePlaceholder => and { case TypePlaceholder => true }
-      case NatType => and { case NatType => true }
-      case sa: ScalarType => and { case sb: ScalarType => sa == sb }
-
-      // Base cases -> identifier lookup
-      case na : TypeIdentifier => and { case nb : TypeIdentifier => env.contains((na, nb)) }
-      case na : DataTypeIdentifier => and { case nb : DataTypeIdentifier =>
-        na.asExplicit == nb.asExplicit || env.contains((na.asExplicit, nb.asExplicit)) }
-
-      // Base cases -> identifier lookup in nat expressions
-      case IndexType(sa) => and { case IndexType(sb) => equivNat(env)(sa)(sb) }
-      case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => equivNat(env)(sa)(sb) && da == db }
-
-      // Should we move this into its own equality check?
-      case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
-        val and = PatternMatching.matchWithDefault(fb, false)
-        equivNat(env)(na)(nb) && (fa match {
-          case na : NatToDataIdentifier => and { case nb : NatToDataIdentifier => env.contains((na, nb)) }
-          case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equiv((xa , xb) :: env)(ba)(bb) }
-        })
-       }
-
-      // Recursive cases
-      case FunType(sa, ta) => and { case FunType(sb, tb) => equiv(env)(sa)(sb) && equiv(env)(ta)(tb) }
-      case PairType(la, ra) => and { case PairType(lb, rb) => equiv(env)(la)(lb) && equiv(env)(ra)(rb) }
-      case VectorType(sa, da) => and { case VectorType(sb, db) => equivNat(env)(sa)(sb) && equiv(env)(da)(db) }
-      case ArrayType(sa, da) => and { case ArrayType(sb, db) => equivNat(env)(sa)(sb) && equiv(env)(da)(db) }
-
-      // Recursive cases -> binding tracking
-      case DepFunType(xa, ta) => and { case DepFunType(xb, tb) =>
-        xa.getClass == xb.getClass && equiv((makeExplicit(xa), makeExplicit(xb)) :: env)(ta)(tb) }
-      case DepPairType(xa, ta) => and { case DepPairType(xb, tb) =>
-        xa.getClass == xb.getClass && equiv((makeExplicit(xa), makeExplicit(xb)) :: env)(ta)(tb) }
-    })
-  }
-
-  val hash : Type => Int = {
-    case TypePlaceholder => 5
-    case TypeIdentifier(n) => 7 * n.hashCode()
-    case FunType(inT, outT) => 11 * inT.hashCode() + 13 * outT.hashCode() + 1
-    case DepFunType(_, t) => 17 * t.hashCode()
-    case dataType: DataType => 19 * dataType.hashCode()
-  }
-}
-
+import rise.core.equality._
 
 sealed trait Type {
-  def =~~=(b: Type): Boolean = alphaEquiv.equiv(this)(b)
-  def =~=(b: Type): Boolean = (this, b) match {
-    case (TypePlaceholder, _) => true
-    case (_, TypePlaceholder) => true
-    case _ => alphaEquiv.equiv(this)(b)
-  }
+  def =~~=(b: Type): Boolean = typeEq.alphaEquivalence.equiv(Nil)(this)(b)
+  def =~=(b: Type): Boolean = typeEq.unificationAlphaEquivalence.equiv(Nil)(this)(b)
 }
 
 object TypePlaceholder extends Type {

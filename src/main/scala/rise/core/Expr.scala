@@ -3,62 +3,15 @@ package rise.core
 import semantics._
 import rise.core.types._
 import rise.core.ShowRise._
+import rise.core.equality._
 import util.PatternMatching
-
-object alphaEquiv {
-  type TYPEEQ = Type => Type => Boolean
-
-  val equiv : TYPEEQ => Expr => Expr => Boolean = typeEq => a => b => {
-    // Make the match exhaustive
-    val and = PatternMatching.matchWithDefault(b, false)
-    typeEq(a.t)(b.t) && (a match {
-      case Identifier(na) => and { case Identifier(nb) => na == nb }
-      case Literal(da) => and { case Literal(db) => da == db }
-      case a : Primitive => and { case b : Primitive => a.name == b.name }
-      // Application compares structurally
-      case App(fa, ea) => and { case App(fb, eb) => equiv(typeEq)(fa)(fb) && equiv(typeEq)(ea)(eb) }
-      case DepApp(fa, xa) => and { case DepApp(fb, xb) => equiv(typeEq)(fa)(fb) && xa == xb }
-      // Abstraction compares after substitution
-      case Lambda(xa, ta) => and { case other@Lambda(xb, _) =>
-        typeEq(xa.t)(xb.t) && equiv(typeEq)(ta)(typedLifting.liftFunExpr(other).value(xa)) }
-      case DepLambda(xa, ea) => and { case other@DepLambda(xb, _) =>
-        val and = PatternMatching.matchWithDefault(xb, false)
-        xa match {
-          case n: NatIdentifier => and { case _: NatIdentifier =>
-            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatKind](other).value(n)) }
-          case dt: DataTypeIdentifier => and { case _: DataTypeIdentifier =>
-            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[DataKind](other).value(dt)) }
-          case addr: AddressSpaceIdentifier => and { case _: AddressSpaceIdentifier =>
-            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr)) }
-          case n2n: NatToNatIdentifier => and { case _: NatToNatIdentifier =>
-            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n)) }
-          case n2d: NatToDataIdentifier => and { case _: NatToDataIdentifier =>
-            equiv(typeEq)(ea)(typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d)) }
-      }}
-    })
-  }
-
-  val hash : Expr => Int = {
-    case _: Identifier => 17
-    case Lambda(_, e) => 3 * e.hashCode() + 1
-    case App(f, e) => 5 * f.hashCode() + -7 * e.hashCode() + 2
-    case DepLambda(_, e) => 4 * e.hashCode() + 3
-    case DepApp(f, _) => 6 * f.hashCode() + 4
-    case l@Literal(_: ScalarData | _: VectorData) => l.d.hashCode()
-    case Literal(_: NatData) => 91
-    case Literal(_: IndexData) => 93
-    case Literal(_: ArrayData) => 95
-    case Literal(_: PairData) => 97
-    case p: Primitive => p.getClass.hashCode()
-  }
-}
 
 sealed abstract class Expr {
   val t: Type
   def setType(t: Type): Expr
   override def toString: String = showRise(this)
-  def =~~=(b : Expr) : Boolean = alphaEquiv.equiv(a => b => a =~~= b)(this)(b)
-  def =~=(b : Expr) : Boolean = alphaEquiv.equiv(a => b => a =~= b)(this)(b)
+  def =~~=(b : Expr) : Boolean = exprEq.alphaEquivalence.equiv(a => b => a =~~= b)(this)(b)
+  def =~=(b : Expr) : Boolean = exprEq.alphaEquivalence.equiv(a => b => a =~= b)(this)(b)
 }
 
 final case class Identifier(name: String)(
