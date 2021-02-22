@@ -127,20 +127,17 @@ object equality {
       }
 
       /** Alpha renaming respecting hash function on expressions.
+        * Parametrised by a hash function on types.
         * All identifiers are considered equal and therefore ignored.
         */
-      val hash: Expr => Int = {
-        case _: Identifier => 5
-        case Lambda(_, e) => 7 * e.hashCode()
-        case App(f, e) => 11 * f.hashCode() + 13 * e.hashCode()
-        case DepLambda(_, e) => 17 * e.hashCode()
-        case DepApp(f, _) => 19 * f.hashCode()
-        case l@Literal(_: ScalarData | _: VectorData) => l.d.hashCode()
-        case Literal(_: NatData) => 23
-        case Literal(_: IndexData) => 29
-        case Literal(_: ArrayData) => 31
-        case Literal(_: PairData) => 37
-        case p: Primitive => p.name.hashCode()
+      val hash: (Type => Int) => Expr => Int = typeHash => e => e match {
+        case i: Identifier => 5 + typeHash(i.t)
+        case Lambda(x, e) => 7 * e.hashCode() + typeHash(x.t) + typeHash(e.t)
+        case App(f, e) => 11 * f.hashCode() + 13 * e.hashCode() + typeHash(f.t) + typeHash(e.t)
+        case DepLambda(x, e) => 17 * e.hashCode() + typeHash(e.t)
+        case DepApp(f, _) => 19 * f.hashCode() + typeHash(f.t)
+        case l : Literal => typeHash(l.t)
+        case p: Primitive => p.name.hashCode() + typeHash(p.t)
       }
     }
   }
