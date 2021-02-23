@@ -90,9 +90,10 @@ case class CExecutor(lowering: Strategy[Rise],
                 println("execution failed")
                 errorLevel = ExecutionFail
                 performanceValue = None
+              case 139 =>
+                throw new Exception("segmentation fault")
               case _ =>
-                println("unknown error code - end program") // unknown error code end program
-                System.exit(-1)
+                throw new Exception("unknow error code")
             }
         }
       } catch{
@@ -207,7 +208,7 @@ case class CExecutor(lowering: Strategy[Rise],
     (solution.expression, performanceValue)
   }
 
-  def prepareInput(tu: C.Module):(String,String,String,String) ={
+  def prepareInput(tu: C.Module):(String,String,String,String) = {
 
     val fun: C.Function = tu.functions.head
 
@@ -229,89 +230,95 @@ case class CExecutor(lowering: Strategy[Rise],
     codeBeg +=
       s"""
         //inputs""".stripMargin
-    fun.inputParams.foreach{ case (elem, _) =>
-      if (elem.t.toString.equals("int")) {
+
+    fun.inputParams.foreach{ case (decl, meta) =>
+
+      println("elem: " + decl)
+      println("type: " + decl.t)
+
+      if (decl.t.toString.equals("int")) {
         codeBeg +=
           s"""
-        const int ${elem.name} = N; """
-        call += s""", ${elem.name}"""
-        callGold += s""", ${elem.name}"""
-      } else if (arrayTwo.findFirstIn(elem.t.toString).isDefined) {
+        const int ${decl.name} = N; """
+        call += s""", ${decl.name}"""
+        callGold += s""", ${decl.name}"""
+      } else if (arrayTwo.findFirstIn(meta.typ.toString).isDefined) {
         codeBeg +=
           s"""
-        float* ${elem.name} = (float*) malloc(sizeof(float)*N*N);
+        float* ${decl.name} = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
-          ${elem.name}[i] = (rand() % 100) - 50;
-          //${elem.name}[i] = i;
+          ${decl.name}[i] = (rand() % 100) - 50;
+          //${decl.name}[i] = i;
         }
         """
         codeEnd +=
           s"""
-        free(${elem.name});"""
-        call += s""", ${elem.name}"""
-        callGold += s""", ${elem.name}"""
-      } else if (arrayOne.findFirstIn(elem.t.toString).isDefined) {
+        free(${decl.name});"""
+        call += s""", ${decl.name}"""
+        callGold += s""", ${decl.name}"""
+      } else if (arrayOne.findFirstIn(meta.typ.toString).isDefined) {
         codeBeg +=
           s"""
-        float* ${elem.name} = (float*) malloc(sizeof(float)*N);
+        float* ${decl.name} = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
-          ${elem.name}[i] = (rand() % 100) - 50;
-          //${elem.name}[i] = i;
+          ${decl.name}[i] = (rand() % 100) - 50;
+          //${decl.name}[i] = i;
         }
         """
         codeEnd +=
           s"""
-        free(${elem.name});"""
-        call += s""", ${elem.name}"""
-        callGold += s""", ${elem.name}"""
-      } else if (elemOne.findFirstIn(elem.t.toString).isDefined) {
+        free(${decl.name});"""
+        call += s""", ${decl.name}"""
+        callGold += s""", ${decl.name}"""
+      } else if (elemOne.findFirstIn(decl.t.toString).isDefined) {
         codeBeg +=
           s"""
-        float ${elem.name} = 5;
+        float ${decl.name} = 5;
         """
-        call += s""", ${elem.name}"""
-        callGold += s""", ${elem.name}"""
+        call += s""", ${decl.name}"""
+        callGold += s""", ${decl.name}"""
       }
     }
 
-    val outputParam = fun.outputParams.head._1
+    val outputParamDecl = fun.outputParams.head._1
+    val outputParamMeta = fun.outputParams.head._2
 
     codeBeg += s"""
 
         //output"""
 
-    if(outputParam.t.toString.equals("int")) {
+    if(outputParamDecl.t.toString.equals("int")) {
       codeBeg +=
         s"""
-        const int ${outputParam.name} = N; """
-    } else if (arrayTwo.findFirstIn(outputParam.t.toString).isDefined) {
+        const int ${outputParamDecl.name} = N; """
+    } else if (arrayTwo.findFirstIn(outputParamMeta.typ.toString).isDefined) {
       codeBeg += s"""
-        float* ${outputParam.name} = (float*) malloc(sizeof(float)*N*N);
+        float* ${outputParamDecl.name} = (float*) malloc(sizeof(float)*N*N);
         float* gold = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
-          ${outputParam.name}[i] = 0;
+          ${outputParamDecl.name}[i] = 0;
           gold[i] = 0;
         }
         """
       codeEnd += s"""
         free(gold);
-        free(${outputParam.name});"""
-    } else if (arrayOne.findFirstIn(outputParam.t.toString).isDefined) {
+        free(${outputParamDecl.name});"""
+    } else if (arrayOne.findFirstIn(outputParamMeta.typ.toString).isDefined) {
       codeBeg += s"""
-        float* ${outputParam.name} = (float*) malloc(sizeof(float)*N);
+        float* ${outputParamDecl.name} = (float*) malloc(sizeof(float)*N);
         float* gold = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
-          ${outputParam.name}[i] = 0;
+          ${outputParamDecl.name}[i] = 0;
           gold[i] = 0;
         }
         """
       codeEnd += s"""
         free(gold);
-        free(${outputParam.name});"""
+        free(${outputParamDecl.name});"""
 
-    } else if (elemOne.findFirstIn(outputParam.t.toString).isDefined) {
+    } else if (elemOne.findFirstIn(outputParamMeta.typ.toString).isDefined) {
       codeBeg += s"""
-        float ${outputParam.name} = N;
+        float ${outputParamDecl.name} = N;
         float gold = N;
         """
     }
@@ -434,6 +441,7 @@ int main(int argc, char** argv) {
     // todo: make this configable using json file
     // compile
     s"clang -O2 $src -o $bin -lm" !!
+//    s"clang $src -o $bin -fopenmp" !!
 
     bin
   }
