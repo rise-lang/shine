@@ -105,7 +105,7 @@ final case class CFunctionDefinition(name: String,
   private def makeModule(gen: CodeGenerator)
                          (outParam: Identifier[AccType]): ((immutable.Seq[gen.Decl], gen.Stmt)) => Module = {
     case (declarations, code) =>
-      val params = (outParam +: this.params).map(C.AST.makeParam(gen))
+      val params = (outParam +: this.params).map(C.AST.makeParam(C.AST.makeParamTy(gen)))
       Module(
         includes = immutable.Seq(IncludeHeader("stdint.h")),
         decls = CFunctionDefinition.collectTypeDeclarations(code, params) ++ declarations,

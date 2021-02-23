@@ -65,7 +65,7 @@ object primitives {
           ((n + sz)`.`s) ->: ((1 + n)`.`sz`.`s) })})
   }
 
-  @primitive object oclRunP extends Primitive with Builder {
+  @primitive object oclRunPrimitive extends Primitive with Builder {
     // the local sizes for execution
     expl((ls1: Nat) => expl((ls2: Nat) => expl((ls3: Nat) =>
     // the global sizes for execution

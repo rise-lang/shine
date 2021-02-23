@@ -64,7 +64,7 @@ final case class HostFunctionDefinition(name: String,
 
     output |> (
       TranslationToImperative.acc(p) _ andThen
-      HostManagedBuffers.populate(params, a.asInstanceOf[Identifier[AccType]]) andThen
+      HostManagedBuffers.insert(params, a.asInstanceOf[Identifier[AccType]]) andThen
       run(TypeCheck(_)) andThen
       UnrollLoops.unroll andThen
       SimplifyNats.simplify
@@ -88,13 +88,22 @@ final case class HostFunctionDefinition(name: String,
     gen.generate(topLevelLetNats, env)
   }
 
+  private def makeParam(gen: CodeGenerator): Identifier[_] => C.AST.ParamDecl =
+    C.AST.makeParam({
+      case _: DPIA.Types.ManagedBufferType =>
+        C.AST.OpaqueType("Buffer")
+      case DPIA.Types.ContextType =>
+        C.AST.OpaqueType("Context")
+      case dt => C.AST.makeParamTy(gen)(dt)
+    })
+
   private def makeModule
     (gen: CodeGenerator)
     (outParam: Identifier[AccType])
   : ((immutable.Seq[gen.Decl], gen.Stmt)) => Module = {
     case (declarations, code) =>
       val params = C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")) +:
-        optionallyManagedParams(outParam).map(C.AST.makeParam(gen))
+        optionallyManagedParams(outParam).map(makeParam(gen))
       val function = C.Function(
         code = C.AST.FunDecl(name, returnType = C.AST.Type.void, params,
           C.AST.Block(immutable.Seq(code))),

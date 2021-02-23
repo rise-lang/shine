@@ -2,17 +2,20 @@ package shine.OpenCL.compilation
 
 import shine.DPIA._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Types._
 import shine.DPIA.primitives.{imperative => dpia}
 import shine.OpenCL._
+import shine.OpenCL.primitives.imperative.HostExecution
 import shine.OpenCL.primitives.{imperative => ocl}
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
 
 object HostManagedBuffers {
-  def populate(params: immutable.Seq[Identifier[ExpType]], outParam: Identifier[AccType])
+  // Given a host program which only operates on plain arrays,
+  // this pass inserts host managed buffers where needed,
+  // as well as host execution sections where plain arrays can still be used
+  def insert(params: immutable.Seq[Identifier[ExpType]], outParam: Identifier[AccType])
   : Phrase[CommType] => Phrase[CommType] = { p =>
     def outsideParams() = mutable.Set[Identifier[_ <: PhraseType]]() ++ (params :+ outParam)
     val worstCasePrevious =
@@ -22,20 +25,6 @@ object HostManagedBuffers {
     insertManagedBuffers(managed)
   }
 
-  final case class HostExecution(env: Map[Identifier[_ <: PhraseType], AccessFlags],
-                                 execute: Phrase[CommType]) extends CommandPrimitive {
-    execute :: comm
-
-    override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommType] =
-      HostExecution(
-        env.map({ case (k, v) =>
-          VisitAndRebuild(k, f).asInstanceOf[Identifier[_ <: PhraseType]] -> v }),
-        VisitAndRebuild(execute, f))
-
-    override def eval(s: OperationalSemantics.Store): OperationalSemantics.Store = ???
-    override def prettyPrint: String = ???
-    override def xmlPrinter: xml.Elem = ???
-  }
 
   // effects to outer scope allocations
   private case class Metadata(
@@ -90,13 +79,13 @@ object HostManagedBuffers {
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags]
   ): (Phrase[CommType], Metadata) = {
     val meta = Metadata(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
-    val p2 = VisitAndRebuild(p, Visitor(allocs, managed, meta))
+    val p2 = VisitAndRebuild(p, InsertHostExecutionsVisitor(allocs, managed, meta))
     (p2, meta)
   }
 
-  private case class Visitor(allocs: Set[Identifier[_ <: PhraseType]],
-                             managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
-                             metadata: Metadata) extends VisitAndRebuild.Visitor {
+  private case class InsertHostExecutionsVisitor(allocs: Set[Identifier[_ <: PhraseType]],
+                                                 managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
+                                                 metadata: Metadata) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
       p match {
         case dpia.Assign(_, lhs, rhs) =>
@@ -145,10 +134,10 @@ object HostManagedBuffers {
     val managed2 = managed.iterator.flatMap { case (i, a) =>
       optionallyManaged(i).map(om => i -> (a, om._1))
     }.toMap
-    VisitAndRebuild(p, Visitor2(managed2))
+    VisitAndRebuild(p, InsertManagedBuffersVisitor(managed2))
   }
 
-  private case class Visitor2(
+  private case class InsertManagedBuffersVisitor(
     managed: Map[Identifier[_ <: PhraseType], (AccessFlags, Identifier[_ <: PhraseType])]
   ) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
