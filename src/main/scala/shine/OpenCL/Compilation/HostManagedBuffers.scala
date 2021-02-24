@@ -1,4 +1,4 @@
-package shine.OpenCL.compilation
+package shine.OpenCL.Compilation
 
 import shine.DPIA._
 import shine.DPIA.Phrases._

@@ -1,24 +1,25 @@
-package shine.OpenCL
+package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
 import shine.C
 import shine.C.AST._
+import shine.C.Compilation.CodeGenerator
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.VarType
-import shine.OpenCL.compilation.HostManagedBuffers
 import shine.OpenCL.primitives.imperative.{KernelCallCmd, NewManagedBuffer}
+import shine.OpenCL._
 
 import scala.collection.{immutable, mutable}
 
-object HostCodeGenerator {
-  def apply(): HostCodeGenerator =
-    new HostCodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
+object HostCodeCodeGenerator {
+  def apply(): HostCodeCodeGenerator =
+    new HostCodeCodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
 }
 
-case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
-                             override val ranges: C.CodeGenerator.Ranges)
-  extends C.CodeGenerator(decls, ranges)
+case class HostCodeCodeGenerator(override val decls: C.Compilation.CodeGenerator.Declarations,
+                                 override val ranges: C.Compilation.CodeGenerator.Ranges)
+  extends CodeGenerator(decls, ranges)
 {
   override def name: String = "OpenCL Host"
 

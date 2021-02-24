@@ -1,9 +1,12 @@
 package shine.OpenCL
 
-case class Module(host: shine.C.Module, kernels: Seq[KernelModule]) {
+import shine.C
+
+// An OpenCL Module consists of the _host code_ a set of OpenCL _kernels_
+case class Module(hostCode: C.Module, kernels: Seq[KernelModule]) {
   def compose(other: Module): Module =
     Module(
-      host compose other.host,
+      hostCode compose other.hostCode,
       kernels ++ other.kernels)
 }
 
@@ -20,7 +23,7 @@ object Module {
          |""".stripMargin
     }.mkString("\n")}
        |#define loadKernel(ctx, ident) loadKernelFromSource(ctx, #ident, ident##_source, sizeof(ident##_source) - 1)
-       |${util.gen.c.function.asString(m.host)}
+       |${util.gen.c.function.asString(m.hostCode)}
        |""".stripMargin
 
   def dumpToDirectory(dir: java.io.File)(m: Module): Unit = {

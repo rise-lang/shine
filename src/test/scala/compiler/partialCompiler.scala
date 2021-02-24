@@ -1,5 +1,6 @@
 package compiler
 
+import shine.C.Module
 import shine.DPIA.Phrases.Phrase
 import util.compiler._
 import util.compiler.DSL._
@@ -44,7 +45,7 @@ class partialCompiler extends test_util.Tests {
   }
 
   object DPIA {
-    type C_Compiler = Compiler[Phrase[_], C.Module]
+    type C_Compiler = Compiler[Phrase[_], Module]
     type OpenCL_Compiler = Compiler[Phrase[_], OpenCL.KernelModule]
   }
 }

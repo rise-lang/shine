@@ -1,18 +1,19 @@
-package shine.C
+package shine.C.Compilation
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
+import shine.C.AST
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
-import shine.DPIA.Compilation.SimplifyNats
+import shine.DPIA.Compilation.Passes.SimplifyNats
 import shine.DPIA.DSL._
-import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional._
+import shine.DPIA.primitives.imperative._
 import shine.DPIA.{error, _}
 import shine._
 

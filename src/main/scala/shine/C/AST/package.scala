@@ -1,6 +1,7 @@
 package shine.C
 
 import shine.C
+import shine.C.Compilation.CodeGenerator
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA
