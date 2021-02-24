@@ -66,9 +66,12 @@ class separableConvolution2DEqsat extends test_util.Tests {
       case Identifier(_) => Nil
       case Lambda(x, e) => everywhere(s)(e).map(Lambda(x, _)(p.t))
       case DepLambda(x, e) => x match {
-        case n: NatIdentifier => everywhere(s)(e).map(DepLambda[NatKind](n, _)(p.t))
-        case n: DataTypeIdentifier => everywhere(s)(e).map(DepLambda[DataKind](n, _)(p.t))
-        case n: AddressSpaceIdentifier => everywhere(s)(e).map(DepLambda[AddressSpaceKind](n, _)(p.t))
+        case n: NatIdentifier =>
+          everywhere(s)(e).map(DepLambda[NatKind](n, _)(p.t))
+        case n: DataTypeIdentifier =>
+          everywhere(s)(e).map(DepLambda[DataKind](n, _)(p.t))
+        case n: AddressSpaceIdentifier =>
+          everywhere(s)(e).map(DepLambda[AddressSpaceKind](n, _)(p.t))
       }
       case DepApp(f, x) => everywhere(s)(f).map(DepApp(_, x)(p.t))
       case Literal(_) => Nil
@@ -100,7 +103,8 @@ class separableConvolution2DEqsat extends test_util.Tests {
         println(s"fuel left: $fuel")
       } else {
         val expansion = expandStrats.flatMap { s =>
-          unvisited.iterator.flatMap(c => s(c.e)).flatMap(c => mayApply(filterStrat, c).map(ExprWrapper))
+          unvisited.iterator.flatMap(c => s(c.e))
+            .flatMap(c => mayApply(filterStrat, c).map(ExprWrapper))
         }
         println(s"expanded by ${expansion.size}")
         unvisited.clear()
@@ -118,7 +122,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
       "could not find rewrite path")
   }
 
-  //// algorithmic
+  // -- algorithmic
 
   test("base to factorise") {
     find_rewrite_path(base(weights2d), factorised(weightsV)(weightsH), immutable.Seq(
@@ -150,7 +154,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
     ))
   }
 
-  //// lowering
+  // -- lowering
 
   // TODO: read/write annotations would enable to trigger less lowerings here
   test("base to baseSeq") {
@@ -161,20 +165,23 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("factorised to factorisedSeq") {
-    find_rewrite_path(factorised(weightsV)(weightsH), factorisedSeq(weightsV)(weightsH), immutable.Seq(
-      everywhere(lowering.reduceSeqUnroll),
-      everywhere(lowering.mapSeq)
-    ),  BENF `;` maxTriggers(2)(isEqualTo(primitives.mapSeq.primitive)))
+    find_rewrite_path(factorised(weightsV)(weightsH), factorisedSeq(weightsV)(weightsH),
+      immutable.Seq(
+        everywhere(lowering.reduceSeqUnroll),
+        everywhere(lowering.mapSeq)
+      ),
+      BENF `;` maxTriggers(2)(isEqualTo(primitives.mapSeq.primitive)))
   }
 
   test("separated to separatedSeq") {
-    find_rewrite_path(separated(weightsV)(weightsH), separatedSeq(weightsV)(weightsH), immutable.Seq(
-      everywhere(lowering.reduceSeqUnroll),
-      everywhere(lowering.mapSeq),
-      everywhere(lowering.toMemAfterMapSeq)
-    ), BENF `;`
-      maxTriggers(4)(isEqualTo(primitives.mapSeq.primitive)) `;`
-      maxTriggers(1)(isEqualTo(primitives.toMem.primitive)))
+    find_rewrite_path(separated(weightsV)(weightsH), separatedSeq(weightsV)(weightsH),
+      immutable.Seq(
+        everywhere(lowering.reduceSeqUnroll),
+        everywhere(lowering.mapSeq),
+        everywhere(lowering.toMemAfterMapSeq)
+      ), BENF `;`
+        maxTriggers(4)(isEqualTo(primitives.mapSeq.primitive)) `;`
+        maxTriggers(1)(isEqualTo(primitives.toMem.primitive)))
   }
 
   test("scanline to scanlineSeq") {

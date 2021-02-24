@@ -4,10 +4,7 @@ import elevate.core.strategies.{Traversable, basic}
 import elevate.core.strategies.basic.{applyNTimes, id}
 import elevate.core.strategies.traversal._
 import rise.elevate.strategies.traversal._
-
-import scala.annotation.nowarn
-//import rise.elevate.rules.traversal.default._
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.macros.StrategyMacro.strategy
 import rise.elevate.Rise
 import rise.elevate.rules.algorithmic.fuseReduceMap
@@ -30,7 +27,7 @@ object algorithmic {
   @strategy def mapFirstFission: Strategy[Rise] = e => {
     // TODO: this should be expressed with elevate strategies
     @scala.annotation.tailrec
-    def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): elevate.core.RewriteResult[Rise] = {
+    def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): RewriteResult[Rise] = {
       gx match {
         case App(f2, gx2) =>
           if (gx2 == x) {
