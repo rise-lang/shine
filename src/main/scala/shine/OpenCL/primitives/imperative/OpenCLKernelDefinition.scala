@@ -22,7 +22,8 @@ import scala.collection.immutable
 @comPrimitive
 final case class OpenCLKernelDefinition(name: String,
                                         definition: Phrase[_ <: PhraseType],
-                                        wgConfig: Option[(LocalSize, GlobalSize)]) extends CommandPrimitive {
+                                        wgConfig: Option[(LocalSize, GlobalSize)]
+                                       ) extends CommandPrimitive {
   def withWgConfig(ls: LocalSize, gs: GlobalSize): OpenCLKernelDefinition =
     this.copy(wgConfig = Some(ls, gs))
 
@@ -42,18 +43,18 @@ final case class OpenCLKernelDefinition(name: String,
   def translateToModule(gen: CodeGenerator): KernelModule = {
     val outParam = cFunDef.createOutputParam(outT = body.t)
 
-    body |>
-      ( run(TypeCheck(_: Phrase[ExpType])) andThen
+    body |> (
+      run(TypeCheck(_: Phrase[ExpType])) andThen
         rewriteToImperative(gen)(outParam) andThen
         InsertMemoryBarriers.insert andThen
         HoistMemoryAllocations.hoist andThen { case (temps, phrase) =>
         AdaptKernelParameters.adapt(gen)(outParam, params, temps)(phrase) } andThen {
           case (outParam, params, temps, kernelParams, phrase) =>
-            phrase |>
-              ( generateCode(gen)(outParam, params, temps) _ andThen { case (decls, code) =>
+            phrase |> (
+              generateCode(gen)(outParam, params, temps) _ andThen { case (decls, code) =>
                 (decls, AdaptKernelBody.adapt(C.AST.Block(immutable.Seq(code)))) } andThen
-                makeModule(gen)(outParam, temps, kernelParams) )
-      } )
+                makeModule(gen)(outParam, temps, kernelParams))
+      })
   }
 
   private def makeModule(gen: CodeGenerator)

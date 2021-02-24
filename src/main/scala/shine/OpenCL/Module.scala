@@ -10,16 +10,20 @@ case class Module(host: shine.C.Module, kernels: Seq[KernelModule]) {
 object Module {
   def compose(ms: Seq[Module]): Module = ms.reduce(_ compose _)
 
+  private def kernelSource(km: KernelModule): String = {
+    // assumes a single kernel per module
+    val name = km.kernels(0).code.name
+    val code = util.gen.opencl.kernel.asString(km)
+    s"""const char ${name}_source[] =
+       |"${code.linesIterator.toArray.mkString(s"${'"'}\n${'"'}")}";
+       |""".stripMargin
+  }
+
   def translateToString(m: Module): String =
     s"""
-       |${m.kernels.map { km =>
-      // assumes a single kernel per module
-      val name = km.kernels(0).code.name
-      s"""const char ${name}_source[] =
-         |"${util.gen.opencl.kernel.asString(km).linesIterator.toArray.mkString(s"${'"'}\n${'"'}")}";
-         |""".stripMargin
-    }.mkString("\n")}
-       |#define loadKernel(ctx, ident) loadKernelFromSource(ctx, #ident, ident##_source, sizeof(ident##_source) - 1)
+       |${m.kernels.map(kernelSource).mkString("\n")}
+       |#define loadKernel(ctx, id)\\
+       |  loadKernelFromSource(ctx, #id, id##_source, sizeof(id##_source) - 1)
        |${util.gen.c.function.asString(m.host)}
        |""".stripMargin
 

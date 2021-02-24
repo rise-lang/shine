@@ -180,8 +180,7 @@ object gen {
 
       def fromPhrase: Phrase => HostedModule =
         partialHostCompiler(name) composeWith
-          (   hostFunDefToFunction()
-            x map(kernelDefToKernel()) )
+          (hostFunDefToFunction() x map(kernelDefToKernel()))
     }
 
     private def hostFunDefToFunction(gen: shine.OpenCL.HostCodeGenerator =
@@ -195,6 +194,6 @@ object gen {
       (CModule,    Seq[KernelModule])] =
         PartialCompiler.functor(
           OpenCL.SeparateHostAndKernelCode.separate(hostFunName),
-          (OpenCL.Module.apply _).tupled )
+          (OpenCL.Module.apply _).tupled)
   }
 }

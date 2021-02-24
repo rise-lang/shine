@@ -45,10 +45,12 @@ object HostManagedBuffers {
     managed.updateWith(ident)(prev => Some(prev.getOrElse(0) | access))
   }
 
-  private def insertHostExecutions(previous: Metadata,
-                                   allocs: Set[Identifier[_ <: PhraseType]],
-                                   managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
-                                   p: Phrase[CommType]): (Phrase[CommType], Metadata) = {
+  private def insertHostExecutions(
+    previous: Metadata,
+    allocs: Set[Identifier[_ <: PhraseType]],
+    managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
+    p: Phrase[CommType]
+  ): (Phrase[CommType], Metadata) = {
     val (p2, current) = analyzeAndInsertHostExecution(p, allocs, managed)
     val syncAccesses = previous.device_reads.union(previous.device_writes)
       .intersect(current.host_reads.union(current.host_writes))
@@ -83,9 +85,11 @@ object HostManagedBuffers {
     (p2, meta)
   }
 
-  private case class InsertHostExecutionsVisitor(allocs: Set[Identifier[_ <: PhraseType]],
-                                                 managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
-                                                 metadata: Metadata) extends VisitAndRebuild.Visitor {
+  private case class InsertHostExecutionsVisitor(
+    allocs: Set[Identifier[_ <: PhraseType]],
+    managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
+    metadata: Metadata
+  ) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
       p match {
         case dpia.Assign(_, lhs, rhs) =>
@@ -148,7 +152,8 @@ object HostManagedBuffers {
           val access = managed(x)._1
           val x2 = managed(x)._2.asInstanceOf[Identifier[VarType]]
           Continue(ocl.NewManagedBuffer(dt, access, Lambda(x2, body)), this)
-        case _: dpia.New | _: Lambda[_, _] | _: dpia.Seq | _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
+        case _: dpia.New | _: Lambda[_, _] | _: dpia.Seq |
+             _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
           Continue(p, this)
         case _: ocl.KernelCallCmd => Continue(p, this)
         case _: HostExecution => Stop(p)
@@ -245,7 +250,6 @@ object HostManagedBuffers {
       case _ => throw new Exception(s"did not expect $e")
     }
   }
-
 
   @tailrec
   private def projCollectIdent(e: Phrase[_ <: PhraseType],

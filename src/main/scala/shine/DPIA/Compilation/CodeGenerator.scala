@@ -2,8 +2,8 @@ package shine.DPIA.Compilation
 
 import shine.C
 import shine.DPIA.Phrases.{Identifier, Phrase}
-import shine.DPIA.Types.{AccType, BasePhraseType, CommType, DataType, ExpType, PhrasePairType, PhraseType}
-import shine.DPIA.{->:, LetNatIdentifier, Nat, VarType}
+import shine.DPIA.Types.{AccType, BasePhraseType, CommType, DataType, ExpType, PhraseType}
+import shine.DPIA.{->:, LetNatIdentifier, Nat}
 
 import scala.collection.immutable
 

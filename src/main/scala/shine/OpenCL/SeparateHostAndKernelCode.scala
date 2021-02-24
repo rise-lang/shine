@@ -22,8 +22,8 @@ object SeparateHostAndKernelCode {
         case Run(localSize, globalSize, _, value) =>
           val name = s"k$kernelNum"
           kernelNum += 1
-          val (closedDefinition, args) = closeDefinition(value)
-          val kernelDef = OpenCLKernelDefinition(name, closedDefinition, Some((localSize, globalSize)))
+          val (closedDef, args) = closeDefinition(value)
+          val kernelDef = OpenCLKernelDefinition(name, closedDef, Some((localSize, globalSize)))
           kernelDefinitions += kernelDef
           Stop(KernelCall(name, localSize, globalSize,
             kernelDef.paramTypes.map(_.dataType),
