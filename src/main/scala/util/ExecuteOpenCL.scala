@@ -7,7 +7,9 @@ object ExecuteOpenCL {
   case class Exception(msg: String) extends Throwable
 
   val runtimePath = "runtime/"
+  val executorHeadersPath = "lib/executor/lib/Executor/include/"
   val libs = "-lm -lOpenCL"
+  val includes = s"-I$runtimePath -I$executorHeadersPath"
 
   // noinspection ScalaUnnecessaryParentheses
   @throws[Exception]

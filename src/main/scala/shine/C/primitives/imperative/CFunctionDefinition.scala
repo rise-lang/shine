@@ -97,7 +97,7 @@ final case class CFunctionDefinition(name: String,
                           (outParam: Identifier[AccType]): Phrase[CommType] => (immutable.Seq[gen.Decl], gen.Stmt) = {
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       (outParam +: params).map(p => p -> C.AST.DeclRef(p.name)).toMap,
-      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
+      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
     gen.generate(topLevelLetNats, env)
   }

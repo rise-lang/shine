@@ -136,13 +136,15 @@ object gen {
       def fromPhrase: Phrase => KernelModule = wgConfig match {
         case Some(PhraseDepLocalAndGlobalSize(f)) => p => p |> (
           phraseToKernelDef(name) andThen
-            kernelDefToKernel(Some(f(p))))
+            kernelWithWgConfig(f(p)) andThen
+            kernelDefToKernel())
         case Some(config: LocalAndGlobalSize) =>
           phraseToKernelDef(name) andThen
-            kernelDefToKernel(Some(config))
+            kernelWithWgConfig(config) andThen
+            kernelDefToKernel()
         case None =>
           phraseToKernelDef(name) andThen
-            kernelDefToKernel(None)
+            kernelDefToKernel()
       }
 
       def asStringFromExpr: Expr => String =
@@ -157,24 +159,15 @@ object gen {
     private def phraseToKernelDef(name: String): Phrase => KernelDef =
       OpenCLKernelDefinition.fromPhrase(name)
 
-    private def kernelDefToKernel(
-        wgConfig: Option[LocalAndGlobalSize]
-                                 ): KernelDef => KernelModule = wgConfig match {
-      case Some(LocalAndGlobalSize(localSize, globalSize)) =>
-        _.translateToModule(shine.OpenCL.CodeGenerator())(Some(localSize, globalSize))
-      case None =>
-        _.translateToModule(shine.OpenCL.CodeGenerator())(None)
+    private def kernelWithWgConfig: LocalAndGlobalSize => KernelDef => KernelDef = {
+      case LocalAndGlobalSize(ls, gs) => _.withWgConfig(ls, gs)
     }
 
-    private def sizedKernelDefToKernel: SizedKernelDef => KernelModule = {
-      case (localSize, globalSize, kernelDef) =>
-        kernelDef.translateToModule(shine.OpenCL.CodeGenerator())(
-          Some(localSize, globalSize))
-    }
+    private def kernelDefToKernel(): KernelDef => KernelModule =
+      _.translateToModule(shine.OpenCL.CodeGenerator())
 
     type HostedModule = OpenCL.Module
     type HostFunDef   = OpenCL.HostFunctionDefinition
-    type SizedKernelDef = OpenCL.SeparateHostAndKernelCode.SizedKernelDef
 
     object hosted {
       def fromExpr: Expr => HostedModule = gen.opencl.hosted().fromExpr
@@ -188,7 +181,7 @@ object gen {
       def fromPhrase: Phrase => HostedModule =
         partialHostCompiler(name) composeWith
           (   hostFunDefToFunction()
-            x map(sizedKernelDefToKernel) )
+            x map(kernelDefToKernel()) )
     }
 
     private def hostFunDefToFunction(gen: shine.OpenCL.HostCodeGenerator =
@@ -198,7 +191,7 @@ object gen {
 
     private def partialHostCompiler(hostFunName: String): PartialCompiler[
       Phrase, HostedModule,
-      (HostFunDef, Seq[SizedKernelDef]),
+      (HostFunDef, Seq[KernelDef]),
       (CModule,    Seq[KernelModule])] =
         PartialCompiler.functor(
           OpenCL.SeparateHostAndKernelCode.separate(hostFunName),

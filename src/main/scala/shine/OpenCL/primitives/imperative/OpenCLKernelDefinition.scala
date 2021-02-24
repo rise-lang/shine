@@ -21,7 +21,11 @@ import scala.collection.immutable
 
 @comPrimitive
 final case class OpenCLKernelDefinition(name: String,
-                                        definition: Phrase[_ <: PhraseType]) extends CommandPrimitive {
+                                        definition: Phrase[_ <: PhraseType],
+                                        wgConfig: Option[(LocalSize, GlobalSize)]) extends CommandPrimitive {
+  def withWgConfig(ls: LocalSize, gs: GlobalSize): OpenCLKernelDefinition =
+    this.copy(wgConfig = Some(ls, gs))
+
   private val cFunDef = CFunctionDefinition(name, definition)
   val body: Phrase[ExpType] = cFunDef.body
   val params: Seq[Identifier[ExpType]] = cFunDef.params
@@ -35,13 +39,12 @@ final case class OpenCLKernelDefinition(name: String,
 
   type CodeGenerator = OpenCL.CodeGenerator
 
-  def translateToModule(gen: CodeGenerator)
-                       (wgConfig: Option[(LocalSize, GlobalSize)]): KernelModule = {
+  def translateToModule(gen: CodeGenerator): KernelModule = {
     val outParam = cFunDef.createOutputParam(outT = body.t)
 
     body |>
       ( run(TypeCheck(_: Phrase[ExpType])) andThen
-        rewriteToImperative(gen)(wgConfig)(outParam) andThen
+        rewriteToImperative(gen)(outParam) andThen
         InsertMemoryBarriers.insert andThen
         HoistMemoryAllocations.hoist andThen { case (temps, phrase) =>
         AdaptKernelParameters.adapt(gen)(outParam, params, temps)(phrase) } andThen {
@@ -49,15 +52,14 @@ final case class OpenCLKernelDefinition(name: String,
             phrase |>
               ( generateCode(gen)(outParam, params, temps) _ andThen { case (decls, code) =>
                 (decls, AdaptKernelBody.adapt(C.AST.Block(immutable.Seq(code)))) } andThen
-                makeModule(gen)(outParam, temps, kernelParams, wgConfig) )
+                makeModule(gen)(outParam, temps, kernelParams) )
       } )
   }
 
   private def makeModule(gen: CodeGenerator)
                         (outputParam: Identifier[AccType],
                          temps: Seq[AllocationInfo],
-                         kernelParams: Seq[C.AST.ParamDecl],
-                         wgConfig: Option[(LocalSize, GlobalSize)]
+                         kernelParams: Seq[C.AST.ParamDecl]
                         ): ((immutable.Seq[gen.Decl], gen.Stmt)) => KernelModule = {
     case (declarations, code) =>
       val attribute = wgConfig match {
@@ -80,7 +82,6 @@ final case class OpenCLKernelDefinition(name: String,
   }
 
   private def rewriteToImperative(gen: CodeGenerator)
-                                 (wgConfig: Option[(LocalSize, GlobalSize)])
                                  (outParam: Phrase[AccType])(p: Phrase[ExpType]): Phrase[CommType] = {
     implicit val context: shine.DPIA.Compilation.TranslationContext = gen.translationContext
 
@@ -122,7 +123,7 @@ final case class OpenCLKernelDefinition(name: String,
 
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       identMap ++ tempsIdentMap,
-      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
+      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
     gen.generate(topLevelLetNats, env)(p)
   }
@@ -130,5 +131,5 @@ final case class OpenCLKernelDefinition(name: String,
 
 object OpenCLKernelDefinition {
   def fromPhrase(name: String)(p: Phrase[_ <: PhraseType]): OpenCLKernelDefinition =
-    OpenCLKernelDefinition(name, p)
+    OpenCLKernelDefinition(name, p, None)
 }

@@ -118,9 +118,7 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
         Proj2(unmanagedV) -> unmanagedA,
       ), `in` = body) |>
       cmd(env updatedIdentEnv (managedE -> managedC) updatedIdentEnv (managedA -> managedC)
-        updatedVarEnv (managedV -> managedC)
-        updatedIdentEnv (unmanagedE -> unmanagedC) updatedIdentEnv (unmanagedA -> unmanagedC)
-        updatedVarEnv (unmanagedV -> unmanagedC))
+        updatedIdentEnv (unmanagedE -> unmanagedC) updatedIdentEnv (unmanagedA -> unmanagedC))
     val destroyBuffer = C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("destroyBuffer"), Seq(
       C.AST.DeclRef("ctx"),
       managedC
@@ -136,12 +134,14 @@ case class HostCodeGenerator(override val decls: C.CodeGenerator.Declarations,
       HostManagedBuffers.optionallyManaged(ident) match {
         case Some((mident, dt)) =>
           modifiedEnv = ident match {
-            case Identifier(_, _: PhrasePairType[_, _]) => modifiedEnv updatedVarEnv
-              (ident.asInstanceOf[Identifier[VarType]] -> C.AST.DeclRef(ident.name))
+            case Identifier(_, _: PhrasePairType[_, _]) =>
+              // no need to modify the environment, this has been done by `newManagedBuffer`
+              modifiedEnv
             case Identifier(_, _: BasePhraseType) => modifiedEnv updatedIdentEnv
               (ident.asInstanceOf[Identifier[_ <: BasePhraseType]] -> C.AST.DeclRef(ident.name))
             case _ => throw new Exception("this should not happen")
           }
+
           stmts :+ C.AST.DeclStmt(C.AST.VarDecl(ident.name, managedTyp(dt), Some(
             C.AST.Cast(managedTyp(dt), C.AST.FunCall(C.AST.DeclRef("hostBufferSync"), Seq(
               C.AST.DeclRef("ctx"),

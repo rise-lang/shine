@@ -12,21 +12,19 @@ import scala.language.existentials
 import scala.annotation.tailrec
 
 object SeparateHostAndKernelCode {
-  type SizedKernelDef = (LocalSize, GlobalSize, OpenCLKernelDefinition)
-
   def separate(hostFunName: String): Phrase[_ <: PhraseType] =>
-    (HostFunctionDefinition, Seq[SizedKernelDef]) = p =>
+    (HostFunctionDefinition, Seq[OpenCLKernelDefinition]) = p =>
   {
     var kernelNum = 0
-    var kernelDefinitions = mutable.ArrayBuffer[SizedKernelDef]()
+    var kernelDefinitions = mutable.ArrayBuffer[OpenCLKernelDefinition]()
     val hostDefinition = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
         case Run(localSize, globalSize, _, value) =>
           val name = s"k$kernelNum"
           kernelNum += 1
           val (closedDefinition, args) = closeDefinition(value)
-          val kernelDef = OpenCLKernelDefinition(name, closedDefinition)
-          kernelDefinitions += Tuple3(localSize, globalSize, kernelDef)
+          val kernelDef = OpenCLKernelDefinition(name, closedDefinition, Some((localSize, globalSize)))
+          kernelDefinitions += kernelDef
           Stop(KernelCall(name, localSize, globalSize,
             kernelDef.paramTypes.map(_.dataType),
             kernelDef.returnType.dataType,
