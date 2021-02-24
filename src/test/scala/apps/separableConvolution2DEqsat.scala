@@ -102,7 +102,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
         val expansion = expandStrats.flatMap { s =>
           unvisited.iterator.flatMap(c => s(c.e)).flatMap(c => mayApply(filterStrat, c).map(ExprWrapper))
         }
-        println(s"expanded to ${expansion.size}")
+        println(s"expanded by ${expansion.size}")
         unvisited.clear()
         unvisited ++= expansion
         println(s"with ${unvisited.size} uniques")
@@ -145,7 +145,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
 
   test("scanline to separated") {
     find_rewrite_path(scanline(weightsV)(weightsH), separated(weightsV)(weightsH), immutable.Seq(
-      everywhere(mapFirstFission), // TODO: can we do this using the simpler mapLastFission rule?
+      everywhere(mapLastFission()(default.RiseTraversable)),
       everywhere(mapFusion)
     ))
   }
