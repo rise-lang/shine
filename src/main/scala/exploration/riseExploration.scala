@@ -15,7 +15,7 @@ import elevate.heuristic_search.util.Solution
 import exploration.explorationUtil.jsonParser
 import exploration.explorationUtil.jsonParser.ParseExploration
 import rise.elevate.Rise
-import strategies.standardStrategies
+import strategies.defaultStrategies
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
 //import rise.elevate.strategies.traversal._
@@ -119,7 +119,7 @@ object riseExploration {
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
     val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[CExecutor], standardStrategies.strategies, nameList.reverse.apply(index))
+      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[CExecutor], defaultStrategies.strategies, nameList.reverse.apply(index))
     index = index + 1
 
     // iterate reverse direction
@@ -127,7 +127,7 @@ object riseExploration {
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
       metaheuristic = new Metaheuristic[Rise](elem.heuristic, jsonParser.getHeuristic(elem.heuristic),
-        elem.depth,elem.iteration, metaheuristic, standardStrategies.strategies, nameList.reverse.apply(index))
+        elem.depth,elem.iteration, metaheuristic, defaultStrategies.strategies, nameList.reverse.apply(index))
       index = index + 1
     })
 

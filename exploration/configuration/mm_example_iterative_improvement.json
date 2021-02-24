@@ -1,5 +1,5 @@
   {
-      "name" : "dot_2_example",
+      "name" : "mm_example_iterative_improvement",
       "strategies" : "default",
       "output" : "exploration",
       "inputSize" : 512,
@@ -7,14 +7,10 @@
         "heuristic" : "IterativeImprovement",
         "depth" : 0,
         "iterations" : 1
-      }, {
-      	"heuristic" : "Random",
-      	"depth" : 5,
-      	"iterations" : 3
       }],
       "executor" : {
         "name" : "C",
-        "iterations" : 9,
-	"threshold" : 10
+        "iterations" : 3,
+        "threshold" : 10
       }
 }
