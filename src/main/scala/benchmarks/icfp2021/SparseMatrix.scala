@@ -11,23 +11,34 @@ import scala.util.Random
 
 object SparseMatrix {
   def main(args: Array[String]): Unit = {
+    Executor.loadAndInit()
+
     val files = Iterable(
-     "Dubcova3",
+//      "web-Google",
+//      "web-Stanford",
+//      "engine",
+//      "GaAsH6",
+//      "NACA0015",
+//      "Goodwin_030",
+//      "Goodwin_127",
+//      "Dubcova3",
       "rajat30",
-      "kim2",
-      "gupta2",
-      "torso1",
-      "SiO2",
+//      "kim2",
+//      "gupta2",
+//      "torso1",
+//      "SiO2",
+//      "pkustk12",
+//      "mip1",
     )
     val results = files.map(name => {
-      Executor.loadAndInit()
+      println(s"MATRIX: $name")
       val file = new File(s"/home/fedepiz/Desktop/artifact_sandbox/benchmark/matrix_cust/$name.mtx.cust")
       val matrix = TwoArrayCSR.fromCustomFormat(file)
       val utime = Kernels.spmv_unwrapped(matrix)
       val wtime = Kernels.spmv_wrapped(matrix)
-      Executor.shutdown()
       (name, utime, wtime)
     })
+    Executor.shutdown()
 
     println("RESULTS:")
     results.foreach {
@@ -68,12 +79,14 @@ object Kernels {
 
     val kernel = util.gen.OpenCLKernel(inferred, "unwrapped_mv")
     val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[(Int, Float)]] `,` Array[Float] `)=>` Array[Float]]
-      .withSizes(LocalSize(8), GlobalSize(8192))
+      .withSizes(LocalSize(64), GlobalSize(8192))
 
     val rng = new Random()
-    val vector = Array.tabulate(matrix.numCols)(_ => rng.nextFloat())
+    val vector = Array.tabulate(matrix.numCols)(_ => 1.0f)
 
-    val (_, time) = kernelF(matrix.numRows `,` matrix.numCols `,` matrix.offsets `,` matrix.entries `,` vector)
+    //val _ = kernelF(matrix.numRows `,` matrix.numCols `,` matrix.offsets `,` matrix.entries `,` vector)
+    val (result, time) = kernelF(matrix.numRows `,` matrix.numCols `,` matrix.offsets `,` matrix.entries `,` vector)
+    println(result.length)
     time
   }
 
@@ -95,16 +108,20 @@ object Kernels {
     val kernel = util.gen.OpenCLKernel(inferred, "wrapped")
     val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,`
       KernelScalaInterop.Puttable[KernelScalaInterop.DependentPair[Array[Array[(Int, Float)]]]] `,` Array[Float] `)=>` Array[Float]]
-      .withSizes(LocalSize(8), GlobalSize(8192))
+      .withSizes(LocalSize(64), GlobalSize(8192))
 
     val rng = new Random()
-    val vector = Array.tabulate(matrix.numCols)(_ => rng.nextFloat())
+    val vector = Array.tabulate(matrix.numCols)(_ => 1.0f)
 
     val matrixArg = KernelScalaInterop.Puttable(
       KernelScalaInterop.DependentPair(matrix.offsets, matrix.entries)
     )
 
-    val (_, time) = kernelF(matrix.numRows `,` matrix.numCols `,` matrixArg `,` vector)
+    //val _ = kernelF(matrix.numRows `,` matrix.numCols `,` matrixArg `,` vector)
+    val (result, time) = kernelF(matrix.numRows `,` matrix.numCols `,` matrixArg `,` vector)
+    println(result.length)
     time
   }
+
+
 }

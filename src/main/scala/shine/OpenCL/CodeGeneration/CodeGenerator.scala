@@ -2,7 +2,7 @@ package shine.OpenCL.CodeGeneration
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
-import shine.C.AST.{BasicType, Decl, VarDecl}
+import shine.C.AST.{BasicType, Decl, DeclRef, VarDecl}
 import shine.C.CodeGeneration.CodeGenerator.CIntExpr
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
@@ -61,6 +61,32 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => super.cmd(phrase, env)
       }
 
+      case OclMkDPairFstI(fst, f, out) =>
+        val (length, storage) = env.natCollLenEnv(fst)
+        val n = length
+        genNat(length, env, length =>
+        acc(out, env, List(), out => {
+        f(n) match {
+          case fBound@Lambda(_, body@Lambda(_, _)) =>
+            val inputIdent = Identifier(fBound.param.name, ExpType(ArrayType(n, NatType), read))
+            val outputIdent = Identifier(body.param.name, AccType(ArrayType(n, NatType)))
+
+            val castedOut = C.AST.Cast(OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, C.AST.Type.int), out)
+            val incCastedOut = C.AST.BinaryExpr(castedOut, C.AST.BinaryOperator.+, C.AST.Literal("1"))
+
+            C.AST.Block(Vector(
+              C.AST.IfThenElse(C.AST.Literal("get_global_id(0) == 0"),
+              C.AST.ExprStmt(C.AST.Assignment(
+                //* (uint32_t*)fstAcc[0] = length;
+                C.AST.ArraySubscript(C.AST.Cast(this.natCollectionNatCType(), castedOut), C.AST.Literal("0")), length)),
+                None
+             ),
+              cmd(body.body, env.updatedIdentEnv(inputIdent -> storage).updatedIdentEnv(outputIdent -> incCastedOut))
+            ))
+          case _ => ???
+        }}))
+
+
       case OpenCLNew(a, dt, Lambda(v, p)) =>
         OpenCLCodeGen.codeGenOpenCLNew(a, dt, v, p, env)
       case _: New =>
@@ -78,7 +104,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case _: NewDoubleBuffer =>
         throw new Exception("NewDoubleBuffer without address space" +
           "found in OpenCL program.")
-
 
 
       case _ => super.cmd(phrase, env)
@@ -173,7 +198,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case AsScalar(_, m, _, _, e) => path match {
         case (i : CIntExpr) :: ps =>
           exp(e, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
-        case _ =>           error(s"Expected path to be not empty")
+        case _ => error(s"Expected path to be not empty")
       }
       // TODO: this has to be refactored
       case VectorFromScalar(n, st, e) => path match {
@@ -464,7 +489,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     }
   }
 
-  override def natCollectionNatCType(const: Boolean): Type = OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, C.AST.Type.u32)
+  override def natCollectionNatCType(const: Boolean): Type = OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, C.AST.Type.int)
 
   override def natCollectionElemCType(elemT: Type, const: Boolean): Type = OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, elemT)
 
@@ -473,20 +498,26 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def natCollectionElemDecl(name: String, elemT: Type, expr: Expr): VarDecl =
     OpenCL.AST.VarDecl(name, C.AST.PointerType(elemT, const = true), OpenCL.AddressSpace.Global, Some(expr), restrict = true)
 
-  override def memcpy(acc: Expr, tgt: Expr, byteLength: Expr): Stmt = {
+  override def memcpy(acc: Expr, tgt: Expr, byteLength: Expr): Stmt = sequentialMemcpy(acc, tgt, byteLength)
+
+
+  def sequentialMemcpy(acc: Expr, tgt: Expr, byteLength: Expr): Stmt = {
     val i = freshName("i")
     C.AST.Stmts(
       C.AST.Comment("OpenCL memcpy"),
-      C.AST.ForLoop(
-        C.AST.DeclStmt(C.AST.VarDecl(i, C.AST.Type.u32, Some(C.AST.Literal("0")))),
-        C.AST.BinaryExpr(C.AST.DeclRef(i), C.AST.BinaryOperator.<, byteLength),
-        C.AST.Assignment(C.AST.DeclRef(i), C.AST.BinaryExpr(C.AST.DeclRef(i), C.AST.BinaryOperator.+, C.AST.Literal("1"))),
-        C.AST.Block(Vector(
-          C.AST.ExprStmt(C.AST.Assignment(
-            C.AST.ArraySubscript(acc, C.AST.DeclRef(i)),
-            C.AST.ArraySubscript(C.AST.Cast(OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, C.AST.Type.u8), tgt), C.AST.DeclRef(i))
+      C.AST.IfThenElse(
+        C.AST.Literal("get_global_id(0) == 0"),
+        C.AST.ForLoop(
+          C.AST.DeclStmt(C.AST.VarDecl(i, C.AST.Type.int, Some(C.AST.Literal("0")))),
+          C.AST.BinaryExpr(C.AST.DeclRef(i), C.AST.BinaryOperator.<, byteLength),
+          C.AST.Assignment(C.AST.DeclRef(i), C.AST.BinaryExpr(C.AST.DeclRef(i), C.AST.BinaryOperator.+, C.AST.Literal("1"))),
+          C.AST.Block(Vector(
+            C.AST.ExprStmt(C.AST.Assignment(
+              C.AST.ArraySubscript(acc, C.AST.DeclRef(i)),
+              C.AST.ArraySubscript(C.AST.Cast(OpenCL.AST.PointerType(OpenCL.AddressSpace.Global, C.AST.Type.u8), tgt), C.AST.DeclRef(i))
+            ))
           ))
-        ))
+        ),None
       )
     )
   }

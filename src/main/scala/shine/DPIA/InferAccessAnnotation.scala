@@ -610,6 +610,26 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
+      case roclp.oclDpairNats() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.DepFunType(fst, rt.FunType(
+            rt.DepFunType(n:rt.NatIdentifier, rt.FunType(at:rt.ArrayType, _)),
+          rt.FunType(sndT:rt.DataType, outT:rt.DataType))) =>
+            val a1 = accessTypeIdentifier()
+            fst match {
+              case fst:rt.NatCollectionIdentifier =>
+                val fst_ = natCollectionIdentifier(fst)
+                val n_ = natIdentifier(n)
+                val at_ = dataType(at)
+                nsFunT(fst_, nFunT(n_, expT(at_, read) ->: expT(at_, write)) ->: expT(dataType(sndT), a1) ->: expT(dataType(outT), a1))
+              case _ => ???
+            }
+
+          case _ =>
+            error(s"did not expect $t")
+        }
+        buildType(p.t)
+
       case rp.dpairNats() =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.DepFunType(fst, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>

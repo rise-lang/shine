@@ -902,6 +902,15 @@ object fromRise {
             MkDPair[NatCollectionKind](a, fst, sndT, snd)))
       }
 
+      case ocl.oclDpairNats() => fromType {
+        case nsFunT(fst, (nFunT(n, expT(_, _) ->: expT(_, _))) ->: expT(sndT, a) ->: expT(_, _)) =>
+          depFun[NatCollectionKind](fst)(
+              fun[`(nat)->:`[ExpType ->: ExpType]](n ->: ExpType(ArrayType(n, NatType), read) ->: ExpType(ArrayType(n, NatType), write), fCopy =>
+                fun[ExpType](expT(sndT, a), snd => OclMkPairNats(a, fst, fCopy, sndT, snd))
+              )
+            )
+      }
+
       case core.count() => fromType {
         case expT(ArrayType(n, _), `read`) ->: expT(IndexType(_), `read`) =>
           fun[ExpType](ExpType(ArrayType(n, bool), read), input => Count(n, input))

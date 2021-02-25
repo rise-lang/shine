@@ -81,7 +81,7 @@ class Printer extends shine.C.AST.CPrinter {
   private def printVarDecl(v: shine.OpenCL.AST.VarDecl): Unit = {
     if (v.addressSpace != AddressSpace.Private) print(s"${v.addressSpace} ")
     if (v.t.const) print("const ")
-    val restrict = ""
+    val restrict = if(v.restrict) "restrict" else ""
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")

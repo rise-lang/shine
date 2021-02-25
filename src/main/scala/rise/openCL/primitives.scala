@@ -1,7 +1,7 @@
 package rise.openCL
 
 import rise.core.TypeLevelDSL._
-import rise.core.types.{AddressSpace, DataType, IndexType, Nat, NatToData, bool}
+import rise.core.types.{AddressSpace, DataType, IndexType, Nat, NatCollection, NatCollectionToData, NatToData, NatType, bool}
 import rise.core.{Builder, Primitive}
 import rise.macros.Primitive.primitive
 
@@ -87,6 +87,13 @@ object primitives {
   @primitive object oclWhichMap extends Primitive with Builder {
     impl { n: Nat => impl { dt: DataType => (n `.` bool) ->: (IndexType(n) ->: dt) ->: expl((count: Nat) => count `.` dt) } }
   }
+
+  @primitive object oclDpairNats extends Primitive with Builder {
+    expl { (ns: NatCollection) => impl { fdt: NatCollectionToData =>
+      expl { (n:Nat) => (n `.` NatType) ->: (n `.` NatType)} ->: fdt(ns) ->: (NatCollection `**` fdt)
+    } }
+  }
+
 
   @primitive object oclCircularBuffer extends Primitive with Builder {
     // TODO: should return a stream / sequential array, not an array

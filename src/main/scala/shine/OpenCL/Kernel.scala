@@ -88,7 +88,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
       val (outputArg, inputArgs) = createKernelArgs(arguments, sizeVarMapping)
       val kernelArgs = outputArg :: inputArgs
 
-      val kernelJNI = opencl.executor.Kernel.create(code, kernel.name, "")
+      val codeToSend = this.code
+      val kernelJNI = opencl.executor.Kernel.create(codeToSend, kernel.name, "")
 
       List(localSize match {
         case LocalSize(x) if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
@@ -338,7 +339,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
             GlobalArg.createInput(p.asInstanceOf[Array[(Int, Int)]].iterator.flatten(x => Iterator(x._1, x._2)).toArray)
           case _ => ???
         }
-      case pp: Array[Array[(_, _)]] => pp.head.head match {
+      case pp: Array[Array[(_, _)]] => pp.find(_.nonEmpty).get.head match {
         case (_: Int, _: Float) =>
           val flattened = pp.flatMap(a => flattenToArrayOfInts(a.asInstanceOf[Array[(Int, Float)]]))
           createGlobalArg(flattened)
@@ -540,16 +541,27 @@ object KernelScalaInterop {
   }
 
   implicit def putDepPair[T: Put] = new Put[DependentPair[T]]{
+    def alignTo(x: Int, align: Int): Int = {
+      val diff =  if(x % align == 0) 0 else align - (x % align)
+      val total = x + diff
+      assert(total % align == 0)
+      total
+    }
+
     override def write(x: DependentPair[T], b: ByteBuffer): Unit = {
-      implicitly[Put[Int]].write(x.fst.length, b)
+      val headArray = Array.fill(64)(0)
+      headArray(0) = alignTo(x.fst.length, 64)
+      implicitly[Put[Array[Int]]].write(headArray, b)
       implicitly[Put[Array[Int]]].write(x.fst, b)
+      val pad = headArray(0) - x.fst.length
+      implicitly[Put[Array[Int]]].write(Array.fill(pad)(0), b)
+      println(b.position())
       implicitly[Put[T]].write(x.data, b)
     }
 
     override def sizeInByte(x: DependentPair[T]): Int = {
-      val fstSize =  implicitly[Put[Array[Int]]].sizeInByte(x.fst)
       val dataSize = implicitly[Put[T]].sizeInByte(x.data)
-      4 + fstSize + dataSize
+      64*4 + alignTo(x.fst.length, 64)*4 + dataSize
     }
   }
 }

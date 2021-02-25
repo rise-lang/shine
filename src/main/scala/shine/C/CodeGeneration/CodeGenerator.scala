@@ -4,7 +4,7 @@ import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import rise.core.types.NatCollectionIndexing
 import shine.C.{AST, SizeInByte}
-import shine.C.AST.Block
+import shine.C.AST.{Block, DeclRef}
 import shine.C.AST.Type.getBaseType
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
@@ -23,13 +23,13 @@ import scala.language.implicitConversions
 object CodeGenerator {
 
   final case class Environment(
-    identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.DeclRef],
+    identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.Expr],
     commEnv: immutable.Map[Identifier[CommType], C.AST.Stmt],
     contEnv: immutable.Map[Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt],
     natCollLenEnv: immutable.Map[NatCollection, (Nat, C.AST.DeclRef)],
     letNatEnv: immutable.Map[LetNatIdentifier, Phrase[PhraseType]]
   ) {
-    def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseType], C.AST.DeclRef)): Environment = {
+    def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseType], C.AST.Expr)): Environment = {
       this.copy(identEnv = identEnv + kv)
     }
 
@@ -186,7 +186,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           // Read off the first uint32_t as a nat
           C.AST.Block(immutable.Seq(
             C.AST.DeclStmt(
-              C.AST.VarDecl(fstId.name, C.AST.Type.u32, Some(C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), input), C.AST.Literal("0"))))
+              C.AST.VarDecl(fstId.name, C.AST.Type.int, Some(C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.int), input), C.AST.Literal("0"))))
             ),
             C.AST.DeclStmt(
               C.AST.VarDecl(sndId.name, sndCType,
@@ -210,19 +210,36 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          */
 
         exp(dPair, env, List(), buffer => {
-          val bufferOfNats = C.AST.Cast(natCollectionNatCType(), buffer)
+          val bufferOfNats = C.AST.Cast(natCollectionNatCType(const = true), buffer)
           val elemCount = freshName("count")
           val nats = xs.name
           val dataElementType = getBaseType(typ(inT))
           val data = freshName("data")
 
+          def alignedOffset(base: Expr, x:Expr, toByte:Int):C.AST.Expr =
+            C.AST.BinaryExpr(
+              base,
+              C.AST.BinaryOperator.+,
+              C.AST.BinaryExpr(
+                x, C.AST.BinaryOperator.+,
+                C.AST.TernaryExpr(C.AST.BinaryExpr(x, C.AST.BinaryOperator.%, C.AST.Literal((toByte/4).toString)),
+                C.AST.BinaryExpr(
+                  C.AST.Literal((toByte/4).toString), C.AST.BinaryOperator.-,
+                  C.AST.BinaryExpr(x, C.AST.BinaryOperator.%, C.AST.Literal((toByte/4).toString))
+                ), C.AST.Literal("0")
+                )
+              )
+            )
+
           C.AST.Block(Vector(
-            C.AST.DeclStmt(C.AST.VarDecl(elemCount, C.AST.Type.u32, Some(C.AST.ArraySubscript(bufferOfNats, C.AST.Literal("0"))))),
+            C.AST.DeclStmt(C.AST.VarDecl(elemCount, C.AST.Type.int, Some(C.AST.ArraySubscript(bufferOfNats, C.AST.Literal("0"))))),
             C.AST.DeclStmt(
-              natCollectionVarDecl(nats, C.AST.BinaryExpr(bufferOfNats, C.AST.BinaryOperator.+, C.AST.Literal("1")), const = true)
+              natCollectionVarDecl(nats, C.AST.BinaryExpr(bufferOfNats, C.AST.BinaryOperator.+, C.AST.Literal("64")), const = true)
             ),
             C.AST.DeclStmt(natCollectionElemDecl(data, dataElementType,
-              C.AST.Cast(natCollectionElemCType(dataElementType), C.AST.BinaryExpr(C.AST.DeclRef(nats), C.AST.BinaryOperator.+, C.AST.DeclRef(elemCount))))),
+              C.AST.Cast(natCollectionElemCType(dataElementType, const = true),
+                alignedOffset(C.AST.DeclRef(nats), C.AST.DeclRef(elemCount), 256))
+              )),
             {
               val fst = NatCollectionIdentifier(nats)
               val snd = Identifier[ExpType](data, expT(inT, `read`))
@@ -278,8 +295,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                 C.AST.Stmts(
                   C.AST.ExprStmt(C.AST.Assignment(
                     //* (uint32_t*)fstAcc[0] = length;
-
-                    C.AST.ArraySubscript(C.AST.Cast(this.natCollectionNatCType(), fstAcc), C.AST.Literal("0")), length)),
+                    C.AST.ArraySubscript(C.AST.Cast(this.natCollectionNatCType(), fstAcc), C.AST.Literal("0")), length)
+                  ),
                   //* memcpy((fstAcc + sizeof(uint32_t), storage, length * sizeof(uint32_t));
                   this.memcpy(C.AST.BinaryExpr(fstAcc, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)")), storage, byteLength)
                 )
@@ -1165,13 +1182,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   protected def applySubstitutions(n: Nat,
-                                   identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.DeclRef]): Nat = {
+                                   identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.Expr]): Nat = {
     // lift the substitutions from the Phrase level to the ArithExpr level
     val substitionMap = identEnv.filter(_._1.t match {
       case ExpType(IndexType(_), _) => true
       case AccType(IndexType(_)) => true
       case _ => false
-    }).map(i => (NamedVar(i._1.name), NamedVar(i._2.name))).toMap[ArithExpr, ArithExpr]
+    }).map(i => (NamedVar(i._1.name), NamedVar(i._2.asInstanceOf[DeclRef].name))).toMap[ArithExpr, ArithExpr]
     ArithExpr.substitute(n, substitionMap)
   }
 
@@ -1400,7 +1417,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     })
   }
 
-  def natBaseType: AST.BasicType = C.AST.Type.u32
+  def natBaseType: AST.BasicType = C.AST.Type.int
   def natCollectionNatCType(const:Boolean = false): C.AST.Type = C.AST.PointerType(this.natBaseType, const)
   def natCollectionElemCType(elemT: C.AST.Type, const:Boolean = false): C.AST.Type =
     C.AST.PointerType(elemT, const)
