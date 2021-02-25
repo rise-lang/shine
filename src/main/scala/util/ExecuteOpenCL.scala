@@ -6,7 +6,6 @@ import scala.sys.process._
 object ExecuteOpenCL {
   case class Exception(msg: String) extends Throwable
 
-  val clHeaderPath = "lib/executor/lib/Executor/include/"
   val runtimePath = "runtime/"
   val executorHeadersPath = "lib/executor/lib/Executor/include/"
   val libs = "-lm -lOpenCL"
@@ -26,7 +25,7 @@ object ExecuteOpenCL {
         s"""#include "host.c"
            |${mainSource}""".stripMargin)
       val sources = s"$mainPath $runtimePath/buffer_${buffer_impl}.c $runtimePath/ocl.c"
-      (s"clang -O2 $sources -I $runtimePath -I $clHeaderPath -o $binPath $libs -Wno-parentheses-equality" !!)
+      (s"clang -O2 $sources $includes -o $binPath $libs -Wno-parentheses-equality" !!)
       (Process(s"$binPath", new java.io.File(genDir.getAbsolutePath)) !!)
     } catch {
       case e: Throwable =>
@@ -44,7 +43,7 @@ object ExecuteOpenCL {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
       val sources = s"$src $runtimePath/buffer_${buffer_impl}.c $runtimePath/ocl.c"
-      (s"clang -O2 $sources -I $runtimePath -I $clHeaderPath -o $bin $libs -Wno-parentheses-equality" !!)
+      (s"clang -O2 $sources $includes -o $bin $libs -Wno-parentheses-equality" !!)
       (s"$bin" !!)
     } catch {
       case e: Throwable =>

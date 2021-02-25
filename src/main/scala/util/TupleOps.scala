@@ -101,20 +101,20 @@ object TupleOps extends App {
     def ++[K, L, M, N, O, P, Q, R, S, T](y: (K, L, M, N, O, P, Q, R, S, T)): (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) = (x._1, x._2, x._3, x._4, x._5, x._6, x._7, x._8, x._9, x._10, y._1, y._2, y._3, y._4, y._5, y._6, y._7, y._8, y._9, y._10)
   }
 
-  // generator
-  for (n <- 2 to 10) yield {
-    val ts = (0 until n).map(i => ('A'+i).toChar).mkString(", ")
-    val u = ('A'+n).toChar
-    val xs = (0 until n).map(i => "x._"+(i+1)).mkString(", ")
-    println(s"implicit class TupOps$n[$ts](val x: ($ts)) extends AnyVal {")
-    println(s"  def :+[$u](y: $u): ($ts, $u) = ($xs, y)")
-    println(s"  def +:[$u](y: $u): ($u, $ts) = (y, $xs)")
-    for (m <- 2 to n) yield {
-      val us = (0 until m).map(i => ('A'+(i+n)).toChar).mkString(", ")
-      val ys = (0 until m).map(i => "y._"+(i+1)).mkString(", ")
-      println(s"  def ++[$us](y: ($us)): ($ts, $us) = ($xs, $ys)")
-    }
-    println("}")
-    println()
-  }
+//  // generator code
+//  for (n <- 2 to 10) yield {
+//    val ts = (0 until n).map(i => ('A'+i).toChar).mkString(", ")
+//    val u = ('A'+n).toChar
+//    val xs = (0 until n).map(i => "x._"+(i+1)).mkString(", ")
+//    println(s"implicit class TupOps$n[$ts](val x: ($ts)) extends AnyVal {")
+//    println(s"  def :+[$u](y: $u): ($ts, $u) = ($xs, y)")
+//    println(s"  def +:[$u](y: $u): ($u, $ts) = (y, $xs)")
+//    for (m <- 2 to n) yield {
+//      val us = (0 until m).map(i => ('A'+(i+n)).toChar).mkString(", ")
+//      val ys = (0 until m).map(i => "y._"+(i+1)).mkString(", ")
+//      println(s"  def ++[$us](y: ($us)): ($ts, $us) = ($xs, $ys)")
+//    }
+//    println("}")
+//    println()
+//  }
 }

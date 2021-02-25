@@ -2,7 +2,7 @@ package shine.OpenCL
 
 import shine.C
 
-// An OpenCL Module consists of the _host code_ a set of OpenCL _kernels_
+// An OpenCL Module consists of the _host code_ and a set of OpenCL _kernels_
 case class Module(hostCode: C.Module, kernels: Seq[KernelModule]) {
   def compose(other: Module): Module =
     Module(

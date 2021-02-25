@@ -19,7 +19,7 @@ object HostManagedBuffers {
   : Phrase[CommType] => Phrase[CommType] = { p =>
     def outsideParams() = mutable.Set[Identifier[_ <: PhraseType]]() ++ (params :+ outParam)
     val worstCasePrevious =
-      Metadata(outsideParams(), outsideParams(), outsideParams(), outsideParams())
+      ReadsAndWrites(outsideParams(), outsideParams(), outsideParams(), outsideParams())
     val managed = mutable.Map[Identifier[_ <: PhraseType], AccessFlags]()
     insertHostExecutions(worstCasePrevious, outsideParams().toSet, managed, p)._1 |>
     insertManagedBuffers(managed)
@@ -27,14 +27,15 @@ object HostManagedBuffers {
 
 
   // effects to outer scope allocations
-  private case class Metadata(
+  private case class ReadsAndWrites(
     host_reads: mutable.Set[Identifier[_ <: PhraseType]],
     host_writes: mutable.Set[Identifier[_ <: PhraseType]],
     device_reads: mutable.Set[Identifier[_ <: PhraseType]],
     device_writes: mutable.Set[Identifier[_ <: PhraseType]])
 
   private object Metadata {
-    def empty: Metadata = Metadata(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
+    def empty: ReadsAndWrites =
+      ReadsAndWrites(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
   }
 
   private def recordManagedAccess(
@@ -46,11 +47,11 @@ object HostManagedBuffers {
   }
 
   private def insertHostExecutions(
-    previous: Metadata,
+    previous: ReadsAndWrites,
     allocs: Set[Identifier[_ <: PhraseType]],
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
     p: Phrase[CommType]
-  ): (Phrase[CommType], Metadata) = {
+  ): (Phrase[CommType], ReadsAndWrites) = {
     val (p2, current) = analyzeAndInsertHostExecution(p, allocs, managed)
     val syncAccesses = previous.device_reads.union(previous.device_writes)
       .intersect(current.host_reads.union(current.host_writes))
@@ -79,8 +80,8 @@ object HostManagedBuffers {
     p: Phrase[CommType],
     allocs: Set[Identifier[_ <: PhraseType]],
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags]
-  ): (Phrase[CommType], Metadata) = {
-    val meta = Metadata(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
+  ): (Phrase[CommType], ReadsAndWrites) = {
+    val meta = ReadsAndWrites(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
     val p2 = VisitAndRebuild(p, InsertHostExecutionsVisitor(allocs, managed, meta))
     (p2, meta)
   }
@@ -88,7 +89,7 @@ object HostManagedBuffers {
   private case class InsertHostExecutionsVisitor(
     allocs: Set[Identifier[_ <: PhraseType]],
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
-    metadata: Metadata
+    metadata: ReadsAndWrites
   ) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
       p match {

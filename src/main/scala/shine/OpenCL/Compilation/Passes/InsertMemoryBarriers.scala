@@ -34,7 +34,8 @@ object InsertMemoryBarriers {
   private def visitLoopBody(p: Phrase[CommType],
                             allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
                             metadata: Metadata,
-                            outer_wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace] = mutable.Map()
+                            outer_wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
+                              = mutable.Map()
                            ): Phrase[CommType] = {
     val p2 = VisitAndRebuild(p, Visitor(allocs, metadata))
     val dependencies = metadata.wg_writes.filter(kv => metadata.reads.contains(kv._1))
@@ -151,7 +152,8 @@ object InsertMemoryBarriers {
 
   private def collectReads(e: Phrase[ExpType],
                            allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
-                           reads: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]): Unit = {
+                           reads: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
+                          ): Unit = {
     def addIdent(i: Identifier[_ <: PhraseType]): Unit = if (allocs.contains(i)) {
       reads(i) = allocs(i)
     }
