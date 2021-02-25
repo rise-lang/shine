@@ -4,14 +4,13 @@ import semantics._
 import rise.core.types._
 import rise.core.ShowRise._
 import rise.core.equality._
-import util.PatternMatching
 
 sealed abstract class Expr {
   val t: Type
   def setType(t: Type): Expr
   override def toString: String = showRise(this)
-  def =~~=(b : Expr) : Boolean = exprEq.alphaEquivalence(typeEq.alphaEquivalence.equiv, this, b)
-  def =~=(b : Expr) : Boolean = exprEq.alphaEquivalence(typeEq.unificationAlphaEquivalence.equiv, this, b)
+  def =~~=(b : Expr) : Boolean = exprAlphaEq(typeAlphaEq).apply(this)(b)
+  def =~=(b : Expr) : Boolean = exprAlphaEq(typeUnificationAlphaEq).apply(this)(b)
 }
 
 final case class Identifier(name: String)(
