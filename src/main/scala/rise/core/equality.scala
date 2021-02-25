@@ -6,7 +6,7 @@ import util.PatternMatching
 object equality {
   case class Env[T](unwrap: Map[T, T]) {
     def add(x: T, y: T): Env[T] = Env(unwrap.updated(x, y))
-    def check(x: T, y: T): Boolean = unwrap.get(x).contains(y)
+    def check(x: T, y: T): Boolean = x == y || unwrap.get(x).contains(y)
   }
   object Env {
     def apply[T](): Env[T] = Env(Map())
@@ -14,7 +14,7 @@ object equality {
 
   // TODO: move to utils?
   private def makeExplicit[K <: Kind.Identifier]: K => K = {
-    case t: DataTypeIdentifier => t.asExplicit.asInstanceOf[K]
+    case t: Kind.Explicitness => t.asExplicit.asInstanceOf[K]
     case t => t
   }
 
@@ -75,8 +75,7 @@ object equality {
 
         // Base cases -> identifier lookup
         case na: TypeIdentifier => and { case nb: TypeIdentifier => env.check(na, nb) }
-        case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier =>
-          na.asExplicit == nb.asExplicit || env.check(na.asExplicit, nb.asExplicit)
+        case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier => env.check(makeExplicit(na), makeExplicit(nb))
         }
 
         // Base cases -> identifier lookup in nat expressions
@@ -88,7 +87,7 @@ object equality {
         case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
           val and = PatternMatching.matchWithDefault(fb, false)
           equivNat(env)(na)(nb) && (fa match {
-            case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => na == nb || env.check(na, nb) }
+            case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => env.check(na, nb) }
             case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equivType(env.add(xa, xb))(ba)(bb) }
           })
         }
@@ -155,7 +154,7 @@ object equality {
     override val equiv: Env[Kind.Identifier] => Env[String] => Eq = typeEnv => exprEnv => a => b => {
       val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
       typeEq.equiv[TypeKind](typeEnv)(a.t)(b.t) && (a match {
-        case Identifier(na) => and { case Identifier(nb) => na == nb || exprEnv.check(na, nb)}
+        case Identifier(na) => and { case Identifier(nb) => exprEnv.check(na, nb)}
         case Literal(da) => and { case Literal(db) => da == db }
         case a: Primitive => and { case b: Primitive => a.name == b.name }
         case App(fa, ea) => and { case App(fb, eb) =>
