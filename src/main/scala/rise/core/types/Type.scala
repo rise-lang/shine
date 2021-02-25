@@ -5,8 +5,8 @@ import rise.core._
 import rise.core.equality._
 
 sealed trait Type {
-  def =~~=(b: Type): Boolean = typeEq.alphaEquivalence.equiv(Nil)(this)(b)
-  def =~=(b: Type): Boolean = typeEq.unificationAlphaEquivalence.equiv(Nil)(this)(b)
+  def =~~=(b: Type): Boolean = typeEq.alphaEquivalence(this, b)
+  def =~=(b: Type): Boolean = typeEq.unificationAlphaEquivalence(this, b)
 }
 
 object TypePlaceholder extends Type {

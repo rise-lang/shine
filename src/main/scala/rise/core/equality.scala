@@ -1,16 +1,20 @@
 package rise.core
 
-import elevate.core.{Strategy, Success}
 import rise.core.types._
-import rise.elevate.strategies.normalForm.BENF
 import util.PatternMatching
-import elevate.core.strategies.Traversable
-import rise.core.DSL.{TypeAssertionHelper, toBeTyped}
 
 object equality {
-  type TypeEnv = List[(Kind.Identifier, Kind.Identifier)]
+  case class Env[T](unwrap : Map[T, T]) {
+    def add(x : T, y : T): Env[T] = Env(unwrap.updated(x, y))
+    def check(x : T, y : T) : Boolean = unwrap.get(x).contains(y)
+  }
+  object Env {
+    def apply[T]() : Env[T] = Env(Map())
+  }
+
+  type TypeEnv = Env[Kind.Identifier]
   type TypeEq = TypeEnv => Type => Type => Boolean
-  type ExprEnv = List[(String, String)]
+  type ExprEnv = Env[String]
   type ExprEq = TypeEq => TypeEnv => ExprEnv => Expr => Expr => Boolean
 
   // TODO: move to utils?
@@ -19,21 +23,21 @@ object equality {
     case t => t
   }
   val equivNat: TypeEnv => Nat => Nat => Boolean = env => a => b => {
-    val natEnv = env.collect { case (i: NatIdentifier, n: Nat) => (i, n) }
+    val natEnv = env.unwrap.collect { case (i: NatIdentifier, n: Nat) => (i, n) }
     // substitutes elements on the left with elements on the right
-    substitute.natsInNat(natEnv.toMap, a) == b
+    substitute.natsInNat(natEnv, a) == b
   }
 
   object typeEq {
     object typeErasure {
-      def apply(a : Type, b : Type) : Boolean = equiv(Nil)(a)(b)
-      val equiv: TypeEq = _ => _ => _ => true
+      def apply(a : Type, b : Type) : Boolean = equiv(Env())(a)(b)
+      val equiv : TypeEq = _ => _ => _ => true
       val hash: Type => Int = _ => 0
     }
     
     object unificationAlphaEquivalence {
-      def apply(a : Type, b : Type) : Boolean = equiv(Nil)(a)(b)
-      val equiv: TypeEq = env => a => b => (a, b) match {
+      def apply(a : Type, b : Type) : Boolean = equiv(Env())(a)(b)
+      val equiv : TypeEq = env => a => b => (a, b) match {
         case (TypePlaceholder, _) => true
         case (_, TypePlaceholder) => true
         case _ => alphaEquivalence.equiv(env)(a)(b)
@@ -42,7 +46,7 @@ object equality {
     }
 
     object alphaEquivalence {
-      def apply(a : Type, b : Type) : Boolean = equiv(Nil)(a)(b)
+      def apply(a : Type, b : Type) : Boolean = equiv(Env())(a)(b)
 
       /** Alpha equivalence on types.
         * Datatype identifier explicitness is ignored.
@@ -58,9 +62,9 @@ object equality {
           case sa: ScalarType => and { case sb: ScalarType => sa == sb }
 
           // Base cases -> identifier lookup
-          case na: TypeIdentifier => and { case nb: TypeIdentifier => env.contains((na, nb)) }
+          case na: TypeIdentifier => and { case nb: TypeIdentifier => env.check(na, nb) }
           case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier =>
-            na.asExplicit == nb.asExplicit || env.contains((na.asExplicit, nb.asExplicit))
+            na.asExplicit == nb.asExplicit || env.check(na.asExplicit, nb.asExplicit)
           }
 
           // Base cases -> identifier lookup in nat expressions
@@ -71,8 +75,8 @@ object equality {
           case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
             val and = PatternMatching.matchWithDefault(fb, false)
             equivNat(env)(na)(nb) && (fa match {
-              case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => env.contains((na, nb)) }
-              case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equiv((xa, xb) :: env)(ba)(bb) }
+              case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => env.check(na, nb) }
+              case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equiv(env.add(xa, xb))(ba)(bb) }
             })
           }
 
@@ -84,10 +88,10 @@ object equality {
 
           // Recursive cases -> binding tracking
           case DepFunType(xa, ta) => and { case DepFunType(xb, tb) =>
-            xa.getClass == xb.getClass && equiv((makeExplicit(xa), makeExplicit(xb)) :: env)(ta)(tb)
+            xa.getClass == xb.getClass && equiv(env.add(makeExplicit(xa), makeExplicit(xb)))(ta)(tb)
           }
           case DepPairType(xa, ta) => and { case DepPairType(xb, tb) =>
-            xa.getClass == xb.getClass && equiv((makeExplicit(xa), makeExplicit(xb)) :: env)(ta)(tb)
+            xa.getClass == xb.getClass && equiv(env.add(makeExplicit(xa), makeExplicit(xb)))(ta)(tb)
           }
         })
       }
@@ -121,22 +125,22 @@ object equality {
       * Kind equality is checked on dependent functions and pairs.
       */
     object alphaEquivalence {
-      def apply(typeEq : TypeEq, a : Expr, b : Expr) : Boolean = equiv(typeEq)(Nil)(Nil)(a)(b)
+      def apply(typeEq : TypeEq, a : Expr, b : Expr) : Boolean = equiv(typeEq)(Env())(Env())(a)(b)
 
-      val equiv: ExprEq = typeEq => typeEnv => exprEnv => a => b => {
+      val equiv : ExprEq = typeEq => typeEnv => exprEnv => a => b => {
         val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
         typeEq(typeEnv)(a.t)(b.t) && (a match {
-          case Identifier(na) => and { case Identifier(nb) => na == nb || exprEnv.contains((na, nb))}
+          case Identifier(na) => and { case Identifier(nb) => na == nb || exprEnv.check(na, nb)}
           case Literal(da) => and { case Literal(db) => da == db }
           case a: Primitive => and { case b: Primitive => a.name == b.name }
           case App(fa, ea) => and { case App(fb, eb) =>
             equiv(typeEq)(typeEnv)(exprEnv)(fa)(fb) && equiv(typeEq)(typeEnv)(exprEnv)(ea)(eb) }
           case DepApp(fa, xa) => and { case DepApp(fb, xb) =>
-            (xa == xb || exprEnv.contains((xa, xb))) && equiv(typeEq)(typeEnv)(exprEnv)(fa)(fb)}
+            xa == xb && equiv(typeEq)(typeEnv)(exprEnv)(fa)(fb)} // FIXME: xa == xb is not alpha equivalence
           case Lambda(xa, ta) => and { case Lambda(xb, tb) =>
-            typeEq(typeEnv)(xa.t)(xb.t) && equiv(typeEq)(typeEnv)((xa.name, xb.name) :: exprEnv)(ta)(tb) }
+            typeEq(typeEnv)(xa.t)(xb.t) && equiv(typeEq)(typeEnv)(exprEnv.add(xa.name, xb.name))(ta)(tb) }
           case DepLambda(xa, ea) => and { case DepLambda(xb, eb) =>
-            xa.getClass == xb.getClass && equiv(typeEq)((makeExplicit(xa), makeExplicit(xb)) :: typeEnv)(exprEnv)(ea)(eb) }
+            xa.getClass == xb.getClass && equiv(typeEq)(typeEnv.add(makeExplicit(xa), makeExplicit(xb)))(exprEnv)(ea)(eb) }
         })
       }
 
