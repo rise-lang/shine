@@ -322,10 +322,10 @@ class tiling extends test_util.Tests {
     assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
 
     val gold2 = DFNF(λ(i => λ(f => (J o **(f) o S) $ i))).get
-    assert(makeClosed((DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~= makeClosed(gold2))
-    assert(makeClosed((DFNF `;` DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~= makeClosed(gold2))
+    assert(makeClosed((DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~~= makeClosed(gold2))
+    assert(makeClosed((DFNF `;` DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~~= makeClosed(gold2))
 
     val gold3 = (DFNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get
-    assert(makeClosed((DFNF `;` RNF `;` DFNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~= makeClosed(gold3))
+    assert(makeClosed((DFNF `;` RNF `;` DFNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~~= makeClosed(gold3))
   }
 }
