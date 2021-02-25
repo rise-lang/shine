@@ -53,14 +53,11 @@ object equality {
       val and = PatternMatching.matchWithDefault(b, false)
       a match {
         case _: Type => equivType(env)(a.asInstanceOf[Type])(b.asInstanceOf[Type])
-        case ia: AddressSpaceIdentifier => and { case ib: AddressSpaceIdentifier => env.check(ia, ib) }
-        case ia: NatToNatIdentifier => and { case ib: NatToNatIdentifier => env.check(ia, ib) }
-        case ia: NatToDataIdentifier => and { case ib: NatToDataIdentifier => env.check(ia, ib) }
-        case ia: NatCollectionIdentifier => and { case ib: NatCollectionIdentifier => env.check(ia, ib) }
+        case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(ia, ib) }
         case a: AddressSpace => and { case b: AddressSpace => (a : AddressSpace) == (b : AddressSpace) }
         case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(na, nb))(ba)(bb) }
         case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataKind](env.add(na, nb))(ba)(bb) }
-        case NatCollectionFromArray(a) => and { case NatCollectionFromArray(b) => a == b }
+        case NatCollectionFromArray(a) => and { case NatCollectionFromArray(b) => a == b } // FIXME: should use exprEq
       }
     }
     override def hash[K <: Kind]: K#T => Int = ???
