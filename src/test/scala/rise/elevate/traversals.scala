@@ -37,29 +37,29 @@ class traversals extends test_util.Tests {
     println(orig.toString)
 
     val oldTiling = body(body(
-      function(argumentOf(map.primitive, body(function(splitJoin(4)) `;` DFNF `;` RNF))) `;`
+      function(argumentOf(map.primitive(), body(function(splitJoin(4)) `;` DFNF `;` RNF))) `;`
         function(splitJoin(4)) `;`
         DFNF `;` RNF `;` DFNF `;` RNF `;` DFNF `;`
-        argument(argument(function(argumentOf(map.primitive, body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` DFNF `;` RNF)) `;`
+        argument(argument(function(argumentOf(map.primitive(), body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` DFNF `;` RNF)) `;`
         DFNF `;` RNF `;` DFNF `;` RNF `;` RNF
     ))
 
     val simplified = body(body(
-      function(argumentOf(map.primitive, body(function(splitJoin(4))))) `;`
+      function(argumentOf(map.primitive(), body(function(splitJoin(4))))) `;`
         function(splitJoin(4)) `;`
         RNF `;` DFNF `;`
-        argument(argument(function(argumentOf(map.primitive, body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` RNF))))
+        argument(argument(function(argumentOf(map.primitive(), body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` RNF))))
 
     val normalized = FNF(simplified).get
     println(normalized)
-    val normalizedModified = body(body(function(argumentOf(map.primitive, body(function(splitJoin(4))))))) `;`
+    val normalizedModified = body(body(function(argumentOf(map.primitive(), body(function(splitJoin(4))))))) `;`
       body(body(function(splitJoin(4)))) `;`
       body(body(RNF)) `;`
       body(body(DFNF)) `;`
-      body(body(argument(argument(function(argumentOf(map.primitive, body(idAfter))))))) `;`
-      body(body(argument(argument(function(argumentOf(map.primitive, body(createTransposePair))))))) `;`
-      body(body(argument(argument(function(argumentOf(map.primitive, body(DFNF))))))) `;`
-      body(body(argument(argument(function(argumentOf(map.primitive, body(argument(mapMapFBeforeTranspose())))))))) `;`
+      body(body(argument(argument(function(argumentOf(map.primitive(), body(idAfter))))))) `;`
+      body(body(argument(argument(function(argumentOf(map.primitive(), body(createTransposePair))))))) `;`
+      body(body(argument(argument(function(argumentOf(map.primitive(), body(DFNF))))))) `;`
+      body(body(argument(argument(function(argumentOf(map.primitive(), body(argument(mapMapFBeforeTranspose())))))))) `;`
       body(body(argument(argument(RNF))))
 
 

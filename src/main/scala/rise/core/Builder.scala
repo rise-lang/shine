@@ -15,9 +15,9 @@ trait Builder {
   def apply(a: AddressSpace): DSL.ToBeTyped[DepApp[AddressSpaceKind]] =
     DSL.depApp[AddressSpaceKind](DSL.toBeTyped(apply()), a)
 
-  def unapply(arg: Expr): Boolean =
+  def unapply(arg: Expr): Option[Option[parser.Span]] =
     throw new Exception("unapply method must be overridden")
 
-  def primitive: Primitive =
+  def primitive(span: Option[Span] = None): Primitive =
     throw new Exception("primitive method must be overridden")
 }

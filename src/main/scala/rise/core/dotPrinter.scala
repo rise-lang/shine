@@ -146,19 +146,19 @@ case object dotPrinter {
             |$eID ${attr(fillWhite + Label(e.toString).toString)}
             |$parent -> $eID ${edgeLabel("dep arg")};""".stripMargin
 
-        case Literal(data) =>
+        case Literal(data, _) =>
           s"$parent ${attr(fillWhite + Label(data.toString).orange.italic)}"
         case i: Identifier =>
           s"$parent ${attr(fillWhite +
             Label(i.name).orange.italic.toString)}"
         case p: Primitive => p match {
-          case primitives.mapSeq() =>
+          case primitives.mapSeq(_) =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
-          case primitives.reduceSeq() =>
+          case primitives.reduceSeq(_) =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
-          case primitives.reduceSeqUnroll() =>
+          case primitives.reduceSeqUnroll(_) =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
-          case rise.openMP.primitives.mapPar() =>
+          case rise.openMP.primitives.mapPar(_) =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
           case _ =>
             s"$parent ${attr(fillGray + Label(p.toString.trim).bold.toString)}"

@@ -84,14 +84,14 @@ object harrisCornerDetectionHalideRewrite {
   }
 
   def isAppliedPair: Strategy[Rise] =
-    function(function(isEqualTo(rise.core.primitives.makePair.primitive)))
+    function(function(isEqualTo(rise.core.primitives.makePair.primitive())))
   def isReduceFI: Strategy[Rise] =
-    function(function(isEqualTo(rise.core.primitives.reduce.primitive)))
+    function(function(isEqualTo(rise.core.primitives.reduce.primitive())))
   def isAppliedReduce: Strategy[Rise] = function(isReduceFI)
   def isAppliedUnzip: Strategy[Rise] =
-    function(isEqualTo(rise.core.primitives.unzip.primitive))
+    function(isEqualTo(rise.core.primitives.unzip.primitive()))
   def isPadEmpty: Strategy[Rise] =
-    depFunction(isEqualTo(rise.core.primitives.padEmpty.primitive))
+    depFunction(isEqualTo(rise.core.primitives.padEmpty.primitive()))
 
   object ocl {
     val unrollDots: Strategy[Rise] = normalize.apply(
@@ -262,7 +262,7 @@ object harrisCornerDetectionHalideRewrite {
           isAppliedZip `;` argument(isAppliedZip) `;`
           subexpressionElimination {
             isAppliedMap `;` function(argument(
-              function(isEqualToUntyped(rise.core.primitives.mapSnd.primitive)) `;`
+              function(isEqualToUntyped(rise.core.primitives.mapSnd.primitive())) `;`
               argument(isPadEmpty)
             ))
           }
@@ -271,7 +271,7 @@ object harrisCornerDetectionHalideRewrite {
         topDown(
           isAppliedMap `;`
           function(argument(argument(argument(
-            function(isEqualToUntyped(rise.core.primitives.mapSnd.primitive)) `;`
+            function(isEqualToUntyped(rise.core.primitives.mapSnd.primitive())) `;`
             argument(isPadEmpty)
           )))) `;`
           reducedFusedForm `;`
@@ -323,7 +323,7 @@ object harrisCornerDetectionHalideRewrite {
         )
       ) `;`
       topDown(
-        function(function(isEqualToUntyped(rise.core.primitives.mapSeq.primitive))) `;`
+        function(function(isEqualToUntyped(rise.core.primitives.mapSeq.primitive()))) `;`
         topDown(lambdaBodyWithName(x =>
           storeToPrivate(isEqualToUntyped(x))
         ))
@@ -351,7 +351,7 @@ object harrisCornerDetectionHalideRewrite {
       afterTopLevel(
         normalize.apply(
           isAppliedMap `;`
-          argument(function(isEqualToUntyped(rise.core.primitives.transpose.primitive))) `;`
+          argument(function(isEqualToUntyped(rise.core.primitives.transpose.primitive()))) `;`
           reducedFissionedForm `;` topDown(vectorize.alignSlide) `;`
           reducedFusedForm `;`
           normalize.apply(

@@ -258,7 +258,7 @@ object harrisCornerDetectionHalide {
         toGlobal >> letf( // H.(W+2)v.f
         slide(3)(1) >> mapSeq( // 3.(W+2)v.f
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
-          mapSeq(fun(nbh => makeArray(2)(
+          mapSeq(fun(nbh => makeArray(2, None)(
             dotWeightsVec(join(sobelXWeights2d), join(nbh)))(
             dotWeightsVec(join(sobelYWeights2d), join(nbh))
           ) |> mapSeqUnroll(id))) >> transpose >>
@@ -302,7 +302,7 @@ object harrisCornerDetectionHalide {
         ) >> toMem >> letf(
         slide(3)(1) >> mapPar(1)(
           map(slideVectors(v) >> slide(3)(v)) >> transpose >>
-          mapPar(0)(fun(nbh => makeArray(2)(
+          mapPar(0)(fun(nbh => makeArray(2, None)(
             dotWeightsVec(join(sobelXWeights2d), join(nbh)))(
             dotWeightsVec(join(sobelYWeights2d), join(nbh))
           ) |> mapSeqUnroll(id))) >> transpose >>
@@ -437,7 +437,7 @@ object harrisCornerDetectionHalide {
         iterateStream( // 3.(W.<v>f x W.<v>f)
           map(fun(p => zip(fst(p))(snd(p)))) >> // W.(<v>f x <v>f)
           transpose >> // W.3.(<v>f x <v>f)
-          map(fun(nbh => makeArray(3)(
+          map(fun(nbh => makeArray(3, None)(
             map(fun(p => fst(p) * fst(p)))(nbh))(
             map(fun(p => fst(p) * snd(p)))(nbh))(
             map(fun(p => snd(p) * snd(p)))(nbh)

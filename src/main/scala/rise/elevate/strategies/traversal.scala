@@ -20,7 +20,7 @@ object traversal {
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Strategy[Rise] => Strategy[Rise] = s => function(argumentOf(map.primitive, body(s)))
+  def fmap: Strategy[Rise] => Strategy[Rise] = s => function(argumentOf(map.primitive(), body(s)))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission

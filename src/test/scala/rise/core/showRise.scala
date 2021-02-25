@@ -41,7 +41,7 @@ class showRise extends test_util.Tests {
 
   test("show blurXTiled2D as an example") {
     val probe: Expr => Boolean = {
-      case padClamp() => true
+      case padClamp(_) => true
       case _          => false
     }
     val example = blurXTiled2D

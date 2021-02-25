@@ -232,16 +232,16 @@ private class InferAccessAnnotation {
 
   private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
     val primitiveType = p match {
-      case roclp.mapGlobal(_) | roclp.mapWorkGroup(_) | roclp.mapLocal(_)
-           | rompp.mapPar() | rp.mapSeq() | rp.mapSeqUnroll()
-           | rp.iterateStream() => p.t match {
+      case roclp.mapGlobal(_,_) | roclp.mapWorkGroup(_,_) | roclp.mapLocal(_,_)
+           | rompp.mapPar(_) | rp.mapSeq(_) | rp.mapSeqUnroll(_)
+           | rp.iterateStream(_) => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
           (expT(s, read) ->: expT(t, write)) ->:
             expT(n`.`s, read) ->: expT(n`.`t, write)
         case _ => error()
       }
 
-      case rp.map() => p.t match {
+      case rp.map(_) => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
 
           val ai = accessTypeIdentifier()
@@ -249,7 +249,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.mapFst() => p.t match {
+      case rp.mapFst(_) => p.t match {
         case ((dt1: rt.DataType) ->: (dt3: rt.DataType)) ->:
           (_ x dt2) ->: (_ x _) =>
 
@@ -259,7 +259,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.mapSnd() => p.t match {
+      case rp.mapSnd(_) => p.t match {
         case ((dt2: rt.DataType) ->: (dt3: rt.DataType)) ->:
           (dt1 x _) ->: (_ x _) =>
 
@@ -269,7 +269,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.mapStream() => p.t match {
+      case rp.mapStream(_) => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
 
           (expT(s, read) ->: expT(t, write)) ->:
@@ -277,40 +277,40 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.toMem() => p.t match {
+      case rp.toMem(_) => p.t match {
         case (t: rt.DataType) ->: (_: rt.DataType) =>
           expT(t, write) ->: expT(t, read)
         case _ => error()
       }
 
-      case roclp.oclToMem() => p.t match {
+      case roclp.oclToMem(_) => p.t match {
         case a `(Addr)->:` ((t: rt.DataType) ->: (_: rt.DataType)) =>
           aFunT(a, expT(t, write) ->: expT(t, read))
         case _ => error()
       }
 
-      case rp.join() | rp.transpose() | rp.asScalar()
-           | rp.unzip() => p.t match {
+      case rp.join(_) | rp.transpose(_) | rp.asScalar(_)
+           | rp.unzip(_) => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) =>
           val ai = accessTypeIdentifier()
           expT(dt1, ai) ->: expT(dt2, ai)
         case _ => error()
       }
 
-      case rp.vectorFromScalar() | rp.neg() | rp.not()
-           | rp.indexAsNat() | rp.fst() | rp.snd()  | rp.cast() => p.t match {
+      case rp.vectorFromScalar(_) | rp.neg(_) | rp.not(_)
+           | rp.indexAsNat(_) | rp.fst(_) | rp.snd(_)  | rp.cast(_) => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) =>
           expT(dt1, read) ->: expT(dt2, read)
         case _ => error()
       }
 
-      case rp.concat() => p.t match {
+      case rp.concat(_concat) => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
           expT(dt1, write) ->: expT(dt2, write) ->: expT(dt3, write)
         case _ => error()
       }
 
-      case rp.let() => p.t match {
+      case rp.let(_) => p.t match {
         case (s: rt.DataType) ->:
           ((_: rt.DataType) ->: (t: rt.DataType)) ->: (_: rt.DataType) =>
 
@@ -319,7 +319,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.split() | rp.asVector() | rp.asVectorAligned() => p.t match {
+      case rp.split(_) | rp.asVector(_) | rp.asVectorAligned(_) => p.t match {
         case n `(Nat)->:` ((dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
 
           val ai = accessTypeIdentifier()
@@ -327,7 +327,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.zip() | rp.makePair() => p.t match {
+      case rp.zip(_) | rp.makePair(_) => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
 
           val ai = accessTypeIdentifier()
@@ -335,26 +335,26 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.idx() | rp.add() | rp.sub() | rp.mul() | rp.div() | rp.gt()
-           | rp.lt() | rp.equal() | rp.mod() | rp.gather() => p.t match {
+      case rp.idx(_) | rp.add(_) | rp.sub(_) | rp.mul(_) | rp.div(_) | rp.gt(_)
+           | rp.lt(_) | rp.equal(_) | rp.mod(_) | rp.gather(_) => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
           expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read)
         case _ => error()
       }
 
-      case rp.scatter() => p.t match {
+      case rp.scatter(_) => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
           expT(dt1, read) ->: expT(dt2, write) ->: expT(dt3, write)
         case _ => error()
       }
 
-      case rp.natAsIndex() | rp.take() | rp.drop() => p.t match {
+      case rp.natAsIndex(_) | rp.take(_) | rp.drop(_) => p.t match {
         case n `(Nat)->:` ((dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
           nFunT(n, expT(dt1, read) ->: expT(dt2, read))
         case _ => error()
       }
 
-      case rp.reduceSeq() | rp.reduceSeqUnroll() => p.t match {
+      case rp.reduceSeq(_) | rp.reduceSeqUnroll(_) => p.t match {
         case ((t: rt.DataType) ->: (s: rt.DataType) ->: (_: rt.DataType)) ->:
           (_: rt.DataType) ->: (n`.`_) ->: (_: rt.DataType) =>
 
@@ -363,7 +363,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case  rp.scanSeq() => p.t match {
+      case  rp.scanSeq(_) => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType) ->: (_: rt.DataType)) ->:
           (_: rt.DataType) ->: (n`.`_) ->: (_`.`_) =>
 
@@ -372,7 +372,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case roclp.oclReduceSeq() | roclp.oclReduceSeqUnroll() => p.t match {
+      case roclp.oclReduceSeq(_) | roclp.oclReduceSeqUnroll(_) => p.t match {
         case a `(Addr)->:`
           (((t: rt.DataType) ->: (s: rt.DataType) ->: (_: rt.DataType)) ->:
             (_: rt.DataType) ->: (n`.`_) ->: (_: rt.DataType)) =>
@@ -383,7 +383,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.depTile() => p.t match {
+      case rp.depTile(_) => p.t match {
         case tile `(Nat)->:`
           (((s: rt.DataType) ->: (t: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType)) =>
@@ -394,7 +394,7 @@ private class InferAccessAnnotation {
       }
 
         //TODO Circular Buffer and OCL versions
-      case rp.rotateValues() => p.t match {
+      case rp.rotateValues(_) => p.t match {
         case  sz `(Nat)->:`
           (((s: rt.DataType) ->: (_: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType)) =>
@@ -404,7 +404,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.circularBuffer() => p.t match {
+      case rp.circularBuffer(_) => p.t match {
         case alloc `(Nat)->:` (sz `(Nat)->:`
           (((s: rt.DataType) ->: (t: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType))) =>
@@ -414,7 +414,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case roclp.oclRotateValues() => p.t match {
+      case roclp.oclRotateValues(_) => p.t match {
         case a `(Addr)->:` (sz `(Nat)->:`
           (((s: rt.DataType) ->: (_: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType))) =>
@@ -425,7 +425,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case roclp.oclCircularBuffer() => p.t match {
+      case roclp.oclCircularBuffer(_) => p.t match {
         case a `(Addr)->:` (alloc `(Nat)->:` (sz `(Nat)->:`
           (((s: rt.DataType) ->: (t: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType)))) =>
@@ -436,7 +436,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.slide() | rp.padClamp() => p.t match {
+      case rp.slide(_) | rp.padClamp(_) => p.t match {
         case sz `(Nat)->:` (sp `(Nat)->:`
           ((dt1: rt.DataType) ->: (dt2: rt.DataType))) =>
           nFunT(sz, nFunT(sp,
@@ -444,7 +444,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.iterate() => p.t match {
+      case rp.iterate(_) => p.t match {
         case k `(Nat)->:`
           ((l `(Nat)->:` ((at1: rt.ArrayType) ->: (at2: rt.ArrayType))) ->:
             (at3: rt.ArrayType) ->: (at4: rt.ArrayType)) =>
@@ -454,7 +454,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case roclp.oclIterate() => p.t match {
+      case roclp.oclIterate(_) => p.t match {
         case a `(Addr)->:` (k `(Nat)->:`
           ((l `(Nat)->:` ((at1: rt.ArrayType) ->: (at2: rt.ArrayType))) ->:
             (at3: rt.ArrayType) ->: (at4: rt.ArrayType))) =>
@@ -464,7 +464,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.select() => p.t match {
+      case rp.select(_) => p.t match {
         case rt.bool ->: (t: rt.DataType) ->:
           (_: rt.DataType) ->: (_: rt.DataType) =>
 
@@ -473,13 +473,13 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.padEmpty() => p.t match {
+      case rp.padEmpty(_) => p.t match {
         case r `(Nat)->:` ((n`.`t) ->: (_`.`_)) =>
           nFunT(r, expT(n`.`t, write) ->: expT((n + r)`.`t, write))
         case _ => error()
       }
 
-      case rp.padCst() => p.t match {
+      case rp.padCst(_) => p.t match {
         case l `(Nat)->:` (q `(Nat)->:`
           ((t: rt.DataType) ->: (n`.`_) ->: (_`.`_))) =>
 
@@ -489,14 +489,14 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case rp.generate() => p.t match {
+      case rp.generate(_) => p.t match {
         case (rt.IndexType(n) ->: (t: rt.DataType)) ->: (_`.`_) =>
           (expT(rt.IndexType(n), read) ->: expT(t, read)) ->:
             expT(n`.`t, read)
         case _ => error()
       }
 
-      case rp.reorder() => p.t match {
+      case rp.reorder(_) => p.t match {
         case (rt.IndexType(n) ->: rt.IndexType(_)) ->:
           (rt.IndexType(_) ->: rt.IndexType(_)) ->: (_`.`t) ->: (_`.`_) =>
 
@@ -518,7 +518,7 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.makeArray(_) =>
+      case rp.makeArray(_,_) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(in: rt.DataType, out) =>
             expT(dataType(in), read) ->: buildType(out)
@@ -527,7 +527,7 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.depMapSeq() =>
+      case rp.depMapSeq(_) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.DepFunType(i, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
             rt.FunType(inArr@rt.DepArrayType(_, _), outArr@rt.DepArrayType(_, _))) =>
@@ -538,7 +538,7 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.dmatch() =>
+      case rp.dmatch(_) =>
         val a = accessTypeIdentifier()
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.DepPairType(x, elemT),
@@ -556,7 +556,7 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rp.makeDepPair() =>
+      case rp.makeDepPair(_) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.DepFunType(fst, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
             val a1 = accessTypeIdentifier()

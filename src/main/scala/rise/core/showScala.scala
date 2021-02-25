@@ -68,7 +68,7 @@ object showScala {
     e match {
       case Identifier(name) => s"""Identifier("$name")(${`type`(e.t)})"""
       case p: Primitive => s"${p.name}.primitive"
-      case Literal(d) => s"Literal(${data(d)})"
+      case Literal(d, _) => s"Literal(${data(d)})"
       case App(f, a) => s"App(${expr(f)}, ${expr(a)})(${`type`(e.t)})"
       case Lambda(x, b) => s"Lambda(${expr(x)}, ${expr(b)})(${`type`(e.t)})"
       case DepApp(f, v: Nat) =>

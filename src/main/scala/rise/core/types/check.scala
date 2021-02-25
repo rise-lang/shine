@@ -61,7 +61,7 @@ object check {
       // ----------- DepApp
       expr `:` substitute.kindInType(e, `for`= x, in = t)
 
-    case Literal(d) =>
+    case Literal(d, _) =>
       // ----------- Literal
       expr `:` d.dataType
 

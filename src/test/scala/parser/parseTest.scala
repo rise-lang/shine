@@ -75,7 +75,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -133,7 +133,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("b"), r.App(rp.not(), r.Identifier("b"))) => true
+      case r.Lambda(r.Identifier("b"), r.App(rp.not(_), r.Identifier("b"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -152,7 +152,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.Lambda(r.Identifier("z"), r.App(r.App(rp.mul(), r.Identifier("x")), r.App(r.App(rp.add(), r.Identifier("y")), r.Identifier("z")))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.Lambda(r.Identifier("z"), r.App(r.App(rp.mul(_), r.Identifier("x")), r.App(r.App(rp.add(_), r.Identifier("y")), r.Identifier("z")))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -171,7 +171,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(), r.App(r.App(rp.add(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(_), r.App(r.App(rp.add(_),
       r.Identifier("x")), r.Identifier("x"))), r.Identifier("x"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -191,7 +191,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(), r.App(r.App(rp.add(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(_), r.App(r.App(rp.add(_),
       r.Identifier("x")), r.Identifier("x"))), r.Identifier("x"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -211,8 +211,8 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.div(), r.App(r.App(rp.mul(),
-      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.mul(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.div(_), r.App(r.App(rp.mul(_),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.mul(_),
       r.Identifier("x")), r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -232,8 +232,8 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.div(), r.App(r.App(rp.mul(),
-      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.mul(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.div(_), r.App(r.App(rp.mul(_),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.mul(_),
       r.Identifier("x")), r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -253,8 +253,8 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.div(), r.App(r.App(rp.mul(),
-      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.mul(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.div(_), r.App(r.App(rp.mul(_),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.mul(_),
       r.Identifier("x")), r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -274,8 +274,8 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.div(), r.App(r.App(rp.mul(),
-      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.mul(),
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.div(_), r.App(r.App(rp.mul(_),
+      r.Identifier("x")), r.Identifier("x"))), r.App(r.App(rp.mul(_),
       r.Identifier("x")), r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -314,13 +314,13 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(),
-      r.App(r.App(rp.add(), r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.App(r.App(rp.mod(), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(_),
+      r.App(r.App(rp.add(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))),
+      r.App(r.App(rp.mod(_), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
-        r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive,
-          r.App(r.App(rp.add.primitive, r.App(r.App(rp.mul.primitive, r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-            r.App(r.App(rp.mod.primitive, r.Literal(rS.IntData(42)))(rt.TypePlaceholder), r.Literal(rS.IntData(5)))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
+        r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive(),
+          r.App(r.App(rp.add.primitive(), r.App(r.App(rp.mul.primitive(), r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+            r.App(r.App(rp.mod.primitive(), r.Literal(rS.IntData(42)))(rt.TypePlaceholder), r.Literal(rS.IntData(5)))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
       case a => fail("not a lambda: " + a)
     }
   }
@@ -338,13 +338,13 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(),
-      r.App(r.App(rp.add(), r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))),
-      r.App(r.App(rp.mod(), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(_),
+      r.App(r.App(rp.add(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))),
+      r.App(r.App(rp.mod(_), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
-        r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive,
-          r.App(r.App(rp.add.primitive, r.App(r.App(rp.mul.primitive, r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-            r.App(r.App(rp.mod.primitive, r.Literal(rS.IntData(42)))(rt.TypePlaceholder), r.Literal(rS.IntData(5)))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
+        r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive(),
+          r.App(r.App(rp.add.primitive(), r.App(r.App(rp.mul.primitive(), r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+            r.App(r.App(rp.mod.primitive(), r.Literal(rS.IntData(42)))(rt.TypePlaceholder), r.Literal(rS.IntData(5)))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
       case a => fail("not a lambda: " + a)
     }
   }
@@ -412,9 +412,9 @@ class parseTest extends  AnyFlatSpec {
 
   ex_g match {
     case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.generate(), n1:rt.NatIdentifier),
+      r.App(r.DepApp(rp.generate(_), n1:rt.NatIdentifier),
       r.Lambda(r.Identifier("i"), r.App(
-      r.DepApp(rp.cast(),d2:rt.DataTypeIdentifier), r.Identifier("i")))
+      r.DepApp(rp.cast(_),d2:rt.DataTypeIdentifier), r.Identifier("i")))
     )))
       if n.name.equals("N1")
         && d.name.equals("D") && n1.name.equals(n.name)&&
@@ -517,9 +517,9 @@ class parseTest extends  AnyFlatSpec {
 
     ex_g match {
       case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.generate(), n1:rt.NatIdentifier),
+      r.App(r.DepApp(rp.generate(_), n1:rt.NatIdentifier),
       r.Lambda(r.Identifier("i"), r.App(
-      r.DepApp(rp.cast(),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
+      r.DepApp(rp.cast(_),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
       )))
         if n.name.equals("N") &&  n2.name.equals(n.name) //&&n1.name.equals(n.name)
           && d.name.equals("D") &&
@@ -556,18 +556,18 @@ class parseTest extends  AnyFlatSpec {
 
     ex_g match {
       case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.generate(), n1:rt.NatIdentifier),
+      r.App(r.DepApp(rp.generate(_), n1:rt.NatIdentifier),
       r.Lambda(r.Identifier("i"), r.App(
-      r.DepApp(rp.cast(),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
+      r.DepApp(rp.cast(_),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
       )))
         if n.name.equals("N") &&  n2.name.equals(n.name) //&&n1.name.equals(n.name)
           && d.name.equals("D") &&
           d2.name.equals(d.name)=> true
       case r.DepLambda(n, e) => {
         println("correct solution: "+  r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.DepLambda[rt.DataKind](rt.DataTypeIdentifier("D"),
-          r.App(r.DepApp[rt.NatKind](rp.generate.primitive, rt.NatIdentifier("N"))(rt.TypePlaceholder),
+          r.App(r.DepApp[rt.NatKind](rp.generate.primitive(), rt.NatIdentifier("N"))(rt.TypePlaceholder),
             r.Lambda(r.Identifier("i")(rt.TypePlaceholder), r.App(
-              r.DepApp[rt.TypeKind](rp.cast.primitive,rt.ArrayType(rt.NatIdentifier("N"), rt.DataTypeIdentifier("D")))(rt.TypePlaceholder), r.Identifier("i")(rt.TypePlaceholder)
+              r.DepApp[rt.TypeKind](rp.cast.primitive(),rt.ArrayType(rt.NatIdentifier("N"), rt.DataTypeIdentifier("D")))(rt.TypePlaceholder), r.Identifier("i")(rt.TypePlaceholder)
             )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
         fail("Not correct deplambda: "
           +n.toString()+ " , " + e.toString())
@@ -629,13 +629,13 @@ class parseTest extends  AnyFlatSpec {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(n,
       r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(), r.Lambda(r.Identifier("acc"), r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.add() , r.Identifier("acc")),r.Identifier("arg"))
+      r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
       ))),
-      r.App(r.App(rp.mapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.mul(), r.App(rp.fst(), r.Identifier("x"))),
-      r.App(rp.snd(), r.Identifier("x")) )
-      )), r.App(r.App(rp.zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
+      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
+      r.App(rp.snd(_), r.Identifier("x")) )
+      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2"))))
       ))) => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
@@ -670,13 +670,13 @@ class parseTest extends  AnyFlatSpec {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(n,r.DepLambda(d,
       r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(), r.Lambda(r.Identifier("acc"), r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.add() , r.Identifier("acc")),r.Identifier("arg"))
+      r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
       ))),
-      r.App(r.App(rp.mapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.mul(), r.App(rp.fst(), r.Identifier("x"))),
-      r.App(rp.snd(), r.Identifier("x")) )
-      )), r.App(r.App(rp.zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
+      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
+      r.App(rp.snd(_), r.Identifier("x")) )
+      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2"))))
       )))) => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
@@ -709,13 +709,13 @@ class parseTest extends  AnyFlatSpec {
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(), r.Lambda(r.Identifier("acc"), r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.add() , r.Identifier("acc")),r.Identifier("arg"))
+      r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
+      r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
       ))),
-      r.App(r.App(rp.mapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.mul(), r.App(rp.fst(), r.Identifier("x"))),
-      r.App(rp.snd(), r.Identifier("x")) )
-      )), r.App(r.App(rp.zip(), r.Identifier("vec1")), r.Identifier("vec2")))
+      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
+      r.App(rp.snd(_), r.Identifier("x")) )
+      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2")))
       )
       )) => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
@@ -818,7 +818,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(), r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))))) => true
       case r.Lambda(x, e) => {
         println("not correct Identifier or not correct expression: " + x + " , " + e)
         fail("not correct Identifier or not correct expression: " + x + " , " + e)
@@ -840,7 +840,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(), r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))))) => true
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))))) => true
       case r.Lambda(x, e) => {
         println("not correct Identifier or not correct expression: " + x + " , " + e)
         fail("not correct Identifier or not correct expression: " + x + " , " + e)
@@ -864,14 +864,14 @@ class parseTest extends  AnyFlatSpec {
     ex match {
       case r.Lambda(x@r.Identifier("x"),
       r.Lambda(y@r.Identifier("y"),
-      r.App(r.App(rp.add(),
-      r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.App(r.App(rp.add(_),
+      r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))),
       r.Literal(rS.IntData(42), _))
       )) if x.t == rt.i32 && y.t == rt.i32 => true
       case r.Lambda(x@r.Identifier("x"),
       r.Lambda(y@r.Identifier("y"),
-      r.App(r.App(rp.add(),
-      r.App(r.App(rp.mul(), r.Identifier("x")), r.Identifier("y"))),
+      r.App(r.App(rp.add(_),
+      r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))),
       r.Literal(rS.IntData(42), _))
       )) => fail("almost correct, but Types don't match!  " + x.t + " != rt.i32 oder/und " + y.t + " != rt.i32")
       case r.Lambda(x, r.Lambda(y, e)) => fail("not correct Identifier or not correct expression: " + "Lambda(" + x + ",Lambda," + y + " , " + e + " , x.t= " + x.t + " , y.t= " + y.t)
@@ -927,22 +927,22 @@ class parseTest extends  AnyFlatSpec {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(n, r.DepLambda(m,r.DepLambda(d,
       r.Lambda(r.Identifier("mat1"),r.Lambda(r.Identifier("mat2"),
-      r.App(r.App(rp.mapSeq(),
+      r.App(r.App(rp.mapSeq(_),
       r.Lambda(r.Identifier("vec1"),
-      r.App(r.App(rp.mapSeq(),
+      r.App(r.App(rp.mapSeq(_),
 
       r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(), r.Lambda(
+      r.App(r.App(rp.reduceSeq(_), r.Lambda(
       r.Identifier("acc"),r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.add() , r.Identifier("acc")),r.Identifier("arg"))
+      r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
       ))),
-      r.App(r.App(rp.mapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.mul(), r.App(rp.fst(), r.Identifier("x"))),
-      r.App(rp.snd(), r.Identifier("x")) )
-      )), r.App(r.App(rp.zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
+      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
+      r.App(rp.snd(_), r.Identifier("x")) )
+      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2"))))
       )),
 
-      r.App(rp.transpose(),r.Identifier("mat2"))
+      r.App(rp.transpose(_),r.Identifier("mat2"))
       ))),
 
       r.Identifier("mat1")
@@ -986,30 +986,30 @@ class parseTest extends  AnyFlatSpec {
     ex_f match {
       case r.DepLambda(r1, r.DepLambda(m, r.DepLambda(n, r.DepLambda(d, r.Lambda(r.Identifier("matrixA"),
 
-      r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal(0),
+      r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal((0, _)),
 
       r.Lambda(r.Identifier("rowA"),
-      r.App(r.App(op.mapLocal(1),
+      r.App(r.App(op.mapLocal(1,_),
 
       r.Lambda(r.Identifier("columnB"),
-      r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(), l:rt.AddressSpace.Local.type ),
+      r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
       r.Lambda(r.Identifier("acc"), r.Lambda(r.Identifier("arg"),
-      r.App(r.App(rp.add(), r.Identifier("acc")), r.Identifier("arg"))))),
-      rp.let()),
+      r.App(r.App(rp.add(_), r.Identifier("acc")), r.Identifier("arg"))))),
+      rp.let(_)),
 
-      r.App(r.DepApp(op.oclToMem(), l1:rt.AddressSpace.Local.type),
+      r.App(r.DepApp(op.oclToMem(_), l1:rt.AddressSpace.Local.type),
 
-      r.App(r.App(rp.mapSeq(), r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(), r.App(rp.fst(), r.Identifier("x"))),
-      r.App(rp.snd(), r.Identifier("x"))))),
+      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
+      r.App(rp.snd(_), r.Identifier("x"))))),
 
-      r.App(r.App(rp.zip(), r.Identifier("rowA")), r.Identifier("columnB"))
+      r.App(r.App(rp.zip(_), r.Identifier("rowA")), r.Identifier("columnB"))
 
       )
 
       )
 
       ))
-      ), r.App(rp.transpose(), r.Identifier("matrixB"))))
+      ), r.App(rp.transpose(_), r.Identifier("matrixB"))))
 
       ),
       r.Identifier("matrixA")
@@ -1051,22 +1051,22 @@ class parseTest extends  AnyFlatSpec {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(n, r.DepLambda(m,r.DepLambda(d,
       r.Lambda(r.Identifier("mat1"),r.Lambda(r.Identifier("mat2"),
-      r.App(r.App(rp.mapSeq(),
+      r.App(r.App(rp.mapSeq(_),
       r.Lambda(r.Identifier("vec1"),
-      r.App(r.App(rp.mapSeq(),
+      r.App(r.App(rp.mapSeq(_),
 
       r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(), r.Lambda(
+      r.App(r.App(rp.reduceSeq(_), r.Lambda(
       r.Identifier("acc"),r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.add() , r.Identifier("acc")),r.Identifier("arg"))
+      r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
       ))),
-      r.App(r.App(rp.mapSeq(), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.mul(), r.App(rp.fst(), r.Identifier("x"))),
-      r.App(rp.snd(), r.Identifier("x")) )
-      )), r.App(r.App(rp.zip(), r.Identifier("vec1")), r.Identifier("vec2"))))
+      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+      r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
+      r.App(rp.snd(_), r.Identifier("x")) )
+      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2"))))
       )),
 
-      r.App(rp.transpose(),r.Identifier("mat2"))
+      r.App(rp.transpose(_),r.Identifier("mat2"))
       ))),
 
       r.Identifier("mat1")
@@ -1095,7 +1095,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.sub(), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.sub(_), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1133,58 +1133,61 @@ class parseTest extends  AnyFlatSpec {
     ex_g match {
       case r.DepLambda(n: rt.NatIdentifier, r.Lambda(r.Identifier("pos"), r.Lambda(
       r.Identifier("vel"), r.Lambda(r.Identifier("espSqr"), r.Lambda(r.Identifier("deltaT"),
-      r.App(rp.join(), r.App(rp.join(), r.App(r.App(op.mapWorkGroup(1),r.App(rp.join(), r.App(
-      r.App(op.mapWorkGroup(0),
+      r.App(rp.join(_), r.App(rp.join(_), r.App(r.App(op.mapWorkGroup(1,_),r.App(rp.join(_), r.App(
+      r.App(op.mapWorkGroup(0,_),
 
       r.Lambda(r.Identifier("p1Chunk"), r.Lambda(r.Identifier("newP1Chunk"),
-      r.App(r.App(r.App(op.mapLocal(1),
+      r.App(r.App(r.App(op.mapLocal(1,_),
 
-      r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0), r.Lambda(r.Identifier("p1A"),
-      r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(), r.App(rp.fst(), r.Identifier("p1A")))),
-      r.App(rp.fst(), r.App(rp.snd(), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(), r.Identifier("p1A"))))),
-      r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
+      r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0,_), r.Lambda(r.Identifier("p1A"),
+      r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(_), r.App(rp.fst(_), r.Identifier("p1A")))),
+      r.App(rp.fst(_), r.App(rp.snd(_), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(_), r.Identifier("p1A"))))),
+      r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
 
       ),
-      r.App(r.App(r.DepApp(op.oclReduceSeq(), l:rt.AddressSpace.Local.type ),
+      r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
       r.Lambda(r.Identifier("accA"), r.Lambda(r.Identifier("p2A"),
 
-      r.App(r.App(rp.let(), r.App(r.App(r.DepApp(op.oclToMem(),
+      r.App(r.App(rp.let(_), r.App(r.App(r.DepApp(op.oclToMem(_),
       l1:rt.AddressSpace.Local.type
-      ), r.App(op.mapLocal(1), r.App(op.mapLocal(0), r.Lambda(r.Identifier("x1"),r.Identifier("x1"))))),
+      ), r.App(op.mapLocal(1,_), r.App(op.mapLocal(0,_), r.Lambda(r.Identifier("x1"),r.Identifier("x1"))))),
       r.Identifier("p2A")
       )),
-      r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1), r.Lambda(r.Identifier("accDim"),r.App(r.App(op.mapLocal(0),
-      r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(), p:rt.AddressSpace.Private.type ),
+      r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1,_), r.Lambda(r.Identifier("accDim"),
+      r.App(r.App(op.mapLocal(0,_),
+      r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), p:rt.AddressSpace.Private.type ),
 
-      r.Lambda(r.Identifier("accB"), r.Lambda(r.Identifier("p2B"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"), r.App(rp.fst(),
-      r.App(rp.fst(), r.Identifier("p1B")))),
+      r.Lambda(r.Identifier("accB"), r.Lambda(r.Identifier("p2B"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"),
+      r.App(rp.fst(_),
+      r.App(rp.fst(_), r.Identifier("p1B")))),
       r.Identifier("p2B")), r.Identifier("deltaT")), r.Identifier("espSqr")), r.Identifier("accB")))
 
-      )), r.App(rp.snd(), r.Identifier("p1B"))), r.App(rp.fst(), r.Identifier("accDim2")))))
-      , r.App(r.App(rp.zip(), r.Identifier("newP1Chunk")), r.App(rp.snd(), r.App(rp.snd(), r.Identifier("accDim"))))
-      ))),r.App(r.App(rp.zip(), r.Identifier("p2Local")), r.Identifier("accA")))
+      )), r.App(rp.snd(_), r.Identifier("p1B"))), r.App(rp.fst(_), r.Identifier("accDim2")))))
+      , r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")), r.App(rp.snd(_), r.App(rp.snd(_), r.Identifier("accDim"))))
+      ))),r.App(r.App(rp.zip(_), r.Identifier("p2Local")), r.Identifier("accA")))
 
       ))
       ))),
-      r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0),r.Lambda(r.Identifier("x2"),r.Identifier("x2")))), r.App(rp.generate(),
+      r.App(r.App(op.mapLocal(1,_), r.App(op.mapLocal(0,_),r.Lambda(r.Identifier("x2"),r.Identifier("x2")))),
+      r.App(rp.generate(_),
 
-      r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(0), _))
+      r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(0), _))
 
       ))
       )), //probably has the 0 of the Type Nat
 
-      r.App(r.DepApp(rp.split(), n1:rt.Nat), r.App(r.DepApp(rp.split(), n2:rt.Nat),
+      r.App(r.DepApp(rp.split(_), n1:rt.Nat), r.App(r.DepApp(rp.split(_), n2:rt.Nat),
       r.Identifier("pos")))
       )
 
       ))
 
       ),
-      r.DepApp(rp.split(), n3:rt.Nat)
+      r.DepApp(rp.split(_), n3:rt.Nat)
       ))
       ),
-      r.App(r.DepApp(rp.split(), n4:rt.NatIdentifier),
-      r.App(r.App(rp.zip(), r.Identifier("pos")), r.Identifier("vel"))
+      r.App(r.DepApp(rp.split(_), n4:rt.NatIdentifier),
+      r.App(r.App(rp.zip(_), r.Identifier("pos")), r.Identifier("vel"))
 
       )
       ))
@@ -1194,7 +1197,7 @@ class parseTest extends  AnyFlatSpec {
         true
       }
       case r.DepLambda(n, e) => {
-        print_nbody()
+        //print_nbody()
         fail("Not correct deplambda: "
           +n.toString()+ " , " + e.toString())
       }
@@ -1202,104 +1205,104 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
-  def print_nbody(): Unit ={ //Todo:not completly correct is this constructed nbody, it was only for debugging first created
-    val e = r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.Lambda(r.Identifier("pos")(rt.TypePlaceholder),
-      r.Lambda(
-        r.Identifier("vel")(rt.TypePlaceholder), r.Lambda(r.Identifier("espSqr")(rt.TypePlaceholder),
-          r.Lambda(r.Identifier("deltaT")(rt.TypePlaceholder),
-            r.App(rp.join.primitive, r.App(rp.join.primitive, r.App(r.App(op.mapWorkGroup(1).primitive,
-              r.App(rp.join.primitive, r.App(
-                r.App(op.mapWorkGroup(0).primitive,
-
-                  r.Lambda(r.Identifier("p1Chunk")(rt.TypePlaceholder), r.Lambda(r.Identifier("newP1Chunk")(rt.TypePlaceholder),
-                    r.App(r.App(r.App(op.mapLocal(1).primitive,
-
-                      r.Lambda(r.Identifier("bla")(rt.TypePlaceholder), r.App(r.App(op.mapLocal(0).primitive,
-                        r.Lambda(r.Identifier("p1A")(rt.TypePlaceholder),
-                          r.App(r.App(r.App(r.App(r.Identifier("update")(rt.TypePlaceholder), r.App(rp.fst.primitive,
-                            r.App(rp.fst.primitive, r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder)
-                          )(rt.TypePlaceholder))(rt.TypePlaceholder),
-                            r.App(rp.fst.primitive, r.App(rp.snd.primitive,
-                              r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder)
-                            )(rt.TypePlaceholder))(rt.TypePlaceholder),
-                            r.Identifier("deltaT")(rt.TypePlaceholder))(rt.TypePlaceholder), r.App(rp.snd.primitive,
-                            r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-                      )(rt.TypePlaceholder),
-                        r.App(r.App(rp.zip.primitive, r.Identifier("newP1Chunk")(rt.TypePlaceholder))(rt.TypePlaceholder),
-                          r.Identifier("bla")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-                    )(rt.TypePlaceholder),
-                      r.App(
-                        r.App(r.DepApp[rt.AddressSpaceKind](op.oclReduceSeq.primitive,
-                          rt.AddressSpace.Local)(rt.TypePlaceholder),
-                          r.Lambda(r.Identifier("accA")(rt.TypePlaceholder), r.Lambda(r.Identifier("p2A")(rt.TypePlaceholder),
-
-                            r.App(r.App(rp.let.primitive, r.App(r.App(r.DepApp[rt.AddressSpaceKind](op.oclToMem.primitive,
-                              rt.AddressSpace.Local
-                            )(rt.TypePlaceholder), r.App(op.mapLocal(1).primitive, r.App(op.mapLocal(0).primitive,
-                              r.Lambda(r.Identifier("x1")(rt.TypePlaceholder),r.Identifier("x1")(rt.TypePlaceholder))(rt.TypePlaceholder)
-                            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-                              r.Identifier("p2A")(rt.TypePlaceholder)
-                            )(rt.TypePlaceholder))(rt.TypePlaceholder),
-                              r.Lambda(r.Identifier("p2Local")(rt.TypePlaceholder), r.App(r.App(op.mapLocal(1).primitive,
-                                r.Lambda(r.Identifier("accDim")(rt.TypePlaceholder),r.App(r.App(op.mapLocal(0).primitive,
-                                  r.Lambda(r.Identifier("p1B")(rt.TypePlaceholder), r.App(r.App(r.App(
-                                    r.DepApp[rt.AddressSpaceKind](op.oclReduceSeq.primitive,
-                                      rt.AddressSpace.Private)(rt.TypePlaceholder),
-
-                                    r.Lambda(r.Identifier("accB")(rt.TypePlaceholder),
-                                      r.Lambda(r.Identifier("p2B")(rt.TypePlaceholder), r.App(r.App(r.App(r.App(r.App(
-                                      r.Identifier("calcAcc")(rt.TypePlaceholder), r.App(rp.fst.primitive,
-                                        r.App(rp.fst.primitive, r.Identifier("p1B")(rt.TypePlaceholder)
-                                        )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-                                      r.Identifier("p2B")(rt.TypePlaceholder))(rt.TypePlaceholder),
-                                      r.Identifier("deltaT")(rt.TypePlaceholder))(rt.TypePlaceholder),
-                                      r.Identifier("espSqr")(rt.TypePlaceholder))(rt.TypePlaceholder),
-                                      r.Identifier("accB")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-                                  )(rt.TypePlaceholder)
-
-                                  )(rt.TypePlaceholder), r.App(rp.snd.primitive,
-                                    r.Identifier("p1B")(rt.TypePlaceholder))(rt.TypePlaceholder)
-                                  )(rt.TypePlaceholder), r.App(rp.fst.primitive, r.Identifier("accDim2")(rt.TypePlaceholder)
-                                  )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-                                  , r.App(r.App(rp.zip.primitive, r.Identifier("newP1Chunk")(rt.TypePlaceholder))(rt.TypePlaceholder)
-                                    , r.App(rp.snd.primitive,
-                                      r.App(rp.snd.primitive, r.Identifier("accDim")(rt.TypePlaceholder))(rt.TypePlaceholder)
-                                    )(rt.TypePlaceholder))(rt.TypePlaceholder)
-                                )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),r.App(r.App(rp.zip.primitive, r.Identifier("p2Local")(rt.TypePlaceholder))(rt.TypePlaceholder),
-                                r.Identifier("accA")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-
-                              )(rt.TypePlaceholder))(rt.TypePlaceholder)
-                          )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-                        ,
-                        r.App(r.App(op.mapLocal(1).primitive, r.App(op.mapLocal(0).primitive,
-                          r.Lambda(r.Identifier("x")(rt.TypePlaceholder),r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder)
-                        )(rt.TypePlaceholder)
-                        )(rt.TypePlaceholder), r.App(rp.generate.primitive,
-                          r.App(rp.vectorFromScalar.primitive, r.Literal(rS.NatData(0)))(rt.TypePlaceholder)
-                        )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-
-                      r.App(r.App(rp.split.primitive, r.Literal(rS.IntData(1)))(rt.TypePlaceholder),
-                        r.App(r.App(rp.split.primitive, r.Literal(rS.IntData(256)))(rt.TypePlaceholder),
-                          r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-                  )(rt.TypePlaceholder))(rt.TypePlaceholder)
-
-                )(rt.TypePlaceholder)
-                ,r.App(rp.split.primitive, r.Literal(rS.IntData(256)))(rt.TypePlaceholder)
-              )(rt.TypePlaceholder))(rt.TypePlaceholder)
-            )(rt.TypePlaceholder),
-              r.App(r.DepApp[rt.NatKind](rp.split.primitive, rt.NatIdentifier("N"))(rt.TypePlaceholder),
-                r.App(r.App(rp.zip.primitive, r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder),
-                  r.Identifier("vel")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-            )(rt.TypePlaceholder))(rt.TypePlaceholder)
-            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-    )(rt.TypePlaceholder))(rt.TypePlaceholder)
-    println("_____________________________________________________________________________________Correct NBODY")
-    println(e)
-    println("__________________________________________________________________________________________________")
-  }
+//  def print_nbody(): Unit ={ //Todo:not completly correct is this constructed nbody, it was only for debugging first created
+//    val e = r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.Lambda(r.Identifier("pos")(rt.TypePlaceholder),
+//      r.Lambda(
+//        r.Identifier("vel")(rt.TypePlaceholder), r.Lambda(r.Identifier("espSqr")(rt.TypePlaceholder),
+//          r.Lambda(r.Identifier("deltaT")(rt.TypePlaceholder),
+//            r.App(rp.join(_), r.App(rp.join(_), r.App(r.App(op.mapWorkGroup(1),
+//              r.App(rp.join(_), r.App(
+//                r.App(op.mapWorkGroup(0),
+//
+//                  r.Lambda(r.Identifier("p1Chunk")(rt.TypePlaceholder), r.Lambda(r.Identifier("newP1Chunk")(rt.TypePlaceholder),
+//                    r.App(r.App(r.App(op.mapLocal(1),
+//
+//                      r.Lambda(r.Identifier("bla")(rt.TypePlaceholder), r.App(r.App(op.mapLocal(0),
+//                        r.Lambda(r.Identifier("p1A")(rt.TypePlaceholder),
+//                          r.App(r.App(r.App(r.App(r.Identifier("update")(rt.TypePlaceholder), r.App(rp.fst(_),
+//                            r.App(rp.fst(_), r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                          )(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                            r.App(rp.fst(_), r.App(rp.snd(_),
+//                              r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                            )(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                            r.Identifier("deltaT")(rt.TypePlaceholder))(rt.TypePlaceholder), r.App(rp.snd(_),
+//                            r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                      )(rt.TypePlaceholder),
+//                        r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                          r.Identifier("bla")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                    )(rt.TypePlaceholder),
+//                      r.App(
+//                        r.App(r.DepApp[rt.AddressSpaceKind](op.oclReduceSeq(_),
+//                          rt.AddressSpace.Local)(rt.TypePlaceholder),
+//                          r.Lambda(r.Identifier("accA")(rt.TypePlaceholder), r.Lambda(r.Identifier("p2A")(rt.TypePlaceholder),
+//
+//                            r.App(r.App(rp.let(_), r.App(r.App(r.DepApp[rt.AddressSpaceKind](op.oclToMem(_),
+//                              rt.AddressSpace.Local
+//                            )(rt.TypePlaceholder), r.App(op.mapLocal(1), r.App(op.mapLocal(0),
+//                              r.Lambda(r.Identifier("x1")(rt.TypePlaceholder),r.Identifier("x1")(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                              r.Identifier("p2A")(rt.TypePlaceholder)
+//                            )(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                              r.Lambda(r.Identifier("p2Local")(rt.TypePlaceholder), r.App(r.App(op.mapLocal(1),
+//                                r.Lambda(r.Identifier("accDim")(rt.TypePlaceholder),r.App(r.App(op.mapLocal(0),
+//                                  r.Lambda(r.Identifier("p1B")(rt.TypePlaceholder), r.App(r.App(r.App(
+//                                    r.DepApp[rt.AddressSpaceKind](op.oclReduceSeq(_),
+//                                      rt.AddressSpace.Private)(rt.TypePlaceholder),
+//
+//                                    r.Lambda(r.Identifier("accB")(rt.TypePlaceholder),
+//                                      r.Lambda(r.Identifier("p2B")(rt.TypePlaceholder), r.App(r.App(r.App(r.App(r.App(
+//                                      r.Identifier("calcAcc")(rt.TypePlaceholder), r.App(rp.fst(_),
+//                                        r.App(rp.fst(_), r.Identifier("p1B")(rt.TypePlaceholder)
+//                                        )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                                      r.Identifier("p2B")(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                                      r.Identifier("deltaT")(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                                      r.Identifier("espSqr")(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                                      r.Identifier("accB")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                                  )(rt.TypePlaceholder)
+//
+//                                  )(rt.TypePlaceholder), r.App(rp.snd(_),
+//                                    r.Identifier("p1B")(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                                  )(rt.TypePlaceholder), r.App(rp.fst(_), r.Identifier("accDim2")(rt.TypePlaceholder)
+//                                  )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                                  , r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                                    , r.App(rp.snd(_),
+//                                      r.App(rp.snd(_), r.Identifier("accDim")(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                                    )(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                                )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),r.App(r.App(rp.zip(_), r.Identifier("p2Local")(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                                r.Identifier("accA")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//
+//                              )(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                          )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                        ,
+//                        r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0),
+//                          r.Lambda(r.Identifier("x")(rt.TypePlaceholder),r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                        )(rt.TypePlaceholder)
+//                        )(rt.TypePlaceholder), r.App(rp.generate(_),
+//                          r.App(rp.vectorFromScalar(_), r.Literal(rS.NatData(0)))(rt.TypePlaceholder)
+//                        )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+//
+//                      r.App(r.App(rp.split(_), r.Literal(rS.IntData(1)))(rt.TypePlaceholder),
+//                        r.App(r.App(rp.split(_), r.Literal(rS.IntData(256)))(rt.TypePlaceholder),
+//                          r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//                  )(rt.TypePlaceholder))(rt.TypePlaceholder)
+//
+//                )(rt.TypePlaceholder)
+//                ,r.App(rp.split(_), r.Literal(rS.IntData(256)))(rt.TypePlaceholder)
+//              )(rt.TypePlaceholder))(rt.TypePlaceholder)
+//            )(rt.TypePlaceholder),
+//              r.App(r.DepApp[rt.NatKind](rp.split(_), rt.NatIdentifier("N"))(rt.TypePlaceholder),
+//                r.App(r.App(rp.zip(_), r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder),
+//                  r.Identifier("vel")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//            )(rt.TypePlaceholder))(rt.TypePlaceholder)
+//            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
+//    )(rt.TypePlaceholder))(rt.TypePlaceholder)
+//    println("_____________________________________________________________________________________Correct NBODY")
+//    println(e)
+//    println("__________________________________________________________________________________________________")
+//  }
 
   "parser" should "print nbody" in {
-    print_nbody()
+    //print_nbody()
   }
 
   "parser" should "be able to parse 'negation.rise'" in {
@@ -1315,7 +1318,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("y"), r.App(rp.neg(), r.Identifier("y"))) => true
+      case r.Lambda(r.Identifier("y"), r.App(rp.neg(_), r.Identifier("y"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1334,7 +1337,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("b"), r.App(rp.neg(), r.Identifier("b"))) => true
+      case r.Lambda(r.Identifier("b"), r.App(rp.neg(_), r.Identifier("b"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1364,7 +1367,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("b"), r.App(rp.not(), r.Identifier("b"))) => true
+      case r.Lambda(r.Identifier("b"), r.App(rp.not(_), r.Identifier("b"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1383,7 +1386,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1412,7 +1415,7 @@ class parseTest extends  AnyFlatSpec {
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(d, r.DepLambda(t,
-      r.Lambda(r.Identifier("t"), r.App(rp.fst(), r.Identifier("t")))))
+      r.Lambda(r.Identifier("t"), r.App(rp.fst(_), r.Identifier("t")))))
         if d.name.equals("D")
         && t.name.equals("T") => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
@@ -1444,7 +1447,7 @@ class parseTest extends  AnyFlatSpec {
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(d, r.DepLambda(t,
-      r.Lambda(r.Identifier("t"), r.App(rp.snd(), r.Identifier("t")))))
+      r.Lambda(r.Identifier("t"), r.App(rp.snd(_), r.Identifier("t")))))
         if d.name.equals("D")
           && t.name.equals("T") => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
@@ -1475,7 +1478,7 @@ class parseTest extends  AnyFlatSpec {
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(d,
-      r.Lambda(r.Identifier("t"), r.App(rp.snd(), r.Identifier("t"))))
+      r.Lambda(r.Identifier("t"), r.App(rp.snd(_), r.Identifier("t"))))
         if d.name.equals("D") => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
@@ -1505,7 +1508,7 @@ class parseTest extends  AnyFlatSpec {
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(d,
-      r.Lambda(r.Identifier("t"), r.App(rp.fst(), r.Identifier("t"))))
+      r.Lambda(r.Identifier("t"), r.App(rp.fst(_), r.Identifier("t"))))
         if d.name.equals("D") => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
@@ -1531,7 +1534,7 @@ class parseTest extends  AnyFlatSpec {
     }
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
-      case r.Lambda(r.Identifier("t"), r.App(rp.snd(), r.Identifier("t"))) => true
+      case r.Lambda(r.Identifier("t"), r.App(rp.snd(_), r.Identifier("t"))) => true
       case r.Lambda(n, e) => fail("Not correct lambda: "
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
@@ -1557,7 +1560,7 @@ class parseTest extends  AnyFlatSpec {
 
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
-      case r.Lambda(r.Identifier("t"), r.App(rp.fst(), r.Identifier("t")))=> true
+      case r.Lambda(r.Identifier("t"), r.App(rp.fst(_), r.Identifier("t")))=> true
       case r.Lambda(n, e) => fail("Not correct lambda: "
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
@@ -1693,7 +1696,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(), r.Identifier("y")), r.Literal(rS.IntData(5), _))) => true
+      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(_), r.Identifier("y")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1743,7 +1746,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(), r.Identifier("y")), r.Literal(rS.IntData(5), _))) => true
+      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(_), r.Identifier("y")), r.Literal(rS.IntData(5), _))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -1778,7 +1781,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(4), _)), i:rt.f32.type) => true
+      case r.DepApp(r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(4), _)), i:rt.f32.type) => true
       case e => fail("not correct expression: " + e)
     }
   }
@@ -1801,7 +1804,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(4), _)), i:rt.f32.type) => true
+      case r.DepApp(r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(4), _)), i:rt.f32.type) => true
       case e => fail("not correct expression: " + e)
     }
   }
@@ -1825,9 +1828,9 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.App(rp.makeArray(2),
-      r.App(r.App(rp.makePair(), r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(16), _)), i1:rt.i32.type)),
-      r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(2), _)), i2: rt.bool.type)))
+      case r.App(rp.makeArray(2,_),
+      r.App(r.App(rp.makePair(_), r.DepApp(r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(16), _)), i1:rt.i32.type)),
+      r.DepApp(r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(2), _)), i2: rt.bool.type)))
       => true
       case e => fail("not correct expression: " + e)
     }
@@ -1852,9 +1855,9 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.App(rp.makeArray(2),
-      r.App(r.App(rp.makePair(), r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(16), _)), i1:rt.i32.type)),
-      r.DepApp(r.App(rp.vectorFromScalar(), r.Literal(rS.IntData(2), _)), i2: rt.bool.type)))
+      case r.App(rp.makeArray(2,_),
+      r.App(r.App(rp.makePair(_), r.DepApp(r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(16), _)), i1:rt.i32.type)),
+      r.DepApp(r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(2), _)), i2: rt.bool.type)))
       => true
       case e => fail("not correct expression: " + e)
     }
@@ -1886,15 +1889,15 @@ class parseTest extends  AnyFlatSpec {
 
     ex_f match {
       case r.Lambda(r.Identifier("michael"), r.Lambda(r.Identifier("heinrich"),
-      r.App(rp.not(), r.App(r.App(rp.equal(),r.App(
-      r.App(rp.mod(),
+      r.App(rp.not(_), r.App(r.App(rp.equal(_),r.App(
+      r.App(rp.mod(_),
 
       r.Lambda(r.Identifier("varX"), r.Lambda(r.Identifier("varY"),
-      r.App(r.App(rp.mul(), r.Identifier("varX")),
-      r.App(r.App(rp.mul(), r.Identifier("varY"))
+      r.App(r.App(rp.mul(_), r.Identifier("varX")),
+      r.App(r.App(rp.mul(_), r.Identifier("varY"))
       ,
 
-      r.App(r.App(rp.div(), r.App(r.App(rp.sub(),
+      r.App(r.App(rp.div(_), r.App(r.App(rp.sub(_),
       r.Literal(rS.IntData(25), _)), r.Literal(rS.FloatData(a), _))
       ), r.Literal(rS.FloatData(b), _))
 

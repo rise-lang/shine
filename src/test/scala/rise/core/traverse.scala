@@ -47,10 +47,10 @@ class traverse extends test_util.Tests {
         { case ArrayType(_, ArrayType(_, `f32`))         => () },
         { case _: App                                    => () },
         { case _: App                                    => () },
-        { case primitives.map()                          => () },
+        { case primitives.map(_)                          => () },
         { case _: FunType[_, _]                          => () },
         { case _: App                                    => () },
-        { case primitives.map()                          => () },
+        { case primitives.map(_)                          => () },
         { case _: FunType[_, _]                          => () },
         { case _: Lambda                                 => () },
         { case _: Identifier                             => () },
@@ -96,7 +96,7 @@ class traverse extends test_util.Tests {
     class Visitor extends TraceVisitor(trace) {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
-          case App(App(primitives.map(), _), e) =>
+          case App(App(primitives.map(_), _), e) =>
             val r = app(fun(x => x), preserveType(e))
             println(r)
             Stop(r)
@@ -137,7 +137,7 @@ class traverse extends test_util.Tests {
     class Visitor extends traversal.Visitor {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
-          case App(primitives.map(), f) =>
+          case App(primitives.map(_), f) =>
             println(f)
             Stop(f)
           case _ => Continue(expr, this)

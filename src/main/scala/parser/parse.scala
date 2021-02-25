@@ -112,9 +112,9 @@ object parse {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     name match {
         //openCL/primitives
-      case "mapGlobal" => SIntToExpr(op.mapGlobal(_)( Some(span)).toExpr) //Todo: add span to everything
-      case "mapLocal" => SIntToExpr(op.mapLocal(_)( Some(span)).toExpr)
-      case "mapWorkGroup" => SIntToExpr(op.mapWorkGroup(_)( Some(span)).toExpr)
+      case "mapGlobal" => SIntToExpr(op.mapGlobal(_, Some(span)).toExpr) //Todo: add span to everything
+      case "mapLocal" => SIntToExpr(op.mapLocal(_, Some(span)).toExpr)
+      case "mapWorkGroup" => SIntToExpr(op.mapWorkGroup(_, Some(span)).toExpr)
       case "oclToMem" => SExpr(op.oclToMem( Some(span)))
       case "oclReduceSeq" => SExpr(op.oclReduceSeq( Some(span)))
       case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll( Some(span)))
@@ -134,7 +134,7 @@ object parse {
       )(rt.TypePlaceholder, Some(span)))
 
         //core/primitives
-      case "makeArray" => SIntToExpr(rp.makeArray(_)( Some(span)).toExpr)
+      case "makeArray" => SIntToExpr(rp.makeArray(_, Some(span)).toExpr)
       case "cast" => SExpr(rp.cast(Some(span)))
       case "depJoin" => SExpr(rp.depJoin( Some(span)))
       case "depMapSeq" => SExpr(rp.depMapSeq( Some(span)))
@@ -190,8 +190,8 @@ object parse {
       case "asVector" => SExpr(rp.asVector( Some(span)))
       case "asScalar" => SExpr(rp.asScalar( Some(span)))
       case "vectorFromScalar" => SExpr(rp.vectorFromScalar( Some(span)))
-      case "printType" => SExpr(rp.printType("")( Some(span))) //Todo: I was forced to delete span in printType and typeHole because of the error with wrong number of arguments
-      case "typeHole" => SExpr(rp.typeHole("")( Some(span)))
+      case "printType" => SExpr(rp.printType("", Some(span)).primitive(Some(span))) //Todo: I was forced to delete span in printType and typeHole because of the error with wrong number of arguments
+      case "typeHole" => SExpr(rp.typeHole("", Some(span)).primitive(Some(span)))
       case _ => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
     }
   }
@@ -210,7 +210,7 @@ object parse {
           case SIntToExpr(prim) => Left(ParseState(remainderTokens, SIntToExpr(prim) :: parsedSynElems, map,
             mapDepL))
           case SExpr(prim) => prim match {
-            case sp @ rp.split() => {
+            case sp @ rp.split(_) => {
               if (remainderTokens.nonEmpty) {
                 val length :: remainderTokens2 = remainderTokens
                 length match {
@@ -547,6 +547,9 @@ object parse {
     var synE = synElemList.reverse
     var e:r.Expr = synE.head match {
       case SExpr(expr) => {
+        if(expr.span.isEmpty){
+          throw new IllegalStateException("Span of '"+ expr+ "' is None in combineExpressionsDependent")
+        }
         synE = synE.tail
         expr
       }
@@ -571,7 +574,15 @@ object parse {
     while(!synE.isEmpty){
       synE.head match {
         case SExpr(expr1) => {
-          val span = Span(e.span.head.file, e.span.head.begin, expr1.span.head.end) //Todo: check if span is in the same file
+          val span_e = e.span match {
+            case Some(span) => span
+            case None => throw new IllegalStateException("Span of combined Expr is None in combineExpressionsDependent: "+ e)
+          }
+          val span_expr1 = expr1.span match {
+            case Some(span) => span
+            case None => throw new IllegalStateException("Span of '"+ expr1+ "'is None in combineExpressionsDependent")
+          }
+          val span = Span(span_e.file, span_e.begin, span_expr1.end) //Todo: check if span is in the same file
           e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
           synE = synE.tail
         }
@@ -1383,8 +1394,13 @@ object parse {
 
     nextToken match {
       case BinOp(op, span) => op match {
-        case OpType.BinOpType.ADD =>
+        case OpType.BinOpType.ADD =>{
+          println("\n\n Span of add: "+ span + " , add: "+ r.primitives.add(Some(span)) + "  ,SExpr(add): "+ SExpr(r.primitives.add(Some(span))).expr ) //es wird vergessen von Scala, dass es auch vom Type ToBeTyped ist
+          println("span of add: " + r.primitives.add(Some(span)).span + "span of add: " + r.primitives.add(Some(span)).toUntypedExpr.span+ " , span of SExpr(add): "+ SExpr(r.primitives.add(Some(span))).expr.span)
+          println("span of makeArray: "+ r.primitives.makeArray(5, Some(span)).span)
           Left(ParseState(remainderTokens, SExpr(r.primitives.add(Some(span))) :: parsedSynElems, map, mapDepL))
+        }
+
         case OpType.BinOpType.DIV =>
           Left(ParseState(remainderTokens, SExpr(r.primitives.div(Some(span))) :: parsedSynElems, map, mapDepL))
         case OpType.BinOpType.EQ =>

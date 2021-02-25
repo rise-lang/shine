@@ -46,7 +46,7 @@ object Primitive {
 
     def makePrimitiveClassAndObject(name: String, typeScheme: Tree): Tree = {
       val className = name + "_class"
-      val makeInstance = q"${TermName(className)}()"
+      val makeInstance = q"${TermName(className)}(span)"
 
       val generated = q"""
         final case class ${TypeName(className)}(override val span: Option[Span] = None)
@@ -64,13 +64,13 @@ object Primitive {
           }
         }
 
-        object ${TermName{name}}  extends Builder {
-          override def primitive: ${TypeName(className)} = $makeInstance()
+        object ${TermName{name}} extends Builder {
+          override def primitive(span: Option[Span] = None): ${TypeName(className)} = $makeInstance()
           override def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
             rise.core.DSL.toBeTyped($makeInstance())
-          override def unapply(arg: rise.core.Expr): Boolean = arg match {
-            case _: ${TypeName(className)} => true
-            case _ => false
+          override def unapply(arg: rise.core.Expr): Option[Option[Span]] = arg match {
+            case _: ${TypeName(className)} => Some(arg.span)
+            case _ => None
           }
         }
         """
@@ -78,6 +78,7 @@ object Primitive {
         c.info(c.enclosingPosition,
           s"generated `${name.toString}'\n$generated", force = false)
       }
+//      println("\n\n\n\ngenerated_object: " + generated + "\n\n\n\n")
       generated
     }
 //Todo: unapply mehtods of class and object has to be modified with Span!
@@ -85,7 +86,7 @@ object Primitive {
                            params: List[ValDef],
                            typeScheme: Tree): Tree = {
       val className = name + "_class"
-      val makeInstance = q"${TermName(className)}(..${getArgs(params)})"
+      val makeInstance = q"${TermName(className)}(..${getArgs(params)}, span)"
 
       val generated = q"""
         final case class ${TypeName(className)}(..$params, override val span: Option[Span] = None)
@@ -105,16 +106,16 @@ object Primitive {
           }
         }
 
-        final case class ${TypeName(name)}(..$params) extends Builder {
-          override def primitive: ${TypeName(className)} = $makeInstance()
+        final case class ${TypeName(name)}(..$params, span: Option[Span]) extends Builder {
+          override def primitive(span: Option[Span] = None): ${TypeName(className)} = $makeInstance()
           override def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
             rise.core.DSL.toBeTyped($makeInstance())
         }
 
         object ${TermName(name)} {
-          def unapply(arg: rise.core.Expr): Option[..${getTypes(params)}] = arg match {
+          def unapply(arg: rise.core.Expr): Option[(..${getTypes(params)},Option[Span])] = arg match {
             case p: ${TypeName(className)} =>
-              Some(..${makeMemberAccess(TermName("p"), getArgs(params))})
+              Some((..${makeMemberAccess(TermName("p"), getArgs(params))}, arg.span))
             case _ => None
           }
         }
@@ -123,6 +124,8 @@ object Primitive {
         c.info(c.enclosingPosition,
           s"generated `${name.toString}'\n$generated", force = false)
       }
+
+      //println("\n\n\n\ngenerated: " + generated + "\n\n\n\n")
       generated
     }
 

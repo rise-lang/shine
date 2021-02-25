@@ -6,24 +6,24 @@ import rise.core.types.AddressSpaceKind
 
 object TypedDSL {
   object mapGlobal {
-    def apply(): ToBeTyped[Primitive] = primitives.mapGlobal(0)
+    def apply(): ToBeTyped[Primitive] = primitives.mapGlobal(0,None)
     def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] =
-      primitives.mapGlobal(0)(e)
-    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapGlobal(dim)
+      primitives.mapGlobal(0,None)(e)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapGlobal(dim,None)
   }
 
   object mapLocal {
-    def apply(): ToBeTyped[Primitive] = primitives.mapLocal(0)
+    def apply(): ToBeTyped[Primitive] = primitives.mapLocal(0,None)
     def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] =
-      primitives.mapLocal(0)(e)
-    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapLocal(dim)
+      primitives.mapLocal(0,None)(e)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapLocal(dim,None)
   }
 
   object mapWorkGroup {
-    def apply(): ToBeTyped[Primitive] = primitives.mapWorkGroup(0)
+    def apply(): ToBeTyped[Primitive] = primitives.mapWorkGroup(0,None)
     def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] =
-      primitives.mapWorkGroup(0)(e)
-    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapWorkGroup(dim)
+      primitives.mapWorkGroup(0,None)(e)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapWorkGroup(dim,None)
   }
 
   def toMem: ToBeTyped[Primitive] = primitives.oclToMem

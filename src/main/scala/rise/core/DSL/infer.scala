@@ -29,10 +29,10 @@ object infer {
       new traversal.Visitor {
         override def visitExpr(e: Expr): traversal.Result[Expr] = {
           e match {
-            case h@primitives.typeHole(msg) =>
+            case h@primitives.typeHole(msg, None) =>
               println(s"found type hole ${msg}: ${h.t}")
               holeFound = true
-            case p@primitives.printType(msg) =>
+            case p@primitives.printType(msg, None) =>
               println(s"$msg : ${p.t} (Rise level)")
             case _ =>
           }

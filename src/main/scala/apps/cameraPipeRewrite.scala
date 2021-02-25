@@ -71,12 +71,12 @@ object cameraPipeRewrite {
     if (predicate(p)) { a(p) } else { b(p) }
   }
 
-  def isAppliedMap: Strategy[Rise] = function(function(isEqualTo(p.map.primitive)))
-  def isAppliedZip: Strategy[Rise] = function(function(isEqualTo(p.zip.primitive)))
-  def isAppliedDrop: Strategy[Rise] = function(depFunction(isEqualTo(p.drop.primitive)))
-  def isAppliedTake: Strategy[Rise] = function(depFunction(isEqualTo(p.take.primitive)))
+  def isAppliedMap: Strategy[Rise] = function(function(isEqualTo(p.map.primitive())))
+  def isAppliedZip: Strategy[Rise] = function(function(isEqualTo(p.zip.primitive())))
+  def isAppliedDrop: Strategy[Rise] = function(depFunction(isEqualTo(p.drop.primitive())))
+  def isAppliedTake: Strategy[Rise] = function(depFunction(isEqualTo(p.take.primitive())))
   def isAppliedSlide: Strategy[Rise] =
-    function(depFunction(depFunction(isEqualTo(p.slide.primitive))))
+    function(depFunction(depFunction(isEqualTo(p.slide.primitive()))))
 
   def anyMapOutsideZip: Strategy[Rise] = {
     // function(function(isEqualTo(DSL.zip))) `;`
@@ -156,7 +156,7 @@ object cameraPipeRewrite {
 
   // idx i >> f -> map f >> idx i
   def idxAfterF: Strategy[Rise] = {
-    case expr @ App(f, App(App(p.idx(), i), in)) =>
+    case expr @ App(f, App(App(p.idx(_), i), in)) =>
       Success(p.idx(i)(p.map(f)(in)) !: expr.t)
     case _ => Failure(idxAfterF)
   }
@@ -223,7 +223,7 @@ object cameraPipeRewrite {
         ) `;` argument(traverse)
       ) <+ {
         case p @ App(
-          App(idx(), Literal(IndexData(Cst(i), _), _)),
+          App(idx(_), Literal(IndexData(Cst(i), _), _)),
           _
         ) =>
           // FIXME: could go wrong
@@ -273,9 +273,9 @@ object cameraPipeRewrite {
   }
 
   def unifyMapOutsideGenerateSelect: Strategy[Rise] = {
-    function(isEqualTo(p.generate.primitive)) `;`
+    function(isEqualTo(p.generate.primitive())) `;`
     argument(body(
-      function(function(function(isEqualTo(p.select.primitive)))) `;`
+      function(function(function(isEqualTo(p.select.primitive())))) `;`
       unifyMapInputs(scala.collection.Seq(argument, s => function(argument(s))))
     )) `;` mapOutsideGenerateSelect() `;`
     argument(argument(normalizeInput) `;` repeat(mapFusion))
@@ -283,7 +283,7 @@ object cameraPipeRewrite {
 
   def unifyMapOutsideMakeArray: Strategy[Rise] = {
     // TODO: can work for arbitrary size arrays
-    function(function(function(isEqualTo(p.makeArray(3).primitive)))) `;`
+    function(function(function(isEqualTo(p.makeArray(3, None).primitive())))) `;`
     unifyMapInputs(scala.collection.Seq(
       argument,
       s => function(argument(s)),
@@ -315,7 +315,7 @@ object cameraPipeRewrite {
       body(body(body(
         function(body(function(body(
           // generate/select 3x2
-          repeatNTimes(6)(topDown(function(isEqualTo(p.generate.primitive)) `;`
+          repeatNTimes(6)(topDown(function(isEqualTo(p.generate.primitive())) `;`
             topDown(one(unifyMapOutsideGenerateSelect))
           )) `;`
           gentlyReducedForm `;`
@@ -362,7 +362,7 @@ object cameraPipeRewrite {
   }
 
   def letContinuation(s: Strategy[Rise]): Strategy[Rise] =
-    function(function(isEqualTo(p.let.primitive))) `;`
+    function(function(isEqualTo(p.let.primitive()))) `;`
     argument(s)
 
   def afterTopLevel(s: Strategy[Rise]): Strategy[Rise] = p => {
@@ -382,15 +382,15 @@ object cameraPipeRewrite {
   }
 
   def letHoist: Strategy[Rise] = {
-    case expr @ App(f, App(App(p.let(), v), Lambda(x, b))) =>
+    case expr @ App(f, App(App(p.let(_), v), Lambda(x, b))) =>
       Success(letf(lambda(eraseType(x), preserveType(f)(b)))(v) !: expr.t)
     // TODO: normal form / non-map specific?
-    case expr @ App(App(p.map(), Lambda(y,
-      App(App(p.let(), v), Lambda(x, b))
+    case expr @ App(App(p.map(_), Lambda(y,
+      App(App(p.let(_), v), Lambda(x, b))
     )), in) if !contains[Rise](y).apply(v) =>
       Success(letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v) !: expr.t)
-    case expr @ App(p.map(), Lambda(y,
-      App(App(p.let(), v), Lambda(x, b))
+    case expr @ App(p.map(_), Lambda(y,
+      App(App(p.let(_), v), Lambda(x, b))
     )) if !contains[Rise](y).apply(v) =>
       Success(fun(in => letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v)) !: expr.t)
     case _ => Failure(letHoist)
@@ -416,8 +416,8 @@ object cameraPipeRewrite {
     afterTopLevel(
       argument(function(argument(
         topDown(
-          function(function(isEqualTo(p.idx.primitive))) `;`
-          argument(function(isEqualTo(p.generate.primitive))) `;`
+          function(function(isEqualTo(p.idx.primitive()))) `;`
+          argument(function(isEqualTo(p.generate.primitive()))) `;`
           argument({ curve =>
             Success(letf(fun(x => x))(
               p.mapSeq(fun(x => x))(curve)) !: curve.t)
@@ -441,7 +441,7 @@ object cameraPipeRewrite {
             function(body(
               function(body(
                 // generate/select 3x2
-                repeatNTimes(6)(topDown(function(isEqualTo(p.generate.primitive)) `;`
+                repeatNTimes(6)(topDown(function(isEqualTo(p.generate.primitive())) `;`
                   topDown(one(unifyMapOutsideGenerateSelect))
                 )) `;`
                 gentlyReducedForm `;`

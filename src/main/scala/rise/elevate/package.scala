@@ -17,9 +17,9 @@ package object elevate {
 
   object ReduceX {
     def unapply(e: Expr): Boolean = e match {
-      case reduce() => true
-      case reduceSeq() => true
-      case reduceSeqUnroll() => true
+      case reduce(_) => true
+      case reduceSeq(_) => true
+      case reduceSeqUnroll(_) => true
       case _ => false
     }
   }

@@ -93,7 +93,7 @@ object cameraPipe {
         img.expr |> slide2D(y_range, 1, x_range, 1)
       ),
       fun(nbh =>
-        offsets.foldLeft(makeArray(n): ToBeTyped[Expr])({ case (e, offset) =>
+        offsets.foldLeft(makeArray(n, None): ToBeTyped[Expr])({ case (e, offset) =>
           e(nbh `@`
             lidx(offset._2 - y_min, y_range) `@`
             lidx(offset._1 - x_min, x_range))
@@ -231,7 +231,7 @@ object cameraPipe {
         g_gr, g_r, g_b, g_gb,
         b_gr, b_r, b_b, b_gb
       ))
-      makeArray(3)(
+      makeArray(3, None)(
         interleaveY(
           interleaveX(r_gr_o.expr, r_r_o.expr))(
           interleaveX(r_b_o.expr, r_gb_o.expr)))( // r
@@ -293,7 +293,7 @@ object cameraPipe {
           val ib = irgb `@` lidx(2, 3)
           def m(x: Int, y: Int): ToBeTyped[Expr] =
             cast(matrix `@` lidx(y, hm) `@` lidx(x, wm)) :: i32
-          makeArray(3)(
+          makeArray(3, None)(
             m(3, 0) + m(0, 0) * ir + m(1, 0) * ig + m(2, 0) * ib)(
             m(3, 1) + m(0, 1) * ir + m(1, 1) * ig + m(2, 1) * ib)(
             m(3, 2) + m(0, 2) * ir + m(1, 2) * ig + m(2, 2) * ib

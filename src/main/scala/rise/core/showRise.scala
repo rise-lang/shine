@@ -272,7 +272,7 @@ class ShowRiseCompact {
         (false, newSize, fr >@> (fd => line(xs) <+: fd))
       }
 
-    case Literal(d) => (true, dataSize(d), line(d.toString))
+    case Literal(d, _) => (true, dataSize(d), line(d.toString))
 
     case TypeAnnotation(e, _) => drawAST(e, wrapped)
 

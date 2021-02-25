@@ -32,21 +32,21 @@ class circularBuffering extends test_util.Tests {
 
   val highLevel: ToBeTyped[Rise] =
     slide(3)(1) >> map(sum) >> fun(x =>
-      makeArray(2)(
+      makeArray(2, None)(
         x |> slide(2)(1) >> map(sum) >> drop(1) >> dropLast(1))(
         x |> slide(4)(1) >> map(sum)
       ))
 
   val inlined: ToBeTyped[Rise] =
     slide(3)(1) >> map(sumSeq) >> fun(x =>
-      makeArray(2)(
+      makeArray(2,None)(
         x |> slide(2)(1) >> map(sumSeq) >> drop(1) >> dropLast(1))(
         x |> slide(4)(1) >> map(sumSeq)
       )) >> mapSeqUnroll(mapSeq(fun(x => x)))
 
   val buffered: ToBeTyped[Rise] =
     slide(3)(1) >> mapSeq(sumSeq) >> toMem >> letf(x =>
-      makeArray(2)(
+      makeArray(2,None)(
         x |> slide(2)(1) >> map(sumSeq) >> drop(1) >> dropLast(1))(
         x |> slide(4)(1) >> map(sumSeq)
       )) >> mapSeqUnroll(mapSeq(fun(x => x)))
@@ -55,7 +55,7 @@ class circularBuffering extends test_util.Tests {
     slide(3)(1) >> map(sumSeq) >>
     circularBuffer(4)(4)(fun(x => x)) >>
     iterateStream(fun(nbh =>
-      makeArray(2)(
+      makeArray(2,None)(
         nbh |> drop(1) >> dropLast(1) >> sumSeq)(
         nbh |> sumSeq
       ) |> mapSeqUnroll(fun(x => x))
@@ -134,7 +134,7 @@ class circularBuffering extends test_util.Tests {
       (topDown(dropBeforeMap)`;` topDown(takeBeforeMap))
       -> (
         slide(3)(1) >> map(sum) >> fun(x =>
-        makeArray(2)(
+        makeArray(2,None)(
           x |> slide(2)(1) >> drop(1) >> dropLast(1) >> map(sum))(
           x |> slide(4)(1) >> map(sum)
         ))
@@ -142,7 +142,7 @@ class circularBuffering extends test_util.Tests {
       (topDown(dropInSlide) `;` topDown(takeBeforeMap) `;` topDown(takeInSlide))
       -> (
       slide(3)(1) >> map(sum) >> fun(x =>
-        makeArray(2)(
+        makeArray(2,None)(
           x |> slide(4)(1) >> map(dropLast(1)) >> map(drop(1)) >> map(sum))(
           x |> slide(4)(1) >> map(sum)
         ))
@@ -150,7 +150,7 @@ class circularBuffering extends test_util.Tests {
       normalize.apply(mapFusion)
       -> (
       slide(3)(1) >> map(sum) >> fun(x =>
-        makeArray(2)(
+        makeArray(2,None)(
           x |> slide(4)(1) >> map(dropLast(1) >> drop(1) >> sum))(
           x |> slide(4)(1) >> map(sum)
         ))
@@ -158,7 +158,7 @@ class circularBuffering extends test_util.Tests {
       topDown(mapOutsideMakeArray)
       -> (
       slide(3)(1) >> map(sum) >> slide(4)(1) >> map(fun(x =>
-        makeArray(2)(
+        makeArray(2,None)(
           x |> dropLast(1) >> drop(1) >> sum)(
           x |> sum
         ))) >> transpose
