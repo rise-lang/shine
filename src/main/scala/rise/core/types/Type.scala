@@ -44,7 +44,6 @@ final case class DataTypeIdentifier(name: String,
   override def toString: String = if (isExplicit) name else "_" + name
   override def asExplicit: DataTypeIdentifier = this.copy(isExplicit = true)
   override def asImplicit: DataTypeIdentifier = this.copy(isExplicit = false)
-  override def hashCode(): Int = this.name.hashCode()
 }
 
 sealed trait ScalarType extends DataType
@@ -100,8 +99,6 @@ final case class DepPairType[K <: Kind: KindName](
 
   override def toString: String =
     s"(${x.name}: ${kindName.get} ** $t)"
-
-  override def hashCode(): Int = super.hashCode()
 }
 
 

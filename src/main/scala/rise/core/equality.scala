@@ -49,24 +49,22 @@ object equality {
   }
 
   object typeAlphaEq extends TypeEq {
-    override def equiv[K <: Kind]: Env[Kind.Identifier] => Eq[K] = env => a => b => {
-      val and = PatternMatching.matchWithDefault(b, false)
-      a match {
-        case _: Type => equivType(env)(a.asInstanceOf[Type])(b.asInstanceOf[Type])
-        case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(ia, ib) }
-        case a: AddressSpace => and { case b: AddressSpace => (a : AddressSpace) == (b : AddressSpace) }
-        case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(na, nb))(ba)(bb) }
-        case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataKind](env.add(na, nb))(ba)(bb) }
-        case NatCollectionFromArray(a) => and { case NatCollectionFromArray(b) => a == b } // FIXME: should use exprEq
-      }
-    }
-    override def hash[K <: Kind]: K#T => Int = ???
-
     /** Alpha equivalence on types.
       * Datatype identifier explicitness is ignored.
       * Short circuits in the event of syntactic equality.
       * Kind equality is checked on dependent functions and pairs.
       */
+    override def equiv[K <: Kind]: Env[Kind.Identifier] => Eq[K] = env => a => b => {
+      val and = PatternMatching.matchWithDefault(b, false)
+      a == b || (a match {
+        case a : Type => and {case b : Type => equivType(env)(a)(b) }
+        case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(makeExplicit(ia), makeExplicit(ib)) }
+        case a: AddressSpace => and { case b: AddressSpace => (a : AddressSpace) == (b : AddressSpace) }
+        case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(na, nb))(ba)(bb) }
+        case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataKind](env.add(na, nb))(ba)(bb) }
+        case NatCollectionFromArray(a) => and { case NatCollectionFromArray(b) => a == b } // FIXME: should use exprEq
+      })
+    }
     val equivType: Env[Kind.Identifier] => Type => Type => Boolean = env => a => b => {
       val and = PatternMatching.matchWithDefault(b, false)
       a == b || (a match {
@@ -83,13 +81,14 @@ object equality {
 
         // Base cases -> identifier lookup in nat expressions
         case IndexType(sa) => and { case IndexType(sb) => equivNat(env)(sa)(sb) }
-        case DepArrayType(sa, da) => and { case DepArrayType(sb, db) => da == db && equivNat(env)(sa)(sb) }
+        case DepArrayType(sa, da) => and { case DepArrayType(sb, db) =>
+          equivNat(env)(sa)(sb) && equiv[NatToDataKind](env)(da)(db) } // FIXME: record sa == sb in env
 
         // Should we move this into its own equality check?
         case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
           val and = PatternMatching.matchWithDefault(fb, false)
           equivNat(env)(na)(nb) && (fa match {
-            case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => env.check(na, nb) }
+            case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => na == nb || env.check(na, nb) }
             case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equivType(env.add(xa, xb))(ba)(bb) }
           })
         }
@@ -113,6 +112,14 @@ object equality {
     /** Alpha renaming respecting hash function on types.
       * All identifiers are considered equal and therefore ignored.
       */
+    override def hash[K <: Kind]: K#T => Int = {
+      case t: Type => hashType(t)
+      case _: Kind.Identifier => 7
+      case a: AddressSpace => a.hashCode()
+      case NatToNatLambda(na, ba) => ba.hashCode()
+      case NatToDataLambda(na, ba) => ba.hashCode()
+      case NatCollectionFromArray(a) => a.hashCode()
+    }
     val hashType: Type => Int = {
       case TypePlaceholder => 5
       case TypeIdentifier(_) => 7
