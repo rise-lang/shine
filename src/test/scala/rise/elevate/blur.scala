@@ -1,24 +1,25 @@
 package rise.elevate
 
+import _root_.util.gen
 import elevate.core._
 import elevate.core.strategies.basic._
-import rise.elevate.rules.lowering.lowerToC
-import _root_.util.gen
+import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
-import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D, zipND}
+import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D}
 import rise.core.DSL.{fun, l}
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
-import rise.elevate.rules.lowering
+import rise.elevate.rules.lowering.{lowerToC, parallel, vectorize}
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.normalForm._
+import rise.elevate.strategies.predicate.{isApplied, isMap}
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
 
 // scalastyle:off
-class gauss extends test_util.Tests {
+class blur extends test_util.Tests {
 
   val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
     traversal.outermost(default.RiseTraversable)
@@ -27,28 +28,18 @@ class gauss extends test_util.Tests {
 
   //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
 
-  val gaussWeights = List(
-    List(2,4,5,4,2),
-    List(4,9,12,9,4),
-    List(5,12,15,12,5),
-    List(4,9,12,9,4),
-    List(2,4,5,4,2)
-  )
-
   val N = 8
   val M = 8
 
   val mulPair = fun(pair => fst(pair) * snd(pair))
 
-  val gauss: Rise = {
+  val blur: Rise = {
     fun(ArrayType(N, ArrayType(M, f64)))(in =>
-      fun(ArrayType(5, ArrayType(5, f64)))(weights =>
-        in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
-          |> slide2D(5, 1) // -> MxN of 5x5 slides
-          |> map(map(fun(sector => // sector:5x5
-            zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0.0)) |> fun(x => x/l(159.0))
-        )))
-      )
+      in |> padClamp2D(1) // in: NxM -> (N+2) x (M+2)
+        |> slide2D(3, 1) // -> MxNx3x3
+        |> map(map(fun(sector=>
+          sector |> join |> reduce(add)(l(0.0)) |> fun(x => x/l(9.0))
+      )))
     )
   }
 
@@ -57,22 +48,42 @@ class gauss extends test_util.Tests {
   val cpu: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
     normalize.apply(fuseReduceMap `@` topDown[Rise])
 
-  test("CPU") {
-    run("cpu", cpu)
-  }
+  test("CPU seq") {
+    println("blur: " + blur)
 
+    val base = cpu.apply(blur)
+    println("base: " + base)
 
-
-  /// UTILS ////////////////////////////////////////////////////////////////////
-  def run(version: String, strategy: Strategy[Rise]): Unit ={
-    println(version + ":")
-
-    val lowered = (strategy`;` lowerToC)(gauss)
+    val lowered = lowerToC.apply(base.get)
     println("lowered: " + lowered)
 
     val code = gen.openmp.function("gaussian").asStringFromExpr(lowered.get)
     println("code: " + code)
   }
+
+  val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
+  val cpuPar: Strategy[Rise] = cpu `;;`
+    (parallel()    `@` outermost(isApplied(isMap))) `;;`
+    debug[Rise]("after par")
+
+  test("CPU par") {
+    run("CPU par", cpuPar)
+  }
+
+
+
+  /// UTILS ////////////////////////////////////////////////////////////////////
+
+  def run(version: String, strategy: Strategy[Rise]): Unit ={
+    println(version + ":")
+
+    val lowered = (strategy`;` lowerToC)(blur)
+    println("lowered: " + lowered)
+
+    val code = gen.openmp.function("blur").asStringFromExpr(lowered.get)
+    println("code: " + code)
+  }
+
 //  def run(version: String,
 //          strategy: Strategy[Rise],
 //          openMP: Boolean // generate C or OpenMP code?
@@ -98,7 +109,7 @@ class gauss extends test_util.Tests {
 //
 //    // rewrite the matmul input expresssion
 //    val time0 = currentTimeSec
-//    val rewritten = strategy(gauss)
+//    val rewritten = strategy(blur)
 //    val time1 = currentTimeSec
 //    println(s"[$versionUC] rewrite time: ${time1 - time0}s")
 //    if (generateFiles) {
@@ -110,9 +121,9 @@ class gauss extends test_util.Tests {
 //    // generate the C code
 //    val time2 = currentTimeSec
 //    val program = if(openMP) {
-////      gen.OpenMPProgram(rewritten.get, version).code
+//      gen.openmp.function(version).asStringFromExpr(rewritten.get)
 //    } else {
-////      gen.CProgram(rewritten.get, version).code
+//      gen.c.function(version).asStringFromExpr(rewritten.get)
 //    }
 //    val time3 = currentTimeSec
 //    println(s"[$versionUC] codegen time: ${time3 - time2}s")
@@ -125,3 +136,6 @@ class gauss extends test_util.Tests {
 //    }
 //  }
 }
+
+
+
