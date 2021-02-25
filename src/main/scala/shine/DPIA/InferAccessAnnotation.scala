@@ -134,7 +134,7 @@ private class InferAccessAnnotation {
         inferDepApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
       case p: r.Primitive => inferPrimitive(p)
     }
-    // the kernel output should be 'write'
+    // the kernel output must be 'write'
     if (isKernelParamFun) {
       pt match {
         case et: ExpType => subUnifyPhraseType(et, ExpType(et.dataType, write)) match {
@@ -296,7 +296,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case roclp.oclRunP() => p.t match {
+      case roclp.oclRunPrimitive() => p.t match {
         case ls1 `(Nat)->:` (ls2 `(Nat)->:` (ls3 `(Nat)->:`
           (gs1 `(Nat)->:` (gs2 `(Nat)->:` (gs3 `(Nat)->:`
           ((t: rt.DataType) ->: (_: rt.DataType))

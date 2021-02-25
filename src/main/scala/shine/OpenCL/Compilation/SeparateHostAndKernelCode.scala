@@ -6,27 +6,25 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.primitives.functional._
-import shine.OpenCL._
 
 import scala.language.existentials
 import scala.annotation.tailrec
 import scala.collection.mutable
 
 object SeparateHostAndKernelCode {
-  type SizedKernelDef = (LocalSize, GlobalSize, FunDef)
 
   def separate(hostFunName: String): Phrase[_ <: PhraseType] =>
-    (FunDef, Seq[SizedKernelDef]) = p => {
+    (FunDef, Seq[KernelDef]) = p => {
     var kernelNum = 0
-    var kernelDefinitions = mutable.ArrayBuffer[SizedKernelDef]()
+    var kernelDefinitions = mutable.ArrayBuffer[KernelDef]()
     val hostDefinition = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
         case Run(localSize, globalSize, _, value) =>
           val name = s"k$kernelNum"
           kernelNum += 1
-          val (closedDefinition, args) = closeDefinition(value)
-          val kernelDef = new FunDef(name, closedDefinition)
-          kernelDefinitions += Tuple3(localSize, globalSize, kernelDef)
+          val (closedDef, args) = closeDefinition(value)
+          val kernelDef = KernelDef(name, closedDef, localSize, globalSize)
+          kernelDefinitions += kernelDef
           Stop(KernelCall(name, localSize, globalSize,
             kernelDef.paramTypes.map(_.dataType),
             kernelDef.returnType.dataType,
@@ -49,7 +47,7 @@ object SeparateHostAndKernelCode {
         case _ => Continue(p, this)
       }
     })
-    (new FunDef(hostFunName, hostDefinition), kernelDefinitions.toSeq)
+    (FunDef(hostFunName, hostDefinition), kernelDefinitions.toSeq)
   }
 
   private def closeDefinition(definition: Phrase[_ <: PhraseType]

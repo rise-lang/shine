@@ -1,6 +1,6 @@
 package shine.OpenCL.Compilation
 
-import shine.C
+import shine.{C, DPIA}
 import shine.C.AST.{Decl, IncludeSource, ParamKind, Stmt}
 import shine.C.Compilation.{ModuleGenerator => CModuleGenerator}
 import shine.DPIA.Compilation.{FunDef, ModuleGenerator}
@@ -10,9 +10,12 @@ import shine.DPIA.Types._
 
 import scala.collection.immutable
 
-object HostCodeModuleGenerator extends ModuleGenerator {
+object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
   override type Module = C.Module
   override type CodeGenerator = HostCodeCodeGenerator
+
+  override def makeFunDef(name: String): Phrase[_ <: PhraseType] => FunDef =
+    CModuleGenerator.makeFunDef(name)
 
   override def createOutputParam(outT: ExpType): Identifier[AccType] =
     outT.dataType match {
@@ -31,7 +34,7 @@ object HostCodeModuleGenerator extends ModuleGenerator {
                                 funDef: FunDef,
                                 outParam: Identifier[AccType]
                                ): Phrase[CommType] => Phrase[CommType] =
-    HostManagedBuffers.populate(funDef.params, outParam) andThen
+    HostManagedBuffers.insert(funDef.params, outParam) andThen
       CModuleGenerator.imperativePasses(gen, funDef, outParam)
 
   override type GeneratedCode = CModuleGenerator.GeneratedCode
@@ -42,8 +45,7 @@ object HostCodeModuleGenerator extends ModuleGenerator {
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       optionallyManagedParams(funDef.params, outParam)
         .map(p => p -> C.AST.DeclRef(p.name)).toMap,
-      immutable.Map.empty, immutable.Map.empty,
-      immutable.Map.empty, immutable.Map.empty)
+      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
     gen.generate(funDef.topLevelLetNats, env)
   }
@@ -54,8 +56,7 @@ object HostCodeModuleGenerator extends ModuleGenerator {
                          ): ((Seq[Decl], Stmt)) => Module = {
     case (declarations, code) =>
       val params = C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")) +:
-        optionallyManagedParams(funDef.params, outParam)
-          .map(C.AST.makeParam(gen))
+        optionallyManagedParams(funDef.params, outParam).map(makeParam(gen))
       C.Module(
         includes = immutable.Seq(IncludeSource("runtime.h")),
         decls = CModuleGenerator.collectTypeDeclarations(code, params) ++
@@ -81,4 +82,12 @@ object HostCodeModuleGenerator extends ModuleGenerator {
       .map(_._1.asInstanceOf[Identifier[_ <: BasePhraseType]]).getOrElse(p)
     )
 
+  private def makeParam(gen: CodeGenerator): Identifier[_] => C.AST.ParamDecl =
+    C.AST.makeParam({
+      case _: DPIA.Types.ManagedBufferType =>
+        C.AST.OpaqueType("Buffer")
+      case DPIA.Types.ContextType =>
+        C.AST.OpaqueType("Context")
+      case dt => C.AST.makeParamTy(gen)(dt)
+    })
 }

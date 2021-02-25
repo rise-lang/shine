@@ -14,9 +14,12 @@ import util.compiler.DSL.run
 
 import scala.collection.{immutable, mutable}
 
-object ModuleGenerator extends DPIA.Compilation.ModuleGenerator {
+object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
   override type Module = C.Module
   override type CodeGenerator = Compilation.CodeGenerator
+
+  override def makeFunDef(name: String): Phrase[_ <: PhraseType] => FunDef =
+    FunDef(name, _)
 
   override def createOutputParam(outT: ExpType): Identifier[AccType] =
     outT.dataType match {
@@ -37,7 +40,8 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator {
                           funDef: FunDef,
                           outParam: Identifier[AccType]
                          ): Phrase[ExpType] => Phrase[CommType] = p => {
-    implicit val context = gen.translationContext
+    implicit val context: DPIA.Compilation.TranslationContext =
+      gen.translationContext
 
     val output = (outParam.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => outParam
@@ -67,8 +71,7 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator {
                            ): Phrase[CommType] => (Seq[gen.Decl], gen.Stmt) = {
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       (outParam +: funDef.params).map(p => p -> C.AST.DeclRef(p.name)).toMap,
-      immutable.Map.empty, immutable.Map.empty,
-      immutable.Map.empty, immutable.Map.empty)
+      immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
     gen.generate(funDef.topLevelLetNats, env)
   }
@@ -78,7 +81,8 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator {
                           outParam: Identifier[AccType]
                          ): ((Seq[gen.Decl], gen.Stmt)) => Module = {
     case (declarations, code) =>
-      val params = (outParam +: funDef.params).map(C.AST.makeParam(gen))
+      val params = (outParam +: funDef.params).
+        map(C.AST.makeParam(C.AST.makeParamTy(gen)))
       Module(
         includes = immutable.Seq(IncludeHeader("stdint.h")),
         decls = collectTypeDeclarations(code, params) ++ declarations,

@@ -5,13 +5,15 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.{AccType, CommType, ExpType, PhraseType, TypeCheck}
 import util.compiler.DSL.run
 
-trait ModuleGenerator {
+trait ModuleGenerator[FunDef <: DPIA.Compilation.FunDef] {
   type Module
   type CodeGenerator <: DPIA.Compilation.CodeGenerator
 
+  def makeFunDef(name: String): Phrase[_ <: PhraseType] => FunDef
+
   def generateFunction(name: String,
                        gen: CodeGenerator): Phrase[_ <: PhraseType] => Module =
-    (new FunDef(name, _)) andThen funDefToModule(gen)
+    makeFunDef(name) andThen funDefToModule(gen)
 
   def funDefToModule(gen: CodeGenerator): FunDef => Module = funDef => {
     val outParam = createOutputParam(funDef.body.t)

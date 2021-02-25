@@ -11,8 +11,7 @@ object SyntaxChecker {
     "-Wno-implicit-function-declaration",
     "-Wno-parentheses-equality",
     "-Wno-unused-command-line-argument",
-    "-Iruntime/",
-    "-Ilib/executor/lib/Executor/include/").mkString(" ")
+    ExecuteOpenCL.includes).mkString(" ")
 
   @throws[SyntaxChecker.Exception]("if code doesn't pass the syntax check")
   def apply(code: String, extension: String = ".c", options: String = defaultOptions): Unit = {

@@ -38,3 +38,8 @@ class FunDef(val name: String,
       case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, defs.reverse)
     }
 }
+
+object FunDef {
+  def apply(name: String, definition: Phrase[_ <: PhraseType]): FunDef =
+    new FunDef(name, definition)
+}

@@ -3,7 +3,7 @@ package shine.OpenCL.Compilation
 import arithexpr.arithmetic.Cst
 import shine.C.AST.ParamKind
 import shine.C.Compilation.{ModuleGenerator => CModuleGenerator}
-import shine.DPIA.Compilation.{FunDef, ModuleGenerator}
+import shine.DPIA.Compilation.ModuleGenerator
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.OpenCL.AST.RequiredWorkGroupSize
@@ -15,17 +15,18 @@ import util.TupleOps._
 
 import scala.collection.immutable
 
-case class KernelModuleGenerator(wgConfig: Option[(LocalSize, GlobalSize)])
-  extends ModuleGenerator
-{
+object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
   override type Module = KernelModule
   override type CodeGenerator = KernelCodeGenerator
+
+  override def makeFunDef(name: String): Phrase[_ <: PhraseType] => KernelDef =
+    KernelDef(name, _)
 
   override def createOutputParam(outT: ExpType): Identifier[AccType] =
     CModuleGenerator.createOutputParam(outT)
 
   override def rewriteToImperative(gen: KernelCodeGenerator,
-                                   funDef: FunDef,
+                                   funDef: KernelDef,
                                    outParam: Identifier[AccType]
                                   ): Phrase[ExpType] => Phrase[CommType] =
     CModuleGenerator.rewriteToImperative(gen, funDef, outParam)
@@ -38,10 +39,10 @@ case class KernelModuleGenerator(wgConfig: Option[(LocalSize, GlobalSize)])
       Phrase[CommType]
     )
   override def imperativePasses(gen: KernelCodeGenerator,
-                                funDef: FunDef,
+                                funDef: KernelDef,
                                 outParam: Identifier[AccType]
                                ): Phrase[CommType] => PhraseAfterPasses = {
-      InjectWorkItemSizes.inject(wgConfig) andThen
+      InjectWorkItemSizes.inject(funDef.wgConfig) andThen
       FlagPrivateArrayLoops.flag andThen
       CModuleGenerator.imperativePasses(gen, funDef, outParam) andThen
       InsertMemoryBarriers.insert andThen
@@ -57,7 +58,7 @@ case class KernelModuleGenerator(wgConfig: Option[(LocalSize, GlobalSize)])
       C.AST.Stmt
     )
   override def generateCode(gen: KernelCodeGenerator,
-                            funDef: FunDef,
+                            funDef: KernelDef,
                             outParam: Identifier[AccType]
                            ): PhraseAfterPasses => GeneratedCode = {
     case (outParam, params, temps, kernelParams, p) =>
@@ -77,8 +78,7 @@ case class KernelModuleGenerator(wgConfig: Option[(LocalSize, GlobalSize)])
 
       val env = shine.DPIA.Compilation.CodeGenerator.Environment(
         identMap ++ tempsIdentMap,
-        immutable.Map.empty, immutable.Map.empty,
-        immutable.Map.empty, immutable.Map.empty)
+        immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
 
       p |> (
         gen.generate(funDef.topLevelLetNats, env) andThen
@@ -87,7 +87,7 @@ case class KernelModuleGenerator(wgConfig: Option[(LocalSize, GlobalSize)])
   }
 
   override def makeModule(gen: KernelCodeGenerator,
-                          funDef: FunDef,
+                          funDef: KernelDef,
                           outParam: Identifier[AccType]
                          ): GeneratedCode => KernelModule = {
     case (outParam, temps, kernelParams, declarations, code) =>
@@ -99,7 +99,7 @@ case class KernelModuleGenerator(wgConfig: Option[(LocalSize, GlobalSize)])
             code = OpenCL.AST.KernelDecl(funDef.name,
               params = kernelParams,
               body = code,
-              attribute = wgConfig match {
+              attribute = funDef.wgConfig match {
                 case Some((LocalSize(cstSize @ NDRange(Cst(_), Cst(_), Cst(_))), _)) =>
                   Some(RequiredWorkGroupSize(cstSize))
                 case _ => None
@@ -108,7 +108,7 @@ case class KernelModuleGenerator(wgConfig: Option[(LocalSize, GlobalSize)])
             paramKinds = ParamKind.output(outParam) +:
               ( funDef.params.map(ParamKind.input) ++
                 temps.map(_.identifier.t.t1.dataType).map(ParamKind.temporary)),
-            wgConfig = wgConfig
+            wgConfig = funDef.wgConfig
           )
         )
       )

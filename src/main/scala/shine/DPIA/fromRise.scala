@@ -800,7 +800,7 @@ object fromRise {
             ocl.ToMem(a, t, e)))
       }
 
-      case rocl.oclRunP() => fromType {
+      case rocl.oclRunPrimitive() => fromType {
         case nFunT(ls1, nFunT(ls2, nFunT(ls3,
           nFunT(gs1, nFunT(gs2, nFunT(gs3,
           expT(t, `write`) ->: _))))))

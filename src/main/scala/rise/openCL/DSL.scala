@@ -49,5 +49,5 @@ object DSL {
     toFun(toPrivate, f)
 
   def oclRun(ls: LocalSize, gs: GlobalSize): ToBeTyped[Expr] =
-    primitives.oclRunP(ls.size.x)(ls.size.y)(ls.size.z)(gs.size.x)(gs.size.y)(gs.size.z)
+    primitives.oclRunPrimitive(ls.size.x)(ls.size.y)(ls.size.z)(gs.size.x)(gs.size.y)(gs.size.z)
 }
