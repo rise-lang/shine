@@ -33,10 +33,10 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
         throw new Exception(s"unexpected output data type: ${outT.dataType}")
     }
 
-  def rewriteToImperative(gen: CodeGenerator,
-                          funDef: FunDef,
-                          outParam: Identifier[AccType]
-                         ): Phrase[ExpType] => Phrase[CommType] = p => {
+  def toImperative(gen: CodeGenerator,
+                   funDef: FunDef,
+                   outParam: Identifier[AccType]
+                  ): Phrase[ExpType] => Phrase[CommType] = p => {
     implicit val context: DPIA.Compilation.TranslationContext =
       gen.translationContext
 
@@ -52,10 +52,10 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
       run(TypeCheck(_)) )
   }
 
-  override def makeModule(gen: CodeGenerator,
-                          funDef: FunDef,
-                          outParam: Identifier[AccType]
-                         ): Phrase[CommType] => Module = {
+  override def imperativeToModule(gen: CodeGenerator,
+                                  funDef: FunDef,
+                                  outParam: Identifier[AccType]
+                                 ): Phrase[CommType] => Module = {
     imperativePasses andThen
       generateCode(gen, funDef, outParam) andThen
       makeCModule(gen, funDef, outParam)

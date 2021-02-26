@@ -20,17 +20,17 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
       case _ => CModuleGenerator.createOutputParam(outT)
     }
 
-  override def rewriteToImperative(gen: HostCodeGenerator,
-                                   funDef: FunDef,
-                                   outParam: Identifier[AccType]
-                                  ): Phrase[ExpType] => Phrase[CommType] =
-    CModuleGenerator.rewriteToImperative(gen, funDef, outParam)
+  override def toImperative(gen: HostCodeGenerator,
+                            funDef: FunDef,
+                            outParam: Identifier[AccType]
+                           ): Phrase[ExpType] => Phrase[CommType] =
+    CModuleGenerator.toImperative(gen, funDef, outParam)
 
 
-  override def makeModule(gen: HostCodeGenerator,
-                          funDef: FunDef,
-                          outParam: Identifier[AccType]
-                         ): Phrase[CommType] => Module =
+  override def imperativeToModule(gen: HostCodeGenerator,
+                                  funDef: FunDef,
+                                  outParam: Identifier[AccType]
+                                 ): Phrase[CommType] => Module =
     imperativePasses(funDef, outParam) andThen
       generateCode(gen, funDef, outParam) andThen
       makeHostCodeModule(gen, funDef, outParam)

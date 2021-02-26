@@ -14,18 +14,19 @@ trait ModuleGenerator[FunDef <: DPIA.Compilation.FunDef] {
 
     funDef.body |> (
       run(TypeCheck(_: Phrase[ExpType])) andThen
-        rewriteToImperative(gen, funDef, outParam) andThen
-        makeModule(gen, funDef, outParam))
+        toImperative(gen, funDef, outParam) andThen
+        imperativeToModule(gen, funDef, outParam))
   }
 
   def createOutputParam(outT: ExpType): Identifier[AccType]
 
-  def rewriteToImperative(gen: CodeGenerator,
-                          funDef: FunDef,
-                          outParam: Identifier[AccType]
-                         ): Phrase[ExpType] => Phrase[CommType]
+  def toImperative(gen: CodeGenerator,
+                   funDef: FunDef,
+                   outParam: Identifier[AccType]
+                  ): Phrase[ExpType] => Phrase[CommType]
 
-  def makeModule(gen: CodeGenerator,
-                 funDef: FunDef,
-                 outParam: Identifier[AccType]): Phrase[CommType] => Module
+  def imperativeToModule(gen: CodeGenerator,
+                         funDef: FunDef,
+                         outParam: Identifier[AccType]
+                        ): Phrase[CommType] => Module
 }

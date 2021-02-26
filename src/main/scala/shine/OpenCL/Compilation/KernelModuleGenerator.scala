@@ -22,17 +22,17 @@ object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
   override def createOutputParam(outT: ExpType): Identifier[AccType] =
     CModuleGenerator.createOutputParam(outT)
 
-  override def rewriteToImperative(gen: KernelCodeGenerator,
-                                   funDef: KernelDef,
-                                   outParam: Identifier[AccType]
-                                  ): Phrase[ExpType] => Phrase[CommType] =
-    CModuleGenerator.rewriteToImperative(gen, funDef, outParam)
+  override def toImperative(gen: KernelCodeGenerator,
+                            funDef: KernelDef,
+                            outParam: Identifier[AccType]
+                           ): Phrase[ExpType] => Phrase[CommType] =
+    CModuleGenerator.toImperative(gen, funDef, outParam)
 
 
-  override def makeModule(gen: KernelCodeGenerator,
-                          funDef: KernelDef,
-                          outParam: Identifier[AccType]
-                         ): Phrase[CommType] => KernelModule =
+  override def imperativeToModule(gen: KernelCodeGenerator,
+                                  funDef: KernelDef,
+                                  outParam: Identifier[AccType]
+                                 ): Phrase[CommType] => KernelModule =
     imperativePasses(gen, funDef, outParam) andThen
       generateCode(gen, funDef) andThen
       makeKernelModule(funDef)
