@@ -3,8 +3,8 @@ package shine.OpenMP
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.{ArraySubscript, Decl}
-import shine.C.CodeGenerator.CIntExpr
-import shine.C.{CodeGenerator => CCodeGenerator}
+import shine.C.Compilation.CodeGenerator.CIntExpr
+import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
@@ -25,7 +25,7 @@ object CodeGenerator {
 
 class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                     override val ranges: CCodeGenerator.Ranges)
-  extends C.CodeGenerator(decls, ranges)
+  extends C.Compilation.CodeGenerator(decls, ranges)
 {
   override def name: String = "OpenMP"
 

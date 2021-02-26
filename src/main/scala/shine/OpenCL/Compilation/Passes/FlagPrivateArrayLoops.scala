@@ -1,13 +1,13 @@
-package shine.OpenCL.compilation
+package shine.OpenCL.Compilation.Passes
 
+import shine.DPIA.Nat
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.ArrayData
 import shine.DPIA.Types.{CommType, PhraseType}
 import shine.DPIA.primitives.functional.{Idx, NatAsIndex}
 import shine.DPIA.primitives.imperative.{For, ForNat, IdxAcc}
-import shine.DPIA.{Nat, NatIdentifier}
 import shine.OpenCL.AddressSpace
-import shine.OpenCL.primitives.imperative._
+import shine.OpenCL.primitives.imperative.{New, ParFor, ParForNat}
 
 import scala.collection.mutable
 

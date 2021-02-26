@@ -6,7 +6,7 @@ import rise.core.DSL._
 import rise.core.DSL.HighLevelConstructs._
 import rise.core.DSL.Type._
 import rise.openCL.primitives.oclReduceSeqUnroll
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule

@@ -800,6 +800,18 @@ object fromRise {
             ocl.ToMem(a, t, e)))
       }
 
+      case rocl.oclRunPrimitive() => fromType {
+        case nFunT(ls1, nFunT(ls2, nFunT(ls3,
+          nFunT(gs1, nFunT(gs2, nFunT(gs3,
+          expT(t, `write`) ->: _))))))
+        =>
+          import shine.OpenCL.{LocalSize, GlobalSize}
+          depFun[NatKind](ls1)(depFun[NatKind](ls2)(depFun[NatKind](ls3)(
+            depFun[NatKind](gs1)(depFun[NatKind](gs2)(depFun[NatKind](gs3)(
+              fun[ExpType](expT(t, write), e =>
+                ocl.Run(LocalSize(ls1, ls2, ls3), GlobalSize(gs1, gs2, gs3), t, e))))))))
+      }
+
       case core.dmatch() => fromType {
         case expT(DepPairType(x, elemT), `read`) ->:
           nFunT(i, expT(elem_iT, `read`) ->: expT(outT, a))

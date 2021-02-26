@@ -1,4 +1,4 @@
-package shine.OpenCL.compilation
+package shine.OpenCL.Compilation.Passes
 
 import shine.DPIA.->:
 import shine.DPIA.Phrases._
@@ -17,27 +17,26 @@ object InsertMemoryBarriers {
   def insert: Phrase[CommType] => Phrase[CommType] = p =>
     analyzeAndInsertBarriers(p, Map())._1
 
-  private case class Metadata(// reads from outer scope allocations
-                              reads: mutable.Map[Identifier[_ <: PhraseType], AddressSpace],
-                              // work-group parallel writes to outer scope allocations
-                              wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace])
+  private case class Metadata( // reads from outer scope allocations
+                               reads: mutable.Map[Identifier[_ <: PhraseType], AddressSpace],
+                               // work-group parallel writes to outer scope allocations
+                               wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace])
 
-  private def analyzeAndInsertBarriers(
-    p: Phrase[CommType],
-    // allocations in the current scope
-    allocs: Map[Identifier[_ <: PhraseType], AddressSpace]
-  ): (Phrase[CommType], Metadata) = {
+  private def analyzeAndInsertBarriers(p: Phrase[CommType],
+                                       // allocations in the current scope
+                                       allocs: Map[Identifier[_ <: PhraseType], AddressSpace]
+                                      ): (Phrase[CommType], Metadata) = {
     val meta = Metadata(mutable.Map(), mutable.Map())
     val p2 = VisitAndRebuild(p, Visitor(allocs, meta))
     (p2, meta)
   }
 
-  private def visitLoopBody(
-    p: Phrase[CommType],
-    allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
-    metadata: Metadata,
-    outer_wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace] = mutable.Map()
-  ): Phrase[CommType] = {
+  private def visitLoopBody(p: Phrase[CommType],
+                            allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
+                            metadata: Metadata,
+                            outer_wg_writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
+                              = mutable.Map()
+                           ): Phrase[CommType] = {
     val p2 = VisitAndRebuild(p, Visitor(allocs, metadata))
     val dependencies = metadata.wg_writes.filter(kv => metadata.reads.contains(kv._1))
     if (dependencies.nonEmpty) {
@@ -50,9 +49,8 @@ object InsertMemoryBarriers {
     }
   }
 
-  private def makeBarrier(
-    allocs: Map[Identifier[_ <: PhraseType], AddressSpace]
-  ): Phrase[CommType] = {
+  private def makeBarrier(allocs: Map[Identifier[_ <: PhraseType], AddressSpace]
+                         ): Phrase[CommType] = {
     OpenCL.DSL.barrier(
       local = allocs.exists(_._2 == AddressSpace.Local),
       global = allocs.exists(_._2 == AddressSpace.Global))
@@ -125,11 +123,10 @@ object InsertMemoryBarriers {
   }
 
   @tailrec
-  private def collectWrites(
-    a: Phrase[AccType],
-    allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
-    writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
-  ): Unit = {
+  private def collectWrites(a: Phrase[AccType],
+                            allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
+                            writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
+                           ): Unit = {
     def addIdent(i: Identifier[_ <: PhraseType]): Unit = if (allocs.contains(i)) {
       writes(i) = allocs(i)
     }
@@ -155,7 +152,8 @@ object InsertMemoryBarriers {
 
   private def collectReads(e: Phrase[ExpType],
                            allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
-                           reads: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]): Unit = {
+                           reads: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
+                          ): Unit = {
     def addIdent(i: Identifier[_ <: PhraseType]): Unit = if (allocs.contains(i)) {
       reads(i) = allocs(i)
     }

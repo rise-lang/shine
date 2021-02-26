@@ -1,4 +1,4 @@
-package shine.OpenCL.compilation
+package shine.OpenCL.Compilation.Passes
 
 import arithexpr.arithmetic.ArithExpr.Math.Min
 import shine.DPIA.DSL._

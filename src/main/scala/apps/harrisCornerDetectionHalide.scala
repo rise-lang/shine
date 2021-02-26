@@ -196,7 +196,7 @@ object harrisCornerDetectionHalide {
   }
 
   object ocl {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.openCL.primitives.{oclCircularBuffer, oclRotateValues}
 
     private val letGlobal = fun(k => fun(x => toGlobal(x) |> letf(k)))

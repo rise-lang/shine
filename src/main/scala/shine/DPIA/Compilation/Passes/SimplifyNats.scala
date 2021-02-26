@@ -1,8 +1,8 @@
-package shine.DPIA.Compilation
+package shine.DPIA.Compilation.Passes
 
-import shine.DPIA.Phrases._
-import shine.DPIA.Types._
-import shine.DPIA._
+import shine.DPIA.DSL
+import shine.DPIA.Phrases.{Identifier, Phrase, VisitAndRebuild}
+import shine.DPIA.Types.{CommType, ExpType, IndexType, NatType, PhraseType}
 import shine.DPIA.primitives.functional.NatAsIndex
 
 object SimplifyNats {

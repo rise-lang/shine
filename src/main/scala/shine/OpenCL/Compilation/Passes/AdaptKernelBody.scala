@@ -1,10 +1,11 @@
-package shine.OpenCL.compilation
+package shine.OpenCL.Compilation.Passes
 
 import shine.C.AST._
 import shine.DPIA.Types.AddressSpace
 import shine.{C, OpenCL}
 
 import scala.collection.mutable
+import scala.collection.immutable
 
 //
 // This performs transformations to ensure:
@@ -13,7 +14,10 @@ import scala.collection.mutable
 //
 object AdaptKernelBody {
 
-  def adapt: C.AST.Block => C.AST.Block =
+  def adapt(s: C.AST.Stmt): C.AST.Block =
+    adaptBlock(C.AST.Block(immutable.Seq(s)))
+
+  private def adaptBlock: C.AST.Block => C.AST.Block =
     (unrollPrivateArrays(_)) andThen
       (moveLocalMemoryVariableDeclarations(_))
 
