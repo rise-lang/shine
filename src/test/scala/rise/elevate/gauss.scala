@@ -2,7 +2,7 @@ package rise.elevate
 
 import elevate.core._
 import elevate.core.strategies.basic._
-import rise.elevate.rules.lowering.lowerToC
+import rise.elevate.rules.lowering.{lowerToC, parallel, vectorize}
 import _root_.util.gen
 import elevate.core.strategies.traversal._
 import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D, zipND}
@@ -14,6 +14,7 @@ import rise.elevate.rules.lowering
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.normalForm._
+import rise.elevate.strategies.predicate.{isApplied, isMap}
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
 
@@ -59,6 +60,14 @@ class gauss extends test_util.Tests {
 
   test("CPU") {
     run("cpu", cpu)
+  }
+
+  val cpuPar: Strategy[Rise] = cpu `;;`
+    (vectorize(32) `@` innermost(isApplied(isMap))) `;;`
+    (parallel()    `@` outermost(isApplied(isMap)))
+
+  test("CPU par") {
+    run("CPU par", cpuPar)
   }
 
 

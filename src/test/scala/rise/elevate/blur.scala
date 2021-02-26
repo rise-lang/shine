@@ -57,8 +57,6 @@ class blur extends test_util.Tests {
     (vectorize(32) `@` innermost(isApplied(isMap))) `;;`
     (parallel()    `@` outermost(isApplied(isMap)))
 
-
-
   test("CPU par") {
     run("CPU par", cpuPar)
   }
