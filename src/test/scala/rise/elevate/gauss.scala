@@ -13,8 +13,9 @@ import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
+import rise.elevate.strategies.algorithmic.reorder
 import rise.elevate.strategies.normalForm._
-import rise.elevate.strategies.predicate.{isApplied, isMap}
+import rise.elevate.strategies.predicate.{isApplied, isMap, isReduce}
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
 
@@ -70,6 +71,60 @@ class gauss extends test_util.Tests {
     run("CPU par", cpuPar)
   }
 
+  test("vectorization example"){
+
+    val N = 1024
+
+    // define algorithm
+    val mm: Rise =
+      fun(ArrayType(N, ArrayType(N, f32)))(a =>
+        fun(ArrayType(N, ArrayType(N, f32)))(b =>
+          a |> map(fun(ak =>
+            transpose(b) |> map(fun(bk =>
+              zip(ak)(bk) |>
+                map(fun(x => fst(x) * snd(x))) |>
+                reduce(add)(l(0.0f))
+            ))
+          ))
+        ))
+
+    // define strategies
+    val splitReduce = splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce))))
+    val reordering = reorder(List(1,3,4,2))
+    val vectorization = vectorize(64) `@` innermost(isApplied(isApplied(isMap)))
+
+    // apply strategies
+    val splitted = splitReduce.apply(mm)
+    val reordered = reordering.apply(splitted.get)
+    val vectorized = vectorization.apply(reordered.get)
+
+    // lowering
+    val loweredDefault = (cpu `;` lowerToC).apply(mm)
+    val loweredSplitted = (cpu `;` lowerToC).apply(splitted.get)
+    val loweredReordered = (cpu `;` lowerToC).apply(reordered.get)
+    val loweredVectorized = (cpu `;` lowerToC).apply(vectorized.get)
+
+    // code generation
+    val codeDefault = gen.openmp.function("mm").asStringFromExpr(loweredDefault.get)
+//    val codeSplitted = gen.openmp.function("gaussian").asStringFromExpr(loweredSplitted.get) // not valid
+    val codeReordered = gen.openmp.function("mm").asStringFromExpr(loweredReordered.get)
+    val codeVectorized = gen.openmp.function("mm").asStringFromExpr(loweredVectorized.get)
+
+    // print results
+    println("mm: \n" + mm)
+    println("splitted: \n" + splitted.get)
+    println("reordered: \n" + reordered.get)
+    println("vectorized: \n" + vectorized.get)
+
+    println("loweredMM: \n" + loweredDefault.get)
+    println("loweredSplitted: \n " + loweredSplitted.get)
+    println("loweredReordered: \n" + loweredReordered.get)
+    println("loweredVectorized: \n" + loweredVectorized.get)
+
+    println("code: \n" + codeDefault)
+    println("code: \n" + codeReordered)
+    println("code: \n" + codeVectorized)
+  }
 
 
   /// UTILS ////////////////////////////////////////////////////////////////////
