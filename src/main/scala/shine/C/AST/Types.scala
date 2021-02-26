@@ -15,6 +15,10 @@ abstract class BasicType(val name: String, override val const: Boolean = false) 
   override def print: String = name
 }
 
+abstract class OpaqueType(val name: String) extends Type(const = false) {
+  override def print: String = name
+}
+
 abstract class StructType(val name: String, val fields: Seq[(Type, String)], override val const: Boolean = false) extends Type(const) {
   //  override def print: String = s"struct $name {${fields.map(_.print).mkString("; ")} }"
   override def print: String = s"struct $name"
@@ -34,6 +38,7 @@ abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr], overri
       case _: PointerType => elemType
       case _: UnionType => elemType
       case a: ArrayType => a.getBaseType
+      case _: OpaqueType => elemType
     }
   }
 
@@ -82,6 +87,9 @@ object Type {
   val i16 = BasicType("int16_t")
   val i32 = BasicType("int32_t")
   val i64 = BasicType("int64_t")
+
+  val usize = BasicType("size_t")
+  val isize = BasicType("ptrdiff_t")
 
   val float = BasicType("float")
   val const_float = BasicType("float", const = true)
@@ -142,6 +150,11 @@ object BasicType {
   def unapply(arg: BasicType): Option[(String, Boolean)] = Some((arg.name, arg.const))
 }
 
+object OpaqueType {
+  def apply(name: String): OpaqueType = DefaultTypeImplementations.OpaqueType(name)
+  def unapply(arg: OpaqueType): Option[String] = Some(arg.name)
+}
+
 object StructType {
   def apply(name: String, fields: Seq[(Type, String)], const: Boolean = false): StructType = DefaultTypeImplementations.StructType(name, fields, const)
   def unapply(arg: StructType): Option[(String, Seq[(Type, String)], Boolean)] = Some((arg.name, arg.fields, arg.const))
@@ -165,6 +178,9 @@ object UnionType {
 object DefaultTypeImplementations {
   case class BasicType(override val name: String, override val const: Boolean = false)
     extends C.AST.BasicType(name, const)
+
+  case class OpaqueType(override val name: String)
+    extends C.AST.OpaqueType(name)
 
   case class StructType(override val name: String, override val fields: Seq[(Type, String)], override val const: Boolean = false)
     extends C.AST.StructType(name, fields, const)

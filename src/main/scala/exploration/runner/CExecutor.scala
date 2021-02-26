@@ -210,7 +210,7 @@ case class CExecutor(lowering: Strategy[Rise],
 
   def prepareInput(tu: C.Module):(String,String,String,String) = {
 
-    val fun: C.Function = tu.functions.head
+    val fun: C.AST.Function = tu.functions.head
 
     val arrayTwo = "(.)+[.](.)+[.]f32".r
     val arrayOne = "(.)+[.]f32".r

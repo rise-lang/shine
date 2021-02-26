@@ -1,4 +1,4 @@
-package shine.OpenCL.compilation
+package shine.OpenCL.Compilation.Passes
 
 import shine.C.AST.ParamDecl
 import shine.DPIA.DSL._
@@ -6,8 +6,8 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.NatAsIndex
-import shine.OpenCL.CodeGenerator
-import shine.OpenCL.compilation.HoistMemoryAllocations._
+import shine.OpenCL.Compilation.KernelCodeGenerator
+import shine.OpenCL.Compilation.Passes.HoistMemoryAllocations._
 import shine.OpenCL.primitives.functional.OpenCLFunctionCall
 import shine.{C, DPIA, OpenCL}
 
@@ -20,30 +20,30 @@ import scala.collection.mutable
 //
 object AdaptKernelParameters {
 
-  def adapt(gen: CodeGenerator)
-           (out: Identifier[AccType],
-            ins: Seq[Identifier[ExpType]],
-            intermediateAllocations: Seq[AllocationInfo]):
-      Phrase[CommType] => (
-        Identifier[AccType],
-          Seq[Identifier[ExpType]],
-          Seq[AllocationInfo],
-          Seq[ParamDecl],
-          Phrase[CommType]) = phrase => {
-    val params = makeParams(out, ins, intermediateAllocations, gen)
-    val (newParams, scalarParamsInGlobalOrLocalMemory) = adaptParamDecls(params, ins)
+  def adapt(gen: KernelCodeGenerator,
+            out: Identifier[AccType],
+            ins: Seq[Identifier[ExpType]]
+           ): ((Seq[AllocationInfo], Phrase[CommType])) => (
+    Identifier[AccType],
+      Seq[Identifier[ExpType]],
+      Seq[AllocationInfo],
+      Seq[ParamDecl],
+      Phrase[CommType]) = {
+    case (intermediateAllocations, phrase) =>
+      val params = makeParams(out, ins, intermediateAllocations, gen)
+      val (newParams, scalarParamsInGlobalOrLocalMemory) = adaptParamDecls(params, ins)
 
-    val rewrittenPhrase = VisitAndRebuild(phrase, Visitor(scalarParamsInGlobalOrLocalMemory))
+      val rewrittenPhrase = VisitAndRebuild(phrase, Visitor(scalarParamsInGlobalOrLocalMemory))
 
-    def rewriteIdentifier[T <: PhraseType](x: Identifier[T]): Identifier[T] =
-      if (scalarParamsInGlobalOrLocalMemory(x.name)) identifierAsSingletonArray(x) else x
+      def rewriteIdentifier[T <: PhraseType](x: Identifier[T]): Identifier[T] =
+        if (scalarParamsInGlobalOrLocalMemory(x.name)) identifierAsSingletonArray(x) else x
 
-    val rewrittenOut = rewriteIdentifier(out)
-    val rewrittenIns = ins.map(rewriteIdentifier)
-    val rewrittenIntermediates = intermediateAllocations.map(alloc => AllocationInfo(alloc.addressSpace,
-      rewriteIdentifier(alloc.identifier)))
+      val rewrittenOut = rewriteIdentifier(out)
+      val rewrittenIns = ins.map(rewriteIdentifier)
+      val rewrittenIntermediates = intermediateAllocations.map(alloc => AllocationInfo(alloc.addressSpace,
+        rewriteIdentifier(alloc.identifier)))
 
-    (rewrittenOut, rewrittenIns, rewrittenIntermediates, newParams, rewrittenPhrase)
+      (rewrittenOut, rewrittenIns, rewrittenIntermediates, newParams, rewrittenPhrase)
   }
 
   private def adaptParamDecls(params: Seq[(AddressSpace, ParamDecl)],
@@ -136,14 +136,14 @@ object AdaptKernelParameters {
   private def makeParams(out: Identifier[AccType],
                          ins: Seq[Identifier[ExpType]],
                          intermediateAllocations: Seq[AllocationInfo],
-                         gen: CodeGenerator): Seq[(AddressSpace, ParamDecl)] = {
+                         gen: KernelCodeGenerator): Seq[(AddressSpace, ParamDecl)] = {
     Seq(makeGlobalParam(out, gen)) ++ // first the output parameter ...
       ins.map(makeInputParam(_, gen)) ++ // ... then the input parameters ...
       intermediateAllocations.map(makeParam(_, gen)) //++  ... then the intermediate buffers ...
   }
 
   // pass arrays via global and scalar + tuple values via private memory
-  private def makeInputParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+  private def makeInputParam(i: Identifier[_], gen: KernelCodeGenerator): (AddressSpace, ParamDecl) = {
     getDataType(i) match {
       case _: ArrayType => makeGlobalParam(i, gen)
       case _: DepArrayType => makeGlobalParam(i, gen)
@@ -151,19 +151,20 @@ object AdaptKernelParameters {
       case _: PairType => makePrivateParam(i, gen)
       case _: DepPairType => makePrivateParam(i, gen)
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
-      case _: NatToDataApply => throw new Exception("This should not happen")
+      case _: NatToDataApply | _: ManagedBufferType | ContextType =>
+        throw new Exception(s"did not expect parameter of type ${getDataType(i)}")
     }
   }
 
-  private def makeGlobalParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+  private def makeGlobalParam(i: Identifier[_], gen: KernelCodeGenerator): (AddressSpace, ParamDecl) = {
     (AddressSpace.Global, ParamDecl(i.name, gen.typ(getDataType(i))))
   }
 
-  private def makePrivateParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+  private def makePrivateParam(i: Identifier[_], gen: KernelCodeGenerator): (AddressSpace, ParamDecl) = {
     (AddressSpace.Private, ParamDecl(i.name, gen.typ(getDataType(i))))
   }
 
-  private def makeParam(allocInfo: AllocationInfo, gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+  private def makeParam(allocInfo: AllocationInfo, gen: KernelCodeGenerator): (AddressSpace, ParamDecl) = {
     (allocInfo.addressSpace, ParamDecl(allocInfo.identifier.name, gen.typ(getDataType(allocInfo.identifier))))
   }
 

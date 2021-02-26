@@ -1,10 +1,10 @@
-package shine.OpenCL
+package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.{BasicType, Decl}
-import shine.C.CodeGenerator.CIntExpr
-import shine.C.{CodeGenerator => CCodeGenerator}
+import shine.C.Compilation.CodeGenerator.CIntExpr
+import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
@@ -16,24 +16,27 @@ import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative._
 import shine.OpenCL.primitives.functional.OpenCLFunctionCall
 import shine.OpenCL.primitives.{imperative => ocl}
-import shine.{C, _}
+import shine.OpenCL.{AddressSpace, BuiltInFunctionCall}
+import shine.{C, OpenCL, _}
 
 import scala.collection.{immutable, mutable}
 
-object CodeGenerator {
-  def apply(): CodeGenerator =
-    new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
+object KernelCodeGenerator {
+  def apply(): KernelCodeGenerator =
+    new KernelCodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
 }
 
-class CodeGenerator(override val decls: CCodeGenerator.Declarations,
-                    override val ranges: CCodeGenerator.Ranges)
-  extends C.CodeGenerator(decls, ranges) {
+class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
+                          override val ranges: CCodeGenerator.Ranges)
+  extends C.Compilation.CodeGenerator(decls, ranges) {
   override def name: String = "OpenCL"
 
-  override def translationContext: TranslationContext = new OpenCL.TranslationContext()
+  override def translationContext: TranslationContext =
+    new OpenCL.Compilation.TranslationContext()
 
-  override def updatedRanges(key: String, value: arithexpr.arithmetic.Range): CodeGenerator =
-    new CodeGenerator(decls, ranges.updated(key, value))
+  override def updatedRanges(key: String,
+                             value: arithexpr.arithmetic.Range): KernelCodeGenerator =
+    new KernelCodeGenerator(decls, ranges.updated(key, value))
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case f: ocl.ParFor =>

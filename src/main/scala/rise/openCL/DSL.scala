@@ -3,8 +3,9 @@ package rise.openCL
 import rise.core.DSL._
 import rise.core.{Expr, Primitive}
 import rise.core.types.AddressSpaceKind
+import shine.OpenCL.{GlobalSize, LocalSize}
 
-object TypedDSL {
+object DSL {
   object mapGlobal {
     def apply(): ToBeTyped[Primitive] = primitives.mapGlobal(0)
     def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] =
@@ -46,4 +47,7 @@ object TypedDSL {
   )
   def toPrivateFun[T <: Expr](f: ToBeTyped[T]): ToBeTyped[rise.core.Lambda] =
     toFun(toPrivate, f)
+
+  def oclRun(ls: LocalSize, gs: GlobalSize): ToBeTyped[Expr] =
+    primitives.oclRunPrimitive(ls.size.x)(ls.size.y)(ls.size.z)(gs.size.x)(gs.size.y)(gs.size.z)
 }

@@ -1,4 +1,4 @@
-package shine.OpenCL.compilation
+package shine.OpenCL.Compilation.Passes
 
 import arithexpr.arithmetic.ArithExpr
 import shine.DPIA.Nat
@@ -7,22 +7,17 @@ import shine.DPIA.Types.{CommType, DataType}
 import shine.OpenCL._
 
 object InjectWorkItemSizes {
-  def inject(localSize: Option[LocalSize],
-             globalSize: Option[GlobalSize]): Phrase[CommType] => Phrase[CommType] = p => {
-      if (localSize.isEmpty && globalSize.isEmpty) {
-        p
-      } else {
-        val lSizes: NDRange = if (localSize.isEmpty) (get_local_size(0), get_local_size(1), get_local_size(2))
-        else (localSize.get.size(0), localSize.get.size(1), localSize.get.size(2))
-
-        val gSizes: NDRange = if (globalSize.isEmpty) (get_global_size(0), get_global_size(1), get_global_size(3))
-        else (globalSize.get.size(0), globalSize.get.size(1), globalSize.get.size(2))
-
-        val numGroups: NDRange = if (localSize.isEmpty || globalSize.isEmpty)
-          (get_num_groups(0), get_num_groups(1), get_num_groups(2))
-        else (globalSize.get.size(0) /^ localSize.get.size(0),
-          globalSize.get.size(1) /^ localSize.get.size(1),
-          globalSize.get.size(2) /^ localSize.get.size(2))
+  def inject(wgConfig: Option[(LocalSize, GlobalSize)]
+            ): Phrase[CommType] => Phrase[CommType] = p => {
+    wgConfig match {
+      case None => p
+      case Some((localSize, globalSize)) =>
+        val lSizes = localSize.size
+        val gSizes = globalSize.size
+        val numGroups = NDRange(
+          gSizes(0) /^ lSizes(0),
+          gSizes(1) /^ lSizes(1),
+          gSizes(2) /^ lSizes(2))
 
         VisitAndRebuild(p, new VisitAndRebuild.Visitor {
           override def data[T <: DataType](dt: T): T =
@@ -34,7 +29,8 @@ object InjectWorkItemSizes {
                       DataType.substitute(lSizes(0), get_local_size(0),
                         DataType.substitute(gSizes(2), get_global_size(2),
                           DataType.substitute(gSizes(1), get_global_size(1),
-                            DataType.substitute(gSizes(0), get_global_size(0), dt)))))))))
+                            DataType.substitute(gSizes(0), get_global_size(0),
+                              dt)))))))))
 
           override def nat[N <: Nat](n: N): N = {
             val substMap: Map[Nat, Nat] = Map(
@@ -53,6 +49,6 @@ object InjectWorkItemSizes {
             subst
           }
         })
-      }
+    }
   }
 }

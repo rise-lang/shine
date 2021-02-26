@@ -1,10 +1,10 @@
-package shine.C
+package shine.C.Compilation
 
 import shine.DPIA.DSL._
-import shine.DPIA.primitives.imperative.Assign
-import shine.DPIA.primitives.intermediate.DepMapSeqI
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
+import shine.DPIA.primitives.imperative.Assign
+import shine.DPIA.primitives.intermediate.DepMapSeqI
 
 class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
   override def assign(dt: DataType,

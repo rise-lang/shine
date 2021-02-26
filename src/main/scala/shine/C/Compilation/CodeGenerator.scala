@@ -1,18 +1,19 @@
-package shine.C
+package shine.C.Compilation
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
+import shine.C.AST
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
-import shine.DPIA.Compilation.SimplifyNats
+import shine.DPIA.Compilation.Passes.SimplifyNats
 import shine.DPIA.DSL._
-import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional._
+import shine.DPIA.primitives.imperative._
 import shine.DPIA.{error, _}
 import shine._
 
@@ -559,8 +560,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             (typ(r.fst), "_fst"),
             (typ(r.snd), "_snd")))
       case shine.DPIA.Types.DepPairType(_, _) => C.AST.PointerType(C.AST.Type.u8)
-      case _: shine.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
-      case _: shine.DPIA.Types.NatToDataApply => throw new Exception("This should not happen")
+      case _: shine.DPIA.Types.DataTypeIdentifier | _: shine.DPIA.Types.NatToDataApply |
+           DPIA.Types.ManagedBufferType(_) | DPIA.Types.ContextType =>
+        throw new Exception(s"did not expect $dt")
     }
   }
 

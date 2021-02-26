@@ -7,7 +7,7 @@ import rise.core._
 import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import rise.core.types._
 import util.{Time, TimeSpan}
