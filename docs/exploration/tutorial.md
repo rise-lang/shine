@@ -119,11 +119,11 @@ containing the results of the exploration process.
 This subfolder contains:
  - a copy of the configuration file used for the exploration
  - a subfolder containing the results of every iteration of the Heuristic Search Algorithm
-   - A `csv` file containing an overview of the runtime measured for each resulting program
+   - A `csv` file containing an overview of the runtimes measured for each resulting program (aka, solution)
    - A copy of every resulting program (in various forms)
    - A `dot` file to visualize the exploration procress 
    - a subfolder containing the results of the executor
-      - A `csv` file containing the runtimes of every single evaluated program as part of the exploration process
+      - A `csv` file containing the runtimes of every single evaluated program (aka, solution candiate) as part of the exploration process
       - A copy of every evaluated program (in various forms)
 
 This information makes it easy to identify the best found expression, as well
