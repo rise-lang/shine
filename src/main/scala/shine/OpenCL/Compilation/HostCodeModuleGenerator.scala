@@ -12,7 +12,7 @@ import scala.collection.immutable
 
 object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
   override type Module = C.Module
-  override type CodeGenerator = HostCodeCodeGenerator
+  override type CodeGenerator = HostCodeGenerator
 
   override def makeFunDef(name: String): Phrase[_ <: PhraseType] => FunDef =
     CModuleGenerator.makeFunDef(name)
@@ -23,14 +23,14 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
       case _ => CModuleGenerator.createOutputParam(outT)
     }
 
-  override def rewriteToImperative(gen: HostCodeCodeGenerator,
+  override def rewriteToImperative(gen: HostCodeGenerator,
                                    funDef: FunDef,
                                    outParam: Identifier[AccType]
                                   ): Phrase[ExpType] => Phrase[CommType] =
     CModuleGenerator.rewriteToImperative(gen, funDef, outParam)
 
   override type PhraseAfterPasses = CModuleGenerator.PhraseAfterPasses
-  override def imperativePasses(gen: HostCodeCodeGenerator,
+  override def imperativePasses(gen: HostCodeGenerator,
                                 funDef: FunDef,
                                 outParam: Identifier[AccType]
                                ): Phrase[CommType] => Phrase[CommType] =
@@ -38,7 +38,7 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
       CModuleGenerator.imperativePasses(gen, funDef, outParam)
 
   override type GeneratedCode = CModuleGenerator.GeneratedCode
-  override def generateCode(gen: HostCodeCodeGenerator,
+  override def generateCode(gen: HostCodeGenerator,
                             funDef: FunDef,
                             outParam: Identifier[AccType]
                            ): Phrase[CommType] => (Seq[Decl], Stmt) = {
@@ -50,7 +50,7 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
     gen.generate(funDef.topLevelLetNats, env)
   }
 
-  override def makeModule(gen: HostCodeCodeGenerator,
+  override def makeModule(gen: HostCodeGenerator,
                           funDef: FunDef,
                           outParam: Identifier[AccType]
                          ): ((Seq[Decl], Stmt)) => Module = {

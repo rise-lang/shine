@@ -12,13 +12,13 @@ import shine.OpenCL._
 
 import scala.collection.{immutable, mutable}
 
-object HostCodeCodeGenerator {
-  def apply(): HostCodeCodeGenerator =
-    new HostCodeCodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
+object HostCodeGenerator {
+  def apply(): HostCodeGenerator =
+    new HostCodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
 }
 
-case class HostCodeCodeGenerator(override val decls: C.Compilation.CodeGenerator.Declarations,
-                                 override val ranges: C.Compilation.CodeGenerator.Ranges)
+case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Declarations,
+                             override val ranges: C.Compilation.CodeGenerator.Ranges)
   extends CodeGenerator(decls, ranges)
 {
   override def name: String = "OpenCL Host"

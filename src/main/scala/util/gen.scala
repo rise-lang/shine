@@ -176,8 +176,8 @@ object gen {
           (hostFunDefToHostPart() x map(kernelDefToKernel()))
     }
 
-    private def hostFunDefToHostPart(gen: HostCodeCodeGenerator =
-                                        shine.OpenCL.Compilation.HostCodeCodeGenerator()
+    private def hostFunDefToHostPart(gen: HostCodeGenerator =
+                                        shine.OpenCL.Compilation.HostCodeGenerator()
                                     ): FunDef => CModule =
       HostCodeModuleGenerator.funDefToModule(gen)
 
