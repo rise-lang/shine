@@ -22,15 +22,15 @@ object explorationTutorial {
               reduce(add)(l(0.0f)) )) )) ))
 
   // fuse reduce and map
-  val mmsFused = (`map >> reduce -> reduce` `@` everywhere)(mm).get
+//  val mmsFused = (`map >> reduce -> reduce` `@` everywhere)(mm).get
 
   def main(args: Array[String]): Unit = {
 
     // run exploration with iterative improvement
-    riseExploration(mmsFused, "exploration/configuration/mm_example_iterative_improvement.json")
+    riseExploration(mm, "exploration/configuration/mm_example_iterative_improvement.json")
 
     // run exploration with random
-    riseExploration(mmsFused, "exploration/configuration/mm_example_random.json")
+    riseExploration(mm, "exploration/configuration/mm_example_random.json")
 
     // find results in exploration/ folder
   }

@@ -3,12 +3,8 @@ package exploration.strategies
 import elevate.core._
 import elevate.core.strategies.basic._
 import rise.elevate.Rise
-//import elevate.core.strategies.debug.peek
-//import rise.core.IsClosedForm
 import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
-//import rise.core.TypedDSL._
-//import rise.core.types._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal._
@@ -21,8 +17,6 @@ import rise.elevate.strategies.tiling._
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
 import rise.elevate.NormalizedThen
-
-//import _root_.util.gen
 
 // scalastyle:off
 object defaultStrategies {
@@ -43,7 +37,7 @@ object defaultStrategies {
 
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
   val blocking: Strategy[Rise] =
-//    baseline `;`
+    baseline `;`
       (tile(32,32)        `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
       (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
@@ -61,12 +55,12 @@ object defaultStrategies {
   // -- LOOP PERMUTATION -------------------------------------------------------
 
   val loopPerm: Strategy[Rise] =
-//    baseline `;`
-    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
-    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-    (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-    reorder(List(1,2,5,3,6,4)) `;;`
-    (vectorize(32) `@` innermost(isFullyAppliedMap))
+    baseline `;`
+      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(List(1,2,5,3,6,4)) `;;`
+      (vectorize(32) `@` innermost(isFullyAppliedMap))
 
 
   // -- ARRAY PACKING ----------------------------------------------------------
@@ -118,4 +112,4 @@ object defaultStrategies {
     par
   )
 
-  }
+}
