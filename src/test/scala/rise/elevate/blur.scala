@@ -60,7 +60,7 @@ class blur extends test_util.Tests {
 
 
   test("CPU par") {
-    run("CPU par", vectorization)
+    run("CPU par", cpuPar)
   }
 
 
