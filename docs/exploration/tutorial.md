@@ -32,7 +32,7 @@ by applying rewrite rules (and more generally
 explorative process that is guided by [Heuristic Search Algorithms](/exploration/exploration#heuristic-search-algorithms).
 
 ## Overview
-In this basic tutorial we walk though an example on how to configure and
+In this basic tutorial we walk through an example on how to configure and
 perform an exploration run.
 
 We start with a definition of a High-Level RISE program for
