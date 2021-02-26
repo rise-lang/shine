@@ -1,6 +1,6 @@
 ---
-title: An overview of the RISE language, and the Shine compiler
-sidebar_label: Overview
+title: A tutorial of the RISE language, and the Shine compiler
+sidebar_label: Tutorial of RISE and Shine
 ---
 ```scala mdoc:invisible
 import elevate.core._
