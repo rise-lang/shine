@@ -24,7 +24,6 @@ module.exports = {
         },
       ],
     },
-    sidebarCollapsible: false,
     prism: {
       additionalLanguages: ['scala'],
       theme: require('prism-react-renderer/themes/dracula'),
