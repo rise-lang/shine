@@ -4,8 +4,8 @@ sidebar_label: Exploration Overview
 ---
 
 Our _Heuristic Search based Exploration_ allows to automatically optimize
-[High-Level RISE Programs](tutorial#high-level-program) by applying rewrite rules
-(and more generally _[ELEVATE Optimization Strategies](tutorial#optimization-strategy)_)
+[High-Level RISE Programs](/tutorial#high-level-program) by applying rewrite rules
+(and more generally _[ELEVATE Optimization Strategies](/tutorial#optimization-strategy)_)
 in an explorative process that is guided by _[Heuristic Search Algorithms](#heuristic-search-algorithms)_.
 
 ## Heuristic Search Algorithms

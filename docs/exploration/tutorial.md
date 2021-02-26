@@ -25,12 +25,24 @@ def printJsonFile(file: String): Unit = {
 }
 ```
 
-### Initialize RISE expression
+The Heuristic Search based Exploration allows to automatically optimize a
+[High-Level RISE Program](/tutorial#high-level-program)
+by applying rewrite rules (and more generally
+[ELEVATE Optimization Strategies](/tutorial#optimization-strategy)) in an
+explorative process that is guided by [Heuristic Search Algorithms](/exploration/exploration#heuristic-search-algorithms).
+
+## Overview
+In this basic tutorial we walk though an example on how to configure and
+perform an exploration run.
+
+We start with a definition of a High-Level RISE program for
+matrix-matrix multiplication:
 ```scala mdoc:silent
 // input size
-val N = 1 << 9
+val N = 512
 
-// define matrix-matrix multiplication in RISE
+// definition of matrix-matrix multiplication
+// as a high-level program in RISE
 val mm =
   fun(ArrayType(N, ArrayType(N, f32)))(a =>
     fun(ArrayType(N, ArrayType(N, f32)))(b =>
@@ -41,36 +53,77 @@ val mm =
             reduce(add)(l(0.0f)) )) )) ))
 ```
 
-```scala mdoc:silent
-// fuse reduce and map
-val mmsFused =
-    (`map >> reduce -> reduce` `@` everywhere)(mm).get
-```
+Our goal is to perform an exploration by applying ELEVATE Optimization Strategies
+to this program in an explorative process guided by Heuristic Search Algorithms.
+For this we have to configure the exploration process.
 
-### Configuration of Exploration
-A very simple example. It combines the Iterative Improvement algorithm with the C Executor.
+## Configuration of Exploration Process
+The exploration process is configured with a `JSON` configuration file.
+We show two examples here.
+
+#### Configuration using Iterative Improvement Search
+First, a simple example using the iterative improvement
+(aka, iterative refinement, or [local search](https://en.wikipedia.org/wiki/Metaheuristic#Local_search_vs._global_search)) heuristic search algorithm.
+We also specify that we evaluate the performance function `f` that guides our
+exploration process by compiling the rewritten program candidate to C and
+executing it.
+
+The corresponding `JSON` configuration file
 ```scala mdoc:passthrough
 val iiFile = "exploration/configuration/mm_example_iterative_improvement.json"
 println(s""" `"$iiFile"` """)
+```
+looks like this:
+```scala mdoc:passthrough
 printJsonFile(iiFile)
 ```
+
+#### Configuration using Random Search
+The second example is similar and uses the Random Search Heuristic.
+
+The corresponding `JSON` configuration file
+```scala mdoc:passthrough
+val randomFile = "exploration/configuration/mm_example_random.json"
+println(s""" `"$randomFile"` """)
+```
+looks like this:
+```scala mdoc:passthrough
+printJsonFile(randomFile)
+```
+
+## Start Exploration Process
+Once we have provided a configuration we can simply start the exploration
+process using the `riseExploration` function.
+
+#### Perform Exploration with Iterative Improvement Search
 ```scala mdoc:compile-only
 // run exploration with iterative improvement
 val iterativeImprovementConfig =
     "exploration/configuration/mm_example_iterative_improvement.json"
-riseExploration(mmsFused, iterativeImprovementConfig)
+riseExploration(mm, iterativeImprovementConfig)
 ```
 
-Another example. The Random algorithm on top combined with the C Executor.
-```scala mdoc:passthrough
-val randomFile = "exploration/configuration/mm_example_random.json"
-println(s""" `"$randomFile"` """)
-printJsonFile(randomFile)
-```
-
+#### Perform Exploration with Random Search
 ```scala mdoc:compile-only
 // run exploration with random
 val randomConfig =
     "exploration/configuration/mm_example_iterative_improvement.json"
-riseExploration(mmsFused, randomConfig)
+riseExploration(mm, randomConfig)
 ```
+
+## Output of Exploration Process
+The exploration process will take a couple of minutes to complete.
+Once complete, the folder specified as `output` in the configuration file
+(in the examples above this is `"exploration"`) will contain a new subfolder
+containing the results of the exploration process.
+This subfolder contains:
+ - a copy of the configuration file used for the exploration
+ - a subfolder containing:
+   - A `csv` file containing an overview of the runtime measured for each
+     evaluated candidate program
+   - A copy of each rewritten candidate program evaluated (in various forms)
+   - The log files of the executor for the execution of ever single iteration
+     evaluated as part of the exploration process
+
+This information makes it easy to identify the best found expression, as well
+as producing graphs investigating the exploration process itself. 
