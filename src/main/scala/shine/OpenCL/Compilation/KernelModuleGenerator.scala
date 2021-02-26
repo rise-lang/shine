@@ -19,9 +19,6 @@ object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
   override type Module = KernelModule
   override type CodeGenerator = KernelCodeGenerator
 
-  override def makeFunDef(name: String): Phrase[_ <: PhraseType] => KernelDef =
-    KernelDef(name, _)
-
   override def createOutputParam(outT: ExpType): Identifier[AccType] =
     CModuleGenerator.createOutputParam(outT)
 
@@ -31,6 +28,15 @@ object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
                                   ): Phrase[ExpType] => Phrase[CommType] =
     CModuleGenerator.rewriteToImperative(gen, funDef, outParam)
 
+
+  override def makeModule(gen: KernelCodeGenerator,
+                          funDef: KernelDef,
+                          outParam: Identifier[AccType]
+                         ): Phrase[CommType] => KernelModule =
+    imperativePasses(gen, funDef, outParam) andThen
+      generateCode(gen, funDef) andThen
+      makeKernelModule(funDef)
+
   type PhraseAfterPasses = (
       Identifier[AccType],
       Seq[Identifier[ExpType]],
@@ -38,13 +44,13 @@ object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
       Seq[C.AST.ParamDecl],
       Phrase[CommType]
     )
-  override def imperativePasses(gen: KernelCodeGenerator,
-                                funDef: KernelDef,
-                                outParam: Identifier[AccType]
-                               ): Phrase[CommType] => PhraseAfterPasses = {
+  def imperativePasses(gen: KernelCodeGenerator,
+                       funDef: KernelDef,
+                       outParam: Identifier[AccType]
+                      ): Phrase[CommType] => PhraseAfterPasses = {
       InjectWorkItemSizes.inject(funDef.wgConfig) andThen
       FlagPrivateArrayLoops.flag andThen
-      CModuleGenerator.imperativePasses(gen, funDef, outParam) andThen
+      CModuleGenerator.imperativePasses andThen
       InsertMemoryBarriers.insert andThen
       HoistMemoryAllocations.hoist andThen
       AdaptKernelParameters.adapt(gen, outParam, funDef.params)
@@ -57,10 +63,8 @@ object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
       Seq[C.AST.Decl],
       C.AST.Stmt
     )
-  override def generateCode(gen: KernelCodeGenerator,
-                            funDef: KernelDef,
-                            outParam: Identifier[AccType]
-                           ): PhraseAfterPasses => GeneratedCode = {
+  def generateCode(gen: KernelCodeGenerator,
+                   funDef: KernelDef): PhraseAfterPasses => GeneratedCode = {
     case (outParam, params, temps, kernelParams, p) =>
       val identMap: Map[Identifier[_ <: BasePhraseType], C.AST.DeclRef] =
         (outParam +: params).map( p => p -> C.AST.DeclRef(p.name) ).toMap
@@ -86,10 +90,7 @@ object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
         ((outParam, temps, kernelParams) ++ _) )
   }
 
-  override def makeModule(gen: KernelCodeGenerator,
-                          funDef: KernelDef,
-                          outParam: Identifier[AccType]
-                         ): GeneratedCode => KernelModule = {
+  def makeKernelModule(funDef: KernelDef): GeneratedCode => KernelModule = {
     case (outParam, temps, kernelParams, declarations, code) =>
       KernelModule(
         decls = CModuleGenerator.collectTypeDeclarations(code, kernelParams) ++

@@ -14,9 +14,6 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
   override type Module = C.Module
   override type CodeGenerator = HostCodeGenerator
 
-  override def makeFunDef(name: String): Phrase[_ <: PhraseType] => FunDef =
-    CModuleGenerator.makeFunDef(name)
-
   override def createOutputParam(outT: ExpType): Identifier[AccType] =
     outT.dataType match {
       case _: ManagedBufferType => identifier("output", AccType(outT.dataType))
@@ -29,19 +26,25 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
                                   ): Phrase[ExpType] => Phrase[CommType] =
     CModuleGenerator.rewriteToImperative(gen, funDef, outParam)
 
-  override type PhraseAfterPasses = CModuleGenerator.PhraseAfterPasses
-  override def imperativePasses(gen: HostCodeGenerator,
-                                funDef: FunDef,
-                                outParam: Identifier[AccType]
-                               ): Phrase[CommType] => Phrase[CommType] =
-    HostManagedBuffers.insert(funDef.params, outParam) andThen
-      CModuleGenerator.imperativePasses(gen, funDef, outParam)
 
-  override type GeneratedCode = CModuleGenerator.GeneratedCode
-  override def generateCode(gen: HostCodeGenerator,
-                            funDef: FunDef,
-                            outParam: Identifier[AccType]
-                           ): Phrase[CommType] => (Seq[Decl], Stmt) = {
+  override def makeModule(gen: HostCodeGenerator,
+                          funDef: FunDef,
+                          outParam: Identifier[AccType]
+                         ): Phrase[CommType] => Module =
+    imperativePasses(funDef, outParam) andThen
+      generateCode(gen, funDef, outParam) andThen
+      makeHostCodeModule(gen, funDef, outParam)
+
+  def imperativePasses(funDef: FunDef,
+                       outParam: Identifier[AccType]
+                      ): Phrase[CommType] => Phrase[CommType] =
+    HostManagedBuffers.insert(funDef.params, outParam) andThen
+      CModuleGenerator.imperativePasses
+
+  def generateCode(gen: HostCodeGenerator,
+                   funDef: FunDef,
+                   outParam: Identifier[AccType]
+                  ): Phrase[CommType] => (Seq[Decl], Stmt) = {
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       optionallyManagedParams(funDef.params, outParam)
         .map(p => p -> C.AST.DeclRef(p.name)).toMap,
@@ -50,10 +53,10 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
     gen.generate(funDef.topLevelLetNats, env)
   }
 
-  override def makeModule(gen: HostCodeGenerator,
-                          funDef: FunDef,
-                          outParam: Identifier[AccType]
-                         ): ((Seq[Decl], Stmt)) => Module = {
+  def makeHostCodeModule(gen: HostCodeGenerator,
+                         funDef: FunDef,
+                         outParam: Identifier[AccType]
+                        ): ((Seq[Decl], Stmt)) => Module = {
     case (declarations, code) =>
       val params = C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")) +:
         optionallyManagedParams(funDef.params, outParam).map(makeParam(gen))

@@ -42,7 +42,8 @@ object gen {
 
   private def funDefToFunction(name: String,
                                gen: CCodeGenerator): Phrase => CModule =
-    CModuleGenerator.generateFunction(name, gen)
+    (FunDef(name, _)) andThen
+      CModuleGenerator.funDefToModule(gen)
 
   private def functionFromExpr(name: String = "foo",
                                gen: CCodeGenerator = CCodeGenerator()

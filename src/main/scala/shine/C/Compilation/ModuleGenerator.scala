@@ -18,9 +18,6 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
   override type Module = C.Module
   override type CodeGenerator = Compilation.CodeGenerator
 
-  override def makeFunDef(name: String): Phrase[_ <: PhraseType] => FunDef =
-    FunDef(name, _)
-
   override def createOutputParam(outT: ExpType): Identifier[AccType] =
     outT.dataType match {
       case _: BasicType =>
@@ -55,20 +52,24 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
       run(TypeCheck(_)) )
   }
 
-  override type PhraseAfterPasses = Phrase[CommType]
-  override def imperativePasses(gen: CodeGenerator,
-                                funDef: FunDef,
-                                outParam: Identifier[AccType]
-                               ): Phrase[CommType] => Phrase[CommType] = {
+  override def makeModule(gen: CodeGenerator,
+                          funDef: FunDef,
+                          outParam: Identifier[AccType]
+                         ): Phrase[CommType] => Module = {
+    imperativePasses andThen
+      generateCode(gen, funDef, outParam) andThen
+      makeCModule(gen, funDef, outParam)
+  }
+
+  def imperativePasses: Phrase[CommType] => Phrase[CommType] = {
     UnrollLoops.unroll andThen
     SimplifyNats.simplify
   }
 
-  override type GeneratedCode = (Seq[C.AST.Decl], C.AST.Stmt)
-  override def generateCode(gen: CodeGenerator,
-                            funDef: FunDef,
-                            outParam: Identifier[AccType]
-                           ): Phrase[CommType] => (Seq[gen.Decl], gen.Stmt) = {
+  def generateCode(gen: CodeGenerator,
+                   funDef: FunDef,
+                   outParam: Identifier[AccType]
+                  ): Phrase[CommType] => (Seq[gen.Decl], gen.Stmt) = {
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       (outParam +: funDef.params).map(p => p -> C.AST.DeclRef(p.name)).toMap,
       immutable.Map.empty, immutable.Map.empty, immutable.Map.empty)
@@ -76,10 +77,10 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
     gen.generate(funDef.topLevelLetNats, env)
   }
 
-  override def makeModule(gen: CodeGenerator,
-                          funDef: FunDef,
-                          outParam: Identifier[AccType]
-                         ): ((Seq[gen.Decl], gen.Stmt)) => Module = {
+  def makeCModule(gen: CodeGenerator,
+                  funDef: FunDef,
+                  outParam: Identifier[AccType]
+                 ): ((Seq[gen.Decl], gen.Stmt)) => Module = {
     case (declarations, code) =>
       val params = (outParam +: funDef.params).
         map(C.AST.makeParam(C.AST.makeParamTy(gen)))
