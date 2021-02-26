@@ -5,6 +5,7 @@ import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
+import exploration.strategies.standardStrategies.{vectorization}
 import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D}
 import rise.core.DSL.{fun, l}
 import rise.core.primitives._
@@ -49,25 +50,17 @@ class blur extends test_util.Tests {
     normalize.apply(fuseReduceMap `@` topDown[Rise])
 
   test("CPU seq") {
-    println("blur: " + blur)
-
-    val base = cpu.apply(blur)
-    println("base: " + base)
-
-    val lowered = lowerToC.apply(base.get)
-    println("lowered: " + lowered)
-
-    val code = gen.openmp.function("gaussian").asStringFromExpr(lowered.get)
-    println("code: " + code)
+    run("CPU seq", cpu)
   }
 
-  val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
   val cpuPar: Strategy[Rise] = cpu `;;`
-    (parallel()    `@` outermost(isApplied(isMap))) `;;`
-    debug[Rise]("after par")
+    (vectorize(32) `@` innermost(isApplied(isMap))) `;;`
+    (parallel()    `@` outermost(isApplied(isMap)))
+
+
 
   test("CPU par") {
-    run("CPU par", cpuPar)
+    run("CPU par", vectorization)
   }
 
 
