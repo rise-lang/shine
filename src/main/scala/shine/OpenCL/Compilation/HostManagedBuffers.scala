@@ -33,7 +33,7 @@ object HostManagedBuffers {
     device_reads: mutable.Set[Identifier[_ <: PhraseType]],
     device_writes: mutable.Set[Identifier[_ <: PhraseType]])
 
-  private object Metadata {
+  private object ReadsAndWrites {
     def empty: ReadsAndWrites =
       ReadsAndWrites(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
   }
@@ -72,7 +72,7 @@ object HostManagedBuffers {
         i -> access
       }).toMap
       env.foreach { case (i, a) => recordManagedAccess(managed, i, a) }
-      (HostExecution(env, p2), Metadata.empty)
+      (HostExecution(env, p2), ReadsAndWrites.empty)
     }
   }
 
