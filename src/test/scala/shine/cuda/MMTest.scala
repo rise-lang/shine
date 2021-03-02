@@ -67,7 +67,7 @@ class MMTest extends test_util.TestsWithYACX {
     val resultTest = computeGold(matrixATest, matrixBTest)
 
     //Execute kernel
-    try {
+    if (executeCudaTests) {
       val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` scala.Array[scala.Array[Float]] `,`
         scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
@@ -85,8 +85,6 @@ class MMTest extends test_util.TestsWithYACX {
         println()
         throw new Exception("False Result")
       }
-    } catch {
-      case _: UnsatisfiedLinkError => System.err.println("Yacx not builded")
     }
   }
 
@@ -163,7 +161,7 @@ class MMTest extends test_util.TestsWithYACX {
     val resultTest = computeGold(matrixATest, matrixBTest)
 
     //Execute kernel
-    try {
+    if (executeCudaTests) {
       val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` Int `,` scala.Array[scala.Array[Float]] `,`
         scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
@@ -181,8 +179,6 @@ class MMTest extends test_util.TestsWithYACX {
         println()
         throw new Exception("False Result")
       }
-    } catch {
-    case _: UnsatisfiedLinkError => System.err.println("Yacx not builded")
     }
   }
 
@@ -317,8 +313,9 @@ class MMTest extends test_util.TestsWithYACX {
     val resultTest = computeGold(matrixATest, matrixBTest)
 
     //Execute kernel
-    try {
-      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,`
+    if (executeCudaTests) {
+      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
+        Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,`
         scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
       val (result, _) = scalaFun(mTest `,` nTest `,` kTest `,` matrixATest `,` matrixBTest)
@@ -335,8 +332,6 @@ class MMTest extends test_util.TestsWithYACX {
         println()
         throw new Exception("False Result")
       }
-    } catch {
-      case _: UnsatisfiedLinkError => System.err.println("Yacx not builded")
     }
   }
 

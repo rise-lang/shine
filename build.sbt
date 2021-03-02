@@ -22,7 +22,8 @@ lazy val riseAndShine = (project in file("."))
     name          := "riseAndShine",
     version       := "1.0",
 
-    javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build", "-Xss26m"),
+    javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build",
+      "-DexecuteCudaTests=false", "-Xss26m"),
 
     commonSettings,
 

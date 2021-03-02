@@ -55,9 +55,9 @@ class gemmTensorCheck extends test_util.TestsWithYACX {
 
     val kernel = gen.cuda.kernel("gemm").fromExpr(gemmKernel)
 
-    try{
-      println(shine.cuda.KernelModule.translationToString(kernel))
+    println(shine.cuda.KernelModule.translationToString(kernel))
 
+    if (executeCudaTests) {
       val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
         Int `,` Int `,` Int `,` Float `,` Float `,`
         Array[Array[Float]] `,` Array[Array[Float]] `,` Array[Array[Float]]
@@ -68,8 +68,6 @@ class gemmTensorCheck extends test_util.TestsWithYACX {
       val (output, _) =  run(LocalSize(32), GlobalSize(32))(m `,` n `,` k `,` alpha `,` beta `,` aMatrix `,` bMatrix `,` c)
 
       checkResult(gold, output)
-    } catch {
-      case _: UnsatisfiedLinkError => System.err.println("UnsatisfiedLinkError")
     }
   }
 
@@ -85,9 +83,9 @@ class gemmTensorCheck extends test_util.TestsWithYACX {
       else
         mmCheckUtils.compilerOptions.appended("-maxrregcount=120")
 
-    try {
-      println(shine.cuda.KernelModule.translationToString(kernel))
+    println(shine.cuda.KernelModule.translationToString(kernel))
 
+    if (executeCudaTests) {
       val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[ScalaFunction `(`
         Int `,` Int `,` Int `,` Float `,` Float `,`
         Array[Array[Float]] `,` Array[Array[Float]] `,` Array[Array[Float]]
@@ -98,8 +96,6 @@ class gemmTensorCheck extends test_util.TestsWithYACX {
       val (output, _) =  run(m `,` n `,` k `,` alpha `,` beta `,` aMatrix `,` bMatrix `,` c)
 
       checkResult(gold, output)
-    } catch {
-      case _: UnsatisfiedLinkError => System.err.println("UnsatisfiedLinkError")
     }
   }
 

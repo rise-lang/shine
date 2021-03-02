@@ -18,9 +18,9 @@ class mmTensorCheck extends test_util.TestsWithYACX {
 
     val kernel = gen.cuda.kernel("mm").fromExpr(simpleMatMulTile)
 
-    try {
-      println(shine.cuda.KernelModule.translationToString(kernel))
+    println(shine.cuda.KernelModule.translationToString(kernel))
 
+    if (executeCudaTests) {
       val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
         Array[Array[Float]] `,` Array[Array[Float]]
         `)=>` Array[Float]]
@@ -28,8 +28,6 @@ class mmTensorCheck extends test_util.TestsWithYACX {
       val (output, _) =  run(LocalSize(1), GlobalSize(32))(a `,` b)
 
       checkResult(output, gold)
-    } catch {
-      case _: UnsatisfiedLinkError => System.err.println("UnsatisfiedLinkError")
     }
   }
 
@@ -112,14 +110,15 @@ class mmTensorCheck extends test_util.TestsWithYACX {
   }
 
 
-  private def executeMM(mmKernel: Expr, matrixBTranspose: Boolean = false, matrixATranspose: Boolean = false) : Unit = {
+  private def executeMM(mmKernel: Expr, matrixBTranspose: Boolean = false,
+                        matrixATranspose: Boolean = false) : Unit = {
     val (a, b, gold) = generateGold(m, n, k)
 
     val kernel = gen.cuda.kernel("mm").fromExpr(mmKernel)
 
-    try {
-        println(shine.cuda.KernelModule.translationToString(kernel))
+    println(shine.cuda.KernelModule.translationToString(kernel))
 
+    if (executeCudaTests) {
         val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
           Int `,` Int `,` Int `,`
           Array[Array[Float]] `,` Array[Array[Float]]
@@ -132,8 +131,6 @@ class mmTensorCheck extends test_util.TestsWithYACX {
         val (output, _) =  run(LocalSize(32), GlobalSize(32))(m `,` n `,` k `,` aMatrix `,` bMatrix)
 
         checkResult(gold, output)
-    } catch {
-      case _: UnsatisfiedLinkError => System.err.println("UnsatisfiedLinkError")
     }
   }
 
@@ -150,9 +147,9 @@ class mmTensorCheck extends test_util.TestsWithYACX {
       else
         mmCheckUtils.compilerOptions.appended("-maxrregcount=80")
 
-    try {
-      println(shine.cuda.KernelModule.translationToString(kernel))
+    println(shine.cuda.KernelModule.translationToString(kernel))
 
+    if (executeCudaTests) {
       val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[ScalaFunction `(`
         Int `,` Int `,` Int `,`
         Array[Array[Float]] `,` Array[Array[Float]]
@@ -163,8 +160,6 @@ class mmTensorCheck extends test_util.TestsWithYACX {
       val (output, _) =  run((m `,` n `,` k `,` aMatrix `,` bMatrix))
 
       checkResult(gold, output)
-    } catch {
-      case _: UnsatisfiedLinkError => System.err.println("UnsatisfiedLinkError")
     }
   }
 

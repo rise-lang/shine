@@ -1,7 +1,7 @@
 package exploration
 
 import org.scalatest.Ignore
-import rise.core.DSL.{fun, lf64}
+import rise.core.DSL.{fun, lf32}
 import rise.core.primitives._
 import rise.core.types.{ArrayType, f32}
 
@@ -17,7 +17,7 @@ class explore extends test_util.Tests {
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
         map(fun(ak =>
           map(fun(bk =>
-            (reduce(add)(l(0.0f)) o
+            (reduce(add)(lf32(0.0f)) o
               map(fun(x => fst(x) * snd(x)))) $
               zip(ak)(bk))) $ transpose(b) )) $ a))
 //  )
@@ -27,7 +27,7 @@ class explore extends test_util.Tests {
   val dot = //infer(
     fun(ArrayType(N, f32))(a =>
       fun(ArrayType(N, f32))(b =>
-        reduce(add)(l(0.0f)) o map(fun(x => fst(x) * snd(x))) $ zip(a)(b)))
+        reduce(add)(lf32(0.0f)) o map(fun(x => fst(x) * snd(x))) $ zip(a)(b)))
 //  )
 
   val scal = //infer(

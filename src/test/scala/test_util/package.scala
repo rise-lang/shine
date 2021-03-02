@@ -1,4 +1,3 @@
-import arithexpr.arithmetic.ArithExpr.Math
 import opencl.executor.Executor
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
@@ -20,12 +19,11 @@ package object test_util {
   }
 
   abstract class TestsWithYACX extends Tests with BeforeAndAfter {
+    val executeCudaTests = sys.props.getOrElse("executeCudaTests", "false").toBoolean
+
     before {
-      try {
+      if (executeCudaTests)
         yacx.Executor.loadLibrary()
-      } catch {
-        case _:UnsatisfiedLinkError => System.err.println("Yacx library not found!")
-      }
     }
   }
 
