@@ -1,11 +1,10 @@
 package shine.cuda
 
-import shine.OpenCL.{GlobalSize, LocalSize}
-import shine.{C, cuda}
-import shine.cuda.primitives.imperative.CudaKernelDefinition
+import shine.C
+import shine.cuda.AST.Kernel
 
 case class KernelModule(decls: Seq[C.AST.Decl],
-                        kernels: Seq[cuda.Kernel]) {
+                        kernels: Seq[Kernel]) {
   def compose(other: KernelModule): KernelModule =
     KernelModule((decls ++ other.decls).distinct, kernels ++ other.kernels)
 }
@@ -15,12 +14,8 @@ object KernelModule {
 
   def translationToString(m: KernelModule): String =
     s"""
-       |${m.decls.map(shine.cuda.ast.Printer(_)).mkString("\n")}
+       |${m.decls.map(shine.cuda.AST.Printer(_)).mkString("\n")}
        |
-       |${m.kernels.map(k => shine.cuda.ast.Printer(k.code)).mkString("\n")}
+       |${m.kernels.map(k => shine.cuda.AST.Printer(k.code)).mkString("\n")}
        |""".stripMargin
-
-  def fromKernelDef(wgConfig: Option[(LocalSize, GlobalSize)])
-                   (kernelDef: CudaKernelDefinition): KernelModule =
-    kernelDef.translateToModule(shine.cuda.CodeGenerator())(wgConfig)
 }

@@ -5,7 +5,7 @@ import rise.core.types._
 import rise.core.DSL._
 import rise.core.primitives._
 import Type._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 
 class fft extends test_util.Tests {
   def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr = {

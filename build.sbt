@@ -57,3 +57,11 @@ lazy val executor   = (project in file("lib/executor"))
 lazy val CUexecutor = (project in file("lib/yacx"))
 
 lazy val elevate    = (project in file("lib/elevate"))
+
+lazy val docs = (project in file("riseAndShine-docs"))
+  .settings(
+    moduleName := "riseAndShine-docs",
+    mdocOut := file("docs-website/docs"),
+  )
+  .enablePlugins(MdocPlugin)
+  .dependsOn(riseAndShine)

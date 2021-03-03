@@ -115,7 +115,7 @@ private class InferAccessAnnotation {
     ctx: Context,
     isKernelParamFun: Boolean
   ): (PhraseType, Subst) = {
-    e match {
+    val (pt, s) = e match {
       case i: r.Identifier =>
         val pt = ctx(i)
         ptAnnotationMap.put(i, pt)
@@ -135,6 +135,19 @@ private class InferAccessAnnotation {
         inferDepApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
       case p: r.Primitive => inferPrimitive(p)
     }
+    // the kernel output must be 'write'
+    if (isKernelParamFun) {
+      pt match {
+        case et: ExpType => subUnifyPhraseType(et, ExpType(et.dataType, write)) match {
+          case Success(subst) => return (subst(pt), subst(s))
+          case Failure(exception) =>
+            error(s"The program does not specify how to write the result " +
+              s"of the program into its output: $exception")
+        }
+        case _ =>
+      }
+    }
+    (pt, s)
   }
 
   private def inferLambda(
@@ -282,6 +295,17 @@ private class InferAccessAnnotation {
       case rp.toMem() => p.t match {
         case (t: rt.DataType) ->: (_: rt.DataType) =>
           expT(t, write) ->: expT(t, read)
+        case _ => error()
+      }
+
+      case roclp.oclRunPrimitive() => p.t match {
+        case ls1 `(Nat)->:` (ls2 `(Nat)->:` (ls3 `(Nat)->:`
+          (gs1 `(Nat)->:` (gs2 `(Nat)->:` (gs3 `(Nat)->:`
+          ((t: rt.DataType) ->: (_: rt.DataType))
+        ))))) =>
+          nFunT(ls1, nFunT(ls2, nFunT(ls3,
+            nFunT(gs1, nFunT(gs2, nFunT(gs3,
+              expT(t, write) ->: expT(t, write)))))))
         case _ => error()
       }
 

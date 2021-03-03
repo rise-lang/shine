@@ -3,7 +3,7 @@ package shine.DPIA
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openMP.primitives._
 import util.gen
 import util.gen.c.function

@@ -18,10 +18,6 @@ object cameraPipeline {
   val max: ToBeTyped[Expr] = foreignFun("max_i16", i16 ->: i16 ->: i16)
   val pow: ToBeTyped[Expr] = foreignFun("pow_f32", f32 ->: f32 ->: f32)
 
-  def li16(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i16
-  def li32(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i32
-  def lu8(v: Int): ToBeTyped[Expr] = cast(l(v)) :: u8
-
   // average two positive values rounding up
   val avg: ToBeTyped[Expr] =
     depFun((dt: DataType) => depFun((compute_dt: DataType) =>

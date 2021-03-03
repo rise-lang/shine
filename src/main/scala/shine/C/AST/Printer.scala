@@ -117,16 +117,17 @@ class CPrinter extends Printer {
   private def printVarDecl(v: VarDecl): Unit = {
     if (v.t.const) print("const ")
     v.t match {
-      case b: BasicType => print(s"${b.print} ${v.name}")
+      case b: BasicType => print(s"${b.name} ${v.name}")
+      case o: OpaqueType => print(s"${o.name} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")
       case _: UnionType => ???
       case a: ArrayType =>
         // float name[s];
-        print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
+        print(s"${typeName(a.getBaseType)} ${v.name}[${ a.getSizes match {
           case None => ""
           case Some(s) => toString(s)
         } }]")
-      case p: PointerType => print(s"${p.valueType}* ${v.name}")
+      case p: PointerType => print(s"${typeName(p.valueType)}* ${v.name}")
     }
     v.init match {
       case None =>
@@ -140,13 +141,14 @@ class CPrinter extends Printer {
     if (p.t.const) print("const ")
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
+      case o: OpaqueType => print(s"${o.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
-      case a: ArrayType => print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
+      case a: ArrayType => print(s"${typeName(a.getBaseType)} ${p.name}[${ a.getSizes match {
         case None => ""
         case Some(s) => toString(s)}
       }]")
-      case pt: PointerType => print(s"${pt.valueType}* ${p.name}")
+      case pt: PointerType => print(s"${typeName(pt.valueType)}* ${p.name}")
     }
   }
 
@@ -317,7 +319,7 @@ class CPrinter extends Printer {
 
   private def printCast(c: Cast): Unit = {
     print("(")
-    print(s"(${c.t})")
+    print(s"(${typeName(c.t)})")
     printExpr(c.e)
     print(")")
   }
@@ -328,7 +330,8 @@ class CPrinter extends Printer {
 
   private def printArrayLiteral(al: ArrayLiteral): Unit = {
     print("((")
-    print(s"${al.t.getBaseType}[${ al.t.getSizes match {
+    if (al.t.const) { print("const ") }
+    print(s"${typeName(al.t.getBaseType)}[${ al.t.getSizes match {
       case None => ""
       case Some(s) => toString(s)
     } }]")
@@ -343,7 +346,7 @@ class CPrinter extends Printer {
   }
 
   private def printRecordLiteral(rl: RecordLiteral): Unit = {
-    print(s"(${rl.t})")
+    print(s"(${typeName(rl.t)})")
     print("{ ")
     printExpr(rl.fst)
     print(", ")

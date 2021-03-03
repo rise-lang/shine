@@ -6,7 +6,7 @@ import rise.core.primitives._
 import Type._
 import rise.core.types._
 import rise.core.types.AddressSpace._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 
 class OclToMem extends test_util.Tests {

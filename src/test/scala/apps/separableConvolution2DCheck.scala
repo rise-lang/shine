@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
 
   // FIXME: code generation cannot evaluate index literal
   ignore("compiling OpenCL private arrays should unroll loops") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.openCL.primitives.oclReduceSeq
 
     val dotSeqPrivate = fun(a => fun(b =>

@@ -102,6 +102,16 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
+// FIXME: this should be a backend extension
+object ContextType extends DataType {
+  override def toString: String = s"context"
+}
+
+// FIXME: this should be a backend extension
+final case class ManagedBufferType(dt: DataType) extends ComposedType {
+  override def toString: String = s"managed($dt)"
+}
+
 final case class DepArrayType private (size: Nat, elemFType: NatToData)
   extends ComposedType
 {
@@ -222,6 +232,7 @@ object DataType {
     case _: BasicType => 1
     case _: PairType => 1
     case _: DepPairType => 1
+    case ManagedBufferType(dt) => getTotalNumberOfElements(dt)
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
@@ -231,7 +242,7 @@ object DataType {
         case NatToDataIdentifier(_) =>
           throw new Exception("This should not happen")
       }
-    case _: DataTypeIdentifier | _: NatToDataApply =>
+    case _: DataTypeIdentifier | _: NatToDataApply | ContextType =>
       throw new Exception("This should not happen")
   }
 
@@ -240,9 +251,11 @@ object DataType {
     case _: PairType => 1 // TODO: is this correct?
     case _: DepPairType => 1
     case VectorType(size, _) => size
+    case ManagedBufferType(dt) => getSize(dt)
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
-    case _ =>
+    case _: DataTypeIdentifier | _: NatToDataApply | _: FragmentType
+         | _: pipeline.type | ContextType =>
       throw new Exception("This should not happen")
   }
 
@@ -259,10 +272,11 @@ object DataType {
     case _: PairType => dt
     case _: DepPairType => dt
     case _: DataTypeIdentifier => dt
+    case ManagedBufferType(dt) => getBaseDataType(dt)
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getBaseDataType(elemType)
-    case DepArrayType(_, _) | _: NatToDataApply =>
+    case DepArrayType(_, _) | _: NatToDataApply | ContextType =>
       throw new Exception("This should not happen")
   }
 

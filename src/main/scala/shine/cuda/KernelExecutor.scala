@@ -2,11 +2,12 @@ package shine.cuda
 
 import arithexpr.arithmetic._
 import shine.C.AST.ParamDecl
-import shine.C.ParamMetaData
+import shine.C.AST.ParamKind
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL
 import shine.OpenCL.{FunctionHelper, GlobalSize, HList, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
+import shine.cuda.AST.Kernel
 import util.Time.ms
 import util.{Time, TimeSpan}
 import util.gen
@@ -83,7 +84,7 @@ object KernelExecutor {
     val kernel: Kernel = ktu.kernels.head
     val dynamicSharedMemory = kernel.dynamicSharedMemory
     val code: String = gen.cuda.kernel.asString(ktu)
-    val outputParam: (ParamDecl, ParamMetaData) = kernel.outputParams.head
+    val outputParam: (ParamDecl, ParamKind) = kernel.outputParams.head
 
     /** This method will return a Scala function which executed the kernel via CUDA or OpenCL and returns its
       * // result and the time it took to execute the kernel.
@@ -481,10 +482,10 @@ object KernelExecutor {
       * @param parameter The OpenCL parameter as appearing in the generated kernel
       * @param argValue For non-intermediate input parameters, this carries the scala value to pass in the executor
       */
-    private case class Argument(parameter: (ParamDecl, ParamMetaData), argValue: Option[Any])
+    private case class Argument(parameter: (ParamDecl, ParamKind), argValue: Option[Any])
 
-    private def constructArguments(inputs: Seq[((ParamDecl, ParamMetaData), Any)],
-                                   intermediateParams: Seq[(ParamDecl, ParamMetaData)],
+    private def constructArguments(inputs: Seq[((ParamDecl, ParamKind), Any)],
+                                   intermediateParams: Seq[(ParamDecl, ParamKind)],
                                    oclParams: Seq[ParamDecl]): List[Argument] = {
       // For each input ...
       inputs.headOption match {

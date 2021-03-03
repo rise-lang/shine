@@ -2,11 +2,11 @@ package shine.OpenCL
 
 import arithexpr.arithmetic._
 import opencl.executor.{Kernel => _, _}
-import shine.C.AST.ParamDecl
-import shine.C.ParamMetaData
+import shine.C.AST.{ParamDecl, ParamKind}
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL
+import shine.OpenCL.AST.Kernel
 import util.Time.ms
 import util.{Time, TimeSpan}
 import util.gen
@@ -60,7 +60,7 @@ object KernelExecutor {
 
     val kernel: Kernel = ktu.kernels.head
     val code: String = gen.opencl.kernel.asString(ktu)
-    val outputParam: (ParamDecl, ParamMetaData) = kernel.outputParams.head
+    val outputParam: (ParamDecl, ParamKind) = kernel.outputParams.head
 
     /** This method will return a Scala function which executed the kernel via OpenCL and returns its
     // result and the time it took to execute the kernel.
@@ -156,10 +156,10 @@ object KernelExecutor {
     * @param parameter The OpenCL parameter as appearing in the generated kernel
     * @param argValue For non-intermediate input parameters, this carries the scala value to pass in the executor
     */
-  private case class Argument(parameter: (ParamDecl, ParamMetaData), argValue: Option[Any])
+  private case class Argument(parameter: (ParamDecl, ParamKind), argValue: Option[Any])
 
-  private def constructArguments(inputs: Seq[((ParamDecl, ParamMetaData), Any)],
-                                 intermediateParams: Seq[(ParamDecl, ParamMetaData)],
+  private def constructArguments(inputs: Seq[((ParamDecl, ParamKind), Any)],
+                                 intermediateParams: Seq[(ParamDecl, ParamKind)],
                                  oclParams: Seq[ParamDecl]): List[Argument] = {
     // For each input ...
     inputs.headOption match {
@@ -188,7 +188,7 @@ object KernelExecutor {
     * the output kernel argument, and all the input kernel arguments
     */
   private def createKernelArgs(arguments: Seq[Argument],
-                               outputParam: (ParamDecl, ParamMetaData),
+                               outputParam: (ParamDecl, ParamKind),
                                sizeVariables: Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
     //Now generate the input kernel args
     println(s"Create input arguments")
@@ -301,7 +301,7 @@ object KernelExecutor {
     }
   }
 
-  private def createOutputKernelArg(outputParam: (ParamDecl, ParamMetaData), sizeVariables:Map[Nat,Nat]):GlobalArg = {
+  private def createOutputKernelArg(outputParam: (ParamDecl, ParamKind), sizeVariables:Map[Nat,Nat]):GlobalArg = {
     val rawSize = sizeInByte(outputParam._2.typ).value
     val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
     Try(cleanSize.evalLong) match {
@@ -377,10 +377,10 @@ object KernelExecutor {
     case ArrayType(_, elemType) => getOutputType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getOutputType(elemType)
-    case DepArrayType(_, _) | _: NatToDataApply =>
-      throw new Exception("This should not happen")
-    case _: DepPairType => throw new Exception("Dependent pair not supported as output type")
-    case t => throw new Exception(s"${t} not supported in OpenCL")
+    case DepArrayType(_, _) | _: NatToDataApply => throw new Exception("This should not happen")
+    case _: DepPairType | _: ManagedBufferType | _: FragmentType
+         | _: pipeline.type | ContextType =>
+      throw new Exception(s"${dt} not supported as output type")
   }
 
   private def sizeInByte(dt: DataType): SizeInByte = dt match {
@@ -407,10 +407,9 @@ object KernelExecutor {
         case _: NatToDataIdentifier =>
           throw new Exception("This should not happen")
       }
-    case _: DepPairType => throw new Exception("This should not happen")
-    case _: NatToDataApply =>  throw new Exception("This should not happen")
-    case _: DataTypeIdentifier => throw new Exception("This should not happen")
-    case _ => throw new Exception("This should not happen")
+    case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier |
+         _: ManagedBufferType | _: FragmentType | _: pipeline.type | ContextType =>
+      throw new Exception(s"the byte size of ${dt} should not be requested")
   }
 
   case class SizeInByte(value: Nat) {

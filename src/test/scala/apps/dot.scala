@@ -120,7 +120,7 @@ class dot extends test_util.Tests {
   }
 
   { // OpenCL
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.openCL.primitives.oclReduceSeq
 
     test("Intel derived no warp dot product 1 compiles to" +

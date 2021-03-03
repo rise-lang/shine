@@ -47,7 +47,7 @@ class Pad extends test_util.Tests {
   }
 
   test("Simple OpenCL pad input and copy") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(3)(lf32(5.0f)) |> mapGlobal(fun(x => x))
@@ -57,7 +57,7 @@ class Pad extends test_util.Tests {
   }
 
   test("OpenCL Pad only left") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(0)(lf32(5.0f)) |> mapGlobal(fun(x => x))
@@ -67,7 +67,7 @@ class Pad extends test_util.Tests {
   }
 
   test("OpenCL Pad only right") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
 
     val e = depFun((n: Nat) => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(0)(3)(lf32(5.0f)) |> mapGlobal(fun(x => x))
@@ -77,7 +77,7 @@ class Pad extends test_util.Tests {
   }
 
   test("OpenCL pad before or after transpose") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
 
     val range = arithexpr.arithmetic.RangeAdd(1, arithexpr.arithmetic.PosInf, 1)
     val k1 = gen.opencl.kernel.fromExpr(depFun(range, (n: Nat) =>

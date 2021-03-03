@@ -11,7 +11,7 @@ import scala.language.postfixOps
 
 class Scatter extends test_util.Tests {
   test("Reversing scatter should generate valid OpenCL") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import shine.OpenCL._
 
     val N = 20
@@ -35,7 +35,7 @@ class Scatter extends test_util.Tests {
   }
 
   test("Overriding scatter should generate valid OpenCL") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import shine.OpenCL._
 
     val N = 20

@@ -7,7 +7,7 @@ import rise.core.types._
 import rise.core.types.AddressSpace._
 import rise.core.primitives._
 import rise.openCL.primitives.oclReduceSeq
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 
 // scalastyle:off org.scalastyle.scalariform.MultipleStringLiteralsChecker
 class Barriers extends test_util.Tests {

@@ -72,6 +72,7 @@ object Primitive {
             case _: ${TypeName(className)} => true
             case _ => false
           }
+          override def toString: String = $name
         }
         """
       if (verbose) {
@@ -109,6 +110,7 @@ object Primitive {
           override def primitive: ${TypeName(className)} = $makeInstance()
           override def apply: rise.core.DSL.ToBeTyped[${TypeName(className)}] =
             rise.core.DSL.toBeTyped($makeInstance())
+          override def toString: String = $name
         }
 
         object ${TermName(name)} {

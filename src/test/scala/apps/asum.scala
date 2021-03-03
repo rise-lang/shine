@@ -109,7 +109,7 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   { // OpenCL code gen
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.openCL.primitives.{oclReduceSeq, oclIterate}
     import shine.OpenCL
 

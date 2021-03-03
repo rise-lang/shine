@@ -1,16 +1,15 @@
 package apps
 
-import rise.Cuda.TypedDSL.{mapBlock, mapThreads}
-import rise.core._
-import rise.core.DSL._
-import rise.core.primitives.{let => _, _}
+import apps.mmTensor._
+import rise.Cuda.DSL.{mapBlock, mapThreads, _}
+import rise.Cuda.primitives.{asFragment, asMatrix, mapFragmentElements, toSharedMemoryShift}
 import rise.core.DSL.Type._
+import rise.core.DSL._
+import rise.core._
+import rise.core.primitives.{let => _, _}
 import rise.core.types.{AddressSpace, _}
+import rise.openCL.DSL.toPrivate
 import rise.openCL.primitives.oclReduceSeq
-import rise.Cuda.primitives.{asMatrix, generateFragment, mapFragmentElements, asFragment, toSharedMemoryShift}
-import rise.openCL.TypedDSL.toPrivate
-import apps.mmTensor.{config, copyMatrix, crossProductOfMatrixTiles, generate2D, mmConfig, warpMMA}
-import rise.Cuda.TypedDSL._
 
 //General Matrix Multiply (gemm) with tensor cores
 //Multiply a m.k a-matrix with a k.n b-matrix and accumulate a m.n c-matrix

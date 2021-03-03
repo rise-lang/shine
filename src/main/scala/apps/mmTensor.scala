@@ -1,16 +1,14 @@
 package apps
 
-import rise.Cuda.TypedDSL.{mapBlock, mapThreads}
-import rise.core._
-import rise.core.DSL._
-import rise.core.primitives.{let => _, _}
+import rise.Cuda.DSL.{mapBlock, mapThreads, _}
+import rise.Cuda.primitives.{asFragment, asMatrix, generateFragment, toSharedMemoryShift}
 import rise.core.DSL.Type._
+import rise.core.DSL._
+import rise.core._
+import rise.core.primitives.{let => _, _}
 import rise.core.types.{AddressSpace, _}
-import rise.core.types.MatrixLayout._
+import rise.openCL.DSL.{toLocal, toPrivate}
 import rise.openCL.primitives.{oclReduceSeq, oclReduceSeqUnroll}
-import rise.Cuda.TypedDSL._
-import rise.Cuda.primitives.{asMatrix, generateFragment, asFragment, toSharedMemoryShift}
-import rise.openCL.TypedDSL.{toLocal, toPrivate}
 
 //Matrixmultiplications (mm) with tensor cores
 //Multiply a m.k a-matrix with a k.n b-matrix
