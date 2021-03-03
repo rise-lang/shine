@@ -40,11 +40,23 @@ object FragmentKind {
   object Accumulator extends FragmentKind { override def toString = "Accumulator"}
 }
 
+//This can be used to create fragments of kind `Accumulator` which does not need a layout
 object FragmentType {
   def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType =
     FragmentType(rows, columns, d3, dataType, FragmentKind.Accumulator, null)
 }
 
+/**
+  * Represents a CUDA-fragment which represents a tile of a matrix which is stored in registers of a warp. <br>
+  * Fragments of kind `Accumulator` does not have a layout. So the `layout` of fragments of kind `Accumulator`
+  * can be ignored.
+  * @param rows         number of rows
+  * @param columns      number of columns
+  * @param d3           third dimension which is used in the MMA operation
+  * @param dataType     dataType of the elements
+  * @param fragmentKind kind of the fragment {@link FragmentKind}
+  * @param layout       layout of the fragment {@link MatrixLayout}
+  */
 final case class FragmentType(rows: Nat,
                               columns: Nat,
                               d3: Nat,

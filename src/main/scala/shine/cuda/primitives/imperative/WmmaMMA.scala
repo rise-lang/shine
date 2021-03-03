@@ -5,6 +5,23 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.macros.Primitive.comPrimitive
 
+/**
+  * Executes an MMA instruction using (multiple) Tensor Cores. <br>
+  * Calculates: aMatrix * bMatrix + cMatrix <br>
+  * This primitive needs to be executed by a full warp!
+  * @param m            number of rows of the `aMatrix`
+  * @param n            number of columns of the `bMatrix` and the `cMatrix`
+  * @param k            number of columns of the `aMatrix` and number of rows of the `bMatrix`
+  * @param layoutA      layout of the `aMatrix`
+  * @param layoutB      layout of the `bMatrix`
+  * @param dataType     datatype of elements of `aMatrix` and `bMatrix` ({@link FragmentType#datatype})
+  * @param dataTypeAcc  datatype of elements of `cMatrix` and the resultMatrix ({@link FragmentType#datatype})
+  * @param aMatrix      first factor of type fragment
+  * @param bMatrix      second factor of type fragment
+  * @param cMatrix      accumulator of type fragment which is added to the product of `aMatrix` * `bMatrix`
+  * @param resultMatrix fragment-Accumulator in which the result is stored
+  *                     (inplace operations using the `cMatrix` as resultMatrix is possible)
+  */
 @comPrimitive
 case class WmmaMMA(m: Nat,
                    n: Nat,

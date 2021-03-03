@@ -5,6 +5,9 @@ import shine.DPIA.Types.{ExpType, pipeline, read}
 import shine.DPIA.expT
 import shine.macros.Primitive.comPrimitive
 
+/**
+  * Execute and wait for all asynchronous memory transactions (used by the {@link GlobalToSharedAcc})
+  */
 @comPrimitive
 final case class SyncPipeline(pipe: Phrase[ExpType]) extends CommandPrimitive {
   pipe :: expT(pipeline, read)
