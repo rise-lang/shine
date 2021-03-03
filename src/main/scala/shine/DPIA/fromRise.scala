@@ -839,13 +839,15 @@ object fromRise {
       }
 
       case rcuda.asFragment() => fromType {
-        case expT(ArrayType(rows, ArrayType(columns, dt)), `read`) ->: expT(FragmentType(_, _, d3, _, fragType, layout), _) =>
+        case expT(ArrayType(rows, ArrayType(columns, dt)), `read`) ->:
+          expT(FragmentType(_, _, d3, _, fragType, layout), _) =>
           fun[ExpType](expT(ArrayType(rows, ArrayType(columns, dt)), read), a =>
             cuda.AsFragment(rows, columns, d3, dt, fragType, a, layout))
       }
 
       case rcuda.asMatrix() => fromType {
-        case expT(FragmentType(rows, columns, d3, dt, FragmentKind.Accumulator, _), `read`) ->: expT(ArrayType(_, ArrayType(_, _)), `write`) =>
+        case expT(FragmentType(rows, columns, d3, dt, FragmentKind.Accumulator, _), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `write`) =>
           fun[ExpType](expT(FragmentType(rows, columns, d3, dt), read), dFrag =>
             cuda.AsMatrix(rows, columns, d3, dt, dFrag))
       }
@@ -857,8 +859,10 @@ object fromRise {
       }
 
       case rcuda.tensorMMA() => fromType {
-        case expT(FragmentType(_, _, _, dt, FragmentKind.AMatrix, layoutA), `read`) ->: expT(FragmentType(_, _, _, _, FragmentKind.BMatrix,layoutB), `read`) ->:
-          expT(FragmentType(m, n, k, dtResult, FragmentKind.Accumulator, _), `read`) ->: expT(FragmentType(_, _, _, _, FragmentKind.Accumulator, _), `write`) =>
+        case expT(FragmentType(_, _, _, dt, FragmentKind.AMatrix, layoutA), `read`) ->:
+          expT(FragmentType(_, _, _, _, FragmentKind.BMatrix,layoutB), `read`) ->:
+          expT(FragmentType(m, n, k, dtResult, FragmentKind.Accumulator, _), `read`) ->:
+          expT(FragmentType(_, _, _, _, FragmentKind.Accumulator, _), `write`) =>
           fun[ExpType](expT(FragmentType(m, k, n, dt, FragmentKind.AMatrix, layoutA), read), a =>
             fun[ExpType](expT(FragmentType(k, n, m, dt, FragmentKind.BMatrix, layoutB), read), b =>
               fun[ExpType](expT(FragmentType(m, n, k, dtResult), read), c =>
@@ -866,7 +870,8 @@ object fromRise {
       }
 
       case rcuda.mapFragmentElements() => fromType {
-        case (expT(dt: DataType, `read`) ->: expT(_, `write`)) ->: expT(fragType : FragmentType, `read`) ->: expT(_, _) =>
+        case (expT(dt: DataType, `read`) ->: expT(_, `write`)) ->:
+          expT(fragType : FragmentType, `read`) ->: expT(_, _) =>
           fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
             fun[ExpType](ExpType(fragType, read), fragment =>
               cuda.MapFragmentElements(fragType.asInstanceOf[FragmentType], fragment, f)))
@@ -964,9 +969,12 @@ object fromRise {
     }
     case f: rt.FragmentType =>
       f.fragmentKind match {
-        case rt.FragmentKind.AMatrix => FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentKind.AMatrix, layout(f.layout))
-        case rt.FragmentKind.BMatrix => FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentKind.BMatrix, layout(f.layout))
-        case rt.FragmentKind.Acuumulator => FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentKind.Accumulator, layout(f.layout))
+        case rt.FragmentKind.AMatrix =>
+          FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentKind.AMatrix, layout(f.layout))
+        case rt.FragmentKind.BMatrix =>
+          FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentKind.BMatrix, layout(f.layout))
+        case rt.FragmentKind.Acuumulator =>
+          FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentKind.Accumulator, layout(f.layout))
         case _ => throw new Exception("this should not happen")
       }
   }
