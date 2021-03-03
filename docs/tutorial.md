@@ -37,7 +37,7 @@ val highLevelProgram: ToBeTyped[Rise] =
           B |> transpose |> map(fun(colOfB =>
             zip(rowOfA)(colOfB) |>
               map(fun(x => fst(x) * snd(x))) |>
-              reduce(add)(l(0.0f)) )) )) )) )
+              reduce(add)(lf32(0.0f)) )) )) )) )
 ```
 
 The matrix dimensions are represented as part of the type of the matrices:

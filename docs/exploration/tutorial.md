@@ -3,7 +3,7 @@ title: A Tutorial of Heuristic Search based Exploration in RISE
 sidebar_label: Tutorial of Heurisitc Search based Exploration
 ---
 ```scala mdoc:invisible
-import rise.core.DSL.{fun, l}
+import rise.core.DSL.{fun, lf32}
 import rise.core.primitives._
 import rise.core.types.{ArrayType, f32}
 import rise.elevate.rules.algorithmic._
@@ -50,7 +50,7 @@ val mm =
         b |> transpose |> map(fun(bk =>
           zip(ak)(bk) |>
             map(fun(x => fst(x) * snd(x))) |>
-            reduce(add)(l(0.0f)) )) )) ))
+            reduce(add)(lf32(0.0f)) )) )) ))
 ```
 
 Our goal is to perform an exploration by applying ELEVATE Optimization Strategies
