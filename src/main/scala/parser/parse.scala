@@ -116,7 +116,7 @@ object parse {
       case "mapLocal" => SIntToExpr(op.mapLocal(_, Some(span)).toExpr)
       case "mapWorkGroup" => SIntToExpr(op.mapWorkGroup(_, Some(span)).toExpr)
       case "oclToMem" => SExpr(op.oclToMem( Some(span)))
-      case "oclReduceSeq" => SExpr(op.oclReduceSeq( Some(span)))
+      case "oclReduceSeq" => SExpr(op.oclReduceSeq(Some(span)))
       case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll( Some(span)))
       case "oclIterate" => SExpr(op.oclIterate( Some(span)))
       case "oclCircularBuffer"=>SExpr(op.oclCircularBuffer( Some(span)))
@@ -227,6 +227,9 @@ object parse {
               }
             }
             case _ => {
+              if(prim.span.isEmpty){
+                throw new IllegalStateException("The span of '" + prim +"' is empty")
+              }
               Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems, map, mapDepL))
             }
           }
@@ -548,7 +551,7 @@ object parse {
     var e:r.Expr = synE.head match {
       case SExpr(expr) => {
         if(expr.span.isEmpty){
-          throw new IllegalStateException("Span of '"+ expr+ "' is None in combineExpressionsDependent")
+          throw new IllegalStateException("Span of the first Expr '"+ expr+ "' is None in combineExpressionsDependent")
         }
         synE = synE.tail
         expr
@@ -580,7 +583,7 @@ object parse {
           }
           val span_expr1 = expr1.span match {
             case Some(span) => span
-            case None => throw new IllegalStateException("Span of '"+ expr1+ "'is None in combineExpressionsDependent")
+            case None => throw new IllegalStateException("Span of the next Expr '"+ expr1+ "'is None in combineExpressionsDependent")
           }
           val span = Span(span_e.file, span_e.begin, span_expr1.end) //Todo: check if span is in the same file
           e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
@@ -593,10 +596,10 @@ object parse {
               throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
             }
             case Some(k)=> k match {
-              case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder)
-              case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder)
+              case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, e.span)
+              case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, e.span)
               case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e,
-                rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder)
+                rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, e.span)
             }
           }
           synE = synE.tail
@@ -614,7 +617,7 @@ object parse {
           prim.apply(n)
         }
         case SAddrSpace(addrSpace) => {
-          e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder)
+          e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder, e.span)
           synE = synE.tail
         }
         case SType(t) => {
@@ -626,17 +629,17 @@ object parse {
                   throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
                 }
                 case Some(k)=> k match {
-                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder)
-                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder)
+                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, e.span)
+                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, e.span)
                   case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e,
-                    rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder)
+                    rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, e.span)
                 }
               }
               case _ => throw new IllegalStateException(
                 "This should not be happening in the combining of the Dependent Expressions")
             }
           }else{
-            e = r.DepApp[rt.TypeKind](e, t)(rt.TypePlaceholder)
+            e = r.DepApp[rt.TypeKind](e, t)(rt.TypePlaceholder, e.span)
           }
           synE = synE.tail
         }
@@ -794,6 +797,7 @@ object parse {
 
         val synElemList = psNamedExpr._2
         val mapDepL = psNamedExpr._4
+        println("\n\n\n Before combining the Expr in parseNamedExpr \n\n\n")
         var expr = combineExpressionsDependent(synElemList, mapDepL)
         expr = expr.setType(typeOfFkt)
 
@@ -970,6 +974,7 @@ object parse {
     val (toks, synElemList, map, mapDepL) = psOrErr match {
       case Left(psNew) => {
         val expr = SExpr(combineExpressionsDependent(psNew.parsedSynElems, psNew.mapDepL))
+        //println("\n\n\nSpanIsHere"+ expr.expr +" : "+ expr.expr.span+ "\n\n\n")
         val newL = expr :: Nil
         val li:List[SyntaxElement] = psOld match {
           case Left(pa) => pa.parsedSynElems.reverse ++ newL
@@ -1280,7 +1285,9 @@ object parse {
                                   val synElem = if(newPS.parsedSynElems.length==1){
                                     newPS.parsedSynElems.head
                                   }else {
-                                    SExpr(combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL))
+                                    val expr = combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL)
+                                    println("\n\n\nSpanIsHere"+ expr +" : "+ expr.span+ "\n\n\n")
+                                    SExpr(expr)
                                   }
                                   Left(ParseState(newPS.tokenStream, synElem::Nil, newPS.mapFkt, newPS.mapDepL))
                                 }

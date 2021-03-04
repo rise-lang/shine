@@ -54,6 +54,7 @@ object Primitive {
           (override val t: rise.core.types.Type =
               rise.core.types.TypePlaceholder) extends Primitive
         {
+          override val span: Option[Span] = span
           override val name: String = $name
           override def setType(ty: rise.core.types.Type): ${TypeName(className)} =
             $makeInstanceSpan(ty)
@@ -95,6 +96,7 @@ object Primitive {
             (override val t: rise.core.types.Type =
                 rise.core.types.TypePlaceholder) extends Primitive
         {
+          override val span: Option[Span] = span
           override val name: String = $name
           override def setType(ty: rise.core.types.Type): ${TypeName(className)} =
             $makeInstanceSpan(ty)
