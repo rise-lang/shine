@@ -18,6 +18,6 @@ trait Builder {
   def unapply(arg: Expr): Option[Option[parser.Span]] =
     throw new Exception("unapply method must be overridden")
 
-  def primitive(span: Option[Span] = None): Primitive =
+  def primitive: Primitive =
     throw new Exception("primitive method must be overridden")
 }

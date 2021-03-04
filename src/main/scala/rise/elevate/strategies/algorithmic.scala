@@ -81,9 +81,9 @@ object algorithmic {
   @strategy def reorderRec(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
 
     def freduce(s: Strategy[Rise]): Strategy[Rise] =
-      function(function(argumentOf(reduceSeq.primitive(), body(body(s)))))
+      function(function(argumentOf(reduceSeq.primitive, body(body(s)))))
     def freduceX(s: Strategy[Rise]): Strategy[Rise] =
-      argument(function(function(argumentOf(reduceSeq.primitive(), body(body(s))))))
+      argument(function(function(argumentOf(reduceSeq.primitive, body(body(s))))))
     def stepDown(s: Strategy[Rise]): Strategy[Rise] = freduceX(s) <+ freduce(s) <+ fmap(s)
 
     val isFullyAppliedReduceSeq: Strategy[Rise] = isApplied(isApplied(isApplied(isReduceSeq))) <+

@@ -190,8 +190,8 @@ object parse {
       case "asVector" => SExpr(rp.asVector( Some(span)))
       case "asScalar" => SExpr(rp.asScalar( Some(span)))
       case "vectorFromScalar" => SExpr(rp.vectorFromScalar( Some(span)))
-      case "printType" => SExpr(rp.printType("", Some(span)).primitive(Some(span))) //Todo: I was forced to delete span in printType and typeHole because of the error with wrong number of arguments
-      case "typeHole" => SExpr(rp.typeHole("", Some(span)).primitive(Some(span)))
+      case "printType" => SExpr(rp.printType("", Some(span)).primitive) //Todo: I was forced to delete span in printType and typeHole because of the error with wrong number of arguments
+      case "typeHole" => SExpr(rp.typeHole("", Some(span)).primitive)
       case _ => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
     }
   }

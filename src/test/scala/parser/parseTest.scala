@@ -318,9 +318,9 @@ class parseTest extends  AnyFlatSpec {
       r.App(r.App(rp.add(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))),
       r.App(r.App(rp.mod(_), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
-        r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive(),
-          r.App(r.App(rp.add.primitive(), r.App(r.App(rp.mul.primitive(), r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-            r.App(r.App(rp.mod.primitive(), r.Literal(rS.IntData(42)))(rt.TypePlaceholder), r.Literal(rS.IntData(5)))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
+        r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive,
+          r.App(r.App(rp.add.primitive, r.App(r.App(rp.mul.primitive, r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+            r.App(r.App(rp.mod.primitive, r.Literal(rS.IntData(42)))(rt.TypePlaceholder), r.Literal(rS.IntData(5)))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
       case a => fail("not a lambda: " + a)
     }
   }
@@ -342,9 +342,9 @@ class parseTest extends  AnyFlatSpec {
       r.App(r.App(rp.add(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))),
       r.App(r.App(rp.mod(_), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
-        r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive(),
-          r.App(r.App(rp.add.primitive(), r.App(r.App(rp.mul.primitive(), r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-            r.App(r.App(rp.mod.primitive(), r.Literal(rS.IntData(42)))(rt.TypePlaceholder), r.Literal(rS.IntData(5)))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
+        r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive,
+          r.App(r.App(rp.add.primitive, r.App(r.App(rp.mul.primitive, r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
+            r.App(r.App(rp.mod.primitive, r.Literal(rS.IntData(42)))(rt.TypePlaceholder), r.Literal(rS.IntData(5)))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
       case a => fail("not a lambda: " + a)
     }
   }
@@ -565,9 +565,9 @@ class parseTest extends  AnyFlatSpec {
           d2.name.equals(d.name)=> true
       case r.DepLambda(n, e) => {
         println("correct solution: "+  r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.DepLambda[rt.DataKind](rt.DataTypeIdentifier("D"),
-          r.App(r.DepApp[rt.NatKind](rp.generate.primitive(), rt.NatIdentifier("N"))(rt.TypePlaceholder),
+          r.App(r.DepApp[rt.NatKind](rp.generate.primitive, rt.NatIdentifier("N"))(rt.TypePlaceholder),
             r.Lambda(r.Identifier("i")(rt.TypePlaceholder), r.App(
-              r.DepApp[rt.TypeKind](rp.cast.primitive(),rt.ArrayType(rt.NatIdentifier("N"), rt.DataTypeIdentifier("D")))(rt.TypePlaceholder), r.Identifier("i")(rt.TypePlaceholder)
+              r.DepApp[rt.TypeKind](rp.cast.primitive,rt.ArrayType(rt.NatIdentifier("N"), rt.DataTypeIdentifier("D")))(rt.TypePlaceholder), r.Identifier("i")(rt.TypePlaceholder)
             )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
         fail("Not correct deplambda: "
           +n.toString()+ " , " + e.toString())

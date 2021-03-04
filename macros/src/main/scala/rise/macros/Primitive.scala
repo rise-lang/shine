@@ -46,7 +46,8 @@ object Primitive {
 
     def makePrimitiveClassAndObject(name: String, typeScheme: Tree): Tree = {
       val className = name + "_class"
-      val makeInstance = q"${TermName(className)}(span)"
+      val makeInstance = q"${TermName(className)}()"
+      val makeInstanceSpan = q"${TermName(className)}(span)"
 
       val generated = q"""
         final case class ${TypeName(className)}(override val span: Option[Span] = None)
@@ -55,7 +56,7 @@ object Primitive {
         {
           override val name: String = $name
           override def setType(ty: rise.core.types.Type): ${TypeName(className)} =
-            $makeInstance(ty)
+            $makeInstanceSpan(ty)
           override def typeScheme: rise.core.types.Type = $typeScheme
 
           override def equals(obj: Any) = obj match {
@@ -65,9 +66,9 @@ object Primitive {
         }
 
         object ${TermName{name}} extends Builder {
-          override def primitive(span: Option[Span] = None): ${TypeName(className)} = $makeInstance()
+          override def primitive: ${TypeName(className)} = $makeInstance()
           override def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
-            rise.core.DSL.toBeTyped($makeInstance())
+            rise.core.DSL.toBeTyped($makeInstanceSpan())
           override def unapply(arg: rise.core.Expr): Option[Option[Span]] = arg match {
             case _: ${TypeName(className)} => Some(arg.span)
             case _ => None
@@ -86,7 +87,8 @@ object Primitive {
                            params: List[ValDef],
                            typeScheme: Tree): Tree = {
       val className = name + "_class"
-      val makeInstance = q"${TermName(className)}(..${getArgs(params)}, span)"
+      val makeInstance = q"${TermName(className)}(..${getArgs(params)})"
+      val makeInstanceSpan = q"${TermName(className)}(..${getArgs(params)}, span)"
 
       val generated = q"""
         final case class ${TypeName(className)}(..$params, override val span: Option[Span] = None)
@@ -95,7 +97,7 @@ object Primitive {
         {
           override val name: String = $name
           override def setType(ty: rise.core.types.Type): ${TypeName(className)} =
-            $makeInstance(ty)
+            $makeInstanceSpan(ty)
           override def typeScheme: rise.core.types.Type = $typeScheme
 
           override def equals(obj: Any) = obj match {
@@ -107,9 +109,9 @@ object Primitive {
         }
 
         final case class ${TypeName(name)}(..$params, span: Option[Span]) extends Builder {
-          override def primitive(span: Option[Span] = None): ${TypeName(className)} = $makeInstance()
+          override def primitive: ${TypeName(className)} = $makeInstance()
           override def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
-            rise.core.DSL.toBeTyped($makeInstance())
+            rise.core.DSL.toBeTyped($makeInstanceSpan())
         }
 
         object ${TermName(name)} {

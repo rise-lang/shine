@@ -71,12 +71,12 @@ object cameraPipeRewrite {
     if (predicate(p)) { a(p) } else { b(p) }
   }
 
-  def isAppliedMap: Strategy[Rise] = function(function(isEqualTo(p.map.primitive())))
-  def isAppliedZip: Strategy[Rise] = function(function(isEqualTo(p.zip.primitive())))
-  def isAppliedDrop: Strategy[Rise] = function(depFunction(isEqualTo(p.drop.primitive())))
-  def isAppliedTake: Strategy[Rise] = function(depFunction(isEqualTo(p.take.primitive())))
+  def isAppliedMap: Strategy[Rise] = function(function(isEqualTo(p.map.primitive)))
+  def isAppliedZip: Strategy[Rise] = function(function(isEqualTo(p.zip.primitive)))
+  def isAppliedDrop: Strategy[Rise] = function(depFunction(isEqualTo(p.drop.primitive)))
+  def isAppliedTake: Strategy[Rise] = function(depFunction(isEqualTo(p.take.primitive)))
   def isAppliedSlide: Strategy[Rise] =
-    function(depFunction(depFunction(isEqualTo(p.slide.primitive()))))
+    function(depFunction(depFunction(isEqualTo(p.slide.primitive))))
 
   def anyMapOutsideZip: Strategy[Rise] = {
     // function(function(isEqualTo(DSL.zip))) `;`
@@ -273,9 +273,9 @@ object cameraPipeRewrite {
   }
 
   def unifyMapOutsideGenerateSelect: Strategy[Rise] = {
-    function(isEqualTo(p.generate.primitive())) `;`
+    function(isEqualTo(p.generate.primitive)) `;`
     argument(body(
-      function(function(function(isEqualTo(p.select.primitive())))) `;`
+      function(function(function(isEqualTo(p.select.primitive)))) `;`
       unifyMapInputs(scala.collection.Seq(argument, s => function(argument(s))))
     )) `;` mapOutsideGenerateSelect() `;`
     argument(argument(normalizeInput) `;` repeat(mapFusion))
@@ -283,7 +283,7 @@ object cameraPipeRewrite {
 
   def unifyMapOutsideMakeArray: Strategy[Rise] = {
     // TODO: can work for arbitrary size arrays
-    function(function(function(isEqualTo(p.makeArray(3, None).primitive())))) `;`
+    function(function(function(isEqualTo(p.makeArray(3, None).primitive)))) `;`
     unifyMapInputs(scala.collection.Seq(
       argument,
       s => function(argument(s)),
@@ -315,7 +315,7 @@ object cameraPipeRewrite {
       body(body(body(
         function(body(function(body(
           // generate/select 3x2
-          repeatNTimes(6)(topDown(function(isEqualTo(p.generate.primitive())) `;`
+          repeatNTimes(6)(topDown(function(isEqualTo(p.generate.primitive)) `;`
             topDown(one(unifyMapOutsideGenerateSelect))
           )) `;`
           gentlyReducedForm `;`
@@ -362,7 +362,7 @@ object cameraPipeRewrite {
   }
 
   def letContinuation(s: Strategy[Rise]): Strategy[Rise] =
-    function(function(isEqualTo(p.let.primitive()))) `;`
+    function(function(isEqualTo(p.let.primitive))) `;`
     argument(s)
 
   def afterTopLevel(s: Strategy[Rise]): Strategy[Rise] = p => {
@@ -416,8 +416,8 @@ object cameraPipeRewrite {
     afterTopLevel(
       argument(function(argument(
         topDown(
-          function(function(isEqualTo(p.idx.primitive()))) `;`
-          argument(function(isEqualTo(p.generate.primitive()))) `;`
+          function(function(isEqualTo(p.idx.primitive))) `;`
+          argument(function(isEqualTo(p.generate.primitive))) `;`
           argument({ curve =>
             Success(letf(fun(x => x))(
               p.mapSeq(fun(x => x))(curve)) !: curve.t)
@@ -441,7 +441,7 @@ object cameraPipeRewrite {
             function(body(
               function(body(
                 // generate/select 3x2
-                repeatNTimes(6)(topDown(function(isEqualTo(p.generate.primitive())) `;`
+                repeatNTimes(6)(topDown(function(isEqualTo(p.generate.primitive)) `;`
                   topDown(one(unifyMapOutsideGenerateSelect))
                 )) `;`
                 gentlyReducedForm `;`
