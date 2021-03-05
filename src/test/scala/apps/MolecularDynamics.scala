@@ -14,8 +14,8 @@ class MolecularDynamics extends test_util.TestsWithExecutor {
     val neighbours = buildNeighbourList(particlesTuple, M).transpose
 
     test_util.runsWithSameResult(Seq(
-      ("original", runOriginalKernel("MolecularDynamics.cl", particles, neighbours)),
-      ("dpia", runKernel(gen.opencl.kernel.fromExpr(shoc), particles, neighbours))
+      ("original", runOriginalKernel("CGO17_MolecularDynamics.cl", particles, neighbours)),
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(shocLL), particles, neighbours))
     ))
   }
 }
