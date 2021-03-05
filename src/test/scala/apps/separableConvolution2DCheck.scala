@@ -98,13 +98,13 @@ int main(int argc, char** argv) {
   }
 
   test("baseVecU compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    test_util.withExecutor {
       checkOCL(LocalSize(1), GlobalSize(1), baseVecU(binomialWeights2d))
     }
   }
 
   test("regRotPar compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    test_util.withExecutor {
       checkOCL(LocalSize(1), GlobalSize(4),
         regRotPar(binomialWeightsV)(binomialWeightsH)
       )
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
   }
 
   test("scanlinePar compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    test_util.withExecutor {
       checkOCL(LocalSize(1), GlobalSize(4),
         scanlinePar(binomialWeightsV)(binomialWeightsH)
       )

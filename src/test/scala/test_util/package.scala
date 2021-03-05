@@ -1,5 +1,6 @@
 import opencl.executor.Executor
 import org.scalactic.source.Position
+import org.scalatest.exceptions.TestCanceledException
 import org.scalatest.{BeforeAndAfter, Tag}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
@@ -24,7 +25,7 @@ package object test_util {
       try {
         Executor.shutdown()
       } catch {
-        case _: Throwable =>
+        case _: UnsatisfiedLinkError =>
       }
     }
 
@@ -42,6 +43,21 @@ package object test_util {
             assume(openclIsAvailable)
         }
       }
+    }
+  }
+
+  def withExecutor[T](f: => T): T = {
+    import opencl.executor._
+
+    try {
+      Executor.loadLibrary()
+      Executor.init()
+      try f
+      finally Executor.shutdown()
+    } catch {
+      case e: UnsatisfiedLinkError =>
+        throw new TestCanceledException("OpenCL not available", e, 0)
+      case e => throw e
     }
   }
 

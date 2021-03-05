@@ -1,4 +1,6 @@
 import java.io.{File, PrintWriter}
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 package object util {
   def createTempFile(prefix: String, suffix: String): File = {
@@ -39,13 +41,18 @@ package object util {
     same(a, b, msg)
   }
 
-  def withExecutor[T](f: => T): T = {
+  def withExecutor[T](f: => T): Try[T] = {
     import opencl.executor._
 
-    Executor.loadLibrary()
-    Executor.init()
-    try f
-    finally Executor.shutdown()
+    try Success({
+      Executor.loadLibrary()
+      Executor.init()
+      try f
+      finally Executor.shutdown()
+    }) catch {
+      case e: UnsatisfiedLinkError => Failure(e)
+      case NonFatal(e) => Failure(e)
+    }
   }
 
   def printTime[T](msg: String, block: => T): T = {
