@@ -8,7 +8,7 @@ import shine.DPIA._
 import shine.OpenCL._
 import shine.cuda.primitives.imperative.{ParFor, SyncThreads, SyncWarp}
 
-final case class MapI(level: ParallelismLevel, dim: Char) {
+final case class MapI(level: ParallelismLevel, dim: Int) {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
             f: Phrase[ExpType ->: AccType ->: CommType],
             in: Phrase[ExpType],

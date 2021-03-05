@@ -70,10 +70,10 @@ object mmTensor {
       (m `.` k `.` f16) ->: (k `.` n `.` f16) ->: (m `.` n `.` f32)
     )((a, b) =>
       a |> split(mTileFrag) |> // m/mTileFrag.mTileFrag.k.f16
-      mapBlock('x')(fun(aRows =>
+      mapBlock(0)(fun(aRows =>
 
         b |> transpose |> split(nTileFrag) |> // n/nTileFrag.nTileFrag.k.f16
-        mapWarp('x')(fun(bColumnsT =>
+        mapWarp(0)(fun(bColumnsT =>
 
           zip
            (transpose(aRows) |> split(kTileFrag))
@@ -107,10 +107,10 @@ object mmTensor {
       (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32)
     )((a, bT) =>
       a |> split(mTileFrag) |> // m/mTileFrag.mTileFrag.k.f16
-        mapBlock('x')(fun(aRows =>
+        mapBlock(0)(fun(aRows =>
 
           bT |> split(nTileFrag) |> // n/nTileFrag.nTileFrag.k.f16
-            mapWarp('x')(fun(bColumnsT =>
+            mapWarp(0)(fun(bColumnsT =>
 
               zip
                 (transpose(aRows) |> split(kTileFrag))
@@ -143,10 +143,10 @@ object mmTensor {
       (m `.` k `.` f16) ->: (k `.` n `.` f16) ->: (m `.` n `.` f32)
     )((a, b) =>
       b |> transpose |> split(nTileFrag) |> // n/nTileFrag.nTileFrag.k.f16
-        mapBlock('x')(fun(bColumnsT =>
+        mapBlock(0)(fun(bColumnsT =>
 
           a |> split(mTileFrag) |> // m/mTileFrag.mTileFrag.k.f16
-            mapWarp('x')(fun(aRows =>
+            mapWarp(0)(fun(aRows =>
 
               zip
                 (transpose(aRows) |> split(kTileFrag))
@@ -191,16 +191,16 @@ object mmTensor {
       (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32)
     )((a, bT) =>
       a |> split(mTileBlock) |>
-      mapBlock('y')(fun(aRowsBlock => // mTileBlock.k.f16
+      mapBlock(1)(fun(aRowsBlock => // mTileBlock.k.f16
 
         bT |> split(nTileBlock) |>
-        mapBlock('x')(fun(bColumnsTBlock => // nTileBlock.k.f16
+        mapBlock(0)(fun(bColumnsTBlock => // nTileBlock.k.f16
 
           aRowsBlock |> split(mTileWarp) |>
-          mapThreads('y')(fun(aRowsWarp => // mTileWarp.k.f16
+          mapThreads(1)(fun(aRowsWarp => // mTileWarp.k.f16
 
             bColumnsTBlock |> split(nTileWarp) |>
-            mapWarp('x')(fun(bColumnsTWarp => // nTileWarp.k.f16
+            mapWarp(0)(fun(bColumnsTWarp => // nTileWarp.k.f16
 
               zip
                 (aRowsWarp |> transpose |> split(kTileFrag))
@@ -281,10 +281,10 @@ object mmTensor {
       (m `.` k `.` f16) ->: (k `.` n `.` f16) ->: (m `.` n `.` f32)
     )((a, b) =>
       a |> split(mTileBlock) |>
-      mapBlock('y')(fun(aRowsBlock => // mTileBlock.k.f16
+      mapBlock(1)(fun(aRowsBlock => // mTileBlock.k.f16
 
         b |> transpose |> split(nTileBlock) |>
-        mapBlock('x')(fun(bColumnsTBlock => // nTileBlock.k.f16
+        mapBlock(0)(fun(bColumnsTBlock => // nTileBlock.k.f16
 
           zip
             (aRowsBlock |> transpose |> split(kTileBlock))
@@ -299,25 +299,25 @@ object mmTensor {
             //Load aTile to shared memory
             let(toLocal(
               aTbTileBlock._1 |> transpose |>
-              mapThreads('y')(mapThreads(id)))) //mTileBlock.kTileBlock.f16
+              mapThreads(1)(mapThreads(id)))) //mTileBlock.kTileBlock.f16
             be(aTile =>
 
               //Load bTile to shared memory
               let(toLocal(
                 aTbTileBlock._2 |>
-                mapThreads('y')(mapThreads(id)))) //kTileBlock.mTileBlock.f16
+                mapThreads(1)(mapThreads(id)))) //kTileBlock.mTileBlock.f16
               be(bTile =>
 
                 zip
                   (aTile |> split(mTileWarp))
                   (resultTile |> split(mTileWarp)) |>
 
-                mapThreads('y')(fun(aTilesWarpC => // (mTileWarp.kTileBlock.f16, mTileWarp.nTileBlock.f32)
+                mapThreads(1)(fun(aTilesWarpC => // (mTileWarp.kTileBlock.f16, mTileWarp.nTileBlock.f32)
 
                   zip
                     (bTile |> transpose |> split(nTileWarp))
                     (aTilesWarpC._2 |> transpose |> split(nTileWarp)) |>
-                  mapWarp('x')(fun(bTilesWarpTCT => // (nTileWarp.kTileBlock.f16, nTileWarp.mTileWarp.f32)
+                  mapWarp(0)(fun(bTilesWarpTCT => // (nTileWarp.kTileBlock.f16, nTileWarp.mTileWarp.f32)
 
                     //Warp-level
                     //Multiply a mTileWarp.kTileBlock.f16-Tile with a kTileBlock.nTileWarp.f16-Tile and accumulate present result
@@ -375,9 +375,9 @@ object mmTensor {
                 join))))                              // mTileBlock.nTileBlock.f32
 
           (generate2D |>
-            mapThreads('y')(mapThreads(id))) |> // mTileBlock.nTileBlock.f32
+            mapThreads(1)(mapThreads(id))) |> // mTileBlock.nTileBlock.f32
 
-          mapThreads('y')(mapThreads(id)) |>
+          mapThreads(1)(mapThreads(id)) |>
 
           transpose)) |>                // n/nTileBlock.nTileBlock.mTileBlock.f32
         join |>                         // n.mTileBlock.f32

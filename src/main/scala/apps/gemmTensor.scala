@@ -43,12 +43,12 @@ object gemmTensor {
       zip
       (a |> split(mTileFrag))
       (c |> split(mTileFrag)) |> // m/mTileFrag.(mTileFrag.k.f16, mTileFrag.n.f32)
-        mapBlock('x')(fun(aRowsC =>
+        mapBlock(0)(fun(aRowsC =>
 
           zip
           (bT |> split(nTileFrag))
           (aRowsC._2 |> transpose |> split(nTileFrag)) |> // n/nTileFrag.(nTileFrag.k.f16, nTileFrag.mTileFrag.f32)
-            mapWarp('x')(fun(bColumnsTCT =>
+            mapWarp(0)(fun(bColumnsTCT =>
 
               zip
               (transpose(aRowsC._1) |> split(kTileFrag))
@@ -102,22 +102,22 @@ object gemmTensor {
       zip
       (a |> split(mTileBlock))
       (c |> split(mTileBlock)) |>
-        mapBlock('y')(fun(aRowsBlockC => // (mTileBlock.k.f16, mTileBlock.n.f32)
+        mapBlock(1)(fun(aRowsBlockC => // (mTileBlock.k.f16, mTileBlock.n.f32)
 
           zip
           (bT |> split(nTileBlock))
           (aRowsBlockC._2 |> transpose |> split(nTileBlock)) |>
-            mapBlock('x')(fun(bColumnsTBlockCT => // (nTileBlock.k.f16, nTileBlock.mTileBlock.f32)
+            mapBlock(0)(fun(bColumnsTBlockCT => // (nTileBlock.k.f16, nTileBlock.mTileBlock.f32)
 
               zip
               (aRowsBlockC._1 |> split(mTileWarp))
               (bColumnsTBlockCT._2 |> transpose |> split(mTileWarp)) |>
-                mapThreads('y')(fun(aRowsWarpC => // (mTileWarp.k.f16, mTileWarp.nTileBlock.f32)
+                mapThreads(1)(fun(aRowsWarpC => // (mTileWarp.k.f16, mTileWarp.nTileBlock.f32)
 
                   zip
                   (bColumnsTBlockCT._1 |> split(nTileWarp))
                   (aRowsWarpC._2 |> transpose |> split(nTileWarp)) |>
-                    mapWarp('x')(fun(bColumnsTWarpCT => // (nTileWarp.k.f16, nTileWarp.mTileWarp.f32)
+                    mapWarp(0)(fun(bColumnsTWarpCT => // (nTileWarp.k.f16, nTileWarp.mTileWarp.f32)
 
                       zip
                       (aRowsWarpC._1 |> transpose |> split(kTileFrag))

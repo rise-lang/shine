@@ -213,7 +213,7 @@ class MMTest extends test_util.TestsWithYACX {
                 Transpose(n, m, f32, read,
                   Join(n /^ nTile, nTile, read, ArrayType(m, f32),
                   //Map over nTile-column-block of matrixB
-                  Map(Local, 'y')(n /^ nTile,
+                  Map(Local, 1)(n /^ nTile,
                     //A transposed column of matrixB
                     ArrayType(nTile, ArrayType(k, f16)),
 
@@ -225,7 +225,7 @@ class MMTest extends test_util.TestsWithYACX {
                       Transpose(m, nTile, f32, write,
                         Join(m /^ mTile, mTile, write, ArrayType(nTile, f32),
                           //Map over mTile-row-blocks of matrixA
-                          Map(Warp, 'x')(m /^ mTile,
+                          Map(Warp, 0)(m /^ mTile,
                             //A row of matrixA
                             ArrayType(mTile, ArrayType(k, f16)),
 

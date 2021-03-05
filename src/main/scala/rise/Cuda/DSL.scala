@@ -6,33 +6,33 @@ import rise.core.{Expr, Primitive}
 
 object DSL {
   object mapBlock {
-    def apply(): ToBeTyped[Primitive] = primitives.mapBlock('x')
-    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapBlock('x')(e)
-    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapBlock(dim)
+    def apply(): ToBeTyped[Primitive] = primitives.mapBlock(0)
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapBlock(0)(e)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapBlock(dim)
   }
 
   object mapGlobal {
-    def apply(): ToBeTyped[Primitive] = primitives.mapGlobal('x')
-    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapGlobal('x')(e)
-    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapGlobal(dim)
+    def apply(): ToBeTyped[Primitive] = primitives.mapGlobal(0)
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapGlobal(0)(e)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapGlobal(dim)
   }
 
   object mapThreads {
-    def apply(): ToBeTyped[Primitive] = primitives.mapThreads('x')
-    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapThreads('x')(e)
-    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapThreads(dim)
+    def apply(): ToBeTyped[Primitive] = primitives.mapThreads(0)
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapThreads(0)(e)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapThreads(dim)
   }
 
   object mapWarp {
-    def apply(): ToBeTyped[Primitive] = primitives.mapWarp('x')
-    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapWarp('x')(e)
-    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapWarp(dim)
+    def apply(): ToBeTyped[Primitive] = primitives.mapWarp(0)
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapWarp(0)(e)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapWarp(dim)
   }
 
   object mapLane {
-    def apply(): ToBeTyped[Primitive] = primitives.mapLane('x')
-    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapLane('x')(e)
-    def apply(dim: Char): ToBeTyped[Primitive] = primitives.mapLane(dim)
+    def apply(): ToBeTyped[Primitive] = primitives.mapLane(0)
+    def apply[T <: Expr](e: ToBeTyped[T]): ToBeTyped[rise.core.App] = primitives.mapLane(0)(e)
+    def apply(dim: Int): ToBeTyped[Primitive] = primitives.mapLane(dim)
   }
 
   object tensorMMA {

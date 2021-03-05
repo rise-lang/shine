@@ -10,7 +10,7 @@ import shine.macros.Primitive.comPrimitive
 
 @comPrimitive
 final case class ParFor(level: ParallelismLevel,
-                        dim: Char,
+                        dim: Int,
                         unroll: Boolean)
                        (val n: Nat,
                         val dt: DataType,
@@ -31,7 +31,7 @@ final case class ParFor(level: ParallelismLevel,
 }
 
 object ParFor {
-  def initInit(level: ParallelismLevel, dim: Char): Nat = level match {
+  def initInit(level: ParallelismLevel, dim: Int): Nat = level match {
     case Global     => globalId(dim)
     case Local      => threadId(dim)
     case WorkGroup  => blockId(dim)
@@ -40,7 +40,7 @@ object ParFor {
     case Sequential => throw new Exception("This should not happen")
   }
 
-  def initStep(level: ParallelismLevel, dim: Char): Nat = level match {
+  def initStep(level: ParallelismLevel, dim: Int): Nat = level match {
     case Global     => globalDim(dim)
     case Local      => blockDim(dim)
     case WorkGroup  => gridDim(dim)

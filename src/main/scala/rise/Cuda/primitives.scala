@@ -12,23 +12,23 @@ object primitives {
       impl{s: DataType =>
         impl{t: DataType => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)}}}
 
-  @primitive case class mapBlock(dim: Char) extends Primitive with Builder {
+  @primitive case class mapBlock(dim: Int) extends Primitive with Builder {
     mapType
   }
 
-  @primitive case class mapGlobal(dim: Char) extends Primitive with Builder {
+  @primitive case class mapGlobal(dim: Int) extends Primitive with Builder {
     mapType
   }
 
-  @primitive case class mapThreads(dim: Char) extends Primitive with Builder {
+  @primitive case class mapThreads(dim: Int) extends Primitive with Builder {
     mapType
   }
 
-  @primitive case class mapWarp(dim: Char) extends Primitive with Builder {
+  @primitive case class mapWarp(dim: Int) extends Primitive with Builder {
     mapType
   }
 
-  @primitive case class mapLane(dim: Char) extends Primitive with Builder {
+  @primitive case class mapLane(dim: Int) extends Primitive with Builder {
     mapType
   }
 

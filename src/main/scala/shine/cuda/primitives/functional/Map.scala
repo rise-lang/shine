@@ -15,7 +15,7 @@ import shine.macros.Primitive.expPrimitive
 
 @expPrimitive
 final case class Map(level: ParallelismLevel,
-                     dim: Char)
+                     dim: Int)
                     (val n: Nat,
                      val dt1: DataType,
                      val dt2: DataType,

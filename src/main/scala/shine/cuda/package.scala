@@ -16,27 +16,27 @@ package object cuda {
   def blockId: OpenCL.get_group_id.type = shine.OpenCL.get_group_id
 
   object warpId {
-    def apply(param: Char): ArithExpr with SimplifiedExpr =
+    def apply(param: Int): ArithExpr with SimplifiedExpr =
       threadId(param) / warpSize
   }
 
   object warpDim {
-    def apply(param: Char): ArithExpr with SimplifiedExpr =
+    def apply(param: Int): ArithExpr with SimplifiedExpr =
       blockDim(param) / warpSize
   }
 
   object laneId {
-    def apply(param: Char): ArithExpr with SimplifiedExpr =
+    def apply(param: Int): ArithExpr with SimplifiedExpr =
       threadId(param) % warpSize
   }
 
   object globalId {
-    def apply(param: Char): ArithExpr with SimplifiedExpr =
+    def apply(param: Int): ArithExpr with SimplifiedExpr =
       blockId(param) * blockDim(param) + threadId(param)
   }
 
   object globalDim {
-    def apply(param: Char): ArithExpr with SimplifiedExpr =
+    def apply(param: Int): ArithExpr with SimplifiedExpr =
       blockDim(param) * gridDim(param)
   }
 }

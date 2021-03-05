@@ -8,7 +8,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.OpenCL.AST.RequiredWorkGroupSize
 import shine.OpenCL.Compilation.KernelDef
-import shine.OpenCL.Compilation.Passes.{AdaptKernelParameters, FlagPrivateArrayLoops}
+import shine.OpenCL.Compilation.Passes.{AdaptKernelParameters, FlagPrivateArrayLoops, InjectWorkItemSizes}
 import shine.OpenCL.Compilation.Passes.HoistMemoryAllocations.AllocationInfo
 import shine.cuda.Compilation.Passes._
 import shine.OpenCL._
@@ -50,7 +50,7 @@ object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
                        funDef: KernelDef,
                        outParam: Identifier[AccType]
                       ): Phrase[CommType] => PhraseAfterPasses = {
-    InjectThreadSizes.inject(funDef.wgConfig) andThen
+    InjectWorkItemSizes.inject(funDef.wgConfig) andThen
       FlagPrivateArrayLoops.flag andThen
       CModuleGenerator.imperativePasses andThen
       HoistMemoryAllocations.hoist andThen

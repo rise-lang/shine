@@ -192,7 +192,6 @@ object gen {
   }
 
   object cuda {
-    import shine.cuda
     import opencl._
 
     type KernelModule = shine.cuda.KernelModule

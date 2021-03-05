@@ -21,10 +21,10 @@ class Printer extends shine.OpenCL.AST.Printer {
   override def toString(e: ArithExpr): String = e match {
     case of: BuiltInFunctionCall =>
       of.name match {
-        case "get_num_groups" => s"gridDim.${of.param.toChar}"
-        case "get_local_size" => s"blockDim.${of.param.toChar}"
-        case "get_local_id" => s"threadIdx.${of.param.toChar}"
-        case "get_group_id" => s"blockIdx.${of.param.toChar}"
+        case "get_num_groups" => s"gridDim.${(of.param + 'x').toChar}"
+        case "get_local_size" => s"blockDim.${(of.param + 'x').toChar}"
+        case "get_local_id" => s"threadIdx.${(of.param + 'x').toChar}"
+        case "get_group_id" => s"blockIdx.${(of.param + 'x').toChar}"
       }
 
     case _ => super.toString(e)
