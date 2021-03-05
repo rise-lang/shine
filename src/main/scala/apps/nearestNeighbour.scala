@@ -4,6 +4,7 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
 import rise.core.types._
+import rise.core.primitives._
 import rise.openCL.TypedDSL._
 
 object nearestNeighbour {
@@ -12,6 +13,13 @@ object nearestNeighbour {
     "{ return sqrt((lat - loc._fst) * (lat - loc._fst) + (lng - loc._snd) * (lng -  loc._snd)); }",
     (f32 x f32) ->: f32 ->: f32 ->: f32
   )
+
+  // FIXME: could not find original Lift expression, this is made up
+  val highLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+    (n`.`(f32 x f32)) ->: f32 ->: f32 ->: (n`.`f32)
+  )((locations, lat, lng) =>
+    locations |> map(fun(loc => distance(loc)(lat)(lng)))
+  ))
 
   val nn: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` (f32 x f32)) ->: f32 ->: f32 ->: (n `.` f32)
