@@ -10,25 +10,10 @@ package object cuda {
   type AddressSpace = shine.DPIA.Types.AddressSpace
   val warpSize = 32
 
-  object gridDim {
-    def apply(param: Char, range : Range = ContinuousRange(1, PosInf)) =
-      BuiltInAttribute("gridDim", param, range)
-  }
-
-  object blockDim {
-    def apply(param: Char, range : Range = ContinuousRange(1, PosInf)) =
-      BuiltInAttribute("blockDim", param, range)
-  }
-
-  object threadId {
-    def apply(param: Char) =
-      BuiltInAttribute("threadIdx", param, ContinuousRange(0, blockDim(param)))
-  }
-
-  object blockId {
-    def apply(param: Char) =
-      BuiltInAttribute("blockIdx", param, ContinuousRange(0, gridDim(param)))
-  }
+  def gridDim: OpenCL.get_num_groups.type = shine.OpenCL.get_num_groups
+  def blockDim: OpenCL.get_local_size.type = shine.OpenCL.get_local_size
+  def threadId: OpenCL.get_local_id.type = shine.OpenCL.get_local_id
+  def blockId: OpenCL.get_group_id.type = shine.OpenCL.get_group_id
 
   object warpId {
     def apply(param: Char): ArithExpr with SimplifiedExpr =

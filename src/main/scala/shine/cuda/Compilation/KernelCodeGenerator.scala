@@ -12,10 +12,11 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{AsVectorAligned, Cast}
 import shine.DPIA.primitives.imperative.{AsScalarAcc, Assign}
+import shine.OpenCL.BuiltInFunctionCall
 import shine.OpenCL.Compilation.{KernelCodeGenerator => OclCodeGenerator}
 import shine._
 import shine.cuda.primitives.imperative._
-import shine.cuda.{AddressSpace, BuiltInAttribute}
+import shine.cuda.AddressSpace
 
 import scala.collection.{immutable, mutable}
 
@@ -317,7 +318,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt =
     n match {
-      case of: BuiltInAttribute => cont(C.AST.Literal(of.toString))
+      case of: BuiltInFunctionCall => cont(C.AST.ArithmeticExpr(of))
       case _ => super.genNat(n, env, cont)
     }
 

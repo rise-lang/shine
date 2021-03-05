@@ -3,9 +3,9 @@ package shine.cuda.AST
 import arithexpr.arithmetic.ArithExpr
 import shine.C.AST._
 import shine.DPIA.Types.AddressSpace
-import shine.{OpenCL, cuda}
+import shine.OpenCL
 import shine.OpenCL.AST.KernelDecl
-import shine.cuda.BuiltInAttribute
+import shine.OpenCL.BuiltInFunctionCall
 
 object Printer {
   def apply(n: Node): String = (new Printer).printNode(n)
@@ -19,7 +19,13 @@ class Printer extends shine.OpenCL.AST.Printer {
   }
 
   override def toString(e: ArithExpr): String = e match {
-    case of: BuiltInAttribute => of.toString
+    case of: BuiltInFunctionCall =>
+      of.name match {
+        case "get_num_groups" => s"gridDim.${of.param.toChar}"
+        case "get_local_size" => s"blockDim.${of.param.toChar}"
+        case "get_local_id" => s"threadIdx.${of.param.toChar}"
+        case "get_group_id" => s"blockIdx.${of.param.toChar}"
+      }
 
     case _ => super.toString(e)
   }
