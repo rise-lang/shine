@@ -14,6 +14,11 @@ import shine.macros.Primitive.expPrimitive
 
 import scala.xml.Elem
 
+/**
+  * Returns a copy in shared memory of data in global memory ({@link GlobalToSharedAcc}).
+  * @param dt          datatype of data which should be copied
+  * @param inputGlobal data in global memory which should be copied to shared memory
+  */
 @expPrimitive
 final case class GlobalToShared(dt: DataType,
                                 inputGlobal: Phrase[ExpType]) extends ExpPrimitive with ConT {

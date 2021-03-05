@@ -9,6 +9,14 @@ import shine.DPIA.{->:, VarType, accT, expT}
 import shine.OpenCL.primitives.imperative.New
 import shine.macros.Primitive.expPrimitive
 
+/**
+  * Returns a fragment with the values of an applied function to elements of a fragment. <br>
+  * This primitive needs to be executed by a full warp!
+  * @param fragType type of the fragment
+  * @param fragment fragment of type `fragType` on whose elements the function should be applied
+  * @param fun      function which takes an element of type `fragType.dataType` and
+  *                 returns an element of type `fragType.dataType`
+  */
 @expPrimitive
 case class MapFragmentElements(fragType: FragmentType,
                                fragment: Phrase[ExpType],

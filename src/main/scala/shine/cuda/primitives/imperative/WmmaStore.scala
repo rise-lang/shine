@@ -6,7 +6,7 @@ import shine.DPIA.Types._
 import shine.macros.Primitive.comPrimitive
 
 /**
-  * Stores the elements from a fragment with fragmentKind `Accumulator` into a a
+  * Stores the elements from a fragment with fragmentKind `Accumulator` into a
   * matrix tile which resides in shared or global memory. <br>
   * This primitive needs to be executed by a full warp!
   * @param rows       number of rows of the fragment ({@link FragmentType#rows})

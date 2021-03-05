@@ -13,21 +13,30 @@ import shine.OpenCL.Sequential
 import shine.OpenCL.primitives.imperative.{IdxDistributeAcc, New}
 import shine.macros.Primitive.expPrimitive
 
+/**
+  * Returns a copy of a matrix in shared memory with `shift` elements spacing between two consecutive rows. <br>
+  * This can be used to avoid bank conflicts when using Tensor Cores.
+  * @param shift  number of elements spacing between two consecutive
+  * @param m      number of rows
+  * @param n      number of columnd
+  * @param dt     datatype of the elemnts of the matrix
+  * @param matrix matrix which should be copied to shared memory
+  */
 @expPrimitive
 final case class ToSharedMemoryShift(shift: Nat,
                                      m: Nat,
                                      n: Nat,
                                      dt: DataType,
-                                     array: Phrase[ExpType]) extends ExpPrimitive with ConT {
+                                     matrix: Phrase[ExpType]) extends ExpPrimitive with ConT {
 
-  array :: expT(m`.`(n`.`dt), write)
+  matrix :: expT(m`.`(n`.`dt), write)
   override val t: ExpType = expT(m`.`(n`.`dt), read)
 
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] =
      New(AddressSpace.Local, ArrayType(m, ArrayType(n + shift, dt)),
       λ(VarType(ArrayType(m, ArrayType(n + shift, dt))))(sharedArray => {
-        acc(array)(
+        acc(matrix)(
           MapAcc(m, ArrayType(n + shift, dt), ArrayType(n, dt),
             λ(AccType(ArrayType(n + shift, dt)))(x =>
               IdxDistributeAcc(n + shift, n, 1, Sequential, dt, x)),
