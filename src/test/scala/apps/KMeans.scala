@@ -14,8 +14,8 @@ class KMeans extends test_util.TestsWithExecutor {
     val clusters = Array.fill(C, F)(random.nextFloat())
 
     test_util.runsWithSameResult(Seq(
-      ("original", runOriginalKernel("KMeans.cl", features, clusters)),
-      ("dpia", runKernel(gen.opencl.kernel.fromExpr(apps.kmeans.kmeans), features, clusters))
+      ("original", runOriginalKernel("CGO17_KMeans.cl", features, clusters)),
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(apps.kmeans.kmeansLL), features, clusters))
     ))
   }
 }
