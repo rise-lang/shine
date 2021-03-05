@@ -1,5 +1,6 @@
 import opencl.executor.Executor
-import org.scalatest.BeforeAndAfter
+import org.scalactic.source.Position
+import org.scalatest.{BeforeAndAfter, Tag}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 import util.{AssertSame, Time, TimeSpan}
@@ -8,13 +9,39 @@ package object test_util {
   abstract class Tests extends AnyFunSuite with Matchers
 
   abstract class TestsWithExecutor extends Tests with BeforeAndAfter {
+    var openclIsAvailable = true
     before {
-      Executor.loadLibrary()
-      Executor.init()
+      try {
+        Executor.loadLibrary()
+        Executor.init()
+      } catch {
+        case _: UnsatisfiedLinkError =>
+          openclIsAvailable = false
+      }
     }
 
     after {
-      Executor.shutdown()
+      try {
+        Executor.shutdown()
+      } catch {
+        case _: Throwable =>
+      }
+    }
+
+    override protected def test(testName: String, testTags: Tag*)
+                               (testFun: => Any)
+                               (implicit pos: Position): Unit = {
+      super.test(testName, testTags:_*) {
+        // try to execute test ...
+        try {
+          testFun
+        } catch {
+          // ... only if execution fails due to a unsatisfied link error we
+          // enforce the assumption that OpenCL must be available.
+          case _: UnsatisfiedLinkError =>
+            assume(openclIsAvailable)
+        }
+      }
     }
   }
 
