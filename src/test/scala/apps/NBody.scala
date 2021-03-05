@@ -7,6 +7,10 @@ import shine.OpenCL._
 class NBody extends test_util.TestsWithExecutor {
   private val N = 512
 
+  test("high level nbody typechecks") {
+    println(highLevel.t)
+  }
+
   test("nbody versions produce same results") {
     val random = new scala.util.Random()
     val pos = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
