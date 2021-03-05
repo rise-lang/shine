@@ -57,7 +57,7 @@ package object test_util {
     } catch {
       case e: UnsatisfiedLinkError =>
         throw new TestCanceledException("OpenCL not available", e, 0)
-      case e => throw e
+      case e : Throwable => throw e
     }
   }
 
