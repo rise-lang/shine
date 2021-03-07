@@ -396,11 +396,11 @@ object parse {
                 case SExpr(outT) => {
                   concreteKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
                     case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier),
-                      outT)(rt.TypePlaceholder))
+                      outT)(rt.TypePlaceholder, outT.span))
                     case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier),
-                      outT)(rt.TypePlaceholder))
+                      outT)(rt.TypePlaceholder, outT.span))
                     case AddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](
-                      rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder))
+                      rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder, outT.span))
                     case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
                   }
                 }
@@ -608,13 +608,14 @@ object parse {
           if(synE.tail.isEmpty){
             throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
           }
-          val n = synE.tail.head match{
-            case SExpr(r.Literal(rS.IntData(len), _)) => len
+          val (n, spanOfIntData) = synE.tail.head match{
+            case SExpr(r.Literal(rS.IntData(len), span)) => (len, span)
             case _ => throw new IllegalStateException("For this Primitive '" + prim +
               "' we expect to see an lenght in Int")
           }
           synE = synE.tail.tail
-          prim.apply(n)
+          val pr = prim.apply(n)
+          pr
         }
         case SAddrSpace(addrSpace) => {
           e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder, e.span)
