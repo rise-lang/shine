@@ -109,8 +109,8 @@ object Primitive {
         }
 
         final case class ${TypeName(name)}(..$params, span: Option[Span]) extends Builder {
-          override def primitive: ${TypeName(className)} = $makeInstance()
-          override def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
+          override def primitive: ${TypeName(className)} = $makeInstanceSpan()
+          override def apply(): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
             rise.core.DSL.toBeTyped($makeInstanceSpan())
         }
 

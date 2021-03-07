@@ -550,13 +550,16 @@ object parse {
   }
 
   private def createSIntToExpr(name:SIntToExprAlternatives, n:Int, span:Span) : r.Expr = {
-    name match {
-      case AltMapGlobal() => op.mapGlobal(n, Some(span)).primitive
-      case AltMapLocal() => op.mapLocal(n, Some(span)).primitive
-      case AltMapWorkGroup() => op.mapWorkGroup(n, Some(span)).primitive
-      case AltMakeArray() => rp.makeArray(n,Some(span)).primitive
+    val expr = name match {
+      case AltMapGlobal() => op.mapGlobal(n, Some(span)).toExpr
+      case AltMapLocal() => op.mapLocal(n,Some(span)).toExpr
+      case AltMapWorkGroup() => op.mapWorkGroup(n, Some(span)).toExpr
+      case AltMakeArray() => rp.makeArray(n,Some(span)).toExpr
     }
-
+    if(expr.span.isEmpty) {
+      throw new IllegalStateException("Span should not be empty: "+ expr)
+    }
+    expr
   }
 
   private def combineExpressionsDependent(synElemList: List[SyntaxElement], mapDepL: MapDepL) : r.Expr = {
