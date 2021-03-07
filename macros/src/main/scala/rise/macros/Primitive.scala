@@ -67,8 +67,10 @@ object Primitive {
 
         object ${TermName{name}} extends Builder {
           override def primitive: ${TypeName(className)} = $makeInstance()
-          override def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
+          def apply(span: Option[Span] = None): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
             rise.core.DSL.toBeTyped($makeInstanceSpan())
+          override def apply(): rise.core.DSL.ToBeTyped[${TypeName(className)}] =
+            rise.core.DSL.toBeTyped($makeInstance())
           override def unapply(arg: rise.core.Expr): Option[Option[Span]] = arg match {
             case _: ${TypeName(className)} => Some(arg.span)
             case _ => None

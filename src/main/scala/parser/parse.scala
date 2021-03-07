@@ -220,8 +220,8 @@ object parse {
               if (remainderTokens.nonEmpty) {
                 val length :: remainderTokens2 = remainderTokens
                 length match {
-                  case NatNumber(n, _) => Left(ParseState(remainderTokens2, SExpr(rp.split(sp.span)(n)) :: parsedSynElems, map, mapDepL))
-                  case TypeIdentifier(t,_) => Left(ParseState(remainderTokens2, SExpr(r.DepApp[rt.NatKind](sp, rt.NatIdentifier(t))(rt.TypePlaceholder) ):: parsedSynElems, map, mapDepL))
+                  case NatNumber(n, _) => Left(ParseState(remainderTokens2, SExpr(r.DepApp[rt.NatKind](sp, n)(rt.TypePlaceholder, sp.span)) :: parsedSynElems, map, mapDepL))
+                  case TypeIdentifier(t,_) => Left(ParseState(remainderTokens2, SExpr(r.DepApp[rt.NatKind](sp, rt.NatIdentifier(t))(rt.TypePlaceholder, sp.span) ):: parsedSynElems, map, mapDepL))
                   case other => {
 //                    throw new IllegalStateException("please delete this error")
                     Right(ParseError("split expects a lenght as Nat, but " + other + " is not a correct lenght"))

@@ -6,8 +6,8 @@ import parser.Span
 trait Builder {
   def apply(): DSL.ToBeTyped[Primitive] =
     throw new Exception("apply method must be overridden")
-  def apply(span: Option[Span] = None): DSL.ToBeTyped[Primitive] =
-    throw new Exception("apply method must be overridden")
+//  def apply(span: Option[Span] = None): DSL.ToBeTyped[Primitive] =
+//    throw new Exception("apply method must be overridden")
   def apply(e: DSL.ToBeTyped[Expr]): DSL.ToBeTyped[App] =
     DSL.app(DSL.toBeTyped(apply()), e)
   def apply(n: Nat): DSL.ToBeTyped[DepApp[NatKind]] =
