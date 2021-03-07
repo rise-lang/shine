@@ -39,10 +39,16 @@ object parse {
     final case class DIdentifier(data: rt.DataTypeIdentifier) extends DataElement
     final case class DType(data: rt.DataType) extends DataElement
 
+  sealed trait SIntToExprAlternatives
+    final case class AltMapGlobal() extends  SIntToExprAlternatives
+    final case class AltMapLocal() extends  SIntToExprAlternatives
+    final case class AltMapWorkGroup() extends  SIntToExprAlternatives
+    final case class AltMakeArray() extends SIntToExprAlternatives
+
   sealed trait SyntaxElement
     final case class SExpr(expr: r.Expr) extends SyntaxElement
     final case class SType(t: rt.Type) extends SyntaxElement
-    final case class SIntToExpr(prim: Int=>r.Expr) extends SyntaxElement
+    final case class SIntToExpr(name: SIntToExprAlternatives, span: Option[Span]) extends SyntaxElement
     final case class SNat(nat: NatElement) extends SyntaxElement
     final case class SData(data: DataElement) extends SyntaxElement
     final case class SAddrSpace(addrSpace: rt.AddressSpace) extends SyntaxElement
@@ -112,9 +118,9 @@ object parse {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     name match {
         //openCL/primitives
-      case "mapGlobal" => SIntToExpr(op.mapGlobal(_, Some(span)).toExpr) //Todo: add span to everything
-      case "mapLocal" => SIntToExpr(op.mapLocal(_, Some(span)).toExpr)
-      case "mapWorkGroup" => SIntToExpr(op.mapWorkGroup(_, Some(span)).toExpr)
+      case "mapGlobal" => SIntToExpr(AltMapGlobal(), Some(span))
+      case "mapLocal" => SIntToExpr(AltMapLocal(), Some(span))
+      case "mapWorkGroup" => SIntToExpr(AltMapWorkGroup(),Some(span))
       case "oclToMem" => SExpr(op.oclToMem( Some(span)))
       case "oclReduceSeq" => SExpr(op.oclReduceSeq(Some(span)))
       case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll( Some(span)))
@@ -134,7 +140,7 @@ object parse {
       )(rt.TypePlaceholder, Some(span)))
 
         //core/primitives
-      case "makeArray" => SIntToExpr(rp.makeArray(_, Some(span)).toExpr)
+      case "makeArray" => SIntToExpr(AltMakeArray(),Some(span))
       case "cast" => SExpr(rp.cast(Some(span)))
       case "depJoin" => SExpr(rp.depJoin( Some(span)))
       case "depMapSeq" => SExpr(rp.depMapSeq( Some(span)))
@@ -207,7 +213,7 @@ object parse {
     nextToken match {
       case Identifier(name, span) => {
         matchPrimitiveOrIdentifier(name, span) match {
-          case SIntToExpr(prim) => Left(ParseState(remainderTokens, SIntToExpr(prim) :: parsedSynElems, map,
+          case SIntToExpr(name, span) => Left(ParseState(remainderTokens, SIntToExpr(name, span) :: parsedSynElems, map,
             mapDepL))
           case SExpr(prim) => prim match {
             case sp @ rp.split(_) => {
@@ -543,6 +549,16 @@ object parse {
     l
   }
 
+  private def createSIntToExpr(name:SIntToExprAlternatives, n:Int, span:Span) : r.Expr = {
+    name match {
+      case AltMapGlobal() => op.mapGlobal(n, Some(span)).primitive
+      case AltMapLocal() => op.mapLocal(n, Some(span)).primitive
+      case AltMapWorkGroup() => op.mapWorkGroup(n, Some(span)).primitive
+      case AltMakeArray() => rp.makeArray(n,Some(span)).primitive
+    }
+
+  }
+
   private def combineExpressionsDependent(synElemList: List[SyntaxElement], mapDepL: MapDepL) : r.Expr = {
     if(synElemList.isEmpty){
       throw new IllegalArgumentException("the ElemList is empty!")
@@ -556,16 +572,19 @@ object parse {
         synE = synE.tail
         expr
       }
-      case SIntToExpr(prim) => {
+      case SIntToExpr(name, span) => {
         if(synE.tail.isEmpty){
-          throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
+          throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
         }
-        val n = synE.tail.head match{
+        val n:Int = synE.tail.head match{
           case SExpr(r.Literal(rS.IntData(len), _)) => len
-          case _ => throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
+          case _ => throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
         }
         synE = synE.tail.tail
-        prim.apply(n)
+        span match {
+          case None => throw new IllegalStateException("should not be None")
+          case Some(spa) =>         createSIntToExpr(name, n, spa)
+        }
       }
       case SAddrSpace(addrSpace) => throw new RuntimeException(
         "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
@@ -604,18 +623,19 @@ object parse {
           }
           synE = synE.tail
         }
-        case SIntToExpr(prim) => {
-          if(synE.tail.isEmpty){
-            throw new IllegalStateException("For this Primitive '" + prim +"' we expect to see an lenght in Int")
-          }
-          val (n, spanOfIntData) = synE.tail.head match{
-            case SExpr(r.Literal(rS.IntData(len), span)) => (len, span)
-            case _ => throw new IllegalStateException("For this Primitive '" + prim +
-              "' we expect to see an lenght in Int")
-          }
-          synE = synE.tail.tail
-          val pr = prim.apply(n)
-          pr
+        case SIntToExpr(name, span) => {
+            if(synE.tail.isEmpty){
+              throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
+            }
+            val n = synE.tail.head match{
+              case SExpr(r.Literal(rS.IntData(len), _)) => len
+              case _ => throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
+            }
+            synE = synE.tail.tail
+            span match {
+              case None => throw new IllegalStateException("should not be None")
+              case Some(spa) =>  createSIntToExpr(name, n, spa)
+            }
         }
         case SAddrSpace(addrSpace) => {
           e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder, e.span)
@@ -748,7 +768,7 @@ object parse {
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
-          case SIntToExpr(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
+          case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
           case SAddrSpace(addrSpace) => throw new RuntimeException(
@@ -832,7 +852,7 @@ object parse {
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
-          case SIntToExpr(prim) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
+          case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
           case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
           case SAddrSpace(addrSpace) => throw new RuntimeException(
@@ -880,7 +900,7 @@ object parse {
       synElems.head match {
         case SType(typ) => typ :: getTypesInList(synElems.tail)
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
-        case SIntToExpr(e) => throw new IllegalArgumentException(
+        case SIntToExpr(e, _) => throw new IllegalArgumentException(
           "in getTypesInList we have as head a not Type: "+ e)
         case SData(t) => t match {
           case DIdentifier(data) => data :: getTypesInList(synElems.tail)
@@ -1002,7 +1022,7 @@ object parse {
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
           }
         case SExpr(i) => (i, synElemListExpr.tail)
-        case SIntToExpr(prim) => throw new RuntimeException("Here is an Expression expected, but " + prim +
+        case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
           " is not an Expression!")
         case SData(t) => t match {
           case DIdentifier(data) => synElemListExpr.tail.head match {
