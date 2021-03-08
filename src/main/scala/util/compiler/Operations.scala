@@ -1,7 +1,9 @@
 package util.compiler
 
-import util.compiler.PartialCompiler.{idPC, fullPartialCompiler}
+import util.compiler.PartialCompiler.idPC
 
+// The notation in the comments is inspired by
+// "The Compiler Forest" by Mihai Budiu, Joel Galenson, and Gordon D. Plotkin
 object Operations {
   // Composition: PC<<C>>
   def composeC[S, T, S_, T_](pc: S => (S_, T_ => T),
@@ -75,12 +77,6 @@ object Operations {
       case Left(s1) => pc1(s1)
       case Right(s2) => pc2(s2)
     }
-
-  // Functor: PC_Func
-  def PC_func[S, T, S_, T_](f: S => S_, g: T_ => T): S => (S_, T_ => T) =
-    fullPartialCompiler(f, {
-      case (_, t_) => g(t_)
-    })
 
   // Iteration: DO
   def iterate[S, T](pc: S => (S, T => T),

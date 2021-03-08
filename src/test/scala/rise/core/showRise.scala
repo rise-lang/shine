@@ -7,7 +7,7 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeqUnroll
 import shine.DPIA.Nat
 

@@ -5,7 +5,7 @@ import rise.core.DSL.Type._
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.KernelExecutor._
 

@@ -62,6 +62,7 @@ object algorithmic {
       Success(padEmpty(n+m)(in) !: e.t)
   }
 
+  def `map >> reduce -> reduce`: Strategy[Rise] = reduceMapFusion
   // *g >> reduce f init -> reduce (acc, x => f acc (g x)) init
   @rule def reduceMapFusion: Strategy[Rise] = {
     case e @ App(App(App(r @ ReduceX(), f), init), App(App(map(), g), in)) =>
@@ -73,19 +74,7 @@ object algorithmic {
         preserveType(f)(acc)(preserveType(g)(x)))))(init)(in) !: e.t)
   }
 
-  @rule def fuseReduceMap: Strategy[Rise] = {
-    case e @ App(
-      App(App(ReduceX(), op), init), // reduce
-      App(App(map(), f), mapArg)     // map
-    ) =>
-      val red = op.t match {
-        case FunType(_, yToOutT) if f.t == yToOutT => reduce
-        case _ => reduceSeq
-      }
-      Success(
-        (red(fun((acc, y) =>
-          preserveType(op)(acc)(preserveType(f)(y))))(init) $ mapArg) !: e.t)
-  }
+  def fuseReduceMap: Strategy[Rise] = reduceMapFusion
 
   @rule def reduceMapFission()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case e @ App(App(ReduceX(), Lambda(acc, Lambda(y,

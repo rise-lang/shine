@@ -1,28 +1,27 @@
 package exploration
 
 import java.nio.file.{Files, Paths}
-
 import elevate.core.Strategy
-
+import elevate.core.strategies.traversal.topDown
+import rise.elevate.rules.algorithmic.fuseReduceMap
+import rise.elevate.rules.traversal.default
 import scala.collection.immutable
-//import elevate.core.strategies.traversal.topDown
-//import rise.elevate.rules.algorithmic.fuseReduceMap
-//import rise.elevate.rules.traversal.default
 import rise.elevate.strategies.normalForm.DFNF
 import exploration.runner.CExecutor
 import elevate.heuristic_search.Metaheuristic
 import elevate.heuristic_search.util.Solution
 import exploration.explorationUtil.jsonParser
 import exploration.explorationUtil.jsonParser.ParseExploration
+import strategies.defaultStrategies
+import elevate.core._
+import elevate.core.strategies.basic._
 import rise.elevate.Rise
-import strategies.standardStrategies
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
-//import rise.elevate.strategies.traversal._
+import rise.elevate.strategies.traversal._
 
 import scala.sys.process._
 import scala.language.postfixOps
-
 
 object riseExploration {
 
@@ -71,7 +70,9 @@ object riseExploration {
     // -- todo --  read expression from file
 
     // make this more generic
-    val lowering = DFNF() `;` lowerToC
+    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+
+    // initialize gold expression
     val gold = lowering(solution).get
 
     // create unique output folder
@@ -119,7 +120,7 @@ object riseExploration {
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
     val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[CExecutor], standardStrategies.strategies, nameList.reverse.apply(index))
+      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[CExecutor], defaultStrategies.strategies, nameList.reverse.apply(index))
     index = index + 1
 
     // iterate reverse direction
@@ -127,7 +128,7 @@ object riseExploration {
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
       metaheuristic = new Metaheuristic[Rise](elem.heuristic, jsonParser.getHeuristic(elem.heuristic),
-        elem.depth,elem.iteration, metaheuristic, standardStrategies.strategies, nameList.reverse.apply(index))
+        elem.depth,elem.iteration, metaheuristic, defaultStrategies.strategies, nameList.reverse.apply(index))
       index = index + 1
     })
 

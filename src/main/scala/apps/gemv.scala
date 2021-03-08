@@ -41,7 +41,7 @@ object gemv {
   ))
 
   object ocl {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.openCL.primitives.{mapWorkGroup => _, mapLocal => _, _}
 
     val blastN = depFun((n: Nat, m: Nat) => fun(

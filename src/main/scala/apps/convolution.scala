@@ -6,7 +6,7 @@ import HighLevelConstructs._
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeqUnroll
 import util.{Time, TimeSpan}
 import shine.OpenCL.KernelExecutor._
