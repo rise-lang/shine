@@ -4,8 +4,13 @@ import mriQ._
 import util.gen
 
 class MRIQ extends test_util.TestsWithExecutor {
-  private val K = 32
-  private val X = 32
+  private val K = 256
+  private val X = 512
+
+  test("high level expression typechecks") {
+    println(computePhiMagHL.t)
+    println(computeQHL.t)
+  }
 
   test("computePhiMag versions produce same results") {
     val random = new scala.util.Random()
