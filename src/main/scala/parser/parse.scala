@@ -649,7 +649,13 @@ object parse {
           }
           synE = synE.tail
         }
-        case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
+        case SData(dataElem) => {
+          dataElem match {
+            case DIdentifier(data) => e= r.DepApp[rt.DataKind](e,data)(rt.TypePlaceholder, e.span)
+            case DType(data) => e= r.DepApp[rt.DataKind](e,data)(rt.TypePlaceholder, e.span)
+          }
+          synE = synE.tail
+        }
         case SNat(natElem) => {
           natElem match {
             case NIdentifier(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, e.span)
