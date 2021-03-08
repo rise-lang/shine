@@ -613,14 +613,18 @@ object parse {
           }
           synE = synE.tail
         }
-        case SIntToExpr(name, span) => {
+        case SIntToExpr(name, span1) => {
             if(synE.tail.isEmpty){
               throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
             }
-            val n = synE.tail.head match{
-              case SExpr(r.Literal(rS.IntData(len), _)) => len
+            val (n, spanOfN) = synE.tail.head match{
+              case SExpr(r.Literal(rS.IntData(len), spanInt)) => spanInt match {
+                case None => throw new IllegalStateException("Span should not be None")
+                case Some(spanI) => (len, spanI)
+              }
               case _ => throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
             }
+            val span = span1 + spanOfN
             synE = synE.tail.tail
             createSIntToExpr(name, n, span)
         }
@@ -640,11 +644,13 @@ object parse {
                   //Todo: Bessere Fehlermeldung!!!
                   throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
                 }
-                case Some(k)=> k match {
-                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, e.span)
-                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, e.span)
-                  case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e,
-                    rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, e.span)
+                case Some(k)=> {
+                  k match {
+                    case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, e.span)
+                    case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, e.span)
+                    case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e,
+                      rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, e.span)
+                  }
                 }
               }
               case _ => throw new IllegalStateException(
