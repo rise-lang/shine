@@ -48,10 +48,10 @@ object parse {
   sealed trait SyntaxElement
     final case class SExpr(expr: r.Expr) extends SyntaxElement
     final case class SType(t: rt.Type) extends SyntaxElement
-    final case class SIntToExpr(name: SIntToExprAlternatives, span: Option[Span]) extends SyntaxElement
-    final case class SNat(nat: NatElement) extends SyntaxElement
-    final case class SData(data: DataElement) extends SyntaxElement
-    final case class SAddrSpace(addrSpace: rt.AddressSpace) extends SyntaxElement
+    final case class SIntToExpr(name: SIntToExprAlternatives, span: Span) extends SyntaxElement
+    final case class SNat(nat: NatElement, span: Span) extends SyntaxElement
+    final case class SData(data: DataElement, span:Span) extends SyntaxElement
+    final case class SAddrSpace(addrSpace: rt.AddressSpace, span: Span) extends SyntaxElement
 
   sealed trait RiseKind //Todo: Scoping einbauen, also Kind nennen und Token explizit immer hinzufügen
     final case class RData() extends RiseKind
@@ -118,9 +118,9 @@ object parse {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
     name match {
         //openCL/primitives
-      case "mapGlobal" => SIntToExpr(AltMapGlobal(), Some(span))
-      case "mapLocal" => SIntToExpr(AltMapLocal(), Some(span))
-      case "mapWorkGroup" => SIntToExpr(AltMapWorkGroup(),Some(span))
+      case "mapGlobal" => SIntToExpr(AltMapGlobal(), span)
+      case "mapLocal" => SIntToExpr(AltMapLocal(), span)
+      case "mapWorkGroup" => SIntToExpr(AltMapWorkGroup(),span)
       case "oclToMem" => SExpr(op.oclToMem( Some(span)))
       case "oclReduceSeq" => SExpr(op.oclReduceSeq(Some(span)))
       case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll( Some(span)))
@@ -140,7 +140,7 @@ object parse {
       )(rt.TypePlaceholder, Some(span)))
 
         //core/primitives
-      case "makeArray" => SIntToExpr(AltMakeArray(),Some(span))
+      case "makeArray" => SIntToExpr(AltMakeArray(),span)
       case "cast" => SExpr(rp.cast(Some(span)))
       case "depJoin" => SExpr(rp.depJoin( Some(span)))
       case "depMapSeq" => SExpr(rp.depMapSeq( Some(span)))
@@ -235,14 +235,14 @@ object parse {
   def parseTypeIdentToCorrectForm(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseTypeIdentToCorrectForm: "+ parseState)
     parseState.tokenStream.head match {
-      case TypeIdentifier(name, _) => parseState.mapDepL.get(name) match {
+      case TypeIdentifier(name, span) => parseState.mapDepL.get(name) match {
         case None =>  Right(ParseError("It exists no DepLambda with this Name: "+ name))
         case Some(RNat()) =>
           Left(ParseState(parseState.tokenStream.tail, SNat(NIdentifier(
-            rt.NatIdentifier(name))) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
+            rt.NatIdentifier(name)), span) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
         case Some(RData()) =>
           Left(ParseState(parseState.tokenStream.tail, SData(DIdentifier(
-            rt.DataTypeIdentifier(name))) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
+            rt.DataTypeIdentifier(name)), span) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
         case Some(RAddrSpace()) =>throw new IllegalStateException("DepAddrSpace is not implemented yet")
       }
       case t => Right(ParseError("Not an TypeIdentifier: "+ t))
@@ -561,21 +561,21 @@ object parse {
         if(synE.tail.isEmpty){
           throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
         }
-        val n:Int = synE.tail.head match{
-          case SExpr(r.Literal(rS.IntData(len), _)) => len
+        val (n, spanOfN) = synE.tail.head match{
+          case SExpr(r.Literal(rS.IntData(len), spanOfLen)) => (len, spanOfLen)
           case _ => throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
         }
         synE = synE.tail.tail
-        span match {
-          case None => throw new IllegalStateException("should not be None")
-          case Some(spa) =>         createSIntToExpr(name, n, spa)
-        }
+        spanOfN match {
+            case None => throw new IllegalStateException("Span of N should not be None")
+            case Some(spa2) => createSIntToExpr(name, n, span+spa2)
+          }
       }
-      case SAddrSpace(addrSpace) => throw new RuntimeException(
+      case SAddrSpace(addrSpace,_) => throw new RuntimeException(
         "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
-      case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
-      case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+      case SData(t, span) => throw new RuntimeException("List should't have any Data at this position! " + t)
+      case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
     }
     println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
     while(!synE.isEmpty){
@@ -589,21 +589,26 @@ object parse {
             case Some(span) => span
             case None => throw new IllegalStateException("Span of the next Expr '"+ expr1+ "'is None in combineExpressionsDependent")
           }
-          val span = Span(span_e.file, span_e.begin, span_expr1.end) //Todo: check if span is in the same file
+          val span = span_e + span_expr1
           e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
           synE = synE.tail
         }
-        case SData(DIdentifier(rt.DataTypeIdentifier(name, _))) => { //Todo: Add span!!!
+        case SData(DIdentifier(data @ rt.DataTypeIdentifier(name, _)), dataSpan) => { //Todo: Add span!!!
+          val span = e.span match {
+            case None => throw new IllegalStateException("Span should no be None")
+            case Some(eSpan) =>dataSpan+eSpan
+          }
+
           mapDepL.get(name) match {
             case None => {
               //Todo: Bessere Fehlermeldung!!!
               throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
             }
             case Some(k)=> k match {
-              case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, e.span)
-              case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, e.span)
+              case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, Some(span))
+              case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, Some(span))
               case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e,
-                rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, e.span)
+                rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, Some(span))
             }
           }
           synE = synE.tail
@@ -617,13 +622,14 @@ object parse {
               case _ => throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
             }
             synE = synE.tail.tail
-            span match {
-              case None => throw new IllegalStateException("should not be None")
-              case Some(spa) =>  createSIntToExpr(name, n, spa)
-            }
+            createSIntToExpr(name, n, span)
         }
-        case SAddrSpace(addrSpace) => {
-          e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder, e.span)
+        case SAddrSpace(addrSpace, spanAddr) => {
+          val span = e.span match {
+            case None => throw new IllegalStateException("Span should not be None")
+            case Some(sp) => sp+spanAddr
+          }
+          e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder, Some(span))
           synE = synE.tail
         }
         case SType(t) => {
@@ -649,17 +655,25 @@ object parse {
           }
           synE = synE.tail
         }
-        case SData(dataElem) => {
+        case SData(dataElem, dataSpan) => {
+          val span = e.span match {
+            case None => throw new IllegalStateException("Span should not be zero")
+            case Some(sp) => dataSpan+sp
+          }
           dataElem match {
-            case DIdentifier(data) => e= r.DepApp[rt.DataKind](e,data)(rt.TypePlaceholder, e.span)
-            case DType(data) => e= r.DepApp[rt.DataKind](e,data)(rt.TypePlaceholder, e.span)
+            case DIdentifier(data) => e= r.DepApp[rt.DataKind](e,data)(rt.TypePlaceholder, Some(span))
+            case DType(data) => e= r.DepApp[rt.DataKind](e,data)(rt.TypePlaceholder, Some(span))
           }
           synE = synE.tail
         }
-        case SNat(natElem) => {
+        case SNat(natElem, spanNat) => {
+          val span = e.span match {
+            case None => throw new IllegalStateException("Span should be not None")
+            case Some(sp1) => sp1 +spanNat
+          }
           natElem match {
-            case NIdentifier(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, e.span)
-            case NNumber(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, e.span)
+            case NIdentifier(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, Some(span))
+            case NNumber(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, Some(span))
           }
           synE = synE.tail
         }
@@ -766,9 +780,9 @@ object parse {
           case SType(t) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
           case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
-          case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
-          case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-          case SAddrSpace(addrSpace) => throw new RuntimeException(
+          case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
+          case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+          case SAddrSpace(addrSpace,_) => throw new RuntimeException(
             "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
         }
       }
@@ -850,9 +864,9 @@ object parse {
           case SType(t) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
           case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
-          case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
-          case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-          case SAddrSpace(addrSpace) => throw new RuntimeException(
+          case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
+          case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+          case SAddrSpace(addrSpace,_) => throw new RuntimeException(
             "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
         }
       }
@@ -899,12 +913,12 @@ object parse {
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
         case SIntToExpr(e, _) => throw new IllegalArgumentException(
           "in getTypesInList we have as head a not Type: "+ e)
-        case SData(t) => t match {
+        case SData(t,_) => t match {
           case DIdentifier(data) => data :: getTypesInList(synElems.tail)
           case DType(data) => data :: getTypesInList(synElems.tail)
         }
-        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-        case SAddrSpace(addrSpace) => throw new RuntimeException(
+        case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+        case SAddrSpace(addrSpace,_) => throw new RuntimeException(
           "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       }
     }else{
@@ -1021,7 +1035,7 @@ object parse {
         case SExpr(i) => (i, synElemListExpr.tail)
         case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
           " is not an Expression!")
-        case SData(t) => t match {
+        case SData(t,_) => t match {
           case DIdentifier(data) => synElemListExpr.tail.head match {
             case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
@@ -1031,8 +1045,8 @@ object parse {
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
           }
         }
-        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-        case SAddrSpace(addrSpace) => throw new RuntimeException(
+        case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+        case SAddrSpace(addrSpace,_) => throw new RuntimeException(
           "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       }
     val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
@@ -1163,7 +1177,7 @@ object parse {
       case Left(pState) => {
         require(pState.parsedSynElems.length==2, "It should exactly be 1 Nat and one Identifer for IndexType in the list!")
         val ty = pState.parsedSynElems.reverse match {
-          case SNat(nat)::SData(data) :: Nil => nat match {
+          case SNat(nat,_)::SData(data,_) :: Nil => nat match {
             case NNumber(n) => data match {
               case DIdentifier(d) => SType(rt.ArrayType(n, d))
               case DType(d) => SType(rt.ArrayType(n,d))
@@ -1173,7 +1187,7 @@ object parse {
               case DType(d) => SType(rt.ArrayType(n,d))
             }
           }
-          case SNat(nat)::SType(t) :: Nil => nat match {
+          case SNat(nat,_)::SType(t) :: Nil => nat match {
             case NNumber(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]))
             case NIdentifier(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]))
           }
@@ -1203,7 +1217,7 @@ object parse {
         require(pState.parsedSynElems.length==2,
           "It should exactly be 1 Nat and one Identifer for IndexType in the list!")
         val ty = pState.parsedSynElems.reverse match {
-          case SType(rt.TypeIdentifier("Idx")) :: SNat(nat)::Nil => nat match {
+          case SType(rt.TypeIdentifier("Idx")) :: SNat(nat,_)::Nil => nat match {
             case NNumber(nat) => SType(rt.IndexType(nat))
             case NIdentifier(nat) => SType(rt.IndexType(nat))
           }
@@ -1355,7 +1369,7 @@ object parse {
     val nextToken :: remainderTokens = parseState.tokenStream
 
     nextToken match {
-      case AddrSpaceType(addrSpace, _) => {
+      case AddrSpaceType(addrSpace, spanAddr) => {
         val p:rt.AddressSpace = addrSpace match {
           case "Local" => rt.AddressSpace.Local
           case "Global" => rt.AddressSpace.Global
@@ -1363,7 +1377,7 @@ object parse {
           case "Constant" => rt.AddressSpace.Constant
         }
         Left(ParseState(remainderTokens,
-          SAddrSpace(p) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
+          SAddrSpace(p,spanAddr) :: parseState.parsedSynElems, parseState.mapFkt, parseState.mapDepL))
       }
       case tok => {
         println("AddrSpaceTypeWasExpected: "+ tok + ": " + remainderTokens)
@@ -1505,10 +1519,10 @@ object parse {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case NatNumber(number, _) => Left(ParseState(remainderTokens, SNat(NNumber(number:rt.Nat))::parsedSynElems,
+      case NatNumber(number, spanNat) => Left(ParseState(remainderTokens, SNat(NNumber(number:rt.Nat),spanNat)::parsedSynElems,
         map, mapDepL))
-      case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens,
-        SNat(NIdentifier(rt.NatIdentifier(name)))::parsedSynElems, map, mapDepL))
+      case TypeIdentifier(name, spanTypeIdentifier) =>Left(ParseState(remainderTokens,
+        SNat(NIdentifier(rt.NatIdentifier(name)), spanTypeIdentifier)::parsedSynElems, map, mapDepL))
       case tok => Right(ParseError("failed to parse Nat: " + tok + " is not an Nat"))
     }
   }
@@ -1518,8 +1532,8 @@ object parse {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case TypeIdentifier(name, _) =>Left(ParseState(remainderTokens,
-        SData(DIdentifier(rt.DataTypeIdentifier(name)))::parsedSynElems, map, mapDepL))
+      case TypeIdentifier(name, sp) =>Left(ParseState(remainderTokens,
+        SData(DIdentifier(rt.DataTypeIdentifier(name)), sp)::parsedSynElems, map, mapDepL))
       case a => Right(ParseError("It ist DatatypeIdentifier expected but '"+ a.toString +"' is not an DataTypeIdentifier: " + a.s.toString + a.s.file.toString))
     }
   }

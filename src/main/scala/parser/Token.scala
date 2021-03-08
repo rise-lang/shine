@@ -25,6 +25,30 @@ case class Span(file: FileReader, begin: Location, end: Location) {
 
   def this(file: FileReader, loc: Location) = this(file, loc, loc) //beginLocation is equal to endLocation for '/'
   override def toString = "FileReader: " + file.toString + "; beginLocation: " + begin.toString + "; endLocation: " + end.toString
+
+  /*
+  both have to be in the same file!
+   */
+  def isAfter(other:Span):Boolean={
+    if(other.end.column<this.begin.column) return true
+    if(other.end.column>this.begin.column) return false
+
+    if(other.end.row<this.begin.row) return true
+    if(other.end.row>=this.begin.row) return false
+
+    throw new IllegalStateException("The Function isAfter in Span should never reach this point")
+  }
+
+  def +(other:Span):Span={
+    if(this.file.fileName!=other.file.fileName){
+      throw new IllegalArgumentException("You try to add two spans of different files")
+    }
+    if(other.isAfter(this)){
+        Span(this.file, this.begin, other.end)
+    }else{
+        Span(this.file, other.begin, this.end)
+    }
+  }
 }
 
 /*
