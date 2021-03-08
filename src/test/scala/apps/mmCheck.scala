@@ -17,6 +17,10 @@ class mmCheck extends test_util.TestsWithExecutor {
     (At, B, gold)
   }
 
+  test("high-level matrix multiplication typechecks") {
+    println(highLevel.t)
+  }
+
   test("sequential matrix multiplication produces expected result") {
     val (at, b, gold) = randGold()
     val (output, time) = runKernel(gen.opencl.kernel.fromExpr(sequential),
@@ -25,7 +29,7 @@ class mmCheck extends test_util.TestsWithExecutor {
     println(s"time: $time")
   }
 
-  ignore("amd matrix multiplication produces expected result") {
+  test("amd matrix multiplication produces expected result") {
     val (at, b, gold) = randGold()
     val runs = Seq(
       "original" -> runOriginal("CGO17_MMAMD.cl",
@@ -39,7 +43,7 @@ class mmCheck extends test_util.TestsWithExecutor {
     })
   }
 
-  ignore("nvidia matrix multplication produces expected result") {
+  test("nvidia matrix multplication produces expected result") {
     val (at, b, gold) = randGold()
     val runs = Seq(
       "original" -> runOriginal("CGO17_MMNVIDIA.cl",

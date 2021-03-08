@@ -11,11 +11,22 @@ import rise.openCL.primitives.oclReduceSeq
 object mm {
   private val id = fun(x => x)
   private val mulT = separableConvolution2D.mulT
+  private val dot = separableConvolution2D.dot
   private val dotSeq = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
   ))
 
   // the first matrix input is transposed
+
+  val highLevel: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
+    (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
+  )((at, b) =>
+    transpose(at) |> map(fun(aRow =>
+      transpose(b) |> map(fun(bCol =>
+        dot(aRow)(bCol)
+      ))
+    ))
+  ))
 
   val sequential: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
     (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
