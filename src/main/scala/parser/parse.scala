@@ -215,29 +215,11 @@ object parse {
         matchPrimitiveOrIdentifier(name, span) match {
           case SIntToExpr(name, span) => Left(ParseState(remainderTokens, SIntToExpr(name, span) :: parsedSynElems, map,
             mapDepL))
-          case SExpr(prim) => prim match {
-            case sp @ rp.split(_) => {
-              if (remainderTokens.nonEmpty) {
-                val length :: remainderTokens2 = remainderTokens
-                length match {
-                  case NatNumber(n, _) => Left(ParseState(remainderTokens2, SExpr(r.DepApp[rt.NatKind](sp, n)(rt.TypePlaceholder, sp.span)) :: parsedSynElems, map, mapDepL))
-                  case TypeIdentifier(t,_) => Left(ParseState(remainderTokens2, SExpr(r.DepApp[rt.NatKind](sp, rt.NatIdentifier(t))(rt.TypePlaceholder, sp.span) ):: parsedSynElems, map, mapDepL))
-                  case other => {
-//                    throw new IllegalStateException("please delete this error")
-                    Right(ParseError("split expects a lenght as Nat, but " + other + " is not a correct lenght"))
-                  }
-                }
-              } else {
-//                throw new IllegalStateException("please delete this error2")
-                Right(ParseError("split has no length"))
-              }
-            }
-            case _ => {
+          case SExpr(prim) => {
               if(prim.span.isEmpty){
                 throw new IllegalStateException("The span of '" + prim +"' is empty")
               }
               Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems, map, mapDepL))
-            }
           }
           case otherSyntaxElement => throw new IllegalStateException("The Syntax Element '" + otherSyntaxElement +
             "' was not expected from matchPrimitiveOrIdentifer")
@@ -668,7 +650,13 @@ object parse {
           synE = synE.tail
         }
         case SData(t) => throw new RuntimeException("List should't have any Data at this position! " + t)
-        case SNat(t) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+        case SNat(natElem) => {
+          natElem match {
+            case NIdentifier(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, e.span)
+            case NNumber(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, e.span)
+          }
+          synE = synE.tail
+        }
       }
     }
     println("I have combined the Expressions in Lambda: "+ e)
