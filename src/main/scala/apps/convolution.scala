@@ -14,12 +14,36 @@ import shine.OpenCL.KernelExecutor._
 object convolution {
   private val id = fun(x => x)
 
+  private val dotElemWeightsHL = fun((weights, elem) =>
+    zip(join(elem))(weights) |>
+    map(separableConvolution2D.mulT) |>
+    reduce(add)(l(0.0f))
+  )
+
   private val dotElemWeights = fun((weights, elem) =>
     oclReduceSeqUnroll(AddressSpace.Private)(fun((acc, pair) => {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
     }))(l(0.0f))(zip(join(elem))(weights)))
+
+  // FIXME: could not find original Lift expression, this is made up
+  val blurXHL: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+    (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
+  )((matrix, weights) =>
+    map(map(dotElemWeightsHL(weights)))
+    o slide2D(1, 1, 17, 1)
+    o padClamp2D(0, 0, 8, 8) $ matrix
+  ))
+
+  // FIXME: could not find original Lift expression, this is made up
+  val blurYHL: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+    (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
+  )((matrix, weights) =>
+    map(map(transpose >> dotElemWeightsHL(weights)))
+    o slide2D(17, 1, 1, 1)
+    o padClamp2D(8, 8, 0, 0) $ matrix
+  ))
 
   val blurXTiled2D: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
