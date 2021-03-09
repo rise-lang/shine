@@ -3,8 +3,6 @@ package exploration
 import rise.core.DSL.{fun, lf32}
 import rise.core.primitives._
 import rise.core.types.{ArrayType, f32}
-import rise.elevate.rules.algorithmic._
-import rise.elevate.strategies.traversal._
 
 object explorationTutorial {
   // see: docs/exploration/tutorial.md
