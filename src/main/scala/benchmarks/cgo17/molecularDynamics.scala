@@ -11,13 +11,15 @@ object molecularDynamics {
   def withSize(N: Int, sampleCount: Int): Unit = {
     val random = new scala.util.Random()
     val particles = Array.fill(N * 4)(random.nextFloat() * 20.0f)
-    val particlesTuple = particles.sliding(4, 4).map { case Array(a, b, c, d) => (a, b, c, d) }.toArray
+    val particlesTuple = particles.sliding(4, 4)
+      .map { case Array(a, b, c, d) => (a, b, c, d) }.toArray
     val neighbours = buildNeighbourList(particlesTuple, M).transpose
 
     val kernel = gen.opencl.kernel.fromExpr(shocLL)
 
     val stats = Seq(
-      ("original", benchmark(sampleCount, runOriginalKernel("CGO17_MolecularDynamics.cl", particles, neighbours)._2)),
+      ("original", benchmark(sampleCount,
+        runOriginalKernel("CGO17_MolecularDynamics.cl", particles, neighbours)._2)),
       ("dpia", benchmark(sampleCount, runKernel(kernel, particles, neighbours)._2)),
     )
     println(s"runtime over $sampleCount runs")

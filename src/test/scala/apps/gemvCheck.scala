@@ -7,7 +7,6 @@ import rise.core.types._
 import util.gen
 import util.gen.c.function
 
-//noinspection TypeAnnotation
 class gemvCheck extends test_util.Tests {
   private val N = 128
   private val M = 128

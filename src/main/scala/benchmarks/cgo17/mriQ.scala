@@ -21,9 +21,11 @@ object mriQ {
     val qKernel = gen.opencl.kernel.fromExpr(computeQ)
 
     val stats = Seq(
-      ("original PhiMag", benchmark(sampleCount, runOriginalComputePhiMag("CGO17_ComputePhiMag.cl", phiR, phiI)._2)),
+      ("original PhiMag", benchmark(sampleCount,
+        runOriginalComputePhiMag("CGO17_ComputePhiMag.cl", phiR, phiI)._2)),
       ("dpia PhiMag", benchmark(sampleCount, runComputePhiMag(phiMagKernel, phiR, phiI)._2)),
-      ("original Q", benchmark(sampleCount, runOriginalComputeQ("CGO17_ComputeQ.cl", x, y, z, Qr, Qi, kvalues)._2)),
+      ("original Q", benchmark(sampleCount,
+        runOriginalComputeQ("CGO17_ComputeQ.cl", x, y, z, Qr, Qi, kvalues)._2)),
       ("dpia Q", benchmark(sampleCount, runComputeQ(qKernel, x, y, z, Qr, Qi, kvalues)._2)),
     )
     println(s"runtime over $sampleCount runs")

@@ -14,7 +14,8 @@ object nearestNeighbour {
     val kernel = gen.opencl.kernel.fromExpr(nn)
 
     val stats = Seq(
-      ("original", benchmark(sampleCount, runOriginalKernel("NearestNeighbour.cl", locations, lat, lng)._2)),
+      ("original", benchmark(sampleCount,
+        runOriginalKernel("NearestNeighbour.cl", locations, lat, lng)._2)),
       ("dpia", benchmark(sampleCount, runKernel(kernel, locations, lat, lng)._2)),
     )
     println(s"runtime over $sampleCount runs")
