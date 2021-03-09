@@ -31,7 +31,7 @@ class gemvCheck extends test_util.Tests {
   }
 
   test("sequential gemv compiles to syntactically correct C") {
-    function.asStringFromExpr(highLevel)
+    function.asStringFromExpr(sequential)
   }
 
   test("OpenCL gemv versions type inference works") {
