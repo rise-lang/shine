@@ -42,6 +42,17 @@ class parseTest extends  AnyFlatSpec {
       case rt.FunType(rt.ArrayType(n, rt.i32), rt.FunType(rt.i32, rt.i32)) if n.eval.equals(5) => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
+
+    ex.span match {
+      case None => fail("The Span should not be None")
+      case Some(Span(file, begin, end)) => {
+        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayType.rise")
+        begin.row should equal(2)
+        end.row should equal(13)
+        begin.column should equal(1)
+        end.column should equal(1)
+      }
+    }
   }
 
   //Todo: It should be possible to parse "    arrayTypeOnlyTypAnn.rise\" and not only "arrayTypeOnlyTypAnn.rise"
@@ -75,9 +86,62 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
+      case r.Lambda(r.Identifier("x"), spAddComp @ r.App(r.App(rp.add(spAdd), idX @ r.Identifier("x")), r.Literal(rS.IntData(5), sp5))) =>
+        {
+          spAdd match {
+            case None => fail("The Span should not be None")
+            case Some(Span(file, begin, end)) => {
+              file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
+              begin.row should equal(6)
+              end.row should equal(7)
+              begin.column should equal(2)
+              end.column should equal(2)
+            }
+          }
+          idX.span match {
+            case None => fail("The Span should not be None")
+            case Some(Span(file, begin, end)) => {
+              file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
+              begin.row should equal(7)
+              end.row should equal(8)
+              begin.column should equal(2)
+              end.column should equal(2)
+            }
+          }
+          sp5 match {
+            case None => fail("The Span should not be None")
+            case Some(Span(file, begin, end)) => {
+              file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
+              begin.row should equal(9)
+              end.row should equal(10)
+              begin.column should equal(2)
+              end.column should equal(2)
+            }
+          }
+          spAddComp.span match {
+            case None => fail("The Span should not be None")
+            case Some(Span(file, begin, end)) => {
+              file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
+              begin.row should equal(6)
+              end.row should equal(10)
+              begin.column should equal(2)
+              end.column should equal(2)
+            }
+          }
+        }
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
+    }
+
+    ex.span match {
+      case None => fail("The Span should not be None")
+      case Some(Span(file, begin, end)) => {
+        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
+        begin.row should equal(2)
+        end.row should equal(10)
+        begin.column should equal(2)
+        end.column should equal(2)
+      }
     }
   }
 

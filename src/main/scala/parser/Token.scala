@@ -33,8 +33,8 @@ case class Span(file: FileReader, begin: Location, end: Location) {
     if(other.end.column<this.begin.column) return true
     if(other.end.column>this.begin.column) return false
 
-    if(other.end.row<this.begin.row) return true
-    if(other.end.row>=this.begin.row) return false
+    if(other.end.row<=this.begin.row) return true
+    if(other.end.row>this.begin.row) return false
 
     throw new IllegalStateException("The Function isAfter in Span should never reach this point")
   }
@@ -44,8 +44,10 @@ case class Span(file: FileReader, begin: Location, end: Location) {
       throw new IllegalArgumentException("You try to add two spans of different files")
     }
     if(other.isAfter(this)){
+      println("after:"+  "this.begin: "+ this.begin +"; this.end : " + this.end  + ";other.begin: " + other.begin+ ";other.end: " + other.end)
         Span(this.file, this.begin, other.end)
     }else{
+      println("before:"+  "this.begin: "+ this.begin +"; this.end : " + this.end  + ";other.begin: " + other.begin+ ";other.end: " + other.end)
         Span(this.file, other.begin, this.end)
     }
   }
@@ -119,24 +121,27 @@ sealed abstract class Token (span: Span){
 }
 
   final case class LParentheses(span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
-
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "LParentheses: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "'('"
   }
 
   // ")"
   final case class RParentheses(span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "RParentheses: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "')'"
   }
 
   final case class LBracket(span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "LBracket: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "'['"
   }
 
   final case class RBracket(span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "RBracket: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "']'"
   }
 
@@ -187,7 +192,8 @@ sealed abstract class Token (span: Span){
   }
   // "\"
   final case class Backslash (span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "Backslash: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "'\\'"
   }
 
@@ -204,19 +210,22 @@ sealed abstract class Token (span: Span){
   }
 
   final case class Dot(span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "Dot: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "'.'"
   }
 
   final case class Comma(span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "Comma: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "','"
   }
 
   // ":"
   //  (\x:a.x) : a -> a
   final case class Colon(span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "Colon: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "':'"
   }
 
@@ -225,7 +234,8 @@ sealed abstract class Token (span: Span){
   }
 
   final case class EqualsSign(span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "EqualsSign: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "'='"
   }
 
@@ -252,13 +262,15 @@ import OpType.BinOpType._
 
   // example: "+"
   final case class BinOp(opType: BinaryOp, span: Span) extends Token(span){
-    require(span.begin == span.end || (span.begin.column == span.end.column && (span.begin.row+1) ==span.end.row), "span,begin is unequal to span.end and it has not lenght 2")
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "BinOp: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = opType.toString
   }
 
   // example: "!"
   final case class UnOp(opType: UnaryOp, span: Span) extends Token(span){
-    require(span.begin == span.end, "span,begin is unequal to span.end")
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "UnOP: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = opType.toString
   }
 

@@ -590,6 +590,7 @@ object parse {
             case None => throw new IllegalStateException("Span of the next Expr '"+ expr1+ "'is None in combineExpressionsDependent")
           }
           val span = span_e + span_expr1
+          println("\n\nHut"+span+"\n\n")
           e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
           synE = synE.tail
         }

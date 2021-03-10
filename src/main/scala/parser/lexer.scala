@@ -431,11 +431,11 @@ case class RecognizeLexeme(fileReader: FileReader){
       }
       case Left(Arrow(span)) => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        return Right(NotExpectedToken("=>", "->", new Span(fileReader, loc), fileReader))
+        return Right(NotExpectedToken("=>", "->", Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader))
       }
       case Left(a) => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        return Right(NotExpectedToken("Arrow or Dots", a.toString, new Span(fileReader, loc), fileReader))
+        return Right(NotExpectedToken("Arrow or Dots", a.toString, Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader))
       }
       case Right(a) => {
         return Right(a)
@@ -487,7 +487,7 @@ case class RecognizeLexeme(fileReader: FileReader){
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        return Right(ThisTokenShouldntBeHereExpectedArrowOrDots(a, new Span(fileReader, loc),fileReader))
+        return Right(ThisTokenShouldntBeHereExpectedArrowOrDots(a, Span(fileReader, loc, Location(loc.column, loc.row+1)),fileReader))
       }
     }
     Left(lexerExpression(column, row,list))
@@ -568,11 +568,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
     case Left(DepArrow(span)) => {
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      return Right(NotExpectedToken("->", "=>", new Span(fileReader, loc), fileReader))
+      return Right(NotExpectedToken("->", "=>", Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader))
     }
     case Left(a) => {
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      return Right(NotExpectedToken("Arrow or Dots", a.toString, new Span(fileReader, loc), fileReader))
+      return Right(NotExpectedToken("Arrow or Dots", a.toString, Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader))
     }
     case Right(a) => {
       return Right(a)
@@ -617,7 +617,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
     case a => {
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      return Right(ThisTokenShouldntBeHereExpectedArrowOrDots(a, new Span(fileReader, loc),fileReader))
+      return Right(ThisTokenShouldntBeHereExpectedArrowOrDots(a, Span(fileReader, loc, Location(loc.column, loc.row+1)),fileReader))
     }
   }
   Left(lexerExpression(column, row,list))
@@ -667,43 +667,43 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     arr(column)(row) match {
       case '(' => {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(LParentheses(new Span(fileReader, loc)))
+        list = list.::(LParentheses(Span(fileReader, loc, Location(loc.column, loc.row+1))))
         row = row + 1
       }
       case ')' => {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(RParentheses(new Span(fileReader, loc)))
+        list = list.::(RParentheses(Span(fileReader, loc, Location(loc.column, loc.row+1))))
         row = row + 1
       }
       case '[' => {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(LBracket(new Span(fileReader, loc)))
+        list = list.::(LBracket(Span(fileReader, loc, Location(loc.column, loc.row+1))))
         row = row + 1
       }
       case ']' => {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(RBracket(new Span(fileReader, loc)))
+        list = list.::(RBracket(Span(fileReader, loc, Location(loc.column, loc.row+1))))
         row = row + 1
       }
       case ',' => {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Comma(new Span(fileReader, loc)))
+        list = list.::(Comma(Span(fileReader, loc, Location(loc.column, loc.row+1))))
         row = row + 1
       }
       case '.' => {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Dot(new Span(fileReader, loc)))
+        list = list.::(Dot(Span(fileReader, loc, Location(loc.column, loc.row+1))))
         row = row + 1
       }
       case ':' => {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Colon(new Span(fileReader, loc)))
+        list = list.::(Colon(Span(fileReader, loc, Location(loc.column, loc.row+1))))
         row = row + 1
       }
       case '-' => {
         if (arr(column).length <= row + 1) {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          return Right(ToShortToBeThisToken(2, "->", Span(fileReader, loc, loc), fileReader))
+          return Right(ToShortToBeThisToken(2, "->", Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader))
         } else {
           val beginLoc: Location = Location(column, row)
           val endLoc: Location = Location(column, row + 1)
@@ -844,7 +844,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
               }else{
                 val loc: Location = Location(column, row) //endLocation is equal to startLocation
                 return Right(NotExpectedToken("Some Number or String",
-                  arr(column)(row).toString, new Span(fileReader, loc), fileReader))
+                  arr(column)(row).toString, Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader))
               }
             }
             lexIdentifier(column, row) match {
@@ -1031,22 +1031,22 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         }
         case '.' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(Dot(new Span(fileReader, loc)))
+          list = list.::(Dot(Span(fileReader, loc, Location(loc.column, loc.row+1))))
           row = row + 1
         }
         case '(' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(LParentheses(new Span(fileReader, loc)))
+          list = list.::(LParentheses(Span(fileReader, loc, Location(loc.column, loc.row+1))))
           row = row + 1
         }
         case ')' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(RParentheses(new Span(fileReader, loc)))
+          list = list.::(RParentheses(Span(fileReader, loc, Location(loc.column, loc.row+1))))
           row = row + 1
         }
         case '!' => {
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(UnOp(UnaryOpType.NOT, new Span(fileReader, loc)))
+          list = list.::(UnOp(UnaryOpType.NOT, Span(fileReader, loc, Location(loc.column, loc.row+1))))
           row = row + 1
 
           isEnd(fileReader, column, row, arr) match {
@@ -1064,7 +1064,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         }
         case '~' => { //TODO: Is this symbol as a Neg-Sign ok?
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          list = list.::(UnOp(UnaryOpType.NEG, new Span(fileReader, loc)))
+          list = list.::(UnOp(UnaryOpType.NEG, Span(fileReader, loc, Location(loc.column, loc.row+1))))
           row = row + 1
 
           isEnd(fileReader, column, row, arr) match {
@@ -1229,14 +1229,14 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         //Todo:Maybe this with lexTypAnnotationToken works fine, so that I can delete this here
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
         val ex = NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator or a BinOperator",
-          "" + symbol, new Span(fileReader, loc), fileReader)
+          "" + symbol, Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader)
         ex.throwException()
       } else if (symbol.isWhitespace && column+1>=arr.length && arr(column).length-1 <=row) {
         println("exit typeRecognizingInNoAppExpr:: "+"column: "+ column + ", row: " + row)
         return Left((column, row,list))
       } else {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        val ex = UnknownSymbol(symbol, new Span(fileReader, loc), fileReader)
+        val ex = UnknownSymbol(symbol, Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader)
         ex.throwException()
       }
     }
@@ -1247,7 +1247,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   private def endNamedExprBeginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):TokenAndPos = {
     var list = l
     val loc: Location = Location(column, row)
-    val span = new Span(fileReader, loc)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
     list = list.::(EndNamedExpr(span))
     list = list.::(BeginTypAnnotatedIdent(span))
     var (newList, c, r) = lexerTypAnnotatedIdent(column, row, list)
@@ -1260,7 +1260,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   private def endNamedExprBeginNamedExpr(column: Int, row: Int, l: List[Token]):TokenAndPos = {
     var list = l
     val loc: Location = Location(column, row)
-    val span = new Span(fileReader, loc)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
     list = list.::(EndNamedExpr(span))
     list = list.::(BeginNamedExpr(span))
     var (newList, c, r) = lexerNamedExpr(column, row, list)
@@ -1274,7 +1274,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   private def endTypAnnotatedIdentBeginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):TokenAndPos = {
     var list = l
     val loc: Location = Location(column, row)
-    val span = new Span(fileReader, loc)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
     list = list.::(EndTypAnnotatedIdent(span))
     list = list.::(BeginTypAnnotatedIdent(span))
     var (newList, c, r) = lexerTypAnnotatedIdent(column, row, list)
@@ -1287,7 +1287,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   private def endTypAnnotatedIdentBeginNamedExpr(column: Int, row: Int, l: List[Token]):TokenAndPos = {
     var list = l
     val loc: Location = Location(column, row)
-    val span = new Span(fileReader, loc)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
     list = list.::(EndTypAnnotatedIdent(span))
     list = list.::(BeginNamedExpr(span))
     var (newList, c, r) = lexerNamedExpr(column, row, list)
@@ -1300,7 +1300,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   private def beginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):TokenAndPos = {
     var list = l
     val loc: Location = Location(column, row)
-    val span = new Span(fileReader, loc)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
     list = list.::(BeginTypAnnotatedIdent(span))
     lexerTypAnnotatedIdent(column, row, list)
   }
@@ -1366,11 +1366,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           val endLoc:Location = Location(column, arr(column).length)
           Right(NotExpectedTwoBackslash("\\", Span(fileReader,loc,endLoc), fileReader))
         }
-        Left(Backslash(new Span(fileReader,loc)))
+        Left(Backslash(Span(fileReader,loc,Location(loc.column, loc.row+1))))
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("\\", ""+ a, Span(fileReader,loc, loc), fileReader))
+        Right(NotExpectedToken("\\", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1)), fileReader))
       }
     }
   }
@@ -1380,11 +1380,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     arr(column)(row) match {
       case '[' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Left(LBracket(new Span(fileReader,loc)))
+        Left(LBracket(Span(fileReader,loc,Location(loc.column, loc.row+1))))
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("[", ""+ a, Span(fileReader,loc, loc), fileReader))
+        Right(NotExpectedToken("[", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1)), fileReader))
       }
     }
   }
@@ -1394,11 +1394,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     arr(column)(row) match {
       case ']' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Left(RBracket(new Span(fileReader,loc)))
+        Left(RBracket(Span(fileReader,loc,Location(loc.column, loc.row+1))))
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("]", ""+ a, Span(fileReader,loc, loc), fileReader))
+        Right(NotExpectedToken("]", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1)), fileReader))
       }
     }
   }
@@ -1408,11 +1408,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
 //    arr(column)(row) match {
 //      case ':' => {
 //        val loc:Location = Location(column, row) //endLocation is equal to startLocation
-//        Left(Colon(new Span(fileReader,loc)))
+//        Left(Colon(Span(fileReader,loc,Location(loc.column, loc.row+1))))
 //      }
 //      case a => {
 //        val loc:Location = Location(column, row) //endLocation is equal to startLocation
-//        Right(NotExpectedToken(":", ""+ a, Span(fileReader,loc, loc), fileReader))
+//        Right(NotExpectedToken(":", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1), fileReader))
 //      }
 //    }
 //  }
@@ -1421,11 +1421,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     arr(column)(row) match {
       case '.' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Left(Dot(new Span(fileReader,loc)))
+        Left(Dot(Span(fileReader,loc, Location(loc.column, loc.row+1))))
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken(".", ""+ a, Span(fileReader,loc, loc), fileReader))
+        Right(NotExpectedToken(".", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1)), fileReader))
       }
     }
   }
@@ -1435,7 +1435,7 @@ private def lexDeporNormalArrow(column:Int, row: Int, arr: Array[String], symbol
 Either[Token,PreAndErrorToken]={
   if(arr(column).length <= row +1){
     val loc:Location = Location(column, row) //endLocation is equal to startLocation
-    Right(ToShortToBeThisToken(2, symbol, Span(fileReader,loc, loc), fileReader))
+    Right(ToShortToBeThisToken(2, symbol, Span(fileReader,loc,Location(loc.column, loc.row+1)), fileReader))
   }else{
     val beginLoc:Location = Location(column, row)
     val endLoc:Location = Location(column, row+1)
@@ -1467,7 +1467,7 @@ requirements:  no whitespace at arr(column)(row)
     arr(column)(row) match {
       case ':' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Left(Colon(new Span(fileReader,loc)))
+        Left(Colon(Span(fileReader,loc,Location(loc.column, loc.row+1))))
       }
       case '-' => {
         lexDeporNormalArrow(column, row, arr, "->")
@@ -1477,7 +1477,7 @@ requirements:  no whitespace at arr(column)(row)
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken(":", ""+ a, Span(fileReader,loc, loc), fileReader))
+        Right(NotExpectedToken(":", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1)), fileReader))
       }
     }
   }
@@ -1488,7 +1488,7 @@ requirements:  no whitespace at arr(column)(row)
       case '=' => {
         if(arr(column).length <= row +1){
           val loc:Location = Location(column, row) //endLocation is equal to startLocation
-          Left(EqualsSign(Span(fileReader,loc, loc)))
+          Left(EqualsSign(Span(fileReader,loc,Location(loc.column, loc.row+1))))
         }else{
           val beginLoc:Location = Location(column, row)
           val endLoc:Location = Location(column, row+1)
@@ -1499,14 +1499,14 @@ requirements:  no whitespace at arr(column)(row)
             }
             case a => {
               val loc:Location = Location(column, row) //endLocation is equal to startLocation
-              Left(EqualsSign(Span(fileReader,loc, loc)))
+              Left(EqualsSign(Span(fileReader,loc,Location(loc.column, loc.row+1))))
             }
           }
         }
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("=", ""+ a, Span(fileReader,loc, loc), fileReader))
+        Right(NotExpectedToken("=", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1)), fileReader))
       }
     }
   }
@@ -1540,7 +1540,7 @@ if '==' then two steps else only one step
       case '-' => {
         if (arr(column).length <= row + 1 || arr(column).substring(row, row + 2) != "->") { // -
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          Left(BinOp(OpType.BinOpType.SUB, new Span(fileReader, loc)))
+          Left(BinOp(OpType.BinOpType.SUB, Span(fileReader,loc,Location(loc.column, loc.row+1))))
         } else { // ->
           val locStart: Location = Location(column, row)
           val locEnd: Location = Location(column, row + 1)
@@ -1549,32 +1549,32 @@ if '==' then two steps else only one step
       }
       case '+' => { // +
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Left(BinOp(OpType.BinOpType.ADD, new Span(fileReader, loc)))
+        Left(BinOp(OpType.BinOpType.ADD, Span(fileReader, loc, Location(loc.column, loc.row+1))))
       }
       case '*' => { // *
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Left(BinOp(OpType.BinOpType.MUL, new Span(fileReader, loc)))
+        Left(BinOp(OpType.BinOpType.MUL, Span(fileReader, loc, Location(loc.column, loc.row+1))))
       }
       case '/' => { // /
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Left(BinOp(OpType.BinOpType.DIV, new Span(fileReader, loc)))
+        Left(BinOp(OpType.BinOpType.DIV, Span(fileReader, loc, Location(loc.column, loc.row+1))))
       }
       case '%' => { // %
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Left(BinOp(OpType.BinOpType.MOD, new Span(fileReader, loc)))
+        Left(BinOp(OpType.BinOpType.MOD, Span(fileReader, loc, Location(loc.column, loc.row+1))))
       }
       case '<' => { // <
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Left(BinOp(OpType.BinOpType.LT, new Span(fileReader, loc)))
+        Left(BinOp(OpType.BinOpType.LT, Span(fileReader, loc, Location(loc.column, loc.row+1))))
       }
       case '>' => { // >
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Left(BinOp(OpType.BinOpType.GT, new Span(fileReader, loc)))
+        Left(BinOp(OpType.BinOpType.GT, Span(fileReader, loc, Location(loc.column, loc.row+1))))
       }
       case '=' => {
         if (arr(column).length <= row + 1 || arr(column).substring(row, row + 2) != "==") {
           val loc: Location = Location(column, row)
-          Right(OnlyOneEqualSign(new Span(fileReader, loc), fileReader))
+          Right(OnlyOneEqualSign(Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader))
         } else { // ==
           val beginLoc: Location = Location(column, row)
           val endLoc: Location = Location(column, row + 1)
@@ -1583,7 +1583,7 @@ if '==' then two steps else only one step
       }
       case a => {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NOTanBinOperator("" + a  , new Span(fileReader, loc), fileReader))
+        Right(NOTanBinOperator("" + a  , Span(fileReader, loc, Location(loc.column, loc.row+1)), fileReader))
       }
     }
   }
@@ -1756,7 +1756,7 @@ if '==' then two steps else only one step
       r = r + 1
     }
     val loc = Location(column, r)
-    (NatNumber(substring.toInt, new Span(fileReader, loc)),r-1)
+    (NatNumber(substring.toInt, Span(fileReader, loc, Location(loc.column, loc.row+1))),r-1)
   }
 
   /*
@@ -1806,7 +1806,7 @@ private def lexNumberComplexMatch(column: Int, row: Int,  arr: Array[String], su
   }
   case 'N' => {
     val loc = Location(column, pos+1)
-    (Left(NatNumber(substring.toInt, new Span(fileReader, loc))),pos+1)
+    (Left(NatNumber(substring.toInt, Span(fileReader, loc, Location(loc.column, loc.row+1)))),pos+1)
   }
   case a => {
     if(a.isLetter){
