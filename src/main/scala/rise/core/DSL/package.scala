@@ -450,6 +450,10 @@ package object DSL {
   def lvec(v: Seq[ScalarData]): ToBeTyped[Literal] = literal(VectorData(v))
   def larr(a: Seq[Data]): ToBeTyped[Literal] = literal(ArrayData(a))
 
+  def li16(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i16
+  def li32(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i32
+  def lu8(v: Int): ToBeTyped[Expr] = cast(l(v)) :: u8
+
   object foreignFun {
     def apply(name: String, t: Type): ToBeTyped[ForeignFunction] = {
       toBeTyped(ForeignFunction(ForeignFunction.Decl(name, None))(t))

@@ -189,7 +189,7 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisTileShiftInwardsGParVecUnaligned(4) generates valid OpenCL") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.core.primitives.mapSeq
 
     checkOCL(lowerOCL(
@@ -199,7 +199,7 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisTileShiftInwardsWLParVecUnaligned(4) generates valid OpenCL") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
 
     checkOCL(lowerOCL(
       ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),

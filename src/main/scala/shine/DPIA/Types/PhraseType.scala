@@ -7,14 +7,15 @@ import shine.DPIA.primitives.functional.NatAsIndex
 
 sealed trait PhraseType
 
-sealed abstract class BasePhraseType extends PhraseType
+sealed abstract class BasePhraseType(val dataType: DataType) extends PhraseType
 
-final case class ExpType(dataType: DataType, accessType: AccessType)
-  extends BasePhraseType {
+final case class ExpType(override val dataType: DataType, accessType: AccessType)
+  extends BasePhraseType(dataType) {
   override def toString = s"exp[$dataType, $accessType]"
 }
 
-final case class AccType(dataType: DataType) extends BasePhraseType {
+final case class AccType(override val dataType: DataType)
+  extends BasePhraseType(dataType) {
   override def toString = s"acc[$dataType]"
 }
 

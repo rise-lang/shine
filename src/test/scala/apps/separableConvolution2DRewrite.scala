@@ -110,6 +110,25 @@ class separableConvolution2DRewrite extends test_util.Tests {
     ))
   }
 
+  test("scanline to separated (mapLastFission)") {
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
+      idS
+        -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
+      skip(0)(mapLastFission())
+        -> (P >> Sv >> *(T >> *(Dv) >> Sh) >> *(*(Dh))),
+      skip(1)(mapLastFission())
+        -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh) >> *(*(Dh))),
+      skip(1)(mapLastFission())
+        -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh) >> *(*(Dh))),
+      skip(0)(mapFusion)
+        -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
+      skip(1)(mapFusion)
+        -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),
+      idS
+        -> separated(weightsV)(weightsH)
+    ))
+  }
+
   //// lowering
 
   test("base to baseSeq") {

@@ -64,4 +64,12 @@ object primitives {
         (s ->: s) ->: // function to write a value
           ((n + sz)`.`s) ->: ((1 + n)`.`sz`.`s) })})
   }
+
+  @primitive object oclRunPrimitive extends Primitive with Builder {
+    // the local sizes for execution
+    expl((ls1: Nat) => expl((ls2: Nat) => expl((ls3: Nat) =>
+    // the global sizes for execution
+      expl((gs1: Nat) => expl((gs2: Nat) => expl((gs3: Nat) =>
+      impl{ t: DataType => t ->: t }))))))
+  }
 }

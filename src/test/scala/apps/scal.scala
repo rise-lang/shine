@@ -58,7 +58,7 @@ class scal extends test_util.Tests {
 
   // OpenCL
   {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
 
     val scalWgLcl = (fst: Nat, snd: Nat) =>
       depFun((n: Nat) => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>
