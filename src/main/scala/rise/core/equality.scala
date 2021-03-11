@@ -58,6 +58,7 @@ object equality {
     override def equiv[K <: Kind]: Env[Kind.Identifier] => Eq[K] = env => a => b => {
       val and = PatternMatching.matchWithDefault(b, false)
       a == b || (a match {
+        case a : Nat => and {case b : Nat => equivNat(env)(a)(b)}
         case a : Type => and {case b : Type => equivType(env)(a)(b) }
         case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(makeExplicit(ia), makeExplicit(ib)) }
         case a: AddressSpace => and { case b: AddressSpace => (a : AddressSpace) == (b : AddressSpace) }
