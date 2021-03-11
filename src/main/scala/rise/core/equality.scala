@@ -161,7 +161,7 @@ object equality {
         case App(fa, ea) => and { case App(fb, eb) =>
           equiv(typeEnv)(exprEnv)(fa)(fb) && equiv(typeEnv)(exprEnv)(ea)(eb) }
         case DepApp(fa, xa) => and { case DepApp(fb, xb) =>
-          xa == xb && equiv(typeEnv)(exprEnv)(fa)(fb)} // FIXME: xa == xb is not alpha equivalence }
+          typeEq.equiv(typeEnv)(xa)(xb) && equiv(typeEnv)(exprEnv)(fa)(fb)}
         case Lambda(xa, ta) => and { case Lambda(xb, tb) =>
           typeEq.equiv[TypeKind](typeEnv)(xa.t)(xb.t) && equiv(typeEnv)(exprEnv.add(xa.name, xb.name))(ta)(tb) }
         case DepLambda(xa, ea) => and { case DepLambda(xb, eb) =>
