@@ -15,12 +15,12 @@ class structuralEquality extends test_util.Tests {
   test("reduce") {
     assert(
       depFun((n: Nat) =>
-        fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))
+        fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(l(0))(a))
       ).toUntypedExpr
         =~=
           depFun((m: Nat) =>
             fun(ArrayType(m, int))(b =>
-              reduceSeq(fun(y => fun(x => y + x)))(0)(b)
+              reduceSeq(fun(y => fun(x => y + x)))(l(0))(b)
             )
           ).toUntypedExpr
     )
@@ -29,12 +29,12 @@ class structuralEquality extends test_util.Tests {
   test("reduce different init") {
     assertFalse(
       depFun((n: Nat) =>
-        fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))
+        fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(l(0))(a))
       ).toUntypedExpr
         =~=
           depFun((m: Nat) =>
             fun(ArrayType(m, int))(b =>
-              reduceSeq(fun(y => fun(x => y + x)))(1)(b)
+              reduceSeq(fun(y => fun(x => y + x)))(l(1))(b)
             )
           ).toUntypedExpr
     )
@@ -43,12 +43,12 @@ class structuralEquality extends test_util.Tests {
   test("reduce different function structure") {
     assertFalse(
       depFun((n: Nat) =>
-        fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))
+        fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(l(0))(a))
       ).toUntypedExpr
         =~=
           depFun((m: Nat) =>
             fun(ArrayType(m, int))(b =>
-              reduceSeq(fun(y => fun(x => x + y)))(0)(b)
+              reduceSeq(fun(y => fun(x => x + y)))(l(0))(b)
             )
           ).toUntypedExpr
     )
@@ -57,14 +57,14 @@ class structuralEquality extends test_util.Tests {
   test("reduce different type") {
     assertFalse(
       depFun((n: Nat) =>
-        fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))
-      )
+        fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(l(0))(a))
+      ).toUntypedExpr
         =~=
           depFun((m: Nat) =>
             fun(ArrayType(m, f32))(b =>
-              reduceSeq(fun(y => fun(x => y + x)))(0)(b)
+              reduceSeq(fun(y => fun(x => y + x)))(l(0))(b)
             )
-          )
+          ).toUntypedExpr
     )
   }
 
