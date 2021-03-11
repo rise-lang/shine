@@ -46,6 +46,7 @@ object parse {
     final case class AltMakeArray() extends SIntToExprAlternatives
 
   sealed trait SyntaxElement
+    final case class SExprClutched(expr: r.Expr, spanClutch: Span) extends SyntaxElement
     final case class SExpr(expr: r.Expr) extends SyntaxElement
     final case class SType(t: rt.Type) extends SyntaxElement
     final case class SIntToExpr(name: SIntToExprAlternatives, span: Span) extends SyntaxElement
@@ -551,6 +552,16 @@ object parse {
     }
     var synE = synElemList.reverse
     var e:r.Expr = synE.head match {
+      case SExprClutched(expr, spanClutch) => {
+        synE = synE.tail
+        if(synE.isEmpty){
+          expr
+        }else{
+          val (exprComb, l) = combineExpressionsDependentOneStep(expr, synE,mapDepL,Some(spanClutch))
+          synE = l
+          exprComb
+        }
+      }
       case SExpr(expr) => {
         if(expr.span.isEmpty){
           throw new IllegalStateException("Span of the first Expr '"+ expr+ "' is None in combineExpressionsDependent")
@@ -581,31 +592,38 @@ object parse {
     (e,synE)
   }
 
-  private def combineExpressionsDependentOneStep(exp: r.Expr, synElemList: List[SyntaxElement], mapDepL: MapDepL):
-                                                                                      (r.Expr, List[SyntaxElement]) = {
+  private def combineExpressionsDependentOneStep(exp: r.Expr, synElemList: List[SyntaxElement],
+                                  mapDepL: MapDepL, spanOfClutchedExprBefore: Option[Span]): (r.Expr, List[SyntaxElement]) = {
     var synE = synElemList
     var e = exp
 
+    val span_e = if(spanOfClutchedExprBefore==None) {
+      e.span match {
+        case Some(span) => span
+        case None => throw new IllegalStateException("Span of combined Expr is None in combineExpressionsDependent: "+ e)
+      }
+    }else{
+      spanOfClutchedExprBefore.get
+    }
+
     synE.head match {
+      case SExprClutched(expr1, spanClutch) => {
+        val span = span_e + spanClutch
+        println("\n\nspan in SExprClutched: "+ span)
+        e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
+        synE = synE.tail
+      }
       case SExpr(expr1) => {
-        val span_e = e.span match {
-          case Some(span) => span
-          case None => throw new IllegalStateException("Span of combined Expr is None in combineExpressionsDependent: "+ e)
-        }
         val span_expr1 = expr1.span match {
           case Some(span) => span
           case None => throw new IllegalStateException("Span of the next Expr '"+ expr1+ "'is None in combineExpressionsDependent")
         }
         val span = span_e + span_expr1
-        println("\n\nHut"+span+"\n\n")
         e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
         synE = synE.tail
       }
       case SData(DIdentifier(data @ rt.DataTypeIdentifier(name, _)), dataSpan) => { //Todo: Add span!!!
-        val span = e.span match {
-          case None => throw new IllegalStateException("Span should no be None")
-          case Some(eSpan) =>dataSpan+eSpan
-        }
+        val span = dataSpan+span_e
 
         mapDepL.get(name) match {
           case None => {
@@ -632,15 +650,12 @@ object parse {
           }
           case _ => throw new IllegalStateException("For this Primitive '" + name +"' we expect to see an lenght in Int")
         }
-        val span = span1 + spanOfN
+        val span = span1 + spanOfN + span_e
         synE = synE.tail.tail
         createSIntToExpr(name, n, span)
       }
       case SAddrSpace(addrSpace, spanAddr) => {
-        val span = e.span match {
-          case None => throw new IllegalStateException("Span should not be None")
-          case Some(sp) => sp+spanAddr
-        }
+        val span = span_e
         e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder, Some(span))
         synE = synE.tail
       }
@@ -654,10 +669,10 @@ object parse {
               }
               case Some(k)=> {
                 k match {
-                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, e.span)
-                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, e.span)
+                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, Some(span_e))
+                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, Some(span_e))
                   case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e,
-                    rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, e.span)
+                    rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, Some(span_e))
                 }
               }
             }
@@ -665,15 +680,12 @@ object parse {
               "This should not be happening in the combining of the Dependent Expressions")
           }
         }else{
-          e = r.DepApp[rt.TypeKind](e, t)(rt.TypePlaceholder, e.span)
+          e = r.DepApp[rt.TypeKind](e, t)(rt.TypePlaceholder, Some(span_e))
         }
         synE = synE.tail
       }
       case SData(dataElem, dataSpan) => {
-        val span = e.span match {
-          case None => throw new IllegalStateException("Span should not be zero")
-          case Some(sp) => dataSpan+sp
-        }
+        val span = span_e
         dataElem match {
           case DIdentifier(data) => e= r.DepApp[rt.DataKind](e,data)(rt.TypePlaceholder, Some(span))
           case DType(data) => e= r.DepApp[rt.DataKind](e,data)(rt.TypePlaceholder, Some(span))
@@ -681,10 +693,7 @@ object parse {
         synE = synE.tail
       }
       case SNat(natElem, spanNat) => {
-        val span = e.span match {
-          case None => throw new IllegalStateException("Span should be not None")
-          case Some(sp1) => sp1 +spanNat
-        }
+        val span = span_e
         natElem match {
           case NIdentifier(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, Some(span))
           case NNumber(nat) => e= r.DepApp[rt.NatKind](e,nat)(rt.TypePlaceholder, Some(span))
@@ -700,7 +709,7 @@ object parse {
     var (e, synE) = combineExpressionDependentFirsExpr(synElemList, mapDepL)
     println("I will combine Expressions in Lambda: "+ synE + " <::> " + e)
     while(!synE.isEmpty){
-      val r = combineExpressionsDependentOneStep(e, synE, mapDepL)
+      val r = combineExpressionsDependentOneStep(e, synE, mapDepL, None)
       e = r._1
       synE = r._2
     }
@@ -801,6 +810,8 @@ object parse {
                 (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapFkt, p.mapDepL, p.spanList) ,
                   id.setType(typeFkt), typeFkt)
             }
+          case SExprClutched(expr, spanClutch) =>
+            throw new IllegalStateException("it is an Identifier expected not expr with spanClutch: "+ expr +" ; " + spanClutch)
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
@@ -885,6 +896,8 @@ object parse {
           }else{
             (p, id)
           }
+          case SExprClutched(expr, spanClutch) =>
+            throw new IllegalStateException("it is an Identifier expected not expr with spanClutch: "+ expr +" ; " + spanClutch)
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
           case SType(t) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
@@ -935,6 +948,8 @@ object parse {
     if( !synElems.isEmpty){
       synElems.head match {
         case SType(typ) => typ :: getTypesInList(synElems.tail)
+        case SExprClutched(expr, spanClutch) =>
+          throw new IllegalStateException("in getTypesInList we have as head a not Type:"+ expr +" ; " + spanClutch)
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
         case SIntToExpr(e, _) => throw new IllegalArgumentException(
           "in getTypesInList we have as head a not Type: "+ e)
@@ -1057,6 +1072,7 @@ object parse {
             case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
           }
+        case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
         case SExpr(i) => (i, synElemListExpr.tail)
         case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
           " is not an Expression!")
@@ -1178,13 +1194,26 @@ object parse {
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
+        val spanClutch = pState.spanList match {
+          case None => throw new IllegalStateException("Here should SpanList not be NONE")
+          case Some(sp1::sp2::Nil) => sp1+sp2
+          case Some(l) => throw new IllegalStateException("The List should have two Spans: "+ l)
+        }
         val synElem = if(pState.parsedSynElems.length==1){
-          pState.parsedSynElems.head
+          pState.parsedSynElems.head match {
+            case SExpr(expr) => SExprClutched(expr, spanClutch)
+            case SExprClutched(expr, _) => SExprClutched(expr, spanClutch)
+            case SAddrSpace(addrSpace, _) => SAddrSpace(addrSpace, spanClutch)
+            case SData(data, _) => SData(data, spanClutch)
+            case SIntToExpr(name, _) => SIntToExpr(name, spanClutch)
+            case SNat(nat, _) => SNat(nat, spanClutch)
+            case SType(t) => SType(t)
+          }
         }else {
           val newExpr = combineExpressionsDependent(pState.parsedSynElems, pState.mapDepL)
-
-          SExpr(newExpr)
+          SExprClutched(newExpr, spanClutch)
         }
+        println("synElem: " + synElem)
         val newL = synElem :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse

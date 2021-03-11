@@ -312,8 +312,8 @@ class parseTest extends  AnyFlatSpec {
           case None => fail("The Span should not be None")
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(9)
-            end.row should equal(16)
+            begin.row should equal(10)
+            end.row should equal(15)
             begin.column should equal(1)
             end.column should equal(1)
           }
