@@ -11,7 +11,7 @@ object kmeans {
     val features = Array.fill(F, P)(random.nextFloat())
     val clusters = Array.fill(C, F)(random.nextFloat())
 
-    val kernel = gen.opencl.kernel.fromExpr(apps.kmeans.kmeansLL)
+    val kernel = gen.opencl.kernel.fromExpr(apps.kmeans.kmeansOcl)
 
     val stats = Seq(
       ("original", benchmark(sampleCount, runOriginalKernel("CGO17_KMeans.cl", features, clusters)._2)),

@@ -11,7 +11,7 @@ object gemv {
   // we can use implicit type parameters and type annotations to specify the function type of mult
   val mult = impl{ dt: DataType => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt) }
   val add = fun(x => fun(y => x + y))
-  val scalHL = impl { n: Nat =>
+  val scal = impl { n: Nat =>
     fun(xs => fun(a =>
       map(fun(x => a * x))(xs)
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
@@ -21,18 +21,18 @@ object gemv {
       mapSeq(fun(x => a * x))(xs)
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
   }
-  val dotHL = separableConvolution2D.dot
+  val dot = separableConvolution2D.dot
   val dotSeq = separableConvolution2D.dotSeq
 
-  val highLevel = depFun((n: Nat, m: Nat) => fun(
+  val gemvHighLevel = depFun((n: Nat, m: Nat) => fun(
     (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
-    zip(map(fun(row => alpha * dotHL(row, xs)))(mat))(scalHL(ys, beta)) |>
+    zip(map(fun(row => alpha * dot(row, xs)))(mat))(scal(ys, beta)) |>
     map(fun(x => x._1 + x._2))
   ))
 
-  val sequential = depFun((n: Nat, m: Nat) => fun(
+  val gemvSequential = depFun((n: Nat, m: Nat) => fun(
     (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
@@ -44,7 +44,7 @@ object gemv {
     import rise.openCL.DSL._
     import rise.openCL.primitives.{mapWorkGroup => _, mapLocal => _, _}
 
-    val blastN = depFun((n: Nat, m: Nat) => fun(
+    val gemvBlastN = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
@@ -67,14 +67,14 @@ object gemv {
       )) o split(64) $ zip(mat)(ys)
     ))
 
-    val blastT = depFun((n: Nat, m: Nat) => fun(
+    val gemvBlastT = depFun((n: Nat, m: Nat) => fun(
       (n`.`m`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
-      blastN(n)(m)(transpose(mat))(xs)(ys)(alpha)(beta)
+      gemvBlastN(n)(m)(transpose(mat))(xs)(ys)(alpha)(beta)
     ))
 
-    val fullMatrixVectorFusedOpenCL = depFun((n: Nat, m: Nat) => fun(
+    val gemvFused = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
@@ -89,7 +89,7 @@ object gemv {
         )) |> join
     ))
 
-    val fullMatrixVectorFusedOpenCLAMD = depFun((n: Nat, m: Nat) => fun(
+    val gemvFusedAMD = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->: (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
       zip(mat)(ys) |>
@@ -106,7 +106,7 @@ object gemv {
         )) |> join
     ))
 
-    val keplerBest = depFun((n: Nat, m: Nat) => fun(
+    val gemvKeplerBest = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
@@ -127,7 +127,7 @@ object gemv {
   object omp {
     import rise.openMP.primitives._
 
-    val fullMatrixVectorFusedOpenMP = depFun((n: Nat, m: Nat) => fun(
+    val gemvFused = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>

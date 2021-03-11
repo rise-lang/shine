@@ -18,12 +18,12 @@ class mmCheck extends test_util.TestsWithExecutor {
   }
 
   test("high-level matrix multiplication typechecks") {
-    println(highLevel.t)
+    println(mmHighLevel.t)
   }
 
   test("sequential matrix multiplication produces expected result") {
     val (at, b, gold) = randGold()
-    val (output, time) = runKernel(gen.opencl.kernel.fromExpr(sequential),
+    val (output, time) = runKernel(gen.opencl.kernel.fromExpr(mmSequential),
       LocalSize(1), GlobalSize(1), at, b)
     util.assertSame(output, gold, "output is different from gold")
     println(s"time: $time")
@@ -34,7 +34,7 @@ class mmCheck extends test_util.TestsWithExecutor {
     val runs = Seq(
       "original" -> runOriginal("CGO17_MMAMD.cl",
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b),
-      "dpia" -> runKernel(gen.opencl.kernel.fromExpr(amd),
+      "dpia" -> runKernel(gen.opencl.kernel.fromExpr(mmAMD),
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
     )
     runs.foreach(r => {
@@ -49,7 +49,7 @@ class mmCheck extends test_util.TestsWithExecutor {
     val runs = Seq(
       "original" -> runOriginal("CGO17_MMNVIDIA.cl",
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b),
-      "dpia" -> runKernel(gen.opencl.kernel.fromExpr(nvidia),
+      "dpia" -> runKernel(gen.opencl.kernel.fromExpr(mmNVIDIA),
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
     )
     runs.foreach(r => {

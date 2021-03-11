@@ -15,13 +15,13 @@ object nearestNeighbour {
   )
 
   // FIXME: could not find original Lift expression, this is made up
-  val highLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+  val nnHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`(f32 x f32)) ->: f32 ->: f32 ->: (n`.`f32)
   )((locations, lat, lng) =>
     locations |> map(fun(loc => distance(loc)(lat)(lng)))
   ))
 
-  val nn: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+  val nnOcl: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` (f32 x f32)) ->: f32 ->: f32 ->: (n `.` f32)
   )((locations, lat, lng) =>
     locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))

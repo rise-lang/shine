@@ -15,7 +15,7 @@ class MolecularDynamics extends test_util.TestsWithExecutor {
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("CGO17_MolecularDynamics.cl", particles, neighbours)),
-      ("dpia", runKernel(gen.opencl.kernel.fromExpr(shocLL), particles, neighbours))
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(shocOcl), particles, neighbours))
     ))
   }
 }

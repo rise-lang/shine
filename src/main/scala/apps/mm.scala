@@ -18,7 +18,7 @@ object mm {
 
   // the first matrix input is transposed
 
-  val highLevel: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
+  val mmHighLevel: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
     (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
   )((at, b) =>
     transpose(at) |> map(fun(aRow =>
@@ -28,7 +28,7 @@ object mm {
     ))
   ))
 
-  val sequential: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
+  val mmSequential: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
     (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
   )((at, b) =>
     transpose(at) |> mapSeq(fun(aRow =>
@@ -38,7 +38,7 @@ object mm {
     ))
   ))
 
-  val amd: ToBeTyped[Expr] = {
+  val mmAMD: ToBeTyped[Expr] = {
     val v3 = 4
     val v4 = 8
     val vw = 4
@@ -69,7 +69,7 @@ object mm {
     ))
   }
 
-  val nvidia: ToBeTyped[Expr] = {
+  val mmNVIDIA: ToBeTyped[Expr] = {
     val v3 = 4
     val v4 = 8
     val v5 = 64

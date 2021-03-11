@@ -15,7 +15,7 @@ object molecularDynamics {
       .map { case Array(a, b, c, d) => (a, b, c, d) }.toArray
     val neighbours = buildNeighbourList(particlesTuple, M).transpose
 
-    val kernel = gen.opencl.kernel.fromExpr(shocLL)
+    val kernel = gen.opencl.kernel.fromExpr(shocOcl)
 
     val stats = Seq(
       ("original", benchmark(sampleCount,

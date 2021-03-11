@@ -19,11 +19,11 @@ object gemv {
     val kernelN = gen.opencl.kernel(
       Some(cgo17_phraseDepLocalAndGlobalSize),
       "KERNEL"
-    ).fromExpr(ocl.blastN)
+    ).fromExpr(ocl.gemvBlastN)
     val kernelT = gen.opencl.kernel(
       Some(cgo17_phraseDepLocalAndGlobalSize),
       "KERNEL"
-    ).fromExpr(ocl.blastT)
+    ).fromExpr(ocl.gemvBlastT)
 
     val stats = Seq(
       ("original N", benchmark(sampleCount, runOriginal("CGO17_GEMV_N.cl",

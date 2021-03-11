@@ -8,8 +8,8 @@ class Convolution extends test_util.TestsWithExecutor {
   private val inputSize_small = 4096
 
   test("high-level convolutions typecheck") {
-    println(blurXHL.t)
-    println(blurYHL.t)
+    println(blurXHighLevel.t)
+    println(blurYHighLevel.t)
   }
 
   test("convolution versions produce same results") {

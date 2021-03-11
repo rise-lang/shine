@@ -12,7 +12,7 @@ class gemvCheck extends test_util.Tests {
   private val M = 128
 
   test("high-level gemv type inference works") {
-    val typed = highLevel.toExpr
+    val typed = gemvHighLevel.toExpr
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
     val M = typed.t
@@ -30,21 +30,21 @@ class gemvCheck extends test_util.Tests {
   }
 
   test("sequential gemv compiles to syntactically correct C") {
-    function.asStringFromExpr(sequential)
+    function.asStringFromExpr(gemvSequential)
   }
 
   test("OpenCL gemv versions type inference works") {
-    ocl.fullMatrixVectorFusedOpenCL.toExpr
-    ocl.fullMatrixVectorFusedOpenCLAMD.toExpr
-    ocl.keplerBest.toExpr
+    ocl.gemvFused.toExpr
+    ocl.gemvFusedAMD.toExpr
+    ocl.gemvKeplerBest.toExpr
   }
 
   test("OpenMP gemv versions type inference works") {
-    omp.fullMatrixVectorFusedOpenMP.toExpr
+    omp.gemvFused.toExpr
   }
 
   test("OpenMP gemv versions compiles to syntactically correct OpenMP") {
-    gen.openmp.function.asStringFromExpr(omp.fullMatrixVectorFusedOpenMP)
+    gen.openmp.function.asStringFromExpr(omp.gemvFused)
   }
 
   test("CGO17 CL Blast kernels produce expected result") {
@@ -59,11 +59,11 @@ class gemvCheck extends test_util.Tests {
     val kernelN = gen.opencl.kernel(
       Some(cgo17_phraseDepLocalAndGlobalSize),
       "KERNEL"
-    ).fromExpr(ocl.blastN)
+    ).fromExpr(ocl.gemvBlastN)
     val kernelT = gen.opencl.kernel(
       Some(cgo17_phraseDepLocalAndGlobalSize),
       "KERNEL"
-    ).fromExpr(ocl.blastT)
+    ).fromExpr(ocl.gemvBlastT)
 
     util.withExecutor {
       test_util.runsWithSameResult(Seq(

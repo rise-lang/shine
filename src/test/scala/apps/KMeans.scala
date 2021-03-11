@@ -15,7 +15,7 @@ class KMeans extends test_util.TestsWithExecutor {
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("CGO17_KMeans.cl", features, clusters)),
-      ("dpia", runKernel(gen.opencl.kernel.fromExpr(apps.kmeans.kmeansLL), features, clusters))
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(apps.kmeans.kmeansOcl), features, clusters))
     ))
   }
 }

@@ -33,7 +33,7 @@ object molecularDynamics {
       vec(4, f32))
 
   // FIXME: could not find original Lift expression, this is made up
-  val shocHL: Expr = depFun((n: Nat, m: Nat) => fun(
+  val shocHighLevel: Expr = depFun((n: Nat, m: Nat) => fun(
     (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
       f32 ->: f32 ->: f32 ->:
       (n`.`vec(4, f32))
@@ -48,7 +48,7 @@ object molecularDynamics {
       })
   ))
 
-  val shocLL: Expr = depFun((n: Nat, m: Nat) => fun(
+  val shocOcl: Expr = depFun((n: Nat, m: Nat) => fun(
     (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
       f32 ->: f32 ->: f32 ->:
       (n`.`vec(4, f32))

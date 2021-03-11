@@ -31,7 +31,7 @@ object kmeans {
   private val select = fun(tuple => tuple._2._2)
 
   // FIXME: could not find original Lift expression, this is made up
-  val kmeansHL: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
+  val kmeansHighLevel: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
     (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
   )((features, clusters) =>
     features |> transpose |> map(fun(feature =>
@@ -45,7 +45,7 @@ object kmeans {
     ))
   ))
 
-  val kmeansLL: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
+  val kmeansOcl: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
     (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
   )((features, clusters) =>
     features |> transpose |> mapGlobal(fun(feature =>

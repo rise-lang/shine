@@ -25,12 +25,12 @@ object mm {
       Some(gen.opencl.PhraseDepLocalAndGlobalSize(phrase =>
         gen.opencl.LocalAndGlobalSize(localSize, globalSizeGen(phrase)))),
       "KERNEL"
-    ).fromExpr(amd)
+    ).fromExpr(mmAMD)
     val nvidiaKernel = gen.opencl.kernel(
       Some(gen.opencl.PhraseDepLocalAndGlobalSize(phrase =>
         gen.opencl.LocalAndGlobalSize(localSize, globalSizeGen(phrase)))),
       "KERNEL"
-    ).fromExpr(nvidia)
+    ).fromExpr(mmNVIDIA)
 
     def globalSize = GlobalSize((M/4, N/8))
     val stats = Seq(

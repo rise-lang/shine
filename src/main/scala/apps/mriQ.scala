@@ -31,20 +31,20 @@ object mriQ {
     f32 `x3 ->:` f32 `x3 ->:` f32 ->: (f32 x f32) ->: (f32 x f32))
 
   // FIXME: could not find original Lift expression, this is made up
-  val computePhiMagHL: Expr = depFun((k: Nat) => fun(
+  val computePhiMagHighLevel: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
     map(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
-  val computePhiMag: Expr = depFun((k: Nat) => fun(
+  val computePhiMagOcl: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
     mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
   // FIXME: could not find original Lift expression, this is made up
-  val computeQHL: Expr = depFun((k: Nat, x: Nat) => fun(
+  val computeQHighLevel: Expr = depFun((k: Nat, x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
@@ -55,7 +55,7 @@ object mriQ {
       ))
   ))
 
-  val computeQ: Expr = depFun((k: Nat, x: Nat) => fun(
+  val computeQOcl: Expr = depFun((k: Nat, x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>

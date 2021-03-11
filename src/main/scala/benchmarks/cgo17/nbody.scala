@@ -15,8 +15,8 @@ object nbody {
     val globalSizeAMD = GlobalSize(N)
     val localSizeNVIDIA = LocalSize((tileX, tileY))
     val globalSizeNVIDIA = GlobalSize((N, tileY))
-    val kernelAMD = gen.opencl.kernel.fromExpr(amd)
-    val kernelNVIDIA = gen.opencl.kernel.fromExpr(nvidia)
+    val kernelAMD = gen.opencl.kernel.fromExpr(nbodyAMD)
+    val kernelNVIDIA = gen.opencl.kernel.fromExpr(nbodyNVIDIA)
 
     val stats = Seq(
       ("original AMD", benchmark(sampleCount, runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)._2)),

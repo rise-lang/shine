@@ -17,8 +17,8 @@ object mriQ {
     val Qi = Array.fill(X)(random.nextFloat())
     val kvalues = Array.fill(4 * K)(random.nextFloat())
 
-    val phiMagKernel = gen.opencl.kernel.fromExpr(computePhiMag)
-    val qKernel = gen.opencl.kernel.fromExpr(computeQ)
+    val phiMagKernel = gen.opencl.kernel.fromExpr(computePhiMagOcl)
+    val qKernel = gen.opencl.kernel.fromExpr(computeQOcl)
 
     val stats = Seq(
       ("original PhiMag", benchmark(sampleCount,

@@ -83,7 +83,7 @@ object nbody {
 
   // FIXME: signature does not match low-level versions
   // also, this code was not verified
-  val highLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+  val nbodyHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
     (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
     (n`.`f32) ->: f32 ->: f32 ->:
@@ -98,7 +98,7 @@ object nbody {
     )) $ zip(zip(x)(zip(y)(z)))(zip(velX)(zip(velY)(velZ)))
   ))
 
-  val amd: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+  val nbodyAMD: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
     mapGlobal(fun(p1 =>
@@ -113,7 +113,7 @@ object nbody {
   val tileY = 1
 
   // TODO: compare generated code to original
-  val nvidia: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+  val nbodyNVIDIA: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
     join o join o mapWorkGroup(1)(

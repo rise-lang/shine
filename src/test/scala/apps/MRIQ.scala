@@ -8,8 +8,8 @@ class MRIQ extends test_util.TestsWithExecutor {
   private val X = 512
 
   test("high level expression typechecks") {
-    println(computePhiMagHL.t)
-    println(computeQHL.t)
+    println(computePhiMagHighLevel.t)
+    println(computeQHighLevel.t)
   }
 
   test("computePhiMag versions produce same results") {
@@ -19,7 +19,7 @@ class MRIQ extends test_util.TestsWithExecutor {
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalComputePhiMag("CGO17_ComputePhiMag.cl", phiR, phiI)),
-      ("dpia", runComputePhiMag(gen.opencl.kernel.fromExpr(computePhiMag), phiR, phiI))
+      ("dpia", runComputePhiMag(gen.opencl.kernel.fromExpr(computePhiMagOcl), phiR, phiI))
     ))
   }
 
@@ -34,7 +34,7 @@ class MRIQ extends test_util.TestsWithExecutor {
 
     test_util.runsWithSameResult(Seq(
       ("original", runOriginalComputeQ("CGO17_ComputeQ.cl", x, y, z, Qr, Qi, kvalues)),
-      ("dpia", runComputeQ(gen.opencl.kernel.fromExpr(computeQ), x, y, z, Qr, Qi, kvalues))
+      ("dpia", runComputeQ(gen.opencl.kernel.fromExpr(computeQOcl), x, y, z, Qr, Qi, kvalues))
     ))
   }
 }
