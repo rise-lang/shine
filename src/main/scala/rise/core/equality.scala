@@ -1,5 +1,6 @@
 package rise.core
 
+import rise.core.semantics._
 import rise.core.types._
 import util.PatternMatching
 
@@ -115,25 +116,25 @@ object equality {
       case t: Type => hashType(t)
       case _: Kind.Identifier => 7
       case a: AddressSpace => a.hashCode()
-      case NatToNatLambda(na, ba) => ba.hashCode()
-      case NatToDataLambda(na, ba) => ba.hashCode()
-      case NatCollectionFromArray(a) => a.hashCode()
+      case NatToNatLambda(na, ba) => hash[NatKind](ba)
+      case NatToDataLambda(na, ba) => hashType(ba)
+      case NatCollectionFromArray(a) => 17
     }
     val hashType: Type => Int = {
       case TypePlaceholder => 5
       case TypeIdentifier(_) => 7
       case DataTypeIdentifier(_, _) => 11
-      case FunType(inT, outT) => 13 * inT.hashCode() + 17 * outT.hashCode()
-      case DepFunType(_, t) => 19 * t.hashCode()
+      case FunType(inT, outT) => 13 * hashType(inT) + 17 * hashType(outT)
+      case DepFunType(_, t) => 19 * hashType(t)
       case st: ScalarType => 29 * st.hashCode()
       case NatType => 23
-      case VectorType(size, elemType) => 31 * size.hashCode() + 37 * elemType.hashCode()
-      case IndexType(size) => 41 * size.hashCode()
-      case PairType(dt1, dt2) => 43 * dt1.hashCode() + 47 * dt2.hashCode()
-      case DepPairType(x, t) => 53 * t.hashCode()
-      case NatToDataApply(f, n) => 59 * f.hashCode() + 61 * n.hashCode()
-      case ArrayType(size, elemType) => 67 * size.hashCode() + 71 * elemType.hashCode()
-      case DepArrayType(size, fdt) => 73 * size.hashCode() + 79 * fdt.hashCode()
+      case VectorType(size, elemType) => 31 * hash[NatKind](size) + 37 * hashType(elemType)
+      case IndexType(size) => 41 * hash[NatKind](size)
+      case PairType(dt1, dt2) => 43 * hashType(dt1) + 47 * hashType(dt2)
+      case DepPairType(x, t) => 53 * hashType(t)
+      case NatToDataApply(f, n) => 59 * hash[NatToDataKind](f) + 61 * hash[NatKind](n)
+      case ArrayType(size, elemType) => 67 * hash[NatKind](size) + 71 * hashType(elemType)
+      case DepArrayType(size, fdt) => 73 * hash[NatKind](size) + 79 * hash[NatToDataKind](fdt)
     }
   }
 
@@ -174,11 +175,15 @@ object equality {
       */
     override val hash: Expr => Int = {
       case i: Identifier => 5 + typeEq.hash[TypeKind](i.t)
-      case Lambda(x, e) => 7 * e.hashCode() + typeEq.hash[TypeKind](x.t) + typeEq.hash[TypeKind](e.t)
-      case App(f, e) => 11 * f.hashCode() + 13 * e.hashCode() + typeEq.hash[TypeKind](f.t) + typeEq.hash[TypeKind](e.t)
-      case DepLambda(x, e) => 17 * e.hashCode() + typeEq.hash[TypeKind](e.t)
-      case DepApp(f, _) => 19 * f.hashCode() + typeEq.hash[TypeKind](f.t)
-      case l : Literal => typeEq.hash[TypeKind](l.t)
+      case Lambda(x, e) => 7 * hash(e) + typeEq.hash[TypeKind](x.t) + typeEq.hash[TypeKind](e.t)
+      case App(f, e) => 11 * hash(f) + 13 * hash(e) + typeEq.hash[TypeKind](f.t) + typeEq.hash[TypeKind](e.t)
+      case DepLambda(x, e) => 17 * hash(e) + typeEq.hash[TypeKind](e.t)
+      case DepApp(f, _) => 19 * hash(f) + typeEq.hash[TypeKind](f.t)
+      case l@Literal(_: ScalarData | _: VectorData) => l.d.hashCode()
+      case Literal(_: NatData) => 91
+      case Literal(_: IndexData) => 93
+      case Literal(_: ArrayData) => 95
+      case Literal(_: PairData) => 97
       case p: Primitive => p.name.hashCode() + typeEq.hash[TypeKind](p.t)
     }
   }
