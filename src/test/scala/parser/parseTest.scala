@@ -670,8 +670,8 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f.t match {
-      case rt.DepFunType(n,
-      rt.ArrayType(n1: rt.NatIdentifier, rt.i32))
+      case dep@rt.DepFunType(n,
+      arr@rt.ArrayType(n1: rt.NatIdentifier, rt.i32))
         if n.name.equals("N") && n1.name.equals("N") => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
@@ -685,16 +685,59 @@ class parseTest extends  AnyFlatSpec {
     }
 
   ex_f match {
-    case r.DepLambda(n: rt.NatIdentifier, r.DepApp(r.DepApp(r.Identifier("g"),
+    case dep@r.DepLambda(n: rt.NatIdentifier, depapp1@r.DepApp(depapp2@r.DepApp(r.Identifier("g"),
     n1:rt.NatIdentifier), i:rt.i32.type ))
-      if n.name.equals("N") && n1.name.equals("N") //Todo: n1 is not of the Type NatIdentifier
-    => true
+      if n.name.equals("N") && n1.name.equals("N")
+    => {
+      dep.span match {
+        case None => fail("The Span should not be None")
+        case Some(Span(file, begin, end)) => {
+          file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
+          begin.row should equal(2)
+          end.row should equal(17)
+          begin.column should equal(2)
+          end.column should equal(2)
+        }
+      }
+      depapp1.span match {
+        case None => fail("The Span should not be None")
+        case Some(Span(file, begin, end)) => {
+          file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
+          begin.row should equal(11)
+          end.row should equal(17)
+          begin.column should equal(2)
+          end.column should equal(2)
+        }
+      }
+      depapp2.span match {
+        case None => fail("The Span should not be None")
+        case Some(Span(file, begin, end)) => {
+          file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
+          begin.row should equal(11)
+          end.row should equal(13)
+          begin.column should equal(2)
+          end.column should equal(2)
+        }
+      }
+    }
     case r.DepLambda(n, e) => fail("Not correct deplambda: "
       +n.toString()+ " , " + e.toString())
     case a => fail("Not a DepLambda: " + a)
   }
 
-  ex_g match {
+    ex_f.span match {
+      case None => fail("The Span should not be None")
+      case Some(Span(file, begin, end)) => {
+        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
+        begin.row should equal(2)
+        end.row should equal(17)
+        begin.column should equal(2)
+        end.column should equal(2)
+      }
+    }
+
+
+    ex_g match {
     case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
       r.App(r.DepApp(rp.generate(_), n1:rt.NatIdentifier),
       r.Lambda(r.Identifier("i"), r.App(
