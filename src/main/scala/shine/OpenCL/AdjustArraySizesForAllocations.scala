@@ -181,7 +181,6 @@ object AdjustArraySizesForAllocations {
       case (Local, AddressSpace.Private) => get_local_size(dim)
       case (Local, _) => 1
       case (Sequential, _) => 1
-      //TODO CUDA-ParallelismLevel
       case (Warp, AddressSpace.Private) => warpDim(dim.asInstanceOf[Char])
       case _ => throw new Exception("This should never happen.")
     }
@@ -207,7 +206,6 @@ object AdjustArraySizesForAllocations {
 
           case (BasicInfo(Sequential, _), AddressSpace.Local) => ArrayType(n, adjustedSizeDataType(elemType, is, addrSpace))
 
-          //TODO CUDA-ParallelismLevel
           case (BasicInfo(Warp, dim), AddressSpace.Private) =>
             ArrayType(n / warpDim(dim.asInstanceOf[Char]), adjustedSizeDataType(elemType, is, addrSpace))
 

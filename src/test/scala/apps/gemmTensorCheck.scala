@@ -9,7 +9,7 @@ import util._
 
 //Cause some TypeChecking-Bugs the execution of the entire test-class could be fail
 //Running each test individually should be successfull
-class gemmTensorCheck extends test_util.TestsWithYACX {
+class gemmTensorCheck extends test_util.TestWithCUDA {
 
   test("gemm with tensor cores produces expected result") {
     executeGEMM(simpleGemm)

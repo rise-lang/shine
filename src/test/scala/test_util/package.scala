@@ -18,7 +18,7 @@ package object test_util {
     }
   }
 
-  abstract class TestsWithYACX extends Tests with BeforeAndAfter {
+  abstract class TestWithCUDA extends Tests with BeforeAndAfter {
     val executeCudaTests = sys.props.getOrElse("executeCudaTests", "false").toBoolean
 
     before {

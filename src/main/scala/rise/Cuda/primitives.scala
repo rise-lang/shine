@@ -7,29 +7,34 @@ import rise.core.types._
 
 object primitives {
 
-  protected def mapType: Type =
+  @primitive case class mapBlock(dim: Int) extends Primitive with Builder {
     impl{n: Nat =>
       impl{s: DataType =>
         impl{t: DataType => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)}}}
-
-  @primitive case class mapBlock(dim: Int) extends Primitive with Builder {
-    mapType
   }
 
   @primitive case class mapGlobal(dim: Int) extends Primitive with Builder {
-    mapType
+    impl{n: Nat =>
+      impl{s: DataType =>
+        impl{t: DataType => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)}}}
   }
 
   @primitive case class mapThreads(dim: Int) extends Primitive with Builder {
-    mapType
+    impl{n: Nat =>
+      impl{s: DataType =>
+        impl{t: DataType => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)}}}
   }
 
   @primitive case class mapWarp(dim: Int) extends Primitive with Builder {
-    mapType
+    impl{n: Nat =>
+      impl{s: DataType =>
+        impl{t: DataType => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)}}}
   }
 
   @primitive case class mapLane(dim: Int) extends Primitive with Builder {
-    mapType
+    impl{n: Nat =>
+      impl{s: DataType =>
+        impl{t: DataType => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)}}}
   }
 
   @primitive object asFragment extends Primitive with Builder {
@@ -80,10 +85,15 @@ object primitives {
             ArrayType(m, ArrayType(n, t)) ->: ArrayType(m, ArrayType(n, t))})}}
   }
 
-  @primitive object mapFragmentElements extends Primitive with Builder {
-    impl{dt: DataType =>
-      impl{fragType: DataType =>
-          (dt ->: dt) ->: fragType ->: fragType}}
+  @primitive object mapFragment extends Primitive with Builder {
+    impl{rows: Nat =>
+      impl{columns: Nat =>
+        impl{d3: Nat =>
+          impl{dt: DataType =>
+            impl{fragmentKind: FragmentKind =>
+              impl{matrixLayout: MatrixLayout =>
+              (dt ->: dt) ->: FragmentType(rows, columns, d3, dt, fragmentKind, matrixLayout) ->:
+                FragmentType(rows, columns, d3, dt, fragmentKind, matrixLayout)}}}}}}
   }
 
   @primitive object globalToShared extends Primitive with Builder {

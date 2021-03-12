@@ -13,7 +13,7 @@ import shine.cuda.KernelExecutor.KernelNoSizes
 import test_util.similar
 import util.gen
 
-class MMTest extends test_util.TestsWithYACX {
+class MMTest extends test_util.TestWithCUDA {
   val n = NatIdentifier(freshName("n"))
   val m = NatIdentifier(freshName("m"))
   val k = NatIdentifier(freshName("k"))

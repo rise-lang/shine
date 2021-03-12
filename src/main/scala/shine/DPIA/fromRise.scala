@@ -869,7 +869,7 @@ object fromRise {
                 cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dt, dtResult, a, b, c))))
       }
 
-      case rcuda.mapFragmentElements() => fromType {
+      case rcuda.mapFragment() => fromType {
         case (expT(dt: DataType, `read`) ->: expT(_, `write`)) ->:
           expT(fragType : FragmentType, `read`) ->: expT(_, _) =>
           fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>

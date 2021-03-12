@@ -6,7 +6,7 @@ import shine.OpenCL._
 import shine.cuda.KernelExecutor.{KernelNoSizes, KernelWithSizes}
 import util._
 
-class mmTensorCheck extends test_util.TestsWithYACX {
+class mmTensorCheck extends test_util.TestWithCUDA {
   import mmCheckUtils._
 
   test("matrix multiplication without tensor cores produces expected result") {
