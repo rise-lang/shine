@@ -689,12 +689,12 @@ class parseTest extends  AnyFlatSpec {
     n1:rt.NatIdentifier), i:rt.i32.type ))
       if n.name.equals("N") && n1.name.equals("N")
     => {
-      dep.span match {
+      depapp2.span match {
         case None => fail("The Span should not be None")
         case Some(Span(file, begin, end)) => {
           file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-          begin.row should equal(2)
-          end.row should equal(17)
+          begin.row should equal(10)
+          end.row should equal(13)
           begin.column should equal(2)
           end.column should equal(2)
         }
@@ -703,18 +703,18 @@ class parseTest extends  AnyFlatSpec {
         case None => fail("The Span should not be None")
         case Some(Span(file, begin, end)) => {
           file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-          begin.row should equal(11)
+          begin.row should equal(10)
           end.row should equal(17)
           begin.column should equal(2)
           end.column should equal(2)
         }
       }
-      depapp2.span match {
+      dep.span match {
         case None => fail("The Span should not be None")
         case Some(Span(file, begin, end)) => {
           file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-          begin.row should equal(11)
-          end.row should equal(13)
+          begin.row should equal(2)
+          end.row should equal(17)
           begin.column should equal(2)
           end.column should equal(2)
         }

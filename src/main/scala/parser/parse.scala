@@ -48,7 +48,7 @@ object parse {
   sealed trait SyntaxElement
     final case class SExprClutched(expr: r.Expr, spanClutch: Span) extends SyntaxElement
     final case class SExpr(expr: r.Expr) extends SyntaxElement
-    final case class SType(t: rt.Type) extends SyntaxElement
+    final case class SType(t: rt.Type, span: Span) extends SyntaxElement
     final case class SIntToExpr(name: SIntToExprAlternatives, span: Span) extends SyntaxElement
     final case class SNat(nat: NatElement, span: Span) extends SyntaxElement
     final case class SData(data: DataElement, span:Span) extends SyntaxElement
@@ -260,7 +260,7 @@ object parse {
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
-      case TypeIdentifier(name, _) => Left(ParseState(remainderTokens, SType(rt.TypeIdentifier(name)) :: parsedSynElems,
+      case TypeIdentifier(name, spanId) => Left(ParseState(remainderTokens, SType(rt.TypeIdentifier(name), spanId) :: parsedSynElems,
         map, mapDepL, spanList))
       case tok => {
         println("Abbruch parseTypeIdent: " + tok + " : " + parseState)
@@ -311,12 +311,12 @@ object parse {
       case Colon(_) => {
         //if a type Annotation exist, we set the type new of the Identifier
         typeToken match {
-          case ScalarType(typ, _) =>  {
+          case ScalarType(typ, sp) =>  {
             //Todo: Complex Alg for Types Parsing
             val t = getScalarType(typ)
             t match {
               case None => Right(ParseError("failed to parse ScalarType: " + typ + " is not an accpeted ScalarType"))
-              case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType)::parseState.parsedSynElems,
+              case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType, sp)::parseState.parsedSynElems,
                 parseState.mapFkt, mapDepL, spanList))
             }
           }
@@ -334,12 +334,12 @@ object parse {
 
     println("parseVecType: " + parseState)
     inputType match {
-      case VectorType(len, concreteType, _) => {
+      case VectorType(len, concreteType, sp) => {
         println("ConcreteType was in parseVecType: " + concreteType + " , with length: " + len)
         //Todo: Complex Alg for Type Parsing
         val parsedInType = getScalarType(concreteType)
         val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType in VecType")))
-        Left(ParseState(remainderTokens, SType(rt.VectorType(len, inT)):: parseState.parsedSynElems, parseState.mapFkt,
+        Left(ParseState(remainderTokens, SType(rt.VectorType(len, inT), sp):: parseState.parsedSynElems, parseState.mapFkt,
           mapDepL, spanList) )
       }
       case notAtype => Right(ParseError("failed to parse VecType: " + notAtype + " is not correct Type"))
@@ -352,12 +352,12 @@ object parse {
 
       println("parseTypeWithoutArrow: " + parseState)
           inputType match {
-            case ScalarType(typ, _) => {
-              println("Type was in parseTypeWithoutArrow parsed: " + typ)
+            case ScalarType(typ, spanTyp) => {
+              println("Type was in parseTypeWithoutArrow parsed: " + typ +" ; " + spanTyp.end)
               //Todo: Complex Alg for Type Parsing
               val parsedInType = getScalarType(typ)
               val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
-              Left(ParseState(remainderTokens, SType(inT):: parseState.parsedSynElems, parseState.mapFkt, mapDepL, spanList) )
+              Left(ParseState(remainderTokens, SType(inT, spanTyp):: parseState.parsedSynElems, parseState.mapFkt, mapDepL, spanList) )
             }
             case notAtype => Right(ParseError("failed to parse ScalarType (in parseScalarType): " + notAtype +
               " is not an Type"))
@@ -366,16 +366,16 @@ object parse {
 
   def parseKindWithDepArrowAfterForDepLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseKind: " + parseState)
-    val nameOfIdentifier:String = parseState.parsedSynElems.head match {
-      case SType(rt.TypeIdentifier(name)) => name
+    val (nameOfIdentifier, spanType) = parseState.parsedSynElems.head match {
+      case SType(rt.TypeIdentifier(name), sp) => (name, sp)
       case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'")
     }
     val newPS = parseState.parsedSynElems.tail
 
     val tokens = parseState.tokenStream
     tokens.head match {
-      case Kind(concreteKind, span) => tokens.tail.head match{
-        case DepArrow(_) =>       {
+      case Kind(concreteKind, spanKind) => tokens.tail.head match{
+        case DepArrow(spanDepArrow) =>       {
           println("Kind was in parseDepFunctionType parsed: " + concreteKind)
           parseMaybeAppExpr(ParseState(tokens.tail.tail, Nil, parseState.mapFkt, parseState.mapDepL, parseState.spanList) ) match {
             case Right(e) => Right(e)
@@ -384,13 +384,18 @@ object parse {
               if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
               val depLam:SExpr = pS.parsedSynElems.head match {
                 case SExpr(outT) => {
+                  val span = outT.span match {
+                    case None => throw new IllegalStateException("Span should not be None in DepLambdafkt")
+                    case Some(sp) => sp + spanType + spanDepArrow + spanKind
+                  }
+                  println("Span of DepLambda123: "+ span.end + " ; " + spanType.end + " ; " + nameOfIdentifier)
                   concreteKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
                     case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier),
-                      outT)(rt.TypePlaceholder, outT.span))
+                      outT)(rt.TypePlaceholder, Some(span)))
                     case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier),
-                      outT)(rt.TypePlaceholder, outT.span))
+                      outT)(rt.TypePlaceholder, Some(span)))
                     case AddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](
-                      rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder, outT.span))
+                      rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder, Some(span)))
                     case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
                   }
                 }
@@ -413,7 +418,7 @@ object parse {
   def parseKindWithDepArrowAfterForDepFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseKind: " + parseState)
     val nameOfIdentifier:String = parseState.parsedSynElems.head match {
-      case SType(rt.TypeIdentifier(name)) => name
+      case SType(rt.TypeIdentifier(name), _) => name
       case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'")
     }
     val newPS = parseState.parsedSynElems.tail
@@ -439,14 +444,14 @@ object parse {
             case Left(pS) => {
               if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
               val depFun:SType = pS.parsedSynElems.head match {
-                case SType(outT) => {
+                case SType(outT, sp) => {
                   concreteKind match {
                     case Data() => SType(rt.DepFunType[rt.DataKind, rt.Type](
-                      rt.DataTypeIdentifier(nameOfIdentifier), outT))
+                      rt.DataTypeIdentifier(nameOfIdentifier), outT), sp)
                     case Nat() => SType(rt.DepFunType[rt.NatKind, rt.Type](
-                      rt.NatIdentifier(nameOfIdentifier), outT))
+                      rt.NatIdentifier(nameOfIdentifier), outT), sp)
                     case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](
-                      rt.AddressSpaceIdentifier(nameOfIdentifier), outT))
+                      rt.AddressSpaceIdentifier(nameOfIdentifier), outT), sp)
                     case ki => return Right(ParseError("Not an accepted Kind: "+ ki))
                   }
                 }
@@ -585,8 +590,8 @@ object parse {
       }
       case SAddrSpace(addrSpace,_) => throw new RuntimeException(
         "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-      case SType(t) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
-      case SData(t, span) => throw new RuntimeException("List should't have any Data at this position! " + t)
+      case SType(t, _) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
+      case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
       case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
     }
     (e,synE)
@@ -622,7 +627,7 @@ object parse {
         e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
         synE = synE.tail
       }
-      case SData(DIdentifier(data @ rt.DataTypeIdentifier(name, _)), dataSpan) => { //Todo: Add span!!!
+      case SData(DIdentifier(data @ rt.DataTypeIdentifier(name, _)), dataSpan) => {
         val span = dataSpan+span_e
 
         mapDepL.get(name) match {
@@ -659,7 +664,9 @@ object parse {
         e= r.DepApp[rt.AddressSpaceKind](e,addrSpace)(rt.TypePlaceholder, Some(span))
         synE = synE.tail
       }
-      case SType(t) => {
+      case SType(t, spanType) => {
+        val span = span_e + spanType
+//        println("spanType: "+ spanType.end + " of Type: " + t)
         if(t.isInstanceOf[rt.DataTypeIdentifier]){
           t match {
             case rt.DataTypeIdentifier(name,_) => mapDepL.get(name) match {
@@ -668,11 +675,12 @@ object parse {
                 throw new IllegalArgumentException("The DataTypeIdentifier '"+name+"' is unknown!")
               }
               case Some(k)=> {
+//                print("Type: "+ t + "; "+ span.end)
                 k match {
-                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, Some(span_e))
-                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, Some(span_e))
+                  case RData() => e = r.DepApp[rt.DataKind](e, rt.DataTypeIdentifier(name,true))(rt.TypePlaceholder, Some(span))
+                  case RNat() => e = r.DepApp[rt.NatKind](e, rt.NatIdentifier(name,true))(rt.TypePlaceholder, Some(span))
                   case RAddrSpace() => e = r.DepApp[rt.AddressSpaceKind](e,
-                    rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, Some(span_e))
+                    rt.AddressSpaceIdentifier(name,true))(rt.TypePlaceholder, Some(span))
                 }
               }
             }
@@ -680,7 +688,7 @@ object parse {
               "This should not be happening in the combining of the Dependent Expressions")
           }
         }else{
-          e = r.DepApp[rt.TypeKind](e, t)(rt.TypePlaceholder, Some(span_e))
+          e = r.DepApp[rt.TypeKind](e, t)(rt.TypePlaceholder, Some(span))
         }
         synE = synE.tail
       }
@@ -713,7 +721,7 @@ object parse {
       e = r._1
       synE = r._2
     }
-    println("I have combined the Expressions in Lambda: "+ e)
+    println("I have combined the Expressions in Lambda: "+ e + " ; " + e.span.get.end)
     e
   }
 
@@ -813,7 +821,7 @@ object parse {
           case SExprClutched(expr, spanClutch) =>
             throw new IllegalStateException("it is an Identifier expected not expr with spanClutch: "+ expr +" ; " + spanClutch)
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
-          case SType(t) => throw new IllegalStateException(
+          case SType(t, _) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
           case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
@@ -899,7 +907,7 @@ object parse {
           case SExprClutched(expr, spanClutch) =>
             throw new IllegalStateException("it is an Identifier expected not expr with spanClutch: "+ expr +" ; " + spanClutch)
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
-          case SType(t) => throw new IllegalStateException(
+          case SType(t, _) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: "+ t)
           case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: "+ prim)
           case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
@@ -926,7 +934,7 @@ object parse {
     psNew.tokenStream match {
       case EndTypAnnotatedIdent(_) :: remainderTokens => {
         val m = psNew.mapFkt
-        val typesList: List[r.types.Type] = getTypesInList(psNew.parsedSynElems)
+        val (typesList, _) = getTypesInList(psNew.parsedSynElems, None)
         if(typesList.length!=1){
           throw new IllegalStateException("The TypesList should have lenght 1: "+ typesList)
         }
@@ -944,25 +952,47 @@ object parse {
     }
   }
 
-  def getTypesInList(synElems: List[SyntaxElement]): List[r.types.Type]= {
+  def getTypesInList(synElems: List[SyntaxElement], spanOp:Option[Span]): (List[r.types.Type], Span)= {
     if( !synElems.isEmpty){
       synElems.head match {
-        case SType(typ) => typ :: getTypesInList(synElems.tail)
+        case SType(typ, sp) =>{
+          val span = spanOp match{
+            case None => sp
+            case Some(s) => s + sp
+          }
+          val (l,newSpan) = getTypesInList(synElems.tail, Some(span))
+          (typ :: l, newSpan)
+        }
         case SExprClutched(expr, spanClutch) =>
           throw new IllegalStateException("in getTypesInList we have as head a not Type:"+ expr +" ; " + spanClutch)
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
         case SIntToExpr(e, _) => throw new IllegalArgumentException(
           "in getTypesInList we have as head a not Type: "+ e)
-        case SData(t,_) => t match {
-          case DIdentifier(data) => data :: getTypesInList(synElems.tail)
-          case DType(data) => data :: getTypesInList(synElems.tail)
+        case SData(t,sp) =>{
+          val span = spanOp match {
+            case None => sp
+            case Some(s) => s + sp
+          }
+          t match {
+            case DIdentifier(data) =>{
+              val (l,newSpan) = getTypesInList(synElems.tail, Some(span))
+              (data :: l, newSpan)
+            }
+            case DType(data) => {
+              val (l,newSpan) = getTypesInList(synElems.tail, Some(span))
+              (data :: l, newSpan)
+            }
+          }
         }
         case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
         case SAddrSpace(addrSpace,_) => throw new RuntimeException(
           "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
       }
     }else{
-      Nil
+      spanOp match {
+        case None => throw new IllegalStateException("spanOp should not be None")
+        case Some(sp) => (Nil,sp)
+      }
     }
   }
 
@@ -1005,10 +1035,12 @@ object parse {
               case Left(pars) => pars
               case Right(e) => return Right(e)
             }
-            val typesList:List[r.types.Type] = combineTypes(getTypesInList(p.parsedSynElems))::
-              combineTypes(getTypesInList(newParse.parsedSynElems))::Nil
+            val (list1, spanList1) = getTypesInList(p.parsedSynElems, None)
+            val (list2, spanList2) = getTypesInList(newParse.parsedSynElems,None)
+            val typesList:List[r.types.Type] = combineTypes(list1)::
+              combineTypes(list2)::Nil
             val newType: r.types.Type = combineTypes(typesList)
-            Left(ParseState(newParse.tokenStream, SType(newType)::Nil, newParse.mapFkt, p.mapDepL, p.spanList) )
+            Left(ParseState(newParse.tokenStream, SType(newType, spanList1+spanList2)::Nil, newParse.mapFkt, p.mapDepL, p.spanList) )
           }
           //Todo: Maybe remove already here the EndTypAnnotatedIdent or RBrace from the TokenList
           case EndTypAnnotatedIdent(_) => Left(p)
@@ -1067,7 +1099,7 @@ object parse {
 
     val (maybeTypedIdent, synElemListMaybeTIdent):(r.Expr, List[SyntaxElement]) =
       synElemListExpr.head match {
-        case SType(t) =>
+        case SType(t, _) =>
           synElemListExpr.tail.head match {
             case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
             case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
@@ -1207,7 +1239,7 @@ object parse {
             case SData(data, _) => SData(data, spanClutch)
             case SIntToExpr(name, _) => SIntToExpr(name, spanClutch)
             case SNat(nat, _) => SNat(nat, spanClutch)
-            case SType(t) => SType(t)
+            case SType(t, _) => SType(t, spanClutch)
           }
         }else {
           val newExpr = combineExpressionsDependent(pState.parsedSynElems, pState.mapDepL)
@@ -1236,19 +1268,25 @@ object parse {
       case Left(pState) => {
         require(pState.parsedSynElems.length==2, "It should exactly be 1 Nat and one Identifer for IndexType in the list!")
         val ty = pState.parsedSynElems.reverse match {
-          case SNat(nat,_)::SData(data,_) :: Nil => nat match {
-            case NNumber(n) => data match {
-              case DIdentifier(d) => SType(rt.ArrayType(n, d))
-              case DType(d) => SType(rt.ArrayType(n,d))
-            }
-            case NIdentifier(n) => data match {
-              case DIdentifier(d) => SType(rt.ArrayType(n, d))
-              case DType(d) => SType(rt.ArrayType(n,d))
+          case SNat(nat,spanNat)::SData(data,spanData) :: Nil => {
+            val span = spanNat+spanData
+            nat match {
+              case NNumber(n) => data match {
+                case DIdentifier(d) => SType(rt.ArrayType(n, d), span)
+                case DType(d) => SType(rt.ArrayType(n,d), span)
+              }
+              case NIdentifier(n) => data match {
+                case DIdentifier(d) => SType(rt.ArrayType(n, d), span)
+                case DType(d) => SType(rt.ArrayType(n,d), span)
+              }
             }
           }
-          case SNat(nat,_)::SType(t) :: Nil => nat match {
-            case NNumber(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]))
-            case NIdentifier(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]))
+          case SNat(nat,spanNat)::SType(t, spanType) :: Nil => {
+            val span = spanNat+spanType
+            nat match {
+              case NNumber(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]), span)
+              case NIdentifier(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]), span)
+            }
           }
           case a => throw new RuntimeException("List should't have only Nat at this position! " + a)
         }
@@ -1276,9 +1314,12 @@ object parse {
         require(pState.parsedSynElems.length==2,
           "It should exactly be 1 Nat and one Identifer for IndexType in the list!")
         val ty = pState.parsedSynElems.reverse match {
-          case SType(rt.TypeIdentifier("Idx")) :: SNat(nat,_)::Nil => nat match {
-            case NNumber(nat) => SType(rt.IndexType(nat))
-            case NIdentifier(nat) => SType(rt.IndexType(nat))
+          case SType(rt.TypeIdentifier("Idx"), spanType) :: SNat(nat,spanNat)::Nil => {
+            val span = spanType+spanNat
+            nat match {
+              case NNumber(nat) => SType(rt.IndexType(nat), span)
+              case NIdentifier(nat) => SType(rt.IndexType(nat), span)
+            }
           }
           case a => throw new RuntimeException("List should't have only Identifier at this position! " + a)
         }
@@ -1308,10 +1349,11 @@ object parse {
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
-        val typesList = getTypesInList(pState.parsedSynElems).reverse
+        val (tL, tLSpan) = getTypesInList(pState.parsedSynElems, None)
+        val typesList = tL.reverse
         require(typesList.length==2, "It should exactly be two Types for PairType in the list!")
         val ty = SType(rt.PairType(typesList.head.asInstanceOf[rt.DataType],
-          typesList.tail.head.asInstanceOf[rt.DataType]))
+          typesList.tail.head.asInstanceOf[rt.DataType]), tLSpan)
         val newL = ty :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse
@@ -1337,7 +1379,8 @@ object parse {
           throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
-        val ty = SType(combineTypes(getTypesInList(pState.parsedSynElems)))
+        val (tL, spanTL) = getTypesInList(pState.parsedSynElems, None)
+        val ty = SType(combineTypes(tL), spanTL)
         val newL = ty :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse
