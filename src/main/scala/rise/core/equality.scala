@@ -13,12 +13,6 @@ object equality {
     def apply[T](): Env[T] = Env(Map())
   }
 
-  // TODO: move to utils?
-  private def makeExplicit[K <: Kind.Identifier]: K => K = {
-    case t: Kind.Explicitness => t.asExplicit.asInstanceOf[K]
-    case t => t
-  }
-
   val equivNat: Env[Kind.Identifier] => Nat => Nat => Boolean = env => a => b => {
     val natEnv = env.unwrap.collect { case (i: NatIdentifier, n: Nat) => (i, n) }
     // substitutes elements on the left with elements on the right
@@ -51,7 +45,6 @@ object equality {
 
   object typeAlphaEq extends TypeEq {
     /** Alpha equivalence on types.
-      * Datatype identifier explicitness is ignored.
       * Short circuits in the event of syntactic equality.
       * Kind equality is checked on dependent functions and pairs.
       */
@@ -60,7 +53,7 @@ object equality {
       a == b || (a match {
         case a : Nat => and {case b : Nat => equivNat(env)(a)(b)}
         case a : Type => and {case b : Type => equivType(env)(a)(b) }
-        case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(makeExplicit(ia), makeExplicit(ib)) }
+        case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(ia, ib) }
         case a: AddressSpace => and { case b: AddressSpace => (a : AddressSpace) == (b : AddressSpace) }
         case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(na, nb))(ba)(bb) }
         case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataKind](env.add(na, nb))(ba)(bb) }
@@ -77,7 +70,7 @@ object equality {
 
         // Base cases -> identifier lookup
         case na: TypeIdentifier => and { case nb: TypeIdentifier => env.check(na, nb) }
-        case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier => env.check(makeExplicit(na), makeExplicit(nb))
+        case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier => env.check(na, nb)
         }
 
         // Base cases -> identifier lookup in nat expressions
@@ -102,10 +95,10 @@ object equality {
 
         // Recursive cases -> binding tracking
         case DepFunType(xa, ta) => and { case DepFunType(xb, tb) =>
-          xa.getClass == xb.getClass && equivType(env.add(makeExplicit(xa), makeExplicit(xb)))(ta)(tb)
+          xa.getClass == xb.getClass && equivType(env.add(xa, xb))(ta)(tb)
         }
         case DepPairType(xa, ta) => and { case DepPairType(xb, tb) =>
-          xa.getClass == xb.getClass && equivType(env.add(makeExplicit(xa), makeExplicit(xb)))(ta)(tb)
+          xa.getClass == xb.getClass && equivType(env.add(xa, xb))(ta)(tb)
         }
       })
     }
@@ -150,7 +143,6 @@ object equality {
   case class exprAlphaEq(typeEq : TypeEq) extends ExprEq {
     /** Alpha equivalence on expressions.
       * Parametrised by an equality relation on type.
-      * Datatype identifier explicitness is ignored.
       * Kind equality is checked on dependent functions and pairs.
       */
     override val equiv: Env[Kind.Identifier] => Env[String] => Eq = typeEnv => exprEnv => a => b => {
@@ -166,7 +158,7 @@ object equality {
         case Lambda(xa, ta) => and { case Lambda(xb, tb) =>
           typeEq.equiv[TypeKind](typeEnv)(xa.t)(xb.t) && equiv(typeEnv)(exprEnv.add(xa.name, xb.name))(ta)(tb) }
         case DepLambda(xa, ea) => and { case DepLambda(xb, eb) =>
-          xa.getClass == xb.getClass && equiv(typeEnv.add(makeExplicit(xa), makeExplicit(xb)))(exprEnv)(ea)(eb) }
+          xa.getClass == xb.getClass && equiv(typeEnv.add(xa, xb))(exprEnv)(ea)(eb) }
       })
     }
 
