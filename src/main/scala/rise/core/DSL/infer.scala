@@ -13,8 +13,13 @@ object infer {
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
+    // Constraints of the form `implicit type var == explicit type var` result in substitutions
+    // `implicit type var -> explicit type var`. We (ab)use that fact to create directed constraints out of
+    // type assertions and opaque types. To do so, we make the type identifiers on one side of the constraint explicit,
+    // and we return a `ftvSubs` map that maps these explicit type identifiers back to implicit type identifiers.
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-    val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
+    // Applies ftvSubs to the constraint solutions
+    val solution = Constraint.solve(constraints.toSeq, Seq())(explDep) ++ ftvSubs
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
@@ -69,18 +74,6 @@ object infer {
       ftvSubs.natColls.view.mapValues(natColl =>
         natColl.asInstanceOf[NatCollectionIdentifier].asExplicit).toMap
     )(t)
-
-  private def unfreeze(ftvSubs: Solution, solution: Solution): Solution = solution match {
-    case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
-      Solution(
-        ts.view.mapValues(t => ftvSubs(t)).toMap,
-        ns.view.mapValues(n => ftvSubs(n)).toMap,
-        as.view.mapValues(a => ftvSubs(a)).toMap,
-        n2ds.view.mapValues(n2d => ftvSubs(n2d)).toMap,
-        n2ns.view.mapValues(n2n => ftvSubs(n2n)).toMap,
-        natColls.view.mapValues(ftvSubs(_)).toMap
-      )
-  }
 
   private def explToImpl[K <: Kind.Identifier] : K => Map[K, K] = {
     case i : Kind.Explicitness => Map(i.asExplicit.asInstanceOf[K] -> i.asImplicit.asInstanceOf[K])
