@@ -357,8 +357,75 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(_), r.App(r.App(rp.add(_),
-      r.Identifier("x")), r.Identifier("x"))), r.Identifier("x"))) => true
+      case r.Lambda(x@r.Identifier("x"), app1@r.App(app2@r.App(rp.mul(spanMul), app3@r.App(
+      r.App(rp.add(_),
+      r.Identifier("x")), r.Identifier("x"))), x1@r.Identifier("x"))) => {
+        app1.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex3.rise")
+            begin.row should equal(8)
+            end.row should equal(19)
+            begin.column should equal(1)
+            end.column should equal(1)
+          }
+        }
+
+        app2.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex3.rise")
+            begin.row should equal(8)
+            end.row should equal(17)
+            begin.column should equal(1)
+            end.column should equal(1)
+          }
+        }
+
+        app3.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex3.rise")
+            begin.row should equal(11)
+            end.row should equal(16)
+            begin.column should equal(1)
+            end.column should equal(1)
+          }
+        }
+
+        spanMul match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex3.rise")
+            begin.row should equal(8)
+            end.row should equal(9)
+            begin.column should equal(1)
+            end.column should equal(1)
+          }
+        }
+
+        x.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex3.rise")
+            begin.row should equal(3)
+            end.row should equal(4)
+            begin.column should equal(1)
+            end.column should equal(1)
+          }
+        }
+
+        x1.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex3.rise")
+            begin.row should equal(18)
+            end.row should equal(19)
+            begin.column should equal(1)
+            end.column should equal(1)
+          }
+        }
+      }
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
