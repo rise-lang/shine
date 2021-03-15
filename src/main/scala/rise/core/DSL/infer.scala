@@ -75,10 +75,8 @@ object infer {
         natColl.asInstanceOf[NatCollectionIdentifier].asExplicit).toMap
     )(t)
 
-  private def explToImpl[K <: Kind.Identifier] : K => Map[K, K] = {
-    case i : Kind.Explicitness => Map(i.asExplicit.asInstanceOf[K] -> i.asImplicit.asInstanceOf[K])
-    case i => Map(i -> i)
-  }
+  private def explToImpl[K <: Kind.Identifier with Kind.Explicitness] : K => Map[K, K] = i =>
+    Map(i.asExplicit.asInstanceOf[K] -> i.asImplicit.asInstanceOf[K])
 
   private def getFTVSubs(t: Type): Solution = {
     getFTVs(t).foldLeft(Solution())((solution, ftv) =>
