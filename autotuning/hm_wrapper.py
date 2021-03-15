@@ -42,6 +42,15 @@ def main(config_file):
         if "End of HyperMapper" in request:  # This means that HyperMapper ended
             print(request)
             break
+        elif "Best point found" in request:
+            headers = p.stdout.readline()
+            parameters_values = p.stdout.readline()
+            p.stdout.readline()
+            p.stdout.flush()
+            sys.stderr.write("Best point found\n")
+            sys.stderr.write(f"Headers: {headers}")
+            sys.stderr.write(f"Values: {parameters_values}")
+            continue
         elif "warning" in request:
             continue
 

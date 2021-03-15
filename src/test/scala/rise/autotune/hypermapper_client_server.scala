@@ -46,7 +46,7 @@ class hypermapper_client_server extends test_util.Tests {
       // maybe request contains a "warning", this should not be a problem
       request match {
         case "End of HyperMapper" => System.exit(0)
-        case _ => {
+        case _ =>
 
           println("Iteration: " + iteration)
           println(request)
@@ -71,15 +71,15 @@ class hypermapper_client_server extends test_util.Tests {
 
             // parse parameters
             // WARNING: hardcoded
-            val vec = parameters_values(0).toFloat
-            val tile = parameters_values(1).toFloat
+            val vec = parameters_values(0)
+            val tile = parameters_values(1)
 
             // call function / execution f(x1, x2)
             // replace parameters in expression
             // execute expression
 
             // use this to simulated runtime
-            val f = vec + tile
+            val f = vec.toFloat + tile.toFloat
 
             // create output string to hypermapper
             val str_to_hypermapper:String =
@@ -94,7 +94,57 @@ class hypermapper_client_server extends test_util.Tests {
             sub.stdin.write(str_to_hypermapper)
             sub.stdin.flush()
           }
-        }
       }
     }
-  }}
+  }
+
+  test("hm client server direct") {
+
+    val computeF: Array[String] => Float = parametersValues => {
+      parametersValues(0).toFloat + parametersValues(1).toFloat
+    }
+
+    val hypermapperBinary = os.Path.expandUser("~") / ".local" / "bin" / "hypermapper"
+
+    val configFile = os.pwd / "autotuning" / "convolution.json"
+
+    assert( os.isFile(hypermapperBinary) && os.isFile(configFile) )
+
+    val hypermapper = os.proc(hypermapperBinary, configFile).spawn()
+
+    var done = false
+    while (hypermapper.isAlive() && !done) {
+      hypermapper.stdout.readLine() match {
+        case "End of HyperMapper" =>
+          done = true
+          println("End of HyperMapper -- done")
+        case "Best point found:" =>
+          val headers = hypermapper.stdout.readLine()
+          val values = hypermapper.stdout.readLine()
+          hypermapper.stdout.readLine() // consume empty line
+          println(s"Best point found\nHeaders: ${headers}Values: ${values}")
+        case request if request.contains("warning") =>
+          println(s"[Hypermapper] $request")
+        case request =>
+          println(s"Request: $request")
+          val numberOfEvalRequests = request.split(" ")(1).toInt
+          // read in header
+          val header = hypermapper.stdout.readLine().split(",").map(x => x.trim())
+          // start forming response
+          var response = s"${header.mkString(",")},runtime,Valid\n"
+          for (_ <- Range(0, numberOfEvalRequests)) {
+            // read in parameters values
+            val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
+            // compute f value
+            val f = computeF(parametersValues)
+            // append response
+            response += s"${parametersValues.mkString(",")},$f,True\n"
+          }
+          print(s"Response: $response")
+          // send response to Hypermapper
+          hypermapper.stdin.write(response)
+          hypermapper.stdin.flush()
+      }
+    }
+  }
+}
