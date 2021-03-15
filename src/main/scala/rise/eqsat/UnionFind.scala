@@ -1,13 +1,12 @@
 package rise.eqsat
 
 import scala.annotation.tailrec
-import scala.collection.mutable.ArrayBuffer
 
 object UnionFind {
-  def empty: UnionFind = new UnionFind(ArrayBuffer[EClassId]())
+  def empty: UnionFind = new UnionFind(Vec[EClassId]())
 }
 
-final class UnionFind(var parents: ArrayBuffer[EClassId]) {
+final class UnionFind(var parents: Vec[EClassId]) {
   def makeSet(): EClassId = {
     val id = EClassId(parents.size)
     parents += id
