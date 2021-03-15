@@ -103,15 +103,18 @@ object parse {
     }
     val nextToken :: remainderTokens = tokens
 
-    nextToken match {
-      case Backslash(_) =>
+    val spanL = nextToken match {
+      case Backslash(span) => spanList match {
+        case None => span :: Nil
+        case Some(l) => span :: l
+      }
       case tok => {
         println("failed parseBacklash: " + parseState)
         return Right(ParseError("failed to parse Backslash: " + tok + " is not an Backslash"))
       }
     }
 
-    Left(ParseState(remainderTokens, parsedExprs, mapFkt, mapDepL, spanList))
+    Left(ParseState(remainderTokens, parsedExprs, mapFkt, mapDepL, Some(spanL)))
   }
 
 
@@ -366,18 +369,23 @@ object parse {
 
   def parseKindWithDepArrowAfterForDepLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseKind: " + parseState)
-    val (nameOfIdentifier, spanType) = parseState.parsedSynElems.head match {
-      case SType(rt.TypeIdentifier(name), sp) => (name, sp)
+    val (nameOfIdentifier, spanType, spanList) = parseState.parsedSynElems.head match {
+      case SType(rt.TypeIdentifier(name), sp) => parseState.spanList match {
+        case Some(Nil) => throw new IllegalArgumentException("this should not happen to be Nil")
+          case None => throw new IllegalArgumentException("this should not happen to be None")
+          case Some(span::Nil) => (name, sp+span, None)
+          case Some(span::l)=> (name, sp+span, Some(l))
+        }
       case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'")
     }
     val newPS = parseState.parsedSynElems.tail
 
     val tokens = parseState.tokenStream
     tokens.head match {
-      case Kind(concreteKind, spanKind) => tokens.tail.head match{
-        case DepArrow(spanDepArrow) =>       {
+      case Kind(concreteKind, _) => tokens.tail.head match{
+        case DepArrow(_) =>       {
           println("Kind was in parseDepFunctionType parsed: " + concreteKind)
-          parseMaybeAppExpr(ParseState(tokens.tail.tail, Nil, parseState.mapFkt, parseState.mapDepL, parseState.spanList) ) match {
+          parseMaybeAppExpr(ParseState(tokens.tail.tail, Nil, parseState.mapFkt, parseState.mapDepL, spanList) ) match {
             case Right(e) => Right(e)
             case Left(pS) => {
               println("In the middle of parseDepFunctionType: " + pS)
@@ -386,9 +394,12 @@ object parse {
                 case SExpr(outT) => {
                   val span = outT.span match {
                     case None => throw new IllegalStateException("Span should not be None in DepLambdafkt")
-                    case Some(sp) => sp + spanType + spanDepArrow + spanKind
+                    case Some(sp) => {
+                      val spanZW = spanType + sp
+                      println("Span of spanType123: ("+ spanZW.begin + ","+spanZW.end+ ") = (" + sp.begin + ","+sp.end+ ") + ("+ spanType.begin + ")"+ spanType.end+ ") ; " + nameOfIdentifier)
+                      spanZW
+                    }
                   }
-                  println("Span of DepLambda123: "+ span.end + " ; " + spanType.end + " ; " + nameOfIdentifier)
                   concreteKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
                     case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier),
                       outT)(rt.TypePlaceholder, Some(span)))
@@ -401,7 +412,7 @@ object parse {
                 }
                 case _ => return Right(ParseError("Not a Type"))
               }
-              Left(ParseState(pS.tokenStream, depLam:: newPS, pS.mapFkt, pS.mapDepL, parseState.spanList) )
+              Left(ParseState(pS.tokenStream, depLam:: newPS, pS.mapFkt, pS.mapDepL, spanList) )
             }
           }
         }
@@ -1067,8 +1078,13 @@ object parse {
         parseMaybeTypeAnnotation |>
         parseArrow
 
-        val psOrErr = psOld match {
-          case Left(p) => parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, p.spanList) )
+        val (psOrErr, spanBackslash) = psOld match {
+          case Left(p) => p.spanList match {
+            case Some(Nil) => throw new IllegalArgumentException("this should not happen to be Nil")
+            case None => throw new IllegalArgumentException("this should not happen to be None")
+            case Some(span::Nil) => (parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, None)) , span )
+            case Some(span::l)=> ( parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, Some(l)) ), span)
+          }
           case Right(e) => {
             println("endLambda: "+ e)
             return Right(e)
