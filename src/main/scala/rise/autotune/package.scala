@@ -1,10 +1,15 @@
 package rise
 
-import arithexpr.arithmetic.{RangeAdd, RangeMul, RangeUnknown}
+import arithexpr.arithmetic.{BoolExpr, RangeAdd, RangeMul, RangeUnknown}
 import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
+import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
 import util.{Time, TimeSpan}
+
+import java.io.{File, FileOutputStream, PrintWriter}
+import java.security.Policy.Parameters
+import scala.annotation.tailrec
 
 package object autotune {
   type Parameters = Set[NatIdentifier]
@@ -17,64 +22,204 @@ package object autotune {
   def tuningParam[A](name: String, r: arithexpr.arithmetic.Range, w: NatFunctionWrapper[A]): A =
     w.f(NatIdentifier(name, r, isExplicit = true, isTuningParam = true))
 
-  def search(e: Expr): Seq[Sample] = ???
+  def search(e: Expr): Seq[Sample] = {
+    // collect parameters
+    val parameters = collectParameters(e)
+
+    // collect constraints
+    val constraints = collectConstraints(e, parameters)
+
+    // generate json and write to tmp directory
+    val config_file = generateJSON(parameters)
+
+    println("parameters: \n" + parameters)
+    println("constraints: \n" + constraints)
+    println("json: \n" + config_file)
+
+    // open file
+    val file = new PrintWriter(
+      new FileOutputStream(new File("autotuning/tmp.json"), false))
+
+    // write to file and close
+    file.write(config_file)
+    file.close()
+
+    // compute function value as result for hypermapper
+    val computeF: (Array[String], Array[String]) => Option[Float] = (header, parametersValues) => {
+
+      val parametersValuesMap = Map.empty[String, Int]
+      for(i <- Range(0,header.length)){
+        parametersValuesMap + (header(i)->parametersValues(i).toInt)
+      }
+
+      checkConstraints(constraints, parametersValuesMap) match{
+        case true => execute(substitute(e, parametersValuesMap))
+        case false => None
+      }
+    }
+
+    val hypermapperBinary = os.Path.expandUser("~") / ".local" / "bin" / "hypermapper"
+
+    val configFile = os.pwd / "autotuning" / "tmp.json"
+
+    assert( os.isFile(hypermapperBinary) && os.isFile(configFile) )
+
+
+    val hypermapper = os.proc(hypermapperBinary, configFile).spawn()
+
+    var done = false
+    while (hypermapper.isAlive() && !done) {
+      hypermapper.stdout.readLine() match {
+        case "End of HyperMapper" =>
+          done = true
+          println("End of HyperMapper -- done")
+        case "Best point found:" =>
+          val headers = hypermapper.stdout.readLine()
+          val values = hypermapper.stdout.readLine()
+          hypermapper.stdout.readLine() // consume empty line
+          println(s"Best point found\nHeaders: ${headers}Values: ${values}")
+        case request if request.contains("warning") =>
+          println(s"[Hypermapper] $request")
+        case request =>
+          println(s"Request: $request")
+          val numberOfEvalRequests = request.split(" ")(1).toInt
+          // read in header
+          val header = hypermapper.stdout.readLine().split(",").map(x => x.trim())
+          // start forming response
+          var response = s"${header.mkString(",")},runtime,Valid\n"
+          for (_ <- Range(0, numberOfEvalRequests)) {
+            // read in parameters values
+            val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
+            // compute f value
+            val f = computeF(header, parametersValues)
+            // append response
+            f match {
+              case None => response += s"${parametersValues.mkString(",")},-1,False\n"
+              case Some(value) => response += s"${parametersValues.mkString(",")},$value,True\n"
+            }
+          }
+          print(s"Response: $response")
+          // send response to Hypermapper
+          hypermapper.stdin.write(response)
+          hypermapper.stdin.flush()
+      }
+    }
+
+
+    // delete tmp json file
+//    val fileDelete = new File("autotuning/tmp.json")
+//    fileDelete.delete()
+
+
+    // options to get results
+    // collect elements in store in Seq[Sample]
+    // collect best
+    // get results from hypermapper .csv output file
+
+    Seq.empty[Sample]
+  }
+
+
+  // check constraints for given values and returns boolean
+  def checkConstraints(constraints: Set[Constraint], values:Map[String, Int]):Boolean = ???
+
+  // substitute tp parameters using value Map
+  def substitute(e: Expr, values:Map[String, Int]):Expr = ???
+
+    // add information for execution as parameter?
+    // execution failure of e returns None
+    // execution success of e returns Some(runtimef)
+  def execute(e: Expr): Option[Float]  = ???
+
 
   def collectParameters(e: Expr): Parameters = {
     var params = scala.collection.mutable.Set[NatIdentifier]()
-    class NatVisitor extends traversal.Visitor {
-      override def visitNat(n: Nat): traversal.Result[Nat] = {
-        n match {
+    traverse(e, new traverse.PureTraversal {
+      override def nat: Nat => traverse.Pure[Nat] = n =>
+        return_(n.visitAndRebuild({
           case n: NatIdentifier if n.isTuningParam =>
             params += n
-            traversal.Stop(n)
-          case _ =>
-            traversal.Stop(n.visitAndRebuild({
-              case n: NatIdentifier if n.isTuningParam =>
-                params += n
-                n
-              case ae => ae
-            }))
-        }
-      }
-    }
-    traversal.DepthFirstLocalResult(e, new NatVisitor {
-      override def visitType[T <: Type](t: T): traversal.Result[T] =
-        traversal.Stop(traversal.types.DepthFirstLocalResult(t, new NatVisitor))
+            n
+          case ae => ae
+        }))
     })
     params.toSet
   }
 
-  def generateConstraints(p: Parameters): String = {
-    // generate constraints as String to be evaluated in python
-
-    var output = ""
-
-    p.foreach(elem => {
-      // check if evaluable
-      val test = elem.range match{
-        case RangeAdd(start, stop, step) => {
-          val constraint = step.isEvaluable match {
-            case true => ""
-            case false => "X['" + elem.name +  "']" + " % " + "X['" + step.toString + "']" + " == 0" + " && "
-          }
-
-          constraint
-        }
-        case RangeMul(start, stop, step) => {
-          val constraint = step.isEvaluable match {
-            case true => ""
-            case false => "math.log(" + elem.name + ", "+ step.toString + ") % 1 == 0" + " && "
-          }
-
-          constraint
-        }
-        case _ => // no constraint
+  private def collectInputNats(e: Expr): Set[NatIdentifier] = {
+    @tailrec
+    def iter(e: Expr, inputs: Set[NatIdentifier]): Set[NatIdentifier] = {
+      e match {
+        case DepLambda(x: NatIdentifier, e) => iter(e, inputs + x)
+        case DepLambda(_, e) => iter(e, inputs)
+        case Lambda(_, e) => iter(e, inputs)
+        case _ => inputs
       }
-      output += test.toString
+    }
+    iter(e, Set.empty)
+  }
+
+  sealed trait Constraint
+  case class PredicateConstraint(n: BoolExpr) extends Constraint {
+    override def toString: String = n.toString
+  }
+  case class RangeConstraint(n: Nat, r: arithexpr.arithmetic.Range) extends Constraint {
+    override def toString: String = s"($n) in $r"
+  }
+
+  // we only look at constraints on top-level nats
+  def collectConstraints(e: Expr, parameters: Parameters): Set[Constraint] = {
+    import arithexpr.arithmetic._
+    import BoolExpr._
+
+    val paramOrInput = (parameters ++ collectInputNats(e)).map(_.name)
+    val cs = collection.mutable.Set[Constraint]()
+
+    def addPredicate(p: ArithPredicate): Unit = {
+      if (!p.evaluate.contains(true)) {
+        cs += PredicateConstraint(p)
+      }
+    }
+
+    traverse(e, new traverse.PureTraversal {
+      override def datatype: DataType => traverse.Pure[DataType] = { t =>
+        t match {
+          case ArrayType(n, _) if n.varList.forall(v => paramOrInput(v.name)) =>
+            addPredicate(ArithPredicate(n, 0, ArithPredicate.Operator.>=))
+          case VectorType(n, _) if n.varList.forall(v => paramOrInput(v.name)) =>
+            cs += RangeConstraint(n, RangeMul(2, 16, 2))
+          case _ =>
+        }
+        super.datatype(t)
+      }
+
+      override def nat: Nat => traverse.Pure[Nat] = n =>
+        return_(n.visitAndRebuild { m =>
+          if (m.varList.forall(v => paramOrInput(v.name))) { m match {
+            case Prod(parts) =>
+              var (num, denum) = parts.partition {
+                case Pow(_, Cst(-1)) => false
+                case _ => true
+              }
+              denum = denum.map { case Pow(b, Cst(-1)) => b }
+              if (denum.nonEmpty) { // num /^ denum
+                val aNum = num.fold(1: ArithExpr)(_ * _)
+                val aDenum = denum.fold(1: ArithExpr)(_ * _)
+                if (aNum % aDenum != Cst(0)) {
+                  cs += RangeConstraint(aNum, RangeAdd(0, PosInf, aDenum))
+                }
+              }
+            case Mod(x, _) =>
+              addPredicate(ArithPredicate(x, 0, ArithPredicate.Operator.>=))
+            case _ => ()
+          }}
+          m
+        })
     })
 
-    output.dropRight(3)
+    cs.toSet
   }
+
 
   def generateJSON(p: Parameters): String = {
 
@@ -84,8 +229,14 @@ package object autotune {
     """{
       | "application_name" : "rise",
       | "optimization_objectives" : ["runtime"],
+      | "hypermapper_mode" : {
+      |   "mode" : "client-server"
+      | },
       | "feasible_output" : {
-      |   "enable_feasible_predictor" : true
+      |   "enable_feasible_predictor" : true,
+      |   "name" : "Valid",
+      |   "true_value" : "True",
+      |   "false_value" : "False"
       | },
       | "design_of_experiment" : {
       |   "doe_type" : "random sampling",
@@ -160,19 +311,6 @@ package object autotune {
     header + parameterSection + foot
   }
 
-  def createCall(json:String, constraints:String, path:String):String = {
-    // write json to file to path
-
-    // copy hypermapper driver to path
-
-    // change current directory to path ones
-
-    // call hypermapper script with constraint
-    // add argument rise executable ?
-    val call = "./hypermapper_driver.py --configuration_file " + path + " " + "--constraints " + constraints
-
-    call
-  }
 
   def applyBest(e: Expr, samples: Seq[Sample]): Expr = ???
 
