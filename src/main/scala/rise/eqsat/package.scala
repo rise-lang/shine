@@ -4,6 +4,7 @@ import scala.collection.mutable
 
 package object eqsat {
   case class EClassId(i: Int)
+  type ENode = Node[EClassId]
 
   type Vec[T] = mutable.ArrayBuffer[T]
   val Vec: mutable.ArrayBuffer.type = mutable.ArrayBuffer

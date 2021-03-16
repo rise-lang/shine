@@ -62,17 +62,8 @@ class EGraph[Data](
     }
   }
 
-  def addExpr(expr: debruijn.Expr): EClassId = {
-    add(expr match {
-      case debruijn.Var(index) => Var(index)
-      case debruijn.App(f, e) => App(addExpr(f), addExpr(e))
-      case debruijn.Lambda(e) => Lambda(addExpr(e))
-      case debruijn.DepApp(f, x) => DepApp(addExpr(f), x)
-      case debruijn.DepLambda(k, e) => DepLambda(k, addExpr(e))
-      case debruijn.Literal(d) => Literal(d)
-      case debruijn.Primitive(p) => Primitive(p)
-    })
-  }
+  def addExpr(expr: Expr): EClassId =
+    add(expr.node.mapChildren(addExpr))
 
   // returns the merged eclass id and whether a union was done
   def union(id1: EClassId, id2: EClassId): (EClassId, Boolean) = {

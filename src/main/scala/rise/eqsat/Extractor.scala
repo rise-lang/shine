@@ -1,7 +1,5 @@
 package rise.eqsat
 
-import rise.debruijn
-
 object Extractor {
   def init[C](egraph: EGraph[_], costFunction: CostFunction[C])
              (implicit costCmp: math.Ordering[C]): Extractor[C] = {
@@ -16,31 +14,23 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
                       val costs: HashMap[EClassId, (Cost, ENode)],
                       val egraph: EGraph[_])
                      (implicit costCmp: math.Ordering[Cost]) {
-  def findBestOf(eclass: EClassId): (Cost, debruijn.Expr) =
+  def findBestOf(eclass: EClassId): (Cost, Expr) =
     findBestRec(eclass, HashMap.empty)
 
   def findBestCostOf(eclass: EClassId): Cost =
     costs(egraph.find(eclass))._1
 
   private def findBestRec(eclass: EClassId,
-                          addedMemo: HashMap[EClassId, debruijn.Expr]
-                         ): (Cost, debruijn.Expr) = {
+                          addedMemo: HashMap[EClassId, Expr]
+                         ): (Cost, Expr) = {
     val id = egraph.find(eclass)
     val (bestCost, bestNode) = costs(id)
     (bestCost, addedMemo.get(id) match {
       case Some(idExpr) => idExpr
       case None =>
-        def child(id: EClassId): debruijn.Expr =
+        def childF(id: EClassId): Expr =
           findBestRec(id, addedMemo)._2
-        val expr = bestNode match {
-          case Var(index) => debruijn.Var(index)
-          case App(f, e) => debruijn.App(child(f), child(e))
-          case Lambda(e) => debruijn.Lambda(child(e))
-          case DepApp(f, x) => debruijn.DepApp(child(f), x)
-          case DepLambda(k, e) => debruijn.DepLambda(k, child(e))
-          case Literal(d) => debruijn.Literal(d)
-          case Primitive(p) => debruijn.Primitive(p)
-        }
+        val expr = Expr(bestNode.mapChildren(childF))
         assert(!addedMemo.contains(id))
         addedMemo(id) = expr
         expr
