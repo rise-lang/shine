@@ -285,7 +285,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def typ(dt: DataType): Type = dt match {
     case FragmentType(m, n, k, dataType, fragmentKind, layout) =>
-      cuda.AST.FragmentType(m, n, k, typ(dataType), fragmentKind, layout)
+      C.AST.FragmentType(m, n, k, typ(dataType), fragmentKind, layout)
     case shine.DPIA.Types.f16 =>
       cuda.AST.Type.half
     case shine.DPIA.Types.pipeline =>

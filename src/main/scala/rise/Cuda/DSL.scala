@@ -40,9 +40,4 @@ object DSL {
     def apply[T <: Expr, U <: Expr](a: ToBeTyped[T], b: ToBeTyped[U]): ToBeTyped[rise.core.App] = primitives.tensorMMA(a)(b)
     def apply[T <: Expr, U <: Expr, V <: Expr](a: ToBeTyped[T], b: ToBeTyped[U], c: ToBeTyped[V]): ToBeTyped[rise.core.App] = primitives.tensorMMA(a)(b)(c)
   }
-
-  object toSharedMemoryShift {
-    def apply(shift: Nat): Expr = primitives.toSharedMemoryShift(shift)
-    def apply(shift: Nat, array: Expr): Expr = primitives.toSharedMemoryShift(shift)(array)
-  }
 }

@@ -61,6 +61,7 @@ class Printer extends shine.OpenCL.AST.Printer {
     if (p.t.const) print("const ")
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
+      case f: FragmentType => print(s"${f.print} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
       case _: ArrayType =>
@@ -72,6 +73,7 @@ class Printer extends shine.OpenCL.AST.Printer {
       case _: shine.C.AST.PointerType =>
         throw new Exception(
           "Pointer without address space unsupported in OpenCL")
+      case _: OpaqueType => throw new Exception("did not expect opaque parameter type")
     }
   }
 

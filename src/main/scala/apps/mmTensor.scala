@@ -1,7 +1,7 @@
 package apps
 
 import rise.Cuda.DSL.{mapBlock, mapThreads, _}
-import rise.Cuda.primitives.{asFragment, asMatrix, generateFragment, toSharedMemoryShift}
+import rise.Cuda.primitives.{asFragment, asMatrix, generateFragment}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
@@ -548,6 +548,17 @@ object mmTensor {
       split(n))
 
 
+  //Write a matrix to shared memory with pad elements spacing between two consecutive rows
+  def toSharedWithPadding(numberOfColumns: Nat, pad: Nat): ToBeTyped[Expr] =
+    fun(matrix =>
+      matrix |>
+      map(fun(row =>
+        row |> padEmpty(pad))) |>
+      toLocal |>
+      map(fun(row =>
+        row |> take(numberOfColumns)))
+    )
+
 
   //Warp-level (executed by a single warp)
   //Multiply a mTileWarp.kTileBlock.f16-Tile with a kTileBlock.nTileWarp.f16-Tile and accumulate current result
@@ -658,14 +669,14 @@ object mmTensor {
         let(aTbTileBlock._1 |>
           transpose |>
           copyMatrix(config.mTileBlock, config.kTileBlock, 8) |>
-          toSharedMemoryShift(8))
+          toSharedWithPadding(config.kTileBlock, 8))
         be(aTile =>
 
           //Load bTile transposed (like it is in global memory) to shared memory
           let(aTbTileBlock._2 |>
             transpose |>
             copyMatrix(config.nTileBlock, config.kTileBlock, 8) |>
-            toSharedMemoryShift(8))
+            toSharedWithPadding(config.kTileBlock, 8))
           be(bTileT =>
 
             zip
@@ -803,7 +814,7 @@ object mmTensor {
           join |>
 
           //Write this result to shared memory
-          toSharedMemoryShift(4) |>
+          toSharedWithPadding(config.nTileBlock, 4) |>
 
           //And then coalesced to global memory
           copyMatrix(matrixMDimensionPerIteration, config.nTileBlock, 4) |>

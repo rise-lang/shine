@@ -91,6 +91,8 @@ object AdjustArraySizesForAllocations {
       //TODO visit value first?
       case Let(_, _, _, _, f) => visitAndGatherInformation(f, parallInfo)
 
+      case Map(_, _, _, _, _, a) => visitAndGatherInformation(a, parallInfo)
+
       case pattern => throw new Exception(s"this should not happen for now: $pattern")
     }
   }

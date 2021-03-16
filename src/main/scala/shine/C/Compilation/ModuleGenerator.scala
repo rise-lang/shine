@@ -111,7 +111,7 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
     def visitor(decls: mutable.ArrayBuffer[C.AST.Decl]): C.AST.Nodes.VisitAndRebuild.Visitor = {
       new C.AST.Nodes.VisitAndRebuild.Visitor {
         def collect(t: C.AST.Type): Unit = t match {
-          case _: C.AST.BasicType | _: C.AST.OpaqueType | _: shine.cuda.AST.FragmentType =>
+          case _: C.AST.BasicType | _: C.AST.OpaqueType | _: C.AST.FragmentType =>
           case s: C.AST.StructType =>
             s.fields.foreach { case (ty, _) => collect(ty) }
             decls += C.AST.StructTypeDecl(

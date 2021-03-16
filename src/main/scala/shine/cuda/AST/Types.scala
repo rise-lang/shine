@@ -19,25 +19,6 @@ object Wmma {
   }
 }
 
-case class FragmentType(m: Nat,
-                   n: Nat,
-                   k: Nat,
-                   dataType: shine.C.AST.Type,
-                   fragmentKind: FragmentKind,
-                   layout: MatrixLayout) extends shine.C.AST.Type(false) {
-  override def print: String = {
-    fragmentKind match {
-      case FragmentKind.AMatrix =>
-        s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
-      case FragmentKind.BMatrix =>
-        s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
-      case FragmentKind.Accumulator =>
-        s"nvcuda::wmma::fragment<nvcuda::wmma::accumulator, $m, $n, $k, $dataType>"
-      case _ => throw new Exception("this should not happen")
-    }
-  }
-}
-
 case class ExternArrayType(override val elemType: shine.C.AST.Type) extends shine.C.AST.ArrayType(elemType, None, false) {
   override def print: String = "extern" + super.print
 }

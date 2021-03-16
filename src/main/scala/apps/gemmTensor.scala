@@ -2,7 +2,7 @@ package apps
 
 import apps.mmTensor._
 import rise.Cuda.DSL.{mapBlock, mapThreads, _}
-import rise.Cuda.primitives.{asFragment, asMatrix, mapFragment, toSharedMemoryShift}
+import rise.Cuda.primitives.{asFragment, asMatrix, mapFragment}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
@@ -272,14 +272,14 @@ object gemmTensor {
           let(aTbTileBlock._1 |>
             transpose |>
             copyMatrix(config.mTileBlock, config.kTileBlock, 8) |>
-            toSharedMemoryShift(8))
+            toSharedWithPadding(config.kTileBlock, 8))
             be(aTile =>
 
             //Load bTile transposed to shared memory
             let(aTbTileBlock._2 |>
               transpose |>
               copyMatrix(config.nTileBlock, config.kTileBlock, 8) |>
-              toSharedMemoryShift(8))
+              toSharedWithPadding(config.kTileBlock, 8))
               be(bTileT =>
 
               zip
@@ -344,7 +344,7 @@ object gemmTensor {
           tilePerIteration |>
             join |>
             copyMatrix(matrixMDimensionPerIteration, config.nTileBlock, 4) |>
-            toSharedMemoryShift(4) |>
+            toSharedWithPadding(config.nTileBlock, 4) |>
 
             tiling2D(config.mTileFrag * mNumberOfFragmentsPerIteration, config.nTileWarp) |>
             mapWarp(fun(warpTilePerIteration =>
@@ -437,7 +437,7 @@ object gemmTensor {
               join |>
 
               //Write this result to shared memory
-              toSharedMemoryShift(4) |>
+              toSharedWithPadding(config.nTileBlock, 4) |>
 
               //And then coalesced to global memory
               copyMatrix(matrixMDimensionPerIteration, config.nTileBlock, 4) |>

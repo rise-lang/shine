@@ -623,11 +623,6 @@ private class InferAccessAnnotation {
           expT(dt, write) ->: expT(dt, read)
       }
 
-      case rocup.toSharedMemoryShift() => p.t match {
-        case  shift `(Nat)->:` ((matrix: rt.ArrayType) ->: _) =>
-          nFunT(shift, expT(matrix, write) ->: expT(matrix, read))
-      }
-
       case rocup.mapFragment() => p.t match {
         case ((dt: rt.DataType) ->: _) ->: (fragType: rt.FragmentType) ->: _ =>
           (expT(dt, read) ->: expT(dt, write)) ->: expT(fragType, read) ->: expT(fragType, write)

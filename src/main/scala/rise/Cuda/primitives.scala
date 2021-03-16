@@ -77,14 +77,6 @@ object primitives {
                     FragmentType(m, n, k, dt2) ->: FragmentType(m, n, k, dt2)}}}}}}}
   }
 
-  @primitive object toSharedMemoryShift extends Primitive with Builder {
-    impl{m: Nat =>
-      impl{n: Nat =>
-        expl((_: Nat) =>
-          impl{t: DataType =>
-            ArrayType(m, ArrayType(n, t)) ->: ArrayType(m, ArrayType(n, t))})}}
-  }
-
   @primitive object mapFragment extends Primitive with Builder {
     impl{rows: Nat =>
       impl{columns: Nat =>
@@ -96,6 +88,7 @@ object primitives {
                 FragmentType(rows, columns, d3, dt, fragmentKind, matrixLayout)}}}}}}
   }
 
+  //TODO remove this primitive and change oclToMem(Local)
   @primitive object globalToShared extends Primitive with Builder {
     impl{t: DataType => t ->: t}
   }

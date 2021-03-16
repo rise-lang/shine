@@ -877,13 +877,6 @@ object fromRise {
               cuda.MapFragmentElements(fragType.asInstanceOf[FragmentType], fragment, f)))
       }
 
-      case rcuda.toSharedMemoryShift() => fromType {
-        case nFunT(s, expT(ArrayType(m, ArrayType(n, dt)), `write`) ->: expT(_, _)) =>
-          DepLambda[NatKind](s)(
-            fun[ExpType](expT(ArrayType(m, ArrayType(n, dt)), write), a =>
-              cuda.ToSharedMemoryShift(s, m, n, dt, a)))
-      }
-
       case rcuda.mapGlobal(dim) => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
           expT(ArrayType(n, _), `read`) ->:

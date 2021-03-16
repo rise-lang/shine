@@ -189,7 +189,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
       case a: shine.DPIA.Types.ArrayType =>
         C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
       case a: DepArrayType => ??? // TODO
-      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | _: FragmentType
+      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | _: shine.DPIA.Types.FragmentType
            | _: pipeline.type | ContextType =>
         throw new Exception(s"did not expect ${dt}")
     }
