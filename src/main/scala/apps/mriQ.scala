@@ -30,13 +30,32 @@ object mriQ {
       |}""".stripMargin,
     f32 `x3 ->:` f32 `x3 ->:` f32 ->: (f32 x f32) ->: (f32 x f32))
 
-  val computePhiMag: Expr = depFun((k: Nat) => fun(
+  // FIXME: could not find original Lift expression, this is made up
+  val computePhiMagHighLevel: Expr = depFun((k: Nat) => fun(
+    (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
+  )((phiR, phiI) =>
+    map(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
+  ))
+
+  val computePhiMagOcl: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
     mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
-  val computeQ: Expr = depFun((k: Nat, x: Nat) => fun(
+  // FIXME: could not find original Lift expression, this is made up
+  val computeQHighLevel: Expr = depFun((k: Nat, x: Nat) => fun(
+    (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))
+  )((x, y, z, Qr, Qi, kvalues) =>
+    zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
+      map(fun(t =>
+          kvalues |> reduceSeq(fun((acc, p) =>
+            qFun(t._1)(t._2._1)(t._2._2._1)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
+          ))(makePair(t._2._2._2._1)(t._2._2._2._2))
+      ))
+  ))
+
+  val computeQOcl: Expr = depFun((k: Nat, x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
@@ -70,7 +89,7 @@ object mriQ {
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     val K = phiR.length
-    val localSize = LocalSize(1)
+    val localSize = LocalSize(256)
     val globalSize = GlobalSize(K)
 
     val float_bytes = 4
@@ -103,7 +122,7 @@ object mriQ {
     phiI: Array[Float]
   ): (Array[Float], TimeSpan[Time.ms]) = {
     val K = phiR.length
-    val localSize = LocalSize(1)
+    val localSize = LocalSize(256)
     val globalSize = GlobalSize(K)
 
     val f = k.as[ScalaFunction `(`
@@ -129,7 +148,7 @@ object mriQ {
     val X = x.length
     assert(kvalues.length % 4 == 0)
     val K = kvalues.length / 4
-    val localSize = LocalSize(1)
+    val localSize = LocalSize(256 / 4)
     val globalSize = GlobalSize(X)
 
     val float_bytes = 4
@@ -173,7 +192,7 @@ object mriQ {
     val X = x.length
     assert(kvalues.length % 4 == 0)
     val K = kvalues.length / 4
-    val localSize = LocalSize(1)
+    val localSize = LocalSize(256 / 4)
     val globalSize = GlobalSize(X)
 
     val f = k.as[ScalaFunction `(`

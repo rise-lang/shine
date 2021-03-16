@@ -15,17 +15,39 @@ object convolution {
   private val id = fun(x => x)
 
   private val dotElemWeights = fun((weights, elem) =>
+    zip(join(elem))(weights) |>
+    map(separableConvolution2D.mulT) |>
+    reduce(add)(l(0.0f))
+  )
+
+  private val dotElemWeightsSeq = fun((weights, elem) =>
     oclReduceSeqUnroll(AddressSpace.Private)(fun((acc, pair) => {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
     }))(lf32(0.0f))(zip(join(elem))(weights)))
 
+  // FIXME: could not find original Lift expression, this is made up
+  val blurXHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+    (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
+  )((matrix, weights) =>
+    matrix |> padClamp2D(0, 0, 8, 8) |> slide2D(1, 1, 17, 1) |>
+    map(map(dotElemWeights(weights)))
+  ))
+
+  // FIXME: could not find original Lift expression, this is made up
+  val blurYHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+    (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
+  )((matrix, weights) =>
+    matrix |> padClamp2D(8, 8, 0, 0) |> slide2D(17, 1, 1, 1) |>
+    map(map(transpose >> dotElemWeights(weights)))
+  ))
+
   val blurXTiled2D: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
   )((matrix, weights) =>
     unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
-      mapLocal(1)(mapLocal(0)(dotElemWeights(weights)))
+      mapLocal(1)(mapLocal(0)(dotElemWeightsSeq(weights)))
         o slide2D(1, 1, 17, 1)
         $ toLocal(mapLocal(1)(mapLocal(0)(id))(tile)))
     )) o slide2D(4, 4, 144, 128)
@@ -43,7 +65,7 @@ object convolution {
       (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
     )((matrix, weights) =>
     unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
-      mapLocal(1)(mapLocal(0)(dotElemWeights(weights)))
+      mapLocal(1)(mapLocal(0)(dotElemWeightsSeq(weights)))
         // o unpadEmpty(0, 1)
         o slide2D(17, 1, 1, 1)
         o transpose o map(join) $ toLocal(
