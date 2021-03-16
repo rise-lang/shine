@@ -87,6 +87,8 @@ class Printer extends shine.C.AST.CPrinter {
         print(s"${toString(pt.a)} ${typeName(pt.valueType)}* restrict ${p.name}")
       case _: shine.C.AST.PointerType =>
         throw new Exception("Pointer without address space unsupported in OpenCL")
+      case _: FragmentType =>
+        throw new Exception("FragmentTypes are not supported in OpenCL")
       case _: OpaqueType => throw new Exception("did not expect opaque parameter type")
     }
   }
@@ -107,6 +109,8 @@ class Printer extends shine.C.AST.CPrinter {
         print(s"${toString(p.a)} ${typeName(p.valueType)}* ${v.name}")
       case _: shine.C.AST.PointerType => throw new Exception("This should not happen")
       case _: shine.C.AST.UnionType => ???
+      case _: FragmentType =>
+        throw new Exception("FragmentTypes are not supported in OpenCL")
       case _: OpaqueType => throw new Exception("did not expect opaque variable type")
     }
     v.init match {

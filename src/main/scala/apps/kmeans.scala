@@ -37,10 +37,10 @@ object kmeans {
     features |> transpose |> map(fun(feature =>
       clusters |> reduceSeq(fun(tuple => fun(cluster => {
         val dist = zip(feature)(cluster) |>
-          reduceSeq(update)(l(0.0f))
+          reduceSeq(update)(lf32(0.0f))
         testF(dist)(tuple)
       })))(
-        makePair(cast(l(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
+        makePair(cast(lf64(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
       ) |> select
     ))
   ))

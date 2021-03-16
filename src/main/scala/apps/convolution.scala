@@ -17,7 +17,7 @@ object convolution {
   private val dotElemWeights = fun((weights, elem) =>
     zip(join(elem))(weights) |>
     map(separableConvolution2D.mulT) |>
-    reduce(add)(l(0.0f))
+    reduce(add)(lf32(0.0f))
   )
 
   private val dotElemWeightsSeq = fun((weights, elem) =>

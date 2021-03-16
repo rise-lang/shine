@@ -73,7 +73,7 @@ object nbody {
     val xyz = fst(xyzvXYZ)
     val vXYZ = snd(xyzvXYZ)
     def p(f: ToBeTyped[Expr]): ToBeTyped[Expr] =
-      f(xyz) + f(vXYZ) * deltaT + l(0.5f) * f(acceleration) * deltaT * deltaT
+      f(xyz) + f(vXYZ) * deltaT + lf32(0.5f) * f(acceleration) * deltaT * deltaT
     def v(f: ToBeTyped[Expr]): ToBeTyped[Expr] =
       f(vXYZ) + f(acceleration) * deltaT
     makePair(
@@ -91,7 +91,7 @@ object nbody {
   )((x, y, z, velX, velY, velZ, mass, espSqr, deltaT) =>
     map(fun(p1 =>
       fun(acceleration => updateScal(p1, deltaT, acceleration)) o
-      reduce(addScal)(makePair(l(0.0f))(makePair(l(0.0f))(l(0.0f)))) o
+      reduce(addScal)(makePair(lf32(0.0f))(makePair(lf32(0.0f))(lf32(0.0f)))) o
       map(fun(p2m =>
         calcAccScal(fst(p1), fst(p2m), snd(p2m), espSqr)
       )) $ zip(zip(x)(zip(y)(z)))(mass)

@@ -62,7 +62,7 @@ object gemv {
                 acc2 + fst(next2) * snd(next2)
               ))(fst(x)) $ zip(snd(x))(localX)
             )) $ zip(acc)(fst(next)))
-        ))(mapLocal(fun(x => x))(generate(fun(_ => l(0.0f))) :: (64`.`f32))) $
+        ))(mapLocal(fun(x => x))(generate(fun(_ => lf32(0.0f))) :: (64`.`f32))) $
           zip(transpose o map(split(64) o fst) $ matChunk)(split(64) $ xs)
       )) o split(64) $ zip(mat)(ys)
     ))
@@ -83,7 +83,7 @@ object gemv {
           zip(xs)(t._1) |>
             split(n) |>
             toLocalFun(mapLocal(
-              reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
+              reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
             mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
         )) |> join
@@ -98,10 +98,10 @@ object gemv {
             reorderWithStride(128) |>
             split(n /^ 128) |>
             toLocalFun(mapLocal(
-              reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
+              reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
             split(128) |>
-            toLocalFun(mapLocal(reduceSeq(add)(l(0.0f)))) |>
+            toLocalFun(mapLocal(reduceSeq(add)(lf32(0.0f)))) |>
             mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
         )) |> join
     ))
@@ -116,9 +116,9 @@ object gemv {
             reorderWithStride(128) |>
             split(n /^ 128) |>
             toLocalFun(mapLocal(
-              reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f))
+              reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
-            toLocalFun(reduceSeq(add)(l(0.0f))) |>
+            toLocalFun(reduceSeq(add)(lf32(0.0f))) |>
             fun(x => (alpha * x) + (t._2 * beta))
         ))
     ))
@@ -135,7 +135,7 @@ object gemv {
         mapPar(fun(t =>
           zip(xs)(t._1) |>
             split(n) |>
-            toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)))(l(0.0f)))) |>
+            toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f)))) |>
             mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
         )) |> join
     ))
