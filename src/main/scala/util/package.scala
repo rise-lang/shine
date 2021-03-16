@@ -84,7 +84,7 @@ package object util {
       applyNodes = false)
     val dotFile = File.createTempFile(prefix, ".dot")
     writeToFile(dotFile, dotString)
-    val dotPath = dotFile.getPath()
+    val dotPath = dotFile.getPath
     val svgPath = dotPath.replace(".dot", ".svg")
     (s"dot -Tsvg $dotPath -o $svgPath" !!)
     println(s"wrote $dotPath.svg and .dot")

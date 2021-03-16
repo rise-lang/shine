@@ -5,6 +5,12 @@ import rise.core.semantics
 
 // Rise with DeBruijn indexing
 sealed trait ENode {
+  def countChildren(): Int = {
+    var n = 0
+    forEachChildren(_ => n += 1)
+    n
+  }
+
   def mapChildren(fc: EClassId => EClassId): ENode = this match {
     case Var(_) | Literal(_) | Primitive(_) => this
     case App(f, e) => App(fc(f), fc(e))
