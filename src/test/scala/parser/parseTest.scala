@@ -1403,23 +1403,23 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.DepLambda(r1, r.DepLambda(m, r.DepLambda(n, r.DepLambda(d, r.Lambda(r.Identifier("matrixA"),
+      case dep@r.DepLambda(r1, dep2@r.DepLambda(m, dep3@r.DepLambda(n, dep4@r.DepLambda(d, lam@r.Lambda(r.Identifier("matrixA"),
 
-      r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal((0, _)),
+      lam2@r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal((0, _)),
 
-      r.Lambda(r.Identifier("rowA"),
+      lam3@r.Lambda(r.Identifier("rowA"),
       r.App(r.App(op.mapLocal(1,_),
 
-      r.Lambda(r.Identifier("columnB"),
+      lam4@r.Lambda(r.Identifier("columnB"),
       r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
-      r.Lambda(r.Identifier("acc"), r.Lambda(r.Identifier("arg"),
+      lam5@r.Lambda(r.Identifier("acc"), lam6@r.Lambda(r.Identifier("arg"),
       r.App(r.App(rp.add(_), r.Identifier("acc")), r.Identifier("arg"))))),
       rp.let(_)),
 
       r.App(r.DepApp(op.oclToMem(_), l1:rt.AddressSpace.Local.type),
 
-      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"), r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
-      r.App(rp.snd(_), r.Identifier("x"))))),
+      r.App(r.App(rp.mapSeq(_), lam7@r.Lambda(r.Identifier("x"), appMulFstSnd@r.App(appMulFst@r.App(rp.mul(spanMul), appFst@r.App(rp.fst(spanFst), r.Identifier("x"))),
+      r.App(rp.snd(spanSnd), r.Identifier("x"))))),
 
       r.App(r.App(rp.zip(_), r.Identifier("rowA")), r.Identifier("columnB"))
 
@@ -1428,13 +1428,204 @@ class parseTest extends  AnyFlatSpec {
       )
 
       ))
-      ), r.App(rp.transpose(_), r.Identifier("matrixB"))))
+      ), appTransPose@r.App(rp.transpose(spanTranspose), r.Identifier("matrixB"))))
 
       ),
       r.Identifier("matrixA")
       ))
 
-      ))))) => true
+      ))))) => {
+        dep.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(7)
+            end.row should equal(9)
+            begin.column should equal(9)
+            end.column should equal(22)
+          }
+        }
+        dep2.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(15)
+            end.row should equal(9)
+            begin.column should equal(9)
+            end.column should equal(22)
+          }
+        }
+        dep3.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(23)
+            end.row should equal(9)
+            begin.column should equal(9)
+            end.column should equal(22)
+          }
+        }
+        dep4.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(31)
+            end.row should equal(9)
+            begin.column should equal(9)
+            end.column should equal(22)
+          }
+        }
+        lam.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(2)
+            end.row should equal(9)
+            begin.column should equal(10)
+            end.column should equal(22)
+          }
+        }
+        lam2.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(12)
+            end.row should equal(9)
+            begin.column should equal(10)
+            end.column should equal(22)
+          }
+        }
+        lam3.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(4)
+            end.row should equal(25)
+            begin.column should equal(13)
+            end.column should equal(20)
+          }
+        }
+        lam4.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(8)
+            end.row should equal(10)
+            begin.column should equal(15)
+            end.column should equal(18)
+          }
+        }
+        lam5.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(39)
+            end.row should equal(69)
+            begin.column should equal(15)
+            end.column should equal(15)
+          }
+        }
+        lam6.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(49)
+            end.row should equal(69)
+            begin.column should equal(15)
+            end.column should equal(15)
+          }
+        }
+        lam7.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(17)
+            end.row should equal(48)
+            begin.column should equal(17)
+            end.column should equal(17)
+          }
+        }
+        spanFst match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(34)
+            end.row should equal(37)
+            begin.column should equal(17)
+            end.column should equal(17)
+          }
+        }
+        spanMul match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(31)
+            end.row should equal(32)
+            begin.column should equal(17)
+            end.column should equal(17)
+          }
+        }
+        spanSnd match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(42)
+            end.row should equal(45)
+            begin.column should equal(17)
+            end.column should equal(17)
+          }
+        }
+        spanTranspose match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(7)
+            end.row should equal(16)
+            begin.column should equal(20)
+            end.column should equal(20)
+          }
+        }
+        appMulFst.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(31)
+            end.row should equal(40)
+            begin.column should equal(17)
+            end.column should equal(17)
+          }
+        }
+        appFst.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(34)
+            end.row should equal(39)
+            begin.column should equal(17)
+            end.column should equal(17)
+          }
+        }
+        appMulFstSnd.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(31)
+            end.row should equal(48)
+            begin.column should equal(17)
+            end.column should equal(17)
+          }
+        }
+        appTransPose.span match {
+          case None => fail("The Span should not be None")
+          case Some(Span(file, begin, end)) => {
+            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+            begin.row should equal(7)
+            end.row should equal(24)
+            begin.column should equal(20)
+            end.column should equal(20)
+          }
+        }
+      }
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
