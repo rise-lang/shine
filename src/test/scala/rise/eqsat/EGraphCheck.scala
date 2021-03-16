@@ -15,6 +15,6 @@ class EGraphCheck extends test_util.Tests {
     egraph.union(x, y)
     egraph.rebuild()
 
-    dot.toSVG(egraph, "/tmp/egraph-simple-add.svg")
+    egraph.dot().toSVG("/tmp/egraph-simple-add.svg")
   }
 }

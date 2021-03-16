@@ -4,21 +4,21 @@ import scala.language.postfixOps
 import scala.sys.process._
 import java.io.{File, Writer, BufferedWriter, FileWriter}
 
-object dot {
-  def toSVG(egraph: EGraph[_], path: String): Unit = {
+case class EGraphDot(egraph: EGraph[_]) {
+  def toSVG(path: String): Unit = {
     val dotPath = path.replace(".svg", ".dot")
-    toFile(egraph, dotPath)
+    toFile(dotPath)
     (s"dot -Tsvg $dotPath -o $path" !!)
   }
 
-  def toFile(egraph: EGraph[_], path: String): Unit = {
+  def toFile(path: String): Unit = {
     val file = new File(path)
     val writer = new BufferedWriter(new FileWriter(file))
-    try { writeTo(egraph, writer) }
+    try { writeTo(writer) }
     finally { writer.close() }
   }
 
-  def writeTo(egraph: EGraph[_], writer: Writer): Unit = {
+  def writeTo(writer: Writer): Unit = {
     def writeln(s: String): Unit = {
       writer.write(s); writer.write('\n')
     }
@@ -42,8 +42,8 @@ object dot {
     for ((id, eclass) <- egraph.classes) {
       for ((node, i) <- eclass.nodes.zipWithIndex) {
         var argI = 0
-        val children = node.countChildren()
-        node.forEachChildren { child =>
+        val children = node.children().length
+        node.children().foreach { child =>
           val (anchor, label) = edge(argI, children)
           val childLeader = egraph.find(child)
           val (targetNode, targetCluster) = if (childLeader == id) {
@@ -80,7 +80,7 @@ object dot {
       case Var(index) => s"%$index"
       case App(_, _) => "app"
       case Lambda(_) => "λ"
-      case DepApp(_, _, _) => "dApp"
+      case DepApp(_, _) => "dApp"
       case DepLambda(_, _) => "Λ"
       case Literal(d) => s"$d"
       case Primitive(p) => s"${p.toString.trim}"

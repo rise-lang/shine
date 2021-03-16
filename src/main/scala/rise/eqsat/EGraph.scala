@@ -1,6 +1,6 @@
 package rise.eqsat
 
-import rise.core.Expr
+import rise.debruijn
 
 object EGraph {
   def emptyWithAnalysis[Data](analysis: Analysis[Data]) = new EGraph(
@@ -50,7 +50,7 @@ class EGraph[Data](
         nodes = Vec(enode),
         data = analysis.make(this, enode),
         parents = Vec())
-      enode.forEachChildren { c =>
+      enode.children().foreach { c =>
         this(c).parents += enode -> id
       }
       pending += enode -> id // TODO: is this needed?
@@ -62,7 +62,17 @@ class EGraph[Data](
     }
   }
 
-  def addExpr(expr: Expr): EClassId = ???
+  def addExpr(expr: debruijn.Expr): EClassId = {
+    add(expr match {
+      case debruijn.Var(index) => Var(index)
+      case debruijn.App(f, e) => App(addExpr(f), addExpr(e))
+      case debruijn.Lambda(e) => Lambda(addExpr(e))
+      case debruijn.DepApp(f, x) => DepApp(addExpr(f), x)
+      case debruijn.DepLambda(k, e) => DepLambda(k, addExpr(e))
+      case debruijn.Literal(d) => Literal(d)
+      case debruijn.Primitive(p) => Primitive(p)
+    })
+  }
 
   // returns the merged eclass id and whether a union was done
   def union(id1: EClassId, id2: EClassId): (EClassId, Boolean) = {
@@ -71,6 +81,8 @@ class EGraph[Data](
     if (cid1 == cid2) { return (cid1, false) }
     unionCanonicalDiff(cid1, cid2)
   }
+
+  def dot(): EGraphDot = EGraphDot(this)
 
   private def unionCanonicalDiff(cid1: EClassId, cid2: EClassId): (EClassId, Boolean) = {
     // make sure class2 has fewer parents
