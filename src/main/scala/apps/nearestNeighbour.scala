@@ -4,6 +4,7 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
 import rise.core.types._
+import rise.core.primitives._
 import rise.openCL.DSL._
 
 object nearestNeighbour {
@@ -13,7 +14,14 @@ object nearestNeighbour {
     (f32 x f32) ->: f32 ->: f32 ->: f32
   )
 
-  val nn: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+  // FIXME: could not find original Lift expression, this is made up
+  val nnHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+    (n`.`(f32 x f32)) ->: f32 ->: f32 ->: (n`.`f32)
+  )((locations, lat, lng) =>
+    locations |> map(fun(loc => distance(loc)(lat)(lng)))
+  ))
+
+  val nnOcl: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` (f32 x f32)) ->: f32 ->: f32 ->: (n `.` f32)
   )((locations, lat, lng) =>
     locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))
