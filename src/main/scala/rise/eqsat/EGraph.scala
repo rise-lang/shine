@@ -1,7 +1,5 @@
 package rise.eqsat
 
-import rise.debruijn
-
 object EGraph {
   def emptyWithAnalysis[Data](analysis: Analysis[Data]) = new EGraph(
     analysis = analysis,

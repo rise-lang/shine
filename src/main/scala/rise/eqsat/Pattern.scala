@@ -19,12 +19,65 @@ case class Pattern(node: Either[Node[Pattern], PatternVar]) {
     rec(node)
     vec
   }
+
+  def compile(): CompiledPattern =
+    CompiledPattern(this, ematching.Program.compileFromPattern(this))
+}
+
+case class CompiledPattern(pat: Pattern, prog: ematching.Program)
+
+object CompiledPattern {
+  import scala.language.implicitConversions
+
+  implicit def patternToSearcher[D](cpat: CompiledPattern): Searcher[D] = new Searcher[D] {
+    override def patternVars(): Vec[PatternVar] = cpat.pat.patternVars()
+
+    override def search(egraph: EGraph[D]): Vec[SearchMatches] = {
+      cpat.pat.node match {
+        case Left(node) =>
+          egraph.classesByMatch.get(node.matchHash()) match {
+            case None => Vec.empty
+            case Some(ids) =>
+              ids.iterator.flatMap(id => searchOne(egraph, id)).to(Vec)
+          }
+        case Right(_) => egraph.classes.valuesIterator
+          .flatMap(e => searchOne(egraph, e.id)).to(Vec)
+      }
+    }
+
+    override def searchOne(egraph: EGraph[D], eclass: EClassId): Option[SearchMatches] = {
+      val substs = cpat.prog.run(egraph, eclass)
+      if (substs.isEmpty) { None } else { Some(SearchMatches(eclass, substs)) }
+    }
+  }
+
+  implicit def patternToApplier[D](cpat: CompiledPattern): Applier[D] = new Applier[D] {
+    override def patternVars(): Vec[PatternVar] = cpat.pat.patternVars()
+
+    override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
+      def rec(pat: Pattern): EClassId = {
+        pat.node match {
+          case Right(w) => subst(w)
+          case Left(n) =>
+            val enode = n.mapChildren(rec)
+            egraph.add(enode)
+        }
+      }
+
+      Vec(rec(cpat.pat))
+    }
+
+    // TODO? could override `apply` to avoid temporary vecs
+  }
 }
 
 object PatternDSL {
   def ?(name: String): Pattern = Pattern(Right(PatternVar(name)))
   def %(index: Int): Pattern = Pattern(Left(Var(index)))
   def app(a: Pattern, b: Pattern): Pattern = Pattern(Left(App(a, b)))
+  def lam(e: Pattern): Pattern = Pattern(Left(Lambda(e)))
+  def map: Pattern = Pattern(Left(Primitive(rcp.map.primitive)))
+  def add: Pattern = Pattern(Left(Primitive(rcp.add.primitive)))
   def mul: Pattern = Pattern(Left(Primitive(rcp.mul.primitive)))
   def div: Pattern = Pattern(Left(Primitive(rcp.div.primitive)))
   def l(d: semantics.Data): Pattern = Pattern(Left(Literal(d)))

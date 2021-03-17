@@ -23,3 +23,35 @@ object NoAnalysis extends Analysis[()] {
   override def make(egraph: EGraph[()], enode: ENode): () = ()
   override def merge(to: (), from: ()): Option[Order] = Some(Equal)
 }
+
+class DefaultAnalysisData(var free: HashSet[Int],
+                          var extractedExpr: Expr,
+                          var extractedSize: Int)
+
+class DefaultAnalysis extends Analysis[DefaultAnalysisData] {
+  override def make(egraph: EGraph[DefaultAnalysisData], enode: ENode): DefaultAnalysisData = {
+    val free = HashSet.empty[Int]
+    enode match {
+      case Var(index) => free += index
+      case Lambda(e) =>
+        free ++= egraph(e).data.free.filter(idx => idx != 0).map(idx => idx - 1)
+      case DepLambda(_, _) => ???
+      case _ => enode.children().foreach(c => free ++= egraph(c).data.free)
+    }
+    val extractedExpr = Expr(enode.mapChildren(c => egraph(c).data.extractedExpr))
+    val extractedSize = enode.children().foldLeft(1) { case (acc, c) => acc + egraph(c).data.extractedSize }
+    new DefaultAnalysisData(free, extractedExpr, extractedSize)
+  }
+
+  override def merge(to: DefaultAnalysisData, from: DefaultAnalysisData): Option[Order] = {
+    val beforeFreeCount = to.free.size
+    to.free ++= from.free
+    var didChange = beforeFreeCount != to.free.size
+    if (to.extractedSize > from.extractedSize) {
+      to.extractedExpr = from.extractedExpr
+      to.extractedSize = from.extractedSize
+      didChange = true
+    }
+    if (didChange) { None } else { Some(Greater) }
+  }
+}

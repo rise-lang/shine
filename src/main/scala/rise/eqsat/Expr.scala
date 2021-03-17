@@ -52,6 +52,7 @@ case class Expr(node: Node[Expr]) {
 object ExprDSL {
   def %(index: Int): Expr = Expr(Var(index))
   def app(a: Expr, b: Expr): Expr = Expr(App(a, b))
+  def add: Expr = Expr(Primitive(rcp.add.primitive))
   def mul: Expr = Expr(Primitive(rcp.mul.primitive))
   def div: Expr = Expr(Primitive(rcp.div.primitive))
   def l(d: semantics.Data): Expr = Expr(Literal(d))

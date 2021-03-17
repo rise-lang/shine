@@ -42,9 +42,9 @@ case class EGraphDot(egraph: EGraph[_]) {
     for ((id, eclass) <- egraph.classes) {
       for ((node, i) <- eclass.nodes.zipWithIndex) {
         var argI = 0
-        val children = node.children().length
+        val childrenCount = node.childrenCount()
         node.children().foreach { child =>
-          val (anchor, label) = edge(argI, children)
+          val (anchor, label) = edge(argI, childrenCount)
           val childLeader = egraph.find(child)
           val (targetNode, targetCluster) = if (childLeader == id) {
             (s"${id.i}.$i:n", s"cluster_${id.i}")

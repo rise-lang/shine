@@ -21,13 +21,17 @@ sealed trait Node[+T] {
     case DepApp(f, _) => Iterator(f)
     case DepLambda(_, e) => Iterator(e)
   }
+  def childrenCount(): Int = {
+    // FIXME: O(N) length computation, O(1) in egg
+    children().length
+  }
 
   def matchHash(): Int = this match {
     case Var(i) => 7 * i
     case App(_, _) => 1
     case Lambda(_) => 2
     case DepApp(_, x) => 5 * x.hashCode()
-    case DepLambda(_, _) => 4
+    case DepLambda(k, _) => 3 * k.hashCode()
     case Literal(d) => 13 * d.hashCode()
     case Primitive(p) => 17 * p.hashCode()
   }

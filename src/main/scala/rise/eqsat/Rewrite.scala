@@ -84,3 +84,7 @@ case class Subst(vec: Vec[(PatternVar, EClassId)]) {
   def apply(variable: PatternVar): EClassId =
     get(variable).get
 }
+
+object Subst {
+  def empty: Subst = Subst(Vec.empty)
+}
