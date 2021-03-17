@@ -7,11 +7,11 @@ import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.autotune.{collectConstraints, tuningParam}
 import apps.separableConvolution2D.weightsSeqVecUnroll
-import shine.DPIA.Types.TypeCheck
-import util.gen
+//import shine.DPIA.Types.TypeCheck
+//import util.gen
 
 
 class autotuning extends test_util.Tests {
