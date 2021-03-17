@@ -111,8 +111,7 @@ int main(int argc, char** argv) {
     checkOutput(m)
   }
 
-  ignore("local memory") {
-    // TODO: clSetKernelArg(k, i, localMemSize, NULL);
+  test("local memory") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
       oclRun(LocalSize(16), GlobalSize(n))(
         in |> split(16) |> mapWorkGroup(0)(

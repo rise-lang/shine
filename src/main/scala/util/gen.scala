@@ -174,13 +174,15 @@ object gen {
 
       def fromPhrase: Phrase => HostedModule =
         partialHostCompiler(name) composeWith
-          (hostFunDefToHostPart() x map(kernelDefToKernel()))
+          ((((x: FunDef) => x) x map(kernelDefToKernel())) andThen
+          hostFunDefToHostPart)
     }
 
-    private def hostFunDefToHostPart(gen: HostCodeGenerator =
-                                        shine.OpenCL.Compilation.HostCodeGenerator()
-                                    ): FunDef => CModule =
-      HostCodeModuleGenerator.funDefToModule(gen)
+    private val hostFunDefToHostPart:
+      ((FunDef, Seq[KernelModule])) => (CModule, Seq[KernelModule]) = { case (hm, kms) =>
+      val gen = shine.OpenCL.Compilation.HostCodeGenerator(kms)
+      (HostCodeModuleGenerator.funDefToModule(gen)(hm), kms)
+    }
 
     private def partialHostCompiler(hostFunName: String): PartialCompiler[
       Phrase,   HostedModule,

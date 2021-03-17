@@ -80,6 +80,21 @@ object convolution {
 
   import shine.OpenCL._
 
+  object hosted {
+    val blurXTiled2D: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+      (n`.`n`.`f32) ->: (17`.`f32) ->: (n`.`n`.`f32)
+    )((matrix, weights) =>
+      oclRun(LocalSize(16, 4), GlobalSize(n / 8, n))(convolution.blurXTiled2D(n)(matrix)(weights))
+    ))
+
+    val blurYTiled2DTiledLoadingTransposed: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+      (n`.`n`.`f32) ->: (17`.`f32) ->: (n`.`n`.`f32)
+    )((matrix, weights) =>
+      oclRun(LocalSize(16, 8), GlobalSize(n, n / 8))(
+        convolution.blurYTiled2DTiledLoadingTransposed(n)(matrix)(weights))
+    ))
+  }
+
   def blurXTiled2DSizes(n: Int): (LocalSize, GlobalSize) = {
     assert(n % 8 == 0)
     (LocalSize((16, 4)), GlobalSize((n / 8, n)))
