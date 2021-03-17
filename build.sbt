@@ -41,6 +41,16 @@ lazy val riseAndShine = (project in file("."))
     )
   )
 
+lazy val meta = (project in file("meta"))
+  .settings(
+    name := "meta",
+    version := "1.0",
+    commonSettings,
+    libraryDependencies += "com.lihaoyi" %% "fastparse" % "2.2.2",
+    libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.7.3",
+    libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.10",
+  )
+
 lazy val riseAndShineMacros = (project in file("macros"))
   .settings(
     name := "riseAndShineMacros",

@@ -1,0 +1,65 @@
+def cast: {s: data} -> {t: data} ->
+    s -> t
+
+def depJoin: {n: nat} -> {lenF: nat2nat} -> {dt: data} -> n..(i: nat |-> lenF(i).dt) -> ???
+def depMapSeq: {n: nat} -> {ft1: nat2data} -> {ft2: nat2data} -> ((k: nat) -> ft1(k) -> ft2(k)) -> n..ft1 -> n..ft2
+def depZip: {n: nat} -> {ft1: nat2data} -> {ft2: nat2data} -> n..ft1 -> n..ft2 -> n..(i: nat |-> (ft1(i), ft2(i)) )
+def drop: (n: nat) -> {m: nat} -> {t: data} -> (n+m).t -> m.t
+def fst: {s: data} -> {t: data} -> (s, t) -> s
+def gather: {n: nat} -> {m: nat} -> {t: data} -> m.idx[n] -> n.t -> m.t
+def scatter: {n: nat} -> {m: nat} -> {t: data} -> n.idx[m] -> n.t -> m.t
+def generate: {n: nat} -> {t: data} -> (idx[n] -> t) -> n.t
+def idx: {n: nat} -> {t: data} -> idx[n] -> n.t -> t
+def id: {t: data} -> t -> t
+def indexAsNat: {n: nat} -> idx[n] -> nat
+def iterate: {n: nat} -> {m: nat} -> (k: nat) -> {t: data} -> ((l: nat) -> (l*n).t -> l.t) -> (m*(n^k)).t -> m.t
+def join: {n: nat} -> {m: nat} -> {t: data} -> n.m.t -> (n*m).t
+def concat: {n: nat} -> {m: nat} -> {t: data} -> n.t -> m.t -> (n+m).t
+def let: {s: data} -> {t: data} -> s -> (s -> t) -> t
+def map: {n: nat} -> {dt1: data} -> {dt2: data} -> (dt1 -> dt2) -> n.dt1 -> n.dt2
+def mapFst: {s1: data} -> {t: data} -> {s2: data} -> (s1 -> s2) -> (s1, t) -> (s2, t)
+def mapSnd: {s: data} -> {t1: data} -> {t2: data} -> (t1 -> t2) -> (s, t1) -> (s, t2)
+def mapSeq: {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+def mapStream: {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+def iterateStream: {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+def mapSeqUnroll: {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+def toMem: {t: data} -> t -> t
+def natAsIndex: (n: nat) -> nat -> idx[n]
+def padCst: {n: nat} -> (l: nat) -> (r: nat) -> {t: data} -> t -> n.t -> (l+n+r).t
+def padEmpty: {n: nat} -> (p: nat) -> {t: data} -> n.t -> (n+p).t
+def padClamp: {n: nat} -> (l: nat) -> (r: nat) -> {t: data} -> n.t -> (l+n+r).t
+def partition: {n: nat} -> {dt: data} -> (m: nat) -> (lenF: nat2nat) -> n.dt -> m..(i: nat |-> lenF(i).dt)
+def makePair: {s: data} -> {t: data} -> s -> t -> (s, t)
+def makeDepPair: {fdt: nat2data} -> (n: nat) -> fdt(n) -> (m: nat ** fdt(m))
+def dmatch: {fdt: nat2data} -> {t: data} -> (n: nat ** fdt(n)) -> ((m: nat) -> fdt(m) -> t) -> t
+def reduce: {n: nat} -> {t: data} -> (t -> t -> t) -> t -> n.t -> t
+def reduceSeq: {n: nat} -> {s: data} -> {t: data} -> (t -> s -> t) -> t -> n.s -> t
+def reduceSeqUnroll: {n: nat} -> {s: data} -> {t: data} -> (t -> s -> t) -> t -> n.s -> t
+def reorder: {n: nat} -> {t: data} -> (idx[n] -> idx[n]) -> (idx[n] -> idx[n]) -> n.t -> n.t
+def scanSeq: {n: nat} -> {s: data} -> {t: data} -> (s -> t -> t) -> t -> n.s -> n.t
+def slide: {n: nat} -> (sz: nat) -> (sp: nat) -> {t: data} -> (sp*n+sz).t -> (1+n).sz.t
+def depSlide: (n: nat) -> (sz: nat) -> (sp: nat) -> {t: data} -> n.t -> ???
+def depTile: ???
+def circularBuffer: {n: nat} -> (alloc: nat) -> (sz: nat) -> {s: data} -> {t: data} -> (s -> t) -> (n-1+sz).s -> n.sz.t
+def rotateValues: {n: nat} -> (sz: nat) -> {s: data} -> (s -> s) -> (n-1+sz).s -> n.sz.s
+def snd: {s: data} -> {t: data} -> (s,t) -> t
+def split: (n: nat) -> {m: nat} -> {t: data} -> (m*n).t -> m.n.t
+def take: (n: nat) -> {m: nat} -> {t: data} -> (n+m).t -> n.t
+def transpose: {n: nat} -> {m: nat} -> {dt: data} -> n.m.dt -> m.n.dt
+def select: {t: data} -> bool -> t -> t -> t
+def unzip: {n: nat} -> {dt1: data} -> {dt2: data} -> n.(dt1, dt2) -> (n.dt1, n.dt2)
+def zip: {n: nat} -> {dt1: data} -> {dt2: data} -> n.dt1 -> n.dt2 -> n.(dt1, dt2)
+def neg: {t: data} -> t -> t
+def not: bool -> bool
+def add: {t: data} -> t -> t -> t
+def sub: {t: data} -> t -> t -> t
+def mul: {t: data} -> t -> t -> t
+def div: {t: data} -> t -> t -> t
+def mod: {t: data} -> t -> t -> t
+def gt: {t: data} -> t -> t -> bool
+def lt: {t: data} -> t -> t -> bool
+def equal: {t: data} -> t -> t -> bool
+def asVectorAligned: (n: nat) -> {m: nat} -> {dt: data} -> (m*n).dt -> m.<n>dt
+def asVector: (n: nat) -> {m: nat} -> {dt: data} -> (m*n).dt -> m.<n>dt
+def asScalar: {n: nat} -> {m: nat} -> {dt: data} -> m.<n>dt -> (m*n).dt
+def vectorFromScalar: {n: nat} -> {dt: data} -> dt -> <n>dt
