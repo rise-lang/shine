@@ -12,7 +12,7 @@ case class Location (column: Int, row: Int){
   require(row >= 0, "row is negative")
   require(column >= 0, "column is negative")
 
-  override def toString: String = s"(column: $column ; row: $row)"
+  override def toString: String = s"($column,$row)"
   def ==(end:Location) = this.column == end.column && this.row == end.row
 }
 
@@ -24,7 +24,15 @@ case class Span(file: FileReader, begin: Location, end: Location) {
   require(end.column >= begin.column, "end.column is before begin.column")
 
   def this(file: FileReader, loc: Location) = this(file, loc, loc) //beginLocation is equal to endLocation for '/'
-  override def toString = "FileReader: " + file.toString + "; beginLocation: " + begin.toString + "; endLocation: " + end.toString
+  override def toString = if(begin.column==end.column){
+    if(begin.row==end.row){
+      end.toString + " in " + file.fileName
+    }else{
+      "("+begin.column+"," + begin.row+"-"+end.row+")" + " in " + file.fileName
+    }
+  }else{
+    begin.toString+ "-"+end.toString + " in " + file.fileName
+  }
 
   /*
   both have to be in the same file!
@@ -50,6 +58,22 @@ case class Span(file: FileReader, begin: Location, end: Location) {
       println("before:"+  "this.begin: "+ this.begin +"; this.end : " + this.end  + ";other.begin: " + other.begin+ ";other.end: " + other.end)
         Span(this.file, other.begin, this.end)
     }
+  }
+
+  def returnMessage():String={
+    val begin = this.begin
+    val end = this.end
+    val f = this.file
+    if(begin.column==end.column){
+      return f.sourceLines(begin.column).substring(begin.row, end.row)
+    }
+
+    var ret = f.sourceLines(begin.column).substring(begin.row)
+    for(i <- (begin.column+1) until (end.column)){
+       ret+= this.file.sourceLines(i)
+    }
+    ret += f.sourceLines(end.column).substring(0, end.column)
+    ret
   }
 }
 
