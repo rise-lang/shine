@@ -45,7 +45,6 @@ class mmTensorCheck extends test_util.TestWithCUDA {
 
   test("matrix multiplication with tensor cores and multiple fragments per warp produces expected result") {
     executeMM(matMulMultipleFragmentsPerWarp(), true)
-    executeMM(matMulMultipleFragmentsPerWarp(), true)
   }
 
   test("matrix multiplication with tensor cores and shared memory produces expected result 0") {
@@ -53,59 +52,95 @@ class mmTensorCheck extends test_util.TestWithCUDA {
   }
 
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 1") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 1.1") {
     executeMMWithSizes(matMulSharedMemory(config1),4)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 1.2") {
     executeMMWithSizes(matMulSharedMemory(config2),4)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 2") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 1.3") {
     executeMMWithSizes(matMulSharedMemory(config3),8)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 1.4") {
     executeMMWithSizes(matMulSharedMemory(config4),8)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 1.5") {
     executeMMWithSizes(matMulSharedMemory(config5),8)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 3"){
-    executeMMWithSizes(matMulSharedMemory(config7),16)
+  test("matrix multiplication with tensor cores and shared memory produces expected result 1.6"){
     executeMMWithSizes(matMulSharedMemory(config6),16)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 4") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 1.7"){
+    executeMMWithSizes(matMulSharedMemory(config7),16)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 2.1") {
     executeMMWithSizes(matMulSharedMemoryV2(config1),4)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 2.2") {
     executeMMWithSizes(matMulSharedMemoryV2(config2),4)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 5") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 2.3") {
     executeMMWithSizes(matMulSharedMemoryV2(config3),8)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 2.4") {
     executeMMWithSizes(matMulSharedMemoryV2(config4),8)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 6") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 2.6") {
     executeMMWithSizes(matMulSharedMemoryV2(config6),16)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 2.7") {
     executeMMWithSizes(matMulSharedMemoryV2(config7),16)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 7") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 3.1") {
     executeMMWithSizes(matMulSharedMemoryV3(config1),4)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 3.2") {
     executeMMWithSizes(matMulSharedMemoryV3(config2),4)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 8") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 3.3") {
     executeMMWithSizes(matMulSharedMemoryV3(config3),8)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 3.4") {
     executeMMWithSizes(matMulSharedMemoryV3(config4),8)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 9") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 4.1") {
     executeMMWithSizes(matMulSharedMemoryV4(config1),4)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 4.2") {
     executeMMWithSizes(matMulSharedMemoryV4(config2),4)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 10") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 4.3") {
     executeMMWithSizes(matMulSharedMemoryV4(config3),8)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 4.4") {
     executeMMWithSizes(matMulSharedMemoryV4(config4),8)
   }
 
-  test("matrix multiplication with tensor cores and shared memory produces expected result 11") {
+  test("matrix multiplication with tensor cores and shared memory produces expected result 4.6") {
     executeMMWithSizes(matMulSharedMemoryV4(config6),16)
+  }
+
+  test("matrix multiplication with tensor cores and shared memory produces expected result 4.7") {
     executeMMWithSizes(matMulSharedMemoryV4(config7),16)
   }
 
