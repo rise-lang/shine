@@ -30,7 +30,7 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType)
     extends NatToData {
   // See hash code of NatNatTypeFunction
   override def hashCode(): Int =
-    this.apply(NatIdentifier("ComparisonDummy")).hashCode()
+    this.apply(NatIdentifier("ComparisonDummy", isExplicit = false)).hashCode()
 
   override def apply(a: Nat): DataType =
     substitute.natInDataType(a, `for` = x, in = body)

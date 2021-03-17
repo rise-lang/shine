@@ -120,7 +120,7 @@ object Type {
 
   object impl {
     def apply[A](w: NatFunctionWrapper[A]): A = {
-      w.f(NatIdentifier(freshName("n")))
+      w.f(NatIdentifier(freshName("n"), isExplicit = false))
     }
 
     def apply[A](w: DataTypeFunctionWrapper[A]): A = {

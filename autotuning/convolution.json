@@ -1,0 +1,29 @@
+{
+  "application_name" : "rise",
+  "optimization_objectives" : ["runtime"],
+  "hypermapper_mode": {
+        "mode": "client-server"
+  },
+  "feasible_output": {
+   "enable_feasible_predictor": true,
+   "name": "Valid",
+   "true_value": "True",
+   "false_value": "False"
+  },     
+  "design_of_experiment" : {
+   "doe_type" : "random sampling",
+   "number_of_samples" : 2
+  },
+  "optimization_iterations" : 100,
+  "input_parameters" : {
+    "tile" : {
+      "parameter_type" : "ordinal",
+      "values" : [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+    },
+    "vec" : {
+      "parameter_type" : "ordinal",
+      "values" : [2, 4, 8, 16, 32]
+    }
+  }
+}
+

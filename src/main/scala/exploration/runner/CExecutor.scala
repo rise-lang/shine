@@ -441,6 +441,8 @@ int main(int argc, char** argv) {
     // todo: make this configable using json file
     // compile
     s"clang -O2 $src -o $bin -lm -fopenmp" !!
+//    s"clang -O2 $src -o $bin -lm" !!
+//    s"clang $src -o $bin -fopenmp" !!
 
     bin
   }
