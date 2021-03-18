@@ -211,7 +211,11 @@ object PhraseType {
       override def nat[N <: Nat](n: N): N = n.visitAndRebuild({ n => replaceOnNat(n)}).asInstanceOf[N]
 
       override def data[Typ <: DataType](dt: Typ): Typ =
-        DataType.visitNat(_.visitAndRebuild({ n => replaceOnNat(n) }), dt)
+        DataType.visitNat(
+          {
+            case n: NatIdentifier => replaceOnNat(n)
+            case data => data.visitAndRebuild({ n => replaceOnNat(n) })
+          }, dt)
     }
   }
 

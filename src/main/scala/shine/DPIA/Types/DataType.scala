@@ -81,7 +81,8 @@ final case class DepPairType[K <: Kind:KindName:KindReified](x:K#I, elemT:DataTy
       case Some(x) =>
         val newSnd = DataType.visitNat(f, this.elemT)
         DepPairType(x, newSnd)
-      case None => throw new Exception(s"Failed to build identifier in dependent type first member: $visited found")
+      case None =>
+        throw new Exception(s"Failed to build identifier in dependent type first member: $visited found of type ${visited.getClass.getName}")
     }
   }
 
