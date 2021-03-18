@@ -20,6 +20,11 @@ class NatIdentifier(
 
   override def asImplicit: NatIdentifier = new NatIdentifier(name, range, false, isTuningParam)
 
+  override def substitute(subs: collection.Map[ArithExpr, ArithExpr]): Option[ArithExpr] = {
+    subs.get(this).orElse(range.substitute(subs)
+      .map(NatIdentifier(name, _, isExplicit, isTuningParam)))
+  }
+
   override def visitAndRebuild(f: ArithExpr => ArithExpr): ArithExpr = {
     f(new NatIdentifier(name, range.visitAndRebuild(f), isExplicit, isTuningParam))
   }
