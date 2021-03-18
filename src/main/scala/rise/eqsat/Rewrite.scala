@@ -83,8 +83,61 @@ case class Subst(vec: Vec[(PatternVar, EClassId)]) {
 
   def apply(variable: PatternVar): EClassId =
     get(variable).get
+
+  override def clone(): Subst =
+    Subst(vec.clone())
 }
 
 object Subst {
   def empty: Subst = Subst(Vec.empty)
+}
+
+// note: the condition is more general in `egg`
+case class ConditionalApplier[D](cond: (EGraph[D], EClassId, Subst) => Boolean,
+                                 applier: Applier[D])
+  extends Applier[D] {
+  override def patternVars(): Vec[PatternVar] =
+    applier.patternVars()
+
+  override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
+    if (cond(egraph, eclass, subst)) { applier.applyOne(egraph, eclass, subst) } else { Vec() }
+  }
+}
+
+case class ShiftedApplier(v: PatternVar, newV: PatternVar,
+                          up: Boolean, cutoff: Int,
+                          applier: Applier[DefaultAnalysisData])
+  extends Applier[DefaultAnalysisData] {
+  override def patternVars(): Vec[PatternVar] = {
+    val vs = Vec(v)
+    vs ++= applier.patternVars()
+    vs -= newV
+    vs
+  }
+
+  override def applyOne(egraph: EGraph[DefaultAnalysisData],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    val extract = egraph(subst(v)).data.extractedExpr
+    val shifted = extract.shifted(up, cutoff)
+    val subst2 = subst.clone()
+    subst2.insert(newV, egraph.addExpr(shifted))
+    applier.applyOne(egraph, eclass, subst2)
+  }
+}
+
+case class BetaApplier(body: PatternVar, subs: PatternVar)
+  extends Applier[DefaultAnalysisData] {
+  override def patternVars(): Vec[PatternVar] = {
+    Vec(body, subs)
+  }
+
+  override def applyOne(egraph: EGraph[DefaultAnalysisData],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    val bodyEx = egraph(subst(body)).data.extractedExpr
+    val subsEx = egraph(subst(subs)).data.extractedExpr
+    val result = bodyEx.withArgument(subsEx)
+    Vec(egraph.addExpr(result))
+  }
 }

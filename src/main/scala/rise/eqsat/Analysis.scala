@@ -28,7 +28,7 @@ class DefaultAnalysisData(var free: HashSet[Int],
                           var extractedExpr: Expr,
                           var extractedSize: Int)
 
-class DefaultAnalysis extends Analysis[DefaultAnalysisData] {
+object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
   override def make(egraph: EGraph[DefaultAnalysisData], enode: ENode): DefaultAnalysisData = {
     val free = HashSet.empty[Int]
     enode match {

@@ -12,4 +12,13 @@ package object eqsat {
   val HashMap: mutable.HashMap.type = mutable.HashMap
   type HashSet[V] = mutable.HashSet[V]
   val HashSet: mutable.HashSet.type = mutable.HashSet
+
+  def BENF(e: Expr): Expr = {
+    val runner = Runner.withAnalysis(DefaultAnalysis)
+    val id = runner.egraph.addExpr(e)
+    runner.run(Seq(rules.eta, rules.beta))
+    val extractor = Extractor.init(runner.egraph, AstSize)
+    val (_, normalized) = extractor.findBestOf(id)
+    normalized
+  }
 }

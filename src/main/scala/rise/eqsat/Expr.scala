@@ -1,5 +1,6 @@
 package rise.eqsat
 
+import rise.core
 import rise.core.{primitives => rcp}
 import rise.core.semantics
 
@@ -49,9 +50,29 @@ case class Expr(node: Node[Expr]) {
   }
 }
 
+object Expr {
+  def from(e: core.Expr): Expr = {
+    def rec(e: core.Expr, bound: Seq[core.Identifier]): Expr = {
+      Expr(e match {
+        case i: core.Identifier => Var(bound.indexOf(i))
+        case core.App(f, e) => App(rec(f, bound), rec(e, bound))
+        case core.Lambda(i, e) => Lambda(rec(e, i +: bound))
+        case core.DepApp(f, x) => DepApp(rec(f, bound), x)
+        case core.DepLambda(_, _) => ???
+        case core.Literal(d) => Literal(d)
+        case p: core.Primitive => Primitive(p.setType(core.types.TypePlaceholder))
+      })
+    }
+
+    rec(e, Seq())
+  }
+}
+
 object ExprDSL {
   def %(index: Int): Expr = Expr(Var(index))
   def app(a: Expr, b: Expr): Expr = Expr(App(a, b))
+  def lam(e: Expr): Expr = Expr(Lambda(e))
+  def map: Expr = Expr(Primitive(rcp.map.primitive))
   def add: Expr = Expr(Primitive(rcp.add.primitive))
   def mul: Expr = Expr(Primitive(rcp.mul.primitive))
   def div: Expr = Expr(Primitive(rcp.div.primitive))

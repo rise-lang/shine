@@ -3,6 +3,11 @@ package rise.eqsat
 import rise.core.semantics
 import rise.core.{primitives => rcp}
 
+object Pattern {
+  def fromExpr(e: Expr): Pattern =
+    Pattern(Left(e.node.mapChildren(fromExpr)))
+}
+
 case class PatternVar(name: String)
 case class Pattern(node: Either[Node[Pattern], PatternVar]) {
   def patternVars(): Vec[PatternVar] = {
@@ -72,8 +77,14 @@ object CompiledPattern {
 }
 
 object PatternDSL {
-  def ?(name: String): Pattern = Pattern(Right(PatternVar(name)))
-  def %(index: Int): Pattern = Pattern(Left(Var(index)))
+  import scala.language.implicitConversions
+
+  case class Pick[A, B](a: A, b: B)
+  implicit def pickA[A, B](p: Pick[A, B]): A = p.a
+  implicit def pickB[A, B](p: Pick[A, B]): B = p.b
+
+  def ?(name: String): Pick[PatternVar, Pattern] = Pick(PatternVar(name), Pattern(Right(PatternVar(name))))
+  def %(index: Int): Pick[Var, Pattern] = Pick(Var(index), Pattern(Left(Var(index))))
   def app(a: Pattern, b: Pattern): Pattern = Pattern(Left(App(a, b)))
   def lam(e: Pattern): Pattern = Pattern(Left(Lambda(e)))
   def map: Pattern = Pattern(Left(Primitive(rcp.map.primitive)))
