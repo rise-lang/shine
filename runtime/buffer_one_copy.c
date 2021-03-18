@@ -52,6 +52,7 @@ void* hostBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access
       b->host_mem, 0, NULL, NULL),
       "could not download buffer data to host"
     );
+    b->device_dirty = false;
   }
   if (access & HOST_WRITE) {
     b->host_dirty = true;
@@ -65,6 +66,7 @@ DeviceBuffer deviceBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFla
       b->host_mem, 0, NULL, NULL),
       "could not upload buffer data to host"
     );
+    b->host_dirty = false;
   }
   if (access & DEVICE_WRITE) {
     b->device_dirty = true;

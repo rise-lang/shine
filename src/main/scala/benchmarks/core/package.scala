@@ -15,7 +15,7 @@ package object core {
          |${util.gen.opencl.hosted.asString(module)}
          |
          |int main() {
-         |  Context ctx = createDefaultContext();
+         |  assertReasonableTimeResolution();
          |  for (int sample = 0; sample < ${sampleCount}; sample++) {
          |    ${init}
          |    Instant start = now();

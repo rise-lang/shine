@@ -2,9 +2,24 @@
 
 typedef struct timespec Instant;
 
+inline void assertReasonableTimeResolution() {
+  struct timespec res;
+  if (clock_getres(CLOCK_MONOTONIC, &res) != 0) {
+    fprintf(stderr, "could not get clock resolution\n");
+    exit(EXIT_FAILURE);
+  }
+  if (res.tv_sec > 0 || res.tv_nsec >= 1000) {
+    fprintf(stderr, "clock resolution was lower than 1ms\n");
+    exit(EXIT_FAILURE);
+  }
+}
+
 inline Instant now() {
   Instant i;
-  clock_gettime(CLOCK_MONOTONIC, &i);
+  if (clock_gettime(CLOCK_MONOTONIC, &i) != 0) {
+    fprintf(stderr, "could not get clock time\n");
+    exit(EXIT_FAILURE);
+  }
   return i;
 }
 

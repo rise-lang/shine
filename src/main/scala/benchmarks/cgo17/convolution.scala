@@ -26,6 +26,11 @@ object convolutionHosted {
          |for (int i = 0; i < 17; i++) {
          |  w[i] = (float)(rand())/(float)(RAND_MAX);
          |}
+         |
+         |// synchronize before entering timed section
+         |deviceBufferSync(ctx, matrix, $N * $N * sizeof(float), DEVICE_READ);
+         |deviceBufferSync(ctx, weights, 17 * sizeof(float), DEVICE_READ);
+         |waitFinished(ctx);
          |""".stripMargin
 
     val compute =
