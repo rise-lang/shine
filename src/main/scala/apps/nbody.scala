@@ -41,14 +41,71 @@ object nbody {
     vec(4, f32) ->: vec(4, f32) ->: f32 ->: vec(4, f32) ->: PairType(vec(4, f32), vec(4, f32))
   )
 
-  val amd: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+  private val calcAccScal = foreignFun("calcAcc",
+    Seq("p1", "p2", "mass2", "espSqr"),
+    """|{
+       |  float rx = p1._fst - p2._fst;
+       |  float ry = p1._snd._fst - p2._snd._fst;
+       |  float rz = p1._snd._snd - p2._snd._snd;
+       |  float distSqr = rx + ry + rz;
+       |  float invDist = 1.0f / sqrt(distSqr + espSqr);
+       |  float invDistCube = invDist * invDist * invDist;
+       |  float s = invDistCube * mass;
+       |  Tuple acc = {s * rx, s * ry, s * rz};
+       |  return acc;
+       |}
+       | """.stripMargin,
+    (f32 x (f32 x f32)) ->: (f32 x (f32 x f32)) ->: f32 ->: f32 ->:
+    (f32 x (f32 x f32)))
+
+  private val addScal = fun(
+    (f32 x (f32 x f32)) ->: (f32 x (f32 x f32)) ->: (f32 x (f32 x f32))
+  )((a, b) => {
+    def r(f: ToBeTyped[Expr]) = f(a) + f(b)
+    makePair(r(fst))(makePair(r(snd >> fst))(r(snd >> snd)))
+  })
+
+  private val updateScal = fun(
+    ((f32 x (f32 x f32)) x (f32 x (f32 x f32))) ->:
+    f32 ->: (f32 x (f32 x f32)) ->:
+    ((f32 x (f32 x f32)) x (f32 x (f32 x f32)))
+  )((xyzvXYZ, deltaT, acceleration) => {
+    val xyz = fst(xyzvXYZ)
+    val vXYZ = snd(xyzvXYZ)
+    def p(f: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      f(xyz) + f(vXYZ) * deltaT + l(0.5f) * f(acceleration) * deltaT * deltaT
+    def v(f: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      f(vXYZ) + f(acceleration) * deltaT
+    makePair(
+      makePair(p(fst))(makePair(p(snd >> fst))(p(snd >> snd))))(
+      makePair(v(fst))(makePair(v(snd >> fst))(v(snd >> snd))))
+  })
+
+  // FIXME: signature does not match low-level versions
+  // also, this code was not verified
+  val nbodyHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+    (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
+    (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
+    (n`.`f32) ->: f32 ->: f32 ->:
+    (n`.`((f32 x (f32 x f32)) x (f32 x (f32 x f32))))
+  )((x, y, z, velX, velY, velZ, mass, espSqr, deltaT) =>
+    map(fun(p1 =>
+      fun(acceleration => updateScal(p1, deltaT, acceleration)) o
+      reduce(addScal)(makePair(l(0.0f))(makePair(l(0.0f))(l(0.0f)))) o
+      map(fun(p2m =>
+        calcAccScal(fst(p1), fst(p2m), snd(p2m), espSqr)
+      )) $ zip(zip(x)(zip(y)(z)))(mass)
+    )) $ zip(zip(x)(zip(y)(z)))(zip(velX)(zip(velY)(velZ)))
+  ))
+
+  val nbodyAMD: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
     mapGlobal(fun(p1 =>
       update(fst(p1))(snd(p1))(deltaT) o
-        oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
-          calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
-        ))(vectorFromScalar(l(0.0f))) $ pos
+      oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
+        calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
+      ))(vectorFromScalar(l(0.0f))) $ pos
     )) $ zip(pos)(vel)
   ))
 
@@ -56,7 +113,7 @@ object nbody {
   val tileY = 1
 
   // TODO: compare generated code to original
-  val nvidia: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+  val nbodyNVIDIA: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
     join o join o mapWorkGroup(1)(
