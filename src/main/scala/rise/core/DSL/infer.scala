@@ -13,8 +13,13 @@ object infer {
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
+    // Constraints of the form `implicit type var == explicit type var` result in substitutions
+    // `implicit type var -> explicit type var`. We (ab)use that fact to create directed constraints out of
+    // type assertions and opaque types. To do so, we make the type identifiers on one side of the constraint explicit,
+    // and we return a `ftvSubs` map that maps these explicit type identifiers back to implicit type identifiers.
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-    val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
+    // Applies ftvSubs to the constraint solutions
+    val solution = Constraint.solve(constraints.toSeq, Seq())(explDep) ++ ftvSubs
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
@@ -70,34 +75,22 @@ object infer {
         natColl.asInstanceOf[NatCollectionIdentifier].asExplicit).toMap
     )(t)
 
-  private def unfreeze(ftvSubs: Solution, solution: Solution): Solution = solution match {
-    case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
-      Solution(
-        ts.view.mapValues(t => ftvSubs(t)).toMap,
-        ns.view.mapValues(n => ftvSubs(n)).toMap,
-        as.view.mapValues(a => ftvSubs(a)).toMap,
-        n2ds.view.mapValues(n2d => ftvSubs(n2d)).toMap,
-        n2ns.view.mapValues(n2n => ftvSubs(n2n)).toMap,
-        natColls.view.mapValues(ftvSubs(_)).toMap
-      )
-  }
+  private def explToImpl[K <: Kind.Identifier with Kind.Explicitness] : K => Map[K, K] = i =>
+    Map(i.asExplicit.asInstanceOf[K] -> i.asImplicit.asInstanceOf[K])
 
   private def getFTVSubs(t: Type): Solution = {
-    import scala.collection.immutable.Map
     getFTVs(t).foldLeft(Solution())((solution, ftv) =>
       solution match {
         case s@Solution(ts, ns, as, n2ds, n2ns, natColls) =>
           ftv match {
-            case _: TypeIdentifier =>
-              throw TypeException("TypeIdentifier cannot be frozen")
-            case i: DataTypeIdentifier      => s.copy(ts = ts ++ Map(i -> i))
-            case i: NatIdentifier           => s.copy(ns = ns ++ Map(i -> i))
-            case i: AddressSpaceIdentifier  => s.copy(as = as ++ Map(i -> i))
-            case i: NatToDataIdentifier     => s.copy(n2ds = n2ds ++ Map(i -> i))
-            case i: NatToNatIdentifier      => s.copy(n2ns = n2ns ++ Map(i -> i))
-            case i: NatCollectionIdentifier => s.copy(natColls = natColls ++ Map(i -> i))
-            case i =>
-              throw TypeException(s"${i.getClass} is not supported yet")
+            case _: TypeIdentifier => throw TypeException("TypeIdentifier cannot be frozen")
+            case i: DataTypeIdentifier      => s.copy(ts = ts ++ explToImpl(i))
+            case i: NatIdentifier           => s.copy(ns = ns ++ explToImpl(i))
+            case i: AddressSpaceIdentifier  => s.copy(as = as ++ explToImpl(i))
+            case i: NatToDataIdentifier     => s.copy(n2ds = n2ds ++ explToImpl(i))
+            case i: NatToNatIdentifier      => s.copy(n2ns = n2ns ++ explToImpl(i))
+            case i: NatCollectionIdentifier => s.copy(natColls = natColls ++ explToImpl(i))
+            case i => throw TypeException(s"${i.getClass} is not supported yet")
           }
       }
     )
