@@ -40,10 +40,38 @@ class autotuning extends test_util.Tests {
   test("collect constraints") {
     val e: Expr = convolution
     autotune.collectConstraints(e, autotune.collectParameters(e)).foreach(println)
-    val constraints = collectConstraints(e, autotune.collectParameters(e))
+  }
 
-    constraints.foreach(elem => {
-    })
+  test("substitute parameters") {
+    val e: Expr = convolution(32)
+    val constraints = autotune.collectConstraints(e, autotune.collectParameters(e))
+
+    val badParameters1 = Map(
+      NatIdentifier("vec", isExplicit = true) -> (5: Nat),
+      NatIdentifier("tile", isExplicit = true) -> (15: Nat)
+    )
+    assert(!autotune.checkConstraints(constraints, badParameters1))
+
+    val badParameters2 = Map(
+      NatIdentifier("vec", isExplicit = true) -> (4: Nat),
+      NatIdentifier("tile", isExplicit = true) -> (13: Nat)
+    )
+    assert(!autotune.checkConstraints(constraints, badParameters2))
+
+    /* FIXME: there is no `n >= tile` constraint collected
+    val badParameters3 = Map(
+      NatIdentifier("vec", isExplicit = true) -> (8: Nat),
+      NatIdentifier("tile", isExplicit = true) -> (64: Nat)
+    )
+    assert(!autotune.checkConstraints(constraints, badParameters3))
+    */
+
+    val goodParameters = Map(
+      NatIdentifier("vec", isExplicit = true) -> (4: Nat),
+      NatIdentifier("tile", isExplicit = true) -> (16: Nat)
+    )
+    assert(autotune.checkConstraints(constraints, goodParameters))
+    rise.core.substitute.natsInExpr(goodParameters, e)
   }
 
   test("generateJSON"){

@@ -1,14 +1,16 @@
 package rise
 
-import arithexpr.arithmetic.{BoolExpr, RangeAdd, RangeMul, RangeUnknown}
+import arithexpr.arithmetic.{ArithExpr, BoolExpr, NamedVar, RangeAdd, RangeMul, RangeUnknown}
 import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
 import util.{Time, TimeSpan}
-
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.security.Policy.Parameters
+
+import arithexpr.arithmetic.BoolExpr.ArithPredicate
+
 import scala.annotation.tailrec
 
 package object autotune {
@@ -46,14 +48,12 @@ package object autotune {
 
     // compute function value as result for hypermapper
     val computeF: (Array[String], Array[String]) => Option[Float] = (header, parametersValues) => {
+      val parametersValuesMap = header.zip(parametersValues).map { case (h, p) =>
+        NatIdentifier(h, isExplicit = true) -> (p.toInt : Nat)
+      }.toMap
 
-      val parametersValuesMap = Map.empty[String, Int]
-      for(i <- Range(0,header.length)){
-        parametersValuesMap + (header(i)->parametersValues(i).toInt)
-      }
-
-      checkConstraints(constraints, parametersValuesMap) match{
-        case true => execute(substitute(e, parametersValuesMap))
+      checkConstraints(constraints, parametersValuesMap) match {
+        case true => execute(rise.core.substitute.natsInExpr(parametersValuesMap, e))
         case false => None
       }
     }
@@ -121,10 +121,10 @@ package object autotune {
 
 
   // check constraints for given values and returns boolean
-  def checkConstraints(constraints: Set[Constraint], values:Map[String, Int]):Boolean = ???
-
-  // substitute tp parameters using value Map
-  def substitute(e: Expr, values:Map[String, Int]):Expr = ???
+  def checkConstraints(constraints: Set[Constraint], values: Map[NatIdentifier, Nat]): Boolean = {
+    val map = values.asInstanceOf[Map[ArithExpr, ArithExpr]]
+    constraints.forall(c => c.substitute(map).isSatisfied())
+  }
 
     // add information for execution as parameter?
     // execution failure of e returns None
@@ -159,7 +159,35 @@ package object autotune {
     iter(e, Set.empty)
   }
 
-  sealed trait Constraint
+  private def isPowerOf(a: Int, b: Int): Boolean = {
+    val p: Int = Math.round(Math.log(a) / Math.log(b)).toInt
+    Math.round(Math.pow(b, p)) == a
+  }
+
+  sealed trait Constraint {
+    def substitute(map: Map[ArithExpr, ArithExpr]): Constraint = this match {
+      case PredicateConstraint(n) =>
+        PredicateConstraint(n.substitute(map).getOrElse(n))
+      case RangeConstraint(n, r) =>
+        RangeConstraint(n.substitute(map).getOrElse(n), r.substitute(map).getOrElse(r))
+    }
+
+    def isSatisfied(): Boolean = this match {
+      case PredicateConstraint(n: ArithPredicate) =>
+        n.evaluate.contains(true)
+      // TODO: it feels like checking if a nat is inside a range should be part of arithexpr
+      case RangeConstraint(n, RangeAdd(start, stop, step)) =>
+        ArithPredicate(start, n.min, ArithPredicate.Operator.<=).evaluate.contains(true) &&
+        ArithPredicate(n.max, stop, ArithPredicate.Operator.<=).evaluate.contains(true) &&
+        n % step == (0: Nat)
+      case RangeConstraint(n, RangeMul(start, stop, mul)) =>
+        ArithPredicate(start, n.min, ArithPredicate.Operator.<=).evaluate.contains(true) &&
+        ArithPredicate(n.max, stop, ArithPredicate.Operator.<=).evaluate.contains(true) &&
+        isPowerOf(n.eval, mul.eval)
+      case _ =>
+        throw new Exception(s"no support for checking $this")
+    }
+  }
   case class PredicateConstraint(n: BoolExpr) extends Constraint {
     override def toString: String = n.toString
   }
