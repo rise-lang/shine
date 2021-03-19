@@ -18,7 +18,7 @@ class Rewrite[Data](name: String,
     searcher.search(egraph)
 
   def apply(egraph: EGraph[Data], matches: Vec[SearchMatches]): Vec[EClassId] =
-    applier.apply(egraph, matches)
+    applier.applyMatches(egraph, matches)
 }
 
 trait Searcher[Data] {
@@ -26,11 +26,11 @@ trait Searcher[Data] {
   def patternVars(): Vec[PatternVar]
 
   // search one eclass, returning None if no matches can be found
-  def searchOne(egraph: EGraph[Data], eclass: EClassId): Option[SearchMatches]
+  def searchEClass(egraph: EGraph[Data], eclass: EClassId): Option[SearchMatches]
 
   // search the whole egraph, returning all matches
   def search(egraph: EGraph[Data]): Vec[SearchMatches] = {
-    egraph.classes.flatMap(e => searchOne(egraph, e._1)).to(Vec)
+    egraph.classes.keys.flatMap(id => searchEClass(egraph, id)).to(Vec)
   }
 }
 
@@ -48,7 +48,7 @@ trait Applier[Data] {
   // be unioned with `eclass`. There can be zero, one, or many.
   def applyOne(egraph: EGraph[Data], eclass: EClassId, subst: Subst): Vec[EClassId]
 
-  def apply(egraph: EGraph[Data], matches: Vec[SearchMatches]): Vec[EClassId] = {
+  def applyMatches(egraph: EGraph[Data], matches: Vec[SearchMatches]): Vec[EClassId] = {
     val added = Vec.empty[EClassId]
     for (mat <- matches) {
       for (subst <- mat.substs) {
@@ -70,7 +70,7 @@ case class Subst(vec: Vec[(PatternVar, EClassId)]) {
   def insert(variable: PatternVar, eclass: EClassId): Option[EClassId] = {
     for (((v, ec), i) <- vec.zipWithIndex) {
       if (v == variable) {
-        vec(i) = variable -> eclass
+        vec.update(i, variable -> eclass)
         return Some(ec)
       }
     }
@@ -84,7 +84,7 @@ case class Subst(vec: Vec[(PatternVar, EClassId)]) {
   def apply(variable: PatternVar): EClassId =
     get(variable).get
 
-  override def clone(): Subst =
+  def deepClone(): Subst =
     Subst(vec.clone())
 }
 
@@ -118,9 +118,9 @@ case class ShiftedApplier(v: PatternVar, newV: PatternVar,
   override def applyOne(egraph: EGraph[DefaultAnalysisData],
                         eclass: EClassId,
                         subst: Subst): Vec[EClassId] = {
-    val extract = egraph(subst(v)).data.extractedExpr
+    val extract = egraph.getMut(subst(v)).data.extractedExpr
     val shifted = extract.shifted(up, cutoff)
-    val subst2 = subst.clone()
+    val subst2 = subst.deepClone()
     subst2.insert(newV, egraph.addExpr(shifted))
     applier.applyOne(egraph, eclass, subst2)
   }
@@ -135,8 +135,8 @@ case class BetaApplier(body: PatternVar, subs: PatternVar)
   override def applyOne(egraph: EGraph[DefaultAnalysisData],
                         eclass: EClassId,
                         subst: Subst): Vec[EClassId] = {
-    val bodyEx = egraph(subst(body)).data.extractedExpr
-    val subsEx = egraph(subst(subs)).data.extractedExpr
+    val bodyEx = egraph.getMut(subst(body)).data.extractedExpr
+    val subsEx = egraph.getMut(subst(subs)).data.extractedExpr
     val result = bodyEx.withArgument(subsEx)
     Vec(egraph.addExpr(result))
   }

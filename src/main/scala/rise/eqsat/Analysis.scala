@@ -34,12 +34,12 @@ object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
     enode match {
       case Var(index) => free += index
       case Lambda(e) =>
-        free ++= egraph(e).data.free.filter(idx => idx != 0).map(idx => idx - 1)
+        free ++= egraph.getMut(e).data.free.filter(idx => idx != 0).map(idx => idx - 1)
       case DepLambda(_, _) => ???
-      case _ => enode.children().foreach(c => free ++= egraph(c).data.free)
+      case _ => enode.children().foreach(c => free ++= egraph.getMut(c).data.free)
     }
-    val extractedExpr = Expr(enode.mapChildren(c => egraph(c).data.extractedExpr))
-    val extractedSize = enode.children().foldLeft(1) { case (acc, c) => acc + egraph(c).data.extractedSize }
+    val extractedExpr = Expr(enode.mapChildren(c => egraph.getMut(c).data.extractedExpr))
+    val extractedSize = enode.children().foldLeft(1) { case (acc, c) => acc + egraph.getMut(c).data.extractedSize }
     new DefaultAnalysisData(free, extractedExpr, extractedSize)
   }
 
@@ -47,6 +47,7 @@ object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
     val beforeFreeCount = to.free.size
     to.free ++= from.free
     var didChange = beforeFreeCount != to.free.size
+    assert(to.extractedSize > 0 && from.extractedSize > 0)
     if (to.extractedSize > from.extractedSize) {
       to.extractedExpr = from.extractedExpr
       to.extractedSize = from.extractedSize

@@ -6,7 +6,9 @@ sealed trait StopReason
 case object Saturated extends StopReason
 case class IterationLimit(iterations: Int) extends StopReason
 case class NodeLimit(nodes: Int) extends StopReason
-case class TimeLimit(duration: Duration) extends StopReason
+case class TimeLimit(duration: Long) extends StopReason {
+  override def toString: String = s"TimeLimit(${util.prettyTime(duration)})"
+}
 case object Done extends StopReason
 
 object Runner {
@@ -17,9 +19,8 @@ object Runner {
     done = _ => false,
 
     iterLimit = 30,
-    nodeLimit = 10_000,
-    timeLimit = Duration.ofSeconds(5).toNanos,
-    startTime = None
+    nodeLimit = 100_000,
+    timeLimit = Duration.ofSeconds(5).toNanos
   )
 }
 
@@ -29,8 +30,7 @@ class Runner[D](var egraph: EGraph[D],
                 var done: Runner[D] => Boolean,
                 var iterLimit: Int,
                 var nodeLimit: Int,
-                var timeLimit: Long,
-                var startTime: Option[Long]) {
+                var timeLimit: Long) {
   def withIterationLimit(limit: Int): Runner[D] = {
     iterLimit = limit; this
   }
@@ -49,21 +49,20 @@ class Runner[D](var egraph: EGraph[D],
 
   def printReport(): Unit = {
     val searchTime = iterations.iterator.map(_.searchTime).sum
-    val applyTime = iterations.map(_.searchTime).sum
-    val rebuildTime = iterations.map(_.searchTime).sum
-    val totalTime = iterations.map(_.searchTime).sum
+    val applyTime = iterations.map(_.applyTime).sum
+    val rebuildTime = iterations.map(_.rebuildTime).sum
+    val totalTime = iterations.map(_.totalTime).sum
     val nRebuilds = iterations.map(_.nRebuilds.toLong).sum
     val nodes = iterations.last.egraphNodes
     val classes = iterations.last.egraphClasses
     println("-- Runner report --")
-    println(s"  Stop reasons: $stopReasons")
+    println(s"  Stop reasons: ${stopReasons.mkString(", ")}")
     println(s"  Iterations: ${iterations.size}")
-    println(s"  EGraph size: ${nodes} nodes, ${classes} classes, ${egraph.memo.size} memo")
+    println(s"  EGraph size: $nodes nodes, $classes classes, ${egraph.memo.size} memo")
     def ratio(a: Double, b: Double) = f"${a/b}%.2f"
-    println(s"  Rebuilds: ${nRebuilds}, " +
+    println(s"  Rebuilds: $nRebuilds, " +
       s"${ratio(nRebuilds.toDouble, iterations.size.toDouble)} per iter")
-    // FIXME: this prints garbage
-    println(s"  Total time: ${Duration.ofNanos(totalTime)} (" +
+    println(s"  Total time: ${util.prettyTime(totalTime)} (" +
       s"${ratio(searchTime.toDouble, totalTime.toDouble)} search, " +
       s"${ratio(applyTime.toDouble, totalTime.toDouble)} apply, " +
       s"${ratio(rebuildTime.toDouble, totalTime.toDouble)} rebuild)")
@@ -72,7 +71,7 @@ class Runner[D](var egraph: EGraph[D],
   def run(rules: Seq[Rewrite[D]]): Runner[D] = {
     egraph.rebuild()
 
-    startTime = Some(System.nanoTime())
+    val startTime = System.nanoTime()
     while (true) {
       if (done(this)) {
         stopReasons += Done
@@ -85,8 +84,9 @@ class Runner[D](var egraph: EGraph[D],
       if (iter.nRewrites == 0) {
         stopReasons += Saturated
       }
-      if (iter.totalTime > timeLimit) {
-        stopReasons += TimeLimit(Duration.ofNanos(iter.totalTime))
+      val elapsed = System.nanoTime() - startTime
+      if (elapsed > timeLimit) {
+        stopReasons += TimeLimit(elapsed)
       }
       if (iter.egraphNodes > nodeLimit) {
         stopReasons += NodeLimit(iter.egraphNodes)
@@ -112,7 +112,7 @@ class Runner[D](var egraph: EGraph[D],
 
     val time2 = System.nanoTime()
 
-    val nRebuilds = egraph.rebuild();
+    val nRebuilds = egraph.rebuild()
 
     val time3 = System.nanoTime()
 
@@ -136,4 +136,15 @@ class Iteration(val egraphNodes: Int,
                 val rebuildTime: Long,
                 val totalTime: Long,
                 val nRewrites: Int,
-                val nRebuilds: Int)
+                val nRebuilds: Int) {
+  override def toString: String = {
+    s"Iteration(#nodes: $egraphNodes, " +
+      s"#classes: $egraphClasses, " +
+      s"search: ${util.prettyTime(searchTime)}, " +
+      s"apply: ${util.prettyTime(applyTime)}, " +
+      s"rebuild: ${util.prettyTime(rebuildTime)}, " +
+      s"total: ${util.prettyTime(totalTime)}, " +
+      s"#rewrites: $nRewrites, " +
+      s"#rebuilds: $nRebuilds)"
+  }
+}

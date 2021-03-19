@@ -1,6 +1,6 @@
 package rise.eqsat
 
-import scala.collection.mutable.PriorityQueue
+import scala.collection.mutable
 
 object ematching {
   object AbstractMachine {
@@ -19,11 +19,12 @@ object ematching {
       while (instrs.nonEmpty) {
         instrs.head match {
           case Bind(node, i, out) =>
-            return forEachMatchingNode(egraph(reg(i)), node, { matched =>
+            forEachMatchingNode(egraph.get(reg(i)), node, { matched =>
               regs.remove(out.n, regs.size - out.n)
               matched.children().foreach(id => regs += id)
               run(egraph, instrs.tail, subst, yieldFn)
             })
+            return
           case Compare(i, j) =>
             if (egraph.find(reg(i)) != egraph.find(reg(j))) {
               return
@@ -93,7 +94,7 @@ object ematching {
   def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
     // if (eclass.nodes.size < 50) {
       eclass.nodes.filter(n => node.matches(n)).foreach(f)
-    /* } else { TODO
+    /* } else { TODO: implement algorithm from egg
       assert(eclass.nodes.sliding(2).forall(w => (w(0) < w(1)): Boolean))
       val start = eclass.nodes.search(node)()
     } */
@@ -120,7 +121,7 @@ object ematching {
   object Compiler {
     def compile(pattern: Pattern): Program = {
       val compiler = new Compiler(
-        pattern, HashMap.empty, PriorityQueue.empty, Reg(1))
+        pattern, HashMap.empty, mutable.PriorityQueue.empty, Reg(1))
       compiler.todo.addOne(Todo(Reg(0), pattern))
       compiler.go()
     }
@@ -128,7 +129,7 @@ object ematching {
 
   class Compiler(var pattern: Pattern,
                  var v2r: HashMap[PatternVar, Reg],
-                 var todo: PriorityQueue[Todo],
+                 var todo: mutable.PriorityQueue[Todo],
                  var out: Reg) {
     def go(): Program = {
       val instructions = Vec.empty[Instruction]
@@ -137,7 +138,7 @@ object ematching {
         pat.node match {
           case Right(v) => v2r.get(v) match {
             case Some(j) => instructions += Compare(i, j)
-            case None => v2r(v) = i
+            case None => v2r += v -> i
           }
           case Left(node) =>
             val currentOut = Reg(out.n)

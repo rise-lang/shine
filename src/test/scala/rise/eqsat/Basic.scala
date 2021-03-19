@@ -4,6 +4,8 @@ import rise.core.DSL._
 import rise.core.primitives._
 
 class Basic extends test_util.Tests {
+  import Basic.proveEquiv
+
   test("normalize") {
     import ExprDSL._
 
@@ -41,21 +43,28 @@ class Basic extends test_util.Tests {
       Seq(rules.eta, rules.beta, rules.mapFission, rules.mapFusion)
     )
   }
+}
 
+object Basic {
   def proveEquiv(start: rise.core.Expr,
                  goal: rise.core.Expr,
                  rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
-    val normStart = BENF(Expr.from(start))
-    val normGoal = BENF(Expr.from(goal))
+    val normStart = BENF(Expr.fromNamed(start))
+    val normGoal = BENF(Expr.fromNamed(goal))
+    println(s"normalized start: ${Expr.toNamed(normStart)}")
+    println(s"normalized goal: ${Expr.toNamed(normGoal)}")
     val goalPattern = Pattern.fromExpr(normGoal).compile()
 
     val runner = Runner.withAnalysis(DefaultAnalysis)
     val id = runner.egraph.addExpr(normStart)
     runner.doneWhen { r =>
-      goalPattern.searchOne(r.egraph, id).isDefined
+      goalPattern.searchEClass(r.egraph, id).isDefined
     }
     runner.run(rules)
     runner.printReport()
-    assert(runner.stopReasons.contains(Done))
+    if (!runner.stopReasons.contains(Done)) {
+      runner.iterations.foreach(println)
+      assert(false)
+    }
   }
 }

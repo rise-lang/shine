@@ -26,15 +26,16 @@ sealed trait Node[+T] {
     children().length
   }
 
-  def matchHash(): Int = this match {
+  // FIXME: match hashing is bugged
+  def matchHash(): Int = 0/* this match {
     case Var(i) => 7 * i
     case App(_, _) => 1
     case Lambda(_) => 2
-    case DepApp(_, x) => 5 * x.hashCode()
-    case DepLambda(k, _) => 3 * k.hashCode()
-    case Literal(d) => 13 * d.hashCode()
-    case Primitive(p) => 17 * p.hashCode()
-  }
+    case DepApp(_, x) => 5// * x.hashCode()
+    case DepLambda(k, _) => 3// * k.hashCode()
+    case Literal(d) => 13// * d.hashCode()
+    case Primitive(p) => 17// * p.hashCode()
+  }*/
 
   // Returns true if this enode matches another enode.
   // This should only consider the operator, not the children ids.

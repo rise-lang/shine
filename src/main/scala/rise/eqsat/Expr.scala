@@ -3,6 +3,8 @@ package rise.eqsat
 import rise.core
 import rise.core.{primitives => rcp}
 import rise.core.semantics
+import rise.core.semantics.NatData
+import rise.core.types.{Nat, NatKind, TypePlaceholder}
 
 // TODO: could also be outside of eqsat package
 case class Expr(node: Node[Expr]) {
@@ -26,10 +28,10 @@ case class Expr(node: Node[Expr]) {
 
   def replace(index: Int, subs: Expr): Expr = {
     node match {
-      case Var(idx) if (idx == index) => subs
+      case Var(idx) if idx == index => subs
       case Var(_) => this
       case Lambda(e) =>
-        val e2 = e.replace(index + 1, subs.shifted(true, 0))
+        val e2 = e.replace(index + 1, subs.shifted(up = true, 0))
         Expr(Lambda(e2))
       case App(f, e) =>
         val f2 = f.replace(index, subs)
@@ -45,15 +47,20 @@ case class Expr(node: Node[Expr]) {
 
   // substitutes %0 for arg in this
   def withArgument(arg: Expr): Expr = {
-    replace(0, arg.shifted(true, 0))
-      .shifted(false, 0)
+    replace(0, arg.shifted(up = true, 0))
+      .shifted(up = false, 0)
   }
 }
 
 object Expr {
-  def from(e: core.Expr): Expr = {
+  def fromNamed(e: core.Expr): Expr = {
     def rec(e: core.Expr, bound: Seq[core.Identifier]): Expr = {
       Expr(e match {
+        // FIXME: temporary hack
+        case core.DepApp(core.DepApp(rcp.slide(), sz: Nat), sp: Nat) =>
+          App(Expr(App(Expr(Primitive(rcp.slide.primitive)),
+            Expr(Literal(NatData(sz))))), Expr(Literal(NatData(sp))))
+          
         case i: core.Identifier => Var(bound.indexOf(i))
         case core.App(f, e) => App(rec(f, bound), rec(e, bound))
         case core.Lambda(i, e) => Lambda(rec(e, i +: bound))
@@ -62,6 +69,29 @@ object Expr {
         case core.Literal(d) => Literal(d)
         case p: core.Primitive => Primitive(p.setType(core.types.TypePlaceholder))
       })
+    }
+
+    rec(e, Seq())
+  }
+
+  def toNamed(e: Expr): core.Expr = {
+    def rec(e: Expr, bound: Seq[core.Identifier]): core.Expr = {
+      e.node match {
+        // FIXME: temporary hack
+        case App(Expr(App(Expr(Primitive(rcp.slide())),
+        Expr(Literal(NatData(sz))))), Expr(Literal(NatData(sp)))) =>
+          core.DepApp[NatKind](core.DepApp[NatKind](rcp.slide.primitive, sz)(TypePlaceholder), sp)(TypePlaceholder)
+
+        case Var(index) => bound(index)
+        case App(f, e) => core.App(rec(f, bound), rec(e, bound))(TypePlaceholder)
+        case Lambda(e) =>
+          val i = core.Identifier(s"x${bound.size}")(TypePlaceholder)
+          core.Lambda(i, rec(e, i +: bound))(TypePlaceholder)
+        case DepApp(f, x) => core.DepApp(rec(f, bound), x)(TypePlaceholder)
+        case DepLambda(_, _) => ???
+        case Literal(d) => core.Literal(d)
+        case Primitive(p) => p
+      }
     }
 
     rec(e, Seq())

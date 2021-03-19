@@ -28,6 +28,6 @@ class PatternCheck extends test_util.Tests {
     egraph.rebuild()
     assert(applications.size == 2)
 
-    egraph.dot().toSVG("/tmp/simple-match.svg")
+    egraph.dot().toFile("/tmp/simple-match.dot")
   }
 }

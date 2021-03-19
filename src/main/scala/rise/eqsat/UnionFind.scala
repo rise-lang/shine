@@ -37,7 +37,7 @@ final class UnionFind(var parents: Vec[EClassId]) {
 
   def union(root1: EClassId, root2: EClassId): EClassId = {
     assert(isRoot(root1) && isRoot(root2) && root1 != root2)
-    setParent(root2, root1);
+    setParent(root2, root1)
     root1
   }
 }

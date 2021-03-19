@@ -32,7 +32,7 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
           findBestRec(id, addedMemo)._2
         val expr = Expr(bestNode.mapChildren(childF))
         assert(!addedMemo.contains(id))
-        addedMemo(id) = expr
+        addedMemo += id -> expr
         expr
     })
   }
@@ -48,24 +48,24 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
   }
 
   private def computeCosts(): Unit = {
-    var didSomething = true;
+    var didSomething = true
     while (didSomething) {
-      didSomething = false;
+      didSomething = false
 
-      for ((_, eclass) <- egraph.classes) {
+      for (eclass <- egraph.classes.values) {
         (costs.get(eclass.id), makePass(eclass)) match {
           case (None, Some(newCost)) =>
-            costs(eclass.id) = newCost
+            costs += eclass.id -> newCost
             didSomething = true
           case (Some(oldCost), Some(newCost)) if costCmp.lt(newCost._1, oldCost._1) =>
-            costs(eclass.id) = newCost
+            costs += eclass.id -> newCost
             didSomething = true
           case _ => ()
         }
       }
     }
 
-    for ((_, eclass) <- egraph.classes) {
+    for (eclass <- egraph.classes.values) {
       assert(costs.contains(eclass.id))
     }
   }

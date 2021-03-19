@@ -63,7 +63,7 @@ case class EGraphDot(egraph: EGraph[_]) {
 
   // returns label and anchor
   private def edge(i: Int, len: Int): (String, String) = {
-    assert(i < len);
+    assert(i < len)
     (len, i) match {
       case (1, 0) => ("", "")
       case (2, 0) => (":sw", "")

@@ -102,6 +102,11 @@ object separableConvolution2D {
     mapSeq(mapSeq(map(dotSeqUnroll(weightsH)) >> dotSeqUnroll(weightsV)))
   ))
 
+  val factorisedVH: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
+    padClamp2D(1) >> slide2D(3, 1) >>
+    map(map(transpose >> map(dot(weightsV)) >> dot(weightsH)))
+  ))
+
   val separated: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
     val horizontal = map(slide(3)(1) >> map(dot(weightsH)))
     val vertical = slide(3)(1) >> map(transpose >> map(dot(weightsV)))
