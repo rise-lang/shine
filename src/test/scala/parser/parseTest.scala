@@ -1,7 +1,8 @@
 package parser
+import apps.nbody.{runKernel, runOriginalKernel}
 import org.scalatest.flatspec.AnyFlatSpec
-import rise.core.types.NatIdentifier
-import rise.openCL.TypedDSL.toMem
+import shine.OpenCL.{GlobalSize, LocalSize}
+import util.gen
 
 //import parser.parse.ParseError
 //import org.scalatest.matchers.should.Matchers.equal
@@ -649,6 +650,7 @@ class parseTest extends  AnyFlatSpec {
       case r.Lambda(r.Identifier("c"), r.Literal(rS.IntData(42), _)) => true
       case a => fail("not a lambda: " + a)
     }
+    assert(r.IsClosedForm(ex))
   }
 
   "parser" should "be able to parse 'DepLambda.rise'" in {
@@ -1141,6 +1143,12 @@ class parseTest extends  AnyFlatSpec {
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
     }
+
+
+    assert(r.IsClosedForm(ex_f)) //It has to be closed form so that gen.Cprogram runs
+
+    val code = gen.CProgram(ex_f, "dot").code
+    println(code)
   }
 
   "parser" should "be able to parse 'FunctionInBraces.rise'" in {
@@ -1222,6 +1230,7 @@ class parseTest extends  AnyFlatSpec {
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
+    assert(r.IsClosedForm(ex))
   }
 
   "parser" should "be able to parse 'lessComplexInOneLine.rise'" in {
@@ -1244,6 +1253,7 @@ class parseTest extends  AnyFlatSpec {
       }
       case a => fail("not a lambda: " + a)
     }
+    assert(r.IsClosedForm(ex))
   }
 
   "parser" should "be able to parse 'lessComplexInOneLineWithDifferentType.rise'" in {
@@ -2012,6 +2022,26 @@ class parseTest extends  AnyFlatSpec {
         end.column should equal(47)
       }
     }
+
+    val N = 512
+    val tileX = 256
+    val tileY = 1
+
+    val random = new scala.util.Random()
+    val pos = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+    val vel = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+
+    val localSizeAMD = LocalSize(128)
+    val globalSizeAMD = GlobalSize(N)
+
+    val localSizeNVIDIA = LocalSize((tileX, tileY))
+    val globalSizeNVIDIA = GlobalSize((N, tileY))
+
+    test_util.runsWithSameResult(Seq(
+      ("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
+      ("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
+      ("parser AMD", runKernel(gen.OpenCLKernel(ex_g), localSizeAMD, globalSizeAMD, pos, vel))
+    ))
   }
 
   "parser" should "be able to parse 'nbodyMinimalTypes.rise'" in {
