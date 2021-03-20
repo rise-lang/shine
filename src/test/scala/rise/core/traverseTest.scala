@@ -41,24 +41,24 @@ class traverseTest extends test_util.Tests {
     gps.forall(gp => gp.map(xs(_)).distinct.length == 1)
 
   test("traversing an expression should traverse identifiers in order") {
-    val exprEquivs = Seq(Seq(0, 3), Seq(1, 2))
-    val exprResult = traverse(e, new ExprTraceVisitor())
+    val equivs = Seq(Seq(0, 3), Seq(1, 2))
+    val result = traverse(e, new ExprTraceVisitor())
 
     // the expression should not have changed
-    assert(exprResult.unwrap =~= e)
+    assert(result.unwrap == e)
     // the trace should match expectations
-    exprResult.trace.length shouldBe exprEquivs.flatten.length
-    assert(checkEqualities(exprResult.trace)(exprEquivs))
+    result.trace.length shouldBe equivs.flatten.length
+    assert(checkEqualities(result.trace)(equivs))
   }
 
   test("traversing a type should traverse identifiers in order") {
-    val typeEquivs = Seq(Seq(0, 2, 4), Seq(1, 3, 5))
-    val typeResult = traverse(e.t, new TypeTraceVisitor())
+    val equivs = Seq(Seq(0, 2, 4), Seq(1, 3, 5))
+    val result = traverse(e.t, new TypeTraceVisitor())
     // the type should not have changed
-    assert(typeResult.unwrap =~= e.t)
+    assert(result.unwrap == e.t)
     // the trace should match expectations
-    typeResult.trace.length shouldBe typeEquivs.flatten.length
-    assert(checkEqualities(typeResult.trace)(typeEquivs))
+    result.trace.length shouldBe equivs.flatten.length
+    assert(checkEqualities(result.trace)(equivs))
   }
 
   test("traverse an expression depth-first with stop and update") {

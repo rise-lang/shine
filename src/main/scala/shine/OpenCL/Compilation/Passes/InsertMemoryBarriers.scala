@@ -122,11 +122,11 @@ object InsertMemoryBarriers {
     }
   }
 
-  @tailrec
-  private def collectWrites(a: Phrase[AccType],
-                            allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
-                            writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
-                           ): Unit = {
+  private def collectWrites(
+    a: Phrase[AccType],
+    allocs: Map[Identifier[_ <: PhraseType], AddressSpace],
+    writes: mutable.Map[Identifier[_ <: PhraseType], AddressSpace]
+  ): Unit = {
     def addIdent(i: Identifier[_ <: PhraseType]): Unit = if (allocs.contains(i)) {
       writes(i) = allocs(i)
     }
@@ -144,6 +144,8 @@ object InsertMemoryBarriers {
       case ocl.IdxDistributeAcc(_, _, _, _, _, a) => collectWrites(a, allocs, writes)
       case PairAcc1(_, _, a) => collectWrites(a, allocs, writes)
       case PairAcc2(_, _, a) => collectWrites(a, allocs, writes)
+      case PairAcc(_, _, a, b) =>
+        collectWrites(a, allocs, writes); collectWrites(b, allocs, writes)
       case TakeAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case TransposeAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case _ => throw new Exception(s"did not expect $a")

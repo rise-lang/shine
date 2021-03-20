@@ -17,20 +17,24 @@ class mmCheck extends test_util.TestsWithExecutor {
     (At, B, gold)
   }
 
+  test("high-level matrix multiplication typechecks") {
+    println(mmHighLevel.t)
+  }
+
   test("sequential matrix multiplication produces expected result") {
     val (at, b, gold) = randGold()
-    val (output, time) = runKernel(gen.opencl.kernel.fromExpr(sequential),
+    val (output, time) = runKernel(gen.opencl.kernel.fromExpr(mmSequential),
       LocalSize(1), GlobalSize(1), at, b)
     util.assertSame(output, gold, "output is different from gold")
     println(s"time: $time")
   }
 
-  ignore("amd matrix multiplication produces expected result") {
+  test("amd matrix multiplication produces expected result") {
     val (at, b, gold) = randGold()
     val runs = Seq(
       "original" -> runOriginal("CGO17_MMAMD.cl",
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b),
-      "dpia" -> runKernel(gen.opencl.kernel.fromExpr(amd),
+      "dpia" -> runKernel(gen.opencl.kernel.fromExpr(mmAMD),
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
     )
     runs.foreach(r => {
@@ -39,12 +43,13 @@ class mmCheck extends test_util.TestsWithExecutor {
     })
   }
 
+  // CL_OUT_OF_RESOURCES on the CI
   ignore("nvidia matrix multplication produces expected result") {
     val (at, b, gold) = randGold()
     val runs = Seq(
       "original" -> runOriginal("CGO17_MMNVIDIA.cl",
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b),
-      "dpia" -> runKernel(gen.opencl.kernel.fromExpr(nvidia),
+      "dpia" -> runKernel(gen.opencl.kernel.fromExpr(mmNVIDIA),
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
     )
     runs.foreach(r => {

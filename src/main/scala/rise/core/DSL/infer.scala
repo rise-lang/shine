@@ -75,27 +75,22 @@ object infer {
         natColl.asInstanceOf[NatCollectionIdentifier].asExplicit).toMap
     )(t)
 
-  private def explToImpl[K <: Kind.Identifier] : K => Map[K, K] = {
-    case i : Kind.Explicitness => Map(i.asExplicit.asInstanceOf[K] -> i.asImplicit.asInstanceOf[K])
-    case i => Map(i -> i)
-  }
+  private def explToImpl[K <: Kind.Identifier with Kind.Explicitness] : K => Map[K, K] = i =>
+    Map(i.asExplicit.asInstanceOf[K] -> i.asImplicit.asInstanceOf[K])
 
   private def getFTVSubs(t: Type): Solution = {
-    import scala.collection.immutable.Map
     getFTVs(t).foldLeft(Solution())((solution, ftv) =>
       solution match {
         case s@Solution(ts, ns, as, n2ds, n2ns, natColls) =>
           ftv match {
-            case _: TypeIdentifier =>
-              throw TypeException("TypeIdentifier cannot be frozen")
+            case _: TypeIdentifier => throw TypeException("TypeIdentifier cannot be frozen")
             case i: DataTypeIdentifier      => s.copy(ts = ts ++ explToImpl(i))
             case i: NatIdentifier           => s.copy(ns = ns ++ explToImpl(i))
             case i: AddressSpaceIdentifier  => s.copy(as = as ++ explToImpl(i))
             case i: NatToDataIdentifier     => s.copy(n2ds = n2ds ++ explToImpl(i))
             case i: NatToNatIdentifier      => s.copy(n2ns = n2ns ++ explToImpl(i))
             case i: NatCollectionIdentifier => s.copy(natColls = natColls ++ explToImpl(i))
-            case i =>
-              throw TypeException(s"${i.getClass} is not supported yet")
+            case i => throw TypeException(s"${i.getClass} is not supported yet")
           }
       }
     )

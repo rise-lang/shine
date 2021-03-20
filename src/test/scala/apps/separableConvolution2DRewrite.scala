@@ -110,6 +110,34 @@ class separableConvolution2DRewrite extends test_util.Tests {
     ))
   }
 
+  test("base to scanline (mapLastFission)") {
+    rewrite_steps(base(weights2d), scala.collection.Seq(
+      idS
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(join(weights2d))(join(nbh)))))),
+      topDown(separateDotT)
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+      topDown(`*f >> S -> S >> **f`)
+        -> (P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+      topDown(mapFusion)
+        -> (P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
+      topDown(mapFusion)
+        -> (P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
+      topDown(`*S >> T -> T >> S >> *T`)
+        -> (P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
+      topDown(mapFusion)
+        -> (P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
+      topDown(removeTransposePair)
+        -> (P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
+      (repeatNTimes(3)(skip(1)(mapLastFission())) `;` BENF `;`
+        repeatNTimes(2)(topDown(mapFusion)))
+        -> (P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
+      topDown(`S >> **f -> *f >> S`)
+        -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
+      idS
+        -> scanline(weightsV)(weightsH)
+    ))
+  }
+
   test("scanline to separated (mapLastFission)") {
     rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
       idS
