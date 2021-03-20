@@ -59,20 +59,17 @@ object infer {
       )
   }
 
+  private def implToExpl[K <: Kind.Identifier with Kind.Explicitness] : K => (K, K) = i =>
+    (i.asImplicit.asInstanceOf[K], i.asExplicit.asInstanceOf[K])
+
   private def freeze(ftvSubs: Solution, t: Type): Type =
     Solution(
-      ftvSubs.ts.view.mapValues(dt =>
-        dt.asInstanceOf[DataTypeIdentifier].asExplicit).toMap,
-      ftvSubs.ns.view.mapValues(n =>
-        n.asInstanceOf[NatIdentifier].asExplicit).toMap,
-      ftvSubs.as.view.mapValues(a =>
-        a.asInstanceOf[AddressSpaceIdentifier].asExplicit).toMap,
-      ftvSubs.n2ds.view.mapValues(n2d =>
-        n2d.asInstanceOf[NatToDataIdentifier].asExplicit).toMap,
-      ftvSubs.n2ns.view.mapValues(n2n =>
-        n2n.asInstanceOf[NatToNatIdentifier].asExplicit).toMap,
-      ftvSubs.natColls.view.mapValues(natColl =>
-        natColl.asInstanceOf[NatCollectionIdentifier].asExplicit).toMap
+      ftvSubs.ts.keySet.map(_.asInstanceOf[DataTypeIdentifier]).map(implToExpl).toMap,
+      ftvSubs.ns.keySet.map(implToExpl).toMap,
+      ftvSubs.as.keySet.map(implToExpl).toMap,
+      ftvSubs.n2ds.keySet.map(implToExpl).toMap,
+      ftvSubs.n2ns.keySet.map(implToExpl).toMap,
+      ftvSubs.natColls.keySet.map(implToExpl).toMap
     )(t)
 
   private def explToImpl[K <: Kind.Identifier with Kind.Explicitness] : K => Map[K, K] = i =>
