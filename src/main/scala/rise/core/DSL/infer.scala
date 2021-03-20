@@ -115,6 +115,25 @@ object infer {
     ftvs.distinct.toSeq
   }
 
+  def getFTVsRec(e: Expr): Seq[Kind.Identifier] = {
+    val ftvs = mutable.ListBuffer[Kind.Identifier]()
+    traverse(e, new PureTraversal {
+      override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = _ => i => {
+        i match {
+          case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
+          case i => ftvs += i
+        }
+        return_(i)
+      }
+      override def nat: Nat => Pure[Nat] = ae =>
+        return_(ae.visitAndRebuild({
+          case i: NatIdentifier if !i.isExplicit => ftvs += i; i
+          case n => n
+        }))
+    })
+    ftvs.distinct.toSeq
+  }
+
   private def constrainTypes(
                               expr: Expr,
                               constraints: mutable.ArrayBuffer[Constraint],
