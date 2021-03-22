@@ -17,11 +17,18 @@ object RisePrimitiveGenerator {
           println(s"  $failure")
         case Parsed.Success(seq, _) =>
           seq.foreach {
-            case (name, typeSignature) =>
-              val outputPath = (path / os.up) / s"${name}.scala"
+            case (name, args, typeSignature) =>
+              val outputPath = (path / os.up) / s"$name.scala"
               println(s"Generate $outputPath")
-              import scala.meta._
 
+              val generatedDef = args match {
+                case None =>
+                  generateObject(name, typeSignature)
+                case Some((start, end)) =>
+                  generateCaseClass(name, definition.substring(start, end), typeSignature)
+              }
+
+              import scala.meta._
               val packageName = path.relativeTo(rise).segments.dropRight(1).foldLeft[Term.Ref](Term.Name("rise")) {
                 case (t, name) => Term.Select(t, Term.Name(name))
               }
@@ -37,7 +44,7 @@ import rise.core._
 import rise.core.types._
 import arithexpr.arithmetic._
 
-${generateCaseClassAndObject(name, typeSignature)}
+..${generatedDef.stats}
 
 }""".toString()}
                             |""".stripMargin
@@ -48,32 +55,78 @@ ${generateCaseClassAndObject(name, typeSignature)}
     })
   }
 
-  def generateCaseClassAndObject(name: String, typeSignature: TypeAST): scala.meta.Defn.Object = {
+  def generateObject(name: String, typeSignature: TypeAST): scala.meta.Term.Block = {
     import scala.meta._
-    val generated = q"""
-      object ${Term.Name{name}}  extends Builder {
+    val generated = q"""{
+      object ${Term.Name{name}} extends Builder {
         private final case class Primitive()(override val t: Type = TypePlaceholder)
-          extends rise.core.Primitive {
-        override val name: String = ${Lit.String(name)}
-        override def setType(ty: Type): Primitive =
-          Primitive()(ty)
-        override def typeScheme: Type =
-          ${generateTypeScheme(typeSignature, Map.empty)}
+          extends rise.core.Primitive
+        {
+          override val name: String = ${Lit.String(name)}
+          override def setType(ty: Type): Primitive = Primitive()(ty)
+          override def typeScheme: Type = ${generateTypeScheme(typeSignature, Map.empty)}
 
-        override def equals(obj: Any): Boolean = obj match {
-          case p: Primitive => p.t =~= t
-          case _ => false
+          override def equals(obj: Any): Boolean = obj match {
+            case p: Primitive => p.t =~= t
+            case _ => false
+          }
         }
-      }
 
         override def primitive: rise.core.Primitive = Primitive()()
-        override def apply: ToBeTyped[rise.core.Primitive] =
-          toBeTyped(Primitive()())
+        override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
         override def unapply(arg: Expr): Boolean = arg match {
           case _: Primitive => true
           case _ => false
         }
+      }
       }"""
+    generated
+  }
+
+  def generateCaseClass(name: String, paramsString: String, typeSignature: TypeAST): scala.meta.Term.Block = {
+    import scala.meta._
+
+    val params = paramsString.split(",").map(param => {
+      val parts = param.split(":").map(_.trim)
+      param"${Term.Name(parts(0))}: ${Type.Name(parts(1))}"
+    } ).toList
+    val args: List[Term.Name] = params.map(p => Term.Name(p.name.value))
+    val types: List[Type] = params.map(p => p.decltpe.get)
+
+    val generated =
+      q"""
+      final case class ${Type.Name(name)}(..$params) extends Builder {
+        override def primitive: rise.core.Primitive = ${Term.Name(name)}.Primitive(..$args)()
+        override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(${Term.Name(name)}.Primitive(..$args)())
+
+        override def unapply(arg: Expr): Boolean = arg match {
+          case _: Primitive => true
+          case _ => false
+        }
+      }
+
+      object ${Term.Name(name)} {
+        private final case class Primitive(..$params)(override val t: Type = TypePlaceholder)
+          extends rise.core.Primitive
+        {
+          override val name: String = ${Lit.String(name)}
+          override def setType(ty: Type): Primitive = Primitive(..$args)(ty)
+          override def typeScheme: Type = ${generateTypeScheme(typeSignature, Map.empty)}
+
+          override def equals(obj: Any): Boolean = obj match {
+            case p: Primitive =>
+              ${generateComparisonChain(args)} && p.t =~= t
+            case _ => false
+          }
+        }
+
+        def unapply(arg: rise.core.Expr): Option[..$types] = arg match {
+          case p: Primitive =>
+            Some(..${generateMemberAccesses(args)})
+          case _ => None
+        }
+      }
+       """
     generated
   }
 
@@ -120,6 +173,7 @@ ${generateCaseClassAndObject(name, typeSignature)}
     case "data" => "DataType"
     case "nat2nat" => "NatToNat"
     case "nat2data" => "NatToData"
+    case "address" => "AddressSpace"
   }
 
   def generateNat(n: NatAST, env: Map[TypeAST.TypeIdentifier, String]): scala.meta.Term = {
@@ -151,6 +205,25 @@ ${generateCaseClassAndObject(name, typeSignature)}
               upTo = ${generateNat(upTo, env)},
               (${Term.Name(id.id.name)}: Nat) => ${generateNat(body, env.updated(id.id, "nat"))})
          """
+    }
+  }
+
+  def generateComparisonChain(args: List[scala.meta.Term.Name]): scala.meta.Term = {
+    import scala.meta._
+    args match {
+      case List() => q"true"
+      case head :: tail =>
+        q"(p.$head == $head) && ${generateComparisonChain(tail)}"
+    }
+  }
+
+  def generateMemberAccesses(args: List[scala.meta.Term.Name]): List[scala.meta.Term] = {
+    import scala.meta._
+    args match {
+      case List() => List(q"()")
+      case List(arg) => List(q"p.$arg")
+      case head :: tail =>
+        q"p.$head" :: generateMemberAccesses(tail)
     }
   }
 }

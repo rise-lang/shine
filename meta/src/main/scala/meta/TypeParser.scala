@@ -26,11 +26,17 @@ object TypeParser {
     case class DepArrayType(size: NatAST, fdt: TypeAST) extends TypeAST
   }
 
-  def PrimitiveDeclarations[_: P]: P[Seq[(String, TypeAST)]] =
+  def PrimitiveDeclarations[_: P]: P[Seq[(String, Option[(Int, Int)], TypeAST)]] =
     P( Start ~ PrimitiveDeclaration.rep(1) ~ End )
 
-  def PrimitiveDeclaration[_: P]: P[(String, TypeAST)] =
-    P( "def" ~ Identifier ~ ":" ~ TypeSignature ~ ";")
+  def ScalaFunArg[_: P]: P[Unit] =
+    P( scalaparse.Scala.Id ~ scalaparse.syntax.Key.O(":") ~ scalaparse.Scala.Type )
+  import scalaparse.Scala.TrailingCommaOps
+  def ScalaFunArgs[_: P]: P[(Int, Int)] =
+    P( "(" ~ Index ~ ScalaFunArg.repTC(1) ~ Index  ~ ")" )
+
+  def PrimitiveDeclaration[_: P]: P[(String, Option[(Int, Int)], TypeAST)] =
+    P( "def" ~ Identifier ~ ScalaFunArgs.? ~ ":" ~ TypeSignature ~ ";")
 
   def Identifier[_: P]: P[String] =
     P( CharPred(_.isLower).! ~~ (CharIn("0-9") | CharIn("a-z") | CharIn("A-Z")).rep.! ).

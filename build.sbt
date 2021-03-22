@@ -68,6 +68,7 @@ lazy val meta = (project in file("meta"))
     version := "1.0",
     commonSettings,
     libraryDependencies += "com.lihaoyi" %% "fastparse" % "2.2.2",
+    libraryDependencies += "com.lihaoyi" %% "scalaparse" % "2.2.2",
     libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.7.3",
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.10",
   )

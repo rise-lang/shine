@@ -1,0 +1,24 @@
+def oclToMem: {t: data} -> (a: address) -> t -> t;
+
+def oclReduceSeq: (a: address) -> {n: nat} -> {s: data} -> {t: data} -> (t -> s -> t) -> t -> n.s -> t;
+
+def oclReduceSeqUnroll: (a: address) -> {n: nat} -> {s: data} -> {t: data} -> (t -> s -> t) -> t -> n.s -> t;
+
+def oclIterate: (a: address) -> {n: nat} -> {m: nat} -> (k: nat) -> {t: data} ->
+    ((l: nat) -> (l*n).t -> l.t) -> (m*(n^k)).t -> m.t;
+
+// TODO: should return a stream / sequential array, not an array
+def oclCircularBuffer: (a: address) -> {n: nat} -> (alloc: nat) -> (sz: nat) -> {s: data} -> {t: data} ->
+    (s -> t) ->  // function to load an input
+        (n+sz).s -> (1+n).sz.t;
+
+// TODO: should return a stream / sequential array, not an array
+def oclRotateValues: (a: address) -> {n: nat} -> (sz: nat) -> {s: data} ->
+    (s -> s) -> // function to write a value
+        (n+sz).s -> (1+n).sz.s;
+
+def mapGlobal(dim: Int): {n: nat} -> {dt1: data} -> {dt2: data} -> (dt1 -> dt2) -> n.dt1 -> n.dt2;
+
+def mapLocal(dim: Int): {n: nat} -> {dt1: data} -> {dt2: data} -> (dt1 -> dt2) -> n.dt1 -> n.dt2;
+
+def mapWorkGroup(dim: Int): {n: nat} -> {dt1: data} -> {dt2: data} -> (dt1 -> dt2) -> n.dt1 -> n.dt2;
