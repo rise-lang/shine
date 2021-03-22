@@ -9,11 +9,11 @@ object NatParser {
 
   sealed trait NatAST
   object NatAST {
-    case class Identifier(id: TypeAST.TypeIdentifier) extends NatAST
+    case class Identifier(id: TypeAST.Identifier) extends NatAST
     case class Number(n: String) extends NatAST
     case class BinaryOp(lhs: NatAST, op: String, rhs: NatAST) extends NatAST
     case class TernaryOp(cond: BinaryOp, thenN: NatAST, elseN: NatAST) extends NatAST
-    case class Nat2NatApply(f: TypeAST.TypeIdentifier, n: NatAST) extends NatAST
+    case class Nat2NatApply(f: TypeAST.Identifier, n: NatAST) extends NatAST
     case class Sum(id: Identifier, from: NatAST, upTo: NatAST, body: NatAST) extends NatAST
   }
 

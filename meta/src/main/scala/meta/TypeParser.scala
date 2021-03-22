@@ -2,28 +2,39 @@ package meta
 
 import fastparse.ScalaWhitespace._
 import fastparse._
-
-import NatParser._
+import meta.NatParser._
 
 object TypeParser {
 
   sealed trait TypeAST
   object TypeAST {
-    case class TypeIdentifier(name: String) extends TypeAST
+    case class Identifier(name: String) extends TypeAST
     case class FunType(inT: TypeAST, outT: TypeAST) extends TypeAST
-    case class DepFunType(id: TypeIdentifier, kind: String, t: TypeAST) extends TypeAST
-    case class ImplicitDepFunType(id: TypeIdentifier, kind: String, t: TypeAST) extends TypeAST
+    case class DepFunType(id: Identifier, kind: String, t: TypeAST) extends TypeAST
+    case class ImplicitDepFunType(id: Identifier, kind: String, t: TypeAST) extends TypeAST
 
     case class ScalarType(t: String) extends TypeAST
     case object NatType extends TypeAST
     case class VectorType(size: NatAST, elemType: TypeAST) extends TypeAST
     case class IndexType(size: NatAST) extends TypeAST
     case class PairType(lhs: TypeAST, rhs: TypeAST) extends TypeAST
-    case class DepPairType(id: TypeIdentifier, kind: String, t: TypeAST) extends TypeAST
+    case class DepPairType(id: Identifier, kind: String, t: TypeAST) extends TypeAST
     case class NatToDataApply(f: TypeAST, n: NatAST) extends TypeAST
-    case class NatToDataLambda(id: TypeIdentifier, t: TypeAST) extends TypeAST
+    case class NatToDataLambda(id: Identifier, t: TypeAST) extends TypeAST
     case class ArrayType(size: NatAST, elemType: TypeAST) extends TypeAST
     case class DepArrayType(size: NatAST, fdt: TypeAST) extends TypeAST
+
+    object Kind extends Enumeration {
+      val Data, Nat, Nat2Nat, Nat2Data, Address, Function = Value
+
+      def fromString(s: String): Value = s match {
+        case "data" => Data
+        case "nat" => Nat
+        case "nat2nat" => Nat2Nat
+        case "nat2data" => Nat2Data
+        case "address" => Address
+      }
+    }
   }
 
   def PrimitiveDeclarations[_: P]: P[Seq[(String, Option[(Int, Int)], TypeAST)]] =
@@ -58,9 +69,9 @@ object TypeParser {
   def ImplicitDepFunType[_: P]: P[TypeAST.ImplicitDepFunType] =
     P( "{" ~ IdentifierKindPair ~ "}" ~ "->" ~/ TypeSignature ).map(TypeAST.ImplicitDepFunType.tupled)
 
-  def IdentifierKindPair[_: P]: P[(TypeAST.TypeIdentifier, String)] = P( TypeIdentifier ~ ":" ~ Kind )
+  def IdentifierKindPair[_: P]: P[(TypeAST.Identifier, String)] = P( TypeIdentifier ~ ":" ~ Kind )
 
-  def TypeIdentifier[_: P]: P[TypeAST.TypeIdentifier] = P( Identifier ).map(TypeAST.TypeIdentifier)
+  def TypeIdentifier[_: P]: P[TypeAST.Identifier] = P( Identifier ).map(TypeAST.Identifier)
 
   def Kind[_: P]: P[String] = P( "data".! | "address".! | "nat2nat".! | "nat2data".! | "nat".! )
 
@@ -106,23 +117,125 @@ object TypeParser {
     P( "(" ~ IdentifierKindPair.filter(_._2 == "nat").map(_._1) ~ "|->" ~/ DataType ~ ")" ).
       map(TypeAST.NatToDataLambda.tupled)
 
-//  def isWellFormedType(typeAST: TypeAST, env: Map[TypeAST.Identifier, (String, Explicitness)]): Boolean = {
-//    typeAST match {
-//      case TypeAST.Identifier(name) =>
-//      case TypeAST.FunType(inT, outT) => isWellFormedType(inT, env) && isWellFormedType(outT, env)
-//      case TypeAST.DepFunType(id, kind, t) =>
-//
-//      case TypeAST.ImplicitDepFunType(id, kind, t) =>
-//      case TypeAST.ScalarType(t) =>
-//      case TypeAST.NatType =>
-//      case TypeAST.VectorType(size, elemType) =>
-//      case TypeAST.IndexType(size) =>
-//      case TypeAST.PairType(lhs, rhs) =>
-//      case TypeAST.DepPairType(id, kind, t) =>
-//      case TypeAST.NatToDataApply(f, n) =>
-//      case TypeAST.NatToDataLambda(id, t) =>
-//      case TypeAST.ArrayType(size, elemType) =>
-//      case TypeAST.DepArrayType(size, fdt) =>
-//    }
-//  }
+  import TypeAST.Kind._
+
+  def isWellKindedType(typeAST: TypeAST): Boolean = {
+    kindOf(typeAST, Map.empty).isDefined
+  }
+
+  def kindOf(typeAST: TypeAST,
+             env: Map[TypeAST.Identifier, TypeAST.Kind.Value]): Option[TypeAST.Kind.Value] = {
+    typeAST match {
+      case id: TypeAST.Identifier =>
+        env.get(id)
+      case TypeAST.FunType(inT, outT) =>
+        for {
+          _ <- kindOf(inT, env)
+          _ <- kindOf(outT, env)
+        } yield Function
+      case TypeAST.DepFunType(id, kind, t) =>
+        if (env.isDefinedAt(id)) {
+          None // we forbid shadowing
+        } else {
+          kindOf(t, env.updated(id, TypeAST.Kind.fromString(kind)))
+        }
+      case TypeAST.ImplicitDepFunType(id, kind, t) =>
+        if (env.isDefinedAt(id)) {
+          None // we forbid shadowing
+        } else {
+          kindOf(t, env.updated(id, TypeAST.Kind.fromString(kind)))
+        }
+      case TypeAST.VectorType(size, elemType) =>
+        for {
+          k1 <- kindOf(size, env)
+          k2 <- kindOf(elemType, env)
+          if k1 == Nat && k2 == Data
+        } yield Data
+      case TypeAST.IndexType(size) =>
+        for {
+          k <- kindOf(size, env)
+          if k == Nat
+        } yield Data
+      case TypeAST.PairType(lhs, rhs) =>
+        for {
+          k1 <- kindOf(lhs, env)
+          k2 <- kindOf(rhs, env)
+          if k1 == Data && k2 == Data
+        } yield Data
+      case TypeAST.DepPairType(id, kind, t) =>
+        if (env.isDefinedAt(id)) {
+          None // we forbid shadowing
+        } else {
+          kindOf(t, env.updated(id, TypeAST.Kind.fromString(kind)))
+        }
+      case TypeAST.NatToDataApply(f, n) =>
+        for {
+          k1 <- kindOf(f, env)
+          k2 <- kindOf(n, env)
+          if k1 == Nat2Data && k2 == Nat
+        } yield Data
+      case TypeAST.NatToDataLambda(id, t) =>
+        if (env.isDefinedAt(id)) {
+          None // we forbid shadowing
+        } else {
+          for {
+            k <- kindOf(t, env.updated(id, Nat))
+            if k == Data
+          } yield Nat2Data
+        }
+      case TypeAST.ArrayType(size, elemType) =>
+        for {
+          k1 <- kindOf(size, env)
+          k2 <- kindOf(elemType, env)
+          if k1 == Nat && k2 == Data
+        } yield Data
+      case TypeAST.DepArrayType(size, fdt) =>
+        for {
+          k1 <- kindOf(size, env)
+          k2 <- kindOf(fdt, env)
+          if k1 == Nat && k2 == Nat2Data
+        } yield Data
+      case _: TypeAST.ScalarType | TypeAST.NatType =>
+        Some(Data)
+    }
+  }
+
+  def kindOf(natAST: NatAST,
+             env: Map[TypeAST.Identifier, TypeAST.Kind.Value]): Option[TypeAST.Kind.Value] = {
+    natAST match {
+      case NatAST.Identifier(id) =>
+        env.get(id)
+      case NatAST.Number(n) =>
+        Some(Nat)
+      case NatAST.BinaryOp(lhs, _, rhs) =>
+        for {
+          k1 <- kindOf(lhs, env)
+          k2 <- kindOf(rhs, env)
+          if k1 == Nat && k2 == Nat
+        } yield Nat
+
+      case NatAST.TernaryOp(_, thenN, elseN) =>
+        for {
+          k1 <- kindOf(thenN, env)
+          k2 <- kindOf(elseN, env)
+          if k1 == Nat && k2 == Nat
+        } yield Nat
+
+      case NatAST.Nat2NatApply(f, n) =>
+        for {
+          k1 <- kindOf(f, env)
+          k2 <- kindOf(n, env)
+          if k1 == Nat2Nat && k2 == Nat
+        } yield Nat
+
+      case NatAST.Sum(id, from, upTo, body) =>
+        val nEnv = env.updated(id.id, Nat)
+        for {
+          k1 <- kindOf(from, nEnv)
+          k2 <- kindOf(upTo, nEnv)
+          k3 <- kindOf(body, nEnv)
+          if k1 == Nat && k2 == Nat && k3 == Nat
+        } yield Nat
+    }
+  }
 }

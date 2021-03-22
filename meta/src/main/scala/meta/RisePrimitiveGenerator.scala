@@ -17,7 +17,7 @@ object RisePrimitiveGenerator {
           println(s"  $failure")
         case Parsed.Success(seq, _) =>
           seq.foreach {
-            case (name, args, typeSignature) =>
+            case (name, args, typeSignature) if TypeParser.isWellKindedType(typeSignature) =>
               val outputPath = (path / os.up) / s"$name.scala"
               println(s"Generate $outputPath")
 
@@ -50,6 +50,8 @@ import arithexpr.arithmetic._
                             |""".stripMargin
 
               os.write.over(outputPath, code)
+            case (name, _, typeSignature) =>
+              println(s"Could not generate code for `$name' as type signature `$typeSignature' is not well kinded.")
           }
       }
     })
@@ -72,7 +74,7 @@ import arithexpr.arithmetic._
           }
         }
 
-        override val name: String = ${Lit.String(name)}
+        override def toString: String = ${Lit.String(name)}
         override def primitive: rise.core.Primitive = Primitive()()
         override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
         override def unapply(arg: Expr): Boolean = arg match {
@@ -97,7 +99,7 @@ import arithexpr.arithmetic._
     val generated =
       q"""
       final case class ${Type.Name(name)}(..$params) extends Builder {
-        override val name: String = ${Lit.String(name)}
+        override def toString: String = ${Lit.String(name)}
         override def primitive: rise.core.Primitive = ${Term.Name(name)}.Primitive(..$args)()
         override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(${Term.Name(name)}.Primitive(..$args)())
 
@@ -132,10 +134,10 @@ import arithexpr.arithmetic._
     generated
   }
 
-  def generateTypeScheme(typeAST: TypeAST, env: Map[TypeAST.TypeIdentifier, String]): scala.meta.Term = {
+  def generateTypeScheme(typeAST: TypeAST, env: Map[TypeAST.Identifier, String]): scala.meta.Term = {
     import scala.meta._
     typeAST match {
-      case id@TypeAST.TypeIdentifier(name) =>
+      case id@TypeAST.Identifier(name) =>
         assert(env.contains(id), s"$id is not in $env")
         Term.Name(name)
       case TypeAST.FunType(inT, outT) =>
@@ -178,7 +180,7 @@ import arithexpr.arithmetic._
     case "address" => "AddressSpace"
   }
 
-  def generateNat(n: NatAST, env: Map[TypeAST.TypeIdentifier, String]): scala.meta.Term = {
+  def generateNat(n: NatAST, env: Map[TypeAST.Identifier, String]): scala.meta.Term = {
     import scala.meta._
     n match {
       case NatAST.Identifier(id) =>
