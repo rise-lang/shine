@@ -17,7 +17,7 @@ lazy val commonSettings = Seq(
 
 lazy val riseAndShine = (project in file("."))
   .aggregate(executor)
-  .dependsOn(riseAndShineMacros, arithExpr, executor, elevate)
+  .dependsOn(meta, riseAndShineMacros, arithExpr, executor, elevate)
   .settings(
     name          := "riseAndShine",
     version       := "1.0",
@@ -40,6 +40,27 @@ lazy val riseAndShine = (project in file("."))
         "com.typesafe.play" %% "play-json" % "2.9.1"
     )
   )
+
+riseAndShine / Compile / sourceGenerators += Def.task {
+  val logger = streams.value
+  val files = scala.collection.mutable.Seq[File]()
+
+  runner.value.run("meta.RisePrimitiveGenerator",
+    (dependencyClasspath in Compile).value.files,
+    Seq((scalaSource in Compile).value.getAbsolutePath),
+    new sbt.util.Logger {
+    override def log(level: Level.Value, message: => String): Unit = {
+      for (patternMatch <- "^Generate (.*)$".r.findAllMatchIn(message))
+        files :+ new File(patternMatch.group(1))
+
+      logger.log.log(level, message)
+    }
+    override def trace(t: => Throwable): Unit = logger.log.trace(t)
+    override def success(message: => String): Unit = logger.log.success(message)
+  }).failed foreach (sys error _.getMessage)
+
+  files
+}.taskValue
 
 lazy val meta = (project in file("meta"))
   .settings(
