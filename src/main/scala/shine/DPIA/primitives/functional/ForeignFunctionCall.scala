@@ -45,7 +45,7 @@ final case class ForeignFunctionCall(funDecl: ForeignFunction.Declaration,
                   val backendNew: (DataType, Phrase[VarType] => Phrase[CommType])
                     => Phrase[CommType] =
                   context match {
-                    case _: shine.OpenCL.TranslationContext =>
+                    case _: shine.OpenCL.Compilation.TranslationContext =>
                       shine.OpenCL.DSL.`new`(AddressSpace.Private) _
                     case _ =>
                       `new`.apply _

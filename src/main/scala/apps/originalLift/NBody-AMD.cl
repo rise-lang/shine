@@ -43,7 +43,9 @@ kernel void KERNEL(const global float* restrict v__25, const global float* restr
         // Typed Value memory
         float4 v__30;
         // Private Memory
-        for (int v_gl_id_22 = get_global_id(0); (v_gl_id_22 < v_N_1); v_gl_id_22 = (v_gl_id_22 + get_global_size(0))){
+        // iteration count is exactly 1, no loop emitted
+        {
+            int v_gl_id_22 = get_global_id(0);
             float4 v_tmp_50 = (float4) 0.0f;
             v__30 = v_tmp_50;
             // reduce_seq

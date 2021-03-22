@@ -4,7 +4,7 @@ import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
 import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize}
 import util.{Display, TimeSpan, gen}
 import util.Time.ms
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import arithexpr.arithmetic.SteppedCase
 import rise.core.DSL._

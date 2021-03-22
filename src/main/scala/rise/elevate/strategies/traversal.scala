@@ -6,9 +6,10 @@ import rise.core.primitives._
 import rise.elevate.rules.algorithmic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
+import elevate.macros.CombinatorMacro.combinator
+import elevate.macros.StrategyMacro.strategy
 import rise.elevate.Rise
 import rise.elevate.rules.traversal._
-//import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.algorithmic._
 import rise.elevate.strategies.normalForm._
 import rise.elevate.strategies.predicate.isReduce
@@ -20,16 +21,20 @@ object traversal {
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Strategy[Rise] => Strategy[Rise] = s => function(argumentOf(map.primitive, body(s)))
+  @combinator
+  def fmap: Strategy[Rise] => Strategy[Rise] =
+    s => function(argumentOf(map.primitive, body(s)))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission
+  @combinator
   def fmapRNF(implicit ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] =
     s => DFNF() `;` mapFusion `;`
          DFNF() `;` fmap(s) `;`
          DFNF() `;` one(mapFullFission)
 
   // applying a strategy to an expression nested in one or multiple lift `map`s
+  @combinator
   def mapped(implicit ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] =
     s => s <+ (e => fmapRNF(ev)(mapped(ev)(s))(e))
 
@@ -38,36 +43,43 @@ object traversal {
   // move(0)(s) == s(***f o ****g o *h)
   // move(1)(s) == s(****g o *h)
   // move(2)(s) == s(*h)
-  def moveTowardsArgument: Int => Strategy[Rise] => Strategy[Rise] =
-    i => s => applyNTimes(i)((e: Strategy[Rise]) => argument(e))(s)
+  @combinator
+  def moveTowardsArgument(i: Int): Strategy[Rise] => Strategy[Rise] =
+    s => applyNTimes(i)((e: Strategy[Rise]) => argument(e))(s)
 
   // TRAVERSAL DSL as described in ICFP'20 /////////////////////////////////////
-  type Traversal[P] = Strategy[P] => Strategy[P]
-
   implicit class AtHelper[P](s: Strategy[P]) {
-    def at(traversal: Traversal[P]): Strategy[P] =
+    def at(traversal: Strategy[P] => Strategy[P]): Strategy[P] =
       traversal(s)
-    def `@`(traversal: Traversal[P]): Strategy[P] = // scalastyle:ignore
+    def `@`(traversal: Strategy[P] => Strategy[P]): Strategy[P] = // scalastyle:ignore
       traversal(s)
   }
 
+  def outermost: Strategy[Rise] => Strategy[Rise] => Strategy[Rise] =
+    outermost(default.RiseTraversable)
 
-  def outermostTraversal(implicit ev: Traversable[Rise]): Traversal[Rise] => Traversal[Rise] = {
-    traversal => s => topDown(traversal(s))
-  }
-
+  @combinator
   def outermost(implicit ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] => Strategy[Rise] = {
     predicate => s => topDown(predicate `;` s)
   }
 
+  def innermost: Strategy[Rise] => Strategy[Rise] => Strategy[Rise] =
+    traversal.innermost(default.RiseTraversable)
+
+  @combinator
   def innermost(implicit ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] => Strategy[Rise] = {
     predicate => s => bottomUp(predicate `;` s)
   }
 
-  def check: Strategy[Rise] => Traversal[Rise] = {
-    predicate => predicate `;` _
-  }
+  @combinator
+  def everywhere: Strategy[Rise] => Strategy[Rise] =
+    s => basic.normalize(default.RiseTraversable)(s)
 
+  @combinator
+  def check: Strategy[Rise] => Strategy[Rise] => Strategy[Rise] =
+    predicate => predicate `;` _
+
+  @strategy
   def mapNest(d: Int): Strategy[Rise] = p => (d match {
     case x if x == 0 => Success(p)
     case x if x < 0  => Failure(mapNest(d))

@@ -3,7 +3,7 @@ package shine.OpenCL
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import util.gen
 
 class Vectors extends test_util.Tests {

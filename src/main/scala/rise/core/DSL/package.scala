@@ -217,9 +217,77 @@ package object DSL {
       lambda(e, fun((e1, e2, e3, e4, e5) => f(e, e1, e2, e3, e4, e5)))
     }
 
+    def apply(
+               f: (
+                 ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier]
+                 ) => ToBeTyped[Expr]
+             ): ToBeTyped[Lambda] = {
+      val e = identifier(freshName("e"))
+      lambda(e, fun((e1, e2, e3, e4, e5, e6) => f(e, e1, e2, e3, e4, e5, e6)))
+    }
+
+    def apply(
+               f: (
+                 ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier]
+                 ) => ToBeTyped[Expr]
+             ): ToBeTyped[Lambda] = {
+      val e = identifier(freshName("e"))
+      lambda(e, fun((e1, e2, e3, e4, e5, e6, e7) => f(e, e1, e2, e3, e4, e5, e6, e7)))
+    }
+
+    def apply(
+               f: (
+                 ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier],
+                   ToBeTyped[Identifier]
+                 ) => ToBeTyped[Expr]
+             ): ToBeTyped[Lambda] = {
+      val e = identifier(freshName("e"))
+      lambda(e, fun((e1, e2, e3, e4, e5, e6, e7, e8) => f(e, e1, e2, e3, e4, e5, e6, e7, e8)))
+    }
+
     // noinspection TypeAnnotation
     // scalastyle:off structural.type
     def apply(ft: FunType[Type, Type]): Object {
+      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier]) => ToBeTyped[Expr]
+               ): ToBeTyped[Expr]
+
+      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier], ToBeTyped[Identifier]
+        ) => ToBeTyped[Expr]
+               ): ToBeTyped[Expr]
+
+      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier], ToBeTyped[Identifier],
+        ToBeTyped[Identifier]) => ToBeTyped[Expr]
+               ): ToBeTyped[Expr]
+
       def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
         ToBeTyped[Identifier], ToBeTyped[Identifier],
         ToBeTyped[Identifier], ToBeTyped[Identifier]
@@ -283,6 +351,45 @@ package object DSL {
       def apply(
                  f: (
                    ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier]
+                   ) => ToBeTyped[Expr]
+               ): ToBeTyped[Expr] = fun(f) :: ft
+
+      def apply(
+                 f: (
+                   ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier]
+                   ) => ToBeTyped[Expr]
+               ): ToBeTyped[Expr] = fun(f) :: ft
+
+      def apply(
+                 f: (
+                   ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier]
+                   ) => ToBeTyped[Expr]
+               ): ToBeTyped[Expr] = fun(f) :: ft
+
+      def apply(
+                 f: (
+                   ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
+                     ToBeTyped[Identifier],
                      ToBeTyped[Identifier],
                      ToBeTyped[Identifier],
                      ToBeTyped[Identifier],
@@ -449,6 +556,10 @@ package object DSL {
   def lidx(i: Nat, n: Nat): ToBeTyped[Literal] = literal(IndexData(i, n))
   def lvec(v: Seq[ScalarData]): ToBeTyped[Literal] = literal(VectorData(v))
   def larr(a: Seq[Data]): ToBeTyped[Literal] = literal(ArrayData(a))
+
+  def li16(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i16
+  def li32(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i32
+  def lu8(v: Int): ToBeTyped[Expr] = cast(l(v)) :: u8
 
   object foreignFun {
     def apply(name: String, t: Type): ToBeTyped[ForeignFunction] = {

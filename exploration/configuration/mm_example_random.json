@@ -1,0 +1,15 @@
+  {
+      "name" : "mm_example_random",
+      "output" : "exploration",
+      "inputSize" : 512,
+      "metaheuristic" : [{
+        "heuristic" : "Random",
+        "depth" : 5,
+        "iterations" : 10
+      }],
+      "executor" : {
+        "name" : "C",
+        "iterations" : 3,
+	    "threshold" : 10
+      }
+}

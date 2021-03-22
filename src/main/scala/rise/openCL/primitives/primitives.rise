@@ -22,3 +22,7 @@ def mapGlobal(dim: Int): {n: nat} -> {dt1: data} -> {dt2: data} -> (dt1 -> dt2) 
 def mapLocal(dim: Int): {n: nat} -> {dt1: data} -> {dt2: data} -> (dt1 -> dt2) -> n.dt1 -> n.dt2;
 
 def mapWorkGroup(dim: Int): {n: nat} -> {dt1: data} -> {dt2: data} -> (dt1 -> dt2) -> n.dt1 -> n.dt2;
+
+def oclRunPrimitive: (ls1: nat) -> (ls2: nat) -> (ls3: nat) -> // the local sizes for execution
+    (gs1: nat) -> (gs2: nat) -> (gs3: nat) -> //  the global sizes for execution
+        {t: data} -> t -> t;

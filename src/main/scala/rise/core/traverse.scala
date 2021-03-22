@@ -30,6 +30,7 @@ object traverse {
 
     // Identifiers are first routed through here before being sent
     // to nat/datatype/addressSpace/natToNat/natToData
+    def nat : Nat => M[Nat] = return_
     def typeIdentifier[I <: Kind.Identifier] : VarType => I => M[I] = _ => return_
     def identifier[I <: Identifier] : VarType => I => M[I] = _ => i =>
       for { t1 <- `type`(i.t)}
@@ -42,18 +43,22 @@ object traverse {
       case n2d: NatToDataIdentifier => bind(typeIdentifier(vt)(n2d))(natToData)
       case t: TypeIdentifier => typeIdentifier(vt)(t)
     }).asInstanceOf[M[I]]
+    def natDispatch : VarType => Nat => M[Nat] = vt => {
+      case i : NatIdentifier =>
+        bind(typeIdentifier(vt)(i))(nat)
+      case n => nat(n)
+    }
 
-    def nat : Nat => M[Nat] = return_
     def addressSpace : AddressSpace => M[AddressSpace] = return_
     def datatype : DataType => M[DataType] = {
       case i: DataTypeIdentifier => return_(i.asInstanceOf[DataType])
       case NatType               => return_(NatType : DataType)
       case s : ScalarType        => return_(s : DataType)
       case ArrayType(n, d) =>
-        for {n1 <- nat(n); d1 <- datatype(d)}
+        for {n1 <- natDispatch(Reference)(n); d1 <- `type`[DataType](d)}
           yield ArrayType(n1, d1)
       case DepArrayType(n, n2d) =>
-        for {n1 <- nat(n); n2d1 <- natToData(n2d)}
+        for {n1 <- natDispatch(Reference)(n); n2d1 <- natToData(n2d)}
           yield DepArrayType(n1, n2d1)
       case PairType(p1, p2) =>
         for {p11 <- datatype(p1); p21 <- datatype(p2)}
@@ -62,20 +67,20 @@ object traverse {
         for {x1 <- typeIdentifierDispatch(Binding)(x); e1 <- datatype(e)}
           yield DepPairType(x1, e1)(pair.kindName)
       case IndexType(n) =>
-        for {n1 <- nat(n)}
+        for {n1 <- natDispatch(Reference)(n)}
           yield IndexType(n1)
       case VectorType(n, e) =>
-        for {n1 <- nat(n); e1 <- datatype(e)}
+        for {n1 <- natDispatch(Reference)(n); e1 <- `type`(e)}
           yield VectorType(n1, e1)
       case NatToDataApply(ntdf, n) =>
-        for {ntdf1 <- natToData(ntdf); n1 <- nat(n)}
+        for {ntdf1 <- natToData(ntdf); n1 <- natDispatch(Reference)(n)}
           yield NatToDataApply(ntdf1, n1)
     }
 
     def natToNat : NatToNat => M[NatToNat] = {
       case i : NatToNatIdentifier => return_(i.asInstanceOf[NatToNat])
       case NatToNatLambda(x, e) =>
-        for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- nat(e) }
+        for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- natDispatch(Reference)(e) }
           yield NatToNatLambda(x1, e1)
     }
 
@@ -90,10 +95,10 @@ object traverse {
       case (sd : ScalarData) => return_(sd : Data)
       case VectorData(vd) => return_(VectorData(vd) : Data)
       case NatData(n) =>
-        for { n1 <- nat(n) }
+        for { n1 <- natDispatch(Reference)(n) }
           yield NatData(n1)
       case IndexData(i, n) =>
-        for { i1 <- nat(i); n1 <- nat(n) }
+        for { i1 <- natDispatch(Reference)(i); n1 <- natDispatch(Reference)(n) }
           yield IndexData(i1, n1)
       case ArrayData(ad) =>
         for { ad1 <- monad.traverse(ad.map(data)) }
@@ -154,7 +159,7 @@ object traverse {
       }
       case da@DepApp(f, x) => x match {
         case n: Nat =>
-          for {f1 <- expr(f); n1 <- nat(n); t1 <- `type`(da.t)}
+          for {f1 <- expr(f); n1 <- natDispatch(Reference)(n); t1 <- `type`(da.t)}
             yield DepApp[NatKind](f1, n1)(t1)
         case dt: DataType =>
           for {f1 <- expr(f); dt1 <- datatype(dt); t1 <- `type`(da.t)}

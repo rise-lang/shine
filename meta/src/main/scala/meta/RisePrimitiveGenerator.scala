@@ -72,6 +72,7 @@ import arithexpr.arithmetic._
           }
         }
 
+        override val name: String = ${Lit.String(name)}
         override def primitive: rise.core.Primitive = Primitive()()
         override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
         override def unapply(arg: Expr): Boolean = arg match {
@@ -96,6 +97,7 @@ import arithexpr.arithmetic._
     val generated =
       q"""
       final case class ${Type.Name(name)}(..$params) extends Builder {
+        override val name: String = ${Lit.String(name)}
         override def primitive: rise.core.Primitive = ${Term.Name(name)}.Primitive(..$args)()
         override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(${Term.Name(name)}.Primitive(..$args)())
 
