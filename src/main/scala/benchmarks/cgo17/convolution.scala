@@ -11,8 +11,10 @@ object convolutionHosted {
 
     val init =
       s"""
-         |if (sample == 0) srand(time(NULL));
+         |srand(time(NULL));
          |Context ctx = createDefaultContext();
+         |fun_t fun;
+         |fun_init(ctx, &fun);
          |Buffer matrix = createBuffer(ctx, $N * $N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
          |Buffer weights = createBuffer(ctx, 17 * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
          |Buffer output = createBuffer(ctx, $N * $N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
@@ -35,7 +37,7 @@ object convolutionHosted {
 
     val compute =
       s"""
-         |fun(ctx, output, matrix, weights);
+         |fun_run(ctx, &fun, output, matrix, weights);
          |waitFinished(ctx);
          |""".stripMargin
 
@@ -46,6 +48,7 @@ object convolutionHosted {
          |destroyBuffer(ctx, matrix);
          |destroyBuffer(ctx, weights);
          |destroyBuffer(ctx, output);
+         |fun_destroy(ctx, &fun);
          |destroyContext(ctx);
          |""".stripMargin
 

@@ -16,14 +16,14 @@ package object core {
          |
          |int main() {
          |  assertReasonableTimeResolution();
+         |  ${init}
          |  for (int sample = 0; sample < ${sampleCount}; sample++) {
-         |    ${init}
          |    Instant start = now();
          |    ${compute}
          |    Instant stop = now();
          |    printf("sample: %lf\\n", elapsedSeconds(start, stop));
-         |    ${finish}
          |  }
+         |  ${finish}
          |}
          |""".stripMargin
     timeStat(util.ExecuteOpenCL(code, buffer_impl).linesIterator.flatMap { line =>

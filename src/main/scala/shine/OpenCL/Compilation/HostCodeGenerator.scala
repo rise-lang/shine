@@ -2,7 +2,7 @@ package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
 import shine.C
-import shine.C.AST._
+import shine.C.AST.{OpaqueType => _, _}
 import shine.C.Compilation.CodeGenerator
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -56,12 +56,6 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
     }
     val arg_count = 1 + args.size + temporaries.size
     output |> acc(env, Nil, outputC => expSeq(args, env, argsC => {
-      val loadKernel = C.AST.DeclStmt(C.AST.VarDecl(name, C.AST.OpaqueType("Kernel"), Some(
-        C.AST.FunCall(C.AST.DeclRef("loadKernel"), Seq(
-          C.AST.DeclRef("ctx"),
-          C.AST.DeclRef(name)
-        ))
-      )))
       val outputSync = deviceBufferSync("b0", outputC, output.t.dataType, DEVICE_WRITE)
       val argSyncs = (args zip argsC).zipWithIndex.flatMap { case ((arg, argC), i) =>
         arg.t.dataType match {
@@ -92,19 +86,18 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
       )))
       val launchKernel = C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("launchKernel"), Seq(
         C.AST.DeclRef("ctx"),
-        C.AST.DeclRef(name),
+        C.AST.StructMemberAccess(
+          C.AST.UnaryExpr(C.AST.UnaryOperator.*, C.AST.DeclRef("self")),
+          C.AST.DeclRef(name)
+        ),
         C.AST.DeclRef("global_size"),
         C.AST.DeclRef("local_size"),
         C.AST.Literal(s"$arg_count"),
         C.AST.DeclRef("args")
       )))
-      val destroyKernel = C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("destroyKernel"), Seq(
-        C.AST.DeclRef("ctx"),
-        C.AST.DeclRef(name)
-      )))
       C.AST.Block(
-        Seq(loadKernel, outputSync) ++ argSyncs ++
-        Seq(declGlobalSize, declLocalSize, declArgs, launchKernel, destroyKernel)
+        Seq(outputSync) ++ argSyncs ++
+        Seq(declGlobalSize, declLocalSize, declArgs, launchKernel)
       )
     }))
   }
@@ -178,7 +171,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
 
   override def typ(dt: DataType): Type = dt match {
     case ManagedBufferType(_) => C.AST.OpaqueType("Buffer")
-    case ContextType => C.AST.OpaqueType("Context")
+    case OpaqueType(name) => C.AST.OpaqueType(name)
     case _ => super.typ(dt)
   }
 
@@ -208,7 +201,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
       case a: shine.DPIA.Types.ArrayType =>
         C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
       case a: DepArrayType => ??? // TODO
-      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | ContextType =>
+      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | _: OpaqueType =>
         throw new Exception(s"did not expect ${dt}")
     }
 

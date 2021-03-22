@@ -378,7 +378,7 @@ object KernelExecutor {
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getOutputType(elemType)
     case DepArrayType(_, _) | _: NatToDataApply => throw new Exception("This should not happen")
-    case _: DepPairType | _: ManagedBufferType | ContextType =>
+    case _: DepPairType | _: ManagedBufferType | _: OpaqueType =>
       throw new Exception(s"${dt} not supported as output type")
   }
 
@@ -407,7 +407,7 @@ object KernelExecutor {
           throw new Exception("This should not happen")
       }
     case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier |
-         _: ManagedBufferType | ContextType =>
+         _: ManagedBufferType | _: OpaqueType =>
       throw new Exception(s"the byte size of ${dt} should not be requested")
   }
 

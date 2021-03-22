@@ -58,20 +58,25 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
                          outParam: Identifier[AccType]
                         ): ((Seq[Decl], Stmt)) => Module = {
     case (declarations, code) =>
-      val params = C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")) +:
+      val selfT = C.AST.OpaqueType(s"${funDef.name}_t")
+      val self = C.AST.ParamDecl("self", C.AST.PointerType(selfT))
+      val params = Seq(C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")), self) ++
         optionallyManagedParams(funDef.params, outParam).map(makeParam(gen))
       C.Module(
         includes = immutable.Seq(IncludeSource("runtime.h")),
         decls = CModuleGenerator.collectTypeDeclarations(code, params) ++
-          declarations,
+          declarations ++ selfTypeDeclarations(gen, funDef.name),
         functions = immutable.Seq(
+          selfInitFunction(gen, funDef.name),
+          selfDestroyFunction(gen, funDef.name),
           C.AST.Function(
-            code = C.AST.FunDecl(funDef.name,
+            code = C.AST.FunDecl(s"${funDef.name}_run",
               returnType = C.AST.Type.void,
               params,
               body = C.AST.Block(immutable.Seq(code))),
             paramKinds =
-              ParamKind.input(ContextType) +:
+              ParamKind.input(OpaqueType("Context")) +:
+                ParamKind.input(OpaqueType(selfT.name)) +:
                 ParamKind.output(outParam) +: funDef.params.map(ParamKind.input)
           )
         )
@@ -89,8 +94,64 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
     C.AST.makeParam({
       case _: DPIA.Types.ManagedBufferType =>
         C.AST.OpaqueType("Buffer")
-      case DPIA.Types.ContextType =>
-        C.AST.OpaqueType("Context")
+      case DPIA.Types.OpaqueType(name) =>
+        C.AST.OpaqueType(name)
       case dt => C.AST.makeParamTy(gen)(dt)
     })
+
+  private def selfTypeDeclarations(gen: HostCodeGenerator, selfName: String): Seq[C.AST.Decl] = Seq(
+    C.AST.StructTypeDecl(s"struct ${selfName}_t", gen.kernelModules.flatMap { km =>
+      km.kernels.map(k => C.AST.VarDecl(k.name, C.AST.OpaqueType("Kernel"), None))
+    }),
+    C.AST.TypedefDecl(C.AST.StructType(s"${selfName}_t", gen.kernelModules.flatMap { km =>
+      km.kernels.map(k => (C.AST.OpaqueType("Kernel"), k.name))
+    }), s"${selfName}_t")
+  )
+
+  private def selfInitFunction(gen: HostCodeGenerator, selfName: String): C.AST.Function = {
+    val ctx = C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context"))
+    val selfT = C.AST.OpaqueType(s"${selfName}_t")
+    val self = C.AST.ParamDecl("self", C.AST.PointerType(selfT))
+    C.AST.Function(
+      code = C.AST.FunDecl(s"${selfName}_init",
+        returnType = C.AST.Type.void,
+        params = Seq(ctx, self),
+        body = C.AST.Block(gen.kernelModules.flatMap { km =>
+          km.kernels.map(k => C.AST.ExprStmt(C.AST.Assignment(
+            C.AST.StructMemberAccess(
+              C.AST.UnaryExpr(C.AST.UnaryOperator.*, C.AST.DeclRef("self")),
+              C.AST.DeclRef(k.name)),
+            C.AST.FunCall(C.AST.DeclRef("loadKernel"), Seq(
+              C.AST.DeclRef("ctx"), C.AST.DeclRef(k.name)
+            ))
+          )))
+        })
+      ),
+      paramKinds = Seq(
+        ParamKind.input(OpaqueType("Context")),
+        ParamKind.output(OpaqueType(selfT.name)))
+    )
+  }
+
+  private def selfDestroyFunction(gen: HostCodeGenerator, selfName: String): C.AST.Function = {
+    val ctx = C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context"))
+    val selfT = C.AST.OpaqueType(s"${selfName}_t")
+    val self = C.AST.ParamDecl("self", C.AST.PointerType(selfT))
+    C.AST.Function(
+      code = C.AST.FunDecl(s"${selfName}_destroy",
+        returnType = C.AST.Type.void,
+        params = Seq(ctx, self),
+        body = C.AST.Block(gen.kernelModules.flatMap { km =>
+          km.kernels.map(k => C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("destroyKernel"), Seq(
+            C.AST.DeclRef("ctx"), C.AST.StructMemberAccess(
+              C.AST.UnaryExpr(C.AST.UnaryOperator.*, C.AST.DeclRef("self")),
+              C.AST.DeclRef(k.name))
+          ))))
+        })
+      ),
+      paramKinds = Seq(
+        ParamKind.input(OpaqueType("Context")),
+        ParamKind.input(OpaqueType(selfT.name)))
+    )
+  }
 }

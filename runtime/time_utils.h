@@ -9,7 +9,7 @@ inline void assertReasonableTimeResolution() {
     exit(EXIT_FAILURE);
   }
   if (res.tv_sec > 0 || res.tv_nsec >= 1000) {
-    fprintf(stderr, "clock resolution was lower than 1ms\n");
+    fprintf(stderr, "clock resolution was lower than 1µs\n");
     exit(EXIT_FAILURE);
   }
 }

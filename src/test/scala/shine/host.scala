@@ -15,6 +15,8 @@ class host extends test_util.Tests {
 const int N = 64;
 int main(int argc, char** argv) {
   Context ctx = createDefaultContext();
+  foo_t foo;
+  foo_init(ctx, &foo);
   Buffer input = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_READ);
   Buffer output = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_WRITE);
 
@@ -23,7 +25,7 @@ int main(int argc, char** argv) {
     in[i] = 0;
   }
 
-  foo(ctx, output, N, input);
+  foo_run(ctx, &foo, output, N, input);
 
   int32_t* out = hostBufferSync(ctx, output, N * sizeof(int32_t), HOST_READ);
 
@@ -36,6 +38,7 @@ int main(int argc, char** argv) {
 
   destroyBuffer(ctx, input);
   destroyBuffer(ctx, output);
+  foo_destroy(ctx, &foo);
   destroyContext(ctx);
   return EXIT_SUCCESS;
 }

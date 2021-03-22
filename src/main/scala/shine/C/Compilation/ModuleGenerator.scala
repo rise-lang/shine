@@ -29,7 +29,7 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
       case _: DepPairType =>
         identifier("output", AccType(outT.dataType))
       case _: DataTypeIdentifier | _: NatToDataApply |
-           ContextType | _: ManagedBufferType =>
+           _: OpaqueType | _: ManagedBufferType =>
         throw new Exception(s"unexpected output data type: ${outT.dataType}")
     }
 

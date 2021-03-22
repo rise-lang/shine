@@ -41,8 +41,8 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
 }
 
 // FIXME: this should be a backend extension
-object ContextType extends DataType {
-  override def toString: String = s"context"
+final case class OpaqueType(name: String) extends DataType {
+  override def toString: String = name
 }
 
 // FIXME: this should be a backend extension
@@ -175,7 +175,7 @@ object DataType {
         case NatToDataIdentifier(_) =>
           throw new Exception("This should not happen")
       }
-    case _: DataTypeIdentifier | _: NatToDataApply | ContextType =>
+    case _: DataTypeIdentifier | _: NatToDataApply | _: OpaqueType =>
       throw new Exception("This should not happen")
   }
 
@@ -187,7 +187,7 @@ object DataType {
     case ManagedBufferType(dt) => getSize(dt)
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
-    case _: DataTypeIdentifier | _: NatToDataApply | ContextType =>
+    case _: DataTypeIdentifier | _: NatToDataApply | _: OpaqueType =>
       throw new Exception("This should not happen")
   }
 
@@ -208,7 +208,7 @@ object DataType {
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getBaseDataType(elemType)
-    case DepArrayType(_, _) | _: NatToDataApply | ContextType =>
+    case DepArrayType(_, _) | _: NatToDataApply | _: OpaqueType =>
       throw new Exception("This should not happen")
   }
 

@@ -561,7 +561,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             (typ(r.snd), "_snd")))
       case shine.DPIA.Types.DepPairType(_, _) => C.AST.PointerType(C.AST.Type.u8)
       case _: shine.DPIA.Types.DataTypeIdentifier | _: shine.DPIA.Types.NatToDataApply |
-           DPIA.Types.ManagedBufferType(_) | DPIA.Types.ContextType =>
+           DPIA.Types.ManagedBufferType(_) | DPIA.Types.OpaqueType(_) =>
         throw new Exception(s"did not expect $dt")
     }
   }

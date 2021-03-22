@@ -151,7 +151,7 @@ object AdaptKernelParameters {
       case _: PairType => makePrivateParam(i, gen)
       case _: DepPairType => makePrivateParam(i, gen)
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
-      case _: NatToDataApply | _: ManagedBufferType | ContextType =>
+      case _: NatToDataApply | _: ManagedBufferType | _: OpaqueType =>
         throw new Exception(s"did not expect parameter of type ${getDataType(i)}")
     }
   }
