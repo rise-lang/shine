@@ -57,10 +57,21 @@ class separableConvolution2DEqsat extends test_util.Tests {
     proveEquiv(base(weights2d), factorisedVH(weightsV)(weightsH), Seq(separateDotT))
   }
 
-  // FIXME: there is a bug
-  // FIXME: rules need to talk about depApp
-  ignore("base to scanline") {
-    proveEquiv(base(weights2d), scanline(weightsV)(weightsH), Seq(
+  test("base to scanline") {
+    val * : ToBeTyped[Expr] = primitives.map
+    val T: ToBeTyped[Expr] = primitives.transpose
+    val J = primitives.join
+    val Sh = primitives.slide(3)(1)
+    val Sv = primitives.slide(3)(1)
+    val Dh = dot(weightsH)
+    val Dv = dot(weightsV)
+    proveEquiv(
+      *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(J(weights2d))(J(nbh))))),
+      Sv >> *(T >> *(Dv) >> Sh >> *(Dh)),
+      // FIXME: adding padClamp2D makes the search explode
+      // base(weights2d),
+      // scanline(weightsV)(weightsH),
+      Seq(
       rules.eta, rules.beta, rules.removeTransposePair,
       rules.mapFusion, rules.mapFission,
       rules.slideBeforeMap, rules.mapSlideBeforeTranspose, rules.slideBeforeMapMapF,

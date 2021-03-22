@@ -11,9 +11,9 @@ object Rewrite {
   }
 }
 
-class Rewrite[Data](name: String,
-                    searcher: Searcher[Data],
-                    applier: Applier[Data]) {
+class Rewrite[Data](val name: String,
+                    val searcher: Searcher[Data],
+                    val applier: Applier[Data]) {
   def search(egraph: EGraph[Data]): Vec[SearchMatches] =
     searcher.search(egraph)
 

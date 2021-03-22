@@ -62,6 +62,7 @@ object Basic {
     }
     runner.run(rules)
     runner.printReport()
+
     if (!runner.stopReasons.contains(Done)) {
       runner.iterations.foreach(println)
       assert(false)

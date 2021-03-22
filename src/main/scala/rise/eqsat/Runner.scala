@@ -19,8 +19,8 @@ object Runner {
     done = _ => false,
 
     iterLimit = 30,
-    nodeLimit = 100_000,
-    timeLimit = Duration.ofSeconds(5).toNanos
+    nodeLimit = 10_000,
+    timeLimit = Duration.ofSeconds(10).toNanos
   )
 }
 
@@ -81,7 +81,7 @@ class Runner[D](var egraph: EGraph[D],
       val iter = runOne(rules)
       iterations += iter
 
-      if (iter.nRewrites == 0) {
+      if (iter.applied.isEmpty) {
         stopReasons += Saturated
       }
       val elapsed = System.nanoTime() - startTime
@@ -106,9 +106,16 @@ class Runner[D](var egraph: EGraph[D],
 
     val time1 = System.nanoTime()
 
-    val nRewrites = rules.zip(matches).map { case (r, ms) =>
-      r.apply(egraph, ms).size
-    }.sum
+    val applied = HashMap.empty[String, Int]
+    rules.zip(matches).map { case (r, ms) =>
+      val newlyApplied = r.apply(egraph, ms).size
+      if (newlyApplied > 0) {
+        applied.updateWith(r.name) {
+          case Some(count) => Some(count + newlyApplied)
+          case None => Some(newlyApplied)
+        }
+      }
+    }
 
     val time2 = System.nanoTime()
 
@@ -119,11 +126,11 @@ class Runner[D](var egraph: EGraph[D],
     new Iteration(
       egraphNodes = egraph.nodeCount(),
       egraphClasses = egraph.classCount(),
+      applied = applied,
       searchTime = time1 - time0,
       applyTime = time2 - time1,
       rebuildTime = time3 - time2,
       totalTime = time3 - time0,
-      nRewrites = nRewrites,
       nRebuilds = nRebuilds
     )
   }
@@ -131,20 +138,21 @@ class Runner[D](var egraph: EGraph[D],
 
 class Iteration(val egraphNodes: Int,
                 val egraphClasses: Int,
+                // map from rule name to number of times it was newly applied
+                val applied: HashMap[String, Int],
                 val searchTime: Long,
                 val applyTime: Long,
                 val rebuildTime: Long,
                 val totalTime: Long,
-                val nRewrites: Int,
                 val nRebuilds: Int) {
   override def toString: String = {
     s"Iteration(#nodes: $egraphNodes, " +
       s"#classes: $egraphClasses, " +
+      s"applied: $applied, " +
       s"search: ${util.prettyTime(searchTime)}, " +
       s"apply: ${util.prettyTime(applyTime)}, " +
       s"rebuild: ${util.prettyTime(rebuildTime)}, " +
       s"total: ${util.prettyTime(totalTime)}, " +
-      s"#rewrites: $nRewrites, " +
       s"#rebuilds: $nRebuilds)"
   }
 }

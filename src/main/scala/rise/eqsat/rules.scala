@@ -27,8 +27,9 @@ object rules {
   )
   val mapFission: Rule = Rewrite.init("map-fission",
     app(map, lam(app(?("f"), ?("gx")))).compile(),
-    ShiftedApplier(?("gx"), ?("gxu"), up = true, 1,
-        lam(app(app(map, ?("f")), app(app(map, lam(?("gxu"))), %(0)))))
+    ConditionalApplier(neg(containsIdent(?("f"), %(0))),
+      ShiftedApplier(?("gx"), ?("gxu"), up = true, 1,
+        lam(app(app(map, ?("f")), app(app(map, lam(?("gxu"))), %(0))))))
   )
 
   // -- reduction --

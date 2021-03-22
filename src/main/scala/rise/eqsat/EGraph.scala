@@ -101,7 +101,7 @@ class EGraph[Data](
     // make sure class2 has fewer parents
     val parents1 = classes(cid1).parents.size
     val parents2 = classes(cid2).parents.size
-    val (id1, id2) = if (parents1 > parents2) { (cid1, cid2) } else { (cid2, cid1) }
+    val (id1, id2) = if (parents1 < parents2) { (cid2, cid1) } else { (cid1, cid2) }
     assert(id1 != id2)
 
     // make id1 the new root
