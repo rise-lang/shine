@@ -1,0 +1,3 @@
+def mapPar: {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t;
+
+def reducePar: {n: nat} -> {t: data} -> (t -> t -> t) -> t -> n.t -> t;
