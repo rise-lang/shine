@@ -7,6 +7,7 @@ import org.scalatest.matchers.should.Matchers._
 
 class LexerTest extends  AnyFlatSpec {
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
+  val errorFilePath = "src/test/scala/parser/readFiles/filesToError/"
 
   "RecognizeLexeme" should "work for the arrayType" in {
     val fileName: String = testFilePath + "arrayType.rise"
@@ -423,15 +424,6 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
-  "RecognizeLexeme" should "work for the identity" in {
-    val fileName: String = testFilePath + "identity.rise"
-    val file: FileReader =  FileReader(fileName)
-    val thrown = intercept[RuntimeException] {
-      RecognizeLexeme(file)
-    }
-    thrown.getMessage should equal("You can't start with a NamedExpr")
-  }
-
   "RecognizeLexeme" should "work for the identityWithI32" in {
     val fileName: String = testFilePath + "identityWithI32.rise"
     val file: FileReader =  FileReader(fileName)
@@ -532,15 +524,6 @@ class LexerTest extends  AnyFlatSpec {
         Identifier("y", _) :: RParentheses(_) :: I32(42, _) :: EndNamedExpr(_):: Nil => true
       case a => fail(a.toString())
     }
-  }
-
-  "RecognizeLexeme" should "work for the longIdentity" in {
-    val fileName: String = testFilePath + "longIdentity.rise"
-    val file: FileReader = FileReader(fileName)
-    val thrown = intercept[RuntimeException] {
-      RecognizeLexeme(file)
-    }
-    thrown.getMessage should equal("You can't start with a NamedExpr")
   }
 
   "RecognizeLexeme" should "work for the longIdentityWithI32" in {
@@ -681,15 +664,6 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
-  "RecognizeLexeme" should "work for negationWithoutIdentifierAtBeginning" in {
-    val fileName: String = testFilePath + "negationWithoutIdentifierAtBeginning.rise"
-    val file: FileReader =  FileReader(fileName)
-    val thrown = intercept[RuntimeException] {
-      RecognizeLexeme(file)
-    }
-    thrown.getMessage should equal("Here should be an Identifier, but whitout an Identifier nothing new can be started")
-  }
-
   "RecognizeLexeme" should "work for negationWithBool" in {
     val fileName: String = testFilePath + "negationWithBool.rise"
     val file: FileReader =  FileReader(fileName)
@@ -706,25 +680,6 @@ class LexerTest extends  AnyFlatSpec {
         :: Identifier("b", _) :: EndNamedExpr(_)::Nil => true
       case a => fail(a.toString())
     }
-  }
-
-  "parser" should "not be able to parse 'noExpression.rise'" in {
-    val fileName: String = testFilePath + "noExpression.rise"
-    val file: FileReader = new FileReader(fileName)
-    val thrown = intercept[RuntimeException] {
-      RecognizeLexeme(file)
-    }
-    thrown.getMessage should equal("Here is at the Beginning in line 0 a Identifier expected, but here is no Identifier!")
-  }
-
-  "RecognizeLexeme" should "work for noIdentityAndEqualSignAtBeginning.rise" in {
-    val fileName: String = testFilePath + "noIdentityAndEqualSignAtBeginning.rise"
-    val file: FileReader =  FileReader(fileName)
-    val thrown = intercept[Exception] {
-      RecognizeLexeme(file)
-    } //Todo: should we have a underline of the important code here too? yes, but here is no
-    val expected: String = "Here should be an '::' or '=', but whitout this nothing new can be started"
-    thrown.getMessage should equal(expected)
   }
 
   "RecognizeLexeme" should "work for not" in {
@@ -882,7 +837,7 @@ class LexerTest extends  AnyFlatSpec {
   }
 
   "RecognizeLexeme" should "work for twoplus1extraDefintionButSameNameInLocalVariable" in {
-    val fileName: String = testFilePath + "twoplus1extraDefintionButSameNameInLocalVariable.rise"
+    val fileName: String = errorFilePath + "twoplus1extraDefintionButSameNameInLocalVariable.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -983,7 +938,7 @@ class LexerTest extends  AnyFlatSpec {
 
 
   "RecognizeLexeme" should "work for twoSimpleFunctionsButWithSameLocalVarName" in {
-    val fileName: String = testFilePath + "twoSimpleFunctionsButWithSameLocalVarName.rise"
+    val fileName: String = errorFilePath + "twoSimpleFunctionsButWithSameLocalVarName.rise"
     val file: FileReader =  FileReader(fileName)
     val lexer: RecognizeLexeme = RecognizeLexeme(file)
     lexer.tokens match {
@@ -1014,15 +969,7 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
-  "RecognizeLexeme" should "work for TypWith-" in {
-    val fileName: String = testFilePath + "TypWith-.rise"
-    val file: FileReader =  FileReader(fileName)
-    val thrown = intercept[Exception] {
-      RecognizeLexeme(file)
-    }
-    val expected: String = "ErrorToken: End of Line at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\nf::I32->I32f=\\x\n}; beginLocation: (column: 1 ; row: 4); endLocation: (column: 1 ; row: 4) at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\nf::I32->I32f=\\x\n}; beginLocation: (column: 1 ; row: 4); endLocation: (column: 1 ; row: 4)\nf=\\x"
-    thrown.getMessage should equal(expected)
-  }
+
 
   "RecognizeLexeme" should "veryComplicated.rise" in {
     val fileName: String = testFilePath + "veryComplicated.rise"
@@ -1063,6 +1010,64 @@ class LexerTest extends  AnyFlatSpec {
       }
       case a => fail(a.toString())
     }
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+//Error-Tests
+  "RecognizeLexeme" should "work for the identity" in {
+    val fileName: String = errorFilePath + "identity.rise"
+    val file: FileReader =  FileReader(fileName)
+    val thrown = intercept[RuntimeException] {
+      RecognizeLexeme(file)
+    }
+    thrown.getMessage should equal("You can't start with a NamedExpr")
+  }
+
+  "RecognizeLexeme" should "work for the longIdentity" in {
+    val fileName: String = errorFilePath + "longIdentity.rise"
+    val file: FileReader = FileReader(fileName)
+    val thrown = intercept[RuntimeException] {
+      RecognizeLexeme(file)
+    }
+    thrown.getMessage should equal("You can't start with a NamedExpr")
+  }
+
+  "RecognizeLexeme" should "work for negationWithoutIdentifierAtBeginning" in {
+    val fileName: String = errorFilePath + "negationWithoutIdentifierAtBeginning.rise"
+    val file: FileReader =  FileReader(fileName)
+    val thrown = intercept[RuntimeException] {
+      RecognizeLexeme(file)
+    }
+    thrown.getMessage should equal("Here should be an Identifier, but whitout an Identifier nothing new can be started")
+  }
+
+  "parser" should "not be able to parse 'noExpression.rise'" in {
+    val fileName: String = errorFilePath + "noExpression.rise"
+    val file: FileReader = new FileReader(fileName)
+    val thrown = intercept[RuntimeException] {
+      RecognizeLexeme(file)
+    }
+    thrown.getMessage should equal("Here is at the Beginning in line 0 a Identifier expected, but here is no Identifier!")
+  }
+
+  "RecognizeLexeme" should "work for noIdentityAndEqualSignAtBeginning.rise" in {
+    val fileName: String = errorFilePath + "noIdentityAndEqualSignAtBeginning.rise"
+    val file: FileReader =  FileReader(fileName)
+    val thrown = intercept[Exception] {
+      RecognizeLexeme(file)
+    } //Todo: should we have a underline of the important code here too? yes, but here is no
+    val expected: String = "Here should be an '::' or '=', but whitout this nothing new can be started"
+    thrown.getMessage should equal(expected)
+  }
+
+  "RecognizeLexeme" should "work for TypWith-" in {
+    val fileName: String = errorFilePath + "TypWith-.rise"
+    val file: FileReader =  FileReader(fileName)
+    val thrown = intercept[Exception] {
+      RecognizeLexeme(file)
+    }
+    val expected: String = "ErrorToken: End of Line at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\nf::I32->I32f=\\x\n}; beginLocation: (column: 1 ; row: 4); endLocation: (column: 1 ; row: 4) at FileReader: fileName: 'src/test/scala/parser/readFiles/filesToLex/TypWith-.rise'; fileContent: {\nf::I32->I32f=\\x\n}; beginLocation: (column: 1 ; row: 4); endLocation: (column: 1 ; row: 4)\nf=\\x"
+    thrown.getMessage should equal(expected)
   }
 
 }

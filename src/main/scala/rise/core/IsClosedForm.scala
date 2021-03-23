@@ -16,7 +16,10 @@ object IsClosedForm {
     ) extends traversal.Visitor {
       override def visitExpr(e: Expr): Result[Expr] = {
         e match {
-          case i: Identifier if !boundV(i) => throw FreeVariable(i)
+          case i: Identifier if !boundV(i) => {
+            println("FreeVar !boundV("+i+"): "+i + " , " + boundV(i) + " , " + Set[Identifier](i))
+            throw FreeVariable(i)
+          }
           case Lambda(x, _) =>
             Continue(e, this.copy(boundV = boundV + x))
           case DepLambda(x: NatIdentifier, _) =>
@@ -39,16 +42,23 @@ object IsClosedForm {
         ) extends traversal.Visitor {
           override def visitType[U <: Type](t: U): Result[U] = {
             t match {
-              case _: TypeIdentifier => throw FreeVariable(t)
+              case typId: TypeIdentifier => {
+                println("FreeVar:"+typId + " , "+ t)
+                throw FreeVariable(t)
+              }
               case DepFunType(x: NatIdentifier, _) =>
                 Continue(t, this.copy(boundN = boundN + x))
               case DepFunType(x: DataTypeIdentifier, _) =>
                 Continue(t, this.copy(boundT = boundT + x))
-              case i: DataTypeIdentifier if !boundT(i) => throw FreeVariable(t)
+              case i: DataTypeIdentifier if !boundT(i) => {
+                println("FreeVar !boundV("+i+"): "+t)
+                throw FreeVariable(t)
+              }
               case DepArrayType(_, elementTypeFun) =>
                 elementTypeFun match {
                   case i: NatToDataIdentifier =>
                     if (!boundNatDataTypeFun(i)) {
+                      println("FreeVar !boundNatDataTypeFun("+i+"): "+t)
                       throw FreeVariable(t)
                     } else {
                       Continue(t, this)
@@ -100,6 +110,7 @@ object IsClosedForm {
     if (closed) {
       Continue(ae, v)
     } else {
+      println("FreeVar closed: "+ae)
       throw FreeVariable(ae)
     }
   }
