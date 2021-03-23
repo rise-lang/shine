@@ -1112,6 +1112,7 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
+
   "parser" should "be able to parse 'dotProductEasy.rise'" in {
     val fileName: String = testFilePath + "dotProductEasy.rise"
     val file: FileReader = new FileReader(fileName)
@@ -1124,37 +1125,37 @@ class parseTest extends  AnyFlatSpec {
       case Right(types) => fail("no definition is in map: " + types)
     }
 
-    ex_f.t match {
-      case rt.FunType(rt.ArrayType(n, rt.i32),
-      rt.FunType(rt.ArrayType(n1, rt.i32),
-      rt.i32))  if n.eval.equals(4) && n1.eval.equals(n.eval)=> true
-      case rt.FunType(rt.ArrayType(n, rt.i32),
-      rt.FunType(rt.ArrayType(n1, rt.i32),
-      rt.i32))=> fail("alomst right, but n should be 4, but it ist: "+ n + " , " + n1)
-      case t => fail("The Type '" + t + "' is not the expected type.")
-    }
+//    ex_f.t match {
+//      case rt.FunType(rt.ArrayType(n, rt.i32),
+//      rt.FunType(rt.ArrayType(n1, rt.i32),
+//      rt.i32))  if n.eval.equals(4) && n1.eval.equals(n.eval)=> true
+//      case rt.FunType(rt.ArrayType(n, rt.i32),
+//      rt.FunType(rt.ArrayType(n1, rt.i32),
+//      rt.i32))=> fail("alomst right, but n should be 4, but it ist: "+ n + " , " + n1)
+//      case t => fail("The Type '" + t + "' is not the expected type.")
+//    }
 
-    ex_f match {
-      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
-      case r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
-      r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
-      ))),
-      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
-      r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
-      r.App(rp.snd(_), r.Identifier("x")) )
-      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2")))
-      )
-      )) => true
-      case r.DepLambda(n, e) => fail("Not correct deplambda: "
-        +n.toString()+ " , " + e.toString())
-      case a => fail("Not a DepLambda: " + a)
-    }
+//    ex_f match {
+//      //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
+//      case r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
+//      r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
+//      r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
+//      ))),
+//      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+//      r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
+//      r.App(rp.snd(_), r.Identifier("x")) )
+//      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2")))
+//      )
+//      )) => true
+//      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+//        +n.toString()+ " , " + e.toString())
+//      case a => fail("Not a DepLambda: " + a)
+//    }
 
+    val infer_ex_f = r.DSL.ToBeTyped(ex_f).toExpr
+    assert(r.IsClosedForm(infer_ex_f)) //It has to be closed form so that gen.Cprogram runs
 
-    assert(r.IsClosedForm(ex_f)) //It has to be closed form so that gen.Cprogram runs
-
-    val code = gen.CProgram(ex_f, "dot").code
+    val code = gen.CProgram(infer_ex_f, "dot").code
     println(code)
   }
 
@@ -1260,6 +1261,7 @@ class parseTest extends  AnyFlatSpec {
       }
       case a => fail("not a lambda: " + a)
     }
+    gen.CProgram(ex,"lessComplexInOneLine")
     assert(r.IsClosedForm(ex))
   }
 

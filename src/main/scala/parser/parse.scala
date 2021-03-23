@@ -126,7 +126,6 @@ object parse {
       case "mapGlobal" => SIntToExpr(AltMapGlobal(), span)
       case "mapLocal" => SIntToExpr(AltMapLocal(), span)
       case "mapWorkGroup" => SIntToExpr(AltMapWorkGroup(),span)
-      case "oclToMem" => SExpr(op.oclToMem( Some(span)))
       case "oclReduceSeq" => SExpr(op.oclReduceSeq(Some(span)))
       case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll( Some(span)))
       case "oclIterate" => SExpr(op.oclIterate( Some(span)))
@@ -555,9 +554,6 @@ object parse {
       case AltMapLocal() => op.mapLocal(n,Some(span)).toExpr
       case AltMapWorkGroup() => op.mapWorkGroup(n, Some(span)).toExpr
       case AltMakeArray() => rp.makeArray(n,Some(span)).toExpr
-    }
-    if(expr.span.isEmpty) {
-      throw new IllegalStateException("Span should not be empty: "+ expr)
     }
     expr
   }
