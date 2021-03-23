@@ -38,29 +38,20 @@ lazy val riseAndShine = (project in file("."))
         "org.scalatest" %% "scalatest" % "3.1.0" % "test",
         // json
         "com.typesafe.play" %% "play-json" % "2.9.1"
-    )
+    ),
+
+    compile := ((compile in Compile) dependsOn generateRISEPrimitives).value,
+    test    := ((test in Test) dependsOn generateRISEPrimitives).value
   )
 
-riseAndShine / Compile / sourceGenerators += Def.task {
-  val logger = streams.value
-  val files = scala.collection.mutable.Seq[File]()
+lazy val generateRISEPrimitives = taskKey[Unit]("Generate RISE Primitives")
 
+generateRISEPrimitives := {
   runner.value.run("meta.RisePrimitiveGenerator",
     (dependencyClasspath in Compile).value.files,
     Seq((scalaSource in Compile).value.getAbsolutePath),
-    new sbt.util.Logger {
-    override def log(level: Level.Value, message: => String): Unit = {
-      for (patternMatch <- "^Generate (.*)$".r.findAllMatchIn(message))
-        files :+ new File(patternMatch.group(1))
-
-      logger.log.log(level, message)
-    }
-    override def trace(t: => Throwable): Unit = logger.log.trace(t)
-    override def success(message: => String): Unit = logger.log.success(message)
-  }).failed foreach (sys error _.getMessage)
-
-  files
-}.taskValue
+    streams.value.log).failed foreach (sys error _.getMessage)
+}
 
 lazy val meta = (project in file("meta"))
   .settings(
@@ -81,11 +72,11 @@ lazy val riseAndShineMacros = (project in file("macros"))
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   )
 
-lazy val arithExpr = (project in file("lib/arithexpr"))
+lazy val arithExpr  = project in file("lib/arithexpr")
 
-lazy val executor   = (project in file("lib/executor"))
+lazy val executor   = project in file("lib/executor")
 
-lazy val elevate    = (project in file("lib/elevate"))
+lazy val elevate    = project in file("lib/elevate")
 
 lazy val docs = (project in file("riseAndShine-docs"))
   .settings(
