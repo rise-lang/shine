@@ -21,7 +21,7 @@ class parserMainTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 

@@ -37,57 +37,58 @@ object traversal {
         case s: Stop[Expr] => s.value
         case c: Continue[Expr] =>
           val v = c.v
+          val span = expr.span
           c.value match {
             case i: Identifier => i.setType(v.visitType(i.t).value)
             case l @ Lambda(x, e) =>
               apply(x, v) match {
                 case newX: Identifier =>
-                  Lambda(newX, apply(e, v))(v.visitType(l.t).value)
+                  Lambda(newX, apply(e, v))(v.visitType(l.t).value, span)
                 case otherwise =>
                   throw new Exception(s"Expected Identifier found: $otherwise")
               }
             case a @ App(f, e) =>
-              App(apply(f, v), apply(e, v))(v.visitType(a.t).value)
+              App(apply(f, v), apply(e, v))(v.visitType(a.t).value, span)
             case dl @ DepLambda(x, e) =>
               x match {
                 case n: NatIdentifier =>
                   DepLambda[NatKind]((v.visitNat(n).value: @unchecked) match {
                     case a: NamedVar => NatIdentifier(a, isExplicit = true)
-                  }, apply(e, v))(v.visitType(dl.t).value)
+                  }, apply(e, v))(v.visitType(dl.t).value, span)
                 case dt: DataTypeIdentifier =>
                   DepLambda[DataKind](v.visitType(dt).value, apply(e, v))(
-                    v.visitType(dl.t).value
+                    v.visitType(dl.t).value, span
                   )
               }
             case da @ DepApp(f, x) =>
               x match {
                 case n: Nat =>
                   DepApp[NatKind](apply(f, v), v.visitNat(n).value)(
-                    v.visitType(da.t).value
+                    v.visitType(da.t).value, span
                   )
                 case dt: DataType =>
                   DepApp[DataKind](apply(f, v), v.visitType(dt).value)(
-                    v.visitType(da.t).value
+                    v.visitType(da.t).value, span
                   )
                 case a: AddressSpace =>
                   DepApp[AddressSpaceKind](
                     apply(f, v),
                     v.visitAddressSpace(a).value
-                  )(v.visitType(da.t).value)
+                  )(v.visitType(da.t).value, span)
                 case n2n: NatToNat =>
                   DepApp[NatToNatKind](apply(f, v), v.visitN2N(n2n).value)(
-                    v.visitType(da.t).value
+                    v.visitType(da.t).value, span
                   )
                 case n2d: NatToData =>
                   DepApp[NatToDataKind](apply(f, v), v.visitN2D(n2d).value)(
-                    v.visitType(da.t).value
+                    v.visitType(da.t).value, span
                   )
               }
             case l: Literal =>
               l.d match {
                 case NatData(n) => Literal(NatData(v.visitNat(n).value))
                 case IndexData(i, n) =>
-                  Literal(IndexData(v.visitNat(i).value, v.visitNat(n).value))
+                  Literal(IndexData(v.visitNat(i).value, v.visitNat(n).value), span)
                 case _ => l
               }
             case p: Primitive => p.setType(v.visitType(p.t).value)

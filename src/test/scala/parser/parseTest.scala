@@ -29,7 +29,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -78,7 +78,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName2: String = "h"
     val ex: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -156,7 +156,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -175,7 +175,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -194,7 +194,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -213,7 +213,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -232,7 +232,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -354,7 +354,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -441,7 +441,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -513,7 +513,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -534,7 +534,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -555,7 +555,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -576,7 +576,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -595,7 +595,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -619,7 +619,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -643,7 +643,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -662,13 +662,13 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
     val functionName2: String = "g"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -808,19 +808,19 @@ class parseTest extends  AnyFlatSpec {
 
 //    val functionName: String = "f"
 //    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-//      case Left(lambda) => lambda
+//      case Left(lambda) => lambda.toExpr
 //      case Right(types) => fail("no definition is in map: " + types)
 //    }
 
     val functionName2: String = "g"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
     val functionName3: String = "u"
     val ex_u: r.Expr = riseExprByIdent.get(functionName3).getOrElse(fail("The function '" + functionName3 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -879,7 +879,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName2: String = "g"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -969,7 +969,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName2: String = "g"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1012,7 +1012,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1040,7 +1040,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1079,7 +1079,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1121,7 +1121,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1167,7 +1167,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1186,7 +1186,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1205,7 +1205,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1224,7 +1224,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1249,7 +1249,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1273,7 +1273,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1295,7 +1295,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1325,7 +1325,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1344,7 +1344,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in riseExprByIdent: " + types)
     }
 
@@ -1404,7 +1404,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "matMul"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
     ex_f.t match {
@@ -1669,7 +1669,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1729,7 +1729,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -1748,7 +1748,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName2: String = "nbody"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2061,7 +2061,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName2: String = "nbody"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2454,7 +2454,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2473,7 +2473,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2492,7 +2492,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2511,7 +2511,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2530,7 +2530,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2562,7 +2562,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2594,7 +2594,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2624,7 +2624,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2654,7 +2654,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2679,7 +2679,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2705,7 +2705,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2729,7 +2729,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2753,7 +2753,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2777,7 +2777,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2804,12 +2804,12 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName_h: String = "h"
     val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_f: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_z: String = "z"
@@ -2845,12 +2845,12 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName_h: String = "h"
     val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_f: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_z: String = "z"
@@ -2879,7 +2879,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2902,7 +2902,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2925,7 +2925,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2952,7 +2952,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
 
@@ -2979,7 +2979,7 @@ class parseTest extends  AnyFlatSpec {
 
     val functionName_f: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => lambda
+      case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
     }
     val functionName_2: String = "specialFunctionOfChaos"

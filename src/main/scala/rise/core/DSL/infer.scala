@@ -14,8 +14,10 @@ object infer {
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
+    require(typed_e.span!=None, "typed_e is None")
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
     val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
+    require(res.span!=None, "res is None")
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
     }
@@ -163,7 +165,7 @@ object infer {
       constrainTypes(e, constraints, env)
     def genType(e: Expr): Type =
       if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
-
+    val span = expr.span
     expr match {
       case i: Identifier =>
         val t = env.getOrElseUpdate(i.name,
@@ -184,7 +186,7 @@ object infer {
         val exprT = genType(expr)
         val constraint = TypeConstraint(exprT, ft)
         constraints += constraint
-        (Lambda(tx, te)(ft), ftvSubsE)
+        (Lambda(tx, te)(ft, span), ftvSubsE)
 
       case App(f, e) =>
         val (tf, ftvSubsF) = constrained(f)
@@ -192,23 +194,23 @@ object infer {
         val exprT = genType(expr)
         val constraint = TypeConstraint(tf.t, FunType(te.t, exprT))
         constraints += constraint
-        (App(tf, te)(exprT), ftvSubsF <> ftvSubsE)
+        (App(tf, te)(exprT, span), ftvSubsF <> ftvSubsE)
 
       case DepLambda(x, e) =>
         val (te, ftvSubsE) = constrained(e)
         val exprT = genType(expr)
         val tf = x match {
           case n: NatIdentifier =>
-            DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
+            DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t), span)
           case dt: DataTypeIdentifier =>
-            DepLambda[DataKind](dt, te)(DepFunType[DataKind, Type](dt, te.t))
+            DepLambda[DataKind](dt, te)(DepFunType[DataKind, Type](dt, te.t), span)
           case ad: AddressSpaceIdentifier =>
             DepLambda[AddressSpaceKind](ad, te)(
-              DepFunType[AddressSpaceKind, Type](ad, te.t)
+              DepFunType[AddressSpaceKind, Type](ad, te.t), span
             )
           case n2n: NatToNatIdentifier =>
             DepLambda[NatToNatKind](n2n, te)(
-              DepFunType[NatToNatKind, Type](n2n, te.t)
+              DepFunType[NatToNatKind, Type](n2n, te.t), span
             )
         }
         val constraint = TypeConstraint(exprT, tf.t)
@@ -220,7 +222,7 @@ object infer {
         val exprT = genType(expr)
         val constraint = DepConstraint(tf.t, x, exprT)
         constraints += constraint
-        (DepApp(tf, x)(exprT), ftvSubsF)
+        (DepApp(tf, x)(exprT, span), ftvSubsF)
 
       case TypeAnnotation(e, t) =>
         val (te, ftvSubsE) = constrained(e)

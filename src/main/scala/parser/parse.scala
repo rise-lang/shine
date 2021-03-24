@@ -2,6 +2,7 @@ package parser //old branch 17. Dezember 2020
 
 import rise.core.{Lambda, primitives => rp, semantics => rS, types => rt}
 import rise.{core => r, openCL => o}
+import r.{DSL => rd}
 import o.{primitives => op}
 
 import scala.collection.mutable
@@ -60,7 +61,7 @@ object parse {
     final case class RAddrSpace() extends RiseKind
 
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
-  type MapFkt = mutable.HashMap[String, Either[r.Expr, r.types.Type]]
+  type MapFkt = mutable.HashMap[String, Either[rd.ToBeTyped[r.Expr], r.types.Type]]
   type MapDepL = mutable.HashMap[String, RiseKind]
   type BracesSpan = Option[List[Span]]
 
@@ -886,7 +887,15 @@ object parse {
 
         println("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
         val m = psNamedExpr._3
-        m.update(identifierFkt.name, Left(expr))
+
+        require(expr.span!= None, "expr is None!")
+        rd.ToBeTyped(expr) match{
+          case rd.ToBeTyped(e) => require(e.span!= None, "expr is now in ToBeTyped without infer None")
+          case _ => throw new IllegalStateException("this should not be happening")
+        }
+        require(rd.ToBeTyped(expr).toExpr.span!= None, "expr is now with ToBeType.toExpr None!")
+
+        m.update(identifierFkt.name, Left(rd.ToBeTyped(expr)))
         println("map updated: " + m + "\nRemainderTokens: " + psNamedExpr._1)
         Left((psNamedExpr._1, m))
       }
@@ -1145,7 +1154,7 @@ object parse {
       throw new IllegalArgumentException("A variable or function with the exact same name '"+ identifierName.name +
         "' is already declared! <- " + map.get(identifierName.name))
     }
-    map.update(identifierName.name, Left(identifierName))
+    map.update(identifierName.name, Left(rd.ToBeTyped(identifierName)))
 
     val myNewParseState = ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent, map,mapDepL, spanList)
     println("myNewParseState: "+ myNewParseState)
