@@ -5,13 +5,15 @@ import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
-import util.{Time, TimeSpan}
+import util.{Time, TimeSpan, gen}
+
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.security.Policy.Parameters
-
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
+import rise.openCL.DSL.oclRun
 
 import scala.annotation.tailrec
+import scala.util.Random
 
 package object autotune {
   type Parameters = Set[NatIdentifier]
@@ -53,8 +55,12 @@ package object autotune {
       }.toMap
 
       checkConstraints(constraints, parametersValuesMap) match {
-        case true => execute(rise.core.substitute.natsInExpr(parametersValuesMap, e))
-        case false => None
+        case true => {
+          execute(rise.core.substitute.natsInExpr(parametersValuesMap, e))
+        }
+        case false => {
+          None
+        }
       }
     }
 
@@ -63,7 +69,6 @@ package object autotune {
     val configFile = os.pwd / "autotuning" / "tmp.json"
 
     assert( os.isFile(hypermapperBinary) && os.isFile(configFile) )
-
 
     val hypermapper = os.proc(hypermapperBinary, configFile).spawn()
 
@@ -119,6 +124,19 @@ package object autotune {
     Seq.empty[Sample]
   }
 
+  // wrap ocl run to a function
+  def wrapOclRun(expr: Expr)(localSize: LocalSize, globalSize: GlobalSize): Expr = {
+    expr match {
+      // fun(x => e)
+      case Lambda(_,e) =>
+        wrapOclRun(e)(localSize, globalSize)
+      // depFun(x => e)
+      case DepLambda(_,e) =>
+        wrapOclRun(e)(localSize, globalSize)
+      case e =>
+        oclRun(localSize, globalSize)(e)
+    }
+  }
 
   // check constraints for given values and returns boolean
   def checkConstraints(constraints: Set[Constraint], values: Map[NatIdentifier, Nat]): Boolean = {
@@ -126,10 +144,51 @@ package object autotune {
     constraints.forall(c => c.substitute(map).isSatisfied())
   }
 
-    // add information for execution as parameter?
-    // execution failure of e returns None
-    // execution success of e returns Some(runtimef)
-  def execute(e: Expr): Option[Float]  = ???
+  def execute(e: Expr): Option[Float]  = {
+//      val e2 = wrapOclRun(e)(LocalSize(1), GlobalSize(1))
+
+      val m = gen.opencl.hosted.fromExpr(e)
+
+      val main = """
+    const int N = 32;
+    int main(int argc, char** argv) {
+      Context ctx = createDefaultContext();
+      Buffer input = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_READ);
+      Buffer output = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+
+      int32_t* in = hostBufferSync(ctx, input, N * sizeof(int32_t), HOST_WRITE);
+      for (int i = 0; i < N; i++) {
+        in[i] = 1;
+      }
+
+      foo(ctx, output, input, input);
+
+      int32_t* out = hostBufferSync(ctx, output, N * sizeof(int32_t), HOST_READ);
+
+      for (int i = 0; i < N; i++) {
+        printf(" %d \n", out[i]);
+      }
+
+      destroyBuffer(ctx, input);
+      destroyBuffer(ctx, output);
+      destroyContext(ctx);
+      return EXIT_SUCCESS;
+    }
+    """
+
+
+    val program = shine.OpenCL.Module.translateToString(m) + main
+
+    // execute program
+    try{
+      util.ExecuteOpenCL(program, "zero_copy")
+    } catch{
+      case e:Throwable => println("error: \n" + e)
+    }
+
+    // return dummy runtime to test hypermapper interface
+    Some(Random.nextFloat())
+  }
 
 
   def collectParameters(e: Expr): Parameters = {
