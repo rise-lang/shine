@@ -887,28 +887,21 @@ class parseTest extends  AnyFlatSpec {
 
     ex_g.t match {
       case rt.DepFunType(n, rt.DepFunType(d,
-      rt.ArrayType(n1: rt.NatIdentifier,
-      rt.ArrayType(n2: rt.NatIdentifier,d1: rt.DataTypeIdentifier))))
-        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
-          && d.name.equals("D") && d1.name.equals(d.name) => true
+      rt.ArrayType(n2: rt.NatIdentifier,rt.f32)))
+        if n2.name.equals(n.name) => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
     ex_g match {
       case dep@r.DepLambda(n: rt.NatIdentifier, dep2@r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.generate(_), n1:rt.NatIdentifier),
-      lam@r.Lambda(r.Identifier("i"), r.App(
-      arrTypeDepAppCast@r.DepApp(rp.cast(spanCast),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
-      )))
-        if n.name.equals("N") &&  n2.name.equals(n.name) //&&n1.name.equals(n.name)
-          && d.name.equals("D") &&
-          d2.name.equals(d.name)=> {
+      r.App(rp.generate(_),
+      lam@r.Lambda(r.Identifier("x"), r.Literal(rS.FloatData(0), _))))) => {
         dep.span match {
           case None => fail("The Span should not be None")
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda2.rise")
             begin.row should equal(3)
-            end.row should equal(52)
+            end.row should equal(41)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -918,27 +911,7 @@ class parseTest extends  AnyFlatSpec {
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda2.rise")
             begin.row should equal(11)
-            end.row should equal(52)
-            begin.column should equal(1)
-            end.column should equal(1)
-          }
-        }
-        spanCast match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda2.rise")
-            begin.row should equal(41)
-            end.row should equal(45)
-            begin.column should equal(1)
-            end.column should equal(1)
-          }
-        }
-        arrTypeDepAppCast.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda2.rise")
-            begin.row should equal(41)
-            end.row should equal(49)
+            end.row should equal(41)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -947,58 +920,14 @@ class parseTest extends  AnyFlatSpec {
           case None => fail("The Span should not be None")
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda2.rise")
-            begin.row should equal(37)
-            end.row should equal(51)
+            begin.row should equal(30)
+            end.row should equal(40)
             begin.column should equal(1)
             end.column should equal(1)
           }
         }
       }
       case r.DepLambda(n, e) => {
-        fail("Not correct deplambda: "
-          +n.toString()+ " , " + e.toString())
-      }
-      case a => fail("Not a DepLambda: " + a)
-    }
-  }
-
-
-  "parser" should "be able to parse 'DepLambda2CleanCode.rise'" in {
-    val fileName: String = testFilePath + "DepLambda2CleanCode.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName2: String = "g"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-
-    ex_g.t match {
-      case rt.DepFunType(n, rt.DepFunType(d,
-      rt.ArrayType(n1: rt.NatIdentifier,
-      rt.ArrayType(n2: rt.NatIdentifier,d1: rt.DataTypeIdentifier))))
-        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
-          && d.name.equals("D") && d1.name.equals(d.name) => true
-      case t => fail("The Type '" + t + "' is not the expected type.")
-    }
-
-    ex_g match {
-      case r.DepLambda(n: rt.NatIdentifier, r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.generate(_), n1:rt.NatIdentifier),
-      r.Lambda(r.Identifier("i"), r.App(
-      r.DepApp(rp.cast(_),rt.ArrayType(n2:rt.NatIdentifier, d2:rt.DataTypeIdentifier)), r.Identifier("i")))
-      )))
-        if n.name.equals("N") &&  n2.name.equals(n.name) //&&n1.name.equals(n.name)
-          && d.name.equals("D") &&
-          d2.name.equals(d.name)=> true
-      case r.DepLambda(n, e) => {
-        println("correct solution: "+  r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.DepLambda[rt.DataKind](rt.DataTypeIdentifier("D"),
-          r.App(r.DepApp[rt.NatKind](rp.generate.primitive, rt.NatIdentifier("N"))(rt.TypePlaceholder),
-            r.Lambda(r.Identifier("i")(rt.TypePlaceholder), r.App(
-              r.DepApp[rt.TypeKind](rp.cast.primitive,rt.ArrayType(rt.NatIdentifier("N"), rt.DataTypeIdentifier("D")))(rt.TypePlaceholder), r.Identifier("i")(rt.TypePlaceholder)
-            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))
         fail("Not correct deplambda: "
           +n.toString()+ " , " + e.toString())
       }
@@ -3020,7 +2949,7 @@ class parseTest extends  AnyFlatSpec {
   }
 
   //-----------------------------------------------------------------------------------------------------
-  //Error-Tests
+  //Error-Tests //Todo: " .. (.. (..).. " as an ErrorTest
 
   "parser" should "not be able to parse 'noExpressionInBraces.rise'" in {
     val fileName: String = errorFilePath + "noExpressionInBraces.rise"

@@ -1,2 +1,0 @@
-g::N:Nat=>D:Data=>N.N.D
-g= \N:Nat=>\D:Data=>generate N  (\i->cast N.D i)
