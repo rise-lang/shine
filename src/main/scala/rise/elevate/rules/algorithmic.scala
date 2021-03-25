@@ -524,7 +524,7 @@ object algorithmic {
   
 
   private val mulT: ToBeTyped[Rise] = fun(x => fst(x) * snd(x))
-  private val sum: ToBeTyped[Rise] = reduce(add)(l(0.0f))
+  private val sum: ToBeTyped[Rise] = reduce(add)(lf32(0.0f))
   private val dot: ToBeTyped[Rise] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> sum
   ))
@@ -533,7 +533,7 @@ object algorithmic {
     case e @ App(App(App(reduce(), rf), init), App(App(map(), mf),
       App(App(zip(), App(join(), weights)), App(join(), nbh))
     )) if rf == ((add !: rf.t): Expr) &&
-      init == (l(0.0f): Expr) &&
+      init == (lf32(0.0f): Expr) &&
       mf == ((mulT !: mf.t): Expr) &&
       weights == weights2d
       =>
@@ -544,7 +544,7 @@ object algorithmic {
     case e @ App(App(App(reduce(), rf), init), App(App(map(), mf),
     App(App(zip(), App(join(), weights)), App(join(), nbh))
     )) if rf == ((add !: rf.t): Expr) &&
-      init == (l(0.0f): Expr) &&
+      init == (lf32(0.0f): Expr) &&
       mf == ((mulT !: mf.t): Expr) &&
       weights == weights2d
     =>

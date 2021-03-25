@@ -44,7 +44,7 @@ object molecularDynamics {
         gather(p._2)(particles) |>
         reduce(fun(force => fun(n =>
           mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
-        )))(vectorFromScalar(l(0.0f)))
+        )))(vectorFromScalar(lf32(0.0f)))
       })
   ))
 
@@ -62,7 +62,7 @@ object molecularDynamics {
             gather(p._2)(particles) |>
             oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
               mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
-            )))(vectorFromScalar(l(0.0f)))
+            )))(vectorFromScalar(lf32(0.0f)))
           )
         ))
       ) |> join

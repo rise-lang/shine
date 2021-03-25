@@ -8,7 +8,7 @@ import util.gen.c.function
 
 class scan extends test_util.Tests {
   private val simpleScan = fun(ArrayType(8, f32))(array =>
-    array |> scanSeq(add)(l(0.0f))
+    array |> scanSeq(add)(lf32(0.0f))
   )
 
   test("Simple scan compiles to syntactically correct C") {

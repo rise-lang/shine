@@ -53,6 +53,8 @@ object infer {
         a.ts ++ b.ts,
         a.ns ++ b.ns,
         a.as ++ b.as,
+        a.ms ++ b.ms,
+        a.fs ++ b.fs,
         a.n2ds ++ b.n2ds,
         a.n2ns ++ b.n2ns,
         a.natColls ++ b.natColls
@@ -67,6 +69,10 @@ object infer {
         n.asInstanceOf[NatIdentifier].asExplicit).toMap,
       ftvSubs.as.view.mapValues(a =>
         a.asInstanceOf[AddressSpaceIdentifier].asExplicit).toMap,
+      ftvSubs.ms.view.mapValues(m =>
+        m.asInstanceOf[MatrixLayoutIdentifier].asExplicit).toMap,
+      ftvSubs.fs.view.mapValues(f =>
+        f.asInstanceOf[FragmentKindIdentifier].asExplicit).toMap,
       ftvSubs.n2ds.view.mapValues(n2d =>
         n2d.asInstanceOf[NatToDataIdentifier].asExplicit).toMap,
       ftvSubs.n2ns.view.mapValues(n2n =>
@@ -81,12 +87,14 @@ object infer {
   private def getFTVSubs(t: Type): Solution = {
     getFTVs(t).foldLeft(Solution())((solution, ftv) =>
       solution match {
-        case s@Solution(ts, ns, as, n2ds, n2ns, natColls) =>
+        case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
             case _: TypeIdentifier => throw TypeException("TypeIdentifier cannot be frozen")
             case i: DataTypeIdentifier      => s.copy(ts = ts ++ explToImpl(i))
             case i: NatIdentifier           => s.copy(ns = ns ++ explToImpl(i))
             case i: AddressSpaceIdentifier  => s.copy(as = as ++ explToImpl(i))
+            case i: MatrixLayoutIdentifier  => s.copy(ms = ms ++ explToImpl(i))
+            case i: FragmentKindIdentifier  => s.copy(fs = fs ++ explToImpl(i))
             case i: NatToDataIdentifier     => s.copy(n2ds = n2ds ++ explToImpl(i))
             case i: NatToNatIdentifier      => s.copy(n2ns = n2ns ++ explToImpl(i))
             case i: NatCollectionIdentifier => s.copy(natColls = natColls ++ explToImpl(i))
