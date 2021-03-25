@@ -12,13 +12,8 @@ object infer {
   private [DSL] def apply(e: Expr,
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
-    // Constraints of the form `implicit type var == explicit type var` result in substitutions
-    // `implicit type var -> explicit type var`. We (ab)use that fact to create directed constraints out of
-    // type assertions and opaque types. To do so, we make the type identifiers on one side of the constraint explicit,
-    // and we return a `ftvSubs` map that maps these explicit type identifiers back to implicit type identifiers.
-    val (typed_e, constraints, ftvSubs) = constrainTypes(Map())(e)
-    // Applies ftvSubs to the constraint solutions
-    val solution = Constraint.solve(constraints.reverse, Seq())(explDep) ++ ftvSubs
+    val (typed_e, constraints, preserve) = constrainTypes(Map())(e)
+    val solution = Constraint.solve(constraints, preserve, Seq())(explDep)
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
@@ -56,40 +51,6 @@ object infer {
         a.n2ns ++ b.n2ns,
         a.natColls ++ b.natColls
       )
-  }
-
-  private def implToExpl[K <: Kind.Identifier with Kind.Explicitness] : K => (K, K) = i =>
-    (i.asImplicit.asInstanceOf[K], i.asExplicit.asInstanceOf[K])
-
-  private def freeze(ftvSubs: Solution, t: Type): Type =
-    Solution(
-      ftvSubs.ts.keySet.map(_.asInstanceOf[DataTypeIdentifier]).map(implToExpl).toMap,
-      ftvSubs.ns.keySet.map(implToExpl).toMap,
-      ftvSubs.as.keySet.map(implToExpl).toMap,
-      ftvSubs.n2ds.keySet.map(implToExpl).toMap,
-      ftvSubs.n2ns.keySet.map(implToExpl).toMap,
-      ftvSubs.natColls.keySet.map(implToExpl).toMap
-    )(t)
-
-  private def explToImpl[K <: Kind.Identifier with Kind.Explicitness] : K => Map[K, K] = i =>
-    Map(i.asExplicit.asInstanceOf[K] -> i.asImplicit.asInstanceOf[K])
-
-  private def getFTVSubs(t: Type): Solution = {
-    getFTVs(t).foldLeft(Solution())((solution, ftv) =>
-      solution match {
-        case s@Solution(ts, ns, as, n2ds, n2ns, natColls) =>
-          ftv match {
-            case _: TypeIdentifier => throw TypeException("TypeIdentifier cannot be frozen")
-            case i: DataTypeIdentifier      => s.copy(ts = ts ++ explToImpl(i))
-            case i: NatIdentifier           => s.copy(ns = ns ++ explToImpl(i))
-            case i: AddressSpaceIdentifier  => s.copy(as = as ++ explToImpl(i))
-            case i: NatToDataIdentifier     => s.copy(n2ds = n2ds ++ explToImpl(i))
-            case i: NatToNatIdentifier      => s.copy(n2ns = n2ns ++ explToImpl(i))
-            case i: NatCollectionIdentifier => s.copy(natColls = natColls ++ explToImpl(i))
-            case i => throw TypeException(s"${i.getClass} is not supported yet")
-          }
-      }
-    )
   }
 
   def getFTVs(t: Type): Seq[Kind.Identifier] = {
@@ -132,30 +93,28 @@ object infer {
 
   private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
 
-  private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint], Solution) =
+  private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint], Seq[Kind.Identifier]) =
     env => {
       case i: Identifier =>
         val t = env.getOrElse(i.name,
           if (i.t =~= TypePlaceholder) error(s"$i has no type")(Seq()) else i.t )
         val c = TypeConstraint(t, i.t)
-        (i.setType(t), c +: Nil, Solution())
+        (i.setType(t), Nil :+ c, Nil)
 
       case expr@Lambda(x, e) =>
         val tx = x.setType(genType(x))
-        val env1 : Map[String, Type] = env + (tx.name -> tx.t)
-        val (te, cs, ftvE) = constrainTypes(env1)(e)
+        val (te, cs, ftvE) = constrainTypes(env + (tx.name -> tx.t))(e)
         val ft = FunType(tx.t, te.t)
         val exprT = genType(expr)
         val c = TypeConstraint(exprT, ft)
-        (Lambda(tx, te)(ft), c +: cs, ftvE)
-
+        (Lambda(tx, te)(ft), cs :+ c, ftvE)
 
       case expr@App(f, e) =>
         val (tf, csF, ftvF) = constrainTypes(env)(f)
         val (te, csE, ftvE) = constrainTypes(env)(e)
         val exprT = genType(expr)
         val c = TypeConstraint(tf.t, FunType(te.t, exprT))
-        (App(tf, te)(exprT), c +: csF ++: csE, ftvF <> ftvE)
+        (App(tf, te)(exprT), csF :++ csE :+ c, ftvF ++ ftvE)
 
       case expr@DepLambda(x, e) =>
         val (te, csE, ftvE) = constrainTypes(env)(e)
@@ -171,33 +130,27 @@ object infer {
             DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
         }
         val c = TypeConstraint(exprT, tf.t)
-        (tf, c +: csE, ftvE)
+        (tf, csE :+ c, ftvE)
 
       case expr@DepApp(f, x) =>
         val (tf, csF, ftvF) = constrainTypes(env)(f)
         val exprT = genType(expr)
         val c = DepConstraint(tf.t, x, exprT)
-        (DepApp(tf, x)(exprT), c +: csF, ftvF)
+        (DepApp(tf, x)(exprT), csF :+ c, ftvF)
 
       case TypeAnnotation(e, t) =>
         val (te, csE, ftvE) = constrainTypes(env)(e)
         val c = TypeConstraint(te.t, t)
-        (te, c +: csE, ftvE)
+        (te, csE :+ c, ftvE)
 
       case TypeAssertion(e, t) =>
-        val ftvT = getFTVSubs(t)
         val (te, csE, ftvE) = constrainTypes(env)(e)
-        val c = TypeConstraint(te.t, freeze(ftvT, t))
-        (te, c +: csE, ftvE <> ftvT)
+        val c = TypeConstraint(te.t, t)
+        (te, csE :+ c, getFTVs(t) ++ ftvE)
 
-      case o: Opaque =>
-        val ftvO = getFTVSubs(o.t)
-        val frozenExpr = Opaque(o.e, freeze(ftvO, o.t))
-        (frozenExpr, Nil, ftvO)
-
-      case l: Literal => (l, Nil, Solution())
-
-      case p: Primitive => (p.setType(p.typeScheme), Nil, Solution())
+      case o: Opaque => (o, Nil, getFTVs(o.t))
+      case l: Literal => (l, Nil, Nil)
+      case p: Primitive => (p.setType(p.typeScheme), Nil, Nil)
     }
 
   private case class Visitor(sol: Solution) extends PureTraversal {
