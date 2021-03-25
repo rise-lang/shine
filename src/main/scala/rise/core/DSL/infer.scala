@@ -16,7 +16,7 @@ object infer {
     // `implicit type var -> explicit type var`. We (ab)use that fact to create directed constraints out of
     // type assertions and opaque types. To do so, we make the type identifiers on one side of the constraint explicit,
     // and we return a `ftvSubs` map that maps these explicit type identifiers back to implicit type identifiers.
-    val (_, typed_e, constraints, ftvSubs) = constrainTypes(Map())(e)
+    val (typed_e, constraints, ftvSubs) = constrainTypes(Map())(e)
     // Applies ftvSubs to the constraint solutions
     val solution = Constraint.solve(constraints.reverse, Seq())(explDep) ++ ftvSubs
     val res = traverse(typed_e, Visitor(solution))
@@ -132,35 +132,33 @@ object infer {
 
   private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
 
-  private val constrainTypes : Map[String, Type] => Expr => (Map[String, Type], Expr, Seq[Constraint], Solution) =
+  private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint], Solution) =
     env => {
       case i: Identifier =>
         val t = env.getOrElse(i.name,
           if (i.t =~= TypePlaceholder) error(s"$i has no type")(Seq()) else i.t )
         val c = TypeConstraint(t, i.t)
-        val env1 = env + (i.name -> t)
-        (env1, i.setType(t), c +: Nil, Solution())
+        (i.setType(t), c +: Nil, Solution())
 
       case expr@Lambda(x, e) =>
         val tx = x.setType(genType(x))
         val env1 : Map[String, Type] = env + (tx.name -> tx.t)
-        val (env2, te, cs, ftvE) = constrainTypes(env1)(e)
-        val env3 : Map[String, Type] = env2 - tx.name
+        val (te, cs, ftvE) = constrainTypes(env1)(e)
         val ft = FunType(tx.t, te.t)
         val exprT = genType(expr)
         val c = TypeConstraint(exprT, ft)
-        (env3, Lambda(tx, te)(ft), c +: cs, ftvE)
+        (Lambda(tx, te)(ft), c +: cs, ftvE)
 
 
       case expr@App(f, e) =>
-        val (env1, tf, csF, ftvF) = constrainTypes(env)(f)
-        val (env2, te, csE, ftvE) = constrainTypes(env1)(e)
+        val (tf, csF, ftvF) = constrainTypes(env)(f)
+        val (te, csE, ftvE) = constrainTypes(env)(e)
         val exprT = genType(expr)
         val c = TypeConstraint(tf.t, FunType(te.t, exprT))
-        (env2, App(tf, te)(exprT), c +: csF ++: csE, ftvF <> ftvE)
+        (App(tf, te)(exprT), c +: csF ++: csE, ftvF <> ftvE)
 
       case expr@DepLambda(x, e) =>
-        val (env1, te, csE, ftvE) = constrainTypes(env)(e)
+        val (te, csE, ftvE) = constrainTypes(env)(e)
         val exprT = genType(expr)
         val tf = x match {
           case n: NatIdentifier =>
@@ -173,33 +171,33 @@ object infer {
             DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
         }
         val c = TypeConstraint(exprT, tf.t)
-        (env1, tf, c +: csE, ftvE)
+        (tf, c +: csE, ftvE)
 
       case expr@DepApp(f, x) =>
-        val (env1, tf, csF, ftvF) = constrainTypes(env)(f)
+        val (tf, csF, ftvF) = constrainTypes(env)(f)
         val exprT = genType(expr)
         val c = DepConstraint(tf.t, x, exprT)
-        (env1, DepApp(tf, x)(exprT), c +: csF, ftvF)
+        (DepApp(tf, x)(exprT), c +: csF, ftvF)
 
       case TypeAnnotation(e, t) =>
-        val (env1, te, csE, ftvE) = constrainTypes(env)(e)
+        val (te, csE, ftvE) = constrainTypes(env)(e)
         val c = TypeConstraint(te.t, t)
-        (env1, te, c +: csE, ftvE)
+        (te, c +: csE, ftvE)
 
       case TypeAssertion(e, t) =>
         val ftvT = getFTVSubs(t)
-        val (env1, te, csE, ftvE) = constrainTypes(env)(e)
+        val (te, csE, ftvE) = constrainTypes(env)(e)
         val c = TypeConstraint(te.t, freeze(ftvT, t))
-        (env1, te, c +: csE, ftvE <> ftvT)
+        (te, c +: csE, ftvE <> ftvT)
 
       case o: Opaque =>
         val ftvO = getFTVSubs(o.t)
         val frozenExpr = Opaque(o.e, freeze(ftvO, o.t))
-        (env, frozenExpr, Nil, ftvO)
+        (frozenExpr, Nil, ftvO)
 
-      case l: Literal => (env, l, Nil, Solution())
+      case l: Literal => (l, Nil, Solution())
 
-      case p: Primitive => (env, p.setType(p.typeScheme), Nil, Solution())
+      case p: Primitive => (p.setType(p.typeScheme), Nil, Solution())
     }
 
   private case class Visitor(sol: Solution) extends PureTraversal {
