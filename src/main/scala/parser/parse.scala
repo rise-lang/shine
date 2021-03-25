@@ -1236,7 +1236,6 @@ the syntax-Tree has on top an Lambda-Expression
     val spanOfBackslash = parseState.tokenStream.head.s
     val span = Span(spanOfBackslash.file,spanOfBackslash.begin, expr.span.head.end)
     val lambda = r.Lambda(idName, expr)(rt.TypePlaceholder, Some(span))
-
     val myNewParseState = ParseState(toks, SExpr(lambda) :: parseState.parsedSynElems, map,mapDepL, spanList)
     println("myNewParseState: "+ myNewParseState)
     Left(myNewParseState)

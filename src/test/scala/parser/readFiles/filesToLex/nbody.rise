@@ -25,19 +25,19 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
           oclReduceSeq Local --I have to add AddrSpace.Local in matchPrimitiveAndIdentifier, because there it is easy
           (
           \accA:1.256.4xF32->\p2A:1.256.4xF32->
-          let (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1))) p2A) --toLocal adden --"id" is a primitive in RISE and cannot be used as name
+          (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1)) p2A)) --toLocal adden --"id" is a primitive in RISE and cannot be used as name
           (
             \p2Local -> mapLocal 1 (
               \accDim-> mapLocal 0 (
                 \p1B -> oclReduceSeq Private (
                   \accB:4xF32->\p2B:4xF32->
                   calcAcc (fst (fst p1B)) p2B deltaT espSqr accB
-                ) (snd p1B) (fst accDim)
+                ) (snd p1B) (toLocal (fst accDim))
               ) (zip newP1Chunk (snd (snd accDim)))
             ) (zip p2Local accA)
           ) 
-          )
-          (mapLocal 1 (mapLocal 0 (\x2->x2)) (generate (vectorFromScalar 0)))
+          ) 0F32
+          (toLocal (mapLocal 1 (mapLocal 0 (\x2->x2)) (generate (vectorFromScalar 0F32))))
         )
         (split 1N ( split 256N pos))
       ) (split 256N)
