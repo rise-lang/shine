@@ -1334,7 +1334,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case dep@r.DepLambda(r1, dep2@r.DepLambda(m, dep3@r.DepLambda(n, dep4@r.DepLambda(d, lam@r.Lambda(r.Identifier("matrixA"),
+      case dep@r.DepLambda(r1, dep2@r.DepLambda(m, dep3@r.DepLambda(n, lam@r.Lambda(r.Identifier("matrixA"),
 
       lam2@r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal((0, _)),
 
@@ -1344,9 +1344,7 @@ class parseTest extends  AnyFlatSpec {
       lam4@r.Lambda(r.Identifier("columnB"),
       r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
       lam5@r.Lambda(r.Identifier("acc"), lam6@r.Lambda(r.Identifier("arg"),
-      r.App(r.App(rp.add(_), r.Identifier("acc")), r.Identifier("arg"))))),
-      rp.let(_)),
-
+      r.App(r.App(rp.add(_), r.Identifier("acc")), r.Identifier("arg"))))),r.Literal(rS.FloatData(0),_)),
       r.App(r.DepApp(op.oclToMem(_), l1:rt.AddressSpace.Local.type),
 
       r.App(r.App(rp.mapSeq(_), lam7@r.Lambda(r.Identifier("x"), appMulFstSnd@r.App(appMulFst@r.App(rp.mul(spanMul), appFst@r.App(rp.fst(spanFst), r.Identifier("x"))),
@@ -1358,14 +1356,16 @@ class parseTest extends  AnyFlatSpec {
 
       )
 
-      ))
+      )
+      )
       ), appTransPose@r.App(rp.transpose(spanTranspose), r.Identifier("matrixB"))))
 
       ),
       r.Identifier("matrixA")
       ))
 
-      ))))) => {
+      )))) =>
+      {
         dep.span match {
           case None => fail("The Span should not be None")
           case Some(Span(file, begin, end)) => {
@@ -1391,16 +1391,6 @@ class parseTest extends  AnyFlatSpec {
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
             begin.row should equal(23)
-            end.row should equal(9)
-            begin.column should equal(9)
-            end.column should equal(22)
-          }
-        }
-        dep4.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(31)
             end.row should equal(9)
             begin.column should equal(9)
             end.column should equal(22)
