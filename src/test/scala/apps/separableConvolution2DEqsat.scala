@@ -32,8 +32,8 @@ class separableConvolution2DEqsat extends test_util.Tests {
   case class ExprWrapper(e: Expr) {
     override def hashCode(): Int = exprAlphaEq(typeErasure).hash(e)
     override def equals(o : Any) : Boolean = o match {
-      case other : ExprWrapper => exprAlphaEq(typeUnificationAlphaEq).apply(this.e)(other.e)
-      case other : Expr => exprAlphaEq(typeUnificationAlphaEq).apply(this.e)(other)
+      case other : ExprWrapper => exprAlphaEq(typeAlphaEq).apply(this.e)(other.e)
+      case other : Expr => exprAlphaEq(typeAlphaEq).apply(this.e)(other)
       case _ => false
     }
   }
