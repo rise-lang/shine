@@ -10,7 +10,7 @@ import rise.core.types.InferenceException.error
 
 import scala.collection.mutable
 
-trait Constraint
+sealed trait Constraint
 case class TypeConstraint(a: Type, b: Type) extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
@@ -19,10 +19,6 @@ case class NatConstraint(a: Nat, b: Nat) extends Constraint {
 }
 case class BoolConstraint(a: arithexpr.arithmetic.BoolExpr,
                           b: arithexpr.arithmetic.BoolExpr) extends Constraint {
-  override def toString: String = s"$a  ~  $b"
-}
-case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace)
-  extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
 case class MatrixLayoutConstraint(a: MatrixLayout, b: MatrixLayout)
