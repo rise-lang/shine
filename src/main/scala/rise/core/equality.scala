@@ -45,12 +45,11 @@ object equality {
 
   object typeAlphaEq extends TypeEq {
     /** Alpha equivalence on types.
-      * Short circuits in the event of syntactic equality.
       * Kind equality is checked on dependent functions and pairs.
       */
     override def equiv[K <: Kind]: Env[Kind.Identifier] => Eq[K] = env => a => b => {
       val and = PatternMatching.matchWithDefault(b, false)
-      a == b || (a match {
+      a match {
         case a : Nat => and {case b : Nat => equivNat(env)(a)(b)}
         case a : Type => and {case b : Type => equivType(env)(a)(b) }
         case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(ia, ib) }
@@ -58,11 +57,11 @@ object equality {
         case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(na, nb))(ba)(bb) }
         case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataKind](env.add(na, nb))(ba)(bb) }
         case NatCollectionFromArray(a) => and { case NatCollectionFromArray(b) => a == b } // FIXME: should use exprEq
-      })
+      }
     }
     val equivType: Env[Kind.Identifier] => Type => Type => Boolean = env => a => b => {
       val and = PatternMatching.matchWithDefault(b, false)
-      a == b || (a match {
+      a match {
         // Base cases
         case TypePlaceholder => and { case TypePlaceholder => true }
         case NatType => and { case NatType => true }
@@ -100,7 +99,7 @@ object equality {
         case DepPairType(xa, ta) => and { case DepPairType(xb, tb) =>
           xa.getClass == xb.getClass && equivType(env.add(xa, xb))(ta)(tb)
         }
-      })
+      }
     }
 
     /** Alpha renaming respecting hash function on types.
