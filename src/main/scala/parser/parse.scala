@@ -33,32 +33,49 @@ object parse {
   }
 
   sealed trait NatElement
-    final case class NNumber(nat: rt.Nat) extends NatElement
-    final case class NIdentifier(nat: rt.NatIdentifier) extends NatElement
+
+  final case class NNumber(nat: rt.Nat) extends NatElement
+
+  final case class NIdentifier(nat: rt.NatIdentifier) extends NatElement
 
   sealed trait DataElement
-    final case class DIdentifier(data: rt.DataTypeIdentifier) extends DataElement
-    final case class DType(data: rt.DataType) extends DataElement
+
+  final case class DIdentifier(data: rt.DataTypeIdentifier) extends DataElement
+
+  final case class DType(data: rt.DataType) extends DataElement
 
   sealed trait SIntToExprAlternatives
-    final case class AltMapGlobal() extends  SIntToExprAlternatives
-    final case class AltMapLocal() extends  SIntToExprAlternatives
-    final case class AltMapWorkGroup() extends  SIntToExprAlternatives
-    final case class AltMakeArray() extends SIntToExprAlternatives
+
+  final case class AltMapGlobal() extends SIntToExprAlternatives
+
+  final case class AltMapLocal() extends SIntToExprAlternatives
+
+  final case class AltMapWorkGroup() extends SIntToExprAlternatives
+
+  final case class AltMakeArray() extends SIntToExprAlternatives
 
   sealed trait SyntaxElement
-    final case class SExprClutched(expr: r.Expr, spanClutch: Span) extends SyntaxElement
-    final case class SExpr(expr: r.Expr) extends SyntaxElement
-    final case class SType(t: rt.Type, span: Span) extends SyntaxElement
-    final case class SIntToExpr(name: SIntToExprAlternatives, span: Span) extends SyntaxElement
-    final case class SNat(nat: NatElement, span: Span) extends SyntaxElement
-    final case class SData(data: DataElement, span:Span) extends SyntaxElement
-    final case class SAddrSpace(addrSpace: rt.AddressSpace, span: Span) extends SyntaxElement
+
+  final case class SExprClutched(expr: r.Expr, spanClutch: Span) extends SyntaxElement
+
+  final case class SExpr(expr: r.Expr) extends SyntaxElement
+
+  final case class SType(t: rt.Type, span: Span) extends SyntaxElement
+
+  final case class SIntToExpr(name: SIntToExprAlternatives, span: Span) extends SyntaxElement
+
+  final case class SNat(nat: NatElement, span: Span) extends SyntaxElement
+
+  final case class SData(data: DataElement, span: Span) extends SyntaxElement
+
+  final case class SAddrSpace(addrSpace: rt.AddressSpace, span: Span) extends SyntaxElement
 
   sealed trait RiseKind //Todo: Scoping einbauen, also Kind nennen und Token explizit immer hinzufügen
-    final case class RData() extends RiseKind
-    final case class RNat() extends RiseKind
-    final case class RAddrSpace() extends RiseKind
+  final case class RData() extends RiseKind
+
+  final case class RNat() extends RiseKind
+
+  final case class RAddrSpace() extends RiseKind
 
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
   type MapFkt = mutable.HashMap[String, Either[rd.ToBeTyped[r.Expr], r.types.Type]]
@@ -66,7 +83,7 @@ object parse {
   type BracesSpan = Option[List[Span]]
 
   final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], mapFkt: MapFkt,
-                              mapDepL:MapDepL, spanList: BracesSpan)
+                              mapDepL: MapDepL, spanList: BracesSpan)
 
   implicit class ParseStatePipe(val ps: Either[ParseState, ParseErrorOrState]) extends AnyVal {
     def |>(f: ParseState => Either[ParseState, ParseErrorOrState]): Either[ParseState, ParseErrorOrState] = {
@@ -119,96 +136,129 @@ object parse {
   }
 
 
-
-  def matchPrimitiveOrIdentifier(name:String, span:Span): SyntaxElement= {
-    require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
+  def matchPrimitiveOrIdentifier(name: String, span: Span): SyntaxElement = {
+    require(name.matches("[a-z][a-zA-Z0-9_]*"), "'" + name + "' has not the preffered structure")
     name match {
-        //openCL/primitives
+      //openCL/primitives
       case "mapGlobal" => SIntToExpr(AltMapGlobal(), span)
       case "mapLocal" => SIntToExpr(AltMapLocal(), span)
-      case "mapWorkGroup" => SIntToExpr(AltMapWorkGroup(),span)
+      case "mapWorkGroup" => SIntToExpr(AltMapWorkGroup(), span)
       case "oclReduceSeq" => SExpr(op.oclReduceSeq(Some(span)))
-      case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll( Some(span)))
-      case "oclIterate" => SExpr(op.oclIterate( Some(span)))
-      case "oclCircularBuffer"=>SExpr(op.oclCircularBuffer( Some(span)))
-      case "oclRotateValues" => SExpr(op.oclRotateValues( Some(span)))
+      case "oclReduceSeqUnroll" => SExpr(op.oclReduceSeqUnroll(Some(span)))
+      case "oclIterate" => SExpr(op.oclIterate(Some(span)))
+      case "oclCircularBuffer" => SExpr(op.oclCircularBuffer(Some(span)))
+      case "oclRotateValues" => SExpr(op.oclRotateValues(Some(span)))
 
       //openCL/TypedDSL //Todo: not sure if this with .toExpr is working. Test with nBody
-      case "toGlobal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem( Some(span)),
+      case "toGlobal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem(Some(span)),
         rt.AddressSpace.Global
       )(rt.TypePlaceholder, Some(span)))
-      case "toLocal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem( Some(span)),
+      case "toLocal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem(Some(span)),
         rt.AddressSpace.Local
       )(rt.TypePlaceholder, Some(span)))
-      case "toPrivate" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem( Some(span)),
+      case "toPrivate" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem(Some(span)),
         rt.AddressSpace.Private
       )(rt.TypePlaceholder, Some(span)))
 
-        //core/primitives
-      case "makeArray" => SIntToExpr(AltMakeArray(),span)
+      //core/primitives
+      case "makeArray" => SIntToExpr(AltMakeArray(), span)
       case "cast" => SExpr(rp.cast(Some(span)))
-      case "depJoin" => SExpr(rp.depJoin( Some(span)))
-      case "depMapSeq" => SExpr(rp.depMapSeq( Some(span)))
-      case "depZip" => SExpr(rp.depZip( Some(span)))
-      case "drop" => SExpr(rp.drop( Some(span)))
-      case "fst" => SExpr(rp.fst( Some(span)))
-      case "gather" => SExpr(rp.gather( Some(span)))
-      case "generate" => SExpr(rp.generate( Some(span)))
-      case "idx" => SExpr(rp.idx( Some(span)))
-      case "id" => SExpr(rp.id( Some(span)))
-      case "indexAsNat" => SExpr(rp.indexAsNat( Some(span)))
-      case "iterate" => SExpr(rp.iterate( Some(span)))
-      case "join" => SExpr(rp.join( Some(span)))
-      case "let" => SExpr(rp.let( Some(span)))
-      case "map" => SExpr(rp.map( Some(span)))
-      case "mapFst" => SExpr(rp.mapFst( Some(span)))
-      case "mapSnd" => SExpr(rp.mapSnd( Some(span)))
-      case "mapSeq" => SExpr(rp.mapSeq( Some(span)))
-      case "mapStream" => SExpr(rp.mapStream( Some(span)))
-      case "iterateStream" => SExpr(rp.iterateStream( Some(span)))
-      case "mapSeqUnroll" => SExpr(rp.mapSeqUnroll( Some(span)))
-      case "toMem" => SExpr(rp.toMem( Some(span)))
-      case "natAsIndex" => SExpr(rp.natAsIndex( Some(span)))
-      case "padEmpty" => SExpr(rp.padEmpty( Some(span)))
-      case "padClamp" => SExpr(rp.padClamp( Some(span)))
-      case "partition" => SExpr(rp.partition( Some(span)))
-      case "makePair" => SExpr(rp.makePair( Some(span)))
-      case "reduce" => SExpr(rp.reduce( Some(span)))
-      case "reduceSeq" => SExpr(rp.reduceSeq( Some(span)))
-      case "reduceSeqUnroll" => SExpr(rp.reduceSeqUnroll( Some(span)))
-      case "reorder" => SExpr(rp.reorder( Some(span)))
-      case "scanSeq" => SExpr(rp.scanSeq( Some(span)))
-      case "slide" => SExpr(rp.slide( Some(span)))
-      case "circularBuffer" => SExpr(rp.circularBuffer( Some(span)))
-      case "rotateValues" => SExpr(rp.rotateValues( Some(span)))
-      case "snd" => SExpr(rp.snd( Some(span)))
-      case "split" => SExpr(rp.split( Some(span)))
-      case "take" => SExpr(rp.take( Some(span)))
-      case "transpose" => SExpr(rp.transpose( Some(span)))
-      case "select" => SExpr(rp.select( Some(span)))
-      case "zip" => SExpr(rp.zip( Some(span)))
-      case "neg" => SExpr(rp.neg( Some(span)))
-      case "not" => SExpr(rp.not( Some(span)))
-      case "add" => SExpr(rp.add( Some(span)))
-      case "sub" => SExpr(rp.sub( Some(span)))
-      case "mul" => SExpr(rp.mul( Some(span)))
-      case "div" => SExpr(rp.div( Some(span)))
-      case "mod" => SExpr(rp.mod( Some(span)))
-      case "gt" => SExpr(rp.gt( Some(span)))
-      case "lt" => SExpr(rp.lt( Some(span)))
-      case "equal" => SExpr(rp.equal( Some(span)))
-      case "asVectorAligned" => SExpr(rp.asVectorAligned( Some(span)))
-      case "asVector" => SExpr(rp.asVector( Some(span)))
-      case "asScalar" => SExpr(rp.asScalar( Some(span)))
-      case "vectorFromScalar" => SExpr(rp.vectorFromScalar( Some(span)))
+      case "depJoin" => SExpr(rp.depJoin(Some(span)))
+      case "depMapSeq" => SExpr(rp.depMapSeq(Some(span)))
+      case "depZip" => SExpr(rp.depZip(Some(span)))
+      case "drop" => SExpr(rp.drop(Some(span)))
+      case "fst" => SExpr(rp.fst(Some(span)))
+      case "gather" => SExpr(rp.gather(Some(span)))
+      case "generate" => SExpr(rp.generate(Some(span)))
+      case "idx" => SExpr(rp.idx(Some(span)))
+      case "id" => SExpr(rp.id(Some(span)))
+      case "indexAsNat" => SExpr(rp.indexAsNat(Some(span)))
+      case "iterate" => SExpr(rp.iterate(Some(span)))
+      case "join" => SExpr(rp.join(Some(span)))
+      case "concat" => SExpr(rp.concat(Some(span)))
+      case "let" => SExpr(rp.let(Some(span)))
+      case "map" => SExpr(rp.map(Some(span)))
+      case "mapFst" => SExpr(rp.mapFst(Some(span)))
+      case "mapSnd" => SExpr(rp.mapSnd(Some(span)))
+      case "mapSeq" => SExpr(rp.mapSeq(Some(span)))
+      case "mapStream" => SExpr(rp.mapStream(Some(span)))
+      case "iterateStream" => SExpr(rp.iterateStream(Some(span)))
+      case "mapSeqUnroll" => SExpr(rp.mapSeqUnroll(Some(span)))
+      case "toMem" => SExpr(rp.toMem(Some(span)))
+      case "natAsIndex" => SExpr(rp.natAsIndex(Some(span)))
+      case "padEmpty" => SExpr(rp.padEmpty(Some(span)))
+      case "padClamp" => SExpr(rp.padClamp(Some(span)))
+      case "partition" => SExpr(rp.partition(Some(span)))
+      case "makePair" => SExpr(rp.makePair(Some(span)))
+      case "reduce" => SExpr(rp.reduce(Some(span)))
+      case "reduceSeq" => SExpr(rp.reduceSeq(Some(span)))
+      case "reduceSeqUnroll" => SExpr(rp.reduceSeqUnroll(Some(span)))
+      case "reorder" => SExpr(rp.reorder(Some(span)))
+      case "scanSeq" => SExpr(rp.scanSeq(Some(span)))
+      case "slide" => SExpr(rp.slide(Some(span)))
+      case "circularBuffer" => SExpr(rp.circularBuffer(Some(span)))
+      case "rotateValues" => SExpr(rp.rotateValues(Some(span)))
+      case "snd" => SExpr(rp.snd(Some(span)))
+      case "split" => SExpr(rp.split(Some(span)))
+      case "take" => SExpr(rp.take(Some(span)))
+      case "transpose" => SExpr(rp.transpose(Some(span)))
+      case "select" => SExpr(rp.select(Some(span)))
+      case "zip" => SExpr(rp.zip(Some(span)))
+      case "neg" => SExpr(rp.neg(Some(span)))
+      case "not" => SExpr(rp.not(Some(span)))
+      case "add" => SExpr(rp.add(Some(span)))
+      case "sub" => SExpr(rp.sub(Some(span)))
+      case "mul" => SExpr(rp.mul(Some(span)))
+      case "div" => SExpr(rp.div(Some(span)))
+      case "mod" => SExpr(rp.mod(Some(span)))
+      case "gt" => SExpr(rp.gt(Some(span)))
+      case "lt" => SExpr(rp.lt(Some(span)))
+      case "equal" => SExpr(rp.equal(Some(span)))
+      case "asVectorAligned" => SExpr(rp.asVectorAligned(Some(span)))
+      case "asVector" => SExpr(rp.asVector(Some(span)))
+      case "asScalar" => SExpr(rp.asScalar(Some(span)))
+      case "vectorFromScalar" => SExpr(rp.vectorFromScalar(Some(span)))
       case "printType" => SExpr(rp.printType("", Some(span)).primitive) //Todo: I was forced to delete span in printType and typeHole because of the error with wrong number of arguments
       case "typeHole" => SExpr(rp.typeHole("", Some(span)).primitive)
       case _ => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
     }
   }
 
+  private def getIdInIdentNoDec(map:MapFkt, name:String, span: Span):SyntaxElement={
+    val id = map.get(name) match {
+      case None => throw new IllegalArgumentException("Variable is not declared: " + name)
+      case Some(Right(_)) => throw new IllegalArgumentException("Variable is only declared but has no definition: " + name) //Todo: Proper Error for Function has declaration but not definition yet
+      case Some(Left(rd.ToBeTyped(e))) => e match {
+        case r.Identifier(_) => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
+        case _ => SExpr(e)
+      }
+    }
+    id
+  }
+
+  private def getIdInIdentWithDec(map:MapFkt, name:String, span: Span):SyntaxElement={
+    val id = map.get(name) match {
+      case None => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
+      case Some(Right(_)) => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span))) //throw new IllegalArgumentException("Variable is only declared but has no definition: "+ name)//Todo: Proper Error for Function has declaration but not definition yet
+      case Some(Left(rd.ToBeTyped(e))) => e match {
+        case r.Identifier(_) => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
+        case _ => throw new IllegalArgumentException("The name already exists with an definition: " + name)
+      }
+    }
+    id
+  }
+
   def parseIdent(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseIdent: " + parseState)
+    parseIdentPos(parseState, true)
+  }
+
+  def parseIdentNoDec(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseIdentNoDec: " + parseState)
+    parseIdentPos(parseState, true)
+  }
+
+  def parseIdentPos(parseState: ParseState, withDec: Boolean): Either[ParseState, ParseErrorOrState] = {
     val ParseState(tokens, parsedSynElems, map, mapDepL, spanList) = parseState
     if (tokens.isEmpty) {
       return Right(ParseError("failed to parse Ident: " + " List is empty"))
@@ -220,11 +270,15 @@ object parse {
         matchPrimitiveOrIdentifier(name, span) match {
           case SIntToExpr(name, span) => Left(ParseState(remainderTokens, SIntToExpr(name, span) :: parsedSynElems, map,
             mapDepL, spanList))
+          case SExpr(r.Identifier(_))=>{
+            val id = if(withDec) getIdInIdentWithDec(map, name, span) else getIdInIdentNoDec(map, name, span)
+            Left(ParseState(remainderTokens, id :: parsedSynElems, map, mapDepL, spanList))
+          }
           case SExpr(prim) => {
-              if(prim.span.isEmpty){
-                throw new IllegalStateException("The span of '" + prim +"' is empty")
-              }
-              Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems, map, mapDepL, spanList))
+            if(prim.span.isEmpty){
+              throw new IllegalStateException("The span of '" + prim +"' is empty")
+            }
+            Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems, map, mapDepL, spanList))
           }
           case otherSyntaxElement => throw new IllegalStateException("The Syntax Element '" + otherSyntaxElement +
             "' was not expected from matchPrimitiveOrIdentifer")
@@ -1066,10 +1120,11 @@ object parse {
       }
     }
   }
+
   /*
-  is the whole Syntax-Tree.
-  the syntax-Tree has on top an Lambda-Expression
-   */
+is the whole Syntax-Tree.
+the syntax-Tree has on top an Lambda-Expression
+ */
   def parseLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     if(parseState.tokenStream.isEmpty){
       println("Abbruch; parseLambda: "+ parseState)
@@ -1077,89 +1132,173 @@ object parse {
     }
     println("parseLambda: " +parseState)
     val psOld =
-      Left(parseState) |>
+      Left(ParseState(parseState.tokenStream, Nil, parseState.mapFkt, parseState.mapDepL, parseState.spanList)) |>
         parseBackslash |>
         parseIdent     |>
         parseMaybeTypeAnnotation |>
         parseArrow
 
-        val (psOrErr, spanBackslash) = psOld match {
-          case Left(p) => p.spanList match {
-            case Some(Nil) => throw new IllegalArgumentException("this should not happen to be Nil")
-            case None => throw new IllegalArgumentException("this should not happen to be None")
-            case Some(span::Nil) => (parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, None)) , span )
-            case Some(span::l)=> ( parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, Some(l)) ), span)
-          }
-          case Right(e) => {
-            println("endLambda: "+ e)
-            return Right(e)
+    val ((psOrErr, spanBackslash),idName) = psOld match {
+      case Left(p) => {
+        val synElemListExpr = p.parsedSynElems
+        val (maybeTypedIdent, synElemListMaybeTIdent):(r.Expr, List[SyntaxElement]) = {
+          synElemListExpr.head match {
+            case SType(t, _) =>
+              synElemListExpr.tail.head match {
+                case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
+                case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+              }
+            case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
+            case SExpr(i) => (i, synElemListExpr.tail)
+            case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
+              " is not an Expression!")
+            case SData(t,_) => t match {
+              case DIdentifier(data) => synElemListExpr.tail.head match {
+                case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
+                case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+              }
+              case DType(data) => synElemListExpr.tail.head match {
+                case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
+                case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+              }
+            }
+            case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+            case SAddrSpace(addrSpace,_) => throw new RuntimeException(
+              "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
           }
         }
+        require(synElemListMaybeTIdent.isEmpty, "the List should be empty")
+        val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
+        var map = p.mapFkt
+        //local variables are in the list, so that not two same localVariables are declared
+        if (map.contains(identifierName.name)) {//Todo: Better error
+          throw new IllegalArgumentException("A variable or function with the exact same name '"+ identifierName.name +
+            "' is already declared! <- " + map.get(identifierName.name))
+        }
+        map.update(identifierName.name, Left(rd.ToBeTyped(identifierName)))
+        val ret = p.spanList match {
+          case Some(Nil) => throw new IllegalArgumentException("this should not happen to be Nil")
+          case None => throw new IllegalArgumentException("this should not happen to be None")
+          case Some(span::Nil) => (parseMaybeAppExpr(ParseState(p.tokenStream,Nil, map, p.mapDepL, None)) , span )
+          case Some(span::l)=> ( parseMaybeAppExpr(ParseState(p.tokenStream,Nil, map, p.mapDepL, Some(l)) ), span)
+        }
+        (ret, identifierName)
+      }
+      case Right(e) => {
+        println("endLambda: "+ e)
+        return Right(e)
+      }
+    }
 
-    val (toks, synElemList, map, mapDepL, spanList) = psOrErr match {
+    val (toks, expr, map, mapDepL, spanList) = psOrErr match {
       case Left(psNew) => {
-        val expr = SExpr(combineExpressionsDependent(psNew.parsedSynElems, psNew.mapDepL))
+        val expr = combineExpressionsDependent(psNew.parsedSynElems, psNew.mapDepL)
         //println("\n\n\nSpanIsHere"+ expr.expr +" : "+ expr.expr.span+ "\n\n\n")
-        val newL = expr :: Nil
-        val li:List[SyntaxElement] = psOld match {
-          case Left(pa) => pa.parsedSynElems.reverse ++ newL
-          case Right(_) => throw new RuntimeException(
-            "this should not be able to happen in parseLambdda, because I already have controlled this!")
-        }
-        val l = li.reverse
-        (psNew.tokenStream,l, psNew.mapFkt, psNew.mapDepL, psNew.spanList)
+        (psNew.tokenStream,expr, psNew.mapFkt, psNew.mapDepL, psNew.spanList)
       }
       case Right(e) => return Right(e)
     }
-
-    val (expr, synElemListExpr) = (synElemList.head match {
-      case SExpr(e) => e
-      case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
-    }, synElemList.tail)
-    println("now in Lambda we want to combine our results: "+ expr +" # " + synElemListExpr)
-
-    val (maybeTypedIdent, synElemListMaybeTIdent):(r.Expr, List[SyntaxElement]) =
-      synElemListExpr.head match {
-        case SType(t, _) =>
-          synElemListExpr.tail.head match {
-            case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
-            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
-          }
-        case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
-        case SExpr(i) => (i, synElemListExpr.tail)
-        case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
-          " is not an Expression!")
-        case SData(t,_) => t match {
-          case DIdentifier(data) => synElemListExpr.tail.head match {
-            case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
-            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
-          }
-          case DType(data) => synElemListExpr.tail.head match {
-            case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
-            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
-          }
-        }
-        case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-        case SAddrSpace(addrSpace,_) => throw new RuntimeException(
-          "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-      }
-    val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
     val spanOfBackslash = parseState.tokenStream.head.s
     val span = Span(spanOfBackslash.file,spanOfBackslash.begin, expr.span.head.end)
-    val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder, Some(span))
-    println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
+    val lambda = Lambda(idName, expr)(rt.TypePlaceholder, Some(span))
 
-    //local variables are in the list, so that not two same localVariables are declared
-    if (map.contains(identifierName.name)) {
-      throw new IllegalArgumentException("A variable or function with the exact same name '"+ identifierName.name +
-        "' is already declared! <- " + map.get(identifierName.name))
-    }
-    map.update(identifierName.name, Left(rd.ToBeTyped(identifierName)))
-
-    val myNewParseState = ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent, map,mapDepL, spanList)
+    val myNewParseState = ParseState(toks, SExpr(lambda) :: parseState.parsedSynElems, map,mapDepL, spanList)
     println("myNewParseState: "+ myNewParseState)
     Left(myNewParseState)
   }
+//  /*
+//  old parseLambda Todo: delete it
+//   */
+//  def parseLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+//    if(parseState.tokenStream.isEmpty){
+//      println("Abbruch; parseLambda: "+ parseState)
+//      return Left(parseState)
+//    }
+//    println("parseLambda: " +parseState)
+//    val psOld =
+//      Left(parseState) |>
+//        parseBackslash |>
+//        parseIdent     |>
+//        parseMaybeTypeAnnotation |>
+//        parseArrow
+//
+//        val (psOrErr, spanBackslash) = psOld match {
+//          case Left(p) => p.spanList match {
+//            case Some(Nil) => throw new IllegalArgumentException("this should not happen to be Nil")
+//            case None => throw new IllegalArgumentException("this should not happen to be None")
+//            case Some(span::Nil) => (parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, None)) , span )
+//            case Some(span::l)=> ( parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, Some(l)) ), span)
+//          }
+//          case Right(e) => {
+//            println("endLambda: "+ e)
+//            return Right(e)
+//          }
+//        }
+//
+//    val (toks, synElemList, map, mapDepL, spanList) = psOrErr match {
+//      case Left(psNew) => {
+//        val expr = SExpr(combineExpressionsDependent(psNew.parsedSynElems, psNew.mapDepL))
+//        //println("\n\n\nSpanIsHere"+ expr.expr +" : "+ expr.expr.span+ "\n\n\n")
+//        val newL = expr :: Nil
+//        val li:List[SyntaxElement] = psOld match {
+//          case Left(pa) => pa.parsedSynElems.reverse ++ newL
+//          case Right(_) => throw new RuntimeException(
+//            "this should not be able to happen in parseLambdda, because I already have controlled this!")
+//        }
+//        val l = li.reverse
+//        (psNew.tokenStream,l, psNew.mapFkt, psNew.mapDepL, psNew.spanList)
+//      }
+//      case Right(e) => return Right(e)
+//    }
+//
+//    val (expr, synElemListExpr) = (synElemList.head match {
+//      case SExpr(e) => e
+//      case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
+//    }, synElemList.tail)
+//    println("now in Lambda we want to combine our results: "+ expr +" # " + synElemListExpr)
+//
+//    val (maybeTypedIdent, synElemListMaybeTIdent):(r.Expr, List[SyntaxElement]) =
+//      synElemListExpr.head match {
+//        case SType(t, _) =>
+//          synElemListExpr.tail.head match {
+//            case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
+//            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+//          }
+//        case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
+//        case SExpr(i) => (i, synElemListExpr.tail)
+//        case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
+//          " is not an Expression!")
+//        case SData(t,_) => t match {
+//          case DIdentifier(data) => synElemListExpr.tail.head match {
+//            case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
+//            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+//          }
+//          case DType(data) => synElemListExpr.tail.head match {
+//            case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
+//            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+//          }
+//        }
+//        case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+//        case SAddrSpace(addrSpace,_) => throw new RuntimeException(
+//          "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
+//      }
+//    val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
+//    val spanOfBackslash = parseState.tokenStream.head.s
+//    val span = Span(spanOfBackslash.file,spanOfBackslash.begin, expr.span.head.end)
+//    val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder, Some(span))
+//    println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
+//
+//    //local variables are in the list, so that not two same localVariables are declared
+//    if (map.contains(identifierName.name)) {
+//      throw new IllegalArgumentException("A variable or function with the exact same name '"+ identifierName.name +
+//        "' is already declared! <- " + map.get(identifierName.name))
+//    }
+//    map.update(identifierName.name, Left(rd.ToBeTyped(identifierName)))
+//
+//    val myNewParseState = ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent, map,mapDepL, spanList)
+//    println("myNewParseState: "+ myNewParseState)
+//    Left(myNewParseState)
+//  }
 
   //_________________________________________________________Lambda
   //_________________________________________________________Expres
@@ -1168,7 +1307,7 @@ object parse {
     println("parseLowExpression: " + parseState)
     Left(parseState) |>
       (parseLambda _ || parseDepLambda || parseBracesExpr ||
-        parseUnOperator || parseBinOperator || parseIdent ||
+        parseUnOperator || parseBinOperator || parseIdentNoDec ||
         parseNumber || parseAddrSpaceType || parseTypeinNoAppExpr|| parseNat //|| parseDependencies
         )
 
