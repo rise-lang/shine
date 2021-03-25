@@ -6,7 +6,7 @@ import rise.core.equality._
 
 sealed trait Type {
   def =~~=(b: Type): Boolean = typeAlphaEq[TypeKind](this)(b)
-  def =~=(b: Type): Boolean = typeUnificationAlphaEq[TypeKind](this)(b)
+  def =~=(b: Type): Boolean = typePartialAlphaEq[TypeKind](this)(b)
 }
 
 object TypePlaceholder extends Type {

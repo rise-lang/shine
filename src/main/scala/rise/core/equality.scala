@@ -31,7 +31,7 @@ object equality {
     override def equiv[K <: Kind]: Env[Kind.Identifier] => Eq[K] = _ => _ => _ => true
   }
 
-  object typeUnificationAlphaEq extends TypeEq {
+  object typePartialAlphaEq extends TypeEq {
     override def hash[K <: Kind]: K#T => Int = _ => 0
     override def equiv[K <: Kind]: Env[Kind.Identifier] => Eq[K] = env => a => b => (a, b) match {
       case (a : Type, b : Type) => (a, b) match {
