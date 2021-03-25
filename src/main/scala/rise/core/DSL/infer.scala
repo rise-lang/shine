@@ -29,7 +29,7 @@ object infer {
     // and we return a `ftvSubs` map that maps these explicit type identifiers back to implicit type identifiers.
     val (typed_e, constraints) = constrainTypes(Map())(frozen_e)
     // Applies ftvSubs to the constraint solutions
-    val solution = Constraint.solve(constraints, Seq())(explDep) ++ ftvSubs
+    val solution = Constraint.solve(constraints, Seq(), Seq())(explDep) ++ ftvSubs
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
