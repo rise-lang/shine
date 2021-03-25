@@ -1145,7 +1145,32 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("t"), r.Identifier("t")) => true
+      case r.Lambda(r.Identifier("t"), r.Literal(rS.IntData(0), _)) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+    assert(r.IsClosedForm(ex))
+  }
+
+  "parser" should "be able to parse 'Idx2.rise'" in {
+    val fileName: String = testFilePath + "Idx2.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex.t match {
+      case rt.FunType(rt.IndexType(n), rt.i32) if n.eval.equals(42)=> true
+      case t => fail("The Type '"+t+"' is not the expected type.")
+    }
+
+    ex match {
+      case r.Lambda(r.Identifier("t"), r.Literal(rS.IntData(0), _)) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
