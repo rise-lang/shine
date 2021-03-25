@@ -976,10 +976,10 @@ class parseTest extends  AnyFlatSpec {
 
     ex_f.t match {
       case rt.DepFunType(n,
-      rt.FunType(rt.ArrayType(n1:rt.NatIdentifier, rt.i32),
-      rt.FunType(rt.ArrayType(n2:rt.NatIdentifier, rt.i32),
-      rt.i32)))
-        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name) => true
+      rt.FunType(rt.ArrayType(n1:rt.NatIdentifier, rt.f32),
+      rt.FunType(rt.ArrayType(n2:rt.NatIdentifier, rt.f32),
+      rt.f32)))
+        if n1.name.equals(n.name) && n2.name.equals(n.name) => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
@@ -987,14 +987,14 @@ class parseTest extends  AnyFlatSpec {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(n,
       r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
+      r.App(r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
       r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
-      ))),
-      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+      ))),r.Literal(rS.FloatData(0),_)),
+      r.App(rp.toMem(_),r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
       r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
       r.App(rp.snd(_), r.Identifier("x")) )
       )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2"))))
-      ))) => true
+      )))) => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
@@ -1028,14 +1028,14 @@ class parseTest extends  AnyFlatSpec {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
       case r.DepLambda(n,r.DepLambda(d,
       r.Lambda(r.Identifier("vec1"),r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
+      r.App(r.App(r.App(rp.reduceSeq(_), r.Lambda(r.Identifier("acc"), r.Lambda(
       r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
-      ))),
-      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+      ))),r.Literal(rS.IntData(0),_)),
+      r.App(rp.toMem(_),r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
       r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
       r.App(rp.snd(_), r.Identifier("x")) )
       )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2"))))
-      )))) => true
+      ))))) => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
@@ -1103,25 +1103,6 @@ class parseTest extends  AnyFlatSpec {
 
     ex match {
       case r.Lambda(r.Identifier("x"), r.App(r.Lambda(r.Identifier("y"), r.Identifier("y")), r.Identifier("x"))) => true
-      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      case a => fail("not a lambda: " + a)
-    }
-  }
-
-  "parser" should "be able to parse 'fx.rise'" in {
-    val fileName: String = testFilePath + "fx.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName: String = "f"
-    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-
-    ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.Identifier("fkt"), r.Identifier("x"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -2949,6 +2930,16 @@ class parseTest extends  AnyFlatSpec {
 
   //-----------------------------------------------------------------------------------------------------
   //Error-Tests //Todo: " .. (.. (..).. " as an ErrorTest
+
+  "parser" should "be able to parse 'fx.rise'" in {
+    val fileName: String = testFilePath + "fx.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val thrown = intercept[RuntimeException] {
+      parse(lexer.tokens)
+    }
+    thrown.getMessage should equal("Variable is not declared: fkt")
+  }
 
   "parser" should "not be able to parse 'noExpressionInBraces.rise'" in {
     val fileName: String = errorFilePath + "noExpressionInBraces.rise"

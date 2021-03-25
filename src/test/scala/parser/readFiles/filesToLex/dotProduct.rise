@@ -1,4 +1,4 @@
-f::N:Nat=>N.I32->N.I32->I32
+f::N:Nat=>N.F32->N.F32->F32
 f=\N:Nat=>\vec1->\vec2 ->
-    reduceSeq (\acc:I32->\arg:I32-> + acc arg)
-        (mapSeq (\x:(I32,I32)->* (fst x) (snd x)) (zip vec1 vec2))
+    reduceSeq (\acc:F32->\arg:F32-> + acc arg) 0F32
+        (toMem ((mapSeq (\x:(F32,F32)->* (fst x) (snd x)) (zip vec1 vec2))))
