@@ -37,7 +37,7 @@ object vectorize {
 
   // asScalar >> asVector -> _
   @rule def asScalarAsVectorId: Strategy[Rise] = {
-    case e @ App(v, App(asScalar(), in)) if isAsVector(v) && e.t =~~= in.t =>
+    case e @ App(v, App(asScalar(), in)) if isAsVector(v) && e.t =~= in.t =>
       Success(in)
   }
 
@@ -177,7 +177,7 @@ object vectorize {
         App(asV @ DepApp(_, v: Nat), App(fst(), x2))),
         App(asV2, App(snd(), x3)))),
       in
-    )) if x =~~= x2 && x =~~= x3 && isAsVector(asV) && asV =~~= asV2 =>
+    )) if x =~= x2 && x =~= x3 && isAsVector(asV) && asV =~= asV2 =>
       Success((
         preserveType(in) |> mapFst(padEmpty(p*v)) |> mapSnd(padEmpty(p*v)) |>
         // FIXME: aligning although we have no alignment information

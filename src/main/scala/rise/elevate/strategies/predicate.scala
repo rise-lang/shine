@@ -103,7 +103,7 @@ object predicate {
   case class isEqualToUntyped(x: ToBeTyped[Expr]) extends Strategy[Rise] {
     override def apply(e: Rise): RewriteResult[Rise] = {
       val p = x.toUntypedExpr
-      if (p =~= e) Success(e) else Failure(isEqualToUntyped(x))
+      if (p =~~= e) Success(e) else Failure(isEqualToUntyped(x))
     }
   }
 }

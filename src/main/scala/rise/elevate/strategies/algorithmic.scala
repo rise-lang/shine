@@ -30,7 +30,7 @@ object algorithmic {
     def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): RewriteResult[Rise] = {
       gx match {
         case App(f2, gx2) =>
-          if (gx2 =~~= x) {
+          if (gx2 =~= x) {
             Success(map(f2) >> map(f) !: e.t)
           } else {
             mapFirstFissionRec(x, fun(e => f(preserveType(f2)(e))), gx2)
@@ -52,7 +52,7 @@ object algorithmic {
     def mapFullFissionRec(x: Identifier, gx: Rise): Option[ToBeTyped[Rise]] = {
       gx match {
         case App(f, gx2) =>
-          if (gx2 =~~= x) {
+          if (gx2 =~= x) {
             Some(map(f))
           } else {
             mapFullFissionRec(x, gx2).map(p => p >> map(f))

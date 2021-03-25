@@ -41,7 +41,7 @@ class showScalaTest extends test_util.Tests {
     val expr = toolbox.eval(toolbox.parse(untypedScala)).asInstanceOf[Expr]
     val typedExpr = toolbox.eval(toolbox.parse(typedScala)).asInstanceOf[Expr]
 
-    assert(expr =~= dotElemWeights.toUntypedExpr)
-    assert(typedExpr =~= typedDotElemWeights)
+    assert(expr =~~= dotElemWeights.toUntypedExpr)
+    assert(typedExpr =~~= typedDotElemWeights)
   }
 }

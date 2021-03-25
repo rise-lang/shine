@@ -35,7 +35,7 @@ class tiling extends test_util.Tests {
     val na = BENF(a).get
     val nb = BENF(b).get
     val uab: Rise = toBeTyped(na) !: nb.t
-    makeClosed(uab) =~= makeClosed(nb)
+    makeClosed(uab) =~~= makeClosed(nb)
   }
   // Check that DSL makes sense
 
@@ -323,10 +323,10 @@ class tiling extends test_util.Tests {
     assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
 
     val gold2 = DFNF(λ(i => λ(f => (J o **(f) o S) $ i))).get
-    assert(makeClosed((DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~~= makeClosed(gold2))
-    assert(makeClosed((DFNF `;` DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~~= makeClosed(gold2))
+    assert(makeClosed((DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~= makeClosed(gold2))
+    assert(makeClosed((DFNF `;` DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~= makeClosed(gold2))
 
     val gold3 = (DFNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get
-    assert(makeClosed((DFNF `;` RNF `;` DFNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~~= makeClosed(gold3))
+    assert(makeClosed((DFNF `;` RNF `;` DFNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) =~= makeClosed(gold3))
   }
 }

@@ -9,8 +9,8 @@ sealed abstract class Expr {
   val t: Type
   def setType(t: Type): Expr
   override def toString: String = showRise(this)
-  def =~~=(b : Expr) : Boolean = exprAlphaEq(typeAlphaEq).apply(this)(b)
-  def =~=(b : Expr) : Boolean = exprAlphaEq(typePartialAlphaEq).apply(this)(b)
+  def =~=(b : Expr) : Boolean = exprAlphaEq(typeAlphaEq).apply(this)(b)
+  def =~~=(b : Expr) : Boolean = exprAlphaEq(typePartialAlphaEq).apply(this)(b)
 }
 
 final case class Identifier(name: String)(

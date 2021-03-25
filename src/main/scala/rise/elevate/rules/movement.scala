@@ -211,7 +211,7 @@ object movement {
   @rule def padEmptyBeforeZip: Strategy[Rise] = {
     case e @ App(DepApp(padEmpty(), n: Nat),
       App(App(zip(), App(fst(), e1)), App(snd(), e2)))
-    if e1 =~~= e2 =>
+    if e1 =~= e2 =>
       Success((preserveType(e1) |>
         mapFst(padEmpty(n)) |> mapSnd(padEmpty(n)) |>
         fun(p => zip(fst(p))(snd(p)))) !: e.t)
@@ -365,14 +365,14 @@ object movement {
 
       reduceArg match {
         // simple case (see test "lift reduce")
-        case x if x =~~= mapVar =>
+        case x if x =~= mapVar =>
           reduceMap(
             (acc, y) => zip(acc)(y),
             transpose
           )
         // zipped input (see test "MM to MM-LoopMKN")
         case App(App(zip(), u), v) =>
-          val notToBeTransposed = if (mapVar =~~= u) v else u
+          val notToBeTransposed = if (mapVar =~= u) v else u
           reduceMap(
             zippedMapArg = (acc, y) =>
               zip(acc)(map(fun(bs => makePair(bs)(fst(y)))) $ snd(y)),
