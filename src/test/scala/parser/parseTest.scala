@@ -2715,7 +2715,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("t"), r.Identifier("t")) => true
+      case r.Lambda(r.Identifier("t"), r.App(rp.fst(_),r.Identifier("t"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -2739,7 +2739,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("t"), r.Identifier("t")) => true
+      case r.Lambda(r.Identifier("t"), r.App(rp.fst(_),r.Identifier("t"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -2763,7 +2763,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("t"), r.Identifier("t")) => true
+      case r.Lambda(r.Identifier("t"), r.App(rp.fst(_),r.Identifier("t"))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -2790,7 +2790,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("t"), r.Identifier("t")) => true
+      case r.Lambda(r.Identifier("t"), r.App(rp.fst(_), r.App(rp.fst(_),r.Identifier("t")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }

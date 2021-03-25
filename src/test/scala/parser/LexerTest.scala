@@ -728,7 +728,7 @@ class LexerTest extends  AnyFlatSpec {
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
-        Identifier("t",_)::EndNamedExpr(_)
+        Identifier("fst", _) ::Identifier("t",_)::EndNamedExpr(_)
         :: Nil => true
       case a => fail(a.toString())
     }
@@ -747,7 +747,7 @@ class LexerTest extends  AnyFlatSpec {
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
-        Identifier("t",_)::EndNamedExpr(_)
+        Identifier("fst", _) ::Identifier("t",_)::EndNamedExpr(_)
         :: Nil => true
       case a => fail(a.toString())
     }
@@ -767,7 +767,7 @@ class LexerTest extends  AnyFlatSpec {
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
-        Identifier("t",_)::EndNamedExpr(_)
+        Identifier("fst", _) ::Identifier("t",_)::EndNamedExpr(_)
         :: Nil => true
       case a => fail(a.toString())
     }
@@ -794,7 +794,8 @@ class LexerTest extends  AnyFlatSpec {
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("t",_)::Arrow(_)::
-        Identifier("t",_)::EndNamedExpr(_)
+        Identifier("fst", _) :: LParentheses(_)::Identifier("fst", _) ::
+        Identifier("t",_)::RParentheses(_)::EndNamedExpr(_)
         :: Nil => true
       case a => fail(a.toString())
     }
