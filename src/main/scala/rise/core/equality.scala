@@ -149,7 +149,7 @@ object equality {
       val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
       typeEq.equiv[TypeKind](typeEnv)(a.t)(b.t) && (a match {
         case Identifier(na) => and { case Identifier(nb) => exprEnv.check(na, nb)}
-        case Literal(da) => and { case Literal(db) => da == db }
+        case Literal(da) => and { case Literal(db) => equivData(typeEnv)(da)(db) }
         case a: Primitive => and { case b: Primitive => a.name == b.name }
         case App(fa, ea) => and { case App(fb, eb) =>
           equiv(typeEnv)(exprEnv)(fa)(fb) && equiv(typeEnv)(exprEnv)(ea)(eb) }
@@ -160,6 +160,22 @@ object equality {
         case DepLambda(xa, ea) => and { case DepLambda(xb, eb) =>
           xa.getClass == xb.getClass && equiv(typeEnv.add(xa, xb))(exprEnv)(ea)(eb) }
       })
+    }
+
+    val equivData: Env[Kind.Identifier] => Data => Data => Boolean = typeEnv => a => b => {
+      val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
+      a match {
+        case NatData(n1) => and { case NatData(n2) =>
+          equivNat(typeEnv)(n1)(n2) }
+        case IndexData(i1, n1) => and { case IndexData(i2, n2) =>
+          equivNat(typeEnv)(i1)(i2) && equivNat(typeEnv)(n1)(n2) }
+        case d1: ScalarData => and { case d2 : ScalarData => d1 == d2 }
+        case VectorData(v1) => and { case VectorData(v2) => v1 == v2 }
+        case ArrayData(as1) => and { case ArrayData(as2) =>
+          (as1 zip as2).forall { case (a1, a2) => equivData(typeEnv)(a1)(a2) } }
+        case PairData(l1, r1) => and { case PairData(l2, r2) =>
+          equivData(typeEnv)(l1)(l2) && equivData(typeEnv)(r1)(r2) }
+      }
     }
 
     /** Alpha renaming respecting hash function on expressions.
