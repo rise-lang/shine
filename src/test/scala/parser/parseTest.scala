@@ -1201,27 +1201,7 @@ class parseTest extends  AnyFlatSpec {
     assert(r.IsClosedForm(ex))
   }
 
-  "parser" should "be able to parse 'lessComplexInOneLineWithDifferentType.rise'" in {
-    val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
-    val file: FileReader = FileReader(fileName)
-    val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
 
-    val functionName: String = "f"
-    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-
-    ex match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))))) => true
-      case r.Lambda(x, e) => {
-        println("not correct Identifier or not correct expression: " + x + " , " + e)
-        fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      }
-      case a => fail("not a lambda: " + a)
-    }
-  }
 
   "parser" should "be able to parse 'littleComplexLine.rise'" in {
     val fileName: String = testFilePath + "littleComplexLine.rise"
@@ -1285,35 +1265,33 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f.t match {
-      case rt.DepFunType(n,rt.DepFunType(m,rt.DepFunType(d, //nxm * mxn
-      rt.FunType(rt.ArrayType(n1:rt.NatIdentifier,rt.ArrayType(m1:rt.NatIdentifier, d1:rt.DataTypeIdentifier)),
-      rt.FunType(rt.ArrayType(m2:rt.NatIdentifier, rt.ArrayType(n2:rt.NatIdentifier,d2:rt.DataTypeIdentifier)),
-      rt.ArrayType(n3:rt.NatIdentifier, rt.ArrayType(n4:rt.NatIdentifier,d3:rt.DataTypeIdentifier))
-      )))))        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name) &&n3.name.equals(n.name) && n4.name.equals(n.name)
-        && m.name.equals("M") && m1.name.equals(m.name) && m2.name.equals(m.name)
-        && d.name.equals("D") && d1.name.equals(d.name)
-        && d2.name.equals(d.name) && d3.name.equals(d.name)
+      case rt.DepFunType(n,rt.DepFunType(m,
+      rt.FunType(rt.ArrayType(n1:rt.NatIdentifier,rt.ArrayType(m1:rt.NatIdentifier, rt.f32)),
+      rt.FunType(rt.ArrayType(m2:rt.NatIdentifier, rt.ArrayType(n2:rt.NatIdentifier,rt.f32)),
+      rt.ArrayType(n3:rt.NatIdentifier, rt.ArrayType(n4:rt.NatIdentifier,rt.f32))
+      ))))        if n1.name.equals(n.name) && n2.name.equals(n.name) &&n3.name.equals(n.name) && n4.name.equals(n.name)
+        && m1.name.equals(m.name) && m2.name.equals(m.name)
 => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
     ex_f match {
       //Todo: How can I give rt.i32 to DepApp as second argument or how to do it else to give rt.i32 as an argument to an fkt
-      case r.DepLambda(n, r.DepLambda(m,r.DepLambda(d,
+      case r.DepLambda(n, r.DepLambda(m,
       r.Lambda(r.Identifier("mat1"),r.Lambda(r.Identifier("mat2"),
       r.App(r.App(rp.mapSeq(_),
       r.Lambda(r.Identifier("vec1"),
       r.App(r.App(rp.mapSeq(_),
 
       r.Lambda(r.Identifier("vec2"),
-      r.App(r.App(rp.reduceSeq(_), r.Lambda(
+      r.App(r.App(r.App(rp.reduceSeq(_), r.Lambda(
       r.Identifier("acc"),r.Lambda(
       r.Identifier("arg"), r.App(r.App(rp.add(_) , r.Identifier("acc")),r.Identifier("arg"))
-      ))),
-      r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
+      ))), r.Literal(rS.FloatData(0),_)),
+      r.App(rp.toMem(_),r.App(r.App(rp.mapSeq(_), r.Lambda(r.Identifier("x"),
       r.App(r.App(rp.mul(_), r.App(rp.fst(_), r.Identifier("x"))),
       r.App(rp.snd(_), r.Identifier("x")) )
-      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2"))))
+      )), r.App(r.App(rp.zip(_), r.Identifier("vec1")), r.Identifier("vec2")))))
       )),
 
       r.App(rp.transpose(_),r.Identifier("mat2"))
@@ -1321,7 +1299,7 @@ class parseTest extends  AnyFlatSpec {
 
       r.Identifier("mat1")
     ))
-    ))))=> true
+    )))=> true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
         +n.toString()+ " , " + e.toString())
       case a => fail("Not a DepLambda: " + a)
@@ -2955,6 +2933,16 @@ class parseTest extends  AnyFlatSpec {
 
   //-----------------------------------------------------------------------------------------------------
   //Error-Tests //Todo: " .. (.. (..).. " as an ErrorTest
+
+  "parser" should "be able to parse 'lessComplexInOneLineWithDifferentType.rise'" in {
+    val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
+    val file: FileReader = FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    val thrown = intercept[RuntimeException] {
+      parse(lexer.tokens)
+    }
+    thrown.getMessage should equal("ToDO")//Todo: Error
+  }
 
   "parser" should "be able to parse 'fx.rise'" in {
     val fileName: String = testFilePath + "fx.rise"

@@ -1,5 +1,5 @@
-f::N:Nat=>M:Nat=>D:Data=>N.M.D->M.N.D->N.N.D
-f=\N:Nat=>\M:Nat=>\D:Data=>
+f::N:Nat=>M:Nat=>N.M.F32->M.N.F32->N.N.F32
+f=\N:Nat=>\M:Nat=>
 \mat1->\mat2->
 mapSeq
 (
@@ -7,8 +7,8 @@ mapSeq
 mapSeq
 (
 \vec2 ->
-    reduceSeq (\acc:I32->\arg:I32-> + acc arg)
-        (mapSeq (\x:(I32,I32)->* (fst x) (snd x)) (zip vec1 vec2))
+    reduceSeq (\acc:F32->\arg:F32-> + acc arg) 0F32
+        (toMem (mapSeq (\x:(F32,F32)->* (fst x) (snd x)) (zip vec1 vec2)))
 )
 (transpose mat2)
 )
