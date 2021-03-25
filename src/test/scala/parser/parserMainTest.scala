@@ -5,7 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 //import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
 import rise.{core => r}
-import rise.core.{types => rt}
+import rise.core.{types => rt, primitives => rp}
 //import rise.core.{semantics => rS}
 //import rise.core.{primitives => rp}
 
@@ -27,14 +27,28 @@ class parserMainTest extends  AnyFlatSpec {
 
 
     ex match {
-      case r.Lambda(r.Identifier("a"), r.Lambda(r.Identifier("x"), r.Identifier("a"))) => true
+      case r.Lambda(r.Identifier("a"), r.Lambda(r.Identifier("x"), r.App(r.App(rp.concat(_),
+      r.Identifier("a")),r.Identifier("x")))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
 
     ex.t match {
-      case rt.FunType(rt.ArrayType(n, rt.i32), rt.FunType(rt.i32, rt.i32)) if n.eval.equals(5) => true
+      case rt.FunType(rt.ArrayType(n, rt.i32), rt.FunType(rt.ArrayType(n2, rt.i32), rt.ArrayType(n3, rt.i32)))
+        if n.eval.equals(5) &&n2.eval.equals(2)&&n3.eval.equals(7) => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
+
+    ex.span match {
+      case None => fail("The Span should not be None")
+      case Some(Span(file, begin, end)) => {
+        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayType.rise")
+        begin.row should equal(2)
+        end.row should equal(22)
+        begin.column should equal(1)
+        end.column should equal(1)
+      }
+    }
   }
+
 }

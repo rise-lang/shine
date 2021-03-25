@@ -802,7 +802,7 @@ class parseTest extends  AnyFlatSpec {
     assert(r.IsClosedForm(ex_g))
 }
 
-  "parser" should "be able to parse 'DepLambdaFunctionType.rise'" in {
+  "parser" should "be able to parse 'DepLambdaFunctionType.rise'" ignore {
     val fileName: String = testFilePath + "DepLambdaFunctionType.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)

@@ -16,24 +16,24 @@ class LexerTest extends  AnyFlatSpec {
     lexer.tokens match {
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: NatNumber(5,_) :: Dot(_)::ScalarType(IntTyp(), _)::
-        Arrow(_)::ScalarType(IntTyp(), _) ::
-        Arrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_)::NatNumber(2,_) :: Dot(_)::ScalarType(IntTyp(), _) ::
+        Arrow(_) :: NatNumber(7,_) :: Dot(_)::ScalarType(IntTyp(), _)::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("a",_)::Arrow(_)::
         Backslash(_)::Identifier("x",_)::Arrow(_)::
-        Identifier("a",
-        Span(FileReader("src/test/scala/parser/readFiles/filesToLex/arrayType.rise"), Location(1, 12), Location(1,13)))::EndNamedExpr(_)
+        Identifier("concat",_):: Identifier("a",_)::Identifier("x",
+        Span(FileReader("src/test/scala/parser/readFiles/filesToLex/arrayType.rise"), Location(1, 21), Location(1,22)))::EndNamedExpr(_)
         :: Nil => true
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: NatNumber(5,_) :: Dot(_)::ScalarType(IntTyp(), _)::
-        Arrow(_)::ScalarType(IntTyp(), _) ::
-        Arrow(_) :: ScalarType(IntTyp(), _)::
+        Arrow(_)::NatNumber(2,_) :: Dot(_)::ScalarType(IntTyp(), _) ::
+        Arrow(_) :: NatNumber(7,_) :: Dot(_)::ScalarType(IntTyp(), _)::
 
         EndTypAnnotatedIdent(_) :: BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_)::Identifier("a",_)::Arrow(_)::
         Backslash(_)::Identifier("x",_)::Arrow(_)::
-        Identifier("a",span)::EndNamedExpr(_)
+        Identifier("concat",_):: Identifier("a",_)::Identifier("x",span)::EndNamedExpr(_)
         :: Nil => fail("The Span is not correct: "+span)
       case a => fail(a.toString())
     }

@@ -14,10 +14,8 @@ object infer {
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-    require(typed_e.span!=None, "typed_e is None")
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
     val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
-    require(res.span!=None, "res is None")
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
     }
