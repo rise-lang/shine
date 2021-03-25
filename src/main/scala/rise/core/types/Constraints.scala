@@ -38,9 +38,9 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 }
 
 object Constraint {
-  def solve(cs: Seq[Constraint], trace: Seq[Constraint])
+  def solve(cs: Seq[Constraint], trace: Seq[Constraint], span:Option[parser.Span])
      (implicit explDep: Flags.ExplicitDependence): Solution =
-  solveRec(cs, Nil, trace)
+  solveRec(cs, Nil, trace,span)
   /* faster but not always enough:
    cs match {
     case Nil => Solution()
@@ -50,26 +50,26 @@ object Constraint {
   }
   */
 
-  def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint])
+  def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint],span:Option[parser.Span])
               (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
     case (Nil, Nil) => Solution()
-    case (Nil, _) => error(s"could not solve constraints ${rs}")(trace)
+    case (Nil, _) => error(s"could not solve constraints ${rs} in $span")(trace)
     case (c +: cs, _) =>
       val s = try {
-        solveOne(c, trace)
+        solveOne(c, trace, span)
       } catch {
         case e: InferenceException =>
-          println(e.msg)
-          return solveRec(cs, rs :+ c, trace)
+          println(e.msg + " in " + span)
+          return solveRec(cs, rs :+ c, trace, span)
       }
-      s ++ solve(s.apply(rs ++ cs), trace)
+      s ++ solve(s.apply(rs ++ cs), trace, span)
   }
 
   // scalastyle:off method.length
-  def solveOne(c: Constraint, trace: Seq[Constraint])
+  def solveOne(c: Constraint, trace: Seq[Constraint], span:Option[parser.Span])
     (implicit explDep: Flags.ExplicitDependence): Solution = {
     implicit val _trace: Seq[Constraint] = trace
-    def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace)
+    def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace, span)
 
     c match {
       case TypeConstraint(a, b) =>
@@ -282,7 +282,7 @@ object Constraint {
     def unify(a: Nat, b: Nat)(
       implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
     ): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs, NatConstraint(a, b) +: trace)
+      def decomposed(cs: Seq[Constraint]) = solve(cs, NatConstraint(a, b) +: trace, None)
       (a, b) match {
         case (i: NatIdentifier, _) => nat.unifyIdent(i, b)
         case (_, i: NatIdentifier) => nat.unifyIdent(i, a)
@@ -447,7 +447,7 @@ object Constraint {
     def unify(a: BoolExpr, b: BoolExpr)(
       implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
     ): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs, BoolConstraint(a, b) +: trace)
+      def decomposed(cs: Seq[Constraint]) = solve(cs, BoolConstraint(a, b) +: trace, None)
       (a, b) match {
         case _ if a == b => Solution()
         case (ArithPredicate(lhs1, rhs1, op1), ArithPredicate(lhs2, rhs2, op2)) if op1 == op2 =>

@@ -6,16 +6,16 @@
 
 --comparision with matrixMult DPIA-Example 
 
-matMul::R:Nat=>M:Nat=>N:Nat=>D:Data=>N.M.D->M.R.D->N.R.D
-matMul=\R:Nat=>\M:Nat=>\N:Nat=>\D:Data=>
+matMul::R:Nat=>M:Nat=>N:Nat=>N.M.F32->M.R.F32->N.R.F32
+matMul=\R:Nat=>\M:Nat=>\N:Nat=>
   \matrixA->\matrixB->
   mapGlobal 0 
    (
     \rowA->mapLocal 1 
       (
-        \columnB-> oclReduceSeq Local (\acc:I32->\arg:I32-> + acc arg)
-        let (toLocal (
-        (mapSeq (\x:(I32,I32)->* (fst x) (snd x)) (zip rowA columnB))
+        \columnB-> oclReduceSeq Local (\acc:F32->\arg:F32-> + acc arg) 0F32
+        (toLocal (
+        (mapSeq (\x:(F32,F32)->* (fst x) (snd x)) (zip rowA columnB))
         ))
       )
       (transpose matrixB)
