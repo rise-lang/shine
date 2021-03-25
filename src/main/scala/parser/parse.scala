@@ -1,9 +1,11 @@
 package parser //old branch 17. Dezember 2020
 
-import rise.core.{Lambda, primitives => rp, semantics => rS, types => rt}
 import rise.{core => r, openCL => o}
-import r.{DSL => rd}
+import r.{DSL => rd, types => rt, primitives => rp, semantics => rS}
 import o.{primitives => op}
+import rise.core.DSL.Type.TypeConstructors
+import rise.core.ForeignFunction
+import rise.core.types.{PairType, f32, vec}
 
 import scala.collection.mutable
 
@@ -136,9 +138,42 @@ object parse {
   }
 
 
+
   def matchPrimitiveOrIdentifier(name: String, span: Span): SyntaxElement = {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'" + name + "' has not the preffered structure")
+    //Todo: delete calcAcc and update, because they are only for testing added. These foreign function should be declared in the rise-File itself
+    val calcAcc = ForeignFunction(
+      ForeignFunction.Decl(name, Some(ForeignFunction.Def(   Seq("p1", "p2", "deltaT", "espSqr", "acc"),
+        """{
+          |  float4 r;
+          |  r.xyz = p2.xyz - p1.xyz;
+          |  float distSqr = r.x*r.x + r.y*r.y + r.z*r.z;
+          |  float invDist = 1.0f / sqrt(distSqr + espSqr);
+          |  float invDistCube = invDist * invDist * invDist;
+          |  float s = invDistCube * p2.w;
+          |  float4 res;
+          |  res.xyz = acc.xyz + s * r.xyz;
+          |  return res;
+          |}
+          |""".stripMargin)))
+    )(vec(4, f32) ->: vec(4, f32) ->: f32 ->: f32 ->: vec(4, f32) ->: vec(4, f32),Some(span))
+    val update =     ForeignFunction(
+      ForeignFunction.Decl(name, Some(ForeignFunction.Def(Seq("pos", "vel", "deltaT", "acceleration"),
+        """{
+          |  float4 newPos;
+          |  newPos.xyz = pos.xyz + vel.xyz * deltaT + 0.5f * acceleration.xyz * deltaT * deltaT;
+          |  newPos.w = pos.w;
+          |  float4 newVel;
+          |  newVel.xyz = vel.xyz + acceleration.xyz * deltaT;
+          |  newVel.w = vel.w;
+          |  return (struct Record_float4_float4){ newPos, newVel };
+          |}""".stripMargin)))
+    )(vec(4, f32) ->: vec(4, f32) ->: f32 ->: vec(4, f32) ->: PairType(vec(4, f32), vec(4, f32)),Some(span))
     name match {
+        //Todo: this functions please delete, because they should be declared via CFunction in the rise-File
+      case "update" => SExpr(update)
+      case "calcAcc" => SExpr(calcAcc)
+
       //openCL/primitives
       case "mapGlobal" => SIntToExpr(AltMapGlobal(), span)
       case "mapLocal" => SIntToExpr(AltMapLocal(), span)
@@ -226,8 +261,8 @@ object parse {
 
   private def getIdInIdentNoDec(map:MapFkt, name:String, span: Span):SyntaxElement={
     val id = map.get(name) match {
-      case None => throw new IllegalArgumentException("Variable is not declared: " + name)
-      case Some(Right(_)) => throw new IllegalArgumentException("Variable is only declared but has no definition: " + name) //Todo: Proper Error for Function has declaration but not definition yet
+      case None => throw new IllegalArgumentException("Variable is not declared: " + name + " in " + span)
+      case Some(Right(_)) => throw new IllegalArgumentException("Variable is only declared but has no definition: " + name+ " in " + span) //Todo: Proper Error for Function has declaration but not definition yet
       case Some(Left(rd.ToBeTyped(e))) => e match {
         case r.Identifier(_) => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
         case _ => SExpr(e)
@@ -242,7 +277,7 @@ object parse {
       case Some(Right(_)) => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span))) //throw new IllegalArgumentException("Variable is only declared but has no definition: "+ name)//Todo: Proper Error for Function has declaration but not definition yet
       case Some(Left(rd.ToBeTyped(e))) => e match {
         case r.Identifier(_) => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
-        case _ => throw new IllegalArgumentException("The name already exists with an definition: " + name)
+        case _ => throw new IllegalArgumentException("The name already exists with an definition: " + name+ " in " + span)
       }
     }
     id
@@ -1200,7 +1235,7 @@ the syntax-Tree has on top an Lambda-Expression
     }
     val spanOfBackslash = parseState.tokenStream.head.s
     val span = Span(spanOfBackslash.file,spanOfBackslash.begin, expr.span.head.end)
-    val lambda = Lambda(idName, expr)(rt.TypePlaceholder, Some(span))
+    val lambda = r.Lambda(idName, expr)(rt.TypePlaceholder, Some(span))
 
     val myNewParseState = ParseState(toks, SExpr(lambda) :: parseState.parsedSynElems, map,mapDepL, spanList)
     println("myNewParseState: "+ myNewParseState)

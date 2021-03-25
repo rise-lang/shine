@@ -32,7 +32,7 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
                 \p1B -> oclReduceSeq Private (
                   \accB:4xF32->\p2B:4xF32->
                   calcAcc (fst (fst p1B)) p2B deltaT espSqr accB
-                ) (snd p1B) (fst accDim2)
+                ) (snd p1B) (fst accDim)
               ) (zip newP1Chunk (snd (snd accDim)))
             ) (zip p2Local accA)
           ) 
