@@ -255,7 +255,7 @@ object parse {
 
   def parseIdentNoDec(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseIdentNoDec: " + parseState)
-    parseIdentPos(parseState, true)
+    parseIdentPos(parseState, false)
   }
 
   def parseIdentPos(parseState: ParseState, withDec: Boolean): Either[ParseState, ParseErrorOrState] = {
