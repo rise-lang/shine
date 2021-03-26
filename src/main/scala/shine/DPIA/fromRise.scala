@@ -12,6 +12,8 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional._
 
+import scala.collection.mutable
+
 object fromRise {
   def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
     if (!r.IsClosedForm(expr)) {
@@ -107,10 +109,12 @@ object fromRise {
                         t: PhraseType): Phrase[_ <: PhraseType] = {
     import rise.openCL.{primitives => rocl}
     import rise.openMP.{primitives => romp}
+    import rise.Cuda.{primitives => rcuda}
     import shine.OpenCL.primitives.{functional => ocl}
     import shine.OpenMP.primitives.{functional => omp}
+    import shine.cuda.primitives.{functional => cuda}
     import shine.DPIA.Types.MatchingDSL._
-    import shine.OpenCL.{Global, WorkGroup, Local}
+    import shine.OpenCL.{Global, Warp, WorkGroup, Lane, Local}
 
     def fromType(f: PartialFunction[PhraseType, Phrase[_ <: PhraseType]]): Phrase[_ <: PhraseType] = {
       f.lift(t) match {
@@ -800,6 +804,18 @@ object fromRise {
             ocl.ToMem(a, t, e)))
       }
 
+      case rocl.oclRunPrimitive() => fromType {
+        case nFunT(ls1, nFunT(ls2, nFunT(ls3,
+          nFunT(gs1, nFunT(gs2, nFunT(gs3,
+          expT(t, `write`) ->: _))))))
+        =>
+          import shine.OpenCL.{LocalSize, GlobalSize}
+          depFun[NatKind](ls1)(depFun[NatKind](ls2)(depFun[NatKind](ls3)(
+            depFun[NatKind](gs1)(depFun[NatKind](gs2)(depFun[NatKind](gs3)(
+              fun[ExpType](expT(t, write), e =>
+                ocl.Run(LocalSize(ls1, ls2, ls3), GlobalSize(gs1, gs2, gs3), t, e))))))))
+      }
+
       case core.dmatch() => fromType {
         case expT(DepPairType(x, elemT), `read`) ->:
           nFunT(i, expT(elem_iT, `read`) ->: expT(outT, a))
@@ -814,6 +830,101 @@ object fromRise {
       case core.makeDepPair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
           depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MakeDepPair(a, fst, sndT, snd)))
+      }
+
+      case rcuda.globalToShared() => fromType {
+        case expT(dt, write) ->: _ =>
+          fun[ExpType](expT(dt, write), e =>
+            cuda.GlobalToShared(dt, e))
+      }
+
+      case rcuda.asFragment() => fromType {
+        case expT(ArrayType(rows, ArrayType(columns, dt)), `read`) ->:
+          expT(FragmentType(_, _, d3, _, fragType, layout), _) =>
+          fun[ExpType](expT(ArrayType(rows, ArrayType(columns, dt)), read), a =>
+            cuda.AsFragment(rows, columns, d3, dt, fragType, a, layout))
+      }
+
+      case rcuda.asMatrix() => fromType {
+        case expT(FragmentType(rows, columns, d3, dt, FragmentKind.Accumulator, _), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `write`) =>
+          fun[ExpType](expT(FragmentType(rows, columns, d3, dt), read), dFrag =>
+            cuda.AsMatrix(rows, columns, d3, dt, dFrag))
+      }
+
+      case rcuda.generateFragment() => fromType {
+        case expT(dt, `read`) ->: expT(FragmentType(rows, columns, d3, _, fragType, layout), read) =>
+          fun[ExpType](expT(dt, read), fill =>
+            cuda.GenerateFragment(rows, columns, d3, dt, fill, fragType, layout))
+      }
+
+      case rcuda.tensorMMA() => fromType {
+        case expT(FragmentType(_, _, _, dt, FragmentKind.AMatrix, layoutA), `read`) ->:
+          expT(FragmentType(_, _, _, _, FragmentKind.BMatrix,layoutB), `read`) ->:
+          expT(FragmentType(m, n, k, dtResult, FragmentKind.Accumulator, _), `read`) ->:
+          expT(FragmentType(_, _, _, _, FragmentKind.Accumulator, _), `write`) =>
+          fun[ExpType](expT(FragmentType(m, k, n, dt, FragmentKind.AMatrix, layoutA), read), a =>
+            fun[ExpType](expT(FragmentType(k, n, m, dt, FragmentKind.BMatrix, layoutB), read), b =>
+              fun[ExpType](expT(FragmentType(m, n, k, dtResult), read), c =>
+                cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dt, dtResult, a, b, c))))
+      }
+
+      case rcuda.mapFragment() => fromType {
+        case (expT(dt: DataType, `read`) ->: expT(_, `write`)) ->:
+          expT(fragType : FragmentType, `read`) ->: expT(_, _) =>
+          fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
+            fun[ExpType](ExpType(fragType, read), fragment =>
+              cuda.MapFragmentElements(fragType.asInstanceOf[FragmentType], fragment, f)))
+      }
+
+      case rcuda.mapGlobal(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              cuda.Map(Global, dim)(n, s, t, f, e)))
+      }
+
+      case rcuda.mapBlock(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              cuda.Map(WorkGroup, dim)(n, s, t, f, e)))
+      }
+
+      case rcuda.mapWarp(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              cuda.Map(Warp, dim)(n, s, t, f, e)))
+      }
+
+      case rcuda.mapThreads(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              cuda.Map(Local, dim)(n, s, t, f, e)))
+      }
+
+      case rcuda.mapLane(dim) => fromType {
+        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
+        =>
+          fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+            fun[ExpType](expT(n`.`s, read), e =>
+              cuda.Map(Lane, dim)(n, s, t, f, e)))
       }
 
       case core.reduce() =>
@@ -849,6 +960,25 @@ object fromRise {
       case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
       case _ => ???
     }
+    case f: rt.FragmentType =>
+      f.fragmentKind match {
+        case rt.FragmentKind.AMatrix =>
+          FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentKind.AMatrix, layout(f.layout))
+        case rt.FragmentKind.BMatrix =>
+          FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentKind.BMatrix, layout(f.layout))
+        case rt.FragmentKind.Acuumulator =>
+          FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentKind.Accumulator, layout(f.layout))
+        case _ => throw new Exception("this should not happen")
+      }
+  }
+
+  private val layouts: mutable.HashMap[String, MatrixLayoutIdentifier] = mutable.HashMap.empty
+
+  def layout(layout: rt.MatrixLayout): MatrixLayout = layout match {
+    case rt.MatrixLayout.Row_Major => MatrixLayout.Row_Major
+    case rt.MatrixLayout.Col_Major => MatrixLayout.Col_Major
+    case rt.MatrixLayoutIdentifier(name, _) => layouts.getOrElseUpdate(name, MatrixLayoutIdentifier(name))
+    case _ => throw new Exception("this should not happen")
   }
 
   def scalarType(t: rt.ScalarType): ScalarType = t match {

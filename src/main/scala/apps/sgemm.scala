@@ -7,7 +7,7 @@ import rise.core._
 import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import rise.core.types._
 import util.{Time, TimeSpan}
@@ -31,7 +31,7 @@ object sgemm {
           zip(a)(c) |> mapSeq(fun(ac =>
             zip(transpose(b))(ac._2) |> mapSeq(fun(bc =>
               zip(ac._1)(bc._1) |>
-                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)))(l(0.0f)) |>
+                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)))(lf32(0.0f)) |>
                 fun(x => (x * alpha) + (beta * bc._2))
             ))
           ))
@@ -47,7 +47,7 @@ object sgemm {
         zip(a)(c) |> mapSeq(fun(ac =>
           zip(transpose(b))(ac._2) |> mapSeq(fun(bc =>
             zip(ac._1)(bc._1) |>
-              oclReduceSeq(AddressSpace.Private)(fun( (acc, y) => acc + (y._1 * y._2)))(l(0.0f)) |>
+              oclReduceSeq(AddressSpace.Private)(fun( (acc, y) => acc + (y._1 * y._2)))(lf32(0.0f)) |>
               fun(x => (x * alpha) + (beta * bc._2))
           ))
         ))
@@ -62,7 +62,7 @@ object sgemm {
 
     val write_zeros = impl{ n: Nat => impl{ m: Nat =>
       generate(fun(IndexType(m))(_ =>
-        generate(fun(IndexType(n))(_ => l(0.0f))))) |> mapSeq(mapSeq(id)) }}
+        generate(fun(IndexType(n))(_ => lf32(0.0f))))) |> mapSeq(mapSeq(id)) }}
 
 
     depFun((n: Nat, m: Nat, k: Nat) =>
@@ -114,7 +114,7 @@ object sgemm {
       generate(fun(IndexType(n4))(_ =>
         generate(fun(IndexType(n3))(_ =>
           generate(fun(IndexType(n2))(_ =>
-            generate(fun(IndexType(n1))(_ => l(0.0f))))))))))
+            generate(fun(IndexType(n1))(_ => lf32(0.0f))))))))))
 
     def tile2: ToBeTyped[Expr] = depFun((s1: Nat, s2: Nat) => impl{ n1: Nat => impl{ n2: Nat => fun(ArrayType(n1, ArrayType(n2, f32)))(x =>
       transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  ) }})

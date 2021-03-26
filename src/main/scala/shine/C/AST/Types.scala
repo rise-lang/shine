@@ -2,6 +2,9 @@ package shine.C.AST
 
 import arithexpr.arithmetic._
 import shine.C
+import shine.DPIA.Nat
+import shine.DPIA.Types.{FragmentKind, MatrixLayout}
+import shine.cuda.AST.Wmma
 
 sealed abstract class Type(val const: Boolean) {
   def print: String
@@ -12,6 +15,10 @@ sealed abstract class Type(val const: Boolean) {
 }
 
 abstract class BasicType(val name: String, override val const: Boolean = false) extends Type(const) {
+  override def print: String = name
+}
+
+abstract class OpaqueType(val name: String) extends Type(const = false) {
   override def print: String = name
 }
 
@@ -29,11 +36,12 @@ abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr], overri
 
   def getBaseType: Type = {
     elemType match {
-      case _: BasicType => elemType
+      case _: BasicType | _: FragmentType => elemType
       case _: StructType => elemType
       case _: PointerType => elemType
       case _: UnionType => elemType
       case a: ArrayType => a.getBaseType
+      case _: OpaqueType => elemType
     }
   }
 
@@ -60,6 +68,25 @@ abstract class UnionType(val fields: Seq[Type], override val const: Boolean = fa
   override def print: String = "union {" + fields.map(_.print).mkString("; ") + "}"
 }
 
+case class FragmentType(m: Nat,
+                        n: Nat,
+                        k: Nat,
+                        dataType: shine.C.AST.Type,
+                        fragmentKind: FragmentKind,
+                        layout: MatrixLayout) extends shine.C.AST.Type(false) {
+  override def print: String = {
+    fragmentKind match {
+      case FragmentKind.AMatrix =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
+      case FragmentKind.BMatrix =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
+      case FragmentKind.Accumulator =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::accumulator, $m, $n, $k, $dataType>"
+      case _ => throw new Exception("this should not happen")
+    }
+  }
+}
+
 
 object Type {
   val void = BasicType("void")
@@ -82,6 +109,9 @@ object Type {
   val i16 = BasicType("int16_t")
   val i32 = BasicType("int32_t")
   val i64 = BasicType("int64_t")
+
+  val usize = BasicType("size_t")
+  val isize = BasicType("ptrdiff_t")
 
   val float = BasicType("float")
   val const_float = BasicType("float", const = true)
@@ -142,6 +172,11 @@ object BasicType {
   def unapply(arg: BasicType): Option[(String, Boolean)] = Some((arg.name, arg.const))
 }
 
+object OpaqueType {
+  def apply(name: String): OpaqueType = DefaultTypeImplementations.OpaqueType(name)
+  def unapply(arg: OpaqueType): Option[String] = Some(arg.name)
+}
+
 object StructType {
   def apply(name: String, fields: Seq[(Type, String)], const: Boolean = false): StructType = DefaultTypeImplementations.StructType(name, fields, const)
   def unapply(arg: StructType): Option[(String, Seq[(Type, String)], Boolean)] = Some((arg.name, arg.fields, arg.const))
@@ -165,6 +200,9 @@ object UnionType {
 object DefaultTypeImplementations {
   case class BasicType(override val name: String, override val const: Boolean = false)
     extends C.AST.BasicType(name, const)
+
+  case class OpaqueType(override val name: String)
+    extends C.AST.OpaqueType(name)
 
   case class StructType(override val name: String, override val fields: Seq[(Type, String)], override val const: Boolean = false)
     extends C.AST.StructType(name, fields, const)

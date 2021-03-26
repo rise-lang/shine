@@ -16,13 +16,14 @@ lazy val commonSettings = Seq(
 )
 
 lazy val riseAndShine = (project in file("."))
-  .aggregate(executor)
-  .dependsOn(riseAndShineMacros, arithExpr, executor, elevate)
+  .aggregate(executor, CUexecutor)
+  .dependsOn(riseAndShineMacros, arithExpr, executor, CUexecutor, elevate)
   .settings(
     name          := "riseAndShine",
     version       := "1.0",
 
-    javaOptions ++= Seq("-Djava.library.path=lib/executor/lib/Executor/build", "-Xss26m"),
+    javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build",
+      "-DexecuteCudaTests=false", "-Xss26m"),
 
     commonSettings,
 
@@ -53,4 +54,14 @@ lazy val arithExpr = (project in file("lib/arithexpr"))
 
 lazy val executor   = (project in file("lib/executor"))
 
+lazy val CUexecutor = (project in file("lib/yacx"))
+
 lazy val elevate    = (project in file("lib/elevate"))
+
+lazy val docs = (project in file("riseAndShine-docs"))
+  .settings(
+    moduleName := "riseAndShine-docs",
+    mdocOut := file("docs-website/docs"),
+  )
+  .enablePlugins(MdocPlugin)
+  .dependsOn(riseAndShine)

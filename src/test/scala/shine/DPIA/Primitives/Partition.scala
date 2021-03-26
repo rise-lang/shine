@@ -38,9 +38,9 @@ class Partition extends test_util.Tests {
 
     val padAndPartition: Expr = depFun((n: Nat) =>
       fun(ArrayType(n, f32))(xs => xs |>
-        padCst(padAmount)(padAmount)(l(0.0f)) |>
+        padCst(padAmount)(padAmount)(lf32(0.0f)) |>
         partition(3)(lenF(n)) |>
-        depMapSeq(mapSeq(fun(x => x + l(1.0f))))))
+        depMapSeq(mapSeq(fun(x => x + lf32(1.0f))))))
 
     case class Run() extends SimpleRunOpenCLProgram(false) {
       val inputSize: Int = 128

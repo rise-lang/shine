@@ -6,7 +6,7 @@ import rise.core.DSL._
 import rise.core.DSL.HighLevelConstructs._
 import rise.core.DSL.Type._
 import rise.openCL.primitives.oclReduceSeqUnroll
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
@@ -17,7 +17,7 @@ class convolution1D extends test_util.Tests {
 
   val dotSeq: ToBeTyped[Expr] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |>
-    oclReduceSeqUnroll(AddressSpace.Private)(add)(l(0.0f))
+    oclReduceSeqUnroll(AddressSpace.Private)(add)(lf32(0.0f))
   ))
 
   val binomial: ToBeTyped[Expr] =

@@ -12,6 +12,80 @@ sealed trait BasicType extends DataType
 
 sealed trait ScalarType extends BasicType
 
+sealed trait MatrixLayout
+
+object MatrixLayout {
+  object Row_Major extends MatrixLayout { override def toString = "Row_Major" }
+  object Col_Major extends MatrixLayout { override def toString = "Col_Major" }
+}
+
+final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with Kind.Identifier {
+  var layout: Option[MatrixLayout] = None
+
+  override def toString: String = name
+
+  def setLayout(matrixLayout: MatrixLayout): Unit = {
+    if (layout.isEmpty)
+      layout = Some(matrixLayout)
+    else if (layout.get != matrixLayout)
+      throw new Exception(s"could not unify ${layout.get} and $matrixLayout")
+  }
+}
+
+sealed trait FragmentKind
+
+object FragmentKind {
+  object AMatrix extends FragmentKind { override def toString = "AMatrix"}
+  object BMatrix extends FragmentKind { override def toString = "BMatrix"}
+  object Accumulator extends FragmentKind { override def toString = "Accumulator"}
+}
+
+//This can be used to create fragments of kind `Accumulator` which does not need a layout
+object FragmentType {
+  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType =
+    FragmentType(rows, columns, d3, dataType, FragmentKind.Accumulator, null)
+}
+
+/**
+  * Represents a CUDA-fragment which represents a tile of a matrix which is stored in registers of a warp. <br>
+  * Fragments of kind `Accumulator` does not have a layout. So the `layout` of fragments of kind `Accumulator`
+  * can be ignored.
+  * @param rows         number of rows
+  * @param columns      number of columns
+  * @param d3           third dimension which is used in the MMA operation
+  * @param dataType     dataType of the elements
+  * @param fragmentKind kind of the fragment {@link FragmentKind}
+  * @param layout       layout of the fragment {@link MatrixLayout}
+  */
+final case class FragmentType(rows: Nat,
+                              columns: Nat,
+                              d3: Nat,
+                              dataType: DataType,
+                              fragmentKind: FragmentKind,
+                              layout: MatrixLayout) extends BasicType {
+  override def toString: String =
+    if (fragmentKind == FragmentKind.Accumulator)
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
+    else
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
+
+  override def equals(o: Any): Boolean = {
+    o match {
+      case f: FragmentType =>
+        f.fragmentKind match {
+          case FragmentKind.Accumulator =>
+            f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType)
+          case _ =>
+            f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType) &&
+              f.fragmentKind.equals(fragmentKind) && f.layout.equals(layout)
+        }
+      case _ => false
+    }
+  }
+}
+
+object pipeline extends BasicType { override def toString = "pipeline" }
+
 object bool extends ScalarType { override def toString: String = "bool" }
 
 object int extends ScalarType { override def toString: String = "int" }
@@ -38,6 +112,16 @@ final case class IndexType(size: Nat) extends BasicType {
 
 final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
+}
+
+// FIXME: this should be a backend extension
+object ContextType extends DataType {
+  override def toString: String = s"context"
+}
+
+// FIXME: this should be a backend extension
+final case class ManagedBufferType(dt: DataType) extends ComposedType {
+  override def toString: String = s"managed($dt)"
 }
 
 final case class DepArrayType private (size: Nat, elemFType: NatToData)
@@ -124,6 +208,11 @@ object DataType {
       case a: ArrayType =>
         ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
           substitute(ae, `for`, a.elemType))
+      case f: FragmentType =>
+        FragmentType(ArithExpr.substitute(f.rows, Map((`for`, ae))),
+          ArithExpr.substitute(f.columns, Map((`for`, ae))),
+          ArithExpr.substitute(f.d3, Map((`for`, ae))),
+          substitute(ae, `for`, f.dataType), f.fragmentKind, f.layout)
       case a: DepArrayType =>
         val subMap = Map((`for`, ae))
         val newSize = ArithExpr.substitute(a.size, subMap)
@@ -155,6 +244,7 @@ object DataType {
     case _: BasicType => 1
     case _: PairType => 1
     case _: DepPairType => 1
+    case ManagedBufferType(dt) => getTotalNumberOfElements(dt)
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
@@ -164,7 +254,7 @@ object DataType {
         case NatToDataIdentifier(_) =>
           throw new Exception("This should not happen")
       }
-    case _: DataTypeIdentifier | _: NatToDataApply =>
+    case _: DataTypeIdentifier | _: NatToDataApply | ContextType =>
       throw new Exception("This should not happen")
   }
 
@@ -173,9 +263,11 @@ object DataType {
     case _: PairType => 1 // TODO: is this correct?
     case _: DepPairType => 1
     case VectorType(size, _) => size
+    case ManagedBufferType(dt) => getSize(dt)
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
-    case _: DataTypeIdentifier | _: NatToDataApply =>
+    case _: DataTypeIdentifier | _: NatToDataApply | _: FragmentType
+         | _: pipeline.type | ContextType =>
       throw new Exception("This should not happen")
   }
 
@@ -192,10 +284,11 @@ object DataType {
     case _: PairType => dt
     case _: DepPairType => dt
     case _: DataTypeIdentifier => dt
+    case ManagedBufferType(dt) => getBaseDataType(dt)
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getBaseDataType(elemType)
-    case DepArrayType(_, _) | _: NatToDataApply =>
+    case DepArrayType(_, _) | _: NatToDataApply | ContextType =>
       throw new Exception("This should not happen")
   }
 

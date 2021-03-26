@@ -6,12 +6,12 @@ import rise.core.primitives._
 import Type._
 import rise.core.types._
 import rise.core.types.AddressSpace._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 
 class OclToMem extends test_util.Tests {
   val id = fun(x => x)
-  val add1 = fun(x => x + l(1.0f))
+  val add1 = fun(x => x + lf32(1.0f))
 
   test("To creates OpenCLNew with appropriate data type: private mem with two mapLocal nesting two mapSeq") {
     val e = depFun((m: Nat, n: Nat, o: Nat, p: Nat) =>
@@ -77,7 +77,7 @@ class OclToMem extends test_util.Tests {
       generate(fun(IndexType(n1))(_ =>
         generate(fun(IndexType(n2))(_ =>
           generate(fun(IndexType(n3))(_ =>
-            generate(fun(IndexType(n4))(_ => l(0.0f))))))))))
+            generate(fun(IndexType(n4))(_ => lf32(0.0f))))))))))
 
     val e = depFun((k: Nat, m: Nat, n: Nat, o: Nat, p: Nat) =>
       fun(k `.` m `.` n `.` o `.` p `.` f32)(xs =>
@@ -147,7 +147,7 @@ class OclToMem extends test_util.Tests {
 
   test("arithmetic expressions should be simplified when unrolling private arrays") {
     val e = fun(ArrayType(1, f32))(a =>
-      a |> padCst(1)(1)(l(1.0f)) |> toPrivateFun(mapSeq(id)) |> mapSeq(id)
+      a |> padCst(1)(1)(lf32(1.0f)) |> toPrivateFun(mapSeq(id)) |> mapSeq(id)
     )
 
     val code = gen.opencl.kernel.asStringFromExpr(e)

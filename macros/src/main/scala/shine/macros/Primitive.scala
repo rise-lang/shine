@@ -101,6 +101,8 @@ object Primitive {
           case Ident(TypeName("NatToData"))     => q"$v.natToData($name)"
           case Ident(TypeName("AccessType"))    => q"$v.access($name)"
           case Ident(TypeName("AddressSpace"))  => q"$v.addressSpace($name)"
+          case Ident(TypeName("LocalSize"))  => q"$name.visitAndRebuild($v)"
+          case Ident(TypeName("GlobalSize"))  => q"$name.visitAndRebuild($v)"
           // Phrase[ExpType]
           case AppliedTypeTree((Ident(TypeName("Phrase")), _)) =>
             q"shine.DPIA.Phrases.VisitAndRebuild($name, $v)"
@@ -264,10 +266,10 @@ object Primitive {
           }
          """
       }).asInstanceOf[ClassDef]
-
+/*
       c.info(c.enclosingPosition,
         s"generated `${name.toString}'\n$expClass", force = false)
-
+*/
       expClass
     }
   }
