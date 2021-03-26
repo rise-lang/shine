@@ -36,6 +36,6 @@ object makeClosed {
         case i => throw TypeException(s"${i.getClass} is not supported yet")
       }
     })
-    (new Solution(ts, ns, as, n2ds, Map.empty, Map.empty)(expr), ts.size + ns.size + as.size + n2ds.size)
+    (new Solution(ts, ns, as, Map.empty, Map.empty, n2ds, Map.empty, Map.empty)(expr), ts.size + ns.size + as.size + n2ds.size)
   }
 }

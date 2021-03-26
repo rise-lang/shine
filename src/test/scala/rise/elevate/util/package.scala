@@ -16,6 +16,7 @@ package object util {
 
   val tileSize = 4
 
+
   // notation
   def T: ToBeTyped[Rise] = transpose
   def S: ToBeTyped[DepApp[NatKind]] = split(tileSize) //slide(3)(1)

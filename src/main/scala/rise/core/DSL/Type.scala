@@ -73,6 +73,14 @@ object Type {
   implicit def toAddressSpaceFunctionWrapper[A](f: AddressSpace => A): AddressSpaceFunctionWrapper[A] =
     AddressSpaceFunctionWrapper(f)
 
+  case class MatrixLayoutWrapper[A](f: MatrixLayout => A)
+  implicit def toMatrixLayoutWrapper[A](f: MatrixLayout => A): MatrixLayoutWrapper[A] =
+    MatrixLayoutWrapper(f)
+
+  case class FragementTypeWrapper[A](f: FragmentKind => A)
+  implicit def toFragmentTypeWrapper[A](f: FragmentKind => A): FragementTypeWrapper[A] =
+    FragementTypeWrapper(f)
+
   case class TypeFunctionWrapper[A](f: TypeIdentifier => A)
 
   implicit def toTypeFunctionWrapper[A](f: TypeIdentifier => A): TypeFunctionWrapper[A] =
@@ -129,6 +137,14 @@ object Type {
 
     def apply[A](w: AddressSpaceFunctionWrapper[A]): A = {
       w.f(AddressSpaceIdentifier(freshName("n2n")))
+    }
+
+    def apply[A](w: MatrixLayoutWrapper[A]): A = {
+      w.f(MatrixLayoutIdentifier(freshName("ml")))
+    }
+
+    def apply[A](w: FragementTypeWrapper[A]): A = {
+      w.f(FragmentKindIdentifier(freshName("ft")))
     }
 
     def apply[A](w: TypeFunctionWrapper[A]): A = {

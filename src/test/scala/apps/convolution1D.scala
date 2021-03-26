@@ -17,7 +17,7 @@ class convolution1D extends test_util.Tests {
 
   val dotSeq: ToBeTyped[Expr] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |>
-    oclReduceSeqUnroll(AddressSpace.Private)(add)(l(0.0f))
+    oclReduceSeqUnroll(AddressSpace.Private)(add)(lf32(0.0f))
   ))
 
   val binomial: ToBeTyped[Expr] =

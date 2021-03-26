@@ -33,20 +33,20 @@ object ParForNat {
     case Global     => get_global_id(dim)
     case Local      => get_local_id(dim)
     case WorkGroup  => get_group_id(dim)
-    case Sequential => throw new Exception("This should not happen")
+    case Sequential | Warp | Lane => throw new Exception("This should not happen")
   }
 
   def initStep(level: ParallelismLevel, dim: Int): Nat = level match {
     case Global     => get_global_size(dim)
     case Local      => get_local_size(dim)
     case WorkGroup  => get_num_groups(dim)
-    case Sequential => throw new Exception("This should not happen")
+    case Sequential | Warp | Lane => throw new Exception("This should not happen")
   }
 
   def initName(level: ParallelismLevel): String = level match {
     case Global     => freshName("gl_id_")
     case Local      => freshName("l_id_")
     case WorkGroup  => freshName("wg_id_")
-    case Sequential => throw new Exception("This should not happen")
+    case Sequential | Warp | Lane => throw new Exception("This should not happen")
   }
 }

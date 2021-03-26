@@ -19,8 +19,8 @@ import rise.elevate.strategies.predicate._
 import shine.DPIA.Nat
 
 class circularBuffering extends test_util.Tests {
-  private val sum = reduce(add)(l(0.0f))
-  private val sumSeq = reduceSeq(add)(l(0.0f))
+  private val sum = reduce(add)(lf32(0.0f))
+  private val sumSeq = reduceSeq(add)(lf32(0.0f))
 
   def wrapExpr(e: ToBeTyped[Rise]): ToBeTyped[Rise] = {
     depFun((n: Nat) => fun(

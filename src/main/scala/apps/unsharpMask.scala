@@ -25,7 +25,7 @@ object unsharpMask {
     fun(f32)(sigma =>
     generate(fun(x_ => {
       val x = cast(x_) :: f32
-      exp(-x * x / (l(2.0f) * sigma * sigma)) / (l(Math.sqrt(2.0f * kPi).toFloat) * sigma)
+      exp(-x * x / (lf32(2.0f) * sigma * sigma)) / (lf32(Math.sqrt(2.0f * kPi).toFloat) * sigma)
     }))
     )
 
@@ -64,7 +64,7 @@ object unsharpMask {
   )((gray, blur) =>
     zipND(2)(gray, blur) |>
     map(map(fun(p =>
-      l(2.0f) * fst(p) - snd(p)
+      lf32(2.0f) * fst(p) - snd(p)
     )))
   ))
 

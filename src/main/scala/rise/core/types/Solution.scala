@@ -5,28 +5,34 @@ import rise.core.traverse._
 import rise.core.{Expr, substitute}
 
 object Solution {
-  def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
+  def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
   def subs(ta: Type, tb: Type): Solution = {
-    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map())
+    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map(), Map(), Map())
   }
 
   def subs(ta: DataTypeIdentifier, tb: Type): Solution =
-    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map())
+    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map(), Map(), Map())
   def subs(na: NatIdentifier, nb: Nat): Solution =
-    Solution(Map(), Map(na -> nb), Map(), Map(), Map(), Map())
+    Solution(Map(), Map(na -> nb), Map(), Map(), Map(), Map(), Map(), Map())
   def subs(aa: AddressSpaceIdentifier, ab: AddressSpace): Solution =
-    Solution(Map(), Map(), Map(aa -> ab), Map(), Map(), Map())
+    Solution(Map(), Map(), Map(aa -> ab), Map(), Map(), Map(), Map(), Map())
+  def subs(ma: MatrixLayoutIdentifier, mb: MatrixLayout): Solution =
+    Solution(Map(), Map(), Map(), Map(ma -> mb), Map(), Map(),  Map(), Map())
+  def subs(fa: FragmentKindIdentifier, fb: FragmentKind): Solution =
+    Solution(Map(), Map(), Map(), Map(), Map(fa -> fb), Map(),  Map(), Map())
   def subs(na: NatToDataIdentifier, nb: NatToData): Solution =
-    Solution(Map(), Map(), Map(), Map(na -> nb), Map(), Map())
+    Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb), Map(), Map())
   def subs(na: NatToNatIdentifier, nb: NatToNat): Solution =
-    Solution(Map(), Map(), Map(), Map(), Map(na -> nb), Map())
+    Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(na -> nb), Map())
   def subs(na: NatCollectionIdentifier, nb: NatCollection): Solution =
-    Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
+    Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
 }
 
 case class Solution(ts: Map[Type, Type],
                     ns: Map[NatIdentifier, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
+                    ms: Map[MatrixLayoutIdentifier, MatrixLayout],
+                    fs: Map[FragmentKindIdentifier, FragmentKind],
                     n2ds: Map[NatToDataIdentifier, NatToData],
                     n2ns: Map[NatToNatIdentifier, NatToNat],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
@@ -35,6 +41,8 @@ case class Solution(ts: Map[Type, Type],
   abstract class Visitor(sol: Solution) extends PureTraversal {
     override def nat: Nat => Pure[Nat] = ae => return_(sol(ae))
     override def addressSpace: AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
+    override def matrixLayout: MatrixLayout => Pure[MatrixLayout] = m => return_(sol(m))
+    override def fragmentKind: FragmentKind => Pure[FragmentKind] = f => return_(sol(f))
     override def natToData: NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
     override def natToNat: NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
   }
@@ -66,6 +74,12 @@ case class Solution(ts: Map[Type, Type],
 
   def apply(a: AddressSpace): AddressSpace =
     substitute.addressSpacesInAddressSpace(as, a)
+
+  def apply(m: MatrixLayout): MatrixLayout =
+    substitute.matrixLayoutsInMatrixLayout(ms, m)
+
+  def apply(f: FragmentKind): FragmentKind =
+    substitute.fragmentTypesInFragmentType(fs, f)
 
   def apply(a: NatCollection): NatCollection =
     substitute.natCollectionInNatCollection(natColls, a)
@@ -104,6 +118,8 @@ case class Solution(ts: Map[Type, Type],
         (s1.ts.view.mapValues(t => s2(t)) ++ s2.ts).toMap,
         (s1.ns.view.mapValues(n => s2(n)) ++ s2.ns).toMap,
         (s1.as.view.mapValues(a => s2(a)) ++ s2.as).toMap,
+        (s1.ms.view.mapValues(m => s2(m)) ++ s2.ms).toMap,
+        (s1.fs.view.mapValues(f => s2(f)) ++ s2.fs).toMap,
         (s1.n2ds.view.mapValues(n => s2(n)) ++ s2.n2ds).toMap,
         (s1.n2ns.view.mapValues(n => s2(n)) ++ s2.n2ns).toMap,
         (s1.natColls.view.mapValues(n => s2(n)) ++ s2.natColls).toMap
@@ -120,6 +136,10 @@ case class Solution(ts: Map[Type, Type],
         TypeConstraint(apply(a), apply(b))
       case AddressSpaceConstraint(a, b) =>
         AddressSpaceConstraint(apply(a), apply(b))
+      case MatrixLayoutConstraint(a, b) =>
+        MatrixLayoutConstraint(apply(a), apply(b))
+      case FragmentTypeConstraint(a, b) =>
+        FragmentTypeConstraint(apply(a), apply(b))
       case NatConstraint(a, b) =>
         NatConstraint(apply(a), apply(b))
       case BoolConstraint(a, b) =>

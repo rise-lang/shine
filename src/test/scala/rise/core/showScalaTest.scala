@@ -25,7 +25,7 @@ class showScalaTest extends test_util.Tests {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
-    }))(l(0.0f))(zip(join(elem))(weights))
+    }))(lf32(0.0f))(zip(join(elem))(weights))
   )
 
   test("show dotElemWeights as an example") {
