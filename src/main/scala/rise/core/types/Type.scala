@@ -103,11 +103,6 @@ final case class MatrixLayoutIdentifier(
   override def asExplicit: MatrixLayoutIdentifier = this.copy(isExplicit = true)
   override def asImplicit: MatrixLayoutIdentifier =
     this.copy(isExplicit = false)
-  override def equals(that: Any): Boolean = that match {
-    case a: MatrixLayoutIdentifier => this.name == a.name
-    case _                         => false
-  }
-  override def hashCode(): Int = this.name.hashCode()
 }
 
 sealed trait FragmentKind
@@ -127,11 +122,6 @@ final case class FragmentKindIdentifier(name: String,
   override def asExplicit: FragmentKindIdentifier = this.copy(isExplicit = true)
   override def asImplicit: FragmentKindIdentifier =
     this.copy(isExplicit = false)
-  override def equals(that: Any): Boolean = that match {
-    case a: FragmentKindIdentifier => this.name == a.name
-    case _                         => false
-  }
-  override def hashCode(): Int = this.name.hashCode()
 }
 
 object FragmentType {
@@ -152,17 +142,6 @@ final case class FragmentType(rows: Nat,
     else
       s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
 
-  override def equals(o: Any): Boolean = {
-    if (!o.isInstanceOf[FragmentType])
-      return false;
-
-    val f = o.asInstanceOf[FragmentType]
-    if (fragmentKind == FragmentKind.Acuumulator && f.fragmentKind == FragmentKind.Acuumulator) {
-      f.rows.equals(rows) && f.columns.equals(columns) && f.dataType.equals(dataType)
-    } else {
-      super.equals(o);
-    }
-  }
 }
 
 

@@ -75,7 +75,7 @@ object equality {
         // Base cases -> identifier lookup in nat expressions
         case IndexType(sa) => and { case IndexType(sb) => equivNat(env)(sa)(sb) }
         case DepArrayType(sa, da) => and { case DepArrayType(sb, db) =>
-          equivNat(env)(sa)(sb) && equiv[NatToDataKind](env)(da)(db) } // FIXME: record sa == sb in env
+          equivNat(env)(sa)(sb) && equiv[NatToDataKind](env)(da)(db) }
 
         // Should we move this into its own equality check?
         case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
@@ -91,6 +91,10 @@ object equality {
         case PairType(la, ra) => and { case PairType(lb, rb) => equivType(env)(la)(lb) && equivType(env)(ra)(rb) }
         case VectorType(sa, da) => and { case VectorType(sb, db) => equivNat(env)(sa)(sb) && equivType(env)(da)(db) }
         case ArrayType(sa, da) => and { case ArrayType(sb, db) => equivNat(env)(sa)(sb) && equivType(env)(da)(db) }
+        case FragmentType(ra, ca, da, dta, fka, mla) => and { case FragmentType(rb, cb, db, dtb, fkb, mlb) =>
+          equivNat(env)(ra)(rb) && equivNat(env)(ca)(cb) && equivNat(env)(da)(db) &&
+          equivType(env)(dta)(dtb) && fka == fkb && mla == mlb
+        }
 
         // Recursive cases -> binding tracking
         case DepFunType(xa, ta) => and { case DepFunType(xb, tb) =>
@@ -128,6 +132,8 @@ object equality {
       case NatToDataApply(f, n) => 59 * hash[NatToDataKind](f) + 61 * hash[NatKind](n)
       case ArrayType(size, elemType) => 67 * hash[NatKind](size) + 71 * hashType(elemType)
       case DepArrayType(size, fdt) => 73 * hash[NatKind](size) + 79 * hash[NatToDataKind](fdt)
+      case FragmentType(r, c, d, dt, fk, ml) => 83 * hash[NatKind](r) + 89 * hash[NatKind](c) + 97 * hash[NatKind](d) +
+        101 * hashType(dt) + 103*fk.hashCode()
     }
   }
 
