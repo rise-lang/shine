@@ -13,7 +13,7 @@ class traverseTest extends test_util.Tests {
     )
   )
 
-  case class Trace[T](unwrap : T) { val trace : Seq[Any] = Seq() }
+  case class Trace[+T](unwrap : T) { val trace : Seq[Any] = Seq() }
   implicit object TraceMonad extends Monad[Trace] {
     def write[T] : T => Trace[T] = t => new Trace(t) { override val trace : Seq[Any] = Seq(t)}
     override def return_[T] : T => Trace[T] = t => Trace(t)

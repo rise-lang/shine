@@ -1,29 +1,23 @@
 package rise.core
 
-import scala.language.implicitConversions
-import arithexpr.arithmetic.NamedVar
+import util.monad
 import rise.core.semantics._
 import rise.core.types._
+import scala.language.implicitConversions
 
 object traverse {
-  trait Monad[M[_]] {
-    def return_[T] : T => M[T]
-    def bind[T,S] : M[T] => (T => M[S]) => M[S]
-    def traverse[A] : Seq[M[A]] => M[Seq[A]] =
-      _.foldRight(return_(Nil : Seq[A]))({case (mx, mxs) =>
-        bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
-  }
-
-  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]) = new {
-    def map[B](f: A => B): M[B] = tc.bind(m)(a => tc.return_(f(a)) )
-    def flatMap[B](f: A => M[B]): M[B] = tc.bind(m)(f)
-  }
+  // Reexport util.monad.*
+  type Monad[M[+_]] = monad.Monad[M]
+  type Pure[+T] = monad.Pure[T]
+  implicit def monadicSyntax[M[+_], A](m: M[A])(implicit tc: monad.Monad[M]) = monad.monadicSyntax(m)(tc)
+  val PureMonad = monad.PureMonad
+  val OptionMonad = monad.OptionMonad
 
   sealed trait VarType
   case object Binding extends VarType
   case object Reference extends VarType
 
-  trait Traversal[M[_]] {
+  trait Traversal[M[+_]] {
     protected[this] implicit def monad : Monad[M]
     def return_[T] : T => M[T] = monad.return_
     def bind[T,S] : M[T] => (T => M[S]) => M[S] = monad.bind
@@ -55,7 +49,7 @@ object traverse {
     def matrixLayout : MatrixLayout => M[MatrixLayout] = return_
     def fragmentKind : FragmentKind => M[FragmentKind] = return_
     def datatype : DataType => M[DataType] = {
-      case i: DataTypeIdentifier => return_(i.asInstanceOf[DataType])
+      case i: DataTypeIdentifier => return_(i)
       case NatType               => return_(NatType : DataType)
       case s : ScalarType        => return_(s : DataType)
       case ArrayType(n, d) =>
@@ -86,14 +80,14 @@ object traverse {
     }
 
     def natToNat : NatToNat => M[NatToNat] = {
-      case i : NatToNatIdentifier => return_(i.asInstanceOf[NatToNat])
+      case i : NatToNatIdentifier => return_(i)
       case NatToNatLambda(x, e) =>
         for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- natDispatch(Reference)(e) }
           yield NatToNatLambda(x1, e1)
     }
 
     def natToData : NatToData => M[NatToData] = {
-      case i : NatToDataIdentifier => return_(i.asInstanceOf[NatToData])
+      case i : NatToDataIdentifier => return_(i)
       case NatToDataLambda(x, e) =>
         for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- datatype(e) }
           yield NatToDataLambda(x1, e1)
@@ -192,27 +186,15 @@ object traverse {
     }
   }
 
-  trait ExprTraversal[M[_]] extends Traversal[M] {
+  trait ExprTraversal[M[+_]] extends Traversal[M] {
     override def `type`[T <: Type] : T => M[T] = return_
-  }
-
-  case class Pure[T](unwrap : T)
-  implicit object PureMonad extends Monad[Pure] {
-    override def return_[T] : T => Pure[T] = t => Pure(t)
-    override def bind[T,S] : Pure[T] => (T => Pure[S]) => Pure[S] =
-      v => f => v match { case Pure(v) => f(v) }
-  }
-
-  implicit object OptionMonad extends Monad[Option] {
-    def return_[T]: T => Option[T] = Some(_)
-    def bind[T, S]: Option[T] => (T => Option[S]) => Option[S] = v => v.flatMap
   }
 
   trait PureTraversal extends Traversal[Pure] { override def monad = PureMonad }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
 
   def apply(e : Expr, f : PureTraversal) : Expr = f.expr(e).unwrap
-  def apply[M[_]](e : Expr, f : Traversal[M]) : M[Expr] = f.expr(e)
+  def apply[M[+_]](e : Expr, f : Traversal[M]) : M[Expr] = f.expr(e)
   def apply[T <: Type](t : T, f : PureTraversal) : T = f.`type`(t).unwrap
-  def apply[T <: Type, M[_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
+  def apply[T <: Type, M[+_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
 }
