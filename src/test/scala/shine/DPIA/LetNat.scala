@@ -17,12 +17,12 @@ class LetNat extends idealised.util.Tests{
       ))))
 
     val typed = TypeInference(program, Map())
-    println(typed.t)
+    logger.debug(typed.t)
     val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
   }
 
   test("Simple functions with no capture") {
@@ -43,7 +43,7 @@ class LetNat extends idealised.util.Tests{
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
   }
 
   test("Inlined single value") {
@@ -60,7 +60,7 @@ class LetNat extends idealised.util.Tests{
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
   }
 
 
@@ -78,7 +78,7 @@ class LetNat extends idealised.util.Tests{
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
   }
 }
  */

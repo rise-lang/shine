@@ -28,7 +28,7 @@ class SparseVector extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     def runScala(indices:Array[Int], sparse:Array[Float], dense:Array[Float]):Array[Float] = {
       indices.zip(sparse).map({
@@ -75,7 +75,7 @@ class SparseVector extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     def runScala(indices:Array[Int], sparse:Array[Float], dense:Array[Float]):Array[Float] = {
       indices.zip(sparse).map({
@@ -122,7 +122,7 @@ class SparseVector extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     def runScala(indices:Array[Int], sparse:Array[Float], dense:Array[Float]):Float = {
       indices.zip(sparse).foldLeft(0.0f)({
@@ -172,7 +172,7 @@ class SparseVector extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     def runScala(indices:Array[Int], sparse:Array[Float], dense:Array[Float]):Float = {
       indices.zip(sparse).foldLeft(0.0f)({
@@ -220,7 +220,7 @@ class SparseVector extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     def runScala(matrix:Array[Array[Float]], indices:Array[Int], vector:Array[Float]):Array[Float] = {
       matrix.map(row =>
@@ -271,7 +271,7 @@ class SparseVector extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
 
     def runScala(matrix:Array[Array[Float]], indices:Array[Int], vector:Array[Float]):Array[Float] = {

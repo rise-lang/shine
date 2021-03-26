@@ -46,7 +46,7 @@ class dot extends test_util.Tests {
 
   // C
   test("Simple dot product compiles to syntactically correct C") {
-    println(function.asStringFromExpr(simpleDotProduct))
+    logger.debug(function.asStringFromExpr(simpleDotProduct))
   }
 
   // OpenMP

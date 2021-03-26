@@ -21,7 +21,7 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
     val compiledProg =
       idealised.OpenCL.KernelGenerator
         .makeCode(LocalSize(8), GlobalSize(32))(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())), "KERNEL")
-    println(compiledProg.code)
+    logger.debug(compiledProg.code)
     SyntaxChecker.checkOpenCL(compiledProg.code)
   }
 
@@ -33,7 +33,7 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
 
     val compiledProg =
       idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())))
-    println(compiledProg.code)
+    logger.debug(compiledProg.code)
     SyntaxChecker(compiledProg.code)
   }
 
@@ -45,7 +45,7 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
 
     val compiledProg =
       idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())))
-    println(compiledProg.code)
+    logger.debug(compiledProg.code)
     SyntaxChecker(compiledProg.code)
   }
 
@@ -73,7 +73,7 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
 
     val kernel =
       idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(prog, Map())))
-    println(kernel.code)
+    logger.debug(kernel.code)
 
     SyntaxChecker.checkOpenCL(kernel.code)
 

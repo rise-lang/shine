@@ -58,8 +58,8 @@ class MMTest extends test_util.TestWithCUDA {
 
     val kernel = gen.cuda.kernel("matrixMult").fromPhrase(simpleMatMulTile)
 
-    println("KernelCode:")
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug("KernelCode:")
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     //Check kernel-result
     val matrixATest = generateMatrix(mTile, kTile)
@@ -77,12 +77,10 @@ class MMTest extends test_util.TestWithCUDA {
 
       //Check result
       if (!similar(resultTest, resultMatrix)) {
-        println("Expected:")
-        print(resultTest.map(_.mkString(" ")).mkString("\n"))
-        println()
-        println("\nFound:")
-        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-        println()
+        logger.debug("Expected:")
+        logger.debug(resultTest.map(_.mkString(" ")).mkString("\n"))
+        logger.debug("\nFound:")
+        logger.debug(resultMatrix.map(_.mkString(" ")).mkString("\n"))
         throw new Exception("False Result")
       }
     }
@@ -149,8 +147,8 @@ class MMTest extends test_util.TestWithCUDA {
 
     val kernel = gen.cuda.kernel("matrixMult").fromPhrase(simpleMatMulTile)
 
-    println("KernelCode:")
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug("KernelCode:")
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
 
     //Check kernel-result
@@ -171,12 +169,10 @@ class MMTest extends test_util.TestWithCUDA {
 
       //Check result
       if (!similar(resultTest, resultMatrix)) {
-        println("Expected:")
-        print(resultTest.map(_.mkString(" ")).mkString("\n"))
-        println()
-        println("\nFound:")
-        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-        println()
+        logger.debug("Expected:")
+        logger.debug(resultTest.map(_.mkString(" ")).mkString("\n"))
+        logger.debug("\nFound:")
+        logger.debug(resultMatrix.map(_.mkString(" ")).mkString("\n"))
         throw new Exception("False Result")
       }
     }
@@ -299,8 +295,8 @@ class MMTest extends test_util.TestWithCUDA {
 
     val kernel = gen.cuda.kernel("matrixMult").fromPhrase(simpleMatMul)
 
-    println("KernelCode:")
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug("KernelCode:")
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
 
     //Check kernel-result
@@ -324,12 +320,10 @@ class MMTest extends test_util.TestWithCUDA {
 
       //Check result
       if (!similar(resultTest, resultMatrix)) {
-        println("Expected:")
-        print(resultTest.map(_.mkString(" ")).mkString("\n"))
-        println()
-        println("\nFound:")
-        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-        println()
+        logger.debug("Expected:")
+        logger.debug(resultTest.map(_.mkString(" ")).mkString("\n"))
+        logger.debug("\nFound:")
+        logger.debug(resultMatrix.map(_.mkString(" ")).mkString("\n"))
         throw new Exception("False Result")
       }
     }
