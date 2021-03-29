@@ -19,7 +19,7 @@ final case class BoolData(b: Boolean) extends ScalarData(bool) {
   override def toString: String = b.toString
 }
 
-final case class IntData(i: Int) extends ScalarData(i32) {
+final case class IntData(i: Int) extends ScalarData(int) {
   override def toString: String = i.toString
 }
 
