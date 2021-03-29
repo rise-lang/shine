@@ -6,12 +6,13 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
    (
       join (
       mapWorkGroup 0 (
-        \p1Chunk:(256.(4xF32, 4xF32)->1.256.(4xF32, 4xF32)) ->
-        \newP1Chunk:256.(4xF32, 4xF32)->
+        \p1Chunk ->
+        (
+        \newP1Chunk->
         mapLocal 1 (
-          \bla:256.4xF32->
+          \bla->
           mapLocal 0 (
-            \p1A:((4xF32, 4xF32), 4xF32)->
+            \p1A->
             update (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
           )
           (zip newP1Chunk bla)
@@ -19,7 +20,7 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
         (
           oclReduceSeq Local --I have to add AddrSpace.Local in matchPrimitiveAndIdentifier, because there it is easy
           (
-          \accA:1.256.4xF32->\p2A:1.256.4xF32->
+          \accA->\p2A->
           (let (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1)) p2A)))
           (
             \p2Local -> mapLocal 1 (
@@ -34,10 +35,10 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
           )
           (mapLocal 1 (mapLocal 0 (\x2->x2)) (generate (\plh1-> generate (\plh2->vectorFromScalar 0F32))))
           (split 1N ( split 256N pos))
+        )(zip(toLocal(mapLocal 0 (\x3->x3) (fst (unzip p1Chunk))))(snd (unzip p1Chunk)))--zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
         )
-      ) (split 256N)
+      ) (split 256N (split N ( zip pos vel)))
       )
    )
-    (split N ( zip pos vel))
     )
   )

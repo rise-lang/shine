@@ -82,7 +82,7 @@ object nbody {
               )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(l(0.0f))))))))
             o split(tileY) o split(tileX) $ pos
           // TODO: toPrivate when it works..
-        ) $ zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
+        ) $ zip(toLocal(mapLocal(0)(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
       )) o split(tileX)
     ) o split(n) $ zip(pos)(vel)
   ))

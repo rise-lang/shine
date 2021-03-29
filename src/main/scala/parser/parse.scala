@@ -239,6 +239,7 @@ object parse {
       case "transpose" => SExpr(rp.transpose(Some(span)))
       case "select" => SExpr(rp.select(Some(span)))
       case "zip" => SExpr(rp.zip(Some(span)))
+      case "unzip" => SExpr(rp.unzip(Some(span)))
       case "neg" => SExpr(rp.neg(Some(span)))
       case "not" => SExpr(rp.not(Some(span)))
       case "add" => SExpr(rp.add(Some(span)))
