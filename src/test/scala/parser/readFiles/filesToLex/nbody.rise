@@ -11,39 +11,39 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
    (
       join (
       mapWorkGroup 0 (
-        \p1Chunk:(256.(4xF32, 4xF32)->1.256.(4xF32, 4xF32)) ->
-        \newP1Chunk:256.(4xF32, 4xF32)->
+        \p1Chunk ->
+        (
+        \newP1Chunk->
         mapLocal 1 (
-          \bla:256.4xF32->
+          \bla->
           mapLocal 0 (
-            \p1A:((4xF32, 4xF32), 4xF32)->
-            update (fst (fst p1A)) (fst (snd p1A)) deltaT (snd p1A)
+            \p1A->
+            update (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
           )
           (zip newP1Chunk bla)
         )
         (
           oclReduceSeq Local --I have to add AddrSpace.Local in matchPrimitiveAndIdentifier, because there it is easy
           (
-          \accA:1.256.4xF32->\p2A:1.256.4xF32->
-          (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1)) p2A)) --toLocal adden --"id" is a primitive in RISE and cannot be used as name
+          \accA->\p2A->
+          (let (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1)) p2A)))
           (
             \p2Local -> mapLocal 1 (
               \accDim-> mapLocal 0 (
                 \p1B -> oclReduceSeq Private (
                   \accB:4xF32->\p2B:4xF32->
                   calcAcc (fst (fst p1B)) p2B deltaT espSqr accB
-                ) (snd p1B) (toLocal (fst accDim))
-              ) (zip newP1Chunk (snd (snd accDim)))
+                ) (snd p1B) (fst accDim)
+              ) (zip newP1Chunk (snd accDim))
             ) (zip p2Local accA)
-          ) 
-          ) 0F32
-          (toLocal (mapLocal 1 (mapLocal 0 (\x2->x2)) (generate (vectorFromScalar 0F32))))
+          )
+          )
+          (mapLocal 1 (mapLocal 0 (\x2->x2)) (generate (\plh1-> generate (\plh2->vectorFromScalar 0F32))))--N.N.4xF32
+          (split 1N ( split 256N pos))--(N/256).1.256.4xF32
+        )(zip(toLocal(mapLocal 0 (\x3->x3) (fst (unzip p1Chunk))))(snd (unzip p1Chunk)))--zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
         )
-        (split 1N ( split 256N pos))
-      ) (split 256N)
+      ) (split 256N (split N ( zip pos vel)))
       )
    )
-    (split N ( zip pos vel))
     )
   )
-
