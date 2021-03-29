@@ -20,6 +20,8 @@ object nbody {
     val kernelAMD = gen.OpenCLKernel(amd)
     val kernelNVIDIA = gen.OpenCLKernel(nvidia)
 
+    println(nvidia)
+
     withExecutor {
       val sampleCount = 10
       val stats = Seq(
