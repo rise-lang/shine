@@ -10,6 +10,7 @@ import util.{Time, TimeSpan, gen}
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.security.Policy.Parameters
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
+import rise.core.DSL.ToBeTyped
 import rise.openCL.DSL.oclRun
 
 import scala.annotation.tailrec
@@ -125,16 +126,27 @@ package object autotune {
   }
 
   // wrap ocl run to a function
-  def wrapOclRun(expr: Expr)(localSize: LocalSize, globalSize: GlobalSize): Expr = {
+  def wrapOclRun(localSize: LocalSize, globalSize: GlobalSize)
+                (expr: Expr): Expr = {
     expr match {
       // fun(x => e)
-      case Lambda(_,e) =>
-        wrapOclRun(e)(localSize, globalSize)
+      case l@Lambda(x,e) =>
+        Lambda(x, wrapOclRun(localSize, globalSize)(e))(l.t)
       // depFun(x => e)
-      case DepLambda(_,e) =>
-        wrapOclRun(e)(localSize, globalSize)
-      case e =>
-        oclRun(localSize, globalSize)(e)
+      case dl@DepLambda(x, e) =>
+        x match {
+          case n: NatIdentifier =>
+            DepLambda[NatKind](n, wrapOclRun(localSize, globalSize)(e))(dl.t)
+          case dt: DataTypeIdentifier =>
+            DepLambda[DataKind](dt, wrapOclRun(localSize, globalSize)(e))(dl.t)
+          case a: AddressSpaceIdentifier =>
+            DepLambda[AddressSpaceKind](a, wrapOclRun(localSize, globalSize)(e))(dl.t)
+          case n2n: NatToNatIdentifier =>
+            DepLambda[NatToNatKind](n2n, wrapOclRun(localSize, globalSize)(e))(dl.t)
+          case n2d: NatToDataIdentifier =>
+            DepLambda[NatToDataKind](n2d, wrapOclRun(localSize, globalSize)(e))(dl.t)
+        }
+      case e => oclRun(localSize, globalSize)(e)
     }
   }
 

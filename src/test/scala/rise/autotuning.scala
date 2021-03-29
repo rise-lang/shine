@@ -120,9 +120,13 @@ class autotuning extends test_util.Tests {
   }
 
   test("wrapOclRun"){
-    val e:Expr = convolution(32)
+    val wrapped = wrapOclRun(LocalSize(1), GlobalSize(1))(convolution)
+    assert(convolutionOcl.toExpr == wrapped)
 
-    val wrapped = wrapOclRun(e)(LocalSize(1), GlobalSize(1))
+    val e = (wrapped: ToBeTyped[Expr])(32)
+    assert(convolutionOcl(32).toExpr == e.toExpr)
+
+    autotune.search(e)
   }
 
   test("search"){
