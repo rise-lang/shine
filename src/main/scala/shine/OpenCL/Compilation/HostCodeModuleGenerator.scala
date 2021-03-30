@@ -78,7 +78,8 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
               ParamKind.input(OpaqueType("Context")) +:
                 ParamKind.input(OpaqueType(selfT.name)) +:
                 ParamKind.output(outParam) +: funDef.params.map(ParamKind.input)
-          )
+          ),
+          selfInitRunFunction(gen, funDef, outParam),
         )
       )
   }
@@ -152,6 +153,36 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
       paramKinds = Seq(
         ParamKind.input(OpaqueType("Context")),
         ParamKind.input(OpaqueType(selfT.name)))
+    )
+  }
+
+  // generates a convenience function to both initialize the computation context and run it
+  private def selfInitRunFunction(gen: HostCodeGenerator,
+                                  funDef: FunDef,
+                                  outParam: Identifier[AccType]): C.AST.Function = {
+    val selfT = C.AST.OpaqueType(s"${funDef.name}_t")
+    val coreParams = optionallyManagedParams(funDef.params, outParam).map(makeParam(gen))
+    C.AST.Function(
+      code = C.AST.FunDecl(s"${funDef.name}_init_run",
+        returnType = C.AST.Type.void,
+        params = C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")) +: coreParams,
+        body = C.AST.Block(Seq(
+          C.AST.DeclStmt(C.AST.VarDecl(funDef.name, selfT, None)),
+          C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(s"${funDef.name}_init"), Seq(
+            C.AST.DeclRef("ctx"), C.AST.UnaryExpr(C.AST.UnaryOperator.&, C.AST.DeclRef(funDef.name))
+          ))),
+          C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(s"${funDef.name}_run"),
+            Seq(C.AST.DeclRef("ctx"), C.AST.UnaryExpr(C.AST.UnaryOperator.&, C.AST.DeclRef(funDef.name))) ++
+            coreParams.map(p => C.AST.DeclRef(p.name))
+          )),
+          C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(s"${funDef.name}_destroy"), Seq(
+            C.AST.DeclRef("ctx"), C.AST.UnaryExpr(C.AST.UnaryOperator.&, C.AST.DeclRef(funDef.name))
+          )))
+        ))
+      ),
+      paramKinds =
+        ParamKind.input(OpaqueType("Context")) +:
+          ParamKind.output(outParam) +: funDef.params.map(ParamKind.input)
     )
   }
 }
