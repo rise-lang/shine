@@ -1,6 +1,7 @@
 package rise.eqsat
 
 import PatternDSL._
+import rise.core.types.{Nat, NatKind}
 import rise.core.{primitives => rcp}
 
 object rules {
@@ -53,16 +54,16 @@ object rules {
 
   // FIXME: rewrite depApp
   val mapSlideBeforeTranspose: Rule = Rewrite.init("map-slide-before-transpose",
-    app(transpose, app(app(map, app(app(slide, ?("sz")), ?("sp"))), ?("y"))).compile(),
-    app(app(map, transpose), app(app(app(slide, ?("sz")), ?("sp")), app(transpose, ?("y"))))
+    app(transpose, app(app(map, depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp"))), ?("y"))).compile(),
+    app(app(map, transpose), app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), app(transpose, ?("y"))))
   )
   val slideBeforeMapMapF: Rule = Rewrite.init("slide-before-map-map-f",
-    app(app(map, app(map, ?("f"))), app(app(app(slide, ?("sz")), ?("sp")), ?("y"))).compile(),
-    app(app(app(slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y")))
+    app(app(map, app(map, ?("f"))), app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), ?("y"))).compile(),
+    app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y")))
   )
   val slideBeforeMap: Rule = Rewrite.init("slide-before-map",
-    app(app(app(slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y"))).compile(),
-    app(app(map, app(map, ?("f"))), app(app(app(slide, ?("sz")), ?("sp")), ?("y")))
+    app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y"))).compile(),
+    app(app(map, app(map, ?("f"))), app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), ?("y")))
   )
 
   // -- lowering --

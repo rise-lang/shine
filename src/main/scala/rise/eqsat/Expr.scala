@@ -4,7 +4,7 @@ import rise.core
 import rise.core.{primitives => rcp}
 import rise.core.semantics
 import rise.core.semantics.NatData
-import rise.core.types.{Nat, NatKind, TypePlaceholder}
+import rise.core.types.{Kind, Nat, NatKind, TypePlaceholder}
 
 // TODO: could also be outside of eqsat package
 case class Expr(node: Node[Expr]) {
@@ -56,14 +56,10 @@ object Expr {
   def fromNamed(e: core.Expr): Expr = {
     def rec(e: core.Expr, bound: Seq[core.Identifier]): Expr = {
       Expr(e match {
-        // FIXME: temporary hack
-        case core.DepApp(core.DepApp(rcp.slide(), sz: Nat), sp: Nat) =>
-          App(Expr(App(Expr(Primitive(rcp.slide.primitive)),
-            Expr(Literal(NatData(sz))))), Expr(Literal(NatData(sp))))
-          
         case i: core.Identifier => Var(bound.indexOf(i))
         case core.App(f, e) => App(rec(f, bound), rec(e, bound))
         case core.Lambda(i, e) => Lambda(rec(e, i +: bound))
+        // TODO: Nat fromNamed
         case core.DepApp(f, x) => DepApp(rec(f, bound), x)
         case core.DepLambda(_, _) => ???
         case core.Literal(d) => Literal(d)
@@ -77,16 +73,12 @@ object Expr {
   def toNamed(e: Expr): core.Expr = {
     def rec(e: Expr, bound: Seq[core.Identifier]): core.Expr = {
       e.node match {
-        // FIXME: temporary hack
-        case App(Expr(App(Expr(Primitive(rcp.slide())),
-        Expr(Literal(NatData(sz))))), Expr(Literal(NatData(sp)))) =>
-          core.DepApp[NatKind](core.DepApp[NatKind](rcp.slide.primitive, sz)(TypePlaceholder), sp)(TypePlaceholder)
-
         case Var(index) => bound(index)
         case App(f, e) => core.App(rec(f, bound), rec(e, bound))(TypePlaceholder)
         case Lambda(e) =>
           val i = core.Identifier(s"x${bound.size}")(TypePlaceholder)
           core.Lambda(i, rec(e, i +: bound))(TypePlaceholder)
+        // TODO: Nat toNamed
         case DepApp(f, x) => core.DepApp(rec(f, bound), x)(TypePlaceholder)
         case DepLambda(_, _) => ???
         case Literal(d) => core.Literal(d)
@@ -102,6 +94,8 @@ object ExprDSL {
   def %(index: Int): Expr = Expr(Var(index))
   def app(a: Expr, b: Expr): Expr = Expr(App(a, b))
   def lam(e: Expr): Expr = Expr(Lambda(e))
+  def depApp[K <: Kind](f: Expr, x: K#T): Expr = Expr(DepApp(f, x))
+  def depLam(kind: Kind, e: Expr): Expr = Expr(DepLambda(kind, e))
   def map: Expr = Expr(Primitive(rcp.map.primitive))
   def add: Expr = Expr(Primitive(rcp.add.primitive))
   def mul: Expr = Expr(Primitive(rcp.mul.primitive))

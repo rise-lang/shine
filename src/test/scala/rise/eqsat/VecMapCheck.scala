@@ -1,8 +1,8 @@
 package rise.eqsat
 
-class SubstCheck extends test_util.Tests {
+class VecMapCheck extends test_util.Tests {
   test("simple substitution") {
-    val s = Subst.empty
+    val s = VecMap.empty[PatternVar, EClassId]
     val x = PatternVar("x")
     val y = PatternVar("y")
     assert(s.get(x).isEmpty)

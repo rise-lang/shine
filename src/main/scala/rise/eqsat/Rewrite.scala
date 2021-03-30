@@ -1,5 +1,7 @@
 package rise.eqsat
 
+import rise.core.types.{Nat, NatIdentifier}
+
 object Rewrite {
   def init[D](name: String, searcher: Searcher[D], applier: Applier[D]): Rewrite[D] = {
     val boundVars = searcher.patternVars()
@@ -65,31 +67,51 @@ trait Applier[Data] {
 
 case class SearchMatches(eclass: EClassId, substs: Vec[Subst])
 
-case class Subst(vec: Vec[(PatternVar, EClassId)]) {
-  // insert a mapping, returning the old eclass if present
-  def insert(variable: PatternVar, eclass: EClassId): Option[EClassId] = {
+case class VecMap[K, V](vec: Vec[(K, V)]) {
+  // insert a mapping, returning the old value if present
+  def insert(key: K, value: V): Option[V] = {
     for (((v, ec), i) <- vec.zipWithIndex) {
-      if (v == variable) {
-        vec.update(i, variable -> eclass)
+      if (v == key) {
+        vec.update(i, key -> value)
         return Some(ec)
       }
     }
-    vec += variable -> eclass
+    vec += key -> value
     None
   }
 
-  def get(variable: PatternVar): Option[EClassId] =
-    vec.find(_._1 == variable).map(_._2)
+  def get(key: K): Option[V] =
+    vec.find(_._1 == key).map(_._2)
 
-  def apply(variable: PatternVar): EClassId =
-    get(variable).get
+  def apply(key: K): V =
+    get(key).get
+
+  def shallowClone(): VecMap[K, V] =
+    VecMap(vec.clone())
+}
+
+object VecMap {
+  def empty[K, V]: VecMap[K, V] = VecMap(Vec.empty)
+}
+
+case class Subst(exprs: VecMap[PatternVar, EClassId],
+                 nats: VecMap[NatIdentifier, Nat]) {
+  def insert(pv: PatternVar, eclass: EClassId): Option[EClassId] =
+    exprs.insert(pv, eclass)
+  def insert(ni: NatIdentifier, n: Nat): Option[Nat] =
+    nats.insert(ni, n)
+
+  def apply(pv: PatternVar): EClassId =
+    exprs(pv)
+  def apply(ni: NatIdentifier): Nat =
+    nats(ni)
 
   def deepClone(): Subst =
-    Subst(vec.clone())
+    Subst(exprs.shallowClone(), nats.shallowClone())
 }
 
 object Subst {
-  def empty: Subst = Subst(Vec.empty)
+  def empty: Subst = Subst(VecMap.empty, VecMap.empty)
 }
 
 // note: the condition is more general in `egg`

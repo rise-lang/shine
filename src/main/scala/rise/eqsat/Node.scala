@@ -24,23 +24,35 @@ sealed trait Node[+T] {
   def childrenCount(): Int =
     children().length
 
+  def mapNats(fn: Nat => Nat): Node[T] = this match {
+    case DepApp(f, n: Nat) => DepApp[NatKind, T](f, fn(n))
+    case _ => this
+  }
+  def nats(): Iterator[Nat] = this match {
+    case DepApp(_, n: Nat) => Iterator(n)
+    case _ => Iterator()
+  }
+  def natsCount(): Int = nats().length
+
   def matchHash(): Int = this match {
     case Var(i) => 7 * i
     case App(_, _) => 1
     case Lambda(_) => 2
-    case DepApp(_, x) => 5 * x.hashCode()
+    case DepApp(_, _) => 4
     case DepLambda(k, _) => 3 * k.hashCode()
     case Literal(d) => 13 * d.hashCode()
     case Primitive(p) => 17 * p.hashCode()
   }
 
   // Returns true if this enode matches another enode.
-  // This should only consider the operator, not the children ids.
+  // This should only consider the operator, not the children ids or nats.
   def matches(other: Node[_]): Boolean = (this, other) match {
     case (Var(i1), Var(i2)) => i1 == i2
     case (App(_, _), App(_, _)) => true
     case (Lambda(_), Lambda(_)) => true
-    case (DepApp(_, x1), DepApp(_, x2)) => x1 == x2
+    case (DepApp(_, _: Nat), DepApp(_, _: Nat)) => true
+    case (DepApp(_, _: DataType), DepApp(_, _: DataType)) => true
+    // TODO: other Kinds
     case (DepLambda(k1, _), DepLambda(k2, _)) => k1 == k2
     case (Literal(d1), Literal(d2)) => d1 == d2
     case (Primitive(p1), Primitive(p2)) => p1 == p2

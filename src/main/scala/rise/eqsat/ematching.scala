@@ -1,58 +1,79 @@
 package rise.eqsat
 
+import rise.core.types.{Nat, NatIdentifier}
+
 import scala.collection.mutable
 
+// NOTE: we currently only support Nat pattern variables if they are directly the argument of a DepApp node
 object ematching {
   object AbstractMachine {
     def init(eclass: EClassId): AbstractMachine =
-      AbstractMachine(Vec(eclass))
+      AbstractMachine(Vec(eclass), Vec())
   }
 
-  case class AbstractMachine(regs: Vec[EClassId]) {
+  case class AbstractMachine(regs: Vec[EClassId],
+                             natRegs: Vec[Nat]) {
     def reg(r: Reg): EClassId = regs(r.n)
+    def natReg(r: NatReg): Nat = natRegs(r.n)
 
     def run[D](egraph: EGraph[D],
                instructions: Seq[Instruction],
-               subst: Subst,
-               yieldFn: (AbstractMachine, Subst) => Unit): Unit = {
+               yieldFn: () => Unit): Unit = {
       var instrs = instructions
       while (instrs.nonEmpty) {
         instrs.head match {
-          case Bind(node, i, out) =>
+          case Bind(node, i, out, natOut) =>
             forEachMatchingNode(egraph.get(reg(i)), node, { matched =>
               regs.remove(out.n, regs.size - out.n)
+              natRegs.remove(natOut.n, natRegs.size - natOut.n)
               matched.children().foreach(id => regs += id)
-              run(egraph, instrs.tail, subst, yieldFn)
+              matched.nats().foreach(n => natRegs += n)
+              run(egraph, instrs.tail, yieldFn)
             })
             return
           case Compare(i, j) =>
             if (egraph.find(reg(i)) != egraph.find(reg(j))) {
               return
             }
+          case NatCompare(i, j) =>
+            if (natReg(i) != natReg(j)) {
+              return
+            }
+          case NatCheck(i, n) =>
+            if (natReg(i) != n) {
+              return
+            }
         }
         instrs = instrs.tail
       }
 
-      yieldFn(this, subst)
+      yieldFn()
     }
   }
 
   sealed trait Instruction
-  case class Bind(node: MNode, i: Reg, out: Reg) extends Instruction
+  // try all matches of `node` in `i`
+  case class Bind(node: MNode, i: Reg, out: Reg, natOut: NatReg) extends Instruction
+  // handle repeated variable occurrences
   case class Compare(i: Reg, j: Reg) extends Instruction
+  case class NatCompare(i: NatReg, j: NatReg) extends Instruction
+  case class NatCheck(i: NatReg, n: Nat) extends Instruction
 
   case class Reg(var n: Int)
+  case class NatReg(var n: Int)
 
   class Program(val instructions: Vec[Instruction],
-                val subst: Subst) {
+                var v2r: HashMap[PatternVar, Reg],
+                var ni2r: HashMap[NatIdentifier, NatReg]) {
     def run[D](egraph: EGraph[D], eclass: EClassId): Vec[Subst] = {
       val machine = AbstractMachine.init(eclass)
 
       val substs = Vec.empty[Subst]
-      machine.run(egraph, instructions.toSeq, subst, { case (machine, subst) =>
+      machine.run(egraph, instructions.toSeq, { () =>
         // (egg) HACK: we are reusing Ids here, this is bad
-        val substVec = subst.vec.map { case (v, regId) => (v, machine.reg(Reg(regId.i))) }
-        substs += Subst(substVec)
+        val substExprs = VecMap(v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) }.to(Vec))
+        val substNats = VecMap(ni2r.iterator.map { case (v, reg) => (v, machine.natReg(reg)) }.to(Vec))
+        substs += Subst(substExprs, substNats)
       })
 
       substs
@@ -66,30 +87,8 @@ object ematching {
   }
 
   // A node without children for matching purposes
+  // TODO: remove nats as well?
   type MNode = Node[()]
-  /* TODO
-  object MNodeOrdering extends math.Ordering[MNode] {
-    override def compare(x: MNode, y: MNode): Int = {
-      (x, y) match {
-        case (Var(i), Var(j)) => i compare j
-        case (Var(_), _) => -1
-        case (_, Var(_)) => 1
-        case (App(_, _), App(_, _)) => 0
-        case (App(_, _), _) => -1
-        case (_, App(_, _)) => 1
-        case (Lambda(_), Lambda(_)) => 0
-        case (Lambda(_), _) => -1
-        case (_, Lambda(_)) => 1
-        case (DepApp(_, x1), DepApp(_, x2)) => x1 compare x2
-        case (DepApp(_, _), _) => -1
-        case (_, DepApp(_, _)) => 1
-        case (Literal(d1), Literal(d2)) => d1 compare d2
-        case (Literal(_), _) => -1
-        case (_, Literal(_)) => 1
-        case (Primitive(p1), Primitive(p2)) => p1 compare p2
-      }
-    }
-  } */
 
   def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
     import scala.math.Ordering.Implicits._
@@ -145,7 +144,7 @@ object ematching {
   object Compiler {
     def compile(pattern: Pattern): Program = {
       val compiler = new Compiler(
-        pattern, HashMap.empty, mutable.PriorityQueue.empty, Reg(1))
+        pattern, HashMap.empty, HashMap.empty, mutable.PriorityQueue.empty, Reg(1), NatReg(0))
       compiler.todo.addOne(Todo(Reg(0), pattern))
       compiler.go()
     }
@@ -153,8 +152,10 @@ object ematching {
 
   class Compiler(var pattern: Pattern,
                  var v2r: HashMap[PatternVar, Reg],
+                 var ni2r: HashMap[NatIdentifier, NatReg],
                  var todo: mutable.PriorityQueue[Todo],
-                 var out: Reg) {
+                 var out: Reg,
+                 var natOut: NatReg) {
     def go(): Program = {
       val instructions = Vec.empty[Instruction]
       while (todo.nonEmpty) {
@@ -166,7 +167,11 @@ object ematching {
           }
           case Left(node) =>
             val currentOut = Reg(out.n)
+            val currentNatOut = NatReg(natOut.n)
             out.n += node.childrenCount()
+            natOut.n += node.natsCount()
+
+            instructions += Bind(node.mapChildren(_ => ()), i, currentOut, currentNatOut)
 
             var id = 0
             node.children().foreach { child =>
@@ -175,15 +180,25 @@ object ematching {
               id += 1
             }
 
-            instructions += Bind(node.mapChildren(_ => ()), i, currentOut)
+            var nid = 0
+            node.nats().foreach { child =>
+              val r = NatReg(currentNatOut.n + nid)
+              // TODO: could add to the `todo` priority queue first
+              child match {
+                case ni: NatIdentifier if ni.name.startsWith("?") => {
+                  ni2r.get(ni) match {
+                    case Some(j) => instructions += NatCompare(r, j)
+                    case None => ni2r += ni -> r
+                  }
+                }
+                case n: Nat => NatCheck(r, n)
+              }
+              nid += 1
+            }
         }
       }
 
-      val subst = Subst.empty
-      for ((v, r) <- v2r) {
-        subst.insert(v, EClassId(r.n))
-      }
-      new Program(instructions, subst)
+      new Program(instructions, v2r, ni2r)
     }
   }
 }

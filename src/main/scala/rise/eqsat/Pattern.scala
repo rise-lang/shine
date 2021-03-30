@@ -1,6 +1,7 @@
 package rise.eqsat
 
 import rise.core.semantics
+import rise.core.types.{Kind, Nat, NatIdentifier}
 import rise.core.{primitives => rcp}
 
 import scala.language.implicitConversions
@@ -17,7 +18,11 @@ object Pattern {
         pat.node match {
           case Right(w) => subst(w)
           case Left(n) =>
-            val enode = n.mapChildren(rec)
+            val enode = n.mapChildren(rec).mapNats {
+              case ni: NatIdentifier if ni.name.startsWith("?") =>
+                subst(ni)
+              case n => n
+            }
             egraph.add(enode)
         }
       }
@@ -84,12 +89,17 @@ object PatternDSL {
   case class Pick[A, B](a: A, b: B)
   implicit def pickA[A, B](p: Pick[A, B]): A = p.a
   implicit def pickB[A, B](p: Pick[A, B]): B = p.b
+  implicit def pickA2[A, B, C](p: Pick[Pick[A, B], C]): A = p.a
+  implicit def pickB2[A, B, C](p: Pick[Pick[A, B], C]): B = p.a
 
-  def ?(name: String): Pick[PatternVar, Pattern] =
-    Pick(PatternVar(name), Pattern(Right(PatternVar(name))))
+  // TODO? use a proper algebraic datatype for nat pattern variables instead of naming convention
+  def ?(name: String): Pick[Pick[PatternVar, Pattern], Nat] =
+    Pick(Pick(PatternVar(name), Pattern(Right(PatternVar(name)))), NatIdentifier(s"?$name"))
   def %(index: Int): Pick[Var, Pattern] = Pick(Var(index), Pattern(Left(Var(index))))
   def app(a: Pattern, b: Pattern): Pattern = Pattern(Left(App(a, b)))
   def lam(e: Pattern): Pattern = Pattern(Left(Lambda(e)))
+  def depApp[K <: Kind](f: Pattern, x: K#T) = Pattern(Left(DepApp(f, x)))
+  def depLam(kind: Kind, e: Pattern): Pattern = Pattern(Left(DepLambda(kind, e)))
   def l(d: semantics.Data): Pattern = Pattern(Left(Literal(d)))
 
   def prim(p: rise.core.Primitive): Pattern = Pattern(Left(Primitive(p)))
