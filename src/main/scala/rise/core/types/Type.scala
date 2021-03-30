@@ -93,6 +93,85 @@ final case class PairType(dt1: DataType, dt2: DataType) extends DataType {
   override def toString: String = s"($dt1, $dt2)"
 }
 
+sealed trait MatrixLayout
+
+object MatrixLayout {
+  object Row_Major extends MatrixLayout { override def toString = "Row_Major" }
+  object Col_Major extends MatrixLayout { override def toString = "Col_Major" }
+}
+
+final case class MatrixLayoutIdentifier(
+                                         name: String,
+                                         override val isExplicit: Boolean = false
+                                       ) extends MatrixLayout
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: MatrixLayoutIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: MatrixLayoutIdentifier =
+    this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case a: MatrixLayoutIdentifier => this.name == a.name
+    case _                         => false
+  }
+  override def hashCode(): Int = this.name.hashCode()
+}
+
+sealed trait FragmentKind
+
+object FragmentKind {
+  object AMatrix extends FragmentKind { override def toString = "AMatrix"}
+  object BMatrix extends FragmentKind { override def toString = "BMatrix"}
+  object Acuumulator extends FragmentKind { override def toString = "Acuumulator"}
+}
+
+final case class FragmentKindIdentifier(name: String,
+                                        override val isExplicit: Boolean = false
+                                       ) extends FragmentKind
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: FragmentKindIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: FragmentKindIdentifier =
+    this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case a: FragmentKindIdentifier => this.name == a.name
+    case _                         => false
+  }
+  override def hashCode(): Int = this.name.hashCode()
+}
+
+object FragmentType {
+  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType = {
+    FragmentType(rows, columns, d3, dataType, FragmentKind.Acuumulator, MatrixLayout.Row_Major)
+  }
+}
+
+final case class FragmentType(rows: Nat,
+                              columns: Nat,
+                              d3: Nat,
+                              dataType: DataType,
+                              fragmentKind: FragmentKind,
+                              layout: MatrixLayout) extends DataType {
+  override def toString: String =
+    if (fragmentKind == FragmentKind.Acuumulator)
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
+    else
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
+
+  override def equals(o: Any): Boolean = {
+    if (!o.isInstanceOf[FragmentType])
+      return false;
+
+    val f = o.asInstanceOf[FragmentType]
+    if (fragmentKind == FragmentKind.Acuumulator && f.fragmentKind == FragmentKind.Acuumulator) {
+      f.rows.equals(rows) && f.columns.equals(columns) && f.dataType.equals(dataType)
+    } else {
+      super.equals(o);
+    }
+  }
+}
+
 
 final case class DepPairType[K <: Kind: KindName](
                             x: K#I,

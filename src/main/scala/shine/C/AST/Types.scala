@@ -2,6 +2,9 @@ package shine.C.AST
 
 import arithexpr.arithmetic._
 import shine.C
+import shine.DPIA.Nat
+import shine.DPIA.Types.{FragmentKind, MatrixLayout}
+import shine.cuda.AST.Wmma
 
 sealed abstract class Type(val const: Boolean) {
   def print: String
@@ -33,7 +36,7 @@ abstract class ArrayType(val elemType: Type, val size: Option[ArithExpr], overri
 
   def getBaseType: Type = {
     elemType match {
-      case _: BasicType => elemType
+      case _: BasicType | _: FragmentType => elemType
       case _: StructType => elemType
       case _: PointerType => elemType
       case _: UnionType => elemType
@@ -63,6 +66,25 @@ abstract class PointerType(val valueType: Type, override val const: Boolean = fa
 
 abstract class UnionType(val fields: Seq[Type], override val const: Boolean = false) extends Type(const) {
   override def print: String = "union {" + fields.map(_.print).mkString("; ") + "}"
+}
+
+case class FragmentType(m: Nat,
+                        n: Nat,
+                        k: Nat,
+                        dataType: shine.C.AST.Type,
+                        fragmentKind: FragmentKind,
+                        layout: MatrixLayout) extends shine.C.AST.Type(false) {
+  override def print: String = {
+    fragmentKind match {
+      case FragmentKind.AMatrix =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
+      case FragmentKind.BMatrix =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
+      case FragmentKind.Accumulator =>
+        s"nvcuda::wmma::fragment<nvcuda::wmma::accumulator, $m, $n, $k, $dataType>"
+      case _ => throw new Exception("this should not happen")
+    }
+  }
 }
 
 

@@ -64,6 +64,6 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
   }
 
   test("unsharpNaivePar generates OpenMP code") {
-    checkOMP(lowerOMP(omp.unsharpNaivePar(l(sigma))))
+    checkOMP(lowerOMP(omp.unsharpNaivePar(lf32(sigma))))
   }
 }
