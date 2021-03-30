@@ -179,36 +179,34 @@ class EGraph[Data](
   }
 
   private def rebuildClasses(): Int = {
+    import Node.{ordering, eclassIdOrdering}
     classesByMatch.values.foreach(ids => ids.clear())
 
     var trimmed = 0
     for (eclass <- classes.values) {
       val oldNodeCount = eclass.nodeCount()
-      // TODO? in egg the nodes are sorted:
-      // eclass.nodes.mapInPlace(n => n.updateChildren(findMut))
-      // eclass.nodes.sortInPlace()
-      // eclass.nodes.distinctInPlace()
-      eclass.nodes = eclass.nodes.map(_.mapChildren(findMut)).distinct
+
+      // sort nodes for optimized search
+      val sortedNodes = eclass.nodes.mapInPlace(n => n.mapChildren(findMut))
+        .sorted
+      // remove duplicates
+      eclass.nodes.clear()
+      eclass.nodes += sortedNodes.head
+      for (nn <- sortedNodes.view.tail) {
+        if (nn != eclass.nodes.last) {
+          eclass.nodes += nn
+        }
+      }
+      // eclass.nodes = eclass.nodes.map(_.mapChildren(findMut)).distinct
 
       trimmed += oldNodeCount - eclass.nodeCount()
 
       def add(n: ENode): Unit =
         classesByMatch.getOrElseUpdate(n.matchHash(), HashSet.empty) += eclass.id
 
-      // TODO? in egg the nodes are sorted to remove duplicates where prev.matches(n)
-      eclass.nodes.distinctBy(_.matchHash()).foreach(add)
+      // TODO? in egg the nodes are sorted and duplicates where prev.matches(n) are not added
+      eclass.nodes/*.distinctBy(_.matchHash())*/.foreach(add)
     }
-
-    /* TODO: this is a useless check?
-    // check invariants if assertions are enabled
-    var assertOn = false
-    assert { assertOn = true; true }
-    if (assertOn) {
-      for (ids <- classesByMatch.values) {
-        val unique = ids.toSet
-        assert(ids.size == unique.size)
-      }
-    } */
 
     trimmed
   }

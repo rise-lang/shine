@@ -92,12 +92,36 @@ object ematching {
   } */
 
   def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
-    // if (eclass.nodes.size < 50) {
+    import scala.math.Ordering.Implicits._
+    import Node.{ordering, eclassIdOrdering}
+
+    if (eclass.nodes.size < 50) {
       eclass.nodes.filter(n => node.matches(n)).foreach(f)
-    /* } else { TODO: implement algorithm from egg
-      assert(eclass.nodes.sliding(2).forall(w => (w(0) < w(1)): Boolean))
-      val start = eclass.nodes.search(node)()
-    } */
+    } else {
+      assert(eclass.nodes.sliding(2).forall(w => w(0) < w(1)))
+      // binary search
+      eclass.nodes.view.map(_.mapChildren(_ => ())).search(node) match {
+        case scala.collection.Searching.Found(found) =>
+          def findStart(pos: Int): Int =
+            if ((pos > 0) && eclass.nodes(pos - 1).matches(node)) {
+              findStart(pos - 1)
+            } else {
+              pos
+            }
+          def findEnd(pos: Int): Int =
+            if ((pos + 1 < eclass.nodes.size) && eclass.nodes(pos + 1).matches(node)) {
+              findEnd(pos + 1)
+            } else {
+              pos
+            }
+          val start = findStart(found)
+          val end = findEnd(found)
+          val matching = eclass.nodes.iterator.slice(start, end + 1)
+          assert(matching.size == eclass.nodes.count(n => node.matches(n)))
+          matching.foreach(f)
+        case scala.collection.Searching.InsertionPoint(_) => ()
+      }
+    }
   }
 
   case class Todo(reg: Reg, pat: Pattern)
