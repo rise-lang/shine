@@ -8,7 +8,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
-import rise.autotune.{collectConstraints, tuningParam, wrapOclRun}
+import rise.autotune.{collectConstraints, getRuntimeFromClap, tuningParam, wrapOclRun}
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.gen
@@ -154,21 +154,21 @@ class autotuning extends test_util.Tests {
     const int N = 32;
     int main(int argc, char** argv) {
       Context ctx = createDefaultContext();
-      Buffer input = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_READ);
-      Buffer output = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
 
-      int32_t* in = hostBufferSync(ctx, input, N * sizeof(int32_t), HOST_WRITE);
+      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
       for (int i = 0; i < N; i++) {
         in[i] = 1;
       }
 
       foo(ctx, output, input, 4);
 
-      int32_t* out = hostBufferSync(ctx, output, N * sizeof(int32_t), HOST_READ);
+      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
 
       for (int i = 0; i < N; i++) {
         if (out[i] != 4) {
-          fprintf(stderr, "wrong output: %i\n", out[i]);
+          fprintf(stderr, "wrong output: %f\n", out[i]);
           exit(EXIT_FAILURE);
         }
       }
@@ -183,6 +183,30 @@ class autotuning extends test_util.Tests {
     val m = gen.opencl.hosted.fromExpr(e)
     val program = shine.OpenCL.Module.translateToString(m) + main
     println("program: \n" + program)
-    util.ExecuteOpenCL(program, "zero_copy")
+    val runtime = util.ExecuteOpenCL.executeWithRuntime(program, "zero_copy")
+    println("result: \n" + runtime)
+  }
+
+  test("test xml parsing") {
+    val xmlString = """
+<trace date="2021-03-30 18:04:26" profiler_version="0.1.0" ocl_version="1.2">
+  <device name="GeForce RTX 2070" id="1"/>
+  <queue properties="CL_QUEUE_PROFILING_ENABLE" device_id="1" id="1"/>
+  <program build_options="-cl-fast-relaxed-math -Werror -cl-std=CL1.2" id="1"/>
+  <kernel name="k0" program_id="1" id="1"/>
+  <kernel_instance kernel_id="1" id="1" unique_id="1" command_queue_id="1">
+    <event forced="true" queued="1617120266695090400" submit="1617120266695092832" start="1617120266695097344" end="1617120266695107456"/>
+    <offset_range/>
+    <global_range dim="3" x="1" y="1" z="1"/>
+    <local_range dim="3" x="1" y="1" z="1"/>
+  </kernel_instance>
+  <mem_object type="Buffer" flag="CL_MEM_WRITE_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="2"/>
+  <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
+</trace>
+    """
+
+//    println("xmlString: \n" + xmlString)
+    assert(util.ExecuteOpenCL.getRuntimeFromClap(xmlString) == 0.010112f)
+
   }
 }

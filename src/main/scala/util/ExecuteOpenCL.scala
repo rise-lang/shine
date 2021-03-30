@@ -56,6 +56,37 @@ object ExecuteOpenCL {
     }
   }
 
+  def getRuntimeFromClap(s: String): Float = {
+    // get xml form string
+    val clapResult = scala.xml.XML.loadString(s)
+
+    // get start and end time
+    val start = (clapResult \\ "@start").toString().toLong
+    val end = (clapResult \\ "@end").toString().toLong
+    val runtime = end - start
+
+    // convert to ms
+    val runtimeMs:Float = runtime.toFloat/1000000
+
+    runtimeMs
+  }
+
+  @throws[Exception]
+  def executeWithRuntime(code: String, buffer_impl: String): Float = {
+    try {
+      val src = writeToTempFile("code-", ".c", code).getAbsolutePath
+      val bin = createTempFile("bin-", "").getAbsolutePath
+      val sources = s"$src $runtimePath/buffer_$buffer_impl.c $runtimePath/ocl.c"
+      (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
+      val result = (s"runtime/clap_wrapper.sh $bin" !!)
+      getRuntimeFromClap(result)
+    } catch {
+      case e: Throwable =>
+        Console.err.println(s"execution failed: $e")
+        throw Exception(s"execution failed: $e")
+    }
+  }
+
   @throws[Exception]
   def apply(code: String, buffer_impl: String): String = {
     try {

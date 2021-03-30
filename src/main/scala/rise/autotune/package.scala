@@ -165,21 +165,21 @@ package object autotune {
     const int N = 32;
     int main(int argc, char** argv) {
       Context ctx = createDefaultContext();
-      Buffer input = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_READ);
-      Buffer output = createBuffer(ctx, N * sizeof(int32_t), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
 
-      int32_t* in = hostBufferSync(ctx, input, N * sizeof(int32_t), HOST_WRITE);
+      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
       for (int i = 0; i < N; i++) {
         in[i] = 1;
       }
 
       foo(ctx, output, input, input);
 
-      int32_t* out = hostBufferSync(ctx, output, N * sizeof(int32_t), HOST_READ);
+      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
 
-      for (int i = 0; i < N; i++) {
-        printf(" %d \n", out[i]);
-      }
+//      for (int i = 0; i < N; i++) {
+//        printf(" %f \n", out[i]);
+//      }
 
       destroyBuffer(ctx, input);
       destroyBuffer(ctx, output);
@@ -193,13 +193,12 @@ package object autotune {
 
     // execute program
     try{
-      util.ExecuteOpenCL(program, "zero_copy")
+      val result = util.ExecuteOpenCL.executeWithRuntime(program, "zero_copy")
+      Some(result)
     } catch{
       case e:Throwable => println("error: \n" + e)
+        None
     }
-
-    // return dummy runtime to test hypermapper interface
-    Some(Random.nextFloat())
   }
 
 
@@ -410,7 +409,6 @@ package object autotune {
     header + parameterSection + foot
   }
 
-
   def applyBest(e: Expr, samples: Seq[Sample]): Expr = ???
 
   def listToString(list: List[Int]): String = {
@@ -425,4 +423,5 @@ package object autotune {
 
     valueStringFinal
   }
+
 }
