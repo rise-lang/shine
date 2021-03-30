@@ -6,7 +6,7 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Root level="warn">
+    <Root level="${env:RISE_LOG_LEVEL:-WARN}">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
