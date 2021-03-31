@@ -14,11 +14,12 @@ import rise.core.DSL.ToBeTyped
 import rise.openCL.DSL.oclRun
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 package object autotune {
   type Parameters = Set[NatIdentifier]
-  case class Sample(p: Parameters, runtime: Option[TimeSpan[Time.ms]], timestamp: Int)
+  case class Sample(parameters: Map[NatIdentifier, Nat], runtime: Option[TimeSpan[Time.ms]], timestamp: Long)
 
   // should we allow tuning params to be substituted during type inference?
   // this could allow to restrict the search space at compile time
@@ -28,6 +29,9 @@ package object autotune {
     w.f(NatIdentifier(name, r, isExplicit = true, isTuningParam = true))
 
   def search(e: Expr): Seq[Sample] = {
+    // timestamp of starting point
+    val start = System.currentTimeMillis()
+
     // collect parameters
     val parameters = collectParameters(e)
 
@@ -50,17 +54,18 @@ package object autotune {
     file.close()
 
     // compute function value as result for hypermapper
-    val computeF: (Array[String], Array[String]) => Option[Float] = (header, parametersValues) => {
+    val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
       val parametersValuesMap = header.zip(parametersValues).map { case (h, p) =>
         NatIdentifier(h, isExplicit = true) -> (p.toInt : Nat)
       }.toMap
 
+
       checkConstraints(constraints, parametersValuesMap) match {
         case true => {
-          execute(rise.core.substitute.natsInExpr(parametersValuesMap, e))
+          Sample(parametersValuesMap, execute(rise.core.substitute.natsInExpr(parametersValuesMap, e)), System.currentTimeMillis() - start)
         }
         case false => {
-          None
+          Sample(parametersValuesMap, None, System.currentTimeMillis() - start)
         }
       }
     }
@@ -72,6 +77,10 @@ package object autotune {
     assert( os.isFile(hypermapperBinary) && os.isFile(configFile) )
 
     val hypermapper = os.proc(hypermapperBinary, configFile).spawn()
+
+
+    // create output Seq
+    var samples = new ListBuffer[Sample]()
 
     var done = false
     while (hypermapper.isAlive() && !done) {
@@ -96,12 +105,14 @@ package object autotune {
           for (_ <- Range(0, numberOfEvalRequests)) {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
-            // compute f value
-            val f = computeF(header, parametersValues)
+            // compute sample (including function value aka runtime)
+            val sample = computeSample(header, parametersValues)
+            // append sample to Samples
+            samples += sample
             // append response
-            f match {
+            sample.runtime match {
               case None => response += s"${parametersValues.mkString(",")},-1,False\n"
-              case Some(value) => response += s"${parametersValues.mkString(",")},$value,True\n"
+              case Some(value) => response += s"${parametersValues.mkString(",")},${value.value},True\n"
             }
           }
           print(s"Response: $response")
@@ -116,13 +127,7 @@ package object autotune {
 //    val fileDelete = new File("autotuning/tmp.json")
 //    fileDelete.delete()
 
-
-    // options to get results
-    // collect elements in store in Seq[Sample]
-    // collect best
-    // get results from hypermapper .csv output file
-
-    Seq.empty[Sample]
+    samples.toSeq
   }
 
   // wrap ocl run to a function
@@ -156,7 +161,7 @@ package object autotune {
     constraints.forall(c => c.substitute(map).isSatisfied())
   }
 
-  def execute(e: Expr): Option[Float]  = {
+  def execute(e: Expr): Option[TimeSpan[Time.ms]]  = {
 //      val e2 = wrapOclRun(e)(LocalSize(1), GlobalSize(1))
 
       val m = gen.opencl.hosted.fromExpr(e)
@@ -409,7 +414,35 @@ package object autotune {
     header + parameterSection + foot
   }
 
-  def applyBest(e: Expr, samples: Seq[Sample]): Expr = ???
+  def applyBest(e: Expr, samples: Seq[Sample]): Expr = {
+    rise.core.substitute.natsInExpr(getBest(samples).parameters, e)
+  }
+
+  def getBest(samples: Seq[Sample]): Sample = {
+    samples.reduceLeft(min)
+  }
+
+  private def min(s1: Sample, s2: Sample): Sample = {
+    s1.runtime match {
+      case Some(s1Runtime) => {
+        s2.runtime match {
+          case Some(s2Runtime) => {
+            s1Runtime.value < s2Runtime.value match {
+              case true => s1
+              case false => s2
+            }
+          }
+          case None => s1
+        }
+      }
+      case None => {
+        s2.runtime match{
+          case Some(_) => s2
+          case None => s1
+        }
+      }
+    }
+  }
 
   def listToString(list: List[Int]): String = {
 

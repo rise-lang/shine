@@ -8,7 +8,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
-import rise.autotune.{collectConstraints, getRuntimeFromClap, tuningParam, wrapOclRun}
+import rise.autotune.{collectConstraints, tuningParam, wrapOclRun}
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.gen
@@ -40,7 +40,7 @@ class autotuning extends test_util.Tests {
         depFun(RangeAdd(1, PosInf, vec), (n: Nat) =>
           fun(3`.`f32)(weights =>
             fun(((n+2)`.`f32) ->: (n`.`f32))(input =>
-              oclRun(LocalSize(1), GlobalSize(1))(
+              oclRun(LocalSize(1), GlobalSize(1024))(
               input |> tileShiftInwards(tile)(mapWorkGroup(0)(
                 slideVectors(vec) >> slide(3)(vec) >>
                   mapLocal(0)(weightsSeqVecUnroll(weights)) >>
@@ -131,8 +131,15 @@ class autotuning extends test_util.Tests {
 
   test("search"){
     val e:Expr = convolutionOcl(32)
-    autotune.search(e)
+    val tuningResult = autotune.search(e)
+
+    val bestSample = autotune.getBest(tuningResult)
+    println("bestSample: \n" + bestSample)
+
+    val tunedE = autotune.applyBest(e, tuningResult)
+    println("tunedE: \n" + tunedE)
   }
+
 
   test("execute convolution"){
     val goodParameters = Map(
@@ -204,9 +211,6 @@ class autotuning extends test_util.Tests {
   <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
 </trace>
     """
-
-//    println("xmlString: \n" + xmlString)
-    assert(util.ExecuteOpenCL.getRuntimeFromClap(xmlString) == 0.010112f)
-
+    assert(util.ExecuteOpenCL.getRuntimeFromClap(xmlString).value == 0.010112f)
   }
 }

@@ -56,7 +56,7 @@ object ExecuteOpenCL {
     }
   }
 
-  def getRuntimeFromClap(s: String): Float = {
+  def getRuntimeFromClap(s: String): TimeSpan[Time.ms] = {
     // get xml form string
     val clapResult = scala.xml.XML.loadString(s)
 
@@ -66,13 +66,11 @@ object ExecuteOpenCL {
     val runtime = end - start
 
     // convert to ms
-    val runtimeMs:Float = runtime.toFloat/1000000
-
-    runtimeMs
+    TimeSpan.inMilliseconds(runtime.toDouble/1000000)
   }
 
   @throws[Exception]
-  def executeWithRuntime(code: String, buffer_impl: String): Float = {
+  def executeWithRuntime(code: String, buffer_impl: String): TimeSpan[Time.ms] = {
     try {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
