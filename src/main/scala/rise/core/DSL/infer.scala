@@ -122,7 +122,10 @@ object infer {
     ftvs.distinct.toSeq
   }
 
-  private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
+  private val genType : Expr => Type = e =>
+    if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
+  private val constrIfTyped : Type => Constraint => Seq[Constraint] = t => c =>
+    if (t == TypePlaceholder) Nil else Seq(c)
 
   private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint], Solution) = env => {
     case i: Identifier =>
@@ -136,9 +139,8 @@ object infer {
       val env1 : Map[String, Type] = env + (tx.name -> tx.t)
       val (te, cs, ftvE) = constrainTypes(env1)(e)
       val ft = FunType(tx.t, te.t)
-      val exprT = genType(expr)
-      val c = TypeConstraint(exprT, ft)
-      (Lambda(tx, te)(ft), cs :+ c, ftvE)
+      val cs1 = constrIfTyped(expr.t)(TypeConstraint(expr.t, ft))
+      (Lambda(tx, te)(ft), cs :++ cs1, ftvE)
 
     case expr@App(f, e) =>
       val (tf, csF, ftvF) = constrainTypes(env)(f)
@@ -149,7 +151,6 @@ object infer {
 
     case expr@DepLambda(x, e) =>
       val (te, csE, ftvE) = constrainTypes(env)(e)
-      val exprT = genType(expr)
       val tf = x match {
         case n: NatIdentifier =>
           DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
@@ -160,8 +161,8 @@ object infer {
         case n2n: NatToNatIdentifier =>
           DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
       }
-      val c = TypeConstraint(exprT, tf.t)
-      (tf, csE :+ c, ftvE)
+      val csE1 = constrIfTyped(expr.t)(TypeConstraint(expr.t, tf.t))
+      (tf, csE :++ csE1, ftvE)
 
     case expr@DepApp(f, x) =>
       val (tf, csF, ftvF) = constrainTypes(env)(f)
