@@ -95,9 +95,9 @@ class Reduce extends test_util.TestsWithExecutor {
       fun(n`.`f32)(arr =>
         arr |> reduceSeq (fun(_ + _))  (init)))
 
-    println("Fst:")
+    logger.debug("Fst:")
     function.asStringFromExpr(e(initRecordExp._1))
-    println("Snd:")
+    logger.debug("Snd:")
     function.asStringFromExpr(e(initRecordExp._2))
   }
 

@@ -66,7 +66,7 @@ class gemvCheck extends test_util.Tests {
     ).fromExpr(ocl.gemvBlastT)
 
     util.withExecutor {
-      test_util.runsWithSameResult(Seq(
+      runsWithSameResult(Seq(
         ("original N", runOriginal("CGO17_GEMV_N.cl", mat, xs, ys, alpha, beta)),
         ("dpia N", runKernel(kernelN, mat, xs, ys, alpha, beta)),
         ("original T", runOriginal("CGO17_GEMV_T.cl", matT, xs, ys, alpha, beta)),

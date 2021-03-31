@@ -55,7 +55,7 @@ class gemmTensorCheck extends test_util.TestWithCUDA {
 
     val kernel = gen.cuda.kernel("gemm").fromExpr(gemmKernel)
 
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
       val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
@@ -83,7 +83,7 @@ class gemmTensorCheck extends test_util.TestWithCUDA {
       else
         mmCheckUtils.compilerOptions.appended("-maxrregcount=120")
 
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
       val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[ScalaFunction `(`

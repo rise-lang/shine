@@ -8,8 +8,8 @@ class Convolution extends test_util.TestsWithExecutor {
   private val inputSize_small = 4096
 
   test("high-level convolutions typecheck") {
-    println(blurXHighLevel.t)
-    println(blurYHighLevel.t)
+    logger.debug(blurXHighLevel.t)
+    logger.debug(blurYHighLevel.t)
   }
 
   test("convolution versions produce same results") {
@@ -21,13 +21,13 @@ class Convolution extends test_util.TestsWithExecutor {
     val (lsX, gsX) = blurXTiled2DSizes(N)
     val (lsY, gsY) = blurYTiled2DTiledLoadingTransposedSizes(N)
 
-    test_util.runsWithSameResult(Seq(
+    runsWithSameResult(Seq(
       ("originalX (CG017)", runOriginalKernel("CGO17_ConvolutionColumn_small.cl",
         N, lsX, gsX, matrix, weights)),
       ("dpiaX", runKernel(gen.opencl.kernel(lsX, gsX).fromExpr(blurXTiled2D(N)),
         lsX, gsX, matrix, weights))
     ))
-    test_util.runsWithSameResult(Seq(
+    runsWithSameResult(Seq(
       ("originalY (CG017)", runOriginalKernel("CGO17_ConvolutionRow_small.cl",
         N, lsY, gsY, matrix, weights)),
       ("dpiaY", runKernel(

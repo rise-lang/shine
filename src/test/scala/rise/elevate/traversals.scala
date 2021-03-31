@@ -34,7 +34,7 @@ class traversals extends test_util.Tests {
   test("simplification") {
     val input2D = λ(i => λ(f => **!(f) $ i))
     val orig = body(body(tileND(2)(tileSize)))
-    println(orig.toString)
+    logger.debug(orig.toString)
 
     val oldTiling = body(body(
       function(argumentOf(map.primitive, body(function(splitJoin(4)) `;` DFNF `;` RNF))) `;`
@@ -51,7 +51,7 @@ class traversals extends test_util.Tests {
         argument(argument(function(argumentOf(map.primitive, body(idAfter `;` createTransposePair `;` DFNF `;` argument(mapMapFBeforeTranspose())))) `;` RNF))))
 
     val normalized = FNF(simplified).get
-    println(normalized)
+    logger.debug(normalized)
     val normalizedModified = body(body(function(argumentOf(map.primitive, body(function(splitJoin(4))))))) `;`
       body(body(function(splitJoin(4)))) `;`
       body(body(RNF)) `;`

@@ -151,7 +151,7 @@ class mmTensorCheck extends test_util.TestWithCUDA {
 
     val kernel = gen.cuda.kernel("mm").fromExpr(mmKernel)
 
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
         val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
@@ -182,7 +182,7 @@ class mmTensorCheck extends test_util.TestWithCUDA {
       else
         mmCheckUtils.compilerOptions.appended("-maxrregcount=80")
 
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
       val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[ScalaFunction `(`
@@ -285,7 +285,7 @@ object mmCheckUtils {
     assert(matrix.length == m*n)
 
     for (i <- 0 until m) {
-      println(matrix.slice(i*n, i*n+n).mkString(", "))
+      print(matrix.slice(i*n, i*n+n).mkString(", "))
     }
     println("")
   }
