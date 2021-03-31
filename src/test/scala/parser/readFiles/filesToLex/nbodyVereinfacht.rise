@@ -21,8 +21,8 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
           oclReduceSeq Local --I have to add AddrSpace.Local in matchPrimitiveAndIdentifier, because there it is easy
           (
           \accA->\p2A->
-          (let (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1)) p2A)))
-          (
+          let (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1)) p2A))
+           (
             \p2Local -> mapLocal 1 (
               \accDim-> mapLocal 0 (
                 \p1B -> oclReduceSeq Private (

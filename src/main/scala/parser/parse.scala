@@ -62,6 +62,8 @@ object parse {
 
   final case class SExpr(expr: r.Expr) extends SyntaxElement
 
+  final case class SLet(span:Span) extends SyntaxElement
+
   final case class SType(t: rt.Type, span: Span) extends SyntaxElement
 
   final case class SIntToExpr(name: SIntToExprAlternatives, span: Span) extends SyntaxElement
@@ -211,7 +213,7 @@ object parse {
       case "iterate" => SExpr(rp.iterate(Some(span)))
       case "join" => SExpr(rp.join(Some(span)))
       case "concat" => SExpr(rp.concat(Some(span)))
-      case "let" => SExpr(rp.let(Some(span)))
+      case "let" => SLet(span)
       case "map" => SExpr(rp.map(Some(span)))
       case "mapFst" => SExpr(rp.mapFst(Some(span)))
       case "mapSnd" => SExpr(rp.mapSnd(Some(span)))
@@ -304,6 +306,8 @@ object parse {
     nextToken match {
       case Identifier(name, span) => {
         matchPrimitiveOrIdentifier(name, span) match {
+          case SLet(span) => Left(ParseState(remainderTokens, SLet(span) :: parsedSynElems, map,
+            mapDepL, spanList))
           case SIntToExpr(name, span) => Left(ParseState(remainderTokens, SIntToExpr(name, span) :: parsedSynElems, map,
             mapDepL, spanList))
           case SExpr(r.Identifier(_))=>{
@@ -655,6 +659,23 @@ object parse {
     }
     var synE = synElemList.reverse
     var e:r.Expr = synE.head match {
+      case SLet(sp) => {
+        val (ex1, sp1) = synE.tail match {
+          case SExpr(expr1)::l => (expr1, expr1.span.get)
+          case SExprClutched(expr1, sp1L)::l => (expr1, sp1L)
+          case r => throw new IllegalArgumentException("It is an 1.Expr expected: " +r)
+        }
+        val (ex2, sp2) = synE.tail.tail match {
+          case SExpr(expr1)::l => (expr1, expr1.span.get)
+          case SExprClutched(expr1, sp1L)::l => (expr1, sp1L)
+          case r => throw new IllegalArgumentException("It is an 2.Expr expected: " +r)
+        }
+        synE = synE.tail.tail.tail
+        val span = sp + sp1 +sp2
+        val e_let = r.App(rp.let(ex1, sp),ex2)(rt.TypePlaceholder, Some(span))
+        require(e_let.span!=None)
+        e_let
+      }
       case SExprClutched(expr, spanClutch) => {
         synE = synE.tail
         if(synE.isEmpty){
@@ -710,6 +731,22 @@ object parse {
     }
 
     synE.head match {
+      case SLet(sp) => {
+        val (ex1, sp1) = synE.tail match {
+          case SExpr(expr1)::l => (expr1, expr1.span.get)
+          case SExprClutched(expr1, sp1L)::l => (expr1, sp1L)
+          case r => throw new IllegalArgumentException("It is an 1.Expr expected: " +r)
+        }
+        val (ex2, sp2) = synE.tail.tail match {
+          case SExpr(expr1)::l => (expr1, expr1.span.get)
+          case SExprClutched(expr1, sp1L)::l => (expr1, sp1L)
+          case r => throw new IllegalArgumentException("It is an 2.Expr expected: " +r)
+        }
+        synE = synE.tail.tail.tail
+        val span = sp + sp1 +sp2
+        val e_let = r.App(rp.let(ex1, sp),ex2)(rt.TypePlaceholder, Some(span))
+        e= r.App(e,e_let)(rt.TypePlaceholder, Some(span_e + span))
+      }
       case SExprClutched(expr1, spanClutch) => {
         val span = span_e + spanClutch
         println("\n\nspan in SExprClutched: "+ span)
@@ -916,6 +953,8 @@ object parse {
                 (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapFkt, p.mapDepL, p.spanList) ,
                   id.setType(typeFkt), typeFkt)
             }
+          case SLet(sp) =>
+            throw new IllegalStateException("it is an Identifier expected not let: " + sp)
           case SExprClutched(expr, spanClutch) =>
             throw new IllegalStateException("it is an Identifier expected not expr with spanClutch: "+ expr +" ; " + spanClutch)
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
@@ -1010,6 +1049,8 @@ object parse {
           }else{
             (p, id)
           }
+          case SLet(sp) =>
+            throw new IllegalStateException("it is an Identifier expected not let: " + sp)
           case SExprClutched(expr, spanClutch) =>
             throw new IllegalStateException("it is an Identifier expected not expr with spanClutch: "+ expr +" ; " + spanClutch)
           case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: "+ expr)
@@ -1069,6 +1110,8 @@ object parse {
           val (l,newSpan) = getTypesInList(synElems.tail, Some(span))
           (typ :: l, newSpan)
         }
+        case SLet(sp) =>
+          throw new IllegalStateException("it is an Identifier expected not let: " + sp)
         case SExprClutched(expr, spanClutch) =>
           throw new IllegalStateException("in getTypesInList we have as head a not Type:"+ expr +" ; " + spanClutch)
         case SExpr(e) => throw new IllegalArgumentException("in getTypesInList we have as head a not Type: "+ e)
@@ -1184,6 +1227,8 @@ the syntax-Tree has on top an Lambda-Expression
                 case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
                 case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
               }
+            case SLet(sp) =>
+              throw new IllegalStateException("it is an Identifier expected not let: " + sp)
             case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
             case SExpr(i) => (i, synElemListExpr.tail)
             case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
@@ -1428,6 +1473,7 @@ the syntax-Tree has on top an Lambda-Expression
         }
         val synElem = if(pState.parsedSynElems.length==1){
           pState.parsedSynElems.head match {
+            case SLet(sp) => SLet(spanClutch)
             case SExpr(expr) => SExprClutched(expr, spanClutch)
             case SExprClutched(expr, _) => SExprClutched(expr, spanClutch)
             case SAddrSpace(addrSpace, _) => SAddrSpace(addrSpace, spanClutch)
