@@ -911,6 +911,12 @@ object fromRise {
             )
       }
 
+      case core.dpairJoin() => fromType( {
+        case expT(dt1@DepPairType(ns, DepArrayType(n, fdt)), ai) ->: expT(DepPairType(m, ArrayType(_, dt)), _) =>
+          fun[ExpType](expT(dt1, ai), input => DPairJoin(n,
+              ns.asInstanceOf[NatCollectionIdentifier], fdt, m.asInstanceOf[NatIdentifier], ai, dt, input))
+      })
+
       case core.count() => fromType {
         case expT(ArrayType(n, _), `read`) ->: expT(IndexType(_), `read`) =>
           fun[ExpType](ExpType(ArrayType(n, bool), read), input => Count(n, input))

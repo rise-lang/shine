@@ -211,11 +211,11 @@ object VisitAndRebuild {
     }
 
   trait KindVisitable[K <: Kind] {
-    def visit(v:VisitAndRebuild.Visitor, x:K#I): K#I
+    def visit(v:VisitAndRebuild.Visitor, x:K#T): K#T
   }
 
-  implicit val natVisitable: KindVisitable[NatKind] = (v: Visitor, x: NatIdentifier) => v.nat(x)
+  implicit val natVisitable: KindVisitable[NatKind] = (v: Visitor, x: Nat) => v.nat(x)
 
   implicit val natCollectionVisitable: KindVisitable[NatCollectionKind] =
-    (v: Visitor, x: NatCollectionIdentifier) => v.natCollection(x).asInstanceOf[NatCollectionIdentifier]
+    (v: Visitor, x: NatCollection) => v.natCollection(x)
 }

@@ -645,6 +645,18 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
+      case rp.dpairJoin() =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(dt1@rt.DepPairType(rt.NatCollectionToDataLambda(_, rt.DepArrayType(_, rt.NatToDataLambda(_, rt.ArrayType(_, _))))),
+            dt2@rt.DepPairType(rt.NatToDataLambda(_, rt.ArrayType(_, _)))
+          ) =>
+            val ai = accessTypeIdentifier()
+            expT(dataType(dt1), ai) ->: expT(dataType(dt2), ai)
+
+          case _ => error(s"did not expect $t")
+        }
+        buildType(p.t)
+
       case rp.count() =>
         def buildType(t: rt.Type): PhraseType = t match {
 

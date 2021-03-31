@@ -1,8 +1,8 @@
 package shine.DPIA.FunctionalPrimitives
 
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
-import shine.DPIA.DSL._
-import shine.DPIA.ImperativePrimitives.JoinAcc
+import shine.DPIA.DSL.{λ, _}
+import shine.DPIA.ImperativePrimitives.{JoinAcc, MkDPairFstI}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
@@ -67,5 +67,76 @@ final case class Join(
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`(m`.`dt), read))(x => C(Join(n, m, w, dt, x)) ))
+  }
+}
+
+final case class DPairJoin(
+                          n: Nat,
+                          ns: NatCollectionIdentifier,
+                          ft: NatToData,
+                          m: NatIdentifier,
+                          w: AccessType,
+                          dt: DataType,
+                          pair: Phrase[ExpType]
+                          ) extends ExpPrimitive {
+
+  val t = expT(DepPairType[NatKind](m, dt), w)
+
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =
+    DPairJoin(
+      f.nat(n),
+      f.natCollection(ns),
+      f.natToData(ft),
+      f.nat(m),
+      f.access(w),
+      f.data(dt),
+      VisitAndRebuild(pair, f)
+    )
+
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
+    import TranslationToImperative._
+    con(pair)(λ(expT(DepPairType[NatCollectionKind](ns, DepArrayType(n, ft)), w))(x => C(DPairJoin(n, ns, ft, m, w, dt, x))))
+  }
+
+  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
+    import TranslationToImperative._
+    // We must cheat...
+    val rns = rise.core.types.NatCollectionIdentifier(this.ns.name, isExplicit = true)
+    MkDPairFstI[NatKind](rns `@` (n+1), A) `;`
+    acc(pair)(DepPairJoinAcc(n, ns, ft, m, dt, A))
+  }
+
+  override def eval(s: Store): Data = ???
+
+  override def prettyPrint: String = ""
+
+  override def xmlPrinter: Elem = <dPairJoin></dPairJoin>
+}
+
+final case class DepPairJoinAcc(
+                                 n: Nat,
+                                 ns: NatCollectionIdentifier,
+                                 ft: NatToData,
+                                 m: NatIdentifier,
+                                 dt: DataType,
+                                 pair: Phrase[AccType]
+                               ) extends AccPrimitive {
+  override val t: AccType = accT(DepPairType[NatCollectionKind](ns, DepArrayType(n, ft)))
+
+  override def eval(s: Store): AccIdentifier = ???
+
+  override def prettyPrint: String = ""
+
+  override def xmlPrinter: Elem = <dPairJoinAAcc></dPairJoinAAcc>
+
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[AccType] = {
+    DepPairJoinAcc(
+      f.nat(n),
+      f.natCollection(ns),
+      f.natToData(ft),
+      f.nat(m),
+      f.data(dt),
+      VisitAndRebuild(pair, f)
+    )
   }
 }

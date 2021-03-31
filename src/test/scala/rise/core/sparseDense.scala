@@ -81,7 +81,6 @@ class sparseDense extends test_util.TestsWithExecutor {
   def dense_to_sparse_ocl_parallel_colmaj(n:Nat, m:Nat):ToBeTyped[Expr] = fun((n + 1) `.` NatType)(offsExpression => fun(m `.` n `.` f32)(array => {
     liftNats(offsExpression)(depFun((offs: NatCollection) => // Scope offs at the nat collection level
         oclDpairNats(offs)(depFun((_:Nat) => mapGlobal(0)(fun(x => x))))( // We track the offset as the first element
-       //dpairNats(offs)(
         array
           |> transpose // Turn into row major
           |>// Second element: the matrix
@@ -206,7 +205,8 @@ class sparseDense extends test_util.TestsWithExecutor {
         .withSizes(LocalSize(256), GlobalSize(8192))
 
 
-      val ((_, nnzpairs), time) =  kernelF(n `,` m `,` offsets `,` matrixColmaj)
+      val ((lengths, nnzpairs), time) =  kernelF(n `,` m `,` offsets `,` matrixColmaj)
+      println(lengths(0))
       val nnzValues = Array.tabulate(nnzpairs.length/2)(idx => nnzpairs(idx * 2)) // Even indexed elements are the data
       nnzValues.zip(nonzero.iterator.flatten).map {
         case (found, expected) => assert(found == expected)
@@ -215,6 +215,7 @@ class sparseDense extends test_util.TestsWithExecutor {
     })
   }
 
+  // THIS IS THE ONE!
   test("BENCH: Dense to sparse ocl") {
 //    val control = List(
 //      32 -> List(1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
@@ -283,56 +284,6 @@ class sparseDense extends test_util.TestsWithExecutor {
                   )
                   ))))))
   })
-
-  def runDenseToSparseAllInOne(logicalSizes: Iterable[Int], filterEach: Int): Iterable[(Int, String)]= {
-    val e2 = depFun((n: Nat) => depFun((m:Nat) => dense_to_sparse_ocl_parallel_all_steps(n, m)))
-
-    logicalSizes.map(logicalSize => {
-      val n = logicalSize
-      val m = logicalSize
-      val matrix = Array.tabulate(n)(_ => Array.tabulate(m)(j => if(j % filterEach != 0) 0.0f else j.toFloat))
-      val nonzero = matrix.map(_.filter(_ != 0.0f))
-      val numNNz = nonzero.map(_.length).sum
-
-      val kernelW = util.gen.OpenCLKernel(e2, "dense_to_sparse_2")
-      val kernel = kernelW.copy(
-        kernel = kernelW.kernel
-          .withFallbackOutputSize(SizeInByte((n + 2) * 4 + numNNz * 8))
-
-      )
-      val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `)=>` (Array[Int], Array[Float])]
-        .withSizes(LocalSize(256), GlobalSize(2048))
-
-
-      val ((_, nnzpairs), time) =  kernelF(n `,` m `,` matrix)
-      val nnzValues = Array.tabulate(nnzpairs.length/2)(idx => nnzpairs(idx * 2)) // Even indexed elements are the data
-      nnzValues.zip(nonzero.iterator.flatten).map {
-        case (found, expected) => assert(found == expected)
-      }
-      (logicalSize, time.toString)
-    })
-  }
-
-  test("BENCH: Dense to sparse ocl all in one") {
-    val control = List(
-      2 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
-      4 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
-      8 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
-      16 -> List(512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8092),
-    )
-    val results = control.map {
-      case (density, sizes) =>
-        val results = runDenseToSparseAllInOne(sizes,  density)
-        density -> results
-    }
-
-    results.foreach {
-      case (density, results) =>
-        println(s"Density: ${1.0/density}")
-        results.foreach(x => println(x))
-    }
-  }
-
 
   test("Sparse to dense") {
     val inferred: Expr = TDSL.infer(depFun((n:Nat) => depFun((m:Nat) => sparse_to_dense(n, m))))

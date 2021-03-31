@@ -279,7 +279,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case MkDPairFstI(fst, a) =>
         fst match {
-          case fst: NatIdentifier =>
+          case fst: Nat =>
             genNat(fst, env, fst => {
               acc(a, env, List(), expr =>
                   C.AST.ExprStmt(C.AST.Assignment(
@@ -414,6 +414,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case _ => ???
         }
         acc(a, env, DPairSnd(length)::path, cont)
+
+      case DepPairJoinAcc(_, ns, _, _, _, pair) =>
+        path match {
+          case DPairSnd(l2)::CIntExpr(i)::CIntExpr(j)::path =>
+
+            // Hack! new gotta rebuild the nat-collection expression...
+            val rns = rise.core.types.NatCollectionIdentifier(ns.name, isExplicit = true)
+
+            acc(pair, env, DPairSnd(l2)::CIntExpr((rns `@` (i+1) - (rns `@` i)) + j)::path, cont)
+          case Nil =>
+            C.AST.Code("// skip")
+          case _ => ???
+        }
 
       case TransmuteAcc(_, _, a) => acc(a, env, path, cont)
 
@@ -715,6 +728,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                               path: Path,
                               env: Environment,
                               cont: Expr => Stmt): Stmt = {
+    if(path.exists(_.isInstanceOf[DPairSnd])) {
+      println(dt)
+      println(path)
+    }
+
     path match {
       case Nil => cont(expr)
       case (xj: PairAccess) :: ps => dt match {

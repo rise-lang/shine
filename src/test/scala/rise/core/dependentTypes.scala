@@ -578,7 +578,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
     val inferred: Expr = TDSL.infer(nextFrontier)
     println(inferred)
     print(inferred.t)
-    val program = util.gen.OpenCLKernel(inferred, "bfs")
+    val program = util.gen.OpenCLKernel(inferred, "bfs_inlined")
   }
 
   test("bfsOclScan") {
@@ -589,24 +589,21 @@ class dependentTypes extends test_util.TestsWithExecutor {
             fun((frontierLen+1) `.` NatType)(childOffsets =>
             fun(n `.` bool)(notSeen =>
               liftNats(childOffsets)(depFun((offs:NatCollection) =>
-            {
-              frontierItems |>
-                mapGlobal(0)(fun(parentIdx =>
-                  let(nodes `@` natAsIndex(n)(parentIdx))(fun(parent => {
-                    liftN(parent._1)(depFun(GoesToRange(m), (childOffset: Nat) =>
-                      liftN(parent._2)(depFun(GoesToRange(m), (numChildren: Nat) => {
-                        def myEdges = edges |> drop(childOffset) |> take(numChildren)
-                        def myEdgesCond = myEdges |> map(fun(childIdx => notSeen `@` natAsIndex(n)(childIdx)))
-                        liftN(
-                          myEdgesCond |> oclCount(AddressSpace.Private) |> indexAsNat
-                        )(depFun(GoesToRange(n), (count:Nat) =>
-                          dpair(count)(
-                            oclWhichMap(myEdgesCond)(fun(edgeIdx => myEdges `@` edgeIdx))(count)
-                          )
-                        ))}
-                      ))))
-                  }))))
-                }))
+                (oclDpairNats(offs)(depFun((_:Nat) => mapGlobal(0)(fun(x => x))))
+                    {
+                      frontierItems |> toDepArray |>
+                        depMapGlobal(0)(depFun((frontierIdx:Nat) => fun(parentIdx =>
+                          let(nodes `@` natAsIndex(n)(parentIdx))(fun(parent => {
+                            liftN(parent._1)(depFun(GoesToRange(m), (childOffset: Nat) =>
+                              liftN(parent._2)(depFun(GoesToRange(m), (numChildren: Nat) => {
+                                def myEdges = edges |> drop(childOffset) |> take(numChildren)
+                                def myEdgesCond = myEdges |> map(fun(childIdx => notSeen `@` natAsIndex(n)(childIdx)))
+                                oclWhichMap(myEdgesCond)(fun(edgeIdx => myEdges `@` edgeIdx))((offs `@` (frontierIdx + 1) )- (offs `@` frontierIdx))
+                              }
+                              ))))
+                          })))))
+                    }) |> dpairJoin
+                ))
             ))
           })))
     )))
@@ -614,7 +611,7 @@ class dependentTypes extends test_util.TestsWithExecutor {
     val inferred: Expr = TDSL.infer(nextFrontier)
     println(inferred)
     print(inferred.t)
-    val program = util.gen.OpenCLKernel(inferred, "bfs")
+    val program = util.gen.OpenCLKernel(inferred, "bfs_offsets")
   }
 
 }

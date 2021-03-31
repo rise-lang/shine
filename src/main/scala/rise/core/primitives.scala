@@ -189,6 +189,12 @@ object primitives {
       (NatCollection `**` ft) ->: expl((m: NatCollection) => ft(m) ->: tOut) ->: tOut }}
   }
 
+  @primitive object dpairJoin extends Primitive with Builder {
+    impl { n: Nat =>  impl { dt: DataType =>
+      (NatCollection `**` (ns => n `*.` (i => (ns `@` (i+1) - (ns `@` i)) `.` dt ))) ->: (Nat `**` (m => m `.` dt)) }
+    }
+  }
+
   @primitive object count extends Primitive with Builder {
     impl { n: Nat => n `.` bool ->: IndexType(n) }
   }

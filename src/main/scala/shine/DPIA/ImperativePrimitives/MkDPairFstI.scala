@@ -8,7 +8,7 @@ import shine.DPIA.Types._
 import scala.xml.Elem
 
 
-final case class MkDPairFstI[K <: Kind:KindVisitable](fst: K#I, A: Phrase[AccType]) extends CommandPrimitive {
+final case class MkDPairFstI[K <: Kind:KindVisitable](fst: K#T, A: Phrase[AccType]) extends CommandPrimitive {
   override val t = comm
 
   override def eval(s: Store) = ???

@@ -39,6 +39,7 @@ final case class MkDPair[K <: Kind: KindName: KindReified:KindVisitable](a: Acce
     import TranslationToImperative._
     // We have the acceptor already, so simply write the first element and then
     // the second element in sequentially
+
     ImperativePrimitives.MkDPairFstI(fst, A) `;`
       acc(snd)(ImperativePrimitives.MkDPairSndAcc(fst, sndT, A))
   }
