@@ -15,7 +15,7 @@ class basic extends test_util.Tests {
     )
 
     val code = gen.cuda.kernel.asStringFromPhrase(mapId)
-    println(code)
+    logger.debug(code)
   }
 
   test("id with mapGlobal compiles to syntactically correct CUDA") {
@@ -25,6 +25,6 @@ class basic extends test_util.Tests {
     )
 
     val code = gen.cuda.kernel.asStringFromPhrase(mapId)
-    println(code)
+    logger.debug(code)
   }
 }

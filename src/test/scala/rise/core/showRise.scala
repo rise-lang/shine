@@ -46,7 +46,7 @@ class showRise extends test_util.Tests {
     }
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, defaultUnicodeConfig)
-    println(show)
+    logger.debug(show)
   }
 
   test("compare the result with simple implementations") {
@@ -128,6 +128,6 @@ class showRise extends test_util.Tests {
     }
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, UnicodeConfig("│╭├╰├╩╦╬═ ──"))
-    println(show)
+    logger.debug(show)
   }
 }

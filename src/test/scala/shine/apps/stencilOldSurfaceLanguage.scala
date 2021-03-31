@@ -71,7 +71,7 @@ class stencilOldSurfaceLanguage extends Tests {
     val inputMinRange = stencilSize //Used for `starts with` simplification
 
     final val padSize = stencilSize / 2
-    println(stencilSize)
+    logger.debug(stencilSize)
     assert(inputSize > inputMinRange)
     final override type Input = Array[Float]
 

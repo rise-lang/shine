@@ -19,8 +19,8 @@ class dependentTypes extends test_util.Tests {
         )(xs => xs |> depMapSeq(depFun((i: Nat) => fun(xs => mapSeq(fun(x => x))(xs::((i+1)`.`f32))))))
       )
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
+    logger.debug(inferred)
+    logger.debug(inferred.t)
     assert(inferred.t =~=
       expl((n: Nat) => (n `*.`n2dtFun(i => (i + 1) `.` f32)) ->: (n `*.`n2dtFun(i => (i + 1) `.` f32)))
     )
@@ -42,8 +42,8 @@ class dependentTypes extends test_util.Tests {
         makeDepPair(n)(mapSeq(fun(x => x + lf32(1.0f)))(xs) ::(n`.`f32))
       ))))
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
+    logger.debug(inferred)
+    logger.debug(inferred.t)
     assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: (Nat `**` (m => m `.` f32)))
     )
@@ -97,8 +97,8 @@ class dependentTypes extends test_util.Tests {
       ))
     )
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
+    logger.debug(inferred)
+    logger.debug(inferred.t)
     assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: f32)
     )
@@ -145,8 +145,8 @@ class dependentTypes extends test_util.Tests {
       dmatch(pair)(depFun((_:Nat) => fun(xs => mapSeq(fun(x => x))(take(5)(xs)))))
     )
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
+    logger.debug(inferred)
+    logger.debug(inferred.t)
     assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: (5`.`f32))
     )
@@ -159,8 +159,8 @@ class dependentTypes extends test_util.Tests {
       ))
 
     val inferred: Expr = inferDependent(e)
-    println(inferred)
-    println(inferred.t)
+    logger.debug(inferred)
+    logger.debug(inferred.t)
     assert(inferred.t =~=
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => (m+1) `.` f32) ))
     )
@@ -173,8 +173,8 @@ class dependentTypes extends test_util.Tests {
     ))
 
     val inferred: Expr = inferDependent(e)
-    println(inferred)
-    println(inferred.t)
+    logger.debug(inferred)
+    logger.debug(inferred.t)
     assert(inferred.t =~=
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => f32) ))
     )
@@ -202,8 +202,8 @@ class dependentTypes extends test_util.Tests {
     ))))
 
     val inferred: Expr = inferDependent(e)
-    println(inferred)
-    print(inferred.t)
+    logger.debug(inferred)
+    logger.debug(inferred.t)
     function.asStringFromExpr(inferred)
   }
 }

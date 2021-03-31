@@ -12,7 +12,7 @@ class harrisCornerDetectionHalideCheck
 {
   test("harris typechecks") {
     val typed = util.printTime("infer", harris(1, 1).toExpr)
-    println(typed.t)
+    logger.debug(typed.t)
   }
 
   val Ho = 128
@@ -110,8 +110,8 @@ class harrisCornerDetectionHalideCheck
       `)=>` Array[Float]]
     val (output, time) = f(ls, gs)(Ho `,` Wo `,` input)
 
-    println(s"gold time: $goldTime")
-    println(s"time: $time")
+    logger.debug(s"gold time: $goldTime")
+    logger.debug(s"time: $time")
     util.assertSame(
       output.sliding(Wov, Wo).toArray,
       gold.sliding(Wov, Wo).toArray,

@@ -59,6 +59,8 @@ class tiling extends test_util.Tests {
   // Tiling one loop
 
   test("tileND - tile one loop 1D") {
+    logger.debug(body(body(tileND(1)(tileSize)) `;` BENF)(λ(i => λ(f => *(f) $ i))).toString)
+    logger.debug(λ(i => λ(f => (J o **(f) o S) $ i)).toString)
     assert(betaEtaEquals(
       body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))),
       λ(i => λ(f => (J o **(f) o S) $ i))
@@ -265,8 +267,8 @@ class tiling extends test_util.Tests {
     val highLevel = wrapInLambda(1, i => *(floatId) $ i, inputT(1, _)).toExpr
     val tiled = one(body(tileND(1)(tileSize))).apply(highLevel).get
 
-    gen.c.function.asStringFromExpr(lower(highLevel))
-    gen.c.function.asStringFromExpr(lower(tiled))
+    logger.debug(gen.c.function.asStringFromExpr(lower(highLevel)))
+    logger.debug(gen.c.function.asStringFromExpr(lower(tiled)))
   }
 
   //TODO make this work without implicit array assignments
@@ -274,8 +276,8 @@ class tiling extends test_util.Tests {
     val highLevel = wrapInLambda(2, i => **!(floatId) $ i, inputT(2, _))
     val tiled = one(one(body(tileND(2)(tileSize)))).apply(highLevel).get
 
-    gen.c.function.asStringFromExpr(lower(highLevel))
-    gen.c.function.asStringFromExpr(lower(tiled))
+    logger.debug(gen.c.function.asStringFromExpr(lower(highLevel)))
+    logger.debug(gen.c.function.asStringFromExpr(lower(tiled)))
   }
 
   //TODO make this work without implicit array assignments
@@ -283,8 +285,8 @@ class tiling extends test_util.Tests {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
     val tiled = one(one(one(body(tileNDList(List(4,8,16)))))).apply(highLevel).get
 
-    gen.c.function.asStringFromExpr(lower(highLevel))
-    gen.c.function.asStringFromExpr(lower(tiled))
+    logger.debug(gen.c.function.asStringFromExpr(lower(highLevel)))
+    logger.debug(gen.c.function.asStringFromExpr(lower(tiled)))
   }
 
   //TODO make this work without implicit array assignments
@@ -293,8 +295,8 @@ class tiling extends test_util.Tests {
     val tiled = one(one(one(body(fmap(tileND(2)(tileSize)))))).apply(highLevel).get
 
 
-    gen.c.function.asStringFromExpr(lower(highLevel))
-    gen.c.function.asStringFromExpr(lower(tiled))
+    logger.debug(gen.c.function.asStringFromExpr(lower(highLevel)))
+    logger.debug(gen.c.function.asStringFromExpr(lower(tiled)))
   }
 
  // Tests related to fixing some development issues

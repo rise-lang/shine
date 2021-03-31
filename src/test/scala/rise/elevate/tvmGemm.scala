@@ -172,10 +172,10 @@ class tvmGemm extends test_util.Tests {
     val time0 = currentTimeSec
     val rewritten = strategy(mm)
     val time1 = currentTimeSec
-    println(s"[$versionUC] rewrite time: ${time1 - time0}s")
+    logger.debug(s"[$versionUC] rewrite time: ${time1 - time0}s")
     if (generateFiles) {
       val steps = Success.rewriteCount
-      println(s"[$versionUC] required rewrite steps: $steps\n")
+      logger.debug(s"[$versionUC] required rewrite steps: $steps\n")
       writeToFile(plotsFolder, version, s"$version,$steps", ".csv")
     }
 
@@ -187,12 +187,12 @@ class tvmGemm extends test_util.Tests {
       gen.c.function(version).asStringFromExpr(rewritten.get)
     }
     val time3 = currentTimeSec
-    println(s"[$versionUC] codegen time: ${time3 - time2}s")
-    println(s"Program:\n${program}")
+    logger.debug(s"[$versionUC] codegen time: ${time3 - time2}s")
+    logger.debug(s"Program:\n${program}")
 
     // store the C code
     if (generateFiles) {
-      println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
+      logger.debug(s"[$versionUC] generated code stored as $version in $kernelsFolder")
       writeToFile(kernelsFolder, version, program)
     }
   }

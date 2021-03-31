@@ -87,24 +87,24 @@ class separableConvolution2DEqsat extends test_util.Tests {
       val finished = fuel <= 0 || unvisited.isEmpty || unvisited.contains(ExprWrapper(closedGoal))
       visited ++= unvisited
       if (finished) {
-        println(s"fuel left: $fuel")
+        logger.debug(s"fuel left: $fuel")
       } else {
         val expansion = expandStrats.flatMap { s =>
           unvisited.iterator.flatMap(c => s(c.e))
             .flatMap(c => mayApply(filterStrat, c).map(ExprWrapper))
         }
-        println(s"expanded by ${expansion.size}")
+        logger.debug(s"expanded by ${expansion.size}")
         unvisited.clear()
         unvisited ++= expansion
-        println(s"with ${unvisited.size} uniques")
+        logger.debug(s"with ${unvisited.size} uniques")
         unvisited --= visited
-        println(s"with ${unvisited.size} unvisited")
+        logger.debug(s"with ${unvisited.size} unvisited")
         expand(fuel - 1)
       }
     }
 
     util.printTime("expansion time", expand(10))
-    println(s"found ${visited.size} candidates")
+    logger.debug(s"found ${visited.size} candidates")
     assert(visited.contains(ExprWrapper(closedGoal)),
       "could not find rewrite path")
   }
