@@ -40,7 +40,7 @@ class autotuning extends test_util.Tests {
         depFun(RangeAdd(1, PosInf, vec), (n: Nat) =>
           fun(3`.`f32)(weights =>
             fun(((n+2)`.`f32) ->: (n`.`f32))(input =>
-              oclRun(LocalSize(1), GlobalSize(1024))(
+              oclRun(LocalSize(1), GlobalSize(32))(
               input |> tileShiftInwards(tile)(mapWorkGroup(0)(
                 slideVectors(vec) >> slide(3)(vec) >>
                   mapLocal(0)(weightsSeqVecUnroll(weights)) >>
@@ -126,7 +126,10 @@ class autotuning extends test_util.Tests {
     val e = (wrapped: ToBeTyped[Expr])(32)
     assert(convolutionOcl(32).toExpr == e.toExpr)
 
-    autotune.search(e)
+    val tuningResult = autotune.search(e)
+
+    val bestSample = autotune.getBest(tuningResult)
+    println("bestSample: \n" + bestSample)
   }
 
   test("search"){
@@ -135,11 +138,7 @@ class autotuning extends test_util.Tests {
 
     val bestSample = autotune.getBest(tuningResult)
     println("bestSample: \n" + bestSample)
-
-    val tunedE = autotune.applyBest(e, tuningResult)
-    println("tunedE: \n" + tunedE)
   }
-
 
   test("execute convolution"){
     val goodParameters = Map(

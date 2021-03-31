@@ -415,11 +415,23 @@ package object autotune {
   }
 
   def applyBest(e: Expr, samples: Seq[Sample]): Expr = {
-    rise.core.substitute.natsInExpr(getBest(samples).parameters, e)
+    val best = getBest(samples)
+    best match {
+      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters, e)
+      case None => e // maybe throw exception?
+    }
   }
 
-  def getBest(samples: Seq[Sample]): Sample = {
-    samples.reduceLeft(min)
+  def applySample(e: Expr, sample: Sample): Expr = {
+    rise.core.substitute.natsInExpr(sample.parameters, e)
+  }
+
+  def getBest(samples: Seq[Sample]): Option[Sample] = {
+    val best = samples.reduceLeft(min)
+    best.runtime match {
+      case Some(_) => Some(best)
+      case None => None
+    }
   }
 
   private def min(s1: Sample, s2: Sample): Sample = {

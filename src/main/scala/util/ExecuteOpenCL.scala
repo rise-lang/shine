@@ -80,8 +80,8 @@ object ExecuteOpenCL {
       getRuntimeFromClap(result)
     } catch {
       case e: Throwable =>
-        Console.err.println(s"execution failed: $e")
-        throw Exception(s"execution failed: $e")
+        Console.err.println(s"execution failed: $e -- TODO change output of this exception")
+        throw Exception(s"execution failed: $e -- TODO change output of this exception")
     }
   }
 
