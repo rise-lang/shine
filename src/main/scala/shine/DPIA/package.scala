@@ -19,17 +19,8 @@ package object DPIA {
   type NatIdentifier = NamedVar with Kind.Identifier
 
   object Nat {
-    def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N = {
-      in.visitAndRebuild {
-        case v: Var =>
-          if (`for`.name == v.name) {
-            ae
-          } else {
-            v
-          }
-        case e => e
-      }.asInstanceOf[N]
-    }
+    def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N =
+      ArithExpr.substitute(in, Map(`for` -> ae)).asInstanceOf[N]
   }
 
   object NatIdentifier {
