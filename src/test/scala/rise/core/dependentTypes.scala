@@ -21,7 +21,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = e.toExpr
     logger.debug(inferred)
     logger.debug(inferred.t)
-    assert(inferred.t ==
+    assert(inferred.t =~=
       expl((n: Nat) => (n `*.`n2dtFun(i => (i + 1) `.` f32)) ->: (n `*.`n2dtFun(i => (i + 1) `.` f32)))
     )
   }
@@ -32,7 +32,7 @@ class dependentTypes extends test_util.Tests {
     )
     val inferred: Expr = e.toExpr
     val expected = expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
-    assert(inferred.t == expected)
+    assert(inferred.t =~= expected)
     function.asStringFromExpr(inferred)
   }
 
@@ -44,7 +44,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = e.toExpr
     logger.debug(inferred)
     logger.debug(inferred.t)
-    assert(inferred.t ==
+    assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: (Nat `**` (m => m `.` f32)))
     )
 
@@ -99,7 +99,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = e.toExpr
     logger.debug(inferred)
     logger.debug(inferred.t)
-    assert(inferred.t ==
+    assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: f32)
     )
 
@@ -147,7 +147,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = e.toExpr
     logger.debug(inferred)
     logger.debug(inferred.t)
-    assert(inferred.t ==
+    assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: (5`.`f32))
     )
     function.asStringFromExpr(inferred)
@@ -161,7 +161,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = inferDependent(e)
     logger.debug(inferred)
     logger.debug(inferred.t)
-    assert(inferred.t ==
+    assert(inferred.t =~=
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => (m+1) `.` f32) ))
     )
     function.asStringFromExpr(inferred)
@@ -175,7 +175,7 @@ class dependentTypes extends test_util.Tests {
     val inferred: Expr = inferDependent(e)
     logger.debug(inferred)
     logger.debug(inferred.t)
-    assert(inferred.t ==
+    assert(inferred.t =~=
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => f32) ))
     )
     function.asStringFromExpr(inferred)

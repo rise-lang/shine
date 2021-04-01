@@ -7,6 +7,7 @@ import elevate.core.strategies.traversal._
 import rise.core.DSL.HighLevelConstructs.dropLast
 import rise.core.DSL.Type._
 import rise.core.DSL._
+import rise.core.makeClosed
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
@@ -15,7 +16,6 @@ import rise.elevate.rules.traversal.alternative
 import rise.elevate.rules.traversal.alternative._
 import rise.elevate.rules.{lowering, _}
 import rise.elevate.strategies.predicate._
-import rise.elevate.util.makeClosed
 import shine.DPIA.Nat
 
 class circularBuffering extends test_util.Tests {
@@ -111,7 +111,7 @@ class circularBuffering extends test_util.Tests {
   private def openEquality(typedA: Rise, b: Rise): Boolean = {
     import rise.core.DSL._
     val typedB: Rise = toBeTyped(b) !: typedA.t
-    makeClosed(typedA)._1 == makeClosed(typedB)._1
+    makeClosed(typedA) =~= makeClosed(typedB)
   }
 
   private val id = fun(x => x)
