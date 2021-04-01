@@ -1,5 +1,6 @@
 package rise.core.types
 
+import util.monads._
 import arithexpr.arithmetic.BoolExpr
 import rise.core.traverse._
 import rise.core.{Expr, substitute}

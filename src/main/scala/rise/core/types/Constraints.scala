@@ -1,9 +1,10 @@
 package rise.core.types
 
+import util.monads._
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.core.DSL.Type.n2dtFun
-import rise.core.traverse.{Pure, PureTraversal}
-import rise.core.{traverse, freshName, substitute}
+import rise.core.traverse._
+import rise.core.{freshName, substitute}
 import rise.core.lifting.liftDependentFunctionType
 import rise.core.types.Flags.ExplicitDependence
 import rise.core.types.InferenceException.error
@@ -539,29 +540,30 @@ object dependence {
    * with applied nat-to-X functions.
    */
   def explicitlyDependent(t: Type, depVar: NatIdentifier): (Type, Solution) = {
-    val visitor = new PureTraversal {
-      private val sols = Seq.newBuilder[Solution]
+    val visitor = new PairMonoidTraversal[Seq[Solution], Pure] {
+      override val fstMonoid = SeqMonoid
+      override val wrapperMonad = PureMonad
 
-      override def nat: Nat => Pure[Nat] = {
+      override def nat: Nat => Pair[Nat] = {
         case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n : Nat)
         case ident: NatIdentifier if ident != depVar && !ident.isExplicit =>
-          sols += Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
-          return_(ident.asImplicit : Nat)
+          val sol = Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
+          Pure((Seq(sol), ident.asImplicit : Nat))
         case n => super.nat(n)
       }
 
-      override def `type`[T <: Type] : T => Pure[T] = {
+      override def `type`[T <: Type] : T => Pair[T] = {
         case n2d@NatToDataApply(_, x) if x == depVar => return_(n2d : T)
         case ident@TypeIdentifier(i) =>
           val application = NatToDataApply(NatToDataIdentifier(freshName("nnf")), depVar)
-          sols += Solution.subs(ident, application)
-          return_(ident.asInstanceOf[T])
+          val sol = Solution.subs(ident, application)
+          Pure((Seq(sol), ident.asInstanceOf[T]))
         case e => super.`type`(e)
       }
 
       def apply(t: Type): (Type, Solution) = {
-        val rewrittenT = traverse(t, this)
-        val solution = this.sols.result().foldLeft(Solution())(_ ++ _)
+        val (sols, rewrittenT) = traverse(t, this).unwrap
+        val solution = sols.foldLeft(Solution())(_ ++ _)
         (solution.apply(rewrittenT), solution)
       }
     }

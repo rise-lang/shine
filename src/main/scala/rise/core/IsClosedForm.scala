@@ -1,5 +1,6 @@
 package rise.core
 
+import util.monads._
 import arithexpr.arithmetic.NamedVar
 import rise.core.traverse._
 import rise.core.types._

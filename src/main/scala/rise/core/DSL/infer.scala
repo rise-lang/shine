@@ -1,8 +1,9 @@
 package rise.core.DSL
 
+import util.monads._
 import Type.freshTypeIdentifier
 import rise.core.traverse._
-import rise.core._
+import rise.core.{traverse=>_, _}
 import rise.core.types.InferenceException.error
 import rise.core.types._
 
@@ -27,21 +28,20 @@ object infer {
   }
 
   def printTypesAndTypeHoles(expr: Expr): Unit = {
-    // TODO: move holeFound state into the traverse
-    var holeFound = false
-    traverse(expr, new PureExprTraversal {
-      override def expr : Expr => Pure[Expr] = {
+    val T = new PairMonoidTraversal[Boolean, Pure] {
+      override val fstMonoid = OrMonoid
+      override val wrapperMonad = PureMonad
+      override def expr: Expr => Pair[Expr] = {
         case h@primitives.typeHole(msg) =>
           println(s"found type hole ${msg}: ${h.t}")
-          holeFound = true
-          return_(h : Expr)
+          Pure((true, h))
         case p@primitives.printType(msg) =>
           println(s"$msg : ${p.t} (Rise level)")
-          return_(p : Expr)
+          return_(p: Expr)
         case e => super.expr(e)
       }
-    })
-    if (holeFound) {
+    }
+    if (T.expr(expr).unwrap._1) {
       error("type holes were found")(Seq())
     }
   }
@@ -98,42 +98,30 @@ object infer {
     )
   }
 
+  val FTVGathering = new PairMonoidTraversal[Seq[Kind.Identifier], Pure] {
+    override val fstMonoid = SeqMonoid
+    override val wrapperMonad = PureMonad
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = _ => {
+      case i: Kind.Explicitness =>
+        if (!i.isExplicit) Pure((Seq(i), i.asInstanceOf[I])) else Pure((Seq(), i.asInstanceOf[I]))
+      case i => Pure((Seq(i), i))
+    }
+    override def nat: Nat => Pair[Nat] = ae => {
+      val ftvs = mutable.ListBuffer[Kind.Identifier]()
+      val r = ae.visitAndRebuild({
+        case i: NatIdentifier if !i.isExplicit => ftvs += i; i
+        case n => n
+      })
+      Pure((ftvs.toSeq, r))
+    }
+  }
+
   def getFTVs(t: Type): Seq[Kind.Identifier] = {
-    val ftvs = mutable.ListBuffer[Kind.Identifier]()
-    traverse(t, new PureTraversal {
-      override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = _ => i => {
-        i match {
-          case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
-          case i => ftvs += i
-        }
-        return_(i)
-      }
-      override def nat: Nat => Pure[Nat] = ae =>
-        return_(ae.visitAndRebuild({
-          case i: NatIdentifier if !i.isExplicit => ftvs += i; i
-          case n => n
-        }))
-    })
-    ftvs.distinct.toSeq
+    traverse(t, FTVGathering).unwrap._1.distinct
   }
 
   def getFTVsRec(e: Expr): Seq[Kind.Identifier] = {
-    val ftvs = mutable.ListBuffer[Kind.Identifier]()
-    traverse(e, new PureTraversal {
-      override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = _ => i => {
-        i match {
-          case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
-          case i => ftvs += i
-        }
-        return_(i)
-      }
-      override def nat: Nat => Pure[Nat] = ae =>
-        return_(ae.visitAndRebuild({
-          case i: NatIdentifier if !i.isExplicit => ftvs += i; i
-          case n => n
-        }))
-    })
-    ftvs.distinct.toSeq
+    traverse(e, FTVGathering).unwrap._1.distinct
   }
 
   private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t

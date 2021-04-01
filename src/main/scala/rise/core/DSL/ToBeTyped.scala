@@ -1,6 +1,6 @@
 package rise.core.DSL
 
-import rise.core.traverse.Pure
+import util.monads.Pure
 import rise.core.types._
 import rise.core._
 
