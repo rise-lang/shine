@@ -140,14 +140,14 @@ object infer {
       val (te, cs, ftvE) = constrainTypes(env1)(e)
       val ft = FunType(tx.t, te.t)
       val cs1 = constrIfTyped(expr.t)(TypeConstraint(expr.t, ft))
-      (Lambda(tx, te)(ft), cs :++ cs1, ftvE)
+      (Lambda(tx, te)(ft), cs ++ cs1, ftvE)
 
     case expr@App(f, e) =>
       val (tf, csF, ftvF) = constrainTypes(env)(f)
       val (te, csE, ftvE) = constrainTypes(env)(e)
       val exprT = genType(expr)
       val c = TypeConstraint(tf.t, FunType(te.t, exprT))
-      (App(tf, te)(exprT), csF :++ csE :+ c, ftvF <> ftvE)
+      (App(tf, te)(exprT), csF ++ csE :+ c, ftvF <> ftvE)
 
     case expr@DepLambda(x, e) =>
       val (te, csE, ftvE) = constrainTypes(env)(e)
@@ -162,7 +162,7 @@ object infer {
           DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
       }
       val csE1 = constrIfTyped(expr.t)(TypeConstraint(expr.t, tf.t))
-      (tf, csE :++ csE1, ftvE)
+      (tf, csE ++ csE1, ftvE)
 
     case expr@DepApp(f, x) =>
       val (tf, csF, ftvF) = constrainTypes(env)(f)
