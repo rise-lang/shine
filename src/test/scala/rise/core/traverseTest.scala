@@ -18,14 +18,14 @@ class traverseTest extends test_util.Tests {
     override val fstMonoid = SeqMonoid[Any]
     override val wrapperMonad = PureMonad
     override def identifier[I <: Identifier] : VarType => I => Pair[I] =
-      vt => i => Pure((Seq(i), i))
+      vt => i => record(Seq(i))(i)
   }
 
   class TypeTraceVisitor extends PairMonoidTraversal[Seq[Any], Pure] {
     override val fstMonoid = SeqMonoid[Any]
     override val wrapperMonad = PureMonad
     override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Pair[I] =
-      vt => i => Pure((Seq(i), i))
+      vt => i => record(Seq(i))(i)
   }
 
   def checkEqualities[T] : Seq[T] => Seq[Seq[Int]] => Boolean = xs => gps =>
@@ -33,7 +33,7 @@ class traverseTest extends test_util.Tests {
 
   test("traversing an expression should traverse identifiers in order") {
     val equivs = Seq(Seq(0, 3), Seq(1, 2))
-    val result = traverse(e, new ExprTraceVisitor()).unwrap
+    val result = traverse(e, new ExprTraceVisitor())
 
     // the expression should not have changed
     assert(result._2 == e)
@@ -44,7 +44,7 @@ class traverseTest extends test_util.Tests {
 
   test("traversing a type should traverse identifiers in order") {
     val equivs = Seq(Seq(0, 2, 4), Seq(1, 3, 5))
-    val result = traverse(e.t, new TypeTraceVisitor()).unwrap
+    val result = traverse(e.t, new TypeTraceVisitor())
     // the type should not have changed
     assert(result._2 == e.t)
     // the trace should match expectations

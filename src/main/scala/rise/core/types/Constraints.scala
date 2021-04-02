@@ -548,7 +548,7 @@ object dependence {
         case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n : Nat)
         case ident: NatIdentifier if ident != depVar && !ident.isExplicit =>
           val sol = Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
-          Pure((Seq(sol), ident.asImplicit : Nat))
+          record(Seq(sol))(ident.asImplicit : Nat)
         case n => super.nat(n)
       }
 
@@ -557,12 +557,12 @@ object dependence {
         case ident@TypeIdentifier(i) =>
           val application = NatToDataApply(NatToDataIdentifier(freshName("nnf")), depVar)
           val sol = Solution.subs(ident, application)
-          Pure((Seq(sol), ident.asInstanceOf[T]))
+          record(Seq(sol))(ident.asInstanceOf[T])
         case e => super.`type`(e)
       }
 
       def apply(t: Type): (Type, Solution) = {
-        val (sols, rewrittenT) = traverse(t, this).unwrap
+        val (sols, rewrittenT) = traverse(t, this)
         val solution = sols.foldLeft(Solution())(_ ++ _)
         (solution.apply(rewrittenT), solution)
       }

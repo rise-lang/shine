@@ -189,6 +189,7 @@ object traverse {
     type Pair[T] = InMonad[M]#SetFst[F]#Type[T]
     implicit val fstMonoid : Monoid[F]
     implicit val wrapperMonad : Monad[M]
+    def record[T] : F => T => Pair[T] = f => t => wrapperMonad.return_((f, t))
     override def monad : PairMonoidMonad[F,M] = new PairMonoidMonad[F,M] {
       override val monoid = implicitly(fstMonoid)
       override val monad = implicitly(wrapperMonad)
@@ -196,7 +197,9 @@ object traverse {
   }
 
   def traverse(e: Expr, f: PureTraversal): Expr = f.expr(e).unwrap
-  def traverse[M[_]](e: Expr, f: Traversal[M]): M[Expr] = f.expr(e)
   def traverse[T <: Type](t: T, f: PureTraversal): T = f.`type`(t).unwrap
+  def traverse[F](e: Expr, f: PairMonoidTraversal[F,Pure]): (F, Expr) = f.expr(e).unwrap
+  def traverse[F,T <: Type](t: T, f: PairMonoidTraversal[F,Pure]): (F, T) = f.`type`(t).unwrap
+  def traverse[M[_]](e: Expr, f: Traversal[M]): M[Expr] = f.expr(e)
   def traverse[T <: Type, M[_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
 }
