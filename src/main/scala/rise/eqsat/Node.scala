@@ -4,69 +4,84 @@ import rise.core.types._
 import rise.core.semantics
 
 // Rise with DeBruijn indexing
-sealed trait Node[+T] {
-  def mapChildren[O](fc: T => O): Node[O] = this match {
+sealed trait Node[+E, +N, +DT] {
+  def map[OE, ON, ODT](fe: E => OE,
+                       fn: N => ON,
+                       fdt: DT => ODT): Node[OE, ON, ODT] = this match {
     case v @ Var(_) => v
     case l @ Literal(_) => l
     case p @ Primitive(_) => p
-    case App(f, e) => App(fc(f), fc(e))
-    case Lambda(e) => Lambda(fc(e))
-    case DepApp(f, x) => DepApp(fc(f), x)
-    case DepLambda(k, e) => DepLambda(k, fc(e))
+    case App(f, e) => App(fe(f), fe(e))
+    case Lambda(e) => Lambda(fe(e))
+    case NatApp(f, x) => NatApp(fe(f), fn(x))
+    case NatLambda(e) => NatLambda(fe(e))
+    case DataApp(f, x) => DataApp(fe(f), fdt(x))
+    case DataLambda(e) => DataLambda(fe(e))
   }
-  def children(): Iterator[T] = this match {
+
+  def mapChildren[OE](fc: E => OE): Node[OE, N, DT] =
+    map(fc, n => n, dt => dt)
+  def children(): Iterator[E] = this match {
     case Var(_) | Literal(_) | Primitive(_) => Iterator()
     case App(f, e) => Iterator(f, e)
     case Lambda(e) => Iterator(e)
-    case DepApp(f, _) => Iterator(f)
-    case DepLambda(_, e) => Iterator(e)
+    case NatApp(f, _) => Iterator(f)
+    case NatLambda(e) => Iterator(e)
+    case DataApp(f, _) => Iterator(f)
+    case DataLambda(e) => Iterator(e)
   }
   def childrenCount(): Int =
     children().length
 
-  def mapNats(fn: Nat => Nat): Node[T] = this match {
-    case DepApp(f, n: Nat) => DepApp[NatKind, T](f, fn(n))
-    case _ => this
-  }
-  def nats(): Iterator[Nat] = this match {
-    case DepApp(_, n: Nat) => Iterator(n)
+  def nats(): Iterator[N] = this match {
+    case NatApp(_, n) => Iterator(n)
     case _ => Iterator()
   }
   def natsCount(): Int = nats().length
+
+  def dataTypes(): Iterator[DT] = this match {
+    case DataApp(_, dt) => Iterator(dt)
+    case _ => Iterator()
+  }
+  def dataTypesCount(): Int = dataTypes().length
 
   def matchHash(): Int = this match {
     case Var(i) => 7 * i
     case App(_, _) => 1
     case Lambda(_) => 2
-    case DepApp(_, _) => 4
-    case DepLambda(k, _) => 3 * k.hashCode()
+    case NatApp(_, _) => 3
+    case NatLambda(_) => 4
+    case DataApp(_, _) => 5
+    case DataLambda(_) => 6
     case Literal(d) => 13 * d.hashCode()
     case Primitive(p) => 17 * p.hashCode()
   }
 
   // Returns true if this enode matches another enode.
   // This should only consider the operator, not the children ids or nats.
-  def matches(other: Node[_]): Boolean = (this, other) match {
+  def matches(other: Node[_, _, _]): Boolean = (this, other) match {
     case (Var(i1), Var(i2)) => i1 == i2
     case (App(_, _), App(_, _)) => true
     case (Lambda(_), Lambda(_)) => true
-    case (DepApp(_, _: Nat), DepApp(_, _: Nat)) => true
-    case (DepApp(_, _: DataType), DepApp(_, _: DataType)) => true
-    // TODO: other Kinds
-    case (DepLambda(k1, _), DepLambda(k2, _)) => k1 == k2
+    case (NatApp(_, _), NatApp(_, _)) => true
+    case (DataApp(_, _), DataApp(_, _)) => true
+    case (NatLambda(_), NatLambda(_)) => true
+    case (DataLambda(_), DataLambda(_)) => true
     case (Literal(d1), Literal(d2)) => d1 == d2
     case (Primitive(p1), Primitive(p2)) => p1 == p2
     case _ => false
   }
 }
 
-case class Var(index: Int) extends Node[Nothing]
-case class App[T](f: T, e: T) extends Node[T]
-case class Lambda[T](e: T) extends Node[T]
-case class DepApp[K <: Kind, T](f: T, x: K#T) extends Node[T]
-case class DepLambda[T](kind: Kind, e: T) extends Node[T]
-case class Literal(d: semantics.Data) extends Node[Nothing]
-case class Primitive(p: rise.core.Primitive) extends Node[Nothing]
+case class Var(index: Int) extends Node[Nothing, Nothing, Nothing]
+case class App[E](f: E, e: E) extends Node[E, Nothing, Nothing]
+case class Lambda[E](e: E) extends Node[E, Nothing, Nothing]
+case class NatApp[E, N](f: E, x: N) extends Node[E, N, Nothing]
+case class DataApp[E, DT](f: E, x: DT) extends Node[E, Nothing, DT]
+case class NatLambda[E](e: E) extends Node[E, Nothing, Nothing]
+case class DataLambda[E](e: E) extends Node[E, Nothing, Nothing]
+case class Literal(d: semantics.Data) extends Node[Nothing, Nothing, Nothing]
+case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Nothing]
 
 object Node {
   import math.Ordering.Implicits.seqOrdering
@@ -159,19 +174,19 @@ object Node {
       id1.i compare id2.i
   }
 
-  implicit def ordering[T](implicit tOrd: Ordering[T]): Ordering[Node[T]] = new Ordering[Node[T]] {
-    def compare(n1: Node[T], n2: Node[T]): Int =
+  implicit def ordering[E, N, DT](implicit tOrd: Ordering[E]): Ordering[Node[E, N, DT]] = new Ordering[Node[E, N, DT]] {
+    def compare(n1: Node[E, N, DT], n2: Node[E, N, DT]): Int =
       (n1, n2) match {
         case (Var(i1), Var(i2)) => i1 compare i2
         case (Var(_), _) => -1
         case (_, Var(_)) => 1
         case (App(f1, e1), App(f2, e2)) =>
-          implicitly[Ordering[(T, T)]].compare((f1, e1), (f2, e2))
+          implicitly[Ordering[(E, E)]].compare((f1, e1), (f2, e2))
         case (App(_, _), _) => -1
         case (_, App(_, _)) => 1
         case (Lambda(e1), Lambda(e2)) => tOrd.compare(e1, e2)
         case (Lambda(_), _) => -1
-        case (_, Lambda(_)) => 1
+        case (_, Lambda(_)) => 1 /* TODO
         case (DepApp(f1, x1), DepApp(f2, x2)) =>
           implicitly[Ordering[(T, Kind#T)]].compare((f1, x1), (f2, x2))
         case (DepApp(_, _), _) => -1
@@ -179,11 +194,12 @@ object Node {
         case (DepLambda(k1, e1), DepLambda(k2, e2)) => ???
           // implicitly[Ordering[(Kind, T)].compare((k1, e1), (k2, e2))
         case (DepLambda(_, _), _) => -1
-        case (_, DepLambda(_, _)) => 1
+        case (_, DepLambda(_, _)) => 1*/
         case (Literal(d1), Literal(d2)) => dataOrdering.compare(d1, d2)
         case (Literal(_), _) => -1
         case (_, Literal(_)) => 1
         case (Primitive(p1), Primitive(p2)) => p1.name compare p2.name
+        case _ => ???
       }
   }
 }

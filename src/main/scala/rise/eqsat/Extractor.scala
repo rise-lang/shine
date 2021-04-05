@@ -30,7 +30,7 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
       case None =>
         def childF(id: EClassId): Expr =
           findBestRec(id, addedMemo)._2
-        val expr = Expr(bestNode.mapChildren(childF))
+        val expr = Expr(bestNode.mapChildren(childF), ???)
         assert(!addedMemo.contains(id))
         addedMemo += id -> expr
         expr

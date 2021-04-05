@@ -5,9 +5,9 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.semantics.FloatData
+import rise.eqsat.rules
 import rise.macros.Primitive.primitive
 import rise.eqsat.Basic.proveEquiv
-import rise.eqsat.rules
 
 object separableConvolution2DEqsat {
   // TODO: use full expressions instead of proxy primitives

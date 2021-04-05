@@ -20,7 +20,7 @@ class dot extends test_util.Tests {
   private val add = fun(a => fun(x => a + x))
 
   private val simpleDotProduct = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-    zip(xs)(ys) |> toMemFun(mapSeq(mulT)) |> reduceSeq(add)(l(0.0f))
+    zip(xs)(ys) |> toMemFun(mapSeq(mulT)) |> reduceSeq(add)(lf32(0.0f))
   )))
 
   test("Simple dot product type inference works") {
@@ -46,7 +46,7 @@ class dot extends test_util.Tests {
 
   // C
   test("Simple dot product compiles to syntactically correct C") {
-    println(function.asStringFromExpr(simpleDotProduct))
+    logger.debug(function.asStringFromExpr(simpleDotProduct))
   }
 
   // OpenMP
@@ -59,7 +59,7 @@ class dot extends test_util.Tests {
       |> mapPar(
         split(2048) >>
         mapSeq(
-          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
+          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(lf32(0.0f)))
         )
       ) |> join |> asScalar
     )))
@@ -77,7 +77,7 @@ class dot extends test_util.Tests {
       |> mapPar(
         split(8192) >>
         mapSeq(
-          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
+          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(lf32(0.0f)))
         )
       ) |> join |> asScalar
     )))
@@ -94,7 +94,7 @@ class dot extends test_util.Tests {
       mapPar(
         split(2048) >>
         mapSeq(
-          reduceSeq(fun(a => fun(x => a + mulT(x))))(l(0.0f))
+          reduceSeq(fun(a => fun(x => a + mulT(x))))(lf32(0.0f))
         )
       ) |> join
     )))
@@ -111,7 +111,7 @@ class dot extends test_util.Tests {
       mapPar(
         split(128) >>
         mapSeq(
-          reduceSeq(add)(l(0.0f))
+          reduceSeq(add)(lf32(0.0f))
         )
       ) |> join
     ))
@@ -132,7 +132,7 @@ class dot extends test_util.Tests {
           split(8192) >>
           mapLocal(
             oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))
-            (vectorFromScalar(l(0.0f)))
+            (vectorFromScalar(lf32(0.0f)))
           )
         ) |> join |> asScalar
       )))
@@ -149,7 +149,7 @@ class dot extends test_util.Tests {
           mapLocal(
             oclReduceSeq(AddressSpace.Private)(
               fun(a => fun(x => a + mulT(x)))
-            )(l(0.0f))
+            )(lf32(0.0f))
           )
         ) |> join
       )))
@@ -166,7 +166,7 @@ class dot extends test_util.Tests {
           mapLocal(
             oclReduceSeq(AddressSpace.Private)(
               fun(a => fun(x => a + x))
-            )(l(0.0f))
+            )(lf32(0.0f))
           )
         ) |> join
       ))
@@ -184,7 +184,7 @@ class dot extends test_util.Tests {
           mapLocal(
             oclReduceSeq(AddressSpace.Private)(
               fun(a => fun(x => a + mulT(x)))
-            )(l(0.0f))
+            )(lf32(0.0f))
           )
         ) |> join
       )))
@@ -199,11 +199,11 @@ class dot extends test_util.Tests {
         mapWorkGroup(
           split(2) >>
           toLocalFun(
-            mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+            mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
           ) >>
           toLocalFun(
             oclIterate(AddressSpace.Local)(6)(depFun((_: Nat) =>
-              split(2) >> mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+              split(2) >> mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
             ))
           ) >> mapLocal(fun(x => x))
         ) |> join

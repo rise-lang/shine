@@ -80,8 +80,10 @@ case class EGraphDot(egraph: EGraph[_]) {
       case Var(index) => s"%$index"
       case App(_, _) => "app"
       case Lambda(_) => "λ"
-      case DepApp(_, _) => "dApp"
-      case DepLambda(_, _) => "Λ"
+      case NatApp(_, n) => s"nApp $n"
+      case NatLambda(_) => "Λ : nat"
+      case DataApp(_, dt) => s"dtApp $dt"
+      case DataLambda(_) => "Λ : data"
       case Literal(d) => s"$d"
       case Primitive(p) => s"${p.toString.trim}"
     }

@@ -43,6 +43,16 @@ class Basic extends test_util.Tests {
       Seq(rules.eta, rules.beta, rules.mapFission, rules.mapFusion)
     )
   }
+
+  test("slide movements") {
+    proveEquiv(
+      fun(f1 => fun(f2 =>
+        map(f1) >> map(slide(3)(1)) >> map(slide(4)(2)) >> map(slide(5)(3)) >> map(map(map(map(map(f2))))))),
+      fun(f1 => fun(f2 =>
+        map(f1 >> map(f2)) >> map(slide(3)(1) >> slide(4)(2) >> slide(5)(3)))),
+      Seq(rules.eta, rules.beta, rules.mapFusion, rules.mapFission, rules.slideBeforeMapMapF)
+    )
+  }
 }
 
 object Basic {

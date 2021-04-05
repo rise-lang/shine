@@ -92,7 +92,7 @@ object localLaplacian {
     (3`.`h`.`w`.`u16) ->: (3`.`h`.`w`.`f32)
   )(input => input |>
     map(map(map(fun(p =>
-      cast(p) / l(65535.0f)
+      cast(p) / lf32(65535.0f)
     ))))
   ))
 
@@ -100,7 +100,7 @@ object localLaplacian {
     (3`.`h`.`w`.`f32) ->: (3`.`h`.`w`.`u16)
   )(input => input |>
     map(map(map(fun(p =>
-      cast(clamp(f32)(p, l(0.0f), l(1.0f)) * l(65535.0f))
+      cast(clamp(f32)(p, lf32(0.0f), lf32(1.0f)) * lf32(65535.0f))
     ))))
   ))
 
@@ -116,8 +116,8 @@ object localLaplacian {
   )(alpha =>
     generate(fun { x =>
       val dx = (cast(x) - l(256)*(cast(l(levels))-l(1))) :: int
-      val fx = (cast(dx) :: f32) / l(256.0f)
-      alpha * fx * exp(-fx * fx / l(2.0f))
+      val fx = (cast(dx) :: f32) / lf32(256.0f)
+      alpha * fx * exp(-fx * fx / lf32(2.0f))
     })
   ))
 
@@ -128,9 +128,9 @@ object localLaplacian {
       generate(fun { k =>
         val maxLevel = l(levels - 1)
         def toF(e: ToBeTyped[Expr]) = cast(e) :: f32
-        val level = toF(k) * l(1.0f) / toF(maxLevel)
+        val level = toF(k) * lf32(1.0f) / toF(maxLevel)
         val idx = clamp(int)(
-          cast(p * toF(maxLevel) * l(256.0f)),
+          cast(p * toF(maxLevel) * lf32(256.0f)),
           l(0), (cast(maxLevel) :: int) * l(256))
         val ridx = natAsIndex((levels-1)*256*2 + 1)(cast(
           idx - l(256) * (cast(k) :: int)) + (levels-1)*256)
@@ -153,7 +153,7 @@ object localLaplacian {
         val level = fst(p) * (cast(l(levels) - l(1: Nat)) :: f32)
         val li = clamp(int)(cast(level), l(0), cast(l(levels) - l(2: Nat)))
         val lf = level - (cast(li) :: f32)
-        (l(1.0f) - lf) * (snd(p) `@` cast(li)) + lf * (snd(p) `@` cast(li + l(1)))
+        (lf32(1.0f) - lf) * (snd(p) `@` cast(li)) + lf * (snd(p) `@` cast(li + l(1)))
       }))
     )}}}
 
@@ -171,7 +171,7 @@ object localLaplacian {
       val outG = fst(p)
       val gray = snd(snd(p))
       fst(snd(p)) |> map(fun { floating =>
-        val eps = l(0.01f)
+        val eps = lf32(0.01f)
         outG * (floating + eps) / (gray + eps)
       })
     })) |> map(transpose) |> transpose

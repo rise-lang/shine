@@ -112,7 +112,7 @@
  <check enabled="true" class="org.scalastyle.scalariform.OverrideJavaChecker" level="warning"/>
  <check enabled="true" class="org.scalastyle.scalariform.PackageNamesChecker" level="warning">
   <parameters>
-   <parameter name="regex">^[a-z][A-Za-z]*$</parameter>
+   <parameter name="regex">^[a-z][A-Za-z0-9]*$</parameter>
   </parameters>
  </check>
  <check level="warning" class="org.scalastyle.scalariform.PackageObjectNamesChecker" enabled="true">

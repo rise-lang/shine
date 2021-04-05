@@ -19,7 +19,7 @@ class NatGen extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     Executor.loadAndInit()
     val length = 10

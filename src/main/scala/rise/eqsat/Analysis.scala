@@ -35,10 +35,11 @@ object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
       case Var(index) => free += index
       case Lambda(e) =>
         free ++= egraph.getMut(e).data.free.filter(idx => idx != 0).map(idx => idx - 1)
-      case DepLambda(_, _) => ???
+      case NatLambda(_) => ???
+      case DataLambda(_) => ???
       case _ => enode.children().foreach(c => free ++= egraph.getMut(c).data.free)
     }
-    val extractedExpr = Expr(enode.mapChildren(c => egraph.getMut(c).data.extractedExpr))
+    val extractedExpr = Expr(enode.mapChildren(c => egraph.getMut(c).data.extractedExpr), ???)
     val extractedSize = enode.children().foldLeft(1) { case (acc, c) => acc + egraph.getMut(c).data.extractedSize }
     new DefaultAnalysisData(free, extractedExpr, extractedSize)
   }

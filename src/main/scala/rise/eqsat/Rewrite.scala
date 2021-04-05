@@ -1,7 +1,5 @@
 package rise.eqsat
 
-import rise.core.types.{Nat, NatIdentifier}
-
 object Rewrite {
   def init[D](name: String, searcher: Searcher[D], applier: Applier[D]): Rewrite[D] = {
     val boundVars = searcher.patternVars()
@@ -95,15 +93,15 @@ object VecMap {
 }
 
 case class Subst(exprs: VecMap[PatternVar, EClassId],
-                 nats: VecMap[NatIdentifier, Nat]) {
+                 nats: VecMap[NatPatternVar, Nat]) {
   def insert(pv: PatternVar, eclass: EClassId): Option[EClassId] =
     exprs.insert(pv, eclass)
-  def insert(ni: NatIdentifier, n: Nat): Option[Nat] =
+  def insert(ni: NatPatternVar, n: Nat): Option[Nat] =
     nats.insert(ni, n)
 
   def apply(pv: PatternVar): EClassId =
     exprs(pv)
-  def apply(ni: NatIdentifier): Nat =
+  def apply(ni: NatPatternVar): Nat =
     nats(ni)
 
   def deepClone(): Subst =

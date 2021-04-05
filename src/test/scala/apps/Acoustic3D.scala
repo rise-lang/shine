@@ -60,7 +60,7 @@ class Acoustic3D extends test_util.TestsWithExecutor {
     val mat1 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat() * random.nextInt(1000))
     val mat2 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat() * random.nextInt(1000))
 
-    test_util.runsWithSameResult(Seq(
+    runsWithSameResult(Seq(
       ("original", runOriginalKernel("acoustic3D.cl", mat1, mat2)),
       ("originalMSS", runOriginalKernel("acoustic3DMSS.cl", mat1, mat2)),
       ("dpia", runKernel(gen.opencl.kernel.fromExpr(stencil), mat1, mat2)),

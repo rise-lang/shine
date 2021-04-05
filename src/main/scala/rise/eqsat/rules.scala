@@ -33,6 +33,18 @@ object rules {
         lam(app(app(map, ?("f")), app(app(map, lam(?("gxu"))), %(0))))))
   )
 
+  // - slide widening -
+/* TODO
+  val dropInSlide: Rule = Rewrite.init("drop-in-slide",
+    app(nApp(drop, ?("l")), app(nApp(nApp(slide, ?("n")), cst(1)), ?("in"))).compile(),
+    app(app(map, nApp(drop, ?("l"))), app(nApp(nApp(slide, ?("n") + ?("l")), cst(1)), ?("in")))
+  )
+  val takeInSlide: Rule = Rewrite.init("take-in-slide",
+    app(nApp(take, ?("r")), app(nApp(nApp(slide, ?("n")), cst(1)), ?("in"))).compile(),
+    // TODO: match on `take : s._ -> _`
+    app(app(map, nApp(take, ?("n"))), app(nApp(nApp(slide, ?("n") + ?("s") - ?("r")), cst(1)), ?("in")))
+  )
+*/
   // -- reduction --
 
   val eta: Rule = Rewrite.init("eta",
@@ -52,18 +64,26 @@ object rules {
 
   // -- movement --
 
-  // FIXME: rewrite depApp
   val mapSlideBeforeTranspose: Rule = Rewrite.init("map-slide-before-transpose",
-    app(transpose, app(app(map, depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp"))), ?("y"))).compile(),
-    app(app(map, transpose), app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), app(transpose, ?("y"))))
+    app(transpose, app(app(map, nApp(nApp(slide, ?("sz")), ?("sp"))), ?("y"))).compile(),
+    app(app(map, transpose), app(nApp(nApp(slide, ?("sz")), ?("sp")), app(transpose, ?("y"))))
   )
   val slideBeforeMapMapF: Rule = Rewrite.init("slide-before-map-map-f",
-    app(app(map, app(map, ?("f"))), app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), ?("y"))).compile(),
-    app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y")))
+    app(app(map, app(map, ?("f"))), app(nApp(nApp(slide, ?("sz")), ?("sp")), ?("y"))).compile(),
+    app(nApp(nApp(slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y")))
   )
   val slideBeforeMap: Rule = Rewrite.init("slide-before-map",
-    app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y"))).compile(),
-    app(app(map, app(map, ?("f"))), app(depApp[NatKind](depApp[NatKind](slide, ?("sz")), ?("sp")), ?("y")))
+    app(nApp(nApp(slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y"))).compile(),
+    app(app(map, app(map, ?("f"))), app(nApp(nApp(slide, ?("sz")), ?("sp")), ?("y")))
+  )
+
+  val dropBeforeMap: Rule = Rewrite.init("drop-before-map",
+    app(nApp(drop, ?("n")), app(app(map, ?("f")), ?("in"))).compile(),
+    app(app(map, ?("f")), app(nApp(drop, ?("n")), ?("in")))
+  )
+  val takeBeforeMap: Rule = Rewrite.init("take-before-map",
+    app(nApp(take, ?("n")), app(app(map, ?("f")), ?("in"))).compile(),
+    app(app(map, ?("f")), app(nApp(take, ?("n")), ?("in")))
   )
 
   // -- lowering --

@@ -1,7 +1,5 @@
 package rise.eqsat
 
-import rise.core.types.{Nat, NatIdentifier}
-
 import scala.collection.mutable
 
 // NOTE: we currently only support Nat pattern variables if they are directly the argument of a DepApp node
@@ -64,7 +62,7 @@ object ematching {
 
   class Program(val instructions: Vec[Instruction],
                 var v2r: HashMap[PatternVar, Reg],
-                var ni2r: HashMap[NatIdentifier, NatReg]) {
+                var ni2r: HashMap[NatPatternVar, NatReg]) {
     def run[D](egraph: EGraph[D], eclass: EClassId): Vec[Subst] = {
       val machine = AbstractMachine.init(eclass)
 
@@ -87,8 +85,7 @@ object ematching {
   }
 
   // A node without children for matching purposes
-  // TODO: remove nats as well?
-  type MNode = Node[()]
+  type MNode = Node[(), (), ()]
 
   def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
     import scala.math.Ordering.Implicits._
@@ -99,7 +96,7 @@ object ematching {
     } else {
       assert(eclass.nodes.sliding(2).forall(w => w(0) < w(1)))
       // binary search
-      eclass.nodes.view.map(_.mapChildren(_ => ())).search(node) match {
+      eclass.nodes.view.map(_.map(_ => (), _ => (), _ => ())).search(node) match {
         case scala.collection.Searching.Found(found) =>
           def findStart(pos: Int): Int =
             if ((pos > 0) && eclass.nodes(pos - 1).matches(node)) {
@@ -152,7 +149,7 @@ object ematching {
 
   class Compiler(var pattern: Pattern,
                  var v2r: HashMap[PatternVar, Reg],
-                 var ni2r: HashMap[NatIdentifier, NatReg],
+                 var ni2r: HashMap[NatPatternVar, NatReg],
                  var todo: mutable.PriorityQueue[Todo],
                  var out: Reg,
                  var natOut: NatReg) {
@@ -171,7 +168,7 @@ object ematching {
             out.n += node.childrenCount()
             natOut.n += node.natsCount()
 
-            instructions += Bind(node.mapChildren(_ => ()), i, currentOut, currentNatOut)
+            instructions += Bind(node.map(_ => (), _ => (), _ => ()), i, currentOut, currentNatOut)
 
             var id = 0
             node.children().foreach { child =>
@@ -185,13 +182,14 @@ object ematching {
               val r = NatReg(currentNatOut.n + nid)
               // TODO: could add to the `todo` priority queue first
               child match {
-                case ni: NatIdentifier if ni.name.startsWith("?") => {
+                /*case ni: NatIdentifier if ni.name.startsWith("?") => {
                   ni2r.get(ni) match {
                     case Some(j) => instructions += NatCompare(r, j)
                     case None => ni2r += ni -> r
                   }
-                }
+                }*/
                 case n: Nat => NatCheck(r, n)
+                case _ => ???
               }
               nid += 1
             }

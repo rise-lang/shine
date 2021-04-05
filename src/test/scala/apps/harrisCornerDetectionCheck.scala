@@ -22,10 +22,10 @@ class harrisCornerDetectionCheck extends test_util.TestsWithExecutor {
     runs.foreach(r => {
       var totalT = TimeSpan.inMilliseconds(0.0f)
       r._2._2.foreach { case (n, t) =>
-        println(s"$n: $t")
+        logger.debug(s"$n: $t")
         totalT = totalT + t
       }
-      println(s"${r._1}: $totalT")
+      logger.debug(s"${r._1}: $totalT")
       assertSame(r._2._1, gold, s"${r._1} output is different from gold")
     })
   }

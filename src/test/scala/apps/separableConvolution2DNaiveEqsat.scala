@@ -11,7 +11,7 @@ import rise.elevate.rules.algorithmic._
 import rise.elevate.strategies.algorithmic._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.movement._
-import rise.elevate.util.makeClosed
+import rise.core.equality._
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
@@ -29,25 +29,12 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
 
   private val BENF = rise.elevate.strategies.normalForm.BENF()(alternative.RiseTraversable)
 
-  // FIXME: hashCode() implementation is broken in Expr with regards to alpha-renaming
   case class ExprWrapper(e: Expr) {
-    override def hashCode(): Int = customHash(e)
-  }
-
-  private def customHash: Expr => Int = {
-    import semantics._
-    {
-      case _: Identifier => 17
-      case Lambda(_, e) => 3 * customHash(e) + 1
-      case App(f, e) => 5 * customHash(f) + -7 * customHash(e) + 2
-      case DepLambda(_, e) => 4 * customHash(e) + 3
-      case DepApp(f, _) => 6 * customHash(f) + 4
-      case l @ Literal(_: ScalarData | _: VectorData) => l.d.hashCode()
-      case Literal(_: NatData) => 91
-      case Literal(_: IndexData) => 93
-      case Literal(_: ArrayData) => 95
-      case Literal(_: PairData) => 97
-      case p: Primitive => p.getClass.hashCode()
+    override def hashCode(): Int = exprAlphaEq(typeErasure).hash(e)
+    override def equals(o : Any) : Boolean = o match {
+      case other : ExprWrapper => exprAlphaEq(typeAlphaEq).apply(this.e)(other.e)
+      case other : Expr => exprAlphaEq(typeAlphaEq).apply(this.e)(other)
+      case _ => false
     }
   }
 
@@ -90,8 +77,8 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
                                 expandStrats: immutable.Seq[ExpandStrategy],
                                 filterStrat: Strategy[Rise] = BENF): Unit = {
     // FIXME: ad-hoc closing mechanism
-    val closedStart = makeClosed(BENF(start).get !: start.t)._1
-    val closedGoal = makeClosed(eraseType(BENF(goal).get) !: start.t)._1
+    val closedStart = makeClosed(BENF(start).get !: start.t)
+    val closedGoal = makeClosed(eraseType(BENF(goal).get) !: start.t)
 
     val visited = mutable.Set[ExprWrapper]()
     val unvisited = mutable.Set[ExprWrapper](ExprWrapper(closedStart))

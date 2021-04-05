@@ -1,5 +1,6 @@
 package rise.eqsat
 
+import arithexpr.arithmetic.ArithExpr
 import rise.core.semantics
 import rise.core.types.{Kind, Nat, NatIdentifier}
 import rise.core.{primitives => rcp}
@@ -8,7 +9,8 @@ import scala.language.implicitConversions
 
 object Pattern {
   def fromExpr(e: Expr): Pattern =
-    Pattern(Left(e.node.mapChildren(fromExpr)))
+    ???
+    //Pattern(Left(e.node.mapChildren(fromExpr)))
 
   implicit def patternToApplier[D](pat: Pattern): Applier[D] = new Applier[D] {
     override def patternVars(): Vec[PatternVar] = pat.patternVars()
@@ -18,11 +20,9 @@ object Pattern {
         pat.node match {
           case Right(w) => subst(w)
           case Left(n) =>
-            val enode = n.mapChildren(rec).mapNats {
-              case ni: NatIdentifier if ni.name.startsWith("?") =>
-                subst(ni)
-              case n => n
-            }
+            val enode = n.map(e => rec(e), { n =>
+              ??? //ArithExpr.substitute(n, subst.nats.vec.toMap)
+            }, dt => dt)
             egraph.add(enode)
         }
       }
@@ -34,10 +34,10 @@ object Pattern {
 
 // TODO? interned string in egg
 case class PatternVar(name: String)
-case class Pattern(node: Either[Node[Pattern], PatternVar]) {
+case class Pattern(node: Either[PNode, PatternVar]/*, t: TypePattern*/) {
   def patternVars(): Vec[PatternVar] = {
     val vec = Vec.empty[PatternVar]
-    def rec(n: Either[Node[Pattern], PatternVar]): Unit = {
+    def rec(n: Either[PNode, PatternVar]): Unit = {
       n match {
         case Left(node) => node.children().foreach { child =>
           rec(child.node)
@@ -93,13 +93,13 @@ object PatternDSL {
   implicit def pickB2[A, B, C](p: Pick[Pick[A, B], C]): B = p.a
 
   // TODO? use a proper algebraic datatype for nat pattern variables instead of naming convention
-  def ?(name: String): Pick[Pick[PatternVar, Pattern], Nat] =
-    Pick(Pick(PatternVar(name), Pattern(Right(PatternVar(name)))), NatIdentifier(s"?$name"))
+  def ?(name: String): Pick[Pick[PatternVar, Pattern], NatPattern] =
+    Pick(Pick(PatternVar(name), Pattern(Right(PatternVar(name)))), ???)
   def %(index: Int): Pick[Var, Pattern] = Pick(Var(index), Pattern(Left(Var(index))))
   def app(a: Pattern, b: Pattern): Pattern = Pattern(Left(App(a, b)))
   def lam(e: Pattern): Pattern = Pattern(Left(Lambda(e)))
-  def depApp[K <: Kind](f: Pattern, x: K#T) = Pattern(Left(DepApp(f, x)))
-  def depLam(kind: Kind, e: Pattern): Pattern = Pattern(Left(DepLambda(kind, e)))
+  def nApp(f: Pattern, x: NatPattern) = Pattern(Left(NatApp(f, x)))
+  def nLam(kind: Kind, e: Pattern): Pattern = Pattern(Left(NatLambda(e)))
   def l(d: semantics.Data): Pattern = Pattern(Left(Literal(d)))
 
   def prim(p: rise.core.Primitive): Pattern = Pattern(Left(Primitive(p)))
@@ -114,4 +114,8 @@ object PatternDSL {
   def add: Pattern = prim(rcp.add.primitive)
   def mul: Pattern = prim(rcp.mul.primitive)
   def div: Pattern = prim(rcp.div.primitive)
+  def drop: Pattern = prim(rcp.drop.primitive)
+  def take: Pattern = prim(rcp.take.primitive)
+
+  def cst(v: Int): NatPattern = NatPatternNode(NatCst(v))
 }

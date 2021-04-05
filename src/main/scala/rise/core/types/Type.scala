@@ -2,8 +2,12 @@ package rise.core.types
 
 import arithexpr.arithmetic.RangeAdd
 import rise.core._
+import rise.core.equality._
 
-sealed trait Type
+sealed trait Type {
+  def =~=(b: Type): Boolean = typeAlphaEq[TypeKind](this)(b)
+  def =~~=(b: Type): Boolean = typePartialAlphaEq[TypeKind](this)(b)
+}
 
 object TypePlaceholder extends Type {
   override def toString: String = "?"
@@ -26,12 +30,6 @@ final case class DepFunType[K <: Kind: KindName, T <: Type](
 ) extends Type {
   override def toString: String =
     s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
-
-  override def equals(obj: Any): Boolean = obj match {
-    case other: DepFunType[K, _] =>
-      t == lifting.liftDependentFunctionType[K](other)(x)
-    case _ => false
-  }
 }
 
 // == Data types ==============================================================
@@ -46,11 +44,6 @@ final case class DataTypeIdentifier(name: String,
   override def toString: String = if (isExplicit) name else "_" + name
   override def asExplicit: DataTypeIdentifier = this.copy(isExplicit = true)
   override def asImplicit: DataTypeIdentifier = this.copy(isExplicit = false)
-  override def equals(that: Any): Boolean = that match {
-    case d: DataTypeIdentifier => this.name == d.name
-    case _                     => false
-  }
-  override def hashCode(): Int = this.name.hashCode()
 }
 
 sealed trait ScalarType extends DataType
@@ -93,6 +86,64 @@ final case class PairType(dt1: DataType, dt2: DataType) extends DataType {
   override def toString: String = s"($dt1, $dt2)"
 }
 
+sealed trait MatrixLayout
+
+object MatrixLayout {
+  object Row_Major extends MatrixLayout { override def toString = "Row_Major" }
+  object Col_Major extends MatrixLayout { override def toString = "Col_Major" }
+}
+
+final case class MatrixLayoutIdentifier(
+                                         name: String,
+                                         override val isExplicit: Boolean = false
+                                       ) extends MatrixLayout
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: MatrixLayoutIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: MatrixLayoutIdentifier =
+    this.copy(isExplicit = false)
+}
+
+sealed trait FragmentKind
+
+object FragmentKind {
+  object AMatrix extends FragmentKind { override def toString = "AMatrix"}
+  object BMatrix extends FragmentKind { override def toString = "BMatrix"}
+  object Acuumulator extends FragmentKind { override def toString = "Acuumulator"}
+}
+
+final case class FragmentKindIdentifier(name: String,
+                                        override val isExplicit: Boolean = false
+                                       ) extends FragmentKind
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: FragmentKindIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: FragmentKindIdentifier =
+    this.copy(isExplicit = false)
+}
+
+object FragmentType {
+  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType = {
+    FragmentType(rows, columns, d3, dataType, FragmentKind.Acuumulator, MatrixLayout.Row_Major)
+  }
+}
+
+final case class FragmentType(rows: Nat,
+                              columns: Nat,
+                              d3: Nat,
+                              dataType: DataType,
+                              fragmentKind: FragmentKind,
+                              layout: MatrixLayout) extends DataType {
+  override def toString: String =
+    if (fragmentKind == FragmentKind.Acuumulator)
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
+    else
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
+
+}
+
 
 final case class DepPairType[K <: Kind: KindName](
                             x: K#I,
@@ -106,16 +157,6 @@ final case class DepPairType[K <: Kind: KindName](
 
   override def toString: String =
     s"(${x.name}: ${kindName.get} ** $t)"
-
-  override def equals(obj: Any): Boolean = obj match {
-    case other: DepPairType[K] =>
-      t == substitute.kindInType[K, DataType](
-        this.x, `for` = other.x, in = other.t
-      )
-    case _ => false
-  }
-
-  override def hashCode(): Int = super.hashCode()
 }
 
 

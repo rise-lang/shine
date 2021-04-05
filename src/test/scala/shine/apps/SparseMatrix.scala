@@ -34,7 +34,7 @@ class SparseMatrix extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     Executor.loadAndInit()
 
@@ -63,11 +63,11 @@ class SparseMatrix extends idealised.util.Tests {
 
     //    def print1D[T]: Array[T] => String = x => x.mkString("[", ", ", "]")
     //    def print2D[T]: Array[Array[T]] => String = x => x.map(print1D).mkString("[\n  ", ",\n  ", "\n]")
-    //    println(s"Vector\n: ${print1D(vector)}")
-    //    println(s"Matrix\n: ${print2D(matrix)}")
-    //    println(s"Dict\n: ${print1D(dict)}")
-    //    println(s"\nGold\n: ${print1D(gold)}")
-    //    println(s"\nOutput\n: ${print1D(output)}")
+    //    logger.debug(s"Vector\n: ${print1D(vector)}")
+    //    logger.debug(s"Matrix\n: ${print2D(matrix)}")
+    //    logger.debug(s"Dict\n: ${print1D(dict)}")
+    //    logger.debug(s"\nGold\n: ${print1D(gold)}")
+    //    logger.debug(s"\nOutput\n: ${print1D(output)}")
 
     Executor.shutdown()
   }
@@ -97,7 +97,7 @@ class SparseMatrix extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     Executor.loadAndInit()
 
@@ -127,11 +127,11 @@ class SparseMatrix extends idealised.util.Tests {
 
     //    def print1D[T]: Array[T] => String = x => x.mkString("[", ", ", "]")
     //    def print2D[T]: Array[Array[T]] => String = x => x.map(print1D).mkString("[\n  ", ",\n  ", "\n]")
-    //    println(s"Vector\n: ${print1D(vector)}")
-    //    println(s"Matrix\n: ${print2D(matrix)}")
-    //    println(s"Dict\n: ${print1D(dict)}")
-    //    println(s"\nGold\n: ${print1D(gold)}")
-    //    println(s"\nOutput\n: ${print1D(output)}")
+    //    logger.debug(s"Vector\n: ${print1D(vector)}")
+    //    logger.debug(s"Matrix\n: ${print2D(matrix)}")
+    //    logger.debug(s"Dict\n: ${print1D(dict)}")
+    //    logger.debug(s"\nGold\n: ${print1D(gold)}")
+    //    logger.debug(s"\nOutput\n: ${print1D(output)}")
 
     Executor.shutdown()
   }
@@ -163,7 +163,7 @@ class SparseMatrix extends idealised.util.Tests {
 
     val code = p.code
     //SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     Executor.loadAndInit()
 
@@ -191,12 +191,12 @@ class SparseMatrix extends idealised.util.Tests {
 
     //    def print1D[T]: Array[T] => String = x => x.mkString("[", ", ", "]")
     //    def print2D[T]: Array[Array[T]] => String = x => x.map(print1D).mkString("[\n  ", ",\n  ", "\n]")
-    //    println(s"Vector\n: ${print1D(vector)}")
-    //    println(s"Matrix\n: ${print2D(matrix)}")
-    //    println(s"Row lengths\n: ${print1D(rowLengths)}")
-    //    println(s"Dict\n: ${print1D(dict)}")
-    //    println(s"\nGold\n: ${print1D(gold)}")
-    //    println(s"\nOutput\n: ${print1D(output)}")
+    //    logger.debug(s"Vector\n: ${print1D(vector)}")
+    //    logger.debug(s"Matrix\n: ${print2D(matrix)}")
+    //    logger.debug(s"Row lengths\n: ${print1D(rowLengths)}")
+    //    logger.debug(s"Dict\n: ${print1D(dict)}")
+    //    logger.debug(s"\nGold\n: ${print1D(gold)}")
+    //    logger.debug(s"\nOutput\n: ${print1D(output)}")
 
     Executor.shutdown()
 
@@ -237,7 +237,7 @@ class SparseMatrix extends idealised.util.Tests {
 
     val code = p.code
     //SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     Executor.loadAndInit()
 
@@ -266,12 +266,12 @@ class SparseMatrix extends idealised.util.Tests {
     /*
        def print1D[T]: Array[T] => String = x => x.mkString("[", ", ", "]")
         def print2D[T]: Array[Array[T]] => String = x => x.map(print1D).mkString("[\n  ", ",\n  ", "\n]")
-        println(s"Vector\n: ${print1D(vector)}")
-        println(s"Matrix\n: ${print2D(xCoords.zip(values).map(x => x._1.zip(x._2)))}")
-        println(s"Row lengths\n: ${print1D(rowLengths)}")
-        println(s"Dict\n: ${print1D(dict)}")
-        println(s"\nGold\n: ${print1D(gold)}")
-        println(s"\nOutput\n: ${print1D(output)}")
+        logger.debug(s"Vector\n: ${print1D(vector)}")
+        logger.debug(s"Matrix\n: ${print2D(xCoords.zip(values).map(x => x._1.zip(x._2)))}")
+        logger.debug(s"Row lengths\n: ${print1D(rowLengths)}")
+        logger.debug(s"Dict\n: ${print1D(dict)}")
+        logger.debug(s"\nGold\n: ${print1D(gold)}")
+        logger.debug(s"\nOutput\n: ${print1D(output)}")
 
      */
 

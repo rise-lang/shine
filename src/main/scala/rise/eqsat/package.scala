@@ -3,8 +3,38 @@ package rise
 import scala.collection.mutable
 
 package object eqsat {
+  trait NodeTypes {
+    type E // Expr
+    type T // Type
+    type DT // DataType
+    type N // Nat
+  }
+  object EChildren extends NodeTypes {
+    type E = EClassId
+    type T = Type
+    type DT = DataType
+    type N = Nat
+  }
+  object ExprChildren extends NodeTypes {
+    type E = Expr
+    type T = Type
+    type DT = DataType
+    type N = Nat
+  }
+  object NoChildren extends NodeTypes {
+    type E = ()
+    type T = ()
+    type DT = ()
+    type N = ()
+  }
+
+  type TypePattern = Type
+  type DataTypePattern = DataType
+  type PNode = Node[Pattern, NatPattern, DataTypePattern]
+
+  type ENode = Node[EClassId, Nat, DataType]
+
   case class EClassId(i: Int)
-  type ENode = Node[EClassId]
 
   type Vec[T] = mutable.ArrayBuffer[T]
   val Vec: mutable.ArrayBuffer.type = mutable.ArrayBuffer
