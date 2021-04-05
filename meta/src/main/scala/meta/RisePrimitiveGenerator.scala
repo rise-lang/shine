@@ -3,6 +3,7 @@ package meta
 import fastparse.{Parsed, parse}
 import meta.NatParser.NatAST
 import meta.TypeParser.TypeAST
+import meta.TypeParser.TypeAST.{FragmentAST, MatrixLayoutAST}
 
 object RisePrimitiveGenerator {
   def main(args: Array[String]): Unit = {
@@ -169,6 +170,8 @@ import arithexpr.arithmetic._
         q"rise.core.types.ArrayType(${generateNat(size, env)}, ${generateTypeScheme(elemType, env)})"
       case TypeAST.DepArrayType(size, fdt) =>
         q"rise.core.types.DepArrayType(${generateNat(size, env)}, ${generateTypeScheme(fdt, env)})"
+      case TypeAST.FragmentType(n, m, k, elemType, fKind, mLayout) =>
+        q"rise.core.types.FragmentType(${generateNat(n, env)}, ${generateNat(m, env)}, ${generateNat(k, env)}, ${generateTypeScheme(elemType, env)}, ${generateFragment(fKind, env)}, ${generateMatrixLayout(mLayout, env)})"
     }
   }
 
@@ -178,6 +181,8 @@ import arithexpr.arithmetic._
     case "nat2nat" => "NatToNat"
     case "nat2data" => "NatToData"
     case "address" => "AddressSpace"
+    case "fragment" => "FragmentKind"
+    case "matrixLayout" => "MatrixLayout"
   }
 
   def generateNat(n: NatAST, env: Map[TypeAST.Identifier, String]): scala.meta.Term = {
@@ -211,6 +216,34 @@ import arithexpr.arithmetic._
               upTo = ${generateNat(upTo, env)},
               (${Term.Name(id.id.name)}: Nat) => ${generateNat(body, env.updated(id.id, "nat"))})
          """
+    }
+  }
+
+  def generateFragment(fragmentAST: FragmentAST, env: Map[TypeAST.Identifier, String]): scala.meta.Term = {
+    import scala.meta._
+    fragmentAST match {
+      case FragmentAST.Identifier(id) =>
+        assert(env.contains(id), s"$id is not in $env")
+        Term.Name(id.name)
+      case FragmentAST.ACC =>
+        q"rise.core.types.FragmentKind.Acuumulator"
+      case FragmentAST.A =>
+        q"rise.core.types.FragmentKind.AMatrix"
+      case FragmentAST.B =>
+        q"rise.core.types.FragmentKind.BMatrix"
+    }
+  }
+
+  def generateMatrixLayout(matrixLayoutAST: MatrixLayoutAST, env: Map[TypeAST.Identifier, String]): scala.meta.Term = {
+    import scala.meta._
+    matrixLayoutAST match {
+      case MatrixLayoutAST.Identifier(id) =>
+        assert(env.contains(id), s"$id is not in $env")
+        Term.Name(id.name)
+      case MatrixLayoutAST.ROW_MAJOR =>
+        q"rise.core.types.MatrixLayout.Row_Major"
+      case MatrixLayoutAST.COL_MAJOR =>
+        q"rise.core.types.MatrixLayout.Col_Major"
     }
   }
 

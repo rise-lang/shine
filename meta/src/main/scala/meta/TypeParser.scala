@@ -3,6 +3,7 @@ package meta
 import fastparse.ScalaWhitespace._
 import fastparse._
 import meta.NatParser._
+import meta.TypeParser.TypeAST.{FragmentAST, MatrixLayoutAST}
 
 object TypeParser {
 
@@ -23,9 +24,26 @@ object TypeParser {
     case class NatToDataLambda(id: Identifier, t: TypeAST) extends TypeAST
     case class ArrayType(size: NatAST, elemType: TypeAST) extends TypeAST
     case class DepArrayType(size: NatAST, fdt: TypeAST) extends TypeAST
+    case class FragmentType(n: NatAST, m: NatAST, k: NatAST, elemType: TypeAST,
+                            fKind: FragmentAST, mLayout: MatrixLayoutAST) extends TypeAST
+
+    sealed trait FragmentAST
+    object FragmentAST {
+      case class Identifier(id: TypeAST.Identifier) extends FragmentAST
+      object ACC extends FragmentAST
+      object A extends FragmentAST
+      object B extends FragmentAST
+    }
+
+    sealed trait MatrixLayoutAST
+    object MatrixLayoutAST {
+      case class Identifier(id: TypeAST.Identifier) extends MatrixLayoutAST
+      object ROW_MAJOR extends MatrixLayoutAST
+      object COL_MAJOR extends MatrixLayoutAST
+    }
 
     object Kind extends Enumeration {
-      val Data, Nat, Nat2Nat, Nat2Data, Address, Function = Value
+      val Data, Nat, Nat2Nat, Nat2Data, Address, Fragment, MatrixLayout, Function = Value
 
       def fromString(s: String): Value = s match {
         case "data" => Data
@@ -33,6 +51,8 @@ object TypeParser {
         case "nat2nat" => Nat2Nat
         case "nat2data" => Nat2Data
         case "address" => Address
+        case "fragment" => Fragment
+        case "matrixLayout" => MatrixLayout
       }
     }
   }
@@ -92,7 +112,8 @@ object TypeParser {
 
   def TypeIdentifier[_: P]: P[TypeAST.Identifier] = P( Identifier ).map(TypeAST.Identifier)
 
-  def Kind[_: P]: P[String] = P( "data".! | "address".! | "nat2nat".! | "nat2data".! | "nat".! )
+  def Kind[_: P]: P[String] =
+    P( "data".! | "address".! | "nat2nat".! | "nat2data".! | "nat".! | "fragment".! | "matrixLayout".! )
 
   // Types that can appear at the left of an function arrow
   def LeftTypeSignature[_: P]: P[TypeAST] = P( DataType | ("(" ~ TypeSignature ~ ")") )
@@ -103,7 +124,7 @@ object TypeParser {
     P( "(" ~ NoCut(LeftDataType) ~ "," ~/ DataType ~ ")" ).map(TypeAST.PairType.tupled)
 
   def LeftDataType[_: P]: P[TypeAST] =
-    P(  ScalarType | NatType | IndexType | VectorType | DepArrayType |
+    P(  ScalarType | NatType | IndexType | VectorType | FragementType | DepArrayType |
         ArrayType | DepPairType | NatToDataApply | TypeIdentifier | ("(" ~ DataType ~ ")") )
 
   def ScalarType[_: P]: P[TypeAST.ScalarType] =
@@ -116,7 +137,25 @@ object TypeParser {
 
   def IndexType[_: P]: P[TypeAST.IndexType] = P( "idx[" ~ Nat ~ "]" ).map(TypeAST.IndexType)
 
-  def VectorType[_: P]: P[TypeAST.VectorType] = P( "vec[" ~ DataType ~ "," ~ Nat ~ "]"  ).map(t => TypeAST.VectorType(t._2, t._1))
+  def VectorType[_: P]: P[TypeAST.VectorType] =
+    P( "vec[" ~ DataType ~ "," ~ Nat ~ "]"  ).map(t => TypeAST.VectorType(t._2, t._1))
+
+  def FragementType[_: P]: P[TypeAST.FragmentType] =
+    P( "fragment["~ Nat ~","~ Nat ~","~ Nat ~","~ DataType ~","~ FragmentKind ~","~ MatrixLayout ~"]").
+      map(TypeAST.FragmentType.tupled)
+
+  def FragmentKind[_: P]: P[FragmentAST] =
+    P( ("fragment." ~~ (
+      "ACC".!.map(_ => FragmentAST.ACC) |
+      "A".!.map(_ => FragmentAST.A) |
+      "B".!.map(_ => FragmentAST.B))
+      ) | TypeIdentifier.map(FragmentAST.Identifier) )
+
+  def MatrixLayout[_: P]: P[MatrixLayoutAST] =
+    P( ("matrixLayout." ~~ (
+      "ROW_MAJOR".!.map(_ => MatrixLayoutAST.ROW_MAJOR) |
+      "COLUMN_MAJOR".!.map(_ => MatrixLayoutAST.COL_MAJOR))
+      ) | TypeIdentifier.map(MatrixLayoutAST.Identifier) )
 
   def DepArrayType[_: P]: P[TypeAST.DepArrayType] =
     P( Nat ~ ".." ~/ NatToData ).map(TypeAST.DepArrayType.tupled)
@@ -214,6 +253,16 @@ object TypeParser {
           k2 <- kindOf(fdt, env)
           if k1 == Nat && k2 == Nat2Data
         } yield Data
+      case TypeAST.FragmentType(n, m, k, elemType, fKind, mLayout) =>
+        for {
+          k1 <- kindOf(n, env)
+          k2 <- kindOf(m, env)
+          k3 <- kindOf(k, env)
+          k4 <- kindOf(elemType, env)
+          k5 <- kindOf(fKind, env)
+          k6 <- kindOf(mLayout, env)
+          if k1 == Nat && k2 == Nat && k3 == Nat && k4 == Data && k5 == Fragment && k6 == TypeAST.Kind.MatrixLayout
+        } yield Data
       case _: TypeAST.ScalarType | TypeAST.NatType =>
         Some(Data)
     }
@@ -255,6 +304,24 @@ object TypeParser {
           k3 <- kindOf(body, nEnv)
           if k1 == Nat && k2 == Nat && k3 == Nat
         } yield Nat
+    }
+  }
+
+  def kindOf(fragmentAST: TypeAST.FragmentAST,
+             env: Map[TypeAST.Identifier, TypeAST.Kind.Value]): Option[TypeAST.Kind.Value] = {
+    fragmentAST match {
+      case FragmentAST.Identifier(id) =>
+        env.get(id)
+      case FragmentAST.ACC | FragmentAST.A | FragmentAST.B => Some(Fragment)
+    }
+  }
+
+  def kindOf(matrixLayout: TypeAST.MatrixLayoutAST,
+             env: Map[TypeAST.Identifier, TypeAST.Kind.Value]): Option[TypeAST.Kind.Value] = {
+    matrixLayout match {
+      case MatrixLayoutAST.Identifier(id) =>
+        env.get(id)
+      case MatrixLayoutAST.ROW_MAJOR | MatrixLayoutAST.COL_MAJOR => Some(TypeAST.Kind.MatrixLayout)
     }
   }
 }
