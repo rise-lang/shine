@@ -47,18 +47,37 @@ object TypeParser {
     P( "(" ~ Index ~ ScalaFunArg.repTC(1) ~ Index  ~ ")" )
 
   def PrimitiveDeclaration[_: P]: P[(String, Option[(Int, Int)], TypeAST)] =
-    P( "def" ~ Identifier ~ ScalaFunArgs.? ~ ":" ~ TypeSignature ~ ";")
+    P( "def" ~ Identifier ~ ScalaFunArgs.? ~ ":" ~ TypeSignature)
 
-  def Identifier[_: P]: P[String] =
-    P( CharPred(_.isLower).! ~~ (CharIn("0-9") | CharIn("a-z") | CharIn("A-Z")).rep.! ).
-      map(t => t._1 ++ t._2).
-      filter(!_.contains(' ')).
-      filter(!Seq(
-        "data", "address", "nat2nat", "nat2data", "nat", "natType", "def",
-        "bool", "int", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f16", "f32", "f64"
-      ).contains(_))
+  case class NamedPredicate(f: Char => Boolean)
+                           (implicit name: sourcecode.Name) extends (Char => Boolean){
+    def apply(t: Char): Boolean = f(t)
+    override def toString(): String = name.value
+  }
 
-  def TypeSignature[_: P]: P[TypeAST] = P( FunType | DepFunType | ImplicitDepFunType | LeftTypeSignature )
+  def Lower[_: P]: P[String] = {
+    val LowerChar = NamedPredicate(CharPredicates.isLower)
+    P( CharPred(LowerChar).! )
+  }
+  def IdRest[_: P]: P[String] = {
+    val IdCharacter = NamedPredicate(c => CharPredicates.isLetter(c) || CharPredicates.isDigit(c))
+    P( CharsWhile(IdCharacter).! )
+  }
+
+  def Identifier[_: P]: P[String] = {
+    P( (!Keywords ~ Lower ~~ IdRest.?).map{
+      case (prefix, Some(suffix)) => prefix ++ suffix
+      case (string, None) => string
+    } )
+  }
+
+  def Keywords[_: P]: P[Unit] =
+    P(StringIn(
+      "data", "address", "nat2nat", "nat2data", "nat", "natType", "def",
+      "bool", "int", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f16", "f32", "f64"
+    ) ~~ CharPred(_.isWhitespace))
+
+  def TypeSignature[_: P]: P[TypeAST] = P( DepFunType | ImplicitDepFunType | FunType | LeftTypeSignature )
 
   def FunType[_: P]: P[TypeAST.FunType] =
     P( NoCut(LeftTypeSignature) ~ "->" ~/ TypeSignature ).map(TypeAST.FunType.tupled)
@@ -97,7 +116,7 @@ object TypeParser {
 
   def IndexType[_: P]: P[TypeAST.IndexType] = P( "idx[" ~ Nat ~ "]" ).map(TypeAST.IndexType)
 
-  def VectorType[_: P]: P[TypeAST.VectorType] = P( "<" ~ Nat ~ ">" ~/ DataType  ).map(TypeAST.VectorType.tupled)
+  def VectorType[_: P]: P[TypeAST.VectorType] = P( "vec[" ~ DataType ~ "," ~ Nat ~ "]"  ).map(t => TypeAST.VectorType(t._2, t._1))
 
   def DepArrayType[_: P]: P[TypeAST.DepArrayType] =
     P( Nat ~ ".." ~/ NatToData ).map(TypeAST.DepArrayType.tupled)
