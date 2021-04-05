@@ -188,6 +188,8 @@ import arithexpr.arithmetic._
         Term.Name(id.name)
       case NatAST.Number(n) =>
         n.parse[Term].get
+      case NatAST.BinaryOp(lhs, "^", rhs) =>
+        q"${generateNat(lhs, env)}.pow(${generateNat(rhs, env)})"
       case NatAST.BinaryOp(lhs, op, rhs) =>
         q"${generateNat(lhs, env)} ${Term.Name(op)} ${generateNat(rhs, env)}"
       case NatAST.TernaryOp(cond, thenN, elseN) =>
