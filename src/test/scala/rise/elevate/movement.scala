@@ -24,9 +24,7 @@ class movement extends test_util.Tests {
     // TODO: investigate why type erasure is required here
     // https://github.com/rise-lang/shine/issues/86
     val uab: Rise = eraseType(na) :: nb.t
-    val ca = makeClosed(uab)
-    val cb = makeClosed(nb)
-    ca == cb
+    makeClosed(uab) =~= makeClosed(nb)
   }
 
   test("**f >> T -> T >> **f") {
@@ -51,7 +49,7 @@ class movement extends test_util.Tests {
           (transpose o map(fun(ac =>
             map(fun(bc =>
               (fun(x => (x * alpha) + beta * bc._2) o
-                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(l(0.0f))) $
+                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(lf32(0.0f))) $
                 zip(ac._1)(bc._1))) $
               zip(transpose(b))(ac._2)))) $
             zip(a)(c)

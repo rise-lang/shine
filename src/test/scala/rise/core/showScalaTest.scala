@@ -25,7 +25,7 @@ class showScalaTest extends test_util.Tests {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
-    }))(l(0.0f))(zip(join(elem))(weights))
+    }))(lf32(0.0f))(zip(join(elem))(weights))
   )
 
   test("show dotElemWeights as an example") {
@@ -37,17 +37,17 @@ class showScalaTest extends test_util.Tests {
     val untypedScala = prefixImports(showScala.expr(dotElemWeights))
     val typedScala = prefixImports(showScala.expr(typedDotElemWeights))
 
-    println(untypedScala)
-    println(typedScala)
+    logger.debug(untypedScala)
+    logger.debug(typedScala)
 
     val toolbox = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
     val expr = toolbox.eval(toolbox.parse(untypedScala)).asInstanceOf[Expr]
     val typedExpr = toolbox.eval(toolbox.parse(typedScala)).asInstanceOf[Expr]
 
-    println(expr)
-    println(typedExpr)
+    logger.debug(expr)
+    logger.debug(typedExpr)
 
-    assert(expr == dotElemWeights.toUntypedExpr)
-    assert(typedExpr == typedDotElemWeights)
+    assert(expr =~~= dotElemWeights.toUntypedExpr)
+    assert(typedExpr =~~= typedDotElemWeights)
   }
 }

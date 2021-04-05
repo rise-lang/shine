@@ -16,13 +16,14 @@ lazy val commonSettings = Seq(
 )
 
 lazy val riseAndShine = (project in file("."))
-  .aggregate(executor)
-  .dependsOn(meta, riseAndShineMacros, arithExpr, executor, elevate)
+  .aggregate(executor, CUexecutor)
+  .dependsOn(meta, riseAndShineMacros, arithExpr, executor, CUexecutor, elevate)
   .settings(
     name          := "riseAndShine",
     version       := "1.0",
 
-    javaOptions ++= Seq("-Djava.library.path=lib/executor/lib/Executor/build", "-Xss26m"),
+    javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build",
+      "-DexecuteCudaTests=false", "-Xss26m"),
 
     commonSettings,
 
@@ -36,6 +37,8 @@ lazy val riseAndShine = (project in file("."))
         // testing
         "junit" % "junit" % "4.11",
         "org.scalatest" %% "scalatest" % "3.1.0" % "test",
+        "org.apache.logging.log4j" % "log4j-core" % "2.14.1",
+        "org.apache.logging.log4j" %% "log4j-api-scala" % "12.0",
         // json
         "com.typesafe.play" %% "play-json" % "2.9.1"
     ),
@@ -75,6 +78,8 @@ lazy val riseAndShineMacros = (project in file("macros"))
 lazy val arithExpr  = project in file("lib/arithexpr")
 
 lazy val executor   = project in file("lib/executor")
+
+lazy val CUexecutor = project in file("lib/yacx")
 
 lazy val elevate    = project in file("lib/elevate")
 

@@ -17,14 +17,14 @@ class fissionFusion extends test_util.Tests {
   val BENF = rise.elevate.strategies.normalForm.BENF()(RiseTraversable)
 
   def eq(a: Expr, b: Expr): Unit = {
-    if (BENF(a).get != BENF(b).get) {
-      throw new Exception(s"expected structural equality:\n$a\n$b")
+    if (! (BENF(a).get =~= BENF(b).get)) {
+      throw new Exception(s"expected alpha equivalence:\n$a\n$b")
     }
   }
 
   def check(a: Expr, fis: Strategy[Rise], b: Expr, fus: Strategy[Rise]): Unit = {
-    val (closedA, nA) = makeClosed(a)
-    val (closedB, nB) = makeClosed(b)
+    val (closedA, nA) = makeClosed.withCount(a)
+    val (closedB, nB) = makeClosed.withCount(b)
     val na = BENF(closedA).get
     val nb = BENF(closedB).get
     eq(position(nA)(fis).apply(na).get, nb)

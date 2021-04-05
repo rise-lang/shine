@@ -19,7 +19,7 @@ class showRise extends test_util.Tests {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
-    }))(l(0.0f))(zip(join(elem))(weights))
+    }))(lf32(0.0f))(zip(join(elem))(weights))
   )
 
   private val blurXTiled2D: Expr = depFun((n: Nat) =>
@@ -46,7 +46,7 @@ class showRise extends test_util.Tests {
     }
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, defaultUnicodeConfig)
-    println(show)
+    logger.debug(show)
   }
 
   test("compare the result with simple implementations") {
@@ -128,6 +128,6 @@ class showRise extends test_util.Tests {
     }
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, UnicodeConfig("│╭├╰├╩╦╬═ ──"))
-    println(show)
+    logger.debug(show)
   }
 }

@@ -37,11 +37,6 @@ final case class NatCollectionIdentifier(
       this.copy(isExplicit = true)
   override def asImplicit: NatCollectionIdentifier =
     this.copy(isExplicit = false)
-  override def equals(that: Any): Boolean = that match {
-    case ident: NatCollectionIdentifier => this.name == ident.name
-    case _                        => false
-  }
-  override def hashCode(): Int = this.name.hashCode()
 }
 
 /**

@@ -11,7 +11,7 @@ class multiscaleInterpolationCheck extends test_util.TestsWithExecutor {
   private val W = 80
 
   test("interpolate typechecks") {
-    println(interpolate(levels, 1).t)
+    logger.debug(interpolate(levels, 1).t)
   }
 
   def lowerOMP(e: ToBeTyped[Expr]): Expr =

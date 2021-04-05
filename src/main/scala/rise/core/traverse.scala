@@ -39,6 +39,8 @@ object traverse {
       case n: NatIdentifier => bind(typeIdentifier(vt)(n))(nat)
       case dt: DataTypeIdentifier => bind(typeIdentifier(vt)(dt))(datatype)
       case a: AddressSpaceIdentifier => bind(typeIdentifier(vt)(a))(addressSpace)
+      case m: MatrixLayoutIdentifier => bind(typeIdentifier(vt)(m))(matrixLayout)
+      case f: FragmentKindIdentifier => bind(typeIdentifier(vt)(f))(fragmentKind)
       case n2n: NatToNatIdentifier => bind(typeIdentifier(vt)(n2n))(natToNat)
       case n2d: NatToDataIdentifier => bind(typeIdentifier(vt)(n2d))(natToData)
       case t: TypeIdentifier => typeIdentifier(vt)(t)
@@ -50,6 +52,8 @@ object traverse {
     }
 
     def addressSpace : AddressSpace => M[AddressSpace] = return_
+    def matrixLayout : MatrixLayout => M[MatrixLayout] = return_
+    def fragmentKind : FragmentKind => M[FragmentKind] = return_
     def datatype : DataType => M[DataType] = {
       case i: DataTypeIdentifier => return_(i.asInstanceOf[DataType])
       case NatType               => return_(NatType : DataType)
@@ -61,10 +65,10 @@ object traverse {
         for {n1 <- natDispatch(Reference)(n); n2d1 <- natToData(n2d)}
           yield DepArrayType(n1, n2d1)
       case PairType(p1, p2) =>
-        for {p11 <- datatype(p1); p21 <- datatype(p2)}
+        for {p11 <- `type`(p1); p21 <- `type`(p2)}
           yield PairType(p11, p21)
       case pair@DepPairType(x, e) =>
-        for {x1 <- typeIdentifierDispatch(Binding)(x); e1 <- datatype(e)}
+        for {x1 <- typeIdentifierDispatch(Binding)(x); e1 <- `type`(e)}
           yield DepPairType(x1, e1)(pair.kindName)
       case IndexType(n) =>
         for {n1 <- natDispatch(Reference)(n)}
@@ -72,6 +76,10 @@ object traverse {
       case VectorType(n, e) =>
         for {n1 <- natDispatch(Reference)(n); e1 <- `type`(e)}
           yield VectorType(n1, e1)
+      case FragmentType(rows, columns, d3, dt, fragKind, layout) =>
+        for {rows1 <- nat(rows); columns1 <- nat(columns); d31 <- nat(d3); dt1 <- datatype(dt);
+          fragKind1 <- fragmentKind(fragKind); layout1 <- matrixLayout(layout)}
+        yield FragmentType(rows1, columns1, d31, dt1, fragKind1, layout1)
       case NatToDataApply(ntdf, n) =>
         for {ntdf1 <- natToData(ntdf); n1 <- natDispatch(Reference)(n)}
           yield NatToDataApply(ntdf1, n1)
@@ -87,7 +95,7 @@ object traverse {
     def natToData : NatToData => M[NatToData] = {
       case i : NatToDataIdentifier => return_(i.asInstanceOf[NatToData])
       case NatToDataLambda(x, e) =>
-        for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- datatype(e) }
+        for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- `type`(e) }
           yield NatToDataLambda(x1, e1)
     }
 
@@ -162,7 +170,7 @@ object traverse {
           for {f1 <- expr(f); n1 <- natDispatch(Reference)(n); t1 <- `type`(da.t)}
             yield DepApp[NatKind](f1, n1)(t1)
         case dt: DataType =>
-          for {f1 <- expr(f); dt1 <- datatype(dt); t1 <- `type`(da.t)}
+          for {f1 <- expr(f); dt1 <- `type`(dt); t1 <- `type`(da.t)}
             yield DepApp[DataKind](f1, dt1)(t1)
         case a: AddressSpace =>
           for {f1 <- expr(f); a1 <- addressSpace(a); t1 <- `type`(da.t)}

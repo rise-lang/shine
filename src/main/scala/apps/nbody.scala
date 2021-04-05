@@ -73,7 +73,7 @@ object nbody {
     val xyz = fst(xyzvXYZ)
     val vXYZ = snd(xyzvXYZ)
     def p(f: ToBeTyped[Expr]): ToBeTyped[Expr] =
-      f(xyz) + f(vXYZ) * deltaT + l(0.5f) * f(acceleration) * deltaT * deltaT
+      f(xyz) + f(vXYZ) * deltaT + lf32(0.5f) * f(acceleration) * deltaT * deltaT
     def v(f: ToBeTyped[Expr]): ToBeTyped[Expr] =
       f(vXYZ) + f(acceleration) * deltaT
     makePair(
@@ -91,7 +91,7 @@ object nbody {
   )((x, y, z, velX, velY, velZ, mass, espSqr, deltaT) =>
     map(fun(p1 =>
       fun(acceleration => updateScal(p1, deltaT, acceleration)) o
-      reduce(addScal)(makePair(l(0.0f))(makePair(l(0.0f))(l(0.0f)))) o
+      reduce(addScal)(makePair(lf32(0.0f))(makePair(lf32(0.0f))(lf32(0.0f)))) o
       map(fun(p2m =>
         calcAccScal(fst(p1), fst(p2m), snd(p2m), espSqr)
       )) $ zip(zip(x)(zip(y)(z)))(mass)
@@ -105,7 +105,7 @@ object nbody {
       update(fst(p1))(snd(p1))(deltaT) o
       oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
         calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
-      ))(vectorFromScalar(l(0.0f))) $ pos
+      ))(vectorFromScalar(lf32(0.0f))) $ pos
     )) $ zip(pos)(vel)
   ))
 
@@ -136,7 +136,7 @@ object nbody {
                     )) $ zip(newP1Chunk)(accDim2._2)
                   )) $ zip(p2Local)(acc)
                 )
-              )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(l(0.0f))))))))
+              )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(lf32(0.0f))))))))
             o split(tileY) o split(tileX) $ pos
           // TODO: toPrivate when it works..
         ) $ zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)

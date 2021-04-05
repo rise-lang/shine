@@ -15,7 +15,7 @@ class MemAccess extends idealised.util.TestsWithExecutor {
   def printSyntaxCheckAnd(exec: KernelNoSizes => Array[Float], prog: Expr): Array[Float] = {
      val kernel = idealised.OpenCL.KernelGenerator
       .makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(prog, Map())))
-    println(kernel.code)
+    logger.debug(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
     exec(kernel)
@@ -42,7 +42,7 @@ class MemAccess extends idealised.util.TestsWithExecutor {
     val prog = fun(ArrayType(N, float))(x => x :>> mapSeq(id))
 
     val output = printSyntaxCheckAnd(runWithVectorInput, prog)
-    println(output)
+    logger.debug(output)
     fail()
   }
 
@@ -63,7 +63,7 @@ class MemAccess extends idealised.util.TestsWithExecutor {
           mapWorkgroup(fun(x => toGlobal(mapLocal(id, x)))))
 
     val output = printSyntaxCheckAnd(runWithMatrixInput, prog)
-    println(output)
+    logger.debug(output)
 
     fail()
   }
@@ -76,7 +76,7 @@ class MemAccess extends idealised.util.TestsWithExecutor {
             mapWorkgroup(fun(x => toGlobal(mapLocal(id, x)))))
 
     val output = printSyntaxCheckAnd(runWithMatrixInput, prog)
-    println(output)
+    logger.debug(output)
 
     fail()
   }
@@ -89,7 +89,7 @@ class MemAccess extends idealised.util.TestsWithExecutor {
           join())
 
     val output = printSyntaxCheckAnd(runWithMatrixInput, prog)
-    println(output)
+    logger.debug(output)
     fail()
   }
 
