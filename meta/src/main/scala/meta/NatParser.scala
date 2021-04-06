@@ -17,31 +17,43 @@ object NatParser {
     case class Sum(id: Identifier, from: NatAST, upTo: NatAST, body: NatAST) extends NatAST
   }
 
-  def Nat[_: P]: P[NatAST] = P( CompOrNat )
+  def Nat[_: P]: P[NatAST] = {
+    def CompOrNat: P[NatAST] = {
+      def CompOp: P[String] = P("<".! | ">".!)
+      P(AddSubOrNat ~ (CompOp ~/ AddSubOrNat).rep).map(asBinaryOpOrNat)
+    }
 
-  def CompOrNat[_: P]: P[NatAST] = P( AddSubOrNat ~ (CompOp ~/ AddSubOrNat).rep ).map(asBinaryOpOrNat)
-  def CompOp[_: P]: P[String] = P( "<".! | ">".! )
+    def AddSubOrNat: P[NatAST] = {
+      def AddSubOps: P[String] = P("+".! | "-".!)
+      P(DivMulPowModOrNat ~ (AddSubOps ~ DivMulPowModOrNat).rep).map(asBinaryOpOrNat)
+    }
 
-  def AddSubOrNat[_: P]: P[NatAST] = P( DivMulPowModOrNat ~ (AddSubOps ~ DivMulPowModOrNat).rep ).map(asBinaryOpOrNat)
-  def AddSubOps[_: P]: P[String] = P( "+".! | "-".! )
+    def DivMulPowModOrNat: P[NatAST] = {
+      def DivMulPowModOp: P[String] = P("*".! | "/".! | "^".! | "%".!)
+      P(SingleNat ~ (DivMulPowModOp ~ SingleNat).rep).map(asBinaryOpOrNat)
+    }
 
-  def DivMulPowModOrNat[_: P]: P[NatAST] = P( SingleNat ~ (DivMulPowModOp ~ SingleNat).rep  ).map(asBinaryOpOrNat)
-  def DivMulPowModOp[_: P]: P[String] = P( "*".! | "/".! | "^".! | "%".! )
+    def SingleNat: P[NatAST] = {
+      def Number: P[NatAST.Number] = P(CharIn("0-9").rep(1).!).map(NatAST.Number)
 
-  def SingleNat[_: P]: P[NatAST] = P( Number | Sum | Nat2NatApply | NatIdentifier | Parens )
+      def Sum: P[NatAST.Sum] = {
+        def Assignment: P[(NatAST.Identifier, NatAST)] =
+          P(NatIdentifier ~ "=" ~ Nat | "(" ~ Assignment ~ ")")
+        P("sum" ~ "_" ~ Assignment ~ "^" ~ Nat ~ Nat).map(NatAST.Sum.tupled)
+      }
 
-  def Number[_: P]: P[NatAST.Number] = P( CharIn("0-9").rep(1).! ).map(NatAST.Number)
+      def Nat2NatApply: P[NatAST.Nat2NatApply] =
+        P(TypeIdentifier ~ "(" ~ Nat ~ ")").map(NatAST.Nat2NatApply.tupled)
 
-  def Sum[_: P]: P[NatAST.Sum] =
-    P("sum" ~ "_" ~ Assignment ~ "^" ~ Nat ~ Nat).map(NatAST.Sum.tupled)
-  def Assignment[_: P]: P[(NatAST.Identifier, NatAST)] = P( NatIdentifier ~ "=" ~ Nat | "(" ~ Assignment ~ ")" )
+      def NatIdentifier: P[NatAST.Identifier] = P(TypeIdentifier).map(NatAST.Identifier)
 
-  def Nat2NatApply[_: P]: P[NatAST.Nat2NatApply] =
-    P( TypeIdentifier ~ "(" ~ Nat ~ ")" ).map(NatAST.Nat2NatApply.tupled)
+      def Parens: P[NatAST] = P("(" ~ Nat ~ ")")
 
-  def NatIdentifier[_: P]: P[NatAST.Identifier] = P( TypeIdentifier ).map(NatAST.Identifier)
+      P(Number | Sum | Nat2NatApply | NatIdentifier | Parens)
+    }
 
-  def Parens[_: P]: P[NatAST] = P( "(" ~ Nat ~ ")" )
+    P(CompOrNat)
+  }
 
   private def asBinaryOpOrNat: ((NatAST, Seq[(String, NatAST)])) => NatAST = {
     case (n, ns) => ns.foldLeft(n){
