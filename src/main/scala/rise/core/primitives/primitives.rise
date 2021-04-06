@@ -28,6 +28,11 @@ def   let: {s: data} -> {t: data} -> s -> (s -> t) -> t
 def toMem: {t: data} -> t -> t
 
 // array ops
+// def makeArray(1): {t: data} -> t -> 1.t
+// def makeArray(2): {t: data} -> t -> t -> 2.t
+// def makeArray(3): {t: data} -> t -> t -> t -> 3.t
+// ...
+// def makeArray(n): {t: data} -> t -> t -> t -> ... -> t -> n.t
 def generate: {n: nat} -> {t: data} -> (idx[n] -> t) -> n.t
 def idx: {n: nat} -> {t: data} -> idx[n] -> n.t -> t
 
