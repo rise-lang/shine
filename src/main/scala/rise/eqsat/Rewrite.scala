@@ -37,6 +37,7 @@ trait Searcher[Data] {
 trait Applier[Data] {
   // the variables used by this applier
   // return an empty Vec to disable checks
+  // TODO: update or remove
   def patternVars(): Vec[PatternVar]
 
   // Apply a single substitition.
@@ -65,6 +66,7 @@ trait Applier[Data] {
 
 case class SearchMatches(eclass: EClassId, substs: Vec[Subst])
 
+// TODO? could use a packed Vec[Option[V]] where K is the index
 case class VecMap[K, V](vec: Vec[(K, V)]) {
   // insert a mapping, returning the old value if present
   def insert(key: K, value: V): Option[V] = {
@@ -93,23 +95,33 @@ object VecMap {
 }
 
 case class Subst(exprs: VecMap[PatternVar, EClassId],
-                 nats: VecMap[NatPatternVar, Nat]) {
+                 nats: VecMap[NatPatternVar, Nat],
+                 types: VecMap[TypePatternVar, Type],
+                 datatypes: VecMap[DataTypePatternVar, DataType]) {
   def insert(pv: PatternVar, eclass: EClassId): Option[EClassId] =
     exprs.insert(pv, eclass)
-  def insert(ni: NatPatternVar, n: Nat): Option[Nat] =
-    nats.insert(ni, n)
+  def insert(nv: NatPatternVar, n: Nat): Option[Nat] =
+    nats.insert(nv, n)
+  def insert(tv: TypePatternVar, t: Type): Option[Type] =
+    types.insert(tv, t)
+  def insert(dtv: DataTypePatternVar, dt: DataType): Option[DataType] =
+    datatypes.insert(dtv, dt)
 
   def apply(pv: PatternVar): EClassId =
     exprs(pv)
-  def apply(ni: NatPatternVar): Nat =
-    nats(ni)
+  def apply(nv: NatPatternVar): Nat =
+    nats(nv)
+  def apply(tv: TypePatternVar): Type =
+    types(tv)
+  def apply(dtv: DataTypePatternVar): DataType =
+    datatypes(dtv)
 
   def deepClone(): Subst =
-    Subst(exprs.shallowClone(), nats.shallowClone())
+    Subst(exprs.shallowClone(), nats.shallowClone(), types.shallowClone(), datatypes.shallowClone())
 }
 
 object Subst {
-  def empty: Subst = Subst(VecMap.empty, VecMap.empty)
+  def empty: Subst = Subst(VecMap.empty, VecMap.empty, VecMap.empty, VecMap.empty)
 }
 
 // note: the condition is more general in `egg`

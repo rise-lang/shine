@@ -59,19 +59,24 @@ object ematching {
 
   case class Reg(var n: Int)
   case class NatReg(var n: Int)
+  case class TypeReg(var n: Int)
+  case class DataTypeReg(var n: Int)
 
   class Program(val instructions: Vec[Instruction],
-                var v2r: HashMap[PatternVar, Reg],
-                var ni2r: HashMap[NatPatternVar, NatReg]) {
+                var v2r: HashMap[PatternVar, Reg], // TODO? HashMap[_, _] -> compact Vec[_]
+                var ni2r: HashMap[NatPatternVar, NatReg],
+                var t2r: HashMap[TypePatternVar, TypeReg],
+                var dt2r: HashMap[DataTypePatternVar, DataTypeReg]) {
     def run[D](egraph: EGraph[D], eclass: EClassId): Vec[Subst] = {
       val machine = AbstractMachine.init(eclass)
 
       val substs = Vec.empty[Subst]
       machine.run(egraph, instructions.toSeq, { () =>
-        // (egg) HACK: we are reusing Ids here, this is bad
         val substExprs = VecMap(v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) }.to(Vec))
         val substNats = VecMap(ni2r.iterator.map { case (v, reg) => (v, machine.natReg(reg)) }.to(Vec))
-        substs += Subst(substExprs, substNats)
+        val substTypes = ??? // VecMap(t2r.iterator.map { case (v, reg) => (v, machine.typeReg(reg)) }.to(Vec))
+        val substDataTypes = ??? // VecMap(dt2r.iterator.map { case (v, reg) => (v, machine.dataTypeReg(reg)) }.to(Vec))
+        substs += Subst(substExprs, substNats, substTypes, substDataTypes)
       })
 
       substs
@@ -196,7 +201,7 @@ object ematching {
         }
       }
 
-      new Program(instructions, v2r, ni2r)
+      new Program(instructions, v2r, ni2r, ???, ???)
     }
   }
 }

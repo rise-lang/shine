@@ -16,7 +16,7 @@ class EGraph[Data](
   val analysis: Analysis[Data],
   var pending: Vec[(ENode, EClassId)],
   var analysisPending: HashSet[(ENode, EClassId)],
-  var memo: HashMap[ENode, EClassId],
+  var memo: HashMap[(ENode, Type), EClassId],
   var unionFind: UnionFind,
   var classes: HashMap[EClassId, EClass[Data]],
   var classesByMatch: HashMap[Int, HashSet[EClassId]]
@@ -37,18 +37,19 @@ class EGraph[Data](
     classes(findMut(id))
 
   // returns the canonicalized enode and its eclass if it has one
-  def lookup(enode: ENode): (ENode, Option[EClassId]) = {
+  def lookup(enode: ENode, t: Type): (ENode, Option[EClassId]) = {
     val enode2 = enode.mapChildren(find)
-    val id = memo.get(enode2)
+    val id = memo.get(enode2, t)
     (enode2, id.map(find))
   }
 
-  def add(n: ENode): EClassId = {
-    val (enode, optec) = lookup(n)
+  def add(n: ENode, t: Type): EClassId = {
+    val (enode, optec) = lookup(n, t)
     optec.getOrElse {
       val id = unionFind.makeSet()
       val eclass = new EClass(
         id = id,
+        t = t,
         nodes = Vec(enode),
         data = analysis.make(this, enode),
         parents = Vec())
@@ -59,8 +60,8 @@ class EGraph[Data](
 
       pending += enode -> id // TODO: is this needed?
       classes += id -> eclass
-      assert(!memo.contains(enode))
-      memo += enode -> id
+      assert(!memo.contains(enode, t))
+      memo += (enode, t) -> id
 
       analysis.modify(this, id)
       id
@@ -68,7 +69,7 @@ class EGraph[Data](
   }
 
   def addExpr(expr: Expr): EClassId =
-    add(expr.node.mapChildren(addExpr))
+    add(expr.node.mapChildren(addExpr), expr.t)
 
   // checks whether two expressions are equivalent
   // returns a list of eclasses that represent both expressions
@@ -110,6 +111,7 @@ class EGraph[Data](
     val class2 = classes.remove(id2).get
     val class1 = classes(id1)
     assert(id1 == class1.id)
+    assert(class2.t == class1.t)
 
     pending ++= class2.parents
     analysis.merge(class1.data, class2.data) match {
@@ -144,10 +146,11 @@ class EGraph[Data](
     while (pending.nonEmpty) {
       while (pending.nonEmpty) {
         val (node, eclass) = pending.remove(pending.size - 1)
+        val t = get(eclass).t
 
         val node2 = node.mapChildren(findMut)
-        val prev = memo.get(node2)
-        memo += node2 -> eclass
+        val prev = memo.get(node2, t)
+        memo += (node2, t) -> eclass
         prev match {
           case Some(memoClass) =>
             val (_, didSomething) = union(memoClass, eclass)
@@ -212,16 +215,16 @@ class EGraph[Data](
   }
 
   private def checkMemo(): Boolean = {
-    val testMemo = HashMap.empty[ENode, EClassId]
+    val testMemo = HashMap.empty[(ENode, Type), EClassId]
 
     for ((id, eclass) <- classes) {
       assert(eclass.id == id);
       for (node <- eclass.nodes) {
-        testMemo.get(node) match {
+        testMemo.get(node, eclass.t) match {
           case None => ()
           case Some(old) => assert(find(old) == find(id))
         }
-        testMemo += node -> id
+        testMemo += (node, eclass.t) -> id
       }
     }
 

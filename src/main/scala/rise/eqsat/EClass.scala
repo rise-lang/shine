@@ -1,6 +1,7 @@
 package rise.eqsat
 
-class EClass[D](var id: EClassId,
+class EClass[D](val id: EClassId,
+                val t: Type, // NOTE: this is close to analysis data
                 var nodes: Vec[ENode],
                 var data: D,
                 var parents: Vec[(ENode, EClassId)]) {

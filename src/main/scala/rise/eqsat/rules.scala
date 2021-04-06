@@ -20,18 +20,18 @@ object rules {
 
   // -- algorithmic --
 
-  val mapFusion: Rule = Rewrite.init("map-fusion",
+  val mapFusion: Rule = ???/*Rewrite.init("map-fusion",
     app(app(map, ?("f")), app(app(map, ?("g")), ?("arg"))).compile(),
     ShiftedApplier(?("f"), ?("fu"), up = true, 0,
       ShiftedApplier(?("g"), ?("gu"), up = true, 0,
         app(app(map, lam(app(?("fu"), app(?("gu"), %(0))))), ?("arg"))))
-  )
-  val mapFission: Rule = Rewrite.init("map-fission",
+  )*/
+  val mapFission: Rule = ???/*Rewrite.init("map-fission",
     app(map, lam(app(?("f"), ?("gx")))).compile(),
     ConditionalApplier(neg(containsIdent(?("f"), %(0))),
       ShiftedApplier(?("gx"), ?("gxu"), up = true, 1,
         lam(app(app(map, ?("f")), app(app(map, lam(?("gxu"))), %(0))))))
-  )
+  )*/
 
   // - slide widening -
 /* TODO
@@ -47,60 +47,60 @@ object rules {
 */
   // -- reduction --
 
-  val eta: Rule = Rewrite.init("eta",
+  val eta: Rule = ???/*Rewrite.init("eta",
     lam(app(?("f"), %(0))).compile(),
     ConditionalApplier(neg(containsIdent(?("f"), %(0))),
       ShiftedApplier(?("f"), ?("fd"), up = false, 1,
         ?("fd"): Pattern))
-  )
-  val beta: Rule = Rewrite.init("beta",
+  )*/
+  val beta: Rule = ???/*Rewrite.init("beta",
     app(lam(?("body")), ?("e")).compile(),
     BetaApplier(?("body"), ?("e"))
-  )
-  val removeTransposePair: Rule = Rewrite.init("remove-transpose-pair",
+  )*/
+  val removeTransposePair: Rule = ???/*Rewrite.init("remove-transpose-pair",
     app(transpose, app(transpose, ?("x"))).compile(),
     ?("x"): Pattern
-  )
+  )*/
 
   // -- movement --
 
-  val mapSlideBeforeTranspose: Rule = Rewrite.init("map-slide-before-transpose",
+  val mapSlideBeforeTranspose: Rule = ???/*Rewrite.init("map-slide-before-transpose",
     app(transpose, app(app(map, nApp(nApp(slide, ?("sz")), ?("sp"))), ?("y"))).compile(),
     app(app(map, transpose), app(nApp(nApp(slide, ?("sz")), ?("sp")), app(transpose, ?("y"))))
-  )
-  val slideBeforeMapMapF: Rule = Rewrite.init("slide-before-map-map-f",
+  )*/
+  val slideBeforeMapMapF: Rule = ???/*Rewrite.init("slide-before-map-map-f",
     app(app(map, app(map, ?("f"))), app(nApp(nApp(slide, ?("sz")), ?("sp")), ?("y"))).compile(),
     app(nApp(nApp(slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y")))
-  )
-  val slideBeforeMap: Rule = Rewrite.init("slide-before-map",
+  )*/
+  val slideBeforeMap: Rule = ???/*Rewrite.init("slide-before-map",
     app(nApp(nApp(slide, ?("sz")), ?("sp")), app(app(map, ?("f")), ?("y"))).compile(),
     app(app(map, app(map, ?("f"))), app(nApp(nApp(slide, ?("sz")), ?("sp")), ?("y")))
-  )
+  )*/
 
-  val dropBeforeMap: Rule = Rewrite.init("drop-before-map",
+  val dropBeforeMap: Rule = ???/*Rewrite.init("drop-before-map",
     app(nApp(drop, ?("n")), app(app(map, ?("f")), ?("in"))).compile(),
     app(app(map, ?("f")), app(nApp(drop, ?("n")), ?("in")))
-  )
-  val takeBeforeMap: Rule = Rewrite.init("take-before-map",
+  )*/
+  val takeBeforeMap: Rule = ???/*Rewrite.init("take-before-map",
     app(nApp(take, ?("n")), app(app(map, ?("f")), ?("in"))).compile(),
     app(app(map, ?("f")), app(nApp(take, ?("n")), ?("in")))
-  )
+  )*/
 
   // -- lowering --
 
-  val reduceSeqUnroll: Rule = Rewrite.init("reduce-seq-unroll",
+  val reduceSeqUnroll: Rule = ???/*Rewrite.init("reduce-seq-unroll",
     reduce.compile(), prim(rcp.reduceSeqUnroll.primitive)
-  )
-  val mapSeq: Rule = Rewrite.init("map-seq",
+  )*/
+  val mapSeq: Rule = ???/*Rewrite.init("map-seq",
     map.compile(), prim(rcp.mapSeq.primitive)
-  )
-  val iterateStream: Rule = Rewrite.init("iterate-stream",
+  )*/
+  val iterateStream: Rule = ???/*Rewrite.init("iterate-stream",
     map.compile(), prim(rcp.iterateStream.primitive)
-  )
-  val toMemAfterMapSeq: Rule = Rewrite.init("to-mem-after-map-seq",
+  )*/
+  val toMemAfterMapSeq: Rule = ???/*Rewrite.init("to-mem-after-map-seq",
     app(app(prim(rcp.mapSeq.primitive), ?("f")), ?("x")).compile(),
     app(prim(rcp.toMem.primitive), app(app(prim(rcp.mapSeq.primitive), ?("f")), ?("x")))
-  )
+  )*/
   /* TODO
         rewrite!("rotate-values-simplified";
             "(app (app slide ?sz) 1)" => "(app rotateValues ?sz)"),

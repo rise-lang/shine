@@ -9,9 +9,12 @@ class Basic extends test_util.Tests {
   test("normalize") {
     import ExprDSL._
 
+    val m = map((f32 ->: f32) ->: (`%n`(0)`.`f32) ->: (`%n`(0)`.`f32))
     assert(
-      BENF(lam(app(app(lam(app(map, %(0))), %(2)), %(0)))) ==
-      app(map, %(1)))
+      BENF(lam(`%n`(0)`.`f32,
+        app(app(lam(f32 ->: f32, app(m, %(0, f32 ->: f32))), %(2, f32 ->: f32)),
+          %(0, `%n`(0)`.`f32)))) ==
+      app(m, %(1, f32 ->: f32)))
   }
 
   test("map fusion") {

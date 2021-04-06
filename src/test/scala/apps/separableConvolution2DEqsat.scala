@@ -25,7 +25,7 @@ object separableConvolution2DEqsat {
 class separableConvolution2DEqsat extends test_util.Tests {
   import separableConvolution2DEqsat._
 
-  private val (separateDot, separateDotT) = {
+  private val (separateDot, separateDotT) = (???, ???) /*{
     import rise.eqsat._
     import rise.eqsat.PatternDSL._
 
@@ -45,7 +45,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
       dot(app(join, w2d), app(join, ?("nbh"))).compile(),
       dot(wH, app(*(lam(dot(wV, %(0)))), app(transpose, ?("nbh"))))
     ))
-  }
+  }*/
 
   // -- algorithmic
 

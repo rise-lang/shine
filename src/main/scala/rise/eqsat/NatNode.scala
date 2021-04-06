@@ -7,7 +7,7 @@ case class Nat(node: NatNode[Nat]) {
 object Nat {
   import arithexpr.arithmetic._
 
-  def fromNamed(n: rise.core.types.Nat, bound: Expr.Bound): Nat = {
+  def fromNamed(n: rise.core.types.Nat, bound: Expr.Bound = Expr.Bound.empty): Nat = {
     Nat(n match {
       case i: rise.core.types.NatIdentifier => NatVar(bound.indexOf(i))
       case Cst(c) => NatCst(c)
@@ -15,7 +15,7 @@ object Nat {
     })
   }
 
-  def toNamed(n: Nat, bound: Expr.Bound): rise.core.types.Nat = {
+  def toNamed(n: Nat, bound: Expr.Bound = Expr.Bound.empty): rise.core.types.Nat = {
     n.node match {
       case NatVar(index) => bound.nat(index)
       case NatCst(value) => Cst(value)
@@ -30,3 +30,7 @@ case class NatCst(value: Long) extends NatNode[Nothing]
 sealed trait NatPattern
 case class NatPatternNode(n: NatNode[NatPattern]) extends NatPattern
 case class NatPatternVar(index: Int) extends NatPattern
+
+object NatPattern {
+  def fromNat(n: Nat): NatPattern = ???
+}

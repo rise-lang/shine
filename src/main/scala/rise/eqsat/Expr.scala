@@ -3,8 +3,6 @@ package rise.eqsat
 import rise.core
 import rise.core.{primitives => rcp}
 import rise.core.semantics
-import rise.core.semantics.NatData
-import rise.core.types.TypePlaceholder
 import rise.core.{types => rct}
 
 // TODO: could also be outside of eqsat package
@@ -58,6 +56,10 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
 }
 
 object Expr {
+  object Bound {
+    def empty: Bound = Bound(Seq(), Seq(), Seq())
+  }
+
   case class Bound(expr: Seq[core.Identifier],
                    nat: Seq[rct.NatIdentifier],
                    data: Seq[rct.DataTypeIdentifier]) {
@@ -76,82 +78,79 @@ object Expr {
       this.copy(data = i +: data)
   }
 
-  def fromNamed(e: core.Expr): Expr = {
-    def rec(e: core.Expr,
-            bound: Bound): Expr = {
-      Expr(e match {
-        case i: core.Identifier => Var(bound.indexOf(i))
-        case core.App(f, e) => App(rec(f, bound), rec(e, bound))
-        case core.Lambda(i, e) => Lambda(rec(e, bound + i))
-        case core.DepApp(f, n: rct.Nat) => NatApp(rec(f, bound), Nat.fromNamed(n, bound))
-        case core.DepApp(f, dt: rct.DataType) => DataApp(rec(f, bound), DataType.fromNamed(dt, bound))
-        case core.DepApp(_, _) => ???
-        case core.DepLambda(n: rct.NatIdentifier, e) =>
-          NatLambda(rec(e, bound + n))
-        case core.DepLambda(dt: rct.DataTypeIdentifier, e) =>
-          DataLambda(rec(e, bound + dt))
-        case core.DepLambda(_, _) => ???
-        case core.Literal(d) => Literal(d)
-        case p: core.Primitive => Primitive(p.setType(core.types.TypePlaceholder))
-      }, Type.fromNamed(e.t, bound))
-    }
-
-    rec(e, Bound(Seq(), Seq(), Seq()))
+  def fromNamed(expr: core.Expr, bound: Bound = Bound.empty): Expr = {
+    Expr(expr match {
+      case i: core.Identifier => Var(bound.indexOf(i))
+      case core.App(f, e) => App(fromNamed(f, bound), fromNamed(e, bound))
+      case core.Lambda(i, e) => Lambda(fromNamed(e, bound + i))
+      case core.DepApp(f, n: rct.Nat) =>
+        NatApp(fromNamed(f, bound), Nat.fromNamed(n, bound))
+      case core.DepApp(f, dt: rct.DataType) =>
+        DataApp(fromNamed(f, bound), DataType.fromNamed(dt, bound))
+      case core.DepApp(_, _) => ???
+      case core.DepLambda(n: rct.NatIdentifier, e) =>
+        NatLambda(fromNamed(e, bound + n))
+      case core.DepLambda(dt: rct.DataTypeIdentifier, e) =>
+        DataLambda(fromNamed(e, bound + dt))
+      case core.DepLambda(_, _) => ???
+      case core.Literal(d) => Literal(d)
+      case p: core.Primitive => Primitive(p.setType(core.types.TypePlaceholder))
+    }, Type.fromNamed(expr.t, bound))
   }
 
-  def toNamed(e: Expr): core.Expr = {
-    def rec(expr: Expr, bound: Bound): core.Expr = {
-      (expr.node match {
-        case Var(index) => bound.expr(index).setType _
-        case App(f, e) => core.App(rec(f, bound), rec(e, bound)) _
-        case Lambda(e) =>
-          val i = core.Identifier(s"x${bound.expr.size}")(Type.toNamed(expr.t.node.asInstanceOf[FunType[Type]].inT, bound))
-          core.Lambda(i, rec(e, bound + i)) _
-        // TODO: Nat and DataType toNamed
-        case NatApp(f, x) => core.DepApp[rct.NatKind](rec(f, bound), Nat.toNamed(x, bound)) _
-        case NatLambda(e) =>
-          val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
-          core.DepLambda[rct.NatKind](i, rec(e, bound + i)) _
-        case DataApp(f, x) => core.DepApp[rct.DataKind](rec(f, bound), DataType.toNamed(x, bound)) _
-        case DataLambda(e) =>
-          val i = rct.DataTypeIdentifier(s"dt${bound.data.size}", isExplicit = true)
-          core.DepLambda[rct.DataKind](i, rec(e, bound + i)) _
-        case Literal(d) => core.Literal(d).setType _
-        case Primitive(p) => p.setType _
-      })(Type.toNamed(expr.t, bound))
-    }
-
-    rec(e, Bound(Seq(), Seq(), Seq()))
+  def toNamed(expr: Expr, bound: Bound = Bound.empty): core.Expr = {
+    (expr.node match {
+      case Var(index) => bound.expr(index).setType _
+      case App(f, e) => core.App(toNamed(f, bound), toNamed(e, bound)) _
+      case Lambda(e) =>
+        val funT = expr.t.node.asInstanceOf[FunType[Type]]
+        val i = core.Identifier(s"x${bound.expr.size}")(Type.toNamed(funT.inT, bound))
+        core.Lambda(i, toNamed(e, bound + i)) _
+      case NatApp(f, x) => core.DepApp[rct.NatKind](toNamed(f, bound), Nat.toNamed(x, bound)) _
+      case NatLambda(e) =>
+        val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
+        core.DepLambda[rct.NatKind](i, toNamed(e, bound + i)) _
+      case DataApp(f, x) => core.DepApp[rct.DataKind](toNamed(f, bound), DataType.toNamed(x, bound)) _
+      case DataLambda(e) =>
+        val i = rct.DataTypeIdentifier(s"dt${bound.data.size}", isExplicit = true)
+        core.DepLambda[rct.DataKind](i, toNamed(e, bound + i)) _
+      case Literal(d) => core.Literal(d).setType _
+      case Primitive(p) => p.setType _
+    })(Type.toNamed(expr.t, bound))
   }
 }
 
 object ExprDSL {
   import scala.language.implicitConversions
-  private def expr(n: Node[Expr, Nat, DataType]) = Expr(n, Type(NatType))
 
-  // TODO: types?
-  def %(index: Int): Expr = expr(Var(index))
-  def app(a: Expr, b: Expr): Expr = expr(App(a, b))
-  def lam(e: Expr): Expr = expr(Lambda(e))
-  def nApp(f: Expr, x: Nat): Expr = expr(NatApp(f, x))
-  def nLam(e: Expr): Expr = expr(NatLambda(e))
-  def map: Expr = expr(Primitive(rcp.map.primitive))
-  def transpose: Expr = expr(Primitive(rcp.transpose.primitive))
-  def add: Expr = expr(Primitive(rcp.add.primitive))
-  def mul: Expr = expr(Primitive(rcp.mul.primitive))
-  def div: Expr = expr(Primitive(rcp.div.primitive))
-  def l(d: semantics.Data): Expr = expr(Literal(d))
+  implicit def dataTypeToType(dt: DataType): Type = Type(dt.node)
 
+  def %(index: Int, t: Type): Expr = Expr(Var(index), t)
+  def lam(argT: Type, e: Expr): Expr = Expr(Lambda(e), argT ->: e.t)
+  def app(a: Expr, b: Expr): Expr =
+    Expr(App(a, b), a.t.node.asInstanceOf[FunType[Type]].outT)
+  // TODO: could compute nApp type using type index shifts (withNatArgument)
+  def nApp(f: Expr, x: Nat, t: Type): Expr = Expr(NatApp(f, x), t)
+  def nLam(e: Expr): Expr = Expr(NatLambda(e), nFunT(e.t))
+  def l(d: semantics.Data): Expr = Expr(Literal(d), DataType.fromNamed(d.dataType))
+
+  def map(t: Type): Expr = Expr(Primitive(rcp.map.primitive), t)
+  def transpose(t: Type): Expr = Expr(Primitive(rcp.transpose.primitive), t)
+  def add(t: Type): Expr = Expr(Primitive(rcp.add.primitive), t)
+  def mul(t: Type): Expr = Expr(Primitive(rcp.mul.primitive), t)
+
+  def `%n`(index: Int): Nat = Nat(NatVar(index))
+  def cst(value: Long): Nat = Nat(NatCst(value))
+
+  val int: DataType = DataType(ScalarType(rct.int))
   val f32: DataType = DataType(ScalarType(rct.f32))
-  def n(index: Int): Nat = Nat(NatVar(index))
 
   def nFunT(t: Type): Type = Type(NatFunType(t))
-  implicit def dataTypeToType(dt: DataType) = Type(dt.node)
   implicit final class FunConstructorT(private val r: Type) extends AnyVal {
     @inline def ->:(t: Type): Type = Type(FunType(t, r))
   }
   implicit final class FunConstructorDT(private val r: DataType) extends AnyVal {
-    @inline def ->:(t: Type): Type = Type(FunType(t, r : Type))
+    @inline def ->:(t: Type): Type = Type(FunType(t, r: Type))
   }
   implicit final class ArrayConstructor(private val s: Nat) extends AnyVal {
     @inline def `.`(et: DataType): DataType = DataType(ArrayType(s, et))

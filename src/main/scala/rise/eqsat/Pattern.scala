@@ -1,16 +1,16 @@
 package rise.eqsat
 
-import arithexpr.arithmetic.ArithExpr
 import rise.core.semantics
-import rise.core.types.{Kind, Nat, NatIdentifier}
 import rise.core.{primitives => rcp}
+import rise.core.{types => rct}
 
 import scala.language.implicitConversions
 
 object Pattern {
-  def fromExpr(e: Expr): Pattern =
-    ???
-    //Pattern(Left(e.node.mapChildren(fromExpr)))
+  def fromExpr(e: Expr): Pattern = {
+    val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType)
+    Pattern(Left(pnode), TypePattern.fromType(e.t))
+  }
 
   implicit def patternToApplier[D](pat: Pattern): Applier[D] = new Applier[D] {
     override def patternVars(): Vec[PatternVar] = pat.patternVars()
@@ -21,9 +21,9 @@ object Pattern {
           case Right(w) => subst(w)
           case Left(n) =>
             val enode = n.map(e => rec(e), { n =>
-              ??? //ArithExpr.substitute(n, subst.nats.vec.toMap)
-            }, dt => dt)
-            egraph.add(enode)
+              ??? : Nat//ArithExpr.substitute(n, subst.nats.vec.toMap)
+            }, dt => ??? : DataType)
+            egraph.add(enode, ???)
         }
       }
 
@@ -32,9 +32,8 @@ object Pattern {
   }
 }
 
-// TODO? interned string in egg
-case class PatternVar(name: String)
-case class Pattern(node: Either[PNode, PatternVar]/*, t: TypePattern*/) {
+case class PatternVar(index: Int)
+case class Pattern(node: Either[PNode, PatternVar], t: TypePattern) {
   def patternVars(): Vec[PatternVar] = {
     val vec = Vec.empty[PatternVar]
     def rec(n: Either[PNode, PatternVar]): Unit = {
@@ -92,30 +91,56 @@ object PatternDSL {
   implicit def pickA2[A, B, C](p: Pick[Pick[A, B], C]): A = p.a
   implicit def pickB2[A, B, C](p: Pick[Pick[A, B], C]): B = p.a
 
-  // TODO? use a proper algebraic datatype for nat pattern variables instead of naming convention
-  def ?(name: String): Pick[Pick[PatternVar, Pattern], NatPattern] =
-    Pick(Pick(PatternVar(name), Pattern(Right(PatternVar(name)))), ???)
-  def %(index: Int): Pick[Var, Pattern] = Pick(Var(index), Pattern(Left(Var(index))))
-  def app(a: Pattern, b: Pattern): Pattern = Pattern(Left(App(a, b)))
-  def lam(e: Pattern): Pattern = Pattern(Left(Lambda(e)))
-  def nApp(f: Pattern, x: NatPattern) = Pattern(Left(NatApp(f, x)))
-  def nLam(kind: Kind, e: Pattern): Pattern = Pattern(Left(NatLambda(e)))
-  def l(d: semantics.Data): Pattern = Pattern(Left(Literal(d)))
+  def ?(index: Int): PatternVar = PatternVar(index)
+  def ?(index: Int, t: TypePattern): Pattern = Pattern(Right(PatternVar(index)), t)
+  def %(index: Int): Var = Var(index)
+  def %(index: Int, t: TypePattern): Pattern = Pattern(Left(Var(index)), t)
 
-  def prim(p: rise.core.Primitive): Pattern = Pattern(Left(Primitive(p)))
-  def slide: Pattern = prim(rcp.slide.primitive)
-  def map: Pattern = prim(rcp.map.primitive)
-  def reduce: Pattern = prim(rcp.reduce.primitive)
-  def transpose: Pattern = prim(rcp.transpose.primitive)
-  def zip: Pattern = prim(rcp.zip.primitive)
-  def join: Pattern = prim(rcp.join.primitive)
-  def fst: Pattern = prim(rcp.fst.primitive)
-  def snd: Pattern = prim(rcp.snd.primitive)
-  def add: Pattern = prim(rcp.add.primitive)
-  def mul: Pattern = prim(rcp.mul.primitive)
-  def div: Pattern = prim(rcp.div.primitive)
-  def drop: Pattern = prim(rcp.drop.primitive)
-  def take: Pattern = prim(rcp.take.primitive)
+  def app(a: Pattern, b: Pattern): PNode = App(a, b)
+  def lam(e: Pattern): PNode = Lambda(e)
+  def nApp(f: Pattern, x: NatPattern): PNode = NatApp(f, x)
+  def nLam(e: Pattern): PNode = NatLambda(e)
+  def l(d: semantics.Data): Pattern = Pattern(Left(Literal(d)), ???)
 
-  def cst(v: Int): NatPattern = NatPatternNode(NatCst(v))
+  def prim(p: rise.core.Primitive): PNode = Primitive(p)
+  def slide: PNode = prim(rcp.slide.primitive)
+  def map: PNode = prim(rcp.map.primitive)
+  def reduce: PNode = prim(rcp.reduce.primitive)
+  def transpose: PNode = prim(rcp.transpose.primitive)
+  def zip: PNode = prim(rcp.zip.primitive)
+  def join: PNode = prim(rcp.join.primitive)
+  def fst: PNode = prim(rcp.fst.primitive)
+  def snd: PNode = prim(rcp.snd.primitive)
+  def add: PNode = prim(rcp.add.primitive)
+  def mul: PNode = prim(rcp.mul.primitive)
+  def div: PNode = prim(rcp.div.primitive)
+  def drop: PNode = prim(rcp.drop.primitive)
+  def take: PNode = prim(rcp.take.primitive)
+
+  implicit final class WithType(private val t: TypePattern) extends AnyVal {
+    @inline def ::(n: PNode): Pattern = Pattern(Left(n), t)
+  }
+
+  def `?n`(index: Int): NatPattern = NatPatternVar(index)
+  def `%n`(index: Int): NatPattern = NatPatternNode(NatVar(index))
+
+  def cst(value: Long): NatPattern = NatPatternNode(NatCst(value))
+
+  def `?t`(index: Int): TypePattern = TypePatternVar(index)
+  def `?dt`(index: Int): DataTypePattern = DataTypePatternVar(index)
+  def `%dt`(index: Int): DataTypePattern = DataTypePatternNode(DataTypeVar(index))
+
+  val int: DataTypePattern = DataTypePatternNode(ScalarType(rct.int))
+  val f32: DataTypePattern = DataTypePatternNode(ScalarType(rct.f32))
+
+  def nFunT(t: TypePattern): TypePattern = TypePatternNode(NatFunType(t))
+  implicit final class FunConstructorT(private val r: TypePattern) extends AnyVal {
+    @inline def ->:(t: TypePattern): TypePattern = TypePatternNode(FunType(t, r))
+  }
+  implicit final class FunConstructorDT(private val r: DataTypePattern) extends AnyVal {
+    @inline def ->:(t: TypePattern): TypePattern = TypePatternNode(FunType(t, r: TypePattern))
+  }
+  implicit final class ArrayConstructor(private val s: NatPattern) extends AnyVal {
+    @inline def `.`(et: DataTypePattern): DataTypePattern = DataTypePatternNode(ArrayType(s, et))
+  }
 }
