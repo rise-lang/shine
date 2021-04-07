@@ -61,7 +61,7 @@ object Expr {
         case core.DepApp(core.DepApp(rcp.slide(), sz: Nat), sp: Nat) =>
           App(Expr(App(Expr(Primitive(rcp.slide.primitive)),
             Expr(Literal(NatData(sz))))), Expr(Literal(NatData(sp))))
-          
+
         case i: core.Identifier => Var(bound.indexOf(i))
         case core.App(f, e) => App(rec(f, bound), rec(e, bound))
         case core.Lambda(i, e) => Lambda(rec(e, i +: bound))
