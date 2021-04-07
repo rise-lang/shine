@@ -18,7 +18,7 @@ final case class MapPar(n: Nat,
                         dt2: DataType,
                         f: Phrase[ExpType ->: ExpType],
                         array: Phrase[ExpType]
-                       ) extends ExpPrimitive with ConT with AccT {
+                       ) extends ExpPrimitive with AccT {
   f :: expT(dt1, read) ->: expT(dt2, write)
   array :: expT(n`.`dt1, read)
   override val t: ExpType = expT(n`.`dt2, write)
@@ -29,14 +29,6 @@ final case class MapPar(n: Nat,
       MapParI(n, dt1, dt2,
         λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
         x, A)))
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] = {
-    println("WARNING: map loop continuation translation allocates memory")
-    // TODO should be removed
-    `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
-      acc(this)(tmp.wr) `;` C(tmp.rd) ))
-  }
 
   override def eval(s: Store): Data = {
     val fE = OperationalSemantics.eval(s, f)

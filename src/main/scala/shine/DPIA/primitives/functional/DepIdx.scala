@@ -14,7 +14,7 @@ final case class DepIdx(n: Nat,
                         ft: NatToData,
                         index: Nat,
                         array: Phrase[ExpType]
-                       ) extends ExpPrimitive with ConT with AccT {
+                       ) extends ExpPrimitive with AccT {
   array :: expT(n`.d`ft, read)
   override val t: ExpType = expT(ft(index), read)
 
@@ -22,9 +22,4 @@ final case class DepIdx(n: Nat,
                          (implicit context: TranslationContext): Phrase[CommType] =
     con(array)(λ(expT(n`.d`ft, read))(x =>
       A :=| ft(index) | DepIdx(n, ft, index, x)))
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(array)(λ(expT(n`.d`ft, read))(e =>
-      C(DepIdx(n, ft, index, e))))
 }

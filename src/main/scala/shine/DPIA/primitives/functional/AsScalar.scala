@@ -16,18 +16,13 @@ final case class AsScalar(n: Nat,
                           dt: ScalarType,
                           access: AccessType,
                           array: Phrase[ExpType]
-                         ) extends ExpPrimitive with ConT with AccT with FedeT {
+                         ) extends ExpPrimitive with AccT with FedeT {
   array :: expT(n `.` vec(m, dt), access)
   override val t: ExpType = expT((n * m) `.` dt, access)
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     acc(array)(AsScalarAcc(n, m, dt, A))
-
-  def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(array)(λ(array.t)(x =>
-      C(AsScalar(n, m, dt, access, x))))
 
   override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
                               (C: Phrase[AccType ->: AccType]): Phrase[AccType] =

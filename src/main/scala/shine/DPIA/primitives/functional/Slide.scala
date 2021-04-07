@@ -20,7 +20,7 @@ final case class Slide(n: Nat,
                        sp: Nat,
                        dt: DataType,
                        input: Phrase[ExpType]
-                      ) extends ExpPrimitive with ConT with AccT {
+                      ) extends ExpPrimitive with AccT {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
   input :: expT(inputSize`.`dt, read)
@@ -30,11 +30,6 @@ final case class Slide(n: Nat,
                          (implicit context: TranslationContext): Phrase[CommType] =
     con(this)(λ(expT(n`.`(sz`.`dt), read))(x =>
       A :=|(n`.`(sz`.`dt))| x ))
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(input)(λ(expT(inputSize`.`dt, read))(x =>
-      C(Slide(n, sz, sp, dt, x)) ))
 
   override def eval(s: Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, input) match {

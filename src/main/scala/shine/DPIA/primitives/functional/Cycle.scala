@@ -1,8 +1,5 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
@@ -17,7 +14,7 @@ final case class Cycle(n: Nat,
                        m: Nat,
                        dt: DataType,
                        input: Phrase[ExpType]
-                      ) extends ExpPrimitive with ConT {
+                      ) extends ExpPrimitive {
   input :: expT(m`.`dt, read)
   override val t: ExpType = expT(n`.`dt, read)
 
@@ -29,9 +26,4 @@ final case class Cycle(n: Nat,
       case _ => throw new Exception("this should not happen")
     }
   }
-
-  def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(input)(fun(expT(m`.`dt, read))(x =>
-      C(Cycle(n, m, dt, x))))
 }

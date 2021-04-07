@@ -18,14 +18,9 @@ final case class Unzip(n: Nat,
                        dt2: DataType,
                        access: AccessType,
                        e: Phrase[ExpType]
-                      ) extends ExpPrimitive with ConT with AccT with FedeT {
+                      ) extends ExpPrimitive with AccT with FedeT {
   e :: expT(n`.`(dt1 x dt2), access)
   override val t: ExpType = expT((n`.`dt1) x (n`.`dt2), access)
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(e)(λ(expT(n`.`(dt1 x dt2), read))(x =>
-      C(Unzip(n, dt1, dt2, access, x))))
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =

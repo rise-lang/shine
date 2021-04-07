@@ -19,16 +19,11 @@ final case class Reorder(n: Nat,
                          idxF: Phrase[ExpType ->: ExpType],
                          idxFinv: Phrase[ExpType ->: ExpType],
                          input: Phrase[ExpType]
-                        ) extends ExpPrimitive with ConT with AccT with FedeT {
+                        ) extends ExpPrimitive with AccT with FedeT {
   idxF :: expT(idx(n), read) ->: expT(idx(n), read)
   idxFinv :: expT(idx(n), read) ->: expT(idx(n), read)
   input :: expT(n`.`dt, access)
   override val t: ExpType = expT(n`.`dt, access)
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(input)(λ(expT(n`.`dt, read))(x =>
-      C(Reorder(n, dt, access, idxF, idxFinv, x))))
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =

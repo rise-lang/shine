@@ -14,7 +14,7 @@ final case class PrintType(msg: String,
                            dt: DataType,
                            access: AccessType,
                            input: Phrase[ExpType]
-                          ) extends ExpPrimitive with ConT with AccT {
+                          ) extends ExpPrimitive with AccT {
   println(s"$msg : $dt (DPIA level)")
 
   input :: expT(dt, access)
@@ -23,10 +23,6 @@ final case class PrintType(msg: String,
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =
     acc(input)(A)
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(input)(C)
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 }
