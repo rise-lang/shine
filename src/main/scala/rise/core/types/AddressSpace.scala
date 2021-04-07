@@ -13,11 +13,6 @@ final case class AddressSpaceIdentifier(
   override def asExplicit: AddressSpaceIdentifier = this.copy(isExplicit = true)
   override def asImplicit: AddressSpaceIdentifier =
     this.copy(isExplicit = false)
-  override def equals(that: Any): Boolean = that match {
-    case a: AddressSpaceIdentifier => this.name == a.name
-    case _                         => false
-  }
-  override def hashCode(): Int = this.name.hashCode()
 }
 
 // scalastyle:off public.methods.have.type

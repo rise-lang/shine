@@ -10,7 +10,7 @@ class Store extends test_util.Tests {
 
   test("scalar values") {
     def plusNum(n: Int, code: String): Unit = {
-      println(code)
+      logger.debug(code)
       "\\+".r.findAllIn(code).length shouldBe n
     }
     // this is surprising behaviour
@@ -35,7 +35,7 @@ class Store extends test_util.Tests {
         xs |> mapSeq(fun(x => x))
       )
     )))
-    println(code)
+    logger.debug(code)
     "for".r.findAllIn(code).length shouldBe 2
   }
 
@@ -45,7 +45,7 @@ class Store extends test_util.Tests {
         xs |> mapSeq(mapSeq(fun(x => x)))
       }
     )))
-    println(code)
+    logger.debug(code)
     "for".r.findAllIn(code).length shouldBe 4
   }
 

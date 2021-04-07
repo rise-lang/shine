@@ -13,7 +13,7 @@ class MolecularDynamics extends test_util.TestsWithExecutor {
     val particlesTuple = particles.sliding(4, 4).map { case Array(a, b, c, d) => (a, b, c, d) }.toArray
     val neighbours = buildNeighbourList(particlesTuple, M).transpose
 
-    test_util.runsWithSameResult(Seq(
+    runsWithSameResult(Seq(
       ("original", runOriginalKernel("CGO17_MolecularDynamics.cl", particles, neighbours)),
       ("dpia", runKernel(gen.opencl.kernel.fromExpr(shocOcl), particles, neighbours))
     ))

@@ -82,7 +82,7 @@ class stencil extends test_util.Tests {
     val inputMinRange: Int = stencilSize
 
     final val padSize = stencilSize / 2
-    println(stencilSize)
+    logger.debug(stencilSize.toString)
     assert(inputSize > inputMinRange)
     final override type Input = Array[Float]
 

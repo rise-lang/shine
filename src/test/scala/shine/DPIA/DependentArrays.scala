@@ -16,7 +16,7 @@ class DependentArrays extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
   }
 
   test("Nested dep arrays") {
@@ -27,11 +27,11 @@ class DependentArrays extends idealised.util.Tests {
     ))
 
     val splitExampleTyped = idealised.DPIA.FromSurfaceLanguage(TypeInference(splitExample, Map()))
-    println(splitExampleTyped)
+    logger.debug(splitExampleTyped)
     val p = idealised.OpenCL.KernelGenerator.makeCode(splitExampleTyped)
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
   }
 
   test("Big sum generates a for loop") {
@@ -44,7 +44,7 @@ class DependentArrays extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
+    logger.debug(code)
 
     "for".r.findAllIn(code).length shouldBe 4
   }

@@ -83,7 +83,7 @@ class algorithmic extends test_util.Tests {
     val typedGold = DFNF(reduceMap)
     val typedRewrite = DFNF(rewrite)
 
-    assert(typedRewrite == typedGold)
+    assert(typedRewrite.get =~= typedGold.get)
   }
 
 
@@ -135,7 +135,7 @@ class algorithmic extends test_util.Tests {
     val typedGold = goldMKNAlternative.toExpr
     val loopMKN = (topDown(liftReduce) `;` DFNF `;` topDown(removeTransposePair)).apply(mm).get
 
-    assert(loopMKN == typedGold)
+    assert(loopMKN =~= typedGold)
   }
 
   // This one just serves as documentation for different mm-rise-expressions
@@ -238,7 +238,7 @@ class algorithmic extends test_util.Tests {
 
     val loopKMN = topDown(liftReduce).apply(mmMKN.toExpr).get
 
-    assert(goldKMNAlternative2.toExpr == loopKMN)
+    assert(goldKMNAlternative2.toExpr =~= loopKMN)
 
     /*
     val goldKMNAlternative2LowLevel =
@@ -287,7 +287,7 @@ class algorithmic extends test_util.Tests {
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
     val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
-    println(gen.c.function.asStringFromExpr(lower(typed).get))
+    logger.debug(gen.c.function.asStringFromExpr(lower(typed).get))
 
     /// TILE + REORDER
 
@@ -296,7 +296,7 @@ class algorithmic extends test_util.Tests {
 
     val reorder = tileReorder(mm).get
 
-    println(gen.c.function.asStringFromExpr(lower(reorder).get))
+    logger.debug(gen.c.function.asStringFromExpr(lower(reorder).get))
   }
 
   test("tile mm") {

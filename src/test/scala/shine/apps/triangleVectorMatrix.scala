@@ -88,25 +88,25 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct C") {
     val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeq, Map())))
-    println(p.code)
+    logger.debug(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenMP") {
     val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeq, Map())))
-    println(p.code)
+    logger.debug(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenMP") {
     val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultPar, Map())))
-    println(p.code)
+    logger.debug(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenCL") {
     val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeqOpenCL, Map())))
-    println(p.code)
+    logger.debug(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
 
@@ -129,7 +129,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     val f = triangleVectorMultGlobalFused(actualN)
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    //println(kernel.code)
+    //logger.debug(kernel.code)
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
 
@@ -151,7 +151,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     ) yield {
       triangleMatrixBasic(inputSize, localSize, inputSize)
     }
-    results.filter(_.correct).sortBy(_.runtime).foreach(x => println(x.display))
+    results.filter(_.correct).sortBy(_.runtime).foreach(x => logger.debug(x.display))
   }
 
 
@@ -194,8 +194,8 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     Executor.loadAndInit()
 
     val inputSize = 4096
-    println(Executor.getPlatformName)
-    println(Executor.getDeviceName)
+    logger.debug(Executor.getPlatformName)
+    logger.debug(Executor.getDeviceName)
 
     val result = try {
       triangleMatrixPadSplit(inputSize, 8, 8, inputSize)

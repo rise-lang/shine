@@ -11,7 +11,7 @@ class unsharpMaskCheck extends test_util.TestsWithExecutor {
   private val sigma = 1.5f
 
   test("unsharp typechecks") {
-    println(unsharp(1).toExpr.t)
+    logger.debug(unsharp(1).toExpr.t)
   }
 
   def lowerOMP(e: ToBeTyped[Expr]): Expr =

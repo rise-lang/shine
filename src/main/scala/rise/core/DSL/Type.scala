@@ -9,14 +9,6 @@ import scala.language.implicitConversions
 // scalastyle:off multiple.string.literals
 object Type {
 
-  implicit class TypeEqual(a: Type) {
-    def =~=(b: Type): Boolean = (a, b) match {
-      case (TypePlaceholder, _) => true
-      case (_, TypePlaceholder) => true
-      case _ => a == b
-    }
-  }
-
   // type level lambdas
   object n2dtFun {
     def apply(f: NatIdentifier => DataType): NatToDataLambda = {
