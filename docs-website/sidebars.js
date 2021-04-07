@@ -35,4 +35,9 @@ module.exports = {
       ],
     }
   ],
+  docs: {
+    'Getting started': ['greeting', 'setup'],
+    'Tutorials': ['overview'],
+    'Language Reference': ['reference/rise-primitives']
+  },
 };

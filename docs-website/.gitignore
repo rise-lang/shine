@@ -7,7 +7,6 @@
 # Generated files
 .docusaurus
 .cache-loader
-docs/*.md
 docs/**/*.md
 
 # Misc
