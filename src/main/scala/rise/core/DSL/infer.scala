@@ -60,24 +60,19 @@ object infer {
       )
   }
 
+  private def implToExpl[K <: Kind.Identifier with Kind.Explicitness] : K => (K, K) = i =>
+    (i.asImplicit.asInstanceOf[K], i.asExplicit.asInstanceOf[K])
+
   private def freeze(ftvSubs: Solution, t: Type): Type =
     Solution(
-      ftvSubs.ts.view.mapValues(dt =>
-        dt.asInstanceOf[DataTypeIdentifier].asExplicit).toMap,
-      ftvSubs.ns.view.mapValues(n =>
-        n.asInstanceOf[NatIdentifier].asExplicit).toMap,
-      ftvSubs.as.view.mapValues(a =>
-        a.asInstanceOf[AddressSpaceIdentifier].asExplicit).toMap,
-      ftvSubs.ms.view.mapValues(m =>
-        m.asInstanceOf[MatrixLayoutIdentifier].asExplicit).toMap,
-      ftvSubs.fs.view.mapValues(f =>
-        f.asInstanceOf[FragmentKindIdentifier].asExplicit).toMap,
-      ftvSubs.n2ds.view.mapValues(n2d =>
-        n2d.asInstanceOf[NatToDataIdentifier].asExplicit).toMap,
-      ftvSubs.n2ns.view.mapValues(n2n =>
-        n2n.asInstanceOf[NatToNatIdentifier].asExplicit).toMap,
-      ftvSubs.natColls.view.mapValues(natColl =>
-        natColl.asInstanceOf[NatCollectionIdentifier].asExplicit).toMap
+      ftvSubs.ts.keySet.map(_.asInstanceOf[DataTypeIdentifier]).map(implToExpl).toMap,
+      ftvSubs.ns.keySet.map(implToExpl).toMap,
+      ftvSubs.as.keySet.map(implToExpl).toMap,
+      ftvSubs.ms.keys.map(implToExpl).toMap,
+      ftvSubs.fs.keys.map(implToExpl).toMap,
+      ftvSubs.n2ds.keySet.map(implToExpl).toMap,
+      ftvSubs.n2ns.keySet.map(implToExpl).toMap,
+      ftvSubs.natColls.keySet.map(implToExpl).toMap,
     )(t)
 
   private def explToImpl[K <: Kind.Identifier with Kind.Explicitness] : K => Map[K, K] = i =>
@@ -122,10 +117,29 @@ object infer {
     ftvs.distinct.toSeq
   }
 
-  private val genType : Expr => Type = e =>
-    if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
-  private val constrIfTyped : Type => Constraint => Seq[Constraint] = t => c =>
-    if (t == TypePlaceholder) Nil else Seq(c)
+  def getFTVsRec(e: Expr): Seq[Kind.Identifier] = {
+    val ftvs = mutable.ListBuffer[Kind.Identifier]()
+    traverse(e, new PureTraversal {
+      override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = _ => i => {
+        i match {
+          case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
+          case i => ftvs += i
+        }
+        return_(i)
+      }
+      override def nat: Nat => Pure[Nat] = ae =>
+        return_(ae.visitAndRebuild({
+          case i: NatIdentifier if !i.isExplicit => ftvs += i; i
+          case n => n
+        }))
+    })
+    ftvs.distinct.toSeq
+  }
+
+  private val genType : Expr => Type =
+    e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
+  private val constrIfTyped : Type => Constraint => Seq[Constraint] =
+    t => c => if (t == TypePlaceholder) Nil else Seq(c)
 
   private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint], Solution) = env => {
     case i: Identifier =>

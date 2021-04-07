@@ -47,7 +47,7 @@ class showScalaTest extends test_util.Tests {
     logger.debug(expr)
     logger.debug(typedExpr)
 
-    assert(expr == dotElemWeights.toUntypedExpr)
-    assert(typedExpr == typedDotElemWeights)
+    assert(expr =~~= dotElemWeights.toUntypedExpr)
+    assert(typedExpr =~~= typedDotElemWeights)
   }
 }
