@@ -38,7 +38,9 @@ lazy val riseAndShine = (project in file("."))
         "junit" % "junit" % "4.11",
         "org.scalatest" %% "scalatest" % "3.1.0" % "test",
         // json
-        "com.typesafe.play" %% "play-json" % "2.9.1"
+        "com.typesafe.play" %% "play-json" % "2.9.1",
+        // subprocess communication
+        "com.lihaoyi" %% "os-lib" % "0.7.3"
     )
   )
 
