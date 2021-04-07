@@ -14,24 +14,8 @@ final case class MakeDepPair(a: AccessType,
                              fst: NatIdentifier,
                              sndT: DataType,
                              snd: Phrase[ExpType]
-                        ) extends ExpPrimitive with ConT with AccT {
+                        ) extends ExpPrimitive with AccT {
   override val t: ExpType = expT(DepPairType(fst, sndT), a)
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] = {
-    // Allocate for the resulting dependent pair,
-    // then imperatively write the first element,
-    // acc-translate and write the second element
-    // and call the continuation on the result
-    // TODO(federico) - This is allocating eagerly. Make it allocate lazily by adding a suitable primitive:
-    //  ideally Dmatch(..,..., MkDPair(x, y))
-    // should not allocate
-    `new`(t.dataType, outVar => {
-      MkDPairFstI(fst, outVar.wr) `;`
-        acc(snd)(MkDPairSndAcc(fst, sndT, outVar.wr)) `;`
-        C(outVar.rd)
-    })
-  }
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] = {

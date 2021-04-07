@@ -18,15 +18,10 @@ final case class MapFst(w: AccessType,
                         dt3: DataType,
                         f: Phrase[ExpType ->: ExpType],
                         record: Phrase[ExpType]
-                       ) extends ExpPrimitive with ConT with AccT with FedeT {
+                       ) extends ExpPrimitive with AccT with FedeT {
   f :: expT(dt1, w) ->: expT(dt3, w)
   record :: expT(dt1 x dt2, w)
   override val t: ExpType = expT(dt3 x dt2, w)
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-  // assumption: f does not need to be translated, it does indexing only
-    con(record)(fun(record.t)(x => C(MapFst(w, dt1, dt2, dt3, f, x))))
 
   override def eval(s: Store): Data = {
     val fE = OperationalSemantics.eval(s, f)

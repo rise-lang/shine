@@ -18,15 +18,10 @@ final case class MapSnd(w: AccessType,
                         dt3: DataType,
                         f: Phrase[ExpType ->: ExpType],
                         record: Phrase[ExpType]
-                       ) extends ExpPrimitive with ConT with AccT with FedeT {
+                       ) extends ExpPrimitive with AccT with FedeT {
   f :: expT(dt2, w) ->: expT(dt3, w)
   record :: expT(dt1 x dt2, w)
   override val t: ExpType = expT(dt1 x dt3, w)
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-  // assumption: f does not need to be translated, it does indexing only
-    con(record)(fun(record.t)(x => C(MapSnd(w, dt1, dt2, dt3, f, x))))
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] = {

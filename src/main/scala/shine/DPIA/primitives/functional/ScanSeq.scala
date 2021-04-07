@@ -18,7 +18,7 @@ final case class ScanSeq(n: Nat,
                          f: Phrase[ExpType ->: ExpType ->: ExpType],
                          init: Phrase[ExpType],
                          array: Phrase[ExpType]
-                        ) extends ExpPrimitive with ConT with AccT {
+                        ) extends ExpPrimitive with AccT {
   f :: expT(dt1, read) ->: expT(dt2, read) ->: expT(dt2, write)
   init :: expT(dt2, write)
   array :: expT(n`.`dt1, read)
@@ -35,9 +35,4 @@ final case class ScanSeq(n: Nat,
         )
       ))
     ))
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
-      acc(this)(tmp.wr) `;` C(tmp.rd) ))
 }

@@ -18,14 +18,9 @@ final case class Split(n: Nat,
                        w: AccessType,
                        dt: DataType,
                        array: Phrase[ExpType]
-                      ) extends ExpPrimitive with ConT with AccT with FedeT {
+                      ) extends ExpPrimitive with AccT with FedeT {
   array :: expT((m * n)`.`dt, w)
   override val t: ExpType = expT(m`.`(n`.`dt), w)
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] =
-    con(array)(λ(expT((m * n)`.`dt, read))(x =>
-      C(Split(n, m, w, dt, x))))
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] =

@@ -375,10 +375,6 @@ trait ExpPrimitive extends Primitive[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 }
 
-trait ConT {
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType]
-}
 
 trait AccT {
   def acceptorTranslation(A: Phrase[AccType])

@@ -78,6 +78,11 @@ object TranslationToImperative {
       case Proj2(_) => throw new Exception("This should never happen")
     }
   }
+  def con(E: Phrase[ExpType])
+         (C: Phrase[ExpType ->: CommType])
+         (implicit context: TranslationContext): Phrase[CommType] = {
+    ContinuationTranslation.con(E)(C)
+  }
 
   def fedAcc(env: Map[Identifier[ExpType], Identifier[AccType]])
             (E: Phrase[ExpType])
@@ -110,54 +115,6 @@ object TranslationToImperative {
 
       case LetNat(_, _, _) => throw new Exception("This should never happen")
       case _ => ???
-    }
-  }
-
-  def con(E: Phrase[ExpType])
-         (C: Phrase[ExpType ->: CommType])
-         (implicit context: TranslationContext): Phrase[CommType] = {
-    E match {
-      case x: Identifier[ExpType] => C(x)
-
-      case c: Literal => C(c)
-
-      case n: Natural => C(n)
-
-      case u@UnaryOp(op, e) =>
-        con(e)(λ(u.t)(x =>
-          C(UnaryOp(op, x))
-        ))
-
-      case b@BinOp(op, e1, e2) =>
-        con(e1)(λ(b.t)(x =>
-          con(e2)(λ(b.t)(y =>
-            C(BinOp(op, x, y))
-          ))
-        ))
-
-      case ep: ExpPrimitive with ConT => ep.continuationTranslation(C)
-      case ep: ExpPrimitive => throw new Exception(s"$ep does not support the Continuation Translation")
-
-      // on the fly beta-reduction
-      case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)
-      case DepApply(fun, arg) => arg match {
-        case a: Nat =>
-          con(Lifting.liftDependentFunction[NatKind, ExpType](
-            fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(C)
-        case a: DataType =>
-          con(Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(C)
-      }
-
-      case IfThenElse(cond, thenP, elseP) =>
-        con(cond)(λ(cond.t) { x =>
-          `if`(x) `then` con(thenP)(C) `else` con(elseP)(C)
-        })
-
-      case Proj1(_) => throw new Exception("This should never happen")
-      case Proj2(_) => throw new Exception("This should never happen")
-
-      case LetNat(_, _, _) => throw new Exception("This should never happen")
     }
   }
 
