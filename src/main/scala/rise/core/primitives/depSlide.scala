@@ -25,12 +25,6 @@ object depSlide extends Builder {
         (n `.` t) ->: (allWindows`*.`(i =>
           (IfThenElse(arithPredicate(i, fullWindows, Operator.<), sp, remainder) + halo) `.` t))
       }))}
-    override def equals(obj: Any): Boolean = obj match {
-      case p: Primitive =>
-        p.t =~= t
-      case _ =>
-        false
-    }
   }
 
   override def primitive: rise.core.Primitive = Primitive()()

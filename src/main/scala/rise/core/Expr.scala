@@ -54,6 +54,7 @@ final case class Literal(d: semantics.Data) extends Expr {
 }
 
 abstract class Primitive extends Expr {
+  override def equals(obj: Any): Boolean = obj.getClass == this.getClass
   override val t: Type = TypePlaceholder
   def typeScheme: Type =
     throw TypeException("typeScheme method must be overridden")
