@@ -11,6 +11,9 @@ object Rewrite {
   }
 }
 
+/** A rewrite rule that searches for a left-hand side using a [[Searcher]],
+  * and applies a right-hand side using an [[Applier]].
+  */
 class Rewrite[Data](val name: String,
                     val searcher: Searcher[Data],
                     val applier: Applier[Data]) {
@@ -21,6 +24,10 @@ class Rewrite[Data](val name: String,
     applier.applyMatches(egraph, matches)
 }
 
+/** The left-hand side of a [[Rewrite]] rule.
+  * A searcher is something that can search the [[EGraph]] for
+  * matching substitutions.
+  */
 trait Searcher[Data] {
   // the variables bound by this searcher
   def patternVars(): Vec[PatternVar]
@@ -34,6 +41,9 @@ trait Searcher[Data] {
   }
 }
 
+/** The right-hand side of a [[Rewrite]] rule.
+  * An applier is anything that can use a [[Subst]] to modify the [[EGraph]].
+  */
 trait Applier[Data] {
   // the variables used by this applier
   // return an empty Vec to disable checks
@@ -63,8 +73,12 @@ trait Applier[Data] {
   }
 }
 
+/** The result of searching over one [[EClass]].
+  * Note that multiple substitutions can have been found.
+  */
 case class SearchMatches(eclass: EClassId, substs: Vec[Subst])
 
+/** A substitution mapping variables to their match in the [[EGraph]] */
 case class Subst(vec: Vec[(PatternVar, EClassId)]) {
   // insert a mapping, returning the old eclass if present
   def insert(variable: PatternVar, eclass: EClassId): Option[EClassId] = {
@@ -93,6 +107,7 @@ object Subst {
 }
 
 // note: the condition is more general in `egg`
+/** An [[Applier]] that checks a condition before applying another [[Applier]] */
 case class ConditionalApplier[D](cond: (EGraph[D], EClassId, Subst) => Boolean,
                                  applier: Applier[D])
   extends Applier[D] {
@@ -104,6 +119,9 @@ case class ConditionalApplier[D](cond: (EGraph[D], EClassId, Subst) => Boolean,
   }
 }
 
+/** An [[Applier]] that shifts the DeBruijn indices of a variable.
+  * @note It works by extracting an expression from the [[EGraph]] in order to shift it.
+  */
 case class ShiftedApplier(v: PatternVar, newV: PatternVar,
                           up: Boolean, cutoff: Int,
                           applier: Applier[DefaultAnalysisData])
@@ -126,6 +144,9 @@ case class ShiftedApplier(v: PatternVar, newV: PatternVar,
   }
 }
 
+/** An [[Applier]] that performs beta-reduction.
+  * @note It works by extracting an expression from the [[EGraph]] in order to beta-reduce it.
+  */
 case class BetaApplier(body: PatternVar, subs: PatternVar)
   extends Applier[DefaultAnalysisData] {
   override def patternVars(): Vec[PatternVar] = {

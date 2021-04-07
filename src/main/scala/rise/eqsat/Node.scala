@@ -3,7 +3,9 @@ package rise.eqsat
 import rise.core.types._
 import rise.core.semantics
 
-// Rise with DeBruijn indexing
+/** A term node for the Rise language with DeBruijn indexing.
+  * @tparam T abstracts over children nodes, and differs for [[Expr]], [[ENode]], [[Pattern]], etc
+  */
 sealed trait Node[+T] {
   def mapChildren[O](fc: T => O): Node[O] = this match {
     case v @ Var(_) => v

@@ -7,6 +7,7 @@ import rise.core.semantics.NatData
 import rise.core.types.{Nat, NatKind, TypePlaceholder}
 
 // TODO: could also be outside of eqsat package
+/** A Rise expression based on DeBruijn indexing */
 case class Expr(node: Node[Expr]) {
   // shifts De-Bruijn indices up or down if they are >= cutoff
   def shifted(up: Boolean, cutoff: Int): Expr = {

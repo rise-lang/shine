@@ -6,6 +6,7 @@ object UnionFind {
   def empty: UnionFind = new UnionFind(Vec[EClassId]())
 }
 
+/** A data structure that maintains a collection of disjoint sets */
 final class UnionFind(var parents: Vec[EClassId]) {
   def makeSet(): EClassId = {
     val id = EClassId(parents.size)

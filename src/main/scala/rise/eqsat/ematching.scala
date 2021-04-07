@@ -2,12 +2,17 @@ package rise.eqsat
 
 import scala.collection.mutable
 
+/** e-matching tries to find a [[Pattern]] in an [[EGraph]],
+  * returning a list of [[Subst]]s representing successful matches.
+  * @see [[http://leodemoura.github.io/files/ematching.pdf Efficient e-matching for SMT Solvers]]
+  */
 object ematching {
   object AbstractMachine {
     def init(eclass: EClassId): AbstractMachine =
       AbstractMachine(Vec(eclass))
   }
 
+  /** An abstract machine on which compiled [[Pattern]]s ([[Program]]s) are executed */
   case class AbstractMachine(regs: Vec[EClassId]) {
     def reg(r: Reg): EClassId = regs(r.n)
 
@@ -43,6 +48,7 @@ object ematching {
 
   case class Reg(var n: Int)
 
+  /** A program compiled from a [[Pattern]] */
   class Program(val instructions: Vec[Instruction],
                 val subst: Subst) {
     def run[D](egraph: EGraph[D], eclass: EClassId): Vec[Subst] = {
@@ -65,7 +71,7 @@ object ematching {
     }
   }
 
-  // A node without children for matching purposes
+  /** A node without children for matching purposes */
   type MNode = Node[()]
   /* TODO
   object MNodeOrdering extends math.Ordering[MNode] {
@@ -127,6 +133,7 @@ object ematching {
     }
   }
 
+  /** A compiler for [[Pattern]]s */
   class Compiler(var pattern: Pattern,
                  var v2r: HashMap[PatternVar, Reg],
                  var todo: mutable.PriorityQueue[Todo],
