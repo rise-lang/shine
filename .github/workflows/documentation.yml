@@ -19,7 +19,7 @@ jobs:
         uses: docker://michelsteuwer/docker-scala-opencl:latest
         with:
           entrypoint: sbt
-          args: docs/mdoc
+          args: generateRISEPrimitives docs/mdoc
       - uses: actions/setup-node@v2
         with:
           node-version: '12'
