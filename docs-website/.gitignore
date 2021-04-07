@@ -8,6 +8,7 @@
 .docusaurus
 .cache-loader
 docs/*.md
+docs/**/*.md
 
 # Misc
 .DS_Store

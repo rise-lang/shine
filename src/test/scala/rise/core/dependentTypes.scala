@@ -39,7 +39,7 @@ class dependentTypes extends test_util.Tests {
   test("GEN: Dependent pair map increment") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((n:Nat) => fun(xs =>
-        makeDepPair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
+        makeDepPair(n)(mapSeq(fun(x => x + lf32(1.0f)))(xs) ::(n`.`f32))
       ))))
     val inferred: Expr = e.toExpr
     println(inferred)
@@ -93,7 +93,7 @@ class dependentTypes extends test_util.Tests {
   test("Dependent pair match with reduction") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((_: Nat) => fun(xs =>
-        reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))(xs))
+        reduceSeq(fun(x => fun(y => x + y)))(lf32(0.0f))(xs))
       ))
     )
     val inferred: Expr = e.toExpr
@@ -169,7 +169,7 @@ class dependentTypes extends test_util.Tests {
 
   test("Simple reduce") {
     val e = depFun((n: Nat) => fun(n `*.` (i => (i+1) `.` f32))(array =>
-      depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
+      depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(lf32(0.0f))))(array)
     ))
 
     val inferred: Expr = inferDependent(e)
@@ -191,7 +191,7 @@ class dependentTypes extends test_util.Tests {
           row =>
             reduceSeq(
               fun(x => fun(y => x + y))
-            )(l(0.0f))(mapSeq(fun(entry => {
+            )(lf32(0.0f))(mapSeq(fun(entry => {
               val number = entry._1
               val index = entry._2
               number * (vector `@` index)

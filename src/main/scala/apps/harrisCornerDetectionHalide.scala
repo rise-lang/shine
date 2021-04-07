@@ -67,7 +67,7 @@ object harrisCornerDetectionHalide {
     zipND(2)(a, b) |> map(map(mulT))
   ))
 
-  val sum: ToBeTyped[Expr] = reduce(add)(l(0.0f))
+  val sum: ToBeTyped[Expr] = reduce(add)(lf32(0.0f))
   val sum3x3: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
     ((h+2)`.`(w+2)`.`f32) ->: (h`.`w`.`f32)
   )(input => input |>
@@ -88,7 +88,7 @@ object harrisCornerDetectionHalide {
       val sxx = fst(s)
       val sxy = fst(snd(s))
       val syy = snd(snd(s))
-      coarsityElem(sxx)(sxy)(syy)(l(0.04f))
+      coarsityElem(sxx)(sxy)(syy)(lf32(0.04f))
     }))
   ))
 
@@ -168,7 +168,7 @@ object harrisCornerDetectionHalide {
               val sxx = fst(s)
               val sxy = fst(snd(s))
               val syy = snd(snd(s))
-              coarsityElem(sxx)(sxy)(syy)(l(0.04f))
+              coarsityElem(sxx)(sxy)(syy)(lf32(0.04f))
             }))
           )))))) >> write2DSeq
         )) >> join >> map(padEmpty(4))
@@ -185,7 +185,7 @@ object harrisCornerDetectionHalide {
     val harrisBuffered: ToBeTyped[Expr] = gen.harrisBuffered(circularBuffer)
   }
 
-  private val sumVec = reduce(add)(vectorFromScalar(l(0.0f)))
+  private val sumVec = reduce(add)(vectorFromScalar(lf32(0.0f)))
   private val dotWeightsVec = fun(weights => fun(input =>
     zip(map(vectorFromScalar)(weights))(input) |> map(mulT) |> sumVec
   ))
@@ -196,7 +196,7 @@ object harrisCornerDetectionHalide {
   }
 
   object ocl {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.openCL.primitives.{oclCircularBuffer, oclRotateValues}
 
     private val letGlobal = fun(k => fun(x => toGlobal(x) |> letf(k)))
@@ -282,7 +282,7 @@ object harrisCornerDetectionHalide {
             ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(sxy =>
             iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(syy =>
               // ^ <v>f
-              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(lf32(0.04f)))
             )))))))))
           )) >> write1DSeq >> asScalar // W.f
         )))
@@ -326,7 +326,7 @@ object harrisCornerDetectionHalide {
             ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(sxy =>
             iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(fun(syy =>
               // ^ <v>f
-              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(lf32(0.04f)))
             )))))))))
           )) >> asScalar // W.f
         )))
@@ -368,7 +368,7 @@ object harrisCornerDetectionHalide {
             ixy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(sxy =>
             iyy |> fun(nbh => sumVec(join(nbh))) >> toPrivate >> letf(syy =>
             // ^ <v>f
-            coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+            coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(lf32(0.04f)))
             ))))))
           )) >> asScalar // W.f
         )
@@ -411,7 +411,7 @@ object harrisCornerDetectionHalide {
             sumVec(join(ixx)) |> toPrivate >> letf(sxx =>
             sumVec(join(ixy)) |> toPrivate >> letf(sxy =>
             sumVec(join(iyy)) |> toPrivate >> letf(syy =>
-            coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+            coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(lf32(0.04f)))
             ))))))
           )) >> asScalar
         )
@@ -452,7 +452,7 @@ object harrisCornerDetectionHalide {
               val sxx = sxys `@` lidx(0, 3)
               val sxy = sxys `@` lidx(1, 3)
               val syy = sxys `@` lidx(2, 3)
-              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(lf32(0.04f)))
             })
           ) >> asScalar
         )

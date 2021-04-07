@@ -63,7 +63,7 @@ object multiscaleInterpolation {
       zipND(3)(downsampled, upsampled) |>
       transpose |> map(transpose) |>
       map(map(fun { p => // 4.(f32 x f32)
-        val alpha = l(1.0f) - fst(p `@` lidx(3, 4))
+        val alpha = lf32(1.0f) - fst(p `@` lidx(3, 4))
         map(fun(x =>
           fst(x) + alpha * snd(x)
         ))(p)

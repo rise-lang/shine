@@ -18,10 +18,6 @@ object cameraPipeline {
   val max: ToBeTyped[Expr] = foreignFun("max_i16", i16 ->: i16 ->: i16)
   val pow: ToBeTyped[Expr] = foreignFun("pow_f32", f32 ->: f32 ->: f32)
 
-  def li16(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i16
-  def li32(v: Int): ToBeTyped[Expr] = cast(l(v)) :: i32
-  def lu8(v: Int): ToBeTyped[Expr] = cast(l(v)) :: u8
-
   // average two positive values rounding up
   val avg: ToBeTyped[Expr] =
     depFun((dt: DataType) => depFun((compute_dt: DataType) =>
@@ -281,11 +277,11 @@ object cameraPipeline {
     // calibrated matrices using inverse kelvin.
     val kelvin = color_temp
     val alpha =
-      (l(1.0f) / kelvin - l(1.0f / 3200)) / l(1.0f / 7000 - 1.0f / 3200)
+      (lf32(1.0f) / kelvin - lf32(1.0f / 3200)) / lf32(1.0f / 7000 - 1.0f / 3200)
     (
       zipND(2)(matrix_3200, matrix_7000) |>
-        map(map(fun(p => p._1 * alpha + p._2 * (l(1.0f) - alpha)))) >>
-          map(map(fun(v => cast(v * l(256.0f)) :: i16))) // Q8.8 fixed point
+        map(map(fun(p => p._1 * alpha + p._2 * (lf32(1.0f) - alpha)))) >>
+          map(map(fun(v => cast(v * lf32(256.0f)) :: i16))) // Q8.8 fixed point
       ) |> fun(matrix =>
         input |> transpose >>
         map(transpose >> map(map(cast :: (i16 ->: i32)))) // H.W.3.i32
@@ -314,27 +310,27 @@ object cameraPipeline {
     val minRaw = blackLevel // / l(lutResample)
     val maxRaw = whiteLevel // / l(lutResample)
 
-    val invRange = l(1.0f) / (cast(maxRaw - minRaw) :: f32)
-    val b = l(2.0f) - pow(l(2.0f), contrast / l(100.0f))
-    val a = l(2.0f) - l(2.0f) * b
+    val invRange = lf32(1.0f) / (cast(maxRaw - minRaw) :: f32)
+    val b = lf32(2.0f) - pow(lf32(2.0f), contrast / lf32(100.0f))
+    val a = lf32(2.0f) - lf32(2.0f) * b
 
     // make LUT
     generate(fun(IndexType(1024))(x_ => {
       val x = cast(x_) :: int
       // get a linear luminance in the range 0-1
       val xf = clamp(f32)(
-        (cast(x - minRaw) :: f32) * invRange, l(0.0f), l(1.0f)
+        (cast(x - minRaw) :: f32) * invRange, lf32(0.0f), lf32(1.0f)
       )
       // gamma correct it
-      val g = pow(xf, l(1.0f) / gamma)
+      val g = pow(xf, lf32(1.0f) / gamma)
       // apply a piecewise quadratic contrast curve
-      val gmo = l(1.0f) - g
-      val z = `if` (g > l(0.5f))
-        .`then` (l(1.0f) - (a * gmo * gmo + b * gmo))
+      val gmo = lf32(1.0f) - g
+      val z = `if` (g > lf32(0.5f))
+        .`then` (lf32(1.0f) - (a * gmo * gmo + b * gmo))
         .`else` (a * g * g + b * g)
       // convert to 8 bit
       val v = cast(
-        clamp(f32)(z * l(255.0f) + l(0.5f), l(0.0f), l(255.0f))
+        clamp(f32)(z * lf32(255.0f) + lf32(0.5f), lf32(0.0f), lf32(255.0f))
       ) :: u8
 
       // add guard band outside of (minraw, maxRaw]
@@ -371,7 +367,7 @@ object cameraPipeline {
     def u8_sat(dt: DataType) = fun(x =>
       cast(clamp(dt)(x, cast(l(0)) :: dt, cast(l(255)) :: dt)) :: u8
     )
-    u8_sat(f32)(strength * l(32.0f)) |> fun(strength_x32 =>
+    u8_sat(f32)(strength * lf32(32.0f)) |> fun(strength_x32 =>
       input |> map(fun(plane_ => {
         val plane = Image(0, w+2, 0, h+2, plane_)
         letImage(mapImage(

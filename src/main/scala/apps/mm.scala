@@ -5,19 +5,30 @@ import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 
 object mm {
   private val id = fun(x => x)
   private val mulT = separableConvolution2D.mulT
+  private val dot = separableConvolution2D.dot
   private val dotSeq = fun(a => fun(b =>
-    zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+    zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
   ))
 
   // the first matrix input is transposed
 
-  val sequential: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
+  val mmHighLevel: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
+    (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
+  )((at, b) =>
+    transpose(at) |> map(fun(aRow =>
+      transpose(b) |> map(fun(bCol =>
+        dot(aRow)(bCol)
+      ))
+    ))
+  ))
+
+  val mmSequential: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
     (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
   )((at, b) =>
     transpose(at) |> mapSeq(fun(aRow =>
@@ -27,7 +38,7 @@ object mm {
     ))
   ))
 
-  val amd: ToBeTyped[Expr] = {
+  val mmAMD: ToBeTyped[Expr] = {
     val v3 = 4
     val v4 = 8
     val vw = 4
@@ -50,7 +61,7 @@ object mm {
                 ))(zip(p8._1)(x._2))
               ))(zip(p6)(x._1))
             )
-          ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => l(0.0f)))))) :: (v4`.`v3`.`f32)) |> //
+          ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => lf32(0.0f)))))) :: (v4`.`v3`.`f32)) |> //
           mapSeq(asScalar o mapSeq(id) o asVector(vw)) |>
           transpose // v3.v4.f
         )) |> join |> transpose
@@ -58,7 +69,7 @@ object mm {
     ))
   }
 
-  val nvidia: ToBeTyped[Expr] = {
+  val mmNVIDIA: ToBeTyped[Expr] = {
     val v3 = 4
     val v4 = 8
     val v5 = 64
@@ -116,7 +127,7 @@ object mm {
             generate(fun(_ =>
               generate(fun( _ =>
                 generate(fun(_ =>
-                  generate(fun(_ => l(0.0f))))))))) |>
+                  generate(fun(_ => lf32(0.0f))))))))) |>
             mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(id))))
           ) |> // (v5/^v4).(v7/^v3).v4.v3.f
           mapLocal(1)(mapLocal(0)(mapSeq(asScalar o mapSeq(id) o asVector(4)))) |>

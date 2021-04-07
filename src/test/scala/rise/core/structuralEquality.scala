@@ -53,8 +53,7 @@ class structuralEquality extends test_util.Tests {
     )
   }
 
-  // TODO: implement equality properly
-  ignore("reduce different type") {
+  test("reduce different type") {
     assert(
       depFun((n: Nat) =>
         fun(ArrayType(n, int))(a => reduceSeq(fun(x => fun(y => x + y)))(0)(a))

@@ -10,7 +10,7 @@ import rise.core.types.InferenceException.error
 
 import scala.collection.mutable
 
-trait Constraint
+sealed trait Constraint
 case class TypeConstraint(a: Type, b: Type) extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
@@ -21,7 +21,11 @@ case class BoolConstraint(a: arithexpr.arithmetic.BoolExpr,
                           b: arithexpr.arithmetic.BoolExpr) extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
-case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace)
+case class MatrixLayoutConstraint(a: MatrixLayout, b: MatrixLayout)
+  extends Constraint {
+  override def toString: String = s"$a  ~  $b"
+}
+case class FragmentTypeConstraint(a: FragmentKind, b: FragmentKind)
   extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
@@ -94,6 +98,9 @@ object Constraint {
             decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
           case (VectorType(sa, ea), VectorType(sb, eb)) =>
             decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+          case (FragmentType(rowsa, columnsa, d3a, dta, fragTypea, layouta), FragmentType(rowsb, columnsb, d3b, dtb, fragTypeb, layoutb)) =>
+            decomposed(Seq(NatConstraint(rowsa, rowsb), NatConstraint(columnsa, columnsb), NatConstraint(d3a, d3b),
+              TypeConstraint(dta, dtb), FragmentTypeConstraint(fragTypea, fragTypeb), MatrixLayoutConstraint(layouta, layoutb)))
           case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
             decomposed(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb)))
           case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
@@ -247,6 +254,21 @@ object Constraint {
             ???
         }
 
+      case MatrixLayoutConstraint(a, b) =>
+        (a, b) match {
+          case (i: MatrixLayoutIdentifier, _) if (!i.isExplicit) => Solution.subs(i, b)
+          case (_, i: MatrixLayoutIdentifier) if (!i.isExplicit) => Solution.subs(i, a)
+          case _ if a == b                 => Solution()
+          case _                           => error(s"cannot unify $a and $b")
+        }
+
+      case FragmentTypeConstraint(a, b) =>
+        (a, b) match {
+          case (i: FragmentKindIdentifier, _) if (!i.isExplicit) => Solution.subs(i, b)
+          case (_, i: FragmentKindIdentifier) if (!i.isExplicit) => Solution.subs(i, a)
+          case _ if a == b                 => Solution()
+          case _                           => error(s"cannot unify $a and $b")
+        }
     }
   }
   // scalastyle:on method.length

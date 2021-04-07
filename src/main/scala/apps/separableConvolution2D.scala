@@ -6,7 +6,7 @@ import rise.core.primitives._
 import rise.core.DSL.Type._
 import rise.core.types._
 import rise.core.semantics._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.{oclRotateValues, oclReduceSeqUnroll}
 import HighLevelConstructs._
 
@@ -65,18 +65,18 @@ object separableConvolution2D {
   val id: ToBeTyped[Expr] = fun(x => x)
   val mulT: ToBeTyped[Expr] = fun(x => fst(x) * snd(x))
   val dot: ToBeTyped[Expr] = fun(a => fun(b =>
-    zip(a)(b) |> map(mulT) |> reduce(add)(l(0.0f))
+    zip(a)(b) |> map(mulT) |> reduce(add)(lf32(0.0f))
   ))
   val dotSeq: ToBeTyped[Expr] = fun(a => fun(b =>
-    zip(a)(b) |> map(mulT) |> reduceSeq(add)(l(0.0f))
+    zip(a)(b) |> map(mulT) |> reduceSeq(add)(lf32(0.0f))
   ))
   val dotSeqUnroll: ToBeTyped[Expr] = fun(a => fun(b =>
-    zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
+    zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(lf32(0.0f))
   ))
   val weightsSeqVecUnroll: ToBeTyped[Expr] = fun(weights => fun(vectors =>
     zip(map(vectorFromScalar)(weights))(vectors) |>
     map(mulT) |>
-    oclReduceSeqUnroll(AddressSpace.Private)(add)(vectorFromScalar(l(0.0f)))
+    oclReduceSeqUnroll(AddressSpace.Private)(add)(vectorFromScalar(lf32(0.0f)))
   ))
 
   val base: ToBeTyped[Expr] = fun(3`.`3`.`f32)(weights2d =>

@@ -74,19 +74,7 @@ object algorithmic {
         preserveType(f)(acc)(preserveType(g)(x)))))(init)(in) !: e.t)
   }
 
-  @rule def fuseReduceMap: Strategy[Rise] = {
-    case e @ App(
-      App(App(ReduceX(), op), init), // reduce
-      App(App(map(), f), mapArg)     // map
-    ) =>
-      val red = op.t match {
-        case FunType(_, yToOutT) if f.t == yToOutT => reduce
-        case _ => reduceSeq
-      }
-      Success(
-        (red(fun((acc, y) =>
-          preserveType(op)(acc)(preserveType(f)(y))))(init) $ mapArg) !: e.t)
-  }
+  def fuseReduceMap: Strategy[Rise] = reduceMapFusion
 
   @rule def reduceMapFission()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case e @ App(App(ReduceX(), Lambda(acc, Lambda(y,
@@ -536,7 +524,7 @@ object algorithmic {
   
 
   private val mulT: ToBeTyped[Rise] = fun(x => fst(x) * snd(x))
-  private val sum: ToBeTyped[Rise] = reduce(add)(l(0.0f))
+  private val sum: ToBeTyped[Rise] = reduce(add)(lf32(0.0f))
   private val dot: ToBeTyped[Rise] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> sum
   ))
@@ -545,7 +533,7 @@ object algorithmic {
     case e @ App(App(App(reduce(), rf), init), App(App(map(), mf),
       App(App(zip(), App(join(), weights)), App(join(), nbh))
     )) if rf == ((add !: rf.t): Expr) &&
-      init == (l(0.0f): Expr) &&
+      init == (lf32(0.0f): Expr) &&
       mf == ((mulT !: mf.t): Expr) &&
       weights == weights2d
       =>
@@ -556,7 +544,7 @@ object algorithmic {
     case e @ App(App(App(reduce(), rf), init), App(App(map(), mf),
     App(App(zip(), App(join(), weights)), App(join(), nbh))
     )) if rf == ((add !: rf.t): Expr) &&
-      init == (l(0.0f): Expr) &&
+      init == (lf32(0.0f): Expr) &&
       mf == ((mulT !: mf.t): Expr) &&
       weights == weights2d
     =>

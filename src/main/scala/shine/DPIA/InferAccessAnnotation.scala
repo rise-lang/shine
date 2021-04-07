@@ -6,6 +6,7 @@ import rise.core.DSL.Type.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstructor
 import rise.core.{primitives => rp}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
+import rise.Cuda.{primitives => rocup}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
@@ -114,7 +115,7 @@ private class InferAccessAnnotation {
     ctx: Context,
     isKernelParamFun: Boolean
   ): (PhraseType, Subst) = {
-    e match {
+    val (pt, s) = e match {
       case i: r.Identifier =>
         val pt = ctx(i)
         ptAnnotationMap.put(i, pt)
@@ -134,6 +135,19 @@ private class InferAccessAnnotation {
         inferDepApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
       case p: r.Primitive => inferPrimitive(p)
     }
+    // the kernel output must be 'write'
+    if (isKernelParamFun) {
+      pt match {
+        case et: ExpType => subUnifyPhraseType(et, ExpType(et.dataType, write)) match {
+          case Success(subst) => return (subst(pt), subst(s))
+          case Failure(exception) =>
+            error(s"The program does not specify how to write the result " +
+              s"of the program into its output: $exception")
+        }
+        case _ =>
+      }
+    }
+    (pt, s)
   }
 
   private def inferLambda(
@@ -233,8 +247,9 @@ private class InferAccessAnnotation {
   private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
     val primitiveType = p match {
       case roclp.mapGlobal(_) | roclp.mapWorkGroup(_) | roclp.mapLocal(_)
-           | rompp.mapPar() | rp.mapSeq() | rp.mapSeqUnroll()
-           | rp.iterateStream() => p.t match {
+           | rocup.mapGlobal(_) | rocup.mapBlock(_) | rocup.mapThreads(_)
+           | rocup.mapWarp(_) | rocup.mapLane(_) |rompp.mapPar()
+           | rp.mapSeq() | rp.mapSeqUnroll() | rp.iterateStream() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
           (expT(s, read) ->: expT(t, write)) ->:
             expT(n`.`s, read) ->: expT(n`.`t, write)
@@ -280,6 +295,17 @@ private class InferAccessAnnotation {
       case rp.toMem() => p.t match {
         case (t: rt.DataType) ->: (_: rt.DataType) =>
           expT(t, write) ->: expT(t, read)
+        case _ => error()
+      }
+
+      case roclp.oclRunPrimitive() => p.t match {
+        case ls1 `(Nat)->:` (ls2 `(Nat)->:` (ls3 `(Nat)->:`
+          (gs1 `(Nat)->:` (gs2 `(Nat)->:` (gs3 `(Nat)->:`
+          ((t: rt.DataType) ->: (_: rt.DataType))
+        ))))) =>
+          nFunT(ls1, nFunT(ls2, nFunT(ls3,
+            nFunT(gs1, nFunT(gs2, nFunT(gs3,
+              expT(t, write) ->: expT(t, write)))))))
         case _ => error()
       }
 
@@ -570,6 +596,37 @@ private class InferAccessAnnotation {
           case _ => error(s"did not expect $t")
         }
         buildType(p.t)
+
+      case rocup.asFragment() => p.t match {
+        case (aMatrix: rt.ArrayType) ->: (resultMatrix: rt.FragmentType) =>
+          expT(aMatrix, read) ->: expT(resultMatrix, read)
+      }
+
+      case rocup.asMatrix() => p.t match {
+        case (accMatrix: rt.FragmentType) ->: (resultArray: rt.ArrayType) =>
+          expT(accMatrix, read) ->: expT(resultArray, write)
+      }
+
+      case rocup.generateFragment() => p.t match {
+        case (dt: rt.DataType) ->: (resultMatrix: rt.FragmentType) =>
+          expT(dt, read) ->: expT(resultMatrix, read)
+      }
+
+      case rocup.tensorMMA() => p.t match {
+        case (aMatrix: rt.FragmentType) ->: (bMatrix: rt.FragmentType) ->:
+          (cMatrix: rt.FragmentType) ->: (resultMatrix: rt.FragmentType) =>
+          expT(aMatrix, read) ->: expT(bMatrix, read) ->: expT(cMatrix, read) ->: expT(resultMatrix, write)
+      }
+
+      case rocup.globalToShared() => p.t match {
+        case (dt: rt.DataType) ->: _ =>
+          expT(dt, write) ->: expT(dt, read)
+      }
+
+      case rocup.mapFragment() => p.t match {
+        case ((dt: rt.DataType) ->: _) ->: (fragType: rt.FragmentType) ->: _ =>
+          (expT(dt, read) ->: expT(dt, write)) ->: expT(fragType, read) ->: expT(fragType, write)
+      }
     }
 
     checkConsistency(p.t, primitiveType)

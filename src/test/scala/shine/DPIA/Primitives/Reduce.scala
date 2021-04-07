@@ -22,7 +22,7 @@ class Reduce extends test_util.TestsWithExecutor {
     "with one loop") {
     val e =
       depFun((n: Nat) => fun(ArrayType(n, f32))(a =>
-        a |> reduceSeq(add)(l(0.0f))))
+        a |> reduceSeq(add)(lf32(0.0f))))
 
     val code = function.asStringFromExpr(e)
 
@@ -34,7 +34,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val e =
       depFun((h: Nat, w: Nat) =>
         fun(ArrayType(h, ArrayType(w, f32)))(a =>
-          a |> map(reduceSeq(add)(l(0.0f))) |> mapSeq(fun(x => x))
+          a |> map(reduceSeq(add)(lf32(0.0f))) |> mapSeq(fun(x => x))
         ))
 
     function.asStringFromExpr(e)
@@ -45,7 +45,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val e =
       depFun((h: Nat, w: Nat) =>
         fun(ArrayType(h, ArrayType(w, f32)))(a =>
-          a |> map(reduceSeq(add)(l(0.0f))) |> reduceSeq(add)(l(0.0f))
+          a |> map(reduceSeq(add)(lf32(0.0f))) |> reduceSeq(add)(lf32(0.0f))
       ))
 
     val code = function.asStringFromExpr(e)
@@ -60,7 +60,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val random = new Random()
 
     val initExp = depFun((n: Nat) =>
-      generate(fun(IndexType(n))(_ => l(0.0f)))
+      generate(fun(IndexType(n))(_ => lf32(0.0f)))
         |> mapSeq (fun(x => x)))
 
     val e = depFun((m: Nat, n: Nat) =>
@@ -87,8 +87,8 @@ class Reduce extends test_util.TestsWithExecutor {
     "of reduceSeq generates syntactically valid C code") {
     val n = 8
     val initRecordExp =
-      (zip (generate(fun(IndexType(n))(_ => l(0.0f))))
-           (generate(fun(IndexType(n))(_ => l(0.0f))))
+      (zip (generate(fun(IndexType(n))(_ => lf32(0.0f))))
+           (generate(fun(IndexType(n))(_ => lf32(0.0f))))
         |> idx(natAsIndex (n) (l(Cst(0)))))
 
     def e(init : ToBeTyped[Expr]): ToBeTyped[Expr] = depFun((n: Nat) =>
@@ -107,7 +107,7 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val random = new Random()
 
-    val initRecordExp = makePair(l(0.0f))(l(0.0f))
+    val initRecordExp = makePair(lf32(0.0f))(lf32(0.0f))
 
     def e(init : ToBeTyped[Expr]) = depFun((n: Nat) =>
       fun(n`.`f32)(arr =>

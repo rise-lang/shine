@@ -1,10 +1,12 @@
 package shine.OpenCL
 
+import shine.OpenCL.AST.Kernel
 import shine.{C, OpenCL}
-import shine.OpenCL.primitives.imperative.OpenCLKernelDefinition
 
+// A OpenCL KernelModule consists of a set of kernels and their
+// dependencies (i.e. declarations)
 case class KernelModule(decls: Seq[C.AST.Decl],
-                        kernels: Seq[OpenCL.Kernel]) {
+                        kernels: Seq[Kernel]) {
   def compose(other: KernelModule): KernelModule =
     KernelModule((decls ++ other.decls).distinct, kernels ++ other.kernels)
 }
@@ -18,8 +20,4 @@ object KernelModule {
        |
        |${m.kernels.map(k => OpenCL.AST.Printer(k.code)).mkString("\n")}
        |""".stripMargin
-
-  def fromKernelDef(wgConfig: Option[(LocalSize, GlobalSize)])
-                   (kernelDef: OpenCLKernelDefinition): KernelModule =
-    kernelDef.translateToModule(shine.OpenCL.CodeGenerator())(wgConfig)
 }

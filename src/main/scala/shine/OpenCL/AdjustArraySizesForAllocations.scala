@@ -7,6 +7,9 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.OpenCL.{primitives => ocl}
+import shine.cuda.{primitives => cuda}
+import shine.cuda.primitives.functional.{AsMatrix, GenerateFragment, MapFragmentElements, TensorMatMultAdd, AsFragment}
+import shine.cuda.warpDim
 
 object AdjustArraySizesForAllocations {
   case class DataTypeAdjustment(accF: Phrase[AccType] => Phrase[AccType],
@@ -36,6 +39,11 @@ object AdjustArraySizesForAllocations {
         visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
       case mL@ocl.functional.Map(Local, dim) =>
         visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
+      case mWG@cuda.functional.Map(Global, dim) => visitAndGatherInformation(mWG.f, BasicInfo(Global, dim) :: parallInfo)
+      case mB@cuda.functional.Map(WorkGroup, dim) => visitAndGatherInformation(mB.f, BasicInfo(WorkGroup, dim) :: parallInfo)
+      case mG@cuda.functional.Map(Local, dim) => visitAndGatherInformation(mG.f, BasicInfo(Local, dim) :: parallInfo)
+      case mW@cuda.functional.Map(Warp, dim) => visitAndGatherInformation(mW.f, BasicInfo(Warp, dim) :: parallInfo)
+      case mL@cuda.functional.Map(Lane, dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
 
       // FIXME: works for scalars
@@ -72,9 +80,18 @@ object AdjustArraySizesForAllocations {
         case pi => error(s"did not expect $pi")
       }
 
+      case _: AsMatrix => BasicInfo(Warp, 'x') :: parallInfo
+
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunctionCall |
-           _: BinOp | _: UnaryOp => parallInfo
+           _: BinOp | _: UnaryOp | _: GenerateFragment |
+           _: AsMatrix | _: AsFragment | _: MapFragmentElements |
+           _: TensorMatMultAdd => parallInfo
+
+      //TODO visit value first?
+      case Let(_, _, _, _, f) => visitAndGatherInformation(f, parallInfo)
+
+      case Map(_, _, _, _, _, a) => visitAndGatherInformation(a, parallInfo)
 
       case pattern => throw new Exception(s"this should not happen for now: $pattern")
     }
@@ -166,6 +183,7 @@ object AdjustArraySizesForAllocations {
       case (Local, AddressSpace.Private) => get_local_size(dim)
       case (Local, _) => 1
       case (Sequential, _) => 1
+      case (Warp, AddressSpace.Private) => warpDim(dim.asInstanceOf[Char])
       case _ => throw new Exception("This should never happen.")
     }
   }
@@ -189,6 +207,9 @@ object AdjustArraySizesForAllocations {
           case (BasicInfo(Local, _), AddressSpace.Local) => ArrayType(n, adjustedSizeDataType(elemType, is, addrSpace))
 
           case (BasicInfo(Sequential, _), AddressSpace.Local) => ArrayType(n, adjustedSizeDataType(elemType, is, addrSpace))
+
+          case (BasicInfo(Warp, dim), AddressSpace.Private) =>
+            ArrayType(n / warpDim(dim.asInstanceOf[Char]), adjustedSizeDataType(elemType, is, addrSpace))
 
 
           case (BasicInfo(Global, dim), AddressSpace.Private) =>
