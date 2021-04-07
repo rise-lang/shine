@@ -1,5 +1,6 @@
 package rise.core
 
+import util.monads._
 import rise.core.primitives._
 import rise.core.semantics._
 import rise.core.traverse._

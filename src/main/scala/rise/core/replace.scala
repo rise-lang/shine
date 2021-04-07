@@ -1,5 +1,6 @@
 package rise.core
 
+import util.monads._
 import rise.core.traverse._
 
 object replace {
