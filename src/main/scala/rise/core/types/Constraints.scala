@@ -540,15 +540,14 @@ object dependence {
    * with applied nat-to-X functions.
    */
   def explicitlyDependent(t: Type, depVar: NatIdentifier): (Type, Solution) = {
-    val visitor = new PairMonoidTraversal[Seq[Solution], Pure] {
-      override val fstMonoid = SeqMonoid
-      override val wrapperMonad = PureMonad
+    val visitor = new PureAccumulatorTraversal[Seq[Solution]] {
+      override val accumulator = SeqMonoid
 
       override def nat: Nat => Pair[Nat] = {
         case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n : Nat)
         case ident: NatIdentifier if ident != depVar && !ident.isExplicit =>
           val sol = Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
-          record(Seq(sol))(ident.asImplicit : Nat)
+          accumulate(Seq(sol))(ident.asImplicit : Nat)
         case n => super.nat(n)
       }
 
@@ -557,7 +556,7 @@ object dependence {
         case ident@TypeIdentifier(i) =>
           val application = NatToDataApply(NatToDataIdentifier(freshName("nnf")), depVar)
           val sol = Solution.subs(ident, application)
-          record(Seq(sol))(ident.asInstanceOf[T])
+          accumulate(Seq(sol))(ident.asInstanceOf[T])
         case e => super.`type`(e)
       }
 

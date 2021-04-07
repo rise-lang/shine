@@ -14,18 +14,16 @@ class traverseTest extends test_util.Tests {
     )
   )
 
-  class ExprTraceVisitor extends PairMonoidTraversal[Seq[Any], Pure] {
-    override val fstMonoid = SeqMonoid[Any]
-    override val wrapperMonad = PureMonad
+  class ExprTraceVisitor extends PureAccumulatorTraversal[Seq[Any]] {
+    override val accumulator = SeqMonoid[Any]
     override def identifier[I <: Identifier] : VarType => I => Pair[I] =
-      vt => i => record(Seq(i))(i)
+      vt => i => accumulate(Seq(i))(i)
   }
 
-  class TypeTraceVisitor extends PairMonoidTraversal[Seq[Any], Pure] {
-    override val fstMonoid = SeqMonoid[Any]
-    override val wrapperMonad = PureMonad
+  class TypeTraceVisitor extends PureAccumulatorTraversal[Seq[Any]] {
+    override val accumulator = SeqMonoid[Any]
     override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Pair[I] =
-      vt => i => record(Seq(i))(i)
+      vt => i => accumulate(Seq(i))(i)
   }
 
   def checkEqualities[T] : Seq[T] => Seq[Seq[Int]] => Boolean = xs => gps =>

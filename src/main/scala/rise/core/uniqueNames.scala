@@ -5,17 +5,14 @@ import rise.core.traverse._
 import rise.core.types._
 
 object uniqueNames {
-  private val collectNames = new PairMonoidTraversal[(Seq[Identifier], Seq[Kind.Identifier]), Pure] {
-    override val fstMonoid: Monoid[(Seq[Identifier], Seq[Kind.Identifier])] = PairMonoid(SeqMonoid, SeqMonoid)
-    override val wrapperMonad = PureMonad
-
+  private val collectNames = new PureAccumulatorTraversal[(Seq[Identifier], Seq[Kind.Identifier])] {
+    override val accumulator: Monoid[(Seq[Identifier], Seq[Kind.Identifier])] = PairMonoid(SeqMonoid, SeqMonoid)
     override def identifier[I <: Identifier]: VarType => I => Pair[I] = {
-      case Binding => i => record((Seq(i), Seq()))(i)
+      case Binding => i => accumulate((Seq(i), Seq()))(i)
       case _ => return_
     }
-
     override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = {
-      case Binding => i => record((Seq(), Seq(i)))(i)
+      case Binding => i => accumulate((Seq(), Seq(i)))(i)
       case _ => return_
     }
   }

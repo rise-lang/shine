@@ -28,13 +28,12 @@ object infer {
   }
 
   def printTypesAndTypeHoles(expr: Expr): Unit = {
-    val hasHoles = new PairMonoidTraversal[Boolean, Pure] {
-      override val fstMonoid = OrMonoid
-      override val wrapperMonad = PureMonad
+    val hasHoles = new PureAccumulatorTraversal[Boolean] {
+      override val accumulator = OrMonoid
       override def expr: Expr => Pair[Expr] = {
         case h@primitives.typeHole(msg) =>
           println(s"found type hole ${msg}: ${h.t}")
-          record(true)(h : Expr)
+          accumulate(true)(h : Expr)
         case p@primitives.printType(msg) =>
           println(s"$msg : ${p.t} (Rise level)")
           return_(p: Expr)
@@ -98,12 +97,11 @@ object infer {
     )
   }
 
-  val FTVGathering = new PairMonoidTraversal[Seq[Kind.Identifier], Pure] {
-    override val fstMonoid = SeqMonoid
-    override val wrapperMonad = PureMonad
+  val FTVGathering = new PureAccumulatorTraversal[Seq[Kind.Identifier]] {
+    override val accumulator = SeqMonoid
     override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = _ => {
-      case i: Kind.Explicitness => record(if (!i.isExplicit) Seq(i) else Seq())(i.asInstanceOf[I])
-      case i => record(Seq(i))(i)
+      case i: Kind.Explicitness => accumulate(if (!i.isExplicit) Seq(i) else Seq())(i.asInstanceOf[I])
+      case i => accumulate(Seq(i))(i)
     }
     override def nat: Nat => Pair[Nat] = ae => {
       val ftvs = mutable.ListBuffer[Kind.Identifier]()
@@ -111,7 +109,7 @@ object infer {
         case i: NatIdentifier if !i.isExplicit => ftvs += i; i
         case n => n
       })
-      record(ftvs.toSeq)(r)
+      accumulate(ftvs.toSeq)(r)
     }
   }
 
