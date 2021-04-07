@@ -59,7 +59,7 @@ object Primitive {
           override def typeScheme: rise.core.types.Type = $typeScheme
 
           override def equals(obj: Any) = obj match {
-            case p: ${TypeName(className)} => ${TermName("p")}.t =~= t
+            case p: ${TypeName(className)} => ${TermName("p")}.t =~~= t
             case _ => false
           }
         }
@@ -101,7 +101,7 @@ object Primitive {
           override def equals(obj: Any) = obj match {
             case other: ${TypeName(className)} =>
               ${makeComparisonChain(TermName("other"), getArgs(params))} &&
-              (${TermName("other")}.t =~= t)
+              (${TermName("other")}.t =~~= t)
             case _ => false
           }
         }

@@ -72,7 +72,7 @@ class traverseTest extends test_util.Tests {
     val result = traverse(e, new Visitor)
 
     // the expression should have changed
-    assert(result ==
+    assert(result =~~=
             depFun((h: Nat) =>
               depFun((w: Nat) =>
                 fun(ArrayType(h, ArrayType(w, f32)))(input =>
@@ -105,8 +105,6 @@ class traverseTest extends test_util.Tests {
         input |> map(fun(x => x)) |> fun(x => x)
       })
     )
-    // TODO: establish proper equality checking
-    // assert(r == expected.toExpr)
-    assert(result.toUntypedExpr == expected.toUntypedExpr)
+    assert(result =~~= expected)
   }
 }

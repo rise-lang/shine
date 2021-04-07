@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
       `)=>` Array[Float]]
     val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
     util.assertSame(output, gold, "output is different from gold")
-    println(s"time: $time")
+    logger.debug(s"time: $time")
   }
 
   test("baseVecU compiles to valid OpenCL that passes checks") {

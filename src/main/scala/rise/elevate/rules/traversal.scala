@@ -58,7 +58,7 @@ object traversal {
     extends Strategy[Rise] {
 
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case ap @ App(f, x) if f == p => s(x).mapSuccess(App(f, _)(ap.t))
+      case ap @ App(f, x) if f =~~= p => s(x).mapSuccess(App(f, _)(ap.t))
       case _ => Failure(s)
     }
     override def toString = s"argumentOf($p,$s)"

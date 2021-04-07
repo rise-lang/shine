@@ -37,6 +37,8 @@ lazy val riseAndShine = (project in file("."))
         // testing
         "junit" % "junit" % "4.11",
         "org.scalatest" %% "scalatest" % "3.1.0" % "test",
+        "org.apache.logging.log4j" % "log4j-core" % "2.14.1",
+        "org.apache.logging.log4j" %% "log4j-api-scala" % "12.0",
         // json
         "com.typesafe.play" %% "play-json" % "2.9.1"
     )

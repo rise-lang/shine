@@ -88,7 +88,7 @@ class fft extends test_util.Tests {
     val fftiter = createStockhamIterationLambda(p, LPrevIter, N)
     val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(fftiter, Map()))
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(kernel.code)
+    logger.debug(kernel.code)
 
     SyntaxChecker(kernel.code)
   }

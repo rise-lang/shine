@@ -2,10 +2,17 @@ import opencl.executor.Executor
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
+import org.apache.logging.log4j.scala.Logging
 import util.{AssertSame, Time, TimeSpan}
 
 package object test_util {
-  abstract class Tests extends AnyFunSuite with Matchers
+  abstract class Tests extends AnyFunSuite with Matchers with Logging {
+    def runsWithSameResult[R, U <: Time.Unit](runs: Seq[(String, (R, TimeSpan[U]))])
+                                             (implicit assertSame: AssertSame[R]): Unit = {
+      runs.tail.foreach(r => assertSame(r._2._1, runs.head._2._1, s"${r._1} had a different result"))
+      runs.foreach(r => logger.debug(s"${r._1} time: ${r._2._2}"))
+    }
+  }
 
   abstract class TestsWithExecutor extends Tests with BeforeAndAfter {
     before {
@@ -25,12 +32,6 @@ package object test_util {
       if (executeCudaTests)
         yacx.Executor.loadLibrary()
     }
-  }
-
-  def runsWithSameResult[R, U <: Time.Unit](runs: Seq[(String, (R, TimeSpan[U]))])
-                                           (implicit assertSame: AssertSame[R]): Unit = {
-    runs.tail.foreach(r => assertSame(r._2._1, runs.head._2._1, s"${r._1} had a different result"))
-    runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
   }
 
   private final def maxDifference = 2.5f

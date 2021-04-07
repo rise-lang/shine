@@ -152,7 +152,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(intelDerivedNoWarp1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 
@@ -183,7 +183,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(intelDerived2)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 
@@ -218,7 +218,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(nvidiaDerived1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 
@@ -260,7 +260,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(amdNvidiaDerived2)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 
@@ -297,7 +297,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(amdDerived1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 

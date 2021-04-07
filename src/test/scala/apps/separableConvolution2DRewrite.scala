@@ -14,7 +14,6 @@ import rise.elevate.Rise
 import rise.elevate.strategies.algorithmic._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.alternative._
-import rise.elevate.util.makeClosed
 import rise.core.primitives._
 
 class separableConvolution2DRewrite extends test_util.Tests {
@@ -39,7 +38,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
     val na = BENF(a).get
     val nb = BENF(b).get
     val uab: Rise = toBeTyped(na) !: nb.t
-    makeClosed(uab)._1 == makeClosed(nb)._1
+    makeClosed(uab) =~~= makeClosed(nb)
   }
 
   private val separateDot: Strategy[Rise] =

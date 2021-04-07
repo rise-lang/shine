@@ -91,7 +91,7 @@ object Constraint {
                 _: IndexType  | _: VectorType,
           _: ScalarType | _: NatType.type |
           _: IndexType  | _: VectorType)
-            if a == b => Solution()
+            if a =~= b => Solution()
           case (IndexType(sa), IndexType(sb)) =>
             decomposed(Seq(NatConstraint(sa, sb)))
           case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
@@ -283,7 +283,7 @@ object Constraint {
   ): Solution = {
     t match {
       case j: DataTypeIdentifier =>
-        if (i == j) {
+        if (i =~= j) {
           Solution()
         } else if (!i.isExplicit) {
           Solution.subs(i, j)
