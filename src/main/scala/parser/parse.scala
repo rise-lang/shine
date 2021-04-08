@@ -1200,6 +1200,49 @@ object parse {
     }
   }
 
+
+  def parseComposition(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    if(parseState.tokenStream.isEmpty||parseState.parsedSynElems.isEmpty){
+      println("Abort; parseComposition because tokenStream is empty: "+ parseState)
+      return Left(parseState)
+    }
+    val (e1,sp1)= parseState.parsedSynElems.head match{
+      case SExpr(expr) => (expr, expr.span.get)
+      case SExprClutched(expr, sp) => (expr, sp)
+      case _ => {
+        println("Abort; parseComposition because not accepted beggining types: "+ parseState)
+        return Left(parseState)
+      }
+    }
+    println("parseComposition: " +parseState)
+    val psOld =
+      Left(ParseState(parseState.tokenStream, Nil, parseState.mapFkt, parseState.mapDepL, parseState.spanList)) |>
+        parseDot |>
+        parseMaybeAppExpr
+    psOld match {
+      case Right(e) => Right(e)
+      case Left(ps)=>{
+        val (e2,sp2)= ps.parsedSynElems.head match{
+          case SExpr(expr) => (expr, expr.span.get)
+          case SExprClutched(expr, sp) => (expr, sp)
+          case _ => {
+            println("Abbruch; parseComposition wegen nicht akzeptierten Anfangstypen: "+ parseState)
+            return Left(parseState)
+          }
+        }
+        val span= sp1+sp2
+        val name = r.freshName("e")
+        if (ps.mapFkt.contains(name)) {//Todo: Better error
+          throw new IllegalArgumentException("A variable or function with the exact same name '"+ name +
+            "' is already declared! <- " + ps.mapFkt.get(name))
+        }
+        val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)),
+          r.App(e1,e2)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+        ps.mapFkt.update(name, Left(rd.ToBeTyped(e2)))
+        Left(ParseState(ps.tokenStream,SExpr(e)::parseState.parsedSynElems.tail, ps.mapFkt, ps.mapDepL, ps.spanList))
+      }
+    }
+    }
   /*
 is the whole Syntax-Tree.
 the syntax-Tree has on top an Lambda-Expression
@@ -1388,7 +1431,8 @@ the syntax-Tree has on top an Lambda-Expression
     Left(parseState) |>
       (parseLambda _ || parseDepLambda || parseBracesExpr ||
         parseUnOperator || parseBinOperator || parseIdentNoDec ||
-        parseNumber || parseAddrSpaceType || parseTypeinNoAppExpr|| parseNat //|| parseDependencies
+        parseNumber || parseAddrSpaceType || parseTypeinNoAppExpr||
+        parseComposition || parseNat //|| parseDependencies
         )
 
   }
@@ -1653,6 +1697,7 @@ the syntax-Tree has on top an Lambda-Expression
                               val expr = combineExpressionsDependent(ps.parsedSynElems, ps.mapDepL)
                               Left(ParseState(ps.tokenStream, SExpr(expr)::Nil, ps.mapFkt, ps.mapDepL, ps.spanList) )
                             }else{
+                              if(ps.parsedSynElems.isEmpty) throw new IllegalStateException("ps is Empty: "+ ps)
                               val p = parseMaybeAppExpr(ps)
                               p match {
                                 case Right(e) => Right(e)
@@ -1660,6 +1705,7 @@ the syntax-Tree has on top an Lambda-Expression
                                   val synElem = if(newPS.parsedSynElems.length==1){
                                     newPS.parsedSynElems.head
                                   }else {
+                                    if(newPS.parsedSynElems.isEmpty) throw new IllegalStateException("newPS is Empty: "+ newPS)
                                     val expr = combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL)
                                     println("\n\n\nSpanIsHere"+ expr +" : "+ expr.span+ "\n\n\n")
                                     SExpr(expr)

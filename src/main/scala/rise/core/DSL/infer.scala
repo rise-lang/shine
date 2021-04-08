@@ -168,7 +168,7 @@ object infer {
       case i: Identifier =>
         val t = env.getOrElseUpdate(i.name,
           if (i.t == TypePlaceholder) {
-            error(s"$i has no type")(Seq())
+            error(s"$i has no type in " + expr.span)(Seq())
           } else {
             i.t
           })

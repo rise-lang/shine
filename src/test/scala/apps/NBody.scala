@@ -18,6 +18,8 @@ class NBody extends test_util.TestsWithExecutor {
     val localSizeNVIDIA = LocalSize((tileX, tileY))
     val globalSizeNVIDIA = GlobalSize((N, tileY))
 
+    println(nvidia.toExpr)
+
     test_util.runsWithSameResult(Seq(
       ("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
       ("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),

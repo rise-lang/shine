@@ -145,7 +145,7 @@ package object DSL {
   }
 
   implicit class FunCompReverse(f: ToBeTyped[Expr]) {
-    def o(g: ToBeTyped[Expr]): ToBeTyped[Lambda] = fun(x => f(g(x)))
+    def o(g: ToBeTyped[Expr]): ToBeTyped[Lambda] = fun(x => f(g(x))) //(f o g)(x) == f(g(x))
   }
 
   implicit class FunCompReversePrimitiveBuilder(f: Builder) {
