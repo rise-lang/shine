@@ -5,6 +5,10 @@ case object Less extends Order
 case object Equal extends Order
 case object Greater extends Order
 
+/** Explains how arbitrary analysis data associated with an [[EClass]]
+  * is maintained across [[EGraph]] operations.
+  * @see [[https://docs.rs/egg/0.6.0/egg/trait.Analysis.html]]
+  */
 trait Analysis[Data] {
   def make(egraph: EGraph[Data], enode: ENode): Data
 

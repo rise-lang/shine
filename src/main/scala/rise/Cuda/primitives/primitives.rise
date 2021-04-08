@@ -1,0 +1,26 @@
+def mapBlock(dim: Int):   {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+def mapGlobal(dim: Int):  {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+def mapThreads(dim: Int): {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+def mapWarp(dim: Int):    {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+def mapLane(dim: Int):    {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
+
+def asFragment: {n: nat} -> {m: nat} -> {k: nat} -> {s: data} -> {f: fragment} -> {l: matrixLayout} ->
+    n.m.s -> fragment[n, m, k, s, f, l]
+
+def asMatrix: {n: nat} -> {m: nat} -> {k: nat} -> {s: data} ->
+  fragment[n, m, k, s, fragment.ACC, matrixLayout.ROW_MAJOR] -> n.m.s
+
+def generateFragment: {n: nat} -> {m: nat} -> {k: nat} -> {s: data} -> {f: fragment} ->
+  s -> fragment[n, m, k, s, f, matrixLayout.ROW_MAJOR]
+
+def tensorMMA: {la: matrixLayout} -> {lb: matrixLayout} ->
+  {m: nat} -> {n: nat} -> {k: nat} -> {s: data} -> {t: data} ->
+    fragment[m, k, n, s, fragment.A, la] ->
+      fragment[k, n, m, s, fragment.B, lb] ->
+        fragment[m, n, k, t, fragment.ACC, matrixLayout.ROW_MAJOR] ->
+          fragment[m, n, k, t, fragment.ACC, matrixLayout.ROW_MAJOR]
+
+def mapFragment: {m: nat} -> {n: nat} -> {k: nat} -> {s: data} -> {f: fragment} -> {l: matrixLayout} ->
+  (s -> s) -> fragment[n, m, k, s, f, l] -> fragment[n, m, k, s, f, l]
+
+def globalToShared: {t: data} -> t -> t

@@ -5,13 +5,13 @@ import elevate.core._
 import elevate.core.strategies.predicate._
 import rise.core.DSL._
 import rise.core._
+import rise.core.equality._
 import rise.elevate.Rise
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.strategies.algorithmic._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.movement._
-import rise.core.equality._
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
@@ -31,9 +31,9 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
 
   case class ExprWrapper(e: Expr) {
     override def hashCode(): Int = exprAlphaEq(typeErasure).hash(e)
-    override def equals(o : Any) : Boolean = o match {
-      case other : ExprWrapper => exprAlphaEq(typeAlphaEq).apply(this.e)(other.e)
-      case other : Expr => exprAlphaEq(typeAlphaEq).apply(this.e)(other)
+    override def equals(o: Any) : Boolean = o match {
+      case other: ExprWrapper => exprAlphaEq(typeAlphaEq).apply(this.e)(other.e)
+      case other: Expr => exprAlphaEq(typeAlphaEq).apply(this.e)(other)
       case _ => false
     }
   }

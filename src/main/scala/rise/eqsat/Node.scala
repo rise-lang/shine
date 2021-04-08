@@ -3,7 +3,11 @@ package rise.eqsat
 import rise.core.types._
 import rise.core.semantics
 
-// Rise with DeBruijn indexing
+/** A term node for the Rise language with DeBruijn indexing.
+  * @tparam E abstracts over children nodes, and differs for [[Expr]], [[ENode]], [[Pattern]], etc
+  * @tparam N abstracts over contained nats
+  * @tparam DT abstracts over contained data types
+  */
 sealed trait Node[+E, +N, +DT] {
   def map[OE, ON, ODT](fe: E => OE,
                        fn: N => ON,

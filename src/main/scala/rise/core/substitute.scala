@@ -1,6 +1,7 @@
 package rise.core
 
-import rise.core.traverse.{Pure, PureExprTraversal, PureTraversal}
+import util.monads._
+import rise.core.traverse._
 import rise.core.types._
 import rise.core.semantics.NatData
 

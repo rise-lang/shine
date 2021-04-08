@@ -6,6 +6,7 @@ import rise.core.semantics
 import rise.core.{types => rct}
 
 // TODO: could also be outside of eqsat package
+/** A Rise expression based on DeBruijn indexing */
 case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
   override def toString: String = s"(${node.toString} : $t)"
 

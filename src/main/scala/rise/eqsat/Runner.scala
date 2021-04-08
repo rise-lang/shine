@@ -24,6 +24,10 @@ object Runner {
   )
 }
 
+/** Facilitates searching for rewrites using an [[Egraph]].
+  * This technique is called "equality saturation" in general.
+  * @see [[https://docs.rs/egg/0.6.0/egg/struct.Runner.html]]
+  */
 class Runner[D](var egraph: EGraph[D],
                 var iterations: Vec[Iteration],
                 var stopReasons: Vec[StopReason],

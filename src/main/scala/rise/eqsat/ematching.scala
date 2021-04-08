@@ -3,12 +3,17 @@ package rise.eqsat
 import scala.collection.mutable
 
 // NOTE: we currently only support Nat pattern variables if they are directly the argument of a DepApp node
+/** e-matching tries to find a [[Pattern]] in an [[EGraph]],
+  * returning a list of [[Subst]]s representing successful matches.
+  * @see [[http://leodemoura.github.io/files/ematching.pdf Efficient e-matching for SMT Solvers]]
+  */
 object ematching {
   object AbstractMachine {
     def init(eclass: EClassId): AbstractMachine =
       AbstractMachine(Vec(eclass), Vec())
   }
 
+  /** An abstract machine on which compiled [[Pattern]]s ([[Program]]s) are executed */
   case class AbstractMachine(regs: Vec[EClassId],
                              natRegs: Vec[Nat]) {
     def reg(r: Reg): EClassId = regs(r.n)
@@ -62,6 +67,7 @@ object ematching {
   case class TypeReg(var n: Int)
   case class DataTypeReg(var n: Int)
 
+  /** A program compiled from a [[Pattern]] */
   class Program(val instructions: Vec[Instruction],
                 var v2r: HashMap[PatternVar, Reg], // TODO? HashMap[_, _] -> compact Vec[_]
                 var ni2r: HashMap[NatPatternVar, NatReg],
@@ -89,7 +95,7 @@ object ematching {
     }
   }
 
-  // A node without children for matching purposes
+  /** A node without children for matching purposes */
   type MNode = Node[(), (), ()]
 
   def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
@@ -152,6 +158,7 @@ object ematching {
     }
   }
 
+  /** A compiler for [[Pattern]]s */
   class Compiler(var pattern: Pattern,
                  var v2r: HashMap[PatternVar, Reg],
                  var ni2r: HashMap[NatPatternVar, NatReg],

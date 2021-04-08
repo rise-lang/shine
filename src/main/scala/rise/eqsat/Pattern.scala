@@ -32,7 +32,15 @@ object Pattern {
   }
 }
 
+/** A variable used in [[Pattern]]s or [[Subst]]s */
 case class PatternVar(index: Int)
+
+/** A pattern is a Rise expression which can contain pattern variables.
+  * It can be used both as a [[Searcher]] or [[Applier]] for rewriting.
+  * Searching for a pattern yields variable substitutions for each match in the [[EGraph]].
+  * Applying a pattern performs a given variable substitution and adds the result to the [[EGraph]].
+  * @see [[https://docs.rs/egg/0.6.0/egg/struct.Pattern.html]]
+  */
 case class Pattern(node: Either[PNode, PatternVar], t: TypePattern) {
   def patternVars(): Vec[PatternVar] = {
     val vec = Vec.empty[PatternVar]
@@ -53,6 +61,7 @@ case class Pattern(node: Either[PNode, PatternVar], t: TypePattern) {
     CompiledPattern(this, ematching.Program.compileFromPattern(this))
 }
 
+/** A [[Pattern]] which has been compiled to an [[ematching.Program]] */
 case class CompiledPattern(pat: Pattern, prog: ematching.Program)
 
 object CompiledPattern {

@@ -1,5 +1,6 @@
 package rise.core
 
+import util.monads._
 import rise.core.DSL._
 import rise.core.traverse._
 import rise.core.primitives._
@@ -13,28 +14,16 @@ class traverseTest extends test_util.Tests {
     )
   )
 
-  case class Trace[T](unwrap : T) { val trace : Seq[Any] = Seq() }
-  implicit object TraceMonad extends Monad[Trace] {
-    def write[T] : T => Trace[T] = t => new Trace(t) { override val trace : Seq[Any] = Seq(t)}
-    override def return_[T] : T => Trace[T] = t => Trace(t)
-    override def bind[T,S] : Trace[T] => (T => Trace[S]) => Trace[S] = t1 => f => {
-      val t2 = f(t1.unwrap)
-      new Trace(t2.unwrap) { override val trace : Seq[Any] = t1.trace ++ t2.trace}
-    }
+  class ExprTraceVisitor extends PureAccumulatorTraversal[Seq[Any]] {
+    override val accumulator = SeqMonoid[Any]
+    override def identifier[I <: Identifier] : VarType => I => Pair[I] =
+      vt => i => accumulate(Seq(i))(i)
   }
 
-  class ExprTraceVisitor extends Traversal[Trace] {
-    override def monad = TraceMonad
-
-    override def identifier[I <: Identifier] : VarType => I => Trace[I] = vt => i =>
-      monad.bind(monad.write(i))(super.identifier(vt)(_))
-  }
-
-  class TypeTraceVisitor extends Traversal[Trace] {
-    override def monad = TraceMonad
-
-    override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Trace[I] = vt => i =>
-      monad.bind(monad.write(i))(super.typeIdentifier(vt)(_))
+  class TypeTraceVisitor extends PureAccumulatorTraversal[Seq[Any]] {
+    override val accumulator = SeqMonoid[Any]
+    override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Pair[I] =
+      vt => i => accumulate(Seq(i))(i)
   }
 
   def checkEqualities[T] : Seq[T] => Seq[Seq[Int]] => Boolean = xs => gps =>
@@ -45,20 +34,20 @@ class traverseTest extends test_util.Tests {
     val result = traverse(e, new ExprTraceVisitor())
 
     // the expression should not have changed
-    assert(result.unwrap == e)
+    assert(result._2 == e)
     // the trace should match expectations
-    result.trace.length shouldBe equivs.flatten.length
-    assert(checkEqualities(result.trace)(equivs))
+    result._1.length shouldBe equivs.flatten.length
+    assert(checkEqualities(result._1)(equivs))
   }
 
   test("traversing a type should traverse identifiers in order") {
     val equivs = Seq(Seq(0, 2, 4), Seq(1, 3, 5))
     val result = traverse(e.t, new TypeTraceVisitor())
     // the type should not have changed
-    assert(result.unwrap == e.t)
+    assert(result._2 == e.t)
     // the trace should match expectations
-    result.trace.length shouldBe equivs.flatten.length
-    assert(checkEqualities(result.trace)(equivs))
+    result._1.length shouldBe equivs.flatten.length
+    assert(checkEqualities(result._1)(equivs))
   }
 
   test("traverse an expression depth-first with stop and update") {

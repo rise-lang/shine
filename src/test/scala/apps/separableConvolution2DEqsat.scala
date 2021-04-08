@@ -2,23 +2,51 @@ package apps
 
 import apps.separableConvolution2D._
 import rise.core.DSL._
-import rise.core.DSL.Type._
 import rise.core._
-import rise.core.semantics.FloatData
+import rise.core.types._
 import rise.eqsat.rules
-import rise.macros.Primitive.primitive
 import rise.eqsat.Basic.proveEquiv
 
 object separableConvolution2DEqsat {
   // TODO: use full expressions instead of proxy primitives
-  @primitive object weights2d extends Primitive with Builder {
-    binomialWeights2d.t
+  object weights2d extends Builder {
+    private final case class Primitive()
+                                      (override val t: Type = TypePlaceholder)
+      extends rise.core.Primitive
+    {
+      override val name: String = "weights2d"
+      override def setType(ty: Type): Primitive = Primitive()(ty)
+      override def typeScheme: Type = binomialWeights2d.t
+    }
+
+    override def primitive: rise.core.Primitive = Primitive()()
+    override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
   }
-  @primitive object weightsV extends Primitive with Builder {
-    binomialWeightsV.t
+  object weightsV extends Builder {
+    private final case class Primitive()
+                                      (override val t: Type = TypePlaceholder)
+      extends rise.core.Primitive
+    {
+      override val name: String = "weightsV"
+      override def setType(ty: Type): Primitive = Primitive()(ty)
+      override def typeScheme: Type = binomialWeightsV.t
+    }
+
+    override def primitive: rise.core.Primitive = Primitive()()
+    override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
   }
-  @primitive object weightsH extends Primitive with Builder {
-    binomialWeightsH.t
+  object weightsH extends Builder {
+    private final case class Primitive()
+                                      (override val t: Type = TypePlaceholder)
+      extends rise.core.Primitive
+    {
+      override val name: String = "weightsH"
+      override def setType(ty: Type): rise.core.Primitive = Primitive()(ty)
+      override def typeScheme: Type = binomialWeightsH.t
+    }
+
+    override def primitive: rise.core.Primitive = Primitive()()
+    override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
   }
 }
 

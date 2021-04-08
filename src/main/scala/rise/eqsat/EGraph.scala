@@ -12,6 +12,9 @@ object EGraph {
   )
 }
 
+/** A data structure to keep track of equalities between expressions.
+  * @see [[https://docs.rs/egg/0.6.0/egg/struct.EGraph.html]]
+  */
 class EGraph[Data](
   val analysis: Analysis[Data],
   var pending: Vec[(ENode, EClassId)],

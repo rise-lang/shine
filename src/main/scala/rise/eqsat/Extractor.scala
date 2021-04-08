@@ -10,6 +10,9 @@ object Extractor {
   }
 }
 
+/** Extracts a single expression from an [[EGraph]],
+  * which minimizes the given [[CostFunction]].
+  */
 class Extractor[Cost](val costFunction: CostFunction[Cost],
                       val costs: HashMap[EClassId, (Cost, ENode)],
                       val egraph: EGraph[_])
@@ -89,6 +92,7 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
   }
 }
 
+/** A cost function which can be used by an [[Extractor]] */
 trait CostFunction[Cost] {
   def cost(enode: ENode, costs: EClassId => Cost): Cost
 }

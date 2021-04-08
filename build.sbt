@@ -17,7 +17,7 @@ lazy val commonSettings = Seq(
 
 lazy val riseAndShine = (project in file("."))
   .aggregate(executor, CUexecutor)
-  .dependsOn(riseAndShineMacros, arithExpr, executor, CUexecutor, elevate)
+  .dependsOn(meta, riseAndShineMacros, arithExpr, executor, CUexecutor, elevate)
   .settings(
     name          := "riseAndShine",
     version       := "1.0",
@@ -41,7 +41,30 @@ lazy val riseAndShine = (project in file("."))
         "org.apache.logging.log4j" %% "log4j-api-scala" % "12.0",
         // json
         "com.typesafe.play" %% "play-json" % "2.9.1"
-    )
+    ),
+
+    compile := ((compile in Compile) dependsOn generateRISEPrimitives).value,
+    test    := ((test in Test) dependsOn generateRISEPrimitives).value
+  )
+
+lazy val generateRISEPrimitives = taskKey[Unit]("Generate RISE Primitives")
+
+generateRISEPrimitives := {
+  runner.value.run("meta.RisePrimitiveGenerator",
+    (dependencyClasspath in Compile).value.files,
+    Seq((scalaSource in Compile).value.getAbsolutePath),
+    streams.value.log).failed foreach (sys error _.getMessage)
+}
+
+lazy val meta = (project in file("meta"))
+  .settings(
+    name := "meta",
+    version := "1.0",
+    commonSettings,
+    libraryDependencies += "com.lihaoyi" %% "fastparse" % "2.2.2",
+    libraryDependencies += "com.lihaoyi" %% "scalaparse" % "2.2.2",
+    libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.7.3",
+    libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.10",
   )
 
 lazy val riseAndShineMacros = (project in file("macros"))
@@ -52,13 +75,13 @@ lazy val riseAndShineMacros = (project in file("macros"))
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   )
 
-lazy val arithExpr = (project in file("lib/arithexpr"))
+lazy val arithExpr  = project in file("lib/arithexpr")
 
-lazy val executor   = (project in file("lib/executor"))
+lazy val executor   = project in file("lib/executor")
 
-lazy val CUexecutor = (project in file("lib/yacx"))
+lazy val CUexecutor = project in file("lib/yacx")
 
-lazy val elevate    = (project in file("lib/elevate"))
+lazy val elevate    = project in file("lib/elevate")
 
 lazy val docs = (project in file("riseAndShine-docs"))
   .settings(

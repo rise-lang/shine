@@ -4,6 +4,7 @@ import scala.language.postfixOps
 import scala.sys.process._
 import java.io.{File, Writer, BufferedWriter, FileWriter}
 
+/** Defines how to output graphviz files for an [[EGraph]] */
 case class EGraphDot(egraph: EGraph[_]) {
   def toSVG(path: String): Unit = {
     val dotPath = path.replace(".svg", ".dot")
