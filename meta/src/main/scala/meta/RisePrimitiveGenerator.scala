@@ -114,8 +114,7 @@ import arithexpr.arithmetic._
           override def typeScheme: Type = ${generateTypeScheme(typeSignature, Map.empty)}
 
           override def equals(obj: Any): Boolean = obj match {
-            case p: Primitive =>
-              ${generateComparisonChain(args)} && p.getClass == this.getClass
+            case p: Primitive => ${generateComparisonChain(args)}
             case _ => false
           }
         }
