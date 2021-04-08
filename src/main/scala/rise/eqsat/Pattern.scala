@@ -9,31 +9,53 @@ import scala.language.implicitConversions
 object Pattern {
   def fromExpr(e: Expr): Pattern = {
     val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType)
-    Pattern(Left(pnode), TypePattern.fromType(e.t))
+    Pattern(PatternNode(pnode), TypePattern.fromType(e.t))
   }
 
-  implicit def patternToApplier[D](pat: Pattern): Applier[D] = new Applier[D] {
-    override def patternVars(): Vec[PatternVar] = pat.patternVars()
+  implicit def patternToApplier[D](pattern: Pattern): Applier[D] = new Applier[D] {
+    override def patternVars(): Vec[PatternVar] = pattern.patternVars()
 
     override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
-      def rec(pat: Pattern): EClassId = {
-        pat.node match {
-          case Right(w) => subst(w)
-          case Left(n) =>
-            val enode = n.map(e => rec(e), { n =>
-              ??? : Nat//ArithExpr.substitute(n, subst.nats.vec.toMap)
-            }, dt => ??? : DataType)
-            egraph.add(enode, ???)
+      def pat(p: Pattern): EClassId = {
+        p.p match {
+          case w: PatternVar => subst(w)
+          case PatternNode(n) =>
+            val enode = n.map(pat, nat, data)
+            egraph.add(enode, `type`(p.t))
+        }
+      }
+      def nat(p: NatPattern): Nat = {
+        p match {
+          case w: NatPatternVar => subst(w)
+          case NatPatternNode(n) => Nat(n.map(nat))
+          case NatPatternAny => throw new Exception("unknown type on right-hand side")
+        }
+      }
+      def data(pat: DataTypePattern): DataType = {
+        pat match {
+          case w: DataTypePatternVar => subst(w)
+          case DataTypePatternNode(n) => DataType(n.map(nat, data))
+          case DataTypePatternAny => throw new Exception("unknown type on right-hand side")
+        }
+      }
+      def `type`(pat: TypePattern): Type = {
+        pat match {
+          case w: TypePatternVar => subst(w)
+          case TypePatternNode(n) => Type(n.map(`type`, nat, data))
+          case TypePatternAny => throw new Exception("unknown type on right-hand side")
+          case dtp: DataTypePattern => Type(data(dtp).node)
         }
       }
 
-      Vec(rec(pat))
+      Vec(pat(pattern))
     }
   }
 }
 
+sealed trait PatternVarOrNode
 /** A variable used in [[Pattern]]s or [[Subst]]s */
-case class PatternVar(index: Int)
+case class PatternVar(index: Int) extends PatternVarOrNode
+case class PatternNode(node: PNode) extends PatternVarOrNode
 
 /** A pattern is a Rise expression which can contain pattern variables.
   * It can be used both as a [[Searcher]] or [[Applier]] for rewriting.
@@ -41,19 +63,19 @@ case class PatternVar(index: Int)
   * Applying a pattern performs a given variable substitution and adds the result to the [[EGraph]].
   * @see [[https://docs.rs/egg/0.6.0/egg/struct.Pattern.html]]
   */
-case class Pattern(node: Either[PNode, PatternVar], t: TypePattern) {
+case class Pattern(p: PatternVarOrNode, t: TypePattern) {
   def patternVars(): Vec[PatternVar] = {
     val vec = Vec.empty[PatternVar]
-    def rec(n: Either[PNode, PatternVar]): Unit = {
-      n match {
-        case Left(node) => node.children().foreach { child =>
-          rec(child.node)
+    def rec(p: PatternVarOrNode): Unit = {
+      p match {
+        case PatternNode(node) => node.children().foreach { child =>
+          rec(child.p)
         }
-        case Right(pv) =>
+        case pv: PatternVar =>
           if (!vec.contains(pv)) { vec += pv }
       }
     }
-    rec(node)
+    rec(p)
     vec
   }
 
@@ -69,14 +91,14 @@ object CompiledPattern {
     override def patternVars(): Vec[PatternVar] = cpat.pat.patternVars()
 
     override def search(egraph: EGraph[D]): Vec[SearchMatches] = {
-      cpat.pat.node match {
-        case Left(node) =>
+      cpat.pat.p match {
+        case PatternNode(node) =>
           egraph.classesByMatch.get(node.matchHash()) match {
             case None => Vec.empty
             case Some(ids) =>
               ids.iterator.flatMap(id => searchEClass(egraph, id)).to(Vec)
           }
-        case Right(_) => egraph.classes.keysIterator
+        case PatternVar(_) => egraph.classes.keysIterator
           .flatMap(id => searchEClass(egraph, id)).to(Vec)
       }
     }
@@ -94,22 +116,14 @@ object CompiledPattern {
 object PatternDSL {
   import scala.language.implicitConversions
 
-  case class Pick[A, B](a: A, b: B)
-  implicit def pickA[A, B](p: Pick[A, B]): A = p.a
-  implicit def pickB[A, B](p: Pick[A, B]): B = p.b
-  implicit def pickA2[A, B, C](p: Pick[Pick[A, B], C]): A = p.a
-  implicit def pickB2[A, B, C](p: Pick[Pick[A, B], C]): B = p.a
-
   def ?(index: Int): PatternVar = PatternVar(index)
-  def ?(index: Int, t: TypePattern): Pattern = Pattern(Right(PatternVar(index)), t)
-  def %(index: Int): Var = Var(index)
-  def %(index: Int, t: TypePattern): Pattern = Pattern(Left(Var(index)), t)
+  def %(index: Int): PNode = Var(index)
 
   def app(a: Pattern, b: Pattern): PNode = App(a, b)
   def lam(e: Pattern): PNode = Lambda(e)
   def nApp(f: Pattern, x: NatPattern): PNode = NatApp(f, x)
   def nLam(e: Pattern): PNode = NatLambda(e)
-  def l(d: semantics.Data): Pattern = Pattern(Left(Literal(d)), ???)
+  def l(d: semantics.Data): PNode = Literal(d)
 
   def prim(p: rise.core.Primitive): PNode = Primitive(p)
   def slide: PNode = prim(rcp.slide.primitive)
@@ -126,17 +140,27 @@ object PatternDSL {
   def drop: PNode = prim(rcp.drop.primitive)
   def take: PNode = prim(rcp.take.primitive)
 
-  implicit final class WithType(private val t: TypePattern) extends AnyVal {
-    @inline def ::(n: PNode): Pattern = Pattern(Left(n), t)
+  implicit def pvarWithoutType(v: PatternVar): Pattern =
+    Pattern(v, TypePatternAny)
+  implicit def pnodeWithoutType(n: PNode): Pattern =
+    Pattern(PatternNode(n), TypePatternAny)
+  implicit final class PVarWithType(private val t: TypePattern) extends AnyVal {
+    @inline def ::(v: PatternVar): Pattern = Pattern(v, t)
+  }
+  implicit final class PNodeWithType(private val t: TypePattern) extends AnyVal {
+    @inline def ::(n: PNode): Pattern = Pattern(PatternNode(n), t)
   }
 
   def `?n`(index: Int): NatPattern = NatPatternVar(index)
+  val `?n`: NatPattern = NatPatternAny
   def `%n`(index: Int): NatPattern = NatPatternNode(NatVar(index))
 
   def cst(value: Long): NatPattern = NatPatternNode(NatCst(value))
 
   def `?t`(index: Int): TypePattern = TypePatternVar(index)
+  val `?t`: TypePattern = TypePatternAny
   def `?dt`(index: Int): DataTypePattern = DataTypePatternVar(index)
+  val `?dt`: DataTypePattern = DataTypePatternAny
   def `%dt`(index: Int): DataTypePattern = DataTypePatternNode(DataTypeVar(index))
 
   val int: DataTypePattern = DataTypePatternNode(ScalarType(rct.int))

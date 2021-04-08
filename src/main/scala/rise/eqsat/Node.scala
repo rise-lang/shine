@@ -77,15 +77,21 @@ sealed trait Node[+E, +N, +DT] {
   }
 }
 
-case class Var(index: Int) extends Node[Nothing, Nothing, Nothing]
+case class Var(index: Int) extends Node[Nothing, Nothing, Nothing] {
+  override def toString: String = s"%$index"
+}
 case class App[E](f: E, e: E) extends Node[E, Nothing, Nothing]
 case class Lambda[E](e: E) extends Node[E, Nothing, Nothing]
 case class NatApp[E, N](f: E, x: N) extends Node[E, N, Nothing]
 case class DataApp[E, DT](f: E, x: DT) extends Node[E, Nothing, DT]
 case class NatLambda[E](e: E) extends Node[E, Nothing, Nothing]
 case class DataLambda[E](e: E) extends Node[E, Nothing, Nothing]
-case class Literal(d: semantics.Data) extends Node[Nothing, Nothing, Nothing]
-case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Nothing]
+case class Literal(d: semantics.Data) extends Node[Nothing, Nothing, Nothing] {
+  override def toString: String = d.toString
+}
+case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Nothing] {
+  override def toString: String = p.toString.trim
+}
 
 object Node {
   import math.Ordering.Implicits.seqOrdering

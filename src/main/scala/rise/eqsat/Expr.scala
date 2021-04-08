@@ -143,6 +143,7 @@ object ExprDSL {
   def `%n`(index: Int): Nat = Nat(NatVar(index))
   def cst(value: Long): Nat = Nat(NatCst(value))
 
+  def `%dt`(index: Int): DataType = DataType(DataTypeVar(index))
   val int: DataType = DataType(ScalarType(rct.int))
   val f32: DataType = DataType(ScalarType(rct.f32))
 

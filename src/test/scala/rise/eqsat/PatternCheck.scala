@@ -13,12 +13,16 @@ class PatternCheck extends test_util.Tests {
     egraph.union(add1, add2)
     egraph.rebuild()
 
-    val commuteAdd: Rewrite[()] = ???/*{
+    val commuteAdd: Rewrite[()] = {
       import PatternDSL._
       Rewrite.init[()]("commute-add",
-        app(app(add, ?("a")), ?("b")).compile(),
-        app(app(add, ?("b")), ?("a")).compile())
-    }*/
+        app(app(add, ?(0) :: `?t`(0)), ?(1)).compile(),
+        app(app(add :: `?t`(0) ->: `?t`(0) ->: `?t`(0),
+          ?(1) :: `?t`(1)) :: `?t`(0) ->: `?t`(0),
+          ?(0) :: `?t`(0)) :: `?t`(0))
+        //app(app(add, ?(0)), ?(1)).compile(),
+        //app(app(add, ?(1)), ?(0)) : Pattern)
+    }
 
     val matches = commuteAdd.search(egraph)
     val nMatches = matches.map(m => m.substs.size).sum
@@ -35,20 +39,25 @@ class PatternCheck extends test_util.Tests {
     import PatternDSL._
 
     val x = `?n`(0)
-    val pattern = (nApp(nApp(add :: `?t`(0), x) :: `?t`(1), x) :: `?t`(2)).compile()
+    val pattern = nApp(nApp(add, x), x).compile()
 
     import ematching._
     assert(
       pattern.prog.instructions == Vec(
-        Bind(NatApp((), ()), Reg(0), Reg(1), NatReg(0)),
-        Bind(NatApp((), ()), Reg(1), Reg(2), NatReg(1)),
-        NatCompare(NatReg(1), NatReg(0)),
-        Bind(Primitive(rise.core.primitives.add.primitive), Reg(2), Reg(3), NatReg(2))
+        PushType(Reg(0)),
+        Bind(NatApp((), ()), Reg(0), Reg(1), NatReg(0), TypeReg(1)),
+        PushType(Reg(1)),
+        Bind(NatApp((), ()), Reg(1), Reg(2), NatReg(1), TypeReg(2)),
+        PushType(Reg(2)),
+        Bind(Primitive(rise.core.primitives.add.primitive), Reg(2), Reg(3), NatReg(2), TypeReg(3)),
+        // TODO: the bind below will be executed on each match backtracking,
+        //  it is probably best to reorder execution in a smarter way
+        NatCompare(NatReg(0), NatReg(1))
       )
     )
-    assert(
-      pattern.prog.v2r == HashMap()
-    )
+    assert(pattern.prog.v2r == HashMap())
+    assert(pattern.prog.n2r == HashMap(x -> NatReg(1)))
+    assert(pattern.prog.t2r == HashMap())
 
     val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
 
@@ -63,5 +72,47 @@ class PatternCheck extends test_util.Tests {
     egraph.rebuild()
 
     assert(pattern.search(egraph).length == 1)
+  }
+
+  test("compile program with types") {
+    import PatternDSL._
+
+    val pattern = (map :: (`?t` ->: `?dt` ->: (`?n`(0)`.``?dt`(0)))).compile()
+
+    import ematching._
+    assert(
+      pattern.prog.instructions == Vec(
+        PushType(Reg(0)),
+        Bind(Primitive(rise.core.primitives.map.primitive), Reg(0), Reg(1), NatReg(0), TypeReg(1)),
+        // TODO: the bind below will be executed on each match backtracking,
+        //  it is probably best to reorder execution in a smarter way
+        TypeBind(FunType((), ()), TypeReg(0)),
+        TypeBind(FunType((), ()), TypeReg(2)),
+        TypeBind(ArrayType((), ()), TypeReg(4)),
+        // TODO: the check below could be eliminated since we know that this is an array element
+        DataTypeCheck(TypeReg(5)),
+        DataTypeCheck(TypeReg(3))
+      )
+    )
+    assert(pattern.prog.v2r == HashMap())
+    assert(pattern.prog.n2r == HashMap(`?n`(0) -> NatReg(0)))
+    assert(pattern.prog.t2r == HashMap())
+    assert(pattern.prog.dt2r == HashMap(`?dt`(0) -> TypeReg(5)))
+
+    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+
+    {
+      import ExprDSL._
+      egraph.addExpr(map((f32 ->: int) ->: (`%n`(0)`.`f32) ->: (`%n`(0)`.`int)))
+      egraph.addExpr(map((f32 ->: `%dt`(0)) ->: (`%n`(0)`.`f32) ->: (cst(0)`.``%dt`(0))))
+      egraph.addExpr(map((f32 ->: int) ->: (f32 ->: int) ->: (`%n`(0)`.`int)))
+      egraph.addExpr(map((f32 ->: int) ->: (f32 ->: int)))
+      egraph.addExpr(map((f32 ->: int) ->: f32))
+      egraph.addExpr(map(int))
+    }
+
+    egraph.rebuild()
+
+    assert(pattern.search(egraph).length == 2)
   }
 }
