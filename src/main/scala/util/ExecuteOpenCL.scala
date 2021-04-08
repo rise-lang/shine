@@ -52,13 +52,26 @@ object ExecuteOpenCL {
         throw Exception(s"execution failed: $e")
     } finally {
       new scala.reflect.io.Directory(new java.io.File(genDir.getAbsolutePath))
-          .deleteRecursively()
+        .deleteRecursively()
     }
   }
 
   def getRuntimeFromClap(s: String): TimeSpan[Time.ms] = {
+
+    // Todo: check weird error, where the first line is an empty element
+    // avoid this error by removing first line
+
+    // convert input String to array of Strings (line-wise)
+    val sArray = s.split("\n")
+
+    //check if first line has empty element tag
+    val sCorrect = sArray(0).trim().takeRight(2) match {
+      case "/>" => sArray.drop(1).mkString("\n")
+      case _ => s
+    }
+
     // get xml form string
-    val clapResult = scala.xml.XML.loadString(s)
+    val clapResult = scala.xml.XML.loadString(sCorrect)
 
     // get start and end time
     val start = (clapResult \\ "@start").toString().toLong
@@ -75,9 +88,23 @@ object ExecuteOpenCL {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
       val sources = s"$src $runtimePath/buffer_$buffer_impl.c $runtimePath/ocl.c"
-      (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
-      val result = (s"runtime/clap_wrapper.sh $bin" !!)
-      getRuntimeFromClap(result)
+      try {
+        (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
+      } catch {
+        case e:Throwable => {
+          println("compile error: " + e)
+          throw Exception("compile error")
+        }
+      }
+      try{
+        val result = (s"runtime/clap_wrapper.sh $bin" !!)
+        getRuntimeFromClap(result)
+      } catch {
+        case e: Throwable => {
+          println("execution error: " + e)
+          throw Exception("execution error")
+        }
+      }
     } catch {
       case e: Throwable =>
         Console.err.println(s"execution failed: $e -- TODO change output of this exception")

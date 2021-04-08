@@ -210,6 +210,27 @@ class autotuning extends test_util.Tests {
   <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
 </trace>
     """
-    assert(util.ExecuteOpenCL.getRuntimeFromClap(xmlString).value == 0.010112f)
+    assert(util.ExecuteOpenCL.getRuntimeFromClap(xmlString).value.toFloat == 0.010112f)
+  }
+
+  test("text xml parsing with corrupted xml string"){
+    val corruptedXmlString = """<trace date="2021-04-01 18:42:51" profiler_version="0.1.0" ocl_version="1.2"/>
+<trace date="2021-04-01 18:42:51" profiler_version="0.1.0" ocl_version="1.2">
+  <device name="pthread-Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz" id="1"/>
+  <queue properties="CL_QUEUE_PROFILING_ENABLE" device_id="1" id="1"/>
+  <program build_options="-cl-fast-relaxed-math -Werror -cl-std=CL1.2" id="1"/>
+  <kernel name="k0" program_id="1" id="1"/>
+  <kernel_instance kernel_id="1" id="1" unique_id="1" command_queue_id="1">
+    <event forced="true" queued="42573479270519" submit="42573479270669" start="42573583785589" end="42573583944408"/>
+    <offset_range/>
+    <global_range dim="3" x="32" y="1" z="1"/>
+    <local_range dim="3" x="1" y="1" z="1"/>
+  </kernel_instance>
+  <mem_object type="Buffer" flag="CL_MEM_WRITE_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="2"/>
+  <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
+</trace>
+
+    """
+    assert(util.ExecuteOpenCL.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
   }
 }
