@@ -1,24 +1,11 @@
 package rise.core
 
 import scala.language.implicitConversions
-import arithexpr.arithmetic.NamedVar
+import util.monads._
 import rise.core.semantics._
 import rise.core.types._
 
 object traverse {
-  trait Monad[M[_]] {
-    def return_[T] : T => M[T]
-    def bind[T,S] : M[T] => (T => M[S]) => M[S]
-    def traverse[A] : Seq[M[A]] => M[Seq[A]] =
-      _.foldRight(return_(Nil : Seq[A]))({case (mx, mxs) =>
-        bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
-  }
-
-  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]) = new {
-    def map[B](f: A => B): M[B] = tc.bind(m)(a => tc.return_(f(a)) )
-    def flatMap[B](f: A => M[B]): M[B] = tc.bind(m)(f)
-  }
-
   sealed trait VarType
   case object Binding extends VarType
   case object Reference extends VarType
@@ -196,23 +183,26 @@ object traverse {
     override def `type`[T <: Type] : T => M[T] = return_
   }
 
-  case class Pure[T](unwrap : T)
-  implicit object PureMonad extends Monad[Pure] {
-    override def return_[T] : T => Pure[T] = t => Pure(t)
-    override def bind[T,S] : Pure[T] => (T => Pure[S]) => Pure[S] =
-      v => f => v match { case Pure(v) => f(v) }
-  }
-
-  implicit object OptionMonad extends Monad[Option] {
-    def return_[T]: T => Option[T] = Some(_)
-    def bind[T, S]: Option[T] => (T => Option[S]) => Option[S] = v => v.flatMap
-  }
-
-  trait PureTraversal extends Traversal[Pure] { override def monad = PureMonad }
+  trait PureTraversal extends Traversal[Pure] {override def monad : PureMonad.type = PureMonad }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
+  trait AccumulatorTraversal[F,M[_]] extends Traversal[InMonad[M]#SetFst[F]#Type] {
+    type Pair[T] = InMonad[M]#SetFst[F]#Type[T]
+    implicit val accumulator : Monoid[F]
+    implicit val wrapperMonad : Monad[M]
+    def accumulate[T] : F => T => Pair[T] = f => t => wrapperMonad.return_((f, t))
+    override def monad : PairMonoidMonad[F,M] = new PairMonoidMonad[F,M] {
+      override val monoid = implicitly(accumulator)
+      override val monad = implicitly(wrapperMonad)
+    }
+  }
+  trait PureAccumulatorTraversal[F] extends AccumulatorTraversal[F, Pure] {
+    override val wrapperMonad : PureMonad.type = PureMonad
+  }
 
-  def apply(e : Expr, f : PureTraversal) : Expr = f.expr(e).unwrap
-  def apply[M[_]](e : Expr, f : Traversal[M]) : M[Expr] = f.expr(e)
-  def apply[T <: Type](t : T, f : PureTraversal) : T = f.`type`(t).unwrap
-  def apply[T <: Type, M[_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
+  def traverse(e: Expr, f: PureTraversal): Expr = f.expr(e).unwrap
+  def traverse[T <: Type](t: T, f: PureTraversal): T = f.`type`(t).unwrap
+  def traverse[F](e: Expr, f: PureAccumulatorTraversal[F]): (F, Expr) = f.expr(e).unwrap
+  def traverse[F,T <: Type](t: T, f: PureAccumulatorTraversal[F]): (F, T) = f.`type`(t).unwrap
+  def traverse[M[_]](e: Expr, f: Traversal[M]): M[Expr] = f.expr(e)
+  def traverse[T <: Type, M[_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
 }
