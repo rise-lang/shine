@@ -10,14 +10,24 @@ import rise.core.types._
 import scala.collection.mutable
 
 object infer {
+  case class V(sol: Solution) extends SolutionVisitor(sol) {
+    override def `type`[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
+    override def expr: Expr => Pure[Expr] = {
+      case Opaque(e, t) => for {t1 <- `type`(t)} yield Opaque(e, t1)
+      case TypeAnnotation(e, t) => for {t1 <- `type`(t)} yield TypeAnnotation(e, t1)
+      case e => super.expr(e)
+    }
+  }
   private [DSL] def apply(e: Expr,
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+    val (collected_e, ftvSubs) = collectAssertOpaque(e)
+    val frozen_e = V(freeze(ftvSubs)).expr(collected_e).unwrap
     // Constraints of the form `implicit type var == explicit type var` result in substitutions
     // `implicit type var -> explicit type var`. We (ab)use that fact to create directed constraints out of
     // type assertions and opaque types. To do so, we make the type identifiers on one side of the constraint explicit,
     // and we return a `ftvSubs` map that maps these explicit type identifiers back to implicit type identifiers.
-    val (typed_e, constraints, ftvSubs) = constrainTypes(Map())(e)
+    val (typed_e, constraints) = constrainTypes(Map())(frozen_e)
     // Applies ftvSubs to the constraint solutions
     val solution = Constraint.solve(constraints, Seq())(explDep) ++ ftvSubs
     val res = traverse(typed_e, Visitor(solution))
@@ -62,7 +72,7 @@ object infer {
   private def implToExpl[K <: Kind.Identifier with Kind.Explicitness] : K => (K, K) = i =>
     (i.asImplicit.asInstanceOf[K], i.asExplicit.asInstanceOf[K])
 
-  private def freeze(ftvSubs: Solution, t: Type): Type =
+  private def freeze(ftvSubs: Solution): Solution =
     Solution(
       ftvSubs.ts.keySet.map(_.asInstanceOf[DataTypeIdentifier]).map(implToExpl).toMap,
       ftvSubs.ns.keySet.map(implToExpl).toMap,
@@ -72,7 +82,7 @@ object infer {
       ftvSubs.n2ds.keySet.map(implToExpl).toMap,
       ftvSubs.n2ns.keySet.map(implToExpl).toMap,
       ftvSubs.natColls.keySet.map(implToExpl).toMap,
-    )(t)
+    )
 
   private def explToImpl[K <: Kind.Identifier with Kind.Explicitness] : K => Map[K, K] = i =>
     Map(i.asExplicit.asInstanceOf[K] -> i.asImplicit.asInstanceOf[K])
@@ -123,31 +133,59 @@ object infer {
 
   private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
 
-  private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint], Solution) = env => {
+  private val collectAssertOpaque : Expr => (Expr, Solution) = {
+    case expr : Identifier => (expr, Solution())
+    case expr@Lambda(x, e) =>
+      val (e1, s) = collectAssertOpaque(e)
+      (Lambda(x, e1)(expr.t), s)
+    case expr@App(f, e) =>
+      val (f1, fs) = collectAssertOpaque(f)
+      val (e1, es) = collectAssertOpaque(e)
+      (App(f1, e1)(expr.t), fs <> es)
+    case expr@DepLambda(x, e) =>
+      val (e1, s) = collectAssertOpaque(e)
+      x match {
+        case n: NatIdentifier => (DepLambda[NatKind](n, e1)(expr.t), s)
+        case dt: DataTypeIdentifier => (DepLambda[DataKind](dt, e1)(expr.t), s)
+        case ad: AddressSpaceIdentifier => (DepLambda[AddressSpaceKind](ad, e1)(expr.t), s)
+        case n2n: NatToNatIdentifier => (DepLambda[NatToNatKind](n2n, e1)(expr.t), s)
+      }
+    case expr@DepApp(f, x) =>
+      val (f1, s) = collectAssertOpaque(f)
+      (DepApp(f1, x)(expr.t), s)
+    case expr@Literal(d) => (expr, Solution())
+    case TypeAssertion(e, t) => // Transform assertions into annotations, collect FTVs
+      val (e1, s) = collectAssertOpaque(e)
+      (TypeAnnotation(e1, t), s <> getFTVSubs(t))
+    case Opaque(e, t) => (Opaque(e, t), getFTVSubs(t)) // Preserve opaques, collect FTVs
+    case expr: Primitive => (expr, Solution())
+  }
+
+  private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint]) = env => {
     case i: Identifier =>
       val t = env.getOrElse(i.name,
         if (i.t == TypePlaceholder) error(s"$i has no type")(Seq()) else i.t )
       val c = TypeConstraint(t, i.t)
-      (i.setType(t), Nil :+ c, Solution())
+      (i.setType(t), Nil :+ c)
 
     case expr@Lambda(x, e) =>
       val tx = x.setType(genType(x))
       val env1 : Map[String, Type] = env + (tx.name -> tx.t)
-      val (te, cs, ftvE) = constrainTypes(env1)(e)
+      val (te, cs) = constrainTypes(env1)(e)
       val ft = FunType(tx.t, te.t)
       val exprT = genType(expr)
       val c = TypeConstraint(exprT, ft)
-      (Lambda(tx, te)(ft), cs :+ c, ftvE)
+      (Lambda(tx, te)(ft), cs :+ c)
 
     case expr@App(f, e) =>
-      val (tf, csF, ftvF) = constrainTypes(env)(f)
-      val (te, csE, ftvE) = constrainTypes(env)(e)
+      val (tf, csF) = constrainTypes(env)(f)
+      val (te, csE) = constrainTypes(env)(e)
       val exprT = genType(expr)
       val c = TypeConstraint(tf.t, FunType(te.t, exprT))
-      (App(tf, te)(exprT), csF :++ csE :+ c, ftvF <> ftvE)
+      (App(tf, te)(exprT), csF :++ csE :+ c)
 
     case expr@DepLambda(x, e) =>
-      val (te, csE, ftvE) = constrainTypes(env)(e)
+      val (te, csE) = constrainTypes(env)(e)
       val exprT = genType(expr)
       val tf = x match {
         case n: NatIdentifier =>
@@ -160,33 +198,27 @@ object infer {
           DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
       }
       val c = TypeConstraint(exprT, tf.t)
-      (tf, csE :+ c, ftvE)
+      (tf, csE :+ c)
 
     case expr@DepApp(f, x) =>
-      val (tf, csF, ftvF) = constrainTypes(env)(f)
+      val (tf, csF) = constrainTypes(env)(f)
       val exprT = genType(expr)
       val c = DepConstraint(tf.t, x, exprT)
-      (DepApp(tf, x)(exprT), csF :+ c, ftvF)
+      (DepApp(tf, x)(exprT), csF :+ c)
 
     case TypeAnnotation(e, t) =>
-      val (te, csE, ftvE) = constrainTypes(env)(e)
+      val (te, csE) = constrainTypes(env)(e)
       val c = TypeConstraint(te.t, t)
-      (te, csE :+ c, ftvE)
+      (te, csE :+ c)
 
     case TypeAssertion(e, t) =>
-      val ftvT = getFTVSubs(t)
-      val (te, csE, ftvE) = constrainTypes(env)(e)
-      val c = TypeConstraint(te.t, freeze(ftvT, t))
-      (te, csE :+ c, ftvE <> ftvT)
+      val (te, csE) = constrainTypes(env)(e)
+      val c = TypeConstraint(te.t, t)
+      (te, csE :+ c)
 
-    case o: Opaque =>
-      val ftvO = getFTVSubs(o.t)
-      val frozenExpr = Opaque(o.e, freeze(ftvO, o.t))
-      (frozenExpr, Nil, ftvO)
-
-    case l: Literal => (l, Nil, Solution())
-
-    case p: Primitive => (p.setType(p.typeScheme), Nil, Solution())
+    case o: Opaque => (o, Nil)
+    case l: Literal => (l, Nil)
+    case p: Primitive => (p.setType(p.typeScheme), Nil)
   }
 
   private case class Visitor(sol: Solution) extends PureTraversal {

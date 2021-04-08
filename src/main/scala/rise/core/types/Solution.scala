@@ -2,8 +2,9 @@ package rise.core.types
 
 import util.monads._
 import arithexpr.arithmetic.BoolExpr
+import rise.core.DSL.Opaque
 import rise.core.traverse._
-import rise.core.{Expr, substitute}
+import rise.core.{Expr, TypeAnnotation, TypeAssertion, substitute}
 
 object Solution {
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
@@ -29,6 +30,15 @@ object Solution {
     Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
 }
 
+abstract class SolutionVisitor(sol: Solution) extends PureTraversal {
+  override def nat: Nat => Pure[Nat] = ae => return_(sol(ae))
+  override def addressSpace: AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
+  override def matrixLayout: MatrixLayout => Pure[MatrixLayout] = m => return_(sol(m))
+  override def fragmentKind: FragmentKind => Pure[FragmentKind] = f => return_(sol(f))
+  override def natToData: NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
+  override def natToNat: NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
+}
+
 case class Solution(ts: Map[Type, Type],
                     ns: Map[NatIdentifier, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
@@ -39,21 +49,12 @@ case class Solution(ts: Map[Type, Type],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
                    ) {
 
-  abstract class Visitor(sol: Solution) extends PureTraversal {
-    override def nat: Nat => Pure[Nat] = ae => return_(sol(ae))
-    override def addressSpace: AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
-    override def matrixLayout: MatrixLayout => Pure[MatrixLayout] = m => return_(sol(m))
-    override def fragmentKind: FragmentKind => Pure[FragmentKind] = f => return_(sol(f))
-    override def natToData: NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
-    override def natToNat: NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
-  }
-
-  case class V(sol: Solution) extends Visitor(sol) {
+  case class V(sol: Solution) extends SolutionVisitor(sol) {
     override def `type`[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
   }
   def apply(e: Expr): Expr = V(this).expr(e).unwrap
 
-  case class T(sol: Solution) extends Visitor(sol) {
+  case class T(sol: Solution) extends SolutionVisitor(sol) {
     override def datatype: DataType => Pure[DataType] = {
       case t: DataTypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[DataType])
       case t => super.datatype(t)
