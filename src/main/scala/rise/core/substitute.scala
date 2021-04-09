@@ -32,7 +32,6 @@ object substitute {
           e match {
             case Lambda(x, b) =>
               // See https://www.cs.cornell.edu/courses/cs3110/2019sp/textbook/interp/subst_lambda.html
-              if (!(FV(b) contains x))
               if (x =~= `for`) return_(e)
               if (!(FV(expression) contains x))
                 super.expr(e)

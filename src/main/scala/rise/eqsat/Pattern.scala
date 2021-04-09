@@ -40,7 +40,7 @@ object Pattern {
       }
       def `type`(pat: TypePattern): Type = {
         pat match {
-          case w: TypePatternVar => subst(w)
+          // case w: TypePatternVar => subst(w)
           case TypePatternNode(n) => Type(n.map(`type`, nat, data))
           case TypePatternAny => throw new Exception("unknown type on right-hand side")
           case dtp: DataTypePattern => Type(data(dtp).node)
@@ -54,8 +54,12 @@ object Pattern {
 
 sealed trait PatternVarOrNode
 /** A variable used in [[Pattern]]s or [[Subst]]s */
-case class PatternVar(index: Int) extends PatternVarOrNode
-case class PatternNode(node: PNode) extends PatternVarOrNode
+case class PatternVar(index: Int) extends PatternVarOrNode {
+  override def toString: String = s"?$index"
+}
+case class PatternNode(node: PNode) extends PatternVarOrNode {
+  override def toString: String = node.toString
+}
 
 /** A pattern is a Rise expression which can contain pattern variables.
   * It can be used both as a [[Searcher]] or [[Applier]] for rewriting.
@@ -64,6 +68,8 @@ case class PatternNode(node: PNode) extends PatternVarOrNode
   * @see [[https://docs.rs/egg/0.6.0/egg/struct.Pattern.html]]
   */
 case class Pattern(p: PatternVarOrNode, t: TypePattern) {
+  override def toString: String = s"$p :: $t"
+
   def patternVars(): Vec[PatternVar] = {
     val vec = Vec.empty[PatternVar]
     def rec(p: PatternVarOrNode): Unit = {
@@ -157,7 +163,7 @@ object PatternDSL {
 
   def cst(value: Long): NatPattern = NatPatternNode(NatCst(value))
 
-  def `?t`(index: Int): TypePattern = TypePatternVar(index)
+  // def `?t`(index: Int): TypePattern = TypePatternVar(index)
   val `?t`: TypePattern = TypePatternAny
   def `?dt`(index: Int): DataTypePattern = DataTypePatternVar(index)
   val `?dt`: DataTypePattern = DataTypePatternAny

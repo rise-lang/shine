@@ -95,7 +95,7 @@ object Expr {
         DataLambda(fromNamed(e, bound + dt))
       case core.DepLambda(_, _) => ???
       case core.Literal(d) => Literal(d)
-      case p: core.Primitive => Primitive(p.setType(core.types.TypePlaceholder))
+      case p: core.Primitive => Primitive(p)//.setType(core.types.TypePlaceholder))
     }, Type.fromNamed(expr.t, bound))
   }
 

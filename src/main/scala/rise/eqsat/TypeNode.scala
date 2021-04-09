@@ -11,15 +11,29 @@ case class DataType(node: DataTypeNode[Nat, DataType]) {
 
 sealed trait TypePattern
 case class TypePatternNode(n: TypeNode[TypePattern, NatPattern, DataTypePattern])
-  extends TypePattern
-case class TypePatternVar(index: Int) extends TypePattern
-case object TypePatternAny extends TypePattern
+  extends TypePattern {
+  override def toString: String = n.toString
+}
+/* TODO? this would require "explicit" type identifiers
+case class TypePatternVar(index: Int) extends TypePattern {
+  override def toString: String = s"?t$index"
+}
+*/
+case object TypePatternAny extends TypePattern {
+  override def toString: String = "?t"
+}
 
 sealed trait DataTypePattern extends TypePattern
 case class DataTypePatternNode(n: DataTypeNode[NatPattern, DataTypePattern])
-  extends DataTypePattern
-case class DataTypePatternVar(index: Int) extends DataTypePattern
-case object DataTypePatternAny extends DataTypePattern
+  extends DataTypePattern {
+  override def toString: String = n.toString
+}
+case class DataTypePatternVar(index: Int) extends DataTypePattern {
+  override def toString: String = s"?dt$index"
+}
+case object DataTypePatternAny extends DataTypePattern {
+  override def toString: String = "?dt"
+}
 
 object Type {
   def fromNamed(t: rct.Type, bound: Expr.Bound = Expr.Bound.empty): Type = {

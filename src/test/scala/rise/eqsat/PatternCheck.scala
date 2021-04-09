@@ -2,37 +2,43 @@ package rise.eqsat
 
 class PatternCheck extends test_util.Tests {
   test("simple match") {
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
-
-    val (add1, add2) = {
-      import ExprDSL._
-      (egraph.addExpr(app(app(add(f32 ->: f32 ->: f32), %(0, f32)), %(1, f32))),
-       egraph.addExpr(app(app(add(f32 ->: f32 ->: f32), %(2, f32)), %(3, f32))))
-    }
-
-    egraph.union(add1, add2)
-    egraph.rebuild()
-
-    val commuteAdd: Rewrite[()] = {
+    val commuteAdd1: Rewrite[()] = {
       import PatternDSL._
-      Rewrite.init[()]("commute-add",
-        app(app(add, ?(0) :: `?t`(0)), ?(1)).compile(),
-        app(app(add :: `?t`(0) ->: `?t`(0) ->: `?t`(0),
-          ?(1) :: `?t`(1)) :: `?t`(0) ->: `?t`(0),
-          ?(0) :: `?t`(0)) :: `?t`(0))
-        //app(app(add, ?(0)), ?(1)).compile(),
-        //app(app(add, ?(1)), ?(0)) : Pattern)
+      Rewrite.init[()]("commute-add-1",
+        app(app(add, ?(0) :: `?dt`(0)), ?(1)).compile(),
+        app(app(add :: `?dt`(0) ->: `?dt`(0) ->: `?dt`(0),
+          ?(1) :: `?dt`(0)) :: `?dt`(0) ->: `?dt`(0),
+          ?(0) :: `?dt`(0)) :: `?dt`(0))
     }
 
-    val matches = commuteAdd.search(egraph)
-    val nMatches = matches.map(m => m.substs.size).sum
-    assert(nMatches == 2)
+    val commuteAdd2: Rewrite[()] = {
+      import PatternDSL._
+      Rewrite.syntactic[()]("commute-add-2",
+        app(app(add, ?(0) :: `?dt`(0)), ?(1) :: `?dt`(0)),
+        app(app(add, ?(1) :: `?dt`(0)), ?(0) :: `?dt`(0)))
+    }
 
-    val applications = commuteAdd.apply(egraph, matches)
-    egraph.rebuild()
-    assert(applications.size == 2)
+    for (commuteAdd <- Seq(commuteAdd1, commuteAdd2)) {
+      val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
 
-    egraph.dot().toFile("/tmp/simple-match.dot")
+      val (add1, add2) = {
+        import ExprDSL._
+        (egraph.addExpr(app(app(add(f32 ->: f32 ->: f32), %(0, f32)), %(1, f32))),
+          egraph.addExpr(app(app(add(f32 ->: f32 ->: f32), %(2, f32)), %(3, f32))))
+      }
+
+      egraph.union(add1, add2)
+      egraph.rebuild()
+      val matches = commuteAdd.search(egraph)
+      val nMatches = matches.map(m => m.substs.size).sum
+      assert(nMatches == 2)
+
+      val applications = commuteAdd.apply(egraph, matches)
+      egraph.rebuild()
+      assert(applications.size == 2)
+
+      egraph.dot().toFile(s"/tmp/simple-${commuteAdd.name}.dot")
+    }
   }
 
   test("compile program with depApps") {
@@ -57,7 +63,6 @@ class PatternCheck extends test_util.Tests {
     )
     assert(pattern.prog.v2r == HashMap())
     assert(pattern.prog.n2r == HashMap(x -> NatReg(1)))
-    assert(pattern.prog.t2r == HashMap())
 
     val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
 
@@ -96,7 +101,6 @@ class PatternCheck extends test_util.Tests {
     )
     assert(pattern.prog.v2r == HashMap())
     assert(pattern.prog.n2r == HashMap(`?n`(0) -> NatReg(0)))
-    assert(pattern.prog.t2r == HashMap())
     assert(pattern.prog.dt2r == HashMap(`?dt`(0) -> TypeReg(5)))
 
     val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
