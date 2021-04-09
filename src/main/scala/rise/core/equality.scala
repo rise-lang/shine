@@ -155,7 +155,7 @@ object equality {
       typeEq.equiv[TypeKind](typeEnv)(a.t)(b.t) && (a match {
         case Identifier(na) => and { case Identifier(nb) => exprEnv.check(na, nb)}
         case Literal(da) => and { case Literal(db) => equivData(typeEnv)(da)(db) }
-        case a: Primitive => and { case b: Primitive => a.getClass == b.getClass }
+        case a: Primitive => and { case b: Primitive => a.primEq(b) }
         case App(fa, ea) => and { case App(fb, eb) =>
           equiv(typeEnv)(exprEnv)(fa)(fb) && equiv(typeEnv)(exprEnv)(ea)(eb) }
         case DepApp(fa, xa) => and { case DepApp(fb, xb) =>
