@@ -1238,7 +1238,7 @@ object parse {
         }
         val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)),
           r.App(e1,e2)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
-        ps.mapFkt.update(name, Left(rd.ToBeTyped(e2)))
+        ps.mapFkt.update(name, Left(rd.ToBeTyped(e)))
         Left(ParseState(ps.tokenStream,SExpr(e)::parseState.parsedSynElems.tail, ps.mapFkt, ps.mapDepL, ps.spanList))
       }
     }
