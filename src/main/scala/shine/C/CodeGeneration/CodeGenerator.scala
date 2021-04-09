@@ -422,7 +422,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             // Hack! new gotta rebuild the nat-collection expression...
             val rns = rise.core.types.NatCollectionIdentifier(ns.name, isExplicit = true)
 
-            acc(pair, env, DPairSnd(l2)::CIntExpr((rns `@` (i+1) - (rns `@` i)) + j)::path, cont)
+            acc(pair, env, DPairSnd(1)::CIntExpr(rns `@` i + j)::path, cont)
           case Nil =>
             C.AST.Code("// skip")
           case _ => ???

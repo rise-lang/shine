@@ -70,7 +70,7 @@ final case class Join(
   }
 }
 
-final case class DPairJoin(
+final case class DepPairJoin(
                           n: Nat,
                           ns: NatCollectionIdentifier,
                           ft: NatToData,
@@ -83,7 +83,7 @@ final case class DPairJoin(
   val t = expT(DepPairType[NatKind](m, dt), w)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    DPairJoin(
+    DepPairJoin(
       f.nat(n),
       f.natCollection(ns),
       f.natToData(ft),
@@ -95,14 +95,14 @@ final case class DPairJoin(
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(pair)(λ(expT(DepPairType[NatCollectionKind](ns, DepArrayType(n, ft)), w))(x => C(DPairJoin(n, ns, ft, m, w, dt, x))))
+    con(pair)(λ(expT(DepPairType[NatCollectionKind](ns, DepArrayType(n, ft)), w))(x => C(DepPairJoin(n, ns, ft, m, w, dt, x))))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     // We must cheat...
     val rns = rise.core.types.NatCollectionIdentifier(this.ns.name, isExplicit = true)
-    MkDPairFstI[NatKind](rns `@` (n+1), A) `;`
+    MkDPairFstI[NatKind](rns `@` n, A) `;`
     acc(pair)(DepPairJoinAcc(n, ns, ft, m, dt, A))
   }
 

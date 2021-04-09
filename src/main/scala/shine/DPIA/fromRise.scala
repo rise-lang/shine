@@ -913,7 +913,7 @@ object fromRise {
 
       case core.dpairJoin() => fromType( {
         case expT(dt1@DepPairType(ns, DepArrayType(n, fdt)), ai) ->: expT(DepPairType(m, ArrayType(_, dt)), _) =>
-          fun[ExpType](expT(dt1, ai), input => DPairJoin(n,
+          fun[ExpType](expT(dt1, ai), input => DepPairJoin(n,
               ns.asInstanceOf[NatCollectionIdentifier], fdt, m.asInstanceOf[NatIdentifier], ai, dt, input))
       })
 
