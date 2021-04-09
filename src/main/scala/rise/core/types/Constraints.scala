@@ -254,16 +254,16 @@ object Constraint {
 
       case MatrixLayoutConstraint(a, b) =>
         (a, b) match {
-          case (i: MatrixLayoutIdentifier, _) if (!i.isExplicit) => Solution.subs(i, b)
-          case (_, i: MatrixLayoutIdentifier) if (!i.isExplicit) => Solution.subs(i, a)
+          case (i: MatrixLayoutIdentifier, _) if (canBeSubstituted(preserve)(i)) => Solution.subs(i, b)
+          case (_, i: MatrixLayoutIdentifier) if (canBeSubstituted(preserve)(i)) => Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
         }
 
       case FragmentTypeConstraint(a, b) =>
         (a, b) match {
-          case (i: FragmentKindIdentifier, _) if (!i.isExplicit) => Solution.subs(i, b)
-          case (_, i: FragmentKindIdentifier) if (!i.isExplicit) => Solution.subs(i, a)
+          case (i: FragmentKindIdentifier, _) if (canBeSubstituted(preserve)(i)) => Solution.subs(i, b)
+          case (_, i: FragmentKindIdentifier) if (canBeSubstituted(preserve)(i)) => Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
         }
@@ -341,20 +341,20 @@ object Constraint {
       }
     }
 
-    def freeOccurences(n: Nat): Map[NatIdentifier, Integer] = {
+    def freeOccurences(n: Nat, preserve : Seq[Kind.Identifier]): Map[NatIdentifier, Integer] = {
       val free_occurrences = mutable
         .Map[NatIdentifier, Integer]()
         .withDefault(_ => 0)
       ArithExpr.visit(n, {
-        case v: NatIdentifier if !v.isExplicit => free_occurrences(v) += 1
-        case _                                 =>
+        case v: NatIdentifier if canBeSubstituted(preserve)(v) => free_occurrences(v) += 1
+        case _ =>
       })
       free_occurrences.toMap
     }
 
     // collect free variables with only 1 occurrence
-    def potentialPivots(n: Nat): Set[NatIdentifier] = {
-      freeOccurences(n).foldLeft(Set[NatIdentifier]())({
+    def potentialPivots(n: Nat, preserve : Seq[Kind.Identifier]): Set[NatIdentifier] = {
+      freeOccurences(n, preserve).foldLeft(Set[NatIdentifier]())({
         case (potential, (v, c)) =>
           if (c == 1) {
             potential + v
@@ -399,8 +399,8 @@ object Constraint {
       }
     }
 
-    def tryPivots(n: Nat, value: Nat)(implicit trace: Seq[Constraint]): Solution = {
-      potentialPivots(n).foreach(pivotSolution(_, n, value) match {
+    def tryPivots(n: Nat, value: Nat, preserve : Seq[Kind.Identifier])(implicit trace: Seq[Constraint]): Solution = {
+      potentialPivots(n, preserve).foreach(pivotSolution(_, n, value) match {
         case Some(s) => return s
         case None    =>
       })
@@ -409,12 +409,12 @@ object Constraint {
 
     def unifyProd(p: Nat, n: Nat, preserve : Seq[Kind.Identifier])(implicit trace: Seq[Constraint]): Solution = {
       // n = p --> 1 = p * (1/n)
-      tryPivots(p /^ n, 1)
+      tryPivots(p /^ n, 1, preserve)
     }
 
     def unifySum(s: Sum, n: Nat, preserve : Seq[Kind.Identifier])(implicit trace: Seq[Constraint]): Solution = {
       // n = s --> 0 = s + (-n)
-      tryPivots(s - n, 0)
+      tryPivots(s - n, 0, preserve)
     }
 
     def unifyIdent(i: NatIdentifier, n: Nat, preserve : Seq[Kind.Identifier])(
