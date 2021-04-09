@@ -15,7 +15,7 @@ object infer {
                           printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
                           explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     // Collect FTVs in assertions and opaques; transform assertions into annotations
-    val (e_wo_assertions, preserve) = collectPreserve(e)
+    val (preserve, e_wo_assertions) = traverse(e, collectPreserve)
     infer.preserving(e_wo_assertions, preserve, printFlag, explDep)
   }
 
@@ -78,32 +78,22 @@ object infer {
 
   private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
 
-  private val collectPreserve : Expr => (Expr, Seq[Kind.Identifier]) = {
-    case expr : Identifier => (expr, Seq())
-    case expr@Lambda(x, e) =>
-      val (e1, s) = collectPreserve(e)
-      (Lambda(x, e1)(expr.t), s)
-    case expr@App(f, e) =>
-      val (f1, fs) = collectPreserve(f)
-      val (e1, es) = collectPreserve(e)
-      (App(f1, e1)(expr.t), fs ++ es)
-    case expr@DepLambda(x, e) =>
-      val (e1, s) = collectPreserve(e)
-      x match {
-        case n: NatIdentifier => (DepLambda[NatKind](n, e1)(expr.t), s)
-        case dt: DataTypeIdentifier => (DepLambda[DataKind](dt, e1)(expr.t), s)
-        case ad: AddressSpaceIdentifier => (DepLambda[AddressSpaceKind](ad, e1)(expr.t), s)
-        case n2n: NatToNatIdentifier => (DepLambda[NatToNatKind](n2n, e1)(expr.t), s)
-      }
-    case expr@DepApp(f, x) =>
-      val (f1, s) = collectPreserve(f)
-      (DepApp(f1, x)(expr.t), s)
-    case expr@Literal(d) => (expr, Seq())
-    case TypeAssertion(e, t) => // Transform assertions into annotations, collect FTVs
-      val (e1, s) = collectPreserve(e)
-      (TypeAnnotation(e1, t), s ++ getFTVs(t))
-    case Opaque(e, t) => (Opaque(e, t), getFTVs(t)) // Preserve opaques, collect FTVs
-    case expr: Primitive => (expr, Seq())
+  private val collectPreserve = new PureAccumulatorTraversal[Seq[Kind.Identifier]] {
+    override val accumulator = SeqMonoid
+    override def expr: Expr => Pair[Expr] = {
+      // Transform assertions into annotations, collect FTVs
+      case TypeAssertion(e, t) =>
+        val (s, e1) = expr(e).unwrap
+        accumulate(s ++ getFTVs(t))(TypeAnnotation(e1, t) : Expr)
+      // Collect FTVs
+      case Opaque(e, t) =>
+        accumulate(getFTVs(t))(Opaque(e, t) : Expr)
+      // Circumvent default .setType on primitives
+      case TypeAnnotation(e, t) =>
+        val (s, e1) = expr(e).unwrap
+        accumulate(s)(TypeAnnotation(e1, t) : Expr)
+      case e => super.expr(e)
+    }
   }
 
   private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint]) = env => {
