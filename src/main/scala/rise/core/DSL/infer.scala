@@ -3,7 +3,7 @@ package rise.core.DSL
 import util.monads._
 import Type.freshTypeIdentifier
 import rise.core.traverse._
-import rise.core.{traverse=>_, _}
+import rise.core.{traverse => _, _}
 import rise.core.types.InferenceException.error
 import rise.core.types._
 
@@ -19,7 +19,7 @@ object infer {
     infer.preserving(e_wo_assertions, preserve, printFlag, explDep)
   }
 
-  private [DSL] def preserving(wo_assertions: Expr, preserve : Seq[Kind.Identifier],
+  private [DSL] def preserving(wo_assertions: Expr, preserve : Set[Kind.Identifier],
                                printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
                                explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     // Collect constraints
@@ -78,8 +78,8 @@ object infer {
 
   private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
 
-  private val collectPreserve = new PureAccumulatorTraversal[Seq[Kind.Identifier]] {
-    override val accumulator = SeqMonoid
+  private val collectPreserve = new PureAccumulatorTraversal[Set[Kind.Identifier]] {
+    override val accumulator = SetMonoid
     override def expr: Expr => Pair[Expr] = {
       // Transform assertions into annotations, collect FTVs
       case TypeAssertion(e, t) =>
@@ -87,7 +87,7 @@ object infer {
         accumulate(s ++ getFTVs(t))(TypeAnnotation(e1, t) : Expr)
       // Collect FTVs
       case Opaque(e, t) =>
-        accumulate(getFTVs(t))(Opaque(e, t) : Expr)
+        accumulate(getFTVs(t).toSet)(Opaque(e, t) : Expr)
       // Circumvent default .setType on primitives
       case TypeAnnotation(e, t) =>
         val (s, e1) = expr(e).unwrap

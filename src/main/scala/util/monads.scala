@@ -1,5 +1,6 @@
 package util
 
+import scala.collection.immutable.HashSet
 import scala.language.implicitConversions
 
 object monads {
@@ -41,6 +42,11 @@ object monads {
   implicit def SeqMonoid[T] : Monoid[Seq[T]] = new Monoid[Seq[T]] {
     def empty : Seq[T] = Seq()
     def append : Seq[T] => Seq[T] => Seq[T] = x => y => x ++ y
+  }
+
+  implicit def SetMonoid[T] : Monoid[Set[T]] = new Monoid[Set[T]] {
+    def empty : Set[T] = HashSet()
+    def append : Set[T] => Set[T] => Set[T] = x => y => x ++ y
   }
 
   implicit def MapMonoid[K,V] : Monoid[Map[K,V]] = new Monoid[Map[K,V]] {
