@@ -2,7 +2,7 @@ package shine.DPIA
 
 import rise.{core => r}
 import rise.core.{types => rt}
-import rise.core.DSL.Type.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
+import rise.core.DSL.Type.{->:, `(Addr)->:`, `(Nat)->:`, `(NatToNat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
 import rise.core.{primitives => rp}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
@@ -523,13 +523,10 @@ private class InferAccessAnnotation {
       }
 
       case rp.reorder() => p.t match {
-        case (rt.IndexType(n) ->: rt.IndexType(_)) ->:
-          (rt.IndexType(_) ->: rt.IndexType(_)) ->: (_`.`t) ->: (_`.`_) =>
+        case (n `(Nat)->:` (idxF `(NatToNat)->:` (idxFinv `(NatToNat)->:` ((_`.`t) ->: (_`.`_) )))) =>
 
           val ai = accessTypeIdentifier()
-          (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
-            (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
-            expT(n`.`t, ai) ->: expT(n`.`t, ai)
+          nFunT(n, n2nFunT(idxF, n2nFunT(idxFinv, expT(n`.`t, ai) ->: expT(n`.`t, ai))))
         case _ => error()
       }
 

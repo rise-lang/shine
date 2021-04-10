@@ -37,6 +37,11 @@ object NatToNatLambda {
     val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
     NatToNatLambda(x, x => ArithExpr.substitute(body, Map((id, x))))
   }
+
+  def apply(range: Range, id: NatIdentifier, body: Nat): NatToNatLambda = {
+    val x = NamedVar(freshName("n"), range)
+    NatToNatLambda(x, x => ArithExpr.substitute(body, Map((id, x))))
+  }
 }
 
 final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier {
