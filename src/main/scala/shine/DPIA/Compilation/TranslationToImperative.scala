@@ -4,7 +4,6 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.DPIA.primitives.functional.MakePair
 
 import scala.language.reflectiveCalls
 
@@ -63,44 +62,8 @@ object TranslationToImperative {
   }
 
   def str(E: Phrase[ExpType])
-    (C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-    (implicit context: TranslationContext)
-  : Phrase[CommType] = {
-    E match {
-      case ep: ExpPrimitive with StreamT => ep.streamTranslation(C)
-      case ep: ExpPrimitive => Compilation.TranslationToImperative.translateArrayToStream(ep, C)
-
-      // on the fly beta-reduction
-      case Apply(fun, arg) => str(Lifting.liftFunction(fun).reducing(arg))(C)
-      case DepApply(fun, arg) => arg match {
-        case a: Nat => str(
-          Lifting.liftDependentFunction[NatKind, ExpType](
-          fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a)
-        )(C)
-        case a: DataType => str(
-          Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a)
-        )(C)
-      }
-
-      case _ => translateArrayToStream(E, C)
-    }
-  }
-
-  // TODO: works for arrays, but not streams
-  def translateArrayToStream(
-    E: Phrase[ExpType],
-    C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])(
-    implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import shine.DPIA.DSL._
-
-    E.t match {
-      case ExpType(ArrayType(n, dt), read) =>
-        C(nFun(i => fun(expT(dt, read) ->: (comm: CommType))(k =>
-          con(E `@` i)(k)
-        ), arithexpr.arithmetic.RangeAdd(0, n, 1)))
-      case _ => throw new Exception("this should not happen")
-    }
+         (C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
+         (implicit context: TranslationContext): Phrase[CommType] = {
+    StreamTranslation.str(E)(C)
   }
 }
