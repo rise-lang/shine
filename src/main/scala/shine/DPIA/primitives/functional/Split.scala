@@ -1,14 +1,11 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.DPIA.primitives.imperative.SplitAcc
 import shine.macros.Primitive.expPrimitive
 
 @expPrimitive
@@ -17,14 +14,9 @@ final case class Split(n: Nat,
                        w: AccessType,
                        dt: DataType,
                        array: Phrase[ExpType]
-                      ) extends ExpPrimitive with FedeT {
+                      ) extends ExpPrimitive {
   array :: expT((m * n)`.`dt, w)
   override val t: ExpType = expT(m`.`(n`.`dt), w)
-
-  def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
-                     (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
-    fedAcc(env)(array)(λ(accT(C.t.inT.dataType))(o =>
-      SplitAcc(n, m, dt, C(o))))
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, array) match {
