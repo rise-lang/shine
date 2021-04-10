@@ -8,8 +8,6 @@ import shine.C.AST.Type.getBaseType
 import shine.DPIA.Compilation.Passes.SimplifyNats
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional._
@@ -820,7 +818,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       })
     }
 
-    def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
+    def codeGenLiteral(d: Data): Expr = {
       d match {
         case NatData(n)       => C.AST.ArithmeticExpr(n)
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)

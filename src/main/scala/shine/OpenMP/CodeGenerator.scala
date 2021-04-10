@@ -8,11 +8,9 @@ import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType, ScalarType, VectorType}
 import shine.DPIA.primitives.functional._
-import shine.DPIA.{Compilation, Nat, NatIdentifier, Phrases, error, freshName}
+import shine.DPIA.{ArrayData, Compilation, Data, Nat, NatIdentifier, Phrases, VectorData, error, freshName}
 import shine.OpenMP.primitives.imperative.{ParFor, ParForNat}
 import shine.{C, _}
 
@@ -272,7 +270,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           C.AST.Block(immutable.Seq(p |> updatedGen.cmd(env)))))))
     }
 
-    def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
+    def codeGenLiteral(d: Data): Expr = {
       d match {
         case VectorData(vector) => CCodeGen.codeGenLiteral(ArrayData(vector))
         case _ => CCodeGen.codeGenLiteral(d)

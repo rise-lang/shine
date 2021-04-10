@@ -1,8 +1,6 @@
 package shine.DPIA.primitives.functional
 
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -24,17 +22,4 @@ final case class ReduceSeq(unroll: Boolean)
 
   def unwrap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]) =
     (n, dt1, dt2, f, init, array)
-
-  override def eval(s: Store): Data = {
-    val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)
-    val initE = OperationalSemantics.eval(s, init)
-    OperationalSemantics.eval(s, array) match {
-      case ArrayData(xs) =>
-        ArrayData(Vector(xs.fold(initE) {
-          (x, y) => OperationalSemantics.eval(s,
-            fE(Literal(x))(Literal(y)))
-        }))
-      case _ => throw new Exception("This should not happen")
-    }
-  }
 }

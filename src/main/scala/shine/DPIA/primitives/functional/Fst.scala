@@ -1,8 +1,6 @@
 package shine.DPIA.primitives.functional
 
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.macros.Primitive.expPrimitive
@@ -14,11 +12,4 @@ final case class Fst(dt1: DataType,
                     ) extends ExpPrimitive {
   pair :: expT(dt1 x dt2, read)
   override val t: ExpType = expT(dt1, read)
-
-  override def eval(s: Store): Data = {
-    OperationalSemantics.eval(s, pair) match {
-      case r: PairData => r.fst
-      case _ => throw new Exception("This should not happen")
-    }
-  }
 }
