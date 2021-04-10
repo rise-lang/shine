@@ -375,12 +375,6 @@ trait ExpPrimitive extends Primitive[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 }
 
-
-trait AccT {
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType]
-}
-
 trait FedeT {
   def fedeTranslation(env: Map[Identifier[ExpType], Identifier[AccType]])
                      (C: Phrase[AccType ->: AccType]) : Phrase[AccType]

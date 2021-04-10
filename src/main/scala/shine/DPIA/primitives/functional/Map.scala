@@ -1,6 +1,5 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
@@ -17,22 +16,10 @@ final case class Map(n: Nat,
                      access: AccessType,
                      f: Phrase[ExpType ->: ExpType],
                      array: Phrase[ExpType]
-                    ) extends ExpPrimitive with AccT with FedeT {
+                    ) extends ExpPrimitive with FedeT {
   array :: expT(n`.`dt1, access)
   f :: expT(dt1, access) ->: expT(dt2, access)
   override val t: ExpType = expT(n`.`dt2, access)
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] = {
-    val x = Identifier(freshName("fede_x"), ExpType(dt1, write))
-
-    val otype = AccType(dt2)
-    val o = Identifier(freshName("fede_o"), otype)
-
-    acc(array)(MapAcc(n, dt2, dt1,
-      Lambda(o, fedAcc(scala.Predef.Map((x, o)))(f(x))(λ(otype)(x => x))),
-      A))
-  }
 
   def fedeTranslation(env: Predef.Map[Identifier[ExpType],Identifier[AccType]])
                      (C: Phrase[AccType ->: AccType]): Phrase[AccType] = {

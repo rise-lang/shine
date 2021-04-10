@@ -19,65 +19,9 @@ object TranslationToImperative {
   def acc(E: Phrase[ExpType])
          (A: Phrase[AccType])
          (implicit context: TranslationContext): Phrase[CommType] = {
-    E match {
-      // on the fly beta-reduction
-      case Apply(fun, arg) => acc(Lifting.liftFunction(fun).reducing(arg))(A)
-      case DepApply(fun, arg) => arg match {
-        case a: Nat =>
-          acc(Lifting.liftDependentFunction[NatKind, ExpType](
-            fun.asInstanceOf[ Phrase[NatKind `()->:` ExpType]])(a))(A)
-        case a: DataType =>
-          acc(Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
-      }
-
-      case e
-        if TypeCheck.notContainingArrayType(e.t.dataType)
-          && e.t.accessType == read =>
-        //FIXME
-        // The pattern matching is needed in order to generate separate
-        // assignments to elements of pairs (structs), because the AMD SDK
-        // cannot deal with literal struct assignments or definitions (C99).
-        e match {
-          case MakePair(dt1, dt2, _, fst, snd) =>
-            acc(fst)(pairAcc1(dt1, dt2, A)) `;`
-              acc(snd)(pairAcc2(dt1, dt2, A))
-          case _ =>
-            con(e)(λ(e.t)(a => A :=| e.t.dataType | a))
-        }
-
-      case c: Literal => A :=|c.t.dataType| c
-
-      case x: Identifier[ExpType] => A :=|x.t.dataType| x
-
-      case n: Natural => A :=|n.t.dataType| n
-
-      case u@UnaryOp(op, e) =>
-        con(e)(λ(u.t)(x =>
-          A :=|u.t.dataType| UnaryOp(op, x)
-        ))
-
-      case b@BinOp(op, e1, e2) =>
-        con(e1)(λ(b.t)(x =>
-          con(e2)(λ(b.t)(y =>
-            A :=|b.t.dataType| BinOp(op, x, y)
-          ))
-        ))
-
-      case ep: ExpPrimitive with AccT => ep.acceptorTranslation(A)
-      case ep: ExpPrimitive => throw new Exception(s"$ep does not support the Acceptor Translation")
-
-      case LetNat(binder, defn, body) => LetNat(binder, defn, acc(body)(A))
-
-      case IfThenElse(cond, thenP, elseP) =>
-        con(cond)(λ(cond.t) { x =>
-          `if` (x) `then` acc(thenP)(A) `else` acc(elseP)(A)
-        })
-
-      case Proj1(_) => throw new Exception("This should never happen")
-      case Proj2(_) => throw new Exception("This should never happen")
-    }
+    AcceptorTranslation.acc(E)(A)
   }
+
   def con(E: Phrase[ExpType])
          (C: Phrase[ExpType ->: CommType])
          (implicit context: TranslationContext): Phrase[CommType] = {

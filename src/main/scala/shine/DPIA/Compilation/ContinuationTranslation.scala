@@ -66,8 +66,8 @@ object ContinuationTranslation {
   }
 
   def primitive(E: ExpPrimitive)
-         (C: Phrase[ExpType ->: CommType])
-         (implicit context: TranslationContext): Phrase[CommType] = E match {
+               (C: Phrase[ExpType ->: CommType])
+               (implicit context: TranslationContext): Phrase[CommType] = E match {
     case AsScalar(n, m, dt, access, array) =>
       con(array)(λ(array.t)(x =>
         C(AsScalar(n, m, dt, access, x))))
@@ -97,7 +97,8 @@ object ContinuationTranslation {
         C(DepJoin(n, lenF, dt, x))))
 
     case depMapSeq: DepMapSeq =>
-      `new`(depMapSeq.n`.d`depMapSeq.ft2, λ(varT(depMapSeq.n`.d`depMapSeq.ft2))(tmp =>
+      val (n, _, ft2, _, _) = depMapSeq.unwrap
+      `new`(n`.d`ft2, λ(varT(n`.d`ft2))(tmp =>
         acc(depMapSeq)(tmp.wr) `;` C(tmp.rd) ))
 
     case DepZip(n, ft1, ft2, e1, e2) =>
@@ -233,10 +234,11 @@ object ContinuationTranslation {
       // assumption: f does not need to be translated, it does indexing only
       con(record)(fun(record.t)(x => C(MapFst(w, dt1, dt2, dt3, f, x))))
 
-    case mapSeq@MapSeq(unroll) =>
+    case mapSeq: MapSeq =>
+      val (n, _, dt2, _, _) = mapSeq.unwrap
       println("WARNING: map loop continuation translation allocates memory")
       // TODO should be removed
-      `new`(mapSeq.n`.`mapSeq.dt2, λ(varT(mapSeq.n`.`mapSeq.dt2))(tmp =>
+      `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
         acc(mapSeq)(tmp.wr) `;` C(tmp.rd) ))
 
     case MapSnd(w, dt1, dt2, dt3, f, record) =>
@@ -272,8 +274,7 @@ object ContinuationTranslation {
       con(input)(C)
 
     case reduceSeq@ReduceSeq(unroll) =>
-      val (n, dt1, dt2, f, init, array) =
-        (reduceSeq.n, reduceSeq.dt1, reduceSeq.dt2, reduceSeq.f, reduceSeq.init, reduceSeq.array)
+      val (n, dt1, dt2, f, init, array) = reduceSeq.unwrap
       con(array)(λ(expT(n`.`dt1, read))(X =>
         ReduceSeqI(n, dt1, dt2,
           λ(expT(dt2, read))(x =>
@@ -349,8 +350,9 @@ object ContinuationTranslation {
             Y, X, C)))))
 
     // OpenCL
-    case depMap@ocl.DepMap(level, dim) =>
-      `new`(depMap.n`.d`depMap.ft2, λ(varT(depMap.n`.d`depMap.ft2))(tmp =>
+    case depMap: ocl.DepMap =>
+      val (n, _, ft2, _, _) = depMap.unwrap
+      `new`(n`.d`ft2, λ(varT(n`.d`ft2))(tmp =>
         acc(depMap)(tmp.wr) `;` C(tmp.rd) ))
 
     case map@ocl.Map(level, dim) =>

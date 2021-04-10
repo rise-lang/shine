@@ -1,6 +1,5 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
@@ -16,13 +15,9 @@ final case class AsScalar(n: Nat,
                           dt: ScalarType,
                           access: AccessType,
                           array: Phrase[ExpType]
-                         ) extends ExpPrimitive with AccT with FedeT {
+                         ) extends ExpPrimitive with FedeT {
   array :: expT(n `.` vec(m, dt), access)
   override val t: ExpType = expT((n * m) `.` dt, access)
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(array)(AsScalarAcc(n, m, dt, A))
 
   override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
                               (C: Phrase[AccType ->: AccType]): Phrase[AccType] =

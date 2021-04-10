@@ -1,6 +1,5 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
@@ -18,13 +17,9 @@ final case class Unzip(n: Nat,
                        dt2: DataType,
                        access: AccessType,
                        e: Phrase[ExpType]
-                      ) extends ExpPrimitive with AccT with FedeT {
+                      ) extends ExpPrimitive with FedeT {
   e :: expT(n`.`(dt1 x dt2), access)
   override val t: ExpType = expT((n`.`dt1) x (n`.`dt2), access)
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(e)(UnzipAcc(n, dt1, dt2, A))
 
   def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
                      (C: Phrase[AccType ->: AccType]): Phrase[AccType] =

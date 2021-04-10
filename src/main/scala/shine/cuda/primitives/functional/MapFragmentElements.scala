@@ -1,11 +1,8 @@
 package shine.cuda.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.Compilation.TranslationToImperative.{acc, con}
-import shine.DPIA.DSL._
+import shine.DPIA.->:
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.{->:, accT, expT}
 import shine.macros.Primitive.expPrimitive
 
 /**
@@ -20,21 +17,10 @@ import shine.macros.Primitive.expPrimitive
 case class MapFragmentElements(fragType: FragmentType,
                                fragment: Phrase[ExpType],
                                fun: Phrase[ExpType ->: ExpType],
-                              ) extends ExpPrimitive with AccT {
+                              ) extends ExpPrimitive {
 
   fragment :: ExpType(fragType, read)
   fun :: ExpType(fragType.dataType, read) ->: ExpType(fragType.dataType, write)
 
   override val t: ExpType = ExpType(fragType, write)
-
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
-    val dt = fragType.dataType
-
-    con(fragment)(λ(expT(fragType, read))(input =>
-      shine.cuda.primitives.imperative.ForFragmentElements(fragType, input, A,
-        λ(expT(dt, read))(x =>
-          λ(accT(dt))(o =>
-            acc(fun(x))(o))))))
-  }
 }

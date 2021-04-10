@@ -1,9 +1,6 @@
 package shine.DPIA.primitives.functional
 
 import arithexpr.arithmetic.SimplifiedExpr
-import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, Store}
@@ -20,16 +17,11 @@ final case class Slide(n: Nat,
                        sp: Nat,
                        dt: DataType,
                        input: Phrase[ExpType]
-                      ) extends ExpPrimitive with AccT {
+                      ) extends ExpPrimitive {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
   input :: expT(inputSize`.`dt, read)
   override val t: ExpType = expT(n`.`(sz`.`dt), read)
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    con(this)(λ(expT(n`.`(sz`.`dt), read))(x =>
-      A :=|(n`.`(sz`.`dt))| x ))
 
   override def eval(s: Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, input) match {

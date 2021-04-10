@@ -1,6 +1,5 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
@@ -18,13 +17,9 @@ final case class Split(n: Nat,
                        w: AccessType,
                        dt: DataType,
                        array: Phrase[ExpType]
-                      ) extends ExpPrimitive with AccT with FedeT {
+                      ) extends ExpPrimitive with FedeT {
   array :: expT((m * n)`.`dt, w)
   override val t: ExpType = expT(m`.`(n`.`dt), w)
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(array)(SplitAcc(n, m, dt, A))
 
   def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])
                      (C: Phrase[AccType ->: AccType]): Phrase[AccType] =

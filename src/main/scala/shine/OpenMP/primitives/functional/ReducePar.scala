@@ -1,8 +1,5 @@
 package shine.OpenMP.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
@@ -17,16 +14,11 @@ final case class ReducePar(n: Nat,
                            f: Phrase[ExpType ->: ExpType ->: ExpType],
                            init: Phrase[ExpType],
                            array: Phrase[ExpType]
-                          ) extends ExpPrimitive with AccT {
+                          ) extends ExpPrimitive {
   f :: expT(dt2, read) ->: expT(dt1, read) ->: expT(dt2, write)
   init :: expT(dt2, write)
   array :: expT(n`.`dt1, read)
   override val t: ExpType = expT(dt2, read)
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    con(this)(λ(expT(dt2, write))(r =>
-      acc(r)(A)))
 
   override def eval(s: Store): Data = {
     val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)

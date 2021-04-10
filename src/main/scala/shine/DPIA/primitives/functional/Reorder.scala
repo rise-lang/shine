@@ -1,6 +1,5 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
@@ -19,15 +18,11 @@ final case class Reorder(n: Nat,
                          idxF: Phrase[ExpType ->: ExpType],
                          idxFinv: Phrase[ExpType ->: ExpType],
                          input: Phrase[ExpType]
-                        ) extends ExpPrimitive with AccT with FedeT {
+                        ) extends ExpPrimitive with FedeT {
   idxF :: expT(idx(n), read) ->: expT(idx(n), read)
   idxFinv :: expT(idx(n), read) ->: expT(idx(n), read)
   input :: expT(n`.`dt, access)
   override val t: ExpType = expT(n`.`dt, access)
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    acc(input)(ReorderAcc(n, dt, idxFinv, A))
 
   def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
                      (C: Phrase[AccType ->: AccType]): Phrase[AccType] =
