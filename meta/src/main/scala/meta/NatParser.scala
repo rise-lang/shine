@@ -3,17 +3,17 @@ package meta
 import fastparse.ScalaWhitespace._
 import fastparse._
 
-import meta.TypeParser._
+import meta.RiseTypeParser._
 
 object NatParser {
 
   sealed trait NatAST
   object NatAST {
-    case class Identifier(id: TypeAST.Identifier) extends NatAST
+    case class Identifier(name: String) extends NatAST
     case class Number(n: String) extends NatAST
     case class BinaryOp(lhs: NatAST, op: String, rhs: NatAST) extends NatAST
     case class TernaryOp(cond: BinaryOp, thenN: NatAST, elseN: NatAST) extends NatAST
-    case class Nat2NatApply(f: TypeAST.Identifier, n: NatAST) extends NatAST
+    case class Nat2NatApply(f: RISETypeAST.Identifier, n: NatAST) extends NatAST
     case class Sum(id: Identifier, from: NatAST, upTo: NatAST, body: NatAST) extends NatAST
   }
 
@@ -45,7 +45,7 @@ object NatParser {
       def Nat2NatApply: P[NatAST.Nat2NatApply] =
         P(TypeIdentifier ~ "(" ~ Nat ~ ")").map(NatAST.Nat2NatApply.tupled)
 
-      def NatIdentifier: P[NatAST.Identifier] = P(TypeIdentifier).map(NatAST.Identifier)
+      def NatIdentifier: P[NatAST.Identifier] = P(TypeIdentifier).map(i => NatAST.Identifier(i.name))
 
       def Parens: P[NatAST] = P("(" ~ Nat ~ ")")
 
