@@ -106,7 +106,7 @@ object ematching {
   class Program(val instructions: Vec[Instruction],
                 var v2r: HashMap[PatternVar, Reg], // TODO? HashMap[_, _] -> compact Vec[_]
                 var n2r: HashMap[NatPatternVar, NatReg],
-                //var t2r: HashMap[TypePatternVar, TypeReg],
+                var t2r: HashMap[TypePatternVar, TypeReg],
                 var dt2r: HashMap[DataTypePatternVar, TypeReg]) {
     def run[D](egraph: EGraph[D], eclass: EClassId): Vec[Subst] = {
       val machine = AbstractMachine.init(eclass)
@@ -115,11 +115,11 @@ object ematching {
       machine.run(egraph, instructions.toSeq, { () =>
         val substExprs = VecMap(v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) }.to(Vec))
         val substNats = VecMap(n2r.iterator.map { case (v, reg) => (v, machine.nReg(reg)) }.to(Vec))
-        //val substTypes = VecMap(t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) }.to(Vec))
+        val substTypes = VecMap(t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) }.to(Vec))
         val substDataTypes = VecMap(dt2r.iterator.map { case (v, reg) =>
           (v, DataType(machine.tReg(reg).node.asInstanceOf[DataTypeNode[Nat, DataType]]))
         }.to(Vec))
-        substs += Subst(substExprs, substNats, /*substTypes, */substDataTypes)
+        substs += Subst(substExprs, substNats, substTypes, substDataTypes)
       })
 
       substs
@@ -217,9 +217,9 @@ object ematching {
           case (TypePatternNode(_), _) => -1
           case (_, TypePatternNode(_)) => 1
           // var has higher priority than node
-          //case (TypePatternVar(_), TypePatternVar(_)) => 0
-          //case (TypePatternVar(_), _) => -1
-          //case (_, TypePatternVar(_)) => 1
+          case (TypePatternVar(_), TypePatternVar(_)) => 0
+          case (TypePatternVar(_), _) => -1
+          case (_, TypePatternVar(_)) => 1
           // any has lower priority
           case (TypePatternAny, TypePatternAny) => 0
           case (TypePatternAny, _) => -1
@@ -257,7 +257,7 @@ object ematching {
   object Compiler {
     def compile(pattern: Pattern): Program = {
       val compiler = new Compiler(pattern,
-        HashMap.empty, HashMap.empty, /*HashMap.empty, */HashMap.empty,
+        HashMap.empty, HashMap.empty, HashMap.empty, HashMap.empty,
         mutable.PriorityQueue(TodoExpr(Reg(0), pattern)),
         Reg(1), NatReg(0), TypeReg(0))
       compiler.go()
@@ -268,7 +268,7 @@ object ematching {
   class Compiler(var pattern: Pattern,
                  var v2r: HashMap[PatternVar, Reg],
                  var n2r: HashMap[NatPatternVar, NatReg],
-                 //var t2r: HashMap[TypePatternVar, TypeReg],
+                 var t2r: HashMap[TypePatternVar, TypeReg],
                  var dt2r: HashMap[DataTypePatternVar, TypeReg],
                  var todo: mutable.PriorityQueue[Todo],
                  var out: Reg,
@@ -321,10 +321,10 @@ object ematching {
           }
           case TodoType(i, pat) =>
             pat match {
-              /*case v: TypePatternVar => t2r.get(v) match {
+              case v: TypePatternVar => t2r.get(v) match {
                 case Some(j) => instructions += TypeCompare(i, j)
                 case None => t2r += v -> i
-              }*/
+              }
               case v: DataTypePatternVar => dt2r.get(v) match {
                 case Some(j) => instructions += TypeCompare(i, j)
                 case None =>
@@ -347,7 +347,7 @@ object ematching {
         }
       }
 
-      new Program(instructions, v2r, n2r, /*t2r, */dt2r)
+      new Program(instructions, v2r, n2r, t2r, dt2r)
     }
   }
 }

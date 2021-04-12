@@ -54,7 +54,7 @@ class EGraph[Data](
         id = id,
         t = t,
         nodes = Vec(enode),
-        data = analysis.make(this, enode),
+        data = analysis.make(this, enode, t),
         parents = Vec())
 
       enode.children().foreach { c =>
@@ -167,8 +167,8 @@ class EGraph[Data](
         analysisPending.remove((node, id))
 
         val cid = findMut(id)
-        val node_data = analysis.make(this, node)
         val eclass = classes(cid)
+        val node_data = analysis.make(this, node, eclass.t)
         analysis.merge(eclass.data, node_data) match {
           case Some(Equal) | Some(Greater) => ()
           case Some(Less) | None =>

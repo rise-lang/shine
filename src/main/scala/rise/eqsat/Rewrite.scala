@@ -1,8 +1,5 @@
 package rise.eqsat
 
-import rise.core.{DepApp, DepLambda, Identifier}
-import rise.{core, eqsat}
-
 object Rewrite {
   def init[D](name: String, searcher: Searcher[D], applier: Applier[D]): Rewrite[D] = {
     val boundVars = searcher.patternVars()
@@ -17,33 +14,43 @@ object Rewrite {
   def syntactic[D](name: String, lhs: Pattern, rhs: Pattern): Rewrite[D] = {
     import rise.{core => rc}
     import rise.core.{types => rct}
+    import arithexpr.{arithmetic => ae}
 
+    // TODO: check that `lhs` and `rhs` have no negative indices for pattern variables to avoid clashes
     var naCount = 0
     var dtaCount = 0
 
-    def exprToBeTyped(rhs: Pattern, bound: Expr.Bound): rc.Expr = {
-      rhs.p match { // TODO? could use DSL building ToBeTyped things
+    def exprToBeTyped(rhs: Pattern,
+                      bound: Expr.Bound,
+                      pvTypes: Map[PatternVar, rct.Type]): rc.Expr = {
+      rhs.p match {
         case pv: PatternVar =>
-          rc.Identifier(s"?${pv.index}")(typeToBeTyped(rhs.t, bound))
+          val tmp = rc.TypeAnnotation(
+            rc.Identifier(s"?${pv.index}")(rct.TypeIdentifier(s"?tOfV${pv.index}")),
+            typeToBeTyped(rhs.t, bound))
+          pvTypes.get(pv) match {
+            case None => tmp
+            case Some(t) => rc.TypeAssertion(tmp, t)
+          }
         case PatternNode(node) => (node match {
           case Var(index) => bound.expr(index).setType _
           case App(f, e) =>
-            rc.App(exprToBeTyped(f, bound), exprToBeTyped(e, bound)) _
+            rc.App(exprToBeTyped(f, bound, pvTypes), exprToBeTyped(e, bound, pvTypes)) _
           case Lambda(e) =>
             val i = rc.Identifier(s"x${bound.expr.size}")(rct.TypePlaceholder)
-            rc.Lambda(i, exprToBeTyped(e, bound + i)) _
+            rc.Lambda(i, exprToBeTyped(e, bound + i, pvTypes)) _
           case NatApp(f, x) =>
-            rc.DepApp[rct.NatKind](exprToBeTyped(f, bound), natToBeTyped(x, bound)) _
+            rc.DepApp[rct.NatKind](exprToBeTyped(f, bound, pvTypes), natToBeTyped(x, bound)) _
           case DataApp(f, x) =>
-            rc.DepApp[rct.DataKind](exprToBeTyped(f, bound), dataToBeTyped(x, bound)) _
+            rc.DepApp[rct.DataKind](exprToBeTyped(f, bound, pvTypes), dataToBeTyped(x, bound)) _
           case NatLambda(e) =>
             val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
-            rc.DepLambda[rct.NatKind](i, exprToBeTyped(e, bound)) _
+            rc.DepLambda[rct.NatKind](i, exprToBeTyped(e, bound, pvTypes)) _
           case DataLambda(e) =>
             val i = rct.DataTypeIdentifier(s"dt${bound.nat.size}", isExplicit = true)
-            rc.DepLambda[rct.DataKind](i, exprToBeTyped(e, bound)) _
-          case eqsat.Literal(d) => rc.Literal(d).setType _
-          case eqsat.Primitive(p) => p.setType _
+            rc.DepLambda[rct.DataKind](i, exprToBeTyped(e, bound, pvTypes)) _
+          case Literal(d) => rc.Literal(d).setType _
+          case Primitive(p) => p.setType _
         })(typeToBeTyped(rhs.t, bound))
       }
     }
@@ -58,6 +65,8 @@ object Rewrite {
         case NatPatternNode(node) => node match {
           case NatVar(index) => bound.nat(index)
           case NatCst(value) => value: rct.Nat
+          case NatAdd(a, b) => natToBeTyped(a, bound) + natToBeTyped(b, bound)
+          case NatMul(a, b) => natToBeTyped(a, bound) * natToBeTyped(b, bound)
         }
       }
     }
@@ -86,7 +95,8 @@ object Rewrite {
     }
     def typeToBeTyped(rhs: TypePattern, bound: Expr.Bound): rct.Type = {
       rhs match {
-        // case pv: TypePatternVar =>
+        case pv: TypePatternVar =>
+          throw new Exception("no support for type pattern variables here")
           // rct.TypeIdentifier(s"?t${pv.index}", isExplicit = true)
         case TypePatternAny => rct.TypePlaceholder
         case dtp: DataTypePattern => dataToBeTyped(dtp, bound)
@@ -105,45 +115,80 @@ object Rewrite {
       }
     }
 
-    def typedPattern(expr: rc.Expr, bound: Expr.Bound): Pattern = {
+    def collectIdentifierTypes(e: rc.Expr): Map[PatternVar, rct.Type] = {
+      val traversal = new rc.traverse.PureAccumulatorTraversal[Map[PatternVar, rct.Type]] {
+        override val accumulator = util.monads.MapMonoid[PatternVar, rct.Type]
+        override def expr: rc.Expr => Pair[rc.Expr] = {
+          case i @ rc.Identifier(name) if name.startsWith("?") =>
+            val pv = PatternVar(name.drop(1).toInt)
+            // TODO: check that i.t contains no local variable, or deal with it?
+            accumulate(Map(pv -> i.t))(i: rc.Expr)
+          case e => super.expr(e)
+        }
+      }
+      rc.traverse.traverse(e, traversal)._1
+    }
+
+    val typesToMatchFor = HashMap[rct.TypeIdentifier, TypePatternVar]()
+    val dataTypesToMatchFor = HashMap[rct.DataTypeIdentifier, DataTypePatternVar]()
+    val natsToMatchFor = HashMap[rct.NatIdentifier, NatPatternVar]()
+    val matchedTypes = HashSet[TypePatternVar]()
+    val matchedDataTypes = HashSet[DataTypePatternVar]()
+    val matchedNats = HashSet[NatPatternVar]()
+
+    def typedPattern(expr: rc.Expr, bound: Expr.Bound, isRhs: Boolean): Pattern = {
       Pattern(expr match {
         case i: rc.Identifier if i.name.startsWith("?") => PatternVar(i.name.drop(1).toInt)
         case i: rc.Identifier => PatternNode(Var(bound.indexOf(i)))
         case rc.Lambda(x, e) =>
-          PatternNode(Lambda(typedPattern(e, bound + x)))
+          PatternNode(Lambda(typedPattern(e, bound + x, isRhs)))
         case rc.App(f, e) =>
-          PatternNode(App(typedPattern(f, bound), typedPattern(e, bound)))
+          PatternNode(App(typedPattern(f, bound, isRhs), typedPattern(e, bound, isRhs)))
         case rc.DepLambda(x: rct.NatIdentifier, e) =>
-          PatternNode(NatLambda(typedPattern(e, bound + x)))
+          PatternNode(NatLambda(typedPattern(e, bound + x, isRhs)))
         case rc.DepLambda(x: rct.DataTypeIdentifier, e) =>
-          PatternNode(DataLambda(typedPattern(e, bound + x)))
+          PatternNode(DataLambda(typedPattern(e, bound + x, isRhs)))
         case rc.DepLambda(_, _) => ???
         case rc.DepApp(f, x: rct.Nat) =>
-          PatternNode(NatApp(typedPattern(f, bound), typedNat(x, bound)))
+          PatternNode(NatApp(typedPattern(f, bound, isRhs), typedNat(x, bound, isRhs)))
         case rc.DepApp(f, x: rct.DataType) =>
-          PatternNode(DataApp(typedPattern(f, bound), typedData(x, bound)))
+          PatternNode(DataApp(typedPattern(f, bound, isRhs), typedData(x, bound, isRhs)))
         case rc.DepApp(_, _) => ???
         case rc.Literal(d) => PatternNode(Literal(d))
         case p: rc.Primitive => PatternNode(Primitive(p))
-      }, typedType(expr.t, bound))
+      }, typedType(expr.t, bound, isRhs))
     }
-    def typedNat(n: rct.Nat, bound: Expr.Bound): NatPattern = {
+    def typedNat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern = {
       n match {
-        case i: rct.NatIdentifier if i.name.startsWith("?n_") =>
-          throw new Exception("nat could not be inferred")
+        case i: rct.NatIdentifier if !i.isExplicit =>
+          // note: negative variable index to avoid clash with user
+          val pv = natsToMatchFor.getOrElseUpdate(i, NatPatternVar(- (1 + natsToMatchFor.size)))
+          if (!isRhs) { matchedNats.add(pv) }
+          pv
         case i: rct.NatIdentifier if i.name.startsWith("?n") =>
           NatPatternVar(i.name.drop(2).toInt)
         case i: rct.NatIdentifier =>
           NatPatternNode(NatVar(bound.indexOf(i)))
-        case arithexpr.arithmetic.Cst(c) =>
+        case ae.Cst(c) =>
           NatPatternNode(NatCst(c))
-        case _ => ???
+        case ae.Sum(Nil) => NatPatternNode(NatCst(0))
+        case ae.Sum(t +: ts) => ts.foldRight(typedNat(t, bound, isRhs)) { case (t, acc) =>
+          NatPatternNode(NatAdd(typedNat(t, bound, isRhs), acc))
+        }
+        case ae.Prod(Nil) => NatPatternNode(NatCst(1))
+        case ae.Prod(t +: ts) => ts.foldRight(typedNat(t, bound, isRhs)) { case (t, acc) =>
+          NatPatternNode(NatMul(typedNat(t, bound, isRhs), acc))
+        }
+        case _ => throw new Exception(s"did not expect $n")
       }
     }
-    def typedData(dt: rct.DataType, bound: Expr.Bound): DataTypePattern = {
+    def typedData(dt: rct.DataType, bound: Expr.Bound, isRhs: Boolean): DataTypePattern = {
       dt match {
-        case i: rct.DataTypeIdentifier if i.name.startsWith("?dt_") =>
-          throw new Exception("data type could not be inferred")
+        case i: rct.DataTypeIdentifier if !i.isExplicit =>
+          // note: negative variable index to avoid clash with user
+          val pv = dataTypesToMatchFor.getOrElseUpdate(i, DataTypePatternVar(- (1 + dataTypesToMatchFor.size)))
+          if (!isRhs) { matchedDataTypes.add(pv) }
+          pv
         case i: rct.DataTypeIdentifier if i.name.startsWith("?dt") =>
           DataTypePatternVar(i.name.drop(3).toInt)
         case i: rct.DataTypeIdentifier =>
@@ -151,36 +196,58 @@ object Rewrite {
         case rct.NatType =>
           DataTypePatternNode(NatType)
         case rct.VectorType(s, et) =>
-          DataTypePatternNode(VectorType(typedNat(s, bound), typedData(et, bound)))
+          DataTypePatternNode(VectorType(typedNat(s, bound, isRhs), typedData(et, bound, isRhs)))
         case rct.IndexType(s) =>
-          DataTypePatternNode(IndexType(typedNat(s, bound)))
+          DataTypePatternNode(IndexType(typedNat(s, bound, isRhs)))
         case rct.PairType(dt1, dt2) =>
-          DataTypePatternNode(PairType(typedData(dt1, bound), typedData(dt2, bound)))
+          DataTypePatternNode(PairType(typedData(dt1, bound, isRhs), typedData(dt2, bound, isRhs)))
         case rct.ArrayType(s, et) =>
-          DataTypePatternNode(ArrayType(typedNat(s, bound), typedData(et, bound)))
+          DataTypePatternNode(ArrayType(typedNat(s, bound, isRhs), typedData(et, bound, isRhs)))
         case _: rct.DepArrayType | _: rct.DepPairType[_] |
              _: rct.NatToDataApply | _: rct.FragmentType =>
           throw new Exception(s"did not expect $dt")
       }
     }
-    def typedType(t: rct.Type, bound: Expr.Bound): TypePattern = {
+    def typedType(t: rct.Type, bound: Expr.Bound, isRhs: Boolean): TypePattern = {
       t match {
-        case dt: rct.DataType => typedData(dt, bound)
+        case dt: rct.DataType => typedData(dt, bound, isRhs)
         case rct.FunType(a, b) =>
-          TypePatternNode(FunType(typedType(a, bound), typedType(b, bound)))
+          TypePatternNode(FunType(typedType(a, bound, isRhs), typedType(b, bound, isRhs)))
         case rct.DepFunType(x: rct.NatIdentifier, t) =>
-          TypePatternNode(NatFunType(typedType(t, bound + x)))
+          TypePatternNode(NatFunType(typedType(t, bound + x, isRhs)))
         case rct.DepFunType(x: rct.DataTypeIdentifier, t) =>
-          TypePatternNode(DataFunType(typedType(t, bound + x)))
+          TypePatternNode(DataFunType(typedType(t, bound + x, isRhs)))
         case rct.DepFunType(_, _) => ???
-        case rct.TypePlaceholder | rct.TypeIdentifier(_) =>
+        case i: rct.TypeIdentifier if isRhs =>
+          // note: negative variable index to avoid clash with user
+          val pv = typesToMatchFor.getOrElseUpdate(i, TypePatternVar(- (1 + typesToMatchFor.size)))
+          if (!isRhs) { matchedTypes.add(pv) }
+          pv
+        case rct.TypePlaceholder =>
           throw new Exception(s"did not expect $t, something was not infered")
       }
     }
 
-    val typed: rc.Expr = rc.DSL.toBeTyped(exprToBeTyped(rhs, Expr.Bound.empty))
-    val typedRhs = typedPattern(typed, Expr.Bound.empty)
-    Rewrite.init(name, lhs.compile(), typedRhs)
+    import rc.DSL.TypeAssertionHelper
+    // whatever the type of the left-hand-side is
+    val typedLhsNamed: rc.Expr = rc.DSL.toBeTyped(exprToBeTyped(lhs, Expr.Bound.empty, Map()))
+    // .. the type of the right-hand-side must be the same
+    // .. and the type of the pattern variables must be the same
+    val pvTypes = collectIdentifierTypes(typedLhsNamed)
+    val typedRhsNamed: rc.Expr = rc.DSL.toBeTyped(exprToBeTyped(rhs, Expr.Bound.empty, pvTypes)) !: typedLhsNamed.t
+    val typedRhs = typedPattern(typedRhsNamed, Expr.Bound.empty, isRhs = true)
+    // .. and we might need to match on some left-hand-side types to construct the typed right-hand-side
+    // FIXME:
+    //  (1) this matches over more types than necessary and could be optimized
+    //  (2) this also throws away type patterns from the original left-hand-side pattern
+    //  (3) matching nats is most likely brittle
+    val typedLhs = typedPattern(typedLhsNamed, Expr.Bound.empty, isRhs = false)
+    val implicitsAreBound =
+      typesToMatchFor.size == matchedTypes.size &&
+      natsToMatchFor.size == matchedNats.size &&
+      dataTypesToMatchFor.size == matchedDataTypes.size
+    assert(implicitsAreBound)
+    Rewrite.init(name, typedLhs.compile(), typedRhs)
   }
 }
 
@@ -195,6 +262,9 @@ class Rewrite[Data](val name: String,
 
   def apply(egraph: EGraph[Data], matches: Vec[SearchMatches]): Vec[EClassId] =
     applier.applyMatches(egraph, matches)
+
+  def when(cond: (EGraph[Data], EClassId, Subst) => Boolean): Rewrite[Data] =
+    new Rewrite(name, searcher, ConditionalApplier(cond, applier))
 }
 
 /** The left-hand side of a [[Rewrite]] rule.
@@ -283,14 +353,14 @@ object VecMap {
 /** A substitution mapping variables to their match in the [[EGraph]] */
 case class Subst(exprs: VecMap[PatternVar, EClassId],
                  nats: VecMap[NatPatternVar, Nat],
-                 //types: VecMap[TypePatternVar, Type],
+                 types: VecMap[TypePatternVar, Type],
                  datatypes: VecMap[DataTypePatternVar, DataType]) {
   def insert(pv: PatternVar, eclass: EClassId): Option[EClassId] =
     exprs.insert(pv, eclass)
   def insert(nv: NatPatternVar, n: Nat): Option[Nat] =
     nats.insert(nv, n)
-  //def insert(tv: TypePatternVar, t: Type): Option[Type] =
-  //  types.insert(tv, t)
+  def insert(tv: TypePatternVar, t: Type): Option[Type] =
+    types.insert(tv, t)
   def insert(dtv: DataTypePatternVar, dt: DataType): Option[DataType] =
     datatypes.insert(dtv, dt)
 
@@ -298,17 +368,17 @@ case class Subst(exprs: VecMap[PatternVar, EClassId],
     exprs(pv)
   def apply(nv: NatPatternVar): Nat =
     nats(nv)
-  //def apply(tv: TypePatternVar): Type =
-  //  types(tv)
+  def apply(tv: TypePatternVar): Type =
+    types(tv)
   def apply(dtv: DataTypePatternVar): DataType =
     datatypes(dtv)
 
   def deepClone(): Subst =
-    Subst(exprs.shallowClone(), nats.shallowClone(), /*types.shallowClone(), */datatypes.shallowClone())
+    Subst(exprs.shallowClone(), nats.shallowClone(), types.shallowClone(), datatypes.shallowClone())
 }
 
 object Subst {
-  def empty: Subst = Subst(VecMap.empty, VecMap.empty, /*VecMap.empty, */VecMap.empty)
+  def empty: Subst = Subst(VecMap.empty, VecMap.empty, VecMap.empty, VecMap.empty)
 }
 
 // note: the condition is more general in `egg`

@@ -18,7 +18,14 @@ class PatternCheck extends test_util.Tests {
         app(app(add, ?(1) :: `?dt`(0)), ?(0) :: `?dt`(0)))
     }
 
-    for (commuteAdd <- Seq(commuteAdd1, commuteAdd2)) {
+    val commuteAdd3: Rewrite[()] = {
+      import PatternDSL._
+      Rewrite.syntactic[()]("commute-add-3",
+        app(app(add, ?(0)), ?(1)),
+        app(app(add, ?(1)), ?(0)))
+    }
+
+    for (commuteAdd <- Seq(commuteAdd1, commuteAdd2, commuteAdd3)) {
       val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
 
       val (add1, add2) = {

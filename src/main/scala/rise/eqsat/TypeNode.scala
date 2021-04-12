@@ -14,11 +14,9 @@ case class TypePatternNode(n: TypeNode[TypePattern, NatPattern, DataTypePattern]
   extends TypePattern {
   override def toString: String = n.toString
 }
-/* TODO? this would require "explicit" type identifiers
 case class TypePatternVar(index: Int) extends TypePattern {
   override def toString: String = s"?t$index"
 }
-*/
 case object TypePatternAny extends TypePattern {
   override def toString: String = "?t"
 }

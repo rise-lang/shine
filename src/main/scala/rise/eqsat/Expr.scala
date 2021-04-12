@@ -64,12 +64,14 @@ object Expr {
   case class Bound(expr: Seq[core.Identifier],
                    nat: Seq[rct.NatIdentifier],
                    data: Seq[rct.DataTypeIdentifier]) {
+    private def assertFound(i: Int): Int =
+      if (i >= 0) { i } else { throw new Exception("identifier was not bound") }
     def indexOf(i: core.Identifier): Int =
-      expr.indexOf(i)
+      assertFound(expr.indexOf(i))
     def indexOf(i: rct.NatIdentifier): Int =
-      nat.indexOf(i)
+      assertFound(nat.indexOf(i))
     def indexOf(i: rct.DataTypeIdentifier): Int =
-      data.indexOf(i)
+      assertFound(data.indexOf(i))
 
     def +(i: core.Identifier): Bound =
       this.copy(expr = i +: expr)

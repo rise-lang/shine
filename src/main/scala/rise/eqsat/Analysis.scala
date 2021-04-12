@@ -10,7 +10,7 @@ case object Greater extends Order
   * @see [[https://docs.rs/egg/0.6.0/egg/trait.Analysis.html]]
   */
 trait Analysis[Data] {
-  def make(egraph: EGraph[Data], enode: ENode): Data
+  def make(egraph: EGraph[Data], enode: ENode, t: Type): Data
 
   // - if `to < from` then `to` should be assigned to `from`
   // - if `to > from` then `to` should be unmodified
@@ -24,7 +24,7 @@ trait Analysis[Data] {
 }
 
 object NoAnalysis extends Analysis[()] {
-  override def make(egraph: EGraph[()], enode: ENode): () = ()
+  override def make(egraph: EGraph[()], enode: ENode, t: Type): () = ()
   override def merge(to: (), from: ()): Option[Order] = Some(Equal)
 }
 
@@ -33,7 +33,7 @@ class DefaultAnalysisData(var free: HashSet[Int],
                           var extractedSize: Int)
 
 object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
-  override def make(egraph: EGraph[DefaultAnalysisData], enode: ENode): DefaultAnalysisData = {
+  override def make(egraph: EGraph[DefaultAnalysisData], enode: ENode, t: Type): DefaultAnalysisData = {
     val free = HashSet.empty[Int]
     enode match {
       case Var(index) => free += index
@@ -43,7 +43,7 @@ object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
       case DataLambda(_) => ???
       case _ => enode.children().foreach(c => free ++= egraph.getMut(c).data.free)
     }
-    val extractedExpr = Expr(enode.mapChildren(c => egraph.getMut(c).data.extractedExpr), ???)
+    val extractedExpr = Expr(enode.mapChildren(c => egraph.getMut(c).data.extractedExpr), t)
     val extractedSize = enode.children().foldLeft(1) { case (acc, c) => acc + egraph.getMut(c).data.extractedSize }
     new DefaultAnalysisData(free, extractedExpr, extractedSize)
   }

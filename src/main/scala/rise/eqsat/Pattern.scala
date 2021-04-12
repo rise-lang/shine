@@ -40,7 +40,7 @@ object Pattern {
       }
       def `type`(pat: TypePattern): Type = {
         pat match {
-          // case w: TypePatternVar => subst(w)
+          case w: TypePatternVar => subst(w)
           case TypePatternNode(n) => Type(n.map(`type`, nat, data))
           case TypePatternAny => throw new Exception("unknown type on right-hand side")
           case dtp: DataTypePattern => Type(data(dtp).node)
@@ -123,7 +123,7 @@ object PatternDSL {
   import scala.language.implicitConversions
 
   def ?(index: Int): PatternVar = PatternVar(index)
-  def %(index: Int): PNode = Var(index)
+  def %(index: Int): Var = Var(index)
 
   def app(a: Pattern, b: Pattern): PNode = App(a, b)
   def lam(e: Pattern): PNode = Lambda(e)
@@ -163,6 +163,7 @@ object PatternDSL {
 
   def cst(value: Long): NatPattern = NatPatternNode(NatCst(value))
 
+  // not supported in all cases, so no DSL for it
   // def `?t`(index: Int): TypePattern = TypePatternVar(index)
   val `?t`: TypePattern = TypePatternAny
   def `?dt`(index: Int): DataTypePattern = DataTypePatternVar(index)
