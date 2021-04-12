@@ -92,7 +92,7 @@ object parse {
 
   implicit class ParseStatePipe(val ps: Either[ParseState, ParseErrorOrState]) extends AnyVal {
     def |>(f: ParseState => Either[ParseState, ParseErrorOrState]): Either[ParseState, ParseErrorOrState] = {
-      println("|> : " + ps)
+      //println("|> : " + ps)
       ps match {
         case Left(p) => f(p)
         case Right(e) => Right(e)
@@ -107,7 +107,7 @@ object parse {
       ps =>
         leftF(ps) match {
           case Right(_) => {
-            println("|| : " + ps)
+            //println("|| : " + ps)
             rightF(ps)
           }
           case Left(resPs) => Left(resPs)
@@ -848,13 +848,13 @@ object parse {
 
   private def combineExpressionsDependent(synElemList: List[SyntaxElement], mapDepL: MapDepL): r.Expr = {
     var (e, synE) = combineExpressionDependentFirsExpr(synElemList, mapDepL)
-    println("I will combine Expressions in Lambda: " + synE + " <::> " + e)
+    println("I will combine Expressions in combineExpressionsDependent: " + synE + " <::> " + e)
     while (!synE.isEmpty) {
       val r = combineExpressionsDependentOneStep(e, synE, mapDepL, None)
       e = r._1
       synE = r._2
     }
-    println("I have combined the Expressions in Lambda: " + e + " ; " + e.span.get.end)
+    println("I have combined the Expressions in combineExpressionsDependent: " + e + " ; " + e.span.get.end)
     e
   }
 
@@ -1197,17 +1197,23 @@ object parse {
     }
   }
 
+  //Todo: Here I have to expect the result of getComposition, so I have to add SComp in the SyntaxElement
+  //Todo: and with that I can return this SyntaxElement so that SComp has to look something like this:
+  //Todo: SComp = (e1:r.Expr, s2:SyntaxElement, span:Span) and with that I have to create an Lambda like this
+  //Todo: r.Lambda(r.freshname(e), r.App(e1,createLambda(s2))(r.TypePlaceholder, Some(span))
   private def parseComp(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseComp: " + parseState)
     val psOld = Left(ParseState(parseState.tokenStream, Nil, parseState.mapFkt, parseState.mapDepL, parseState.spanList)) |>
       parseNoAppExpr |>
       parseDot |>
+      parseNoAppExpr|>
       parseMaybeAppExpr
-
+    println("Yuhuuuasdf: "+psOld)
     psOld match {
       case Right(e) => Right(e)
       case Left(ps) => {
-        val (e1, sp1) = ps.parsedSynElems.head match {
+        val synElems = ps.parsedSynElems.reverse
+        val (e1, sp1) = synElems.head match {
           case SExpr(expr) => (expr, expr.span.get)
           case SExprClutched(expr, sp) => (expr, sp)
           case _ => {
@@ -1215,24 +1221,32 @@ object parse {
             return Left(parseState)
           }
         }
-        val e2 = combineExpressionsDependent(ps.parsedSynElems.tail, ps.mapDepL)
-        val span = sp1 + e2.span.get
+        if(synElems.tail.isEmpty) return Right(ParseError("synElems is empty:"+ synElems))
+        val (e2, sp2) = synElems.tail.head match {
+          case SExpr(expr) => (expr, expr.span.get)
+          case SExprClutched(expr, sp) => (expr, sp)
+          case _ => {
+            println("Abort; parseComposition because not accepted beggining types: " + parseState)
+            return Left(parseState)
+          }
+        }
+        if(synElems.tail.tail.isEmpty) return Right(ParseError("synElems.tail.tail is empty:"+ synElems))
+        println("I combine now synElem.tail.tail: "+ synElems.tail.tail)
+        val e3 = combineExpressionsDependent(synElems.tail.tail, ps.mapDepL)
+        val span = sp1 + sp2 + e3.span.get
         val name = r.freshName("e")
         if (ps.mapFkt.contains(name)) { //Todo: Better error
           throw new IllegalArgumentException("A variable or function with the exact same name '" + name +
             "' is already declared! <- " + ps.mapFkt.get(name))
         }
         val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)),
-          r.App(e2, e1)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+          r.App(e2, r.App(e1, e3)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
         ps.mapFkt.update(name, Left(rd.ToBeTyped(e)))
-        Left(ParseState(ps.tokenStream, SExpr(e) :: parseState.parsedSynElems.tail, ps.mapFkt, ps.mapDepL, ps.spanList))
+        Left(ParseState(ps.tokenStream, SExpr(e) :: parseState.parsedSynElems, ps.mapFkt, ps.mapDepL, ps.spanList))
       }
     }
   }
-  //Todo: Here I have to expect the result of getComposition, so I have to add SComp in the SyntaxElement
-  //Todo: and with that I can return this SyntaxElement so that SComp has to look something like this:
-  //Todo: SComp = (e1:r.Expr, s2:SyntaxElement, span:Span) and with that I have to create an Lambda like this
-  //Todo: r.Lambda(r.freshname(e), r.App(e1,createLambda(s2))(r.TypePlaceholder, Some(span))
+
 
   /*
 is the whole Syntax-Tree.
@@ -1285,6 +1299,7 @@ the syntax-Tree has on top an Lambda-Expression
         require(synElemListMaybeTIdent.isEmpty, "the List should be empty")
         val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
         var map = p.mapFkt
+        print("WhereAre: "+p)
         //local variables are in the list, so that not two same localVariables are declared
         if (map.contains(identifierName.name)) {//Todo: Better error
           throw new IllegalArgumentException("A variable or function with the exact same name '"+ identifierName.name +
@@ -1320,99 +1335,7 @@ the syntax-Tree has on top an Lambda-Expression
     println("myNewParseState: "+ myNewParseState)
     Left(myNewParseState)
   }
-//  /*
-//  old parseLambda Todo: delete it
-//   */
-//  def parseLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-//    if(parseState.tokenStream.isEmpty){
-//      println("Abbruch; parseLambda: "+ parseState)
-//      return Left(parseState)
-//    }
-//    println("parseLambda: " +parseState)
-//    val psOld =
-//      Left(parseState) |>
-//        parseBackslash |>
-//        parseIdent     |>
-//        parseMaybeTypeAnnotation |>
-//        parseArrow
-//
-//        val (psOrErr, spanBackslash) = psOld match {
-//          case Left(p) => p.spanList match {
-//            case Some(Nil) => throw new IllegalArgumentException("this should not happen to be Nil")
-//            case None => throw new IllegalArgumentException("this should not happen to be None")
-//            case Some(span::Nil) => (parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, None)) , span )
-//            case Some(span::l)=> ( parseMaybeAppExpr(ParseState(p.tokenStream,Nil, p.mapFkt, p.mapDepL, Some(l)) ), span)
-//          }
-//          case Right(e) => {
-//            println("endLambda: "+ e)
-//            return Right(e)
-//          }
-//        }
-//
-//    val (toks, synElemList, map, mapDepL, spanList) = psOrErr match {
-//      case Left(psNew) => {
-//        val expr = SExpr(combineExpressionsDependent(psNew.parsedSynElems, psNew.mapDepL))
-//        //println("\n\n\nSpanIsHere"+ expr.expr +" : "+ expr.expr.span+ "\n\n\n")
-//        val newL = expr :: Nil
-//        val li:List[SyntaxElement] = psOld match {
-//          case Left(pa) => pa.parsedSynElems.reverse ++ newL
-//          case Right(_) => throw new RuntimeException(
-//            "this should not be able to happen in parseLambdda, because I already have controlled this!")
-//        }
-//        val l = li.reverse
-//        (psNew.tokenStream,l, psNew.mapFkt, psNew.mapDepL, psNew.spanList)
-//      }
-//      case Right(e) => return Right(e)
-//    }
-//
-//    val (expr, synElemListExpr) = (synElemList.head match {
-//      case SExpr(e) => e
-//      case a => throw new RuntimeException("Here is an Expression expected, but " + a +" ist not an Expression!")
-//    }, synElemList.tail)
-//    println("now in Lambda we want to combine our results: "+ expr +" # " + synElemListExpr)
-//
-//    val (maybeTypedIdent, synElemListMaybeTIdent):(r.Expr, List[SyntaxElement]) =
-//      synElemListExpr.head match {
-//        case SType(t, _) =>
-//          synElemListExpr.tail.head match {
-//            case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
-//            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
-//          }
-//        case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
-//        case SExpr(i) => (i, synElemListExpr.tail)
-//        case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
-//          " is not an Expression!")
-//        case SData(t,_) => t match {
-//          case DIdentifier(data) => synElemListExpr.tail.head match {
-//            case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
-//            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
-//          }
-//          case DType(data) => synElemListExpr.tail.head match {
-//            case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
-//            case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
-//          }
-//        }
-//        case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-//        case SAddrSpace(addrSpace,_) => throw new RuntimeException(
-//          "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-//      }
-//    val identifierName = maybeTypedIdent.asInstanceOf[r.Identifier]
-//    val spanOfBackslash = parseState.tokenStream.head.s
-//    val span = Span(spanOfBackslash.file,spanOfBackslash.begin, expr.span.head.end)
-//    val lambda = Lambda(identifierName, expr)(rt.TypePlaceholder, Some(span))
-//    println("synElemListMaybeTIdent: " + synElemListMaybeTIdent +" ______ " + synElemListExpr)
-//
-//    //local variables are in the list, so that not two same localVariables are declared
-//    if (map.contains(identifierName.name)) {
-//      throw new IllegalArgumentException("A variable or function with the exact same name '"+ identifierName.name +
-//        "' is already declared! <- " + map.get(identifierName.name))
-//    }
-//    map.update(identifierName.name, Left(rd.ToBeTyped(identifierName)))
-//
-//    val myNewParseState = ParseState(toks, SExpr(lambda) :: synElemListMaybeTIdent, map,mapDepL, spanList)
-//    println("myNewParseState: "+ myNewParseState)
-//    Left(myNewParseState)
-//  }
+
 
   //_________________________________________________________Lambda
   //_________________________________________________________Expres
@@ -1678,18 +1601,17 @@ the syntax-Tree has on top an Lambda-Expression
       return Left(parseState)
     }
     val parseStateOrError =
-      Left(parseState)  |>
-        parseNoAppExpr
+      Left(parseState)  |> parseNoAppExpr// _|| parseComp)
     println("parseApp after parseLowExpression: "+ parseStateOrError)
     parseStateOrError match {
       case Right(e) => Right(e)
-      case Left(ps)=> if(ps.tokenStream.isEmpty){
-                              //println("parseApp End, because TokenList is empty: "+ ps)
+      case Left(ps)=> if(ps.tokenStream.isEmpty||ps.tokenStream.head.isInstanceOf[EndNamedExpr]){
+                              println("parseApp End, because TokenList is empty: "+ ps)
                               val expr = combineExpressionsDependent(ps.parsedSynElems, ps.mapDepL)
                               Left(ParseState(ps.tokenStream, SExpr(expr)::Nil, ps.mapFkt, ps.mapDepL, ps.spanList) )
                             }else{
                               if(ps.parsedSynElems.isEmpty) throw new IllegalStateException("ps is Empty: "+ ps)
-                              val p = Left(ps)|> (parseMaybeAppExpr _|| parseComp)
+                              val p = Left(ps)|> parseMaybeAppExpr
                               p match {
                                 case Right(e) => Right(e)
                                 case Left(newPS) => {
@@ -1698,7 +1620,7 @@ the syntax-Tree has on top an Lambda-Expression
                                   }else {
                                     if(newPS.parsedSynElems.isEmpty) throw new IllegalStateException("newPS is Empty: "+ newPS)
                                     val expr = combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL)
-                                    //println("\n\n\nSpanIsHere"+ expr +" : "+ expr.span+ "\n\n\n")
+                                    println("\n\n\nSpanIsHere"+ expr +" : "+ expr.span+ "\n\n\n")
                                     SExpr(expr)
                                   }
                                   Left(ParseState(newPS.tokenStream, synElem::Nil, newPS.mapFkt, newPS.mapDepL, newPS.spanList) )
