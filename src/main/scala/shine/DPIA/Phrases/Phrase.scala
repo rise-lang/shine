@@ -1,7 +1,6 @@
 package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
@@ -373,26 +372,6 @@ sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
 
 trait ExpPrimitive extends Primitive[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
-}
-
-trait ConT {
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType]
-}
-
-trait AccT {
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType]
-}
-
-trait FedeT {
-  def fedeTranslation(env: Map[Identifier[ExpType], Identifier[AccType]])
-                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType]
-}
-
-trait StreamT {
-  def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                       (implicit context: TranslationContext): Phrase[CommType]
 }
 
 trait AccPrimitive extends Primitive[AccType] {
