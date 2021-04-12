@@ -1,5 +1,5 @@
 --f::N:Nat=>D:Data=>N.N.D->(N.N.D -> N.N.D) -> N.N.D
-u::D1:Data=>D1 -> I32
-u=\D1:Data=>\fkt->1
+u::D1:Data=>D1 -> F32
+u=\D1:Data=>\fkt->1F32
 g::F32->I32
 g=\x-> u (F32->I32) --this does not work yet, ignore please because FunType doesn't work and should not parse because we can not generate it
