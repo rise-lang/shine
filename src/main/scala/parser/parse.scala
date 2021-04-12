@@ -1,8 +1,9 @@
 package parser //old branch 17. Dezember 2020
 
 import rise.{core => r, openCL => o}
-import r.{DSL => rd, types => rt, primitives => rp, semantics => rS}
+import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
+import rise.core.DSL.ToBeTyped
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.ForeignFunction
 import rise.core.types.{PairType, f32, vec}
@@ -107,7 +108,7 @@ object parse {
       ps =>
         leftF(ps) match {
           case Right(_) => {
-            //println("|| : " + ps)
+            println("|| : " + ps)
             rightF(ps)
           }
           case Left(resPs) => Left(resPs)
@@ -1591,6 +1592,17 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
+  private def testHashMapByReference(parseState: ParseState): Unit ={
+    parseState.mapFkt.update("test", Left(ToBeTyped(r.Identifier("test")(rt.TypePlaceholder, None))))
+  }
+
+  private def testNoApp(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("testNoApp: " + parseState)
+    testHashMapByReference(parseState)
+    println("testNoApp2: " + parseState)
+    parseNoAppExpr(parseState)
+  }
+
   def parseMaybeAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseMaybeAppExpr: " + parseState)
     if(parseState.tokenStream.head.isInstanceOf[RParentheses]){
@@ -1603,7 +1615,7 @@ the syntax-Tree has on top an Lambda-Expression
     }
     val parseStateOrError =
       Left(ParseState(parseState.tokenStream, Nil, parseState.mapFkt, parseState.mapDepL, parseState.spanList))  |>
-        (parseComp _ || parseNoAppExpr)
+        (parseComp _ || testNoApp)
     println("parseApp after parseLowExpression: "+ parseStateOrError)
     parseStateOrError match {
       case Right(e) => Right(e)
