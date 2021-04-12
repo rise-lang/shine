@@ -85,12 +85,12 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex.t match {
-      case rt.FunType(rt.i32, rt.i32) => true
+      case rt.FunType(rt.f32, rt.f32) => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
     ex match {
-      case r.Lambda(r.Identifier("x"), spAddComp @ r.App(r.App(rp.add(spAdd), idX @ r.Identifier("x")), r.Literal(rS.IntData(5), sp5))) =>
+      case r.Lambda(r.Identifier("x"), spAddComp @ r.App(r.App(rp.add(spAdd), idX @ r.Identifier("x")), r.Literal(rS.FloatData(5), sp5))) =>
         {
           spAdd match {
             case None => fail("The Span should not be None")
@@ -117,7 +117,7 @@ class parseTest extends  AnyFlatSpec {
             case Some(Span(file, begin, end)) => {
               file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
               begin.row should equal(9)
-              end.row should equal(10)
+              end.row should equal(13)
               begin.column should equal(2)
               end.column should equal(2)
             }
@@ -127,7 +127,7 @@ class parseTest extends  AnyFlatSpec {
             case Some(Span(file, begin, end)) => {
               file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
               begin.row should equal(6)
-              end.row should equal(10)
+              end.row should equal(13)
               begin.column should equal(2)
               end.column should equal(2)
             }
@@ -142,7 +142,7 @@ class parseTest extends  AnyFlatSpec {
       case Some(Span(file, begin, end)) => {
         file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
         begin.row should equal(2)
-        end.row should equal(10)
+        end.row should equal(13)
         begin.column should equal(2)
         end.column should equal(2)
       }
