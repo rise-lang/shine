@@ -1,0 +1,2 @@
+f::(F32,F32) --16xI32 for vec(16,i32)
+f=makePair 0F32 0F32
