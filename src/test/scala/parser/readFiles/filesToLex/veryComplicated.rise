@@ -1,8 +1,8 @@
-f::Bool->Bool->I32->F32->F32
-f=\michael->\heinrich
-    ->!
+f::Bool->Bool->F32->F32->Bool
+f=\michael->\heinrich->\varX->\varY->
+    !
         (
-            ==(%(\varX->\varY->* varX (* varY (/(- 25 10.5) 2.3F32)))
-            42 )0
+            ==(%(* varX (* varY (/(- 25F32 10.5) 2.3F32)))
+            42F32 )0F32
         )
 specialFunctionOfChaos::Bool->Bool->I32->F32->F32

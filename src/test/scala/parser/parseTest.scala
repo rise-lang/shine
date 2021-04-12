@@ -2936,21 +2936,21 @@ class parseTest extends  AnyFlatSpec {
 
     ex_f match {
       case r.Lambda(r.Identifier("michael"), r.Lambda(r.Identifier("heinrich"),
+      r.Lambda(r.Identifier("varX"), r.Lambda(r.Identifier("varY"),
       r.App(rp.not(_), r.App(r.App(rp.equal(_),r.App(
       r.App(rp.mod(_),
 
-      r.Lambda(r.Identifier("varX"), r.Lambda(r.Identifier("varY"),
       r.App(r.App(rp.mul(_), r.Identifier("varX")),
       r.App(r.App(rp.mul(_), r.Identifier("varY"))
       ,
 
       r.App(r.App(rp.div(_), r.App(r.App(rp.sub(_),
-      r.Literal(rS.IntData(25), _)), r.Literal(rS.FloatData(a), _))
+      r.Literal(rS.FloatData(25), _)), r.Literal(rS.FloatData(a), _))
       ), r.Literal(rS.FloatData(b), _))
 
-      ))))),r.Literal(rS.IntData(42), _))),
-      r.Literal(rS.IntData(0), _)))
-      )) if a == 10.5000 && b == 2.3000f=> true
+      ))),r.Literal(rS.FloatData(42), _))),
+      r.Literal(rS.FloatData(0), _)))
+      )))) if a == 10.5000 && b == 2.3000f=> true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
@@ -2959,24 +2959,15 @@ class parseTest extends  AnyFlatSpec {
   //-----------------------------------------------------------------------------------------------------
   //Error-Tests //Todo: " .. (.. (..).. " as an ErrorTest
 
-  "parser" should "be able to parse 'lessComplexInOneLineWithDifferentType.rise'" in {
-    val fileName: String = testFilePath + "lessComplexInOneLineWithDifferentType.rise"
-    val file: FileReader = FileReader(fileName)
-    val lexer: RecognizeLexeme = RecognizeLexeme(file)
-    val thrown = intercept[RuntimeException] {
-      parse(lexer.tokens)
-    }
-    thrown.getMessage should equal("ToDO")//Todo: Error
-  }
 
   "parser" should "be able to parse 'fx.rise'" in {
-    val fileName: String = testFilePath + "fx.rise"
+    val fileName: String = errorFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val thrown = intercept[RuntimeException] {
       parse(lexer.tokens)
     }
-    thrown.getMessage should equal("Variable is not declared: fkt")
+    thrown.getMessage should equal("Variable is not declared: fkt in (1,7-10) in src/test/scala/parser/readFiles/filesToError/fx.rise")
   }
 
   "parser" should "not be able to parse 'noExpressionInBraces.rise'" in {
@@ -2998,7 +2989,7 @@ class parseTest extends  AnyFlatSpec {
       parse(lexer.tokens)
     }
 
-    thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left( x))")
+    thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left(ToBeTyped( x)))")
   }
 
   "parser" should "not be able to parse 'twoSimpleFunctionsButWithSameLocalVarName.rise'" in {
@@ -3009,7 +3000,7 @@ class parseTest extends  AnyFlatSpec {
       parse(lexer.tokens)
     }
 
-    thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left( x))")
+    thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left(ToBeTyped( x)))")
   }
 
 }
