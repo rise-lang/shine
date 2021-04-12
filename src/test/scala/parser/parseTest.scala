@@ -861,19 +861,19 @@ class parseTest extends  AnyFlatSpec {
 //    }
 
     ex_u.t match {
-      case rt.DepFunType(d:rt.DataTypeIdentifier, rt.FunType(d1:rt.DataTypeIdentifier, rt.i32))
+      case rt.DepFunType(d:rt.DataTypeIdentifier, rt.FunType(d1:rt.DataTypeIdentifier, rt.f32))
       if d.name.equals("D1") && d1.name.equals("D1")=> true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
     ex_g.t match {
-      case rt.FunType(rt.f32, rt.i32) => true
+      case rt.FunType(rt.f32, rt.f32) => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
     ex_u match {
       case r.DepLambda(d:rt.DataTypeIdentifier,
-      r.Lambda(r.Identifier("fkt"), r.Literal(rS.IntData(1), _)))
+      r.Lambda(r.Identifier("fkt"), r.Literal(rS.FloatData(1), _)))
         if d.name.equals("D1")
       => true
       case r.DepLambda(n, e) => fail("Not correct deplambda: "
@@ -882,7 +882,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_g match {
-      case r.Lambda(r.Identifier("x"), r.DepApp(r.Identifier("u"), rt.FunType(rt.f32, rt.i32)))=> true
+      case r.Lambda(r.Identifier("x"), r.DepApp(r.Identifier("u"), rt.FunType(rt.f32, rt.f32)))=> true
       case a => fail("Lambda not correct: " + a)
     }
 
