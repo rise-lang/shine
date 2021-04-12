@@ -1,0 +1,2 @@
+f::Bool -> Bool -> Bool
+f=\x->\y-> (== y).! x

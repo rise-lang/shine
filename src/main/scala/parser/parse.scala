@@ -1236,11 +1236,12 @@ object parse {
         val span = sp1 + sp2 + e3.span.get
         val name = r.freshName("e")
         if (ps.mapFkt.contains(name)) { //Todo: Better error
-          throw new IllegalArgumentException("A variable or function with the exact same name '" + name +
+          throw new IllegalArgumentException("parseComb: A variable or function with the exact same name '" + name +
             "' is already declared! <- " + ps.mapFkt.get(name))
         }
         val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)),
           r.App(e2, r.App(e1, e3)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+        println("beforeUpdate\n")
         ps.mapFkt.update(name, Left(rd.ToBeTyped(e)))
         Left(ParseState(ps.tokenStream, SExpr(e) :: parseState.parsedSynElems, ps.mapFkt, ps.mapDepL, ps.spanList))
       }
@@ -1302,7 +1303,7 @@ the syntax-Tree has on top an Lambda-Expression
         print("WhereAre: "+p)
         //local variables are in the list, so that not two same localVariables are declared
         if (map.contains(identifierName.name)) {//Todo: Better error
-          throw new IllegalArgumentException("A variable or function with the exact same name '"+ identifierName.name +
+          throw new IllegalArgumentException("parseLambda: A variable or function with the exact same name '"+ identifierName.name +
             "' is already declared! <- " + map.get(identifierName.name))
         }
         map.update(identifierName.name, Left(rd.ToBeTyped(identifierName)))
@@ -1601,14 +1602,15 @@ the syntax-Tree has on top an Lambda-Expression
       return Left(parseState)
     }
     val parseStateOrError =
-      Left(parseState)  |> parseNoAppExpr// _|| parseComp)
+      Left(ParseState(parseState.tokenStream, Nil, parseState.mapFkt, parseState.mapDepL, parseState.spanList))  |>
+        (parseComp _ || parseNoAppExpr)
     println("parseApp after parseLowExpression: "+ parseStateOrError)
     parseStateOrError match {
       case Right(e) => Right(e)
       case Left(ps)=> if(ps.tokenStream.isEmpty||ps.tokenStream.head.isInstanceOf[EndNamedExpr]){
                               println("parseApp End, because TokenList is empty: "+ ps)
                               val expr = combineExpressionsDependent(ps.parsedSynElems, ps.mapDepL)
-                              Left(ParseState(ps.tokenStream, SExpr(expr)::Nil, ps.mapFkt, ps.mapDepL, ps.spanList) )
+                              Left(ParseState(ps.tokenStream, SExpr(expr)::parseState.parsedSynElems, ps.mapFkt, ps.mapDepL, ps.spanList) )
                             }else{
                               if(ps.parsedSynElems.isEmpty) throw new IllegalStateException("ps is Empty: "+ ps)
                               val p = Left(ps)|> parseMaybeAppExpr
@@ -1623,7 +1625,7 @@ the syntax-Tree has on top an Lambda-Expression
                                     println("\n\n\nSpanIsHere"+ expr +" : "+ expr.span+ "\n\n\n")
                                     SExpr(expr)
                                   }
-                                  Left(ParseState(newPS.tokenStream, synElem::Nil, newPS.mapFkt, newPS.mapDepL, newPS.spanList) )
+                                  Left(ParseState(newPS.tokenStream, synElem::parseState.parsedSynElems, newPS.mapFkt, newPS.mapDepL, newPS.spanList) )
                                 }
                               }
                             }
