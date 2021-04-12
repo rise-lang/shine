@@ -617,7 +617,7 @@ class parseTest extends  AnyFlatSpec {
     ex match {
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(_),
       r.App(r.App(rp.add(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))),
-      r.App(r.App(rp.mod(_), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
+      r.App(r.App(rp.mod(_), r.Literal(rS.FloatData(42), _)), r.Literal(rS.FloatData(5), _)))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
         r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive,
           r.App(r.App(rp.add.primitive, r.App(r.App(rp.mul.primitive, r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
@@ -641,7 +641,7 @@ class parseTest extends  AnyFlatSpec {
     ex match {
       case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"), r.App(rp.neg(_),
       r.App(r.App(rp.add(_), r.App(r.App(rp.mul(_), r.Identifier("x")), r.Identifier("y"))),
-      r.App(r.App(rp.mod(_), r.Literal(rS.IntData(42), _)), r.Literal(rS.IntData(5), _)))))) => true
+      r.App(r.App(rp.mod(_), r.Literal(rS.FloatData(42), _)), r.Literal(rS.FloatData(5), _)))))) => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e + ": expected: " +
         r.Lambda(r.Identifier("x")(rt.TypePlaceholder), r.Lambda(r.Identifier("y")(rt.TypePlaceholder), r.App(rp.neg.primitive,
           r.App(r.App(rp.add.primitive, r.App(r.App(rp.mul.primitive, r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder), r.Identifier("y")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
@@ -663,7 +663,7 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex match {
-      case r.Lambda(r.Identifier("c"), r.Literal(rS.IntData(42), _)) => true
+      case r.Lambda(r.Identifier("c"), r.Literal(rS.FloatData(42), _)) => true
       case a => fail("not a lambda: " + a)
     }
     assert(r.IsClosedForm(ex))
