@@ -101,8 +101,7 @@ object mmTuning {
     }catch{
       case e:Throwable => {
         Executor.shutdown()
-
-        println("error: " + e.getCause)
+        println("error: " + e)
 
 //        val costfile = new PrintWriter(new FileOutputStream(new File("/home/jo/development/lift/atf/atfc/build/costfile.txt"), false))
 //        costfile.println(Double.MaxValue.toString)
