@@ -296,7 +296,7 @@ package object autotune {
               addPredicate(ArithPredicate(s, 1, ArithPredicate.Operator.>=))
             }
             for ((ls, gs) <- Seq((ls0, gs0), (ls1, gs1), (ls2, gs2))) {
-              cs += RangeConstraint(ls, RangeMul(0, PosInf, gs))
+              cs += RangeConstraint(gs, RangeAdd(0, PosInf, ls))
             }
           case _ =>
         }
