@@ -122,6 +122,17 @@ object CompiledPattern {
 object PatternDSL {
   import scala.language.implicitConversions
 
+  implicit final class RewriteArrowPattern(private val lhs: Pattern) extends AnyVal {
+    @inline def -->(rhs: Pattern): (Pattern, Pattern) = lhs -> rhs
+  }
+  implicit final class RewriteArrowCPattern(private val lhs: CompiledPattern) extends AnyVal {
+    @inline def -->[D](rhs: Pattern): (Searcher[D], Applier[D]) = (lhs : Searcher[D]) -> rhs
+    @inline def -->[D](rhs: Applier[D]): (Searcher[D], Applier[D]) = (lhs : Searcher[D]) -> rhs
+  }
+  implicit final class RewriteArrowPNode(private val lhs: PNode) extends AnyVal {
+    @inline def -->(rhs: Pattern): (Pattern, Pattern) = (lhs: Pattern) -> rhs
+  }
+
   def ?(index: Int): PatternVar = PatternVar(index)
   def %(index: Int): Var = Var(index)
 

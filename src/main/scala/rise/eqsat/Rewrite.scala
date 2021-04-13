@@ -1,7 +1,8 @@
 package rise.eqsat
 
 object Rewrite {
-  def init[D](name: String, searcher: Searcher[D], applier: Applier[D]): Rewrite[D] = {
+  def init[D](name: String, rule: (Searcher[D], Applier[D])): Rewrite[D] = {
+    val (searcher, applier) = rule
     val boundVars = searcher.patternVars()
     for (v <- applier.patternVars()) {
       assert(boundVars.contains(v))
@@ -11,7 +12,7 @@ object Rewrite {
   }
 
   // this checks and infers types for a purely syntactic rewrite
-  def syntactic[D](name: String, lhs: Pattern, rhs: Pattern): Rewrite[D] = {
+  def syntactic[D](name: String, rule: (Pattern, Pattern)): Rewrite[D] = {
     import rise.{core => rc}
     import rise.core.{types => rct}
     import arithexpr.{arithmetic => ae}
@@ -20,14 +21,14 @@ object Rewrite {
     var naCount = 0
     var dtaCount = 0
 
-    def exprToBeTyped(rhs: Pattern,
+    def exprToBeTyped(pattern: Pattern,
                       bound: Expr.Bound,
                       pvTypes: Map[PatternVar, rct.Type]): rc.Expr = {
-      rhs.p match {
+      pattern.p match {
         case pv: PatternVar =>
           val tmp = rc.TypeAnnotation(
             rc.Identifier(s"?${pv.index}")(rct.TypeIdentifier(s"?tOfV${pv.index}")),
-            typeToBeTyped(rhs.t, bound))
+            typeToBeTyped(pattern.t, bound))
           pvTypes.get(pv) match {
             case None => tmp
             case Some(t) => rc.TypeAssertion(tmp, t)
@@ -35,14 +36,18 @@ object Rewrite {
         case PatternNode(node) => (node match {
           case Var(index) => bound.expr(index).setType _
           case App(f, e) =>
-            rc.App(exprToBeTyped(f, bound, pvTypes), exprToBeTyped(e, bound, pvTypes)) _
+            rc.App(
+              exprToBeTyped(f, bound, pvTypes),
+              exprToBeTyped(e, bound, pvTypes)) _
           case Lambda(e) =>
             val i = rc.Identifier(s"x${bound.expr.size}")(rct.TypePlaceholder)
             rc.Lambda(i, exprToBeTyped(e, bound + i, pvTypes)) _
           case NatApp(f, x) =>
-            rc.DepApp[rct.NatKind](exprToBeTyped(f, bound, pvTypes), natToBeTyped(x, bound)) _
+            rc.DepApp[rct.NatKind](exprToBeTyped(f, bound, pvTypes),
+              natToBeTyped(x, bound)) _
           case DataApp(f, x) =>
-            rc.DepApp[rct.DataKind](exprToBeTyped(f, bound, pvTypes), dataToBeTyped(x, bound)) _
+            rc.DepApp[rct.DataKind](exprToBeTyped(f, bound, pvTypes),
+              dataToBeTyped(x, bound)) _
           case NatLambda(e) =>
             val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
             rc.DepLambda[rct.NatKind](i, exprToBeTyped(e, bound, pvTypes)) _
@@ -51,11 +56,11 @@ object Rewrite {
             rc.DepLambda[rct.DataKind](i, exprToBeTyped(e, bound, pvTypes)) _
           case Literal(d) => rc.Literal(d).setType _
           case Primitive(p) => p.setType _
-        })(typeToBeTyped(rhs.t, bound))
+        })(typeToBeTyped(pattern.t, bound))
       }
     }
-    def natToBeTyped(rhs: NatPattern, bound: Expr.Bound): rct.Nat = {
-      rhs match {
+    def natToBeTyped(pattern: NatPattern, bound: Expr.Bound): rct.Nat = {
+      pattern match {
         case pv: NatPatternVar =>
           rct.NatIdentifier(s"?n${pv.index}", isExplicit = true)
         case NatPatternAny => // "NatPlaceholder"
@@ -70,8 +75,8 @@ object Rewrite {
         }
       }
     }
-    def dataToBeTyped(rhs: DataTypePattern, bound: Expr.Bound): rct.DataType = {
-      rhs match {
+    def dataToBeTyped(pattern: DataTypePattern, bound: Expr.Bound): rct.DataType = {
+      pattern match {
         case pv: DataTypePatternVar =>
           rct.DataTypeIdentifier(s"?dt${pv.index}", isExplicit = true)
         case DataTypePatternAny => // "DataTypePlaceholder"
@@ -93,8 +98,8 @@ object Rewrite {
         }
       }
     }
-    def typeToBeTyped(rhs: TypePattern, bound: Expr.Bound): rct.Type = {
-      rhs match {
+    def typeToBeTyped(pattern: TypePattern, bound: Expr.Bound): rct.Type = {
+      pattern match {
         case pv: TypePatternVar =>
           throw new Exception("no support for type pattern variables here")
           // rct.TypeIdentifier(s"?t${pv.index}", isExplicit = true)
@@ -127,6 +132,28 @@ object Rewrite {
         }
       }
       rc.traverse.traverse(e, traversal)._1
+    }
+
+    // TODO: for every lhs pattern variable, check its Bound context,
+    //  deal with multiple occurences in different contexts somehow,
+    //  for every rhs pattern variable, shift it according to its new context
+    val lhsPVBound = HashMap[PatternVar, Expr.Bound]()
+    val lhsNPVBound = HashMap[NatPatternVar, Expr.Bound]()
+    val lhsDTPVBound = HashMap[DataTypePatternVar, Expr.Bound]()
+    val lhsTPVBound = HashMap[TypePatternVar, Expr.Bound]()
+
+    def checkPVBound[K](pv: K, m: HashMap[K, Expr.Bound], bound: Expr.Bound, isRhs: Boolean): Unit = {
+      if (!isRhs) {
+        val b = m.getOrElseUpdate(pv, bound)
+        assert( // FIXME: find a way to match over shifted pattern variables
+          b.expr.size == bound.expr.size &&
+            b.nat.size == bound.nat.size &&
+            b.data.size == bound.data.size
+        )
+      } else {
+        val b = m.getOrElse(pv,
+          throw new Exception(s"$pv was not bound on the left-hand-side"))
+      }
     }
 
     val typesToMatchFor = HashMap[rct.TypeIdentifier, TypePatternVar]()
@@ -229,12 +256,16 @@ object Rewrite {
     }
 
     import rc.DSL.TypeAssertionHelper
+
+    val (lhs, rhs) = rule
     // whatever the type of the left-hand-side is
-    val typedLhsNamed: rc.Expr = rc.DSL.toBeTyped(exprToBeTyped(lhs, Expr.Bound.empty, Map()))
+    val typedLhsNamed: rc.Expr = rc.DSL.toBeTyped(
+      exprToBeTyped(lhs, Expr.Bound.empty, Map()))
     // .. the type of the right-hand-side must be the same
     // .. and the type of the pattern variables must be the same
     val pvTypes = collectIdentifierTypes(typedLhsNamed)
-    val typedRhsNamed: rc.Expr = rc.DSL.toBeTyped(exprToBeTyped(rhs, Expr.Bound.empty, pvTypes)) !: typedLhsNamed.t
+    val typedRhsNamed: rc.Expr = rc.DSL.toBeTyped(
+      exprToBeTyped(rhs, Expr.Bound.empty, pvTypes)) !: typedLhsNamed.t
     val typedRhs = typedPattern(typedRhsNamed, Expr.Bound.empty, isRhs = true)
     // .. and we might need to match on some left-hand-side types to construct the typed right-hand-side
     // FIXME:
@@ -247,7 +278,9 @@ object Rewrite {
       natsToMatchFor.size == matchedNats.size &&
       dataTypesToMatchFor.size == matchedDataTypes.size
     assert(implicitsAreBound)
-    Rewrite.init(name, typedLhs.compile(), typedRhs)
+    Rewrite.init(name,
+      CompiledPattern.patternToSearcher(typedLhs.compile()) ->
+      Pattern.patternToApplier(typedRhs))
   }
 }
 

@@ -5,23 +5,26 @@ class PatternCheck extends test_util.Tests {
     val commuteAdd1: Rewrite[()] = {
       import PatternDSL._
       Rewrite.init[()]("commute-add-1",
-        app(app(add, ?(0) :: `?dt`(0)), ?(1)).compile(),
-        app(app(add :: `?dt`(0) ->: `?dt`(0) ->: `?dt`(0),
+        app(app(add, ?(0) :: `?dt`(0)), ?(1)).compile()
+          -->
+        (app(app(add :: `?dt`(0) ->: `?dt`(0) ->: `?dt`(0),
           ?(1) :: `?dt`(0)) :: `?dt`(0) ->: `?dt`(0),
-          ?(0) :: `?dt`(0)) :: `?dt`(0))
+          ?(0) :: `?dt`(0)) :: `?dt`(0)))
     }
 
     val commuteAdd2: Rewrite[()] = {
       import PatternDSL._
       Rewrite.syntactic[()]("commute-add-2",
-        app(app(add, ?(0) :: `?dt`(0)), ?(1) :: `?dt`(0)),
+        app(app(add, ?(0) :: `?dt`(0)), ?(1) :: `?dt`(0))
+          -->
         app(app(add, ?(1) :: `?dt`(0)), ?(0) :: `?dt`(0)))
     }
 
     val commuteAdd3: Rewrite[()] = {
       import PatternDSL._
       Rewrite.syntactic[()]("commute-add-3",
-        app(app(add, ?(0)), ?(1)),
+        app(app(add, ?(0)), ?(1))
+          -->
         app(app(add, ?(1)), ?(0)))
     }
 
