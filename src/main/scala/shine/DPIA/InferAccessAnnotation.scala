@@ -2,10 +2,11 @@ package shine.DPIA
 
 import rise.{core => r}
 import rise.core.{types => rt}
-import rise.core.DSL.Type.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
+import rise.core.DSL.Type.{->:, `(Addr)->:`, `(Nat)->:`, `(NatToNat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
 import rise.core.{primitives => rp}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
+import rise.Cuda.{primitives => rocup}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
@@ -246,8 +247,9 @@ private class InferAccessAnnotation {
   private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
     val primitiveType = p match {
       case roclp.mapGlobal(_) | roclp.mapWorkGroup(_) | roclp.mapLocal(_)
-           | rompp.mapPar() | rp.mapSeq() | rp.mapSeqUnroll()
-           | rp.iterateStream() => p.t match {
+           | rocup.mapGlobal(_) | rocup.mapBlock(_) | rocup.mapThreads(_)
+           | rocup.mapWarp(_) | rocup.mapLane(_) |rompp.mapPar()
+           | rp.mapSeq() | rp.mapSeqUnroll() | rp.iterateStream() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->: (n`.`_) ->: (_`.`_) =>
           (expT(s, read) ->: expT(t, write)) ->:
             expT(n`.`s, read) ->: expT(n`.`t, write)
@@ -521,13 +523,10 @@ private class InferAccessAnnotation {
       }
 
       case rp.reorder() => p.t match {
-        case (rt.IndexType(n) ->: rt.IndexType(_)) ->:
-          (rt.IndexType(_) ->: rt.IndexType(_)) ->: (_`.`t) ->: (_`.`_) =>
+        case (n `(Nat)->:` (idxF `(NatToNat)->:` (idxFinv `(NatToNat)->:` ((_`.`t) ->: (_`.`_) )))) =>
 
           val ai = accessTypeIdentifier()
-          (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
-            (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
-            expT(n`.`t, ai) ->: expT(n`.`t, ai)
+          nFunT(n, n2nFunT(idxF, n2nFunT(idxFinv, expT(n`.`t, ai) ->: expT(n`.`t, ai))))
         case _ => error()
       }
 
@@ -594,6 +593,37 @@ private class InferAccessAnnotation {
           case _ => error(s"did not expect $t")
         }
         buildType(p.t)
+
+      case rocup.asFragment() => p.t match {
+        case (aMatrix: rt.ArrayType) ->: (resultMatrix: rt.FragmentType) =>
+          expT(aMatrix, read) ->: expT(resultMatrix, read)
+      }
+
+      case rocup.asMatrix() => p.t match {
+        case (accMatrix: rt.FragmentType) ->: (resultArray: rt.ArrayType) =>
+          expT(accMatrix, read) ->: expT(resultArray, write)
+      }
+
+      case rocup.generateFragment() => p.t match {
+        case (dt: rt.DataType) ->: (resultMatrix: rt.FragmentType) =>
+          expT(dt, read) ->: expT(resultMatrix, read)
+      }
+
+      case rocup.tensorMMA() => p.t match {
+        case (aMatrix: rt.FragmentType) ->: (bMatrix: rt.FragmentType) ->:
+          (cMatrix: rt.FragmentType) ->: (resultMatrix: rt.FragmentType) =>
+          expT(aMatrix, read) ->: expT(bMatrix, read) ->: expT(cMatrix, read) ->: expT(resultMatrix, write)
+      }
+
+      case rocup.globalToShared() => p.t match {
+        case (dt: rt.DataType) ->: _ =>
+          expT(dt, write) ->: expT(dt, read)
+      }
+
+      case rocup.mapFragment() => p.t match {
+        case ((dt: rt.DataType) ->: _) ->: (fragType: rt.FragmentType) ->: _ =>
+          (expT(dt, read) ->: expT(dt, write)) ->: expT(fragType, read) ->: expT(fragType, write)
+      }
     }
 
     checkConsistency(p.t, primitiveType)

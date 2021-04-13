@@ -161,11 +161,11 @@ int main(int argc, char** argv) {
 
   test("hot pixel suppression passes checks") {
     val typed = printTime("infer", hot_pixel_suppression.toExpr)
-    println(s"hot pixel suppression: ${typed.t}")
+    logger.debug(s"hot pixel suppression: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
       repeatNTimes(2)(topDown(lowering.mapSeq))
     val lowered = printTime("lower", lower(typed).get)
-    println(s"lowered: ${lowered}")
+    logger.debug(s"lowered: ${lowered}")
     check(
       lowered, fName => s"${fName}(output, ${H*2 + 8}, ${W*2 + 8}, input);",
       (H*2 + 12) * (W*2 + 12), "int16_t", "shifted.dump",
@@ -178,13 +178,13 @@ int main(int argc, char** argv) {
     val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       deinterleave(h)(w) >> mapSeq(mapSeq(mapSeq(fun(x => x))))
     ).toExpr)
-    println(s"deinterleave: ${typed.t}")
+    logger.debug(s"deinterleave: ${typed.t}")
     /* TODO
     val lower: Strategy[Rise] =
     val lowered = printTime(lower(typed).get)
      */
     val lowered = typed
-    println(s"lowered: ${lowered}")
+    logger.debug(s"lowered: ${lowered}")
     check(
       lowered, fName => s"${fName}(output, ${H + 4}, ${W + 4}, input);",
       (H*2 + 8) * (W*2 + 8), "int16_t", "denoised.dump",
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
     val typed = printTime("infer", depFun((h: Nat, w: Nat) =>
       demosaic(h)(w) >> mapSeqUnroll(mapSeq(mapSeq(fun(x => x))))
     ).toExpr)
-    println(s"demosaic: ${typed.t}")
+    logger.debug(s"demosaic: ${typed.t}")
     // TODO
     val lower: Strategy[Rise] = strategies.basic.id
     val lowered = printTime("lower", lower(typed).get)
@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
           mapSeqUnroll(fun(x => x)))
       )) >> join >> map(transpose) >> transpose
     ).toExpr)
-    println(s"demosaic: ${typed.t}")
+    logger.debug(s"demosaic: ${typed.t}")
     // TODO
     val lower: Strategy[Rise] = strategies.basic.id
     val lowered = printTime("lower", lower(typed).get)
@@ -244,12 +244,12 @@ int main(int argc, char** argv) {
           )
         )).toExpr
     )
-    println(s"color correction: ${typed.t}")
+    logger.debug(s"color correction: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
       repeatNTimes(2)(topDown(lowering.mapSeq)) `;`
       topDown(lowering.mapSeqUnroll)
     val lowered = printTime("lower", lower(typed).get)
-    println(s"lowered: ${lowered}")
+    logger.debug(s"lowered: ${lowered}")
     // TODO: investigate output difference of 1
     check(
       lowered, fName => s"""
@@ -268,11 +268,11 @@ int main(int argc, char** argv) {
 
   test("apply curve passes checks") {
     val typed = printTime("infer", apply_curve.toExpr)
-    println(s"apply curve: ${typed.t}")
+    logger.debug(s"apply curve: ${typed.t}")
     val lower: Strategy[Rise] = DFNF `;` CNF `;`
       repeatNTimes(3)(topDown(lowering.mapSeq))
     val lowered = printTime("lower", lower(typed).get)
-    println(s"lowered: ${lowered}")
+    logger.debug(s"lowered: ${lowered}")
     check(
       lowered, fName => s"""
 ${fName}(output, ${2*H + 2}, ${2*W + 2},
@@ -290,10 +290,10 @@ ${fName}(output, ${2*H + 2}, ${2*W + 2},
     )((input, strength) =>
       sharpen(h)(w)(input)(strength) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
     )).toExpr)
-    println(s"sharpen: ${typed.t}")
+    logger.debug(s"sharpen: ${typed.t}")
     val lower: Strategy[Rise] = strategies.basic.id
     val lowered = printTime("lower", lower(typed).get)
-    println(s"lowered: ${lowered}")
+    logger.debug(s"lowered: ${lowered}")
     check(
       lowered, fName => s"""
 ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
@@ -348,7 +348,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   test("type inference") {
     def assertClosedT(e: ToBeTyped[Expr], t: Type): Unit = {
       val typed = e.toExpr
-      assert(typed.t == t)
+      assert(typed.t =~= t)
       assert(IsClosedForm(typed))
     }
 

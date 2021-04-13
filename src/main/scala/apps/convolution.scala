@@ -17,7 +17,7 @@ object convolution {
   private val dotElemWeights = fun((weights, elem) =>
     zip(join(elem))(weights) |>
     map(separableConvolution2D.mulT) |>
-    reduce(add)(l(0.0f))
+    reduce(add)(lf32(0.0f))
   )
 
   private val dotElemWeightsSeq = fun((weights, elem) =>
@@ -25,7 +25,7 @@ object convolution {
       val pixel = pair._1
       val weight = pair._2
       acc + (pixel * weight)
-    }))(l(0.0f))(zip(join(elem))(weights)))
+    }))(lf32(0.0f))(zip(join(elem))(weights)))
 
   // FIXME: could not find original Lift expression, this is made up
   val blurXHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(

@@ -1,10 +1,8 @@
 package exploration
 
-import rise.core.DSL.{fun, l}
+import rise.core.DSL.{fun, lf32}
 import rise.core.primitives._
 import rise.core.types.{ArrayType, f32}
-import rise.elevate.rules.algorithmic._
-import rise.elevate.strategies.traversal._
 
 object explorationTutorial {
   // see: docs/exploration/tutorial.md
@@ -19,7 +17,7 @@ object explorationTutorial {
           b |> transpose |> map(fun(bk =>
             zip(ak)(bk) |>
               map(fun(x => fst(x) * snd(x))) |>
-              reduce(add)(l(0.0f)) )) )) ))
+              reduce(add)(lf32(0.0f)) )) )) ))
 
   // fuse reduce and map
 //  val mmsFused = (`map >> reduce -> reduce` `@` everywhere)(mm).get

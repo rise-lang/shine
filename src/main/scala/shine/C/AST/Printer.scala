@@ -120,7 +120,7 @@ class CPrinter extends Printer {
       case b: BasicType => print(s"${b.name} ${v.name}")
       case o: OpaqueType => print(s"${o.name} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")
-      case _: UnionType => ???
+      case _: UnionType | _:FragmentType => ???
       case a: ArrayType =>
         // float name[s];
         print(s"${typeName(a.getBaseType)} ${v.name}[${ a.getSizes match {
@@ -149,6 +149,8 @@ class CPrinter extends Printer {
         case Some(s) => toString(s)}
       }]")
       case pt: PointerType => print(s"${typeName(pt.valueType)}* ${p.name}")
+      case _: FragmentType =>
+        throw new Exception("FragmentTypes are not supported in C")
     }
   }
 
@@ -270,10 +272,13 @@ class CPrinter extends Printer {
   private def printFunCall(f: FunCall): Unit = {
     printDeclRef(f.fun)
     print("(")
-    f.args.foreach(a => {
-      printExpr(a)
-      if (!a.eq(f.args.last)) print(", ")
-    })
+    if (f.args.nonEmpty) {
+      f.args.take(f.args.length - 1).foreach(a => {
+        printExpr(a)
+        print(", ")
+      })
+      printExpr(f.args.last)
+    }
     print(")")
   }
 

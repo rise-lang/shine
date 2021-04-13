@@ -13,7 +13,7 @@ class DepMap extends test_util.Tests {
       depFun((n: Nat) => fun(DepArrayType(n, n2dtFun(i => (i+1)`.`f32)) ->: DepArrayType(n, n2dtFun(i => (i+1)`.`f32)))(xs =>
         xs |> depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))))
 
-    println(e)
+    logger.debug(e)
 
     val code = function.asStringFromExpr(e)
 

@@ -4,6 +4,7 @@ import elevate.core.strategies.traversal._
 import elevate.core.{NotApplicable, Strategy}
 import rise.elevate.util._
 import rise.core.DSL._
+import rise.core.makeClosed
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.halide._
@@ -13,16 +14,16 @@ class halide extends test_util.Tests {
   private val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
 
   private def LCNFrewrite(a: Rise, s: Strategy[Rise], b: Rise): Unit = {
-    val (closedA, nA) = makeClosed(a)
-    val (closedB, nB) = makeClosed(b)
+    val (closedA, nA) = makeClosed.withCount(a)
+    val (closedB, nB) = makeClosed.withCount(b)
     val na = DFNF(closedA).get
     val nb = DFNF(closedB).get
-    assert(position(nA)(s).apply(na).get == nb)
+    assert(position(nA)(s).apply(na).get =~~= nb)
   }
 
   test("generic reorder 1D") {
     val expr = toExpr(λ(i => λ(f => *!(f) $ i)))
-    assert(body(body(reorder(Seq(1))))(expr).get == expr)
+    assert(body(body(reorder(Seq(1))))(expr).get =~~= expr)
 
     try(body(body(reorder(Seq(1,2))))(expr).get) catch {
       case NotApplicable(_) => assert(true)

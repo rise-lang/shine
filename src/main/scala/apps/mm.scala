@@ -13,7 +13,7 @@ object mm {
   private val mulT = separableConvolution2D.mulT
   private val dot = separableConvolution2D.dot
   private val dotSeq = fun(a => fun(b =>
-    zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+    zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
   ))
 
   // the first matrix input is transposed
@@ -61,7 +61,7 @@ object mm {
                 ))(zip(p8._1)(x._2))
               ))(zip(p6)(x._1))
             )
-          ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => l(0.0f)))))) :: (v4`.`v3`.`f32)) |> //
+          ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => lf32(0.0f)))))) :: (v4`.`v3`.`f32)) |> //
           mapSeq(asScalar o mapSeq(id) o asVector(vw)) |>
           transpose // v3.v4.f
         )) |> join |> transpose
@@ -127,7 +127,7 @@ object mm {
             generate(fun(_ =>
               generate(fun( _ =>
                 generate(fun(_ =>
-                  generate(fun(_ => l(0.0f))))))))) |>
+                  generate(fun(_ => lf32(0.0f))))))))) |>
             mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(id))))
           ) |> // (v5/^v4).(v7/^v3).v4.v3.f
           mapLocal(1)(mapLocal(0)(mapSeq(asScalar o mapSeq(id) o asVector(4)))) |>
