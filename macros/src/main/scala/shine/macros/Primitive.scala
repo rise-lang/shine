@@ -81,70 +81,6 @@ object Primitive {
       """
     }
 
-    def makeXMLPrinter(name: TypeName,
-                       additionalParams: List[ValDef],
-                       params: List[ValDef]): Tree = {
-      def makeAttributes(params: List[ValDef]): (List[ValDef], Tree) = {
-        if (params.isEmpty) return (params, q"scala.xml.Null")
-        params.head match {
-          case ValDef(_, name, tpt, _) => tpt match {
-            case Ident(TypeName("DataType")) | Ident(TypeName("ScalarType")) |
-                 Ident(TypeName("BasicType")) | Ident(TypeName("Nat")) |
-                 Ident(TypeName("NatToNat")) | Ident(TypeName("NatToData")) |
-                 Ident(TypeName("AccessType")) | Ident(TypeName("AddressSpace"))
-            =>
-              val (list, next) = makeAttributes(params.tail)
-              (list, q"""
-                 scala.xml.Attribute(${name.toString},
-                                     scala.xml.Text(
-                                        shine.DPIA.Phrases.ToString($name)),
-                                     $next)
-               """)
-            case _ => (params, q"scala.xml.Null")
-          }
-        }
-      }
-
-      def makeBody(params: List[ValDef]): List[Tree] = {
-        params.map {
-          case ValDef(_, name, tpt, _) =>
-
-            val body = tpt match {
-              // Phrase[ExpType]
-              case AppliedTypeTree((Ident(TypeName("Phrase")), _)) =>
-                q"shine.DPIA.Phrases.xmlPrinter($name)"
-              // Vector[Phrase[ExpType]]
-              case AppliedTypeTree((Ident(TypeName("Vector")),
-              List(AppliedTypeTree((Ident(TypeName("Phrase")), _)))))
-                   |   AppliedTypeTree((Ident(TypeName("Seq")),
-              List(AppliedTypeTree((Ident(TypeName("Phrase")), _)))))
-              =>
-                q"$name.flatMap(shine.DPIA.Phrases.xmlPrinter(_)):_*"
-              case _ =>
-                q"scala.xml.Text(shine.DPIA.Phrases.ToString($name))"
-            }
-            q"""
-               scala.xml.Elem(null, ${name.toString},
-                              scala.xml.Null, scala.xml.TopScope,
-                              minimizeEmpty = false, $body)
-             """
-        }
-      }
-
-      val lowerCaseName = makeLowerCaseName(name.toString)
-      val (rest, attributes) = makeAttributes(params)
-      val body = makeBody(rest)
-
-      q"""
-       override def xmlPrinter: scala.xml.Elem = {
-         val attributes_ = $attributes
-         val body_ = $body
-         scala.xml.Elem(null, $lowerCaseName, attributes_, scala.xml.TopScope,
-                        minimizeEmpty = false, (body_):_*)
-       }
-       """
-    }
-
     case class ClassInfo(name: TypeName,
                          additionalParams: List[ValDef],
                          params: List[ValDef],
@@ -189,16 +125,10 @@ object Primitive {
     def makePrimitiveClass : ClassInfo => ClassDef = { case ClassInfo(name, additionalParams, params, body, parents) =>
       val visitAndRebuildMissing =
         body.collectFirst({ case DefDef(_, TermName("visitAndRebuild"), _, _, _, _) => ()}).isEmpty
-      val xmlPrinterMissing =
-        body.collectFirst({ case DefDef(_, TermName("xmlPrinter"), _, _, _, _) => ()}).isEmpty
 
       val generated = q"""
           ${if (visitAndRebuildMissing)
         makeVisitAndRebuild(name, additionalParams, params)
-      else q""}
-
-          ${if (xmlPrinterMissing)
-        makeXMLPrinter(name, additionalParams, params)
       else q""}
          """
 

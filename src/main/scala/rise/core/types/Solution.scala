@@ -1,6 +1,7 @@
 package rise.core.types
 
-import arithexpr.arithmetic.BoolExpr
+import util.monads._
+import arithexpr.arithmetic.{BoolExpr, NamedVar}
 import rise.core.traverse._
 import rise.core.{Expr, substitute}
 
@@ -103,6 +104,7 @@ case class Solution(ts: Map[Type, Type],
       case lambda@NatToNatLambda(x, body) =>
         val xSub = apply(x) match {
           case n: NatIdentifier => n
+          case n: arithexpr.arithmetic.NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
           case other => throw NonIdentifierInBinderException(lambda, other)
         }
         NatToNatLambda(xSub, apply(body))
