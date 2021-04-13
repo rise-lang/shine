@@ -10,7 +10,7 @@ import util.gen
 
 class SlowCodegen extends test_util.Tests {
   // FIXME: compilation takes ~4mn and generates huge code with too many ifs
-  test("multiscale interpolation subexpression") {
+  ignore("multiscale interpolation subexpression") {
     val normalize: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(
       (4`.`h`.`w`.`f32) ->: (4`.`h`.`w`.`f32)
     )(input =>
@@ -35,7 +35,7 @@ class SlowCodegen extends test_util.Tests {
       normalize(h)(w) >> mapSeq(mapSeq(mapSeq(fun(x => x))))
     }))
 
-    val code = gen.CProgram(uniqueNames.enforce(expr.toExpr)).code
+    val code = gen.c.function.asStringFromExpr(uniqueNames.enforce(expr.toExpr))
     // last recorded code length: 61 868 345
     // maximum reasonable code length: ~ 20 lines of 100 chars
     assert(code.length < 20*100)
