@@ -54,25 +54,18 @@ object convolution {
     o padClamp2D(0, 0, 8, 8) $ matrix
   ))
 
-  def padEmpty(l: Nat, r: Nat): ToBeTyped[Expr] = padClamp(l)(r)
-  def unpadEmpty(l: Nat, r: Nat): ToBeTyped[Expr] =
-    impl{ n: Nat => impl{ t: DataType =>
-      drop(l) >> (take(n) :: ((n + r) `.` t) ->: (n `.` t))
-    }}
-
   val blurYTiled2DTiledLoadingTransposed: ToBeTyped[Expr] =
     depFun((n: Nat) => fun(
       (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
     )((matrix, weights) =>
     unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
       mapLocal(1)(mapLocal(0)(dotElemWeightsSeq(weights)))
-        // o unpadEmpty(0, 1)
         o slide2D(17, 1, 1, 1)
-        o transpose o map(join) $ toLocal(
+        o transpose o map(dropLast(1)) $ toLocal(
           transpose(tile)
-          // |> map(padEmpty(0, 1))
           |> map(split(8))
           |> mapLocal(0)(mapSeqUnroll(mapLocal(1)(id)))
+          |> map(join >> padEmpty(1))
         )
     ))) o slide2D(80, 64, 16, 16)
       o padClamp2D(8, 8, 0, 0) $ matrix
