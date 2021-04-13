@@ -21,7 +21,7 @@ final case class DepMapI(level: ParallelismLevel, dim: Int) {
         parForNatLocal(dim)(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a)) `;` barrier()
       case WorkGroup =>
         parForNatWorkGroup(dim)(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a))
-      case Sequential =>
+      case Sequential | Warp | Lane =>
         throw new Exception("This should not happen")
     }
   }

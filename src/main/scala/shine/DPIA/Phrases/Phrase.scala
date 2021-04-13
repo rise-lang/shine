@@ -1,17 +1,14 @@
 package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.NatAsIndex
 
 sealed trait Phrase[T <: PhraseType] {
-  val t: T // TODO? perform type checking at the same time
+  val t: T
 }
 
 final case class Identifier[T <: PhraseType](name: String, `type`: T)
@@ -118,7 +115,7 @@ final case class BinOp(op: Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Ph
     }
 }
 
-final case class Literal(d: OperationalSemantics.Data)
+final case class Literal(d: Data)
   extends Phrase[ExpType] {
 
   assert(!d.isInstanceOf[NatData])
@@ -364,44 +361,16 @@ object Phrase {
 sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
   def prettyPrint: String = this.toString
 
-  def xmlPrinter: xml.Elem =
-    throw new Exception("xmlPrinter should be implemented by a macro")
-
   def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T] =
     throw new Exception("visitAndRebuild should be implemented by a macro")
 }
 
-trait ExpPrimitive extends Primitive[ExpType] {
-  def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
-}
+trait ExpPrimitive extends Primitive[ExpType]
 
-trait ConT {
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType]
-}
-
-trait AccT {
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType]
-}
-
-trait FedeT {
-  def fedeTranslation(env: Map[Identifier[ExpType], Identifier[AccType]])
-                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType]
-}
-
-trait StreamT {
-  def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                       (implicit context: TranslationContext): Phrase[CommType]
-}
-
-trait AccPrimitive extends Primitive[AccType] {
-  def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier = ???
-}
+trait AccPrimitive extends Primitive[AccType]
 
 trait CommandPrimitive extends Primitive[CommType] {
   override val t: CommType = comm
-  def eval(s: OperationalSemantics.Store): OperationalSemantics.Store = ???
 }
 
 object Operators {

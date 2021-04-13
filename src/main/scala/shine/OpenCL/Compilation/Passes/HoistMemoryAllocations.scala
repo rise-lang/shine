@@ -81,7 +81,7 @@ object HoistMemoryAllocations {
                     performRewrite(oldVariable, oldBody, i, n)
                   case OpenCL.WorkGroup => // do not perform the substitution
                     (oldVariable, oldBody)
-                  case OpenCL.Global =>
+                  case OpenCL.Global | OpenCL.Warp | OpenCL.Lane =>
                     throw new Exception("This should not happen")
                 }
               case AddressSpace.Private | AddressSpace.Constant | AddressSpaceIdentifier(_) =>

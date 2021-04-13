@@ -17,7 +17,7 @@ class convolution1D extends test_util.Tests {
 
   val dotSeq: ToBeTyped[Expr] = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |>
-    oclReduceSeqUnroll(AddressSpace.Private)(add)(l(0.0f))
+    oclReduceSeqUnroll(AddressSpace.Private)(add)(lf32(0.0f))
   ))
 
   val binomial: ToBeTyped[Expr] =
@@ -98,7 +98,7 @@ class convolution1D extends test_util.Tests {
       `)=>` Array[Float]]
     val (output, time) = run(localSize, globalSize)(N `,` input)
     util.assertSame(output, gold, "output is different from gold")
-    println(s"time: $time")
+    logger.debug(s"time: $time")
   }
 
   test("binomialTile compiles to valid OpenCL that passes checks") {
@@ -145,7 +145,7 @@ class convolution1D extends test_util.Tests {
 
   // TODO: nat unification
   ignore("depSlide inference") {
-    println(
+    logger.debug(
       depFun((n: Nat) => fun(((n+2)`.`f32) ->: (n`.`f32))(a =>
         a |>
         depSlide(n+2)(34)(32) >>

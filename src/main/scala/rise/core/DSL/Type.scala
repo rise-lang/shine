@@ -9,14 +9,6 @@ import scala.language.implicitConversions
 // scalastyle:off multiple.string.literals
 object Type {
 
-  implicit class TypeEqual(a: Type) {
-    def =~=(b: Type): Boolean = (a, b) match {
-      case (TypePlaceholder, _) => true
-      case (_, TypePlaceholder) => true
-      case _ => a == b
-    }
-  }
-
   // type level lambdas
   object n2dtFun {
     def apply(f: NatIdentifier => DataType): NatToDataLambda = {
@@ -81,6 +73,14 @@ object Type {
   implicit def toAddressSpaceFunctionWrapper[A](f: AddressSpace => A): AddressSpaceFunctionWrapper[A] =
     AddressSpaceFunctionWrapper(f)
 
+  case class MatrixLayoutWrapper[A](f: MatrixLayout => A)
+  implicit def toMatrixLayoutWrapper[A](f: MatrixLayout => A): MatrixLayoutWrapper[A] =
+    MatrixLayoutWrapper(f)
+
+  case class FragementTypeWrapper[A](f: FragmentKind => A)
+  implicit def toFragmentTypeWrapper[A](f: FragmentKind => A): FragementTypeWrapper[A] =
+    FragementTypeWrapper(f)
+
   case class TypeFunctionWrapper[A](f: TypeIdentifier => A)
 
   implicit def toTypeFunctionWrapper[A](f: TypeIdentifier => A): TypeFunctionWrapper[A] =
@@ -137,6 +137,14 @@ object Type {
 
     def apply[A](w: AddressSpaceFunctionWrapper[A]): A = {
       w.f(AddressSpaceIdentifier(freshName("n2n")))
+    }
+
+    def apply[A](w: MatrixLayoutWrapper[A]): A = {
+      w.f(MatrixLayoutIdentifier(freshName("ml")))
+    }
+
+    def apply[A](w: FragementTypeWrapper[A]): A = {
+      w.f(FragmentKindIdentifier(freshName("ft")))
     }
 
     def apply[A](w: TypeFunctionWrapper[A]): A = {
@@ -200,6 +208,15 @@ object Type {
       funType.x match {
         case n: NatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
+      }
+    }
+  }
+
+  object `(NatToNat)->:` {
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatToNatIdentifier, T)] = {
+      funType.x match {
+        case n: NatToNatIdentifier => Some((n, funType.t))
+        case _ => throw new Exception("Expected NatToNat DepFunType")
       }
     }
   }

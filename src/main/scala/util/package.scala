@@ -56,21 +56,29 @@ package object util {
   }
 
   def printTime[T](msg: String, block: => T): T = {
-    val start = System.currentTimeMillis()
+    val start = System.nanoTime()
     val result = block
-    val end = System.currentTimeMillis()
+    val end = System.nanoTime()
 
     val elapsed = end - start
-    val milliseconds = elapsed % 1000
-    val rest = elapsed / 1000
-    val seconds = rest % 60
-    val minutes = rest / 60
-
-    val millisStr = s"${milliseconds}ms"
-    val secondsStr = if (seconds > 0) s"${seconds}s " else ""
-    val minutesStr = if (minutes > 0) s"${minutes}mn " else ""
-    println(s"${msg}: ${minutesStr}${secondsStr}${millisStr}")
+    println(s"${msg}: ${prettyTime(elapsed)}")
     result
+  }
+
+  def prettyTime(nanoseconds: Long): String = {
+    val microseconds = nanoseconds / 1000
+    val µs = microseconds % 1000
+    val milliseconds = microseconds / 1000
+    val ms = milliseconds % 1000
+    val seconds = milliseconds / 1000
+    val s = seconds % 60
+    val mn = seconds / 60
+
+    val µsStr = s"${µs}µs"
+    val msStr = if (ms > 0) s"${ms}ms " else ""
+    val sStr = if (s > 0) s"${s}s " else ""
+    val mnStr = if (mn > 0) s"${mn}mn " else ""
+    s"${mnStr}${sStr}${msStr}${µsStr}"
   }
 
   def dotPrintTmp(
@@ -91,7 +99,7 @@ package object util {
       applyNodes = false)
     val dotFile = File.createTempFile(prefix, ".dot")
     writeToFile(dotFile, dotString)
-    val dotPath = dotFile.getPath()
+    val dotPath = dotFile.getPath
     val svgPath = dotPath.replace(".dot", ".svg")
     (s"dot -Tsvg $dotPath -o $svgPath" !!)
     println(s"wrote $dotPath.svg and .dot")

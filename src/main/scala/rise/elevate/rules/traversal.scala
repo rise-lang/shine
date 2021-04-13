@@ -58,7 +58,7 @@ object traversal {
     extends Strategy[Rise] {
 
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case ap @ App(f, x) if f == p => s(x).mapSuccess(App(f, _)(ap.t))
+      case ap @ App(f, x) if f =~~= p => s(x).mapSuccess(App(f, _)(ap.t))
       case _ => Failure(s)
     }
     override def toString = s"argumentOf($p,$s)"
@@ -183,6 +183,10 @@ object traversal {
               Some(s(f).mapSuccess(DepApp[DataKind](_, dt)(da.t)))
             case addr: AddressSpace =>
               Some(s(f).mapSuccess(DepApp[AddressSpaceKind](_, addr)(da.t)))
+            case n2n: NatToNat =>
+              Some(s(f).mapSuccess(DepApp[NatToNatKind](_, n2n)(da.t)))
+            case n2d: NatToData =>
+              Some(s(f).mapSuccess(DepApp[NatToDataKind](_, n2d)(da.t)))
           }
           case Literal(_) => None
           case _: ForeignFunction => None
