@@ -57,10 +57,10 @@ object fromRise {
           arg)
 
       x match {
-        case n: Nat => depApp[NatKind](f, n)
-        case dt: rt.DataType =>
-          depApp[DataKind](f, dataType(dt))
+        case n: Nat             => depApp[NatKind](f, n)
+        case dt: rt.DataType    => depApp[DataKind](f, dataType(dt))
         case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
+        case n2n: rt.NatToNat   => depApp[NatToNatKind](f, nat2nat(n2n))
       }
 
     case r.Literal(d) => d match {
@@ -415,16 +415,14 @@ object fromRise {
       }
 
       case core.reorder() => fromType {
-        case (expT(IndexType(n), `read`) ->: expT(IndexType(_), `read`)) ->:
-          (expT(IndexType(_), `read`) ->: expT(IndexType(_), `read`)) ->:
-          expT(ArrayType(_, t), a) ->: expT(ArrayType(_, _), _)
+        case nFunT(n, n2nFunT(idxF, n2nFunT(idxFinv,
+          expT(ArrayType(_, t), a) ->: expT(ArrayType(_, _), _))))
         =>
-        fun[ExpType ->: ExpType](
-          expT(idx(n), read) ->: expT(idx(n), read), idxF =>
-            fun[ExpType ->: ExpType](
-              expT(idx(n), read) ->: expT(idx(n), read), idxFinv =>
-                fun[ExpType](expT(n`.`t, a), e =>
-                  Reorder(n, t, a, idxF, idxFinv, e))))
+        depFun[NatKind](n)(
+          depFun[NatToNatKind](idxF)(
+            depFun[NatToNatKind](idxFinv)(
+              fun[ExpType](expT(n`.`t, a), e =>
+                Reorder(n, t, a, idxF, idxFinv, e)))))
       }
 
       case core.gather() => fromType {
@@ -940,6 +938,13 @@ object fromRise {
     case rt.AddressSpace.Private => AddressSpace.Private
     case rt.AddressSpace.Constant => AddressSpace.Constant
     case rt.AddressSpaceIdentifier(name, _) => AddressSpaceIdentifier(name)
+  }
+
+  def nat2nat(n2n: rt.NatToNat): NatToNat = n2n match {
+    case rt.NatToNatIdentifier(name, _) =>
+      NatToNatIdentifier(name)
+    case rt.NatToNatLambda(x, body) =>
+      NatToNatLambda(x.range, NatIdentifier(x.name), body)
   }
 
   def dataType(t: rt.DataType): DataType = t match {
