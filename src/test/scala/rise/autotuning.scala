@@ -48,6 +48,12 @@ class autotuning extends test_util.Tests {
               ))
             ))))))
 
+  val convolutionOcl2: Expr =
+    tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
+    tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
+      wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(convolution)
+    ))))
+
   val scalSJ: ToBeTyped[Expr] =
     depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
       oclRun(LocalSize(1), GlobalSize(32))(
@@ -66,14 +72,18 @@ class autotuning extends test_util.Tests {
     ))
 
   test("collect parameters") {
-    val params = autotune.collectParameters(convolution)
+    val params = autotune.collectParameters(convolutionOcl2)
     assert(params.find(_.name == "vec").get.range == RangeAdd(0, 32, 1))
     assert(params.find(_.name == "tile").get.range == RangeAdd(4, 32, 1))
-    assert(params.size == 2)
+    assert(params.find(_.name == "ls0").get.range == RangeUnknown)
+    assert(params.find(_.name == "ls1").get.range == RangeUnknown)
+    assert(params.find(_.name == "gs0").get.range == RangeUnknown)
+    assert(params.find(_.name == "gs1").get.range == RangeUnknown)
+    assert(params.size == 6)
   }
 
   test("collect constraints") {
-    val e: Expr = convolution
+    val e: Expr = convolutionOcl2
     autotune.collectConstraints(e, autotune.collectParameters(e)).foreach(println)
   }
 

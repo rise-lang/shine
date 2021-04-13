@@ -1,9 +1,10 @@
 package rise.core.DSL
 
 import Type.impl
+import util.monads._
 import rise.core.traverse._
 import rise.core.types._
-import rise.core.{DSL, Expr, Primitive, traverse}
+import rise.core.{DSL, Expr, Primitive}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
   override val t: Type = e.t
@@ -22,7 +23,7 @@ object TopLevel {
     import scala.collection.immutable.Map
     infer.getFTVs(t).foldLeft(Solution())((subs, ftv) =>
       subs match {
-        case s@Solution(ts, ns, as, n2ds, n2ns, natColls) =>
+        case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
             case i: TypeIdentifier =>
               s.copy(ts = ts ++ Map(i -> impl{ x: TypeIdentifier => x }))
@@ -32,6 +33,10 @@ object TopLevel {
               s.copy(ns = ns ++ Map(i -> impl{ x: Nat => x }))
             case i: AddressSpaceIdentifier =>
               s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
+            case i: MatrixLayoutIdentifier =>
+              s.copy(ms = ms ++ Map(i -> impl{ x: MatrixLayout => x }))
+            case i: FragmentKindIdentifier =>
+              s.copy(fs = fs ++ Map(i -> impl{ x: FragmentKind => x }))
             case i: NatToDataIdentifier =>
               s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
             case i: NatToNatIdentifier =>

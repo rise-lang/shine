@@ -1,5 +1,6 @@
 package rise.core
 
+import util.monads._
 import arithexpr.arithmetic.NamedVar
 import rise.core.traverse._
 import rise.core.types._
@@ -37,6 +38,13 @@ object IsClosedForm {
         for { _ <- this.copy(boundT = boundT + x).`type`(e) }
           yield d
       case t => super.natToData(t)
+    }
+
+    override def natToNat: NatToNat => Option[NatToNat] = {
+      case d@NatToNatLambda(x, n) =>
+        for { _ <- this.copy(boundT = boundT + x).nat(n) }
+          yield d
+      case n => super.natToNat(n)
     }
 
     override def `type`[T <: Type]: T => Option[T] = {

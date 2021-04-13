@@ -5,10 +5,10 @@ import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
-import util.{Time, TimeSpan, gen}
-
+import util.{Time, TimeSpan, gen, monads}
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.security.Policy.Parameters
+
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.core.DSL.ToBeTyped
 import rise.openCL.DSL.oclRun
@@ -209,8 +209,8 @@ package object autotune {
 
   def collectParameters(e: Expr): Parameters = {
     var params = scala.collection.mutable.Set[NatIdentifier]()
-    traverse(e, new traverse.PureTraversal {
-      override def nat: Nat => traverse.Pure[Nat] = n =>
+    traverse.traverse(e, new traverse.PureTraversal {
+      override def nat: Nat => monads.Pure[Nat] = n =>
         return_(n.visitAndRebuild({
           case n: NatIdentifier if n.isTuningParam =>
             params += n
@@ -284,8 +284,26 @@ package object autotune {
       }
     }
 
-    traverse(e, new traverse.PureTraversal {
-      override def datatype: DataType => traverse.Pure[DataType] = { t =>
+    traverse.traverse(e, new traverse.PureTraversal {
+      override def expr: Expr => monads.Pure[Expr] = { e =>
+        e match {
+          case DepApp(DepApp(DepApp(DepApp(DepApp(DepApp(
+            rise.openCL.primitives.oclRunPrimitive(),
+            ls0: Nat), ls1: Nat), ls2: Nat),
+            gs0: Nat), gs1: Nat), gs2: Nat)
+          =>
+            for (s <- Seq(ls0, ls1, ls2, gs0, gs1, gs2)) {
+              addPredicate(ArithPredicate(s, 1, ArithPredicate.Operator.>=))
+            }
+            for ((ls, gs) <- Seq((ls0, gs0), (ls1, gs1), (ls2, gs2))) {
+              cs += RangeConstraint(ls, RangeMul(0, PosInf, gs))
+            }
+          case _ =>
+        }
+        super.expr(e)
+      }
+
+      override def datatype: DataType => monads.Pure[DataType] = { t =>
         t match {
           case ArrayType(n, _) if n.varList.forall(v => paramOrInput(v.name)) =>
             addPredicate(ArithPredicate(n, 0, ArithPredicate.Operator.>=))
@@ -296,7 +314,7 @@ package object autotune {
         super.datatype(t)
       }
 
-      override def nat: Nat => traverse.Pure[Nat] = n =>
+      override def nat: Nat => monads.Pure[Nat] = n =>
         return_(n.visitAndRebuild { m =>
           if (m.varList.forall(v => paramOrInput(v.name))) { m match {
             case Prod(parts) =>

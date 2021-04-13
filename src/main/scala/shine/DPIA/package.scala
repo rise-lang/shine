@@ -19,17 +19,8 @@ package object DPIA {
   type NatIdentifier = NamedVar with Kind.Identifier
 
   object Nat {
-    def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N = {
-      in.visitAndRebuild {
-        case v: Var =>
-          if (`for`.name == v.name) {
-            ae
-          } else {
-            v
-          }
-        case e => e
-      }.asInstanceOf[N]
-    }
+    def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N =
+      ArithExpr.substitute(in, Map(`for` -> ae)).asInstanceOf[N]
   }
 
   object NatIdentifier {
@@ -167,6 +158,24 @@ package object DPIA {
       funType.x match {
         case a: AddressSpaceIdentifier => Some((a, funType.t))
         case _ => throw new Exception("Expected AddressSpace DepFunType")
+      }
+    }
+  }
+
+  object n2nFunT {
+    def apply(n: rt.NatToNatIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[NatToNatKind, PhraseType](fromRise.natToNatIdentifier(n), t)
+    }
+
+    def apply(n: NatToNatIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[NatToNatKind, PhraseType](n, t)
+    }
+
+    def unapply[K <: Kind, T <: PhraseType](funType: DepFunType[K, T]
+                                           ): Option[(NatToNatIdentifier, T)] = {
+      funType.x match {
+        case n: NatToNatIdentifier => Some((n, funType.t))
+        case _ => throw new Exception("Expected Nat DepFunType")
       }
     }
   }

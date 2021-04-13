@@ -27,7 +27,7 @@ class fft extends test_util.Tests {
           generate(fun(IndexType(p))(k => {
             val exponentWoMinus2 =
               (j * (LPrevIter: Nat)) + i * (k / (p * (LPrevIter: Nat)))
-            val exponent = (cast(exponentWoMinus2) :: f32) * l(-2.0)
+            val exponent = (cast(exponentWoMinus2) :: f32) * lf64(-2.0)
             makePair(cast(cospi(exponent) :: f32))(cast(sinpi(exponent) :: f32))
           }))
         ))
@@ -47,7 +47,7 @@ class fft extends test_util.Tests {
         Brow |> mapSeq(
           fun(Bchunk =>
             zip(yChunk)(Bchunk) |> reduceSeq(cmultandsum)(
-              makePair(l(0.0f))(l(0.0f))
+              makePair(lf32(0.0f))(lf32(0.0f))
             )
           )
         )
@@ -88,7 +88,7 @@ class fft extends test_util.Tests {
     val fftiter = createStockhamIterationLambda(p, LPrevIter, N)
     val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(fftiter, Map()))
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(kernel.code)
+    logger.debug(kernel.code)
 
     SyntaxChecker(kernel.code)
   }

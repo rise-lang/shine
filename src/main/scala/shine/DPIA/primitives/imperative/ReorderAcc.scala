@@ -9,10 +9,9 @@ import shine.macros.Primitive.accPrimitive
 @accPrimitive
 final case class ReorderAcc(n: Nat,
                             dt: DataType,
-                            idxF: Phrase[ExpType ->: ExpType],
+                            idxF: NatToNat,
                             array: Phrase[AccType]
                            ) extends AccPrimitive {
-  idxF :: expT(idx(n), read) ->: expT(idx(n), read)
   array :: accT(n`.`dt)
   override val t: AccType = accT(n`.`dt)
 }

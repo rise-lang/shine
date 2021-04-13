@@ -20,15 +20,15 @@ class dotPrinterTests extends test_util.Tests {
   }
 
   test("simple *f") {
-    println(dotPrinter(λ(i => λ(f => *(f) $ i))))
+    logger.debug(dotPrinter(λ(i => λ(f => *(f) $ i))))
   }
 
   test("typed *f") {
-    println(dotPrinter(λ(i => λ(f => *(f) $ i))))
+    logger.debug(dotPrinter(λ(i => λ(f => *(f) $ i))))
   }
 
   test("tiled 4D") {
-    println(dotPrinter(λ(i => λ(f => (
+    logger.debug(dotPrinter(λ(i => λ(f => (
       J o **(J) o ****(J) o ******(J) o
         *****(T) o ***(T) o ****(T) o *(T) o **(T) o ***(T) o
         ****(****(f)) o
@@ -46,7 +46,7 @@ class dotPrinterTests extends test_util.Tests {
           zip(a)(c) |> map(fun(ac =>
             zip(transpose(b))(ac._2) |> map(fun(bc =>
               zip(ac._1)(bc._1) |>
-                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)))(l(0.0f)) |>
+                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)))(lf32(0.0f)) |>
                 fun(x => (x * alpha) + (beta * bc._2))
             ))
           ))
@@ -54,8 +54,8 @@ class dotPrinterTests extends test_util.Tests {
       )
 
     // without type inference
-    println(dotPrinter(gemm.toUntypedExpr))
+    logger.debug(dotPrinter(gemm.toUntypedExpr))
     // with type inference
-    println(dotPrinter(gemm.toExpr))
+    logger.debug(dotPrinter(gemm.toExpr))
   }
 }

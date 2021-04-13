@@ -1,24 +1,11 @@
 package rise.core
 
 import scala.language.implicitConversions
-import arithexpr.arithmetic.NamedVar
+import util.monads._
 import rise.core.semantics._
 import rise.core.types._
 
 object traverse {
-  trait Monad[M[_]] {
-    def return_[T] : T => M[T]
-    def bind[T,S] : M[T] => (T => M[S]) => M[S]
-    def traverse[A] : Seq[M[A]] => M[Seq[A]] =
-      _.foldRight(return_(Nil : Seq[A]))({case (mx, mxs) =>
-        bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
-  }
-
-  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]) = new {
-    def map[B](f: A => B): M[B] = tc.bind(m)(a => tc.return_(f(a)) )
-    def flatMap[B](f: A => M[B]): M[B] = tc.bind(m)(f)
-  }
-
   sealed trait VarType
   case object Binding extends VarType
   case object Reference extends VarType
@@ -39,6 +26,8 @@ object traverse {
       case n: NatIdentifier => bind(typeIdentifier(vt)(n))(nat)
       case dt: DataTypeIdentifier => bind(typeIdentifier(vt)(dt))(datatype)
       case a: AddressSpaceIdentifier => bind(typeIdentifier(vt)(a))(addressSpace)
+      case m: MatrixLayoutIdentifier => bind(typeIdentifier(vt)(m))(matrixLayout)
+      case f: FragmentKindIdentifier => bind(typeIdentifier(vt)(f))(fragmentKind)
       case n2n: NatToNatIdentifier => bind(typeIdentifier(vt)(n2n))(natToNat)
       case n2d: NatToDataIdentifier => bind(typeIdentifier(vt)(n2d))(natToData)
       case t: TypeIdentifier => typeIdentifier(vt)(t)
@@ -50,6 +39,8 @@ object traverse {
     }
 
     def addressSpace : AddressSpace => M[AddressSpace] = return_
+    def matrixLayout : MatrixLayout => M[MatrixLayout] = return_
+    def fragmentKind : FragmentKind => M[FragmentKind] = return_
     def datatype : DataType => M[DataType] = {
       case i: DataTypeIdentifier => return_(i.asInstanceOf[DataType])
       case NatType               => return_(NatType : DataType)
@@ -61,10 +52,10 @@ object traverse {
         for {n1 <- natDispatch(Reference)(n); n2d1 <- natToData(n2d)}
           yield DepArrayType(n1, n2d1)
       case PairType(p1, p2) =>
-        for {p11 <- datatype(p1); p21 <- datatype(p2)}
+        for {p11 <- `type`(p1); p21 <- `type`(p2)}
           yield PairType(p11, p21)
       case pair@DepPairType(x, e) =>
-        for {x1 <- typeIdentifierDispatch(Binding)(x); e1 <- datatype(e)}
+        for {x1 <- typeIdentifierDispatch(Binding)(x); e1 <- `type`(e)}
           yield DepPairType(x1, e1)(pair.kindName)
       case IndexType(n) =>
         for {n1 <- natDispatch(Reference)(n)}
@@ -72,6 +63,10 @@ object traverse {
       case VectorType(n, e) =>
         for {n1 <- natDispatch(Reference)(n); e1 <- `type`(e)}
           yield VectorType(n1, e1)
+      case FragmentType(rows, columns, d3, dt, fragKind, layout) =>
+        for {rows1 <- nat(rows); columns1 <- nat(columns); d31 <- nat(d3); dt1 <- datatype(dt);
+          fragKind1 <- fragmentKind(fragKind); layout1 <- matrixLayout(layout)}
+        yield FragmentType(rows1, columns1, d31, dt1, fragKind1, layout1)
       case NatToDataApply(ntdf, n) =>
         for {ntdf1 <- natToData(ntdf); n1 <- natDispatch(Reference)(n)}
           yield NatToDataApply(ntdf1, n1)
@@ -87,7 +82,7 @@ object traverse {
     def natToData : NatToData => M[NatToData] = {
       case i : NatToDataIdentifier => return_(i.asInstanceOf[NatToData])
       case NatToDataLambda(x, e) =>
-        for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- datatype(e) }
+        for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- `type`(e) }
           yield NatToDataLambda(x1, e1)
     }
 
@@ -162,7 +157,7 @@ object traverse {
           for {f1 <- expr(f); n1 <- natDispatch(Reference)(n); t1 <- `type`(da.t)}
             yield DepApp[NatKind](f1, n1)(t1)
         case dt: DataType =>
-          for {f1 <- expr(f); dt1 <- datatype(dt); t1 <- `type`(da.t)}
+          for {f1 <- expr(f); dt1 <- `type`(dt); t1 <- `type`(da.t)}
             yield DepApp[DataKind](f1, dt1)(t1)
         case a: AddressSpace =>
           for {f1 <- expr(f); a1 <- addressSpace(a); t1 <- `type`(da.t)}
@@ -188,23 +183,26 @@ object traverse {
     override def `type`[T <: Type] : T => M[T] = return_
   }
 
-  case class Pure[T](unwrap : T)
-  implicit object PureMonad extends Monad[Pure] {
-    override def return_[T] : T => Pure[T] = t => Pure(t)
-    override def bind[T,S] : Pure[T] => (T => Pure[S]) => Pure[S] =
-      v => f => v match { case Pure(v) => f(v) }
-  }
-
-  implicit object OptionMonad extends Monad[Option] {
-    def return_[T]: T => Option[T] = Some(_)
-    def bind[T, S]: Option[T] => (T => Option[S]) => Option[S] = v => v.flatMap
-  }
-
-  trait PureTraversal extends Traversal[Pure] { override def monad = PureMonad }
+  trait PureTraversal extends Traversal[Pure] {override def monad : PureMonad.type = PureMonad }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
+  trait AccumulatorTraversal[F,M[_]] extends Traversal[InMonad[M]#SetFst[F]#Type] {
+    type Pair[T] = InMonad[M]#SetFst[F]#Type[T]
+    implicit val accumulator : Monoid[F]
+    implicit val wrapperMonad : Monad[M]
+    def accumulate[T] : F => T => Pair[T] = f => t => wrapperMonad.return_((f, t))
+    override def monad : PairMonoidMonad[F,M] = new PairMonoidMonad[F,M] {
+      override val monoid = implicitly(accumulator)
+      override val monad = implicitly(wrapperMonad)
+    }
+  }
+  trait PureAccumulatorTraversal[F] extends AccumulatorTraversal[F, Pure] {
+    override val wrapperMonad : PureMonad.type = PureMonad
+  }
 
-  def apply(e : Expr, f : PureTraversal) : Expr = f.expr(e).unwrap
-  def apply[M[_]](e : Expr, f : Traversal[M]) : M[Expr] = f.expr(e)
-  def apply[T <: Type](t : T, f : PureTraversal) : T = f.`type`(t).unwrap
-  def apply[T <: Type, M[_]](e : T, f : Traversal[M]) : M[T] = f.`type`(e)
+  def traverse(e: Expr, f: PureTraversal): Expr = f.expr(e).unwrap
+  def traverse[T <: Type](t: T, f: PureTraversal): T = f.`type`(t).unwrap
+  def traverse[F](e: Expr, f: PureAccumulatorTraversal[F]): (F, Expr) = f.expr(e).unwrap
+  def traverse[F,T <: Type](t: T, f: PureAccumulatorTraversal[F]): (F, T) = f.`type`(t).unwrap
+  def traverse[M[_]](e: Expr, f: Traversal[M]): M[Expr] = f.expr(e)
+  def traverse[T <: Type, M[_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
 }

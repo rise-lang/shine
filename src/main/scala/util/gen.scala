@@ -190,4 +190,105 @@ object gen {
           OpenCL.Compilation.SeparateHostAndKernelCode.separate(hostFunName),
           (OpenCL.Module.apply _).tupled)
   }
+
+  object cuda {
+    import opencl._
+
+    type KernelModule = shine.cuda.KernelModule
+
+    object kernel {
+      def apply(name: String = "foo"): kernel =
+        new kernel(None, name)
+
+      def apply(localSize: LocalSize, globalSize: GlobalSize): kernel =
+        new kernel(Some(LocalAndGlobalSize(localSize, globalSize)), "foo")
+
+      def apply(localSize: LocalSize, globalSize: GlobalSize, name: String): kernel =
+        new kernel(Some(LocalAndGlobalSize(localSize, globalSize)), name)
+
+      def fromExpr: Expr => KernelModule =
+        gen.cuda.kernel().fromExpr
+
+      def fromPhrase: Phrase => KernelModule =
+        gen.cuda.kernel().fromPhrase
+
+      def asStringFromExpr: Expr => String =
+        gen.cuda.kernel().asStringFromExpr
+
+      def asStringFromPhrase: Phrase => String =
+        gen.cuda.kernel().asStringFromPhrase
+
+      def asString: KernelModule => String = {
+        shine.cuda.KernelModule.translationToString
+      }
+    }
+
+    case class kernel(wgConfig: Option[WorkGroupConfig], name: String) {
+      def fromExpr: Expr => KernelModule =
+        exprToPhrase andThen
+          fromPhrase
+
+      def fromPhrase: Phrase => KernelModule = wgConfig match {
+        case Some(PhraseDepLocalAndGlobalSize(f)) => p => p |> (
+          phraseToKernelDef(name) andThen
+            kernelWithWgConfig(f(p)) andThen
+            kernelDefToKernel())
+        case Some(config: LocalAndGlobalSize) =>
+          phraseToKernelDef(name) andThen
+            kernelWithWgConfig(config) andThen
+            kernelDefToKernel()
+        case None =>
+          phraseToKernelDef(name) andThen
+            kernelDefToKernel()
+      }
+
+      def asStringFromExpr: Expr => String =
+        fromExpr andThen
+          gen.cuda.kernel.asString
+
+      def asStringFromPhrase: Phrase => String =
+        fromPhrase andThen
+          gen.cuda.kernel.asString
+    }
+
+    private def phraseToKernelDef(name: String): Phrase => KernelDef =
+      KernelDef(name, _)
+
+    private def kernelWithWgConfig: LocalAndGlobalSize => KernelDef => KernelDef = {
+      case LocalAndGlobalSize((ls, gs)) =>_.withWgConfig(ls, gs)
+    }
+
+    private def kernelDefToKernel(): KernelDef => KernelModule =
+      shine.cuda.Compilation.KernelModuleGenerator.funDefToModule(
+        shine.cuda.Compilation.KernelCodeGenerator())
+
+    type HostedModule = shine.cuda.Module
+
+    object hosted {
+      def fromExpr: Expr => HostedModule = gen.cuda.hosted().fromExpr
+      def fromPhrase: Phrase => HostedModule = gen.cuda.hosted().fromPhrase
+      def asString: HostedModule => String = shine.cuda.Module.translateToString
+    }
+
+    case class hosted(name: String = "foo") {
+      def fromExpr: Expr => HostedModule = exprToPhrase andThen fromPhrase
+
+      def fromPhrase: Phrase => HostedModule =
+        partialHostCompiler(name) composeWith
+          (hostFunDefToHostPart() x map(kernelDefToKernel()))
+    }
+
+    private def hostFunDefToHostPart(gen: HostCodeGenerator =
+                                     shine.OpenCL.Compilation.HostCodeGenerator()
+                                    ): FunDef => CModule =
+      HostCodeModuleGenerator.funDefToModule(gen)
+
+    private def partialHostCompiler(hostFunName: String): PartialCompiler[
+      Phrase,   HostedModule,
+      (FunDef,  Seq[KernelDef]),
+      (CModule, Seq[shine.cuda.KernelModule])] =
+      PartialCompiler.functor(
+        shine.OpenCL.Compilation.SeparateHostAndKernelCode.separate(hostFunName),
+        (shine.cuda.Module.apply _).tupled)
+  }
 }

@@ -19,9 +19,9 @@ class dependentTypes extends test_util.Tests {
         )(xs => xs |> depMapSeq(depFun((i: Nat) => fun(xs => mapSeq(fun(x => x))(xs::((i+1)`.`f32))))))
       )
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
-    assert(inferred.t ==
+    logger.debug(inferred)
+    logger.debug(inferred.t)
+    assert(inferred.t =~=
       expl((n: Nat) => (n `*.`n2dtFun(i => (i + 1) `.` f32)) ->: (n `*.`n2dtFun(i => (i + 1) `.` f32)))
     )
   }
@@ -32,19 +32,19 @@ class dependentTypes extends test_util.Tests {
     )
     val inferred: Expr = e.toExpr
     val expected = expl((n: Nat) => (n `.` f32) ->: (Nat `**` (m => m `.` f32)))
-    assert(inferred.t == expected)
+    assert(inferred.t =~= expected)
     function.asStringFromExpr(inferred)
   }
 
   test("GEN: Dependent pair map increment") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((n:Nat) => fun(xs =>
-        makeDepPair(n)(mapSeq(fun(x => x + l(1.0f)))(xs) ::(n`.`f32))
+        makeDepPair(n)(mapSeq(fun(x => x + lf32(1.0f)))(xs) ::(n`.`f32))
       ))))
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
-    assert(inferred.t ==
+    logger.debug(inferred)
+    logger.debug(inferred.t)
+    assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: (Nat `**` (m => m `.` f32)))
     )
 
@@ -93,13 +93,13 @@ class dependentTypes extends test_util.Tests {
   test("Dependent pair match with reduction") {
     val e = fun(Nat `**` (n => n`.`f32))(pair =>
       dmatch(pair)(depFun((_: Nat) => fun(xs =>
-        reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))(xs))
+        reduceSeq(fun(x => fun(y => x + y)))(lf32(0.0f))(xs))
       ))
     )
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
-    assert(inferred.t ==
+    logger.debug(inferred)
+    logger.debug(inferred.t)
+    assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: f32)
     )
 
@@ -145,9 +145,9 @@ class dependentTypes extends test_util.Tests {
       dmatch(pair)(depFun((_:Nat) => fun(xs => mapSeq(fun(x => x))(take(5)(xs)))))
     )
     val inferred: Expr = e.toExpr
-    println(inferred)
-    println(inferred.t)
-    assert(inferred.t ==
+    logger.debug(inferred)
+    logger.debug(inferred.t)
+    assert(inferred.t =~=
       ((Nat `**` (n => n`.`f32)) ->: (5`.`f32))
     )
     function.asStringFromExpr(inferred)
@@ -159,9 +159,9 @@ class dependentTypes extends test_util.Tests {
       ))
 
     val inferred: Expr = inferDependent(e)
-    println(inferred)
-    println(inferred.t)
-    assert(inferred.t ==
+    logger.debug(inferred)
+    logger.debug(inferred.t)
+    assert(inferred.t =~=
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => (m+1) `.` f32) ))
     )
     function.asStringFromExpr(inferred)
@@ -169,13 +169,13 @@ class dependentTypes extends test_util.Tests {
 
   test("Simple reduce") {
     val e = depFun((n: Nat) => fun(n `*.` (i => (i+1) `.` f32))(array =>
-      depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
+      depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(lf32(0.0f))))(array)
     ))
 
     val inferred: Expr = inferDependent(e)
-    println(inferred)
-    println(inferred.t)
-    assert(inferred.t ==
+    logger.debug(inferred)
+    logger.debug(inferred.t)
+    assert(inferred.t =~=
       expl((n: Nat) => (n `*.` n2dtFun(m => (m+1) `.` f32) ) ->: (n `*.` n2dtFun(m => f32) ))
     )
     function.asStringFromExpr(inferred)
@@ -191,7 +191,7 @@ class dependentTypes extends test_util.Tests {
           row =>
             reduceSeq(
               fun(x => fun(y => x + y))
-            )(l(0.0f))(mapSeq(fun(entry => {
+            )(lf32(0.0f))(mapSeq(fun(entry => {
               val number = entry._1
               val index = entry._2
               number * (vector `@` index)
@@ -202,8 +202,8 @@ class dependentTypes extends test_util.Tests {
     ))))
 
     val inferred: Expr = inferDependent(e)
-    println(inferred)
-    print(inferred.t)
+    logger.debug(inferred)
+    logger.debug(inferred.t)
     function.asStringFromExpr(inferred)
   }
 }
