@@ -7,7 +7,6 @@ import rise.elevate.rules._
 import rise.core.{semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional._
@@ -72,16 +71,16 @@ object fromRise {
     case p: r.Primitive => primitive(p, ptMap.get(p))
   }
 
-  def data(d: rs.Data): OpSem.Data = d match {
-    case rs.ArrayData(a) => OpSem.ArrayData(a.map(data).toVector)
-    case rs.PairData(a, b) => OpSem.PairData(data(a), data(b))
-    case rs.BoolData(b) => OpSem.BoolData(b)
-    case rs.IntData(i) => OpSem.IntData(i)
-    case rs.FloatData(f) => OpSem.FloatData(f)
-    case rs.DoubleData(d) => OpSem.DoubleData(d)
-    case rs.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)
-    case rs.IndexData(i, n) => OpSem.IndexData(i, n)
-    case rs.NatData(n) => OpSem.NatData(n)
+  def data(d: rs.Data): Data = d match {
+    case rs.ArrayData(a) => ArrayData(a.map(data).toVector)
+    case rs.PairData(a, b) => PairData(data(a), data(b))
+    case rs.BoolData(b) => BoolData(b)
+    case rs.IntData(i) => IntData(i)
+    case rs.FloatData(f) => FloatData(f)
+    case rs.DoubleData(d) => DoubleData(d)
+    case rs.VectorData(v) => VectorData(v.map(data(_)).toVector)
+    case rs.IndexData(i, n) => IndexData(i, n)
+    case rs.NatData(n) => NatData(n)
   }
 
   import rise.core.{primitives => core}

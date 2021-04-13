@@ -1,12 +1,9 @@
 package shine.cuda.primitives.imperative
 
+import shine.DPIA.Nat
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics.Store
 import shine.DPIA.Types._
-import shine.DPIA.{Nat, Phrases}
 import shine.macros.Primitive.comPrimitive
-
-import scala.xml.Elem
 
 /**
   * Loads a tile of a matrix into a fragment. <br>
