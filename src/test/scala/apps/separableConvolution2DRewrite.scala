@@ -14,7 +14,6 @@ import rise.elevate.Rise
 import rise.elevate.strategies.algorithmic._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.alternative._
-import rise.elevate.util.makeClosed
 import rise.core.primitives._
 
 class separableConvolution2DRewrite extends test_util.Tests {
@@ -39,7 +38,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
     val na = BENF(a).get
     val nb = BENF(b).get
     val uab: Rise = toBeTyped(na) !: nb.t
-    makeClosed(uab)._1 == makeClosed(nb)._1
+    makeClosed(uab) =~~= makeClosed(nb)
   }
 
   private val separateDot: Strategy[Rise] =
@@ -103,6 +102,53 @@ class separableConvolution2DRewrite extends test_util.Tests {
       idS
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       repeatNTimes(2)(topDown(mapFirstFission))
+        -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
+      skip(1)(mapFusion)
+        -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),
+      idS
+        -> separated(weightsV)(weightsH)
+    ))
+  }
+
+  test("base to scanline (mapLastFission)") {
+    rewrite_steps(base(weights2d), scala.collection.Seq(
+      idS
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(join(weights2d))(join(nbh)))))),
+      topDown(separateDotT)
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+      topDown(`*f >> S -> S >> **f`)
+        -> (P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+      topDown(mapFusion)
+        -> (P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
+      topDown(mapFusion)
+        -> (P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
+      topDown(`*S >> T -> T >> S >> *T`)
+        -> (P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
+      topDown(mapFusion)
+        -> (P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
+      topDown(removeTransposePair)
+        -> (P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
+      (repeatNTimes(3)(skip(1)(mapLastFission())) `;` BENF `;`
+        repeatNTimes(2)(topDown(mapFusion)))
+        -> (P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
+      topDown(`S >> **f -> *f >> S`)
+        -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
+      idS
+        -> scanline(weightsV)(weightsH)
+    ))
+  }
+
+  test("scanline to separated (mapLastFission)") {
+    rewrite_steps(scanline(weightsV)(weightsH), scala.collection.Seq(
+      idS
+        -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
+      skip(0)(mapLastFission())
+        -> (P >> Sv >> *(T >> *(Dv) >> Sh) >> *(*(Dh))),
+      skip(1)(mapLastFission())
+        -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh) >> *(*(Dh))),
+      skip(1)(mapLastFission())
+        -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh) >> *(*(Dh))),
+      skip(0)(mapFusion)
         -> (P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
       skip(1)(mapFusion)
         -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),

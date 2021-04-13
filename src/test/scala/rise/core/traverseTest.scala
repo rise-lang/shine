@@ -1,149 +1,58 @@
 package rise.core
 
+import util.monads._
 import rise.core.DSL._
 import rise.core.traverse._
 import rise.core.primitives._
 import rise.core.types._
 
 class traverseTest extends test_util.Tests {
-  val e: ToBeTyped[DepLambda[NatKind]] = depFun((h: Nat) =>
+  val e: Expr = depFun((h: Nat) =>
     depFun((w: Nat) =>
       fun(ArrayType(h, ArrayType(w, f32)))(input => map(map(fun(x => x)))(input)
       )
     )
   )
 
-  case class Trace[T](unwrap : T) { val trace : Seq[Any] = Seq() }
-  implicit object TraceMonad extends Monad[Trace] {
-    def write[T] : T => Trace[T] = t => new Trace(t) { override val trace : Seq[Any] = Seq(t)}
-    override def return_[T] : T => Trace[T] = t => Trace(t)
-    override def bind[T,S] : Trace[T] => (T => Trace[S]) => Trace[S] = t1 => f => {
-      val t2 = f(t1.unwrap)
-      new Trace(t2.unwrap) { override val trace : Seq[Any] = t1.trace ++ t2.trace}
-    }
+  class ExprTraceVisitor extends PureAccumulatorTraversal[Seq[Any]] {
+    override val accumulator = SeqMonoid[Any]
+    override def identifier[I <: Identifier] : VarType => I => Pair[I] =
+      vt => i => accumulate(Seq(i))(i)
   }
 
-  class TraceVisitor extends Traversal[Trace] {
-    override def monad = TraceMonad
-
-    override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Trace[I] = vt => i =>
-      monad.bind(monad.write(i))(super.typeIdentifier(vt)(_))
-
-    override def identifier[I <: Identifier] : VarType => I => Trace[I] = vt => i =>
-      monad.bind(monad.write(i))(super.identifier(vt)(_))
-
-    override def expr : Expr => Trace[Expr] = e =>
-      monad.bind(monad.write(e))(super.expr)
-
-    override def `type`[T <: Type] : T => Trace[T] = t =>
-    monad.bind(monad.write(t))(super.`type`)
+  class TypeTraceVisitor extends PureAccumulatorTraversal[Seq[Any]] {
+    override val accumulator = SeqMonoid[Any]
+    override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Pair[I] =
+      vt => i => accumulate(Seq(i))(i)
   }
 
-  test("traverse an expression depth-first") {
-    val expected = {
-      Seq(
-        { case _: DepLambda[NatKind] @unchecked          => () },
-        { case _: NatIdentifier                          => () },
-        { case _: DepLambda[NatKind] @unchecked          => () },
-        { case _: NatIdentifier                          => () },
-        { case _: Lambda                                 => () },
-        { case _: Identifier                             => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case _: App                                    => () },
-        { case _: App                                    => () },
-        { case primitives.map()                          => () },
-        { case _: FunType[_, _]                          => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, `f32`)                       => () },
-        { case ArrayType(_, `f32`)                       => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case _: App                                    => () },
-        { case primitives.map()                          => () },
-        { case _: FunType[_, _]                          => () },
-        { case _: FunType[_, _]                          => () },
-        { case `f32`                                     => () },
-        { case `f32`                                     => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, `f32`)                       => () },
-        { case ArrayType(_, `f32`)                       => () },
-        { case _: Lambda                                 => () },
-        { case _: Identifier                             => () },
-        { case `f32`                                     => () },
-        { case _: Identifier                             => () },
-        { case _: Identifier                             => () },
-        { case `f32`                                     => () },
-        { case _: FunType[_, _]                          => () },
-        { case `f32`                                     => () },
-        { case `f32`                                     => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, `f32`)                       => () },
-        { case ArrayType(_, `f32`)                       => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case _: Identifier                             => () },
-        { case _: Identifier                             => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case _: DepFunType[NatKind, _] @unchecked      => () },
-        { case _: Kind.Identifier                        => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case _: DepFunType[NatKind, _] @unchecked      => () },
-        { case _: Kind.Identifier                        => () },
-        { case _: DepFunType[NatKind, _] @unchecked      => () },
-        { case _: Kind.Identifier                        => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-        { case ArrayType(_, ArrayType(_, `f32`))         => () },
-      ): Seq[Any => Unit]
-    }
+  def checkEqualities[T] : Seq[T] => Seq[Seq[Int]] => Boolean = xs => gps =>
+    gps.forall(gp => gp.map(xs(_)).distinct.length == 1)
 
-    val result = traverse(e, new TraceVisitor())
+  test("traversing an expression should traverse identifiers in order") {
+    val equivs = Seq(Seq(0, 3), Seq(1, 2))
+    val result = traverse(e, new ExprTraceVisitor())
 
     // the expression should not have changed
-    assert(result.unwrap == e.toExpr)
+    assert(result._2 == e)
     // the trace should match expectations
-    result.trace.length shouldBe expected.length
-    result.trace.zip(expected).foreach({ case (x, e) => e(x) })
+    result._1.length shouldBe equivs.flatten.length
+    assert(checkEqualities(result._1)(equivs))
+  }
+
+  test("traversing a type should traverse identifiers in order") {
+    val equivs = Seq(Seq(0, 2, 4), Seq(1, 3, 5))
+    val result = traverse(e.t, new TypeTraceVisitor())
+    // the type should not have changed
+    assert(result._2 == e.t)
+    // the trace should match expectations
+    result._1.length shouldBe equivs.flatten.length
+    assert(checkEqualities(result._1)(equivs))
   }
 
   test("traverse an expression depth-first with stop and update") {
-    val expected = {
-      Seq(
-        { case _: DepLambda[NatKind] @unchecked          => () },
-        { case _: NatIdentifier                          => () },
-        { case _: DepLambda[NatKind] @unchecked          => () },
-        { case _: NatIdentifier                          => () },
-        { case _: Lambda                                 => () },
-        { case _: Identifier                             => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
-        { case _: DepFunType[NatKind, _] @unchecked      => () },
-        { case _: Kind.Identifier                        => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
-        { case _: DepFunType[NatKind, _] @unchecked      => () },
-        { case _: Kind.Identifier                        => () },
-        { case _: DepFunType[NatKind, _] @unchecked      => () },
-        { case _: Kind.Identifier                        => () },
-        { case _: FunType[_, _]                          => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
-      ): Seq[Any => Unit]
-    }
-
-    class Visitor extends TraceVisitor {
-      override def expr : Expr => Trace[Expr] = {
+    class Visitor extends PureExprTraversal {
+      override def expr : Expr => Pure[Expr] = {
         case App(App(primitives.map(), _), e) => monad.return_(app(fun(x => x), preserveType(e)))
         case e => super.expr(e)
       }
@@ -152,7 +61,7 @@ class traverseTest extends test_util.Tests {
     val result = traverse(e, new Visitor)
 
     // the expression should have changed
-    assert(result.unwrap ==
+    assert(result =~~=
             depFun((h: Nat) =>
               depFun((w: Nat) =>
                 fun(ArrayType(h, ArrayType(w, f32)))(input =>
@@ -160,9 +69,6 @@ class traverseTest extends test_util.Tests {
                 )
               )
             ).toExpr)
-    // the trace should match expectations
-    result.trace.length shouldBe expected.length
-    result.trace.zip(expected).foreach({ case (x, e) => e(x) })
   }
 
   test("traverse an expression depth-first with global stop") {
@@ -188,8 +94,6 @@ class traverseTest extends test_util.Tests {
         input |> map(fun(x => x)) |> fun(x => x)
       })
     )
-    // TODO: establish proper equality checking
-    // assert(r == expected.toExpr)
-    assert(result.toUntypedExpr == expected.toUntypedExpr)
+    assert(result =~~= expected)
   }
 }

@@ -1,20 +1,32 @@
 package rise.core.DSL
 
+import util.monads._
 import Type.freshTypeIdentifier
 import rise.core.traverse._
-import rise.core._
+import rise.core.{traverse => _, _}
 import rise.core.types.InferenceException.error
 import rise.core.types._
 
 import scala.collection.mutable
 
 object infer {
+  // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
   private [DSL] def apply(e: Expr,
-            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
-            explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
-    val constraints = mutable.ArrayBuffer[Constraint]()
-    val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-    val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
+                          printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
+                          explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+    // Collect FTVs in assertions and opaques; transform assertions into annotations
+    val (preserve, e_wo_assertions) = traverse(e, collectPreserve)
+    infer.preserving(e_wo_assertions, preserve, printFlag, explDep)
+  }
+
+  private [DSL] def preserving(wo_assertions: Expr, preserve : Set[Kind.Identifier],
+                               printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
+                               explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+    // Collect constraints
+    val (typed_e, constraints) = constrainTypes(Map())(wo_assertions)
+    // Solve constraints while preserving the FTVs in preserve
+    val solution = Constraint.solve(constraints, preserve, Seq())(explDep)
+    // Apply the solution
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
@@ -23,195 +35,125 @@ object infer {
   }
 
   def printTypesAndTypeHoles(expr: Expr): Unit = {
-    // TODO: move holeFound state into the traverse
-    var holeFound = false
-    traverse(expr, new PureExprTraversal {
-      override def expr : Expr => Pure[Expr] = {
+    val hasHoles = new PureAccumulatorTraversal[Boolean] {
+      override val accumulator = OrMonoid
+      override def expr: Expr => Pair[Expr] = {
         case h@primitives.typeHole(msg) =>
           println(s"found type hole ${msg}: ${h.t}")
-          holeFound = true
-          return_(h : Expr)
+          accumulate(true)(h : Expr)
         case p@primitives.printType(msg) =>
           println(s"$msg : ${p.t} (Rise level)")
-          return_(p : Expr)
+          return_(p: Expr)
         case e => super.expr(e)
       }
-    })
-    if (holeFound) {
+    }
+    if (traverse(expr, hasHoles)._1) {
       error("type holes were found")(Seq())
     }
   }
 
-  implicit class TrivialSolutionConcat(a: Solution) {
-    def <>(b: Solution): Solution =
-      new Solution(
-        a.ts ++ b.ts,
-        a.ns ++ b.ns,
-        a.as ++ b.as,
-        a.n2ds ++ b.n2ds,
-        a.n2ns ++ b.n2ns,
-        a.natColls ++ b.natColls
-      )
-  }
-
-  private def freeze(ftvSubs: Solution, t: Type): Type =
-    Solution(
-      ftvSubs.ts.view.mapValues(dt =>
-        dt.asInstanceOf[DataTypeIdentifier].asExplicit).toMap,
-      ftvSubs.ns.view.mapValues(n =>
-        n.asInstanceOf[NatIdentifier].asExplicit).toMap,
-      ftvSubs.as.view.mapValues(a =>
-        a.asInstanceOf[AddressSpaceIdentifier].asExplicit).toMap,
-      ftvSubs.n2ds.view.mapValues(n2d =>
-        n2d.asInstanceOf[NatToDataIdentifier].asExplicit).toMap,
-      ftvSubs.n2ns.view.mapValues(n2n =>
-        n2n.asInstanceOf[NatToNatIdentifier].asExplicit).toMap,
-      ftvSubs.natColls.view.mapValues(natColl =>
-        natColl.asInstanceOf[NatCollectionIdentifier].asExplicit).toMap
-    )(t)
-
-  private def unfreeze(ftvSubs: Solution, solution: Solution): Solution = solution match {
-    case Solution(ts, ns, as, n2ds, n2ns, natColls) =>
-      Solution(
-        ts.view.mapValues(t => ftvSubs(t)).toMap,
-        ns.view.mapValues(n => ftvSubs(n)).toMap,
-        as.view.mapValues(a => ftvSubs(a)).toMap,
-        n2ds.view.mapValues(n2d => ftvSubs(n2d)).toMap,
-        n2ns.view.mapValues(n2n => ftvSubs(n2n)).toMap,
-        natColls.view.mapValues(ftvSubs(_)).toMap
-      )
-  }
-
-  private def getFTVSubs(t: Type): Solution = {
-    import scala.collection.immutable.Map
-    getFTVs(t).foldLeft(Solution())((solution, ftv) =>
-      solution match {
-        case s@Solution(ts, ns, as, n2ds, n2ns, natColls) =>
-          ftv match {
-            case _: TypeIdentifier =>
-              throw TypeException("TypeIdentifier cannot be frozen")
-            case i: DataTypeIdentifier      => s.copy(ts = ts ++ Map(i -> i))
-            case i: NatIdentifier           => s.copy(ns = ns ++ Map(i -> i))
-            case i: AddressSpaceIdentifier  => s.copy(as = as ++ Map(i -> i))
-            case i: NatToDataIdentifier     => s.copy(n2ds = n2ds ++ Map(i -> i))
-            case i: NatToNatIdentifier      => s.copy(n2ns = n2ns ++ Map(i -> i))
-            case i: NatCollectionIdentifier => s.copy(natColls = natColls ++ Map(i -> i))
-            case i =>
-              throw TypeException(s"${i.getClass} is not supported yet")
-          }
-      }
-    )
+  val FTVGathering = new PureAccumulatorTraversal[Seq[Kind.Identifier]] {
+    override val accumulator = SeqMonoid
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = _ => {
+      case i: Kind.Explicitness => accumulate(if (!i.isExplicit) Seq(i) else Seq())(i.asInstanceOf[I])
+      case i => accumulate(Seq(i))(i)
+    }
+    override def nat: Nat => Pair[Nat] = ae => {
+      val ftvs = mutable.ListBuffer[Kind.Identifier]()
+      val r = ae.visitAndRebuild({
+        case i: NatIdentifier if !i.isExplicit => ftvs += i; i
+        case n => n
+      })
+      accumulate(ftvs.toSeq)(r)
+    }
   }
 
   def getFTVs(t: Type): Seq[Kind.Identifier] = {
-    val ftvs = mutable.ListBuffer[Kind.Identifier]()
-    traverse(t, new PureTraversal {
-      override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = _ => i => {
-        i match {
-          case i: Kind.Explicitness => if (!i.isExplicit) (ftvs += i)
-          case i => ftvs += i
-        }
-        return_(i)
-      }
-      override def nat: Nat => Pure[Nat] = ae =>
-        return_(ae.visitAndRebuild({
-          case i: NatIdentifier if !i.isExplicit => ftvs += i; i
-          case n => n
-        }))
-    })
-    ftvs.distinct.toSeq
+    traverse(t, FTVGathering)._1.distinct
   }
 
-  private def constrainTypes(
-                              expr: Expr,
-                              constraints: mutable.ArrayBuffer[Constraint],
-                              env: mutable.Map[String, Type]
-                            ): (Expr, Solution) = {
-    def constrained(e: Expr): (Expr, Solution) =
-      constrainTypes(e, constraints, env)
-    def genType(e: Expr): Type =
-      if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
+  def getFTVsRec(e: Expr): Seq[Kind.Identifier] = {
+    traverse(e, FTVGathering)._1.distinct
+  }
 
-    expr match {
-      case i: Identifier =>
-        val t = env.getOrElseUpdate(i.name,
-          if (i.t == TypePlaceholder) {
-            error(s"$i has no type")(Seq())
-          } else {
-            i.t
-          })
-        constraints += TypeConstraint(t, i.t)
-        (i.setType(t), Solution())
+  private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
 
-      case Lambda(x, e) =>
-        val tx = x.setType(genType(x))
-        env.update(tx.name, tx.t)
-        val (te, ftvSubsE) = constrained(e)
-        env remove tx.name
-        val ft = FunType(tx.t, te.t)
-        val exprT = genType(expr)
-        val constraint = TypeConstraint(exprT, ft)
-        constraints += constraint
-        (Lambda(tx, te)(ft), ftvSubsE)
-
-      case App(f, e) =>
-        val (tf, ftvSubsF) = constrained(f)
-        val (te, ftvSubsE) = constrained(e)
-        val exprT = genType(expr)
-        val constraint = TypeConstraint(tf.t, FunType(te.t, exprT))
-        constraints += constraint
-        (App(tf, te)(exprT), ftvSubsF <> ftvSubsE)
-
-      case DepLambda(x, e) =>
-        val (te, ftvSubsE) = constrained(e)
-        val exprT = genType(expr)
-        val tf = x match {
-          case n: NatIdentifier =>
-            DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
-          case dt: DataTypeIdentifier =>
-            DepLambda[DataKind](dt, te)(DepFunType[DataKind, Type](dt, te.t))
-          case ad: AddressSpaceIdentifier =>
-            DepLambda[AddressSpaceKind](ad, te)(
-              DepFunType[AddressSpaceKind, Type](ad, te.t)
-            )
-          case n2n: NatToNatIdentifier =>
-            DepLambda[NatToNatKind](n2n, te)(
-              DepFunType[NatToNatKind, Type](n2n, te.t)
-            )
-        }
-        val constraint = TypeConstraint(exprT, tf.t)
-        constraints += constraint
-        (tf, ftvSubsE)
-
-      case DepApp(f, x) =>
-        val (tf, ftvSubsF) = constrained(f)
-        val exprT = genType(expr)
-        val constraint = DepConstraint(tf.t, x, exprT)
-        constraints += constraint
-        (DepApp(tf, x)(exprT), ftvSubsF)
-
-      case TypeAnnotation(e, t) =>
-        val (te, ftvSubsE) = constrained(e)
-        val constraint = TypeConstraint(te.t, t)
-        constraints += constraint
-        (te, ftvSubsE)
-
+  private val collectPreserve = new PureAccumulatorTraversal[Set[Kind.Identifier]] {
+    override val accumulator = SetMonoid
+    override def expr: Expr => Pair[Expr] = {
+      // Transform assertions into annotations, collect FTVs
       case TypeAssertion(e, t) =>
-        val ftvSubsT = getFTVSubs(t)
-        val (te, ftvSubsE) = constrained(e)
-        val constraint = TypeConstraint(te.t, freeze(ftvSubsT, t))
-        constraints += constraint
-        (te, ftvSubsE <> ftvSubsT)
-
-      case o: Opaque =>
-        val ftvSubs = getFTVSubs(o.t)
-        val frozenExpr = Opaque(o.e, freeze(ftvSubs, o.t))
-        (frozenExpr, ftvSubs)
-
-      case l: Literal => (l, Solution())
-
-      case p: Primitive => (p.setType(p.typeScheme), Solution())
+        val (s, e1) = expr(e).unwrap
+        accumulate(s ++ getFTVs(t))(TypeAnnotation(e1, t) : Expr)
+      // Collect FTVs
+      case Opaque(e, t) =>
+        accumulate(getFTVs(t).toSet)(Opaque(e, t) : Expr)
+      // Circumvent default .setType on primitives
+      case TypeAnnotation(e, t) =>
+        val (s, e1) = expr(e).unwrap
+        accumulate(s)(TypeAnnotation(e1, t) : Expr)
+      case e => super.expr(e)
     }
+  }
+
+  private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint]) = env => {
+    case i: Identifier =>
+      val t = env.getOrElse(i.name,
+        if (i.t == TypePlaceholder) error(s"$i has no type")(Seq()) else i.t )
+      val c = TypeConstraint(t, i.t)
+      (i.setType(t), Nil :+ c)
+
+    case expr@Lambda(x, e) =>
+      val tx = x.setType(genType(x))
+      val env1 : Map[String, Type] = env + (tx.name -> tx.t)
+      val (te, cs) = constrainTypes(env1)(e)
+      val ft = FunType(tx.t, te.t)
+      val exprT = genType(expr)
+      val c = TypeConstraint(exprT, ft)
+      (Lambda(tx, te)(ft), cs :+ c)
+
+    case expr@App(f, e) =>
+      val (tf, csF) = constrainTypes(env)(f)
+      val (te, csE) = constrainTypes(env)(e)
+      val exprT = genType(expr)
+      val c = TypeConstraint(tf.t, FunType(te.t, exprT))
+      (App(tf, te)(exprT), csF :++ csE :+ c)
+
+    case expr@DepLambda(x, e) =>
+      val (te, csE) = constrainTypes(env)(e)
+      val exprT = genType(expr)
+      val tf = x match {
+        case n: NatIdentifier =>
+          DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
+        case dt: DataTypeIdentifier =>
+          DepLambda[DataKind](dt, te)(DepFunType[DataKind, Type](dt, te.t))
+        case ad: AddressSpaceIdentifier =>
+          DepLambda[AddressSpaceKind](ad, te)(DepFunType[AddressSpaceKind, Type](ad, te.t))
+        case n2n: NatToNatIdentifier =>
+          DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
+      }
+      val c = TypeConstraint(exprT, tf.t)
+      (tf, csE :+ c)
+
+    case expr@DepApp(f, x) =>
+      val (tf, csF) = constrainTypes(env)(f)
+      val exprT = genType(expr)
+      val c = DepConstraint(tf.t, x, exprT)
+      (DepApp(tf, x)(exprT), csF :+ c)
+
+    case TypeAnnotation(e, t) =>
+      val (te, csE) = constrainTypes(env)(e)
+      val c = TypeConstraint(te.t, t)
+      (te, csE :+ c)
+
+    case TypeAssertion(e, t) =>
+      val (te, csE) = constrainTypes(env)(e)
+      val c = TypeConstraint(te.t, t)
+      (te, csE :+ c)
+
+    case o: Opaque => (o, Nil)
+    case l: Literal => (l, Nil)
+    case p: Primitive => (p.setType(p.typeScheme), Nil)
   }
 
   private case class Visitor(sol: Solution) extends PureTraversal {

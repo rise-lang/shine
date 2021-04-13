@@ -5,7 +5,7 @@ import rise.core._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
@@ -22,7 +22,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val xs = Array.fill(8)(0)
 
     val (result, time) = kernelF(8`,`xs)
-    println(time)
+    logger.debug(time)
 
     val gold = Array.fill(8)(1)
     assertResult(gold)(result)
@@ -39,7 +39,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val xs = Array.fill(n)(0)
 
     val (result, time) = kernelF(xs`;`)
-    println(time)
+    logger.debug(time)
 
     val gold = Array.fill(n)(1)
     assertResult(gold)(result)
@@ -74,7 +74,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val xs = Array.fill(m)(Array.fill(n)(0))
 
     val (result, time) =  kernelF(m`,`n`,`xs)
-    println(time)
+    logger.debug(time)
 
     val gold = Array.fill(m)(Array.fill(n)(1)).flatten
     assertResult(gold)(result)
@@ -108,7 +108,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
     val xs = Array.fill(n)(0)
 
     val (result, time) =  kernelF(xs`;`)
-    println(time)
+    logger.debug(time)
 
     val gold = Array.fill(n)(1)
     assertResult(gold)(result)

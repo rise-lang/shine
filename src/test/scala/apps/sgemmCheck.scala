@@ -89,7 +89,7 @@ class sgemmCheck extends test_util.TestsWithExecutor {
 
     runs.foreach(r => {
       util.assertSame(r._2._1, goldMat, s"${r._1} is different from gold")
-      println(s"${r._1} time: ${r._2._2}")
+      logger.debug(s"${r._1} time: ${r._2._2}")
     })
   }
 
@@ -116,7 +116,7 @@ class sgemmCheck extends test_util.TestsWithExecutor {
 
     runs.foreach(r => {
       util.assertSame(r._2._1, goldMat, s"${r._1} is different from gold")
-      println(s"${r._1} time: ${r._2._2}")
+      logger.debug(s"${r._1} time: ${r._2._2}")
     })
   }
 }

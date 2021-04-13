@@ -12,9 +12,9 @@ class NearestNeighbour extends test_util.TestsWithExecutor {
     val lat = random.nextFloat()
     val lng = random.nextFloat()
 
-    test_util.runsWithSameResult(Seq(
+    runsWithSameResult(Seq(
       ("original", runOriginalKernel("NearestNeighbour.cl", locations, lat, lng)),
-      ("dpia", runKernel(gen.opencl.kernel.fromExpr(nn), locations, lat, lng))
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(nnOcl), locations, lat, lng))
     ))
   }
 }

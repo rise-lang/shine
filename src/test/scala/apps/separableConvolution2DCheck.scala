@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
       `)=>` Array[Float]]
     val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
     util.assertSame(output, gold, "output is different from gold")
-    println(s"time: $time")
+    logger.debug(s"time: $time")
   }
 
   test("baseVecU compiles to valid OpenCL that passes checks") {
@@ -136,11 +136,11 @@ int main(int argc, char** argv) {
 
   // FIXME: code generation cannot evaluate index literal
   ignore("compiling OpenCL private arrays should unroll loops") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.openCL.primitives.oclReduceSeq
 
     val dotSeqPrivate = fun(a => fun(b =>
-      zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+      zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
     ))
 
     val e = padClamp2D(1) >> slide2D(3, 1) >> mapGlobal(0)(mapGlobal(1)(

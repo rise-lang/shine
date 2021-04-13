@@ -7,14 +7,15 @@ import shine.DPIA.primitives.functional.NatAsIndex
 
 sealed trait PhraseType
 
-sealed abstract class BasePhraseType extends PhraseType
+sealed abstract class BasePhraseType(val dataType: DataType) extends PhraseType
 
-final case class ExpType(dataType: DataType, accessType: AccessType)
-  extends BasePhraseType {
+final case class ExpType(override val dataType: DataType, accessType: AccessType)
+  extends BasePhraseType(dataType) {
   override def toString = s"exp[$dataType, $accessType]"
 }
 
-final case class AccType(dataType: DataType) extends BasePhraseType {
+final case class AccType(override val dataType: DataType)
+  extends BasePhraseType(dataType) {
   override def toString = s"acc[$dataType]"
 }
 
@@ -53,7 +54,7 @@ object PhraseType {
     case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier)  => substitute(a, forA, in)
     case (a: AccessType, forA: AccessTypeIdentifier)      => substitute(a, forA, in)
-    case (n2n: NatToNat, fotN2N: NatToNatIdentifier)      => ??? //substitute(n2n, forN2N, in)
+    case (n2n: NatToNat, forN2N: NatToNatIdentifier)      => substitute(n2n, forN2N, in)
     case (n2d: NatToData, fotN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
     case _ => throw new Exception(s"could not substitute $x for ${`for`} in $in")
   }
@@ -63,8 +64,8 @@ object PhraseType {
     case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier)  => substitute(a, forA, in)
     case (a: AccessType, forA: AccessTypeIdentifier)      => ??? //substitute(a, forA, in)
-    case (n2n: NatToNat, fotN2N: NatToNatIdentifier)      => ??? //substitute(n2n, forN2N, in)
-    case (n2d: NatToData, fotN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
+    case (n2n: NatToNat, forN2N: NatToNatIdentifier)      => substitute(n2n, forN2N, in)
+    case (n2d: NatToData, forN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
     case _ => throw new Exception(s"could not substitute $x for ${`for`} in $in")
   }
 
@@ -134,21 +135,21 @@ object PhraseType {
   }
 
 
-  def substitute(ae: Nat, `for`: Nat, in: PhraseType): PhraseType = {
+  def substitute(n: Nat, `for`: Nat, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseType => b match {
-        case e: ExpType => ExpType(DataType.substitute(ae, `for`, e.dataType), e.accessType)
-        case a: AccType => AccType(DataType.substitute(ae, `for`, a.dataType))
+        case e: ExpType => ExpType(DataType.substitute(n, `for`, e.dataType), e.accessType)
+        case a: AccType => AccType(DataType.substitute(n, `for`, a.dataType))
       }
       case c: CommType => c
       case p: PhrasePairType[_, _] =>
-        PhrasePairType(substitute(ae, `for`, p.t1), substitute(ae, `for`, p.t2))
+        PhrasePairType(substitute(n, `for`, p.t1), substitute(n, `for`, p.t2))
       case f: FunType[_, _] =>
-        FunType(substitute(ae, `for`, f.inT), substitute(ae, `for`, f.outT))
+        FunType(substitute(n, `for`, f.inT), substitute(n, `for`, f.outT))
       case pf: PassiveFunType[_, _] =>
-        PassiveFunType(substitute(ae, `for`, pf.inT), substitute(ae, `for`, pf.outT))
+        PassiveFunType(substitute(n, `for`, pf.inT), substitute(n, `for`, pf.outT))
       case df: DepFunType[_, _] =>
-        DepFunType(df.x, substitute(ae, `for`, df.t))(df.kn)
+        DepFunType(df.x, substitute(n, `for`, df.t))(df.kn)
     }
   }
 
@@ -165,6 +166,26 @@ object PhraseType {
   def substitute(addr: AddressSpace,
                  `for`: AddressSpaceIdentifier,
                  in: PhraseType): PhraseType = {
+    // address spaces do not appear syntactically in phrase types
+    in
+  }
+
+  def substitute[T <: PhraseType](n2n: NatToNat,
+                                  `for`: NatToNatIdentifier,
+                                  in: Phrase[T]): Phrase[T] = {
+    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+      override def natToNat(ft: NatToNat): NatToNat = ft match {
+        case i: NatToNatIdentifier if i == `for` => n2n
+        case _ => ft
+      }
+    }
+    Phrases.VisitAndRebuild(in, Visitor)
+  }
+
+  def substitute(n2n: NatToNat,
+                 `for`: NatToNatIdentifier,
+                 in: PhraseType): PhraseType = {
+    // NatToNat does not appear syntactically in phrase types
     in
   }
 

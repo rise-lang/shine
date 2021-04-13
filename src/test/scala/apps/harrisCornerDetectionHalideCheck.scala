@@ -12,7 +12,7 @@ class harrisCornerDetectionHalideCheck
 {
   test("harris typechecks") {
     val typed = util.printTime("infer", harris(1, 1).toExpr)
-    println(typed.t)
+    logger.debug(typed.t)
   }
 
   val Ho = 128
@@ -90,7 +90,7 @@ class harrisCornerDetectionHalideCheck
     rewrite.ocl.unrollDots(util.printTime("infer", e.toExpr)).get
 
   def checkOCL(lowered: Expr, ls: LocalSize, gs: GlobalSize): Unit = {
-    assert(lowered.t == harris(1, 1).toExpr.t)
+    assert(lowered.t =~= harris(1, 1).toExpr.t)
     val prog = util.printTime("codegen",
       gen.opencl.kernel("harris").fromExpr(lowered))
 
@@ -110,8 +110,8 @@ class harrisCornerDetectionHalideCheck
       `)=>` Array[Float]]
     val (output, time) = f(ls, gs)(Ho `,` Wo `,` input)
 
-    println(s"gold time: $goldTime")
-    println(s"time: $time")
+    logger.debug(s"gold time: $goldTime")
+    logger.debug(s"time: $time")
     util.assertSame(
       output.sliding(Wov, Wo).toArray,
       gold.sliding(Wov, Wo).toArray,
@@ -189,7 +189,7 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisTileShiftInwardsGParVecUnaligned(4) generates valid OpenCL") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
     import rise.core.primitives.mapSeq
 
     checkOCL(lowerOCL(
@@ -199,7 +199,7 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisTileShiftInwardsWLParVecUnaligned(4) generates valid OpenCL") {
-    import rise.openCL.TypedDSL._
+    import rise.openCL.DSL._
 
     checkOCL(lowerOCL(
       ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),

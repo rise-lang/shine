@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import Type._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclRotateValues
 import util.gen
 import shine.OpenCL.KernelExecutor._

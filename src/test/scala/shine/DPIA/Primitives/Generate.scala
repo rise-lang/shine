@@ -14,7 +14,7 @@ class Generate extends test_util.Tests {
   val cos: ToBeTyped[ForeignFunction] = foreignFun("callCos", Seq("x"), "{ return cos(x); }", f64 ->: f64)
 
   test("Very simple one-dimensional generate generates syntactically correct code in C.") {
-    val e = depFun((n: Nat) => generate(fun(IndexType(n))(i => cast(i) + l(1.0))) |> mapSeq(id))
+    val e = depFun((n: Nat) => generate(fun(IndexType(n))(i => cast(i) + lf64(1.0))) |> mapSeq(id))
     function.asStringFromExpr(e)
   }
 
@@ -55,7 +55,7 @@ class Generate extends test_util.Tests {
         generate(fun(IndexType(p))(j =>
           generate(fun(IndexType(p))(k => {
             val exponentWoMinus2 = (j * LPrevIter) + i * (k / (p * LPrevIter))
-            val exponent = (cast(exponentWoMinus2) :: f64) * l(-2.0)
+            val exponent = (cast(exponentWoMinus2) :: f64) * lf64(-2.0)
             makePair(cast(foreignFun("cospi", f64 ->: f64)(exponent)) :: f32)(
               cast(foreignFun("sinpi", f64 ->: f64)(exponent)) :: f32)
           }))))))

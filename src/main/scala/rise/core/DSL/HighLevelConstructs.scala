@@ -74,16 +74,10 @@ object HighLevelConstructs {
 
   val reorderWithStride: ToBeTyped[Expr] = {
     depFun((s: Nat) => {
-      val f =
-        impl { n: Nat =>
-          fun(IndexType(n))(i =>
-            natAsIndex(n)(
-              (indexAsNat(i) / (n /^ s)) +
-                (l(s) * (indexAsNat(i) % (n /^ s)))
-            )
-          )
-        }
-      reorder(f)(f)
+      impl { n: Nat =>
+        def f = n2nFun(n)(i => (i / (n /^ s)) + (s * (i % (n /^ s))))
+        reorder(n)(f)(f)
+      }
     })
   }
 

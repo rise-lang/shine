@@ -58,7 +58,7 @@ object lowering {
 
   def `map -> mapGlobal`(dim: Int = 0): Strategy[Rise] = mapGlobal(dim)
   @rule def mapGlobal(dim: Int = 0): Strategy[Rise] = {
-    case m@map() => Success(rise.openCL.TypedDSL.mapGlobal(dim) !: m.t)
+    case m@map() => Success(rise.openCL.DSL.mapGlobal(dim) !: m.t)
   }
 
   def `reduce -> reduceSeq`: Strategy[Rise] = reduceSeq
@@ -186,7 +186,7 @@ object lowering {
   }
 
   @rule def isId: Strategy[Rise] = {
-    case l@Lambda(x1, x2) if x1 == x2 => Success(l)
+    case l@Lambda(x1, x2) if x1 =~= x2 => Success(l)
   }
 
   // requires expr to be in LCNF
