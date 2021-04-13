@@ -34,12 +34,12 @@ object NatToNatLambda {
   }
 
   def apply(upperBound:Nat, id: NatIdentifier, body:Nat):NatToNatLambda = {
-    val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
+    val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
     NatToNatLambda(x, x => ArithExpr.substitute(body, Map((id, x))))
   }
 
   def apply(range: Range, id: NatIdentifier, body: Nat): NatToNatLambda = {
-    val x = NamedVar(freshName("n"), range)
+    val x = NatIdentifier(freshName("n"), range)
     NatToNatLambda(x, x => ArithExpr.substitute(body, Map((id, x))))
   }
 }
