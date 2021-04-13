@@ -1,8 +1,6 @@
 package shine.DPIA.primitives.functional
 
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -22,16 +20,4 @@ final case class MapSeq(unroll: Boolean)
 
   def unwrap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) =
     (n, dt1, dt2, f, array)
-
-  override def eval(s: Store): Data = {
-    val fE = OperationalSemantics.eval(s, f)
-    OperationalSemantics.eval(s, array) match {
-      case ArrayData(xs) =>
-        ArrayData(xs.map { x =>
-          OperationalSemantics.eval(s, fE(Literal(x)))
-        })
-
-      case _ => throw new Exception("This should not happen")
-    }
-  }
 }

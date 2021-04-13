@@ -8,8 +8,6 @@ import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics.VectorData
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
@@ -417,7 +415,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
       })
     }
 
-    def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
+    def codeGenLiteral(d: Data): Expr = {
       d match {
         case VectorData(vector) =>
           OpenCL.AST.VectorLiteral(
