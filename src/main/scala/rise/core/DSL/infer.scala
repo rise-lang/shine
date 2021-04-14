@@ -88,10 +88,6 @@ object infer {
       // Collect FTVs
       case Opaque(e, t) =>
         accumulate(getFTVs(t).toSet)(Opaque(e, t) : Expr)
-      // Circumvent default .setType on primitives
-      case TypeAnnotation(e, t) =>
-        val (s, e1) = expr(e).unwrap
-        accumulate(s)(TypeAnnotation(e1, t) : Expr)
       case e => super.expr(e)
     }
   }

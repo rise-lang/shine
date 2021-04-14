@@ -40,6 +40,9 @@ object lowering {
       case _: Identifier      => Failure(extract(what))
       case _: Literal         => Failure(extract(what))
       case _: ForeignFunction => Failure(extract(what))
+      case _: TypeAnnotation  => Failure(extract(what))
+      case _: TypeAssertion   => Failure(extract(what))
+      case _: Opaque          => Failure(extract(what))
       case _: Primitive       => Failure(extract(what))
     })
   }

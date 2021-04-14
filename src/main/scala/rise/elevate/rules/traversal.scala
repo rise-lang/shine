@@ -189,6 +189,9 @@ object traversal {
               Some(s(f).mapSuccess(DepApp[NatToDataKind](_, n2d)(da.t)))
           }
           case Literal(_) => None
+          case TypeAssertion(_, _) => None
+          case TypeAnnotation(_, _) => None
+          case Opaque(_, _) => None
           case _: ForeignFunction => None
           case _: Primitive => None
         }

@@ -63,6 +63,9 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
       case DepApp(f, x) => everywhere(s)(f).map(DepApp(_, x)(p.t))
       case Literal(_) => Nil
       case _: ForeignFunction => Nil
+      case _: TypeAnnotation => Nil
+      case _: TypeAssertion => Nil
+      case _: Opaque => Nil
       case _: Primitive => Nil
     })
   }
