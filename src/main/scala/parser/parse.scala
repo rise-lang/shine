@@ -1195,11 +1195,10 @@ object parse {
   private def parseComp(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
     println("parseComp: " + parseState)
 //    val cpyMapFkt = parseState.mapFkt.clone()
-    val psOld = Left(ParseState(parseState.tokenStream, Nil,  parseState.mapDepL, parseState.spanList)) |>
-      parseNoAppExpr |>
+    val psOld = Left(ParseState(parseState.tokenStream, parseState.parsedSynElems.head::Nil,  parseState.mapDepL, parseState.spanList)) |>
       parseDot |>
       parseNoAppExpr|>
-      parseMaybeAppExpr
+      parseNoAppExpr
     println("Yuhuuuasdf: "+psOld)
     psOld match {
       case Right(e) => {
@@ -1229,12 +1228,13 @@ object parse {
         if(synElems.tail.tail.isEmpty) return Right(ParseError("synElems.tail.tail is empty:"+ synElems))
         println("I combine now synElem.tail.tail: "+ synElems.tail.tail)
         val e3 = combineExpressionsDependent(synElems.tail.tail, ps.mapDepL.get)
+        require(synElems.tail.tail.tail.isEmpty, "3 NoAppExprs are parsed not more"+ synElems + " , " + e3)
         val span = sp1 + sp2 + e3.span.get
         val name = r.freshName("e")
         val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)),
           r.App(e2, r.App(e1, e3)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
         println("beforeUpdate\n")
-        Left(ParseState(ps.tokenStream, SExpr(e) :: parseState.parsedSynElems, ps.mapDepL, ps.spanList))
+        Left(ParseState(ps.tokenStream, SExpr(e) :: parseState.parsedSynElems.tail, ps.mapDepL, ps.spanList))
       }
     }
   }
@@ -1594,7 +1594,6 @@ the syntax-Tree has on top an Lambda-Expression
     }
     val parseStateOrError =
       Left(parseState)  |> parseNoAppExpr
-        //(parseComp _ || parseNoAppExpr)
     println("parseApp after parseLowExpression: "+ parseStateOrError)
     parseStateOrError match {
       case Right(e) => Right(e)
@@ -1604,7 +1603,11 @@ the syntax-Tree has on top an Lambda-Expression
                               Left(ParseState(ps.tokenStream, SExpr(expr)::Nil,  ps.mapDepL, ps.spanList) )
                             }else{
                               if(ps.parsedSynElems.isEmpty) throw new IllegalStateException("ps is Empty: "+ ps)
-                              val p = Left(ps)|> parseMaybeAppExpr
+                              val p = if(ps.tokenStream.head.isInstanceOf[Dot]){
+                                Left(ps)|> parseComp
+                              }else{
+                                Left(ps)|> parseMaybeAppExpr
+                              }
                               p match {
                                 case Right(e) => Right(e)
                                 case Left(newPS) => {
