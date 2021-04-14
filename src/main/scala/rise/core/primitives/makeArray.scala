@@ -22,9 +22,11 @@ object makeArray {
     extends rise.core.Primitive
   {
     override def name: String = "makeArray"
-
+    override def primEq(obj: rise.core.Primitive): Boolean = obj match {
+      case Primitive(n1) => n == n1
+      case _ => false
+    }
     override def setType(t: Type): Primitive = Primitive(n)(t)
-
     override def typeScheme: Type =
       impl { t: DataType => {
         def tRec(m: Int, dt: DataType): Type =

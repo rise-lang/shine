@@ -212,6 +212,15 @@ object Type {
     }
   }
 
+  object `(NatToNat)->:` {
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatToNatIdentifier, T)] = {
+      funType.x match {
+        case n: NatToNatIdentifier => Some((n, funType.t))
+        case _ => throw new Exception("Expected NatToNat DepFunType")
+      }
+    }
+  }
+
   implicit final class TupleTypeConstructors(private val a: DataType)
     extends AnyVal {
     @inline def x(b: DataType): PairType = PairType(a, b)

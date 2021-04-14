@@ -1,34 +1,25 @@
 package rise.core
 
+import util.monads._
 import rise.core.traverse._
 import rise.core.types._
 
 object uniqueNames {
-  private case class CountingVisitor(
-    var values: Map[Identifier, Int],
-    var types: Map[Kind.Identifier, Int]
-  ) extends PureTraversal {
-    override def identifier[I <: Identifier]: VarType => I => Pure[I] = {
-      case Binding => i =>
-        values = values + (i -> (values.getOrElse(i, 0) + 1))
-        return_(i)
+  private val collectNames = new PureAccumulatorTraversal[(Seq[Identifier], Seq[Kind.Identifier])] {
+    override val accumulator: Monoid[(Seq[Identifier], Seq[Kind.Identifier])] = PairMonoid(SeqMonoid, SeqMonoid)
+    override def identifier[I <: Identifier]: VarType => I => Pair[I] = {
+      case Binding => i => accumulate((Seq(i), Seq()))(i)
       case _ => return_
     }
-
-    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pure[I] = {
-      case Binding => i =>
-        types = types + (i -> (types.getOrElse(i, 0) + 1))
-        return_(i)
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = {
+      case Binding => i => accumulate((Seq(), Seq(i)))(i)
       case _ => return_
     }
   }
 
   def check(e: Expr): Boolean = {
-    val cv = CountingVisitor(Map(), Map())
-    traverse(e, cv)
-    val valuesDup = cv.values.filter({ case (_, n) => n > 1 })
-    val typesDup = cv.types.filter({ case (_, n) => n > 1 })
-    valuesDup.isEmpty && typesDup.isEmpty
+    val ((vs, ts), _) = traverse(e, collectNames)
+    vs == vs.distinct && ts == ts.distinct
   }
 
   def enforce(e: Expr): Expr = {

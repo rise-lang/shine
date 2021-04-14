@@ -161,4 +161,22 @@ package object DPIA {
       }
     }
   }
+
+  object n2nFunT {
+    def apply(n: rt.NatToNatIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[NatToNatKind, PhraseType](fromRise.natToNatIdentifier(n), t)
+    }
+
+    def apply(n: NatToNatIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[NatToNatKind, PhraseType](n, t)
+    }
+
+    def unapply[K <: Kind, T <: PhraseType](funType: DepFunType[K, T]
+                                           ): Option[(NatToNatIdentifier, T)] = {
+      funType.x match {
+        case n: NatToNatIdentifier => Some((n, funType.t))
+        case _ => throw new Exception("Expected Nat DepFunType")
+      }
+    }
+  }
 }

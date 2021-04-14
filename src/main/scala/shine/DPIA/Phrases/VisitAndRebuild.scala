@@ -12,10 +12,10 @@ object VisitAndRebuild {
 
     def data[T <: DataType](dt: T): T = dt
 
-    def natToNat[N <: NatToNat](ft: N): N = (ft match {
+    def natToNat(ft: NatToNat): NatToNat= ft match {
       case NatToNatLambda(n, body) => NatToNatLambda(nat(n), nat(body))
       case i: NatToNatIdentifier => i
-    }).asInstanceOf[N]
+    }
 
     def natToData[N <: NatToData](ft: N): N = (ft match {
       case NatToDataLambda(n, body) => NatToDataLambda(nat(n), data(body))
