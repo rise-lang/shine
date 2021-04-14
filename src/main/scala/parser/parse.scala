@@ -1230,11 +1230,12 @@ object parse {
         val e3 = combineExpressionsDependent(synElems.tail.tail, ps.mapDepL.get)
         require(synElems.tail.tail.tail.isEmpty, "3 NoAppExprs are parsed not more"+ synElems + " , " + e3)
         val span = sp1 + sp2 + e3.span.get
-        val name = r.freshName("e")
-        val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)),
-          r.App(e2, r.App(e1, e3)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+        //val name = r.freshName("e")
+        val app = r.App(e2, r.App(e1, e3)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+        //Todo: should be lambda here or is only app ok?
+        //val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)), app)(rt.TypePlaceholder, Some(span))
         println("beforeUpdate\n")
-        Left(ParseState(ps.tokenStream, SExpr(e) :: parseState.parsedSynElems.tail, ps.mapDepL, ps.spanList))
+        Left(ParseState(ps.tokenStream, SExpr(app) :: parseState.parsedSynElems.tail, ps.mapDepL, ps.spanList))
       }
     }
   }

@@ -1717,8 +1717,7 @@ class parseTest extends  AnyFlatSpec {
   }
 
 
-  //Todo: not ignore
-  "parser" should "be able to parse 'nbodyVereinfacht.rise'" ignore {
+  "parser" should "be able to parse 'nbodyVereinfacht.rise'" in {
     val fileName: String = testFilePath + "nbodyVereinfacht.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
