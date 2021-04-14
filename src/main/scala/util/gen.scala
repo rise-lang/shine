@@ -283,6 +283,8 @@ object gen {
 
     private val hostFunDefToHostPart:
       ((FunDef, Seq[KernelModule])) => (CModule, Seq[KernelModule]) = { case (hm, kms) =>
+      // FIXME: The OpenCL host code generator does not work with CUDA kernel modules
+      //  We need to refactor the OpenCL and CUDA backends and generalize host code generation
       ???
     }
 
