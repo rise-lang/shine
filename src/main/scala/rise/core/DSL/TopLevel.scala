@@ -10,6 +10,8 @@ final case class TopLevel(e: Expr, inst: Solution = Solution())(
   override val t: Type = e.t
 ) extends Primitive {
   import DSL.TopLevel._
+  // TODO: Ignored by alpha equivalence, remove when taking out of primitives
+  override def primEq(obj: Primitive): Boolean = obj.getClass == getClass
   override def typeScheme: Type = e.t
   override def setType(t: Type): TopLevel = {
     val subs = instantiate(t)

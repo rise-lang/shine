@@ -17,6 +17,7 @@ object separableConvolution2DEqsat {
       extends rise.core.Primitive
     {
       override val name: String = "weights2d"
+      override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
       override def setType(ty: Type): Primitive = Primitive()(ty)
       override def typeScheme: Type = binomialWeights2d.t
     }
@@ -30,6 +31,7 @@ object separableConvolution2DEqsat {
       extends rise.core.Primitive
     {
       override val name: String = "weightsV"
+      override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
       override def setType(ty: Type): Primitive = Primitive()(ty)
       override def typeScheme: Type = binomialWeightsV.t
     }
@@ -43,6 +45,7 @@ object separableConvolution2DEqsat {
       extends rise.core.Primitive
     {
       override val name: String = "weightsH"
+      override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
       override def setType(ty: Type): rise.core.Primitive = Primitive()(ty)
       override def typeScheme: Type = binomialWeightsH.t
     }

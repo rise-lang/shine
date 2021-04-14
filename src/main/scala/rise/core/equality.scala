@@ -1,5 +1,6 @@
 package rise.core
 
+import rise.core.DSL._
 import rise.core.semantics._
 import rise.core.types._
 import util.PatternMatching
@@ -170,7 +171,7 @@ object equality {
         case TypeAssertion(e1, t1) => and { case TypeAssertion(e2, t2) =>
           equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[TypeKind](typeEnv)(t1)(t2) }
         // TODO: TopLevel
-        case a: Primitive => and { case b: Primitive => a.name == b.name }
+        case a: Primitive => and { case b: Primitive => a.primEq(b) }
       })
     }
 

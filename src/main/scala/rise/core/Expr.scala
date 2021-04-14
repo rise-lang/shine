@@ -73,10 +73,11 @@ case class TypeAssertion(e: Expr, assertion: Type) extends Expr {
 
 abstract class Primitive extends Expr {
   override val t: Type = TypePlaceholder
+  def primEq(obj : Primitive) : Boolean
   def typeScheme: Type =
-    throw TypeException("typeScheme method must be overridden")
+    throw TypeException(s"typeScheme method must be overridden by ${getClass}")
   def name: String =
-    throw RenderException("the name of Primitive must be set")
+    throw RenderException(s"the name of Primitive must be set by ${getClass}")
   override def setType(t: Type): Primitive =
-    throw TypeException("setType method must be overridden")
+    throw TypeException(s"setType method must be overridden by ${getClass}")
 }
