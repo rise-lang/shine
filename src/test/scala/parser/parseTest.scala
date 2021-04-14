@@ -2689,6 +2689,8 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
+
+
   "parser" should "be able to parse 'TupleType.rise'" in {
     val fileName: String = testFilePath + "TupleType.rise"
     val file: FileReader = new FileReader(fileName)
@@ -2829,6 +2831,45 @@ class parseTest extends  AnyFlatSpec {
 
   }
 
+  "parser" should "not be able to parse 'twoplus1extraDefintionButSameNameInLocalVariable.rise'" in {
+    val fileName: String = testFilePath + "twoplus1extraDefintionButSameNameInLocalVariable.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+    val functionName_h: String = "h"
+    val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+    val functionName_f: String = "f"
+    val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+    val functionName_z: String = "z"
+    val ex_z: r.types.Type = riseExprByIdent.get(functionName_z).getOrElse(fail("The function '" + functionName_z + "' does not exist!!!")) match {
+      case Left(lambda) => fail("it is no definition expected: " + lambda)
+      case Right(t) =>
+        t
+    }
+
+    ex_h match {
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("fkt"), r.App(r.Identifier("fkt"), r.Identifier("x")))) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+
+    ex_f match {
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")), r.Literal(rS.FloatData(5), _))) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+    ex_z match {
+      case rt.FunType(rt.f32, rt.f32) => true
+      case a => fail("not correct Type: " + a)
+    }
+  }
+
   "parser" should "be able to parse 'twoSimpleFunctions.rise'" in {
     val fileName: String = testFilePath + "twoSimpleFunctions.rise"
     val file: FileReader = new FileReader(fileName)
@@ -2863,6 +2904,34 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "not be able to parse 'twoSimpleFunctionsButWithSameLocalVarName.rise'" in {
+    val fileName: String = testFilePath + "twoSimpleFunctionsButWithSameLocalVarName.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+    val functionName_h: String = "h"
+    val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+    val functionName_f: String = "f"
+    val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_h match {
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("fkt"), r.App(r.Identifier("fkt"), r.Identifier("x")))) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+
+    ex_f match {
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")), r.Literal(rS.FloatData(5), _))) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }  }
+
   "parser" should "be able to parse 'VecType1.rise'" in {
     val fileName: String = testFilePath + "VecType1.rise"
     val file: FileReader = new FileReader(fileName)
@@ -2885,6 +2954,8 @@ class parseTest extends  AnyFlatSpec {
       case e => fail("not correct expression: " + e)
     }
   }
+
+
 
   "parser" should "be able to parse 'VecType1WithLessParentheses.rise'" in {
     val fileName: String = testFilePath + "VecType1WithLessParentheses.rise"
@@ -2989,10 +3060,10 @@ class parseTest extends  AnyFlatSpec {
     val fileName: String = errorFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[RuntimeException] {
+    val thrown = intercept[rt.InferenceException] {
       parse(lexer.tokens)
     }
-    thrown.getMessage should equal("Variable is not declared: fkt in (1,7-10) in src/test/scala/parser/readFiles/filesToError/fx.rise")
+    thrown.msg should equal(" fkt has no type in Some((1,7-10) in src/test/scala/parser/readFiles/filesToError/fx.rise)") //Todo: more like equal("Variable is not declared: fkt in (1,7-10) in src/test/scala/parser/readFiles/filesToError/fx.rise")
   }
 
   "parser" should "not be able to parse 'noExpressionInBraces.rise'" in {
@@ -3004,28 +3075,6 @@ class parseTest extends  AnyFlatSpec {
     }
 
     thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List('(', ')', <EndNamedExpr>)")
-  }
-
-  "parser" should "not be able to parse 'twoplus1extraDefintionButSameNameInLocalVariable.rise'" in {
-    val fileName: String = errorFilePath + "twoplus1extraDefintionButSameNameInLocalVariable.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[RuntimeException] {
-      parse(lexer.tokens)
-    }
-
-    thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left(ToBeTyped( x)))")
-  }
-
-  "parser" should "not be able to parse 'twoSimpleFunctionsButWithSameLocalVarName.rise'" in {
-    val fileName: String = errorFilePath + "twoSimpleFunctionsButWithSameLocalVarName.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[RuntimeException] {
-      parse(lexer.tokens)
-    }
-
-    thrown.getMessage should equal("A variable or function with the exact same name 'x' is already declared! <- Some(Left(ToBeTyped( x)))")
   }
 
 }
