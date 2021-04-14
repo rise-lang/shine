@@ -1841,7 +1841,7 @@ the syntax-Tree has on top an Lambda-Expression
         mapDepL, spanList) )
       case TypeIdentifier(name, spanTypeIdentifier) =>Left(ParseState(remainderTokens,
         SNat(NIdentifier(rt.NatIdentifier(name)), spanTypeIdentifier)::parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse Nat: " + tok + " is not an Nat"))
+      case tok => Right(ParseError("failed to parse Nat: " + tok + " is not an Nat in " + tok.s))
     }
   }
 
