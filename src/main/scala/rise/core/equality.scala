@@ -1,5 +1,6 @@
 package rise.core
 
+import rise.core.DSL._
 import rise.core.semantics._
 import rise.core.types._
 import util.PatternMatching
@@ -155,7 +156,6 @@ object equality {
       typeEq.equiv[TypeKind](typeEnv)(a.t)(b.t) && (a match {
         case Identifier(na) => and { case Identifier(nb) => exprEnv.check(na, nb)}
         case Literal(da) => and { case Literal(db) => equivData(typeEnv)(da)(db) }
-        case a: Primitive => and { case b: Primitive => a.primEq(b) }
         case App(fa, ea) => and { case App(fb, eb) =>
           equiv(typeEnv)(exprEnv)(fa)(fb) && equiv(typeEnv)(exprEnv)(ea)(eb) }
         case DepApp(fa, xa) => and { case DepApp(fb, xb) =>
@@ -164,6 +164,14 @@ object equality {
           typeEq.equiv[TypeKind](typeEnv)(xa.t)(xb.t) && equiv(typeEnv)(exprEnv.add(xa.name, xb.name))(ta)(tb) }
         case DepLambda(xa, ea) => and { case DepLambda(xb, eb) =>
           xa.getClass == xb.getClass && equiv(typeEnv.add(xa, xb))(exprEnv)(ea)(eb) }
+        case Opaque(e1, t1) => and { case Opaque(e2, t2) =>
+          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[TypeKind](typeEnv)(t1)(t2) }
+        case TypeAnnotation(e1, t1) => and { case TypeAnnotation(e2, t2) =>
+          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[TypeKind](typeEnv)(t1)(t2) }
+        case TypeAssertion(e1, t1) => and { case TypeAssertion(e2, t2) =>
+          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[TypeKind](typeEnv)(t1)(t2) }
+        // TODO: TopLevel
+        case a: Primitive => and { case b: Primitive => a.primEq(b) }
       })
     }
 

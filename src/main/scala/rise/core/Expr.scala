@@ -55,8 +55,7 @@ final case class Literal(d: semantics.Data) extends Expr {
 
 abstract class Primitive extends Expr {
   override val t: Type = TypePlaceholder
-  def primEq(obj : Primitive) : Boolean =
-    throw TypeException(s"primEq method must be overriden by ${getClass}")
+  def primEq(obj : Primitive) : Boolean
   def typeScheme: Type =
     throw TypeException(s"typeScheme method must be overridden by ${getClass}")
   def name: String =

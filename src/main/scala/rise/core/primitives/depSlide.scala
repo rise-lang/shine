@@ -11,6 +11,7 @@ object depSlide extends Builder {
     extends rise.core.Primitive
   {
     override val name: String = "depSlide"
+    override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
     override def setType(ty: Type): Primitive = Primitive()(ty)
     override def typeScheme: Type =
       expl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
