@@ -107,7 +107,7 @@ object parse {
       ps =>
         leftF(ps) match {
           case Right(_) => {
-            println("|| : " + ps)
+            //println("|| : " + ps)
             rightF(ps)
           }
           case Left(resPs) => Left(resPs)
@@ -1188,6 +1188,30 @@ object parse {
     }
   }
 
+  private def parseCompLoop(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+    println("parseCompLoop: "+ parseState.tokenStream)
+    val p = Left(parseState)|> parseDot |> parseNoAppExpr
+    p match{
+      case Right(e) => Right(e)
+      case Left(ps) => if(ps.tokenStream.head.isInstanceOf[Dot]){
+        Left(ps) |> parseCompLoop
+      }else{
+        Left(ps)
+      }
+    }
+  }
+
+  private def getExprAndSpan(syntaxElement: SyntaxElement, parseState: ParseState):Option[(r.Expr, Span)]={
+    syntaxElement match {
+      case SExpr(expr) => Some((expr, expr.span.get))
+      case SExprClutched(expr, sp) => Some((expr, sp))
+      case _ => {
+        println("Abort; getExprAndSpan because not accepted beggining types: " + parseState)
+        None
+      }
+    }
+  }
+
   //Todo: Here I have to expect the result of getComposition, so I have to add SComp in the SyntaxElement
   //Todo: and with that I can return this SyntaxElement so that SComp has to look something like this:
   //Todo: SComp = (e1:r.Expr, s2:SyntaxElement, span:Span) and with that I have to create an Lambda like this
@@ -1196,8 +1220,7 @@ object parse {
     println("parseComp: " + parseState)
 //    val cpyMapFkt = parseState.mapFkt.clone()
     val psOld = Left(ParseState(parseState.tokenStream, parseState.parsedSynElems.head::Nil,  parseState.mapDepL, parseState.spanList)) |>
-      parseDot |>
-      parseNoAppExpr|>
+      parseCompLoop |>
       parseNoAppExpr
     println("Yuhuuuasdf: "+psOld)
     psOld match {
@@ -1207,31 +1230,23 @@ object parse {
         Right(e)
       }
       case Left(ps) => {
-        val synElems = ps.parsedSynElems.reverse
-        val (e1, sp1) = synElems.head match {
-          case SExpr(expr) => (expr, expr.span.get)
-          case SExprClutched(expr, sp) => (expr, sp)
-          case _ => {
-            println("Abort; parseComposition because not accepted beggining types: " + parseState)
-            return Left(parseState)
-          }
-        }
+        val (lastElem, lastElemSpan) = getExprAndSpan(ps.parsedSynElems.head, ps).get
+        var synElems = ps.parsedSynElems.tail.reverse
+
+        val (e1, sp1) = getExprAndSpan(synElems.head,parseState).get
         if(synElems.tail.isEmpty) return Right(ParseError("synElems is empty:"+ synElems))
-        val (e2, sp2) = synElems.tail.head match {
-          case SExpr(expr) => (expr, expr.span.get)
-          case SExprClutched(expr, sp) => (expr, sp)
-          case _ => {
-            println("Abort; parseComposition because not accepted beggining types: " + parseState)
-            return Left(parseState)
-          }
-        }
-        if(synElems.tail.tail.isEmpty) return Right(ParseError("synElems.tail.tail is empty:"+ synElems))
-        println("I combine now synElem.tail.tail: "+ synElems.tail.tail)
-        val e3 = combineExpressionsDependent(synElems.tail.tail, ps.mapDepL.get)
-        require(synElems.tail.tail.tail.isEmpty, "3 NoAppExprs are parsed not more"+ synElems + " , " + e3)
-        val span = sp1 + sp2 + e3.span.get
+        val (e2, sp2) = getExprAndSpan(synElems.tail.head,parseState).get
+        val span = sp1 + sp2 + lastElemSpan
         //val name = r.freshName("e")
-        val app = r.App(e2, r.App(e1, e3)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+        var app = r.App(e2, r.App(e1, lastElem)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+        println("app of Comp: "+ app + " e1: '" + e1 + "' e2: '"+ e2 + "' lastElem: '" + lastElem + "'")
+        synElems = synElems.tail.tail
+        while(synElems.nonEmpty){
+          val (exN, _) = getExprAndSpan(synElems.head,parseState).get
+          synElems = synElems.tail
+          app = r.App(exN, app)(rt.TypePlaceholder,Some(span))
+          println("app of Comp in Loop: "+ app)
+        }
         //Todo: should be lambda here or is only app ok?
         //val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)), app)(rt.TypePlaceholder, Some(span))
         println("beforeUpdate\n")
@@ -1437,7 +1452,7 @@ the syntax-Tree has on top an Lambda-Expression
           val newExpr = combineExpressionsDependent(pState.parsedSynElems, pState.mapDepL.get)
           SExprClutched(newExpr, spanClutch)
         }
-        println("synElem: " + synElem)
+        //println("synElem: " + synElem)
         val newL = synElem :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
         val l = li.reverse
@@ -1449,7 +1464,7 @@ the syntax-Tree has on top an Lambda-Expression
   }
 
   def parseArrayType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    println("parseIndexType: " + parseState)
+    //println("parseIndexType: " + parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList) )  |>
         parseNat |>
@@ -1493,7 +1508,7 @@ the syntax-Tree has on top an Lambda-Expression
   }
 
   def parseIndexType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    println("parseIndexType: " + parseState)
+    //println("parseIndexType: " + parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList) )  |>
         parseTypeIdent |>
@@ -1525,7 +1540,7 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
   def parseTupleType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    println("parseTupleType: "+ parseState)
+    //println("parseTupleType: "+ parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList) )  |>
         parseLeftParentheses  |>
@@ -1557,7 +1572,7 @@ the syntax-Tree has on top an Lambda-Expression
   }
 
   def parseBracesExprType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    println("parseBracesExprType: "+ parseState)
+    //println("parseBracesExprType: "+ parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList) )  |>
         parseLeftParentheses  |>
@@ -1583,8 +1598,12 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
+  private def end(tokenStream:List[Token]):Boolean={
+    tokenStream.isEmpty||tokenStream.head.isInstanceOf[EndNamedExpr]
+  }
+
   def parseMaybeAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    println("parseMaybeAppExpr: " + parseState)
+    //println("parseMaybeAppExpr: " + parseState)
     if(parseState.tokenStream.head.isInstanceOf[RParentheses]){
       println("L" +
         "RBrace is at the beginning of parseApp: " + parseState)
@@ -1595,11 +1614,11 @@ the syntax-Tree has on top an Lambda-Expression
     }
     val parseStateOrError =
       Left(parseState)  |> parseNoAppExpr
-    println("parseApp after parseLowExpression: "+ parseStateOrError)
+    //println("parseApp after parseLowExpression: "+ parseStateOrError)
     parseStateOrError match {
       case Right(e) => Right(e)
-      case Left(ps)=> if(ps.tokenStream.isEmpty||ps.tokenStream.head.isInstanceOf[EndNamedExpr]){
-                              println("parseApp End, because TokenList is empty: "+ ps)
+      case Left(ps)=> if(end(ps.tokenStream)){
+        //println("parseApp End, because TokenList is empty: "+ ps)
                               val expr = combineExpressionsDependent(ps.parsedSynElems, ps.mapDepL.get)
                               Left(ParseState(ps.tokenStream, SExpr(expr)::Nil,  ps.mapDepL, ps.spanList) )
                             }else{
@@ -1617,7 +1636,7 @@ the syntax-Tree has on top an Lambda-Expression
                                   }else {
                                     if(newPS.parsedSynElems.isEmpty) throw new IllegalStateException("newPS is Empty: "+ newPS)
                                     val expr = combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL.get)
-                                    println("\n\n\nSpanIsHere"+ expr +" : "+ expr.span+ "\n\n\n")
+                                    //println("\n\n\nSpanIsHere"+ expr +" : "+ expr.span+ "\n\n\n")
                                     SExpr(expr)
                                   }
                                   Left(ParseState(newPS.tokenStream, synElem::Nil, newPS.mapDepL, newPS.spanList) )
@@ -1704,7 +1723,7 @@ the syntax-Tree has on top an Lambda-Expression
   }
 
   def parseNumber(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    println("ParseNumber: " + parseState)
+    //println("ParseNumber: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     if(tokens.isEmpty){
       return Right(ParseError("failed to parse Number: " + " List is empty"))
@@ -1726,16 +1745,16 @@ the syntax-Tree has on top an Lambda-Expression
 
 
   def parseBinOperator(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    println("parseBinOperator: "+ parseState)
+    //println("parseBinOperator: "+ parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case BinOp(op, span) => op match {
         case OpType.BinOpType.ADD =>{
-          println("\n\n Span of add: "+ span + " , add: "+ r.primitives.add(Some(span)) + "  ,SExpr(add): "+ SExpr(r.primitives.add(Some(span))).expr ) //es wird vergessen von Scala, dass es auch vom Type ToBeTyped ist
-          println("span of add: " + r.primitives.add(Some(span)).span + "span of add: " + r.primitives.add(Some(span)).toUntypedExpr.span+ " , span of SExpr(add): "+ SExpr(r.primitives.add(Some(span))).expr.span)
-          println("span of makeArray: "+ r.primitives.makeArray(5, Some(span)).span)
+          //println("\n\n Span of add: "+ span + " , add: "+ r.primitives.add(Some(span)) + "  ,SExpr(add): "+ SExpr(r.primitives.add(Some(span))).expr ) //es wird vergessen von Scala, dass es auch vom Type ToBeTyped ist
+          //println("span of add: " + r.primitives.add(Some(span)).span + "span of add: " + r.primitives.add(Some(span)).toUntypedExpr.span+ " , span of SExpr(add): "+ SExpr(r.primitives.add(Some(span))).expr.span)
+          //println("span of makeArray: "+ r.primitives.makeArray(5, Some(span)).span)
           Left(ParseState(remainderTokens, SExpr(r.primitives.add(Some(span))) :: parsedSynElems, mapDepL, spanList) )
         }
 
@@ -1768,7 +1787,7 @@ the syntax-Tree has on top an Lambda-Expression
 
 
   def parseComma(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
-    println("parseComma: " + parseState)
+    //println("parseComma: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 

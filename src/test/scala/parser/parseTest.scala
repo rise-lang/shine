@@ -214,9 +214,17 @@ class parseTest extends  AnyFlatSpec {
     val riseExprByIdent = parse(lexer.tokens)
 
     val functionName2: String = "f"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
       case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f match {
+      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")),
+      r.App(r.App(rp.sub(_), r.Identifier("x")),r.App(r.App(rp.add(_), r.Identifier("x")), r.Identifier("x")))))
+        => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
     }
   }
 
@@ -227,9 +235,16 @@ class parseTest extends  AnyFlatSpec {
     val riseExprByIdent = parse(lexer.tokens)
 
     val functionName2: String = "f"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
       case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f match {
+      case r.Lambda(r.Identifier("x"), r.App(rp.not(_), r.App(rp.not(_), r.Identifier("x"))))
+      => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
     }
   }
 
@@ -240,9 +255,36 @@ class parseTest extends  AnyFlatSpec {
     val riseExprByIdent = parse(lexer.tokens)
 
     val functionName2: String = "f"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+    val ex_f: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
       case Left(lambda) => lambda.toExpr
       case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f match {
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(rp.not(_), r.App(r.App(rp.equal(_), r.Identifier("y")), r.Identifier("x")))))
+      => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+  }
+
+  "parser" should "be able to parse 'composition4.rise'" in {
+    val fileName: String = testFilePath + "composition4.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "f"
+    val ex_f: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_f match {
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(rp.not(_), r.App(rp.not(_), r.App(r.App(rp.equal(_), r.Identifier("y")), r.Identifier("x"))))))
+      => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
     }
   }
 
