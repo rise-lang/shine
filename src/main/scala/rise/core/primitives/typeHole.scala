@@ -22,9 +22,8 @@ object typeHole {
     extends rise.core.Primitive
   {
     override def name: String = s"printType($msg)"
-
+    override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
     override def setType(t: Type): Primitive = Primitive(msg)(t)
-
     override def typeScheme: Type = impl{ t: TypeIdentifier => t }
   }
 

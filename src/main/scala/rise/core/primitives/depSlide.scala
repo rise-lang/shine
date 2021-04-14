@@ -11,6 +11,7 @@ object depSlide extends Builder {
     extends rise.core.Primitive
   {
     override val name: String = "depSlide"
+    override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
     override def setType(ty: Type): Primitive = Primitive()(ty)
     override def typeScheme: Type =
       expl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
@@ -25,12 +26,6 @@ object depSlide extends Builder {
         (n `.` t) ->: (allWindows`*.`(i =>
           (IfThenElse(arithPredicate(i, fullWindows, Operator.<), sp, remainder) + halo) `.` t))
       }))}
-    override def equals(obj: Any): Boolean = obj match {
-      case p: Primitive =>
-        p.t =~= t
-      case _ =>
-        false
-    }
   }
 
   override def primitive: rise.core.Primitive = Primitive()()
