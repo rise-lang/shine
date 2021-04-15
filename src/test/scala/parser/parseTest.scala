@@ -3101,6 +3101,16 @@ class parseTest extends  AnyFlatSpec {
   //-----------------------------------------------------------------------------------------------------
   //Error-Tests //Todo: " .. (.. (..).. " as an ErrorTest
 
+  "parser" should "be able to parse 'composition5.rise'" in {
+    val fileName: String = errorFilePath + "composition5.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val thrown = intercept[rt.InferenceException] {
+      parse(lexer.tokens)
+    }
+    //Todo: does not the variable names change each time?
+    thrown.msg should equal("could not solve constraints List((_n1578.(_n1566*n1596*(1/^(_n1576))*(1/^(_n1578)))._n1576._dt1577 -> _n1566.n1596._dt1577)  ~  (n1596.(<4>f32, <4>f32) -> n1596.(<4>f32, <4>f32))) in Some((1,6)-(5,30) in src/test/scala/parser/readFiles/filesToError/composition5.rise)")
+  }
 
   "parser" should "be able to parse 'fx.rise'" in {
     val fileName: String = errorFilePath + "fx.rise"

@@ -1,0 +1,6 @@
+nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
+nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
+join .
+ join .
+   (mapWorkGroup 1 (\x->x)
+   ). (split N) ( zip pos vel)

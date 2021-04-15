@@ -478,13 +478,23 @@ object parse {
     tokens.head match {
       case Kind(concreteKind, _) => tokens.tail.head match {
         case DepArrow(_) => {
-          println("Kind was in parseDepFunctionType parsed: " + concreteKind)
+          val ki = concreteKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
+            case Data() => RData()
+            case Nat() => RNat()
+            case AddrSpace() => RAddrSpace()
+            case ki => return Right(ParseError("Not an accepted Kind: " + ki))
+          }
+          parseState.mapDepL match {
+            case None => throw new IllegalStateException("mapDepL is None")
+            case Some(mL)=> mL.update(nameOfIdentifier, ki)
+          }
+          println("Kind was in parseDepFunctionType parsed: " + concreteKind + " , mapDepL: "+ parseState.mapDepL)
           parseMaybeAppExpr(ParseState(tokens.tail.tail, Nil, parseState.mapDepL, spanList)) match {
             case Right(e) => Right(e)
             case Left(pS) => {
               println("In the middle of parseDepFunctionType: " + pS)
               if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
-              val depLam: SExpr = pS.parsedSynElems.head match {
+              val depLam = pS.parsedSynElems.head match {
                 case SExpr(outT) => {
                   val span = outT.span match {
                     case None => throw new IllegalStateException("Span should not be None in DepLambdafkt")
@@ -494,19 +504,19 @@ object parse {
                       spanZW
                     }
                   }
-                  concreteKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
-                    case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier),
+                  ki match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
+                    case RData() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier),
                       outT)(rt.TypePlaceholder, Some(span)))
-                    case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier),
+                    case RNat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier),
                       outT)(rt.TypePlaceholder, Some(span)))
-                    case AddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](
+                    case RAddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](
                       rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder, Some(span)))
-                    case ki => return Right(ParseError("Not an accepted Kind: " + ki))
                   }
                 }
                 case _ => return Right(ParseError("Not a Type"))
               }
-              Left(ParseState(pS.tokenStream, depLam :: newPS,  pS.mapDepL, spanList))
+
+              Left(ParseState(pS.tokenStream, depLam :: newPS, pS.mapDepL , spanList))
             }
           }
         }
@@ -534,9 +544,18 @@ object parse {
             throw new IllegalArgumentException("It exists already an DepLambda with this Name: " + nameOfIdentifier)
           }
           concreteKind match {
-            case Data() => parseState.mapDepL.get.update(nameOfIdentifier, RData())
-            case Nat() => parseState.mapDepL.get.update(nameOfIdentifier, RNat())
-            case AddrSpace() => parseState.mapDepL.get.update(nameOfIdentifier, RAddrSpace())
+            case Data() => parseState.mapDepL match {
+              case None => throw new IllegalStateException("mapDepL is None")
+              case Some(mL)=> mL.update(nameOfIdentifier, RData())
+            }
+            case Nat() => parseState.mapDepL match {
+              case None => throw new IllegalStateException("mapDepL is None")
+              case Some(mL)=> mL.update(nameOfIdentifier, RNat())
+            }
+            case AddrSpace() => parseState.mapDepL match {
+              case None => throw new IllegalStateException("mapDepL is None")
+              case Some(mL)=> mL.update(nameOfIdentifier, RAddrSpace())
+            }
             case ki => return Right(ParseError("Not an accepted Kind: " + ki))
           }
           println("Kind was in parseDepFunctionType parsed: " + concreteKind)
