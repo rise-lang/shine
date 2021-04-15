@@ -11,6 +11,7 @@ object depTile extends Builder {
     extends rise.core.Primitive
   {
     override val name: String = "depTile"
+    override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
     override def setType(ty: Type): Primitive = Primitive()(ty)
     override def typeScheme: Type =
       impl{ n: Nat => expl((tile: Nat) => impl{ halo: Nat =>
@@ -28,12 +29,6 @@ object depTile extends Builder {
             (allTiles `*.` (i => (depSize(i) `.` t)))) ->:
             ((n + halo) `.` s) ->: (n `.` t)
         }}})}
-    override def equals(obj: Any): Boolean = obj match {
-      case p: Primitive =>
-        p.t =~= t
-      case _ =>
-        false
-    }
   }
 
   override def primitive: rise.core.Primitive = Primitive()()

@@ -4,6 +4,10 @@ import rise.core.types.Type
 
 case class ForeignFunction(decl: ForeignFunction.Decl)(override val t: Type)
     extends Primitive {
+  override def primEq(obj: Primitive): Boolean = obj match {
+    case ForeignFunction(decl1) => decl == decl1
+    case _ => false
+  }
   override def typeScheme: Type = t
   override def setType(t: Type): ForeignFunction = ForeignFunction(decl)(t)
   override val name: String = decl.name

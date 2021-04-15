@@ -67,12 +67,8 @@ import arithexpr.arithmetic._
         {
           override val name: String = ${Lit.String(name)}
           override def setType(ty: Type): Primitive = Primitive()(ty)
+          override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
           override def typeScheme: Type = ${generateTypeScheme(typeSignature, Map.empty)}
-
-          override def equals(obj: Any): Boolean = obj match {
-            case p: Primitive => p.t =~~= t
-            case _ => false
-          }
         }
 
         override def toString: String = ${Lit.String(name)}
@@ -118,9 +114,8 @@ import arithexpr.arithmetic._
           override def setType(ty: Type): Primitive = Primitive(..$args)(ty)
           override def typeScheme: Type = ${generateTypeScheme(typeSignature, Map.empty)}
 
-          override def equals(obj: Any): Boolean = obj match {
-            case p: Primitive =>
-              ${generateComparisonChain(args)} && p.t =~~= t
+          override def primEq(obj: rise.core.Primitive): Boolean = obj match {
+            case p: Primitive => ${generateComparisonChain(args)}
             case _ => false
           }
         }
