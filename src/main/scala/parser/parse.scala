@@ -1250,7 +1250,7 @@ object parse {
       case Left(ps) => {
         //val (lastElem, lastElemSpan) = getExprAndSpan(ps.parsedSynElems.head, ps).get
         //var synElems = ps.parsedSynElems.tail.reverse
-        var synElems = ps.parsedSynElems.reverse
+        var synElems = ps.parsedSynElems
 
         val (e1, sp1) = getExprAndSpan(synElems.head,parseState).get
         if(synElems.tail.isEmpty) return Right(ParseError("synElems is empty:"+ synElems))
