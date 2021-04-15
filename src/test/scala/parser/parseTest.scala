@@ -221,7 +221,8 @@ class parseTest extends  AnyFlatSpec {
 
     ex_f match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")),
-      r.App(r.App(rp.sub(_), r.Identifier("x")),r.App(r.App(rp.add(_), r.Identifier("x")), r.Identifier("x")))))
+      r.App(r.Lambda(e1, r.App(r.App(rp.sub(_), r.Identifier("x")),r.App(r.App(rp.add(_), r.Identifier("x")), e2:r.Identifier))), r.Identifier("x"))))
+        if e1.name.equals(e2.name)
         => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -241,7 +242,8 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("x"), r.App(rp.not(_), r.App(rp.not(_), r.Identifier("x"))))
+      case r.Lambda(r.Identifier("x"), r.App(r.Lambda(e1, r.App(rp.not(_), r.App(rp.not(_), e2:r.Identifier))), r.Identifier("x")))
+        if e1.name.equals(e2.name)
       => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -261,7 +263,8 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(rp.not(_), r.App(r.App(rp.equal(_), r.Identifier("y")), r.Identifier("x")))))
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(r.Lambda(e1, r.App(rp.not(_), r.App(r.App(rp.equal(_), r.Identifier("y")), e2:r.Identifier))), r.Identifier("x"))))
+        if e1.name.equals(e2.name)
       => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
@@ -281,7 +284,9 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(rp.not(_), r.App(rp.not(_), r.App(r.App(rp.equal(_), r.Identifier("y")), r.Identifier("x"))))))
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(r.Lambda(e1, r.App(rp.not(_), r.App(rp.not(_),
+      r.App(r.App(rp.equal(_), r.Identifier("y")), e2:r.Identifier)))), r.Identifier("x"))))
+        if e1.name.equals(e2.name)
       => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)

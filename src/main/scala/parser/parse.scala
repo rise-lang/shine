@@ -1220,8 +1220,7 @@ object parse {
     println("parseComp: " + parseState)
 //    val cpyMapFkt = parseState.mapFkt.clone()
     val psOld = Left(ParseState(parseState.tokenStream, parseState.parsedSynElems.head::Nil,  parseState.mapDepL, parseState.spanList)) |>
-      parseCompLoop |>
-      parseNoAppExpr
+      parseCompLoop //|> parseNoAppExpr
     println("Yuhuuuasdf: "+psOld)
     psOld match {
       case Right(e) => {
@@ -1230,16 +1229,20 @@ object parse {
         Right(e)
       }
       case Left(ps) => {
-        val (lastElem, lastElemSpan) = getExprAndSpan(ps.parsedSynElems.head, ps).get
-        var synElems = ps.parsedSynElems.tail.reverse
+        //val (lastElem, lastElemSpan) = getExprAndSpan(ps.parsedSynElems.head, ps).get
+        //var synElems = ps.parsedSynElems.tail.reverse
+        var synElems = ps.parsedSynElems.reverse
 
         val (e1, sp1) = getExprAndSpan(synElems.head,parseState).get
         if(synElems.tail.isEmpty) return Right(ParseError("synElems is empty:"+ synElems))
         val (e2, sp2) = getExprAndSpan(synElems.tail.head,parseState).get
-        val span = sp1 + sp2 + lastElemSpan
-        //val name = r.freshName("e")
-        var app = r.App(e2, r.App(e1, lastElem)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
-        println("app of Comp: "+ app + " e1: '" + e1 + "' e2: '"+ e2 + "' lastElem: '" + lastElem + "'")
+        val span = sp1 + sp2 //+ lastElemSpan
+        val name = r.freshName("e")
+        //var app = r.App(e2, r.App(e1, lastElem)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+        //println("app of Comp: "+ app + " e1: '" + e1 + "' e2: '"+ e2 + "' lastElem: '" + lastElem + "'")
+        var app = r.App(e2, r.App(e1, r.Identifier(name)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
+        println("app of Comp: "+ app + " e1: '" + e1 + "' e2: '"+ e2 + "'")
+
         synElems = synElems.tail.tail
         while(synElems.nonEmpty){
           val (exN, _) = getExprAndSpan(synElems.head,parseState).get
@@ -1247,10 +1250,22 @@ object parse {
           app = r.App(exN, app)(rt.TypePlaceholder,Some(span))
           println("app of Comp in Loop: "+ app)
         }
-        //Todo: should be lambda here or is only app ok?
-        //val e = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)), app)(rt.TypePlaceholder, Some(span))
-        println("beforeUpdate\n")
-        Left(ParseState(ps.tokenStream, SExpr(app) :: parseState.parsedSynElems.tail, ps.mapDepL, ps.spanList))
+        val lam = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)), app)(rt.TypePlaceholder, Some(span))
+        println("lam in parseComp:"+lam + "\n")
+        if(end(ps.tokenStream)){
+          Left(ParseState(ps.tokenStream, SExpr(lam) :: parseState.parsedSynElems.tail, ps.mapDepL, ps.spanList))
+        }else{
+          val pP = Left(ParseState(ps.tokenStream, Nil, ps.mapDepL, ps.spanList)) |> parseNoAppExpr
+          pP match{
+            case Right(e)=> return Right(e)
+            case Left(pL) => {
+              val (expr, expr_span) = getExprAndSpan(pL.parsedSynElems.head, pL).get
+              val resApp = r.App(lam,expr)(rt.TypePlaceholder, Some(span+expr_span))
+              println("resApp in parseComp:"+resApp + "\n")
+              Left(ParseState(pL.tokenStream, SExpr(resApp) :: parseState.parsedSynElems.tail, pL.mapDepL, pL.spanList))
+            }
+          }
+        }
       }
     }
   }
