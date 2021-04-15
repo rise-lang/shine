@@ -221,7 +221,7 @@ class parseTest extends  AnyFlatSpec {
 
     ex_f match {
       case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")),
-      r.App(r.Lambda(e1, r.App(r.App(rp.sub(_), r.Identifier("x")),r.App(r.App(rp.add(_), r.Identifier("x")), e2:r.Identifier))), r.Identifier("x"))))
+      r.App(r.Lambda(e1, r.App(r.App(rp.add(_), r.Identifier("x")),r.App(r.App(rp.sub(_), r.Identifier("x")), e2:r.Identifier))), r.Identifier("x"))))
         if e1.name.equals(e2.name)
         => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
@@ -263,7 +263,8 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(r.Lambda(e1, r.App(rp.not(_), r.App(r.App(rp.equal(_), r.Identifier("y")), e2:r.Identifier))), r.Identifier("x"))))
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(r.Lambda(e1, r.App(r.App(rp.equal(_),
+      r.Identifier("y")), r.App(rp.not(_), e2:r.Identifier))), r.Identifier("x"))))
         if e1.name.equals(e2.name)
       => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
@@ -284,8 +285,9 @@ class parseTest extends  AnyFlatSpec {
     }
 
     ex_f match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(r.Lambda(e1, r.App(rp.not(_), r.App(rp.not(_),
-      r.App(r.App(rp.equal(_), r.Identifier("y")), e2:r.Identifier)))), r.Identifier("x"))))
+      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("y"),r.App(r.Lambda(e1,
+      r.App(r.App(rp.equal(_), r.Identifier("y")), r.App(rp.not(_),
+      r.App(rp.not(_), e2:r.Identifier)))), r.Identifier("x"))))
         if e1.name.equals(e2.name)
       => true
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
@@ -3109,7 +3111,7 @@ class parseTest extends  AnyFlatSpec {
       parse(lexer.tokens)
     }
     //Todo: does not the variable names change each time?
-    thrown.msg should equal("could not solve constraints List((_n1578.(_n1566*n1596*(1/^(_n1576))*(1/^(_n1578)))._n1576._dt1577 -> _n1566.n1596._dt1577)  ~  (n1596.(<4>f32, <4>f32) -> n1596.(<4>f32, <4>f32))) in Some((1,6)-(5,30) in src/test/scala/parser/readFiles/filesToError/composition5.rise)")
+    thrown.msg should equal("could not solve constraints List(((_n1578*n1596)._n1566._dt1567 -> (_n1566*_n1578*n1596)._dt1567)  ~  (n1596.(<4>f32, <4>f32) -> n1596.(<4>f32, <4>f32))) in Some((1,6)-(5,30) in src/test/scala/parser/readFiles/filesToError/composition5.rise)")
   }
 
   "parser" should "be able to parse 'fx.rise'" in {
