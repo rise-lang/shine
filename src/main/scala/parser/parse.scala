@@ -88,7 +88,8 @@ object parse {
   type MapDepL = mutable.HashMap[String, RiseKind]
   type BracesSpan = Option[List[Span]]
 
-  final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], mapDepL: Option[MapDepL], spanList: BracesSpan)
+  final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], mapDepL: Option[MapDepL],
+                              spanList: BracesSpan)
 
   implicit class ParseStatePipe(val ps: Either[ParseState, ParseErrorOrState]) extends AnyVal {
     def |>(f: ParseState => Either[ParseState, ParseErrorOrState]): Either[ParseState, ParseErrorOrState] = {
