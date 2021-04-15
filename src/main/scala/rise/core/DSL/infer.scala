@@ -76,8 +76,6 @@ object infer {
     traverse(e, FTVGathering)._1.distinct
   }
 
-  private val genType : Expr => Type = e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
-
   private val collectPreserve = new PureAccumulatorTraversal[Set[Kind.Identifier]] {
     override val accumulator = SetMonoid
     override def expr: Expr => Pair[Expr] = {
@@ -92,6 +90,11 @@ object infer {
     }
   }
 
+  private val genType : Expr => Type =
+    e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
+  private val constrIfTyped : Type => Constraint => Seq[Constraint] =
+    t => c => if (t == TypePlaceholder) Nil else Seq(c)
+
   private val constrainTypes : Map[String, Type] => Expr => (Expr, Seq[Constraint]) = env => {
     case i: Identifier =>
       val t = env.getOrElse(i.name,
@@ -104,16 +107,15 @@ object infer {
       val env1 : Map[String, Type] = env + (tx.name -> tx.t)
       val (te, cs) = constrainTypes(env1)(e)
       val ft = FunType(tx.t, te.t)
-      val exprT = genType(expr)
-      val c = TypeConstraint(exprT, ft)
-      (Lambda(tx, te)(ft), cs :+ c)
+      val cs1 = constrIfTyped(expr.t)(TypeConstraint(expr.t, ft))
+      (Lambda(tx, te)(ft), cs ++ cs1)
 
     case expr@App(f, e) =>
       val (tf, csF) = constrainTypes(env)(f)
       val (te, csE) = constrainTypes(env)(e)
       val exprT = genType(expr)
       val c = TypeConstraint(tf.t, FunType(te.t, exprT))
-      (App(tf, te)(exprT), csF :++ csE :+ c)
+      (App(tf, te)(exprT), csF ++ csE :+ c)
 
     case expr@DepLambda(x, e) =>
       val (te, csE) = constrainTypes(env)(e)
@@ -128,8 +130,8 @@ object infer {
         case n2n: NatToNatIdentifier =>
           DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
       }
-      val c = TypeConstraint(exprT, tf.t)
-      (tf, csE :+ c)
+      val csE1 = constrIfTyped(expr.t)(TypeConstraint(expr.t, tf.t))
+      (tf, csE ++ csE1)
 
     case expr@DepApp(f, x) =>
       val (tf, csF) = constrainTypes(env)(f)
