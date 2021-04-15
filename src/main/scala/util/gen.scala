@@ -174,13 +174,15 @@ object gen {
 
       def fromPhrase: Phrase => HostedModule =
         partialHostCompiler(name) composeWith
-          (hostFunDefToHostPart() x map(kernelDefToKernel()))
+          ((((x: FunDef) => x) x map(kernelDefToKernel())) andThen
+          hostFunDefToHostPart)
     }
 
-    private def hostFunDefToHostPart(gen: HostCodeGenerator =
-                                        shine.OpenCL.Compilation.HostCodeGenerator()
-                                    ): FunDef => CModule =
-      HostCodeModuleGenerator.funDefToModule(gen)
+    private val hostFunDefToHostPart:
+      ((FunDef, Seq[KernelModule])) => (CModule, Seq[KernelModule]) = { case (hm, kms) =>
+      val gen = shine.OpenCL.Compilation.HostCodeGenerator(kms)
+      (HostCodeModuleGenerator.funDefToModule(gen)(hm), kms)
+    }
 
     private def partialHostCompiler(hostFunName: String): PartialCompiler[
       Phrase,   HostedModule,
@@ -275,18 +277,21 @@ object gen {
 
       def fromPhrase: Phrase => HostedModule =
         partialHostCompiler(name) composeWith
-          (hostFunDefToHostPart() x map(kernelDefToKernel()))
+          ((((x: FunDef) => x) x map(kernelDefToKernel())) andThen
+          hostFunDefToHostPart)
     }
 
-    private def hostFunDefToHostPart(gen: HostCodeGenerator =
-                                     shine.OpenCL.Compilation.HostCodeGenerator()
-                                    ): FunDef => CModule =
-      HostCodeModuleGenerator.funDefToModule(gen)
+    private val hostFunDefToHostPart:
+      ((FunDef, Seq[KernelModule])) => (CModule, Seq[KernelModule]) = { case (hm, kms) =>
+      // FIXME: The OpenCL host code generator does not work with CUDA kernel modules
+      //  We need to refactor the OpenCL and CUDA backends and generalize host code generation
+      ???
+    }
 
     private def partialHostCompiler(hostFunName: String): PartialCompiler[
       Phrase,   HostedModule,
       (FunDef,  Seq[KernelDef]),
-      (CModule, Seq[shine.cuda.KernelModule])] =
+      (CModule, Seq[KernelModule])] =
       PartialCompiler.functor(
         shine.OpenCL.Compilation.SeparateHostAndKernelCode.separate(hostFunName),
         (shine.cuda.Module.apply _).tupled)

@@ -212,6 +212,10 @@ void destroyContext(Context ctx) {
   free(ctx);
 }
 
+void waitFinished(Context ctx) {
+  oclFatalError(clFinish(ctx->queue), "waiting for commands");
+}
+
 Kernel loadKernelFromSource(Context ctx, const char* name, const char* source, size_t length) {
   cl_int err;
   const char* sources[] = { source };

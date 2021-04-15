@@ -28,5 +28,6 @@ bool oclReportError(cl_int error, const char* msg);
 void oclFatalError(cl_int error, const char* msg);
 
 #define KARG(val) { sizeof(val), &val }
+#define LARG(size) { size, NULL }
 
 #endif
