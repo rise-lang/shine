@@ -189,6 +189,9 @@ object traversal {
               Some(s(f).mapSuccess(DepApp[NatToDataKind](_, n2d)(da.t)))
           }
           case Literal(_) => None
+          case _: TypeAnnotation => throw new Exception("Type annotations should be gone.")
+          case _: TypeAssertion => throw new Exception("Type assertions should be gone.")
+          case _: Opaque => throw new Exception("Opaque expressions should be gone.")
           case _: ForeignFunction => None
           case _: Primitive => None
         }
