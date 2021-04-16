@@ -4,7 +4,7 @@ import scala.collection.immutable.HashSet
 import scala.language.implicitConversions
 
 object monads {
-  trait Monad[M[_]] {
+  trait Monad[M[+_]] {
     def return_[T] : T => M[T]
     def bind[T,S] : M[T] => (T => M[S]) => M[S]
     def traverse[A] : Seq[M[A]] => M[Seq[A]] =
@@ -12,12 +12,12 @@ object monads {
         bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
   }
 
-  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]) = new {
+  implicit def monadicSyntax[M[+_], A](m: M[A])(implicit tc: Monad[M]) = new {
     def map[B](f: A => B): M[B] = tc.bind(m)(a => tc.return_(f(a)) )
     def flatMap[B](f: A => M[B]): M[B] = tc.bind(m)(f)
   }
 
-  case class Pure[T](unwrap : T)
+  case class Pure[+T](unwrap : T)
   implicit object PureMonad extends Monad[Pure] {
     override def return_[T] : T => Pure[T] = t => Pure(t)
     override def bind[T,S] : Pure[T] => (T => Pure[S]) => Pure[S] =
@@ -61,9 +61,9 @@ object monads {
     }
   }
 
-  trait InMonad[M[_]] { trait SetFst[F] { type Type[S] = M[Tuple2[F, S]] } }
-  trait PairMonoidMonad[F, M[_]] extends Monad[InMonad[M]#SetFst[F]#Type] {
-    type Pair[T] = InMonad[M]#SetFst[F]#Type[T]
+  trait InMonad[M[+_]] { trait SetFst[F] { type Type[+S] = M[Tuple2[F, S]] } }
+  trait PairMonoidMonad[F, M[+_]] extends Monad[InMonad[M]#SetFst[F]#Type] {
+    type Pair[+T] = InMonad[M]#SetFst[F]#Type[T]
     implicit val monoid : Monoid[F]
     implicit val monad : Monad[M]
     override def return_[T]: T => Pair[T] = t => monad.return_((monoid.empty, t))
