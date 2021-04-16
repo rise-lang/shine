@@ -10,6 +10,9 @@ object monads {
     def traverse[A] : Seq[M[A]] => M[Seq[A]] =
       _.foldRight(return_(Nil : Seq[A]))({case (mx, mxs) =>
         bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
+    def traverseV[A] : Vector[M[A]] => M[Vector[A]] =
+      _.foldRight(return_(Vector.empty : Vector[A]))({case (mx, mxs) =>
+        bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
   }
 
   implicit def monadicSyntax[M[+_], A](m: M[A])(implicit tc: Monad[M]) = new {

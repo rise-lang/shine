@@ -2,6 +2,7 @@ package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
+import shine.DPIA.Phrases.traverse.Traversal
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck._
 import shine.DPIA._
@@ -43,6 +44,7 @@ final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
   extends Phrase[K `()->:` T] {
   override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
   override def toString: String = s"Λ(${x.name} : ${kn.get}). $body"
+  val kindName : KindName[K] = implicitly(kn)
 }
 
 object DepLambda {
@@ -360,6 +362,9 @@ object Phrase {
 
 sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
   def prettyPrint: String = this.toString
+
+  def traverse[M[+_]](f: Traversal[M]): M[Phrase[T]] =
+    throw new Exception("traverse should be implemented by a macro")
 
   def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T] =
     throw new Exception("visitAndRebuild should be implemented by a macro")
