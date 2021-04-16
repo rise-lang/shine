@@ -2,7 +2,7 @@ package rise
 
 import arithexpr.arithmetic.{NamedVar, PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
-import rise.core.types._
+import rise.core.types.{NatIdentifier, _}
 import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.DSL.Type._
@@ -10,8 +10,9 @@ import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
 import rise.autotune.{collectConstraints, tuningParam, wrapOclRun}
 import apps.separableConvolution2D.weightsSeqVecUnroll
+import org.junit.Ignore
 import shine.OpenCL.{GlobalSize, LocalSize}
-import util.gen
+import util.{Time, TimeSpan, createTempFile, gen, writeToFile, writeToPath, writeToTempFile}
 //import shine.DPIA.Types.TypeCheck
 //import util.gen
 
@@ -48,11 +49,34 @@ class autotuning extends test_util.Tests {
               ))
             ))))))
 
+
   val convolutionOcl2: Expr =
     tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
     tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
       wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(convolution)
     ))))
+
+  val convolutionOcl3: ToBeTyped[Expr] = {
+    // tileShiftInwards should constrain n >= tile
+    // slideVectors and slide should constrain tile % vec = 0
+    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+      tuningParam("ls1", RangeMul(1, 1024, 2),(ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2),(gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2),(gs1: Nat) =>
+            tuningParam("vec", RangeAdd(0, 32, 1), (vec: Nat) =>
+              tuningParam("tile", RangeAdd(4, 1024, 1), (tile: Nat) =>
+                depFun(RangeAdd(1, PosInf, vec), (n: Nat) =>
+                  fun(3`.`f32)(weights =>
+                    fun(((n+2)`.`f32) ->: (n`.`f32))(input =>
+                      oclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(
+                        input |> tileShiftInwards(tile)(mapWorkGroup(0)(
+                          slideVectors(vec) >> slide(3)(vec) >>
+                            mapLocal(0)(weightsSeqVecUnroll(weights)) >>
+                            asScalar
+                        ))
+                      ))))))))))
+  }
+
 
   val scalSJ: ToBeTyped[Expr] =
     depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
@@ -135,6 +159,27 @@ class autotuning extends test_util.Tests {
 
     val e = (wrapped: ToBeTyped[Expr])(32)
     assert(convolutionOcl(32).toExpr == e.toExpr)
+
+    val tuningResult = autotune.search(e)
+
+    val bestSample = autotune.getBest(tuningResult)
+    println("bestSample: \n" + bestSample)
+  }
+
+  ignore("collect constraints 3"){
+    val e:Expr = convolutionOcl3(1024)
+    println("e: \n" + e)
+
+    val param = autotune.collectParameters(e)
+    val constraints = autotune.collectConstraints(e, param)
+
+    println("constraints")
+    constraints.foreach(elem => println(elem))
+  }
+
+  ignore("search2"){
+    val e:Expr = convolutionOcl3(1024)
+    println("e: \n" + e)
 
     val tuningResult = autotune.search(e)
 
@@ -242,5 +287,58 @@ class autotuning extends test_util.Tests {
 
     """
     assert(util.ExecuteOpenCL.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
+  }
+
+  test("generate huge amount of code"){
+    // expression
+    val e:Expr = convolutionOcl3(1024)
+
+    // define parameters
+    val parameters = Map(
+      NatIdentifier("vec", isExplicit = true) -> (16: Nat),
+      NatIdentifier("tile", isExplicit = true) -> (32: Nat),
+      NatIdentifier("gs0", isExplicit = true) -> (1: Nat),
+      NatIdentifier("gs1", isExplicit = true) -> (512: Nat),
+      NatIdentifier("ls0", isExplicit = true) -> (1: Nat),
+      NatIdentifier("ls1", isExplicit = true) -> (64: Nat)
+    )
+
+    // define main
+      val main = """
+    const int N = 1024;
+    int main(int argc, char** argv) {
+      Context ctx = createDefaultContext();
+      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+
+      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+      for (int i = 0; i < N; i++) {
+        in[i] = 1;
+      }
+
+      foo(ctx, output, input, input);
+
+      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+
+//      for (int i = 0; i < N; i++) {
+//        printf(" %f \n", out[i]);
+//      }
+
+      destroyBuffer(ctx, input);
+      destroyBuffer(ctx, output);
+      destroyContext(ctx);
+      return EXIT_SUCCESS;
+    }
+    """
+
+    // substitute parameters
+    val eWithParams = rise.core.substitute.natsInExpr(parameters, e)
+
+    println("start code generation")
+    val m = gen.opencl.hosted.fromExpr(eWithParams)
+    val program = shine.OpenCL.Module.translateToString(m) + main
+
+    // write program to disk
+    writeToPath("convolution.c", program)
   }
 }
