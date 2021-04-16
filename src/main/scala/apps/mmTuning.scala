@@ -80,7 +80,7 @@ object mmTuning {
 //      val result = runKernel(code, LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
 //      val result = runKernel(gen.OpenCLKernel(kernel), LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
 
-      val result = runKernel(gen.OpenCLKernel(kernel), LocalSize((ls0, ls1)), GlobalSize((gs0, gs1)), at, b)
+      val result = runKernel(gen.opencl.kernel.fromExpr(kernel), LocalSize((ls0, ls1)), GlobalSize((gs0, gs1)), at, b)
 
 //      val kernel2 = gen.OpenCLKernel(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(kernel, "")
 
