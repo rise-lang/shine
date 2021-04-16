@@ -89,7 +89,8 @@ object ExecuteOpenCL {
       val bin = createTempFile("bin-", "").getAbsolutePath
       val sources = s"$src $runtimePath/buffer_$buffer_impl.c $runtimePath/ocl.c"
       try {
-        (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
+//        (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
+        (s"timeout 5s clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
       } catch {
         case e:Throwable => {
           println("compile error: " + e)
@@ -97,7 +98,9 @@ object ExecuteOpenCL {
         }
       }
       try{
-        val result = (s"runtime/clap_wrapper.sh $bin" !!)
+//        val result = (s"runtime/clap_wrapper.sh $bin" !!)
+        val result = (s"timeout 5s runtime/clap_wrapper.sh $bin" !!)
+        println("result: " + result)
         getRuntimeFromClap(result)
       } catch {
         case e: Throwable => {
