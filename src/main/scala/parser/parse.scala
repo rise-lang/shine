@@ -12,11 +12,7 @@ import scala.collection.mutable
 
 object parse {
 
-  abstract sealed class ParseErrorOrState()
-
-  abstract sealed class ParseEnd() extends ParseErrorOrState()
-
-  final case class ParseError(mes: String) extends ParseErrorOrState()
+  val SpanPlaceholder = Span(FileReader("src/test/scala/parser/readFiles/Placeholder.rise"), Location(0,0), Location(0,0))
 
   /*
    * Precondition: Only valid Tokens in tokenList.
@@ -88,11 +84,11 @@ object parse {
   type MapDepL = mutable.HashMap[String, RiseKind]
   type BracesSpan = Option[List[Span]]
 
-  final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement], mapDepL: Option[MapDepL],
-                              spanList: BracesSpan)
+  final case class ParseState(tokenStream: List[Token], parsedSynElems: List[SyntaxElement],
+                              mapDepL: Option[MapDepL], spanList: BracesSpan)
 
-  implicit class ParseStatePipe(val ps: Either[ParseState, ParseErrorOrState]) extends AnyVal {
-    def |>(f: ParseState => Either[ParseState, ParseErrorOrState]): Either[ParseState, ParseErrorOrState] = {
+  implicit class ParseStatePipe(val ps: Either[ParseState, PreAndErrorSynElems]) extends AnyVal {
+    def |>(f: ParseState => Either[ParseState, PreAndErrorSynElems]): Either[ParseState, PreAndErrorSynElems] = {
       //println("|> : " + ps)
       ps match {
         case Left(p) => f(p)
@@ -101,10 +97,10 @@ object parse {
     }
   }
 
-  implicit class ParseStateElse(val leftF: ParseState => Either[ParseState, ParseErrorOrState]) extends AnyVal {
+  implicit class ParseStateElse(val leftF: ParseState => Either[ParseState, PreAndErrorSynElems]) extends AnyVal {
     def ||(
-            rightF: ParseState => Either[ParseState, ParseErrorOrState]
-          ): ParseState => Either[ParseState, ParseErrorOrState] = {
+            rightF: ParseState => Either[ParseState, PreAndErrorSynElems]
+          ): ParseState => Either[ParseState, PreAndErrorSynElems] = {
       ps =>
         leftF(ps) match {
           case Right(_) => {
@@ -120,10 +116,10 @@ object parse {
   //_________________________________________________________Lambda
 
 
-  def parseBackslash(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseBackslash(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedExprs, mapDepL, spanList) = parseState
     if (tokens.isEmpty) {
-      return Right(ParseError("failed to parse Backlash: " + " List is empty"))
+      return Right(TokListIsEmpty(SpanPlaceholder, "Backslash"))
     }
     val nextToken :: remainderTokens = tokens
 
@@ -134,7 +130,7 @@ object parse {
       }
       case tok => {
         println("failed parseBacklash: " + parseState)
-        return Right(ParseError("failed to parse Backslash: " + tok + " is not an Backslash"))
+        return Right(NotCorrectToken(tok, "Backslash", "Backslash"))
       }
     }
 
@@ -287,20 +283,20 @@ object parse {
     id
   }
 
-  def parseIdent(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseIdent(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseIdent: " + parseState)
     parseIdentPos(parseState, true)
   }
 
-  def parseIdentNoDec(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseIdentNoDec(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseIdentNoDec: " + parseState)
     parseIdentPos(parseState, false)
   }
 
-  def parseIdentPos(parseState: ParseState, withDec: Boolean): Either[ParseState, ParseErrorOrState] = {
+  def parseIdentPos(parseState: ParseState, withDec: Boolean): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList) = parseState
     if (tokens.isEmpty) {
-      return Right(ParseError("failed to parse Ident: " + " List is empty"))
+      return Right(TokListIsEmpty(SpanPlaceholder, "Ident"))
     }
     val nextToken :: remainderTokens = tokens
 
@@ -327,16 +323,16 @@ object parse {
       }
       case tok => {
         println("Abbruch parseIdent: " + tok + " : " + parseState)
-        Right(ParseError("failed to parse Ident: " + tok + " is not an Identifier"))
+        Right(NotCorrectToken(tok, "Ident", "Ident"))
       }
     }
   }
 
-  def parseTypeIdentToCorrectForm(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseTypeIdentToCorrectForm(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseTypeIdentToCorrectForm: " + parseState)
     parseState.tokenStream.head match {
       case TypeIdentifier(name, span) => parseState.mapDepL.get.get(name) match {
-        case None => Right(ParseError("It exists no DepLambda with this Name: " + name))
+        case None => Right(NoKindWithThisName(TypeIdentifier(name, span), "TypeIdent"))
         case Some(RNat()) =>
           Left(ParseState(parseState.tokenStream.tail, SNat(NIdentifier(
             rt.NatIdentifier(name)), span) :: parseState.parsedSynElems, parseState.mapDepL, parseState.spanList))
@@ -345,15 +341,15 @@ object parse {
             rt.DataTypeIdentifier(name)), span) :: parseState.parsedSynElems,  parseState.mapDepL, parseState.spanList))
         case Some(RAddrSpace()) => throw new IllegalStateException("DepAddrSpace is not implemented yet")
       }
-      case t => Right(ParseError("Not an TypeIdentifier: " + t))
+      case t => Right(NotCorrectToken(t, "TypeIdent", "TypeIdent"))
     }
   }
 
-  def parseTypeIdent(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseTypeIdent(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseTypeIdent: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList) = parseState
     if (tokens.isEmpty) {
-      return Right(ParseError("failed to parse Ident: " + " List is empty"))
+      return Right(TokListIsEmpty(SpanPlaceholder, "TypeIdent"))
     }
     val nextToken :: remainderTokens = tokens
 
@@ -362,7 +358,7 @@ object parse {
        mapDepL, spanList))
       case tok => {
         println("Abbruch parseTypeIdent: " + tok + " : " + parseState)
-        Right(ParseError("failed to parse TypeIdent: " + tok + " is not an TypeIdentifier"))
+        Right(NotCorrectToken(tok, "TypeIdent", "TypeIdent"))
       }
     }
   }
@@ -379,7 +375,7 @@ object parse {
     }
   }
 
-  def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseMaybeTypeAnnotation(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems,  mapDepL, spanList) = parseState
     val colonToken :: typeTokenWithremainderTokens = tokens
 
@@ -401,7 +397,7 @@ object parse {
     }
   }
 
-  def parseTypeAnnotation(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseTypeAnnotation(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, _,  mapDepL, spanList) = parseState
     val colonToken :: typeToken :: remainderTokens = tokens
 
@@ -413,20 +409,19 @@ object parse {
             //Todo: Complex Alg for Types Parsing
             val t = getScalarType(typ)
             t match {
-              case None => Right(ParseError("failed to parse ScalarType: " + typ + " is not an accpeted ScalarType"))
+              case None => Right(NotAcceptedScalarType(sp, typ,"TypeAnnotation"))
               case Some(parsedType) => Left(ParseState(remainderTokens, SType(parsedType, sp) :: parseState.parsedSynElems,
                  mapDepL, spanList))
             }
           }
-          case notAtype => Right(ParseError("failed to parse Type: " + notAtype + " is not an ScalarType"))
+          case notAtype => Right(NotCorrectToken(typeToken, "ScalarType", "TypeAnnotation"))
         }
       }
-      case notAColon => Right(ParseError("failed to parse Type: A TypeAnnotation is expected, but " + notAColon +
-        " is not an Colon"))
+      case notAColon => Right(NotCorrectToken(notAColon, "Colon", "TypeAnnotation"))
     }
   }
 
-  def parseVecType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseVecType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, _, mapDepL, spanList) = parseState
     val inputType :: remainderTokens = tokens
 
@@ -436,15 +431,15 @@ object parse {
         println("ConcreteType was in parseVecType: " + concreteType + " , with length: " + len)
         //Todo: Complex Alg for Type Parsing
         val parsedInType = getScalarType(concreteType)
-        val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType in VecType")))
+        val inT = parsedInType.getOrElse(return Right(NotAcceptedScalarType(sp, concreteType,"VecType")))
         Left(ParseState(remainderTokens, SType(rt.VectorType(len, inT), sp) :: parseState.parsedSynElems,
           mapDepL, spanList))
       }
-      case notAtype => Right(ParseError("failed to parse VecType: " + notAtype + " is not correct Type"))
+      case notAtype => Right(NotCorrectToken(notAtype, "VectorType", "VecType"))
     }
   }
 
-  def parseScalarType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseScalarType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, _, mapDepL, spanList) = parseState
     val inputType :: remainderTokens = tokens
 
@@ -454,15 +449,14 @@ object parse {
         println("Type was in parseTypeWithoutArrow parsed: " + typ + " ; " + spanTyp.end)
         //Todo: Complex Alg for Type Parsing
         val parsedInType = getScalarType(typ)
-        val inT = parsedInType.getOrElse(return Right(ParseError("IllegalInputScalaType")))
+        val inT = parsedInType.getOrElse(return Right(NotAcceptedScalarType(spanTyp, typ,"ScalarType")))
         Left(ParseState(remainderTokens, SType(inT, spanTyp) :: parseState.parsedSynElems,  mapDepL, spanList))
       }
-      case notAtype => Right(ParseError("failed to parse ScalarType (in parseScalarType): " + notAtype +
-        " is not an Type"))
+      case notAtype => Right(NotCorrectToken(notAtype, "ScalarType", "ScalarType"))
     }
   }
 
-  def parseKindWithDepArrowAfterForDepLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseKindWithDepArrowAfterForDepLambda(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseKind: " + parseState)
     val (nameOfIdentifier, spanType, spanList) = parseState.parsedSynElems.head match {
       case SType(rt.TypeIdentifier(name), sp) => parseState.spanList match {
@@ -471,19 +465,19 @@ object parse {
         case Some(span :: Nil) => (name, sp + span, None)
         case Some(span :: l) => (name, sp + span, Some(l))
       }
-      case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'")
+      case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'") //Todo: make PreAndErrorSynElem and test for this
     }
     val newPS = parseState.parsedSynElems.tail
 
     val tokens = parseState.tokenStream
     tokens.head match {
-      case Kind(concreteKind, _) => tokens.tail.head match {
+      case Kind(concreteKind, sp) => tokens.tail.head match {
         case DepArrow(_) => {
           val ki = concreteKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
             case Data() => RData()
             case Nat() => RNat()
             case AddrSpace() => RAddrSpace()
-            case ki => return Right(ParseError("Not an accepted Kind: " + ki))
+            case ki => return Right(NotCorrectKind(sp, ki, "KindWithDepArrow"))
           }
           parseState.mapDepL match {
             case None => throw new IllegalStateException("mapDepL is None")
@@ -494,7 +488,7 @@ object parse {
             case Right(e) => Right(e)
             case Left(pS) => {
               println("In the middle of parseDepFunctionType: " + pS)
-              if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
+              if (pS.parsedSynElems.tail.nonEmpty) throw new IllegalStateException("ParsedSynElems.tail has to be empty!") //Todo: write test
               val depLam = pS.parsedSynElems.head match {
                 case SExpr(outT) => {
                   val span = outT.span match {
@@ -514,22 +508,21 @@ object parse {
                       rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder, Some(span)))
                   }
                 }
-                case _ => return Right(ParseError("Not a Type"))
+                case wrongSynElem => return Right(NotCorrectSynElem(wrongSynElem, "SExpr", "KindWithDepArrow"))
               }
 
               Left(ParseState(pS.tokenStream, depLam :: newPS, pS.mapDepL , spanList))
             }
           }
         }
-        case notAnDepArrow => Right(ParseError("failed to parse DepArrow: " + notAnDepArrow + " is not an DepArrow"))
+        case notAnDepArrow => Right(NotCorrectToken(notAnDepArrow, "DepArrow", "KindWithDepArrow"))
       }
-      case Arrow(_) => Right(ParseError("DepArrow and not Arrow was expected"))
-      case t => Right(ParseError("DepArrow and not " + t + " was expected"))
+      case t => Right(NotCorrectToken(t, "Kind", "KindWithDepArrow"))
     }
   }
 
-
-  def parseKindWithDepArrowAfterForDepFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+//Todo: combine with function above
+  def parseKindWithDepArrowAfterForDepFunctionType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseKind: " + parseState)
     val nameOfIdentifier: String = parseState.parsedSynElems.head match {
       case SType(rt.TypeIdentifier(name), _) => name
@@ -557,13 +550,13 @@ object parse {
               case None => throw new IllegalStateException("mapDepL is None")
               case Some(mL)=> mL.update(nameOfIdentifier, RAddrSpace())
             }
-            case ki => return Right(ParseError("Not an accepted Kind: " + ki))
+            case ki => return Right(NotCorrectKind(span, ki, "KindWithDepArrow"))
           }
           println("Kind was in parseDepFunctionType parsed: " + concreteKind)
           parseType(ParseState(tokens.tail.tail, Nil,  parseState.mapDepL, parseState.spanList)) match {
             case Right(e) => Right(e)
             case Left(pS) => {
-              if (pS.parsedSynElems.tail.nonEmpty) return Right(ParseError("ParsedSynElems.tail has to be empty!"))
+              if (pS.parsedSynElems.tail.nonEmpty) throw new IllegalStateException("ParsedSynElems.tail has to be empty!") //Todo: write test
               val depFun: SType = pS.parsedSynElems.head match {
                 case SType(outT, sp) => {
                   concreteKind match {
@@ -573,27 +566,39 @@ object parse {
                       rt.NatIdentifier(nameOfIdentifier), outT), sp)
                     case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](
                       rt.AddressSpaceIdentifier(nameOfIdentifier), outT), sp)
-                    case ki => return Right(ParseError("Not an accepted Kind: " + ki))
+                    case ki => return Right(NotCorrectKind(sp, ki, "KindWithDepArrow"))
                   }
                 }
-                case _ => return Right(ParseError("Not a Type"))
+                case wrongSynEl => return Right(NotCorrectSynElem(wrongSynEl, "SType", "KindWithDepArrow"))
               }
               Left(ParseState(pS.tokenStream, depFun :: newPS,  pS.mapDepL, pS.spanList))
             }
           }
         }
-        case notAtype => Right(ParseError("failed to parse Type (in DepFunction): " + notAtype + " is not an Type"))
+        case notAnDepArrow => Right(NotCorrectToken(notAnDepArrow, "DepArrow", "KindWithDepArrow"))
       }
-      case Arrow(_) => Right(ParseError("DepArrow and not Arrow was expected"))
-      case t => Right(ParseError("DepArrow and not " + t + " was expected"))
+      case t => Right(NotCorrectToken(t, "Kind", "KindWithDepArrow"))
     }
   }
 
-  def parseDepFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+
+  private def isMinLen(l:List[Token], minLen: Int, whatToParse:String):Option[PreAndErrorSynElems]={
+    if (l.length < minLen) {
+      if(l.isEmpty){
+        return Some(TokListIsEmpty(SpanPlaceholder, whatToParse))
+      }
+      return Some(TokListTooSmall(l, minLen, whatToParse))
+    }
+    return None
+  }
+
+  def parseDepFunctionType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseDepFunctionType: " + parseState)
     val ParseState(tokens, _,  _, _) = parseState
-    if (tokens.length < 3) {
-      return Right(ParseError("only " + tokens.length + " arguments are in the TokenList, but we need minimum 3!"))
+
+    isMinLen(tokens, 3, "DepFunctionType") match{
+      case Some(e) => return Right(e)
+      case None => None
     }
 
     val psOld =
@@ -604,11 +609,12 @@ object parse {
     psOld
   }
 
-  def parseDepLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseDepLambda(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseDepFunctionType: " + parseState)
     val ParseState(tokens, _,  _, _) = parseState
-    if (tokens.length < 3) {
-      return Right(ParseError("only " + tokens.length + " arguments are in the TokenList, but we need minimum 3!"))
+    isMinLen(tokens, 3, "DepLambda") match{
+      case Some(e) => return Right(e)
+      case None => None
     }
 
     val psOld =
@@ -620,13 +626,13 @@ object parse {
     psOld
   }
 
-  def parseArrow(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseArrow(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedExprs, mapDepL, spanList) = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case Arrow(_) =>
-      case tok => Right(ParseError("failed to parse Arrow: " + tok + " is not an Arrow"))
+      case tok => Right(NotCorrectToken(tok, "Arrow", "Arrow"))
     }
 
     Left(ParseState(remainderTokens, parsedExprs, mapDepL, spanList))
@@ -877,7 +883,7 @@ object parse {
   }
 
   def parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState: ParseState):
-  Either[MapFkt, ParseErrorOrState] = {
+  Either[MapFkt, PreAndErrorSynElems] = {
     val mapFkt = new MapFkt
     if (parseState.tokenStream.isEmpty) {
       throw new IllegalArgumentException("TokenStream is empty")
@@ -944,7 +950,7 @@ object parse {
 
   only use as top level!
    */
-  def parseNamedExpr(parseState: ParseState, mapFkt: MapFkt): Either[List[Token], ParseErrorOrState] = {
+  def parseNamedExpr(parseState: ParseState, mapFkt: MapFkt): Either[List[Token], PreAndErrorSynElems] = {
     require(parseState.parsedSynElems.isEmpty, "parseState is not empty, but nothing should be in it yet")
     val psLambdaOld =
       Left(parseState) |>
@@ -1041,7 +1047,7 @@ object parse {
   /*
   mapFkt is by reference, and does not to be returned
    */
-  def parseTypAnnotatedIdent(parseState: ParseState, mapFkt:MapFkt): Either[List[Token], ParseErrorOrState] = {
+  def parseTypAnnotatedIdent(parseState: ParseState, mapFkt:MapFkt): Either[List[Token], PreAndErrorSynElems] = {
     require(parseState.parsedSynElems.isEmpty, "parseState is not empty, but nothing should be in it yet")
     val psLambdaOld =
       Left(parseState) |>
@@ -1153,25 +1159,25 @@ object parse {
     }
   }
 
-  def parseType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseType: " + parseState)
-    val ps: Either[ParseState, ParseErrorOrState] =
+    val ps: Either[ParseState, PreAndErrorSynElems] =
       Left(parseState) |>
         (parseDepOrNormalFunctionType _ || parseSimpleType)
     ps
   }
 
-  def parseDepOrNormalFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseDepOrNormalFunctionType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseType: " + parseState)
-    val ps: Either[ParseState, ParseErrorOrState] =
+    val ps: Either[ParseState, PreAndErrorSynElems] =
       Left(parseState) |>
         (parseDepFunctionType _ || parseFunctionType)
     ps
   }
 
-  def parseSimpleType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseSimpleType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseType: " + parseState)
-    val ps: Either[ParseState, ParseErrorOrState] =
+    val ps: Either[ParseState, PreAndErrorSynElems] =
       Left(parseState) |>
         (parseBracesExprType _ ||
           parseTupleType || parseIndexType || parseArrayType || parseVecType ||
@@ -1179,7 +1185,7 @@ object parse {
     ps
   }
 
-  def parseFunctionType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseFunctionType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ps = parseSimpleType(parseState)
     ps match {
       case Right(e) => Right(e)
@@ -1202,13 +1208,13 @@ object parse {
           //Todo: Maybe remove already here the EndTypAnnotatedIdent or RBrace from the TokenList
           case EndTypAnnotatedIdent(_) => Left(p)
           case RParentheses(_) => Left(p)
-          case a => Right(ParseError("the Token '" + a + "' is not here expected!!!"))
+          case a => Right(NotCorrectToken(a, "Arrow, EndTypAnn or RParentheses", "FunctionType"))
         }
       }
     }
   }
 
-  private def parseCompLoop(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  private def parseCompLoop(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseCompLoop: "+ parseState.tokenStream)
     val p = Left(parseState)|> parseDot |> parseNoAppExpr
     p match{
@@ -1236,7 +1242,7 @@ object parse {
   //Todo: and with that I can return this SyntaxElement so that SComp has to look something like this:
   //Todo: SComp = (e1:r.Expr, s2:SyntaxElement, span:Span) and with that I have to create an Lambda like this
   //Todo: r.Lambda(r.freshname(e), r.App(e1,createLambda(s2))(r.TypePlaceholder, Some(span))
-  private def parseComp(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  private def parseComp(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseComp: " + parseState)
 //    val cpyMapFkt = parseState.mapFkt.clone()
     val psOld = Left(ParseState(parseState.tokenStream, parseState.parsedSynElems.head::Nil,  parseState.mapDepL, parseState.spanList)) |>
@@ -1254,7 +1260,7 @@ object parse {
         var synElems = ps.parsedSynElems
 
         val (e1, sp1) = getExprAndSpan(synElems.head,parseState).get
-        if(synElems.tail.isEmpty) return Right(ParseError("synElems is empty:"+ synElems))
+        if(synElems.tail.isEmpty) return Right(SynListIsEmpty(sp1, "Composition"))
         val (e2, sp2) = getExprAndSpan(synElems.tail.head,parseState).get
         val span = sp1 + sp2 //+ lastElemSpan
         val name = r.freshName("e")
@@ -1295,7 +1301,7 @@ object parse {
 is the whole Syntax-Tree.
 the syntax-Tree has on top an Lambda-Expression
  */
-  def parseLambda(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseLambda(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     if(parseState.tokenStream.isEmpty){
       println("Abbruch; parseLambda: "+ parseState)
       return Left(parseState)
@@ -1383,7 +1389,7 @@ the syntax-Tree has on top an Lambda-Expression
   //_________________________________________________________Lambda
   //_________________________________________________________Expres
 
-  def parseNoAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseNoAppExpr(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseLowExpression: " + parseState)
     Left(parseState) |>
       (parseLambda _ || parseDepLambda || parseBracesExpr ||
@@ -1395,7 +1401,7 @@ the syntax-Tree has on top an Lambda-Expression
   }
 
   //Todo:Maybe not needed any more
-//  def ParseTypesUntilRBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+//  def ParseTypesUntilRBracket(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
 //    if(parseState.tokenStream.isEmpty||parseState.tokenStream.head.isInstanceOf[RBracket]){
 //      println("Abbruch; endlessPossibleParseType: "+ parseState)
 //      return Left(parseState)
@@ -1415,7 +1421,7 @@ the syntax-Tree has on top an Lambda-Expression
 //    }
 //  }
 
-  def parseDepOrNormalFunctionTypeInNoAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseDepOrNormalFunctionTypeInNoAppExpr(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val p = //Todo: change so that no Brackets are needed, only parentheses for Dep- and FunctionType
       Left(parseState) |>
         parseLeftParentheses |>
@@ -1427,7 +1433,7 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
-  def parseTypeinNoAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseTypeinNoAppExpr(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseTypeinNoAppExpr: "+ parseState)
     if(parseState.tokenStream.isEmpty){
       println("Abbruch; parseTypeinNoAppExpr: "+ parseState)
@@ -1448,7 +1454,7 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
-  def parseBracesExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseBracesExpr(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     println("parseBracesExpr: "+ parseState)
     if(parseState.tokenStream.isEmpty){
       println("Abbruch; parseBracesExpr: "+ parseState)
@@ -1498,7 +1504,7 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
-  def parseArrayType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseArrayType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     //println("parseIndexType: " + parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList) )  |>
@@ -1542,7 +1548,7 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
-  def parseIndexType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseIndexType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     //println("parseIndexType: " + parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList) )  |>
@@ -1574,7 +1580,7 @@ the syntax-Tree has on top an Lambda-Expression
       case Right(e) => Right(e)
     }
   }
-  def parseTupleType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseTupleType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     //println("parseTupleType: "+ parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList) )  |>
@@ -1606,7 +1612,7 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
-  def parseBracesExprType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseBracesExprType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     //println("parseBracesExprType: "+ parseState)
     val p =
       Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList) )  |>
@@ -1637,7 +1643,7 @@ the syntax-Tree has on top an Lambda-Expression
     tokenStream.isEmpty||tokenStream.head.isInstanceOf[EndNamedExpr]
   }
 
-  def parseMaybeAppExpr(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseMaybeAppExpr(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     //println("parseMaybeAppExpr: " + parseState)
     if(parseState.tokenStream.head.isInstanceOf[RParentheses]){
       println("L" +
@@ -1681,36 +1687,34 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
-  def parseEqualsSign(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseEqualsSign(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedExprs, mapDepL, spanList) = parseState
     if (tokens.isEmpty) {
-      return Right(ParseError("failed to parse EqualsSign: " + " List is empty"))
+      return Right(TokListIsEmpty(SpanPlaceholder, "EqualsSign"))
     }
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case EqualsSign(_) =>
       case tok => {
-        println("failed parseBacklash: " + parseState)
-        return Right(ParseError("failed to parse Backslash: " + tok + " is not an Backslash"))
+        return Right(NotCorrectToken(tok, "EqualsSign", "EqualsSign"))
       }
     }
 
     Left(ParseState(remainderTokens, parsedExprs, mapDepL, spanList) )
   }
 
-  def parseDoubleColons(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseDoubleColons(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedExprs, mapDepL, spanList) = parseState
     if (tokens.isEmpty) {
-      return Right(ParseError("failed to parse DoubleColons: " + " List is empty"))
+      return Right(TokListIsEmpty(SpanPlaceholder, "DoubleColons"))
     }
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case DoubleColons(_) =>
       case tok => {
-        println("failed parseBacklash: " + parseState)
-        return Right(ParseError("failed to parse Backslash: " + tok + " is not an Backslash"))
+        return Right(NotCorrectToken(tok, "DoubleColons", "DoubleColons" ))
       }
     }
 
@@ -1718,7 +1722,10 @@ the syntax-Tree has on top an Lambda-Expression
   }
 
 
-  def parseAddrSpaceType(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseAddrSpaceType(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
+    if (parseState.tokenStream.isEmpty) {
+      return Right(TokListIsEmpty(SpanPlaceholder, "AddrSpacerType"))
+    }
     val nextToken :: remainderTokens = parseState.tokenStream
 
     nextToken match {
@@ -1734,12 +1741,12 @@ the syntax-Tree has on top an Lambda-Expression
       }
       case tok => {
         println("AddrSpaceTypeWasExpected: "+ tok + ": " + remainderTokens)
-        Right(ParseError("failed to parse parseAddrSpaceType: " + tok + " is not an AddrSpaceType"))
+        Right(NotCorrectToken(tok, "addrSpaceType", "AddrSpaceType"))
       }
     }
   }
 
-  def parseUnOperator(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseUnOperator(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val nextToken :: remainderTokens = parseState.tokenStream
 
     val p = nextToken match {
@@ -1750,18 +1757,18 @@ the syntax-Tree has on top an Lambda-Expression
           SExpr(r.primitives.not(Some(span))) :: parseState.parsedSynElems, parseState.mapDepL, parseState.spanList) )
       }
       case tok => {
-        println("UnaryOperatorWasExpected: "+ tok + ": " + remainderTokens)
-        Right(ParseError("failed to parse parseUnOperator: " + tok + " is not an UnaryOperator"))
+        //println("UnaryOperatorWasExpected: "+ tok + ": " + remainderTokens)
+        Right(NotCorrectToken(tok, "UnOp", "UnOperator"))
       }
     }
     p
   }
 
-  def parseNumber(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseNumber(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     //println("ParseNumber: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     if(tokens.isEmpty){
-      return Right(ParseError("failed to parse Number: " + " List is empty"))
+      return Right(TokListIsEmpty(SpanPlaceholder, "Number"))
     }
     val nextToken :: remainderTokens = tokens
 
@@ -1774,12 +1781,12 @@ the syntax-Tree has on top an Lambda-Expression
         Left(ParseState(remainderTokens, SExpr(r.Literal(rS.FloatData(number),Some(span))) :: parsedSynElems, mapDepL, spanList) )
       case F64(number, span) =>
         Left(ParseState(remainderTokens, SExpr(r.Literal(rS.DoubleData(number),Some(span))) :: parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse Number: " + tok + " is not an accepted Integer of Float"))
+      case tok => Right(NotCorrectToken(tok, "Integer of Float", "Number"))
     }
   }
 
 
-  def parseBinOperator(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseBinOperator(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     //println("parseBinOperator: "+ parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
@@ -1808,66 +1815,67 @@ the syntax-Tree has on top an Lambda-Expression
         case OpType.BinOpType.SUB => Left(ParseState(remainderTokens, SExpr(
           r.primitives.sub(Some(span))) :: parsedSynElems, mapDepL, spanList) )
         case tok => {
-          println("Das hier kann nicht sein, weil alle Operatoren müsste ich abgedeckt haben. BinOp: '" + tok +
-            "' is no BinOperator!")
-          Right(ParseError("failed to parse BinOperator: " + tok + " is not an accepted BinOp"))
+          //println("Das hier kann nicht sein, weil alle Operatoren müsste ich abgedeckt haben. BinOp: '" + tok +
+          //  "' is no BinOperator!")
+          Right(NotCorrectToken(BinOp(op, span), "BinOp", "BinOp"))
         }
       }
       case tok => {
         println("BinOp: '" + tok + "' is no BinOperator!")
-        Right(ParseError("failed to parse BinOperator: " + tok + " is not an BinOp"))
+        Right(NotCorrectToken(tok, "BinOp", "BinOp"))
       }
     }
   }
 
 
-  def parseComma(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseComma(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     //println("parseComma: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case Comma(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse Comma: " + tok + " is not an Comma"))
+      case tok => Right(NotCorrectToken(tok, "Comma", "Comma"))
     }
   }
 
 
 
-  def parseDepArrow(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseDepArrow(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case DepArrow(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse DepArrow: " + tok + " is not an DepArrow"))
+      case tok => Right(NotCorrectToken(tok, "DepArrow", "DepArrow"))
     }
   }
 
-  def parseColon(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseColon(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case Colon(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse Colon: " + tok + " is not an Colon"))
+      case tok => Right(NotCorrectToken(tok, "Colon", "Colon"))
     }
   }
 
-  def parseDot(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseDot(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
-    if(tokens.isEmpty||tokens.length<=1){
-      return Right(ParseError("failed to parse Dot, because List is empty"))
+    isMinLen(tokens, 2, "Dot") match{
+      case Some(e) => return Right(e)
+      case None => None
     }
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case Dot(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse Dot: " + tok + " is not an Dot"))
+      case tok => Right(NotCorrectToken(tok, "Dot", "Dot"))
     }
   }
 
-  def parseNat(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseNat(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 
@@ -1876,55 +1884,56 @@ the syntax-Tree has on top an Lambda-Expression
         mapDepL, spanList) )
       case TypeIdentifier(name, spanTypeIdentifier) =>Left(ParseState(remainderTokens,
         SNat(NIdentifier(rt.NatIdentifier(name)), spanTypeIdentifier)::parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse Nat: " + tok + " is not an Nat in " + tok.s))
+      case tok => Right(NotCorrectToken(tok, "NatNumber or TypeIdent", "Nat"))
     }
   }
 
-  def parseData(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseData(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case TypeIdentifier(name, sp) =>Left(ParseState(remainderTokens,
         SData(DIdentifier(rt.DataTypeIdentifier(name)), sp)::parsedSynElems, mapDepL, spanList) )
-      case a => Right(ParseError("It ist DatatypeIdentifier expected but '"+ a.toString +"' is not an DataTypeIdentifier: " + a.s.toString + a.s.file.toString))
+      case a => Right(NotCorrectToken(a, "TypeIdent", "Data"))
     }
   }
 
-  def parseLeftBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseLeftBracket(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
-    if(tokens.isEmpty||tokens.length<=1){
-      return Right(ParseError("failed to parse LeftBracket, because List is empty"))
+    isMinLen(tokens, 2, "LeftBracket") match{
+      case Some(e) => return Right(e)
+      case None => None
     }
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case LBracket(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse LeftBracket: " + tok + " is not an LeftBracket"))
+      case tok => Right(NotCorrectToken(tok, "LBracket", "LBracket"))
     }
   }
 
-  def parseRightBracket(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseRightBracket(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case RBracket(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList) )
-      case tok => Right(ParseError("failed to parse RightBracket: " + tok + " is not an RightBracket"))
+      case tok => Right(NotCorrectToken(tok, "RBracket", "RBracket"))
     }
   }
 
-  def parseLeftParentheses(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseLeftParentheses(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, _)  = parseState
     val nextToken :: remainderTokens = tokens
 
     nextToken match {
       case LParentheses(sp) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, Some(sp::Nil)))
-      case tok => Right(ParseError("failed to parse LeftParentheses: " + tok + " is not an LeftParentheses"))
+      case tok => Right(NotCorrectToken(tok, "LParentheses", "LParentheses"))
     }
   }
 
-  def parseRightParentheses(parseState: ParseState): Either[ParseState, ParseErrorOrState] = {
+  def parseRightParentheses(parseState: ParseState): Either[ParseState, PreAndErrorSynElems] = {
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
 
@@ -1938,7 +1947,7 @@ the syntax-Tree has on top an Lambda-Expression
 
     nextToken match {
       case RParentheses(sp) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, Some(sp::spanL ::Nil)) )
-      case tok => Right(ParseError("failed to parse RightParentheses: " + tok + " is not an RightParentheses"))
+      case tok => Right(NotCorrectToken(tok, "RParentheses", "RParentheses"))
     }
   }
 

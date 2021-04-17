@@ -50,6 +50,9 @@ abstract sealed class ErrorMessages(span:Span) {
   }
 }
 
+//______________________________________________________________________________________________________
+//Lexer
+
 abstract sealed class PreAndErrorToken(span: Span) extends ErrorMessages(span)
 
 final case class EndOfLine(span:Span) extends PreAndErrorToken(span){
@@ -176,3 +179,59 @@ final case class IdentifierExpectedNotTypeIdentifier(name: String, span:Span)
   extends PreAndErrorToken(span){
   override def description() = "It is an Identifier expected. '" + name + "' is an TypeIdentifier"
 }
+
+
+//__________________________________________________________________________________________________________
+//Parser
+
+abstract sealed class PreAndErrorSynElems(span: Span, whatToParse: String) extends ErrorMessages(span){
+  def subDescription():String= {
+    throw new Exception("SubDescriptionError method must be overridden")
+  }
+
+  override def description(): String = subDescription() + " ~ while parsing'" + whatToParse + "' ~"
+}
+
+final case class SynListIsEmpty(span: Span, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  override def subDescription(): String = "SyntayElementslist is empty"
+}
+
+final case class TokListIsEmpty(span: Span, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  override def subDescription(): String = "Tokenlist is empty"
+}
+
+/*
+has to have at least one elem else ListIsEmpty Exeption should be used
+ */
+final case class TokListTooSmall(list: List[Token], minimumLen: Int, whatToParse: String)
+  extends PreAndErrorSynElems(list.head.s, whatToParse){
+  override def subDescription(): String = "Tokenlist size is "+ list.size+ " but min. Lenght is "+ minimumLen
+}
+
+final case class NotCorrectToken(token: Token, expectedToken:String, whatToParse: String)
+  extends PreAndErrorSynElems(token.s, whatToParse){
+  override def subDescription(): String = "'"+token+"' is not '"+ expectedToken+"'"
+}
+
+final case class NoKindWithThisName(kind: TypeIdentifier, whatToParse: String)
+  extends PreAndErrorSynElems(kind.span, whatToParse){
+  override def subDescription(): String = "TypeIdent '"+kind.name+"' is not declared"
+}
+
+final case class NotAcceptedScalarType(span:Span, notAcceptedType: ConcreteType, whatToParse: String)
+  extends  PreAndErrorSynElems(span, whatToParse){
+  override def subDescription(): String = "'"+notAcceptedType+"' is not an ScalarType"
+}
+
+final case class NotCorrectKind(span:Span, kind: ConcreteKind, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  override def subDescription(): String = "'"+kind+"' is not the expected Kind"
+}
+
+final case class NotCorrectSynElem(wrongSynElem: parser.parse.SyntaxElement,expectedSynElem: String, whatToParse: String)
+  extends PreAndErrorSynElems(Span.getSpanSynElem(wrongSynElem).get, whatToParse){
+  override def subDescription(): String = "'"+wrongSynElem+"' is not the expected SynElem '" + expectedSynElem +"'"
+}
+

@@ -76,6 +76,21 @@ case class Span(file: FileReader, begin: Location, end: Location) {
     ret
   }
 }
+object Span {
+  import parser.parse._
+  def getSpanSynElem(synElem:SyntaxElement):Option[Span]={
+    synElem match {
+      case SExprClutched(_, spanClutch) => Some(spanClutch)
+      case SLet(span) => Some(span)
+      case SAddrSpace(_, span)=> Some(span)
+      case SType(_, span)=> Some(span)
+      case SExpr(expr) => expr.span
+      case SNat(_, span) => Some(span)
+      case SData(_, span) => Some(span)
+      case SIntToExpr(_, span)=> Some(span)
+    }
+  }
+}
 
 /*
 a symbol/token, which represents a Lexem: a logical part of the Code
