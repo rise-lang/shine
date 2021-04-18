@@ -264,9 +264,20 @@ final case class ErrorList(){
       deepestElem += 1
     }
     errorList = e::errorList
+    //println("ErrorList: " +this.toString)
     return this
   }
 
+  def returnDeepestElem():String = "deepestElem at "+ this.deepestElem + ":\n"+ this.errorList(this.deepestElem).returnMessage()
+  def returnList():String = {
+    var s = "\nfull ErrorList:\n"
+    val l = this.errorList
+    for(i <- 0 until l.size){
+      s = s+i+".th: "+l(i).returnMessage()+"\n"
+    }
+    s
+  }
+  override def toString: String =  returnDeepestElem()+returnList()
   def getList():List[PreAndErrorSynElems]=return this.errorList
   def getDeepestElemPos():Int =return this.deepestElem
   def getDeepestElem():PreAndErrorSynElems =return this.errorList(this.deepestElem)

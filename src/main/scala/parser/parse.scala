@@ -1004,7 +1004,11 @@ object parse {
 
 
     val (tokenList,synElemList, mapDepL) = psNamedExprBefore match {
-      case Right(e) => return Right(newEL.add(e))
+      case Right(e) => {
+        val eL = newEL.add(e)
+        println("return ErrorList from parsedNewExpr: " +eL)
+        return Right(eL)
+      }
       case Left(p) => {
         p.tokenStream match {
 
