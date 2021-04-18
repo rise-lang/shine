@@ -7,10 +7,13 @@ trait ParserError { self: Throwable =>
   def span: Span
 }
 
+
+
 abstract sealed class ErrorMessages(span:Span) {
   val fileReader = span.file
   val begin = span.begin
   val end = span.end
+  val s = span
   private def underline(str:String):String = {
     var s:String = ""
     for( a <- str){ s = s + a + "\u0332" }
@@ -235,3 +238,23 @@ final case class NotCorrectSynElem(wrongSynElem: parser.parse.SyntaxElement,expe
   override def subDescription(): String = "'"+wrongSynElem+"' is not the expected SynElem '" + expectedSynElem +"'"
 }
 
+//__________________________________________________________________________________________________________
+//ErrorList
+
+final case class ErrorList(){
+  private var errorList: List[PreAndErrorSynElems] = Nil
+  private var deepestElem: Int = -1
+
+  def add(e:PreAndErrorSynElems):Unit={
+    if(errorList.forall(p=>e.s.isAfter(p.s))){
+       deepestElem = 0
+    }else{
+      deepestElem += 1
+    }
+    errorList = e::errorList
+  }
+
+  def getList():List[PreAndErrorSynElems]=return this.errorList
+  def getDeepestElemPos():Int =return this.deepestElem
+  def getDeepestElem():PreAndErrorSynElems =return this.errorList(this.deepestElem)
+}
