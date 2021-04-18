@@ -34,6 +34,8 @@ case class Span(file: FileReader, begin: Location, end: Location) {
     begin.toString+ "-"+end.toString + " in " + file.fileName
   }
 
+  def ==(span: Span): Boolean = span.begin == this.begin && span.end == this.end &&span.file.fileName.equals(this.file.fileName)
+
   /*
   both have to be in the same file!
    */

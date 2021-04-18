@@ -51,6 +51,8 @@ abstract sealed class ErrorMessages(span:Span) {
       override def span: Span = sp
     }
   }
+
+  def ==(error:ErrorMessages): Boolean = error.s==this.s&&error.description().equals(this.description())
 }
 
 //______________________________________________________________________________________________________
@@ -245,13 +247,24 @@ final case class ErrorList(){
   private var errorList: List[PreAndErrorSynElems] = Nil
   private var deepestElem: Int = -1
 
-  def add(e:PreAndErrorSynElems):Unit={
+  def add(e:PreAndErrorSynElems):ErrorList={
+    if(errorList.isEmpty){
+      errorList = e::errorList
+      deepestElem = 0
+      return this
+    }
+    if(e==errorList(0)){
+      println("same Error")
+      return this
+    }
+    //Todo: maybe only for the deepest elem check if he is deeper and configure the first elem as the deepest automatically
     if(errorList.forall(p=>e.s.isAfter(p.s))){
        deepestElem = 0
     }else{
       deepestElem += 1
     }
     errorList = e::errorList
+    return this
   }
 
   def getList():List[PreAndErrorSynElems]=return this.errorList
