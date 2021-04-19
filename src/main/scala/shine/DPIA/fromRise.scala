@@ -60,7 +60,7 @@ object fromRise {
         case n: rt.Nat          => depApp[NatKind](f, nat(n))
         case dt: rt.DataType    => depApp[DataKind](f, dataType(dt))
         case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
-        case n2n: rt.NatToNat   => depApp[NatToNatKind](f, nat2nat(n2n))
+        case n2n: rt.NatToNat   => depApp[NatToNatKind](f, ntn(n2n))
       }
 
     case r.Literal(d) => d match {
@@ -941,13 +941,6 @@ object fromRise {
     case rt.AddressSpace.Private => AddressSpace.Private
     case rt.AddressSpace.Constant => AddressSpace.Constant
     case rt.AddressSpaceIdentifier(name, _) => AddressSpaceIdentifier(name)
-  }
-
-  def nat2nat(n2n: rt.NatToNat): NatToNat = n2n match {
-    case rt.NatToNatIdentifier(name, _) =>
-      NatToNatIdentifier(name)
-    case rt.NatToNatLambda(x, body) =>
-      NatToNatLambda(x.range, NatIdentifier(x.name), nat(body))
   }
 
   def dataType(t: rt.DataType): DataType = t match {
