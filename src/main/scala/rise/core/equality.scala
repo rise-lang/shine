@@ -206,7 +206,10 @@ object equality {
       case Literal(_: IndexData) => 93
       case Literal(_: ArrayData) => 95
       case Literal(_: PairData) => 97
-      case p: Primitive => p.name.hashCode() + typeEq.hash[TypeKind](p.t)
+      case Opaque(e, t) => 101*hash(e) + 103*typeEq.hash[TypeKind](t)
+      case TypeAnnotation(e, t) => 107*hash(e) + 109*typeEq.hash[TypeKind](t)
+      case TypeAssertion(e, t) => 113*hash(e) + 127*typeEq.hash[TypeKind](t)
+      case p: Primitive => 131*p.name.hashCode() + 137*typeEq.hash[TypeKind](p.t)
     }
   }
 }
