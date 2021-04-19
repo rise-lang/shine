@@ -2,10 +2,12 @@ package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
+import shine.DPIA.Phrases.traverse._
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.NatAsIndex
+import util.monads.Pure
 
 sealed trait Phrase[T <: PhraseType] {
   val t: T
@@ -43,6 +45,7 @@ final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
   extends Phrase[K `()->:` T] {
   override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
   override def toString: String = s"Λ(${x.name} : ${kn.get}). $body"
+  val kindName : KindName[K] = implicitly(kn)
 }
 
 object DepLambda {
@@ -134,7 +137,7 @@ object Phrase {
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
     var substCounter = 0
-    object Visitor extends VisitAndRebuild.Visitor {
+    object Visitor extends PureTraversal {
       def renaming[X <: PhraseType](p: Phrase[X]): Phrase[X] = {
         case class Renaming(idMap: Map[String, String]) extends VisitAndRebuild.Visitor {
           override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
@@ -151,8 +154,7 @@ object Phrase {
           }
 
           override def nat[N <: Nat](n: N): N = n.visitAndRebuild({
-            case i: NatIdentifier =>
-              NatIdentifier(idMap.getOrElse(i.name, i.name))
+            case i: NatIdentifier => NatIdentifier(idMap.getOrElse(i.name, i.name))
             case ae => ae
           }).asInstanceOf[N]
 
@@ -164,13 +166,13 @@ object Phrase {
         }
         VisitAndRebuild(p, Renaming(Map()))
       }
-      override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
-        p match {
+
+      override def phrase[T <: PhraseType]: Phrase[T] => Pure[Phrase[T]] = {
           case `for` =>
             val newPh = if (substCounter == 0) ph else renaming(ph)
             substCounter += 1
-            Stop(newPh.asInstanceOf[Phrase[T]])
-          case Natural(n) =>
+            return_(newPh.asInstanceOf[Phrase[T]])
+          case p@Natural(n) =>
             val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
               case _ => throw new Exception("This should never happen")
@@ -178,19 +180,18 @@ object Phrase {
 
             ph.t match {
               case ExpType(NatType, _) =>
-                Stop(Natural(Nat.substitute(
+                return_(Natural(Nat.substitute(
                   Internal.transientNatFromExpr(ph.asInstanceOf[Phrase[ExpType]]).n, v, n)).asInstanceOf[Phrase[T]])
               case ExpType(IndexType(_), _) =>
-                Stop(Natural(Nat.substitute(
+                return_(Natural(Nat.substitute(
                   Internal.transientNatFromExpr(ph.asInstanceOf[Phrase[ExpType]]).n, v, n)).asInstanceOf[Phrase[T]])
-              case _ => Continue(p, this)
+              case _ => super.phrase(p)
             }
-          case _ => Continue(p, this)
-        }
+          case p => super.phrase(p)
       }
     }
 
-    VisitAndRebuild(in, Visitor)
+    Visitor.phrase(in).unwrap
   }
 
   def substitute[T2 <: PhraseType](substitutionMap: Map[Phrase[_], Phrase[_]],
@@ -360,6 +361,9 @@ object Phrase {
 
 sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
   def prettyPrint: String = this.toString
+
+  def traverse[M[+_]](f: Traversal[M]): M[Phrase[T]] =
+    throw new Exception("traverse should be implemented by a macro")
 
   def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T] =
     throw new Exception("visitAndRebuild should be implemented by a macro")

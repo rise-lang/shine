@@ -10,7 +10,7 @@ object traverse {
   case object Binding extends VarType
   case object Reference extends VarType
 
-  trait Traversal[M[_]] {
+  trait Traversal[M[+_]] {
     protected[this] implicit def monad : Monad[M]
     def return_[T] : T => M[T] = monad.return_
     def bind[T,S] : M[T] => (T => M[S]) => M[S] = monad.bind
@@ -187,13 +187,13 @@ object traverse {
     }
   }
 
-  trait ExprTraversal[M[_]] extends Traversal[M] {
+  trait ExprTraversal[M[+_]] extends Traversal[M] {
     override def `type`[T <: Type] : T => M[T] = return_
   }
 
   trait PureTraversal extends Traversal[Pure] {override def monad : PureMonad.type = PureMonad }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
-  trait AccumulatorTraversal[F,M[_]] extends Traversal[InMonad[M]#SetFst[F]#Type] {
+  trait AccumulatorTraversal[F,M[+_]] extends Traversal[InMonad[M]#SetFst[F]#Type] {
     type Pair[T] = InMonad[M]#SetFst[F]#Type[T]
     implicit val accumulator : Monoid[F]
     implicit val wrapperMonad : Monad[M]
@@ -211,6 +211,6 @@ object traverse {
   def traverse[T <: Type](t: T, f: PureTraversal): T = f.`type`(t).unwrap
   def traverse[F](e: Expr, f: PureAccumulatorTraversal[F]): (F, Expr) = f.expr(e).unwrap
   def traverse[F,T <: Type](t: T, f: PureAccumulatorTraversal[F]): (F, T) = f.`type`(t).unwrap
-  def traverse[M[_]](e: Expr, f: Traversal[M]): M[Expr] = f.expr(e)
-  def traverse[T <: Type, M[_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
+  def traverse[M[+_]](e: Expr, f: Traversal[M]): M[Expr] = f.expr(e)
+  def traverse[T <: Type, M[+_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
 }
