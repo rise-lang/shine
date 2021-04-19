@@ -16,16 +16,14 @@ package object DPIA {
   }
 
   type Nat = ArithExpr
-  type NatIdentifier = NamedVar with Kind.Identifier
-
-  object Nat {
-    def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N =
-      ArithExpr.substitute(in, Map(`for` -> ae)).asInstanceOf[N]
+  case class NatIdentifier(override val name : String, override val range : Range = RangeUnknown) extends NamedVar(name, range) with Kind.Identifier {
+    override def withRange(r : Range) : NatIdentifier = NatIdentifier(name, r)
   }
 
-  object NatIdentifier {
-    def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
-    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
+  object Nat {
+    def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N = {
+      ArithExpr.substitute(in, Map(`for` -> ae)).asInstanceOf[N]
+    }
   }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia
