@@ -1,5 +1,6 @@
 package shine.DPIA
 
+import arithexpr.arithmetic.NamedVar
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
 import rise.elevate.Rise
@@ -56,15 +57,15 @@ object fromRise {
           arg)
 
       x match {
-        case n: Nat             => depApp[NatKind](f, n)
+        case n: rt.Nat          => depApp[NatKind](f, nat(n))
         case dt: rt.DataType    => depApp[DataKind](f, dataType(dt))
         case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
         case n2n: rt.NatToNat   => depApp[NatToNatKind](f, nat2nat(n2n))
       }
 
     case r.Literal(d) => d match {
-      case rs.NatData(n) => Natural(n)
-      case rs.IndexData(i, n) => NatAsIndex(n, Natural(i))
+      case rs.NatData(n) => Natural(nat(n))
+      case rs.IndexData(i, n) => NatAsIndex(nat(n), Natural(nat(i)))
       case _ => Literal(data(d))
     }
 
@@ -82,8 +83,8 @@ object fromRise {
     case rs.FloatData(f) => FloatData(f)
     case rs.DoubleData(d) => DoubleData(d)
     case rs.VectorData(v) => VectorData(v.map(data(_)).toVector)
-    case rs.IndexData(i, n) => IndexData(i, n)
-    case rs.NatData(n) => NatData(n)
+    case rs.IndexData(i, n) => IndexData(nat(i), nat(n))
+    case rs.NatData(n) => NatData(nat(n))
   }
 
   import rise.core.{primitives => core}
@@ -946,22 +947,22 @@ object fromRise {
     case rt.NatToNatIdentifier(name, _) =>
       NatToNatIdentifier(name)
     case rt.NatToNatLambda(x, body) =>
-      NatToNatLambda(x.range, NatIdentifier(x.name), body)
+      NatToNatLambda(x.range, NatIdentifier(x.name), nat(body))
   }
 
   def dataType(t: rt.DataType): DataType = t match {
     case st: rt.ScalarType => scalarType(st)
     case rt.NatType => NatType
-    case rt.IndexType(sz) => IndexType(sz)
+    case rt.IndexType(sz) => IndexType(nat(sz))
     case rt.VectorType(sz, et) => et match {
-      case e : rt.ScalarType => VectorType(sz, scalarType(e))
+      case e : rt.ScalarType => VectorType(nat(sz), scalarType(e))
       case _ => ???
     }
     case i: rt.DataTypeIdentifier => dataTypeIdentifier(i)
-    case rt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
-    case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
+    case rt.ArrayType(sz, et) => ArrayType(nat(sz), dataType(et))
+    case rt.DepArrayType(sz, f) => DepArrayType(nat(sz), ntd(f))
     case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
-    case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
+    case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), nat(n))
     case rt.DepPairType(x, t) =>
       x match {
       case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
@@ -970,11 +971,11 @@ object fromRise {
     case f: rt.FragmentType =>
       f.fragmentKind match {
         case rt.FragmentKind.AMatrix =>
-          FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentKind.AMatrix, layout(f.layout))
+          FragmentType(nat(f.rows), nat(f.d3), nat(f.columns), dataType(f.dataType), FragmentKind.AMatrix, layout(f.layout))
         case rt.FragmentKind.BMatrix =>
-          FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentKind.BMatrix, layout(f.layout))
+          FragmentType(nat(f.d3), nat(f.columns), nat(f.rows), dataType(f.dataType), FragmentKind.BMatrix, layout(f.layout))
         case rt.FragmentKind.Acuumulator =>
-          FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentKind.Accumulator, layout(f.layout))
+          FragmentType(nat(f.rows), nat(f.columns), nat(f.d3), dataType(f.dataType), FragmentKind.Accumulator, layout(f.layout))
         case _ => throw new Exception("this should not happen")
       }
   }
@@ -1011,8 +1012,13 @@ object fromRise {
   }
 
   def ntn(ntn: rt.NatToNat): NatToNat= ntn match {
-    case rt.NatToNatLambda(n, body) => NatToNatLambda(natIdentifier(n), body)
+    case rt.NatToNatLambda(n, body) => NatToNatLambda(natIdentifier(n), nat(body))
     case rt.NatToNatIdentifier(x, _) => NatToNatIdentifier(x)
+  }
+
+  def nat(n : rt.Nat) : Nat = n.visitAndRebuild{
+    case i : NamedVar => NatIdentifier(i.name, i.range)
+    case e => e
   }
 
   def dataTypeIdentifier(dt: rt.DataTypeIdentifier): DataTypeIdentifier =
