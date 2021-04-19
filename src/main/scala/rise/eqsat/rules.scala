@@ -1,7 +1,6 @@
 package rise.eqsat
 
 import PatternDSL._
-import rise.core.types.{Nat, NatKind}
 import rise.core.{primitives => rcp}
 
 object rules {
@@ -18,6 +17,28 @@ object rules {
   // TODO: automate DeBruijn indices shifting
   // TODO: find a way to combine different analysis requirements?
 
+  // -- reduction --
+
+  val eta: Rule = Rewrite.init("eta",
+    lam(app(?(0), %(0))).compile()
+      -->
+      ConditionalApplier(neg(containsIdent(?(0), %(0))),
+        ShiftedApplier(?(0), ?(1), -1, 1,
+          ?(1): Pattern))
+  )
+  val beta: Rule = Rewrite.init("beta",
+    app(lam(?(0)), ?(1)).compile()
+      -->
+      BetaApplier(?(0), ?(1))
+  )
+
+  import rise.core.types.{Nat, DataType, Type}
+  import NamedRewriteDSL._
+
+  val removeTransposePair: Rule = NamedRewrite.init("remove-transpose-pair",
+    app(transpose, app(transpose, "x")) --> "x"
+  )
+
   // -- algorithmic --
 
   // ?(0) + \. ?(0) + %(0) --> ?(0)
@@ -27,96 +48,82 @@ object rules {
   // \. %(0) + \. %(1) + %(0)
   // in e-graph: %(0) != %(1)
 
-  lazy val mapFusion: Rule = Rewrite.syntactic("map-fusion",
-    app(app(map, ?(0)), app(app(map, ?(1)), ?(2)))
+  lazy val mapFusion: Rule = NamedRewrite.init("map-fusion",
+    app(app(map, "f"), app(app(map, "g"), "in"))
       -->
     // TODO: inject
     // ShiftedApplier(?(0), _, up = true, 0,
     // ShiftedApplier(?(1), _, up = true, 0,
-    app(app(map, lam(app(?(0), app(?(1), %(0))))), ?(2))
+    app(app(map, lam("x", app("f", app("g", "x")))), "in")
   )
-  lazy val mapFission: Rule = Rewrite.syntactic("map-fission",
-    app(map, lam(app(?(0), ?(1))))
+  val mapFission: Rule = NamedRewrite.init("map-fission",
+    app(map, lam("x", app("f", "gx" :: ("dt": DataType))))
       -->
     // TODO: inject
     // ShiftedApplier(?(1), _, up = true, 1,
-    lam(app(app(map, ?(0)), app(app(map, lam(?(1))), %(0))))
+    lam("in", app(app(map, "f"), app(app(map, lam("x", "gx")), "in")))
   ) when neg(containsIdent(?(0), %(0)))
 
   // - slide widening -
-/* TODO
-  val dropInSlide: Rule = Rewrite.init("drop-in-slide",
-    app(nApp(drop, ?("l")), app(nApp(nApp(slide, ?("n")), cst(1)), ?("in"))).compile(),
-    app(app(map, nApp(drop, ?("l"))), app(nApp(nApp(slide, ?("n") + ?("l")), cst(1)), ?("in")))
-  )
-  val takeInSlide: Rule = Rewrite.init("take-in-slide",
-    app(nApp(take, ?("r")), app(nApp(nApp(slide, ?("n")), cst(1)), ?("in"))).compile(),
-    // TODO: match on `take : s._ -> _`
-    app(app(map, nApp(take, ?("n"))), app(nApp(nApp(slide, ?("n") + ?("s") - ?("r")), cst(1)), ?("in")))
-  )
-*/
-  // -- reduction --
 
-  val eta: Rule = Rewrite.init("eta",
-    lam(app(?(0), %(0))).compile()
+  // TODO:
+  lazy val dropInSlide: Rule = NamedRewrite.init("drop-in-slide",
+    app(nApp(drop, "l"), app(nApp(nApp(slide, "n"), 1: Nat), "in"))
       -->
-    ConditionalApplier(neg(containsIdent(?(0), %(0))),
-      ShiftedApplier(?(0), ?(1), up = false, 1,
-        ?(1): Pattern))
+    app(app(map, nApp(drop, "l")), app(nApp(nApp(slide, ("n": Nat) + ("l": Nat)), 1: Nat), "in"))
   )
-  val beta: Rule = Rewrite.init("beta",
-    app(lam(?(0)), ?(1)).compile()
+  lazy val takeInSlide: Rule = NamedRewrite.init("take-in-slide",
+    app(nApp(take, "r") :: ((("s": Nat)`.``_`) ->: `_`), app(nApp(nApp(slide, "n"), 1: Nat), "in"))
       -->
-    BetaApplier(?(0), ?(1))
-  )
-  val removeTransposePair: Rule = Rewrite.syntactic("remove-transpose-pair",
-    app(transpose, app(transpose, ?(0))) --> ?(0)
+    app(app(map, nApp(take, "n")), app(nApp(nApp(slide, ("n": Nat) + ("s": Nat) - ("r": Nat)), 1: Nat), "in"))
   )
 
   // -- movement --
 
-  val mapSlideBeforeTranspose: Rule = Rewrite.syntactic("map-slide-before-transpose",
-    app(transpose, app(app(map, nApp(nApp(slide, `?n`(0)), `?n`(1))), ?(0)))
+  // FIXME: matching shifted nats
+  lazy val mapSlideBeforeTranspose: Rule = NamedRewrite.init("map-slide-before-transpose",
+    app(transpose, app(app(map, nApp(nApp(slide, "sz"), "sp")), "in"))
       -->
-    app(app(map, transpose), app(nApp(nApp(slide, `?n`(0)), `?n`(1)), app(transpose, ?(0))))
+    app(app(map, transpose), app(nApp(nApp(slide, "sz"), "sp"), app(transpose, "in")))
   )
-  val slideBeforeMapMapF: Rule = Rewrite.syntactic("slide-before-map-map-f",
-    app(app(map, app(map, ?(0))), app(nApp(nApp(slide, `?n`(0)), `?n`(1)), ?(1)))
+  lazy val slideBeforeMapMapF: Rule = NamedRewrite.init("slide-before-map-map-f",
+    app(app(map, app(map, "f")), app(nApp(nApp(slide, "sz"), "sp"), "in"))
       -->
-    app(nApp(nApp(slide, `?n`(0)), `?n`(1)), app(app(map, ?(0)), ?(1)))
+    app(nApp(nApp(slide, "sz"), "sp"), app(app(map, "f"), "in"))
   )
-  val slideBeforeMap: Rule = Rewrite.syntactic("slide-before-map",
-    app(nApp(nApp(slide, `?n`(0)), `?n`(1)), app(app(map, ?(0)), ?(1)))
+  lazy val slideBeforeMap: Rule = NamedRewrite.init("slide-before-map",
+    app(nApp(nApp(slide, "sz"), "sp"), app(app(map, "f"), "in"))
       -->
-    app(app(map, app(map, ?(0))), app(nApp(nApp(slide, `?n`(0)), `?n`(1)), ?(1)))
+    app(app(map, app(map, "f")), app(nApp(nApp(slide, "sz"), "sp"), "in"))
   )
 
-  val dropBeforeMap: Rule = Rewrite.syntactic("drop-before-map",
-    app(nApp(drop, `?n`(0)), app(app(map, ?(0)), ?(1)))
+  // FIXME: matching shifted nats
+  lazy val dropBeforeMap: Rule = NamedRewrite.init("drop-before-map",
+    app(nApp(drop, "n"), app(app(map, "f"), "in"))
       -->
-    app(app(map, ?(0)), app(nApp(drop, `?n`(0)), ?(1)))
+    app(app(map, "f"), app(nApp(drop, "n"), "in"))
   )
-  val takeBeforeMap: Rule = Rewrite.syntactic("take-before-map",
-    app(nApp(take, `?n`(0)), app(app(map, ?(0)), ?(1)))
+  lazy val takeBeforeMap: Rule = NamedRewrite.init("take-before-map",
+    app(nApp(take, "n"), app(app(map, "f"), "in"))
       -->
-    app(app(map, ?(0)), app(nApp(take, `?n`(0)), ?(1)))
+    app(app(map, "f"), app(nApp(take, "n"), "in"))
   )
 
   // -- lowering --
 
-  val reduceSeqUnroll: Rule = Rewrite.syntactic("reduce-seq-unroll",
-    reduce --> prim(rcp.reduceSeqUnroll.primitive)
+  val reduceSeqUnroll: Rule = NamedRewrite.init("reduce-seq-unroll",
+    reduce --> rcp.reduceSeqUnroll.primitive
   )
-  val mapSeq: Rule = Rewrite.syntactic("map-seq",
-    map --> prim(rcp.mapSeq.primitive)
+  val mapSeq: Rule = NamedRewrite.init("map-seq",
+    map --> rcp.mapSeq.primitive
   )
-  val iterateStream: Rule = Rewrite.syntactic("iterate-stream",
-    map --> prim(rcp.iterateStream.primitive)
+  val iterateStream: Rule = NamedRewrite.init("iterate-stream",
+    map --> rcp.iterateStream.primitive
   )
-  val toMemAfterMapSeq: Rule = Rewrite.syntactic("to-mem-after-map-seq",
-    app(app(prim(rcp.mapSeq.primitive), ?(0)), ?(1))
+  val toMemAfterMapSeq: Rule = NamedRewrite.init("to-mem-after-map-seq",
+    app(app(rcp.mapSeq.primitive, "f"), "in")
       -->
-    app(prim(rcp.toMem.primitive), app(app(prim(rcp.mapSeq.primitive), ?(0)), ?(1)))
+    app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
   )
   /* TODO
         rewrite!("rotate-values-simplified";

@@ -11,21 +11,17 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
   override def toString: String = s"(${node.toString} : $t)"
 
   // shifts De-Bruijn indices up or down if they are >= cutoff
-  def shifted(up: Boolean, cutoff: Int): Expr = {
+  def shifted(shift: Int, cutoff: Int): Expr = {
     Expr(node match {
       case Var(index) =>
-        val newIndex = if (index >= cutoff) {
-          if (up) { index + 1 } else { index - 1 }
-        } else {
-          index
-        }
-        Var(newIndex)
-      case Lambda(e) => Lambda(e.shifted(up, cutoff + 1))
-      case App(f, e) => App(f.shifted(up, cutoff), e.shifted(up, cutoff))
-      case NatLambda(e) => NatLambda(e.shifted(up, cutoff))
-      case NatApp(f, x) => NatApp(f.shifted(up, cutoff), x)
-      case DataLambda(e) => DataLambda(e.shifted(up, cutoff))
-      case DataApp(f, x) => DataApp(f.shifted(up, cutoff), x)
+        val delta = if (index >= cutoff) shift else 0
+        Var(index + delta)
+      case Lambda(e) => Lambda(e.shifted(shift, cutoff + 1))
+      case App(f, e) => App(f.shifted(shift, cutoff), e.shifted(shift, cutoff))
+      case NatLambda(e) => NatLambda(e.shifted(shift, cutoff))
+      case NatApp(f, x) => NatApp(f.shifted(shift, cutoff), x)
+      case DataLambda(e) => DataLambda(e.shifted(shift, cutoff))
+      case DataApp(f, x) => DataApp(f.shifted(shift, cutoff), x)
       case Literal(_) | Primitive(_) => node
     }, t)
   }
@@ -35,7 +31,8 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
       case Var(idx) if idx == index => subs
       case Var(_) => this
       case Lambda(e) =>
-        val e2 = e.replace(index + 1, subs.shifted(up = true, 0))
+        // TODO: could shift lazily
+        val e2 = e.replace(index + 1, subs.shifted(1, 0))
         Expr(Lambda(e2), t)
       case App(f, e) =>
         val f2 = f.replace(index, subs)
@@ -51,8 +48,8 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
 
   // substitutes %0 for arg in this
   def withArgument(arg: Expr): Expr = {
-    replace(0, arg.shifted(up = true, 0))
-      .shifted(up = false, 0)
+    replace(0, arg.shifted(1, 0))
+      .shifted(-1, 0)
   }
 }
 
@@ -64,14 +61,14 @@ object Expr {
   case class Bound(expr: Seq[core.Identifier],
                    nat: Seq[rct.NatIdentifier],
                    data: Seq[rct.DataTypeIdentifier]) {
-    private def assertFound(i: Int): Int =
-      if (i >= 0) { i } else { throw new Exception("identifier was not bound") }
+    private def assertFound(i: Int, name: => String): Int =
+      if (i >= 0) { i } else { throw new Exception(s"identifier $name was not bound") }
     def indexOf(i: core.Identifier): Int =
-      assertFound(expr.indexOf(i))
+      assertFound(expr.indexOf(i), i.toString)
     def indexOf(i: rct.NatIdentifier): Int =
-      assertFound(nat.indexOf(i))
+      assertFound(nat.indexOf(i), i.toString)
     def indexOf(i: rct.DataTypeIdentifier): Int =
-      assertFound(data.indexOf(i))
+      assertFound(data.indexOf(i), i.toString)
 
     def +(i: core.Identifier): Bound =
       this.copy(expr = i +: expr)

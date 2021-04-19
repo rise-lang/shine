@@ -2,9 +2,9 @@ package rise.eqsat
 
 class PatternCheck extends test_util.Tests {
   test("simple match") {
-    val commuteAdd1: Rewrite[()] = {
+    val commuteAdd1: Rewrite[DefaultAnalysisData] = {
       import PatternDSL._
-      Rewrite.init[()]("commute-add-1",
+      Rewrite.init[DefaultAnalysisData]("commute-add-1",
         app(app(add, ?(0) :: `?dt`(0)), ?(1)).compile()
           -->
         (app(app(add :: `?dt`(0) ->: `?dt`(0) ->: `?dt`(0),
@@ -12,24 +12,16 @@ class PatternCheck extends test_util.Tests {
           ?(0) :: `?dt`(0)) :: `?dt`(0)))
     }
 
-    val commuteAdd2: Rewrite[()] = {
-      import PatternDSL._
-      Rewrite.syntactic[()]("commute-add-2",
-        app(app(add, ?(0) :: `?dt`(0)), ?(1) :: `?dt`(0))
+    val commuteAdd2: Rewrite[DefaultAnalysisData] = {
+      import NamedRewriteDSL._
+      NamedRewrite.init("commute-add-2",
+        app(app(add, "x"), "y")
           -->
-        app(app(add, ?(1) :: `?dt`(0)), ?(0) :: `?dt`(0)))
+        app(app(add, "y"), "x"))
     }
 
-    val commuteAdd3: Rewrite[()] = {
-      import PatternDSL._
-      Rewrite.syntactic[()]("commute-add-3",
-        app(app(add, ?(0)), ?(1))
-          -->
-        app(app(add, ?(1)), ?(0)))
-    }
-
-    for (commuteAdd <- Seq(commuteAdd1, commuteAdd2, commuteAdd3)) {
-      val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    for (commuteAdd <- Seq(commuteAdd1, commuteAdd2)) {
+      val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
 
       val (add1, add2) = {
         import ExprDSL._

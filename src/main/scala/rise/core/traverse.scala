@@ -173,7 +173,7 @@ object traverse {
         for { d1 <- data(d) }
           yield Literal(d1)
       case p : Primitive =>
-        for { t1 <- `type`(p.t)}
+        for { t1 <- `type`(p.t) }
           yield p.setType(t1)
 
     }
@@ -190,7 +190,7 @@ object traverse {
     implicit val accumulator : Monoid[F]
     implicit val wrapperMonad : Monad[M]
     def accumulate[T] : F => T => Pair[T] = f => t => wrapperMonad.return_((f, t))
-    override def monad : PairMonoidMonad[F,M] = new PairMonoidMonad[F,M] {
+    override protected[this] implicit def monad : PairMonoidMonad[F,M] = new PairMonoidMonad[F,M] {
       override val monoid = implicitly(accumulator)
       override val monad = implicitly(wrapperMonad)
     }
