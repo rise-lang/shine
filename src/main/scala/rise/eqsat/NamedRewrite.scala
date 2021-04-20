@@ -21,21 +21,15 @@ object NamedRewrite {
     val typedLhs = preservingWithEnv(lhs, untypedFreeV, Set())
     val freeV = collectFreeEnv(typedLhs)
     val (_, freeT) = rise.core.IsClosedForm.freeVars(typedLhs)
-    if (name == "drop-before-map") {
-      print("x")
-    }
     val typedRhs = preservingWithEnv(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
 
     // from var name to var index and whether it is matched
     // (depending on local index shift)
     type PatternVarMap[S, V] = HashMap[String, HashMap[S, (V, Boolean)]]
-    type ExprShift = (Int, Int, Int) // Expr, Nat, Data
-    type NatShift = Int // Nat
-    type TypeShift = (Int, Int) // Nat, Data
-    val patVars: PatternVarMap[ExprShift, PatternVar] = HashMap()
-    val natPatVars: PatternVarMap[NatShift, NatPatternVar] = HashMap()
-    val dataTypePatVars: PatternVarMap[TypeShift, DataTypePatternVar] = HashMap()
-    val typePatVars: PatternVarMap[TypeShift, TypePatternVar] = HashMap()
+    val patVars: PatternVarMap[Expr.Shift, PatternVar] = HashMap()
+    val natPatVars: PatternVarMap[Nat.Shift, NatPatternVar] = HashMap()
+    val dataTypePatVars: PatternVarMap[Type.Shift, DataTypePatternVar] = HashMap()
+    val typePatVars: PatternVarMap[Type.Shift, TypePatternVar] = HashMap()
 
     def makePatVar[S, V](name: String,
                          shift: S,
@@ -102,6 +96,8 @@ object NamedRewrite {
             dataTypePatVars, DataTypePatternVar, isRhs)
         case i: rct.DataTypeIdentifier =>
           DataTypePatternNode(DataTypeVar(bound.indexOf(i)))
+        case s: rct.ScalarType =>
+          DataTypePatternNode(ScalarType(s))
         case rct.NatType =>
           DataTypePatternNode(NatType)
         case rct.VectorType(s, et) =>
@@ -164,41 +160,40 @@ object NamedRewrite {
       }
     }
 
-    def patMkShift(s1: ExprShift, pv1: PatternVar)
-                  (s2: ExprShift, pv2: PatternVar)
+    def patMkShift(s1: Expr.Shift, pv1: PatternVar)
+                  (s2: Expr.Shift, pv2: PatternVar)
                   (applier: Applier): Applier = {
       assert(s1 != s2)
-      if (s1._2 != s2._2 || s1._3 != s2._3) {
-        throw new Exception("TOOD: implement nat/type shift for exprs")
-      }
-      if (s1._1 != s2._1) {
-        val cutoff = s1._1
-        val shift = s2._2 - s1._1
-        ShiftedApplier(pv1, pv2, shift, cutoff, applier)
-      } else {
-        applier
-      }
+      val cutoff = s1
+      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
+      ShiftedApplier(pv1, pv2, shift, cutoff, applier)
     }
 
-    def natPatMkShift(s1: NatShift, pv1: NatPatternVar)
-                     (s2: NatShift, pv2: NatPatternVar)
+    def natPatMkShift(s1: Nat.Shift, pv1: NatPatternVar)
+                     (s2: Nat.Shift, pv2: NatPatternVar)
                      (applier: Applier): Applier = {
       assert(s1 != s2)
-      throw new Exception("TOOD: implement nat/type shift for nats")
+      val cutoff = s1
+      val shift = s2 - s1
+      ShiftedNatApplier(pv1, pv2, shift, cutoff, applier)
     }
 
-    def dataTypePatMkShift(s1: TypeShift, pv1: DataTypePatternVar)
-                          (s2: TypeShift, pv2: DataTypePatternVar)
+    def dataTypePatMkShift(s1: Type.Shift, pv1: DataTypePatternVar)
+                          (s2: Type.Shift, pv2: DataTypePatternVar)
                           (applier: Applier): Applier = {
       assert(s1 != s2)
-      throw new Exception("TOOD: implement nat/type shift for datatypes")
+      val cutoff = s1
+      val shift = (s2._1 - s1._1, s2._2 - s1._2)
+      ShiftedDataTypeApplier(pv1, pv2, shift, cutoff, applier)
     }
 
-    def typePatMkShift(s1: TypeShift, pv1: TypePatternVar)
-                      (s2: TypeShift, pv2: TypePatternVar)
+    def typePatMkShift(s1: Type.Shift, pv1: TypePatternVar)
+                      (s2: Type.Shift, pv2: TypePatternVar)
                       (applier: Applier): Applier = {
       assert(s1 != s2)
-      throw new Exception("TOOD: implement nat/type shift for types")
+      val cutoff = s1
+      val shift = (s2._1 - s1._1, s2._2 - s1._2)
+      ShiftedTypeApplier(pv1, pv2, shift, cutoff, applier)
     }
 
     Rewrite.init(name,
@@ -254,13 +249,14 @@ object NamedRewriteDSL {
   def take: Pattern = rcp.take.primitive
 
   implicit def placeholderAsNatPattern(p: `_`.type): NatPattern =
-    rct.NatIdentifier(rc.freshName("n"), isExplicit = true)
-  implicit def stringAsNatPattern(name: String): NatPattern = rct.NatIdentifier(name, isExplicit = true)
+    rct.NatIdentifier(rc.freshName("n"), isExplicit = false)
+  implicit def stringAsNatPattern(name: String): NatPattern =
+    rct.NatIdentifier(name, isExplicit = false)
 
   implicit def placeholderAsDataTypePattern(p: `_`.type): DataTypePattern =
-    rct.DataTypeIdentifier(rc.freshName("dt"), isExplicit = true)
+    rct.DataTypeIdentifier(rc.freshName("dt"), isExplicit = false)
   implicit def stringAsDataTypePattern(name: String): DataTypePattern =
-    rct.DataTypeIdentifier(name, isExplicit = true)
+    rct.DataTypeIdentifier(name, isExplicit = false)
 
   val int: DataTypePattern = rct.int
   val f32: DataTypePattern = rct.f32

@@ -19,4 +19,13 @@ class EGraphCheck extends test_util.Tests {
 
     egraph.dot().toFile("/tmp/egraph-simple-add.dot")
   }
+
+  test("canonical nats") {
+    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val x = egraph.add(Var(0), Type(IndexType(Nat(
+      NatAdd(Nat(NatVar(0)), Nat(NatAdd(Nat(NatVar(2)), Nat(NatVar(1)))))))))
+    val x2 = egraph.add(Var(0), Type(IndexType(Nat(
+      NatAdd(Nat(NatVar(1)), Nat(NatAdd(Nat(NatVar(0)), Nat(NatVar(2)))))))))
+    assert(x == x2)
+  }
 }

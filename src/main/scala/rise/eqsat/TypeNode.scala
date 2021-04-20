@@ -2,11 +2,46 @@ package rise.eqsat
 
 import rise.core.{types => rct}
 
+/** A Rise type based on DeBruijn indexing */
 case class Type(node: TypeNode[Type, Nat, DataType]) {
   override def toString: String = node.toString
+
+  /** Shifts DeBruijn indices up or down if they are >= cutoff */
+  def shifted(shift: Type.Shift, cutoff: Type.Shift): Type = {
+    Type(node match {
+      case FunType(inT, outT) =>
+        FunType(inT.shifted(shift, cutoff), outT.shifted(shift, cutoff))
+      case NatFunType(t) =>
+        NatFunType(t.shifted(shift, cutoff.copy(_1 = cutoff._1 + 1)))
+      case DataFunType(t) =>
+        DataFunType(t.shifted(shift, cutoff.copy(_2 = cutoff._2 + 1)))
+      case dt: DataTypeNode[Nat, DataType] =>
+        DataType(dt).shifted(shift, cutoff).node
+    })
+  }
 }
+
 case class DataType(node: DataTypeNode[Nat, DataType]) {
   override def toString: String = node.toString
+
+  /** Shifts DeBruijn indices up or down if they are >= cutoff */
+  def shifted(shift: Type.Shift, cutoff: Type.Shift): DataType = {
+    DataType(node match {
+      case DataTypeVar(index) =>
+        val delta = if (index >= cutoff._2) shift._2 else 0
+        DataTypeVar(index + delta)
+      case ScalarType(s) => ScalarType(s)
+      case NatType => NatType
+      case VectorType(size, elemType) =>
+        VectorType(size.shifted(shift._1, cutoff._1), elemType.shifted(shift, cutoff))
+      case IndexType(size) =>
+        IndexType(size.shifted(shift._1, cutoff._1))
+      case PairType(dt1, dt2) =>
+        PairType(dt1.shifted(shift, cutoff), dt2.shifted(shift, cutoff))
+      case ArrayType(size, elemType) =>
+        ArrayType(size.shifted(shift._1, cutoff._1), elemType.shifted(shift, cutoff))
+    })
+  }
 }
 
 sealed trait TypePattern
@@ -34,6 +69,9 @@ case object DataTypePatternAny extends DataTypePattern {
 }
 
 object Type {
+  /** Shift nat and datatype indices */
+  type Shift = (Int, Int)
+
   def fromNamed(t: rct.Type, bound: Expr.Bound = Expr.Bound.empty): Type = {
     Type(t match {
       case dt: rct.DataType => DataType.fromNamed(dt, bound).node
@@ -58,6 +96,9 @@ object Type {
         rct.DepFunType[rct.DataKind, rct.Type](i, toNamed(t, bound + i))
     }
   }
+
+  def simplifyNats(t: Type): Type =
+    Type(t.node.map(simplifyNats, Nat.simplify, DataType.simplifyNats))
 }
 
 object DataType {
@@ -87,14 +128,23 @@ object DataType {
       case ArrayType(s, et) => rct.ArrayType(Nat.toNamed(s, bound), toNamed(et, bound))
     }
   }
+
+  def simplifyNats(dt: DataType): DataType =
+    DataType(dt.node.map(Nat.simplify, simplifyNats))
 }
 
 object TypePattern {
-  def fromType(t: Type): TypePattern = ???
+  def fromType(t: Type): TypePattern = {
+    val pnode = t.node.map(fromType, NatPattern.fromNat, DataTypePattern.fromDataType)
+    TypePatternNode(pnode)
+  }
 }
 
 object DataTypePattern {
-  def fromDataType(dt: DataType): DataTypePattern = ???
+  def fromDataType(dt: DataType): DataTypePattern = {
+    val pnode = dt.node.map(NatPattern.fromNat, fromDataType)
+    DataTypePatternNode(pnode)
+  }
 }
 
 sealed trait TypeNode[+T, +N, +DT] {

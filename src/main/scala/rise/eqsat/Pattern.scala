@@ -68,7 +68,7 @@ case class PatternNode(node: PNode) extends PatternVarOrNode {
   * @see [[https://docs.rs/egg/0.6.0/egg/struct.Pattern.html]]
   */
 case class Pattern(p: PatternVarOrNode, t: TypePattern) {
-  override def toString: String = s"$p :: $t"
+  override def toString: String = s"($p : $t)"
 
   def patternVars(): Vec[PatternVar] = {
     val vec = Vec.empty[PatternVar]

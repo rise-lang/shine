@@ -1,6 +1,6 @@
 package rise.eqsat
 
-import rise.core.types._
+import rise.core.{types => rct}
 import rise.core.semantics
 
 /** A term node for the Rise language with DeBruijn indexing.
@@ -58,7 +58,8 @@ sealed trait Node[+E, +N, +DT] {
     case DataApp(_, _) => 5
     case DataLambda(_) => 6
     case Literal(d) => 13 * d.hashCode()
-    case Primitive(p) => 17 * p.hashCode()
+    // TODO: type should not be inside the primitive?
+    case Primitive(p) => 17 * p.setType(rct.TypePlaceholder).hashCode()
   }
 
   // Returns true if this enode matches another enode.
@@ -72,7 +73,9 @@ sealed trait Node[+E, +N, +DT] {
     case (NatLambda(_), NatLambda(_)) => true
     case (DataLambda(_), DataLambda(_)) => true
     case (Literal(d1), Literal(d2)) => d1 == d2
-    case (Primitive(p1), Primitive(p2)) => p1 == p2
+    case (Primitive(p1), Primitive(p2)) =>
+      // TODO: type should not be inside the primitive?
+      p1.setType(rct.TypePlaceholder) == p2.setType(rct.TypePlaceholder)
     case _ => false
   }
 }
@@ -97,11 +100,10 @@ object Node {
   import math.Ordering.Implicits.seqOrdering
 
   implicit val natOrdering: Ordering[Nat] = new Ordering[Nat] {
-    import arithexpr.arithmetic._
     def compare(n1: Nat, n2: Nat): Int = {
       implicit val ord: Ordering[Nat] = this
-      (n1, n2) match {
-        case (Cst(c1), Cst(c2)) => c1 compare c2
+      (n1.node, n2.node) match {
+        case (NatCst(c1), NatCst(c2)) => c1 compare c2
         /*case (Sum(ts1), Sum(ts2)) =>
           implicitly[Ordering[Seq[Nat]]].compare(ts1, ts2)
         case (Prod(fs1), Prod(fs2)) =>
@@ -116,6 +118,7 @@ object Node {
       ???
   }
 
+  /*
   implicit val depValOrdering: Ordering[Kind#T] = new Ordering[Kind#T] {
     def compare(v1: Kind#T, v2: Kind#T): Int =
       (v1, v2) match {
@@ -127,7 +130,7 @@ object Node {
         case (_, _: DataType) => 1
         case _ => ???
       }
-  }
+  } */
 
   implicit val scalarDataOrdering: Ordering[semantics.ScalarData] = new Ordering[semantics.ScalarData] {
     import semantics._
@@ -154,13 +157,13 @@ object Node {
 
     def compare(d1: Data, d2: Data): Int =
       (d1, d2) match {
-        case (NatData(n1), NatData(n2)) => natOrdering.compare(n1, n2)
-        case (NatData(_), _) => -1
-        case (_, NatData(_)) => 1
-        case (IndexData(i1, n1), IndexData(i2, n2)) =>
-          implicitly[Ordering[(Nat, Nat)]].compare((i1, n1), (i2, n2))
-        case (IndexData(_, _), _) => -1
-        case (_, IndexData(_, _)) => 1
+        case (NatData(n1), NatData(n2)) => ??? // natOrdering.compare(n1, n2)
+        case (NatData(_), _) => ??? // -1
+        case (_, NatData(_)) => ??? // 1
+        case (IndexData(i1, n1), IndexData(i2, n2)) => ???
+          // implicitly[Ordering[(Nat, Nat)]].compare((i1, n1), (i2, n2))
+        case (IndexData(_, _), _) => ??? // -1
+        case (_, IndexData(_, _)) => ??? // 1
         case (sd1: ScalarData, sd2: ScalarData) => scalarDataOrdering.compare(sd1, sd2)
         case (_: ScalarData, _) => -1
         case (_, _: ScalarData) => 1
@@ -184,7 +187,11 @@ object Node {
       id1.i compare id2.i
   }
 
-  implicit def ordering[E, N, DT](implicit tOrd: Ordering[E]): Ordering[Node[E, N, DT]] = new Ordering[Node[E, N, DT]] {
+  implicit def ordering[E, N, DT](implicit
+                                  eOrd: Ordering[E],
+                                  nOrd: Ordering[N],
+                                  dtOrd: Ordering[DT]
+                                 ): Ordering[Node[E, N, DT]] = new Ordering[Node[E, N, DT]] {
     def compare(n1: Node[E, N, DT], n2: Node[E, N, DT]): Int =
       (n1, n2) match {
         case (Var(i1), Var(i2)) => i1 compare i2
@@ -194,17 +201,23 @@ object Node {
           implicitly[Ordering[(E, E)]].compare((f1, e1), (f2, e2))
         case (App(_, _), _) => -1
         case (_, App(_, _)) => 1
-        case (Lambda(e1), Lambda(e2)) => tOrd.compare(e1, e2)
+        case (Lambda(e1), Lambda(e2)) => eOrd.compare(e1, e2)
         case (Lambda(_), _) => -1
-        case (_, Lambda(_)) => 1 /* TODO
-        case (DepApp(f1, x1), DepApp(f2, x2)) =>
-          implicitly[Ordering[(T, Kind#T)]].compare((f1, x1), (f2, x2))
-        case (DepApp(_, _), _) => -1
-        case (_, DepApp(_, _)) => 1
-        case (DepLambda(k1, e1), DepLambda(k2, e2)) => ???
-          // implicitly[Ordering[(Kind, T)].compare((k1, e1), (k2, e2))
-        case (DepLambda(_, _), _) => -1
-        case (_, DepLambda(_, _)) => 1*/
+        case (_, Lambda(_)) => 1
+        case (NatApp(f1, x1), NatApp(f2, x2)) =>
+          implicitly[Ordering[(E, N)]].compare((f1, x1), (f2, x2))
+        case (NatApp(_, _), _) => -1
+        case (_, NatApp(_, _)) => 1
+        case (DataApp(f1, x1), DataApp(f2, x2)) =>
+          implicitly[Ordering[(E, DT)]].compare((f1, x1), (f2, x2))
+        case (DataApp(_, _), _) => -1
+        case (_, DataApp(_, _)) => 1
+        case (NatLambda(e1), NatLambda(e2)) => eOrd.compare(e1, e2)
+        case (NatLambda(_), _) => -1
+        case (_, NatLambda(_)) => 1
+        case (DataLambda(e1), DataLambda(e2)) => eOrd.compare(e1, e2)
+        case (DataLambda(_), _) => -1
+        case (_, DataLambda(_)) => 1
         case (Literal(d1), Literal(d2)) => dataOrdering.compare(d1, d2)
         case (Literal(_), _) => -1
         case (_, Literal(_)) => 1

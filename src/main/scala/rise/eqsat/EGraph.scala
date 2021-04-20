@@ -46,8 +46,10 @@ class EGraph[Data](
     (enode2, id.map(find))
   }
 
-  def add(n: ENode, t: Type): EClassId = {
-    val (enode, optec) = lookup(n, t)
+  def add(n: ENode, givenT: Type): EClassId = {
+    // we simplify the contained nats before adding the node to the graph
+    val t = Type.simplifyNats(givenT)
+    val (enode, optec) = lookup(n.map(id => id, Nat.simplify, DataType.simplifyNats), t)
     optec.getOrElse {
       val id = unionFind.makeSet()
       val eclass = new EClass(
@@ -185,7 +187,7 @@ class EGraph[Data](
   }
 
   private def rebuildClasses(): Int = {
-    import Node.{ordering, eclassIdOrdering}
+    import Node.{ordering, eclassIdOrdering, natOrdering, dataTypeOrdering}
     classesByMatch.values.foreach(ids => ids.clear())
 
     var trimmed = 0

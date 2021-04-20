@@ -14,27 +14,29 @@ object rules {
             (egraph: EGraph[D], eclass: EClassId, subst: Subst): Boolean =
     !cond(egraph, eclass, subst)
 
-  // TODO: automate DeBruijn indices shifting
   // TODO: find a way to combine different analysis requirements?
 
   // -- reduction --
 
-  val eta: Rule = Rewrite.init("eta",
-    lam(app(?(0), %(0))).compile()
-      -->
-      ConditionalApplier(neg(containsIdent(?(0), %(0))),
-        ShiftedApplier(?(0), ?(1), -1, 1,
-          ?(1): Pattern))
-  )
   val beta: Rule = Rewrite.init("beta",
     app(lam(?(0)), ?(1)).compile()
       -->
       BetaApplier(?(0), ?(1))
   )
+  val eta: Rule = Rewrite.init("eta",
+    lam(app(?(0), %(0))).compile()
+      -->
+      ConditionalApplier(neg(containsIdent(?(0), %(0))),
+        ShiftedApplier(?(0), ?(1), (-1, 0, 0), (1, 0, 0),
+          ?(1): Pattern))
+  )
 
   import rise.core.types.{Nat, DataType, Type}
   import NamedRewriteDSL._
 
+  /*val eta: Rule = NamedRewrite.init("eta",
+    lam("x", app("f", "x")) --> "f"
+  ) when neg(containsIdent("f", "x"))*/
   val removeTransposePair: Rule = NamedRewrite.init("remove-transpose-pair",
     app(transpose, app(transpose, "x")) --> "x"
   )
@@ -51,18 +53,14 @@ object rules {
   lazy val mapFusion: Rule = NamedRewrite.init("map-fusion",
     app(app(map, "f"), app(app(map, "g"), "in"))
       -->
-    // TODO: inject
-    // ShiftedApplier(?(0), _, up = true, 0,
-    // ShiftedApplier(?(1), _, up = true, 0,
     app(app(map, lam("x", app("f", app("g", "x")))), "in")
   )
   val mapFission: Rule = NamedRewrite.init("map-fission",
     app(map, lam("x", app("f", "gx" :: ("dt": DataType))))
       -->
-    // TODO: inject
-    // ShiftedApplier(?(1), _, up = true, 1,
     lam("in", app(app(map, "f"), app(app(map, lam("x", "gx")), "in")))
   ) when neg(containsIdent(?(0), %(0)))
+  // TODO: neg(containsIdent("f", "x"))
 
   // - slide widening -
 

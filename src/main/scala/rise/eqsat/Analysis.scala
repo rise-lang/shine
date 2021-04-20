@@ -39,8 +39,9 @@ object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
       case Var(index) => free += index
       case Lambda(e) =>
         free ++= egraph.getMut(e).data.free.filter(idx => idx != 0).map(idx => idx - 1)
-      case NatLambda(_) => ???
-      case DataLambda(_) => ???
+      // note: we are not collecting free nat/type variables yet
+      // case NatLambda(_) => ???
+      // case DataLambda(_) => ???
       case _ => enode.children().foreach(c => free ++= egraph.getMut(c).data.free)
     }
     val extractedExpr = Expr(enode.mapChildren(c => egraph.getMut(c).data.extractedExpr), t)

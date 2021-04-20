@@ -139,7 +139,7 @@ object ematching {
 
   def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
     import scala.math.Ordering.Implicits._
-    import Node.{ordering, eclassIdOrdering}
+    import Node.{ordering, eclassIdOrdering, natOrdering, dataTypeOrdering}
 
     if (eclass.nodes.size < 50) {
       eclass.nodes.filter(n => node.matches(n)).foreach(f)

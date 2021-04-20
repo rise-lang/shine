@@ -158,7 +158,7 @@ case class ConditionalApplier[D](cond: (EGraph[D], EClassId, Subst) => Boolean,
   * @note It works by extracting an expression from the [[EGraph]] in order to shift it.
   */
 case class ShiftedApplier(v: PatternVar, newV: PatternVar,
-                          shift: Int, cutoff: Int,
+                          shift: Expr.Shift, cutoff: Expr.Shift,
                           applier: Applier[DefaultAnalysisData])
   extends Applier[DefaultAnalysisData] {
   override def patternVars(): Vec[PatternVar] = {
@@ -175,6 +175,69 @@ case class ShiftedApplier(v: PatternVar, newV: PatternVar,
     val shifted = extract.shifted(shift, cutoff)
     val subst2 = subst.deepClone()
     subst2.insert(newV, egraph.addExpr(shifted))
+    applier.applyOne(egraph, eclass, subst2)
+  }
+}
+
+/** An [[Applier]] that shifts the DeBruijn indices of a nat variable */
+case class ShiftedNatApplier[D](v: NatPatternVar, newV: NatPatternVar,
+                                shift: Nat.Shift, cutoff: Nat.Shift,
+                                applier: Applier[D])
+  extends Applier[D] {
+  override def patternVars(): Vec[PatternVar] = {
+    // TODO: remove this function or keep track of type variables as well?
+    applier.patternVars()
+  }
+
+  override def applyOne(egraph: EGraph[D],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    val nat = subst(v)
+    val shifted = nat.shifted(shift, cutoff)
+    val subst2 = subst.deepClone()
+    subst2.insert(newV, shifted)
+    applier.applyOne(egraph, eclass, subst2)
+  }
+}
+
+/** An [[Applier]] that shifts the DeBruijn indices of a data type variable */
+case class ShiftedDataTypeApplier[D](v: DataTypePatternVar, newV: DataTypePatternVar,
+                                     shift: Type.Shift, cutoff: Type.Shift,
+                                     applier: Applier[D])
+  extends Applier[D] {
+  override def patternVars(): Vec[PatternVar] = {
+    // TODO: remove this function or keep track of type variables as well?
+    applier.patternVars()
+  }
+
+  override def applyOne(egraph: EGraph[D],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    val dt = subst(v)
+    val shifted = dt.shifted(shift, cutoff)
+    val subst2 = subst.deepClone()
+    subst2.insert(newV, shifted)
+    applier.applyOne(egraph, eclass, subst2)
+  }
+}
+
+/** An [[Applier]] that shifts the DeBruijn indices of a type variable */
+case class ShiftedTypeApplier[D](v: TypePatternVar, newV: TypePatternVar,
+                                 shift: Type.Shift, cutoff: Type.Shift,
+                                 applier: Applier[D])
+  extends Applier[D] {
+  override def patternVars(): Vec[PatternVar] = {
+    // TODO: remove this function or keep track of type variables as well?
+    applier.patternVars()
+  }
+
+  override def applyOne(egraph: EGraph[D],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    val t = subst(v)
+    val shifted = t.shifted(shift, cutoff)
+    val subst2 = subst.deepClone()
+    subst2.insert(newV, shifted)
     applier.applyOne(egraph, eclass, subst2)
   }
 }
