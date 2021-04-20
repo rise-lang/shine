@@ -662,7 +662,7 @@ object parse {
     val ParseState(tokens, _,  _, _) = parseState
 
     isMinLen(tokens, 3, "DepFunctionType") match{
-      case Some(e) => return (Right(e),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
+      case Some(e) => return (Right(e),errorList.add(e))
       case None => None
     }
 
@@ -684,7 +684,7 @@ object parse {
     println("parseDepFunctionType: " + parseState)
     val ParseState(tokens, _,  _, _) = parseState
     isMinLen(tokens, 3, "DepLambda") match{
-      case Some(e) => return (Right(e),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
+      case Some(e) => return (Right(e),errorList.add(e))
       case None => None
     }
 
@@ -2044,7 +2044,7 @@ the syntax-Tree has on top an Lambda-Expression
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     isMinLen(tokens, 2, "Dot") match{
-      case Some(e) => return (Right(e), errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
+      case Some(e) => return (Right(e), errorList.add(e))
       case None => None
     }
     val nextToken :: remainderTokens = tokens
@@ -2100,7 +2100,7 @@ the syntax-Tree has on top an Lambda-Expression
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     isMinLen(tokens, 2, "LeftBracket") match{
-      case Some(e) => return (Right(e),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
+      case Some(e) => return (Right(e),errorList.add(e))
       case None => None
     }
     val nextToken :: remainderTokens = tokens

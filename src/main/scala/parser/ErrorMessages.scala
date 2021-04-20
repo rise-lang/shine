@@ -1,5 +1,7 @@
 package parser
 
+import scala.tools.nsc.util.StringUtil
+
 /*
 https://stackoverflow.com/questions/38243530/custom-exception-in-scala is reference
  */
@@ -301,28 +303,25 @@ final case class ErrorList(){
   /*
   so that is looks better with spaces, but if it takes too much time, it is probably better to solve it in an different way
    */
-  private def retSpace(space:Int): String ={
-    require(space >= 0 )
-    var s = "   "
-    var toAdd = space
-    while(toAdd > 0 ){
-      toAdd -= 1
-      s = s + "  "
-    }
-    s
+  def retSpace(space:Int): String ={
+    val str = ""
+    String.format("%-"+space+"s", str)
   }
   def returnDeepestElem():String = "deepest Error at "+ this.deepestError + ":\n"+
     this.errorList(this.deepestError).getOrElse(throw new IllegalStateException("Rules should not be the deepest elem")).returnMessage()
   def returnList():String = {
     var s = "\nfull ErrorList:\n"
-    val l = this.errorList
+    val l = this.errorList.reverse
     var space = 1
 
     for(i <- 0 until l.size){
-      s = s+i+".th: " + retSpace(space)
+      if(space<0){
+        println(s)
+        throw new IllegalStateException("Oh no space is negative")
+      }
       l(i) match {
         case Left(r)=> {
-          s = s + r.toString()+ "\n"
+          s = s+retSpace(space)+ i+".th: "+r.toString()+ "\n"
           r.state match{
             case isParsing()=> space += 1
             case isMatched()=> space -= 1
@@ -330,8 +329,8 @@ final case class ErrorList(){
           }
         }
         case Right(e)=> {
+          s = s +retSpace(space)+ i+".th: "+ e.returnMessage() + "\n"
           space -= 1
-          s = s + e.returnMessage() + "\n"
         }
       }
     }
