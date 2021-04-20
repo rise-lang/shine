@@ -136,7 +136,6 @@ object parse {
         case Some(l) => span :: l
       }
       case tok => {
-        println("failed parseBacklash: " + parseState)
         val e = NotCorrectToken(tok, "Backslash", "Backslash")
         return (Right(e),errorList.add(e))
       }
@@ -301,7 +300,6 @@ object parse {
         }
       }
       case tok => {
-        println("Abbruch parseIdent: " + tok + " : " + parseState)
         val e = NotCorrectToken(tok, "Ident", "Ident")
         (Right(e),errorList.add(e))
       }
@@ -311,7 +309,7 @@ object parse {
   def parseTypeIdentToCorrectForm(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "TypeIdent"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseTypeIdentToCorrectForm: " + parseState)
+    //println("parseTypeIdentToCorrectForm: " + parseState)
     parseState.tokenStream.head match {
       case TypeIdentifier(name, span) => parseState.mapDepL.get.get(name) match {
         case None => {
@@ -338,7 +336,7 @@ object parse {
   def parseTypeIdent(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "TypeIdent"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseTypeIdent: " + parseState)
+    //println("parseTypeIdent: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList) = parseState
     if (tokens.isEmpty) {
       val e = TokListIsEmpty(SpanPlaceholder, "TypeIdent")
@@ -350,7 +348,6 @@ object parse {
       case TypeIdentifier(name, spanId) => (Left(ParseState(remainderTokens, SType(rt.TypeIdentifier(name), spanId) :: parsedSynElems,
        mapDepL, spanList)),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       case tok => {
-        //println("Abbruch parseTypeIdent: " + tok + " : " + parseState)
         val e =NotCorrectToken(tok, "TypeIdent", "TypeIdent")
         (Right(e),errorList.add(e))
       }
@@ -364,7 +361,7 @@ object parse {
     case DoubleType() => Some(rt.f64)
     case BoolType() => Some(rt.bool)
     case notAtype => {
-      println("                        This is not an accepted Type: " + notAtype)
+      //println("                        This is not an accepted Type: " + notAtype)
       None
     }
   }
@@ -434,10 +431,10 @@ object parse {
     val ParseState(tokens, _, mapDepL, spanList) = parseState
     val inputType :: remainderTokens = tokens
 
-    println("parseVecType: " + parseState)
+    //println("parseVecType: " + parseState)
     inputType match {
       case VectorType(len, concreteType, sp) => {
-        println("ConcreteType was in parseVecType: " + concreteType + " , with length: " + len)
+        //println("ConcreteType was in parseVecType: " + concreteType + " , with length: " + len)
         //Todo: Complex Alg for Type Parsing
         val parsedInType = getScalarType(concreteType)
         val inT = parsedInType match {
@@ -463,10 +460,10 @@ object parse {
     val ParseState(tokens, _, mapDepL, spanList) = parseState
     val inputType :: remainderTokens = tokens
 
-    println("parseTypeWithoutArrow: " + parseState)
+    //println("parseTypeWithoutArrow: " + parseState)
     inputType match {
       case ScalarType(typ, spanTyp) => {
-        println("Type was in parseTypeWithoutArrow parsed: " + typ + " ; " + spanTyp.end)
+        //println("Type was in parseTypeWithoutArrow parsed: " + typ + " ; " + spanTyp.end)
         //Todo: Complex Alg for Type Parsing
         val parsedInType = getScalarType(typ)
         val inT = parsedInType match {
@@ -489,7 +486,7 @@ object parse {
   def parseKindWithDepArrowAfterForDepLambda(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "KindWithDepArror"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseKind: " + parseState)
+    //println("parseKind: " + parseState)
     val (nameOfIdentifier, spanType, spanList) = parseState.parsedSynElems.head match {
       case SType(rt.TypeIdentifier(name), sp) => parseState.spanList match {
         case Some(Nil) => throw new IllegalArgumentException("this should not happen to be Nil")
@@ -518,11 +515,11 @@ object parse {
             case None => throw new IllegalStateException("mapDepL is None")
             case Some(mL)=> mL.update(nameOfIdentifier, ki)
           }
-          println("Kind was in parseDepFunctionType parsed: " + concreteKind + " , mapDepL: "+ parseState.mapDepL)
+          //println("Kind was in parseDepFunctionType parsed: " + concreteKind + " , mapDepL: "+ parseState.mapDepL)
           parseMaybeAppExpr((ParseState(tokens.tail.tail, Nil, parseState.mapDepL, spanList), errorList)) match {
             case (Right(e),errorL) => (Right(e),errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
             case (Left(pS),errorL) => {
-              println("In the middle of parseDepFunctionType: " + pS)
+              //println("In the middle of parseDepFunctionType: " + pS)
               if (pS.parsedSynElems.tail.nonEmpty) throw new IllegalStateException("ParsedSynElems.tail has to be empty!") //Todo: write test
               val depLam = pS.parsedSynElems.head match {
                 case SExpr(outT) => {
@@ -530,7 +527,7 @@ object parse {
                     case None => throw new IllegalStateException("Span should not be None in DepLambdafkt")
                     case Some(sp) => {
                       val spanZW = spanType + sp
-                      println("Span of spanType123: (" + spanZW.begin + "," + spanZW.end + ") = (" + sp.begin + "," + sp.end + ") + (" + spanType.begin + ")" + spanType.end + ") ; " + nameOfIdentifier)
+                      //println("Span of spanType123: (" + spanZW.begin + "," + spanZW.end + ") = (" + sp.begin + "," + sp.end + ") + (" + spanType.begin + ")" + spanType.end + ") ; " + nameOfIdentifier)
                       spanZW
                     }
                   }
@@ -570,7 +567,7 @@ object parse {
   def parseKindWithDepArrowAfterForDepFunctionType(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "KindWithDepArrow"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseKind: " + parseState)
+    //println("parseKind: " + parseState)
     val nameOfIdentifier: String = parseState.parsedSynElems.head match {
       case SType(rt.TypeIdentifier(name), _) => name
       case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'")
@@ -602,7 +599,7 @@ object parse {
               return (Right(e),errorList.add(e))
             }
           }
-          println("Kind was in parseDepFunctionType parsed: " + concreteKind)
+          //println("Kind was in parseDepFunctionType parsed: " + concreteKind)
           parseType((ParseState(tokens.tail.tail, Nil,  parseState.mapDepL, parseState.spanList),errorList)) match {
             case (Right(e),errorL) => (Right(e),errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
             case (Left(pS),errorL) => {
@@ -658,7 +655,7 @@ object parse {
   def parseDepFunctionType(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "DepFunctionType"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseDepFunctionType: " + parseState)
+    //println("parseDepFunctionType: " + parseState)
     val ParseState(tokens, _,  _, _) = parseState
 
     isMinLen(tokens, 3, "DepFunctionType") match{
@@ -681,7 +678,7 @@ object parse {
   def parseDepLambda(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "DepLambda"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseDepFunctionType: " + parseState)
+    //println("parseDepFunctionType: " + parseState)
     val ParseState(tokens, _,  _, _) = parseState
     isMinLen(tokens, 3, "DepLambda") match{
       case Some(e) => return (Right(e),errorList.add(e))
@@ -852,7 +849,7 @@ object parse {
       }
       case SExprClutched(expr1, spanClutch) => {
         val span = span_e + spanClutch
-        println("\n\nspan in SExprClutched: " + span)
+        //println("\n\nspan in SExprClutched: " + span)
         e = r.App(e, expr1)(rt.TypePlaceholder, Some(span))
         synE = synE.tail
       }
@@ -953,13 +950,13 @@ object parse {
 
   private def combineExpressionsDependent(synElemList: List[SyntaxElement], mapDepL: MapDepL): r.Expr = {
     var (e, synE) = combineExpressionDependentFirsExpr(synElemList, mapDepL)
-    println("I will combine Expressions in combineExpressionsDependent: " + synE + " <::> " + e)
+    //println("I will combine Expressions in combineExpressionsDependent: " + synE + " <::> " + e)
     while (!synE.isEmpty) {
       val r = combineExpressionsDependentOneStep(e, synE, mapDepL, None)
       e = r._1
       synE = r._2
     }
-    println("I have combined the Expressions in combineExpressionsDependent: " + e + " ; " + e.span.get.end)
+    //println("I have combined the Expressions in combineExpressionsDependent: " + e + " ; " + e.span.get.end)
     e
   }
 
@@ -995,7 +992,7 @@ object parse {
     }
 
     while (!tokenList.isEmpty) {
-      println("tokens: " + tokenList + " ,MapFkt: " + mapFkt)
+      //println("tokens: " + tokenList + " ,MapFkt: " + mapFkt)
       tokenList match {
         case BeginTypAnnotatedIdent(_) :: remainderTokens => {
           val p: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), parseState.spanList)
@@ -1009,9 +1006,9 @@ object parse {
         }
         case BeginNamedExpr(_) :: remainderTokens => {
           val p: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), parseState.spanList)
-          println("p: " + p)
+          //println("p: " + p)
           val psNew = parseNamedExpr(p, mapFkt)
-          println("psNew: " + psNew)
+          //println("psNew: " + psNew)
           psNew match {
             case Left(tokens) => {
               tokenList = tokens
@@ -1045,7 +1042,7 @@ object parse {
           case SExpr(id@r.Identifier(n)) =>
             mapFkt.get(n) match {
               case None => {
-                println("Identifier doesn't exist: " + n + " , " + psLambdaOld)
+                //println("Identifier doesn't exist: " + n + " , " + psLambdaOld)
                 throw new IllegalStateException("We want to parse an NamedExpr for " + n +
                   " but this Identifier is not declared yet!")
               }
@@ -1109,22 +1106,22 @@ object parse {
       }
     }
 
-    println("\n\n\n Before combining the Expr in parseNamedExpr \n\n\n")
+    //println("\n\n\n Before combining the Expr in parseNamedExpr \n\n\n")
     var expr = combineExpressionsDependent(synElemList, mapDepL)
     expr = expr.setType(typeOfFkt)
 
-    println("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
+    //println("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
 
     require(expr.span != None, "expr is None!")
     rd.ToBeTyped(expr) match {
       case rd.ToBeTyped(e) => require(e.span != None, "expr is now in ToBeTyped without infer None")
       case _ => throw new IllegalStateException("this should not be happening")
     }
-    println("before requre MapFkt: '"+ mapFkt + "' for the Expr: '"+ expr + "' with Type: '"+ expr.t + "'")
+    //println("before requre MapFkt: '"+ mapFkt + "' for the Expr: '"+ expr + "' with Type: '"+ expr.t + "'")
     require(rd.ToBeTyped(expr).toExpr.span != None, "expr is now with ToBeType.toExpr None!")
 
     mapFkt.update(identifierFkt.name, Left(rd.ToBeTyped(expr)))
-    println("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)
+    //println("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)
     Left(tokenList)
   }
 
@@ -1143,7 +1140,7 @@ object parse {
       case (Left(p),errorL) => {
         p.parsedSynElems.head match {
           case SExpr(id@r.Identifier(n)) => if (mapFkt.contains(n)) {
-            println("Identifier does already exist: " + n + " , " + psLambdaOld)
+            //println("Identifier does already exist: " + n + " , " + psLambdaOld)
             throw new IllegalStateException("We want to parse an TypAnnotatedIdent for " + n
               + " but this Identifier is already declared!")
           } else {
@@ -1177,7 +1174,7 @@ object parse {
       case (Left(p),erL) => (p,erL.add(UsedOrFailedRule(isMatched(), whatToParse)))
     }
 
-    println("in the middle of TypAnnotatedIden: " + psNew)
+    //println("in the middle of TypAnnotatedIden: " + psNew)
     psNew.tokenStream match {
       case EndTypAnnotatedIdent(_) :: remainderTokens => {
         val (typesList, _) = getTypesInList(psNew.parsedSynElems, None)
@@ -1185,7 +1182,7 @@ object parse {
           throw new IllegalStateException("The TypesList should have lenght 1: " + typesList)
         }
         mapFkt.put(identifierFkt.name, Right(typesList.head))
-        println("return TypAnnotatedIdent: " + remainderTokens + " <<<<>>>> " + mapFkt)
+        //println("return TypAnnotatedIdent: " + remainderTokens + " <<<<>>>> " + mapFkt)
         Left(remainderTokens)
       }
       case EndNamedExpr(_) :: remainderTokens => {
@@ -1247,7 +1244,7 @@ object parse {
   def parseType(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "Type"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseType: " + parseState)
+    //println("parseType: " + parseState)
     val (p, eL) =
       (Left(parseState),errorList) |>
         (parseDepOrNormalFunctionType _ || parseSimpleType)
@@ -1261,7 +1258,7 @@ object parse {
   def parseDepOrNormalFunctionType(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "DepOrNormalFunctionType"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseType: " + parseState)
+    //println("parseType: " + parseState)
     val (p,eL) =
       (Left(parseState),errorList) |>
         (parseDepFunctionType _ || parseFunctionType)
@@ -1275,7 +1272,7 @@ object parse {
   def parseSimpleType(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "SimpleType"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseType: " + parseState)
+    //println("parseType: " + parseState)
     val (p, eL) : OutputEPState =
       (Left(parseState),errorList) |>
         (parseBracesExprType _ ||
@@ -1326,7 +1323,7 @@ object parse {
   private def parseCompLoop(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "CompLoop"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseCompLoop: "+ parseState.tokenStream)
+    //println("parseCompLoop: "+ parseState.tokenStream)
     val (p,errL) = (Left(parseState),errorList)|> parseDot |> parseNoAppExpr
     p match{
       case Right(e) => (Right(e),errL.add(UsedOrFailedRule(isFailed(), whatToParse)))
@@ -1344,7 +1341,7 @@ object parse {
       case SExpr(expr) => Some((expr, expr.span.get))
       case SExprClutched(expr, sp) => Some((expr, sp))
       case _ => {
-        println("Abort; getExprAndSpan because not accepted beggining types: " + parseState)
+        //println("Abort; getExprAndSpan because not accepted beggining types: " + parseState)
         None
       }
     }
@@ -1357,11 +1354,11 @@ object parse {
   private def parseComp(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "Comp"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseComp: " + parseState)
+    //println("parseComp: " + parseState)
 //    val cpyMapFkt = parseState.mapFkt.clone()
     val (psOld,eL) = (Left(ParseState(parseState.tokenStream, parseState.parsedSynElems.head::Nil,  parseState.mapDepL, parseState.spanList)),errorList) |>
       parseCompLoop //|> parseNoAppExpr
-    println("Yuhuuuasdf: "+psOld)
+    //println("Yuhuuuasdf: "+psOld)
     psOld match {
       case Right(e) => {
 //        parseState.mapFkt.clear()
@@ -1382,19 +1379,19 @@ object parse {
         val span = sp1 + sp2 //+ lastElemSpan
         val name = r.freshName("e")
         //var app = r.App(e2, r.App(e1, lastElem)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
-        //println("app of Comp: "+ app + " e1: '" + e1 + "' e2: '"+ e2 + "' lastElem: '" + lastElem + "'")
+        ////println("app of Comp: "+ app + " e1: '" + e1 + "' e2: '"+ e2 + "' lastElem: '" + lastElem + "'")
         var app = r.App(e2, r.App(e1, r.Identifier(name)(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span)))(rt.TypePlaceholder, Some(span))
-        println("app of Comp: "+ app + " e1: '" + e1 + "' e2: '"+ e2 + "'")
+        //println("app of Comp: "+ app + " e1: '" + e1 + "' e2: '"+ e2 + "'")
 
         synElems = synElems.tail.tail
         while(synElems.nonEmpty){
           val (exN, _) = getExprAndSpan(synElems.head,parseState).get
           synElems = synElems.tail
           app = r.App(exN, app)(rt.TypePlaceholder,Some(span))
-          println("app of Comp in Loop: "+ app)
+          //println("app of Comp in Loop: "+ app)
         }
         val lam = r.Lambda(r.Identifier(name)(rt.TypePlaceholder, Some(span)), app)(rt.TypePlaceholder, Some(span))
-        println("lam in parseComp:"+lam + "\n")
+        //println("lam in parseComp:"+lam + "\n")
         if(end(ps.tokenStream)){
           (Left(ParseState(ps.tokenStream, SExpr(lam) :: parseState.parsedSynElems.tail, ps.mapDepL, ps.spanList)),
             eL.add(UsedOrFailedRule(isMatched(), whatToParse)))
@@ -1405,7 +1402,7 @@ object parse {
             case Left(pL) => {
               val (expr, expr_span) = getExprAndSpan(pL.parsedSynElems.head, pL).get
               val resApp = r.App(lam,expr)(rt.TypePlaceholder, Some(span+expr_span))
-              println("resApp in parseComp:"+resApp + "\n")
+              //println("resApp in parseComp:"+resApp + "\n")
               (Left(ParseState(pL.tokenStream, SExpr(resApp) :: parseState.parsedSynElems.tail, pL.mapDepL, pL.spanList)),
                 newErrorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
             }
@@ -1424,10 +1421,9 @@ the syntax-Tree has on top an Lambda-Expression
     val whatToParse = "Lambda"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     if(parseState.tokenStream.isEmpty){
-      println("Abbruch; parseLambda: "+ parseState)
       return (Left(parseState),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
-    println("parseLambda: " +parseState)
+    //println("parseLambda: " +parseState)
     val (psOld,errorL) =
       (Left(ParseState(parseState.tokenStream, Nil,  parseState.mapDepL, parseState.spanList)),errorList) |>
         parseBackslash |>
@@ -1484,14 +1480,13 @@ the syntax-Tree has on top an Lambda-Expression
         (ret, identifierName)
       }
       case Right(e) => {
-        println("endLambda: "+ e)
         return (Right(e),errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
       }
     }
 
     val (toks, expr,  mapDepL, spanList, newEL) = psOrErr match {
       case (Left(psNew),errorList2) => {
-        println("combine in Lambda: "+ psNew)
+        //println("combine in Lambda: "+ psNew)
         val expr = combineExpressionsDependent(psNew.parsedSynElems, psNew.mapDepL.get)
         //println("\n\n\nSpanIsHere"+ expr.expr +" : "+ expr.expr.span+ "\n\n\n")
         (psNew.tokenStream,expr, psNew.mapDepL, psNew.spanList, errorList2)
@@ -1502,7 +1497,7 @@ the syntax-Tree has on top an Lambda-Expression
     val span = Span(spanOfBackslash.file,spanOfBackslash.begin, expr.span.head.end)
     val lambda = r.Lambda(idName, expr)(rt.TypePlaceholder, Some(span))
     val myNewParseState = ParseState(toks, SExpr(lambda) :: parseState.parsedSynElems, mapDepL, spanList)
-    println("myNewParseState: "+ myNewParseState)
+    //println("myNewParseState: "+ myNewParseState)
     (Left(myNewParseState),newEL.add(UsedOrFailedRule(isMatched(), whatToParse)))
   }
 
@@ -1513,7 +1508,7 @@ the syntax-Tree has on top an Lambda-Expression
   def parseNoAppExpr(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "NoAppExpr"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseLowExpression: " + parseState)
+    //println("parseLowExpression: " + parseState)
     val (p, eL) = (Left(parseState),errorList) |>
       (parseLambda _ || parseDepLambda || parseBracesExpr ||
         parseUnOperator || parseBinOperator || parseIdent ||
@@ -1545,16 +1540,15 @@ the syntax-Tree has on top an Lambda-Expression
   def parseTypeinNoAppExpr(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "TypeInNoAppExpr"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseTypeinNoAppExpr: "+ parseState)
+    //println("parseTypeinNoAppExpr: "+ parseState)
     if(parseState.tokenStream.isEmpty){
-      println("Abbruch; parseTypeinNoAppExpr: "+ parseState)
       return (Left(parseState),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
     val (p,eL) = //Todo: change so that no Brackets are needed, only parentheses for Dep- and FunctionType
       (Left(ParseState(parseState.tokenStream,Nil, parseState.mapDepL, parseState.spanList)),errorList)  |>
         (parseDepOrNormalFunctionTypeInNoAppExpr _ || parseSimpleType)
 
-    println("after parseTypeinNoAppExpr: "+ p)
+    //println("after parseTypeinNoAppExpr: "+ p)
     p match {
       case Left(newPS) => {
         val synList = combineSynElemList(parseState.parsedSynElems, newPS.parsedSynElems).reverse
@@ -1569,9 +1563,8 @@ the syntax-Tree has on top an Lambda-Expression
   def parseBracesExpr(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "BracesExpr"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    println("parseBracesExpr: "+ parseState)
+    //println("parseBracesExpr: "+ parseState)
     if(parseState.tokenStream.isEmpty){
-      println("Abbruch; parseBracesExpr: "+ parseState)
       return (Left(parseState),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
     val (p,eL) =
@@ -1770,11 +1763,9 @@ the syntax-Tree has on top an Lambda-Expression
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     //println("parseMaybeAppExpr: " + parseState)
     if(parseState.tokenStream.head.isInstanceOf[RParentheses]){
-      println("L" +
-        "RBrace is at the beginning of parseApp: " + parseState)
       return (Left(parseState),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }else if(parseState.tokenStream.head.isInstanceOf[EndNamedExpr]){
-      println("EndNamedExpr sighted in ParseMaybeAppExpr: "+ parseState)
+      //println("EndNamedExpr sighted in ParseMaybeAppExpr: "+ parseState)
       return (Left(parseState),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
     val (parseStateOrError,eL) =
@@ -1884,7 +1875,6 @@ the syntax-Tree has on top an Lambda-Expression
           errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       }
       case tok => {
-        println("AddrSpaceTypeWasExpected: "+ tok + ": " + remainderTokens)
         val e = NotCorrectToken(tok, "addrSpaceType", "AddrSpaceType")
         (Right(e),errorList.add(e))
       }
@@ -1904,7 +1894,6 @@ the syntax-Tree has on top an Lambda-Expression
           SExpr(r.primitives.not(Some(span))) :: parseState.parsedSynElems, parseState.mapDepL, parseState.spanList) )
       }
       case tok => {
-        //println("UnaryOperatorWasExpected: "+ tok + ": " + remainderTokens)
         val e = NotCorrectToken(tok, "UnOp", "UnOperator")
         return (Right(e), errorList.add(e))
       }
@@ -1979,7 +1968,6 @@ the syntax-Tree has on top an Lambda-Expression
         }
       }
       case tok => {
-        println("BinOp: '" + tok + "' is no BinOperator!")
         val e = NotCorrectToken(tok, "BinOp", "BinOp")
         return (Right(e),errorList.add(e))
       }
