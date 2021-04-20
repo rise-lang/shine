@@ -307,8 +307,12 @@ final case class ErrorList(){
     val str = ""
     String.format("%-"+space+"s", str)
   }
-  def returnDeepestElem():String = "deepest Error at "+ this.deepestError + ":\n"+
-    this.errorList(this.deepestError).getOrElse(throw new IllegalStateException("Rules should not be the deepest elem")).returnMessage()
+  def returnDeepestElem():String = {
+    //in returnList I reverse the List, so I have to reverse the number too!
+    val dErrorInReverseList = errorList.length-this.deepestError-1
+    "deepest Error at "+ dErrorInReverseList + ":\n"+
+      this.errorList(this.deepestError).getOrElse(throw new IllegalStateException("Rules should not be the deepest elem")).returnMessage()
+  }
   def returnList():String = {
     var s = "\nfull ErrorList:\n"
     val l = this.errorList.reverse
