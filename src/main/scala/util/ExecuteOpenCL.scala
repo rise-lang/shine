@@ -1,5 +1,7 @@
 package util
 
+import rise.autotune.{AutoTuningError, COMPILATION_ERROR, EXECUTION_ERROR, NO_ERROR}
+
 import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.Using
@@ -82,36 +84,34 @@ object ExecuteOpenCL {
     TimeSpan.inMilliseconds(runtime.toDouble/1000000)
   }
 
-  @throws[Exception]
-  def executeWithRuntime(code: String, buffer_impl: String): TimeSpan[Time.ms] = {
+  def executeWithRuntime(code: String, buffer_impl: String): (Option[TimeSpan[Time.ms]], AutoTuningError) = {
+    val src = writeToTempFile("code-", ".c", code).getAbsolutePath
+    val bin = createTempFile("bin-", "").getAbsolutePath
+    val sources = s"$src $runtimePath/buffer_$buffer_impl.c $runtimePath/ocl.c"
     try {
-      val src = writeToTempFile("code-", ".c", code).getAbsolutePath
-      val bin = createTempFile("bin-", "").getAbsolutePath
-      val sources = s"$src $runtimePath/buffer_$buffer_impl.c $runtimePath/ocl.c"
-      try {
-//        (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
-        (s"timeout 5s clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
-      } catch {
-        case e:Throwable => {
-          println("compile error: " + e)
-          throw Exception("compile error")
-        }
-      }
-      try{
-//        val result = (s"runtime/clap_wrapper.sh $bin" !!)
-        val result = (s"timeout 5s runtime/clap_wrapper.sh $bin" !!)
-        println("result: " + result)
-        getRuntimeFromClap(result)
-      } catch {
-        case e: Throwable => {
-          println("execution error: " + e)
-          throw Exception("execution error")
-        }
-      }
+      //        (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
+      (s"timeout 5s clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
     } catch {
-      case e: Throwable =>
-        Console.err.println(s"execution failed: $e -- TODO change output of this exception")
-        throw Exception(s"execution failed: $e -- TODO change output of this exception")
+      case e:Throwable => {
+        println("compile error: " + e)
+        //          throw Exception("COMPILATION_ERROR")
+
+        (None, AutoTuningError(COMPILATION_ERROR, Some(e.toString)))
+      }
+    }
+    try{
+      val result = (s"timeout 5s runtime/clap_wrapper.sh $bin" !!)
+//      println("result: " + result)
+      val runtime = getRuntimeFromClap(result)
+
+      (Some(runtime), AutoTuningError(NO_ERROR, None))
+    } catch {
+      // todo check error codes here
+      case e: Throwable => {
+        println("execution error: " + e)
+
+        (None, AutoTuningError(EXECUTION_ERROR, Some(e.toString)))
+      }
     }
   }
 

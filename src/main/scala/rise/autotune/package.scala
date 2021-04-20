@@ -1,25 +1,44 @@
 package rise
 
-import arithexpr.arithmetic.{ArithExpr, BoolExpr, NamedVar, RangeAdd, RangeMul, RangeUnknown}
+import arithexpr.arithmetic.{ArithExpr, BoolExpr, RangeAdd, RangeMul, RangeUnknown}
 import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
-import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize, ScalaFunction, `(`, `)=>`, `,`}
-import util.{Time, TimeSpan, gen, monads}
+import shine.OpenCL.{GlobalSize, LocalSize}
+import util.{Time, TimeSpan, gen, monads, writeToPath}
 import java.io.{File, FileOutputStream, PrintWriter}
-import java.security.Policy.Parameters
-
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
-import rise.core.DSL.ToBeTyped
 import rise.openCL.DSL.oclRun
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
-import scala.util.Random
+
 
 package object autotune {
+
+  // error levels
+  sealed trait ErrorLevel
+  case object NO_ERROR extends ErrorLevel
+  case object CONSTRAINTS_ERROR extends ErrorLevel
+  case object SUBSTITUTION_ERROR extends ErrorLevel
+  case object CODE_GENERATION_ERROR extends ErrorLevel // how to check?
+  case object COMPILATION_ERROR extends ErrorLevel // error code?
+  case object EXECUTION_ERROR extends ErrorLevel // e.g. crash, 124 (timeout), -1 correctness?
+
+  // tuner, result and tuning errors
+  case class Tuner(main:String,
+                   name:String = "RISE",
+                   iterations: Int = 100,
+                   output:String = "autotuning",
+                   configFile:Option[String] = None,
+                   hierarchicalHM: Option[String] = None)
+
+  case class TuningResult(samples: Seq[Sample]) // todo add meta information (configuration, times, samples, ...)
+  case class AutoTuningError(errorLevel: ErrorLevel, message:Option[String])
+
+  // parameters and sample
   type Parameters = Set[NatIdentifier]
-  case class Sample(parameters: Map[NatIdentifier, Nat], runtime: Option[TimeSpan[Time.ms]], timestamp: Long)
+  case class Sample(parameters: Map[NatIdentifier, Nat], runtime: Option[TimeSpan[Time.ms]], timestamp: Long, autoTuningError: AutoTuningError)
 
   // should we allow tuning params to be substituted during type inference?
   // this could allow to restrict the search space at compile time
@@ -28,7 +47,8 @@ package object autotune {
   def tuningParam[A](name: String, r: arithexpr.arithmetic.Range, w: NatFunctionWrapper[A]): A =
     w.f(NatIdentifier(name, r, isExplicit = true, isTuningParam = true))
 
-  def search(e: Expr): Seq[Sample] = {
+  // main search method using custom tuner
+  def search(tuner:Tuner)(e:Expr): TuningResult = {
     // timestamp of starting point
     val start = System.currentTimeMillis()
 
@@ -38,46 +58,68 @@ package object autotune {
     // collect constraints
     val constraints = collectConstraints(e, parameters)
 
-    // generate json and write to tmp directory
-    val config_file = generateJSON(parameters)
+    // generate json if necessary
+    tuner.configFile match {
+      case None => {
+        // open file
+        val file = new PrintWriter(new FileOutputStream(new File(tuner.output + "/" + tuner.name + ".json"), false))
+
+        // write to file and close
+        file.write(generateJSON(parameters, constraints, tuner))
+        file.close()
+      }
+      case _ =>
+    }
 
     println("parameters: \n" + parameters)
     println("constraints: \n" + constraints)
-    println("json: \n" + config_file)
-
-    // open file
-    val file = new PrintWriter(
-      new FileOutputStream(new File("autotuning/tmp.json"), false))
-
-    // write to file and close
-    file.write(config_file)
-    file.close()
+//    println("json: \n" + config_file)
 
     // compute function value as result for hypermapper
     val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
       val parametersValuesMap = header.zip(parametersValues).map { case (h, p) =>
-        NatIdentifier(h, isExplicit = true) -> (p.toInt : Nat)
+        NatIdentifier(h, isExplicit = true) -> (p.toInt: Nat)
       }.toMap
 
 
       checkConstraints(constraints, parametersValuesMap) match {
         case true => {
-          Sample(parametersValuesMap, execute(rise.core.substitute.natsInExpr(parametersValuesMap, e)), System.currentTimeMillis() - start)
+          // execute
+          val result = execute(rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main)
+
+          result._1 match {
+            case Some(_) =>
+              // true
+              Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
+            case None =>
+              // false
+              Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
+          }
         }
+        // constraints error
         case false => {
-          Sample(parametersValuesMap, None, System.currentTimeMillis() - start)
+          Sample(parametersValuesMap, None, System.currentTimeMillis() - start, AutoTuningError(CONSTRAINTS_ERROR, None))
         }
       }
     }
 
-    val hypermapperBinary = os.Path.expandUser("~") / ".local" / "bin" / "hypermapper"
+    // todo check how to string to path
+    val hypermapperBinary = tuner.hierarchicalHM match {
+      case Some(path) => os.Path.apply(path)
+      case None => os.Path.expandUser("~") / ".local" / "bin" / "hypermapper"
+    }
 
-    val configFile = os.pwd / "autotuning" / "tmp.json"
+    // todo make sure filename can be full path
+    val configFile = tuner.configFile match {
+      case Some(filename) => os.pwd / filename
+      case None => os.pwd / tuner.output / (tuner.name + ".json")
+    }
 
+    // todo adjust this check
     assert( os.isFile(hypermapperBinary) && os.isFile(configFile) )
 
+    // spawn hypermapper process
     val hypermapper = os.proc(hypermapperBinary, configFile).spawn()
-
 
     // create output Seq
     var samples = new ListBuffer[Sample]()
@@ -127,7 +169,7 @@ package object autotune {
 //    val fileDelete = new File("autotuning/tmp.json")
 //    fileDelete.delete()
 
-    samples.toSeq
+    TuningResult(samples.toSeq)
   }
 
   // wrap ocl run to a function
@@ -161,49 +203,12 @@ package object autotune {
     constraints.forall(c => c.substitute(map).isSatisfied())
   }
 
-  def execute(e: Expr): Option[TimeSpan[Time.ms]]  = {
-//      val e2 = wrapOclRun(e)(LocalSize(1), GlobalSize(1))
-
-      val m = gen.opencl.hosted.fromExpr(e)
-
-      val main = """
-    const int N = 32;
-    int main(int argc, char** argv) {
-      Context ctx = createDefaultContext();
-      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
-
-      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
-      for (int i = 0; i < N; i++) {
-        in[i] = 1;
-      }
-
-      foo(ctx, output, input, input);
-
-      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-
-//      for (int i = 0; i < N; i++) {
-//        printf(" %f \n", out[i]);
-//      }
-
-      destroyBuffer(ctx, input);
-      destroyBuffer(ctx, output);
-      destroyContext(ctx);
-      return EXIT_SUCCESS;
-    }
-    """
-
-
+  def execute(e: Expr, main: String): (Option[TimeSpan[Time.ms]], AutoTuningError)  = {
+    val m = gen.opencl.hosted.fromExpr(e)
     val program = shine.OpenCL.Module.translateToString(m) + main
 
     // execute program
-    try{
-      val result = util.ExecuteOpenCL.executeWithRuntime(program, "zero_copy")
-      Some(result)
-    } catch{
-      case e:Throwable => println("error: \n" + e)
-        None
-    }
+    util.ExecuteOpenCL.executeWithRuntime(program, "zero_copy")
   }
 
 
@@ -342,13 +347,22 @@ package object autotune {
   }
 
 
-  def generateJSON(p: Parameters): String = {
+  def generateJSON(p: Parameters, c:Set[Constraint], tuner: Tuner): String = {
+//    def generateJSON(p: Parameters, tuner: Tuner): String = {
 
+
+    // distinguish wether to generate constraints or not
+    tuner.hierarchicalHM match {
+      case Some(value) => // generate constraints
+      case None =>  // generate without constraints
+    }
+
+    val doe = p.size * 10
     // create header for hypermapper configuration file
     // WARNING: configuration is partially hard coded
     val header =
-    """{
-      | "application_name" : "rise",
+    s"""{
+      | "application_name" : "${tuner.name}",
       | "optimization_objectives" : ["runtime"],
       | "hypermapper_mode" : {
       |   "mode" : "client-server"
@@ -361,9 +375,9 @@ package object autotune {
       | },
       | "design_of_experiment" : {
       |   "doe_type" : "random sampling",
-      |   "number_of_samples" : 100
+      |   "number_of_samples" : ${doe}
       | },
-      | "optimization_iterations" : 100,
+      | "optimization_iterations" : ${tuner.iterations},
       | "input_parameters" : {
       |""".stripMargin
 
@@ -374,7 +388,7 @@ package object autotune {
 
       val parameterRange = elem.range match {
         case RangeAdd(start, stop, step) =>  {
-          // check if all elements are evaluable
+          //check if all elements are evaluable
           // Todo check start and stop
 
           // HACK
@@ -410,6 +424,15 @@ package object autotune {
           ""
         }
       }
+
+      val parameterEntry2 =
+        s"""   "${elem.name}" : {
+           |       "parameter_type" : "ordinal",
+           |       "values" : ${parameterRange},
+           |       "constraints" : [],
+           |       "dependencies" : []
+           |   },
+           |""".stripMargin
 
       val parameterEntry =
         s"""   "${elem.name}" : {
@@ -486,5 +509,62 @@ package object autotune {
 
     valueStringFinal
   }
+
+//  def TuningResult(drop)
+
+  // check path and duplicates above
+
+  // write tuning results into csv file
+  def saveSamples(path: String, tuningResult: TuningResult): Unit = {
+    // write header
+    var header = ""
+    tuningResult.samples(0).parameters.foreach(param => {
+      header += param._1.name + ","
+    })
+    header += "runtime" + ","
+    header += "error level" + ","
+    header += "error message" + ","
+    header += "timestamp"
+    header += "\n"
+
+    // write content
+    var content = ""
+    tuningResult.samples.foreach(sample => {
+
+      // write parameter
+      sample.parameters.foreach(param =>{
+        content += param._2.eval.toString + ","
+      })
+
+      // write runtime
+      sample.runtime match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
+
+      // write error level
+      content += sample.autoTuningError.errorLevel.toString + ","
+
+      // write error message
+      sample.autoTuningError.message match {
+        case Some(value) => content += value.toString + ","
+        case None => content += "" + ","
+      }
+
+      // write timestamp
+      content += sample.timestamp
+
+      // finish line
+      content += "\n"
+    })
+
+    writeToPath(path, header + content)
+  }
+
+  // write tuning results meta information to file
+  def saveMeta(path: String, tuningResult: TuningResult):Unit = {
+    // currently no meta data available
+  }
+
 
 }

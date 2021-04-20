@@ -1,6 +1,6 @@
 package rise
 
-import arithexpr.arithmetic.{NamedVar, PosInf, RangeAdd, RangeMul, RangeUnknown}
+import arithexpr.arithmetic.{PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
 import rise.core.primitives._
@@ -8,14 +8,10 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
-import rise.autotune.{collectConstraints, tuningParam, wrapOclRun}
+import rise.autotune.{Tuner, tuningParam, wrapOclRun}
 import apps.separableConvolution2D.weightsSeqVecUnroll
-import org.junit.Ignore
 import shine.OpenCL.{GlobalSize, LocalSize}
-import util.{Time, TimeSpan, createTempFile, gen, writeToFile, writeToPath, writeToTempFile}
-//import shine.DPIA.Types.TypeCheck
-//import util.gen
-
+import util.{gen, writeToPath}
 
 class autotuning extends test_util.Tests {
   val convolution: ToBeTyped[Expr] =
@@ -49,14 +45,13 @@ class autotuning extends test_util.Tests {
               ))
             ))))))
 
-
-  val convolutionOcl2: Expr =
+  val convolutionOclGsLsWrap: Expr =
     tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
     tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
       wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(convolution)
     ))))
 
-  val convolutionOcl3: ToBeTyped[Expr] = {
+  val convolutionOclGsLs: ToBeTyped[Expr] = {
     // tileShiftInwards should constrain n >= tile
     // slideVectors and slide should constrain tile % vec = 0
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
@@ -77,7 +72,6 @@ class autotuning extends test_util.Tests {
                       ))))))))))
   }
 
-
   val scalSJ: ToBeTyped[Expr] =
     depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
       oclRun(LocalSize(1), GlobalSize(32))(
@@ -95,8 +89,33 @@ class autotuning extends test_util.Tests {
         input |> mapGlobal(0)(fun(x => alpha * x)))
     ))
 
+  val main = """
+    const int N = 32;
+    int main(int argc, char** argv) {
+      Context ctx = createDefaultContext();
+      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+
+      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+      for (int i = 0; i < N; i++) {
+        in[i] = 1;
+      }
+
+      foo(ctx, output, input, input);
+
+      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+
+//    todo add error checking
+
+      destroyBuffer(ctx, input);
+      destroyBuffer(ctx, output);
+      destroyContext(ctx);
+      return EXIT_SUCCESS;
+    }
+    """
+
   test("collect parameters") {
-    val params = autotune.collectParameters(convolutionOcl2)
+    val params = autotune.collectParameters(convolutionOclGsLsWrap)
     assert(params.find(_.name == "vec").get.range == RangeAdd(0, 32, 1))
     assert(params.find(_.name == "tile").get.range == RangeAdd(4, 32, 1))
     assert(params.find(_.name == "ls0").get.range == RangeUnknown)
@@ -107,7 +126,7 @@ class autotuning extends test_util.Tests {
   }
 
   test("collect constraints") {
-    val e: Expr = convolutionOcl2
+    val e: Expr = convolutionOclGsLsWrap
     autotune.collectConstraints(e, autotune.collectParameters(e)).foreach(println)
   }
 
@@ -144,8 +163,11 @@ class autotuning extends test_util.Tests {
     rise.core.substitute.natsInExpr(goodParameters, e)
   }
 
+  // todo drop constraints into json file
   test("generateJSON"){
-    val json = autotune.generateJSON(autotune.collectParameters(convolution))
+    val parameters = autotune.collectParameters(convolution)
+    val constraints = autotune.collectConstraints(convolution, parameters)
+    val json = autotune.generateJSON(parameters, constraints, Tuner(main))
 
     // create gold
     // check against gold
@@ -160,39 +182,24 @@ class autotuning extends test_util.Tests {
     val e = (wrapped: ToBeTyped[Expr])(32)
     assert(convolutionOcl(32).toExpr == e.toExpr)
 
-    val tuningResult = autotune.search(e)
+    val tuningResult = autotune.search(Tuner(main))(e)
 
-    val bestSample = autotune.getBest(tuningResult)
-    println("bestSample: \n" + bestSample)
-  }
-
-  ignore("collect constraints 3"){
-    val e:Expr = convolutionOcl3(1024)
-    println("e: \n" + e)
-
-    val param = autotune.collectParameters(e)
-    val constraints = autotune.collectConstraints(e, param)
-
-    println("constraints")
-    constraints.foreach(elem => println(elem))
-  }
-
-  ignore("search2"){
-    val e:Expr = convolutionOcl3(1024)
-    println("e: \n" + e)
-
-    val tuningResult = autotune.search(e)
-
-    val bestSample = autotune.getBest(tuningResult)
+    val bestSample = autotune.getBest(tuningResult.samples)
     println("bestSample: \n" + bestSample)
   }
 
   test("search"){
     val e:Expr = convolutionOcl(32)
-    val tuningResult = autotune.search(e)
 
-    val bestSample = autotune.getBest(tuningResult)
+    val tuningResult = autotune.search(Tuner(main))(e)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
     println("bestSample: \n" + bestSample)
+
+    autotune.saveSamples("autotuning/RISE.csv", tuningResult)
   }
 
   test("execute convolution"){
@@ -204,7 +211,7 @@ class autotuning extends test_util.Tests {
     val e:Expr = convolutionOcl(32)
     val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
 
-    val result = autotune.execute(e2)
+    val result = autotune.execute(e2, main)
     println("result: " + result)
   }
 
@@ -241,10 +248,8 @@ class autotuning extends test_util.Tests {
     }
     """
 
-    val m = gen.opencl.hosted.fromExpr(e)
-    val program = shine.OpenCL.Module.translateToString(m) + main
-    println("program: \n" + program)
-    val runtime = util.ExecuteOpenCL.executeWithRuntime(program, "zero_copy")
+    val runtime = autotune.execute(e, main)
+
     println("result: \n" + runtime)
   }
 
@@ -289,9 +294,9 @@ class autotuning extends test_util.Tests {
     assert(util.ExecuteOpenCL.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
   }
 
-  test("generate huge amount of code"){
+  ignore("generate huge amount of code"){
     // expression
-    val e:Expr = convolutionOcl3(1024)
+    val e:Expr = convolutionOclGsLs(1024)
 
     // define parameters
     val parameters = Map(
@@ -302,34 +307,6 @@ class autotuning extends test_util.Tests {
       NatIdentifier("ls0", isExplicit = true) -> (1: Nat),
       NatIdentifier("ls1", isExplicit = true) -> (64: Nat)
     )
-
-    // define main
-      val main = """
-    const int N = 1024;
-    int main(int argc, char** argv) {
-      Context ctx = createDefaultContext();
-      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
-
-      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
-      for (int i = 0; i < N; i++) {
-        in[i] = 1;
-      }
-
-      foo(ctx, output, input, input);
-
-      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-
-//      for (int i = 0; i < N; i++) {
-//        printf(" %f \n", out[i]);
-//      }
-
-      destroyBuffer(ctx, input);
-      destroyBuffer(ctx, output);
-      destroyContext(ctx);
-      return EXIT_SUCCESS;
-    }
-    """
 
     // substitute parameters
     val eWithParams = rise.core.substitute.natsInExpr(parameters, e)
