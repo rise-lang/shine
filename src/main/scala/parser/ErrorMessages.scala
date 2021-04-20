@@ -325,7 +325,7 @@ final case class ErrorList(){
       }
       l(i) match {
         case Left(r)=> {
-          s = s+retSpace(space)+ i+".th: "+r.toString()+ "\n"
+          s = s+retSpace(space)+space+";"+i+".th: "+r.toString()+ "\n"
           r.state match{
             case isParsing()=> space += 1
             case isMatched()=> space -= 1
@@ -333,7 +333,7 @@ final case class ErrorList(){
           }
         }
         case Right(e)=> {
-          s = s +retSpace(space)+ i+".th: "+ e.returnMessage() + "\n"
+          s = s +retSpace(space)+space+";"+i+".th: "+ e.returnMessage() + "\n"
           space -= 1
         }
       }

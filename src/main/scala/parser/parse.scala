@@ -1398,7 +1398,10 @@ object parse {
         }else{
           val (pP,newErrorList) = (Left(ParseState(ps.tokenStream, Nil, ps.mapDepL, ps.spanList)) ,eL)|> parseNoAppExpr
           pP match{
-            case Right(e)=> (Right(e),newErrorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
+            case Right(e)=> {
+              (Left(ParseState(ps.tokenStream, SExpr(lam) :: parseState.parsedSynElems.tail, ps.mapDepL, ps.spanList)),
+                newErrorList.add(UsedOrFailedRule(isMatched(), whatToParse)))//If NoAppExpr does not suceed, we simply use lam
+            }
             case Left(pL) => {
               val (expr, expr_span) = getExprAndSpan(pL.parsedSynElems.head, pL).get
               val resApp = r.App(lam,expr)(rt.TypePlaceholder, Some(span+expr_span))
