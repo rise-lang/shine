@@ -117,26 +117,26 @@ case class Solution(ts: Map[Type, Type],
 
   def apply(constraints: Seq[Constraint]): Seq[Constraint] = {
     constraints.map {
-      case TypeConstraint(a, b) =>
-        TypeConstraint(apply(a), apply(b))
-      case AddressSpaceConstraint(a, b) =>
-        AddressSpaceConstraint(apply(a), apply(b))
-      case NatConstraint(a, b) =>
-        NatConstraint(apply(a), apply(b))
-      case BoolConstraint(a, b) =>
-        BoolConstraint(apply(a), apply(b))
-      case NatToDataConstraint(a, b) =>
-        NatToDataConstraint(apply(a), apply(b))
-      case DepConstraint(df, arg: Nat, t) =>
-        DepConstraint[NatKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: DataType, t) =>
+      case TypeConstraint(a, b, sp) =>
+        TypeConstraint(apply(a), apply(b), sp)
+      case AddressSpaceConstraint(a, b, sp) =>
+        AddressSpaceConstraint(apply(a), apply(b), sp)
+      case NatConstraint(a, b, sp) =>
+        NatConstraint(apply(a), apply(b), sp)
+      case BoolConstraint(a, b, sp) =>
+        BoolConstraint(apply(a), apply(b), sp)
+      case NatToDataConstraint(a, b, sp) =>
+        NatToDataConstraint(apply(a), apply(b), sp)
+      case DepConstraint(df, arg: Nat, t, sp) =>
+        DepConstraint[NatKind](apply(df), apply(arg), apply(t), sp)
+      case DepConstraint(df, arg: DataType, t, sp) =>
         DepConstraint[DataKind](
           apply(df),
           apply(arg).asInstanceOf[DataType],
-          apply(t)
+          apply(t), sp
         )
-      case DepConstraint(df, arg: AddressSpace, t) =>
-        DepConstraint[AddressSpaceKind](apply(df), apply(arg), apply(t))
+      case DepConstraint(df, arg: AddressSpace, t, sp) =>
+        DepConstraint[AddressSpaceKind](apply(df), apply(arg), apply(t), sp)
     }
   }
 }

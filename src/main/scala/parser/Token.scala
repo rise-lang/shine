@@ -92,6 +92,15 @@ object Span {
       case SIntToExpr(_, span)=> Some(span)
     }
   }
+  def combineOptionSpan(sp1:Option[Span],sp2:Option[Span]): Option[Span] ={
+    sp1 match{
+      case None => None
+      case Some(span1)=>sp2 match {
+        case None =>None
+        case Some(span2)=>Some(span1+span2)
+      }
+    }
+  }
 }
 
 /*

@@ -415,7 +415,7 @@ class parseTest extends  AnyFlatSpec {
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
             begin.row should equal(7)
-            end.row should equal(16)
+            end.row should equal(15)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -468,7 +468,7 @@ class parseTest extends  AnyFlatSpec {
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex3.rise")
             begin.row should equal(8)
-            end.row should equal(17)
+            end.row should equal(16)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -554,7 +554,7 @@ class parseTest extends  AnyFlatSpec {
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex4.rise")
             begin.row should equal(7)
-            end.row should equal(24)
+            end.row should equal(23)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -564,7 +564,7 @@ class parseTest extends  AnyFlatSpec {
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex4.rise")
             begin.row should equal(7)
-            end.row should equal(16)
+            end.row should equal(15)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -1636,7 +1636,7 @@ class parseTest extends  AnyFlatSpec {
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
             begin.row should equal(31)
-            end.row should equal(40)
+            end.row should equal(39)
             begin.column should equal(17)
             end.column should equal(17)
           }
@@ -1656,7 +1656,7 @@ class parseTest extends  AnyFlatSpec {
           case Some(Span(file, begin, end)) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
             begin.row should equal(31)
-            end.row should equal(48)
+            end.row should equal(47)
             begin.column should equal(17)
             end.column should equal(17)
           }
