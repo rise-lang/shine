@@ -189,6 +189,7 @@ final case class IdentifierExpectedNotTypeIdentifier(name: String, span:Span)
 //__________________________________________________________________________________________________________
 //Parser
 
+
 abstract sealed class PreAndErrorSynElems(span: Span, whatToParse: String) extends ErrorMessages(span){
   def subDescription():String= {
     throw new Exception("SubDescriptionError method must be overridden")
@@ -241,44 +242,103 @@ final case class NotCorrectSynElem(wrongSynElem: parser.parse.SyntaxElement,expe
 }
 
 //__________________________________________________________________________________________________________
+abstract sealed class UseOrFailState()
+  final case class isParsing() extends UseOrFailState
+  final case class isFailed() extends UseOrFailState
+  final case class isMatched() extends UseOrFailState
+
+final case class UsedOrFailedRule(state: UseOrFailState, whatToParse: String){
+  override def toString():String =  {
+    state match {
+      case isParsing() => "parsing Rule "+ whatToParse
+      case isFailed() =>  "failed Rule  "+ whatToParse
+      case isMatched() => "matched Rule "+ whatToParse
+    }
+  }
+}
+
+//__________________________________________________________________________________________________________
 //ErrorList
+/*Gib aus welche Regeln angewendet werden und ob sie fehlschlagen.
+  parsing NoAppExpr
+  parsing Identifier
+  failed to apply Rule: Identifier
+  parsing Lambda
+  ....
+  matched Lambda
+  matched NoAppExpr
+ */
 
 final case class ErrorList(){
-  private var errorList: List[PreAndErrorSynElems] = Nil
-  private var deepestElem: Int = -1
+  private var errorList: List[Either[UsedOrFailedRule, PreAndErrorSynElems]] = Nil
+  private var deepestError: Int = -1
 
   def add(e:PreAndErrorSynElems):ErrorList={
-    if(errorList.isEmpty){
-      errorList = e::errorList
-      deepestElem = 0
-      return this
-    }
-    if(e==errorList(0)){
-      println("same Error")
-      return this
-    }
-    //Todo: maybe only for the deepest elem check if he is deeper and configure the first elem as the deepest automatically
-    if(errorList.forall(p=>e.s.isAfter(p.s))){
-       deepestElem = 0
+    if(errorList.isEmpty || deepestError.equals(-1)){
+       deepestError = 0
     }else{
-      deepestElem += 1
+      errorList(deepestError) match {
+        case Right(newE)=> if(e.s.isAfter(newE.s)){
+          deepestError = 0
+        } else {
+          deepestError += 1
+        }
+        case Left(usedOrFailedRule) => throw new IllegalStateException("Rules dont save spans and because of that can not be the deepest elem: "+ usedOrFailedRule)
+      }
     }
-    errorList = e::errorList
+    errorList = Right(e)::errorList
     //println("ErrorList: " +this.toString)
-    return this
+    this
+  }
+  def add(r:UsedOrFailedRule):ErrorList={
+    if(!deepestError.equals(-1)){
+      deepestError += 1
+    }
+    errorList = Left(r)::errorList
+    this
   }
 
-  def returnDeepestElem():String = "deepestElem at "+ this.deepestElem + ":\n"+ this.errorList(this.deepestElem).returnMessage()
+  /*
+  so that is looks better with spaces, but if it takes too much time, it is probably better to solve it in an different way
+   */
+  private def retSpace(space:Int): String ={
+    require(space >= 0 )
+    var s = "   "
+    var toAdd = space
+    while(toAdd > 0 ){
+      toAdd -= 1
+      s = s + "  "
+    }
+    s
+  }
+  def returnDeepestElem():String = "deepest Error at "+ this.deepestError + ":\n"+
+    this.errorList(this.deepestError).getOrElse(throw new IllegalStateException("Rules should not be the deepest elem")).returnMessage()
   def returnList():String = {
     var s = "\nfull ErrorList:\n"
     val l = this.errorList
+    var space = 1
+
     for(i <- 0 until l.size){
-      s = s+i+".th: "+l(i).returnMessage()+"\n"
+      s = s+i+".th: " + retSpace(space)
+      l(i) match {
+        case Left(r)=> {
+          s = s + r.toString()+ "\n"
+          r.state match{
+            case isParsing()=> space += 1
+            case isMatched()=> space -= 1
+            case isFailed() => space -= 1
+          }
+        }
+        case Right(e)=> {
+          space -= 1
+          s = s + e.returnMessage() + "\n"
+        }
+      }
     }
     s
   }
   override def toString: String =  returnDeepestElem()+returnList()
-  def getList():List[PreAndErrorSynElems]=return this.errorList
-  def getDeepestElemPos():Int =return this.deepestElem
-  def getDeepestElem():PreAndErrorSynElems =return this.errorList(this.deepestElem)
+  def getList():List[Either[UsedOrFailedRule, PreAndErrorSynElems]]=this.errorList
+  def getDeepestElemPos():Int =this.deepestError
+  def getDeepestElem():PreAndErrorSynElems =this.errorList(this.deepestError).getOrElse(throw new IllegalStateException("Rules should not be the deepest elem"))
 }

@@ -172,7 +172,7 @@ object infer {
           } else {
             i.t
           })
-        constraints += TypeConstraint(t, i.t)
+        constraints += TypeConstraint(t, i.t)//Todo:add expr.span to Constraint
         (i.setType(t), Solution())
 
       case Lambda(x, e) =>

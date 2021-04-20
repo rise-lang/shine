@@ -1765,6 +1765,19 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
+  "parser" should "be able to parse 'nBodySubExpression.rise'" in {
+    val fileName: String = testFilePath + "nBodySubExpression.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "nbody"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+    println(ex_g)
+  }
 
   "parser" should "be able to parse 'nbodyVereinfacht.rise'" in {
     val fileName: String = testFilePath + "nbodyVereinfacht.rise"
