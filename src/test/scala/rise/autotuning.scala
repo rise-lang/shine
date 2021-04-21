@@ -1,13 +1,14 @@
 package rise
 
-import arithexpr.arithmetic.{PosInf, RangeAdd, RangeMul, RangeUnknown}
+import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
-import rise.core.primitives._
+import rise.core.primitives.{let => _, _}
 import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
+import rise.openCL.primitives.oclReduceSeq
 import rise.autotune.{Tuner, tuningParam, wrapOclRun}
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
@@ -161,6 +162,195 @@ class autotuning extends test_util.Tests {
     )
     assert(autotune.checkConstraints(constraints, goodParameters))
     rise.core.substitute.natsInExpr(goodParameters, e)
+  }
+
+  val mmKernel: ToBeTyped[Expr] =
+    tuningParam("v3", (v3: Nat) =>
+    tuningParam("v4", (v4: Nat) =>
+    tuningParam("v5", (v5: Nat) =>
+    tuningParam("v6", (v6: Nat) =>
+    tuningParam("v7", (v7: Nat) =>
+    tuningParam("v8", (v8: Nat) =>
+    depFun((n: Nat, m: Nat, o: Nat) => fun(
+      (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
+    )((at, b) =>
+      at |>
+        map(split(v5)) |> split(v8) |> // O'.v8.N'.v5.f
+        map(transpose) |> transpose |> // N'.O'.v8.v5.f
+        mapWorkGroup(1)(fun(p2 =>
+          b |>
+            map(split(v7)) |> split(v8) |> // O'.v8.M'.v7.f
+            map(transpose) |> transpose |> // M'.O'.v8.v7.f
+            mapWorkGroup(0)(fun(p3 =>
+              zip(p2)(p3) |> // O'.(v8.v5.f x v8.v7.f)
+                oclReduceSeq(AddressSpace.Local)(fun((p13, p14) =>
+                  // (v5/^v4).(v7/^v3).v4.v3.f x (v8.v5.f x v8.v7.f)
+                  let (toLocal(makePair(
+                    p14._1 |> join |> split(v6) |> // ((v8 x v5) /^ v6).v6.f
+                      mapLocal(1)(asScalar o mapLocal(0)(id) o asVectorAligned(4)) |>
+                      join |> split(v5)
+                  )( // v8.v5.f
+                    p14._2 |> // v8.v7.f
+                      mapLocal(1)(asScalar o mapLocal(0)(id) o asVectorAligned(4))
+                  )))
+                    be (p15 =>
+                    zip(p13)(split(v4)(transpose(p15._1))) |> // (v5/^v4).((v7/^v3).v4.v3.f x v4.v8.f)
+                      mapLocal(1)(fun(p16 =>
+                        zip(p16._1)(split(v3)(transpose(p15._2))) |> // (v7/^v3).(v4.v3.f x v3.v8.f)
+                          mapLocal(0)(fun(p17 =>
+                            zip(transpose(p16._2))(transpose(p17._2)) |> // v8.(v4.f x v3.f)
+                              oclReduceSeq(AddressSpace.Private)(fun((p19, p20) =>
+                                // v4.v3.f x (v4.f x v3.f)
+                                let (toPrivate(makePair(mapSeq(id)(p20._1))(mapSeq(id)(p20._2))))
+                                  be (p21 =>
+                                  zip(p19)(p21._1) |> // v4.(v3.f x f)
+                                    mapSeq(fun(p22 =>
+                                      zip(p22._1)(p21._2) |> // v3.(f x f)
+                                        mapSeq(fun(p23 =>
+                                          p23._1 + (p22._2 * p23._2)
+                                        ))
+                                    ))
+                                  )
+                              ))(p17._1 // v4.v3.f
+                                |> mapSeq(mapSeq(id)) // TODO: think about that
+                              ) |> mapSeq(mapSeq(id)) // TODO: think about that
+                          ))
+                      ))
+                    )
+                ))(
+                  generate(fun(_ =>
+                    generate(fun( _ =>
+                      generate(fun(_ =>
+                        generate(fun(_ => lf32(0.0f))))))))) |>
+                    mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(id))))
+                ) |> // (v5/^v4).(v7/^v3).v4.v3.f
+                mapLocal(1)(mapLocal(0)(mapSeq(asScalar o mapSeq(id) o asVector(4)))) |>
+                map(transpose) |> join |> map(join) |> transpose // v7.v5.f
+            )) |> join |> transpose // v5.M.f
+        )) |> join // N.M.f
+    ))))))))
+
+  test("mm kernel constraints") {
+    val e: Expr =
+      tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
+      tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
+        wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
+      ))))
+    val (nIdent, mIdent, oIdent) = e match {
+      case DepLambda(n: NatIdentifier, DepLambda(m: NatIdentifier, DepLambda(o: NatIdentifier, _))) =>
+        (n, m, o)
+      case _ => ???
+    }
+    val params = autotune.collectParameters(e)
+    val constraints = autotune.collectConstraints(e, params)
+    // note: v5 multiple of 4, contiguous memory constraint is missing
+
+    // n, m, o, v3, v4, v5, v6, v7, v8, ls0, ls1, gs0, gs1
+    val badParameters = Seq[(Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat)](
+      (64, 128, 128, 8, 1, 1, 1, 16, 1, 32, 4, 32, 16),
+      (64, 128, 128, 1, 1, 1, 32, 1, 128, 64, 2, 64, 128),
+      (64, 128, 128, 2, 1, 1, 2, 32, 32, 1, 1, 4, 64),
+      (64, 128, 128, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1),
+      (64, 128, 128, 1, 1, 1, 1, 8, 4, 4, 1, 64, 1),
+      (64, 128, 128, 1, 1, 1, 1, 1, 128, 2, 2, 2, 8),
+      (64, 128, 128, 1, 1, 1, 2, 1, 2, 2, 2, 4, 128),
+      (64, 128, 128, 2, 1, 1, 1, 2, 4, 4, 4, 16, 64),
+      (64, 128, 128, 2, 1, 1, 2, 8, 2, 4, 2, 4, 2),
+      (64, 128, 128, 8, 1, 1, 1, 8, 4, 8, 64, 8, 64),
+      (64, 128, 128, 16, 2, 2, 1, 16, 2, 64, 4, 64, 8),
+      (64, 128, 128, 1, 1, 2, 2, 128, 4, 16, 16, 64, 64),
+      (64, 128, 128, 1, 1, 2, 4, 1, 16, 4, 1, 4, 32),
+      (64, 128, 128, 1, 1, 2, 1, 4, 128, 4, 2, 64, 4),
+      (64, 128, 128, 2, 1, 2, 4, 2, 64, 2, 1, 128, 1),
+      (64, 128, 128, 16, 2, 2, 2, 32, 8, 2, 1, 128, 1),
+      (64, 128, 128, 2, 2, 2, 2, 16, 8, 4, 1, 4, 32),
+      (64, 128, 128, 1, 2, 2, 1, 1, 1, 4, 1, 4, 4),
+      (64, 128, 128, 8, 2, 2, 1, 8, 32, 8, 2, 32, 2),
+      (64, 128, 128, 32, 2, 2, 2, 64, 16, 1, 2, 16, 32),
+      (64, 128, 128, 2, 4, 4, 16, 8, 64, 8, 1, 8, 8),
+      (64, 128, 128, 1, 1, 4, 32, 8, 64, 2, 4, 128, 4),
+      (64, 128, 128, 1, 2, 4, 4, 1, 1, 16, 1, 16, 1),
+      (64, 128, 128, 1, 2, 4, 128, 8, 128, 2, 1, 2, 32),
+      (64, 128, 128, 1, 1, 4, 16, 16, 32, 1, 128, 32, 128),
+      (64, 128, 128, 1, 1, 4, 32, 8, 8, 16, 8, 64, 8),
+      (64, 128, 128, 2, 1, 4, 64, 8, 32, 2, 8, 4, 64),
+      (64, 128, 128, 4, 1, 4, 2, 32, 2, 4, 8, 8, 64),
+      (64, 128, 128, 2, 1, 8, 2, 4, 128, 2, 2, 2, 16),
+      (64, 128, 128, 1, 4, 8, 8, 2, 16, 4, 2, 8, 4),
+      (64, 128, 128, 2, 8, 8, 8, 128, 2, 2, 1, 4, 2),
+      (64, 128, 128, 1, 4, 8, 16, 4, 4, 1, 2, 128, 2),
+      (64, 128, 128, 1, 1, 8, 1, 4, 1, 1, 16, 1, 32),
+      (64, 128, 128, 2, 8, 8, 8, 8, 1, 8, 4, 8, 16),
+      (64, 128, 128, 2, 1, 16, 16, 8, 32, 1, 2, 1, 128),
+      (64, 128, 128, 2, 2, 16, 4, 2, 4, 2, 1, 128, 2),
+      (64, 128, 128, 2, 1, 16, 16, 8, 8, 16, 2, 16, 2),
+      (64, 128, 128, 1, 4, 16, 32, 8, 128, 1, 1, 2, 8),
+      (64, 128, 128, 1, 4, 16, 128, 32, 32, 1, 4, 1, 16),
+      (64, 128, 128, 1, 1, 16, 4, 1, 1, 1, 4, 32, 32),
+      (64, 128, 128, 2, 1, 32, 1, 4, 8, 8, 2, 128, 2),
+      (64, 128, 128, 1, 4, 32, 1, 4, 64, 1, 8, 1, 8),
+      (64, 128, 128, 1, 1, 32, 2, 1, 8, 8, 1, 64, 1),
+      (64, 128, 128, 1, 8, 32, 32, 1, 64, 1, 1, 1, 64),
+      (64, 128, 128, 1, 32, 32, 16, 64, 32, 1, 1, 8, 16),
+      (64, 128, 128, 2, 32, 32, 4, 4, 2, 16, 8, 32, 64),
+      (64, 128, 128, 32, 8, 32, 2, 32, 1, 2, 8, 2, 8),
+      (64, 128, 128, 2, 8, 64, 4, 4, 64, 1, 8, 1, 32),
+      (64, 128, 128, 2, 1, 64, 16, 2, 4, 1, 1, 4, 64),
+      (64, 128, 128, 1, 4, 64, 8, 1, 128, 1, 2, 16, 4),
+      (64, 128, 128, 2, 16, 64, 2, 2, 8, 2, 2, 2, 2),
+      (64, 128, 128, 1, 8, 64, 1, 1, 1, 1, 1, 1, 2),
+      (64, 128, 128, 1, 1, 64, 1, 2, 8, 32, 64, 64, 128),
+      (64, 128, 128, 1, 64, 64, 64, 1, 4, 1, 2, 1, 16),
+      (64, 128, 128, 2, 64, 64, 4, 2, 1, 2, 8, 2, 32),
+      (64, 128, 128, 64, 32, 64, 1, 64, 64, 32, 1, 128, 64),
+      (64, 128, 128, 32, 32, 128, 1, 64, 4, 64, 1, 64, 1),
+      (64, 128, 128, 4, 2, 128, 32, 4, 8, 1, 1, 8, 4),
+      (64, 128, 128, 4, 128, 128, 1, 4, 32, 2, 16, 2, 64),
+      (64, 128, 128, 1, 8, 128, 128, 1, 32, 2, 2, 4, 16),
+      (64, 128, 128, 1, 32, 128, 2, 1, 128, 4, 1, 64, 8),
+      (64, 128, 128, 1, 8, 128, 8, 4, 128, 4, 8, 8, 16),
+      (64, 128, 128, 8, 128, 128, 128, 16, 16, 8, 64, 16, 64),
+      (64, 128, 128, 16, 64, 128, 1, 128, 128, 1, 2, 1, 4),
+      (64, 128, 128, 16, 128, 128, 8, 32, 8, 1, 2, 1, 2),
+      (64, 128, 128, 2, 1, 1, 8, 4, 16, 2, 2, 2, 2),
+    )
+    val goodParameters = Seq[(Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat, Nat)](
+      (64, 128, 128, 4, 1, 1, 4, 4, 8, 8, 4, 8, 32),
+      (64, 128, 128, 4, 1, 1, 8, 64, 16, 1, 16, 4, 32),
+      (64, 128, 128, 4, 1, 1, 8, 128, 64, 1, 8, 8, 8),
+      (64, 128, 128, 4, 1, 2, 4, 64, 128, 4, 2, 4, 4),
+      (64, 128, 128, 64, 2, 2, 32, 64, 32, 1, 1, 2, 32),
+      (64, 128, 128, 4, 1, 2, 8, 8, 64, 32, 2, 32, 16),
+      (64, 128, 128, 4, 1, 2, 32, 4, 32, 4, 4, 4, 4),
+    )
+    for ((params, isGood) <- Seq((badParameters, false), (goodParameters, true))) {
+      params.foreach { case cfg@(n, m, o, v3, v4, v5, v6, v7, v8, ls0, ls1, gs0, gs1) =>
+        val map = Map(
+          nIdent -> n,
+          mIdent -> m,
+          oIdent -> o,
+          NatIdentifier("v3", isExplicit = true) -> v3,
+          NatIdentifier("v4", isExplicit = true) -> v4,
+          NatIdentifier("v5", isExplicit = true) -> v5,
+          NatIdentifier("v6", isExplicit = true) -> v6,
+          NatIdentifier("v7", isExplicit = true) -> v7,
+          NatIdentifier("v8", isExplicit = true) -> v8,
+          NatIdentifier("ls0", isExplicit = true) -> ls0,
+          NatIdentifier("ls1", isExplicit = true) -> ls1,
+          NatIdentifier("gs0", isExplicit = true) -> gs0,
+          NatIdentifier("gs1", isExplicit = true) -> gs1,
+        )
+        if (autotune.checkConstraints(constraints, map) != isGood) {
+          val (sat, notSat) = constraints.partition(c =>
+            c.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]).isSatisfied())
+          println("satisfied:")
+          sat.foreach(println)
+          println("not satisfied:")
+          notSat.foreach(println)
+          throw new Exception(s"$cfg should${if (isGood) "" else " not"} pass constraint checking")
+        }
+      }
+    }
   }
 
   // todo drop constraints into json file

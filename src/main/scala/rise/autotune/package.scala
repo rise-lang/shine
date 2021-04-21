@@ -311,7 +311,7 @@ package object autotune {
       override def datatype: DataType => monads.Pure[DataType] = { t =>
         t match {
           case ArrayType(n, _) if n.varList.forall(v => paramOrInput(v.name)) =>
-            addPredicate(ArithPredicate(n, 0, ArithPredicate.Operator.>=))
+            addPredicate(ArithPredicate(n, 1, ArithPredicate.Operator.>=))
           case VectorType(n, _) if n.varList.forall(v => paramOrInput(v.name)) =>
             cs += RangeConstraint(n, RangeMul(2, 16, 2))
           case _ =>
