@@ -58,7 +58,7 @@ object Constraint {
   def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint])
               (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
     case (Nil, Nil) => Solution()
-    case (Nil, _) => error(s"could not solve constraints ${rs} ", Span.getSpanOfFirstElemInSeq(rs))(trace)
+    case (Nil, _) => error(s"could not solve constraints ${rs} ", Span.getSpanListOfSeq(rs))(trace)
     case (c +: cs, _) =>
       val s = try {
         solveOne(c, trace)

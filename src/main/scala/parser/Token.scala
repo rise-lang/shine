@@ -105,6 +105,11 @@ object Span {
     case Seq(first, tail @ _*) =>first.span
     case Seq() => None
   }
+
+  def getSpanListOfSeq(seq: Seq[rise.core.types.Constraint]): List[Option[parser.Span]]= seq match {
+    case Seq(first, tail @ _*) =>first.span :: getSpanListOfSeq(tail)
+    case Seq() => Nil
+  }
 }
 
 /*

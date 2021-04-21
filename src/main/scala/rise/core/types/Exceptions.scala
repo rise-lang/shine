@@ -3,7 +3,7 @@ package rise.core.types
 import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.xml.NodeSeq
 
-case class InferenceException(msg: String, trace: Seq[Constraint], span:Option[parser.Span])
+case class InferenceException(msg: String, trace: Seq[Constraint], span:List[Option[parser.Span]])
   extends Exception {
   override def toString: String =
     s"inference exception in $span: $msg\n${trace.mkString("---- trace ----\n",
@@ -11,8 +11,10 @@ case class InferenceException(msg: String, trace: Seq[Constraint], span:Option[p
 }
 
 object InferenceException {
-  def error(msg: String, span:Option[parser.Span])(implicit trace: Seq[Constraint]): Nothing =
+  def error(msg: String, span:List[Option[parser.Span]])(implicit trace: Seq[Constraint]): Nothing =
     throw InferenceException(msg, trace, span)
+  def error(msg: String, span:Option[parser.Span])(implicit trace: Seq[Constraint]): Nothing =
+    throw InferenceException(msg, trace, span::Nil)
 }
 
 case class NonIdentifierInBinderException[T](lambda: T,
