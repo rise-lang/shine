@@ -15,7 +15,7 @@ object infer {
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-    val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq(), e.span)(explDep))
+    val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
     val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
       printTypesAndTypeHoles(res)
@@ -42,7 +42,7 @@ object infer {
       }
     )
     if (holeFound) {
-      error("type holes were found")(Seq())
+      error("type holes were found",expr.span)(Seq())
     }
   }
 
@@ -169,7 +169,7 @@ object infer {
       case i: Identifier =>
         val t = env.getOrElseUpdate(i.name,
           if (i.t == TypePlaceholder) {
-            error(s"$i has no type in " + span)(Seq())
+            error(s"$i has no type", span)(Seq())
           } else {
             i.t
           })

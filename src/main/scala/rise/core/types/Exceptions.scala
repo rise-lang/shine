@@ -1,15 +1,18 @@
 package rise.core.types
 
-case class InferenceException(msg: String, trace: Seq[Constraint])
+import scala.collection.immutable.{AbstractSeq, LinearSeq}
+import scala.xml.NodeSeq
+
+case class InferenceException(msg: String, trace: Seq[Constraint], span:Option[parser.Span])
   extends Exception {
   override def toString: String =
-    s"inference exception: $msg\n${trace.mkString("---- trace ----\n",
+    s"inference exception in $span: $msg\n${trace.mkString("---- trace ----\n",
       "\n", "\n---------------")}"
 }
 
 object InferenceException {
-  def error(msg: String)(implicit trace: Seq[Constraint]): Nothing =
-    throw InferenceException(msg, trace)
+  def error(msg: String, span:Option[parser.Span])(implicit trace: Seq[Constraint]): Nothing =
+    throw InferenceException(msg, trace, span)
 }
 
 case class NonIdentifierInBinderException[T](lambda: T,

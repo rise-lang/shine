@@ -43,9 +43,9 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection, override 
 }
 
 object Constraint {
-  def solve(cs: Seq[Constraint], trace: Seq[Constraint], span:Option[parser.Span])
+  def solve(cs: Seq[Constraint], trace: Seq[Constraint])
      (implicit explDep: Flags.ExplicitDependence): Solution =
-  solveRec(cs, Nil, trace,span)
+  solveRec(cs, Nil, trace)
   /* faster but not always enough:
    cs match {
     case Nil => Solution()
@@ -55,26 +55,26 @@ object Constraint {
   }
   */
 
-  def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint],span:Option[parser.Span])
+  def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint])
               (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
     case (Nil, Nil) => Solution()
-    case (Nil, _) => error(s"could not solve constraints ${rs} in $span")(trace)
+    case (Nil, _) => error(s"could not solve constraints ${rs} ", Span.getSpanOfFirstElemInSeq(rs))(trace)
     case (c +: cs, _) =>
       val s = try {
-        solveOne(c, trace, span)
+        solveOne(c, trace)
       } catch {
         case e: InferenceException =>
-          println(e.msg + " in " + span)
-          return solveRec(cs, rs :+ c, trace, span)
+          println(e.msg + " in " + c.span)
+          return solveRec(cs, rs :+ c, trace)
       }
-      s ++ solve(s.apply(rs ++ cs), trace, span)
+      s ++ solve(s.apply(rs ++ cs), trace)
   }
 
   // scalastyle:off method.length
-  def solveOne(c: Constraint, trace: Seq[Constraint], span:Option[parser.Span])
+  def solveOne(c: Constraint, trace: Seq[Constraint])
     (implicit explDep: Flags.ExplicitDependence): Solution = {
     implicit val _trace: Seq[Constraint] = trace
-    def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace, span)
+    def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace)
 
     c match {
       case TypeConstraint(a, b, sp) =>
@@ -84,9 +84,9 @@ object Constraint {
           case (i: TypeIdentifier, _) => unifyTypeIdent(i, b)
           case (_, i: TypeIdentifier) => unifyTypeIdent(i, a)
           case (i: DataTypeIdentifier, dt: DataType) =>
-            unifyDataTypeIdent(i, dt)
+            unifyDataTypeIdent(i, dt,sp)
           case (dt: DataType, i: DataTypeIdentifier) =>
-            unifyDataTypeIdent(i, dt)
+            unifyDataTypeIdent(i, dt,sp)
           case (_: ScalarType | _: NatType.type |
                 _: IndexType  | _: VectorType,
           _: ScalarType | _: NatType.type |
@@ -210,7 +210,7 @@ object Constraint {
             Solution.subs(b, dt) // substitute apply by data type
 
           case _ =>
-            error(s"cannot unify $a and $b")
+            error(s"cannot unify $a and $b",sp)
         }
 
 
@@ -220,15 +220,15 @@ object Constraint {
             val applied = liftDependentFunctionType(df)(arg)
             decomposed(Seq(TypeConstraint(applied, t, sp)))
           case _ =>
-            error(s"expected a dependent function type, but got $df")
+            error(s"expected a dependent function type, but got $df", sp)
         }
 
       case NatConstraint(a, b, sp) => nat.unify(a, b, sp)
       case BoolConstraint(a, b, sp) => bool.unify(a, b, sp)
       case NatToDataConstraint(a, b, sp) =>
         (a, b) match {
-          case (i: NatToDataIdentifier, _) => natToData.unifyIdent(i, b)
-          case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a)
+          case (i: NatToDataIdentifier, _) => natToData.unifyIdent(i, b, sp)
+          case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a, sp)
           case _ if a == b                 => Solution()
           case (NatToDataLambda(x1, dt1), NatToDataLambda(x2, dt2)) =>
             val n = NatIdentifier(freshName("n"), isExplicit = true)
@@ -238,13 +238,13 @@ object Constraint {
               TypeConstraint(dt1, dt2, sp)
             ))
 
-          case _ => error(s"cannot unify $a and $b")
+          case _ => error(s"cannot unify $a and $b", sp)
         }
 
       case NatCollectionConstraint(a, b, sp) =>
         (a,b) match {
-          case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b)
-          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, b)
+          case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b, sp)
+          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, b, sp)
           case _ if a == b                    => Solution()
           case (NatCollectionFromArray(e1), NatCollectionFromArray(e2)) =>
             // What to do here???
@@ -260,7 +260,7 @@ object Constraint {
   }
 
   // FIXME: datatypes and types are mixed up
-  def unifyDataTypeIdent(i: DataTypeIdentifier, t: DataType)(
+  def unifyDataTypeIdent(i: DataTypeIdentifier, t: DataType, sp:Option[Span])(
     implicit trace: Seq[Constraint]
   ): Solution = {
     t match {
@@ -272,11 +272,11 @@ object Constraint {
         } else if (!j.isExplicit) {
           Solution.subs(j, i)
         } else {
-          error(s"cannot unify $i and $j, they are both explicit")
+          error(s"cannot unify $i and $j, they are both explicit", sp)
         }
       case _ if i.isExplicit =>
-        error(s"cannot substitute $i, it is explicit")
-      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
+        error(s"cannot substitute $i, it is explicit", sp)
+      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t", sp)
       case _ if !i.isExplicit => Solution.subs(i, t)
     }
   }
@@ -287,7 +287,7 @@ object Constraint {
     def unify(a: Nat, b: Nat, sp:Option[Span])(
       implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
     ): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs, NatConstraint(a, b, sp) +: trace, None)
+      def decomposed(cs: Seq[Constraint]) = solve(cs, NatConstraint(a, b, sp) +: trace)
       (a, b) match {
         case (i: NatIdentifier, _) => nat.unifyIdent(i, b, sp)
         case (_, i: NatIdentifier) => nat.unifyIdent(i, a, sp)
@@ -307,14 +307,14 @@ object Constraint {
           decomposed(Seq(
             NatConstraint(t1, t2, sp), NatConstraint(e1, e2, sp), BoolConstraint(c1, c2, sp)
           ))
-        case (s: arithexpr.arithmetic.Sum, _) => nat.unifySum(s, b)
-        case (_, s: arithexpr.arithmetic.Sum) => nat.unifySum(s, a)
-        case (p: arithexpr.arithmetic.Prod, _) => nat.unifyProd(p, b)
-        case (_, p: arithexpr.arithmetic.Prod) => nat.unifyProd(p, a)
-        case (p: arithexpr.arithmetic.Pow, _) => nat.unifyProd(p, b)
-        case (_, p: arithexpr.arithmetic.Pow) => nat.unifyProd(p, a)
-        case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
-        case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a)
+        case (s: arithexpr.arithmetic.Sum, _) => nat.unifySum(s, b, sp)
+        case (_, s: arithexpr.arithmetic.Sum) => nat.unifySum(s, a, sp)
+        case (p: arithexpr.arithmetic.Prod, _) => nat.unifyProd(p, b, sp)
+        case (_, p: arithexpr.arithmetic.Prod) => nat.unifyProd(p, a, sp)
+        case (p: arithexpr.arithmetic.Pow, _) => nat.unifyProd(p, b, sp)
+        case (_, p: arithexpr.arithmetic.Pow) => nat.unifyProd(p, a, sp)
+        case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b, sp)
+        case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a, sp)
         case (arithexpr.arithmetic.Mod(x1, m1),
           arithexpr.arithmetic.Mod(x2: NatIdentifier, m2))
           if m1 == m2 && !x2.isExplicit =>
@@ -325,7 +325,7 @@ object Constraint {
           if m1 == m2 && !x2.isExplicit =>
           val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
           Solution.subs(x2, k*m1 + x1%m1)
-        case _ => error(s"cannot unify $a and $b")
+        case _ => error(s"cannot unify $a and $b", sp)
       }
     }
 
@@ -387,24 +387,24 @@ object Constraint {
       }
     }
 
-    def tryPivots(n: Nat, value: Nat)(
+    def tryPivots(n: Nat, value: Nat, sp:Option[Span])(
       implicit trace: Seq[Constraint]
     ): Solution = {
       potentialPivots(n).foreach(pivotSolution(_, n, value) match {
         case Some(s) => return s
         case None    =>
       })
-      error(s"could not pivot $n = $value")
+      error(s"could not pivot $n = $value", sp)
     }
 
-    def unifyProd(p: Nat, n: Nat)(implicit trace: Seq[Constraint]): Solution = {
+    def unifyProd(p: Nat, n: Nat, sp:Option[Span])(implicit trace: Seq[Constraint]): Solution = {
       // n = p --> 1 = p * (1/n)
-      tryPivots(p /^ n, 1)
+      tryPivots(p /^ n, 1, sp)
     }
 
-    def unifySum(s: Sum, n: Nat)(implicit trace: Seq[Constraint]): Solution = {
+    def unifySum(s: Sum, n: Nat, sp:Option[Span])(implicit trace: Seq[Constraint]): Solution = {
       // n = s --> 0 = s + (-n)
-      tryPivots(s - n, 0)
+      tryPivots(s - n, 0, sp)
     }
 
     def unifyIdent(i: NatIdentifier, n: Nat, sp:Option[Span])(
@@ -418,14 +418,14 @@ object Constraint {
         } else if (!j.isExplicit) {
           Solution.subs(j, i)
         } else {
-          error(s"cannot unify $i and $j")
+          error(s"cannot unify $i and $j", sp)
         }
       case fx: NatToNatApply => unifyApply(fx, i,sp)
       case _ if !ArithExpr.contains(n, i) && (!i.isExplicit) =>
         Solution.subs(i, n)
-      case p: Prod => unifyProd(p, i)
-      case s: Sum  => unifySum(s, i)
-      case _       => error(s"cannot unify $i and $n")
+      case p: Prod => unifyProd(p, i, sp)
+      case s: Sum  => unifySum(s, i, sp)
+      case _       => error(s"cannot unify $i and $n", sp)
     }
 
     def unifyApply(apply: NatToNatApply, nat: Nat, sp:Option[Span])(
@@ -452,25 +452,25 @@ object Constraint {
     def unify(a: BoolExpr, b: BoolExpr, sp:Option[Span])(
       implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
     ): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs, BoolConstraint(a, b, sp) +: trace, None)
+      def decomposed(cs: Seq[Constraint]) = solve(cs, BoolConstraint(a, b, sp) +: trace)
       (a, b) match {
         case _ if a == b => Solution()
         case (ArithPredicate(lhs1, rhs1, op1), ArithPredicate(lhs2, rhs2, op2)) if op1 == op2 =>
           decomposed(Seq(NatConstraint(lhs1, lhs2, sp), NatConstraint(rhs1, rhs2, sp)))
-        case _ => error(s"cannot unify $a and $b")
+        case _ => error(s"cannot unify $a and $b",sp)
       }
     }
   }
 
   object natToData {
-    def unifyIdent(i: NatToDataIdentifier, n: NatToData)(
+    def unifyIdent(i: NatToDataIdentifier, n: NatToData, sp:Option[Span])(
       implicit trace: Seq[Constraint]
     ): Solution = n match {
       case j: NatToDataIdentifier =>
         if (i == j) {
           Solution()
         } else {
-          error(s"cannot unify $i and $j, they are both bound")
+          error(s"cannot unify $i and $j, they are both bound", sp)
         }
       case _ => Solution.subs(i, n)
     }
@@ -494,14 +494,14 @@ object Constraint {
   }
 
   object natCollection {
-    def unifyIdent(i: NatCollectionIdentifier, n: NatCollection)(
+    def unifyIdent(i: NatCollectionIdentifier, n: NatCollection, sp:Option[Span])(
         implicit trace: Seq[Constraint]
       ): Solution = n match {
       case j: NatCollectionIdentifier =>
         if (i == j) {
           Solution()
         } else {
-          error(s"cannot unify $i and $j, they are both bound")
+          error(s"cannot unify $i and $j, they are both bound",sp)
         }
       case _ => Solution.subs(i,n)
     }

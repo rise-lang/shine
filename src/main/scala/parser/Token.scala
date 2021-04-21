@@ -101,6 +101,10 @@ object Span {
       }
     }
   }
+  def getSpanOfFirstElemInSeq(seq: Seq[rise.core.types.Constraint]): Option[parser.Span]= seq match {
+    case Seq(first, tail @ _*) =>first.span
+    case Seq() => None
+  }
 }
 
 /*
