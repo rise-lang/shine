@@ -10,7 +10,8 @@ import rise.core.{types => rct}
 case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
   override def toString: String = s"($node : $t)"
 
-  /** Shifts De-Bruijn indices up or down if they are >= cutoff */
+  /** Shifts De-Bruijn indices up or down if they are >= cutoff
+    * @todo some traversals could be avoided for 0-shifts? */
   def shifted(shift: Expr.Shift, cutoff: Expr.Shift): Expr = {
     Expr(node match {
       case Var(index) =>

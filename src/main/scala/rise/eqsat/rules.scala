@@ -50,7 +50,7 @@ object rules {
   // \. %(0) + \. %(1) + %(0)
   // in e-graph: %(0) != %(1)
 
-  lazy val mapFusion: Rule = NamedRewrite.init("map-fusion",
+  val mapFusion: Rule = NamedRewrite.init("map-fusion",
     app(app(map, "f"), app(app(map, "g"), "in"))
       -->
     app(app(map, lam("x", app("f", app("g", "x")))), "in")
@@ -64,12 +64,12 @@ object rules {
 
   // - slide widening -
 
-  // TODO:
-  lazy val dropInSlide: Rule = NamedRewrite.init("drop-in-slide",
+  val dropInSlide: Rule = NamedRewrite.init("drop-in-slide",
     app(nApp(drop, "l"), app(nApp(nApp(slide, "n"), 1: Nat), "in"))
       -->
     app(app(map, nApp(drop, "l")), app(nApp(nApp(slide, ("n": Nat) + ("l": Nat)), 1: Nat), "in"))
   )
+  // FIXME: there is a bug for this one
   lazy val takeInSlide: Rule = NamedRewrite.init("take-in-slide",
     app(nApp(take, "r") :: ((("s": Nat)`.``_`) ->: `_`), app(nApp(nApp(slide, "n"), 1: Nat), "in"))
       -->
@@ -78,30 +78,28 @@ object rules {
 
   // -- movement --
 
-  // FIXME: matching shifted nats
-  lazy val mapSlideBeforeTranspose: Rule = NamedRewrite.init("map-slide-before-transpose",
+  val mapSlideBeforeTranspose: Rule = NamedRewrite.init("map-slide-before-transpose",
     app(transpose, app(app(map, nApp(nApp(slide, "sz"), "sp")), "in"))
       -->
     app(app(map, transpose), app(nApp(nApp(slide, "sz"), "sp"), app(transpose, "in")))
   )
-  lazy val slideBeforeMapMapF: Rule = NamedRewrite.init("slide-before-map-map-f",
+  val slideBeforeMapMapF: Rule = NamedRewrite.init("slide-before-map-map-f",
     app(app(map, app(map, "f")), app(nApp(nApp(slide, "sz"), "sp"), "in"))
       -->
     app(nApp(nApp(slide, "sz"), "sp"), app(app(map, "f"), "in"))
   )
-  lazy val slideBeforeMap: Rule = NamedRewrite.init("slide-before-map",
+  val slideBeforeMap: Rule = NamedRewrite.init("slide-before-map",
     app(nApp(nApp(slide, "sz"), "sp"), app(app(map, "f"), "in"))
       -->
     app(app(map, app(map, "f")), app(nApp(nApp(slide, "sz"), "sp"), "in"))
   )
 
-  // FIXME: matching shifted nats
-  lazy val dropBeforeMap: Rule = NamedRewrite.init("drop-before-map",
+  val dropBeforeMap: Rule = NamedRewrite.init("drop-before-map",
     app(nApp(drop, "n"), app(app(map, "f"), "in"))
       -->
     app(app(map, "f"), app(nApp(drop, "n"), "in"))
   )
-  lazy val takeBeforeMap: Rule = NamedRewrite.init("take-before-map",
+  val takeBeforeMap: Rule = NamedRewrite.init("take-before-map",
     app(nApp(take, "n"), app(app(map, "f"), "in"))
       -->
     app(app(map, "f"), app(nApp(take, "n"), "in"))

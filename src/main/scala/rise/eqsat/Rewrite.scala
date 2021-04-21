@@ -1,5 +1,7 @@
 package rise.eqsat
 
+import rise.core.{types => rct}
+
 object Rewrite {
   def init[D](name: String, rule: (Searcher[D], Applier[D])): Rewrite[D] = {
     val (searcher, applier) = rule
@@ -17,6 +19,8 @@ object Rewrite {
 class Rewrite[Data](val name: String,
                     val searcher: Searcher[Data],
                     val applier: Applier[Data]) {
+  override def toString: String = s"$name:\n$searcher\n  -->\n$applier"
+
   def search(egraph: EGraph[Data]): Vec[SearchMatches] =
     searcher.search(egraph)
 
@@ -100,7 +104,7 @@ case class VecMap[K, V](vec: Vec[(K, V)]) {
     vec.find(_._1 == key).map(_._2)
 
   def apply(key: K): V =
-    get(key).get
+    get(key).getOrElse(throw new Exception(s"could not find $key"))
 
   def shallowClone(): VecMap[K, V] =
     VecMap(vec.clone())
@@ -146,6 +150,8 @@ object Subst {
 case class ConditionalApplier[D](cond: (EGraph[D], EClassId, Subst) => Boolean,
                                  applier: Applier[D])
   extends Applier[D] {
+  override def toString: String = s"$applier when $cond"
+
   override def patternVars(): Vec[PatternVar] =
     applier.patternVars()
 
@@ -179,6 +185,21 @@ case class ShiftedApplier(v: PatternVar, newV: PatternVar,
   }
 }
 
+/** An [[Applier]] that checks whether a shifted variable is equal to another
+  * @note It works by extracting an expression from the [[EGraph]] in order to shift it.
+  */
+object ShiftedCheckApplier {
+  def apply(v: PatternVar, v2: PatternVar,
+            shift: Expr.Shift, cutoff: Expr.Shift,
+            applier: Applier[DefaultAnalysisData]): Applier[DefaultAnalysisData] =
+    ConditionalApplier({ case (egraph, _, subst) =>
+      val extract = egraph.getMut(subst(v)).data.extractedExpr
+      val shifted = extract.shifted(shift, cutoff)
+      val expected = egraph.getMut(subst(v2)).data.extractedExpr
+      shifted == expected
+    }, applier)
+}
+
 /** An [[Applier]] that shifts the DeBruijn indices of a nat variable */
 case class ShiftedNatApplier[D](v: NatPatternVar, newV: NatPatternVar,
                                 shift: Nat.Shift, cutoff: Nat.Shift,
@@ -198,6 +219,19 @@ case class ShiftedNatApplier[D](v: NatPatternVar, newV: NatPatternVar,
     subst2.insert(newV, shifted)
     applier.applyOne(egraph, eclass, subst2)
   }
+}
+
+/** An [[Applier]] that checks whether a shifted nat variable is equal to another */
+object ShiftedNatCheckApplier {
+  def apply(v: NatPatternVar, v2: NatPatternVar,
+            shift: Nat.Shift, cutoff: Nat.Shift,
+            applier: Applier[DefaultAnalysisData]): Applier[DefaultAnalysisData] =
+    ConditionalApplier({ case (_, _, subst) =>
+      val nat = subst(v)
+      val shifted = nat.shifted(shift, cutoff)
+      val expected = subst(v2)
+      shifted == expected
+    }, applier)
 }
 
 /** An [[Applier]] that shifts the DeBruijn indices of a data type variable */
@@ -221,6 +255,19 @@ case class ShiftedDataTypeApplier[D](v: DataTypePatternVar, newV: DataTypePatter
   }
 }
 
+/** An [[Applier]] that checks whether a shifted nat variable is equal to another */
+object ShiftedDataTypeCheckApplier {
+  def apply(v: DataTypePatternVar, v2: DataTypePatternVar,
+            shift: Type.Shift, cutoff: Type.Shift,
+            applier: Applier[DefaultAnalysisData]): Applier[DefaultAnalysisData] =
+    ConditionalApplier({ case (_, _, subst) =>
+      val dt = subst(v)
+      val shifted = dt.shifted(shift, cutoff)
+      val expected = subst(v2)
+      shifted == expected
+    }, applier)
+}
+
 /** An [[Applier]] that shifts the DeBruijn indices of a type variable */
 case class ShiftedTypeApplier[D](v: TypePatternVar, newV: TypePatternVar,
                                  shift: Type.Shift, cutoff: Type.Shift,
@@ -242,6 +289,19 @@ case class ShiftedTypeApplier[D](v: TypePatternVar, newV: TypePatternVar,
   }
 }
 
+/** An [[Applier]] that checks whether a shifted nat variable is equal to another */
+object ShiftedTypeCheckApplier {
+  def apply(v: TypePatternVar, v2: TypePatternVar,
+            shift: Type.Shift, cutoff: Type.Shift,
+            applier: Applier[DefaultAnalysisData]): Applier[DefaultAnalysisData] =
+    ConditionalApplier({ case (_, _, subst) =>
+      val t = subst(v)
+      val shifted = t.shifted(shift, cutoff)
+      val expected = subst(v2)
+      shifted == expected
+    }, applier)
+}
+
 /** An [[Applier]] that performs beta-reduction.
   * @note It works by extracting an expression from the [[EGraph]] in order to beta-reduce it.
   */
@@ -258,5 +318,54 @@ case class BetaApplier(body: PatternVar, subs: PatternVar)
     val subsEx = egraph.getMut(subst(subs)).data.extractedExpr
     val result = bodyEx.withArgument(subsEx)
     Vec(egraph.addExpr(result))
+  }
+}
+
+/** An [[Applier]] that checks whether a nat variable is equal to a nat pattern */
+object ComputeNatCheckApplier {
+  def apply[D](v: NatPatternVar, expected: NatPattern,
+               applier: Applier[D]): Applier[D] =
+    ConditionalApplier({ case (_, _, subst) =>
+      ComputeNat.toNamed(v, subst) == ComputeNat.toNamed(expected, subst)
+    }, applier)
+}
+
+/** An [[Applier]] that computes a nat variable according to a nat pattern */
+case class ComputeNatApplier[D](v: NatPatternVar, value: NatPattern,
+                                applier: Applier[D]) extends Applier[D] {
+  override def patternVars(): Vec[PatternVar] = {
+    // TODO: remove this function or keep track of type variables as well?
+    applier.patternVars()
+  }
+
+  override def applyOne(egraph: EGraph[D],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    val actualValue = Nat.fromNamedGeneric(ComputeNat.toNamed(value, subst), ni => ni.name.drop(1).toInt)
+    val subst2 = subst.deepClone()
+    subst2.insert(v, actualValue)
+    applier.applyOne(egraph, eclass, subst2)
+  }
+}
+
+private object ComputeNat {
+  def toNamed(n: NatPattern, subst: Subst): rct.Nat = {
+    import arithexpr.arithmetic._
+
+    n match {
+      case NatPatternAny => throw new Exception("")
+      case pv: NatPatternVar => Nat.toNamedGeneric(subst(pv), i => rct.NatIdentifier(s"n$i"))
+      case NatPatternNode(node) => node match {
+        case NatVar(index) => rct.NatIdentifier(s"n$index")
+        case NatCst(value) => Cst(value)
+        case NatNegInf => NegInf
+        case NatPosInf => PosInf
+        case NatAdd(a, b) => toNamed(a, subst) + toNamed(b, subst)
+        case NatMul(a, b) => toNamed(a, subst) * toNamed(b, subst)
+        case NatPow(b, e) => toNamed(b, subst).pow(toNamed(e, subst))
+        case NatMod(a, b) => toNamed(a, subst) % toNamed(b, subst)
+        case NatIntDiv(a, b) => toNamed(a, subst) / toNamed(b, subst)
+      }
+    }
   }
 }

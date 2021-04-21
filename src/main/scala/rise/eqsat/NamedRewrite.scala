@@ -23,25 +23,39 @@ object NamedRewrite {
     val (_, freeT) = rise.core.IsClosedForm.freeVars(typedLhs)
     val typedRhs = preservingWithEnv(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
 
-    // from var name to var index and whether it is matched
-    // (depending on local index shift)
-    type PatternVarMap[S, V] = HashMap[String, HashMap[S, (V, Boolean)]]
+    trait PatVarStatus
+    case object Unknown extends PatVarStatus
+    case object Known extends PatVarStatus
+    // both known and coherent with other shifts
+    case object ShiftCoherent extends PatVarStatus
+
+    // from var name to var index and a status depending on local index shift
+    type PatternVarMap[S, V] = HashMap[String, HashMap[S, (V, PatVarStatus)]]
     val patVars: PatternVarMap[Expr.Shift, PatternVar] = HashMap()
     val natPatVars: PatternVarMap[Nat.Shift, NatPatternVar] = HashMap()
     val dataTypePatVars: PatternVarMap[Type.Shift, DataTypePatternVar] = HashMap()
     val typePatVars: PatternVarMap[Type.Shift, TypePatternVar] = HashMap()
 
+    // nats which we need to pivot to avoid matching over certain nat constructs
+    val natsToPivot = Vec[(rct.Nat, rct.NatIdentifier, Nat.Shift, NatPatternVar)]()
+
     def makePatVar[S, V](name: String,
                          shift: S,
                          pvm: PatternVarMap[S, V],
                          constructor: Int => V,
-                         isRhs: Boolean): V = {
+                         status: PatVarStatus): V = {
       val shiftMap = pvm.getOrElseUpdate(name, HashMap())
-      val (pv, matched) = shiftMap.getOrElseUpdate(shift, {
+      val (pv, previousStatus) = shiftMap.getOrElseUpdate(shift, {
         val pvCount = pvm.values.map(m => m.size).sum
-        (constructor(pvCount), false)
+        (constructor(pvCount), Unknown)
       })
-      shiftMap(shift) = (pv, matched || !isRhs)
+      val updatedStatus = (previousStatus, status) match {
+        case (Unknown, s) => s
+        case (s, Unknown) => s
+        case (Known, Known) => Known
+        case t => throw new Exception(s"did not expect $t")
+      }
+      shiftMap(shift) = (pv, updatedStatus)
       pv
     }
 
@@ -50,8 +64,9 @@ object NamedRewrite {
         case i: rc.Identifier if freeV.contains(i.name) =>
           makePatVar(i.name,
             (bound.expr.size, bound.nat.size, bound.data.size),
-            patVars, PatternVar, isRhs)
+            patVars, PatternVar, if (isRhs) { Unknown } else { Known })
         case i: rc.Identifier => PatternNode(Var(bound.indexOf(i)))
+        // TODO: for some of these constructs we can avoid matching types because there is redundancy
         case rc.Lambda(x, e) =>
           PatternNode(Lambda(makePat(e, bound + x, isRhs)))
         case rc.App(f, e) =>
@@ -73,19 +88,27 @@ object NamedRewrite {
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
         case i: rct.NatIdentifier if freeT(i) =>
-          makePatVar(i.name, bound.nat.size, natPatVars, NatPatternVar, isRhs)
+          makePatVar(i.name, bound.nat.size, natPatVars, NatPatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
           NatPatternNode(NatVar(bound.indexOf(i)))
         case ae.Cst(c) =>
           NatPatternNode(NatCst(c))
         case ae.Sum(Nil) => NatPatternNode(NatCst(0))
-        case ae.Sum(t +: ts) => ts.foldRight(makeNPat(t, bound, isRhs)) { case (t, acc) =>
+        case ae.Sum(t +: ts) if isRhs => ts.foldRight(makeNPat(t, bound, isRhs)) { case (t, acc) =>
           NatPatternNode(NatAdd(makeNPat(t, bound, isRhs), acc))
         }
         case ae.Prod(Nil) => NatPatternNode(NatCst(1))
-        case ae.Prod(t +: ts) => ts.foldRight(makeNPat(t, bound, isRhs)) { case (t, acc) =>
+        case ae.Prod(t +: ts) if isRhs => ts.foldRight(makeNPat(t, bound, isRhs)) { case (t, acc) =>
           NatPatternNode(NatMul(makeNPat(t, bound, isRhs), acc))
         }
+        // do not match over these nat constructs on the left-hand side,
+        // as structural matching would not be sufficient,
+        // try to pivot the equality around a fresh pattern variable instead
+        case ae.Sum(_) | ae.Prod(_) if !isRhs =>
+          val nv = rct.NatIdentifier(s"_nv${natsToPivot.size}")
+          val pv = makePatVar(nv.name, bound.nat.size, natPatVars, NatPatternVar, Known)
+          natsToPivot.addOne((n, nv, bound.nat.size, pv))
+          pv
         case _ => throw new Exception(s"did not expect $n")
       }
 
@@ -93,7 +116,7 @@ object NamedRewrite {
       dt match {
         case i: rct.DataTypeIdentifier if freeT(i) =>
           makePatVar(i.name, (bound.nat.size, bound.data.size),
-            dataTypePatVars, DataTypePatternVar, isRhs)
+            dataTypePatVars, DataTypePatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.DataTypeIdentifier =>
           DataTypePatternNode(DataTypeVar(bound.indexOf(i)))
         case s: rct.ScalarType =>
@@ -126,7 +149,7 @@ object NamedRewrite {
         case i: rct.TypeIdentifier =>
           assert(freeT(i))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
-            typePatVars, TypePatternVar, isRhs)
+            typePatVars, TypePatternVar, if (isRhs) { Unknown } else { Known })
         case rct.TypePlaceholder =>
           throw new Exception(s"did not expect $t, something was not infered")
       }
@@ -134,31 +157,37 @@ object NamedRewrite {
     val lhsPat = makePat(typedLhs, Expr.Bound.empty, isRhs = false)
     val rhsPat = makePat(typedRhs, Expr.Bound.empty, isRhs = true)
 
-    // TODO: deal with different shifts on lhs
-    def getLhsShifts[S, V](pvm: PatternVarMap[S, V]): HashMap[String, (S, V)] = {
-      pvm.map { case (name, shiftMap) =>
-        val lhs = shiftMap.toSeq.flatMap { case (s, (v, matched)) =>
-          if (matched) Some((s, v)) else None
-        }
-        assert(lhs.size == 1)
-        name -> lhs(0)
-      }
-    }
-
     type Applier = rise.eqsat.Applier[DefaultAnalysisData]
     def shiftAppliers[S, V](pvm: PatternVarMap[S, V],
-                            mkShift: (S, V) => (S, V) => Applier => Applier
+                            mkShift: (S, V) => (S, V) => Applier => Applier,
+                            mkShiftCheck: (S, V) => (S, V) => Applier => Applier,
                            ): Applier => Applier = {
-      val bases = getLhsShifts(pvm)
       pvm.foldRight { a: Applier => a } { case ((name, shiftMap), acc) =>
-        val base = bases(name)
-        shiftMap.foldRight(acc) {
-          case ((_, (_, true)), acc) => acc
-          case ((shift, (pv, false)), acc) =>
-            a: Applier => mkShift.tupled(base)(shift, pv)(acc(a))
+        shiftMap.collectFirst { case (s, (v, ShiftCoherent)) => (s, v) }
+          // if nothing is shift coherent yet, pick any known shift as our reference
+          .orElse(shiftMap.collectFirst { case (s, (v, Known)) => (s, v) }) match {
+            case Some(base) =>
+              shiftMap(base._1) = (base._2, ShiftCoherent)
+
+              shiftMap.foldRight(acc) { case ((shift, (pv, status)), acc) =>
+                status match {
+                  // nothing to do
+                  case ShiftCoherent => acc
+                  // check a shifted variable
+                  case Known =>
+                    shiftMap(shift) = (pv, ShiftCoherent)
+                    a: Applier => acc(mkShiftCheck.tupled(base)(shift, pv)(a))
+                  // construct a shifted variable
+                  case Unknown =>
+                    shiftMap(shift) = (pv, ShiftCoherent)
+                    a: Applier => acc(mkShift.tupled(base)(shift, pv)(a))
+                }
+              }
+            // nothing is known, but it may become known later (e.g. after nat pivoting)
+            case None => a: Applier => a
+          }
         }
       }
-    }
 
     def patMkShift(s1: Expr.Shift, pv1: PatternVar)
                   (s2: Expr.Shift, pv2: PatternVar)
@@ -167,6 +196,15 @@ object NamedRewrite {
       val cutoff = s1
       val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
       ShiftedApplier(pv1, pv2, shift, cutoff, applier)
+    }
+
+    def patMkShiftCheck(s1: Expr.Shift, pv1: PatternVar)
+                       (s2: Expr.Shift, pv2: PatternVar)
+                       (applier: Applier): Applier = {
+      assert(s1 != s2)
+      val cutoff = s1
+      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
+      ShiftedCheckApplier(pv1, pv2, shift, cutoff, applier)
     }
 
     def natPatMkShift(s1: Nat.Shift, pv1: NatPatternVar)
@@ -178,6 +216,15 @@ object NamedRewrite {
       ShiftedNatApplier(pv1, pv2, shift, cutoff, applier)
     }
 
+    def natPatMkShiftCheck(s1: Nat.Shift, pv1: NatPatternVar)
+                          (s2: Nat.Shift, pv2: NatPatternVar)
+                          (applier: Applier): Applier = {
+      assert(s1 != s2)
+      val cutoff = s1
+      val shift = s2 - s1
+      ShiftedNatCheckApplier(pv1, pv2, shift, cutoff, applier)
+    }
+
     def dataTypePatMkShift(s1: Type.Shift, pv1: DataTypePatternVar)
                           (s2: Type.Shift, pv2: DataTypePatternVar)
                           (applier: Applier): Applier = {
@@ -185,6 +232,15 @@ object NamedRewrite {
       val cutoff = s1
       val shift = (s2._1 - s1._1, s2._2 - s1._2)
       ShiftedDataTypeApplier(pv1, pv2, shift, cutoff, applier)
+    }
+
+    def dataTypePatMkShiftCheck(s1: Type.Shift, pv1: DataTypePatternVar)
+                               (s2: Type.Shift, pv2: DataTypePatternVar)
+                               (applier: Applier): Applier = {
+      assert(s1 != s2)
+      val cutoff = s1
+      val shift = (s2._1 - s1._1, s2._2 - s1._2)
+      ShiftedDataTypeCheckApplier(pv1, pv2, shift, cutoff, applier)
     }
 
     def typePatMkShift(s1: Type.Shift, pv1: TypePatternVar)
@@ -196,13 +252,139 @@ object NamedRewrite {
       ShiftedTypeApplier(pv1, pv2, shift, cutoff, applier)
     }
 
-    Rewrite.init(name,
-      CompiledPattern.patternToSearcher(lhsPat.compile()) -> (
-        Pattern.patternToApplier[DefaultAnalysisData](rhsPat) |>
-        shiftAppliers(patVars, patMkShift) |>
-        shiftAppliers(natPatVars, natPatMkShift) |>
-        shiftAppliers(dataTypePatVars, dataTypePatMkShift) |>
-        shiftAppliers(typePatVars, typePatMkShift)))
+    def typePatMkShiftCheck(s1: Type.Shift, pv1: TypePatternVar)
+                           (s2: Type.Shift, pv2: TypePatternVar)
+                           (applier: Applier): Applier = {
+      assert(s1 != s2)
+      val cutoff = s1
+      val shift = (s2._1 - s1._1, s2._2 - s1._2)
+      ShiftedTypeCheckApplier(pv1, pv2, shift, cutoff, applier)
+    }
+
+    // FIXME: duplicated from type inference's 'pivotSolution'
+    @scala.annotation.tailrec
+    def tryPivot(pivot: rct.NatIdentifier, n: rct.Nat, value: rct.Nat): Option[rct.Nat] = {
+      import arithexpr.arithmetic._
+
+      n match {
+        case i: rct.NatIdentifier if i == pivot => Some(value)
+        case Prod(terms) =>
+          val (p, rest) = terms.partition(t => ArithExpr.contains(t, pivot))
+          if (p.size != 1) {
+            None
+          } else {
+            tryPivot(pivot, p.head, rest.foldLeft(value)({
+              case (v, r) => v /^ r
+            }))
+          }
+        case Sum(terms) =>
+          val (p, rest) = terms.partition(t => ArithExpr.contains(t, pivot))
+          if (p.size != 1) {
+            None
+          } else {
+            tryPivot(pivot, p.head, rest.foldLeft(value)({
+              case (v, r) => v - r
+            }))
+          }
+        case Pow(b, Cst(-1)) => tryPivot(pivot, b, Cst(1) /^ value)
+        case Mod(p, m) if p == pivot =>
+          val k = rct.NatIdentifier("k", RangeAdd(0, PosInf, 1))
+          Some(k*m + value)
+        case _ => None
+      }
+    }
+
+    def pivotNatsRec(natsToPivot: Seq[(rct.Nat, rct.NatIdentifier, Nat.Shift, NatPatternVar)],
+                     couldNotPivot: Seq[(rct.Nat, rct.NatIdentifier, Nat.Shift, NatPatternVar)])
+                    (applier: Applier): Applier = {
+      import arithexpr.arithmetic._
+
+      def pivotSuccess = pivotNatsRec(natsToPivot.tail ++ couldNotPivot, Seq())(applier)
+      def pivotFailure = pivotNatsRec(natsToPivot.tail, couldNotPivot :+ natsToPivot.head)(applier)
+
+      natsToPivot.headOption match {
+        case Some((n, nv, shift, pv)) =>
+          def fromNamed(n: rct.Nat): NatPattern = {
+            n match {
+              case i: rct.NatIdentifier =>
+                makePatVar(i.name, shift, natPatVars, NatPatternVar, Unknown)
+              case PosInf => NatPatternNode(NatPosInf)
+              case NegInf => NatPatternNode(NatNegInf)
+              case Cst(c) => NatPatternNode(NatCst(c))
+              case Sum(Nil) => NatPatternNode(NatCst(0))
+              case Sum(t +: ts) => ts.foldRight(fromNamed(t)) { case (t, acc) =>
+                NatPatternNode(NatAdd(fromNamed(t), acc))
+              }
+              case Prod(Nil) => NatPatternNode(NatCst(1))
+              case Prod(t +: ts) => ts.foldRight(fromNamed(t)) { case (t, acc) =>
+                NatPatternNode(NatMul(fromNamed(t), acc))
+              }
+              case Pow(b, e) =>
+                NatPatternNode(NatPow(fromNamed(b), fromNamed(e)))
+              case Mod(a, b) =>
+                NatPatternNode(NatMod(fromNamed(a), fromNamed(b)))
+              case IntDiv(a, b) =>
+                NatPatternNode(NatIntDiv(fromNamed(a), fromNamed(b)))
+              case _ => throw new Exception(s"no support for $n")
+            }
+          }
+
+          val natsToFindOut = HashMap[rct.NatIdentifier, Integer]().withDefault(_ => 0)
+          ArithExpr.visit(n, {
+            case ni: rct.NatIdentifier =>
+              val isKnown = natPatVars.get(ni.name)
+                .exists(shiftMap => shiftMap.exists { case (s, (pv, status)) => status != Unknown })
+              if (!isKnown) {
+                natsToFindOut(ni) += 1
+              }
+            case _ =>
+          })
+          natsToFindOut.size match {
+            case 0 => // check nv = n
+              ComputeNatCheckApplier(pv, fromNamed(n), pivotSuccess)
+            case 1 =>
+              val (potentialPivot, uses) = natsToFindOut.head
+              if (uses == 1) {
+                tryPivot(potentialPivot, n, nv) match {
+                  case Some(value) =>
+                    val valuePat = fromNamed(value)
+                    val updateShifts = shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)
+                    val pivotPat = makePatVar(potentialPivot.name, shift, natPatVars, NatPatternVar, Known)
+                    updateShifts(ComputeNatApplier(pivotPat, valuePat,
+                      shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)(pivotSuccess)))
+                  case None => pivotFailure
+                }
+              } else {
+                pivotFailure
+              }
+            case _ => pivotFailure
+          }
+        case None =>
+          if (couldNotPivot.nonEmpty) {
+            throw new Exception(s"could not pivot nats: $couldNotPivot")
+          } else {
+            applier
+          }
+      }
+    }
+
+    val searcher: Searcher[DefaultAnalysisData] = lhsPat.compile()
+    val shiftPV = shiftAppliers(patVars, patMkShift, patMkShiftCheck)
+    val shiftNPV = shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)
+    val shiftDTPV = shiftAppliers(dataTypePatVars, dataTypePatMkShift, dataTypePatMkShiftCheck)
+    val shiftTPV = shiftAppliers(typePatVars, typePatMkShift, typePatMkShiftCheck)
+    val pivotNats = pivotNatsRec(natsToPivot.toSeq, Seq()) _
+    val applier = shiftPV(shiftNPV(shiftDTPV(shiftTPV(pivotNats(rhsPat)))))
+
+    def allIsShiftCoherent[S, V](pvm: PatternVarMap[S, V]): Boolean =
+      pvm.forall { case (_, shiftMap) => shiftMap.forall { case (_, (_, status)) => status == ShiftCoherent }}
+    assert(allIsShiftCoherent(patVars))
+    assert(allIsShiftCoherent(natPatVars))
+    assert(allIsShiftCoherent(dataTypePatVars))
+    assert(allIsShiftCoherent(typePatVars))
+    // throw new Exception(s"$name was not known (it is not matched on the left-hand-side?)"
+
+    Rewrite.init(name, searcher -> applier)
   }
 }
 

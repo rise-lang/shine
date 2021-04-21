@@ -81,13 +81,23 @@ class Basic extends test_util.Tests {
     )
   }
 
-  test("slide movements") {
-    /* TODO:
+  test("slideBeforeMapMapF") {
+    val `_` = rct.TypePlaceholder
+    def wrap(inner: ToBeTyped[rc.Expr] => ToBeTyped[rc.Expr])
+    : ToBeTyped[rc.Expr] =
+      depFun((n: rct.Nat) =>
+      depFun((dt1: rct.DataType) => depFun((dt2: rct.DataType) =>
+      fun(f =>
+        inner(f :: dt1 ->: dt2) :: ((n`.`dt1) ->: `_`)
+      ))))
+
     proveEquiv(
-        map(f1 >> map(slide(3)(1)) >> map(slide(4)(2)) >> map(slide(5)(3)) >> map(map(map(map(map(f2)))))),
-        map(f1 >> map(f2) >> map(slide(3)(1) >> slide(4)(2) >> slide(5)(3))),
+      wrap(f =>
+        slide(3)(1) >> slide(4)(2) >> map(map(map(f)))),
+      wrap(f =>
+        map(f) >> slide(3)(1) >> slide(4)(2)),
       Seq(rules.eta, rules.beta, rules.mapFusion, rules.mapFission, rules.slideBeforeMapMapF)
-    )*/
+    )
   }
 }
 

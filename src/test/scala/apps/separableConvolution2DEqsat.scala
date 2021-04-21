@@ -93,10 +93,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("base to scanline") {
-    proveEquiv(
-      base(weights2d),
-      scanline(weightsV)(weightsH),
-      Seq(
+    proveEquiv(wrapExpr(base(weights2d)), wrapExpr(scanline(weightsV)(weightsH)), Seq(
       rules.eta, rules.beta, rules.removeTransposePair,
       rules.mapFusion, rules.mapFission,
       rules.slideBeforeMap, rules.mapSlideBeforeTranspose, rules.slideBeforeMapMapF,

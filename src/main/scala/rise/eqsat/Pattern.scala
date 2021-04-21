@@ -13,6 +13,8 @@ object Pattern {
   }
 
   implicit def patternToApplier[D](pattern: Pattern): Applier[D] = new Applier[D] {
+    override def toString: String = pattern.toString
+
     override def patternVars(): Vec[PatternVar] = pattern.patternVars()
 
     override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
@@ -90,10 +92,14 @@ case class Pattern(p: PatternVarOrNode, t: TypePattern) {
 }
 
 /** A [[Pattern]] which has been compiled to an [[ematching.Program]] */
-case class CompiledPattern(pat: Pattern, prog: ematching.Program)
+case class CompiledPattern(pat: Pattern, prog: ematching.Program) {
+  override def toString: String = s"CompiledPattern($pat)"
+}
 
 object CompiledPattern {
   implicit def patternToSearcher[D](cpat: CompiledPattern): Searcher[D] = new Searcher[D] {
+    override def toString: String = cpat.toString
+
     override def patternVars(): Vec[PatternVar] = cpat.pat.patternVars()
 
     override def search(egraph: EGraph[D]): Vec[SearchMatches] = {
