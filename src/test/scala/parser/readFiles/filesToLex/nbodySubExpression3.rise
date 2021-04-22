@@ -1,0 +1,9 @@
+ nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32)
+nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
+\newP1Chunk->
+(\bla->
+                    (mapLocal 0
+                      \p1A->
+                      update (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
+                    )
+                    (zip newP1Chunk bla))

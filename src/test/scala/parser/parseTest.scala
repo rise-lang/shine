@@ -1778,6 +1778,32 @@ class parseTest extends  AnyFlatSpec {
     }
     println(ex_g)
   }
+  "parser" should "be able to parse 'nbodySubExpression2.rise'" in {
+    val fileName: String = testFilePath + "nbodySubExpression2.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "nbody"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+    println(ex_g)
+  }
+  "parser" should "be able to parse 'nbodySubExpression3.rise'" in {
+    val fileName: String = testFilePath + "nbodySubExpression3.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "nbody"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+    println(ex_g)
+  }
 
   "parser" should "be able to parse 'nbodyVereinfacht.rise'" in {
     val fileName: String = testFilePath + "nbodyVereinfacht.rise"
@@ -3115,17 +3141,6 @@ class parseTest extends  AnyFlatSpec {
 
   //-----------------------------------------------------------------------------------------------------
   //Error-Tests //Todo: " .. (.. (..).. " as an ErrorTest
-
-  "parser" should "be able to parse 'composition5.rise'" in {
-    val fileName: String = errorFilePath + "composition5.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[rt.InferenceException] {
-      parse(lexer.tokens)
-    }
-    //Todo: does not the variable names change each time?
-    thrown.msg should equal("could not solve constraints List(((_n1578*n1596)._n1566._dt1567 -> (_n1566*_n1578*n1596)._dt1567)  ~  (n1596.(<4>f32, <4>f32) -> n1596.(<4>f32, <4>f32))) in Some((1,6)-(5,30) in src/test/scala/parser/readFiles/filesToError/composition5.rise)")
-  }
 
   "parser" should "be able to parse 'fx.rise'" in {
     val fileName: String = errorFilePath + "fx.rise"
