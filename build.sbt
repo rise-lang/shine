@@ -50,7 +50,7 @@ lazy val riseAndShine = (project in file("."))
 lazy val generateRISEPrimitives = taskKey[Unit]("Generate RISE Primitives")
 
 generateRISEPrimitives := {
-  runner.value.run("meta.RisePrimitiveGenerator",
+  runner.value.run("meta.generator.RisePrimitives",
     (dependencyClasspath in Compile).value.files,
     Seq((scalaSource in Compile).value.getAbsolutePath),
     streams.value.log).failed foreach (sys error _.getMessage)
