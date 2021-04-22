@@ -1765,61 +1765,8 @@ class parseTest extends  AnyFlatSpec {
     }
   }
 
-  "parser" should "be able to parse 'nBodySubExpression.rise'" in {
-    val fileName: String = testFilePath + "nBodySubExpression.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName2: String = "nbody"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-    println(ex_g)
-  }
-  "parser" should "be able to parse 'nbodySubExpression2.rise'" in {
-    val fileName: String = testFilePath + "nbodySubExpression2.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName2: String = "nbody"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-    println(ex_g)
-  }
-  "parser" should "be able to parse 'nbodySubExpression3.rise'" in {
-    val fileName: String = testFilePath + "nbodySubExpression3.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName2: String = "nbody"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-    println(ex_g)
-  }
-
-  "parser" should "be able to parse 'nbodyVereinfacht.rise'" in {
-    val fileName: String = testFilePath + "nbodyVereinfacht.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName2: String = "nbody"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-  }
-
   //Todo: not ignore
-  "parser" should "be able to parse 'nbody.rise'" ignore {
+  "parser" should "be able to parse 'nbody.rise'" in {
     val fileName: String = testFilePath + "nbody.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
@@ -1841,275 +1788,275 @@ class parseTest extends  AnyFlatSpec {
       )
       ))
 
-        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
+        if n1.name.equals(n.name) && n2.name.equals(n.name)
           && n3.name.equals(n.name)
       &&num1.eval.equals(4)&&num2.eval.equals(4)&&num3.eval.equals(4)&&num4.eval.equals(4)
       => true
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 //Todo: finish match
-    ex_g match {
-      case dep@r.DepLambda(n: rt.NatIdentifier, lam@r.Lambda(r.Identifier("pos"), lam2@r.Lambda(
-      r.Identifier("vel"), lam3@r.Lambda(r.Identifier("espSqr"), lam4@r.Lambda(r.Identifier("deltaT"),
-      r.App(rp.join(_), r.App(rp.join(_), r.App(r.App(op.mapWorkGroup(1,_),r.App(rp.join(_), r.App(
-      r.App(op.mapWorkGroup(0,_),
-
-      lam5@r.Lambda(r.Identifier("p1Chunk"), lam6@r.Lambda(r.Identifier("newP1Chunk"),
-      r.App(r.App(r.App(op.mapLocal(1,_),
-
-      lam7@r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0,_), lam8@r.Lambda(r.Identifier("p1A"),
-      r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(_), r.App(rp.fst(_), r.Identifier("p1A")))),
-      r.App(rp.fst(_), r.App(rp.snd(_), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(_), r.Identifier("p1A"))))),
-      r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
-
-      ),
-      r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
-      lam9@r.Lambda(r.Identifier("accA"), lam10@r.Lambda(r.Identifier("p2A"),
-
-      r.App(r.App(rp.let(_), r.App(r.App(r.DepApp(op.oclToMem(_),
-      l1:rt.AddressSpace.Local.type
-      ), r.App(op.mapLocal(1,_), r.App(op.mapLocal(0,_), lam11@r.Lambda(r.Identifier("x1"),r.Identifier("x1"))))),
-      r.Identifier("p2A")
-      )),
-      lam12@r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1,_), lam13@r.Lambda(r.Identifier("accDim"),
-      r.App(r.App(op.mapLocal(0,_),
-      lam14@r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), p:rt.AddressSpace.Private.type ),
-
-      lam15@r.Lambda(r.Identifier("accB"), lam16@r.Lambda(r.Identifier("p2B"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"),
-      r.App(rp.fst(_),
-      r.App(rp.fst(_), r.Identifier("p1B")))),
-      r.Identifier("p2B")), r.Identifier("deltaT")), r.Identifier("espSqr")), r.Identifier("accB")))
-
-      )), r.App(rp.snd(_), r.Identifier("p1B"))), r.App(rp.fst(_), r.Identifier("accDim2")))))
-      , r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")), r.App(rp.snd(_), r.App(rp.snd(_), r.Identifier("accDim"))))
-      ))),r.App(r.App(rp.zip(_), r.Identifier("p2Local")), r.Identifier("accA")))
-
-      ))
-      ))),
-      r.App(r.App(op.mapLocal(1,_), r.App(op.mapLocal(0,_),lam17@r.Lambda(r.Identifier("x2"),r.Identifier("x2")))),
-      r.App(rp.generate(_),
-
-      r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(0), _))
-
-      ))
-      )), //probably has the 0 of the Type Nat
-
-      r.App(r.DepApp(rp.split(_), n1:rt.Nat), r.App(r.DepApp(rp.split(_), n2:rt.Nat),
-      r.Identifier("pos")))
-      )
-
-      ))
-
-      ),
-      r.DepApp(rp.split(_), n3:rt.Nat)
-      ))
-      ),
-      r.App(r.DepApp(rp.split(_), n4:rt.NatIdentifier),
-      r.App(r.App(rp.zip(_), r.Identifier("pos")), r.Identifier("vel"))
-
-      )
-      ))
-      ))))))
-        if n.name.equals("N") &&n4.name.equals(n.name)&& n1.eval.equals(1) &&n2.eval.equals(256)&&n3.eval.equals(256)
-      => {
-        dep.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(6)
-            end.row should equal(3)
-            begin.column should equal(6)
-            end.column should equal(47)
-          }
-        }
-        lam.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(14)
-            end.row should equal(3)
-            begin.column should equal(6)
-            end.column should equal(47)
-          }
-        }
-        lam2.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(20)
-            end.row should equal(3)
-            begin.column should equal(6)
-            end.column should equal(47)
-          }
-        }
-        lam3.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(26)
-            end.row should equal(3)
-            begin.column should equal(6)
-            end.column should equal(47)
-          }
-        }
-        lam4.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(35)
-            end.row should equal(3)
-            begin.column should equal(6)
-            end.column should equal(47)
-          }
-        }
-        lam5.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(8)
-            end.row should equal(36)
-            begin.column should equal(13)
-            end.column should equal(41)
-          }
-        }
-        lam6.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(8)
-            end.row should equal(36)
-            begin.column should equal(14)
-            end.column should equal(41)
-          }
-        }
-        lam7.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(10)
-            end.row should equal(30)
-            begin.column should equal(16)
-            end.column should equal(21)
-          }
-        }
-        lam8.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(12)
-            end.row should equal(67)
-            begin.column should equal(18)
-            end.column should equal(19)
-          }
-        }
-        lam9.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(10)
-            end.row should equal(11)
-            begin.column should equal(26)
-            end.column should equal(37)
-          }
-        }
-        lam10.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(29)
-            end.row should equal(11)
-            begin.column should equal(26)
-            end.column should equal(37)
-          }
-        }
-        lam11.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(48)
-            end.row should equal(55)
-            begin.column should equal(27)
-            end.column should equal(27)
-          }
-        }
-        lam12.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(12)
-            end.row should equal(32)
-            begin.column should equal(29)
-            end.column should equal(36)
-          }
-        }
-        lam13.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(14)
-            end.row should equal(51)
-            begin.column should equal(30)
-            end.column should equal(35)
-          }
-        }
-        lam14.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(16)
-            end.row should equal(41)
-            begin.column should equal(31)
-            end.column should equal(34)
-          }
-        }
-        lam15.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(18)
-            end.row should equal(64)
-            begin.column should equal(32)
-            end.column should equal(33)
-          }
-        }
-        lam16.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(31)
-            end.row should equal(64)
-            begin.column should equal(32)
-            end.column should equal(33)
-          }
-        }
-        lam17.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-            begin.row should equal(35)
-            end.row should equal(42)
-            begin.column should equal(39)
-            end.column should equal(39)
-          }
-        }
-      }
-      case r.DepLambda(n, e) => {
-        //print_nbody()
-        fail("Not correct deplambda: "
-          +n.toString()+ " , " + e.toString())
-      }
-      case a => fail("Not a DepLambda: " + a)
-    }
-    ex_g.span match {
-      case None => fail("The Span should not be None")
-      case Some(Span(file, begin, end)) => {
-        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
-        begin.row should equal(6)
-        end.row should equal(3)
-        begin.column should equal(6)
-        end.column should equal(47)
-      }
-    }
+//    ex_g match {
+//      case dep@r.DepLambda(n: rt.NatIdentifier, lam@r.Lambda(r.Identifier("pos"), lam2@r.Lambda(
+//      r.Identifier("vel"), lam3@r.Lambda(r.Identifier("espSqr"), lam4@r.Lambda(r.Identifier("deltaT"),
+//      r.App(rp.join(_), r.App(rp.join(_), r.App(r.App(op.mapWorkGroup(1,_),r.App(rp.join(_), r.App(
+//      r.App(op.mapWorkGroup(0,_),
+//
+//      lam5@r.Lambda(r.Identifier("p1Chunk"), lam6@r.Lambda(r.Identifier("newP1Chunk"),
+//      r.App(r.App(r.App(op.mapLocal(1,_),
+//
+//      lam7@r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0,_), lam8@r.Lambda(r.Identifier("p1A"),
+//      r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(_), r.App(rp.fst(_), r.Identifier("p1A")))),
+//      r.App(rp.fst(_), r.App(rp.snd(_), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(_), r.Identifier("p1A"))))),
+//      r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
+//
+//      ),
+//      r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
+//      lam9@r.Lambda(r.Identifier("accA"), lam10@r.Lambda(r.Identifier("p2A"),
+//
+//      r.App(r.App(rp.let(_), r.App(r.App(r.DepApp(op.oclToMem(_),
+//      l1:rt.AddressSpace.Local.type
+//      ), r.App(op.mapLocal(1,_), r.App(op.mapLocal(0,_), lam11@r.Lambda(r.Identifier("x1"),r.Identifier("x1"))))),
+//      r.Identifier("p2A")
+//      )),
+//      lam12@r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1,_), lam13@r.Lambda(r.Identifier("accDim"),
+//      r.App(r.App(op.mapLocal(0,_),
+//      lam14@r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), p:rt.AddressSpace.Private.type ),
+//
+//      lam15@r.Lambda(r.Identifier("accB"), lam16@r.Lambda(r.Identifier("p2B"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"),
+//      r.App(rp.fst(_),
+//      r.App(rp.fst(_), r.Identifier("p1B")))),
+//      r.Identifier("p2B")), r.Identifier("deltaT")), r.Identifier("espSqr")), r.Identifier("accB")))
+//
+//      )), r.App(rp.snd(_), r.Identifier("p1B"))), r.App(rp.fst(_), r.Identifier("accDim2")))))
+//      , r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")), r.App(rp.snd(_), r.App(rp.snd(_), r.Identifier("accDim"))))
+//      ))),r.App(r.App(rp.zip(_), r.Identifier("p2Local")), r.Identifier("accA")))
+//
+//      ))
+//      ))),
+//      r.App(r.App(op.mapLocal(1,_), r.App(op.mapLocal(0,_),lam17@r.Lambda(r.Identifier("x2"),r.Identifier("x2")))),
+//      r.App(rp.generate(_),
+//
+//      r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(0), _))
+//
+//      ))
+//      )), //probably has the 0 of the Type Nat
+//
+//      r.App(r.DepApp(rp.split(_), n1:rt.Nat), r.App(r.DepApp(rp.split(_), n2:rt.Nat),
+//      r.Identifier("pos")))
+//      )
+//
+//      ))
+//
+//      ),
+//      r.DepApp(rp.split(_), n3:rt.Nat)
+//      ))
+//      ),
+//      r.App(r.DepApp(rp.split(_), n4:rt.NatIdentifier),
+//      r.App(r.App(rp.zip(_), r.Identifier("pos")), r.Identifier("vel"))
+//
+//      )
+//      ))
+//      ))))))
+//        if n4.name.equals(n.name)&& n1.eval.equals(1) &&n2.eval.equals(256)&&n3.eval.equals(256)
+//      => {
+//        dep.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(6)
+//            end.row should equal(3)
+//            begin.column should equal(6)
+//            end.column should equal(47)
+//          }
+//        }
+//        lam.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(14)
+//            end.row should equal(3)
+//            begin.column should equal(6)
+//            end.column should equal(47)
+//          }
+//        }
+//        lam2.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(20)
+//            end.row should equal(3)
+//            begin.column should equal(6)
+//            end.column should equal(47)
+//          }
+//        }
+//        lam3.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(26)
+//            end.row should equal(3)
+//            begin.column should equal(6)
+//            end.column should equal(47)
+//          }
+//        }
+//        lam4.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(35)
+//            end.row should equal(3)
+//            begin.column should equal(6)
+//            end.column should equal(47)
+//          }
+//        }
+//        lam5.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(8)
+//            end.row should equal(36)
+//            begin.column should equal(13)
+//            end.column should equal(41)
+//          }
+//        }
+//        lam6.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(8)
+//            end.row should equal(36)
+//            begin.column should equal(14)
+//            end.column should equal(41)
+//          }
+//        }
+//        lam7.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(10)
+//            end.row should equal(30)
+//            begin.column should equal(16)
+//            end.column should equal(21)
+//          }
+//        }
+//        lam8.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(12)
+//            end.row should equal(67)
+//            begin.column should equal(18)
+//            end.column should equal(19)
+//          }
+//        }
+//        lam9.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(10)
+//            end.row should equal(11)
+//            begin.column should equal(26)
+//            end.column should equal(37)
+//          }
+//        }
+//        lam10.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(29)
+//            end.row should equal(11)
+//            begin.column should equal(26)
+//            end.column should equal(37)
+//          }
+//        }
+//        lam11.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(48)
+//            end.row should equal(55)
+//            begin.column should equal(27)
+//            end.column should equal(27)
+//          }
+//        }
+//        lam12.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(12)
+//            end.row should equal(32)
+//            begin.column should equal(29)
+//            end.column should equal(36)
+//          }
+//        }
+//        lam13.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(14)
+//            end.row should equal(51)
+//            begin.column should equal(30)
+//            end.column should equal(35)
+//          }
+//        }
+//        lam14.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(16)
+//            end.row should equal(41)
+//            begin.column should equal(31)
+//            end.column should equal(34)
+//          }
+//        }
+//        lam15.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(18)
+//            end.row should equal(64)
+//            begin.column should equal(32)
+//            end.column should equal(33)
+//          }
+//        }
+//        lam16.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(31)
+//            end.row should equal(64)
+//            begin.column should equal(32)
+//            end.column should equal(33)
+//          }
+//        }
+//        lam17.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, begin, end)) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//            begin.row should equal(35)
+//            end.row should equal(42)
+//            begin.column should equal(39)
+//            end.column should equal(39)
+//          }
+//        }
+//      }
+//      case r.DepLambda(n, e) => {
+//        //print_nbody()
+//        fail("Not correct deplambda: "
+//          +n.toString()+ " , " + e.toString())
+//      }
+//      case a => fail("Not a DepLambda: " + a)
+//    }
+//    ex_g.span match {
+//      case None => fail("The Span should not be None")
+//      case Some(Span(file, begin, end)) => {
+//        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbody.rise")
+//        begin.row should equal(6)
+//        end.row should equal(3)
+//        begin.column should equal(6)
+//        end.column should equal(47)
+//      }
+//    }
 
     val N = 512
     val tileX = 256
