@@ -14,7 +14,7 @@ nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
             update (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
           )
           (zip newP1Chunk bla))).
-          (oclReduceSeq Local --I have to add AddrSpace.Local in matchPrimitiveAndIdentifier, because there it is easy
+          (oclReduceSeq Local 
 
           (\accA->\p2A->
           let (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1)) p2A))
