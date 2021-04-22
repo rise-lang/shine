@@ -1,24 +1,24 @@
-package meta
+package meta.generator
 
 import fastparse.{Parsed, parse}
-import meta.NatParser.NatAST
-import meta.RiseTypeParser.RISETypeAST
-import meta.RiseTypeParser.RISETypeAST.{FragmentAST, MatrixLayoutAST}
+import meta.parser._
+import meta.parser.shared.Kind.AST
 
-object RisePrimitiveGenerator {
+object RisePrimitives {
   def main(args: Array[String]): Unit = {
     val sourceDir = args.head
-    val rise = os.Path(sourceDir) / "rise"
-    os.walk.stream(rise).filter(_.ext == "rise").foreach(path => {
+    val risePath = os.Path(sourceDir) / "rise"
+    os.walk.stream(risePath).filter(_.ext == "rise").foreach(path => {
 
       val definition = os.read(path)
-      parse(definition, RiseTypeParser.PrimitiveDeclarations(_)) match {
+      parse(definition, rise.Expr.PrimitiveDeclarations(_)) match {
         case failure: Parsed.Failure =>
           println(s"Failed to parse `${failure.extra.input}'")
           println(s"  $failure")
         case Parsed.Success(seq, _) =>
           seq.foreach {
-            case (name, args, typeSignature) if RiseTypeParser.isWellKindedType(typeSignature) =>
+            case rise.Expr.AST.PrimitiveDeclaration(rise.Expr.AST.Identifier(name), args, typeSignature)
+                if rise.isWellKindedType(typeSignature) =>
               val outputPath = (path / os.up) / s"$name.scala"
               println(s"Generate $outputPath")
 
@@ -30,7 +30,7 @@ object RisePrimitiveGenerator {
               }
 
               import scala.meta._
-              val packageName = path.relativeTo(rise).segments.dropRight(1).foldLeft[Term.Ref](Term.Name("rise")) {
+              val packageName = path.relativeTo(risePath).segments.dropRight(1).foldLeft[Term.Ref](Term.Name("rise")) {
                 case (t, name) => Term.Select(t, Term.Name(name))
               }
               val code = s"""// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
@@ -51,14 +51,14 @@ import arithexpr.arithmetic._
                             |""".stripMargin
 
               os.write.over(outputPath, code)
-            case (name, _, typeSignature) =>
+            case rise.Expr.AST.PrimitiveDeclaration(name, _, typeSignature) =>
               println(s"Could not generate code for `$name' as type signature `$typeSignature' is not well kinded.")
           }
       }
     })
   }
 
-  def generateObject(name: String, typeSignature: RISETypeAST): scala.meta.Term.Block = {
+  def generateObject(name: String, typeSignature: rise.Type.AST): scala.meta.Term.Block = {
     import scala.meta._
     val generated = q"""{
       object ${Term.Name{name}} extends Builder {
@@ -83,7 +83,7 @@ import arithexpr.arithmetic._
     generated
   }
 
-  def generateCaseClass(name: String, paramsString: String, typeSignature: RISETypeAST): scala.meta.Term.Block = {
+  def generateCaseClass(name: String, paramsString: String, typeSignature: rise.Type.AST): scala.meta.Term.Block = {
     import scala.meta._
 
     val params = paramsString.split(",").map(param => {
@@ -130,69 +130,70 @@ import arithexpr.arithmetic._
     generated
   }
 
-  def generateTypeScheme(typeAST: RISETypeAST, env: Map[String, String]): scala.meta.Term = {
+  def generateTypeScheme(typeAST: rise.Type.AST, env: Map[String, shared.Kind.AST]): scala.meta.Term = {
     import scala.meta._
     typeAST match {
-      case RISETypeAST.Identifier(name) =>
+      case rise.Type.AST.Identifier(name) =>
         assert(env.contains(name), s"$name is not in $env")
         Term.Name(name)
-      case RISETypeAST.FunType(inT, outT) =>
+      case rise.Type.AST.FunType(inT, outT) =>
         q"(${generateTypeScheme(inT, env)}) ->: (${generateTypeScheme(outT, env)})"
-      case RISETypeAST.DepFunType(id, kind, t) =>
+      case rise.Type.AST.DepFunType(id, kind, t) =>
         q"expl((${Term.Name(id.name)}: ${Type.Name(kindName(kind))}) => ${generateTypeScheme(t, env.updated(id.name, kind))})"
-      case RISETypeAST.ImplicitDepFunType(id, kind, t) =>
+      case rise.Type.AST.ImplicitDepFunType(id, kind, t) =>
         q"impl((${Term.Name(id.name)}: ${Type.Name(kindName(kind))}) => ${generateTypeScheme(t, env.updated(id.name, kind))})"
-      case RISETypeAST.ScalarType(t) =>
+      case rise.Type.AST.ScalarType(t) =>
         t.parse[Term].get
-      case RISETypeAST.NatType =>
+      case rise.Type.AST.NatType =>
         q"rise.core.types.NatType"
-      case RISETypeAST.VectorType(size, elemType) =>
+      case rise.Type.AST.VectorType(size, elemType) =>
         q"rise.core.types.VectorType(${generateNat(size, env)}, ${generateTypeScheme(elemType, env)})"
-      case RISETypeAST.IndexType(size) =>
+      case rise.Type.AST.IndexType(size) =>
         q"rise.core.types.IndexType(${generateNat(size, env)})"
-      case RISETypeAST.PairType(lhs, rhs) =>
+      case rise.Type.AST.PairType(lhs, rhs) =>
         q"rise.core.types.PairType(${generateTypeScheme(lhs, env)}, ${generateTypeScheme(rhs, env)})"
-      case RISETypeAST.DepPairType(id, kind, t) => kind match {
-        case "nat" =>
+      case rise.Type.AST.DepPairType(id, kind, t) => kind match {
+        case shared.Kind.AST.Nat =>
           q"Nat `**` ((${Term.Name(id.name)}: Nat) => ${generateTypeScheme(t, env.updated(id.name, kind))})"
         case _ => ???
       }
-      case RISETypeAST.NatToDataApply(f, n) =>
+      case rise.Type.AST.NatToDataApply(f, n) =>
         q"rise.core.types.NatToDataApply(${generateTypeScheme(f, env)}, ${generateNat(n, env)})"
-      case RISETypeAST.NatToDataLambda(id, t) =>
-        q"n2dtFun((${Term.Name(id.name)}: NatIdentifier) => ${generateTypeScheme(t, env.updated(id.name, "nat"))})"
-      case RISETypeAST.ArrayType(size, elemType) =>
+      case rise.Type.AST.NatToDataLambda(id, t) =>
+        q"n2dtFun((${Term.Name(id.name)}: NatIdentifier) => ${generateTypeScheme(t, env.updated(id.name, shared.Kind.AST.Nat))})"
+      case rise.Type.AST.ArrayType(size, elemType) =>
         q"rise.core.types.ArrayType(${generateNat(size, env)}, ${generateTypeScheme(elemType, env)})"
-      case RISETypeAST.DepArrayType(size, fdt) =>
+      case rise.Type.AST.DepArrayType(size, fdt) =>
         q"rise.core.types.DepArrayType(${generateNat(size, env)}, ${generateTypeScheme(fdt, env)})"
-      case RISETypeAST.FragmentType(n, m, k, elemType, fKind, mLayout) =>
+      case rise.Type.AST.FragmentType(n, m, k, elemType, fKind, mLayout) =>
         q"rise.core.types.FragmentType(${generateNat(n, env)}, ${generateNat(m, env)}, ${generateNat(k, env)}, ${generateTypeScheme(elemType, env)}, ${generateFragment(fKind, env)}, ${generateMatrixLayout(mLayout, env)})"
     }
   }
 
-  def kindName(kind: String): String = kind match {
-    case "nat" => "Nat"
-    case "data" => "DataType"
-    case "nat2nat" => "NatToNat"
-    case "nat2data" => "NatToData"
-    case "address" => "AddressSpace"
-    case "fragment" => "FragmentKind"
-    case "matrixLayout" => "MatrixLayout"
+  def kindName(kind: shared.Kind.AST): String = kind match {
+    case AST.Data =>  "DataType"
+    case AST.Address => "AddressSpace"
+    case AST.Nat2Nat => "NatToNat"
+    case AST.Nat2Data => "NatToData"
+    case AST.Nat => "Nat"
+    case AST.Fragment => "FragmentKind"
+    case AST.MatrixLayout => "MatrixLayout"
+    case AST.Function => ???
   }
 
-  def generateNat(n: NatAST, env: Map[String, String]): scala.meta.Term = {
+  def generateNat(n: Nat.AST, env: Map[String, shared.Kind.AST]): scala.meta.Term = {
     import scala.meta._
     n match {
-      case NatAST.Identifier(id) =>
+      case Nat.AST.Identifier(id) =>
         assert(env.contains(id), s"$id is not in $env")
         Term.Name(id)
-      case NatAST.Number(n) =>
+      case Nat.AST.Number(n) =>
         n.parse[Term].get
-      case NatAST.BinaryOp(lhs, "^", rhs) =>
+      case Nat.AST.BinaryOp(lhs, "^", rhs) =>
         q"${generateNat(lhs, env)}.pow(${generateNat(rhs, env)})"
-      case NatAST.BinaryOp(lhs, op, rhs) =>
+      case Nat.AST.BinaryOp(lhs, op, rhs) =>
         q"${generateNat(lhs, env)} ${Term.Name(op)} ${generateNat(rhs, env)}"
-      case NatAST.TernaryOp(cond, thenN, elseN) =>
+      case Nat.AST.TernaryOp(cond, thenN, elseN) =>
         val operator: Term = cond.op match {
           case "<" => q"Operator.<"
           case ">" => q"Operator.>"
@@ -203,41 +204,41 @@ import arithexpr.arithmetic._
               ${generateNat(thenN, env)},
               ${generateNat(elseN, env)})
          """
-      case NatAST.Nat2NatApply(f, n) =>
+      case Nat.AST.Nat2NatApply(f, n) =>
         q"${generateTypeScheme(f, env)}(${generateNat(n, env)})"
-      case NatAST.Sum(id, from, upTo, body) =>
+      case Nat.AST.Sum(id, from, upTo, body) =>
         q"""BigSum(
               from = ${generateNat(from, env)},
               upTo = ${generateNat(upTo, env)},
-              (${Term.Name(id.name)}: Nat) => ${generateNat(body, env.updated(id.name, "nat"))})
+              (${Term.Name(id.name)}: Nat) => ${generateNat(body, env.updated(id.name, shared.Kind.AST.Nat))})
          """
     }
   }
 
-  def generateFragment(fragmentAST: FragmentAST, env: Map[String, String]): scala.meta.Term = {
+  def generateFragment(fragmentAST: rise.Type.Fragment.AST, env: Map[String, shared.Kind.AST]): scala.meta.Term = {
     import scala.meta._
     fragmentAST match {
-      case FragmentAST.Identifier(name) =>
+      case rise.Type.Fragment.AST.Identifier(name) =>
         assert(env.contains(name), s"$name is not in $env")
         Term.Name(name)
-      case FragmentAST.ACC =>
+      case rise.Type.Fragment.AST.ACC =>
         q"rise.core.types.FragmentKind.Acuumulator"
-      case FragmentAST.A =>
+      case rise.Type.Fragment.AST.A =>
         q"rise.core.types.FragmentKind.AMatrix"
-      case FragmentAST.B =>
+      case rise.Type.Fragment.AST.B =>
         q"rise.core.types.FragmentKind.BMatrix"
     }
   }
 
-  def generateMatrixLayout(matrixLayoutAST: MatrixLayoutAST, env: Map[String, String]): scala.meta.Term = {
+  def generateMatrixLayout(matrixLayoutAST: rise.Type.MatrixLayout.AST, env: Map[String, shared.Kind.AST]): scala.meta.Term = {
     import scala.meta._
     matrixLayoutAST match {
-      case MatrixLayoutAST.Identifier(name) =>
+      case rise.Type.MatrixLayout.AST.Identifier(name) =>
         assert(env.contains(name), s"$name is not in $env")
         Term.Name(name)
-      case MatrixLayoutAST.ROW_MAJOR =>
+      case rise.Type.MatrixLayout.AST.ROW_MAJOR =>
         q"rise.core.types.MatrixLayout.Row_Major"
-      case MatrixLayoutAST.COL_MAJOR =>
+      case rise.Type.MatrixLayout.AST.COL_MAJOR =>
         q"rise.core.types.MatrixLayout.Col_Major"
     }
   }
