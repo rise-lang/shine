@@ -37,7 +37,7 @@ def generate: {n: nat} -> {t: data} -> (idx[n] -> t) -> n.t
 def idx: {n: nat} -> {t: data} -> idx[n] -> n.t -> t
 
 def take:   (n: nat) -> {m: nat} -> {t: data} -> (n+m).t -> n.t
-def drop:   (n: nat) -> {m: nat} -> {t: data} -> (n+m).t -> m.t
+  def drop:   (n: nat) -> {m: nat} -> {t: data} -> (n+m).t -> m.t
 def concat: {n: nat} -> {m: nat} -> {t: data} -> n.t -> m.t -> (n+m).t
 
 def split: (n: nat) -> {m: nat} -> {t: data} -> (m*n).t -> m.n.t
