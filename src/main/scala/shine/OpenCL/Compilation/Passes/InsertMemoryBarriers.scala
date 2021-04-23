@@ -189,7 +189,7 @@ object InsertMemoryBarriers {
       case Split(_, _, _, _, e) => collectReads(e, allocs, reads)
       case Zip(_, _, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
-      case Pad(_, _, _, _, e1, e2) =>
+      case PadCst(_, _, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case PadClamp(_, _, _, _, e) =>
         collectReads(e, allocs, reads)

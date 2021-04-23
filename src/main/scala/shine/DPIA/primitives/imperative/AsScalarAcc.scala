@@ -9,7 +9,7 @@ import shine.macros.Primitive.accPrimitive
 @accPrimitive
 final case class AsScalarAcc(n: Nat,
                              m: Nat,
-                             dt: ScalarType,
+                             dt: DataType,
                              array: Phrase[AccType]
                             )extends AccPrimitive {
   array :: accT((m * n)`.`dt)

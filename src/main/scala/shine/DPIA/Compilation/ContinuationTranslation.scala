@@ -257,10 +257,10 @@ object ContinuationTranslation {
       con(e)(λ(e.t)(x =>
         C(NatAsIndex(n, x))))
 
-    case Pad(n, l, r, dt, padExp, array) =>
+    case PadCst(n, l, r, dt, padExp, array) =>
       con(array)(λ(expT(n`.`dt, read))(x =>
         con(padExp)(λ(expT(dt, read))(p =>
-          C(Pad(n, l, r, dt, p, x))))))
+          C(PadCst(n, l, r, dt, p, x))))))
 
     case PadClamp(n, l, r, dt, array) =>
       con(array)(λ(expT(n`.`dt, read))(x =>
@@ -291,7 +291,8 @@ object ContinuationTranslation {
         acc(scanSeq)(tmp.wr) `;` C(tmp.rd) ))
 
     case slide@Slide(n, sz, sp, dt, input) =>
-      con(input)(λ(expT(slide.inputSize`.`dt, read))(x =>
+      val inputSize = sp*n+sz
+      con(input)(λ(expT(inputSize`.`dt, read))(x =>
         C(Slide(n, sz, sp, dt, x)) ))
 
     case Snd(dt1, dt2, pair) =>

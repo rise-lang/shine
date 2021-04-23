@@ -8,7 +8,7 @@ import shine.macros.Primitive.accPrimitive
 
 @accPrimitive
 final case class IdxVecAcc(n: Nat,
-                           st: ScalarType,
+                           st: DataType,
                            index: Phrase[ExpType],
                            vector: Phrase[AccType]
                           ) extends AccPrimitive {

@@ -95,7 +95,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     }
     case ForeignFunctionCall(f, inTs, outT, args) =>
       OpenMPCodeGen.codeGenForeignFunctionCall(f, inTs, outT, args, env, path, cont)
-    case AsVectorAligned(n, _, _, dt, e) => path match {
+    case AsVectorAligned(n, _, dt, _, e) => path match {
       case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
         e |> exp(env, CIntExpr((i * n) + j) :: ps, cont)
 

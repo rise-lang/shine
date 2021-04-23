@@ -2,7 +2,7 @@ package meta.parser.DPIA
 
 import fastparse.ScalaWhitespace._
 import fastparse._
-import meta.parser.shared.{Identifier, Kind}
+import meta.parser.shared.Identifier
 
 object Phrase extends App {
   sealed trait AST
@@ -23,9 +23,9 @@ object Phrase extends App {
   def PrimitiveDeclaration[_: P]: P[AST.PrimitiveDeclaration] = {
     import scalaparse.Scala.TrailingCommaOps
     def ScalaParams: P[(Int, Int)] = {
-      P("[" ~ Index ~
+      P("{" ~ Index ~
         (scalaparse.Scala.Id ~ scalaparse.syntax.Key.O(":") ~ scalaparse.Scala.Type).repTC(1) ~
-        Index ~ "]")
+        Index ~ "}")
     }
 
     def Param: P[AST.Param] = (

@@ -2,7 +2,7 @@ package meta.parser.rise
 
 import fastparse.ScalaWhitespace._
 import fastparse._
-import meta.parser.shared.{Identifier, Kind}
+import meta.parser.shared.Identifier
 import meta.parser._
 
 object Type {
@@ -12,6 +12,7 @@ object Type {
     case class FunType(inT: AST, outT: AST) extends AST
     case class DepFunType(id: Identifier, kind: Kind.AST, t: AST) extends AST
     case class ImplicitDepFunType(id: Identifier, kind: Kind.AST, t: AST) extends AST
+
     case class ScalarType(t: String) extends AST
     case object NatType extends AST
     case class VectorType(size: Nat.AST, elemType: AST) extends AST
@@ -65,7 +66,7 @@ object Type {
   def TypeIdentifier[_: P]: P[AST.Identifier] = P(Identifier).map(AST.Identifier)
 
   def IdentifierKindPair[_: P]: P[(AST.Identifier, Kind.AST)] =
-    shared.IdentifierKindPair.map(p => (AST.Identifier(p._1), p._2))
+    P(Identifier.map(AST.Identifier) ~ ":" ~ Kind.Kind)
 
   object DataType {
     def ScalarType[_: P]: P[AST.ScalarType] =

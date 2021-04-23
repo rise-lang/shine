@@ -436,7 +436,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
           AddressSpace.Private, Some(expr)))
     }
 
-    def codeGenVectorLiteral(n: Int, dt: ScalarType,
+    def codeGenVectorLiteral(n: Int, dt: DataType,
                              f: Int => Phrase[ExpType],
                              env: Environment,
                              cont: Expr => Stmt,

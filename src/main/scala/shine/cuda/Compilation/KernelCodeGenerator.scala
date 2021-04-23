@@ -254,7 +254,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def exp(env: Environment,
                    path: Path,
                    cont: Expr => Stmt): Phrase[ExpType] => Stmt = {
-    case phrase@AsVectorAligned(n, _, _, dt, e) => path match {
+    case phrase@AsVectorAligned(n, _, dt, _, e) => path match {
       case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
         e |> exp(env, CIntExpr((i * n) + j) :: ps, cont)
 
@@ -295,7 +295,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
       super.typ(dt)
   }
 
-  private def getVectorType(dt: ScalarType, n: Nat): Type = {
+  private def getVectorType(dt: DataType, n: Nat): Type = {
     if (n.eval > 0 && n.eval <= 4)
       dt match {
         case shine.DPIA.Types.u8 => BasicType(s"uchar$n")

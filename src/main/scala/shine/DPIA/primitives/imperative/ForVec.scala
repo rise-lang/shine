@@ -8,7 +8,7 @@ import shine.macros.Primitive.comPrimitive
 
 @comPrimitive
 final case class ForVec(n: Nat,
-                        dt: ScalarType,
+                        dt: DataType,
                         out: Phrase[AccType],
                         loopBody: Phrase[ExpType ->: AccType ->: CommType]
                        ) extends CommandPrimitive {
