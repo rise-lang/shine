@@ -29,6 +29,14 @@ case class Nat(node: NatNode[Nat]) {
         NatIntDiv(a.shifted(shift, cutoff), b.shifted(shift, cutoff))
     })
   }
+
+  def replace(index: Int, subs: Nat): Nat = {
+    node match {
+      case NatVar(i) if index == i => subs
+      case nv: NatVar => Nat(nv)
+      case other => Nat(other.map(_.replace(index, subs)))
+    }
+  }
 }
 
 object Nat {

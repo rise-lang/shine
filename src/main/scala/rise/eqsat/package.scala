@@ -22,7 +22,7 @@ package object eqsat {
   def BENF(e: Expr): Expr = {
     val runner = Runner.withAnalysis(DefaultAnalysis)
     val id = runner.egraph.addExpr(e)
-    runner.run(Seq(rules.eta, rules.beta))
+    runner.run(Seq(rules.eta, rules.beta, rules.betaNat))
     val extractor = Extractor.init(runner.egraph, AstSize)
     val (_, normalized) = extractor.findBestOf(id)
     normalized

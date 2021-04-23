@@ -26,32 +26,83 @@ class ExprCheck extends test_util.Tests {
       app(%(5, f32 ->: f32), app(%(4, f32 ->: f32), %(0, f32))))
   }
 
+  test("withNatArgument") {
+    import ExprDSL._
+
+    // (Λn. Λm. transpose: n.m.dt -> m.n.dt) o 1
+    // (Λ. Λ. transpose: %n1.%n0.%dt0 -> %n0.%n1.%dt0) %n0
+    // -->
+    // transpose: o.1.dt -> 1.o.dt
+    // transpose: %n0.1.%dt0 -> 1.%n0.%dt0
+    assert((
+      nLam(transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      )) withNatArgument
+        `%n`(0))
+      ==
+      nLam(transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      ))
+    )
+    assert((
+      transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      ) withNatArgument
+        cst(1))
+      ==
+      transpose(
+        (`%n`(0)`.`(cst(1)`.``%dt`(0))) ->:
+        (cst(1)`.`(`%n`(0)`.``%dt`(0)))
+      )
+    )
+  }
+
   test("fromNamed") {
-    val named: rise.core.Expr = {
+    val named: Seq[rise.core.Expr] = {
       import rise.core.types._
       import rise.core.primitives._
       import rise.core.DSL._
       import rise.core.DSL.Type._
 
-      depFun((n: Nat) => depFun((m: Nat) => fun(
-        (n`.`m`.`f32) ->: (m`.`n`.`f32)
-      )(input => input |>
-        transpose
-      )))
+      Seq(
+        depFun((n: Nat) => depFun((m: Nat) => fun(
+          (n`.`m`.`f32) ->: (m`.`n`.`f32)
+        )(input => input |>
+          transpose
+        ))),
+        depFun((n: Nat) => depFun((m: Nat) => fun(
+          ((n+2)`.`f32) ->: (n`.`f32)
+        )(input => input |>
+          take(n)
+        )))
+      )
     }
 
-    val expectedDebruijn = {
+    val expectedDebruijn: Seq[Expr] = {
       import ExprDSL._
 
-      nLam(nLam(lam(`%n`(1)`.`(`%n`(0)`.`f32),
-        app(transpose((`%n`(1)`.`(`%n`(0)`.`f32)) ->: (`%n`(0)`.`(`%n`(1)`.`f32))),
-          %(0, `%n`(1)`.`(`%n`(0)`.`f32)))
-      )))
+      Seq(
+        nLam(nLam(lam(`%n`(1) `.` (`%n`(0) `.` f32),
+          app(transpose((`%n`(1) `.` (`%n`(0) `.` f32)) ->: (`%n`(0) `.` (`%n`(1) `.` f32))),
+            %(0, `%n`(1) `.` (`%n`(0) `.` f32)))
+        ))),
+        nLam(nLam(lam(Nat(NatAdd(`%n`(1), cst(2)))`.`f32,
+          app(nApp(Expr(Primitive(rise.core.primitives.take.primitive),
+            nFunT((Nat(NatAdd(`%n`(0), cst(2)))`.`f32) ->: (`%n`(0)`.`f32))),
+           `%n`(1), (Nat(NatAdd(`%n`(1), cst(2)))`.`f32) ->: (`%n`(1)`.`f32)),
+            %(0, Nat(NatAdd(`%n`(1), cst(2)))`.`f32))
+          )))
+      )
     }
 
-    val debruijn = Expr.fromNamed(named)
-    assert(expectedDebruijn == debruijn)
-    val backToNamed = Expr.toNamed(debruijn)
-    assert(named =~= backToNamed)
+    for ((n, ed) <- named.zip(expectedDebruijn)) {
+      val debruijn = Expr.fromNamed(n)
+      assert(ed == debruijn)
+      val backToNamed = Expr.toNamed(debruijn)
+      assert(n =~= backToNamed)
+    }
   }
 }

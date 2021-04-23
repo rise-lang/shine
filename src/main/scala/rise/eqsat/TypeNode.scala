@@ -19,6 +19,19 @@ case class Type(node: TypeNode[Type, Nat, DataType]) {
         DataType(dt).shifted(shift, cutoff).node
     })
   }
+
+  def replace(index: Int, subs: Nat): Type = Type(node match {
+    case NatFunType(t) =>
+      // TODO: could shift lazily
+      val t2 = t.replace(index + 1, subs.shifted(1, 0))
+      NatFunType(t2)
+    case other =>
+      other.map(_.replace(index, subs), _.replace(index, subs), _.replace(index, subs))
+  })
+
+  def replace(index: Int, subs: DataType): Type = {
+    ???
+  }
 }
 
 case class DataType(node: DataTypeNode[Nat, DataType]) {
@@ -41,6 +54,13 @@ case class DataType(node: DataTypeNode[Nat, DataType]) {
       case ArrayType(size, elemType) =>
         ArrayType(size.shifted(shift._1, cutoff._1), elemType.shifted(shift, cutoff))
     })
+  }
+
+  def replace(index: Int, subs: Nat): DataType =
+    DataType(node.map(_.replace(index, subs), _.replace(index, subs)))
+
+  def replace(index: Int, subs: DataType): DataType = {
+    ???
   }
 }
 

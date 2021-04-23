@@ -316,6 +316,24 @@ case class BetaApplier(body: PatternVar, subs: PatternVar)
   }
 }
 
+/** An [[Applier]] that performs beta-reduction for nat-dependent functions.
+  * @note It works by extracting an expression from the [[EGraph]] in order to beta-reduce it.
+  */
+case class BetaNatApplier(body: PatternVar, subs: NatPatternVar)
+  extends Applier[DefaultAnalysisData] {
+  override def patternVars(): Set[Any] =
+    Set(body, subs)
+
+  override def applyOne(egraph: EGraph[DefaultAnalysisData],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    val bodyEx = egraph.getMut(subst(body)).data.extractedExpr
+    val subsNat = subst(subs)
+    val result = bodyEx.withNatArgument(subsNat)
+    Vec(egraph.addExpr(result))
+  }
+}
+
 /** An [[Applier]] that checks whether a nat variable is equal to a nat pattern */
 object ComputeNatCheckApplier {
   def apply[D](v: NatPatternVar, expected: NatPattern,

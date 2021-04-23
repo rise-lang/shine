@@ -21,14 +21,19 @@ object rules {
   val beta: Rule = Rewrite.init("beta",
     app(lam(?(0)), ?(1)).compile()
       -->
-      BetaApplier(?(0), ?(1))
+    BetaApplier(?(0), ?(1))
+  )
+  val betaNat: Rule = Rewrite.init("beta-nat",
+    nApp(nLam(?(0)), `?n`(0)).compile()
+      -->
+    BetaNatApplier(?(0), `?n`(0))
   )
   val eta: Rule = Rewrite.init("eta",
     lam(app(?(0), %(0))).compile()
       -->
-      ConditionalApplier(neg(containsIdent(?(0), %(0))), Set(?(0)),
-        ShiftedApplier(?(0), ?(1), (-1, 0, 0), (1, 0, 0),
-          ?(1): Pattern))
+    ConditionalApplier(neg(containsIdent(?(0), %(0))), Set(?(0)),
+      ShiftedApplier(?(0), ?(1), (-1, 0, 0), (1, 0, 0),
+        ?(1): Pattern))
   )
 
   import rise.core.types.{Nat, DataType, Type}
@@ -43,13 +48,6 @@ object rules {
 
   // -- algorithmic --
 
-  // ?(0) + \. ?(0) + %(0) --> ?(0)
-  // x + \y. z + y
-  // \x. x + \y. x + y --> \x. x
-  // \x. %(0) + \. %(1) + %(0)
-  // \. %(0) + \. %(1) + %(0)
-  // in e-graph: %(0) != %(1)
-
   val mapFusion: Rule = NamedRewrite.init("map-fusion",
     app(app(map, "f"), app(app(map, "g"), "in"))
       -->
@@ -62,18 +60,24 @@ object rules {
   ) when neg(containsIdent(?(0), %(0)))
   // TODO: neg(containsIdent("f", "x"))
 
+  // FIXME: how can we generalize to N?
+  val mapOutsideMakeArray2: Rule = NamedRewrite.init("map-outside-make-array-2",
+    app(app(rcp.makeArray(2).primitive, app(app(map, "f1"), "e")), app(app(map, "f2"), "e"))
+      -->
+    app(transpose, app(app(map, lam("x", app(app(rcp.makeArray(2).primitive, app("f1", "x")), app("f2", "x")))), "e"))
+  )
+
   // - slide widening -
 
   val dropInSlide: Rule = NamedRewrite.init("drop-in-slide",
-    app(nApp(drop, "l"), app(nApp(nApp(slide, "n"), 1: Nat), "in"))
+    app(nApp(drop, "l"), app(nApp(nApp(slide, "n"), 1), "in"))
       -->
-    app(app(map, nApp(drop, "l")), app(nApp(nApp(slide, ("n": Nat) + ("l": Nat)), 1: Nat), "in"))
+    app(app(map, nApp(drop, "l")), app(nApp(nApp(slide, ("n": Nat) + ("l": Nat)), 1), "in"))
   )
-  // FIXME: there is a bug for this one
   val takeInSlide: Rule = NamedRewrite.init("take-in-slide",
-    app(nApp(take, "r") :: ((("s": Nat)`.``_`) ->: `_`), app(nApp(nApp(slide, "n"), 1: Nat), "in"))
+    app(nApp(take, "r") :: ((("s": Nat)`.``_`) ->: `_`), app(nApp(nApp(slide, "n"), 1), "in"))
       -->
-    app(app(map, nApp(take, "n")), app(nApp(nApp(slide, ("n": Nat) + ("s": Nat) - ("r": Nat)), 1: Nat), "in"))
+    app(app(map, nApp(take, "n")), app(nApp(nApp(slide, ("n": Nat) + ("s": Nat) - ("r": Nat)), 1), "in"))
   )
 
   // -- movement --
@@ -105,13 +109,25 @@ object rules {
     app(app(map, "f"), app(nApp(take, "n"), "in"))
   )
 
+  val dropBeforeTake: Rule = NamedRewrite.init("drop-before-take",
+    app(nApp(drop, "m"), app(nApp(take, "n+m"), "in"))
+      -->
+    app(nApp(take, ("n+m": Nat) - ("m": Nat)), app(nApp(drop, "m"), "in"))
+  )
+
   // -- lowering --
 
+  val reduceSeq: Rule = NamedRewrite.init("reduce-seq",
+    reduce --> rcp.reduceSeq.primitive
+  )
   val reduceSeqUnroll: Rule = NamedRewrite.init("reduce-seq-unroll",
     reduce --> rcp.reduceSeqUnroll.primitive
   )
   val mapSeq: Rule = NamedRewrite.init("map-seq",
     map --> rcp.mapSeq.primitive
+  )
+  val mapSeqUnroll: Rule = NamedRewrite.init("map-seq-unroll",
+    map --> rcp.mapSeqUnroll.primitive
   )
   val iterateStream: Rule = NamedRewrite.init("iterate-stream",
     map --> rcp.iterateStream.primitive
@@ -121,8 +137,12 @@ object rules {
       -->
     app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
   )
-  /* TODO
-        rewrite!("rotate-values-simplified";
-            "(app (app slide ?sz) 1)" => "(app rotateValues ?sz)"),
-  */
+
+  // TODO: generalize to circularBuffer(load: Expr) and rotateValues(write: Expr)
+  val circularBufferScalar: Rule = NamedRewrite.init("circular-buffer-scalar",
+    nApp(nApp(slide, "sz"), 1) --> app(nApp(nApp(rcp.circularBuffer.primitive, "sz"), "sz"), lam("x", "x"))
+  )
+  val rotateValuesScalar: Rule = NamedRewrite.init("rotate-values-scalar",
+    nApp(nApp(slide, "sz"), 1) --> app(nApp(rcp.rotateValues.primitive, "sz"), lam("x", "x"))
+  )
 }

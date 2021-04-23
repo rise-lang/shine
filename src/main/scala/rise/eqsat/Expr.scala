@@ -30,7 +30,7 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
       case DataApp(f, x) =>
         DataApp(f.shifted(shift, cutoff), x)
       case Literal(_) | Primitive(_) => node
-    }, t)
+    }, t.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
   }
 
   def replace(index: Int, subs: Expr): Expr = {
@@ -61,10 +61,38 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
     }
   }
 
+  def replace(index: Int, subs: Nat): Expr = {
+    Expr(node match {
+      case _: Var | _: Literal | _: Primitive => node
+      case Lambda(e) =>
+        Lambda(e.replace(index, subs))
+      case App(f, e) =>
+        val f2 = f.replace(index, subs)
+        val e2 = e.replace(index, subs)
+        App(f2, e2)
+      case NatLambda(e) =>
+        // TODO: could shift lazily
+        val e2 = e.replace(index + 1, subs.shifted(1, 0))
+        NatLambda(e2)
+      case NatApp(f, x) =>
+        NatApp(f.replace(index, subs), x.replace(index, subs))
+      case DataLambda(e) =>
+        DataLambda(e.replace(index, subs))
+      case DataApp(f, x) =>
+        DataApp(f.replace(index, subs), x.replace(index, subs))
+    }, t.replace(index, subs))
+  }
+
   // substitutes %0 for arg in this
   def withArgument(arg: Expr): Expr = {
     replace(0, arg.shifted((1, 0, 0), (0, 0, 0)))
       .shifted((-1, 0, 0), (0, 0, 0))
+  }
+
+  // substitutes %n0 for arg in this
+  def withNatArgument(arg: Nat): Expr = {
+    replace(0, arg.shifted(1, 0))
+      .shifted((0, -1, 0), (0, 0, 0))
   }
 }
 

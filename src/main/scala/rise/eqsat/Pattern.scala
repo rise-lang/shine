@@ -167,7 +167,7 @@ object PatternDSL {
     @inline def ::(n: PNode): Pattern = Pattern(PatternNode(n), t)
   }
 
-  def `?n`(index: Int): NatPattern = NatPatternVar(index)
+  def `?n`(index: Int): NatPatternVar = NatPatternVar(index)
   val `?n`: NatPattern = NatPatternAny
   def `%n`(index: Int): NatPattern = NatPatternNode(NatVar(index))
 

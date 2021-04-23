@@ -121,6 +121,7 @@ object Basic {
 
     if (!runner.stopReasons.contains(Done)) {
       runner.iterations.foreach(println)
+      // runner.egraph.dot().toSVG("/tmp/egraph.svg")
       assert(false)
     }
   }

@@ -59,7 +59,7 @@ object NamedRewrite {
       pv
     }
 
-    def makePat(expr: rc.Expr, bound: Expr.Bound, isRhs: Boolean): Pattern =
+    def makePat(expr: rc.Expr, bound: Expr.Bound, isRhs: Boolean, matchType: Boolean = true): Pattern =
       Pattern(expr match {
         case i: rc.Identifier if freeV.contains(i.name) =>
           makePatVar(i.name,
@@ -67,23 +67,30 @@ object NamedRewrite {
             patVars, PatternVar, if (isRhs) { Unknown } else { Known })
         case i: rc.Identifier => PatternNode(Var(bound.indexOf(i)))
         // TODO: for some of these constructs we can avoid matching types because there is redundancy
+
+        // note: we do not match for the type of lambda bodies, as we can always infer it:
+        //       lam(x : xt, e : et) : xt -> et
         case rc.Lambda(x, e) =>
-          PatternNode(Lambda(makePat(e, bound + x, isRhs)))
-        case rc.App(f, e) =>
-          PatternNode(App(makePat(f, bound, isRhs), makePat(e, bound, isRhs)))
+          PatternNode(Lambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(x: rct.NatIdentifier, e) =>
-          PatternNode(NatLambda(makePat(e, bound + x, isRhs)))
+          PatternNode(NatLambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(x: rct.DataTypeIdentifier, e) =>
-          PatternNode(DataLambda(makePat(e, bound + x, isRhs)))
+          PatternNode(DataLambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(_, _) => ???
+
+        // note: we do not match for the type of applied functions, as we can always infer it:
+        //       app(f : et -> at, e : et) : at
+        case rc.App(f, e) =>
+          PatternNode(App(makePat(f, bound, isRhs, matchType = false), makePat(e, bound, isRhs)))
         case rc.DepApp(f, x: rct.Nat) =>
-          PatternNode(NatApp(makePat(f, bound, isRhs), makeNPat(x, bound, isRhs)))
+          PatternNode(NatApp(makePat(f, bound, isRhs, matchType = false), makeNPat(x, bound, isRhs)))
         case rc.DepApp(f, x: rct.DataType) =>
-          PatternNode(DataApp(makePat(f, bound, isRhs), makeDTPat(x, bound, isRhs)))
+          PatternNode(DataApp(makePat(f, bound, isRhs, matchType = false), makeDTPat(x, bound, isRhs)))
+
         case rc.DepApp(_, _) => ???
         case rc.Literal(d) => PatternNode(Literal(d))
         case p: rc.Primitive => PatternNode(Primitive(p))
-      }, makeTPat(expr.t, bound, isRhs))
+      }, if (!isRhs && !matchType) TypePatternAny else makeTPat(expr.t, bound, isRhs))
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
