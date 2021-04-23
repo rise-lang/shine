@@ -340,12 +340,12 @@ object fromRise {
       case core.slide() => fromType {
         case nFunT(sz, nFunT(sp,
           expT(ArrayType(insz, t), `read`) ->:
-          expT(ArrayType(n, ArrayType(_, _)), `read`)))
+          expT(ArrayType(np1, ArrayType(_, _)), `read`)))
         =>
         depFun[NatKind](sz)(
           depFun[NatKind](sp)(
             fun[ExpType](expT(insz`.`t, read), e =>
-              Slide(n, sz, sp, t, e))))
+              Slide(np1-1, sz, sp, t, e))))
       }
 
       case core.circularBuffer() => fromType {
@@ -482,7 +482,7 @@ object fromRise {
           depFun[NatKind](q)(
             fun[ExpType](expT(t, read), cst =>
               fun[ExpType](expT(n`.`t, read), e =>
-                Pad(n, l, q, t, cst, e)))))
+                PadCst(n, l, q, t, cst, e)))))
       }
 
       case core.padEmpty() => fromType {
@@ -763,7 +763,7 @@ object fromRise {
         =>
         depFun[NatKind](n)(
           fun[ExpType](expT(mn`.`t, read), e =>
-            AsVectorAligned(n, m, a, t, e)))
+            AsVectorAligned(n, m, t, a, e)))
       }
 
       case core.asScalar() => fromType {

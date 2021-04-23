@@ -14,7 +14,8 @@ object Type {
 
     case class PairType(lhs: AST, rhs: AST) extends AST
     case class FunType(inT: AST, outT: AST) extends AST
-    case class DepFunType(id: String, kind: Kind.AST, t: AST) extends AST
+    case class DepFunType(id: Identifier, kind: Kind.AST, t: AST) extends AST
+    case class Identifier(name: String) extends AST
   }
 
   object Access {
@@ -50,8 +51,12 @@ object Type {
     // Types that can appear at the left of an function arrow
     def LeftPhraseType: P[AST] = P(NonFunType | ("(" ~ PhraseType ~ ")"))
 
-    def DepFunType: P[AST.DepFunType] =
+    def DepFunType: P[AST.DepFunType] = {
+      def IdentifierKindPair: P[(AST.Identifier, Kind.AST)] =
+        P(Identifier.map(AST.Identifier) ~ ":" ~ Kind.Kind)
+
       P("(" ~ IdentifierKindPair ~ ")" ~ "->" ~/ PhraseType).map(AST.DepFunType.tupled)
+    }
 
     def NonFunType: P[AST] = P( ExpType | AccType | CommType | PairType | DepFunType )
 

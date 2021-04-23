@@ -9,7 +9,7 @@ import shine.macros.Primitive.accPrimitive
 @accPrimitive
 final case class AsVectorAcc(n: Nat,
                              m: Nat,
-                             dt: ScalarType,
+                             dt: DataType,
                              array: Phrase[AccType]
                             ) extends AccPrimitive {
   array :: accT(n`.`vec(m, dt))

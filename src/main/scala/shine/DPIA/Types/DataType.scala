@@ -153,7 +153,7 @@ final case class PairType(fst: DataType, snd: DataType) extends ComposedType {
   override def toString: String = s"($fst x $snd)"
 }
 
-sealed case class VectorType(size: Nat, elemType: ScalarType)
+sealed case class VectorType(size: Nat, elemType: DataType)
   extends BasicType
 {
   override def toString: String = s"<$size>$elemType"
@@ -161,7 +161,7 @@ sealed case class VectorType(size: Nat, elemType: ScalarType)
 
 object vec {
   @inline
-  def apply(size: Nat, elemType: ScalarType): VectorType =
+  def apply(size: Nat, elemType: DataType): VectorType =
     VectorType(size, elemType)
 }
 

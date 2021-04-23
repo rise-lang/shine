@@ -4,8 +4,6 @@ import meta.parser._
 
 object isWellKindedType {
 
-  import meta.parser.shared.Kind
-
   def apply(typeAST: Type.AST): Boolean = {
     kindOf(typeAST, Map.empty).isDefined
   }

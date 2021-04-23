@@ -90,7 +90,7 @@ object AcceptorTranslation {
     case AsVector(n, m, dt, access, array) =>
       acc(array)(AsVectorAcc(n, m, dt, A))
 
-    case AsVectorAligned(n, m, w, dt, array) =>
+    case AsVectorAligned(n, m, dt, access, array) =>
       acc(array)(AsVectorAcc(n, m, dt, A))
 
     case DepIdx(n, ft, index, array) =>

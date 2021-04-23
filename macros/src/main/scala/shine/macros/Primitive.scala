@@ -153,10 +153,10 @@ object Primitive {
           }
          """
       }).asInstanceOf[ClassDef]
-/*
+
       c.info(c.enclosingPosition,
         s"generated `${name.toString}'\n$expClass", force = false)
-*/
+
       expClass
     }
   }

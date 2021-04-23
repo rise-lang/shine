@@ -2,7 +2,7 @@ package meta.generator
 
 import fastparse.{Parsed, parse}
 import meta.parser._
-import meta.parser.shared.Kind.AST
+import meta.parser.rise.Kind
 
 object RisePrimitives {
   def main(args: Array[String]): Unit = {
@@ -17,12 +17,12 @@ object RisePrimitives {
           println(s"  $failure")
         case Parsed.Success(seq, _) =>
           seq.foreach {
-            case rise.Expr.AST.PrimitiveDeclaration(rise.Expr.AST.Identifier(name), args, typeSignature)
+            case rise.Expr.AST.PrimitiveDeclaration(rise.Expr.AST.Identifier(name), scalaParams, typeSignature)
                 if rise.isWellKindedType(typeSignature) =>
               val outputPath = (path / os.up) / s"$name.scala"
               println(s"Generate $outputPath")
 
-              val generatedDef = args match {
+              val generatedDef = scalaParams match {
                 case None =>
                   generateObject(name, typeSignature)
                 case Some((start, end)) =>
@@ -68,7 +68,7 @@ import arithexpr.arithmetic._
           override val name: String = ${Lit.String(name)}
           override def setType(ty: Type): Primitive = Primitive()(ty)
           override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-          override def typeScheme: Type = ${generateTypeScheme(typeSignature, Map.empty)}
+          override def typeScheme: Type = ${generateTypeScheme(typeSignature)}
         }
 
         override def toString: String = ${Lit.String(name)}
@@ -112,7 +112,7 @@ import arithexpr.arithmetic._
         {
           override val name: String = ${Lit.String(name)}
           override def setType(ty: Type): Primitive = Primitive(..$args)(ty)
-          override def typeScheme: Type = ${generateTypeScheme(typeSignature, Map.empty)}
+          override def typeScheme: Type = ${generateTypeScheme(typeSignature)}
 
           override def primEq(obj: rise.core.Primitive): Boolean = obj match {
             case p: Primitive => ${generateComparisonChain(args)}
@@ -130,69 +130,79 @@ import arithexpr.arithmetic._
     generated
   }
 
-  def generateTypeScheme(typeAST: rise.Type.AST, env: Map[String, shared.Kind.AST]): scala.meta.Term = {
+  def generateTypeScheme(typeAST: rise.Type.AST): scala.meta.Term = {
     import scala.meta._
     typeAST match {
-      case rise.Type.AST.Identifier(name) =>
-        assert(env.contains(name), s"$name is not in $env")
-        Term.Name(name)
       case rise.Type.AST.FunType(inT, outT) =>
-        q"(${generateTypeScheme(inT, env)}) ->: (${generateTypeScheme(outT, env)})"
+        q"(${generateTypeScheme(inT)}) ->: (${generateTypeScheme(outT)})"
       case rise.Type.AST.DepFunType(id, kind, t) =>
-        q"expl((${Term.Name(id.name)}: ${Type.Name(kindName(kind))}) => ${generateTypeScheme(t, env.updated(id.name, kind))})"
+        q"expl((${Term.Name(id.name)}: ${Type.Name(kindName(kind))}) => ${generateTypeScheme(t)})"
       case rise.Type.AST.ImplicitDepFunType(id, kind, t) =>
-        q"impl((${Term.Name(id.name)}: ${Type.Name(kindName(kind))}) => ${generateTypeScheme(t, env.updated(id.name, kind))})"
-      case rise.Type.AST.ScalarType(t) =>
-        t.parse[Term].get
-      case rise.Type.AST.NatType =>
-        q"rise.core.types.NatType"
-      case rise.Type.AST.VectorType(size, elemType) =>
-        q"rise.core.types.VectorType(${generateNat(size, env)}, ${generateTypeScheme(elemType, env)})"
-      case rise.Type.AST.IndexType(size) =>
-        q"rise.core.types.IndexType(${generateNat(size, env)})"
-      case rise.Type.AST.PairType(lhs, rhs) =>
-        q"rise.core.types.PairType(${generateTypeScheme(lhs, env)}, ${generateTypeScheme(rhs, env)})"
-      case rise.Type.AST.DepPairType(id, kind, t) => kind match {
-        case shared.Kind.AST.Nat =>
-          q"Nat `**` ((${Term.Name(id.name)}: Nat) => ${generateTypeScheme(t, env.updated(id.name, kind))})"
-        case _ => ???
-      }
-      case rise.Type.AST.NatToDataApply(f, n) =>
-        q"rise.core.types.NatToDataApply(${generateTypeScheme(f, env)}, ${generateNat(n, env)})"
-      case rise.Type.AST.NatToDataLambda(id, t) =>
-        q"n2dtFun((${Term.Name(id.name)}: NatIdentifier) => ${generateTypeScheme(t, env.updated(id.name, shared.Kind.AST.Nat))})"
-      case rise.Type.AST.ArrayType(size, elemType) =>
-        q"rise.core.types.ArrayType(${generateNat(size, env)}, ${generateTypeScheme(elemType, env)})"
-      case rise.Type.AST.DepArrayType(size, fdt) =>
-        q"rise.core.types.DepArrayType(${generateNat(size, env)}, ${generateTypeScheme(fdt, env)})"
-      case rise.Type.AST.FragmentType(n, m, k, elemType, fKind, mLayout) =>
-        q"rise.core.types.FragmentType(${generateNat(n, env)}, ${generateNat(m, env)}, ${generateNat(k, env)}, ${generateTypeScheme(elemType, env)}, ${generateFragment(fKind, env)}, ${generateMatrixLayout(mLayout, env)})"
+        q"impl((${Term.Name(id.name)}: ${Type.Name(kindName(kind))}) => ${generateTypeScheme(t)})"
+      case _ => generateDataType(typeAST)
     }
   }
 
-  def kindName(kind: shared.Kind.AST): String = kind match {
-    case AST.Data =>  "DataType"
-    case AST.Address => "AddressSpace"
-    case AST.Nat2Nat => "NatToNat"
-    case AST.Nat2Data => "NatToData"
-    case AST.Nat => "Nat"
-    case AST.Fragment => "FragmentKind"
-    case AST.MatrixLayout => "MatrixLayout"
-    case AST.Function => ???
+  def generateDataType(typeAST: rise.Type.AST): scala.meta.Term = {
+    import scala.meta._
+    typeAST match {
+      case rise.Type.AST.Identifier(name) =>
+        Term.Name(name)
+      case rise.Type.AST.ScalarType(t) =>
+        t.parse[Term].get
+      case rise.Type.AST.NatType =>
+        q"NatType"
+      case rise.Type.AST.VectorType(size, elemType) =>
+        q"VectorType(${generateNat(size)}, ${generateDataType(elemType)})"
+      case rise.Type.AST.IndexType(size) =>
+        q"IndexType(${generateNat(size)})"
+      case rise.Type.AST.PairType(lhs, rhs) =>
+        q"PairType(${generateDataType(lhs)}, ${generateDataType(rhs)})"
+      case rise.Type.AST.DepPairType(id, kind, t) => kind match {
+        case Kind.AST.Nat =>
+          q"Nat `**` ((${Term.Name(id.name)}: Nat) => ${generateDataType(t)})"
+        case _ => ???
+      }
+      case rise.Type.AST.NatToDataApply(f, n) =>
+        q"NatToDataApply(${generateDataType(f)}, ${generateNat(n)})"
+      case rise.Type.AST.NatToDataLambda(id, t) =>
+        q"n2dtFun((${Term.Name(id.name)}: NatIdentifier) => ${generateDataType(t)})"
+      case rise.Type.AST.ArrayType(size, elemType) =>
+        q"ArrayType(${generateNat(size)}, ${generateDataType(elemType)})"
+      case rise.Type.AST.DepArrayType(size, fdt) =>
+        q"DepArrayType(${generateNat(size)}, ${generateDataType(fdt)})"
+      case rise.Type.AST.FragmentType(n, m, k, elemType, fKind, mLayout) =>
+        q"FragmentType(${generateNat(n)}, ${generateNat(m)}, ${generateNat(k)}, ${generateDataType(elemType)}, ${generateFragment(fKind)}, ${generateMatrixLayout(mLayout)})"
+      case rise.Type.AST.FunType(_, _) | rise.Type.AST.DepFunType(_, _, _) |
+           rise.Type.AST.ImplicitDepFunType(_, _, _) => ???
+    }
   }
 
-  def generateNat(n: Nat.AST, env: Map[String, shared.Kind.AST]): scala.meta.Term = {
+  def kindName(kind: Kind.AST): String = {
+    import meta.parser.rise.Kind.AST
+    kind match {
+      case AST.Data =>  "DataType"
+      case AST.Address => "AddressSpace"
+      case AST.Nat2Nat => "NatToNat"
+      case AST.Nat2Data => "NatToData"
+      case AST.Nat => "Nat"
+      case AST.Fragment => "FragmentKind"
+      case AST.MatrixLayout => "MatrixLayout"
+      case AST.Function => ???
+    }
+  }
+
+  def generateNat(n: Nat.AST): scala.meta.Term = {
     import scala.meta._
     n match {
       case Nat.AST.Identifier(id) =>
-        assert(env.contains(id), s"$id is not in $env")
         Term.Name(id)
       case Nat.AST.Number(n) =>
         n.parse[Term].get
       case Nat.AST.BinaryOp(lhs, "^", rhs) =>
-        q"${generateNat(lhs, env)}.pow(${generateNat(rhs, env)})"
+        q"${generateNat(lhs)}.pow(${generateNat(rhs)})"
       case Nat.AST.BinaryOp(lhs, op, rhs) =>
-        q"${generateNat(lhs, env)} ${Term.Name(op)} ${generateNat(rhs, env)}"
+        q"${generateNat(lhs)} ${Term.Name(op)} ${generateNat(rhs)}"
       case Nat.AST.TernaryOp(cond, thenN, elseN) =>
         val operator: Term = cond.op match {
           case "<" => q"Operator.<"
@@ -200,26 +210,25 @@ import arithexpr.arithmetic._
         }
         q"""
            IfThenElse(
-              arithPredicate(${generateNat(cond.lhs, env)}, ${generateNat(cond.rhs, env)}, $operator),
-              ${generateNat(thenN, env)},
-              ${generateNat(elseN, env)})
+              arithPredicate(${generateNat(cond.lhs)}, ${generateNat(cond.rhs)}, $operator),
+              ${generateNat(thenN)},
+              ${generateNat(elseN)})
          """
       case Nat.AST.Nat2NatApply(f, n) =>
-        q"${generateTypeScheme(f, env)}(${generateNat(n, env)})"
+        q"${generateDataType(f)}(${generateNat(n)})"
       case Nat.AST.Sum(id, from, upTo, body) =>
         q"""BigSum(
-              from = ${generateNat(from, env)},
-              upTo = ${generateNat(upTo, env)},
-              (${Term.Name(id.name)}: Nat) => ${generateNat(body, env.updated(id.name, shared.Kind.AST.Nat))})
+              from = ${generateNat(from)},
+              upTo = ${generateNat(upTo)},
+              (${Term.Name(id.name)}: Nat) => ${generateNat(body)})
          """
     }
   }
 
-  def generateFragment(fragmentAST: rise.Type.Fragment.AST, env: Map[String, shared.Kind.AST]): scala.meta.Term = {
+  def generateFragment(fragmentAST: rise.Type.Fragment.AST): scala.meta.Term = {
     import scala.meta._
     fragmentAST match {
       case rise.Type.Fragment.AST.Identifier(name) =>
-        assert(env.contains(name), s"$name is not in $env")
         Term.Name(name)
       case rise.Type.Fragment.AST.ACC =>
         q"rise.core.types.FragmentKind.Acuumulator"
@@ -230,11 +239,10 @@ import arithexpr.arithmetic._
     }
   }
 
-  def generateMatrixLayout(matrixLayoutAST: rise.Type.MatrixLayout.AST, env: Map[String, shared.Kind.AST]): scala.meta.Term = {
+  def generateMatrixLayout(matrixLayoutAST: rise.Type.MatrixLayout.AST): scala.meta.Term = {
     import scala.meta._
     matrixLayoutAST match {
       case rise.Type.MatrixLayout.AST.Identifier(name) =>
-        assert(env.contains(name), s"$name is not in $env")
         Term.Name(name)
       case rise.Type.MatrixLayout.AST.ROW_MAJOR =>
         q"rise.core.types.MatrixLayout.Row_Major"

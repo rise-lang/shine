@@ -438,7 +438,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case Pad(n, l, r, _, pad, array) => path match {
+    case PadCst(n, l, r, _, pad, array) => path match {
       case (i: CIntExpr) :: ps =>
         pad |> exp(env, ps, padExpr =>
           genPad(n, l, r, padExpr, padExpr, i, ps, array, env, cont))
