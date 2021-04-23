@@ -184,7 +184,7 @@ object NamedRewrite {
                 }
               }
             // nothing is known, but it may become known later (e.g. after nat pivoting)
-            case None => a: Applier => a
+            case None => acc
           }
         }
       }
@@ -341,7 +341,9 @@ object NamedRewrite {
           })
           natsToFindOut.size match {
             case 0 => // check nv = n
-              ComputeNatCheckApplier(pv, fromNamed(n), pivotSuccess)
+              val valuePat = fromNamed(n)
+              val updateShifts = shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)
+              updateShifts(ComputeNatCheckApplier(pv, valuePat, pivotSuccess))
             case 1 =>
               val (potentialPivot, uses) = natsToFindOut.head
               if (uses == 1) {
@@ -382,7 +384,6 @@ object NamedRewrite {
     assert(allIsShiftCoherent(natPatVars))
     assert(allIsShiftCoherent(dataTypePatVars))
     assert(allIsShiftCoherent(typePatVars))
-    // throw new Exception(s"$name was not known (it is not matched on the left-hand-side?)"
 
     Rewrite.init(name, searcher -> applier)
   }

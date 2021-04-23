@@ -139,7 +139,15 @@ case class NatIntDiv[N](a: N, b: N) extends NatNode[N] {
   override def toString: String = s"($a / $b)"
 }
 
-sealed trait NatPattern
+sealed trait NatPattern {
+  def patternVars(): Set[Any] = {
+    this match {
+      case NatPatternNode(n) => n.nats().flatMap(_.patternVars()).toSet
+      case pv: NatPatternVar => Set(pv)
+      case NatPatternAny => Set()
+    }
+  }
+}
 case class NatPatternNode(n: NatNode[NatPattern]) extends NatPattern {
   override def toString: String = n.toString
 }

@@ -5,9 +5,14 @@ import rise.core.{types => rct}
 object Rewrite {
   def init[D](name: String, rule: (Searcher[D], Applier[D])): Rewrite[D] = {
     val (searcher, applier) = rule
-    val boundVars = searcher.patternVars()
-    val usedVars = applier.patternVars()
-    assert(usedVars.forall(boundVars.contains(_)))
+    assert {
+      val boundVars = searcher.patternVars()
+      val usedVars = applier.patternVars()
+      val delta = usedVars diff boundVars
+      if (delta.nonEmpty) {
+        throw new Exception(s"used vars which are not bound: $delta")
+      }; true
+    }
 
     new Rewrite(name, searcher, applier)
   }
@@ -27,8 +32,9 @@ class Rewrite[Data](val name: String,
   def apply(egraph: EGraph[Data], matches: Vec[SearchMatches]): Vec[EClassId] =
     applier.applyMatches(egraph, matches)
 
+  // TODO: remove this, change to named free test
   def when(cond: (EGraph[Data], EClassId, Subst) => Boolean): Rewrite[Data] =
-    new Rewrite(name, searcher, ConditionalApplier(cond, applier))
+    new Rewrite(name, searcher, ConditionalApplier(cond, Set(), applier))
 }
 
 /** The left-hand side of a [[Rewrite]] rule.
@@ -37,7 +43,7 @@ class Rewrite[Data](val name: String,
   */
 trait Searcher[Data] {
   // the variables bound by this searcher
-  def patternVars(): Vec[PatternVar]
+  def patternVars(): Set[Any]
 
   // search one eclass, returning None if no matches can be found
   def searchEClass(egraph: EGraph[Data], eclass: EClassId): Option[SearchMatches]
@@ -53,9 +59,8 @@ trait Searcher[Data] {
   */
 trait Applier[Data] {
   // the variables used by this applier
-  // return an empty Vec to disable checks
-  // TODO: update or remove
-  def patternVars(): Vec[PatternVar]
+  // return empty to disable checks
+  def patternVars(): Set[Any]
 
   // Apply a single substitition.
   //
@@ -148,12 +153,13 @@ object Subst {
 // note: the condition is more general in `egg`
 /** An [[Applier]] that checks a condition before applying another [[Applier]] */
 case class ConditionalApplier[D](cond: (EGraph[D], EClassId, Subst) => Boolean,
+                                 condPatternVars: Set[Any],
                                  applier: Applier[D])
   extends Applier[D] {
   override def toString: String = s"$applier when $cond"
 
-  override def patternVars(): Vec[PatternVar] =
-    applier.patternVars()
+  override def patternVars(): Set[Any] =
+    applier.patternVars() ++ condPatternVars
 
   override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
     if (cond(egraph, eclass, subst)) { applier.applyOne(egraph, eclass, subst) } else { Vec() }
@@ -167,12 +173,8 @@ case class ShiftedApplier(v: PatternVar, newV: PatternVar,
                           shift: Expr.Shift, cutoff: Expr.Shift,
                           applier: Applier[DefaultAnalysisData])
   extends Applier[DefaultAnalysisData] {
-  override def patternVars(): Vec[PatternVar] = {
-    val vs = Vec(v)
-    vs ++= applier.patternVars()
-    vs -= newV
-    vs
-  }
+  override def patternVars(): Set[Any] =
+    applier.patternVars() - newV + v
 
   override def applyOne(egraph: EGraph[DefaultAnalysisData],
                         eclass: EClassId,
@@ -197,7 +199,7 @@ object ShiftedCheckApplier {
       val shifted = extract.shifted(shift, cutoff)
       val expected = egraph.getMut(subst(v2)).data.extractedExpr
       shifted == expected
-    }, applier)
+    }, Set(v, v2), applier)
 }
 
 /** An [[Applier]] that shifts the DeBruijn indices of a nat variable */
@@ -205,10 +207,8 @@ case class ShiftedNatApplier[D](v: NatPatternVar, newV: NatPatternVar,
                                 shift: Nat.Shift, cutoff: Nat.Shift,
                                 applier: Applier[D])
   extends Applier[D] {
-  override def patternVars(): Vec[PatternVar] = {
-    // TODO: remove this function or keep track of type variables as well?
-    applier.patternVars()
-  }
+  override def patternVars(): Set[Any] =
+    applier.patternVars() - newV + v
 
   override def applyOne(egraph: EGraph[D],
                         eclass: EClassId,
@@ -231,7 +231,7 @@ object ShiftedNatCheckApplier {
       val shifted = nat.shifted(shift, cutoff)
       val expected = subst(v2)
       shifted == expected
-    }, applier)
+    }, Set(v, v2), applier)
 }
 
 /** An [[Applier]] that shifts the DeBruijn indices of a data type variable */
@@ -239,10 +239,8 @@ case class ShiftedDataTypeApplier[D](v: DataTypePatternVar, newV: DataTypePatter
                                      shift: Type.Shift, cutoff: Type.Shift,
                                      applier: Applier[D])
   extends Applier[D] {
-  override def patternVars(): Vec[PatternVar] = {
-    // TODO: remove this function or keep track of type variables as well?
-    applier.patternVars()
-  }
+  override def patternVars(): Set[Any] =
+    applier.patternVars() - newV + v
 
   override def applyOne(egraph: EGraph[D],
                         eclass: EClassId,
@@ -265,7 +263,7 @@ object ShiftedDataTypeCheckApplier {
       val shifted = dt.shifted(shift, cutoff)
       val expected = subst(v2)
       shifted == expected
-    }, applier)
+    }, Set(v, v2), applier)
 }
 
 /** An [[Applier]] that shifts the DeBruijn indices of a type variable */
@@ -273,10 +271,8 @@ case class ShiftedTypeApplier[D](v: TypePatternVar, newV: TypePatternVar,
                                  shift: Type.Shift, cutoff: Type.Shift,
                                  applier: Applier[D])
   extends Applier[D] {
-  override def patternVars(): Vec[PatternVar] = {
-    // TODO: remove this function or keep track of type variables as well?
-    applier.patternVars()
-  }
+  override def patternVars(): Set[Any] =
+    applier.patternVars() - newV + v
 
   override def applyOne(egraph: EGraph[D],
                         eclass: EClassId,
@@ -299,7 +295,7 @@ object ShiftedTypeCheckApplier {
       val shifted = t.shifted(shift, cutoff)
       val expected = subst(v2)
       shifted == expected
-    }, applier)
+    }, Set(v, v2), applier)
 }
 
 /** An [[Applier]] that performs beta-reduction.
@@ -307,9 +303,8 @@ object ShiftedTypeCheckApplier {
   */
 case class BetaApplier(body: PatternVar, subs: PatternVar)
   extends Applier[DefaultAnalysisData] {
-  override def patternVars(): Vec[PatternVar] = {
-    Vec(body, subs)
-  }
+  override def patternVars(): Set[Any] =
+    Set(body, subs)
 
   override def applyOne(egraph: EGraph[DefaultAnalysisData],
                         eclass: EClassId,
@@ -327,16 +322,15 @@ object ComputeNatCheckApplier {
                applier: Applier[D]): Applier[D] =
     ConditionalApplier({ case (_, _, subst) =>
       ComputeNat.toNamed(v, subst) == ComputeNat.toNamed(expected, subst)
-    }, applier)
+    }, expected.patternVars() + v, applier)
 }
 
 /** An [[Applier]] that computes a nat variable according to a nat pattern */
 case class ComputeNatApplier[D](v: NatPatternVar, value: NatPattern,
                                 applier: Applier[D]) extends Applier[D] {
-  override def patternVars(): Vec[PatternVar] = {
-    // TODO: remove this function or keep track of type variables as well?
-    applier.patternVars()
-  }
+
+  override def patternVars(): Set[Any] =
+    applier.patternVars() - v ++ value.patternVars()
 
   override def applyOne(egraph: EGraph[D],
                         eclass: EClassId,

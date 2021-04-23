@@ -99,6 +99,18 @@ case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Noth
 object Node {
   import math.Ordering.Implicits.seqOrdering
 
+  def collect[T](n: Node[T, T, T]): Seq[T] = n match {
+    case Var(_) => Seq()
+    case App(f, e) => Seq(f, e)
+    case Lambda(e) => Seq(e)
+    case NatApp(f, x) => Seq(f, x)
+    case DataApp(f, x) => Seq(f, x)
+    case NatLambda(e) => Seq(e)
+    case DataLambda(e) => Seq(e)
+    case Literal(_) => Seq()
+    case Primitive(_) => Seq()
+  }
+
   implicit val natOrdering: Ordering[Nat] = new Ordering[Nat] {
     def compare(n1: Nat, n2: Nat): Int = {
       implicit val ord: Ordering[Nat] = this

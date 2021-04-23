@@ -15,7 +15,7 @@ object Pattern {
   implicit def patternToApplier[D](pattern: Pattern): Applier[D] = new Applier[D] {
     override def toString: String = pattern.toString
 
-    override def patternVars(): Vec[PatternVar] = pattern.patternVars()
+    override def patternVars(): Set[Any] = pattern.patternVars()
 
     override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
       def pat(p: Pattern): EClassId = {
@@ -72,19 +72,12 @@ case class PatternNode(node: PNode) extends PatternVarOrNode {
 case class Pattern(p: PatternVarOrNode, t: TypePattern) {
   override def toString: String = s"($p : $t)"
 
-  def patternVars(): Vec[PatternVar] = {
-    val vec = Vec.empty[PatternVar]
-    def rec(p: PatternVarOrNode): Unit = {
-      p match {
-        case PatternNode(node) => node.children().foreach { child =>
-          rec(child.p)
-        }
-        case pv: PatternVar =>
-          if (!vec.contains(pv)) { vec += pv }
-      }
-    }
-    rec(p)
-    vec
+  def patternVars(): Set[Any] = {
+    (this.p match {
+      case PatternNode(n) =>
+        Node.collect(n.map(_.patternVars(), _.patternVars(), _.patternVars())).flatten.toSet
+      case pv: PatternVar => Set(pv)
+    }) ++ this.t.patternVars()
   }
 
   def compile(): CompiledPattern =
@@ -100,7 +93,7 @@ object CompiledPattern {
   implicit def patternToSearcher[D](cpat: CompiledPattern): Searcher[D] = new Searcher[D] {
     override def toString: String = cpat.toString
 
-    override def patternVars(): Vec[PatternVar] = cpat.pat.patternVars()
+    override def patternVars(): Set[Any] = cpat.pat.patternVars()
 
     override def search(egraph: EGraph[D]): Vec[SearchMatches] = {
       cpat.pat.p match {

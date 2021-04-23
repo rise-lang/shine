@@ -26,7 +26,7 @@ object rules {
   val eta: Rule = Rewrite.init("eta",
     lam(app(?(0), %(0))).compile()
       -->
-      ConditionalApplier(neg(containsIdent(?(0), %(0))),
+      ConditionalApplier(neg(containsIdent(?(0), %(0))), Set(?(0)),
         ShiftedApplier(?(0), ?(1), (-1, 0, 0), (1, 0, 0),
           ?(1): Pattern))
   )
@@ -70,7 +70,7 @@ object rules {
     app(app(map, nApp(drop, "l")), app(nApp(nApp(slide, ("n": Nat) + ("l": Nat)), 1: Nat), "in"))
   )
   // FIXME: there is a bug for this one
-  lazy val takeInSlide: Rule = NamedRewrite.init("take-in-slide",
+  val takeInSlide: Rule = NamedRewrite.init("take-in-slide",
     app(nApp(take, "r") :: ((("s": Nat)`.``_`) ->: `_`), app(nApp(nApp(slide, "n"), 1: Nat), "in"))
       -->
     app(app(map, nApp(take, "n")), app(nApp(nApp(slide, ("n": Nat) + ("s": Nat) - ("r": Nat)), 1: Nat), "in"))

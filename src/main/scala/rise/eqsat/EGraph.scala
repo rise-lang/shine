@@ -139,9 +139,7 @@ class EGraph[Data](
     val nUnions = processUnions()
     val _ = rebuildClasses()
 
-    var assertOn = false
-    assert { assertOn = true; true }
-    if (assertOn) { checkMemo() }
+    assert { checkMemo(); true }
 
     nUnions
   }

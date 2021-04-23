@@ -44,7 +44,17 @@ case class DataType(node: DataTypeNode[Nat, DataType]) {
   }
 }
 
-sealed trait TypePattern
+sealed trait TypePattern {
+  def patternVars(): Set[Any] = {
+    this match {
+      case TypePatternNode(n) =>
+        TypeNode.collect(n.map(_.patternVars(), _.patternVars(), _.patternVars())).flatten.toSet
+      case pv: TypePatternVar => Set(pv)
+      case TypePatternAny => Set()
+      case dt: DataTypePattern => dt.patternVars()
+    }
+  }
+}
 case class TypePatternNode(n: TypeNode[TypePattern, NatPattern, DataTypePattern])
   extends TypePattern {
   override def toString: String = n.toString
@@ -56,7 +66,16 @@ case object TypePatternAny extends TypePattern {
   override def toString: String = "?t"
 }
 
-sealed trait DataTypePattern extends TypePattern
+sealed trait DataTypePattern extends TypePattern {
+  override def patternVars(): Set[Any] = {
+    this match {
+      case DataTypePatternNode(n) =>
+        DataTypeNode.collect(n.map(_.patternVars(), _.patternVars())).flatten.toSet
+      case pv: DataTypePatternVar => Set(pv)
+      case DataTypePatternAny => Set()
+    }
+  }
+}
 case class DataTypePatternNode(n: DataTypeNode[NatPattern, DataTypePattern])
   extends DataTypePattern {
   override def toString: String = n.toString
@@ -208,4 +227,25 @@ final case class PairType[DT](dt1: DT, dt2: DT) extends DataTypeNode[Nothing, DT
 }
 final case class ArrayType[N, DT](size: N, elemType: DT) extends DataTypeNode[N, DT] {
   override def toString: String = s"$size.$elemType"
+}
+
+object TypeNode {
+  def collect[T](n: TypeNode[T, T, T]): Seq[T] = n match {
+    case FunType(inT, outT) => Seq(inT, outT)
+    case NatFunType(t) =>Seq(t)
+    case DataFunType(t) =>Seq(t)
+    case dt: DataTypeNode[T, T] => DataTypeNode.collect(dt)
+  }
+}
+
+object DataTypeNode {
+  def collect[T](n: DataTypeNode[T, T]): Seq[T] = n match {
+    case DataTypeVar(_) => Seq()
+    case ScalarType(_) =>Seq()
+    case NatType => Seq()
+    case VectorType(size, elemType) => Seq(size, elemType)
+    case IndexType(size) => Seq(size)
+    case PairType(dt1, dt2) => Seq(dt1, dt2)
+    case ArrayType(size, elemType) => Seq(size, elemType)
+  }
 }
