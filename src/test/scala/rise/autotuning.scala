@@ -89,8 +89,9 @@ class autotuning extends test_util.Tests {
         input |> mapGlobal(0)(fun(x => alpha * x)))
     ))
 
-  val main = """
-    const int N = 32;
+    val main: Int => String = iterations => {
+    s"""
+    const int N = ${iterations};
     int main(int argc, char** argv) {
       Context ctx = createDefaultContext();
       Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
@@ -113,6 +114,7 @@ class autotuning extends test_util.Tests {
       return EXIT_SUCCESS;
     }
     """
+    }
 
   test("collect parameters") {
     val params = autotune.collectParameters(convolutionOclGsLsWrap)
@@ -167,7 +169,7 @@ class autotuning extends test_util.Tests {
   test("generateJSON"){
     val parameters = autotune.collectParameters(convolution)
     val constraints = autotune.collectConstraints(convolution, parameters)
-    val json = autotune.generateJSON(parameters, constraints, Tuner(main))
+    val json = autotune.generateJSON(parameters, constraints, Tuner(main(32)))
 
     // create gold
     // check against gold
@@ -182,16 +184,53 @@ class autotuning extends test_util.Tests {
     val e = (wrapped: ToBeTyped[Expr])(32)
     assert(convolutionOcl(32).toExpr == e.toExpr)
 
-    val tuningResult = autotune.search(Tuner(main))(e)
+    val tuningResult = autotune.search(Tuner(main(32)))(e)
 
     val bestSample = autotune.getBest(tuningResult.samples)
     println("bestSample: \n" + bestSample)
   }
 
-  test("search"){
+  ignore("search"){
     val e:Expr = convolutionOcl(32)
 
-    val tuningResult = autotune.search(Tuner(main))(e)
+    val tuningResult = autotune.search(Tuner(main(32)))(e)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: \n" + bestSample)
+
+    autotune.saveSamples("autotuning/RISE.csv", tuningResult)
+  }
+
+  test("search experiment"){
+    val e:Expr = convolutionOclGsLs(1024)
+
+    // create tuner with main and 10 optimization iterations
+    val tuner = Tuner(main(1024), 10)
+
+    // tune
+    val tuningResult = autotune.search(tuner)(e)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: \n" + bestSample)
+
+    // what should bestSample look like?
+
+//    autotune.saveSamples("autotuning/RISE.csv", tuningResult)
+  }
+
+  // works only, if you have access to experimental branch of hypermapper
+  ignore("search experimental"){
+    val e:Expr = convolutionOclGsLs(1024)
+
+    val tuner = Tuner(main(1024), 100, "RISE", "autotuning", Some("/home/jo/development/rise-lang/shine/autotuning/configs/convolution.json"), Some("/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py"))
+
+    val tuningResult = autotune.search(tuner)(e)
 
     println("tuningResult: \n")
     tuningResult.samples.foreach(elem => println(elem))
@@ -211,7 +250,7 @@ class autotuning extends test_util.Tests {
     val e:Expr = convolutionOcl(32)
     val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
 
-    val result = autotune.execute(e2, main)
+    val result = autotune.execute(e2, main(32))
     println("result: " + result)
   }
 
@@ -294,6 +333,7 @@ class autotuning extends test_util.Tests {
     assert(util.ExecuteOpenCL.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
   }
 
+  // fix this
   ignore("generate huge amount of code"){
     // expression
     val e:Expr = convolutionOclGsLs(1024)
@@ -313,7 +353,7 @@ class autotuning extends test_util.Tests {
 
     println("start code generation")
     val m = gen.opencl.hosted.fromExpr(eWithParams)
-    val program = shine.OpenCL.Module.translateToString(m) + main
+    val program = shine.OpenCL.Module.translateToString(m) + main(1024)
 
     // write program to disk
     writeToPath("convolution.c", program)

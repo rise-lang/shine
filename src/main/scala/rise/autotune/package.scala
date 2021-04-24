@@ -27,8 +27,8 @@ package object autotune {
 
   // tuner, result and tuning errors
   case class Tuner(main:String,
-                   name:String = "RISE",
                    iterations: Int = 100,
+                   name:String = "RISE",
                    output:String = "autotuning",
                    configFile:Option[String] = None,
                    hierarchicalHM: Option[String] = None)
@@ -68,7 +68,7 @@ package object autotune {
         file.write(generateJSON(parameters, constraints, tuner))
         file.close()
       }
-      case _ =>
+      case _ => println("no generation of json")
     }
 
     println("parameters: \n" + parameters)
@@ -103,23 +103,26 @@ package object autotune {
       }
     }
 
-    // todo check how to string to path
+
+    // todo make sure location can be relative path (necessary?)
     val hypermapperBinary = tuner.hierarchicalHM match {
       case Some(path) => os.Path.apply(path)
       case None => os.Path.expandUser("~") / ".local" / "bin" / "hypermapper"
     }
 
-    // todo make sure filename can be full path
+    // todo make sure filename can be relative path
     val configFile = tuner.configFile match {
-      case Some(filename) => os.pwd / filename
+      case Some(filename) => os.Path.apply(filename)
       case None => os.pwd / tuner.output / (tuner.name + ".json")
     }
 
     // todo adjust this check
+    println("configFile: \n " + configFile)
+    println("HMBinary: \n " + hypermapperBinary)
     assert( os.isFile(hypermapperBinary) && os.isFile(configFile) )
 
     // spawn hypermapper process
-    val hypermapper = os.proc(hypermapperBinary, configFile).spawn()
+    val hypermapper = os.proc("python", hypermapperBinary, configFile).spawn()
 
     // create output Seq
     var samples = new ListBuffer[Sample]()
