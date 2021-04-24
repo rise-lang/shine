@@ -20,8 +20,8 @@ object mmTuning {
 
   private def randGold(): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
     val rand = new scala.util.Random
-    val At = Array.fill(O, N)(rand.nextFloat() * 10)
-    val B = Array.fill(O, M)(rand.nextFloat() * 10)
+    val At = Array.fill(O, N)(rand.nextInt(6).toFloat)
+    val B = Array.fill(O, M)(rand.nextInt(6).toFloat)
     val gold = computeGold(N, M, O, At, B).flatten
     (At, B, gold)
   }
