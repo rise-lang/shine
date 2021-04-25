@@ -61,12 +61,18 @@ object InsertMemoryBarriers {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {
         case f@For(unroll) =>
-          val (x, body) = f.unwrapBody
-          Stop(For(unroll)(f.n, Lambda(x, visitLoopBody(body, allocs, metadata))))
+          f.loopBody match {
+            case Lambda(x, body) =>
+              Stop(For(unroll)(f.n, Lambda(x, visitLoopBody(body, allocs, metadata))))
+            case _ => throw new Exception("This should not happen")
+          }
         case f@ForNat(unroll) =>
-          val (x, body) = f.unwrapBody
-          Stop(ForNat(unroll)(f.n,
-            DepLambda[NatKind, CommType](x, visitLoopBody(body, allocs, metadata))))
+          f.loopBody match {
+            case DepLambda(x, body) =>
+              Stop(ForNat(unroll)(f.n,
+                DepLambda[NatKind, CommType](x, visitLoopBody(body, allocs, metadata))))
+            case _ => throw new Exception("This should not happen")
+          }
         case pf@ocl.ParFor(Local, dim, unroll) =>
           val (x, o, body) = pf.unwrapBody
           val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
