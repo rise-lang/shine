@@ -56,6 +56,15 @@ generateRISEPrimitives := {
     streams.value.log).failed foreach (sys error _.getMessage)
 }
 
+lazy val generateDPIAPrimitives = taskKey[Unit]("Generate DPIA Primitives")
+
+generateDPIAPrimitives := {
+  runner.value.run("meta.generator.DPIAPrimitives",
+    (dependencyClasspath in Compile).value.files,
+    Seq((scalaSource in Compile).value.getAbsolutePath),
+    streams.value.log).failed foreach (sys error _.getMessage)
+}
+
 lazy val meta = (project in file("meta"))
   .settings(
     name := "meta",

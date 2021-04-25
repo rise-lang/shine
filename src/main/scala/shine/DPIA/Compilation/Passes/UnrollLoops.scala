@@ -16,14 +16,20 @@ object UnrollLoops {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
         p match {
           case f@For(true) =>
-            val (ident, body) = f.unwrapBody
-            Continue(unrollLoop(f.n, init = 0, step = 1, i =>
-              Phrase.substitute(NatAsIndex(f.n, Natural(i)),
-                `for` = ident, in = body)), this)
+            f.loopBody match {
+              case shine.DPIA.Phrases.Lambda(x, body) =>
+                Continue(unrollLoop(f.n, init = 0, step = 1, i =>
+                  Phrase.substitute(NatAsIndex(f.n, Natural(i)),
+                    `for` = x, in = body)), this)
+              case _ => throw new Exception("This should not happen")
+            }
           case f@ForNat(true) =>
-            val (ident, body) = f.unwrapBody
-            Continue(unrollLoop(f.n, init = 0, step = 1, i =>
-              PhraseType.substitute(i, `for` = ident, in = body)), this)
+            f.loopBody match {
+              case shine.DPIA.Phrases.DepLambda(x, body) =>
+                Continue(unrollLoop(f.n, init = 0, step = 1, i =>
+                  PhraseType.substitute(i, `for` = x, in = body)), this)
+              case _ => throw new Exception("This should not happen")
+            }
           case pf@ParFor(_, _, true) =>
             val (ident, identOut, body) = pf.unwrapBody
             pf.out.t.dataType match {

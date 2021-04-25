@@ -60,12 +60,12 @@ object FlagPrivateArrayLoops {
                                 eliminateVars: mutable.Set[String]): Phrase[CommType] = {
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case f@For(_) if (eliminateVars(f.unwrapBody._1.name)) =>
-          val (i, _) = f.unwrapBody
+        case f@For(_) if (eliminateVars(f.loopBody.asInstanceOf[Lambda[_, _]].param.name)) =>
+          val i = f.loopBody.asInstanceOf[Lambda[_, _]].param
           eliminateVars -= i.name
           Continue(For(unroll = true)(f.n, f.loopBody), this)
-        case f@ForNat(_) if (eliminateVars(f.unwrapBody._1.name)) =>
-          val (i, _) = f.unwrapBody
+        case f@ForNat(_) if (eliminateVars(f.loopBody.asInstanceOf[DepLambda[_, _]].x.name)) =>
+          val i = f.loopBody.asInstanceOf[DepLambda[_, _]].x
           eliminateVars -= i.name
           Continue(ForNat(unroll = true)(f.n, f.loopBody), this)
         case pf@ParFor(level, dim, _) if (eliminateVars(pf.unwrapBody._1.name)) =>

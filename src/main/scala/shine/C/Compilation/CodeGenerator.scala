@@ -112,12 +112,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         CCodeGen.codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
       case f@For(unroll) =>
-        val (i, p) = f.unwrapBody
-        CCodeGen.codeGenFor(f.n, i, p, unroll, env)
+        f.loopBody match {
+          case Lambda(i, p) =>
+            CCodeGen.codeGenFor(f.n, i, p, unroll, env)
+          case _ => throw new Exception("This should not happen")
+        }
 
       case f@ForNat(unroll) =>
-        val (i, p) = f.unwrapBody
-        CCodeGen.codeGenForNat(f.n, i, p, unroll, env)
+        f.loopBody match {
+          case shine.DPIA.Phrases.DepLambda(i, p) =>
+            CCodeGen.codeGenForNat(f.n, i, p, unroll, env)
+          case _ => throw new Exception("This should not happen")
+        }
 
       case Proj1(pair) => Lifting.liftPair(pair)._1 |> cmd(env)
       case Proj2(pair) => Lifting.liftPair(pair)._2 |> cmd(env)
