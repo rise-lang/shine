@@ -1,0 +1,7 @@
+def parFor(n: nat, dt: data,
+           out: acc[dt],
+           body: exp[idx[n], read] -> acc[dt] -> comm): comm
+
+def parForNat(n: nat, ft: nat2data,
+              out: acc[n..ft],
+              body: (i: nat) -> acc[ft(i)] -> comm): comm
