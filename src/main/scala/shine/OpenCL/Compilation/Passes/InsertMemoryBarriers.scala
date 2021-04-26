@@ -1,6 +1,6 @@
 package shine.OpenCL.Compilation.Passes
 
-import shine.DPIA.->:
+import shine.DPIA.{->:, NatIdentifier}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional
@@ -73,29 +73,41 @@ object InsertMemoryBarriers {
                 DepLambda[NatKind, CommType](x, visitLoopBody(body, allocs, metadata))))
             case _ => throw new Exception("This should not happen")
           }
-        case pf@ocl.ParFor(Local, dim, unroll) =>
-          val (x, o, body) = pf.unwrapBody
-          val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
-          collectWrites(pf.out, allocs, outer_wg_writes)
-          Stop(ocl.ParFor(Local, dim, unroll)(pf.n, pf.dt, pf.out,
-            Lambda(x, Lambda(o,
-              visitLoopBody(body, allocs, metadata, outer_wg_writes))), pf.init, pf.step))
-        case pf@ocl.ParFor(level, dim, unroll) =>
-          val (x, o, body) = pf.unwrapBody
-          Stop(ocl.ParFor(level, dim, unroll)(pf.n, pf.dt, pf.out,
-            Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
-        case pf@ocl.ParForNat(Local, dim, unroll) =>
-          val (x, o, body) = pf.unwrapBody
-          val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
-          collectWrites(pf.out, allocs, outer_wg_writes)
-          Stop(ocl.ParForNat(Local, dim, unroll)(pf.n, pf.ft, pf.out,
-            DepLambda[NatKind, AccType ->: CommType](x, Lambda(o,
-              visitLoopBody(body, allocs, metadata, outer_wg_writes))), pf.init, pf.step))
-        case pf@ocl.ParForNat(level, dim, unroll) =>
-          val (x, o, body) = pf.unwrapBody
-          Stop(ocl.ParForNat(level, dim, unroll)(pf.n, pf.ft, pf.out,
-            DepLambda[NatKind, AccType ->: CommType](x, Lambda(o,
-              visitLoopBody(body, allocs, metadata))), pf.init, pf.step))
+        case pf@ocl.ParFor(Local, dim, unroll, name) =>
+          pf.body match {
+            case Lambda(x, Lambda(o, body)) =>
+              val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
+              collectWrites(pf.out, allocs, outer_wg_writes)
+              Stop(ocl.ParFor(Local, dim, unroll, name)(pf.init, pf.n, pf.step, pf.dt, pf.out,
+                Lambda(x, Lambda(o,
+                  visitLoopBody(body, allocs, metadata, outer_wg_writes)))))
+            case _ => throw new Exception("This should not happen")
+          }
+        case pf@ocl.ParFor(level, dim, unroll, name) =>
+          pf.body match {
+            case Lambda(x, Lambda(o, body)) =>
+              Stop(ocl.ParFor(level, dim, unroll, name)(pf.init, pf.n, pf.step, pf.dt, pf.out,
+                Lambda(x, Lambda(o, visitLoopBody(body, allocs, metadata)))))
+            case _ => throw new Exception("This should not happen")
+          }
+        case pf@ocl.ParForNat(Local, dim, unroll, name) =>
+          pf.body match {
+            case DepLambda(i: NatIdentifier, Lambda(o, p)) =>
+              val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
+              collectWrites(pf.out, allocs, outer_wg_writes)
+              Stop(ocl.ParForNat(Local, dim, unroll, name)(pf.init, pf.n, pf.step, pf.ft, pf.out,
+                DepLambda[NatKind, AccType ->: CommType](i, Lambda(o,
+                  visitLoopBody(p, allocs, metadata, outer_wg_writes)))))
+            case _ => throw new Exception("This should not happen")
+          }
+        case pf@ocl.ParForNat(level, dim, unroll, name) =>
+          pf.body match {
+            case DepLambda(i: NatIdentifier, Lambda(o, p)) =>
+              Stop(ocl.ParForNat(level, dim, unroll, name)(pf.init, pf.n, pf.step, pf.ft, pf.out,
+                DepLambda[NatKind, AccType ->: CommType](i, Lambda(o,
+                  visitLoopBody(p, allocs, metadata)))))
+            case _ => throw new Exception("This should not happen")
+          }
         case ocl.New(addr, _, Lambda(x, _)) if addr != AddressSpace.Private =>
           Continue(p, Visitor(allocs + (x -> addr), metadata))
         case ocl.NewDoubleBuffer(addr, dt1, dt2, dt3, n, in, out, Lambda(x, body))
@@ -147,7 +159,7 @@ object InsertMemoryBarriers {
       case JoinAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case SplitAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case AsScalarAcc(_, _, _, a) => collectWrites(a, allocs, writes)
-      case ocl.IdxDistributeAcc(_, _, _, _, _, a) => collectWrites(a, allocs, writes)
+      case idx: ocl.IdxDistributeAcc => collectWrites(idx.array, allocs, writes)
       case PairAcc1(_, _, a) => collectWrites(a, allocs, writes)
       case PairAcc2(_, _, a) => collectWrites(a, allocs, writes)
       case PairAcc(_, _, a, b) =>
@@ -181,7 +193,7 @@ object InsertMemoryBarriers {
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Slide(_, _, _, _, e) => collectReads(e, allocs, reads)
       case functional.Map(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case ocl.IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
+      case idx: ocl.IdxDistribute => collectReads(idx.array, allocs, reads)
       case MapRead(_, _, _, _, e) => collectReads(e, allocs, reads)
       case GenerateCont(_, _, _) => giveUp()
       case AsScalar(_, _, _, _, e) => collectReads(e, allocs, reads)
@@ -200,7 +212,7 @@ object InsertMemoryBarriers {
       case PadClamp(_, _, _, _, e) =>
         collectReads(e, allocs, reads)
       case Cast(_, _, e) => collectReads(e, allocs, reads)
-      case ForeignFunctionCall(_, _, _, es) =>
+      case ForeignFunctionCall(_, _, es) =>
         es.foreach {
           collectReads(_, allocs, reads)
         }
@@ -211,7 +223,7 @@ object InsertMemoryBarriers {
       case MakePair(_, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Reorder(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case MakeArray(_, es) =>
+      case MakeArray(es) =>
         es.foreach {
           collectReads(_, allocs, reads)
         }

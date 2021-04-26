@@ -97,10 +97,10 @@ object HostManagedBuffers {
           collectWrites(lhs, metadata.host_writes)
           collectReads(rhs, allocs, metadata.host_reads)
           Stop(p)
-        case ocl.KernelCallCmd(_, _, _, out, in) =>
+        case k@ocl.KernelCallCmd(_, _, _, in) =>
           in.foreach(collectReads(_, allocs, metadata.device_reads))
-          collectWrites(out, metadata.device_writes)
-          ((out, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
+          collectWrites(k.output, metadata.device_writes)
+          ((k.output, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
             case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
             case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
             case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
@@ -180,7 +180,7 @@ object HostManagedBuffers {
       case JoinAcc(_, _, _, a) => collectWrites(a, writes)
       case SplitAcc(_, _, _, a) => collectWrites(a, writes)
       case AsScalarAcc(_, _, _, a) => collectWrites(a, writes)
-      case ocl.IdxDistributeAcc(_, _, _, _, _, a) => collectWrites(a, writes)
+      case idx:ocl.IdxDistributeAcc => collectWrites(idx.array, writes)
       case PairAcc1(_, _, a) => collectWrites(a, writes)
       case PairAcc2(_, _, a) => collectWrites(a, writes)
       case TakeAcc(_, _, _, a) => collectWrites(a, writes)
@@ -212,7 +212,7 @@ object HostManagedBuffers {
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Slide(_, _, _, _, e) => collectReads(e, allocs, reads)
       case Map(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case ocl.IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
+      case idx: ocl.IdxDistribute => collectReads(idx.array, allocs, reads)
       case dpia.MapRead(_, _, _, _, e) => collectReads(e, allocs, reads)
       case dpia.GenerateCont(_, _, _) => giveUp()
       case AsScalar(_, _, _, _, e) => collectReads(e, allocs, reads)
@@ -231,7 +231,7 @@ object HostManagedBuffers {
       case PadClamp(_, _, _, _, e) =>
         collectReads(e, allocs, reads)
       case Cast(_, _, e) => collectReads(e, allocs, reads)
-      case ForeignFunctionCall(_, _, _, es) =>
+      case ForeignFunctionCall(_, _, es) =>
         es.foreach {
           collectReads(_, allocs, reads)
         }
@@ -242,7 +242,7 @@ object HostManagedBuffers {
       case MakePair(_, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Reorder(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case MakeArray(_, es) =>
+      case MakeArray(es) =>
         es.foreach {
           collectReads(_, allocs, reads)
         }

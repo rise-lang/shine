@@ -25,6 +25,10 @@ def depZip(n: nat, ft1: nat2data, ft2: nat2data,
 
 def drop(n: nat, m: nat, dt: data, array: exp[n+m.dt, read]): exp[m.dt, read]
 
+def foreignFunctionCall{funDecl: rise.core.ForeignFunction.Decl,
+                        inTs: Seq[DataType],
+                        args: Seq[Phrase[ExpType]]}(outT: data): exp[outT, read]
+
 def fst(dt1: data, dt2: data, pair: exp[(dt1, dt2), read]): exp[dt1, read]
 
 def gather(n: nat, m: nat, dt: data, indices: exp[n.idx[n], read], input: exp[n.dt, read]): exp[m.dt, read]
@@ -50,6 +54,8 @@ def join(n: nat, m: nat, a: access, dt: data, array: exp[n.m.dt, a]): exp[(n*m).
 def let(dt1: data, dt2: data, a: access, value: exp[dt1, read],
         f: exp[dt1, read] -> exp[dt2, a]): exp[dt2, a]
 
+def makeArray{elements: Vector[Phrase[ExpType]]}(n: nat, dt: data): exp[n.dt, read]
+
 def makePair(dt1: data, dt2: data, a: access, fst: exp[dt1, a], snd: exp[dt2, a]): exp[(dt1, dt2), a]
 
 def map(n: nat, dt1: data, dt2: data, a: access,
@@ -61,14 +67,14 @@ def mapFst(a: access, dt1: data, dt2: data, dt3: data,
 
 def mapSeq{unroll: Boolean}
           (n: nat, dt1: data, dt2: data,
-           f: exp[n.dt1, read] -> exp[n.dt2, write], array: exp[n.dt1, read]): exp[n.dt2, write]
+           f: exp[dt1, read] -> exp[dt2, write], array: exp[n.dt1, read]): exp[n.dt2, write]
 
 def mapSnd(a: access, dt1: data, dt2: data, dt3: data,
            f: exp[dt2, a] -> exp[dt3, a],
            pair: exp[(dt1, dt2), a]): exp[(dt1, dt3), a]
 
 def mapStream(n: nat, dt1: data, dt2: data,
-              f: exp[n.dt1, read] -> exp[n.dt2, write], array: exp[n.dt1, read]): exp[n.dt2, write]
+              f: exp[dt1, read] -> exp[dt2, write], array: exp[n.dt1, read]): exp[n.dt2, write]
 
 def mapVec(n: nat, dt1: data, dt2: data,
            f: exp[dt1, read] -> exp[dt2, write], array: exp[vec[dt1, n], read]): exp[vec[dt2, n], write]
@@ -85,13 +91,14 @@ def partition(n: nat, m: nat, lenF: nat2nat, dt: data, array: exp[n.dt, read]): 
 
 def reduceSeq{unroll: Boolean}
              (n: nat, dt1: data, dt2: data,
-              f: exp[dt2, read] -> exp[dt1, read] -> exp[dt2, read],
-              init: exp[dt2, read],
+              f: exp[dt2, read] -> exp[dt1, read] -> exp[dt2, write],
+              init: exp[dt2, write],
               array: exp[n.dt1, read]): exp[dt2, read]
 
 def reorder(n: nat, dt: data, a: access, idxF: nat2nat, idxFiv: nat2nat, input: exp[n.dt, a]): exp[n.dt, a]
 
-def rotateValues(n: nat, sz: nat, dt: data, wrt: exp[dt, read] -> exp[dt, write],
+def rotateValues(n: nat, sz: nat, dt: data,
+                 wrt: exp[dt, read] -> exp[dt, write],
                  input: exp[(n-1+sz).dt, read]): exp[n.sz.dt, read]
 
 def scanSeq(n: nat, dt1: data, dt2: data,

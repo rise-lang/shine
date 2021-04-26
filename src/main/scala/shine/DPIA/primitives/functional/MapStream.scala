@@ -9,7 +9,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 final case class MapStream(val n: Nat, val dt1: DataType, val dt2: DataType, val f: Phrase[FunType[ExpType, ExpType]], val array: Phrase[ExpType]) extends ExpPrimitive {
   {
-    f :: FunType(expT(ArrayType(n, dt1), read), expT(ArrayType(n, dt2), write))
+    f :: FunType(expT(dt1, read), expT(dt2, write))
     array :: expT(ArrayType(n, dt1), read)
   }
   override val t: ExpType = expT(ArrayType(n, dt2), write)

@@ -4,7 +4,7 @@ def assign(dt: data, lhs: acc[dt], rhs: exp[dt, read]): comm
 
 def asVectorAcc(n: nat, m: nat, dt: data, array: acc[n.vec[dt, m]]): acc[(n*m).dt]
 
-// def comment{comment: String}(): comm
+ def comment{comment: String}(): comm
 
 def cycleAcc(n: nat, m: nat, dt: data, input: acc[m.dt]): acc[n.dt]
 
@@ -34,8 +34,11 @@ def mapRead(n: nat, dt1: data, dt2: data,
             f: exp[dt1, read] -> (exp[dt2, read] -> comm) -> comm, input: exp[n.dt1, read]): exp[n.dt2, read]
 def mapSndAcc(dt1: data, dt2: data, dt3: data, f: acc[dt3] -> acc[dt2], record: acc[(dt1, dt3)]): acc[(dt1, dt2)]
 
-//def new(dt: data, f:  (expT(dt, read), accT(dt)) -> comm): comm
-//def new(dt: data, f: var[dt] -> comm): comm
+def new(dt: data, f: var[dt] -> comm): comm
+
+def newDoubleBuffer(dt1: data, dt2: data, dt3: data, n: nat,
+                    in: exp[dt1, read], out: acc[dt2],
+                    f: ((var[n.dt3], comm), comm) -> comm): comm
 
 def pairAcc(dt1: data, dt2: data, fst: acc[dt1], snd: acc[dt2]): acc[(dt1, dt2)]
 def pairAcc1(dt1: data, dt2: data, pair: acc[(dt1, dt2)]): acc[dt1]
@@ -47,7 +50,7 @@ def scatterAcc(n: nat, m: nat, dt: data, indices: exp[n.idx[m], read], array: ac
 
 def seq(c1: comm, c2: comm): comm
 
-//def skip(): comm
+def skip(): comm
 
 def splitAcc(n: nat, m: nat, dt: data, array: acc[m.n.dt]): acc[(n*m).dt]
 

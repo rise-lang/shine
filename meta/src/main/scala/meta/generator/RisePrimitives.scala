@@ -88,7 +88,8 @@ import arithexpr.arithmetic._
 
     val params = paramsString.split(",").map(param => {
       val parts = param.split(":").map(_.trim)
-      param"${Term.Name(parts(0))}: ${Type.Name(parts(1))}"
+      val ty = parts(1).parse[Type].get
+      param"${Term.Name(parts(0))}: $ty"
     } ).toList
     val args: List[Term.Name] = params.map(p => Term.Name(p.name.value))
     val types: List[Type] = params.map(p => p.decltpe.get)

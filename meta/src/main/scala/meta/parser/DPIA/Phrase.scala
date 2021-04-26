@@ -4,7 +4,7 @@ import fastparse.ScalaWhitespace._
 import fastparse._
 import meta.parser.shared.Identifier
 
-object Phrase extends App {
+object Phrase {
   sealed trait AST
   object AST {
     case class Identifier(name: String) extends AST
@@ -33,7 +33,7 @@ object Phrase extends App {
         | (Identifier.map(AST.Identifier) ~ ":" ~ Type.PhraseType).map(pair => AST.Param(pair._1, Right(pair._2)))
       )
 
-    def Params: P[Seq[AST.Param]] = Param.repTC(1)
+    def Params: P[Seq[AST.Param]] = Param.repTC(0)
 
     P("def" ~ Identifier.map(AST.Identifier) ~ ScalaParams.? ~ "(" ~ Params ~ ")" ~ ":" ~ Type.PhraseType)
       .map(AST.PrimitiveDeclaration.tupled)

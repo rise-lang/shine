@@ -113,7 +113,7 @@ object AdjustArraySizesForAllocations {
           }
           val stride = determineStride(parallLevel, dim, addrSpace)
 
-          val outerDimension = ocl.imperative.IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
+          val outerDimension = ocl.imperative.IdxDistributeAcc(parallLevel)(adjSize, oldSize, stride, adjElemT, A)
 
           val arr = identifier(freshName("x"), accT(adjElemT))
           val mapFunBody = adjustedAcceptor(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
@@ -149,7 +149,7 @@ object AdjustArraySizesForAllocations {
           }
           val stride = determineStride(parallLevel, dim, addrSpace)
 
-          val outerDimension = ocl.imperative.IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E)
+          val outerDimension = ocl.imperative.IdxDistribute(parallLevel)(adjSize, oldSize, stride, adjElemT, E)
 
           val arr = identifier(freshName("arr"), expT(adjElemT, read))
           val mapFunBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)

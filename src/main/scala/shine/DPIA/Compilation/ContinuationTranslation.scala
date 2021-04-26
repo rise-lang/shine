@@ -119,7 +119,7 @@ object ContinuationTranslation {
       con(array)(λ(expT((n + m)`.` dt, read))(x =>
         C(Drop(n, m, dt, x))))
 
-    case ForeignFunctionCall(funDecl, inTs, outT, args) =>
+    case ffc@ForeignFunctionCall(funDecl, inTs, args) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
               exps: Seq[Phrase[ExpType]],
               inTs: Seq[DataType]): Phrase[CommType] = {
@@ -127,7 +127,7 @@ object ContinuationTranslation {
           // with only one argument left to process return the assignment of the function call
           case Seq( (arg, inT) ) =>
             con(arg)(λ(expT(inT, read))(e =>
-              outT match {
+              ffc.outT match {
                 // TODO: this is an ugly fix to avoid calling the function multiple times
                 //  for pair assignment, see:
                 // https://github.com/rise-lang/shine/issues/58
@@ -140,10 +140,10 @@ object ContinuationTranslation {
                       case _ =>
                         `new`.apply
                     }
-                  backendNew(outT, tmp =>
-                    Assign(outT, tmp.wr, ForeignFunctionCall(funDecl, inTs :+ inT, outT, exps :+ e)) `;`
+                  backendNew(ffc.outT, tmp =>
+                    Assign(ffc.outT, tmp.wr, ForeignFunctionCall(funDecl, inTs :+ inT, exps :+ e)(ffc.outT)) `;`
                       C(tmp.rd))
-                case _ => C( ForeignFunctionCall(funDecl, inTs :+ inT, outT, exps :+ e) )
+                case _ => C( ForeignFunctionCall(funDecl, inTs :+ inT, exps :+ e)(ffc.outT) )
               }))
           // with a `tail` of arguments left, rec
           case Seq( (arg, inT), tail@_* ) =>
@@ -191,13 +191,13 @@ object ContinuationTranslation {
       con(value)(fun(value.t)(x =>
         con(f(x))(C)))
 
-    case MakeArray(dt, elements) =>
+    case ma@MakeArray(elements) =>
       def rec(func: Vector[Phrase[ExpType]], imp: Vector[Phrase[ExpType]]): Phrase[CommType] = {
         func match {
-          case xf +: func => con(xf)(fun(expT(dt, read))(xi =>
+          case xf +: func => con(xf)(fun(expT(ma.dt, read))(xi =>
             rec(func, imp :+ xi)
           ))
-          case _ => C(MakeArray(dt, imp))
+          case _ => C(MakeArray(imp)(ma.n, ma.dt))
         }
       }
 
@@ -362,7 +362,7 @@ object ContinuationTranslation {
       `new`(map.n `.` map.dt2, λ(varT(map.n `.` map.dt2))(tmp =>
         acc(map)(tmp.wr) `;` C(tmp.rd)))
 
-    case ocl.OpenCLFunctionCall(name, inTs, outT, args) =>
+    case fc@ocl.OpenCLFunctionCall(name, inTs, args) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
               es: Seq[Phrase[ExpType]],
               inTs: Seq[DataType]): Phrase[CommType] = {
@@ -370,7 +370,7 @@ object ContinuationTranslation {
           // with only one argument left to process continue with the OpenCLFunction call
           case Seq( (arg, inT) ) =>
             con(arg)(λ(expT(inT, read))(e =>
-              C(ocl.OpenCLFunctionCall(name, inTs :+ inT, outT, es :+ e)) ))
+              C(ocl.OpenCLFunctionCall(name, inTs :+ inT, es :+ e)(fc.outT)) ))
           // with a `tail` of arguments left, rec
           case Seq( (arg, inT), tail@_* ) =>
             con(arg)(λ(expT(inT, read))(e => rec(tail, es :+ e, inTs :+ inT) ))
@@ -380,12 +380,10 @@ object ContinuationTranslation {
       rec(args zip inTs, Seq(), Seq())
 
     case reduceSeq@ocl.ReduceSeq(unroll) =>
-      val (n, initAddrSpace, dt1, dt2, f, init, array) =
-        ( reduceSeq.n, reduceSeq.initAddrSpace, reduceSeq.dt1, reduceSeq.dt2,
-          reduceSeq.f, reduceSeq.init, reduceSeq.array )
+      val (n, a, dt1, dt2, f, init, array) = reduceSeq.unwrap
 
       con(array)(λ(expT(n`.`dt1, read))(X =>
-        oclI.ReduceSeqI(n, initAddrSpace, dt1, dt2,
+        oclI.ReduceSeqI(n, a, dt1, dt2,
           λ(expT(dt2, read))(x =>
             λ(expT(dt1, read))(y =>
               λ(accT(dt2))(o => acc( f(x)(y) )( o )))),
