@@ -58,8 +58,8 @@ sealed trait Node[+E, +N, +DT] {
     case DataApp(_, _) => 5
     case DataLambda(_) => 6
     case Literal(d) => 13 * d.hashCode()
-    // TODO: type should not be inside the primitive?
-    case Primitive(p) => 17 * p.setType(rct.TypePlaceholder).hashCode()
+    // note: assumption that p.t == rct.TypePlaceholder
+    case Primitive(p) => 17 * p.hashCode()
   }
 
   // Returns true if this enode matches another enode.

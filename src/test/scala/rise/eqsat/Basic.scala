@@ -109,12 +109,22 @@ object Basic {
     val normGoal = BENF(Expr.fromNamed(goal))
     println(s"normalized start: ${Expr.toNamed(normStart)}")
     println(s"normalized goal: ${Expr.toNamed(normGoal)}")
-    val goalPattern = Pattern.fromExpr(normGoal).compile()
+    proveEquiv(normStart, normGoal, rules)
+  }
+
+  def proveEquiv(start: Expr,
+                 goal: Expr,
+                 rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
+    val goalPattern = Pattern.fromExpr(goal).compile()
 
     val runner = Runner.withAnalysis(DefaultAnalysis)
-    val id = runner.egraph.addExpr(normStart)
+    val startId = runner.egraph.addExpr(start)
+    // val goalId = runner.egraph.addExpr(goal)
     runner.doneWhen { r =>
-      goalPattern.searchEClass(r.egraph, id).isDefined
+      goalPattern.searchEClass(r.egraph, startId).isDefined
+      // note: could also use this to get a faster procedure,
+      // but it would allow rewriting the goal as well, not just the start
+      // r.egraph.findMut(startId) == r.egraph.findMut(goalId)
     }
     runner.run(rules)
     runner.printReport()

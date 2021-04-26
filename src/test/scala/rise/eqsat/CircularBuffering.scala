@@ -1,32 +1,72 @@
 package rise.eqsat
 
 import rise.elevate.circularBuffering._
-import Basic.proveEquiv
 
 class CircularBuffering extends test_util.Tests {
-  test("highLevel to circBuf") {
-    import rise.core.primitives._
-    import rise.core.DSL._
-    import rise.core.DSL.HighLevelConstructs.dropLast
-
-    val sum = reduce(add)(lf32(0.0f))
-    val goal = // circBuf
-      slide(3)(1) >> map(sum) >> fun(x =>
-      makeArray(2)(
-        x |> slide(2)(1) >> drop(1) >> dropLast(1) >> map(sum))(
-        x |> slide(4)(1) >> map(sum)
-      ))
-    // FIXME: there is a bug here
-    proveEquiv(wrapExpr(highLevel), wrapExpr(goal), Seq(
-      // rules.eta, rules.beta, rules.betaNat,
-      // rules.mapFusion,
-      rules.takeBeforeMap, rules.dropBeforeMap,
-      /* rules.takeInSlide, rules.dropInSlide,
-      rules.dropBeforeTake,
-      rules.reduceSeq, rules.mapSeqUnroll, // original: mapSeqUnrollWrite
-      rules.mapOutsideMakeArray2, // original: mapOutsideMakeArray
-      rules.circularBufferScalar, // original: circularBuffer(id)
-      rules.iterateStream */
+  test("highLevel to inlined") {
+    proveEquiv(wrapExpr(highLevel), wrapExpr(inlined), Seq(
+      rules.eta, rules.beta, rules.betaNat, rules.reduceSeq, rules.mapSeqUnrollMapSeqWrite
     ))
+  }
+
+  test("highLevel to buffered") {
+    proveEquiv(wrapExpr(highLevel), wrapExpr(inlined), Seq(
+      rules.eta, rules.beta, rules.betaNat,
+      rules.mapSeq, rules.toMemAfterMapSeq, rules.reduceSeq, rules.mapSeqUnrollMapSeqWrite
+    ))
+  }
+
+  test("highLevel to circBuf") {
+    proveEquiv(wrapExpr(highLevel), wrapExpr(circBuf), Seq(
+      rules.eta, rules.beta, rules.betaNat,
+      rules.mapFusion,
+      rules.takeBeforeMap, rules.dropBeforeMap,
+      rules.takeInSlide, rules.dropInSlide,
+      rules.dropBeforeTake,
+      rules.reduceSeq, rules.mapSeqUnrollWrite,
+      rules.mapOutsideMakeArray2, // original: mapOutsideMakeArray
+      rules.circularBuffer, // original: circularBuffer(id)
+      rules.iterateStream
+    ))
+  }
+
+  test("highLevelChain to inlinedChain") {
+    proveEquiv(wrapExprChain(highLevelChain), wrapExprChain(inlinedChain), Seq(
+      rules.eta, rules.beta, rules.betaNat, rules.reduceSeq, rules.mapSeq
+    ))
+  }
+
+  test("highLevelChain to circBufChain") {
+    proveEquiv(wrapExprChain(highLevelChain), wrapExprChain(circBufChain), Seq(
+      rules.eta, rules.beta, rules.betaNat, rules.reduceSeq,
+      rules.circularBuffer, rules.circularBufferLoadFusion, rules.iterateStream
+    ))
+  }
+
+  test("highLevelTogether to inlinedTogether") {
+    proveEquiv(wrapExprTogether(highLevelTogether), wrapExprTogether(inlinedTogether), Seq(
+      rules.eta, rules.beta, rules.betaNat, rules.reduceSeq, rules.mapSeq
+    ))
+  }
+
+  /* TODO: find out which rewrite rules are necessary, not done with Elevate either
+  test("highLevelTogether to circBufTogether") {
+    proveEquiv(wrapExprTogether(highLevelTogether), wrapExprTogether(circBufTogether), Seq(
+      rules.eta, rules.beta, rules.betaNat, rules.reduceSeq, rules.mapSeq,
+      rules.circularBuffer, rules.circularBufferLoadFusion, rules.iterateStream
+    ))
+  } */
+
+  def proveEquiv(start: rise.core.Expr,
+                 goal: rise.core.Expr,
+                 rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
+    import rise.elevate.rules._
+    import rise.elevate.rules.traversal.alternative._
+    import elevate.core.strategies.basic.normalize
+
+    val normGoal = normalize.apply(gentleBetaReduction() <+ etaReduction())(goal).get
+    println(s"normalized goal: $normGoal")
+
+    Basic.proveEquiv(Expr.fromNamed(start), Expr.simplifyNats(Expr.fromNamed(normGoal)), rules)
   }
 }

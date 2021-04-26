@@ -126,9 +126,6 @@ object rules {
   val mapSeq: Rule = NamedRewrite.init("map-seq",
     map --> rcp.mapSeq.primitive
   )
-  val mapSeqUnroll: Rule = NamedRewrite.init("map-seq-unroll",
-    map --> rcp.mapSeqUnroll.primitive
-  )
   val iterateStream: Rule = NamedRewrite.init("iterate-stream",
     map --> rcp.iterateStream.primitive
   )
@@ -138,10 +135,28 @@ object rules {
     app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
   )
 
-  // TODO: generalize to circularBuffer(load: Expr) and rotateValues(write: Expr)
-  val circularBufferScalar: Rule = NamedRewrite.init("circular-buffer-scalar",
+  // TODO: condition typeHasTrivialCopy(t) / or synthesise trivial write function
+  val mapSeqUnrollWrite: Rule = NamedRewrite.init("map-seq-unroll-write",
+    ("x" :: ((`_`: Nat)`.`"dt"))
+      -->
+    app(app(rcp.mapSeqUnroll.primitive, lam("y", "y")), "x")
+  )
+  val mapSeqUnrollMapSeqWrite: Rule = NamedRewrite.init("map-seq-unroll-map-seq-write",
+    ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.`"dt")))
+      -->
+      app(app(rcp.mapSeqUnroll.primitive, app(rcp.mapSeq.primitive, lam("y", "y"))), "x")
+  )
+
+  val circularBuffer: Rule = NamedRewrite.init("circular-buffer-scalar",
     nApp(nApp(slide, "sz"), 1) --> app(nApp(nApp(rcp.circularBuffer.primitive, "sz"), "sz"), lam("x", "x"))
   )
+  val circularBufferLoadFusion: Rule = NamedRewrite.init("circular-buffer-load-fusion",
+    app(app(nApp(nApp(rcp.circularBuffer.primitive, "n1"), "n2"), "load"), app(app(map, "f"), "in"))
+      -->
+      app(app(nApp(nApp(rcp.circularBuffer.primitive, "n1"), "n2"), lam("x", app("load", app("f", "x")))), "in")
+  )
+
+  // TODO: generalize to rotateValues(write: Expr)
   val rotateValuesScalar: Rule = NamedRewrite.init("rotate-values-scalar",
     nApp(nApp(slide, "sz"), 1) --> app(nApp(rcp.rotateValues.primitive, "sz"), lam("x", "x"))
   )

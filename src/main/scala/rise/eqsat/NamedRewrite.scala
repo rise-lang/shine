@@ -89,7 +89,9 @@ object NamedRewrite {
 
         case rc.DepApp(_, _) => ???
         case rc.Literal(d) => PatternNode(Literal(d))
-        case p: rc.Primitive => PatternNode(Primitive(p))
+        // note: we set the primitive type to a place holder here,
+        // because we do not want type information at the node level
+        case p: rc.Primitive => PatternNode(Primitive(p.setType(TypePlaceholder)))
       }, if (!isRhs && !matchType) TypePatternAny else makeTPat(expr.t, bound, isRhs))
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =

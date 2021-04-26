@@ -58,6 +58,66 @@ class ExprCheck extends test_util.Tests {
         (cst(1)`.`(`%n`(0)`.``%dt`(0)))
       )
     )
+
+    // Λn. ((Λm. transpose: n.m.dt -> m.n.dt) o) 1
+    // Λ. ((Λ. transpose: %n1.%n0.%dt0 -> %n0.%n1.%dt0) %n1) 1
+    // -->
+    // transpose: 1.o.dt -> o.1.dt
+    // transpose: 1.%n0.%dt0 -> %n0.1.%dt0
+    assert((
+      transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      ) withNatArgument
+        `%n`(1))
+      ==
+      transpose(
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0))) ->:
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0)))
+      )
+    )
+    assert((
+      transpose(
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0))) ->:
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0)))
+      ) withNatArgument
+        cst(1))
+      ==
+      transpose(
+        (cst(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(cst(1)`.``%dt`(0)))
+      )
+    )
+    assert((
+      nApp(nLam(transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      )), `%n`(1),
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0))) ->:
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0)))
+      ) withNatArgument
+        cst(1))
+      ==
+      nApp(nLam(transpose(
+        (cst(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(cst(1)`.``%dt`(0)))
+      )), `%n`(0),
+        (cst(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(cst(1)`.``%dt`(0)))
+      )
+    )
+    assert((
+      transpose(
+        (cst(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(cst(1)`.``%dt`(0)))
+      ) withNatArgument
+        `%n`(0))
+      ==
+      transpose(
+        (cst(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(cst(1)`.``%dt`(0)))
+      )
+    )
   }
 
   test("fromNamed") {
@@ -94,7 +154,7 @@ class ExprCheck extends test_util.Tests {
             nFunT((Nat(NatAdd(`%n`(0), cst(2)))`.`f32) ->: (`%n`(0)`.`f32))),
            `%n`(1), (Nat(NatAdd(`%n`(1), cst(2)))`.`f32) ->: (`%n`(1)`.`f32)),
             %(0, Nat(NatAdd(`%n`(1), cst(2)))`.`f32))
-          )))
+        )))
       )
     }
 

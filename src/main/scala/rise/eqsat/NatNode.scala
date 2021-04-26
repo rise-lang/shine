@@ -1,6 +1,5 @@
 package rise.eqsat
 
-import rise.core.types.NatIdentifier
 import rise.core.{types => rct}
 
 /** A Rise arithmetic expression based on DeBruijn indexing */

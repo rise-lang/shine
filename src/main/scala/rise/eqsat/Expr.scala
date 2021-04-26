@@ -24,11 +24,11 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
       case NatLambda(e) =>
         NatLambda(e.shifted(shift, cutoff.copy(_2 = cutoff._2 + 1)))
       case NatApp(f, x) =>
-        NatApp(f.shifted(shift, cutoff), x)
+        NatApp(f.shifted(shift, cutoff), x.shifted(shift._2, cutoff._2))
       case DataLambda(e) =>
         DataLambda(e.shifted(shift, cutoff.copy(_3 = cutoff._3 + 1)))
       case DataApp(f, x) =>
-        DataApp(f.shifted(shift, cutoff), x)
+        DataApp(f.shifted(shift, cutoff), x.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
       case Literal(_) | Primitive(_) => node
     }, t.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
   }
@@ -140,7 +140,9 @@ object Expr {
         DataLambda(fromNamed(e, bound + dt))
       case core.DepLambda(_, _) => ???
       case core.Literal(d) => Literal(d)
-      case p: core.Primitive => Primitive(p)//.setType(core.types.TypePlaceholder))
+      // note: we set the primitive type to a place holder here,
+      // because we do not want type information at the node level
+      case p: core.Primitive => Primitive(p.setType(core.types.TypePlaceholder))
     }, Type.fromNamed(expr.t, bound))
   }
 
@@ -164,6 +166,10 @@ object Expr {
       case Primitive(p) => p.setType _
     })(Type.toNamed(expr.t, bound))
   }
+
+  def simplifyNats(e: Expr): Expr =
+    Expr(e.node.map(simplifyNats, Nat.simplify, DataType.simplifyNats),
+      Type.simplifyNats(e.t))
 }
 
 object ExprDSL {
