@@ -321,17 +321,17 @@ object AcceptorTranslation {
       rec(args zip inTs, Seq(), Seq())
 
     // CUDA
-    case cuda.AsFragment(rows, columns, d3, dataType, fragmentKind, matrix, layout) =>
+    case cuda.AsFragment(rows, columns, layers, dataType, fragmentKind, layout, matrix) =>
       con(matrix)(λ(ExpType(ArrayType(rows, ArrayType(columns, dataType)), read))(matrix =>
-        cudaImp.WmmaLoad(rows, columns, d3, dataType, fragmentKind, layout, matrix, A)))
+        cudaImp.WmmaLoad(rows, columns, layers, dataType, fragmentKind, layout, matrix, A)))
 
-    case cuda.AsMatrix(rows, columns, d3, dataType, fragment) =>
+    case cuda.AsMatrix(rows, columns, layers, dataType, fragment) =>
       con(fragment)(λ(ExpType(fragment.t.dataType, read))(fragment =>
-        cudaImp.WmmaStore(rows, columns, d3, dataType, fragment, A)))
+        cudaImp.WmmaStore(rows, columns, layers, dataType, fragment, A)))
 
-    case cuda.GenerateFragment(rows, columns, d3, dataType, fill, fragmentKind, layout) =>
+    case cuda.GenerateFragment(rows, columns, layers, dataType, frag, layout, fill) =>
       con(fill)(λ(ExpType(dataType, read))(fill =>
-        cudaImp.WmmaFill(rows, columns, d3, dataType, fill, fragmentKind, layout, A)))
+        cudaImp.WmmaFill(rows, columns, layers, dataType, fill, frag, layout, A)))
 
     case map@cuda.Map(level, dim) =>
       val (n, dt1, dt2, f, array) = map.unwrap
@@ -340,8 +340,9 @@ object AcceptorTranslation {
           λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
           x, A)))
 
-    case cuda.MapFragmentElements(fragType, fragment, fun) =>
-      con(fragment)(λ(expT(fragType, read))(input =>
+    case cuda.MapFragmentElements(rows, columns, layers, dt, frag, layout, fun, input) =>
+      val fragType = FragmentType(rows, columns, layers, dt, frag, layout)
+      con(input)(λ(expT(fragType, read))(input =>
         shine.cuda.primitives.imperative.ForFragmentElements(fragType, input, A,
           λ(expT(fragType.dataType, read))(x =>
             λ(accT(fragType.dataType))(o =>
@@ -350,7 +351,7 @@ object AcceptorTranslation {
     case cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix) =>
       con(aMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.AMatrix, layoutA), read))(aMatrix =>
         con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layoutB), read))(bMatrix =>
-          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc), read))(cMatrix =>
+          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, FragmentKind.Accumulator, MatrixLayout.None), read))(cMatrix =>
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
   }
 }

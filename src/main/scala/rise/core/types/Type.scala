@@ -91,11 +91,11 @@ sealed trait MatrixLayout
 object MatrixLayout {
   object Row_Major extends MatrixLayout { override def toString = "Row_Major" }
   object Col_Major extends MatrixLayout { override def toString = "Col_Major" }
+  object None extends MatrixLayout
 }
 
-final case class MatrixLayoutIdentifier(
-                                         name: String,
-                                         override val isExplicit: Boolean = false
+final case class MatrixLayoutIdentifier(name: String,
+                                        override val isExplicit: Boolean = false
                                        ) extends MatrixLayout
   with Kind.Identifier
   with Kind.Explicitness {
@@ -110,7 +110,7 @@ sealed trait FragmentKind
 object FragmentKind {
   object AMatrix extends FragmentKind { override def toString = "AMatrix"}
   object BMatrix extends FragmentKind { override def toString = "BMatrix"}
-  object Acuumulator extends FragmentKind { override def toString = "Acuumulator"}
+  object Accumulator extends FragmentKind { override def toString = "Accumulator"}
 }
 
 final case class FragmentKindIdentifier(name: String,
@@ -126,7 +126,7 @@ final case class FragmentKindIdentifier(name: String,
 
 object FragmentType {
   def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType = {
-    FragmentType(rows, columns, d3, dataType, FragmentKind.Acuumulator, MatrixLayout.Row_Major)
+    FragmentType(rows, columns, d3, dataType, FragmentKind.Accumulator, MatrixLayout.None)
   }
 }
 
@@ -137,7 +137,7 @@ final case class FragmentType(rows: Nat,
                               fragmentKind: FragmentKind,
                               layout: MatrixLayout) extends DataType {
   override def toString: String =
-    if (fragmentKind == FragmentKind.Acuumulator)
+    if (fragmentKind == FragmentKind.Accumulator)
       s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
     else
       s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"

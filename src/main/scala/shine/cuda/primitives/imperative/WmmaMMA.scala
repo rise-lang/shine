@@ -37,8 +37,8 @@ case class WmmaMMA(m: Nat,
                   ) extends CommandPrimitive {
   aMatrix :: ExpType(FragmentType(m, k, n, dataType, FragmentKind.AMatrix, layoutA), read)
   bMatrix :: ExpType(FragmentType(k, n, m, dataType, FragmentKind.BMatrix, layoutB), read)
-  cMatrix :: ExpType(FragmentType(m, n, k, dataTypeAcc), read)
-  resultMatrix :: AccType(FragmentType(m, n, k, dataTypeAcc))
+  cMatrix :: ExpType(FragmentType(m, n, k, dataTypeAcc, FragmentKind.Accumulator, MatrixLayout.None), read)
+  resultMatrix :: AccType(FragmentType(m, n, k, dataTypeAcc, FragmentKind.Accumulator, MatrixLayout.None))
 
   override def prettyPrint: String =
     s"WmmaMMA(${PrettyPhrasePrinter(aMatrix)}, ${PrettyPhrasePrinter(bMatrix)}," +

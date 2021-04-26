@@ -842,20 +842,20 @@ object fromRise {
         case expT(ArrayType(rows, ArrayType(columns, dt)), `read`) ->:
           expT(FragmentType(_, _, d3, _, fragType, layout), _) =>
           fun[ExpType](expT(ArrayType(rows, ArrayType(columns, dt)), read), a =>
-            cuda.AsFragment(rows, columns, d3, dt, fragType, a, layout))
+            cuda.AsFragment(rows, columns, d3, dt, fragType, layout, a))
       }
 
       case rcuda.asMatrix() => fromType {
-        case expT(FragmentType(rows, columns, d3, dt, FragmentKind.Accumulator, _), `read`) ->:
+        case expT(FragmentType(rows, columns, layers, dt, FragmentKind.Accumulator, _), `read`) ->:
           expT(ArrayType(_, ArrayType(_, _)), `write`) =>
-          fun[ExpType](expT(FragmentType(rows, columns, d3, dt), read), dFrag =>
-            cuda.AsMatrix(rows, columns, d3, dt, dFrag))
+          fun[ExpType](expT(FragmentType(rows, columns, layers, dt, FragmentKind.Accumulator, MatrixLayout.None), read), dFrag =>
+            cuda.AsMatrix(rows, columns, layers, dt, dFrag))
       }
 
       case rcuda.generateFragment() => fromType {
-        case expT(dt, `read`) ->: expT(FragmentType(rows, columns, d3, _, fragType, layout), read) =>
+        case expT(dt, `read`) ->: expT(FragmentType(rows, columns, layers, _, frag, layout), read) =>
           fun[ExpType](expT(dt, read), fill =>
-            cuda.GenerateFragment(rows, columns, d3, dt, fill, fragType, layout))
+            cuda.GenerateFragment(rows, columns, layers, dt, frag, layout, fill))
       }
 
       case rcuda.tensorMMA() => fromType {
@@ -865,7 +865,7 @@ object fromRise {
           expT(FragmentType(_, _, _, _, FragmentKind.Accumulator, _), `write`) =>
           fun[ExpType](expT(FragmentType(m, k, n, dt, FragmentKind.AMatrix, layoutA), read), a =>
             fun[ExpType](expT(FragmentType(k, n, m, dt, FragmentKind.BMatrix, layoutB), read), b =>
-              fun[ExpType](expT(FragmentType(m, n, k, dtResult), read), c =>
+              fun[ExpType](expT(FragmentType(m, n, k, dtResult, FragmentKind.Accumulator, MatrixLayout.None), read), c =>
                 cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dt, dtResult, a, b, c))))
       }
 
@@ -873,8 +873,9 @@ object fromRise {
         case (expT(dt: DataType, `read`) ->: expT(_, `write`)) ->:
           expT(fragType : FragmentType, `read`) ->: expT(_, _) =>
           fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
-            fun[ExpType](ExpType(fragType, read), fragment =>
-              cuda.MapFragmentElements(fragType.asInstanceOf[FragmentType], fragment, f)))
+            fun[ExpType](ExpType(fragType, read), input =>
+              cuda.MapFragmentElements(fragType.rows, fragType.columns, fragType.layers, fragType.dataType,
+                fragType.fragmentKind, fragType.layout, f, input)))
       }
 
       case rcuda.mapGlobal(dim) => fromType {
@@ -973,7 +974,7 @@ object fromRise {
           FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentKind.AMatrix, layout(f.layout))
         case rt.FragmentKind.BMatrix =>
           FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentKind.BMatrix, layout(f.layout))
-        case rt.FragmentKind.Acuumulator =>
+        case rt.FragmentKind.Accumulator =>
           FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentKind.Accumulator, layout(f.layout))
         case _ => throw new Exception("this should not happen")
       }
@@ -984,6 +985,7 @@ object fromRise {
   def layout(layout: rt.MatrixLayout): MatrixLayout = layout match {
     case rt.MatrixLayout.Row_Major => MatrixLayout.Row_Major
     case rt.MatrixLayout.Col_Major => MatrixLayout.Col_Major
+    case rt.MatrixLayout.None => MatrixLayout.None
     case rt.MatrixLayoutIdentifier(name, _) => layouts.getOrElseUpdate(name, MatrixLayoutIdentifier(name))
     case _ => throw new Exception("this should not happen")
   }

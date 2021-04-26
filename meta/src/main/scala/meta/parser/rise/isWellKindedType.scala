@@ -156,7 +156,8 @@ object isWellKindedType {
       case MatrixLayout.AST.Identifier(id) =>
         env.get(id)
       case MatrixLayout.AST.ROW_MAJOR |
-           MatrixLayout.AST.COL_MAJOR => Some(Kind.AST.MatrixLayout)
+           MatrixLayout.AST.COL_MAJOR |
+           MatrixLayout.AST.NONE => Some(Kind.AST.MatrixLayout)
     }
   }
 }

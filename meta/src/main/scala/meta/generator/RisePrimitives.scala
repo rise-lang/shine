@@ -232,11 +232,11 @@ import arithexpr.arithmetic._
       case rise.Type.Fragment.AST.Identifier(name) =>
         Term.Name(name)
       case rise.Type.Fragment.AST.ACC =>
-        q"rise.core.types.FragmentKind.Acuumulator"
+        q"FragmentKind.Accumulator"
       case rise.Type.Fragment.AST.A =>
-        q"rise.core.types.FragmentKind.AMatrix"
+        q"FragmentKind.AMatrix"
       case rise.Type.Fragment.AST.B =>
-        q"rise.core.types.FragmentKind.BMatrix"
+        q"FragmentKind.BMatrix"
     }
   }
 
@@ -246,9 +246,11 @@ import arithexpr.arithmetic._
       case rise.Type.MatrixLayout.AST.Identifier(name) =>
         Term.Name(name)
       case rise.Type.MatrixLayout.AST.ROW_MAJOR =>
-        q"rise.core.types.MatrixLayout.Row_Major"
+        q"MatrixLayout.Row_Major"
       case rise.Type.MatrixLayout.AST.COL_MAJOR =>
-        q"rise.core.types.MatrixLayout.Col_Major"
+        q"MatrixLayout.Col_Major"
+      case rise.Type.MatrixLayout.AST.NONE =>
+        q"MatrixLayout.None"
     }
   }
 
