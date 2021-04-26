@@ -154,11 +154,13 @@ object Expr {
         val funT = expr.t.node.asInstanceOf[FunType[Type]]
         val i = core.Identifier(s"x${bound.expr.size}")(Type.toNamed(funT.inT, bound))
         core.Lambda(i, toNamed(e, bound + i)) _
-      case NatApp(f, x) => core.DepApp[rct.NatKind](toNamed(f, bound), Nat.toNamed(x, bound)) _
+      case NatApp(f, x) =>
+        core.DepApp[rct.NatKind](toNamed(f, bound), Nat.toNamed(x, bound)) _
       case NatLambda(e) =>
         val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
         core.DepLambda[rct.NatKind](i, toNamed(e, bound + i)) _
-      case DataApp(f, x) => core.DepApp[rct.DataKind](toNamed(f, bound), DataType.toNamed(x, bound)) _
+      case DataApp(f, x) =>
+        core.DepApp[rct.DataKind](toNamed(f, bound), DataType.toNamed(x, bound)) _
       case DataLambda(e) =>
         val i = rct.DataTypeIdentifier(s"dt${bound.data.size}", isExplicit = true)
         core.DepLambda[rct.DataKind](i, toNamed(e, bound + i)) _

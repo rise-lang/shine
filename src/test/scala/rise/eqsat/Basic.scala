@@ -21,15 +21,21 @@ class Basic extends test_util.Tests {
   import rise.core.DSL.Type._
   import rise.core.primitives._
 
-  def introduceDataFuns(n: Int, k: Seq[rct.DataType] => Seq[ToBeTyped[rc.Identifier]] => ToBeTyped[rc.Expr]): ToBeTyped[rc.Expr] = {
-    def recDataTypes(n: Int, k: Seq[rct.DataType] => ToBeTyped[rc.Expr]): ToBeTyped[rc.Expr] =
+  def introduceDataFuns(n: Int,
+                        k: Seq[rct.DataType] => Seq[ToBeTyped[rc.Identifier]] => ToBeTyped[rc.Expr]
+                       ): ToBeTyped[rc.Expr] = {
+    def recDataTypes(n: Int,
+                     k: Seq[rct.DataType] => ToBeTyped[rc.Expr]
+                    ): ToBeTyped[rc.Expr] =
       if (n <= 0) {
         k(Seq())
       } else {
         recDataTypes(n - 1, rest => depFun((dt: rct.DataType) => k(dt +: rest)))
       }
 
-    def recFuns(n: Int, dts: Seq[rct.DataType], k: Seq[ToBeTyped[rc.Identifier]] => ToBeTyped[rc.Expr]): ToBeTyped[rc.Expr] =
+    def recFuns(n: Int, dts: Seq[rct.DataType],
+                k: Seq[ToBeTyped[rc.Identifier]] => ToBeTyped[rc.Expr]
+               ): ToBeTyped[rc.Expr] =
       if (n <= 0) {
         k(Seq())
       } else {
@@ -46,7 +52,9 @@ class Basic extends test_util.Tests {
     println(e.toExpr)
   }
 
-  def withArrayAndFuns(n: Int, k: ToBeTyped[rc.Identifier] => Seq[ToBeTyped[rc.Identifier]] => ToBeTyped[rc.Expr]): ToBeTyped[rc.Expr] = {
+  def withArrayAndFuns(n: Int,
+                       k: ToBeTyped[rc.Expr] => Seq[ToBeTyped[rc.Expr]] => ToBeTyped[rc.Expr]
+                      ): ToBeTyped[rc.Expr] = {
     impl { elemT: rct.DataType =>
       depFun((size: rct.Nat) => introduceDataFuns(n, _ => f => fun(size`.`elemT)(in => k(in)(f)))) }
   }

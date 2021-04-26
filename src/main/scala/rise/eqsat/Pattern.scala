@@ -18,6 +18,7 @@ object Pattern {
     override def patternVars(): Set[Any] = pattern.patternVars()
 
     override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
+      def missingRhsTy[T](): T = throw new Exception("unknown type on right-hand side")
       def pat(p: Pattern): EClassId = {
         p.p match {
           case w: PatternVar => subst(w)
@@ -30,21 +31,21 @@ object Pattern {
         p match {
           case w: NatPatternVar => subst(w)
           case NatPatternNode(n) => Nat(n.map(nat))
-          case NatPatternAny => throw new Exception("unknown type on right-hand side")
+          case NatPatternAny => missingRhsTy()
         }
       }
       def data(pat: DataTypePattern): DataType = {
         pat match {
           case w: DataTypePatternVar => subst(w)
           case DataTypePatternNode(n) => DataType(n.map(nat, data))
-          case DataTypePatternAny => throw new Exception("unknown type on right-hand side")
+          case DataTypePatternAny => missingRhsTy()
         }
       }
       def `type`(pat: TypePattern): Type = {
         pat match {
           case w: TypePatternVar => subst(w)
           case TypePatternNode(n) => Type(n.map(`type`, nat, data))
-          case TypePatternAny => throw new Exception("unknown type on right-hand side")
+          case TypePatternAny => missingRhsTy()
           case dtp: DataTypePattern => Type(data(dtp).node)
         }
       }
@@ -125,8 +126,8 @@ object PatternDSL {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = lhs -> rhs
   }
   implicit final class RewriteArrowCPattern(private val lhs: CompiledPattern) extends AnyVal {
-    @inline def -->[D](rhs: Pattern): (Searcher[D], Applier[D]) = (lhs : Searcher[D]) -> rhs
-    @inline def -->[D](rhs: Applier[D]): (Searcher[D], Applier[D]) = (lhs : Searcher[D]) -> rhs
+    @inline def -->[D](rhs: Pattern): (Searcher[D], Applier[D]) = (lhs: Searcher[D]) -> rhs
+    @inline def -->[D](rhs: Applier[D]): (Searcher[D], Applier[D]) = (lhs: Searcher[D]) -> rhs
   }
   implicit final class RewriteArrowPNode(private val lhs: PNode) extends AnyVal {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = (lhs: Pattern) -> rhs

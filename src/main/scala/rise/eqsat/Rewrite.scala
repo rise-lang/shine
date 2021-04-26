@@ -353,7 +353,8 @@ case class ComputeNatApplier[D](v: NatPatternVar, value: NatPattern,
   override def applyOne(egraph: EGraph[D],
                         eclass: EClassId,
                         subst: Subst): Vec[EClassId] = {
-    val actualValue = Nat.fromNamedGeneric(ComputeNat.toNamed(value, subst), ni => ni.name.drop(1).toInt)
+    val actualValue = Nat.fromNamedGeneric(
+      ComputeNat.toNamed(value, subst), ni => ni.name.drop(1).toInt)
     val subst2 = subst.deepClone()
     subst2.insert(v, actualValue)
     applier.applyOne(egraph, eclass, subst2)

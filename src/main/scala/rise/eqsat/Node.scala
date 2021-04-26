@@ -116,10 +116,10 @@ object Node {
       implicit val ord: Ordering[Nat] = this
       (n1.node, n2.node) match {
         case (NatCst(c1), NatCst(c2)) => c1 compare c2
-        /*case (Sum(ts1), Sum(ts2)) =>
+        /* case (Sum(ts1), Sum(ts2)) =>
           implicitly[Ordering[Seq[Nat]]].compare(ts1, ts2)
         case (Prod(fs1), Prod(fs2)) =>
-          implicitly[Ordering[Seq[Nat]]].compare(fs1, fs2)*/
+          implicitly[Ordering[Seq[Nat]]].compare(fs1, fs2) */
         case _ => ???
       }
     }
@@ -144,7 +144,8 @@ object Node {
       }
   } */
 
-  implicit val scalarDataOrdering: Ordering[semantics.ScalarData] = new Ordering[semantics.ScalarData] {
+  implicit val scalarDataOrdering: Ordering[semantics.ScalarData] =
+    new Ordering[semantics.ScalarData] {
     import semantics._
 
     def compare(sd1: ScalarData, sd2: ScalarData): Int =

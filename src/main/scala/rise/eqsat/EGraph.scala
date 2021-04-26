@@ -211,7 +211,8 @@ class EGraph[Data](
         classesByMatch.getOrElseUpdate(n.matchHash(), HashSet.empty) += eclass.id
 
       // TODO? in egg the nodes are sorted and duplicates where prev.matches(n) are not added
-      eclass.nodes/*.distinctBy(_.matchHash())*/.foreach(add)
+      // .distinctBy(_.matchHash())
+      eclass.nodes.foreach(add)
     }
 
     trimmed

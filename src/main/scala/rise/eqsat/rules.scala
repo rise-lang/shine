@@ -42,9 +42,9 @@ object rules {
   val etaAbstraction: Rule = NamedRewrite.init("eta-abstraction",
     ("f" :: ("a" ->: ("b": Type))) --> lam("x", app("f", "x"))
   )
-  /*val eta: Rule = NamedRewrite.init("eta",
+  /* val eta: Rule = NamedRewrite.init("eta",
     lam("x", app("f", "x")) --> "f"
-  ) when neg(containsIdent("f", "x"))*/
+  ) when neg(containsIdent("f", "x")) */
   val removeTransposePair: Rule = NamedRewrite.init("remove-transpose-pair",
     app(transpose, app(transpose, "x")) --> "x"
   )

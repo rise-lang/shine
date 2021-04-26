@@ -59,14 +59,16 @@ object NamedRewrite {
       pv
     }
 
-    def makePat(expr: rc.Expr, bound: Expr.Bound, isRhs: Boolean, matchType: Boolean = true): Pattern =
+    def makePat(expr: rc.Expr,
+                bound: Expr.Bound,
+                isRhs: Boolean,
+                matchType: Boolean = true): Pattern =
       Pattern(expr match {
         case i: rc.Identifier if freeV.contains(i.name) =>
           makePatVar(i.name,
             (bound.expr.size, bound.nat.size, bound.data.size),
             patVars, PatternVar, if (isRhs) { Unknown } else { Known })
         case i: rc.Identifier => PatternNode(Var(bound.indexOf(i)))
-        // TODO: for some of these constructs we can avoid matching types because there is redundancy
 
         // note: we do not match for the type of lambda bodies, as we can always infer it:
         //       lam(x : xt, e : et) : xt -> et
@@ -83,9 +85,11 @@ object NamedRewrite {
         case rc.App(f, e) =>
           PatternNode(App(makePat(f, bound, isRhs, matchType = false), makePat(e, bound, isRhs)))
         case rc.DepApp(f, x: rct.Nat) =>
-          PatternNode(NatApp(makePat(f, bound, isRhs, matchType = false), makeNPat(x, bound, isRhs)))
+          PatternNode(NatApp(
+            makePat(f, bound, isRhs, matchType = false), makeNPat(x, bound, isRhs)))
         case rc.DepApp(f, x: rct.DataType) =>
-          PatternNode(DataApp(makePat(f, bound, isRhs, matchType = false), makeDTPat(x, bound, isRhs)))
+          PatternNode(DataApp(
+            makePat(f, bound, isRhs, matchType = false), makeDTPat(x, bound, isRhs)))
 
         case rc.DepApp(_, _) => ???
         case rc.Literal(d) => PatternNode(Literal(d))
@@ -97,7 +101,8 @@ object NamedRewrite {
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
         case i: rct.NatIdentifier if freeT(i) =>
-          makePatVar(i.name, bound.nat.size, natPatVars, NatPatternVar, if (isRhs) { Unknown } else { Known })
+          makePatVar(i.name, bound.nat.size, natPatVars,
+            NatPatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
           NatPatternNode(NatVar(bound.indexOf(i)))
         case ae.Cst(c) =>
@@ -360,7 +365,8 @@ object NamedRewrite {
                   case Some(value) =>
                     val valuePat = fromNamed(value)
                     val updateShifts = shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)
-                    val pivotPat = makePatVar(potentialPivot.name, shift, natPatVars, NatPatternVar, Known)
+                    val pivotPat = makePatVar(potentialPivot.name, shift, natPatVars,
+                      NatPatternVar, Known)
                     updateShifts(ComputeNatApplier(pivotPat, valuePat,
                       shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)(pivotSuccess)))
                   case None => pivotFailure
@@ -388,7 +394,8 @@ object NamedRewrite {
     val applier = shiftPV(shiftNPV(shiftDTPV(shiftTPV(pivotNats(rhsPat)))))
 
     def allIsShiftCoherent[S, V](pvm: PatternVarMap[S, V]): Boolean =
-      pvm.forall { case (_, shiftMap) => shiftMap.forall { case (_, (_, status)) => status == ShiftCoherent }}
+      pvm.forall { case (_, shiftMap) =>
+        shiftMap.forall { case (_, (_, status)) => status == ShiftCoherent }}
     assert(allIsShiftCoherent(patVars))
     assert(allIsShiftCoherent(natPatVars))
     assert(allIsShiftCoherent(dataTypePatVars))

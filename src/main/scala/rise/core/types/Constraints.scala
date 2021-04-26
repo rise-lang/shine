@@ -44,7 +44,8 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 }
 
 object Constraint {
-  def canBeSubstituted(preserve: Set[Kind.Identifier], i: Kind.Identifier with Kind.Explicitness): Boolean =
+  def canBeSubstituted(preserve: Set[Kind.Identifier],
+                       i: Kind.Identifier with Kind.Explicitness): Boolean =
     !(preserve.contains(i) || i.isExplicit)
   def canBeSubstituted(preserve: Set[Kind.Identifier], i: TypeIdentifier): Boolean =
     !preserve.contains(i)
@@ -256,16 +257,20 @@ object Constraint {
 
       case MatrixLayoutConstraint(a, b) =>
         (a, b) match {
-          case (i: MatrixLayoutIdentifier, _) if (canBeSubstituted(preserve, i)) => Solution.subs(i, b)
-          case (_, i: MatrixLayoutIdentifier) if (canBeSubstituted(preserve, i)) => Solution.subs(i, a)
+          case (i: MatrixLayoutIdentifier, _) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, b)
+          case (_, i: MatrixLayoutIdentifier) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
         }
 
       case FragmentTypeConstraint(a, b) =>
         (a, b) match {
-          case (i: FragmentKindIdentifier, _) if (canBeSubstituted(preserve, i)) => Solution.subs(i, b)
-          case (_, i: FragmentKindIdentifier) if (canBeSubstituted(preserve, i)) => Solution.subs(i, a)
+          case (i: FragmentKindIdentifier, _) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, b)
+          case (_, i: FragmentKindIdentifier) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
         }
@@ -301,8 +306,11 @@ object Constraint {
         }
       case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
       case _ =>
-        if (canBeSubstituted(preserve, i)) Solution.subs(i, t)
-        else error(s"cannot substitute $i, it is explicit")
+        if (canBeSubstituted(preserve, i)) {
+          Solution.subs(i, t)
+        } else {
+          error(s"cannot substitute $i, it is explicit")
+        }
     }
   }
 
@@ -544,7 +552,8 @@ object dependence {
 
       override def nat: Nat => Pair[Nat] = {
         case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n : Nat)
-        case ident: NatIdentifier if ident != depVar && Constraint.canBeSubstituted(preserve, ident) =>
+        case ident: NatIdentifier
+          if ident != depVar && Constraint.canBeSubstituted(preserve, ident) =>
           val sol = Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
           accumulate(Seq(sol))(ident.asImplicit : Nat)
         case n => super.nat(n)

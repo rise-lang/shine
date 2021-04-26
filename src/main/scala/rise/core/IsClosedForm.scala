@@ -11,9 +11,13 @@ object IsClosedForm {
   {
     override val accumulator = PairMonoid(SetMonoid, SetMonoid)
 
-    override def identifier[I <: Identifier] : VarType => I => Pair[I] = vt => i => {
+    override def identifier[I <: Identifier]: VarType => I => Pair[I] = vt => i => {
       for { t2 <- `type`(i.t);
-            i2 <- if (vt == Reference && !boundV(i)) accumulate((Set(i), Set()))(i) else return_(i) }
+            i2 <- if (vt == Reference && !boundV(i)) {
+                    accumulate((Set(i), Set()))(i)
+                  } else {
+                    return_(i)
+                  }}
         yield i2
     }
 
@@ -37,7 +41,7 @@ object IsClosedForm {
       case e => super.expr(e)
     }
 
-    override def natToData : NatToData => Pair[NatToData] = {
+    override def natToData: NatToData => Pair[NatToData] = {
       case NatToDataLambda(x, e) =>
         for { p <- this.copy(boundT = boundT + x).`type`(e) }
           yield (p._1, NatToDataLambda(x, e))
