@@ -57,6 +57,7 @@ object substitute {
     case Literal(_) => Set()
     case TypeAnnotation(e, _) => FV(e)
     case TypeAssertion(e, _) => FV(e)
+    case Opaque(e, _) => FV(e)
     case _: Primitive => Set()
   }
 

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "ocl.h"
+#include "time_utils.h"
 
 typedef struct ContextImpl* Context;
 typedef struct KernelImpl* Kernel;
@@ -21,6 +22,7 @@ typedef enum {
 Context createDefaultContext();
 Context createContext(const char* platform_subname, const char* device_type_str);
 void destroyContext(Context ctx);
+void waitFinished(Context ctx);
 
 Buffer createBuffer(Context ctx, size_t byte_size, AccessFlags access);
 void destroyBuffer(Context ctx, Buffer b);

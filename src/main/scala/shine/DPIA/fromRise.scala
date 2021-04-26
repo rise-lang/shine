@@ -4,10 +4,9 @@ import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
 import rise.elevate.Rise
 import rise.elevate.rules._
-import rise.core.{semantics => rs, types => rt}
+import rise.core.{Opaque, TypeAnnotation, TypeAssertion, semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional._
@@ -57,10 +56,10 @@ object fromRise {
           arg)
 
       x match {
-        case n: Nat => depApp[NatKind](f, n)
-        case dt: rt.DataType =>
-          depApp[DataKind](f, dataType(dt))
+        case n: Nat             => depApp[NatKind](f, n)
+        case dt: rt.DataType    => depApp[DataKind](f, dataType(dt))
         case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
+        case n2n: rt.NatToNat   => depApp[NatToNatKind](f, nat2nat(n2n))
       }
 
     case r.Literal(d) => d match {
@@ -69,19 +68,22 @@ object fromRise {
       case _ => Literal(data(d))
     }
 
+    case e@TypeAnnotation(_, _) => throw new Exception(s"Missing rule for ${e.getClass}")
+    case e@TypeAssertion(_, _) => throw new Exception(s"Missing rule for ${e.getClass}")
+    case e@Opaque(_, _) => throw new Exception(s"Missing rule for ${e.getClass}")
     case p: r.Primitive => primitive(p, ptMap.get(p))
   }
 
-  def data(d: rs.Data): OpSem.Data = d match {
-    case rs.ArrayData(a) => OpSem.ArrayData(a.map(data).toVector)
-    case rs.PairData(a, b) => OpSem.PairData(data(a), data(b))
-    case rs.BoolData(b) => OpSem.BoolData(b)
-    case rs.IntData(i) => OpSem.IntData(i)
-    case rs.FloatData(f) => OpSem.FloatData(f)
-    case rs.DoubleData(d) => OpSem.DoubleData(d)
-    case rs.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)
-    case rs.IndexData(i, n) => OpSem.IndexData(i, n)
-    case rs.NatData(n) => OpSem.NatData(n)
+  def data(d: rs.Data): Data = d match {
+    case rs.ArrayData(a) => ArrayData(a.map(data).toVector)
+    case rs.PairData(a, b) => PairData(data(a), data(b))
+    case rs.BoolData(b) => BoolData(b)
+    case rs.IntData(i) => IntData(i)
+    case rs.FloatData(f) => FloatData(f)
+    case rs.DoubleData(d) => DoubleData(d)
+    case rs.VectorData(v) => VectorData(v.map(data(_)).toVector)
+    case rs.IndexData(i, n) => IndexData(i, n)
+    case rs.NatData(n) => NatData(n)
   }
 
   import rise.core.{primitives => core}
@@ -415,16 +417,14 @@ object fromRise {
       }
 
       case core.reorder() => fromType {
-        case (expT(IndexType(n), `read`) ->: expT(IndexType(_), `read`)) ->:
-          (expT(IndexType(_), `read`) ->: expT(IndexType(_), `read`)) ->:
-          expT(ArrayType(_, t), a) ->: expT(ArrayType(_, _), _)
+        case nFunT(n, n2nFunT(idxF, n2nFunT(idxFinv,
+          expT(ArrayType(_, t), a) ->: expT(ArrayType(_, _), _))))
         =>
-        fun[ExpType ->: ExpType](
-          expT(idx(n), read) ->: expT(idx(n), read), idxF =>
-            fun[ExpType ->: ExpType](
-              expT(idx(n), read) ->: expT(idx(n), read), idxFinv =>
-                fun[ExpType](expT(n`.`t, a), e =>
-                  Reorder(n, t, a, idxF, idxFinv, e))))
+        depFun[NatKind](n)(
+          depFun[NatToNatKind](idxF)(
+            depFun[NatToNatKind](idxFinv)(
+              fun[ExpType](expT(n`.`t, a), e =>
+                Reorder(n, t, a, idxF, idxFinv, e)))))
       }
 
       case core.gather() => fromType {
@@ -940,6 +940,13 @@ object fromRise {
     case rt.AddressSpace.Private => AddressSpace.Private
     case rt.AddressSpace.Constant => AddressSpace.Constant
     case rt.AddressSpaceIdentifier(name, _) => AddressSpaceIdentifier(name)
+  }
+
+  def nat2nat(n2n: rt.NatToNat): NatToNat = n2n match {
+    case rt.NatToNatIdentifier(name, _) =>
+      NatToNatIdentifier(name)
+    case rt.NatToNatLambda(x, body) =>
+      NatToNatLambda(x.range, NatIdentifier(x.name), body)
   }
 
   def dataType(t: rt.DataType): DataType = t match {

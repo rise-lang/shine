@@ -70,7 +70,7 @@ class Reorder extends test_util.Tests {
     val gold1324: Expr = wrap(i => f => (*!(T) o ****!(f) o *!(T)) $ i)
     val gold2134: Expr = wrap(i => f => (T o ****!(f) o T) $ i)
     val gold4321: Expr = wrap(i => f => (**!(T) o *!(T) o T o **!(T) o *!(T) o **!(T) o ****!(f) o
-      **!(T) o *!(T) o **!(T) o T o  *!(T) o **!(T) ) $ i)
+      **!(T) o *!(T) o **!(T) o T o  *!(T) o **!(T)) $ i)
 
     proveEquiv(expr, Seq(gold1243, gold1324, gold2134, gold4321), Seq(
       rules.eta, rules.beta, rules.betaNat,

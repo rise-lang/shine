@@ -3,7 +3,6 @@ package shine.DPIA
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Operators, _}
-import shine.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional.{DepIdx, Idx, IdxVec, NatAsIndex}
 

@@ -1,9 +1,8 @@
 package shine.DPIA
 
 import rise.{core => r}
-import rise.core.{types => rt}
-import rise.core.DSL.Type.{->:, `(Addr)->:`, `(Nat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
-import rise.core.{primitives => rp}
+import rise.core.{Opaque, TypeAnnotation, TypeAssertion, primitives => rp, types => rt}
+import rise.core.DSL.Type.{->:, ArrayTypeConstructors, TupleTypeConstructors, `(Addr)->:`, `(Nat)->:`, `(NatToNat)->:`, `.`, x}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
 import rise.Cuda.{primitives => rocup}
@@ -133,6 +132,9 @@ private class InferAccessAnnotation {
         inferDepLambda(depL, ctx, isKernelParamFun)
       case depA: r.DepApp[_] =>
         inferDepApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
+      case _: TypeAnnotation => throw new Exception("Type annotations should be gone.")
+      case _: TypeAssertion => throw new Exception("Type assertions should be gone.")
+      case _: Opaque => throw new Exception("Opaque expressions should be gone.")
       case p: r.Primitive => inferPrimitive(p)
     }
     // the kernel output must be 'write'
@@ -523,13 +525,10 @@ private class InferAccessAnnotation {
       }
 
       case rp.reorder() => p.t match {
-        case (rt.IndexType(n) ->: rt.IndexType(_)) ->:
-          (rt.IndexType(_) ->: rt.IndexType(_)) ->: (_`.`t) ->: (_`.`_) =>
+        case (n `(Nat)->:` (idxF `(NatToNat)->:` (idxFinv `(NatToNat)->:` ((_`.`t) ->: (_`.`_) )))) =>
 
           val ai = accessTypeIdentifier()
-          (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
-            (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
-            expT(n`.`t, ai) ->: expT(n`.`t, ai)
+          nFunT(n, n2nFunT(idxF, n2nFunT(idxFinv, expT(n`.`t, ai) ->: expT(n`.`t, ai))))
         case _ => error()
       }
 

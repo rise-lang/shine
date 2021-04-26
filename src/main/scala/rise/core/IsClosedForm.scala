@@ -48,6 +48,13 @@ object IsClosedForm {
       case t => super.natToData(t)
     }
 
+    override def natToNat: NatToNat => Pair[NatToNat] = {
+      case NatToNatLambda(x, n) =>
+        for { p <- this.copy(boundT = boundT + x).nat(n) }
+          yield (p._1, NatToNatLambda(x, n))
+      case n => super.natToNat(n)
+    }
+
     override def `type`[T <: Type]: T => Pair[T] = {
       case d@DepFunType(x, t) =>
         for { p <- this.copy(boundT = boundT + x).`type`(t) }

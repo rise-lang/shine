@@ -1,7 +1,6 @@
 package shine.cuda
 
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics.FloatData
 import shine.DPIA.Types.MatrixLayout._
 import shine.DPIA.Types._
 import shine.DPIA._

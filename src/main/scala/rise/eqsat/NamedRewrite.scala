@@ -4,7 +4,6 @@ import rise.core.types.TypePlaceholder
 import rise.{core => rc}
 import rise.core.{types => rct}
 import rise.core.{primitives => rcp}
-import shine.Pipe
 
 object NamedRewrite {
   def init(name: String,

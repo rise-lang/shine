@@ -1,8 +1,6 @@
 package shine.DPIA.primitives.functional
 
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.macros.Primitive.expPrimitive
@@ -17,6 +15,4 @@ final case class PrintType(msg: String,
 
   input :: expT(dt, access)
   override val t: ExpType = expT(dt, access)
-
-  override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 }

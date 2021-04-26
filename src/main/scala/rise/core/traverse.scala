@@ -172,10 +172,18 @@ object traverse {
       case Literal(d) =>
         for { d1 <- data(d) }
           yield Literal(d1)
+      case TypeAnnotation(e, t) =>
+        for { e1 <- expr(e); t1 <- `type`(t)}
+          yield TypeAnnotation(e1, t1)
+      case TypeAssertion(e, t) =>
+        for { e1 <- expr(e); t1 <- `type`(t)}
+          yield TypeAssertion(e1, t1)
+      case Opaque(e, t) =>
+        for { e1 <- expr(e); t1 <- `type`(t)}
+          yield Opaque(e1, t1)
       case p : Primitive =>
         for { t1 <- `type`(p.t) }
           yield p.setType(t1)
-
     }
   }
 

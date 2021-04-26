@@ -1,9 +1,7 @@
 package rise.eqsat
 
 import rise.core
-import rise.core.{primitives => rcp}
-import rise.core.semantics
-import rise.core.{types => rct}
+import rise.core.{semantics, primitives => rcp, types => rct}
 
 // TODO: could also be outside of eqsat package
 /** A Rise expression based on DeBruijn indexing */
@@ -143,6 +141,8 @@ object Expr {
       // note: we set the primitive type to a place holder here,
       // because we do not want type information at the node level
       case p: core.Primitive => Primitive(p.setType(core.types.TypePlaceholder))
+      case _: core.Opaque | _: core.TypeAnnotation | _: core.TypeAssertion =>
+        throw new Exception("this should not happen")
     }, Type.fromNamed(expr.t, bound))
   }
 

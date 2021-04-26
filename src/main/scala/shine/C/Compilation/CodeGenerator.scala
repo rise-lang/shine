@@ -8,8 +8,6 @@ import shine.C.AST.Type.getBaseType
 import shine.DPIA.Compilation.Passes.SimplifyNats
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional._
@@ -242,7 +240,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case ReorderAcc(n, _, idxF, a) => path match {
       case (i: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(NatAsIndex(n, Natural(i))))) :: ps, cont)
+        a |> acc(env, CIntExpr(idxF(i)) :: ps, cont)
       case _ => error(s"Expected a C-Integer-Expression on the path.")
     }
 
@@ -421,7 +419,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case Reorder(n, _, _, idxF, _, a) => path match {
       case (i: CIntExpr) :: ps =>
-        a |> exp(env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(functional.NatAsIndex(n, Natural(i))))) :: ps, cont)
+        a |> exp(env, CIntExpr(idxF(i)) :: ps, cont)
       case _ => error(s"Expected a C-Integer-Expression on the path.")
     }
 
@@ -562,7 +560,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             (typ(r.snd), "_snd")))
       case shine.DPIA.Types.DepPairType(_, _) => C.AST.PointerType(C.AST.Type.u8)
       case _: shine.DPIA.Types.DataTypeIdentifier | _: shine.DPIA.Types.NatToDataApply |
-           DPIA.Types.ManagedBufferType(_) | DPIA.Types.ContextType =>
+           DPIA.Types.ManagedBufferType(_) | DPIA.Types.OpaqueType(_) =>
         throw new Exception(s"did not expect $dt")
     }
   }
@@ -820,7 +818,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       })
     }
 
-    def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
+    def codeGenLiteral(d: Data): Expr = {
       d match {
         case NatData(n)       => C.AST.ArithmeticExpr(n)
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
