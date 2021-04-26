@@ -274,8 +274,15 @@ object Constraint {
   // scalastyle:on method.length
 
   def unifyTypeIdent(i: TypeIdentifier, t: Type, preserve: Set[Kind.Identifier]): Solution = {
-    assert(canBeSubstituted(preserve, i))
-    Solution.subs(i, t)
+    t match {
+      case _ if canBeSubstituted(preserve, i) =>
+        Solution.subs(i, t)
+      case _ if i == t => Solution()
+      case i2: TypeIdentifier if canBeSubstituted(preserve, i2) =>
+        Solution.subs(i2, i)
+      case _ =>
+        throw new Exception(s"$i cannot be substituted for $t")
+    }
   }
 
   // FIXME: datatypes and types are mixed up

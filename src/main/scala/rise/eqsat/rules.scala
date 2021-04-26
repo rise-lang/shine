@@ -39,6 +39,9 @@ object rules {
   import rise.core.types.{Nat, DataType, Type}
   import NamedRewriteDSL._
 
+  val etaAbstraction: Rule = NamedRewrite.init("eta-abstraction",
+    ("f" :: ("a" ->: ("b": Type))) --> lam("x", app("f", "x"))
+  )
   /*val eta: Rule = NamedRewrite.init("eta",
     lam("x", app("f", "x")) --> "f"
   ) when neg(containsIdent("f", "x"))*/
@@ -60,11 +63,30 @@ object rules {
   ) when neg(containsIdent(?(0), %(0)))
   // TODO: neg(containsIdent("f", "x"))
 
+  val reduceSeqMapFusion: Rule = NamedRewrite.init("reduce-seq-map-fusion",
+    app(app(app(rcp.reduceSeq.primitive, "f"), "init"), app(app(map, "g"), "in"))
+      -->
+    app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("x",
+      app(app("f", "acc"), app("g", "x"))))), "init"), "in")
+  )
+
   // FIXME: how can we generalize to N?
   val mapOutsideMakeArray2: Rule = NamedRewrite.init("map-outside-make-array-2",
     app(app(rcp.makeArray(2).primitive, app(app(map, "f1"), "e")), app(app(map, "f2"), "e"))
       -->
     app(transpose, app(app(map, lam("x", app(app(rcp.makeArray(2).primitive, app("f1", "x")), app("f2", "x")))), "e"))
+  )
+
+  val idAfter = NamedRewrite.init("id-after",
+    ("x": Pattern) --> app(lam("y", "y"), "x")
+  )
+  val transposePairAfter: Rule = NamedRewrite.init("transpose-pair-after",
+    ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`))) --> app(transpose, app(transpose, "x"))
+  )
+  val createTransposePair: Rule = NamedRewrite.init("create-transpose-pair",
+    app(lam("y", "y"), "x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))
+      -->
+    app(lam("y", app(transpose, app(transpose, "y"))), "x")
   )
 
   // - slide widening -
@@ -96,6 +118,12 @@ object rules {
     app(nApp(nApp(slide, "sz"), "sp"), app(app(map, "f"), "in"))
       -->
     app(app(map, app(map, "f")), app(nApp(nApp(slide, "sz"), "sp"), "in"))
+  )
+
+  val mapMapFBeforeTranspose: Rule = NamedRewrite.init("map-map-f-before-transpose",
+    app(transpose, app(app(map, app(map, "f")), "y"))
+      -->
+    app(app(map, app(map, "f")), app(transpose, "y"))
   )
 
   val dropBeforeMap: Rule = NamedRewrite.init("drop-before-map",

@@ -105,23 +105,37 @@ object Basic {
   def proveEquiv(start: rise.core.Expr,
                  goal: rise.core.Expr,
                  rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
-    val normStart = BENF(Expr.fromNamed(start))
-    val normGoal = BENF(Expr.fromNamed(goal))
-    println(s"normalized start: ${Expr.toNamed(normStart)}")
-    println(s"normalized goal: ${Expr.toNamed(normGoal)}")
-    proveEquiv(normStart, normGoal, rules)
+    proveEquiv(start, Seq(goal), rules)
   }
 
   def proveEquiv(start: Expr,
                  goal: Expr,
                  rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
-    val goalPattern = Pattern.fromExpr(goal).compile()
+    proveEquiv(start, Seq(goal), rules)
+  }
+
+  def proveEquiv(start: rise.core.Expr,
+                 goals: Seq[rise.core.Expr],
+                 rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
+    val normStart = BENF(Expr.fromNamed(start))
+    val normGoals = goals.map(g => BENF(Expr.fromNamed(g)))
+    println(s"normalized start: ${Expr.toNamed(normStart)}")
+    for ((goal, i) <- normGoals.zipWithIndex) {
+      println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
+    }
+    proveEquiv(normStart, normGoals, rules)
+  }
+
+  def proveEquiv(start: Expr,
+                 goals: Seq[Expr],
+                 rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
+    val goalPatterns = goals.map(Pattern.fromExpr(_).compile())
 
     val runner = Runner.withAnalysis(DefaultAnalysis)
     val startId = runner.egraph.addExpr(start)
     // val goalId = runner.egraph.addExpr(goal)
     runner.doneWhen { r =>
-      goalPattern.searchEClass(r.egraph, startId).isDefined
+      goalPatterns.forall(_.searchEClass(r.egraph, startId).isDefined)
       // note: could also use this to get a faster procedure,
       // but it would allow rewriting the goal as well, not just the start
       // r.egraph.findMut(startId) == r.egraph.findMut(goalId)
@@ -132,6 +146,11 @@ object Basic {
     if (!runner.stopReasons.contains(Done)) {
       runner.iterations.foreach(println)
       // runner.egraph.dot().toSVG("/tmp/egraph.svg")
+      val (found, notFound) = goalPatterns.zipWithIndex.partition { case (goal, _) =>
+        goal.searchEClass(runner.egraph, startId).isDefined
+      }
+      println(s"found: ${found.map(_._2).mkString(", ")}")
+      println(s"not found: ${notFound.map(_._2).mkString(", ")}")
       assert(false)
     }
   }
