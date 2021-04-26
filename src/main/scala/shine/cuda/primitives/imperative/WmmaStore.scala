@@ -24,7 +24,7 @@ final case class WmmaStore(rows: Nat,
                            fragment: Phrase[ExpType],
                            matrixTile: Phrase[AccType]
                           ) extends CommandPrimitive {
-  fragment :: ExpType(FragmentType(rows, columns, d3, dataType), read)
+  fragment :: ExpType(FragmentType(rows, columns, d3, dataType, FragmentKind.Accumulator, MatrixLayout.None), read)
   matrixTile :: AccType(ArrayType(rows, ArrayType(columns, dataType)))
 
   override def prettyPrint: String = {

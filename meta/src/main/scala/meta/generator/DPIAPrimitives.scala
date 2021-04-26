@@ -169,8 +169,8 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
           case AST.Nat2Nat => Type.Name("NatToNat")
           case AST.Nat2Data => Type.Name("NatToData")
           case AST.Nat => Type.Name("Nat")
-          case AST.Fragment => ???
-          case AST.MatrixLayout => ???
+          case AST.Fragment => Type.Name("FragmentKind")
+          case AST.MatrixLayout => Type.Name("MatrixLayout")
           case AST.Function => ???
         }
       case AST.Access => Type.Name("AccessType")

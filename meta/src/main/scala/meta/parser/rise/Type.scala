@@ -43,6 +43,7 @@ object Type {
       case class Identifier(name: String) extends AST
       object ROW_MAJOR extends AST
       object COL_MAJOR extends AST
+      object NONE extends AST
     }
   }
 
@@ -93,7 +94,8 @@ object Type {
       def MatrixLayoutKind: P[MatrixLayout.AST] =
         P(("matrixLayout." ~~ (
           "ROW_MAJOR".!.map(_ => MatrixLayout.AST.ROW_MAJOR) |
-            "COL_MAJOR".!.map(_ => MatrixLayout.AST.COL_MAJOR))
+            "COL_MAJOR".!.map(_ => MatrixLayout.AST.COL_MAJOR) |
+            "NONE".!.map(_ => MatrixLayout.AST.NONE))
           ) | TypeIdentifier.map(i => MatrixLayout.AST.Identifier(i.name)))
 
       P("fragment[" ~ Nat.Nat ~ "," ~ Nat.Nat ~ "," ~ Nat.Nat ~ "," ~ DataType ~ "," ~ FragmentKind ~
