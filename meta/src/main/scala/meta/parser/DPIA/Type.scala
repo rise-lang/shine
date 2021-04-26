@@ -40,16 +40,16 @@ object Type {
 
     def AccType: P[AST.AccType] = P("acc[" ~ DataType ~ "]").map(AST.AccType)
 
+    def VarType: P[AST.PairType] = P("var[" ~ DataType ~ "]").
+      map(dt => AST.PairType(AST.ExpType(dt, Access.AST.Read), AST.AccType(dt)))
+
     def CommType: P[AST.CommType.type] = P("comm".!.map(_ => AST.CommType))
 
     def PairType: P[AST.PairType] =
       P("(" ~ NoCut(PhraseType) ~ "," ~/ PhraseType ~ ")").map(AST.PairType.tupled)
 
     def FunType: P[AST.FunType] =
-      P(NoCut(LeftPhraseType) ~ "->" ~/ PhraseType).map(AST.FunType.tupled)
-
-    // Types that can appear at the left of an function arrow
-    def LeftPhraseType: P[AST] = P(NonFunType | ("(" ~ PhraseType ~ ")"))
+      P(NoCut(NonFunPhraseType | ("(" ~ PhraseType ~ ")")) ~ "->" ~/ PhraseType).map(AST.FunType.tupled)
 
     def DepFunType: P[AST.DepFunType] = {
       def IdentifierKindPair: P[(AST.Identifier, Kind.AST)] =
@@ -58,8 +58,8 @@ object Type {
       P("(" ~ IdentifierKindPair ~ ")" ~ "->" ~/ PhraseType).map(AST.DepFunType.tupled)
     }
 
-    def NonFunType: P[AST] = P( ExpType | AccType | CommType | PairType | DepFunType )
+    def NonFunPhraseType: P[AST] = P( ExpType | AccType | VarType | CommType | PairType | DepFunType )
 
-    P( FunType | NonFunType )
+    P( FunType | NonFunPhraseType )
   }
 }

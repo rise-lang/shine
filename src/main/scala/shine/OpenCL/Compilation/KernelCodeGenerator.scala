@@ -38,12 +38,18 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case f: ocl.ParFor =>
-      val (i, o, p) = f.unwrapBody
-      OpenCLCodeGen.codeGenOpenCLParFor(f, f.n, f.dt, f.out, i, o, p, env)
+      f.body match {
+        case Lambda(i, Lambda(o, p)) =>
+          OpenCLCodeGen.codeGenOpenCLParFor(f, f.n, f.dt, f.out, i, o, p, env)
+        case _ => throw new Exception("This should not happen")
+      }
 
     case f: ocl.ParForNat =>
-      val (i, o, p) = f.unwrapBody
-      OpenCLCodeGen.codeGenOpenCLParForNat(f, f.n, f.out, i, o, p, env)
+      f.body match {
+        case DepLambda(i: NatIdentifier, Lambda(o, p)) =>
+          OpenCLCodeGen.codeGenOpenCLParForNat(f, f.n, f.out, i, o, p, env)
+        case _ => throw new Exception("This should not happen")
+      }
 
     case phrase@Assign(dt, a, e) => dt match {
       case VectorType(_, _) =>
@@ -105,10 +111,10 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
     case IdxVecAcc(_, _, i, a) =>
       CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
 
-    case ocl.IdxDistributeAcc(_, _, stride, _, _, a) => path match {
+    case idx: ocl.IdxDistributeAcc => path match {
       // TODO: ensure that i % stride == init ?
       case (i: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr(i / stride) :: ps, cont)
+        idx.array |> acc(env, CIntExpr(i / idx.stride) :: ps, cont)
       case _ => error(s"Expected a C-Integer-Expression on the path.")
     }
 
@@ -185,13 +191,13 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
 
     case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
 
-    case OpenCLFunctionCall(name, _, _, args) =>
+    case OpenCLFunctionCall(name, _, args) =>
       CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
 
-    case ocl.IdxDistribute(_, _, stride, _, _, e) => path match {
+    case idx: ocl.IdxDistribute => path match {
       // TODO: ensure that i % stride == init ?
       case (i: CIntExpr) :: ps
-      => e |> exp(env, CIntExpr(i / stride) :: ps, cont)
+      => idx.array |> exp(env, CIntExpr(i / idx.stride) :: ps, cont)
       case _ => error(s"Expected a C-Integer-Expression on the path.")
     }
 
@@ -307,7 +313,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
                             p: Phrase[CommType],
                             env: Environment): Stmt = {
       assert(!f.unroll)
-      val cI = C.AST.DeclRef(f.name)
+      val cI = C.AST.DeclRef(freshName(f.prefix))
       val range = RangeAdd(f.init, n, f.step)
       val updatedGen = updatedRanges(cI.name, range)
 
@@ -363,7 +369,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
                                p: Phrase[CommType],
                                env: Environment): Stmt = {
       assert(!f.unroll)
-      val cI = C.AST.DeclRef(f.name)
+      val cI = C.AST.DeclRef(freshName(f.prefix))
       val range = RangeAdd(f.init, n, f.step)
       val updatedGen = updatedRanges(cI.name, range)
 

@@ -7,6 +7,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Fst, Snd}
 
+object ImperativePrimitives {
+  def skip: Skip = Skip()
+}
+
 object `new` {
   def apply(dt: DataType,
             f: Phrase[VarType ->: CommType]): New =
@@ -79,7 +83,7 @@ object streamNext {
 }
 
 object comment {
-  def apply(comment: String): Comment = Comment(comment)
+  def apply(comment: String): Comment = Comment(comment)()
 }
 
 object fst {
@@ -109,5 +113,3 @@ object pairAcc2 {
   def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): PairAcc2 =
     PairAcc2(fstT, sndT, record)
 }
-
-object skip extends Skip

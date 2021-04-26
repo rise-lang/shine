@@ -694,7 +694,7 @@ object fromRise {
             fun[ExpType](ExpType(inTs(i), read), a =>
               buildFFCall(args :+ a))
           } else {
-            ForeignFunctionCall(decl, inTs, outT, args)
+            ForeignFunctionCall(decl, inTs, args)(outT)
           }
         }
         buildFFCall(Vector())
@@ -713,7 +713,7 @@ object fromRise {
                      ): Phrase[_ <: PhraseType] = t match {
           case FunType(in: ExpType, out) =>
             fun[ExpType](in, e => buildArrayPrimitive(out, elements :+ e))
-          case ExpType(ArrayType(_, et), _) => MakeArray(et, elements)
+          case ExpType(ArrayType(_, et), _) => MakeArray(elements)(elements.size, et)
           case _ => error(s"did not expect $t")
         }
         buildArrayPrimitive(t, Vector())
@@ -813,7 +813,7 @@ object fromRise {
           depFun[NatKind](ls1)(depFun[NatKind](ls2)(depFun[NatKind](ls3)(
             depFun[NatKind](gs1)(depFun[NatKind](gs2)(depFun[NatKind](gs3)(
               fun[ExpType](expT(t, write), e =>
-                ocl.Run(LocalSize(ls1, ls2, ls3), GlobalSize(gs1, gs2, gs3), t, e))))))))
+                ocl.Run(LocalSize(ls1, ls2, ls3), GlobalSize(gs1, gs2, gs3))(t, e))))))))
       }
 
       case core.dmatch() => fromType {

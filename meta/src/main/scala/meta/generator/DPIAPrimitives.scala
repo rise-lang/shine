@@ -83,7 +83,7 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
 
         ${generateVisitAndRebuild(name, generatedParams)}
 
-        ..${if (scalaParamsString.nonEmpty) {
+        ..${if (scalaParamsString.nonEmpty && generatedParams.last.size > 1) {
               List(generateUnwrap(generatedParams.last))
             } else List() }
       }
@@ -97,7 +97,8 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
     val scalaParams = if (scalaParamsString.nonEmpty) {
       List(scalaParamsString.split(",").map(param => {
         val parts = param.split(":").map(_.trim)
-        param"${Term.Name(parts(0))}: ${Type.Name(parts(1))}"
+        val ty = parts(1).parse[Type].get
+        param"${Term.Name(parts(0))}: $ty"
       }).toList)
     } else {
       List()
@@ -230,21 +231,31 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
                               paramLists: List[List[scala.meta.Term.Param]]): scala.meta.Defn.Def = {
     import scala.meta._
 
+    object TypeIs {
+      def unapply(ty: Type): Option[String] = ty match {
+        case Type.Name(name) => Some(name)
+        case Type.Select(_, Type.Name(name)) => Some(name)
+        case _ => None
+      }
+    }
+
     def injectVisitCall(param: Term.Param): Term = {
       param.decltpe match {
-        case Some(typeName) => typeName match {
-          case Type.Name("Nat") | Type.Name("NatIdentifier") =>
+        case Some(ty) => ty match {
+          case TypeIs("Nat") | TypeIs("NatIdentifier") =>
             q"v.nat(${Term.Name(param.name.value)})"
-          case Type.Name("DataType") | Type.Name("ScalarType") | Type.Name("BasicType") =>
+          case TypeIs("DataType") | TypeIs("ScalarType") | TypeIs("BasicType") =>
             q"v.data(${Term.Name(param.name.value)})"
-          case Type.Name("NatToNat") =>
+          case TypeIs("NatToNat") =>
             q"v.natToNat(${Term.Name(param.name.value)})"
-          case Type.Name("NatToData") =>
+          case TypeIs("NatToData") =>
             q"v.natToData(${Term.Name(param.name.value)})"
-          case Type.Name("AccessType") =>
+          case TypeIs("AccessType") =>
             q"v.access(${Term.Name(param.name.value)})"
-          case Type.Name("AddressSpace") =>
+          case TypeIs("AddressSpace") =>
             q"v.addressSpace(${Term.Name(param.name.value)})"
+          case TypeIs("LocalSize") | TypeIs("GlobalSize") =>
+            q"${Term.Name(param.name.value)}.visitAndRebuild(v)"
           case Type.Apply(Type.Name("Phrase"), _) => // Phrase[_]
             q"VisitAndRebuild(${Term.Name(param.name.value)}, v)"
           case Type.Apply(Type.Name("Vector"), List(Type.Apply(Type.Name("Phrase"), _))) // Vector[Phrase[_]]
@@ -257,22 +268,13 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
       }
     }
 
-    val argLists = paramLists.size match {
-      case 1 => paramLists.map(_.map(injectVisitCall))
-      case 2 => paramLists.head.map{
-        case Term.Param(_, name, _, _) => Term.Name(name.value)
-      } +: paramLists.tail.map(_.map(injectVisitCall))
-      case _ => throw new Exception(s"Expected 1 or 2 parameter lists for definition of `${name.value}'")
-    }
     q"""override def visitAndRebuild(v: VisitAndRebuild.Visitor): $name =
-       new $name(...$argLists)
+       new $name(...${paramLists.map(_.map(injectVisitCall))})
      """
   }
 
   def generateUnwrap(paramList: List[scala.meta.Term.Param]): scala.meta.Defn.Def = {
     import scala.meta._
-//    def unwrap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) =
-//      (n, dt1, dt2, f, array)
     val (types, names) = paramList.map({
       case Term.Param(_, name, Some(typ), _) => (typ, Term.Name(name.value))
     }).unzip

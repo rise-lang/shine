@@ -496,7 +496,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case MakeArray(_, elems) => path match {
+    case MakeArray(elems) => path match {
       case (i: CIntExpr) :: ps => try {
         elems(i.eval) |> exp(env, ps, cont)
       } catch {
@@ -509,9 +509,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case DepIdx(_, _, i, e) => e |> exp(env, CIntExpr(i) :: path, cont)
 
-    case ForeignFunctionCall(f, inTs, outT, args) =>
-      CCodeGen.codeGenForeignFunctionCall(f, inTs, outT, args, env, fe =>
-        generateAccess(outT, fe, path, env, cont)
+    case ffc@ForeignFunctionCall(f, inTs, args) =>
+      CCodeGen.codeGenForeignFunctionCall(f, inTs, ffc.outT, args, env, fe =>
+        generateAccess(ffc.outT, fe, path, env, cont)
       )
 
     case Proj1(pair) => SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1) |> exp(env, path, cont)
@@ -862,7 +862,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       })
     }
 
-    def codeGenForeignFunctionCall(funDecl: ForeignFunction.Declaration,
+    def codeGenForeignFunctionCall(funDecl: rise.core.ForeignFunction.Decl,
                                    inTs: collection.Seq[DataType],
                                    outT: DataType,
                                    args: collection.Seq[Phrase[ExpType]],

@@ -35,6 +35,12 @@ object PrettyPhrasePrinter {
 
       case PhrasePair(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
 
+      case shine.DPIA.primitives.imperative.Comment(comment) => s"\n//$comment\n"
+
+      case shine.OpenCL.primitives.imperative.Barrier(local, global) =>
+        s"""barrier( ${if(local) "CLK_LOCAL_MEM_FENCE" else ""} ${if(global && local) "|" else ""}
+          ${if(global) "CLK_GLOBAL_MEM_FENCE" else ""})"""
+
       case c: Primitive[_] => c.prettyPrint
     }
   }
