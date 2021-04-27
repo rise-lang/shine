@@ -10,8 +10,8 @@ import shine.DPIA._
 final case class ScatterAcc(val n: Nat, val m: Nat, val dt: DataType, val indices: Phrase[ExpType], val array: Phrase[AccType]) extends AccPrimitive {
   {
     indices :: expT(ArrayType(n, IndexType(m)), read)
-    array :: accT(ArrayType(n, dt))
+    array :: accT(ArrayType(m, dt))
   }
-  override val t: AccType = accT(ArrayType(m, dt))
+  override val t: AccType = accT(ArrayType(n, dt))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): ScatterAcc = new ScatterAcc(v.nat(n), v.nat(m), v.data(dt), VisitAndRebuild(indices, v), VisitAndRebuild(array, v))
 }

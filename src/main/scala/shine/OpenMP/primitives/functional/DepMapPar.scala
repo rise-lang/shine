@@ -11,7 +11,7 @@ final case class DepMapPar(val n: Nat, val ft1: NatToData, val ft2: NatToData, v
   {
     f :: ({
       val m = f.t.x
-      DepFunType[NatKind, PhraseType](m, FunType(expT(NatToDataApply(ft1, m), read), expT(NatToDataApply(ft2, m), read)))
+      DepFunType[NatKind, PhraseType](m, FunType(expT(NatToDataApply(ft1, m), read), expT(NatToDataApply(ft2, m), write)))
     })
     array :: expT(DepArrayType(n, ft1), read)
   }

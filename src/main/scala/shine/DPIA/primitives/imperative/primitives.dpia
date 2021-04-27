@@ -46,7 +46,7 @@ def pairAcc2(dt1: data, dt2: data, pair: acc[(dt1, dt2)]): acc[dt2]
 
 def reorderAcc(n: nat, dt: data, idxF: nat2nat, array: acc[n.dt]): acc[n.dt]
 
-def scatterAcc(n: nat, m: nat, dt: data, indices: exp[n.idx[m], read], array: acc[n.dt]): acc[m.dt]
+def scatterAcc(n: nat, m: nat, dt: data, indices: exp[n.idx[m], read], array: acc[m.dt]): acc[n.dt]
 
 def seq(c1: comm, c2: comm): comm
 

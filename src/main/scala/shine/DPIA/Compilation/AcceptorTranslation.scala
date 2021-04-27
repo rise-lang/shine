@@ -225,7 +225,7 @@ object AcceptorTranslation {
             y, x, A)))))
 
     case Scatter(n, m, dt, indices, input) =>
-      con(indices)(fun(expT(m`.`idx(n), read))(y =>
+      con(indices)(fun(expT(n`.`idx(m), read))(y =>
         acc(input)(ScatterAcc(n, m, dt, y, A))))
 
     case slide@Slide(n, sz, sp, dt, input) =>
@@ -288,7 +288,7 @@ object AcceptorTranslation {
               es: Seq[Phrase[ExpType]]): Phrase[CommType] = {
         ts match {
           case Nil =>
-            oclImp.KernelCallCmd(name, localSize, globalSize, es)(A.t.dataType, A)
+            oclImp.KernelCallCmd(name, localSize, globalSize, A, es)
           case Seq(arg, tail@_*) =>
             con(arg)(λ(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
         }
