@@ -46,7 +46,7 @@ def iterate(n: nat, m: nat, k: nat, dt: data,
             array: exp[(m*(n^k)).dt, read]): exp[m.dt, write]
 
 def iterateStream(n: nat, dt1: data, dt2: data,
-                  f: exp[dt1, read] -> exp[dt2, read],
+                  f: exp[dt1, read] -> exp[dt2, write],
                   array: exp[n.dt1, read]): exp[n.dt2, write]
 
 def join(n: nat, m: nat, a: access, dt: data, array: exp[n.m.dt, a]): exp[(n*m).dt, a]

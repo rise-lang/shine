@@ -9,7 +9,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 final case class ParFor(val n: Nat, val dt: DataType, val out: Phrase[AccType], val body: Phrase[FunType[ExpType, FunType[AccType, CommType]]]) extends CommandPrimitive {
   {
-    out :: accT(dt)
+    out :: accT(ArrayType(n, dt))
     body :: FunType(expT(IndexType(n), read), FunType(accT(dt), comm))
   }
   override val t: CommType = comm

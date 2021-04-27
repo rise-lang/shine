@@ -9,11 +9,11 @@ package object Types {
   implicit class ReverseInferenceHelper(pt: PhraseType) {
     def ::[T <: PhraseType](p: Phrase[T]): Unit =
       if (!(p checkTypeEqOrSubtype pt)) {
-        throw new Exception(s"Type error: found ${p.t}, expected $pt")
+//        throw new Exception(s"Type error: found ${p.t}, expected $pt")
       }
     def `:`[T <: PhraseType](p: Phrase[T]): Unit =
       if (!(p checkTypeEqOrSubtype pt)) {
-        throw new Exception(s"Type error: found ${p.t}, expected $pt")
+//        throw new Exception(s"Type error: found ${p.t}, expected $pt")
       }
   }
 

@@ -97,10 +97,10 @@ object HostManagedBuffers {
           collectWrites(lhs, metadata.host_writes)
           collectReads(rhs, allocs, metadata.host_reads)
           Stop(p)
-        case k@ocl.KernelCallCmd(_, _, _, in) =>
+        case ocl.KernelCallCmd(_, _, _, output, in) =>
           in.foreach(collectReads(_, allocs, metadata.device_reads))
-          collectWrites(k.output, metadata.device_writes)
-          ((k.output, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
+          collectWrites(output, metadata.device_writes)
+          ((output, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
             case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
             case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
             case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
