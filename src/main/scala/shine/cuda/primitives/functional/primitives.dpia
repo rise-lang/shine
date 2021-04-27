@@ -12,7 +12,7 @@
   */
 def asFragment(rows: nat, columns: nat, layers: nat, dt: data,
                frag: fragment, layout: matrixLayout,
-               input: exp[rows.columns.dt, write]): exp[fragment[rows, columns, layers, dt, frag, layout], write]
+               input: exp[rows.columns.dt, read]): exp[fragment[rows, columns, layers, dt, frag, layout], write]
 
 /**
   * Returns a matrix tile with the elements from the `Accumulator`-fragment. The matrix tile must resides
@@ -26,7 +26,7 @@ def asFragment(rows: nat, columns: nat, layers: nat, dt: data,
   */
 def asMatrix(rows: nat, columns: nat, layers: nat, dt: data,
              input: exp[fragment[rows, columns, layers, dt, fragment.ACC, matrixLayout.NONE], read]
-             ): exp[rows.columns.dt, read]
+             ): exp[rows.columns.dt, write]
 
 /**
   * Returns a fragment in which all elements have a specific value ({@link WmmaFill}). <br>
@@ -64,11 +64,11 @@ def map{level: shine.OpenCL.ParallelismLevel, dim: Int}
   * @param fun      function which takes an element of type `fragType.dataType` and
   *                 returns an element of type `fragType.dataType`
   */
-def mapFragmentElements(rows: nat, columns: nat, layers: nat, dt: data,
-                        frag: fragment, layout: matrixLayout,
-                        f: exp[dt, read] -> exp[dt, write],
-                        input: exp[fragment[rows, columns, layers, dt, frag, layout], read]
-                       ): exp[fragment[rows, columns, layers, dt, frag, layout], write]
+def mapFragment(rows: nat, columns: nat, layers: nat, dt: data,
+                frag: fragment, layout: matrixLayout,
+                f: exp[dt, read] -> exp[dt, write],
+                input: exp[fragment[rows, columns, layers, dt, frag, layout], read]
+               ): exp[fragment[rows, columns, layers, dt, frag, layout], write]
 
 /**
   * Executes an MMA instruction using (multiple) Tensor Cores ({@link WmmaMMA}). <br>

@@ -14,7 +14,7 @@ final case class MapI(level: ParallelismLevel, dim: Int) {
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommType] = {
     val imperativ = comment(s"map${level.toString}") `;`
-                      ParFor(level, dim, unroll = false)(n, dt2, out,
+                      shine.cuda.DSL.parFor(level, dim, unroll = false)(n, dt2, out,
                         λ(expT(idx(n), read))(i => λ(accT(dt2))(a => f(in `@` i)(a))))
     //TODO use other InsertMemoryBarrieres-mechanism
     level match {

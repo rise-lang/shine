@@ -7,8 +7,14 @@ import shine.DPIA.Types.TypeCheck._
 
 package object Types {
   implicit class ReverseInferenceHelper(pt: PhraseType) {
-    def ::[T <: PhraseType](p: Phrase[T]): Unit = p checkTypeEqOrSubtype pt
-    def `:`[T <: PhraseType](p: Phrase[T]): Unit = p checkTypeEqOrSubtype pt
+    def ::[T <: PhraseType](p: Phrase[T]): Unit =
+      if (!(p checkTypeEqOrSubtype pt)) {
+        throw new Exception(s"Type error: found ${p.t}, expected $pt")
+      }
+    def `:`[T <: PhraseType](p: Phrase[T]): Unit =
+      if (!(p checkTypeEqOrSubtype pt)) {
+        throw new Exception(s"Type error: found ${p.t}, expected $pt")
+      }
   }
 
   type NatDependentFunctionType[T <: PhraseType] = DepFunType[NatKind, T]
