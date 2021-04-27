@@ -1,19 +1,14 @@
 package shine.GAP8.Compilation
 
-import arithexpr.arithmetic.Cst
 import shine.C.AST.{IncludeHeader, ParamKind}
+import shine.C.Compilation.{ModuleGenerator => CModuleGenerator}
 import shine.C.{Compilation, Module}
-import shine.DPIA.Compilation.Passes._
-import shine.DPIA.Compilation.{FunDef, TranslationToImperative}
-import shine.DPIA.DSL._
+import shine.DPIA.Compilation.FunDef
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.primitives.functional
 import shine.{C, DPIA}
-import util.compiler.DSL.run
-import shine.C.Compilation.{ModuleGenerator => CModuleGenerator}
 
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
 
 object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
   override type Module = C.Module
@@ -28,7 +23,6 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
                   ): Phrase[ExpType] => Phrase[CommType] =
     CModuleGenerator.toImperative(gen, funDef, outParam)
 
-  //Culprit
   override def imperativeToModule(gen: CodeGenerator,
                                   funDef: FunDef,
                                   outParam: Identifier[AccType]
@@ -60,13 +54,26 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
         params.map(i => C.AST.VarDecl(i.name, i.t))
       )
 
-      //C.AST.Cast or sth
-      val structCastStmt = C.AST.Code("struct cluster_params* cl_params = (struct cluster_params*) args;")
-      //C.AST.DeclStmt maybe?
-      val unpackingStmt = C.AST.Code(
-        params.map(pdecl => pdecl.t.print + " " + pdecl.name + " = " + "cl_params->" + pdecl.name + ";").mkString("\n")
-      )
+      val structCastDecl = {
+        C.AST.DeclStmt(
+          C.AST.VarDecl(
+            "cl_params",
+            C.AST.PointerType(
+              C.AST.StructType("cluster_params", Seq())
+            ),
+            Some(C.AST.Cast(C.AST.PointerType(C.AST.StructType("cluster_params", Seq())), C.AST.Literal("args")))
+          )
+        )
+      }
 
+      val unpackingStmts = params.map{paramDecl =>
+        C.AST.DeclStmt(
+          C.AST.VarDecl(
+            paramDecl.name,
+            paramDecl.t,
+            Some(C.AST.StructMemberAccess(C.AST.Literal("(*cl_params)"), C.AST.DeclRef(paramDecl.name)))
+        ))
+      }
 
       Module(
         includes = immutable.Seq(IncludeHeader("stdint.h")),
@@ -78,14 +85,9 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
                 funDef.name,
                 returnType = C.AST.Type.void,
                 Seq(C.AST.ParamDecl("args", C.AST.PointerType(C.AST.Type.void))),
-                C.AST.Block(immutable.Seq(structCastStmt, unpackingStmt, code))),
+                C.AST.Block(immutable.Seq(structCastDecl) ++ unpackingStmts ++ immutable.Seq(code))),
             paramKinds =
-            //Construct new ParamKind() of type analogous to void*, assert in Function.scala fails
-              ParamKind(
-                outParam.`type`.dataType, C.AST.ParamKind.Kind.output
-              ) +: funDef.params.map(p =>
-                ParamKind(p.`type`.dataType, C.AST.ParamKind.Kind.input)
-              )
+              immutable.Seq(ParamKind(DPIA.Types.OpaqueType("void*"), C.AST.ParamKind.Kind.input))
           )
         )
       )
