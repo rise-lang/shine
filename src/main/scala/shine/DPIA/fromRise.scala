@@ -771,7 +771,7 @@ object fromRise {
           expT(ArrayType(_, _), _)
         =>
         fun[ExpType](expT(m`.`vec(n, t), a), e =>
-          AsScalar(m, n, t, a, e))
+          AsScalar(n, m, t, a, e))
       }
 
       case core.vectorFromScalar() => fromType {

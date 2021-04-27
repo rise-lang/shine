@@ -233,18 +233,18 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case AsScalarAcc(_, m, dt, a) => path match {
+    case AsScalarAcc(n, _, dt, a) => path match {
       case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr((i * m) + j) :: ps, cont)
+        a |> acc(env, CIntExpr((i * n) + j) :: ps, cont)
 
       case (i : CIntExpr) :: Nil =>
-        a |> acc(env,CIntExpr(i * m) :: Nil, array => {
+        a |> acc(env,CIntExpr(i * n) :: Nil, array => {
           cont(
             //acces first (vector-)element pointed by the pointer
             C.AST.ArraySubscript(
               //cast pointer to array to pointer of vectorType
               C.AST.Cast(
-                C.AST.PointerType(getVectorType(dt, m)),
+                C.AST.PointerType(getVectorType(dt, n)),
                 C.AST.UnaryExpr(C.AST.UnaryOperator.&, array)),
               C.AST.ArithmeticExpr(0)))})
 
@@ -309,13 +309,13 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
         case shine.DPIA.Types.u32 => BasicType(s"uint$n")
         case shine.DPIA.Types.f32 => BasicType(s"float$n")
         case shine.DPIA.Types.f64 => BasicType(s"double$n")
-        case _ => ???
+        case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
       }
     else
       dt match {
         case shine.DPIA.Types.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
         case shine.DPIA.Types.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
-        case _ => ???
+        case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
       }
   }
 
