@@ -1765,6 +1765,56 @@ class parseTest extends  test_util.TestsWithExecutor {
     }
   }
 
+  test("parser should be able to parse 'nbodyWithMoreParentheses.rise'"){
+    val fileName: String = testFilePath + "nbodyWithMoreParentheses.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "nbody"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case Left(lambda) => lambda.toExpr
+      case Right(types) => fail("no definition is in map: " + types)
+    }
+
+    ex_g.t match {
+      case rt.DepFunType(n:rt.NatIdentifier,rt.FunType(
+      rt.ArrayType(n1: rt.NatIdentifier,rt.VectorType(num1:rt.Nat, rt.f32)),
+      rt.FunType(
+      rt.ArrayType(n2: rt.NatIdentifier,rt.VectorType(num2:rt.Nat, rt.f32)),
+      rt.FunType(rt.f32, rt.FunType(rt.f32, rt.ArrayType(n3:rt.NatIdentifier,
+      rt.PairType(rt.VectorType(num3:rt.Nat, rt.f32),rt.VectorType(num4:rt.Nat, rt.f32)))))
+      )
+      ))
+
+        if n1.name.equals(n.name) && n2.name.equals(n.name)
+          && n3.name.equals(n.name)
+          &&num1.eval.equals(4)&&num2.eval.equals(4)&&num3.eval.equals(4)&&num4.eval.equals(4)
+      => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+    val N = 512
+    val tileX = 256
+    val tileY = 1
+
+    val random = new scala.util.Random()
+    val pos = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+    val vel = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+
+    val localSizeAMD = LocalSize(128)
+    val globalSizeAMD = GlobalSize(N)
+
+    val localSizeNVIDIA = LocalSize((tileX, tileY))
+    val globalSizeNVIDIA = GlobalSize((N, tileY))
+
+    test_util.runsWithSameResult(Seq(
+      //("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
+      //("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
+      ("parser NVIDIA", runKernel(gen.OpenCLKernel(ex_g), localSizeAMD, globalSizeAMD, pos, vel)),
+      ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
+    ))
+  }
+
   //Todo: not ignore
   test("parser should be able to parse 'nbody.rise'"){
     val fileName: String = testFilePath + "nbody.rise"
@@ -2079,397 +2129,7 @@ class parseTest extends  test_util.TestsWithExecutor {
       ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
     ))
   }
-
-  //Todo: not ignore
-  ignore("parser should be able to parse 'nbodyMinimalTypes.rise'" ) {
-    val fileName: String = testFilePath + "nbodyMinimalTypes.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName2: String = "nbody"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
-    }
-
-    ex_g.t match {
-      case rt.DepFunType(n:rt.NatIdentifier,rt.FunType(
-      rt.ArrayType(n1: rt.NatIdentifier,rt.VectorType(num1:rt.Nat, rt.f32)),
-      rt.FunType(
-      rt.ArrayType(n2: rt.NatIdentifier,rt.VectorType(num2:rt.Nat, rt.f32)),
-      rt.FunType(rt.f32, rt.FunType(rt.f32, rt.ArrayType(n3:rt.NatIdentifier,
-      rt.PairType(rt.VectorType(num3:rt.Nat, rt.f32),rt.VectorType(num4:rt.Nat, rt.f32)))))
-      )
-      ))
-
-        if n.name.equals("N") && n1.name.equals(n.name) && n2.name.equals(n.name)
-          && n3.name.equals(n.name)
-          &&num1.eval.equals(4)&&num2.eval.equals(4)&&num3.eval.equals(4)&&num4.eval.equals(4)
-      => true
-      case t => fail("The Type '" + t + "' is not the expected type.")
-    }
-    //Todo: finish match
-    ex_g match {
-      case dep@r.DepLambda(n: rt.NatIdentifier, lam@r.Lambda(r.Identifier("pos"), lam2@r.Lambda(
-      r.Identifier("vel"), lam3@r.Lambda(r.Identifier("espSqr"), lam4@r.Lambda(r.Identifier("deltaT"),
-      r.App(rp.join(_), r.App(rp.join(_), r.App(r.App(op.mapWorkGroup(1,_),r.App(rp.join(_), r.App(
-      r.App(op.mapWorkGroup(0,_),
-
-      lam5@r.Lambda(r.Identifier("p1Chunk"), lam6@r.Lambda(r.Identifier("newP1Chunk"),
-      r.App(r.App(r.App(op.mapLocal(1,_),
-
-      lam7@r.Lambda(r.Identifier("bla"), r.App(r.App(op.mapLocal(0,_), lam8@r.Lambda(r.Identifier("p1A"),
-      r.App(r.App(r.App(r.App(r.Identifier("update"), r.App(rp.fst(_), r.App(rp.fst(_), r.Identifier("p1A")))),
-      r.App(rp.fst(_), r.App(rp.snd(_), r.Identifier("p1A")))), r.Identifier("deltaT")), r.App(rp.snd(_), r.Identifier("p1A"))))),
-      r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")), r.Identifier("bla"))))
-
-      ),
-      r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
-      lam9@r.Lambda(r.Identifier("accA"), lam10@r.Lambda(r.Identifier("p2A"),
-
-      r.App(r.App(rp.let(_), r.App(r.App(r.DepApp(op.oclToMem(_),
-      l1:rt.AddressSpace.Local.type
-      ), r.App(op.mapLocal(1,_), r.App(op.mapLocal(0,_), lam11@r.Lambda(r.Identifier("x1"),r.Identifier("x1"))))),
-      r.Identifier("p2A")
-      )),
-      lam12@r.Lambda(r.Identifier("p2Local"), r.App(r.App(op.mapLocal(1,_), lam13@r.Lambda(r.Identifier("accDim"),
-      r.App(r.App(op.mapLocal(0,_),
-      lam14@r.Lambda(r.Identifier("p1B"), r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), p:rt.AddressSpace.Private.type ),
-
-      lam15@r.Lambda(r.Identifier("accB"), lam16@r.Lambda(r.Identifier("p2B"), r.App(r.App(r.App(r.App(r.App(r.Identifier("calcAcc"),
-      r.App(rp.fst(_),
-      r.App(rp.fst(_), r.Identifier("p1B")))),
-      r.Identifier("p2B")), r.Identifier("deltaT")), r.Identifier("espSqr")), r.Identifier("accB")))
-
-      )), r.App(rp.snd(_), r.Identifier("p1B"))), r.App(rp.fst(_), r.Identifier("accDim2")))))
-      , r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")), r.App(rp.snd(_), r.App(rp.snd(_), r.Identifier("accDim"))))
-      ))),r.App(r.App(rp.zip(_), r.Identifier("p2Local")), r.Identifier("accA")))
-
-      ))
-      ))),
-      r.App(r.App(op.mapLocal(1,_), r.App(op.mapLocal(0,_),lam17@r.Lambda(r.Identifier("x2"),r.Identifier("x2")))),
-      r.App(rp.generate(_),
-
-      r.App(rp.vectorFromScalar(_), r.Literal(rS.IntData(0), _))
-
-      ))
-      )), //probably has the 0 of the Type Nat
-
-      r.App(r.DepApp(rp.split(_), n1:rt.Nat), r.App(r.DepApp(rp.split(_), n2:rt.Nat),
-      r.Identifier("pos")))
-      )
-
-      ))
-
-      ),
-      r.DepApp(rp.split(_), n3:rt.Nat)
-      ))
-      ),
-      r.App(r.DepApp(rp.split(_), n4:rt.NatIdentifier),
-      r.App(r.App(rp.zip(_), r.Identifier("pos")), r.Identifier("vel"))
-
-      )
-      ))
-      ))))))
-        if n.name.equals("N") &&n4.name.equals(n.name)&& n1.eval.equals(1) &&n2.eval.equals(256)&&n3.eval.equals(256)
-      => {
-        dep.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(6)
-            end.row should equal(78)
-            begin.column should equal(1)
-            end.column should equal(12)
-          }
-        }
-        lam.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(14)
-            end.row should equal(78)
-            begin.column should equal(1)
-            end.column should equal(12)
-          }
-        }
-        lam2.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(20)
-            end.row should equal(78)
-            begin.column should equal(1)
-            end.column should equal(12)
-          }
-        }
-        lam3.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(26)
-            end.row should equal(78)
-            begin.column should equal(1)
-            end.column should equal(12)
-          }
-        }
-        lam4.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(35)
-            end.row should equal(78)
-            begin.column should equal(1)
-            end.column should equal(12)
-          }
-        }
-        lam5.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(8)
-            end.row should equal(36)
-            begin.column should equal(3)
-            end.column should equal(12)
-          }
-        }
-        lam6.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(20)
-            end.row should equal(36)
-            begin.column should equal(3)
-            end.column should equal(12)
-          }
-        }
-        lam7.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(47)
-            end.row should equal(31)
-            begin.column should equal(3)
-            end.column should equal(5)
-          }
-        }
-        lam8.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(12)
-            end.row should equal(74)
-            begin.column should equal(4)
-            end.column should equal(4)
-          }
-        }
-        lam9.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(11)
-            end.row should equal(72)
-            begin.column should equal(7)
-            end.column should equal(10)
-          }
-        }
-        lam10.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(18)
-            end.row should equal(72)
-            begin.column should equal(7)
-            end.column should equal(10)
-          }
-        }
-        lam11.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(63)
-            end.row should equal(70)
-            begin.column should equal(7)
-            end.column should equal(7)
-          }
-        }
-        lam12.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(11)
-            end.row should equal(71)
-            begin.column should equal(8)
-            end.column should equal(10)
-          }
-        }
-        lam13.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(35)
-            end.row should equal(51)
-            begin.column should equal(8)
-            end.column should equal(10)
-          }
-        }
-        lam14.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(57)
-            end.row should equal(102)
-            begin.column should equal(8)
-            end.column should equal(9)
-          }
-        }
-        lam15.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(17)
-            end.row should equal(77)
-            begin.column should equal(9)
-            end.column should equal(9)
-          }
-        }
-        lam16.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(24)
-            end.row should equal(77)
-            begin.column should equal(9)
-            end.column should equal(9)
-          }
-        }
-        lam17.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, begin, end)) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-            begin.row should equal(35)
-            end.row should equal(42)
-            begin.column should equal(11)
-            end.column should equal(11)
-          }
-        }
-      }
-      case r.DepLambda(n, e) => {
-        fail("Not correct deplambda: "
-          +n.toString()+ " , " + e.toString())
-      }
-      case a => fail("Not a DepLambda: " + a)
-    }
-    ex_g.span match {
-      case None => fail("The Span should not be None")
-      case Some(Span(file, begin, end)) => {
-        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/nbodyMinimalTypes.rise")
-        begin.row should equal(6)
-        end.row should equal(78)
-        begin.column should equal(1)
-        end.column should equal(12)
-      }
-    }
-  }
-
-
-  //  def print_nbody(): Unit ={ //Todo:not completly correct is this constructed nbody, it was only for debugging first created
-  //    val e = r.DepLambda[rt.NatKind](rt.NatIdentifier("N"), r.Lambda(r.Identifier("pos")(rt.TypePlaceholder),
-  //      r.Lambda(
-  //        r.Identifier("vel")(rt.TypePlaceholder), r.Lambda(r.Identifier("espSqr")(rt.TypePlaceholder),
-  //          r.Lambda(r.Identifier("deltaT")(rt.TypePlaceholder),
-  //            r.App(rp.join(_), r.App(rp.join(_), r.App(r.App(op.mapWorkGroup(1),
-  //              r.App(rp.join(_), r.App(
-  //                r.App(op.mapWorkGroup(0),
-  //
-  //                  r.Lambda(r.Identifier("p1Chunk")(rt.TypePlaceholder), r.Lambda(r.Identifier("newP1Chunk")(rt.TypePlaceholder),
-  //                    r.App(r.App(r.App(op.mapLocal(1),
-  //
-  //                      r.Lambda(r.Identifier("bla")(rt.TypePlaceholder), r.App(r.App(op.mapLocal(0),
-  //                        r.Lambda(r.Identifier("p1A")(rt.TypePlaceholder),
-  //                          r.App(r.App(r.App(r.App(r.Identifier("update")(rt.TypePlaceholder), r.App(rp.fst(_),
-  //                            r.App(rp.fst(_), r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                          )(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                            r.App(rp.fst(_), r.App(rp.snd(_),
-  //                              r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                            )(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                            r.Identifier("deltaT")(rt.TypePlaceholder))(rt.TypePlaceholder), r.App(rp.snd(_),
-  //                            r.Identifier("p1A")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                      )(rt.TypePlaceholder),
-  //                        r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                          r.Identifier("bla")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                    )(rt.TypePlaceholder),
-  //                      r.App(
-  //                        r.App(r.DepApp[rt.AddressSpaceKind](op.oclReduceSeq(_),
-  //                          rt.AddressSpace.Local)(rt.TypePlaceholder),
-  //                          r.Lambda(r.Identifier("accA")(rt.TypePlaceholder), r.Lambda(r.Identifier("p2A")(rt.TypePlaceholder),
-  //
-  //                            r.App(r.App(rp.let(_), r.App(r.App(r.DepApp[rt.AddressSpaceKind](op.oclToMem(_),
-  //                              rt.AddressSpace.Local
-  //                            )(rt.TypePlaceholder), r.App(op.mapLocal(1), r.App(op.mapLocal(0),
-  //                              r.Lambda(r.Identifier("x1")(rt.TypePlaceholder),r.Identifier("x1")(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                              r.Identifier("p2A")(rt.TypePlaceholder)
-  //                            )(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                              r.Lambda(r.Identifier("p2Local")(rt.TypePlaceholder), r.App(r.App(op.mapLocal(1),
-  //                                r.Lambda(r.Identifier("accDim")(rt.TypePlaceholder),r.App(r.App(op.mapLocal(0),
-  //                                  r.Lambda(r.Identifier("p1B")(rt.TypePlaceholder), r.App(r.App(r.App(
-  //                                    r.DepApp[rt.AddressSpaceKind](op.oclReduceSeq(_),
-  //                                      rt.AddressSpace.Private)(rt.TypePlaceholder),
-  //
-  //                                    r.Lambda(r.Identifier("accB")(rt.TypePlaceholder),
-  //                                      r.Lambda(r.Identifier("p2B")(rt.TypePlaceholder), r.App(r.App(r.App(r.App(r.App(
-  //                                      r.Identifier("calcAcc")(rt.TypePlaceholder), r.App(rp.fst(_),
-  //                                        r.App(rp.fst(_), r.Identifier("p1B")(rt.TypePlaceholder)
-  //                                        )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                                      r.Identifier("p2B")(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                                      r.Identifier("deltaT")(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                                      r.Identifier("espSqr")(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                                      r.Identifier("accB")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                                  )(rt.TypePlaceholder)
-  //
-  //                                  )(rt.TypePlaceholder), r.App(rp.snd(_),
-  //                                    r.Identifier("p1B")(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                                  )(rt.TypePlaceholder), r.App(rp.fst(_), r.Identifier("accDim2")(rt.TypePlaceholder)
-  //                                  )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                                  , r.App(r.App(rp.zip(_), r.Identifier("newP1Chunk")(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                                    , r.App(rp.snd(_),
-  //                                      r.App(rp.snd(_), r.Identifier("accDim")(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                                    )(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                                )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),r.App(r.App(rp.zip(_), r.Identifier("p2Local")(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                                r.Identifier("accA")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //
-  //                              )(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                          )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                        ,
-  //                        r.App(r.App(op.mapLocal(1), r.App(op.mapLocal(0),
-  //                          r.Lambda(r.Identifier("x")(rt.TypePlaceholder),r.Identifier("x")(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                        )(rt.TypePlaceholder)
-  //                        )(rt.TypePlaceholder), r.App(rp.generate(_),
-  //                          r.App(rp.vectorFromScalar(_), r.Literal(rS.NatData(0)))(rt.TypePlaceholder)
-  //                        )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //
-  //                      r.App(r.App(rp.split(_), r.Literal(rS.IntData(1)))(rt.TypePlaceholder),
-  //                        r.App(r.App(rp.split(_), r.Literal(rS.IntData(256)))(rt.TypePlaceholder),
-  //                          r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //                  )(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //
-  //                )(rt.TypePlaceholder)
-  //                ,r.App(rp.split(_), r.Literal(rS.IntData(256)))(rt.TypePlaceholder)
-  //              )(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //            )(rt.TypePlaceholder),
-  //              r.App(r.DepApp[rt.NatKind](rp.split(_), rt.NatIdentifier("N"))(rt.TypePlaceholder),
-  //                r.App(r.App(rp.zip(_), r.Identifier("pos")(rt.TypePlaceholder))(rt.TypePlaceholder),
-  //                  r.Identifier("vel")(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //            )(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //            )(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //    )(rt.TypePlaceholder))(rt.TypePlaceholder)
-  //    println("_____________________________________________________________________________________Correct NBODY")
-  //    println(e)
-  //    println("__________________________________________________________________________________________________")
-  //  }
-
+  
   test("parser should print nbody"){
     //print_nbody()
   }
