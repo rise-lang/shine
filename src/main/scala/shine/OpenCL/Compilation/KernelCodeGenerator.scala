@@ -90,20 +90,20 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def acc(env: Environment,
                    path: Path,
                    cont: Expr => Stmt): Phrase[AccType] => Stmt = {
-    case AsVectorAcc(n, _, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i / n) :: ps, cont)
+    case AsVectorAcc(_, m, _, a) => path match {
+      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i / m) :: ps, cont)
       case _ => error(s"Expected path to be not empty")
     }
-    case AsScalarAcc(_, m, dt, a) => path match {
+    case AsScalarAcc(n, _, dt, a) => path match {
       case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr((i * m) + j) :: ps, cont)
+        a |> acc(env, CIntExpr((i * n) + j) :: ps, cont)
 
       case (i: CIntExpr) :: Nil =>
         // TODO: check alignment and use pointer with correct address space
-        a |> acc(env, CIntExpr(i * m) :: Nil, array => {
+        a |> acc(env, CIntExpr(i * n) :: Nil, array => {
           // the continuation has to add the value ...
           val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, array)
-          cont(C.AST.FunCall(C.AST.DeclRef(s"vstore$m"),
+          cont(C.AST.FunCall(C.AST.DeclRef(s"vstore$n"),
             immutable.Seq(C.AST.Literal("0"), ptr)))
         })
       case _ => error(s"Expected path to be not empty")

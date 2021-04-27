@@ -1,10 +1,10 @@
-def asScalarAcc(n: nat, m: nat, dt: data, array: acc[(m*n).dt]): acc[n.vec[dt, m]]
+def asScalarAcc(n: nat, m: nat, dt: data, array: acc[(m*n).dt]): acc[m.vec[dt, n]]
 
 def assign(dt: data, lhs: acc[dt], rhs: exp[dt, read]): comm
 
-def asVectorAcc(n: nat, m: nat, dt: data, array: acc[n.vec[dt, m]]): acc[(n*m).dt]
+def asVectorAcc(n: nat, m: nat, dt: data, array: acc[m.vec[dt, n]]): acc[(n*m).dt]
 
- def comment{comment: String}(): comm
+def comment{comment: String}(): comm
 
 def cycleAcc(n: nat, m: nat, dt: data, input: acc[m.dt]): acc[n.dt]
 

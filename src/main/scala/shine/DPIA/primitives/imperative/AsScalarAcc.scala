@@ -11,6 +11,6 @@ final case class AsScalarAcc(val n: Nat, val m: Nat, val dt: DataType, val array
   {
     array :: accT(ArrayType(m * n, dt))
   }
-  override val t: AccType = accT(ArrayType(n, VectorType(m, dt)))
+  override val t: AccType = accT(ArrayType(m, VectorType(n, dt)))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): AsScalarAcc = new AsScalarAcc(v.nat(n), v.nat(m), v.data(dt), VisitAndRebuild(array, v))
 }
