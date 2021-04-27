@@ -33,7 +33,8 @@ object substitute {
             case Lambda(x, b) =>
               // See https://www.cs.cornell.edu/courses/cs3110/2019sp/textbook/interp/subst_lambda.html
               if (x =~= `for`) return_(e)
-              if (!(FV(expression) contains x))
+              // FIXME: should just be !(FV(expression) contains x) ?
+              if (!(FV(expression) contains x) && !(FV(b) contains x))
                 super.expr(e)
               else {
                 val newX = Identifier(freshName(x.name.substring(0, 1)))(x.t)
