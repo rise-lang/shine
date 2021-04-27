@@ -7,11 +7,11 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-final case class MapFragmentElements(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: FragmentKind, val layout: MatrixLayout, val f: Phrase[FunType[ExpType, ExpType]], val input: Phrase[ExpType]) extends ExpPrimitive {
+final case class MapFragment(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: FragmentKind, val layout: MatrixLayout, val f: Phrase[FunType[ExpType, ExpType]], val input: Phrase[ExpType]) extends ExpPrimitive {
   {
     f :: FunType(expT(dt, read), expT(dt, write))
     input :: expT(FragmentType(rows, columns, layers, dt, frag, layout), read)
   }
   override val t: ExpType = expT(FragmentType(rows, columns, layers, dt, frag, layout), write)
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): MapFragmentElements = new MapFragmentElements(v.nat(rows), v.nat(columns), v.nat(layers), v.data(dt), frag, layout, VisitAndRebuild(f, v), VisitAndRebuild(input, v))
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): MapFragment = new MapFragment(v.nat(rows), v.nat(columns), v.nat(layers), v.data(dt), frag, layout, VisitAndRebuild(f, v), VisitAndRebuild(input, v))
 }

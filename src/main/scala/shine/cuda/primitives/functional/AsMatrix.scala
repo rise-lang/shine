@@ -11,6 +11,6 @@ final case class AsMatrix(val rows: Nat, val columns: Nat, val layers: Nat, val 
   {
     input :: expT(FragmentType(rows, columns, layers, dt, FragmentKind.Accumulator, MatrixLayout.None), read)
   }
-  override val t: ExpType = expT(ArrayType(rows, ArrayType(columns, dt)), read)
+  override val t: ExpType = expT(ArrayType(rows, ArrayType(columns, dt)), write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): AsMatrix = new AsMatrix(v.nat(rows), v.nat(columns), v.nat(layers), v.data(dt), VisitAndRebuild(input, v))
 }

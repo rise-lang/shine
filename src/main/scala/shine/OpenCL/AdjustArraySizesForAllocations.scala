@@ -8,7 +8,7 @@ import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.OpenCL.{primitives => ocl}
 import shine.cuda.{primitives => cuda}
-import shine.cuda.primitives.functional.{AsMatrix, GenerateFragment, MapFragmentElements, TensorMatMultAdd, AsFragment}
+import shine.cuda.primitives.functional.{AsMatrix, GenerateFragment, MapFragment, TensorMatMultAdd, AsFragment}
 import shine.cuda.warpDim
 
 object AdjustArraySizesForAllocations {
@@ -85,7 +85,7 @@ object AdjustArraySizesForAllocations {
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunctionCall |
            _: BinOp | _: UnaryOp | _: GenerateFragment |
-           _: AsMatrix | _: AsFragment | _: MapFragmentElements |
+           _: AsMatrix | _: AsFragment | _: MapFragment |
            _: TensorMatMultAdd => parallInfo
 
       //TODO visit value first?

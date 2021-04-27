@@ -9,7 +9,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 final case class AsFragment(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: FragmentKind, val layout: MatrixLayout, val input: Phrase[ExpType]) extends ExpPrimitive {
   {
-    input :: expT(ArrayType(rows, ArrayType(columns, dt)), write)
+    input :: expT(ArrayType(rows, ArrayType(columns, dt)), read)
   }
   override val t: ExpType = expT(FragmentType(rows, columns, layers, dt, frag, layout), write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): AsFragment = new AsFragment(v.nat(rows), v.nat(columns), v.nat(layers), v.data(dt), frag, layout, VisitAndRebuild(input, v))

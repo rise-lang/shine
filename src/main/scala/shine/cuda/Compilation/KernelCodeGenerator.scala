@@ -48,8 +48,11 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case f: ParFor =>
-      val (i, o, p) = f.unwrapBody
-      codeGenCudaParFor(f, f.n, f.dt, f.out, i, o, p, env)
+      f.body match {
+        case Lambda(i, Lambda(o, p)) =>
+          codeGenCudaParFor(f, f.n, f.dt, f.out, i, o, p, env)
+        case _ => throw new Exception("This should not happen")
+      }
 
     case WmmaLoad(m, n, k, _, fragType, layoutIdentifier, matrix, fragmentAcc) =>
       matrix |> exp(env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
@@ -92,7 +95,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
               C.AST.ArithmeticExpr(ldm),
               C.AST.DeclRef(toString(layout)))))}))
 
-    case WmmaFill(_, _, _, _, fill, _, _, fragmentAcc) =>
+    case WmmaFill(_, _, _, _, _, _, fill, fragmentAcc) =>
       fill |> exp(env, Nil, fill =>
         fragmentAcc |> acc(env, Nil, fragment =>
           C.AST.ExprStmt(C.AST.FunCall(
@@ -114,7 +117,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
                   bMatrix,
                   cMatrix)))))))
 
-    case ForFragmentElements(fragType, inFragment, outFragmemt, Lambda(in, Lambda(out, p))) =>
+    case ForFragment(_, _, _, dt, _, _, inFragment, outFragmemt, Lambda(in, Lambda(out, p))) =>
       inFragment |> exp(env, Nil, fragmentIn =>
         outFragmemt |> acc(env, Nil, fragmentOut => {
           val n = C.AST.StructMemberAccess(fragmentOut, C.AST.DeclRef("num_elements"))
@@ -142,8 +145,8 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
               C.AST.Block(
                 immutable.Seq(
-                  C.AST.DeclStmt(C.AST.VarDecl(xIInPointer.name, PointerType(typ(fragType.dataType)), init = Some(xIInDecl))),
-                  C.AST.DeclStmt(C.AST.VarDecl(xIOutPointer.name, PointerType(typ(fragType.dataType)), init = Some(xIOutDecl))),
+                  C.AST.DeclStmt(C.AST.VarDecl(xIInPointer.name, PointerType(typ(dt)), init = Some(xIInDecl))),
+                  C.AST.DeclStmt(C.AST.VarDecl(xIOutPointer.name, PointerType(typ(dt)), init = Some(xIOutDecl))),
                   p |> updatedGen.cmd(env updatedIdentEnv (in -> xIIn) updatedIdentEnv (out -> xIOut))))))}))
 
     case Assign(_, lhsAcc, rhs) =>
@@ -331,7 +334,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
                         p: Phrase[CommType],
                         env: Environment): Stmt = {
     assert(!f.unroll)
-    val cI = C.AST.DeclRef(f.name)
+    val cI = C.AST.DeclRef(freshName(f.prefix))
     val range = RangeAdd(f.init, n, f.step)
     val updatedGen = updatedRanges(cI.name, range)
 

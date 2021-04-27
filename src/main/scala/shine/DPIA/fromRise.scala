@@ -874,7 +874,7 @@ object fromRise {
           expT(fragType : FragmentType, `read`) ->: expT(_, _) =>
           fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
             fun[ExpType](ExpType(fragType, read), input =>
-              cuda.MapFragmentElements(fragType.rows, fragType.columns, fragType.layers, fragType.dataType,
+              cuda.MapFragment(fragType.rows, fragType.columns, fragType.layers, fragType.dataType,
                 fragType.fragmentKind, fragType.layout, f, input)))
       }
 

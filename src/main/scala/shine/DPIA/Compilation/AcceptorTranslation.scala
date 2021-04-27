@@ -331,7 +331,7 @@ object AcceptorTranslation {
 
     case cuda.GenerateFragment(rows, columns, layers, dataType, frag, layout, fill) =>
       con(fill)(λ(ExpType(dataType, read))(fill =>
-        cudaImp.WmmaFill(rows, columns, layers, dataType, fill, frag, layout, A)))
+        cudaImp.WmmaFill(rows, columns, layers, dataType, frag, layout, fill, A)))
 
     case map@cuda.Map(level, dim) =>
       val (n, dt1, dt2, f, array) = map.unwrap
@@ -340,12 +340,11 @@ object AcceptorTranslation {
           λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
           x, A)))
 
-    case cuda.MapFragmentElements(rows, columns, layers, dt, frag, layout, fun, input) =>
-      val fragType = FragmentType(rows, columns, layers, dt, frag, layout)
-      con(input)(λ(expT(fragType, read))(input =>
-        shine.cuda.primitives.imperative.ForFragmentElements(fragType, input, A,
-          λ(expT(fragType.dataType, read))(x =>
-            λ(accT(fragType.dataType))(o =>
+    case cuda.MapFragment(rows, columns, layers, dt, frag, layout, fun, input) =>
+      con(input)(λ(expT(FragmentType(rows, columns, layers, dt, frag, layout), read))(input =>
+        shine.cuda.primitives.imperative.ForFragment(rows, columns, layers, dt, frag, layout, input, A,
+          λ(expT(dt, read))(x =>
+            λ(accT(dt))(o =>
               acc(fun(x))(o))))))
 
     case cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix) =>
