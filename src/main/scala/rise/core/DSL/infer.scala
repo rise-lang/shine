@@ -180,10 +180,15 @@ object infer {
                     return (subExpr, Solution())
                   }
                   case parse.HMType(t) => error(s"$i has a type but no implementation: "+ t, span)(Seq())
-                  case parse.HMNat(parser.parse.SNat(nat, _)) => {
-                    NatType
-//                    constraints += TypeConstraint(t, NatType, span)
-//                    return (nat, Solution())
+                  case parse.HMNat(parser.parse.SNat(nat, sp)) =>
+                    //It creates an InferExp, because Nat needs to be combined with DepApp and not with App
+                    //and because we are not able to change it here, this solution to put Nat here, can not work
+                  {
+                    constraints += TypeConstraint(NatType, NatType, span)
+                    nat match {
+                      case parse.NNumber(n) => return (n.toExpr, Solution())
+                      case parse.NIdentifier(n) => error(s"only explicit values are accepted in declaring Nat: "+ n, span)(Seq())
+                    }
                   }
                 }
                 case None =>error(s"$i has no type", span)(Seq())
