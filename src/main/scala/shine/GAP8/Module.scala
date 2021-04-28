@@ -2,8 +2,18 @@ package shine.GAP8
 
 import shine.C
 
-// A C Module consists of a set of functions and their
-// dependencies (i.e. declarations and includes)
+/**
+  * This is a prototype of GAP8 module. Right now it consists of
+  * a set of includes, declarations (structure for passing arguments to cluster), and
+  * accelerator function (forked code)
+  *
+  * To be added:
+  * 1. host (fiber controller) code
+  * 2. code initially executed on core 0 after sending task to cluster
+  *   (executed prior to forking on cluster)
+  * 3. System kickoff code
+  * 4. TBA
+  * */
 case class Module(includes: Seq[C.AST.IncludeDirective],
                   decls: Seq[C.AST.Decl],
                   functions: Seq[C.AST.Function]) {

@@ -2,16 +2,17 @@ package shine.GAP8.Compilation
 
 import shine.C.AST.{IncludeHeader, ParamKind}
 import shine.C.Compilation.{ModuleGenerator => CModuleGenerator}
-import shine.C.{Compilation, Module}
+import shine.C.Compilation
 import shine.DPIA.Compilation.FunDef
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.{C, DPIA}
+import shine.GAP8.Module
+import shine.{C, DPIA, GAP8}
 
 import scala.collection.immutable
 
 object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
-  override type Module = C.Module
+  override type Module = GAP8.Module
   override type CodeGenerator = Compilation.CodeGenerator
 
   override def createOutputParam(outT: ExpType): Identifier[AccType] =

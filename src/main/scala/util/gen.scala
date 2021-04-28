@@ -103,20 +103,20 @@ object gen {
     }
 
     case class function(name: String = "foo") {
-      def fromExpr: Expr => CModule =
+      def fromExpr: Expr => GAP8.Module =
         functionFromExpr(name, OpenMP.CodeGenerator())
 
       def asStringFromExpr: Expr => String =
         functionAsStringFromExpr(name, OpenMP.CodeGenerator())
 
       private def funDefToFunction(name: String,
-                                   gen: CCodeGenerator): Phrase => CModule =
+                                   gen: CCodeGenerator): Phrase => GAP8.Module =
         (FunDef(name, _)) andThen
           GAP8.Compilation.ModuleGenerator.funDefToModule(gen)
 
       private def functionFromExpr(name: String = "foo",
                                    gen: CCodeGenerator = CCodeGenerator()
-                                  ): Expr => CModule =
+                                  ): Expr => GAP8.Module =
         exprToPhrase andThen
           funDefToFunction(name, gen)
 
@@ -124,7 +124,7 @@ object gen {
                                            gen: CCodeGenerator = CCodeGenerator()
                                           ): Expr => String =
         functionFromExpr(name, gen) andThen
-          C.Module.translateToString andThen
+          GAP8.Module.translateToString andThen
           run(SyntaxChecker(_))
     }
   }
