@@ -353,7 +353,7 @@ package object autotune {
 
 
   def generateJSON(p: Parameters, c:Set[Constraint], tuner: Tuner): String = {
-//    def generateJSON(p: Parameters, tuner: Tuner): String = {
+    //    def generateJSON(p: Parameters, tuner: Tuner): String = {
 
 
     // distinguish wether to generate constraints or not
@@ -369,31 +369,36 @@ package object autotune {
     // WARNING: configuration is partially hard coded
     val header =
     s"""{
-      | "application_name" : "${tuner.name}",
-      | "optimization_objectives" : ["runtime"],
-      | "hypermapper_mode" : {
-      |   "mode" : "client-server"
-      | },
-      | "feasible_output" : {
-      |   "enable_feasible_predictor" : true,
-      |   "name" : "Valid",
-      |   "true_value" : "True",
-      |   "false_value" : "False"
-      | },
-      | "design_of_experiment" : {
-      |   "doe_type" : "random sampling",
-      |   "number_of_samples" : ${doe}
-      | },
-      | "optimization_iterations" : ${tuner.iterations},
-      | "input_parameters" : {
-      |""".stripMargin
+       | "application_name" : "${tuner.name}",
+       | "optimization_objectives" : ["runtime"],
+       | "hypermapper_mode" : {
+       |   "mode" : "client-server"
+       | },
+       | "feasible_output" : {
+       |   "enable_feasible_predictor" : true,
+       |   "name" : "Valid",
+       |   "true_value" : "True",
+       |   "false_value" : "False"
+       | },
+       | "design_of_experiment" : {
+       |   "doe_type" : "random sampling",
+       |   "number_of_samples" : ${doe}
+       | },
+       | "optimization_iterations" : ${tuner.iterations},
+       | "input_parameters" : {
+       |""".stripMargin
 
     // create entry foreach parameter
     var parameter = ""
 
     p.foreach(elem => {
 
+      println("elem: " + elem)
+      println("range: " + elem.range)
+
       val parameterRange = elem.range match {
+
+        // case step = 1
         case RangeAdd(start, stop, step) =>  {
           //check if all elements are evaluable
           // Todo check start and stop
@@ -405,11 +410,20 @@ package object autotune {
             case false => 1
           }
 
+          // use integer range then
+
           val x = List.range(start.evalInt, stop.evalInt+1)
           val values = x.filter(_ % stepWidth == 0)
 
-          listToString(values)
+          //          listToString(values)
+
+          start.eval match {
+            case 0 => listToString(List(start.evalInt+1, stop.evalInt))
+            case _ => listToString(List(start.evalInt, stop.evalInt))
+          }
         }
+
+        // case mul = 1
         case RangeMul(start, stop, mul) => {
           // check if all elements are evaluable
           // Todo check start and stop
@@ -420,10 +434,12 @@ package object autotune {
               val powers:List[Int] = List.range(start.evalInt, maxVal.toInt+1)
               val values:List[Int] = powers.map(power => scala.math.pow(mul.evalInt, power).toInt)
 
-              listToString(values)
+              //              listToString(values)
+              listToString(List(start.evalInt, stop.evalInt))
             }
             case false =>
-              listToString(List.range(start.evalInt, stop.evalInt+1))
+              //              listToString(List.range(start.evalInt, stop.evalInt+1))
+              listToString(List(start.evalInt, stop.evalInt))
           }
         }
         case _ => {
@@ -441,69 +457,46 @@ package object autotune {
       val constraints = parametersWDC(elem)._1.size match {
         case 0 => "[]"
         case _ => {
-//          listToString(parametersWDC(elem)._1.toList)
           val constraintsList = new ListBuffer[String]
-            parametersWDC(elem)._1.foreach(constraint => {
-              // check type of constraint
-                val constraintString = constraint match {
-                case RangeConstraint(n, r) => {
-                  val rangeString = r match {
-                    case RangeAdd(start, stop, step) =>  {
-                      println("const:" + n)
-                      println("start: " + start)
-                      println("stop: " + stop)
-                      println("step: " + step)
-//
-//                      // step
-//                      val stepConstraint = n.toString + " % " + step + " == 0"
-//
-//                      // start
-//                      val startConstraint = {
-//
-//                      // stop
-//                      val stopConstraint = {
-//
-//                      }
-
-                      n.toString + " % " + step + " == 0" + " && " + n.toString + " >= " + start + " && " + n.toString + " <= " + stop
-                    }
-                    case RangeMul(start, stop, step) => ""
-                    case _ => "" // should not reach this point
-                  }
-                  rangeString
+          parametersWDC(elem)._1.foreach(constraint => {
+            // check type of constraint
+            val constraintString = constraint match {
+              case RangeConstraint(n, r) => {
+                val (start, stop, step) = r match {
+                  case RangeAdd(start, stop, step) => (start, stop, step)
+                  case RangeMul(start, stop, step) => (start, stop, step)
+                  case _ => (0, 0, 0) // todo catch other types of ranges
                 }
-//                case "/^" => // occurrence of "/^"
-                case _ => ""// any other case just take it and to string
-              }
 
-//              println("constraintString: " + constraintString)
-              constraintsList += constraintString
-            })
+                val startConstraint = n.toString + " >= " + start
+                val stopConstraint = n.toString + " <= " + stop
+                val stepConstraint = n.toString + " % " + step + " == 0"
+
+                startConstraint + " && " + stopConstraint + " && " + stepConstraint
+              }
+              case _ => {
+                // todo check for '/^'  which is not evaluable by python!
+                // any other case just take it and to string
+                //                case "/^" => // occurrence of "/^"
+                constraint.toString
+              }
+            }
+            constraintsList += constraintString
+          })
           listToString(constraintsList.filter(elem => elem.size != 0).toList)
         }
       }
 
-      println("param: " + elem)
-      println("param: " + elem.range)
-      println("constraint: " + constraints)
-
-      val parameterEntry2 =
+      val parameterEntry =
         s"""   "${elem.name}" : {
-           |       "parameter_type" : "ordinal",
+           |       "parameter_type" : "integer",
            |       "values" : ${parameterRange},
            |       "constraints" : ${constraints},
            |       "dependencies" : ${dependencies}
            |   },
            |""".stripMargin
 
-      val parameterEntry =
-        s"""   "${elem.name}" : {
-           |       "parameter_type" : "ordinal",
-           |       "values" : ${parameterRange}
-           |   },
-           |""".stripMargin
-
-      parameter += parameterEntry2
+      parameter += parameterEntry
     })
 
     // remove last comma
@@ -572,7 +565,7 @@ package object autotune {
     valueStringFinal
   }
 
-//  def TuningResult(drop)
+  //  def TuningResult(drop)
 
   // check path and duplicates above
 
@@ -640,37 +633,78 @@ package object autotune {
     // get parameters from constraint
     // check for given parameters in the given constraint
     constraints.foreach(constraint => {
-      println("constraint: " + constraint)
+      //      println("constraint: " + constraint)
       val parametersInConstraint = getParametersFromConstraint(parameters, constraint)
-      println("parametersInConstraint: " + parametersInConstraint)
-      println("\n")
+      //      println("parametersInConstraint: " + parametersInConstraint)
+      //      println("\n")
 
-      // iterate over candidates
-      //  true: next candidate
-      //  false: add constraint and other parameters to candidate parameter
+      // check if constraint is type of range
+      constraint match {
+        case RangeConstraint(n, r) => {
+          // order this constraint to n
+          val candidates = parametersInConstraint.filter(param => param.name.equals(n.toString))
 
-      // we do not stop if candidate is found!
-      parametersInConstraint.foreach(candidate => {
+          candidates.size match {
+            case 0 => {
+              // we do not stop if candidate is found!
+              parametersInConstraint.foreach(candidate => {
 
-        // check if pointer occurs in other parameters' dependencies  (avoid cycles)
-        parametersWDC.filter(paramWDC => !(paramWDC._1.name.equals(candidate.name))).exists(paramWDC => {
-          paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
-        }) match {
-          case false => {
-            // use this candidate
-            // add candidate to output map
-            val elem = parametersWDC(candidate)
-            parametersWDC(candidate) = (elem._1 + constraint, elem._2 ++ parametersInConstraint.filter(param => !(param.name.equals(candidate.name))))
+                // check if pointer occurs in other parameters' dependencies  (avoid cycles)
+                parametersWDC.filter(paramWDC => !(paramWDC._1.name.equals(candidate.name))).exists(paramWDC => {
+                  paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
+                }) match {
+                  case false => {
+                    // use this candidate
+                    // add candidate to output map
+                    val elem = parametersWDC(candidate)
+                    parametersWDC(candidate) = (elem._1 + constraint, elem._2 ++ parametersInConstraint.filter(param => !(param.name.equals(candidate.name))))
+                  }
+                  case true => // use next candidate
+                }
+              })
+            }
+            case _ => {
+              val candidate = candidates.last
+
+              val elem = parametersWDC(candidate)
+              parametersWDC(candidate) = (elem._1 + constraint, elem._2 ++ parametersInConstraint.filter(param => !(param.name.equals(candidate.name))))
+              // should go to n
+            }
           }
-          case true => // use next candidate
         }
-      })
-    })
+        case _ => {
+          // iterate over candidates
+          //  true: next candidate
+          //  false: add constraint and other parameters to candidate parameter
+          // we do not stop if candidate is found!
+          parametersInConstraint.foreach(candidate => {
 
+            // check if pointer occurs in other parameters' dependencies  (avoid cycles)
+            parametersWDC.filter(paramWDC => !(paramWDC._1.name.equals(candidate.name))).exists(paramWDC => {
+              paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
+            }) match {
+              case false => {
+                // use this candidate
+                // add candidate to output map
+                val elem = parametersWDC(candidate)
+                parametersWDC(candidate) = (elem._1 + constraint, elem._2 ++ parametersInConstraint.filter(param => !(param.name.equals(candidate.name))))
+              }
+              case true => // use next candidate
+            }
+          })
+        }
+      }
+    })
     parametersWDC.toMap
   }
 
+
   def getParametersFromConstraint(parameters: Parameters, constraint: Constraint):Set[NatIdentifier] = {
+
+    // consider kind of constraints here
+
+    // min max should be part of
+    // constraints with only one element?
 
     // collect parameters as vars in constraint
     val parametersInConstraint = constraint match {
@@ -690,6 +724,8 @@ package object autotune {
         n.freeVariables()
       }
     }
+//    println("constraint: " + constraint)
+//    println("parametersInConstraint: " + parametersInConstraint)
 
     // get occurring parameters form parameter list
     val output = parameters.filter(nat => {
