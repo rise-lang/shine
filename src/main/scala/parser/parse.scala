@@ -79,8 +79,13 @@ object parse {
 
   final case class RAddrSpace() extends RiseKind
 
+  sealed trait HashMapElems
+  final case class HMExpr(e:rd.ToBeTyped[r.Expr]) extends HashMapElems
+  final case class HMType(t:r.types.Type) extends HashMapElems
+  final case class HMNat(n:SNat) extends HashMapElems
+
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
-  type MapFkt = mutable.HashMap[String, Either[rd.ToBeTyped[r.Expr], r.types.Type]]
+  type MapFkt = mutable.HashMap[String, HashMapElems]
   type MapDepL = mutable.HashMap[String, RiseKind]
   type BracesSpan = Option[List[Span]]
   type OutputEPState = (Either[ParseState, PreAndErrorSynElems], ErrorList)
@@ -360,6 +365,7 @@ object parse {
     case FloatTyp() => Some(rt.f32)
     case DoubleType() => Some(rt.f64)
     case BoolType() => Some(rt.bool)
+    case NatTyp() => Some(rt.NatType)
     case notAtype => {
       //println("                        This is not an accepted Type: " + notAtype)
       None
@@ -1023,6 +1029,26 @@ object parse {
     Left(mapFkt)
   }
 
+  def parseNamedExprWithNormalExpr(inputEPState: InputEPState):OutputEPState ={
+    val (ps, errorList) = inputEPState
+    (Left(ps),errorList) |>
+      parseEqualsSign |>
+      parseMaybeAppExpr
+  }
+//  def parseNamedExprWithOnlyOneNumber(inputEPState: InputEPState):OutputEPState ={
+//    val (ps, errorList) = inputEPState
+//    (Left(ps),errorList) |>
+//      parseEqualsSign |>
+//      parseNumber
+//  }
+
+  def parseNamedExprWithOnlyOneNat(inputEPState: InputEPState):OutputEPState ={
+    val (ps, errorList) = inputEPState
+    (Left(ps),errorList) |>
+      parseEqualsSign |>
+      parseNat
+  }
+
   /*
   top level Lambda expects that the type of the Identifier is defined!
 
@@ -1046,8 +1072,9 @@ object parse {
                 throw new IllegalStateException("We want to parse an NamedExpr for " + n +
                   " but this Identifier is not declared yet!")
               }
-              case Some(Left(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
-              case Some(Right(typeFkt)) =>
+              case Some(HMExpr(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
+              case Some(HMNat(n)) => throw new IllegalStateException("Name of a Nat: "+ n)
+              case Some(HMType(typeFkt)) =>
                 (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapDepL, p.spanList),
                   id.setType(typeFkt), typeFkt)
             }
@@ -1068,9 +1095,7 @@ object parse {
     }
 
     val (psNamedExprBefore,newEL) = {
-      (Left(ps),errorList) |>
-        parseEqualsSign |>
-        parseMaybeAppExpr
+      (Left(ps),errorList) |>(parseNamedExprWithOnlyOneNat _||parseNamedExprWithNormalExpr)
     }
 
 
@@ -1085,8 +1110,9 @@ object parse {
             mapFkt.get(identifierFkt.name) match {
               case None => throw new IllegalStateException("Identifier seems not to be in the Map: " +
                 identifierFkt.name + " , " + mapFkt)
-              case Some(Left(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
-              case Some(Right(l)) =>
+              case Some(HMNat(n)) => throw new IllegalStateException("Name of a Nat: "+ n)
+              case Some(HMExpr(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
+              case Some(HMType(t)) =>
                 //Todo: I have to add Types in the Identifiers in Lambda and delete it after it, after this this if-clause makes sense
                 //                if(!l.isEmpty){
                 //                throw new IllegalStateException("The List should be empty! But it isn't. " +
@@ -1106,6 +1132,20 @@ object parse {
       }
     }
 
+      synElemList.head match {
+        case SExprClutched(expr, spanClutch) =>
+        case SExpr(expr) =>
+        case SLet(span) =>
+        case SType(t, span) =>
+        case SIntToExpr(name, span) =>
+        case SNat(nat, span) => {
+          mapFkt.update(identifierFkt.name, HMNat(SNat(nat, span)))
+          //println("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)
+          return Left(tokenList)
+        }
+        case SData(data, span) =>
+        case SAddrSpace(addrSpace, span) =>
+      }
     //println("\n\n\n Before combining the Expr in parseNamedExpr \n\n\n")
     var expr = combineExpressionsDependent(synElemList, mapDepL)
     expr = expr.setType(typeOfFkt)
@@ -1120,7 +1160,7 @@ object parse {
     //println("before requre MapFkt: '"+ mapFkt + "' for the Expr: '"+ expr + "' with Type: '"+ expr.t + "'")
     require(rd.ToBeTyped(expr).toExpr.span != None, "expr is now with ToBeType.toExpr None!")
 
-    mapFkt.update(identifierFkt.name, Left(rd.ToBeTyped(expr)))
+    mapFkt.update(identifierFkt.name, HMExpr(rd.ToBeTyped(expr)))
     //println("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)
     Left(tokenList)
   }
@@ -1181,7 +1221,7 @@ object parse {
         if (typesList.length != 1) {
           throw new IllegalStateException("The TypesList should have lenght 1: " + typesList)
         }
-        mapFkt.put(identifierFkt.name, Right(typesList.head))
+        mapFkt.put(identifierFkt.name, HMType(typesList.head))
         //println("return TypAnnotatedIdent: " + remainderTokens + " <<<<>>>> " + mapFkt)
         Left(remainderTokens)
       }

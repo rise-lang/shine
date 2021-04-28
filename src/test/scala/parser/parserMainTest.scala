@@ -1,5 +1,6 @@
 package parser
 import org.scalatest.flatspec.AnyFlatSpec
+import parser.parse.{HMExpr, HMNat, HMType}
 
 //import parser.parse.ParseError
 //import org.scalatest.matchers.should.Matchers.equal
@@ -21,8 +22,9 @@ class parserMainTest extends  AnyFlatSpec {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
 

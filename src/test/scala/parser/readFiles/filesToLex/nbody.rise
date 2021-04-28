@@ -1,8 +1,13 @@
+tileX::NatTyp
+tileX= 256N
+tileY::NatTyp
+tileY= 1N
+
 nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
 nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
 join . join .
    (mapWorkGroup 1
-   
+
       join .
       (mapWorkGroup 0
         \p1Chunk ->
@@ -30,7 +35,7 @@ join . join .
           )
 
           )(mapLocal 1 (mapLocal 0 (\x2->x2)) (generate \plh1-> generate \plh2->vectorFromScalar 0F32)))--N.N.4xF32
-          . (split 1N). ( split 256N ) pos--(N/256).1.256.4xF32
+          . (split tileY). ( split tileX ) pos--(N/256).1.256.4xF32
         (zip(toLocal(mapLocal 0 (\x3->x3) (fst (unzip p1Chunk))))(snd (unzip p1Chunk)))--zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
-        ). (split 256N)
+        ). (split tileX)
       ). (split N) ( zip pos vel)

@@ -1,6 +1,7 @@
 package parser
 import apps.nbody.{runKernel, runOriginalKernel}
 import org.scalatest.flatspec.AnyFlatSpec
+import parser.parse.{HMExpr, HMNat, HMType}
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.gen
 
@@ -29,8 +30,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
 
@@ -69,8 +71,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val exT = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => fail("no definition is expected: " + lambda)
-      case Right(t) => t
+      case HMExpr(lambda) => fail("no definition is expected: " + lambda)
+      case HMType(t) => t
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     exT match {
@@ -80,8 +83,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "h"
     val ex: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -158,8 +162,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -177,8 +182,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -196,8 +202,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -215,8 +222,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f match {
@@ -237,8 +245,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f match {
@@ -258,8 +267,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f match {
@@ -280,8 +290,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f match {
@@ -303,8 +314,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -322,8 +334,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -444,8 +457,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -531,8 +545,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -603,8 +618,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -624,8 +640,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -645,8 +662,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -666,8 +684,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -685,8 +704,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -709,8 +729,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -733,8 +754,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -754,14 +776,16 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     val functionName2: String = "g"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -908,14 +932,16 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "g"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     val functionName3: String = "u"
     val ex_u: r.Expr = riseExprByIdent.get(functionName3).getOrElse(fail("The function '" + functionName3 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     //    ex_f.t match {
@@ -973,8 +999,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "g"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_g.t match {
@@ -1035,8 +1062,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -1062,8 +1090,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -1109,8 +1138,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -1151,8 +1181,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     //    ex_f.t match {
@@ -1197,8 +1228,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -1216,8 +1248,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -1235,8 +1268,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -1260,8 +1294,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -1285,8 +1320,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -1311,8 +1347,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -1341,8 +1378,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -1360,8 +1398,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -1385,8 +1424,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in riseExprByIdent: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in riseExprByIdent: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -1443,8 +1483,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "matMul"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     ex_f.t match {
       case rt.DepFunType(r, rt.DepFunType(m, rt.DepFunType(n, rt.FunType(
@@ -1696,8 +1737,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -1754,8 +1796,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -1773,8 +1816,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "nbody"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_g.t match {
@@ -1815,7 +1859,6 @@ class parseTest extends  test_util.TestsWithExecutor {
     ))
   }
 
-  //Todo: not ignore
   test("parser should be able to parse 'nbody.rise'"){
     val fileName: String = testFilePath + "nbody.rise"
     val file: FileReader = new FileReader(fileName)
@@ -1824,8 +1867,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName2: String = "nbody"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_g.t match {
@@ -2129,10 +2173,6 @@ class parseTest extends  test_util.TestsWithExecutor {
       ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
     ))
   }
-  
-  test("parser should print nbody"){
-    //print_nbody()
-  }
 
   test("parser should be able to parse 'negation.rise'"){
     val fileName: String = testFilePath + "negation.rise"
@@ -2142,8 +2182,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -2161,8 +2202,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -2180,8 +2222,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -2201,8 +2244,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex match {
@@ -2220,8 +2264,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -2251,8 +2296,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -2282,8 +2328,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -2311,8 +2358,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -2341,8 +2389,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -2366,8 +2415,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_f.t match {
@@ -2384,7 +2434,40 @@ class parseTest extends  test_util.TestsWithExecutor {
     }
   }
 
+  test("parser should be able to parse 'secondFktCallsFirstFkt.rise'"){
+    val fileName: String = testFilePath + "secondFktCallsFirstFkt.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
 
+    val functionName: String = "f"
+    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
+    }
+    val functionName2: String = "h"
+    val ex_h: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!")) match {
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
+    }
+
+    ex_f.t match {
+      case rt.FunType(rt.f32, rt.f32) => true
+      case t => fail("The Type '"+t+"' is not the expected type.")
+    }
+    ex_h.t match {
+      case rt.FunType(rt.f32, rt.f32) => true
+      case t => fail("The Type '"+t+"' is not the expected type.")
+    }
+
+    ex_h match {
+      case r.Lambda(r.Identifier("x"), r.App(r.Identifier("f"),r.App(r.App(rp.add(_), r.Identifier("x")),r.Identifier("x") ))) => true
+      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
+      case a => fail("not a lambda: " + a)
+    }
+  }
 
   test("parser should be able to parse 'TupleType.rise'"){
     val fileName: String = testFilePath + "TupleType.rise"
@@ -2394,8 +2477,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -2418,8 +2502,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -2442,8 +2527,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -2466,8 +2552,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -2493,19 +2580,21 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName_h: String = "h"
     val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     val functionName_f: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     val functionName_z: String = "z"
     val ex_z: r.types.Type = riseExprByIdent.get(functionName_z).getOrElse(fail("The function '" + functionName_z + "' does not exist!!!")) match {
-      case Left(lambda) => fail("it is no definition expected: " + lambda)
-      case Right(t) =>
-        t
+      case HMExpr(lambda) => fail("it is no definition expected: " + lambda)
+      case HMType(t) => t
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_h match {
@@ -2533,19 +2622,21 @@ class parseTest extends  test_util.TestsWithExecutor {
     val riseExprByIdent = parse(lexer.tokens)
     val functionName_h: String = "h"
     val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     val functionName_f: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     val functionName_z: String = "z"
     val ex_z: r.types.Type = riseExprByIdent.get(functionName_z).getOrElse(fail("The function '" + functionName_z + "' does not exist!!!")) match {
-      case Left(lambda) => fail("it is no definition expected: " + lambda)
-      case Right(t) =>
-        t
+      case HMExpr(lambda) => fail("it is no definition expected: " + lambda)
+      case HMType(t) => t
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_h match {
@@ -2573,13 +2664,15 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName_h: String = "h"
     val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     val functionName_f: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     val functionName_z: String = "z"
     if (riseExprByIdent.contains(functionName_z)) {
@@ -2606,13 +2699,15 @@ class parseTest extends  test_util.TestsWithExecutor {
     val riseExprByIdent = parse(lexer.tokens)
     val functionName_h: String = "h"
     val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     val functionName_f: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex_h match {
@@ -2635,8 +2730,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -2660,8 +2756,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -2683,8 +2780,9 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "f"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     ex.t match {
@@ -2709,13 +2807,15 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName_f: String = "f"
     val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => lambda.toExpr
-      case Right(types) => fail("no definition is in map: " + types)
+      case HMExpr(lambda) => lambda.toExpr
+      case HMType(types) => fail("no definition is in map: " + types)
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
     val functionName_2: String = "specialFunctionOfChaos"
     val type_2:r.types.Type= riseExprByIdent.get(functionName_2).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-      case Left(lambda) => fail("no definition is expected: "+ lambda)
-      case Right(t) => t
+      case HMExpr(lambda) => fail("no definition is expected: "+ lambda)
+      case HMType(t) => t
+      case HMNat(n) => fail("no nat is expected: "+n)
     }
 
     type_2 match {
@@ -2757,7 +2857,7 @@ class parseTest extends  test_util.TestsWithExecutor {
     val thrown = intercept[rt.InferenceException] {
       parse(lexer.tokens)
     }
-    thrown.msg should equal(" fkt has no type in Some((1,7-10) in src/test/scala/parser/readFiles/filesToError/fx.rise)") //Todo: more like equal("Variable is not declared: fkt in (1,7-10) in src/test/scala/parser/readFiles/filesToError/fx.rise")
+    thrown.msg should equal(" fkt has no type")
   }
 
   test("parser should not be able to parse 'noExpressionInBraces.rise'"){
