@@ -14,10 +14,24 @@ object parse {
 
   val SpanPlaceholder = Span(FileReader("src/test/scala/parser/readFiles/Placeholder.rise"), Location(0,0), Location(0,0))
 
+
+  def giveEveryExpr(map:MapFkt):MapExpr={
+    val m= new MapExpr
+    map.foreach{
+      case (name, elems) => elems match {
+        case HMExpr(e) => m.update(name, e.toExprWithMapFkt(map))
+        case HMType(t) => { //error: Every fkt should be initialised yet
+          throw new RuntimeException("The function '"+name+"' is not implemented: "+ t)
+        }
+        case HMNat(n) => //ignore
+      }
+    }
+    m
+  }
   /*
    * Precondition: Only valid Tokens in tokenList.
    */
-  def apply(tokenList: List[Token]): MapFkt = {
+  def apply(tokenList: List[Token]): MapExpr = {
     val parseState: ParseState = ParseState(tokenList, Nil, None, None)
     val shineLambda: MapFkt = parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState) match {
       case Left(map) => map
@@ -27,8 +41,9 @@ object parse {
       }
     }
     println("parse: " + shineLambda)
-    shineLambda
-    //r.Identifier("placeholder")()
+    val res = giveEveryExpr(shineLambda)
+    println("everyExpr: " + res)
+    res
   }
 
   sealed trait NatElement
@@ -85,6 +100,7 @@ object parse {
   final case class HMNat(n:SNat) extends HashMapElems
 
   //Todo: if I have Identifier, I have to get the right Span and the Span is differntly each time
+  type MapExpr = mutable.HashMap[String, r.Expr]
   type MapFkt = mutable.HashMap[String, HashMapElems]
   type MapDepL = mutable.HashMap[String, RiseKind]
   type BracesSpan = Option[List[Span]]
@@ -1153,12 +1169,12 @@ object parse {
     //println("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
 
     require(expr.span != None, "expr is None!")
-    rd.ToBeTyped(expr) match {
-      case rd.ToBeTyped(e) => require(e.span != None, "expr is now in ToBeTyped without infer None")
-      case _ => throw new IllegalStateException("this should not be happening")
-    }
-    //println("before requre MapFkt: '"+ mapFkt + "' for the Expr: '"+ expr + "' with Type: '"+ expr.t + "'")
-    require(rd.ToBeTyped(expr).toExpr.span != None, "expr is now with ToBeType.toExpr None!")
+//    rd.ToBeTyped(expr) match {
+//      case rd.ToBeTyped(e) => require(e.span != None, "expr is now in ToBeTyped without infer None")
+//      case _ => throw new IllegalStateException("this should not be happening")
+//    }
+//    //println("before requre MapFkt: '"+ mapFkt + "' for the Expr: '"+ expr + "' with Type: '"+ expr.t + "'")
+//    require(rd.ToBeTyped(expr).toExpr.span != None, "expr is now with ToBeType.toExpr None!")
 
     mapFkt.update(identifierFkt.name, HMExpr(rd.ToBeTyped(expr)))
     //println("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)

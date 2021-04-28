@@ -5,16 +5,17 @@ import rise.core._
 import rise.core.traversal.{Continue, Result, Stop}
 import rise.core.types.InferenceException.error
 import rise.core.types._
-import parser.Span
+import parser.{Span, parse}
+import parser.parse.MapFkt
 
 import scala.collection.mutable
 
 object infer {
-  private [DSL] def apply(e: Expr,
+  private [DSL] def apply(e: Expr,mapFkt: Option[MapFkt]=None,
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
-    val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
+    val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map(), mapFkt)
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
     val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
@@ -158,10 +159,11 @@ object infer {
   private def constrainTypes(
                               expr: Expr,
                               constraints: mutable.ArrayBuffer[Constraint],
-                              env: mutable.Map[String, Type]
+                              env: mutable.Map[String, Type],
+                              mapFkt: Option[MapFkt]
                             ): (Expr, Solution) = {
     def constrained(e: Expr): (Expr, Solution) =
-      constrainTypes(e, constraints, env)
+      constrainTypes(e, constraints, env, mapFkt)
     def genType(e: Expr): Type =
       if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
     val span = expr.span
@@ -169,11 +171,29 @@ object infer {
       case i: Identifier =>
         val t = env.getOrElseUpdate(i.name,
           if (i.t == TypePlaceholder) {
-            error(s"$i has no type", span)(Seq())
+            mapFkt match {
+              case Some(mF) => mF.get(i.name) match {
+                case Some(fkt) => fkt match { //Todo: We need the implementation at some point too, now we only use the Type
+                  case parse.HMExpr(e) => {
+                    val subExpr = e.toExprWithMapFkt(mF)
+                    constraints += TypeConstraint(subExpr.t, subExpr.t, span)
+                    return (subExpr, Solution())
+                  }
+                  case parse.HMType(t) => error(s"$i has a type but no implementation: "+ t, span)(Seq())
+                  case parse.HMNat(parser.parse.SNat(nat, _)) => {
+                    NatType
+//                    constraints += TypeConstraint(t, NatType, span)
+//                    return (nat, Solution())
+                  }
+                }
+                case None =>error(s"$i has no type", span)(Seq())
+              }
+              case None =>error(s"$i has no type", span)(Seq())
+            }
           } else {
             i.t
           })
-        constraints += TypeConstraint(t, i.t, span)//Todo:add expr.span to Constraint
+        constraints += TypeConstraint(t, i.t, span)
         (i.setType(t), Solution())
 
       case Lambda(x, e) =>
@@ -272,5 +292,5 @@ object inferDependent {
   def apply(e: ToBeTyped[Expr],
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off): Expr = infer(e match {
     case ToBeTyped(e) => e
-  }, printFlag, Flags.ExplicitDependence.On)
+  }, None, printFlag, Flags.ExplicitDependence.On)
 }

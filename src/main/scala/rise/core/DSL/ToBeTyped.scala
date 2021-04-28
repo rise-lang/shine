@@ -1,10 +1,12 @@
 package rise.core.DSL
 
+import parser.parse.MapFkt
 import rise.core.traversal.{Continue, Stop}
 import rise.core.types.{Flags, TypePlaceholder}
 import rise.core.{Expr, Literal, TypeAnnotation, TypeAssertion, traversal}
 
 final case class ToBeTyped[+T <: Expr](private val e: T) {
+  def toExprWithMapFkt(mapFkt: MapFkt) = infer(e,Some(mapFkt))
   def toExpr: Expr = infer(e)
   def toUntypedExpr: Expr = traversal.DepthFirstLocalResult(e, new traversal.Visitor {
     override def visitExpr(e: Expr): traversal.Result[Expr] = e match {

@@ -21,11 +21,7 @@ class parserMainTest extends  AnyFlatSpec {
     val riseExprByIdent = parseFile(fileName)
 
     val functionName: String = "f"
-    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!")) match {
-      case HMExpr(lambda) => lambda.toExpr
-      case HMType(types) => fail("no definition is in map: " + types)
-      case HMNat(n) => fail("no nat is expected: "+n)
-    }
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
 
 
     ex match {
