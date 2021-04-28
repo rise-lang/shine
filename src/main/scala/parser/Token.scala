@@ -179,6 +179,11 @@ sealed abstract class Token (span: Span){
   val s:Span = span
 }
 
+//ForeignFct("g", "x"::"y"::Nil, "return x*y;")
+  final case class ForeignFct(name:String, parameter:List[String], body:String, span: Span) extends Token(span){
+    override def toString: String = "ForeignFct '"+name+"'("+parameter+"'{\n"+body+"\n}"
+  }
+
   final case class LParentheses(span: Span) extends Token(span){
     require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
     require((span.begin.row +1) == span.end.row, "LParentheses: (span.begin.row +1) should be span.end.row: "+ span)

@@ -1,0 +1,7 @@
+g:: F32->F32->F32
+f:: F32->F32
+
+foreign g(x,y){
+   return x*y;
+}
+f=\x->g x x

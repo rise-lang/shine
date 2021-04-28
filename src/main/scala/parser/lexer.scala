@@ -733,6 +733,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   private def startNewTypAnnoationOrNewExpr(column:Int, row:Int, list:List[Token],arr: Array[String] =
   fileReader.sourceLines):List[Token]={
     if (arr(column)(row).isLetter) {
+//      if(arr(column).substring(row,row+7)=="foreign"){
+//        return endTypAnnotatedIdentBeginCFct(column, row, list)
+//      }
+
       lexIdentifier(column, row) match {
         case (Left(_), r) => {
           var newRow = r

@@ -87,6 +87,26 @@ class LexerTest extends  AnyFlatSpec {
     }
   }
 
+  "RecognizeLexeme" should "work for CFunction" in {
+    val fileName: String = testFilePath + "CFunction.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("g", _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) ::
+        ScalarType(FloatTyp(), _) :: Arrow(_) ::ScalarType(FloatTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+        BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
+        EndTypAnnotatedIdent(_) :: ForeignFct("g", "x"::"y"::Nil, "return x*y;",_)::
+        BeginNamedExpr(_) :: Identifier("f", _) ::
+        EqualsSign(_)::Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
+        Identifier("g", _)::Identifier("x", _)::Identifier("y", _)
+        ::EndNamedExpr(_) :: Nil => true
+      case a => fail(a.toString())
+    }
+  }
+
 
   "RecognizeLexeme" should "Complex1" in {
     val fileName: String = testFilePath + "Complex1.rise"
