@@ -8,7 +8,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
-import rise.autotune.{Tuner, tuningParam, wrapOclRun}
+import rise.autotune.{Tuner, generateJSON, tuningParam, wrapOclRun}
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.{gen, writeToPath}
@@ -241,6 +241,28 @@ class autotuning extends test_util.Tests {
     autotune.saveSamples("autotuning/RISE.csv", tuningResult)
   }
 
+  test("distribute constraints"){
+    val e:Expr = convolutionOclGsLs(1024)
+    val tuner = Tuner(main(1024), 10)
+    val params = autotune.collectParameters(e)
+    val constraints = autotune.collectConstraints(e, params)
+
+    val distribution = autotune.distributeConstraints(params, constraints)
+
+    println("output: \n")
+    distribution.foreach(elem => {
+      println("elem: " + elem._1)
+      println("dependencies: " + elem._2._2)
+      println("constraints: " + elem._2._1)
+      println()
+    })
+
+    println("\nnow generate json")
+    val json = generateJSON(params, constraints, tuner)
+    println("json: \n" + json)
+
+  }
+
   test("execute convolution"){
     val goodParameters = Map(
       NatIdentifier("vec", isExplicit = true) -> (4: Nat),
@@ -357,5 +379,15 @@ class autotuning extends test_util.Tests {
 
     // write program to disk
     writeToPath("convolution.c", program)
+  }
+
+  test("test getParametersFromConstraint"){
+    // test method here
+
+    // create some parameters by hand
+    // create some constraints
+
+    // check if all occurring parameters are collected properly
+
   }
 }

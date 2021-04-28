@@ -1,11 +1,13 @@
 package rise
 
-import arithexpr.arithmetic.{ArithExpr, BoolExpr, RangeAdd, RangeMul, RangeUnknown}
+import arithexpr.arithmetic.ArithExpr.{collectVars, freeVariables}
+import arithexpr.arithmetic.{ArithExpr, BoolExpr, RangeAdd, RangeMul, RangeUnknown, Var}
 import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.{Time, TimeSpan, gen, monads, writeToPath}
+
 import java.io.{File, FileOutputStream, PrintWriter}
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.openCL.DSL.oclRun
@@ -360,6 +362,8 @@ package object autotune {
       case None =>  // generate without constraints
     }
 
+    val parametersWDC = distributeConstraints(p, c)
+
     val doe = p.size * 10
     // create header for hypermapper configuration file
     // WARNING: configuration is partially hard coded
@@ -428,12 +432,67 @@ package object autotune {
         }
       }
 
+      // get dependencies and constraints from map
+      val dependencies = parametersWDC(elem)._2.size match {
+        case 0 => "[]"
+        case _ =>  listToString(parametersWDC(elem)._2.toList)
+      }
+
+      val constraints = parametersWDC(elem)._1.size match {
+        case 0 => "[]"
+        case _ => {
+//          listToString(parametersWDC(elem)._1.toList)
+          val constraintsList = new ListBuffer[String]
+            parametersWDC(elem)._1.foreach(constraint => {
+              // check type of constraint
+                val constraintString = constraint match {
+                case RangeConstraint(n, r) => {
+                  val rangeString = r match {
+                    case RangeAdd(start, stop, step) =>  {
+                      println("const:" + n)
+                      println("start: " + start)
+                      println("stop: " + stop)
+                      println("step: " + step)
+//
+//                      // step
+//                      val stepConstraint = n.toString + " % " + step + " == 0"
+//
+//                      // start
+//                      val startConstraint = {
+//
+//                      // stop
+//                      val stopConstraint = {
+//
+//                      }
+
+                      n.toString + " % " + step + " == 0" + " && " + n.toString + " >= " + start + " && " + n.toString + " <= " + stop
+                    }
+                    case RangeMul(start, stop, step) => ""
+                    case _ => "" // should not reach this point
+                  }
+                  rangeString
+                }
+//                case "/^" => // occurrence of "/^"
+                case _ => ""// any other case just take it and to string
+              }
+
+//              println("constraintString: " + constraintString)
+              constraintsList += constraintString
+            })
+          listToString(constraintsList.filter(elem => elem.size != 0).toList)
+        }
+      }
+
+      println("param: " + elem)
+      println("param: " + elem.range)
+      println("constraint: " + constraints)
+
       val parameterEntry2 =
         s"""   "${elem.name}" : {
            |       "parameter_type" : "ordinal",
            |       "values" : ${parameterRange},
-           |       "constraints" : [],
-           |       "dependencies" : []
+           |       "constraints" : ${constraints},
+           |       "dependencies" : ${dependencies}
            |   },
            |""".stripMargin
 
@@ -444,7 +503,7 @@ package object autotune {
            |   },
            |""".stripMargin
 
-      parameter += parameterEntry
+      parameter += parameterEntry2
     })
 
     // remove last comma
@@ -500,7 +559,7 @@ package object autotune {
     }
   }
 
-  def listToString(list: List[Int]): String = {
+  def listToString(list: List[Any]): String = {
 
     var valueString = "["
     list.foreach(value => {
@@ -569,5 +628,77 @@ package object autotune {
     // currently no meta data available
   }
 
+
+  def distributeConstraints(parameters: Parameters, constraints: Set[Constraint]): Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])] =  {
+
+    // initialize output map and add parameters
+    val parametersWDC = scala.collection.mutable.Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]()
+    parameters.foreach(param => {
+      parametersWDC(param) = (Set.empty[Constraint], Set.empty[NatIdentifier])
+    })
+
+    // get parameters from constraint
+    // check for given parameters in the given constraint
+    constraints.foreach(constraint => {
+      println("constraint: " + constraint)
+      val parametersInConstraint = getParametersFromConstraint(parameters, constraint)
+      println("parametersInConstraint: " + parametersInConstraint)
+      println("\n")
+
+      // iterate over candidates
+      //  true: next candidate
+      //  false: add constraint and other parameters to candidate parameter
+
+      // we do not stop if candidate is found!
+      parametersInConstraint.foreach(candidate => {
+
+        // check if pointer occurs in other parameters' dependencies  (avoid cycles)
+        parametersWDC.filter(paramWDC => !(paramWDC._1.name.equals(candidate.name))).exists(paramWDC => {
+          paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
+        }) match {
+          case false => {
+            // use this candidate
+            // add candidate to output map
+            val elem = parametersWDC(candidate)
+            parametersWDC(candidate) = (elem._1 + constraint, elem._2 ++ parametersInConstraint.filter(param => !(param.name.equals(candidate.name))))
+          }
+          case true => // use next candidate
+        }
+      })
+    })
+
+    parametersWDC.toMap
+  }
+
+  def getParametersFromConstraint(parameters: Parameters, constraint: Constraint):Set[NatIdentifier] = {
+
+    // collect parameters as vars in constraint
+    val parametersInConstraint = constraint match {
+      case RangeConstraint(n, r) => {
+        val rangeVars = r match {
+          case RangeAdd(start, stop, step) => {
+            start.varList ++ stop.varList ++ step.varList
+          }
+          case RangeMul(start, stop, mul) => {
+            start.varList ++ stop.varList ++ mul.varList
+          }
+          case _ => List.empty[Var]
+        }
+        (n.varList ++ rangeVars).toSet
+      }
+      case PredicateConstraint(n) => {
+        n.freeVariables()
+      }
+    }
+
+    // get occurring parameters form parameter list
+    val output = parameters.filter(nat => {
+      parametersInConstraint.exists(paramInConstraint => {
+        paramInConstraint.name.equals(nat.name)
+      })
+    })
+
+    output
+  }
 
 }
