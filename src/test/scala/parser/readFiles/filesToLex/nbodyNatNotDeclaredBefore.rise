@@ -1,0 +1,36 @@
+nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
+nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
+join . join .
+   (mapWorkGroup 1
+
+      join .
+      (mapWorkGroup 0
+        \p1Chunk ->
+        \newP1Chunk->
+        (mapLocal 1
+          \bla->
+          (mapLocal 0
+            \p1A->
+            update (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
+          )
+          (zip newP1Chunk bla)).
+          (oclReduceSeq Local
+
+          (\accA->\p2A->
+          let (toLocal (mapLocal 1 (mapLocal 0 (\x->x)) p2A))
+           (
+            \p2Local -> (mapLocal 1
+              \accDim-> (mapLocal 0
+                \p1B -> (oclReduceSeq Private
+                  \accB->\p2B->
+                  calcAcc (fst (fst p1B)) p2B deltaT espSqr accB
+                ) (snd p1B) (fst accDim)
+              ) (zip newP1Chunk (snd accDim))
+            ) (zip p2Local accA)
+          )
+
+          )(mapLocal 1 (mapLocal 0 (\x->x)) (generate \plh1-> generate \plh2->vectorFromScalar 0F32)))--N.N.4xF32
+          . (split 1N). ( split 256N ) pos--(N/256).1.256.4xF32
+        (zip(toLocal(mapLocal 0 (\x->x) (fst (unzip p1Chunk))))(snd (unzip p1Chunk)))--zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
+        ). (split 256N)
+      ). (split N) ( zip pos vel)

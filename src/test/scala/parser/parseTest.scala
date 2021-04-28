@@ -1683,13 +1683,99 @@ class parseTest extends  test_util.TestsWithExecutor {
     val globalSizeNVIDIA = GlobalSize((N, tileY))
 
     test_util.runsWithSameResult(Seq(
-      //("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
-      //("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
       ("parser NVIDIA", runKernel(gen.OpenCLKernel(ex_g), localSizeAMD, globalSizeAMD, pos, vel)),
       ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
     ))
   }
 
+  test("parser should be able to parse 'nbodyNatNotDeclaredBeforeButTheFunctionIDIsSeperated.rise'"){
+    val fileName: String = testFilePath + "nbodyNatNotDeclaredBeforeButTheFunctionIDIsSeperated.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "nbody"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!"))
+
+    ex_g.t match {
+      case rt.DepFunType(n:rt.NatIdentifier,rt.FunType(
+      rt.ArrayType(n1: rt.NatIdentifier,rt.VectorType(num1:rt.Nat, rt.f32)),
+      rt.FunType(
+      rt.ArrayType(n2: rt.NatIdentifier,rt.VectorType(num2:rt.Nat, rt.f32)),
+      rt.FunType(rt.f32, rt.FunType(rt.f32, rt.ArrayType(n3:rt.NatIdentifier,
+      rt.PairType(rt.VectorType(num3:rt.Nat, rt.f32),rt.VectorType(num4:rt.Nat, rt.f32)))))
+      )
+      ))
+
+        if n1.name.equals(n.name) && n2.name.equals(n.name)
+          && n3.name.equals(n.name)
+          &&num1.eval.equals(4)&&num2.eval.equals(4)&&num3.eval.equals(4)&&num4.eval.equals(4)
+      => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+    val N = 512
+    val tileX = 256
+    val tileY = 1
+
+    val random = new scala.util.Random()
+    val pos = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+    val vel = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+
+    val localSizeAMD = LocalSize(128)
+    val globalSizeAMD = GlobalSize(N)
+
+    val localSizeNVIDIA = LocalSize((tileX, tileY))
+    val globalSizeNVIDIA = GlobalSize((N, tileY))
+
+    test_util.runsWithSameResult(Seq(
+      ("parser NVIDIA", runKernel(gen.OpenCLKernel(ex_g), localSizeAMD, globalSizeAMD, pos, vel)),
+      ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
+    ))
+  }
+  test("parser should be able to parse 'nbodyNatNotDeclaredBefore.rise'"){
+    val fileName: String = testFilePath + "nbodyNatNotDeclaredBefore.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "nbody"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!"))
+
+    ex_g.t match {
+      case rt.DepFunType(n:rt.NatIdentifier,rt.FunType(
+      rt.ArrayType(n1: rt.NatIdentifier,rt.VectorType(num1:rt.Nat, rt.f32)),
+      rt.FunType(
+      rt.ArrayType(n2: rt.NatIdentifier,rt.VectorType(num2:rt.Nat, rt.f32)),
+      rt.FunType(rt.f32, rt.FunType(rt.f32, rt.ArrayType(n3:rt.NatIdentifier,
+      rt.PairType(rt.VectorType(num3:rt.Nat, rt.f32),rt.VectorType(num4:rt.Nat, rt.f32)))))
+      )
+      ))
+
+        if n1.name.equals(n.name) && n2.name.equals(n.name)
+          && n3.name.equals(n.name)
+          &&num1.eval.equals(4)&&num2.eval.equals(4)&&num3.eval.equals(4)&&num4.eval.equals(4)
+      => true
+      case t => fail("The Type '" + t + "' is not the expected type.")
+    }
+    val N = 512
+    val tileX = 256
+    val tileY = 1
+
+    val random = new scala.util.Random()
+    val pos = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+    val vel = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
+
+    val localSizeAMD = LocalSize(128)
+    val globalSizeAMD = GlobalSize(N)
+
+    val localSizeNVIDIA = LocalSize((tileX, tileY))
+    val globalSizeNVIDIA = GlobalSize((N, tileY))
+
+    test_util.runsWithSameResult(Seq(
+      ("parser NVIDIA", runKernel(gen.OpenCLKernel(ex_g), localSizeAMD, globalSizeAMD, pos, vel)),
+      ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
+    ))
+  }
   test("parser should be able to parse 'nbody.rise'"){
     val fileName: String = testFilePath + "nbody.rise"
     val file: FileReader = new FileReader(fileName)
