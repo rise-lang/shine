@@ -98,7 +98,11 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::
         BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
-        EndTypAnnotatedIdent(_) :: ForeignFct("g", "x"::"y"::Nil, "return x*y;",_)::
+        EndTypAnnotatedIdent(_) :: BeginForeignFct(_)::Identifier("g",_)::
+        LParentheses(_)::Identifier("x",_)::Comma(_)::Identifier("y",_)::
+        RParentheses(_):: LBracket(_)::
+        ForeignFctBodyColumn("return x*y;",_):: RBracket(_)::
+        EndForeignFct(_)::
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
         Identifier("g", _)::Identifier("x", _)::Identifier("y", _)

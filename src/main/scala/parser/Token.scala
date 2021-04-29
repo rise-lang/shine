@@ -180,8 +180,8 @@ sealed abstract class Token (span: Span){
 }
 
 //ForeignFct("g", "x"::"y"::Nil, "return x*y;")
-  final case class ForeignFct(name:String, parameter:List[String], body:String, span: Span) extends Token(span){
-    override def toString: String = "ForeignFct '"+name+"'("+parameter+"'{\n"+body+"\n}"
+  final case class ForeignFctBodyColumn(body:String, span: Span) extends Token(span){
+    override def toString: String = "ForeignFctbdy {\n"+body+"\n}"
   }
 
   final case class LParentheses(span: Span) extends Token(span){
@@ -384,4 +384,10 @@ final case class BeginNamedExpr(span: Span) extends Token(span){
 }
 final case class EndNamedExpr(span: Span) extends Token(span){
   override  def toString = "<EndNamedExpr>"
+}
+final case class BeginForeignFct(span: Span) extends Token(span){
+  override def toString: String = "<BeginForeignFct>"
+}
+final case class EndForeignFct(span: Span) extends Token(span){
+  override def toString: String = "<EndForeignFct>"
 }

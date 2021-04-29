@@ -198,8 +198,8 @@ object parse {
     )(vec(4, f32) ->: vec(4, f32) ->: f32 ->: vec(4, f32) ->: PairType(vec(4, f32), vec(4, f32)), Some(span))
     name match {
       //Todo: this functions please delete, because they should be declared via CFunction in the rise-File
-      case "update" => SExpr(update)
-      case "calcAcc" => SExpr(calcAcc)
+      case "updateP" => SExpr(update)
+      case "calcAccP" => SExpr(calcAcc)
 
       //openCL/primitives
       case "mapGlobal" => SIntToExpr(AltMapGlobal(), span)

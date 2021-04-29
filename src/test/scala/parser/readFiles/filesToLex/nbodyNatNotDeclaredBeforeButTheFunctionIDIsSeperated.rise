@@ -11,7 +11,7 @@ join . join .
           \bla->
           (mapLocal 0
             \p1A->
-            update (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
+            updateP (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
           )
           (zip newP1Chunk bla)).
           (oclReduceSeq Local
@@ -23,7 +23,7 @@ join . join .
               \accDim-> (mapLocal 0
                 \p1B -> (oclReduceSeq Private
                   \accB->\p2B->
-                  calcAcc (fst (fst p1B)) p2B deltaT espSqr accB
+                  calcAccP (fst (fst p1B)) p2B deltaT espSqr accB
                 ) (snd p1B) (fst accDim)
               ) (zip newP1Chunk (snd accDim))
             ) (zip p2Local accA)

@@ -1,7 +1,25 @@
-tileX::NatTyp
-tileX= 256N
-tileY::NatTyp
-tileY= 1N
+calcAcc::4xF32->4xF32->F32->F32->4xF32->4xF32
+foreign calcAcc(p1,p2,deltaT, espSqr, acc){
+   float4 r;
+   r.xyz = p2.xyz - p1.xyz;
+   float distSqr = r.x*r.x + r.y*r.y + r.z*r.z;
+   float invDist = 1.0f / sqrt(distSqr + espSqr);
+   float invDistCube = invDist * invDist * invDist;
+   float s = invDistCube * p2.w;
+   float4 res;
+   res.xyz = acc.xyz + s * r.xyz;
+   return res;
+}
+update::4xF32->4xF32->F32->4xF32->(4xF32,4xF32)
+foreign update(pos, vel, deltaT, acceleration){
+  float4 newPos;
+  newPos.xyz = pos.xyz + vel.xyz * deltaT + 0.5f * acceleration.xyz * deltaT * deltaT;
+  newPos.w = pos.w;
+  float4 newVel;
+  newVel.xyz = vel.xyz + acceleration.xyz * deltaT;
+  newVel.w = vel.w;
+  return (struct Record_float4_float4){ newPos, newVel };
+}
 
 nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
 nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
@@ -22,7 +40,7 @@ join . join .
           (oclReduceSeq Local
 
           (\accA->\p2A->
-          let (toLocal (mapLocal 1 (mapLocal 0 (\x1->x1)) p2A))
+          let (toLocal (mapLocal 1 (mapLocal 0 (\x->x)) p2A))
            (
             \p2Local -> (mapLocal 1
               \accDim-> (mapLocal 0
@@ -34,8 +52,8 @@ join . join .
             ) (zip p2Local accA)
           )
 
-          )(mapLocal 1 (mapLocal 0 (\x2->x2)) (generate \plh1-> generate \plh2->vectorFromScalar 0F32)))--N.N.4xF32
-          . (split tileY). ( split tileX ) pos--(N/256).1.256.4xF32
-        (zip(toLocal(mapLocal 0 (\x3->x3) (fst (unzip p1Chunk))))(snd (unzip p1Chunk)))--zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
-        ). (split tileX)
+          )(mapLocal 1 (mapLocal 0 (\x->x)) (generate \plh1-> generate \plh2->vectorFromScalar 0F32)))--N.N.4xF32
+          . (split 1N). ( split 256N ) pos--(N/256).1.256.4xF32
+        (zip(toLocal(mapLocal 0 (\x->x) (fst (unzip p1Chunk))))(snd (unzip p1Chunk)))--zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
+        ). (split 256N)
       ). (split N) ( zip pos vel)
