@@ -98,15 +98,24 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) ::
         BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
-        EndTypAnnotatedIdent(_) :: BeginForeignFct(_)::Identifier("g",_)::
+        EndTypAnnotatedIdent(_) :: BeginForeignFct(_)::ForeignKeyword(_) ::Identifier("g",_)::
         LParentheses(_)::Identifier("x",_)::Comma(_)::Identifier("y",_)::
-        RParentheses(_):: LBracket(_)::
-        ForeignFctBodyColumn("return x*y;",_):: RBracket(_)::
+        RParentheses(_):: LBraces(_)::
+        ForeignFctBodyColumn("return x*y;",_)::ForeignFctBodyColumn("",_):: RBraces(_)::
         EndForeignFct(_)::
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
         Identifier("g", _)::Identifier("x", _)::Identifier("y", _)
         ::EndNamedExpr(_) :: Nil => true
+      case BeginTypAnnotatedIdent(_):: Identifier("g", _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) ::
+        ScalarType(FloatTyp(), _) :: Arrow(_) ::ScalarType(FloatTyp(), _)::
+        EndTypAnnotatedIdent(_) ::
+        BeginTypAnnotatedIdent(_):: Identifier("f", _)::
+        DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
+        EndTypAnnotatedIdent(_) :: BeginForeignFct(_)::ForeignKeyword(_) ::Identifier("g",_)::
+        LParentheses(_)::Identifier("x",_)::Comma(_)::Identifier("y",_)::
+        RParentheses(_):: LBraces(_):: list => println(list)
       case a => fail(a.toString())
     }
   }

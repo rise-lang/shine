@@ -179,9 +179,12 @@ sealed abstract class Token (span: Span){
   val s:Span = span
 }
 
+  final case class ForeignKeyword(span:Span) extends Token(span){
+    override def toString: String = "'foreign'"
+  }
 //ForeignFct("g", "x"::"y"::Nil, "return x*y;")
   final case class ForeignFctBodyColumn(body:String, span: Span) extends Token(span){
-    override def toString: String = "ForeignFctbdy {\n"+body+"\n}"
+    override def toString: String = "<ForeignFctbdyLine {\n"+body+"\n}>"
   }
 
   final case class LParentheses(span: Span) extends Token(span){
@@ -207,6 +210,16 @@ sealed abstract class Token (span: Span){
     require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
     require((span.begin.row +1) == span.end.row, "RBracket: (span.begin.row +1) should be span.end.row: "+ span)
     override def toString = "']'"
+  }
+  final case class LBraces(span: Span) extends Token(span){
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "LBracket: (span.begin.row +1) should be span.end.row: "+ span)
+    override def toString = "'{'"
+  }
+  final case class RBraces(span: Span) extends Token(span){
+    require(span.begin.column == span.end.column, "span.begin.column is unequal to span.end.column")
+    require((span.begin.row +1) == span.end.row, "RBracket: (span.begin.row +1) should be span.end.row: "+ span)
+    override def toString = "'}'"
   }
 
   // example: "split"

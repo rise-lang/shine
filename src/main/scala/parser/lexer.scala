@@ -16,13 +16,13 @@ case class RecognizeLexeme(fileReader: FileReader){
   type TokenList = List[Either[Token,PreAndErrorToken]]
 
   private def lexer(): List[Token] = {
-    val list:List[Token] = lexNamedExprOrTypAnnotatedIdent(0,0, Nil)
+    val list:List[Token] = lexNamedExprOrTypAnnotatedIdentOrForeignFct(0,0, Nil)
     val newL = list.reverse
     println("Lexer finished: " + newL)
     newL
   }
 
-  private def lexNamedExprOrTypAnnotatedIdent(oldColumn:Int, oldRow:Int, l:List[Token]):List[Token] =  {
+  private def lexNamedExprOrTypAnnotatedIdentOrForeignFct(oldColumn:Int, oldRow:Int, l:List[Token]):List[Token] =  {
     val arr: Array[String]= fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -48,6 +48,10 @@ case class RecognizeLexeme(fileReader: FileReader){
     if (arr(column)(row).isLetter) {
       lexIdentifier(column, row) match {
         case (Left(a), r) => {
+          a match {
+            case Identifier("foreign", span) => throw new IllegalStateException("You can't start with an foreign Function")
+            case _ =>
+          }
           var newRow = r
           //            val i: Token = a
           skipWhitespaceWhitoutNewLine(column, newRow) match {
@@ -97,6 +101,79 @@ case class RecognizeLexeme(fileReader: FileReader){
   }
 
 
+  private def lexerForeignFct(oldColumn:Int, oldRow:Int, l:List[Token]):TokenAndPos = {
+    val arr: Array[String]= fileReader.sourceLines
+    var row = oldRow
+    var column = oldColumn
+    require(row>=0, "row is not allowed to be negative")
+    require(column>=0, "column is not allowed to be negative")
+    require(arr.length > column, "array does not have so much columns")
+    require(arr(column).length > row, "arr(column) has less than row chars")
+
+    var list= l
+
+    isEnd(fileReader, column, row, arr) match {
+      case Left((c, r)) => {
+        column = c
+        row = r
+      }
+      case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+        " but this should not be able to happen")
+      case Right(EndOfLine(span)) => throw new RuntimeException("At position ("
+        + span.begin.column + "," + span.begin.row + " is an expression expected " +
+        ", but there is nothing! '" + arr(column) + "'")
+      case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+    }
+
+    lexIdentifier(column, row) match {
+      case (Left(a), r) => {
+        row = r
+        a match {
+          case Identifier("foreign",sp)=> list=list.::(ForeignKeyword(sp))
+          case _ => throw new IllegalStateException("Foreign Keyword expected: "+ a)
+        }
+
+      }
+      case (Right(a), _) => {
+        a.throwException()
+      }
+    }
+
+    isEnd(fileReader, column, row, arr) match {
+      case Left((c, r)) => {
+        column = c
+        row = r
+      }
+      case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+        " but this should not be able to happen")
+      case Right(EndOfLine(span)) => throw new RuntimeException("At position ("
+        + span.begin.column + "," + span.begin.row + " is an expression expected " +
+        ", but there is nothing! '" + arr(column) + "'")
+      case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+    }
+
+    lexIdentifier(column, row) match {
+      case (Left(a), r) => {
+        row = r
+        list=list.::(a)
+      }
+      case (Right(a), _) => {
+        a.throwException()
+      }
+    }
+
+    lexLParentheses(column, row) match {
+      case Left(a) => {
+        row = row+1
+        list=list.::(a)
+      }
+      case Right(a) => {
+        a.throwException()
+      }
+    }
+    val res = lexerForeignFctParameterList(column, row,list)
+    res
+  }
   private def lexerNamedExpr(oldColumn:Int, oldRow:Int, l:List[Token]):TokenAndPos = {
     //println("lexerNamedExpr: "+ l)
     val arr: Array[String]= fileReader.sourceLines
@@ -203,6 +280,7 @@ case class RecognizeLexeme(fileReader: FileReader){
 
     (lexerTypAnnotationExpression(column, row,list), column, row)
   }
+
 
 
 
@@ -733,12 +811,13 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
   private def startNewTypAnnoationOrNewExpr(column:Int, row:Int, list:List[Token],arr: Array[String] =
   fileReader.sourceLines):List[Token]={
     if (arr(column)(row).isLetter) {
-//      if(arr(column).substring(row,row+7)=="foreign"){
-//        return endTypAnnotatedIdentBeginCFct(column, row, list)
-//      }
 
       lexIdentifier(column, row) match {
-        case (Left(_), r) => {
+        case (Left(a), r) => {
+          a match {
+            case Identifier("foreign", span) => return endTypAnnotatedIdentBeginForeignFct(column, row, list)._1
+            case _ =>
+          }
           var newRow = r
           skipWhitespaceWhitoutNewLine(column, newRow) match {
             case (_, r) => {
@@ -771,7 +850,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                 return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
               }
             }
-            case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+            case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started: "+ list)
           }
         }
         case (Right(_), _) =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
@@ -822,6 +901,162 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
     }
     howToContinueLexerTypAnnoationExpression(column,row,list)
+  }
+
+  private def lexerForeignFctBody(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],Int,Int)={
+    val arr: Array[String] = fileReader.sourceLines
+    var row = oldRow
+    var column = oldColumn
+    require(row >= 0, "row is not allowed to be negative")
+    require(column >= 0, "column is not allowed to be negative")
+    var list = l
+
+    isEnd(fileReader, column, row, arr) match {
+      case Left((c, r)) => {
+        column = c
+        row = r
+      }
+      case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+        " but this should not be able to happen")
+      case Right(EndOfLine(span)) => throw new RuntimeException("At position ("
+        + span.begin.column + "," + span.begin.row + " is an expression expected " +
+        ", but there is nothing! '" + arr(column) + "'")
+      case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+    }
+    val len = arr.apply(column).length
+    val currentColumn=arr.apply(column).substring(row, len)
+    if(currentColumn.matches("(.*)[}]")){
+      val RBracesPos = currentColumn.lastIndexOf("}")
+      val startLoc = Location(column, row)
+      val endLoc= Location(column,RBracesPos)
+      list = list.::(ForeignFctBodyColumn(currentColumn, Span(fileReader, startLoc, endLoc)))
+      .::(RBraces(Span(fileReader, Location(column, RBracesPos), Location(column, RBracesPos+1))))
+      row = 0
+      column = column+1
+      isEnd(fileReader, column, row, arr) match {
+        case Left((c, r)) => {
+          column = c
+          row = r
+        }
+        case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+          " but this should not be able to happen")
+        case Right(EndOfLine(span)) => throw new RuntimeException("At position ("
+          + span.begin.column + "," + span.begin.row + " is an expression expected " +
+          ", but there is nothing! '" + arr(column) + "'")
+        case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+      }
+      lexIdentifier(column, row) match {
+        case (Right(_), _) => (list,column,row)
+        case (Left(a), r) => {
+          println(a)
+          var newRow = r
+          //            val i: Token = a
+          skipWhitespaceWhitoutNewLine(column, newRow) match {
+            case (c, r) => {
+              newRow = r
+            }
+          }
+      arr(column).substring(newRow, newRow + 1) match {
+        case ":" => {
+                endForeignFctBeginTypAnnotatedIdent(column, row, list)
+          }
+        case "=" => {
+          endForeignFctBeginNamedExpr(column, row, list)
+        }
+        case a =>endForeignFctBeginForeignFct(column,row,list)
+      }}}
+    }else{
+      val startLoc = Location(column, row)
+      val endLoc= Location(column,len)
+      list = list.::(ForeignFctBodyColumn(currentColumn, Span(fileReader, startLoc, endLoc)))
+      row = 0
+      column = column+1
+      lexerForeignFctBody(column,row,list)
+    }
+  }
+
+  private def lexerForeignFctParameterList(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token],Int,Int)={
+    val arr: Array[String] = fileReader.sourceLines
+    var row = oldRow
+    var column = oldColumn
+    require(row >= 0, "row is not allowed to be negative")
+    require(column >= 0, "column is not allowed to be negative")
+    var list = l
+
+    isEnd(fileReader, column, row, arr) match {
+      case Left((c, r)) => {
+        column = c
+        row = r
+      }
+      case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+        " but this should not be able to happen")
+      case Right(EndOfLine(span)) => throw new RuntimeException("At position ("
+        + span.begin.column + "," + span.begin.row + " is an expression expected " +
+        ", but there is nothing! '" + arr(column) + "'")
+      case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+    }
+
+    val loc: Location = Location(column, row) //endLocation is equal to startLocation
+    arr(column)(row) match {
+      case ')' => {
+        list = list.::(RParentheses(Span(fileReader, loc, Location(loc.column, loc.row+1))))
+        row = row + 1
+        isEnd(fileReader, column, row, arr) match {
+          case Left((c, r)) => {
+            column = c
+            row = r
+          }
+          case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+            " but this should not be able to happen")
+          case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+        }
+        arr(column)(row) match{
+          case '{' => {
+            list = list.::(LBraces(Span(fileReader, loc, Location(loc.column, loc.row+1))))
+            row = row + 1
+            return lexerForeignFctBody(column,row, list)
+          }
+          case a => throw new RuntimeException("Here is an '{' expected: "+ a)
+        }
+      }
+      case ',' => {
+        list = list.::(Comma(Span(fileReader, loc, Location(loc.column, loc.row+1))))
+        row = row + 1
+      }
+      case a => {
+        lexIdentifier(column, row) match {
+          case (Left(TypeIdentifier(name, span)), r) => {
+            row = r
+            list=list.::(TypeIdentifier(name, span))
+          }
+          case (Left(Identifier(name, span)), r) => {
+            row = r
+            list=list.::(Identifier(name, span))
+          }
+          case (Left(a), _) => NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s).throwException()
+          case (Right(a), _) => {
+            a.throwException()
+          }
+        }
+      }
+    }
+      isEnd(fileReader, column, row, arr) match {
+        case Left((c, r)) => {
+          column = c
+          row = r
+        }
+        case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
+          " but this should not be able to happen")
+        case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+      }
+      //println("after isEnd: " + column + " , " + row + " arr(column)(row)= '" + arr(column)(row)+ "'")
+
+      if(arr.length<=column+1){
+        throw new IllegalStateException("ForeignFct does not seem to have an body: "+ list)
+      }else{
+        lexerForeignFctParameterList(column, row, list)
+      }
+
   }
 
   private def lexerExpression(oldColumn:Int, oldRow:Int, l:List[Token]):(List[Token], Int, Int) = {
@@ -997,6 +1232,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         lexIdentifier(column, row) match {
 
           case (Left(a), r) => {
+            a match {
+              case Identifier("foreign", span) => return endTypAnnotatedIdentBeginForeignFct(column, row, list)
+              case _ =>
+            }
             var newRow = r
             //            val i: Token = a
             skipWhitespaceWhitoutNewLine(column, newRow) match {
@@ -1104,7 +1343,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     list = list.::(EndNamedExpr(span))
     list = list.::(BeginTypAnnotatedIdent(span))
     var (newList, c, r) = lexerTypAnnotatedIdent(column, row, list)
-    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])){
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
       newList = newList.::(EndTypAnnotatedIdent(new Span(fileReader, Location(c, r))))
     }
     //println("endNamedExprBeginTypAnnotatedIdent ended: "+  newList)
@@ -1117,8 +1356,21 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     list = list.::(EndNamedExpr(span))
     list = list.::(BeginNamedExpr(span))
     var (newList, c, r) = lexerNamedExpr(column, row, list)
-    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])){
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
       newList = newList.::(EndNamedExpr(new Span(fileReader, Location(c, r))))
+    }
+    //println("endNamedExprBeginNamedExpr ended: "+  newList)
+    (newList, c, r)
+  }
+  private def endNamedExprBeginForeignFct(column: Int, row: Int, l: List[Token]):TokenAndPos = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
+    list = list.::(EndNamedExpr(span))
+    list = list.::(BeginForeignFct(span))
+    var (newList, c, r) = lexerForeignFct(column, row, list)
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
+      newList = newList.::(EndForeignFct(new Span(fileReader, Location(c, r))))
     }
     //println("endNamedExprBeginNamedExpr ended: "+  newList)
     (newList, c, r)
@@ -1131,7 +1383,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     list = list.::(EndTypAnnotatedIdent(span))
     list = list.::(BeginTypAnnotatedIdent(span))
     var (newList, c, r) = lexerTypAnnotatedIdent(column, row, list)
-    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])){
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
       newList = newList.::(EndTypAnnotatedIdent(new Span(fileReader, Location(c, r))))
     }
     //println("endTypAnnotatedIdentBeginTypAnnotatedIdent ended: "+  newList)
@@ -1144,7 +1396,60 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     list = list.::(EndTypAnnotatedIdent(span))
     list = list.::(BeginNamedExpr(span))
     var (newList, c, r) = lexerNamedExpr(column, row, list)
-    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])){
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
+      newList = newList.::(EndNamedExpr(new Span(fileReader, Location(c, r))))
+    }
+    //println("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
+    (newList, c, r)
+  }
+  private def endTypAnnotatedIdentBeginForeignFct(column: Int, row: Int, l: List[Token]):TokenAndPos = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
+    list = list.::(EndTypAnnotatedIdent(span))
+    list = list.::(BeginForeignFct(span))
+    var (newList, c, r) = lexerForeignFct(column, row, list)
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
+      newList = newList.::(EndForeignFct(new Span(fileReader, Location(c, r))))
+    }
+    //println("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
+    (newList, c, r)
+  }
+
+  private def endForeignFctBeginForeignFct(column: Int, row: Int, l: List[Token]):TokenAndPos = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
+    list = list.::(EndForeignFct(span))
+    list = list.::(BeginForeignFct(span))
+    var (newList, c, r) = lexerForeignFct(column, row, list)
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
+      newList = newList.::(EndForeignFct(new Span(fileReader, Location(c, r))))
+    }
+    //println("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
+    (newList, c, r)
+  }
+  private def endForeignFctBeginTypAnnotatedIdent(column: Int, row: Int, l: List[Token]):TokenAndPos = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
+    list = list.::(EndForeignFct(span))
+    list = list.::(BeginTypAnnotatedIdent(span))
+    var (newList, c, r) = lexerTypAnnotatedIdent(column, row, list)
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
+      newList = newList.::(EndTypAnnotatedIdent(new Span(fileReader, Location(c, r))))
+    }
+    //println("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
+    (newList, c, r)
+  }
+  private def endForeignFctBeginNamedExpr(column: Int, row: Int, l: List[Token]):TokenAndPos = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = Span(fileReader, loc, Location(loc.column, loc.row+1))
+    list = list.::(EndForeignFct(span))
+    list = list.::(BeginNamedExpr(span))
+    var (newList, c, r) = lexerNamedExpr(column, row, list)
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
       newList = newList.::(EndNamedExpr(new Span(fileReader, Location(c, r))))
     }
     //println("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
@@ -1157,6 +1462,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     list = list.::(BeginTypAnnotatedIdent(span))
     lexerTypAnnotatedIdent(column, row, list)
   }
+
 
   /*
   skip the Whitespaces
@@ -1238,6 +1544,32 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
         Right(NotExpectedToken("[", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1))))
+      }
+    }
+  }
+  private def lexLParentheses(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):
+  Either[Token,PreAndErrorToken]= {
+    arr(column)(row) match {
+      case '(' => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Left(LParentheses(Span(fileReader,loc,Location(loc.column, loc.row+1))))
+      }
+      case a => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken("(", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1))))
+      }
+    }
+  }
+  private def lexLBraces(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):
+  Either[Token,PreAndErrorToken]= {
+    arr(column)(row) match {
+      case '{' => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Left(LBraces(Span(fileReader,loc,Location(loc.column, loc.row+1))))
+      }
+      case a => {
+        val loc:Location = Location(column, row) //endLocation is equal to startLocation
+        Right(NotExpectedToken("{", ""+ a, Span(fileReader,loc,Location(loc.column, loc.row+1))))
       }
     }
   }
