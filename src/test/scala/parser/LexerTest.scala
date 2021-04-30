@@ -101,13 +101,21 @@ class LexerTest extends  AnyFlatSpec {
         EndTypAnnotatedIdent(_) :: BeginForeignFct(_)::ForeignKeyword(_) ::Identifier("g",_)::
         LParentheses(_)::Identifier("x",_)::Comma(_)::Identifier("y",_)::
         RParentheses(_):: LBraces(_)::
-        ForeignFctBodyColumn("return x*y;",_)::ForeignFctBodyColumn("",_):: RBraces(_)::
+        ForeignFctBodyColumn(a,_)::ForeignFctBodyColumn(b,_):: RBraces(_)::
         EndForeignFct(_)::
         BeginNamedExpr(_) :: Identifier("f", _) ::
         EqualsSign(_)::Backslash(_) :: Identifier("x", _) :: Arrow(_) ::
-        Identifier("g", _)::Identifier("x", _)::Identifier("y", _)
-        ::EndNamedExpr(_) :: Nil => true
-      case BeginTypAnnotatedIdent(_):: Identifier("g", _)::
+        Identifier("g", _)::Identifier("x", _)::Identifier("x", _)
+        ::EndNamedExpr(_) :: Nil if a.contains("return x*y;")=> true
+      case a => fail(a.toString())
+    }
+  }
+  "RecognizeLexeme" should "work for CFunction2" in {
+    val fileName: String = testFilePath + "CFunction2.rise"
+    val file: FileReader =  FileReader(fileName)
+    val lexer: RecognizeLexeme = RecognizeLexeme(file)
+    lexer.tokens match {
+      case BeginTypAnnotatedIdent(_):: Identifier("calcAcc", _)::
         DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) ::
         ScalarType(FloatTyp(), _) :: Arrow(_) ::ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) ::
@@ -115,11 +123,12 @@ class LexerTest extends  AnyFlatSpec {
         DoubleColons(_) :: ScalarType(FloatTyp(), _) :: Arrow(_) :: ScalarType(FloatTyp(), _)::
         EndTypAnnotatedIdent(_) :: BeginForeignFct(_)::ForeignKeyword(_) ::Identifier("g",_)::
         LParentheses(_)::Identifier("x",_)::Comma(_)::Identifier("y",_)::
-        RParentheses(_):: LBraces(_):: list => println(list)
+        RParentheses(_):: LBraces(_)::
+        ForeignFctBodyColumn(a,_)::ForeignFctBodyColumn(b,_):: RBraces(_)::
+        EndForeignFct(_):: Nil=> true
       case a => fail(a.toString())
     }
   }
-
 
   "RecognizeLexeme" should "Complex1" in {
     val fileName: String = testFilePath + "Complex1.rise"
