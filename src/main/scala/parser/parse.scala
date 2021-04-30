@@ -86,6 +86,8 @@ object parse {
 
   final case class SAddrSpace(addrSpace: rt.AddressSpace, span: Span) extends SyntaxElement
 
+  final case class SSeq(seq:mutable.Seq[String], span:Span) extends SyntaxElement
+
   sealed trait RiseKind //Todo: Scoping einbauen, also Kind nennen und Token explizit immer hinzufügen
 
   final case class RData() extends RiseKind
@@ -834,6 +836,7 @@ object parse {
       case SType(t, _) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
       case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
       case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+      case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
     }
     (e, synE)
   }
@@ -965,6 +968,7 @@ object parse {
         }
         synE = synE.tail
       }
+      case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
     }
 
     (e, synE)
@@ -1038,6 +1042,16 @@ object parse {
             case Right(errorL) => return Right(errorL)
           }
         }
+        case BeginForeignFct(_) :: remainderTokens => {
+          val p: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), parseState.spanList)
+          val psNew = parseForeignFct(p, mapFkt)
+          psNew match {
+            case Left(tokens) => {
+              tokenList = tokens
+            }
+            case Right(errorL) => return Right(errorL)
+          }
+        }
         case a => throw new IllegalArgumentException("You have started with something different: " + a)
       }
     }
@@ -1065,6 +1079,176 @@ object parse {
       parseNat
   }
 
+  def iterateForeignFctParameterList(inputEPState: InputEPState):OutputEPState = {
+    val whatToParse = "iterateForeignFctParameterList"
+    val (parseState, errorList) = inputEPState
+    if(!parseState.tokenStream.head.isInstanceOf[RParentheses]){
+      return (Left(parseState), errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+    }
+    val ps = ParseState(parseState.tokenStream, Nil , parseState.mapDepL, parseState.spanList)
+    (Left(ps), errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
+      parseComma |> parseIdent |> iterateForeignFctParameterList
+  }
+
+  private def getSequenceOfNames(seq:mutable.Seq[String], parsedSynElems:List[SyntaxElement]):Either[Span, PreAndErrorSynElems]={
+    val whatToParse = "SequenceOfNames"
+    parsedSynElems match {
+      case SExpr(id@r.Identifier(name))::list => {
+        seq.appended(name)
+        getSequenceOfNames(seq,list) match{
+          case Right(e) => Right(e)
+          case Left(sp) => Left(id.span.get + sp)
+        }
+      }
+      case e :: list => {
+        Right(NotCorrectSynElem(e, "Identifier", whatToParse))
+      }
+      case Nil => Right(SynListIsEmpty(SpanPlaceholder, whatToParse))
+    }
+  }
+
+  def parseForeignFctParameterListintern(inputEPState: InputEPState):OutputEPState  = {
+    val (parseState, errorList) = inputEPState
+    val seq = mutable.Seq[String]()
+    if(parseState.tokenStream.head.isInstanceOf[RParentheses]){
+      return (Left(ParseState(parseState.tokenStream, SSeq(seq,
+        parseState.tokenStream.head.s)::parseState.parsedSynElems,
+        parseState.mapDepL, parseState.spanList)), errorList)
+    }
+    val newPS = (Left(ParseState(parseState.tokenStream, Nil, parseState.mapDepL, parseState.spanList)), errorList) |>
+      parseIdent |> iterateForeignFctParameterList
+
+    newPS match {
+      case (Right(e), errorList) => (Right(e), errorList.add(e))
+      case (Left(p), errorList) => {
+        val seqSpan = getSequenceOfNames(seq, p.parsedSynElems) match {
+          case Left(value) => value
+          case Right(e) => return (Right(e), errorList.add(e))
+        }
+        (Left(ParseState(parseState.tokenStream, SSeq(seq,
+          seqSpan)::parseState.parsedSynElems,
+          parseState.mapDepL, parseState.spanList)), errorList)
+      }
+    }
+  }
+
+  def parseForeignFctParameterList(inputEPState: InputEPState):OutputEPState  = {
+    val whatToParse = "ForeignFctParameterList"
+    //Seq("p1", "p2", "deltaT", "espSqr", "acc")
+    val (parseState, errorList) = inputEPState
+    val ps = ParseState(parseState.tokenStream, Nil , parseState.mapDepL, parseState.spanList)
+    val newPS = (Left(ps), errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
+      parseLeftParentheses |> parseForeignFctParameterListintern |> parseRightParentheses
+
+    newPS match{
+      case (Right(e), errorList) => (Right(e), errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
+      case (Left(p), errorList) => (Left(p), errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+    }
+  }
+
+  def parseForeignFctBody(inputEPState: InputEPState):OutputEPState  = {
+    val whatToParse = "ForeignFctParameterList"
+    //Seq("p1", "p2", "deltaT", "espSqr", "acc")
+    val (parseState, errorList) = inputEPState
+    val ps = ParseState(parseState.tokenStream, Nil , parseState.mapDepL, parseState.spanList)
+    val newPS = (Left(ps), errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
+      parseLeftBraces |>
+      //parseForeignFctBodyLinesLoop |>
+      parseRightBraces
+
+    newPS match{
+      case (Right(e), errorList) => (Right(e), errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
+      case (Left(p), errorList) => (Left(p), errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+    }
+  }
+
+  def parseForeignFct(parseState: ParseState, mapFkt: MapFkt): Either[List[Token], ErrorList] = {
+    require(parseState.parsedSynElems.isEmpty, "parseState is not empty, but nothing should be in it yet")
+    val whatToParse = "ForeignFct"
+    val (psLambdaOld, errorList) =
+      (Left(parseState), ErrorList().add(UsedOrFailedRule(isParsing(), whatToParse))) |>
+        parseForeignFctKeyWord |>
+        parseIdent
+    val (ps, identifierFkt, typeOfFkt): (ParseState, r.Identifier, r.types.Type) = psLambdaOld match {
+      case Right(e) => return Right(errorList.add(UsedOrFailedRule(isParsing(), whatToParse)))
+      case Left(p) => {
+        p.parsedSynElems.head match {
+          case SExpr(id@r.Identifier(n)) =>
+            mapFkt.get(n) match {
+              case None => {
+                //println("Identifier doesn't exist: " + n + " , " + psLambdaOld)
+                throw new IllegalStateException("We want to parse an NamedExpr for " + n +
+                  " but this Identifier is not declared yet!")
+              }
+              case Some(HMExpr(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
+              case Some(HMNat(n)) => throw new IllegalStateException("Name of a Nat: " + n)
+              case Some(HMType(typeFkt)) =>
+                (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapDepL, p.spanList),
+                  id.setType(typeFkt), typeFkt)
+            }
+          case SLet(sp) =>
+            throw new IllegalStateException("it is an Identifier expected not let: " + sp)
+          case SExprClutched(expr, spanClutch) =>
+            throw new IllegalStateException("it is an Identifier expected not expr with spanClutch: " + expr + " ; " + spanClutch)
+          case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: " + expr)
+          case SType(t, _) => throw new IllegalStateException(
+            "it is an Identifier expected but an Type is completely false: " + t)
+          case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: " + prim)
+          case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
+          case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
+          case SAddrSpace(addrSpace, _) => throw new RuntimeException(
+            "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
+          case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+        }
+      }
+    }
+
+    val (psNamedExprBefore, newEL) = {
+      (Left(ps), errorList) |> parseForeignFctParameterList |> parseForeignFctBody
+    }
+    val (tokenList, synElemList, mapDepL) = psNamedExprBefore match {
+      case Right(e) => {
+        return Right(newEL.add(UsedOrFailedRule(isFailed(), whatToParse)))
+      }
+      case Left(p) => {
+        p.tokenStream match {
+
+          case EndNamedExpr(_) :: remainderTokens => {
+            mapFkt.get(identifierFkt.name) match {
+              case None => throw new IllegalStateException("Identifier seems not to be in the Map: " +
+                identifierFkt.name + " , " + mapFkt)
+              case Some(HMNat(n)) => throw new IllegalStateException("Name of a Nat: " + n)
+              case Some(HMExpr(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
+              case Some(HMType(t)) =>
+                //Todo: I have to add Types in the Identifiers in Lambda and delete it after it, after this this if-clause makes sense
+                //                if(!l.isEmpty){
+                //                throw new IllegalStateException("The List should be empty! But it isn't. " +
+                //                  "Probably we have one or more Types in the " +
+                //                  "TypAnnotationIdent declared than the NamedExpr really has. Types left: " + l + "\nTypes defined: " + typesDefined + "\nNamedExpr: " + p.parsedSynElems)
+                //              }else{
+                //Todo: We have to give the Identifier (identifierFkt/p.map.get(n)) now a Type
+
+                (remainderTokens, p.parsedSynElems, p.mapDepL.get)
+              //              }
+            }
+          }
+          case _ => {
+            throw new IllegalStateException("NewExpr ends with an EndNamedExpr, but we have no EndNamedExpr at the end")
+          }
+        }
+      }
+    }
+    val expr = synElemList.head match{
+      case SExpr(e) => e
+      case x => {
+        val e = NotCorrectSynElem(x, "ForeignFct", whatToParse)
+        return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
+      }
+    }
+    mapFkt.update(identifierFkt.name, HMExpr(rd.ToBeTyped(expr)))
+    //println("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)
+    Left(tokenList)
+  }
   /*
   top level Lambda expects that the type of the Identifier is defined!
 
@@ -1106,6 +1290,7 @@ object parse {
           case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
           case SAddrSpace(addrSpace, _) => throw new RuntimeException(
             "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
+          case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
         }
       }
     }
@@ -1161,6 +1346,7 @@ object parse {
         }
         case SData(data, span) =>
         case SAddrSpace(addrSpace, span) =>
+        case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
       }
     //println("\n\n\n Before combining the Expr in parseNamedExpr \n\n\n")
     var expr = combineExpressionsDependent(synElemList, mapDepL)
@@ -1214,6 +1400,7 @@ object parse {
           case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
           case SAddrSpace(addrSpace, _) => throw new RuntimeException(
             "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
+          case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
         }
       }
     }
@@ -1288,6 +1475,7 @@ object parse {
         case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
         case SAddrSpace(addrSpace, _) => throw new RuntimeException(
           "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
+        case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
       }
     } else {
       spanOp match {
@@ -1519,6 +1707,7 @@ the syntax-Tree has on top an Lambda-Expression
             case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
             case SAddrSpace(addrSpace,_) => throw new RuntimeException(
               "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
+            case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
           }
         }
         require(synElemListMaybeTIdent.isEmpty, "the List should be empty")
@@ -1654,6 +1843,7 @@ the syntax-Tree has on top an Lambda-Expression
             case SIntToExpr(name, _) => SIntToExpr(name, spanClutch)
             case SNat(nat, _) => SNat(nat, spanClutch)
             case SType(t, _) => SType(t, spanClutch)
+            case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
           }
         }else {
           val newExpr = combineExpressionsDependent(pState.parsedSynElems, pState.mapDepL.get)
@@ -2106,6 +2296,23 @@ the syntax-Tree has on top an Lambda-Expression
     }
   }
 
+    def parseForeignFctKeyWord(inputEPState: InputEPState): OutputEPState = {
+      val whatToParse = "ForeignFctKeyWord"
+      val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
+      val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
+      val nextToken :: remainderTokens = tokens
+
+      val p = nextToken match {
+        case ForeignKeyword(_) => Left(ParseState(remainderTokens, parsedSynElems,
+          mapDepL, spanList) )
+        case tok => {
+          val e = NotCorrectToken(tok, whatToParse, whatToParse)
+          return (Right(e),errorList.add(e))
+        }
+      }
+      (p,errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+    }
+
   def parseNat(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "Nat"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
@@ -2172,6 +2379,37 @@ the syntax-Tree has on top an Lambda-Expression
       case RBracket(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList) )
       case tok => {
         val e = NotCorrectToken(tok, "RBracket", "RBracket")
+        return (Right(e),errorList.add(e))
+      }
+    }
+    (p,errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+  }
+
+  def parseLeftBraces(inputEPState: InputEPState): OutputEPState = {
+    val whatToParse = "LeftBraces"
+    val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
+    val ParseState(tokens, parsedSynElems, mapDepL, _)  = parseState
+    val nextToken :: remainderTokens = tokens
+
+    val p  =nextToken match {
+      case LBraces(sp) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, Some(sp::Nil)))
+      case tok => {
+        val e = NotCorrectToken(tok, whatToParse, whatToParse)
+        return (Right(e),errorList.add(e))
+      }
+    }
+    (p,errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+  }
+  def parseRightBraces(inputEPState: InputEPState): OutputEPState = {
+    val whatToParse = "RightBraces"
+    val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
+    val ParseState(tokens, parsedSynElems, mapDepL, _)  = parseState
+    val nextToken :: remainderTokens = tokens
+
+    val p  =nextToken match {
+      case RBraces(sp) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, Some(sp::Nil)))
+      case tok => {
+        val e = NotCorrectToken(tok, whatToParse, whatToParse)
         return (Right(e),errorList.add(e))
       }
     }
