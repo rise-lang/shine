@@ -9,7 +9,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 final case class Gather(val n: Nat, val m: Nat, val dt: DataType, val indices: Phrase[ExpType], val input: Phrase[ExpType]) extends ExpPrimitive {
   {
-    indices :: expT(ArrayType(n, IndexType(n)), read)
+    indices :: expT(ArrayType(m, IndexType(n)), read)
     input :: expT(ArrayType(n, dt), read)
   }
   override val t: ExpType = expT(ArrayType(m, dt), read)
