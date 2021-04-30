@@ -184,7 +184,7 @@ sealed abstract class Token (span: Span){
   }
 //ForeignFct("g", "x"::"y"::Nil, "return x*y;")
   final case class ForeignFctBodyColumn(body:String, span: Span) extends Token(span){
-    override def toString: String = "<ForeignFctbdyLine {\n"+body+"\n}>"
+    override def toString: String = "<{"+body+"}>"
   }
 
   final case class LParentheses(span: Span) extends Token(span){

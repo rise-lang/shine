@@ -931,6 +931,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       val endLoc= Location(column,RBracesPos)
       list = list.::(ForeignFctBodyColumn(currentColumn, Span(fileReader, startLoc, endLoc)))
       .::(RBraces(Span(fileReader, Location(column, RBracesPos), Location(column, RBracesPos+1))))
+      if(arr.length <= column+1){
+        row = arr(column).length
+        return (list, column,row)
+      }
       row = 0
       column = column+1
       isEnd(fileReader, column, row, arr) match {
