@@ -927,10 +927,16 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     val currentColumn=arr.apply(column).substring(row, len)
     if(currentColumn.matches("(.*)[}]")){
       val RBracesPos = currentColumn.lastIndexOf("}")
-      val startLoc = Location(column, row)
-      val endLoc= Location(column,RBracesPos)
-      list = list.::(ForeignFctBodyColumn(currentColumn, Span(fileReader, startLoc, endLoc)))
-      .::(RBraces(Span(fileReader, Location(column, RBracesPos), Location(column, RBracesPos+1))))
+      val startLocBrace = Location(column, RBracesPos)
+      val endLocBrace= Location(column, RBracesPos+1)
+      if(currentColumn.matches("(\\s)*[}]")){
+        list = list.::(RBraces(Span(fileReader, startLocBrace, endLocBrace)))
+      }else{
+        val startLoc = Location(column, row)
+        val endLoc= Location(column,RBracesPos)
+        list = list.::(ForeignFctBodyColumn(currentColumn, Span(fileReader, startLoc, endLoc)))
+          .::(RBraces(Span(fileReader, Location(column, RBracesPos), Location(column, RBracesPos+1))))
+      }
       if(arr.length <= column+1){
         row = arr(column).length
         return (list, column,row)

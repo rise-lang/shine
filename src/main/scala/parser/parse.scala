@@ -1098,26 +1098,30 @@ object parse {
     (Left(parseState), errorList) |>
       parseComma |> parseIdent |> iterateForeignFctParameterList
   }
-
-  private def getSequenceOfStrings(seq:mutable.Seq[String], parsedSynElems:List[SyntaxElement]):Either[Span, PreAndErrorSynElems]={
-    val whatToParse = "SequenceOfNames"
-    parsedSynElems match {
-      case SExpr(id@r.Identifier(name))::list => {
-        seq.appended(name)
-        getSequenceOfStrings(seq,list) match{
-          case Right(e) => if(e.isInstanceOf[SynListIsEmpty]){
-            Left(id.span.get)
-          }else{
-            Right(e)
-          }
-          case Left(sp) => Left(id.span.get + sp)
+private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[SyntaxElement]):Either[(mutable.Seq[String], Span), PreAndErrorSynElems]={
+  val whatToParse = "SequenceOfNames"
+  parsedSynElems match {
+    case SExpr(id@r.Identifier(name))::list => {
+      val s  = seq.appended(name +"\n")
+      println("SequenzString: "+ s)
+      subGetSequenceStrings(s,list) match{
+        case Right(e) => if(e.isInstanceOf[SynListIsEmpty]){
+          Left(s, id.span.get)
+        }else{
+          Right(e)
         }
+        case Left((seqN, spanN)) => Left(seqN, id.span.get + spanN)
       }
-      case e :: list => {
-        Right(NotCorrectSynElem(e, "Identifier", whatToParse))
-      }
-      case Nil => Right(SynListIsEmpty(SpanPlaceholder, whatToParse))
     }
+    case e :: list => {
+      Right(NotCorrectSynElem(e, "Identifier", whatToParse))
+    }
+    case Nil => Right(SynListIsEmpty(SpanPlaceholder, whatToParse))
+  }
+}
+
+  private def getSequenceOfStrings(seq:mutable.Seq[String], parsedSynElems:List[SyntaxElement]):Either[(mutable.Seq[String], Span), PreAndErrorSynElems]={
+    subGetSequenceStrings(seq, parsedSynElems.reverse)
   }
 
   def parseForeignFctBodyLinesLoop(inputEPState: InputEPState):OutputEPState  = {
@@ -1136,7 +1140,7 @@ object parse {
     newPS match {
       case (Right(e), errorList) => (Right(e), errorList.add(e))
       case (Left(p), errorList) => {
-        val seqSpan = getSequenceOfStrings(seq, p.parsedSynElems) match {
+        val (seqN, seqSpan) = getSequenceOfStrings(seq, p.parsedSynElems) match {
           case Left(value) => {
             errorList.add(UsedOrFailedRule(isMatched(), whatToParse))
             value
@@ -1168,11 +1172,11 @@ object parse {
     newPS match {
       case (Right(e), errorList) => (Right(e), errorList)
       case (Left(p), errorList) => {
-        val seqSpan = getSequenceOfStrings(seq, p.parsedSynElems) match {
+        val (seqN,seqSpan) = getSequenceOfStrings(seq, p.parsedSynElems) match {
           case Left(value) => value
           case Right(e) => return (Right(e), errorList.add(e))
         }
-        (Left(ParseState(p.tokenStream, SSeq(seq,
+        (Left(ParseState(p.tokenStream, SSeq(seqN,
           seqSpan)::parseState.parsedSynElems,
           p.mapDepL, p.spanList)), errorList.add(UsedOrFailedRule(isMatched(),whatToParse)))
       }
@@ -1206,6 +1210,14 @@ object parse {
       case (Right(e), errorList) => (Right(e), errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
       case (Left(p), errorList) => (Left(p), errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
     }
+  }
+
+  private def giveAsOneString(seq: Seq[String]):String={
+    var body:String = ""
+    for(col <- seq){
+      body = body + col
+    }
+    body
   }
 
   def parseForeignFct(parseState: ParseState, mapFkt: MapFkt): Either[List[Token], ErrorList] = {
@@ -1286,11 +1298,11 @@ object parse {
     }
     val expr = synElemList match{
       case SSeq(seqBody,spBody)::SSeq(seqParam, spParam)::list => {
-        var body = ""
-        for(col <- seqBody){
-          body = body + col
-        }
-        r.ForeignFunction(r.ForeignFunction.Decl(identifierFkt.name, Some(ForeignFunction.Def(seqParam.toSeq, body))))(typeOfFkt, Some(spBody+spParam))
+        val body = giveAsOneString(seqBody.toSeq)
+        val bodyWithBraces ="{\n"+body+"}"
+        println("body: '"+ bodyWithBraces+"'" + " ; '"+ seqBody.isEmpty+"'")
+        r.ForeignFunction(r.ForeignFunction.Decl(identifierFkt.name,
+          Some(ForeignFunction.Def(seqParam.toSeq, bodyWithBraces))))(typeOfFkt, Some(spBody+spParam))
       }
       case SSeq(_,_)::x::list => {
         val e = NotCorrectSynElem(x, "SSeq (second position)", whatToParse)
@@ -2295,12 +2307,12 @@ the syntax-Tree has on top an Lambda-Expression
     //println("parseComma: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
     val nextToken :: remainderTokens = tokens
-
+    //println("BodyLine: '"+nextToken+"'")
     nextToken match {
       case ForeignFctBodyColumn(body, span) => (Left(ParseState(remainderTokens, SExpr(r.Identifier(body)(rt.TypePlaceholder, Some(span)))::parsedSynElems, mapDepL, spanList) ),
         errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       case tok => {
-        val e = NotCorrectToken(tok, "Comma", "Comma")
+        val e = NotCorrectToken(tok, "ForeignFctBodyColumn", whatToParse)
         (Right(e),errorList.add(e))
       }
     }
