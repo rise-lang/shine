@@ -1290,7 +1290,7 @@ object parse {
         for(col <- seqBody){
           body = body + col
         }
-        r.ForeignFunction(r.ForeignFunction.Decl(identifierFkt.name, Some(ForeignFunction.Def(seqParam.toSeq, body))))(rt.TypePlaceholder, Some(spBody+spParam))
+        r.ForeignFunction(r.ForeignFunction.Decl(identifierFkt.name, Some(ForeignFunction.Def(seqParam.toSeq, body))))(typeOfFkt, Some(spBody+spParam))
       }
       case SSeq(_,_)::x::list => {
         val e = NotCorrectSynElem(x, "SSeq (second position)", whatToParse)

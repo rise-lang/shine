@@ -1826,6 +1826,9 @@ class parseTest extends  test_util.TestsWithExecutor {
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val riseExprByIdent = parse(lexer.tokens)
 
+    val calcAccName = "calcAcc"
+    val ex_calcAcc = riseExprByIdent.get(calcAccName).getOrElse(fail("The function '" + calcAccName+ "' does not exist!!!"))
+    println("\nexCalcAcc-------\n"+gen.OpenCLKernel(ex_calcAcc)+"\n-------\n")
     val functionName2: String = "nbody"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!"))
 
@@ -2120,8 +2123,7 @@ class parseTest extends  test_util.TestsWithExecutor {
     val localSizeAMD = LocalSize(128)
     val globalSizeAMD = GlobalSize(N)
 
-    val localSizeNVIDIA = LocalSize((tileX, tileY))
-    val globalSizeNVIDIA = GlobalSize((N, tileY))
+
 
     test_util.runsWithSameResult(Seq(
       //("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
