@@ -74,7 +74,7 @@ case class Span(file: FileReader, begin: Location, end: Location) {
     for(i <- (begin.column+1) until (end.column)){
        ret+= this.file.sourceLines(i)
     }
-    ret += f.sourceLines(end.column).substring(0, end.column)
+    ret += f.sourceLines(end.column).substring(0, end.row)
     ret
   }
 }
@@ -90,6 +90,7 @@ object Span {
       case SNat(_, span) => Some(span)
       case SData(_, span) => Some(span)
       case SIntToExpr(_, span)=> Some(span)
+      case SSeq(_, span) => Some(span)
     }
   }
   def combineOptionSpan(sp1:Option[Span],sp2:Option[Span]): Option[Span] ={

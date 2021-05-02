@@ -1079,24 +1079,37 @@ object parse {
       parseNat
   }
 
+  def iterateForeignFctBodyLines(inputEPState: InputEPState):OutputEPState = {
+    val whatToParse = "iterateForeignFctBodyLines"
+    val (parseState, errorList) = inputEPState
+    if(parseState.tokenStream.head.isInstanceOf[RBraces]){
+      return (Left(parseState), errorList)
+    }
+    (Left(parseState), errorList) |>
+      parseBodyLine |> iterateForeignFctBodyLines
+  }
+
   def iterateForeignFctParameterList(inputEPState: InputEPState):OutputEPState = {
     val whatToParse = "iterateForeignFctParameterList"
     val (parseState, errorList) = inputEPState
-    if(!parseState.tokenStream.head.isInstanceOf[RParentheses]){
-      return (Left(parseState), errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+    if(parseState.tokenStream.head.isInstanceOf[RParentheses]){
+      return (Left(parseState), errorList)
     }
-    val ps = ParseState(parseState.tokenStream, Nil , parseState.mapDepL, parseState.spanList)
-    (Left(ps), errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
+    (Left(parseState), errorList) |>
       parseComma |> parseIdent |> iterateForeignFctParameterList
   }
 
-  private def getSequenceOfNames(seq:mutable.Seq[String], parsedSynElems:List[SyntaxElement]):Either[Span, PreAndErrorSynElems]={
+  private def getSequenceOfStrings(seq:mutable.Seq[String], parsedSynElems:List[SyntaxElement]):Either[Span, PreAndErrorSynElems]={
     val whatToParse = "SequenceOfNames"
     parsedSynElems match {
       case SExpr(id@r.Identifier(name))::list => {
         seq.appended(name)
-        getSequenceOfNames(seq,list) match{
-          case Right(e) => Right(e)
+        getSequenceOfStrings(seq,list) match{
+          case Right(e) => if(e.isInstanceOf[SynListIsEmpty]){
+            Left(id.span.get)
+          }else{
+            Right(e)
+          }
           case Left(sp) => Left(id.span.get + sp)
         }
       }
@@ -1107,7 +1120,39 @@ object parse {
     }
   }
 
-  def parseForeignFctParameterListintern(inputEPState: InputEPState):OutputEPState  = {
+  def parseForeignFctBodyLinesLoop(inputEPState: InputEPState):OutputEPState  = {
+    val whatToParse = "iterateForeignFctBodyLines"
+    val (parseState, errorList) = inputEPState
+    val seq = mutable.Seq[String]()
+    if(parseState.tokenStream.head.isInstanceOf[RBraces]){
+      return (Left(ParseState(parseState.tokenStream, SSeq(seq,
+        parseState.tokenStream.head.s)::parseState.parsedSynElems,
+        parseState.mapDepL, parseState.spanList)), errorList)
+    }
+    val newPS = (Left(ParseState(parseState.tokenStream, Nil, parseState.mapDepL, parseState.spanList)),
+      errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
+      iterateForeignFctBodyLines
+
+    newPS match {
+      case (Right(e), errorList) => (Right(e), errorList.add(e))
+      case (Left(p), errorList) => {
+        val seqSpan = getSequenceOfStrings(seq, p.parsedSynElems) match {
+          case Left(value) => {
+            errorList.add(UsedOrFailedRule(isMatched(), whatToParse))
+            value
+          }
+          case Right(e) => return (Right(e), errorList.add(e))
+        }
+        (Left(ParseState(p.tokenStream, SSeq(seq,
+          seqSpan)::parseState.parsedSynElems,
+          p.mapDepL, p.spanList)), errorList)
+      }
+    }
+  }
+
+
+  def parseForeignFctParameterIterationLoop(inputEPState: InputEPState):OutputEPState  = {
+    val whatToParse = "ForeignFctParameterIterationLoop"
     val (parseState, errorList) = inputEPState
     val seq = mutable.Seq[String]()
     if(parseState.tokenStream.head.isInstanceOf[RParentheses]){
@@ -1115,19 +1160,21 @@ object parse {
         parseState.tokenStream.head.s)::parseState.parsedSynElems,
         parseState.mapDepL, parseState.spanList)), errorList)
     }
-    val newPS = (Left(ParseState(parseState.tokenStream, Nil, parseState.mapDepL, parseState.spanList)), errorList) |>
+//    println("Hey, here is intern FctParamList\n")
+    val newPS = (Left(ParseState(parseState.tokenStream, Nil, parseState.mapDepL, parseState.spanList)),
+      errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
       parseIdent |> iterateForeignFctParameterList
 
     newPS match {
-      case (Right(e), errorList) => (Right(e), errorList.add(e))
+      case (Right(e), errorList) => (Right(e), errorList)
       case (Left(p), errorList) => {
-        val seqSpan = getSequenceOfNames(seq, p.parsedSynElems) match {
+        val seqSpan = getSequenceOfStrings(seq, p.parsedSynElems) match {
           case Left(value) => value
           case Right(e) => return (Right(e), errorList.add(e))
         }
-        (Left(ParseState(parseState.tokenStream, SSeq(seq,
+        (Left(ParseState(p.tokenStream, SSeq(seq,
           seqSpan)::parseState.parsedSynElems,
-          parseState.mapDepL, parseState.spanList)), errorList)
+          p.mapDepL, p.spanList)), errorList.add(UsedOrFailedRule(isMatched(),whatToParse)))
       }
     }
   }
@@ -1138,7 +1185,7 @@ object parse {
     val (parseState, errorList) = inputEPState
     val ps = ParseState(parseState.tokenStream, Nil , parseState.mapDepL, parseState.spanList)
     val newPS = (Left(ps), errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
-      parseLeftParentheses |> parseForeignFctParameterListintern |> parseRightParentheses
+      parseLeftParentheses |> parseForeignFctParameterIterationLoop |> parseRightParentheses
 
     newPS match{
       case (Right(e), errorList) => (Right(e), errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
@@ -1147,13 +1194,12 @@ object parse {
   }
 
   def parseForeignFctBody(inputEPState: InputEPState):OutputEPState  = {
-    val whatToParse = "ForeignFctParameterList"
+    val whatToParse = "ForeignFctParameterBody"
     //Seq("p1", "p2", "deltaT", "espSqr", "acc")
     val (parseState, errorList) = inputEPState
-    val ps = ParseState(parseState.tokenStream, Nil , parseState.mapDepL, parseState.spanList)
-    val newPS = (Left(ps), errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
+    val newPS = (Left(parseState), errorList.add(UsedOrFailedRule(isParsing(), whatToParse))) |>
       parseLeftBraces |>
-      //parseForeignFctBodyLinesLoop |>
+      parseForeignFctBodyLinesLoop |>
       parseRightBraces
 
     newPS match{
@@ -1170,7 +1216,7 @@ object parse {
         parseForeignFctKeyWord |>
         parseIdent
     val (ps, identifierFkt, typeOfFkt): (ParseState, r.Identifier, r.types.Type) = psLambdaOld match {
-      case Right(e) => return Right(errorList.add(UsedOrFailedRule(isParsing(), whatToParse)))
+      case Right(e) => return Right(errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
       case Left(p) => {
         p.parsedSynElems.head match {
           case SExpr(id@r.Identifier(n)) =>
@@ -1213,7 +1259,7 @@ object parse {
       case Left(p) => {
         p.tokenStream match {
 
-          case EndNamedExpr(_) :: remainderTokens => {
+          case EndForeignFct(span) :: remainderTokens => {
             mapFkt.get(identifierFkt.name) match {
               case None => throw new IllegalStateException("Identifier seems not to be in the Map: " +
                 identifierFkt.name + " , " + mapFkt)
@@ -1233,20 +1279,39 @@ object parse {
             }
           }
           case _ => {
-            throw new IllegalStateException("NewExpr ends with an EndNamedExpr, but we have no EndNamedExpr at the end")
+            throw new IllegalStateException("ForeignFct ends with an EndForeignFct, but we have no EndForeignFct at the end")
           }
         }
       }
     }
-    val expr = synElemList.head match{
-      case SExpr(e) => e
-      case x => {
-        val e = NotCorrectSynElem(x, "ForeignFct", whatToParse)
+    val expr = synElemList match{
+      case SSeq(seqBody,spBody)::SSeq(seqParam, spParam)::list => {
+        var body = ""
+        for(col <- seqBody){
+          body = body + col
+        }
+        r.ForeignFunction(r.ForeignFunction.Decl(identifierFkt.name, Some(ForeignFunction.Def(seqParam.toSeq, body))))(rt.TypePlaceholder, Some(spBody+spParam))
+      }
+      case SSeq(_,_)::x::list => {
+        val e = NotCorrectSynElem(x, "SSeq (second position)", whatToParse)
+        return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
+      }
+      case SSeq(_,sp)::Nil => {
+        val e = SynListIsEmpty(sp, whatToParse)
+        return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
+      }
+      case x::list => {
+        val e = NotCorrectSynElem(x, "SSeq (first position)", whatToParse)
+        return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
+      }
+      case Nil =>{
+        val e = SynListIsEmpty(SpanPlaceholder, whatToParse)
         return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
       }
     }
     mapFkt.update(identifierFkt.name, HMExpr(rd.ToBeTyped(expr)))
     //println("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)
+    errorList.add(UsedOrFailedRule(isMatched(), whatToParse))
     Left(tokenList)
   }
   /*
@@ -2224,6 +2289,22 @@ the syntax-Tree has on top an Lambda-Expression
     (p,errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
   }
 
+  def parseBodyLine(inputEPState: InputEPState): OutputEPState = {
+    val whatToParse = "BodyLine"
+    val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
+    //println("parseComma: " + parseState)
+    val ParseState(tokens, parsedSynElems, mapDepL, spanList)  = parseState
+    val nextToken :: remainderTokens = tokens
+
+    nextToken match {
+      case ForeignFctBodyColumn(body, span) => (Left(ParseState(remainderTokens, SExpr(r.Identifier(body)(rt.TypePlaceholder, Some(span)))::parsedSynElems, mapDepL, spanList) ),
+        errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+      case tok => {
+        val e = NotCorrectToken(tok, "Comma", "Comma")
+        (Right(e),errorList.add(e))
+      }
+    }
+  }
 
   def parseComma(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "Comma"
