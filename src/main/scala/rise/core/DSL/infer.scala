@@ -165,7 +165,7 @@ object infer {
     def constrained(e: Expr): (Expr, Solution) =
       constrainTypes(e, constraints, env, mapFkt)
     def genType(e: Expr): Type =
-      if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
+      if (e.t == TypePlaceholder) freshTypeIdentifier else e.t //if TypePlaceholder it returns names with numbers after else it returns the normal name
     val span = expr.span
     expr match {
       case i: Identifier =>
