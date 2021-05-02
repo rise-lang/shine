@@ -2124,10 +2124,7 @@ class parseTest extends  test_util.TestsWithExecutor {
     val globalSizeAMD = GlobalSize(N)
 
 
-
     test_util.runsWithSameResult(Seq(
-      //("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
-      //("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
       ("parser NVIDIA", runKernel(gen.OpenCLKernel(ex_g), localSizeAMD, globalSizeAMD, pos, vel)),
       ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
     ))

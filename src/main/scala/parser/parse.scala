@@ -1106,6 +1106,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
       println("SequenzString: "+ s)
       subGetSequenceStrings(s,list) match{
         case Right(e) => if(e.isInstanceOf[SynListIsEmpty]){
+          println("SequenzStringEnd: "+ s)
           Left(s, id.span.get)
         }else{
           Right(e)
@@ -1147,7 +1148,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
           }
           case Right(e) => return (Right(e), errorList.add(e))
         }
-        (Left(ParseState(p.tokenStream, SSeq(seq,
+        (Left(ParseState(p.tokenStream, SSeq(seqN,
           seqSpan)::parseState.parsedSynElems,
           p.mapDepL, p.spanList)), errorList)
       }
