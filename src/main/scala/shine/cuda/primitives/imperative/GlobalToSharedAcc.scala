@@ -21,7 +21,7 @@ final case class GlobalToSharedAcc(dt: DataType,
                                    pipe: Phrase[ExpType],
                                    outputShared: Phrase[AccType]
                                   ) extends AccPrimitive {
-  pipe :: expT(pipeline, read)
+  pipe :: expT(OpaqueType("pipeline"), read)
   outputShared :: accT(dt)
   override val t: AccType = accT(dt)
 
