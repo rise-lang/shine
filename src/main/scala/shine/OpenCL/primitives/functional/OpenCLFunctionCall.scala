@@ -10,5 +10,5 @@ import shine.DPIA._
 final case class OpenCLFunctionCall(name: String, inTs: Seq[DataType], args: Seq[Phrase[ExpType]])(val outT: DataType) extends ExpPrimitive {
   {}
   override val t: ExpType = expT(outT, write)
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): OpenCLFunctionCall = new OpenCLFunctionCall(name, inTs, args.map(VisitAndRebuild(_, v)))(v.data(outT))
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): OpenCLFunctionCall = new OpenCLFunctionCall(name, inTs.map(v.data), args.map(VisitAndRebuild(_, v)))(v.data(outT))
 }

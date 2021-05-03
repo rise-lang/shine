@@ -10,5 +10,5 @@ import shine.DPIA._
 final case class ForeignFunctionCall(funDecl: rise.core.ForeignFunction.Decl, inTs: Seq[DataType], args: Seq[Phrase[ExpType]])(val outT: DataType) extends ExpPrimitive {
   {}
   override val t: ExpType = expT(outT, read)
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): ForeignFunctionCall = new ForeignFunctionCall(funDecl, inTs, args.map(VisitAndRebuild(_, v)))(v.data(outT))
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): ForeignFunctionCall = new ForeignFunctionCall(funDecl, inTs.map(v.data), args.map(VisitAndRebuild(_, v)))(v.data(outT))
 }

@@ -10,5 +10,5 @@ import shine.DPIA._
 final case class KernelCall(name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, inTs: Seq[DataType], args: Seq[Phrase[ExpType]])(val outT: DataType) extends ExpPrimitive {
   {}
   override val t: ExpType = expT(outT, write)
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCall = new KernelCall(name, localSize.visitAndRebuild(v), globalSize.visitAndRebuild(v), inTs, args.map(VisitAndRebuild(_, v)))(v.data(outT))
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCall = new KernelCall(name, localSize.visitAndRebuild(v), globalSize.visitAndRebuild(v), inTs.map(v.data), args.map(VisitAndRebuild(_, v)))(v.data(outT))
 }
