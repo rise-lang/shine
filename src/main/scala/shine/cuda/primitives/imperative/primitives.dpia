@@ -13,6 +13,8 @@ def forFragment(rows: nat, columns: nat, layers: nat, dt: data,
                 out: acc[fragment[rows, columns, layers, dt, frag, layout]],
                 fun: exp[dt, read] -> acc[dt] -> comm): comm
 
+// def globalToSharedAcc(...)
+
 def parFor{level: shine.OpenCL.ParallelismLevel,
            dim: Int,
            unroll: Boolean,
@@ -22,7 +24,7 @@ def parFor{level: shine.OpenCL.ParallelismLevel,
            out: acc[n.dt],
            body: exp[idx[n], read] -> acc[dt] -> comm): comm
 
-
+// def syncPipeline(...)
 
 /**
   * Synchronize all thread in a single thread block.

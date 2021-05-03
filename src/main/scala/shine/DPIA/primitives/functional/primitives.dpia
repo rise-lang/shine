@@ -20,8 +20,12 @@ def depMapSeq{unroll: Boolean}
               f: (k: nat) -> exp[ft1(k), read] -> exp[ft2(k), write],
               array: exp[n..ft1, read]): exp[n..ft2, write]
 
+// def depTile(...)
+
 def depZip(n: nat, ft1: nat2data, ft2: nat2data,
            e1: exp[n..ft1, read], e2: exp[n..ft2, read]): exp[n..(i: nat |-> (ft1(i), ft2(i)) ), read]
+
+// def dmatch(...)
 
 def drop(n: nat, m: nat, dt: data, array: exp[n+m.dt, read]): exp[m.dt, read]
 
@@ -56,6 +60,8 @@ def let(dt1: data, dt2: data, a: access, value: exp[dt1, read],
 
 def makeArray{elements: Vector[Phrase[ExpType]]}(n: nat, dt: data): exp[n.dt, read]
 
+// def makeDepPair(...)
+
 def makePair(dt1: data, dt2: data, a: access, fst: exp[dt1, a], snd: exp[dt2, a]): exp[(dt1, dt2), a]
 
 def map(n: nat, dt1: data, dt2: data, a: access,
@@ -81,13 +87,15 @@ def mapVec(n: nat, dt1: data, dt2: data,
 
 def natAsIndex(n: nat, e: exp[natType, read]): exp[idx[n], read]
 
-def padCst(n: nat, l: nat, r: nat, dt: data, padExp: exp[dt, read], array: exp[n.dt, read]): exp[(l+n+r).dt, read]
-
 def padClamp(n: nat, l: nat, r: nat, dt: data, array: exp[n.dt, read]): exp[(l+n+r).dt, read]
+
+def padCst(n: nat, l: nat, r: nat, dt: data, padExp: exp[dt, read], array: exp[n.dt, read]): exp[(l+n+r).dt, read]
 
 def padEmpty(n: nat, r: nat, dt: data, array: exp[n.dt, write]): exp[(n+r).dt, write]
 
 def partition(n: nat, m: nat, lenF: nat2nat, dt: data, array: exp[n.dt, read]): exp[m..(i: nat |-> lenF(i).dt), read]
+
+// def printType{msg: String}(dt: data, a: access, input: exp[dt, a]): exp[dt, a]
 
 def reduceSeq{unroll: Boolean}
              (n: nat, dt1: data, dt2: data,
@@ -118,6 +126,8 @@ def take(n: nat, m: nat, dt: data, array: exp[(n+m).dt, read]): exp[n.dt, read]
 def toMem(dt: data, input: exp[dt, write]): exp[dt, read]
 
 def transpose(n: nat, m: nat, dt: data, a: access, array: exp[n.m.dt, a]): exp[m.n.dt, a]
+
+// def transposeDepArray(...)
 
 def unzip(n: nat, dt1: data, dt2: data, a: access, e: exp[n.(dt1, dt2), a]): exp[(n.dt1, n.dt2), a]
 
