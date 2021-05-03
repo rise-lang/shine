@@ -127,7 +127,7 @@ def toMem(dt: data, input: exp[dt, write]): exp[dt, read]
 
 def transpose(n: nat, m: nat, dt: data, a: access, array: exp[n.m.dt, a]): exp[m.n.dt, a]
 
-// def transposeDepArray(...)
+def transposeDepArray(n: nat, m: nat, ft: nat2data, array: exp[n.m..ft, read]): exp[n..(i: nat |-> n.ft(i)), read]
 
 def unzip(n: nat, dt1: data, dt2: data, a: access, e: exp[n.(dt1, dt2), a]): exp[(n.dt1, n.dt2), a]
 
