@@ -45,6 +45,8 @@ object PrettyPhrasePrinter {
 
       case shine.cuda.primitives.imperative.SyncWarp() => "__syncwarp()"
 
+      case shine.cuda.primitives.imperative.SyncPipeline(pipe) => s"$pipe.commit_and_wait()"
+
       case c: Primitive[_] => c.prettyPrint
     }
   }
