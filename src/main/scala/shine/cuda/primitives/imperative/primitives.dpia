@@ -13,7 +13,17 @@ def forFragment(rows: nat, columns: nat, layers: nat, dt: data,
                 out: acc[fragment[rows, columns, layers, dt, frag, layout]],
                 fun: exp[dt, read] -> acc[dt] -> comm): comm
 
-// def globalToSharedAcc(...)
+/**
+  * Copy a element from global memory to shared memory without using registers
+  * (faster than normal copy operations using the =-operator). <br>
+  * This requires CUDA 11 and compute capability >= 8. For devices with ompute capability
+  * smaller than 8 this will be compiled by the CUDA-Compiler to the same as normal copy
+  * operations using the =-operator).
+  * @param dt           datatype of element which should be copied
+  * @param pipe         pipeline which should be used to execute this copy instruction
+  * @param outputShared output-Acceptor in shared memory of type `dt`
+  */
+def globalToSharedAcc(dt: data, pipe: exp["pipeline", read], outputShared: acc[dt]): acc[dt]
 
 def parFor{level: shine.OpenCL.ParallelismLevel,
            dim: Int,
@@ -24,7 +34,10 @@ def parFor{level: shine.OpenCL.ParallelismLevel,
            out: acc[n.dt],
            body: exp[idx[n], read] -> acc[dt] -> comm): comm
 
-// def syncPipeline(...)
+/**
+  * Execute and wait for all asynchronous memory transactions (used by the {@link GlobalToSharedAcc})
+  */
+def syncPipeline(pipe: exp["pipeline", read]): comm
 
 /**
   * Synchronize all thread in a single thread block.
