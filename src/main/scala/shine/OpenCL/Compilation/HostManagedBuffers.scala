@@ -72,7 +72,7 @@ object HostManagedBuffers {
         i -> access
       }).toMap
       env.foreach { case (i, a) => recordManagedAccess(managed, i, a) }
-      (HostExecution(env, p2), ReadsAndWrites.empty)
+      (HostExecution(env)(p2), ReadsAndWrites.empty)
     }
   }
 

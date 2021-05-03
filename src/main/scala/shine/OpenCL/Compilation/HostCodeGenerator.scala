@@ -30,8 +30,8 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
     case n@NewManagedBuffer(access) =>
       val (dt, Lambda(v, p)) = n.unwrap
       newManagedBuffer(dt, access, v, p, env)
-    case HostExecution(params, body) =>
-      hostExecution(params, body, env)
+    case h@HostExecution(params) =>
+      hostExecution(params, h.body, env)
     case phrase => phrase |> super.cmd(env)
   }
 
