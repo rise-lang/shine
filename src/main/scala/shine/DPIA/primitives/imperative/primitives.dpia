@@ -12,6 +12,8 @@ def depIdxAcc(n: nat, ft: nat2data, index: nat, array: acc[n..ft]): acc[ft(index
 
 def depJoinAcc(n: nat, lenF: nat2nat, dt: data, array: acc[(sum_(i=0)^(n-1) lenF(i)).dt]): acc[n..(i: nat |-> lenF(i).dt)]
 
+// def dMatchI(...)
+
 // this drops n many elements from an array of m elements
 def dropAcc(n: nat, m: nat, dt: data, array: acc[(n+m).dt]): acc[(m-n).dt]
 
@@ -33,6 +35,9 @@ def mapFstAcc(dt1: data, dt2: data, dt3: data, f: acc[dt3] -> acc[dt1], record: 
 def mapRead(n: nat, dt1: data, dt2: data,
             f: exp[dt1, read] -> (exp[dt2, read] -> comm) -> comm, input: exp[n.dt1, read]): exp[n.dt2, read]
 def mapSndAcc(dt1: data, dt2: data, dt3: data, f: acc[dt3] -> acc[dt2], record: acc[(dt1, dt3)]): acc[(dt1, dt2)]
+
+// def mkDPairFstI(...)
+// def mkDPairSndAcc(...)
 
 def new(dt: data, f: var[dt] -> comm): comm
 
