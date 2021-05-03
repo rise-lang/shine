@@ -6,8 +6,18 @@ import rise.core.{types => rct}
 import rise.core.{primitives => rcp}
 
 object NamedRewrite {
+  sealed trait Condition
+  // TODO: could try to either:
+  //  (1) infer these constraints from the rule
+  //  (2) check that such a constraint is not missing
+  //      for the rule to be well-formed
+  case class NotFreeIn(notFree: String, // bound variable in named pattern
+                       in: String // free variable in named pattern
+                      ) extends Condition
+
   def init(name: String,
-           rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern)
+           rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
+           conditions: Seq[NamedRewrite.Condition] = Seq(),
           ): Rewrite[DefaultAnalysisData] = {
     import rise.core.DSL.infer.{preservingWithEnv, collectFreeEnv}
     import arithexpr.{arithmetic => ae}
@@ -37,6 +47,8 @@ object NamedRewrite {
 
     // nats which we need to pivot to avoid matching over certain nat constructs
     val natsToPivot = Vec[(rct.Nat, rct.NatIdentifier, Nat.Shift, NatPatternVar)]()
+
+    val boundVarToShift = HashMap[String, Expr.Shift]()
 
     def makePatVar[S, V](name: String,
                          shift: S,
@@ -72,6 +84,12 @@ object NamedRewrite {
         // note: we do not match for the type of lambda bodies, as we can always infer it:
         //       lam(x : xt, e : et) : xt -> et
         case rc.Lambda(x, e) =>
+          // right now we assume that all bound variables are uniquely named
+          if (!isRhs) {
+            assert(!boundVarToShift.contains(x.name))
+            boundVarToShift += x.name ->
+              (bound.expr.size + 1, bound.nat.size, bound.data.size)
+          }
           PatternNode(Lambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(x: rct.NatIdentifier, e) =>
           PatternNode(NatLambda(makePat(e, bound + x, isRhs, matchType = false)))
@@ -114,15 +132,18 @@ object NamedRewrite {
         case ae.Prod(t +: ts) if isRhs => ts.foldRight(makeNPat(t, bound, isRhs)) { case (t, acc) =>
           NatPatternNode(NatMul(makeNPat(t, bound, isRhs), acc))
         }
+        case ae.Pow(b, e) if isRhs =>
+          NatPatternNode(NatPow(makeNPat(b, bound, isRhs), makeNPat(e, bound, isRhs)))
         // do not match over these nat constructs on the left-hand side,
         // as structural matching would not be sufficient,
         // try to pivot the equality around a fresh pattern variable instead
-        case ae.Sum(_) | ae.Prod(_) if !isRhs =>
+        case ae.Sum(_) | ae.Prod(_) | ae.Pow(_, _) if !isRhs =>
           val nv = rct.NatIdentifier(s"_nv${natsToPivot.size}")
           val pv = makePatVar(nv.name, bound.nat.size, natPatVars, NatPatternVar, Known)
           natsToPivot.addOne((n, nv, bound.nat.size, pv))
           pv
-        case _ => throw new Exception(s"did not expect $n")
+        case _ =>
+          throw new Exception(s"did not expect $n")
       }
 
     def makeDTPat(dt: rct.DataType, bound: Expr.Bound, isRhs: Boolean): DataTypePattern =
@@ -301,7 +322,7 @@ object NamedRewrite {
           }
         case Pow(b, Cst(-1)) => tryPivot(pivot, b, Cst(1) /^ value)
         case Mod(p, m) if p == pivot =>
-          val k = rct.NatIdentifier("k", RangeAdd(0, PosInf, 1))
+          val k = rct.NatIdentifier(s"_k_${p}_${m}", RangeAdd(0, PosInf, 1))
           Some(k*m + value)
         case _ => None
       }
@@ -385,12 +406,31 @@ object NamedRewrite {
     }
 
     val searcher: Searcher[DefaultAnalysisData] = lhsPat.compile()
+    val cond = conditions.foldRight((a: Applier) => a) { case (c, acc) =>
+      c match {
+        case NotFreeIn(notFree, in) =>
+          val nfShift = boundVarToShift.getOrElse(notFree, (0, 0, 0))._1
+          // all left-hand-side uses of `in` may contain `notFree`
+          assert(patVars(in).forall {
+            case ((shift, _, _), (_, status)) =>
+              shift >= nfShift || status != Known
+          })
+          // pick one of these uses
+          val (iS, iPV) = patVars(in).collectFirst {
+            case ((s, _, _), (pv, Known)) => (s, pv)
+          }.get
+          val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
+          def condF(egraph: EGraph[DefaultAnalysisData], eclass: EClassId, subst: Subst): Boolean =
+            !egraph.getMut(subst(iPV)).data.free.contains(nfIndex)
+          (a: Applier) => ConditionalApplier(condF, Set(iPV), acc(a))
+      }
+    }
     val shiftPV = shiftAppliers(patVars, patMkShift, patMkShiftCheck)
     val shiftNPV = shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)
     val shiftDTPV = shiftAppliers(dataTypePatVars, dataTypePatMkShift, dataTypePatMkShiftCheck)
     val shiftTPV = shiftAppliers(typePatVars, typePatMkShift, typePatMkShiftCheck)
     val pivotNats = pivotNatsRec(natsToPivot.toSeq, Seq()) _
-    val applier = shiftPV(shiftNPV(shiftDTPV(shiftTPV(pivotNats(rhsPat)))))
+    val applier = cond(shiftPV(shiftNPV(shiftDTPV(shiftTPV(pivotNats(rhsPat))))))
 
     def allIsShiftCoherent[S, V](pvm: PatternVarMap[S, V]): Boolean =
       pvm.forall { case (_, shiftMap) =>
@@ -437,6 +477,7 @@ object NamedRewriteDSL {
   def reduce: Pattern = rcp.reduce.primitive
   def transpose: Pattern = rcp.transpose.primitive
   def zip: Pattern = rcp.zip.primitive
+  def split: Pattern = rcp.split.primitive
   def join: Pattern = rcp.join.primitive
   def fst: Pattern = rcp.fst.primitive
   def snd: Pattern = rcp.snd.primitive
@@ -474,4 +515,31 @@ object NamedRewriteDSL {
     @inline def `.`(et: DataTypePattern): DataTypePattern =
       rct.ArrayType(s, et)
   }
+
+  implicit final class NotFreeIn(private val in: String) extends AnyVal {
+    @inline def notFree(notFree: String): NamedRewrite.Condition =
+      NamedRewrite.NotFreeIn(notFree, in)
+  }
+/*
+  // combinatory
+
+  implicit final class MakeComposition(private val f: Pattern) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = app(app(Composition, f), g)
+  }
+  implicit final class MakeCompositionString(private val f: String) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = app(app(Composition, f), g)
+  }
+  case object Composition extends rc.Primitive {
+    import rise.core.DSL.Type.{impl, ->:}
+    override def typeScheme: TypePattern =
+      impl { a: rct.TypeIdentifier =>
+      impl { b: rct.TypeIdentifier =>
+      impl { c: rct.TypeIdentifier =>
+        (a ->: b) ->: (b ->: c) ->: (a ->: c)
+      }}}
+    override def primEq(obj: rc.Primitive): Boolean =
+      obj == Composition
+  }
+
+ */
 }

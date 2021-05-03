@@ -410,7 +410,7 @@ object Constraint {
           }
         case Pow(b, Cst(-1)) => pivotSolution(pivot, b, Cst(1) /^ value)
         case Mod(p, m) if p == pivot =>
-          val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
+          val k = NatIdentifier(freshName("k"), RangeAdd(0, PosInf, 1))
           Some(Solution.subs(pivot, k*m + value))
         case _               =>
           None

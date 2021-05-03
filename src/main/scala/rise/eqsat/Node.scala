@@ -58,8 +58,7 @@ sealed trait Node[+E, +N, +DT] {
     case DataApp(_, _) => 5
     case DataLambda(_) => 6
     case Literal(d) => 13 * d.hashCode()
-    // note: assumption that p.t == rct.TypePlaceholder
-    case Primitive(p) => 17 * p.hashCode()
+    case Primitive(p) => 17 * p.setType(rct.TypePlaceholder).hashCode()
   }
 
   // Returns true if this enode matches another enode.
@@ -129,20 +128,6 @@ object Node {
     def compare(dt1: DataType, dt2: DataType): Int =
       ???
   }
-
-  /*
-  implicit val depValOrdering: Ordering[Kind#T] = new Ordering[Kind#T] {
-    def compare(v1: Kind#T, v2: Kind#T): Int =
-      (v1, v2) match {
-        case (n1: Nat, n2: Nat) => natOrdering.compare(n1, n2)
-        case (_: Nat, _) => -1
-        case (_, _: Nat) => 1
-        case (dt1: DataType, dt2: DataType) => dataTypeOrdering.compare(dt1, dt2)
-        case (_: DataType, _) => -1
-        case (_, _: DataType) => 1
-        case _ => ???
-      }
-  } */
 
   implicit val scalarDataOrdering: Ordering[semantics.ScalarData] =
     new Ordering[semantics.ScalarData] {
@@ -234,6 +219,7 @@ object Node {
         case (Literal(d1), Literal(d2)) => dataOrdering.compare(d1, d2)
         case (Literal(_), _) => -1
         case (_, Literal(_)) => 1
+        // FIXME: does not work for mapGlobal(dim)
         case (Primitive(p1), Primitive(p2)) => p1.name compare p2.name
         case _ => ???
       }
