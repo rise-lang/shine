@@ -97,10 +97,10 @@ object HostManagedBuffers {
           collectWrites(lhs, metadata.host_writes)
           collectReads(rhs, allocs, metadata.host_reads)
           Stop(p)
-        case ocl.KernelCallCmd(_, _, _, output, in) =>
+        case k@ocl.KernelCallCmd(_, _, _, in) =>
           in.foreach(collectReads(_, allocs, metadata.device_reads))
-          collectWrites(output, metadata.device_writes)
-          ((output, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
+          collectWrites(k.output, metadata.device_writes)
+          ((k.output, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
             case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
             case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
             case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
@@ -152,7 +152,7 @@ object HostManagedBuffers {
         case dpia.New(dt, Lambda(x, body)) if managed.contains(x) =>
           val access = managed(x)._1
           val x2 = managed(x)._2.asInstanceOf[Identifier[VarType]]
-          Continue(ocl.NewManagedBuffer(dt, access, Lambda(x2, body)), this)
+          Continue(ocl.NewManagedBuffer(access)(dt, Lambda(x2, body)), this)
         case _: dpia.New | _: Lambda[_, _] | _: dpia.Seq |
              _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
           Continue(p, this)

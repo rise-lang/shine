@@ -92,7 +92,12 @@ object isWellKindedType {
           if k1 == Kind.AST.Nat && k2 == Kind.AST.Nat && k3 == Kind.AST.Nat && k4 == Kind.AST.Data &&
             k5 == Kind.AST.Fragment && k6 == Kind.AST.MatrixLayout
         } yield Kind.AST.Data
-      case _: AST.ScalarType | AST.NatType =>
+      case AST.ManagedBufferType(dt) =>
+        for {
+          k1 <- kindOf(dt, env)
+          if k1 == Kind.AST.Data
+        } yield Kind.AST.Data
+      case _: AST.ScalarType | AST.NatType | _: AST.OpaqueType =>
         Some(Kind.AST.Data)
     }
   }

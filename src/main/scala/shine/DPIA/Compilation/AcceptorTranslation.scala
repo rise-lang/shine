@@ -288,7 +288,7 @@ object AcceptorTranslation {
               es: Seq[Phrase[ExpType]]): Phrase[CommType] = {
         ts match {
           case Nil =>
-            oclImp.KernelCallCmd(name, localSize, globalSize, A, es)
+            oclImp.KernelCallCmd(name, localSize, globalSize, es)(A.t.dataType, A)
           case Seq(arg, tail@_*) =>
             con(arg)(λ(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
         }
