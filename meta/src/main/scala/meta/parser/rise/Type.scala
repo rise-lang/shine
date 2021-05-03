@@ -15,6 +15,7 @@ object Type {
 
     case class ScalarType(t: String) extends AST
     case object NatType extends AST
+    case class OpaqueType(name: String) extends AST
     case class VectorType(size: Nat.AST, elemType: AST) extends AST
     case class IndexType(size: Nat.AST) extends AST
     case class PairType(lhs: AST, rhs: AST) extends AST
@@ -25,6 +26,7 @@ object Type {
     case class DepArrayType(size: Nat.AST, fdt: AST) extends AST
     case class FragmentType(n: Nat.AST, m: Nat.AST, k: Nat.AST, elemType: AST,
                             fKind: Fragment.AST, mLayoutKind: MatrixLayout.AST) extends AST
+    case class ManagedBufferType(t: AST) extends AST
   }
 
   object Fragment {
@@ -78,6 +80,8 @@ object Type {
 
     def NatType[_: P]: P[AST.NatType.type] = P("natType").map(_ => AST.NatType)
 
+    def OpaqueType[_: P]: P[AST.OpaqueType] = P( "\"" ~~ Identifier ~~ "\"" ).map(AST.OpaqueType)
+
     def IndexType[_: P]: P[AST.IndexType] = P("idx[" ~ Nat.Nat ~ "]").map(AST.IndexType)
 
     def VectorType[_: P]: P[AST.VectorType] =
@@ -102,6 +106,9 @@ object Type {
         "," ~ MatrixLayoutKind ~ "]").map(AST.FragmentType.tupled)
     }
 
+    def ManagedBufferType[_: P]: P[AST.ManagedBufferType] =
+      P("managed[" ~ DataType ~ "]").map(AST.ManagedBufferType)
+
     def DepArrayType[_: P]: P[AST.DepArrayType] =
       P(Nat.Nat ~ ".." ~/ NatToData).map(AST.DepArrayType.tupled)
 
@@ -118,9 +125,9 @@ object Type {
       P("(" ~ NoCut(DataType) ~ "," ~/ DataType ~ ")").map(AST.PairType.tupled)
 
     def DataType[_: P]: P[AST] =
-      P(ScalarType | NatType | IndexType | VectorType | FragmentType | DepArrayType |
-        ArrayType | DepPairType | NatToDataApply | PairType | TypeIdentifier |
-        ("(" ~ DataType ~ ")"))
+      P(ScalarType | NatType | OpaqueType | IndexType | VectorType | FragmentType |
+        ManagedBufferType | DepArrayType | ArrayType | DepPairType | NatToDataApply |
+        PairType | TypeIdentifier | ("(" ~ DataType ~ ")"))
 
     def TypeName[_: P]: P[Unit] =
       P(ScalarType | NatType | "idx" | "vec" | "fragment" | "matrixLayout")

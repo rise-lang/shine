@@ -95,11 +95,9 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
     import scala.meta._
 
     val scalaParams = if (scalaParamsString.nonEmpty) {
-      List(scalaParamsString.split(",").map(param => {
-        val parts = param.split(":").map(_.trim)
-        val ty = parts(1).parse[Type].get
-        param"${Term.Name(parts(0))}: $ty"
-      }).toList)
+      s"def foo($scalaParamsString)".parse[Stat].get match {
+        case declDef: Decl.Def => declDef.paramss
+      }
     } else {
       List()
     }
@@ -256,11 +254,15 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
             q"v.addressSpace(${Term.Name(param.name.value)})"
           case TypeIs("LocalSize") | TypeIs("GlobalSize") =>
             q"${Term.Name(param.name.value)}.visitAndRebuild(v)"
-          case Type.Apply(Type.Name("Phrase"), _) => // Phrase[_]
-            q"VisitAndRebuild(${Term.Name(param.name.value)}, v)"
-          case Type.Apply(Type.Name("Vector"), List(Type.Apply(Type.Name("Phrase"), _))) // Vector[Phrase[_]]
-            |  Type.Apply(Type.Name("Seq"), List(Type.Apply(Type.Name("Phrase"), _))) => // Seq[Phrase[_]]
-            q"${Term.Name(param.name.value)}.map(VisitAndRebuild(_, v))"
+          case t"Phrase[$_]" => q"VisitAndRebuild(${Term.Name(param.name.value)}, v)"
+          case t"Vector[Phrase[$_]]" =>  q"${Term.Name(param.name.value)}.map(VisitAndRebuild(_, v))"
+          case t"Seq[Phrase[$_]]" => q"${Term.Name(param.name.value)}.map(VisitAndRebuild(_, v))"
+
+          case t"Map[Identifier[_ <: PhraseType], $_]" =>
+            q"""${Term.Name(param.name.value)}.map{ case (key, value) =>
+                  VisitAndRebuild(key, v).asInstanceOf[Identifier[_ <: PhraseType]] -> value
+                }"""
+
           case Type.Apply(Type.Name("Vector"), List(TypeIs("DataType"))) // Vector[DataType]
             |  Type.Apply(Type.Name("Seq"), List(TypeIs("DataType"))) => // Seq[DataType]
             q"${Term.Name(param.name.value)}.map(v.data)"

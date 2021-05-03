@@ -86,11 +86,9 @@ import arithexpr.arithmetic._
   def generateCaseClass(name: String, paramsString: String, typeSignature: rise.Type.AST): scala.meta.Term.Block = {
     import scala.meta._
 
-    val params = paramsString.split(",").map(param => {
-      val parts = param.split(":").map(_.trim)
-      val ty = parts(1).parse[Type].get
-      param"${Term.Name(parts(0))}: $ty"
-    } ).toList
+    val params = s"def foo($paramsString)".parse[Stat].get match {
+      case declDef: Decl.Def => declDef.paramss.head
+    }
     val args: List[Term.Name] = params.map(p => Term.Name(p.name.value))
     val types: List[Type] = params.map(p => p.decltpe.get)
 
@@ -153,6 +151,8 @@ import arithexpr.arithmetic._
         t.parse[Term].get
       case rise.Type.AST.NatType =>
         q"NatType"
+      case rise.Type.AST.OpaqueType(name) =>
+        q"OpaqueType($name)"
       case rise.Type.AST.VectorType(size, elemType) =>
         q"VectorType(${generateNat(size)}, ${generateDataType(elemType)})"
       case rise.Type.AST.IndexType(size) =>
@@ -174,6 +174,8 @@ import arithexpr.arithmetic._
         q"DepArrayType(${generateNat(size)}, ${generateDataType(fdt)})"
       case rise.Type.AST.FragmentType(n, m, k, elemType, fKind, mLayout) =>
         q"FragmentType(${generateNat(n)}, ${generateNat(m)}, ${generateNat(k)}, ${generateDataType(elemType)}, ${generateFragment(fKind)}, ${generateMatrixLayout(mLayout)})"
+      case rise.Type.AST.ManagedBufferType(dt) =>
+        q"ManagedBufferType(${generateDataType(dt)})"
       case rise.Type.AST.FunType(_, _) | rise.Type.AST.DepFunType(_, _, _) |
            rise.Type.AST.ImplicitDepFunType(_, _, _) => ???
     }

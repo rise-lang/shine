@@ -978,6 +978,8 @@ object fromRise {
           FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentKind.Accumulator, layout(f.layout))
         case _ => throw new Exception("this should not happen")
       }
+    case rt.OpaqueType(name) => OpaqueType(name)
+    case rt.ManagedBufferType(dt) => ManagedBufferType(dataType(dt))
   }
 
   private val layouts: mutable.HashMap[String, MatrixLayoutIdentifier] = mutable.HashMap.empty

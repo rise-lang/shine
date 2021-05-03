@@ -186,6 +186,8 @@ object VisitAndRebuild {
       case r: PairType =>
         PairType(visitDataTypeAndRebuild(r.fst, v),
           visitDataTypeAndRebuild(r.snd, v))
+      case ManagedBufferType(dt) =>
+        ManagedBufferType(visitDataTypeAndRebuild(dt, v))
       case d => d
     }
 }

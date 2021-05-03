@@ -63,6 +63,10 @@ object traverse {
       case VectorType(n, e) =>
         for {n1 <- natDispatch(Reference)(n); e1 <- `type`(e)}
           yield VectorType(n1, e1)
+      case ManagedBufferType(dt) =>
+        for {dt1 <- datatype(dt)}
+          yield ManagedBufferType(dt1)
+      case o: OpaqueType => return_(o: DataType)
       case FragmentType(rows, columns, d3, dt, fragKind, layout) =>
         for {rows1 <- nat(rows); columns1 <- nat(columns); d31 <- nat(d3); dt1 <- datatype(dt);
           fragKind1 <- fragmentKind(fragKind); layout1 <- matrixLayout(layout)}

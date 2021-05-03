@@ -68,6 +68,10 @@ object f64 extends ScalarType { override def toString: String = "f64" }
 
 object NatType extends DataType { override def toString: String = "nat" }
 
+final case class OpaqueType(name: String) extends DataType {
+  override def toString: String = name
+}
+
 // TODO: enforce ScalarType
 sealed case class VectorType(size: Nat, elemType: DataType) extends DataType {
   override def toString: String = s"<$size>$elemType"
@@ -144,6 +148,10 @@ final case class FragmentType(rows: Nat,
 
 }
 
+final case class ManagedBufferType(dt: DataType) extends DataType {
+  override def toString: String = s"managed[$dt]"
+
+}
 
 final case class DepPairType[K <: Kind: KindName](
                             x: K#I,
