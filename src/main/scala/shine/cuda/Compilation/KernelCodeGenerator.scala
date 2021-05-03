@@ -291,7 +291,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
       C.AST.FragmentType(m, n, k, typ(dataType), fragmentKind, layout)
     case shine.DPIA.Types.f16 =>
       cuda.AST.Type.half
-    case shine.DPIA.Types.pipeline =>
+    case shine.DPIA.Types.OpaqueType("pipeline") =>
       cuda.AST.Type.pipeline
 
     case _ =>

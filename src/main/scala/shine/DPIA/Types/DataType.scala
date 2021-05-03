@@ -76,8 +76,6 @@ final case class FragmentType(rows: Nat,
   }
 }
 
-object pipeline extends BasicType { override def toString = "pipeline" }
-
 object bool extends ScalarType { override def toString: String = "bool" }
 
 object int extends ScalarType { override def toString: String = "int" }
@@ -259,7 +257,7 @@ object DataType {
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
     case _: DataTypeIdentifier | _: NatToDataApply | _: OpaqueType |
-         _: FragmentType | _: pipeline.type =>
+         _: FragmentType =>
       throw new Exception("This should not happen")
   }
 

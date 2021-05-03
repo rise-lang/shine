@@ -549,7 +549,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case shine.DPIA.Types.f32 => C.AST.Type.float
         case shine.DPIA.Types.f64 => C.AST.Type.double
         case _: shine.DPIA.Types.IndexType => C.AST.Type.int
-        case _: shine.DPIA.Types.VectorType | _: FragmentType | _: pipeline.type =>
+        case _: shine.DPIA.Types.VectorType | _: FragmentType =>
           throw new Exception(s"$b types in C are not supported")
       }
       case a: shine.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))

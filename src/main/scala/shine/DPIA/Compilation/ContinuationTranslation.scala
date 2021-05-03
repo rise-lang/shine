@@ -399,7 +399,7 @@ object ContinuationTranslation {
     case cuda.GlobalToShared(dt, inputGlobal) =>
       val adj = AdjustArraySizesForAllocations(inputGlobal, dt, AddressSpace.Local)
 
-      shine.OpenCL.DSL.`new` (AddressSpace.Private) (pipeline, pipeline =>
+      shine.OpenCL.DSL.`new` (AddressSpace.Private) (OpaqueType("pipeline"), pipeline =>
         shine.OpenCL.DSL.`new` (AddressSpace.Local) (adj.dt, tmp =>
           acc(inputGlobal)(cudaIm.GlobalToSharedAcc(dt, pipeline.rd, tmp.wr)) `;`
             cudaIm.SyncPipeline(pipeline.rd) `;`
