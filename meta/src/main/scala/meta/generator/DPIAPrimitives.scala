@@ -261,6 +261,9 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
           case Type.Apply(Type.Name("Vector"), List(Type.Apply(Type.Name("Phrase"), _))) // Vector[Phrase[_]]
             |  Type.Apply(Type.Name("Seq"), List(Type.Apply(Type.Name("Phrase"), _))) => // Seq[Phrase[_]]
             q"${Term.Name(param.name.value)}.map(VisitAndRebuild(_, v))"
+          case Type.Apply(Type.Name("Vector"), List(TypeIs("DataType"))) // Vector[DataType]
+            |  Type.Apply(Type.Name("Seq"), List(TypeIs("DataType"))) => // Seq[DataType]
+            q"${Term.Name(param.name.value)}.map(v.data)"
           case _ =>
             Term.Name(param.name.value)
         }

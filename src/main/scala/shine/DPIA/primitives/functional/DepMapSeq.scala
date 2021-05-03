@@ -11,7 +11,7 @@ final case class DepMapSeq(unroll: Boolean)(val n: Nat, val ft1: NatToData, val 
   {
     f :: ({
       val k = f.t.x
-      DepFunType[NatKind, PhraseType](k, FunType(expT(NatToDataApply(ft1, k), read), expT(NatToDataApply(ft2, k), read)))
+      DepFunType[NatKind, PhraseType](k, FunType(expT(NatToDataApply(ft1, k), read), expT(NatToDataApply(ft2, k), write)))
     })
     array :: expT(DepArrayType(n, ft1), read)
   }

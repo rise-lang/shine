@@ -41,6 +41,10 @@ object PrettyPhrasePrinter {
         s"""barrier( ${if(local) "CLK_LOCAL_MEM_FENCE" else ""} ${if(global && local) "|" else ""}
           ${if(global) "CLK_GLOBAL_MEM_FENCE" else ""})"""
 
+      case shine.cuda.primitives.imperative.SyncThreads() => "__syncthreads()"
+
+      case shine.cuda.primitives.imperative.SyncWarp() => "__syncwarp()"
+
       case c: Primitive[_] => c.prettyPrint
     }
   }
