@@ -10,6 +10,37 @@ import rise.core.types._
 import scala.collection.mutable
 
 object infer {
+  def collectFreeEnv(e: Expr): Map[String, Type] = {
+    case class Traversal(bound: Set[String]) extends PureAccumulatorTraversal[Map[String, Type]] {
+      override val accumulator = MapMonoid
+
+      override def expr: Expr => Pair[Expr] = {
+        case Lambda(x, e) => this.copy(bound = bound + x.name).expr(e)
+        // FIXME: work around type annotation should not be a primitive bug
+        case TypeAnnotation(e, _) => this.expr(e)
+        case e => super.expr(e)
+      }
+
+      override def identifier[I <: Identifier]: VarType => I => Pair[I] =
+        _ => i => {
+          if (!bound(i.name)) {
+            accumulate(Map(i.name -> i.t))(i)
+          } else {
+            return_(i)
+          }
+        }
+    }
+
+    traverse(e, Traversal(Set()))._1
+  }
+
+  def preservingWithEnv(e: Expr, env: Map[String, Type], preserve: Set[Kind.Identifier]): Expr = {
+    val (typed_e, constraints) = constrainTypes(env)(e)
+    val solution = Constraint.solve(constraints, preserve, Seq())(
+      Flags.ExplicitDependence.Off)
+    solution(typed_e)
+  }
+
   // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
   private [DSL] def apply(e: Expr,
                           printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,

@@ -18,7 +18,7 @@ import rise.elevate.rules.{lowering, _}
 import rise.elevate.strategies.predicate._
 import shine.DPIA.Nat
 
-class circularBuffering extends test_util.Tests {
+object circularBuffering {
   private val sum = reduce(add)(lf32(0.0f))
   private val sumSeq = reduceSeq(add)(lf32(0.0f))
 
@@ -60,6 +60,74 @@ class circularBuffering extends test_util.Tests {
         nbh |> sumSeq
       ) |> mapSeqUnroll(fun(x => x))
     )) >> transpose
+
+  def wrapExprChain(e: ToBeTyped[Rise]): ToBeTyped[Rise] = {
+    depFun((n: Nat) => fun(
+      ((n+6)`.`f32) ->: (n`.`f32)
+    )(input =>
+      e(input)
+    ))
+  }
+
+  val highLevelChain: ToBeTyped[Rise] =
+    slide(4)(1) >> map(sum) >>
+    slide(3)(1) >> map(sum) >>
+    slide(2)(1) >> map(sum)
+
+  val inlinedChain: ToBeTyped[Rise] =
+    slide(4)(1) >> map(sumSeq) >>
+    slide(3)(1) >> map(sumSeq) >>
+    slide(2)(1) >> mapSeq(sumSeq)
+
+  val circBufChain: ToBeTyped[Rise] =
+    slide(4)(1) >> // map(sumSeq) >>
+    circularBuffer(3)(3)(sumSeq) >> // mapStream(sumSeq) >>
+    circularBuffer(2)(2)(sumSeq) >> iterateStream(sumSeq)
+
+  def wrapExprTogether(e: ToBeTyped[Rise]): ToBeTyped[Rise] = {
+    depFun((n: Nat, m: Nat) => fun(
+      ((n+2)`.`(m+2)`.`f32) ->: (n`.`m`.`f32)
+    )(input =>
+      e(input)
+    ))
+  }
+
+  val highLevelTogether: ToBeTyped[Rise] =
+    fun(x => zip( // N+2.M+2.f
+    x |> map(slide(3)(1) >> map(sum)))( // N+2.M.f
+    x |> map(slide(3)(1) >> map(sum)))) >>
+    map(fun(p => zip(fst(p))(snd(p)))) >> // N+2.M.(f x f)
+    slide(3)(1) >> // N.3.M.(f x f)
+    map(transpose >> // M.3.(f x f)
+      map(map(fun(p => fst(p) + snd(p)))) >> // M.3.f
+      map(sum) // M.f
+    ) // N.M.f
+
+  val inlinedTogether: ToBeTyped[Rise] =
+    fun(x => zip(
+    x |> map(slide(3)(1) >> map(sumSeq)))(
+    x |> map(slide(3)(1) >> map(sumSeq)))) >>
+    map(fun(p => zip(fst(p))(snd(p)))) >>
+    slide(3)(1) >>
+    mapSeq(transpose >>
+      map(map(fun(p => fst(p) + snd(p)))) >>
+      mapSeq(sumSeq)
+    )
+
+  val circBufTogether: ToBeTyped[Rise] =
+    circularBuffer(3)(3)(
+      slide(3)(1) >> mapSeq(fun(x => makePair(sumSeq(x))(sumSeq(x)))) >> unzip
+    ) >> // N.3.(M.f x M.f)
+    iterateStream(
+      map(fun(p => zip(fst(p))(snd(p)))) >> // 3.M.(f x f)
+        transpose >>
+        map(map(fun(p => fst(p) + snd(p)))) >>
+        mapSeq(sumSeq)
+    )
+}
+
+class circularBuffering extends test_util.Tests {
+  import circularBuffering._
 
   test("example outputs are consistent") {
     val inlinedFun = gen.c.function("inlined").asStringFromExpr(wrapExpr(inlined))
@@ -173,29 +241,6 @@ class circularBuffering extends test_util.Tests {
     ))
   }
 
-  def wrapExprChain(e: ToBeTyped[Rise]): ToBeTyped[Rise] = {
-    depFun((n: Nat) => fun(
-      ((n+6)`.`f32) ->: (n`.`f32)
-    )(input =>
-      e(input)
-    ))
-  }
-
-  val highLevelChain: ToBeTyped[Rise] =
-    slide(4)(1) >> map(sum) >>
-    slide(3)(1) >> map(sum) >>
-    slide(2)(1) >> map(sum)
-
-  val inlinedChain: ToBeTyped[Rise] =
-    slide(4)(1) >> map(sumSeq) >>
-    slide(3)(1) >> map(sumSeq) >>
-    slide(2)(1) >> mapSeq(sumSeq)
-
-  val circBufChain: ToBeTyped[Rise] =
-    slide(4)(1) >> // map(sumSeq) >>
-    circularBuffer(3)(3)(sumSeq) >> // mapStream(sumSeq) >>
-    circularBuffer(2)(2)(sumSeq) >> iterateStream(sumSeq)
-
   test("example chain outputs are consistent") {
     val inlinedFun = gen.c.function("inlined").asStringFromExpr(wrapExprChain(inlinedChain))
     val circBufFun = gen.c.function("circularBuffered").asStringFromExpr(wrapExprChain(circBufChain))
@@ -234,47 +279,6 @@ class circularBuffering extends test_util.Tests {
          |""".stripMargin
     Execute(testCode)
   }
-
-  def wrapExprTogether(e: ToBeTyped[Rise]): ToBeTyped[Rise] = {
-    depFun((n: Nat, m: Nat) => fun(
-      ((n+2)`.`(m+2)`.`f32) ->: (n`.`m`.`f32)
-    )(input =>
-      e(input)
-    ))
-  }
-
-  val highLevelTogether: ToBeTyped[Rise] =
-    fun(x => zip( // N+2.M+2.f
-      x |> map(slide(3)(1) >> map(sum)))( // N+2.M.f
-      x |> map(slide(3)(1) >> map(sum)))) >>
-    map(fun(p => zip(fst(p))(snd(p)))) >> // N+2.M.(f x f)
-    slide(3)(1) >> // N.3.M.(f x f)
-    map(transpose >> // M.3.(f x f)
-      map(map(fun(p => fst(p) + snd(p)))) >> // M.3.f
-      map(sum) // M.f
-    ) // N.M.f
-
-  val inlinedTogether: ToBeTyped[Rise] =
-    fun(x => zip(
-      x |> map(slide(3)(1) >> map(sumSeq)))(
-      x |> map(slide(3)(1) >> map(sumSeq)))) >>
-      map(fun(p => zip(fst(p))(snd(p)))) >>
-      slide(3)(1) >>
-      mapSeq(transpose >>
-        map(map(fun(p => fst(p) + snd(p)))) >>
-        mapSeq(sumSeq)
-      )
-
-  val circBufTogether: ToBeTyped[Rise] =
-    circularBuffer(3)(3)(
-      slide(3)(1) >> mapSeq(fun(x => makePair(sumSeq(x))(sumSeq(x)))) >> unzip
-    ) >> // N.3.(M.f x M.f)
-    iterateStream(
-      map(fun(p => zip(fst(p))(snd(p)))) >> // 3.M.(f x f)
-      transpose >>
-      map(map(fun(p => fst(p) + snd(p)))) >>
-      mapSeq(sumSeq)
-    )
 
   test("example together outputs are consistent") {
     val inlinedFun = gen.c.function("inlined").asStringFromExpr(wrapExprTogether(inlinedTogether))

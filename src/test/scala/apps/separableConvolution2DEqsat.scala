@@ -1,110 +1,57 @@
 package apps
 
 import apps.separableConvolution2D._
+import apps.separableConvolution2DCheck.wrapExpr
 import rise.core.DSL._
-import rise.core.DSL.Type._
-import rise.core._
-import rise.core.types._
 import rise.core.semantics.FloatData
-import rise.eqsat.Basic.proveEquiv
+import rise.core.types._
 import rise.eqsat.rules
-
-object separableConvolution2DEqsat {
-  // TODO: use full expressions instead of proxy primitives
-  object weights2d extends Builder {
-    private final case class Primitive()
-                                      (override val t: Type = TypePlaceholder)
-      extends rise.core.Primitive
-    {
-      override val name: String = "weights2d"
-      override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-      override def setType(ty: Type): Primitive = Primitive()(ty)
-      override def typeScheme: Type = binomialWeights2d.t
-    }
-
-    override def primitive: rise.core.Primitive = Primitive()()
-    override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
-  }
-  object weightsV extends Builder {
-    private final case class Primitive()
-                                      (override val t: Type = TypePlaceholder)
-      extends rise.core.Primitive
-    {
-      override val name: String = "weightsV"
-      override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-      override def setType(ty: Type): Primitive = Primitive()(ty)
-      override def typeScheme: Type = binomialWeightsV.t
-    }
-
-    override def primitive: rise.core.Primitive = Primitive()()
-    override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
-  }
-  object weightsH extends Builder {
-    private final case class Primitive()
-                                      (override val t: Type = TypePlaceholder)
-      extends rise.core.Primitive
-    {
-      override val name: String = "weightsH"
-      override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-      override def setType(ty: Type): rise.core.Primitive = Primitive()(ty)
-      override def typeScheme: Type = binomialWeightsH.t
-    }
-
-    override def primitive: rise.core.Primitive = Primitive()()
-    override def apply: ToBeTyped[rise.core.Primitive] = toBeTyped(Primitive()())
-  }
-}
+import rise.eqsat.Basic.proveEquiv
 
 class separableConvolution2DEqsat extends test_util.Tests {
-  import separableConvolution2DEqsat._
+  val weights2d = binomialWeights2d
+  val weightsV = binomialWeightsV
+  val weightsH = binomialWeightsH
 
   private val (separateDot, separateDotT) = {
-    import rise.eqsat._
-    import rise.eqsat.PatternDSL._
+    import rise.eqsat.NamedRewrite
+    import rise.eqsat.NamedRewriteDSL._
 
-    val mulT = lam(app(app(mul, app(fst, %(0))), app(snd, %(0))))
+    def mulT(xName: String) = lam(xName, app(app(mul, app(fst, xName)), app(snd, xName)))
     def *(p: Pattern) = app(map, p)
     val sum = app(app(reduce, add), l(FloatData(0)))
-    def dot(a: Pattern, b: Pattern) = app(sum, app(*(mulT), app(app(zip, a), b)))
-    val w2d = prim(weights2d.primitive)
-    val wV = prim(weightsV.primitive)
-    val wH = prim(weightsH.primitive)
+    def dot(xName: String, a: Pattern, b: Pattern) =
+      app(sum, app(*(mulT(xName)), app(app(zip, a), b)))
+    val w2d: Pattern = weights2d
+    val wV: Pattern = weightsV
+    val wH: Pattern = weightsH
 
-    (Rewrite.init[DefaultAnalysisData]("separate-dot-hv",
-      dot(app(join, w2d), app(join, ?("nbh"))).compile(),
-      dot(wV, app(*(lam(dot(wH, %(0)))), ?("nbh")))
+    (NamedRewrite.init("separate-dot-hv",
+      dot("x", app(join, w2d :: ("t": Type)), app(join, ("nbh": Pattern) :: ("t": Type)))
+        -->
+      dot("x2", wV, app(*(lam("y", dot("x3", wH, "y"))), "nbh"))
     ),
-    Rewrite.init[DefaultAnalysisData]("separate-dot-vh",
-      dot(app(join, w2d), app(join, ?("nbh"))).compile(),
-      dot(wH, app(*(lam(dot(wV, %(0)))), app(transpose, ?("nbh"))))
+    NamedRewrite.init("separate-dot-vh",
+      dot("x", app(join, w2d :: ("t": Type)), app(join, ("nbh": Pattern) :: ("t": Type)))
+        -->
+      dot("x2", wH, app(*(lam("y", dot("x3", wV, "y"))), app(transpose, "nbh")))
     ))
   }
 
   // -- algorithmic
 
   test("base to factorised") {
-    proveEquiv(base(weights2d), factorised(weightsV)(weightsH), Seq(separateDot))
+    proveEquiv(wrapExpr(base(weights2d)), wrapExpr(factorised(weightsV)(weightsH)),
+      Seq(separateDot))
   }
 
   test("base to factorised (VH)") {
-    proveEquiv(base(weights2d), factorisedVH(weightsV)(weightsH), Seq(separateDotT))
+    proveEquiv(wrapExpr(base(weights2d)), wrapExpr(factorisedVH(weightsV)(weightsH)),
+      Seq(separateDotT))
   }
 
   test("base to scanline") {
-    val * = primitives.map: ToBeTyped[Expr]
-    val T: ToBeTyped[Expr] = primitives.transpose
-    val J = primitives.join
-    val Sh = primitives.slide(3)(1)
-    val Sv = primitives.slide(3)(1)
-    val Dh = dot(weightsH)
-    val Dv = dot(weightsV)
-    proveEquiv(
-      *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(J(weights2d))(J(nbh))))),
-      Sv >> *(T >> *(Dv) >> Sh >> *(Dh)),
-      // FIXME: adding padClamp2D makes the search explode
-      // base(weights2d),
-      // scanline(weightsV)(weightsH),
-      Seq(
+    proveEquiv(wrapExpr(base(weights2d)), wrapExpr(scanline(weightsV)(weightsH)), Seq(
       rules.eta, rules.beta, rules.removeTransposePair,
       rules.mapFusion, rules.mapFission,
       rules.slideBeforeMap, rules.mapSlideBeforeTranspose, rules.slideBeforeMapMapF,
@@ -113,7 +60,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("scanline to separated") {
-    proveEquiv(scanline(weightsV)(weightsH), separated(weightsV)(weightsH), Seq(
+    proveEquiv(wrapExpr(scanline(weightsV)(weightsH)), wrapExpr(separated(weightsV)(weightsH)), Seq(
       rules.eta, rules.beta, rules.mapFission, rules.mapFusion
     ))
   }
@@ -121,34 +68,37 @@ class separableConvolution2DEqsat extends test_util.Tests {
   // -- lowering
 
   test("base to baseSeq") {
-    proveEquiv(base(weights2d), baseSeq(weights2d), Seq(
+    proveEquiv(wrapExpr(base(weights2d)), wrapExpr(baseSeq(weights2d)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
   test("factorised to factorisedSeq") {
-    proveEquiv(factorised(weightsV)(weightsH), factorisedSeq(weightsV)(weightsH), Seq(
+    proveEquiv(wrapExpr(factorised(weightsV)(weightsH)),
+      wrapExpr(factorisedSeq(weightsV)(weightsH)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
   test("separated to separatedSeq") {
-    proveEquiv(separated(weightsV)(weightsH), separatedSeq(weightsV)(weightsH), Seq(
+    proveEquiv(wrapExpr(separated(weightsV)(weightsH)),
+      wrapExpr(separatedSeq(weightsV)(weightsH)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq, rules.toMemAfterMapSeq
     ))
   }
 
   test("scanline to scanlineSeq") {
-    proveEquiv(scanline(weightsV)(weightsH), scanlineSeq(weightsV)(weightsH), Seq(
+    proveEquiv(wrapExpr(scanline(weightsV)(weightsH)),
+      wrapExpr(scanlineSeq(weightsV)(weightsH)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
-  /* TODO: rotate values
   test("scanline to regRotSeq") {
-    proveEquiv(scanline(weightsV)(weightsH), regRotSeq(weightsV)(weightsH), Seq(
-      rules.reduceSeqUnroll, rules.mapSeq, rules.rotateValues, rules.iterateStream
+    proveEquiv(wrapExpr(scanline(weightsV)(weightsH)),
+      wrapExpr(regRotSeq(weightsV)(weightsH)), Seq(
+      rules.reduceSeqUnroll, rules.mapSeq, rules.rotateValuesScalar, rules.iterateStream
     ))
-  } */
+  }
 }
 
