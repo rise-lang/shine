@@ -40,7 +40,7 @@ class tvmGemm extends test_util.Tests {
           transpose(b) |> map(fun(bk =>
             zip(ak)(bk) |>
               map(fun(x => fst(x) * snd(x))) |>
-              reduce(add)(l(0.0f))
+              reduce(add)(lf32(0.0f))
           ))
         ))
       ))

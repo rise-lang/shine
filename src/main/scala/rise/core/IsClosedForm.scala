@@ -20,7 +20,7 @@ object IsClosedForm {
 
     override def nat: Nat => Option[Nat] = n => {
       val closed = n.varList.foldLeft(true) {
-        case (c, v: NamedVar) => c && boundT(NatIdentifier(v))
+        case (c, v: NamedVar) => c && boundT(NatIdentifier(v, isExplicit = false, isTuningParam = false))
         case (c, _) => c
       }
       if (closed) Some(n) else None

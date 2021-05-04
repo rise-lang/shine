@@ -5,7 +5,7 @@ import rise.core.DSL.Type._
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.KernelExecutor._
 
@@ -30,18 +30,33 @@ object kmeans {
 
   private val select = fun(tuple => tuple._2._2)
 
-  val kmeans: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
-    (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
+  // FIXME: could not find original Lift expression, this is made up
+  val kmeansHighLevel: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
+    (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
+  )((features, clusters) =>
+    features |> transpose |> map(fun(feature =>
+      clusters |> reduceSeq(fun(tuple => fun(cluster => {
+        val dist = zip(feature)(cluster) |>
+          reduceSeq(update)(lf32(0.0f))
+        testF(dist)(tuple)
+      })))(
+        makePair(cast(lf64(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
+      ) |> select
+    ))
+  ))
+
+  val kmeansOcl: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
+    (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
   )((features, clusters) =>
     features |> transpose |> mapGlobal(fun(feature =>
       clusters |> oclReduceSeq(AddressSpace.Private)(
         fun(tuple => fun(cluster => {
           val dist = zip(feature)(cluster) |>
-            oclReduceSeq(AddressSpace.Private)(update)(l(0.0f))
+            oclReduceSeq(AddressSpace.Private)(update)(lf32(0.0f))
           testF(dist)(tuple)
         }))
       )(
-        makePair(cast(l(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
+        makePair(cast(lf64(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
       ) |> select
     ))
   ))
@@ -62,7 +77,7 @@ object kmeans {
     val C = clusters.length
     val F = features.length
     val P = features(0).length
-    val localSize = LocalSize(128)
+    val localSize = LocalSize(256)
     val globalSize = GlobalSize(P)
 
     val int_bytes = 4
@@ -97,7 +112,7 @@ object kmeans {
     val C = clusters.length
     val F = features.length
     val P = features(0).length
-    val localSize = LocalSize(128)
+    val localSize = LocalSize(256)
     val globalSize = GlobalSize(P)
 
     val f = k.as[ScalaFunction `(`

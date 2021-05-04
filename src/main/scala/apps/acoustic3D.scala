@@ -6,7 +6,7 @@ import rise.core.primitives._
 import rise.core.DSL.Type._
 import rise.core.types._
 import HighLevelConstructs._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclRotateValues
 
 object acoustic3D {
@@ -51,9 +51,9 @@ object acoustic3D {
   private val loss1 = 1.0f / (1.0f + lambda * alpha)
   private val loss2 = 1.0f - lambda * alpha
 
-  private val l2 = l(((c * c * k * k) / (h * h)).toFloat)
-  private val cf1 = Array(loss1.toFloat, 1.0f).map(l)
-  private val cf21 = Array(loss2.toFloat, 1.0f).map(l)
+  private val l2 = lf32(((c * c * k * k) / (h * h)).toFloat)
+  private val cf1 = Array(loss1.toFloat, 1.0f).map(lf32)
+  private val cf21 = Array(loss2.toFloat, 1.0f).map(lf32)
 
   private val sz: Nat = 3
 
@@ -75,7 +75,7 @@ object acoustic3D {
     val valueMat1 = tile `@` lidx(1, 3) `@` lidx(1, 3) `@` lidx(1, 3) |> fst
     val valueMask = cast(x) :: f32
 
-    ((t(1, 1, 1) * (l(2.0f) - (valueMask * l2))) +
+    ((t(1, 1, 1) * (lf32(2.0f) - (valueMask * l2))) +
       ((stencil * maskedValStencil) - (valueMat1 * cf2))) * cf
   })
 

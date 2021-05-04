@@ -5,7 +5,7 @@ import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types._
-import rise.openCL.TypedDSL._
+import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 
 object molecularDynamics {
@@ -32,7 +32,23 @@ object molecularDynamics {
       f32 ->: f32 ->: f32 ->:
       vec(4, f32))
 
-  val shoc: Expr = depFun((n: Nat, m: Nat) => fun(
+  // FIXME: could not find original Lift expression, this is made up
+  val shocHighLevel: Expr = depFun((n: Nat, m: Nat) => fun(
+    (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
+      f32 ->: f32 ->: f32 ->:
+      (n`.`vec(4, f32))
+  )((particles, neighbourIds, cutsq, lj1, lj2) =>
+    zip(particles)(transpose(neighbourIds)) |>
+      map(fun { p =>
+        val particle = p._1
+        gather(p._2)(particles) |>
+        reduce(fun(force => fun(n =>
+          mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
+        )))(vectorFromScalar(lf32(0.0f)))
+      })
+  ))
+
+  val shocOcl: Expr = depFun((n: Nat, m: Nat) => fun(
     (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
       f32 ->: f32 ->: f32 ->:
       (n`.`vec(4, f32))
@@ -46,7 +62,7 @@ object molecularDynamics {
             gather(p._2)(particles) |>
             oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
               mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
-            )))(vectorFromScalar(l(0.0f)))
+            )))(vectorFromScalar(lf32(0.0f)))
           )
         ))
       ) |> join

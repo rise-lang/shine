@@ -1,10 +1,12 @@
 package shine.OpenMP
+
+import shine.C
 import shine.DPIA.DSL.λ
 import shine.DPIA.primitives.intermediate.MapVecI
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, VectorType, read}
 
-class TranslationContext() extends shine.C.TranslationContext {
+class TranslationContext() extends C.Compilation.TranslationContext {
   override def assign(dt: DataType,
                       A: Phrase[AccType],
                       E: Phrase[ExpType]): Phrase[CommType] = {

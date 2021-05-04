@@ -1,9 +1,15 @@
 [submodule "lib/executor"]
 	path = lib/executor
 	url = https://github.com/rise-lang/executor.git
+[submodule "lib/yacx"]
+	path = lib/yacx
+	url = https://github.com/ZerataX/yacx.git
 [submodule "lib/elevate"]
 	path = lib/elevate
 	url = https://github.com/elevate-lang/elevate.git
 [submodule "lib/arithexpr"]
 	path = lib/arithexpr
 	url = https://github.com/rise-lang/arithexpr.git
+[submodule "lib/clap"]
+	path = lib/clap
+	url = git@github.com:michel-steuwer/clap.git
