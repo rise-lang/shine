@@ -46,19 +46,19 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def acc(env: Environment,
                    path: Path,
                    cont: Expr => Stmt): Phrase[AccType] => Stmt = {
-    case AsVectorAcc(n, _, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i / n) :: ps, cont)
+    case AsVectorAcc(_, m, _, a) => path match {
+      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i / m) :: ps, cont)
       case _ => error(s"Expected path to be not empty")
     }
-    case AsScalarAcc(_, m, dt, a) => path match {
+    case AsScalarAcc(n, _, dt, a) => path match {
       case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr((i * m) + j) :: ps, cont)
+        a |> acc(env, CIntExpr((i * n) + j) :: ps, cont)
 
       case (i: CIntExpr) :: Nil =>
-        a |> acc(env, CIntExpr(i * m) :: Nil, {
+        a |> acc(env, CIntExpr(i * n) :: Nil, {
           case ArraySubscript(v, idx) =>
             // emit something like: ((struct float4 *)v)[idx]
-            val ptrType = C.AST.PointerType(typ(VectorType(m, dt)))
+            val ptrType = C.AST.PointerType(typ(VectorType(n, dt)))
             cont(C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx))
         })
       case _ => error(s"Expected path to be not empty")
@@ -93,9 +93,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
       case _ => phrase |> super.exp(env, path, cont)
     }
-    case ForeignFunctionCall(f, inTs, outT, args) =>
-      OpenMPCodeGen.codeGenForeignFunctionCall(f, inTs, outT, args, env, path, cont)
-    case AsVectorAligned(n, _, _, dt, e) => path match {
+    case ffc@ForeignFunctionCall(f, inTs, args) =>
+      OpenMPCodeGen.codeGenForeignFunctionCall(f, inTs, ffc.outT, args, env, path, cont)
+    case AsVectorAligned(n, _, dt, _, e) => path match {
       case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
         e |> exp(env, CIntExpr((i * n) + j) :: ps, cont)
 
@@ -277,7 +277,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
     }
 
-    def codeGenForeignFunctionCall(funDecl: ForeignFunction.Declaration,
+    def codeGenForeignFunctionCall(funDecl: rise.core.ForeignFunction.Decl,
                                    inTs: collection.Seq[DataType],
                                    outT: DataType,
                                    args: collection.Seq[Phrase[ExpType]],

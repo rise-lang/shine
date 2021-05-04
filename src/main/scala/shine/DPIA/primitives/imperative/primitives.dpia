@@ -1,0 +1,69 @@
+def asScalarAcc(n: nat, m: nat, dt: data, array: acc[(m*n).dt]): acc[m.vec[dt, n]]
+
+def assign(dt: data, lhs: acc[dt], rhs: exp[dt, read]): comm
+
+def asVectorAcc(n: nat, m: nat, dt: data, array: acc[m.vec[dt, n]]): acc[(n*m).dt]
+
+def comment{comment: String}(): comm
+
+def cycleAcc(n: nat, m: nat, dt: data, input: acc[m.dt]): acc[n.dt]
+
+def depIdxAcc(n: nat, ft: nat2data, index: nat, array: acc[n..ft]): acc[ft(index)]
+
+def depJoinAcc(n: nat, lenF: nat2nat, dt: data, array: acc[(sum_(i=0)^(n-1) lenF(i)).dt]): acc[n..(i: nat |-> lenF(i).dt)]
+
+// def dMatchI(...)
+
+// this drops n many elements from an array of m elements
+def dropAcc(n: nat, m: nat, dt: data, array: acc[(n+m).dt]): acc[(m-n).dt]
+
+def for{unroll: Boolean}(n: nat, loopBody: exp[idx[n], read] -> comm): comm
+def forNat{unroll: Boolean}(n: nat, loopBody: (i: nat) -> comm): comm
+def forVec(n: nat, dt: data, out: acc[vec[dt, n]], loopBody: exp[idx[n], read] -> acc[dt] -> comm): comm
+
+// note: would not be necessary if generate was defined as indices + map
+def generateCont(n: nat, dt: data, f: exp[idx[n], read] -> (exp[dt, read] -> comm) -> comm): exp[n.dt, read]
+
+def idxAcc(n: nat, dt: data, index: exp[idx[n], read], array: acc[n.dt]): acc[dt]
+def idxVecAcc(n: nat, dt: data, index: exp[idx[n], read], vector: acc[vec[dt, n]]): acc[dt]
+
+def joinAcc(n: nat, m: nat, dt: data, array: acc[(n*m).dt]): acc[n.m.dt]
+
+def mapAcc(n: nat, dt1: data, dt2: data, f: acc[dt1] -> acc[dt2], array: acc[n.dt1]): acc[n.dt2]
+
+def mapFstAcc(dt1: data, dt2: data, dt3: data, f: acc[dt3] -> acc[dt1], record: acc[(dt3, dt2)]): acc[(dt1, dt2)]
+def mapRead(n: nat, dt1: data, dt2: data,
+            f: exp[dt1, read] -> (exp[dt2, read] -> comm) -> comm, input: exp[n.dt1, read]): exp[n.dt2, read]
+def mapSndAcc(dt1: data, dt2: data, dt3: data, f: acc[dt3] -> acc[dt2], record: acc[(dt1, dt3)]): acc[(dt1, dt2)]
+
+// def mkDPairFstI(...)
+// def mkDPairSndAcc(...)
+
+def new(dt: data, f: var[dt] -> comm): comm
+
+def newDoubleBuffer(dt1: data, dt2: data, dt3: data, n: nat,
+                    in: exp[dt1, read], out: acc[dt2],
+                    f: ((var[n.dt3], comm), comm) -> comm): comm
+
+def pairAcc(dt1: data, dt2: data, fst: acc[dt1], snd: acc[dt2]): acc[(dt1, dt2)]
+def pairAcc1(dt1: data, dt2: data, pair: acc[(dt1, dt2)]): acc[dt1]
+def pairAcc2(dt1: data, dt2: data, pair: acc[(dt1, dt2)]): acc[dt2]
+
+def reorderAcc(n: nat, dt: data, idxF: nat2nat, array: acc[n.dt]): acc[n.dt]
+
+def scatterAcc(n: nat, m: nat, dt: data, indices: exp[n.idx[m], read], array: acc[m.dt]): acc[n.dt]
+
+def seq(c1: comm, c2: comm): comm
+
+def skip(): comm
+
+def splitAcc(n: nat, m: nat, dt: data, array: acc[m.n.dt]): acc[(n*m).dt]
+
+def takeAcc(n: nat, m: nat, dt: data, array: acc[(n+m).dt]): acc[n.dt]
+
+def transposeAcc(n: nat, m: nat, dt: data, array: acc[m.n.dt]): acc[n.m.dt]
+
+def unzipAcc(n: nat, dt1: data, dt2: data, a: acc[(n.dt1, n.dt2)]): acc[n.(dt1, dt2)]
+
+def zipAcc1(n: nat, dt1: data, dt2: data, array: acc[n.(dt1, dt2)]): acc[n.dt1]
+def zipAcc2(n: nat, dt1: data, dt2: data, array: acc[n.(dt1, dt2)]): acc[n.dt2]

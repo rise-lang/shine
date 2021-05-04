@@ -1,0 +1,123 @@
+/**
+  * Applies a function on every element of a fragment. <br>
+  * This primitive needs to be executed by a full warp!
+  * @param fragType type of the fragment
+  * @param in       fragment of type `fragType` whose elements should be iterated
+  * @param out      fragment-Acceptor of type `fragType` which is used to store the result
+  * @param fun      function which takes an element of type `fragType.dataType` from `in` and
+  *                 an element-Acceptor of type `fragType.dataType` from `out` and returns a command
+  */
+def forFragment(rows: nat, columns: nat, layers: nat, dt: data,
+                frag: fragment, layout: matrixLayout,
+                in: exp[fragment[rows, columns, layers, dt, frag, layout], read],
+                out: acc[fragment[rows, columns, layers, dt, frag, layout]],
+                fun: exp[dt, read] -> acc[dt] -> comm): comm
+
+/**
+  * Copy a element from global memory to shared memory without using registers
+  * (faster than normal copy operations using the =-operator). <br>
+  * This requires CUDA 11 and compute capability >= 8. For devices with ompute capability
+  * smaller than 8 this will be compiled by the CUDA-Compiler to the same as normal copy
+  * operations using the =-operator).
+  * @param dt           datatype of element which should be copied
+  * @param pipe         pipeline which should be used to execute this copy instruction
+  * @param outputShared output-Acceptor in shared memory of type `dt`
+  */
+def globalToSharedAcc(dt: data, pipe: exp["pipeline", read], outputShared: acc[dt]): acc[dt]
+
+def parFor{level: shine.OpenCL.ParallelismLevel,
+           dim: Int,
+           unroll: Boolean,
+           prefix: String}
+          (init: nat, n: nat, step: nat,
+           dt: data,
+           out: acc[n.dt],
+           body: exp[idx[n], read] -> acc[dt] -> comm): comm
+
+/**
+  * Execute and wait for all asynchronous memory transactions (used by the {@link GlobalToSharedAcc})
+  */
+def syncPipeline(pipe: exp["pipeline", read]): comm
+
+/**
+  * Synchronize all thread in a single thread block.
+  */
+def syncThreads(): comm
+
+/**
+  * Synchronize all elements in a single warp.
+  */
+def syncWarp(): comm
+
+/**
+  * Fills a fragment with a specific value. <br>
+  * This primitive needs to be executed by a full warp!
+  * @param rows         number of rows of the fragment ({@link FragmentType#rows})
+  * @param columns      number of columns of the fragment ({@link FragmentType#columns})
+  * @param layers       third dimension which is used in the MMA operation ({@link FragmentType#d3})
+  * @param dt           dataType of the elements in the fragment ({@link FragmentType#datatype})
+  * @param fill         new value of all elements in the fragment (type of fill: `dataType`)
+  * @param frag         kind of the fragment ({@link FragmentType#fragmentKind})
+  * @param layout       layout of the fragment ({@link FragmentType#layout})
+  * @param target       fragment-Acceptor whose elements should be changed to `fill`
+  */
+def wmmaFill(rows: nat, columns: nat, layers: nat, dt: data, frag: fragment, layout: matrixLayout,
+             fill: exp[dt, read],
+             target: acc[fragment[rows, columns, layers, dt, frag, layout]]): comm
+
+/**
+  * Loads a tile of a matrix into a fragment. <br>
+  * This primitive needs to be executed by a full warp!
+  * @param rows          number of rows of the fragment ({@link FragmentType#rows})
+  * @param columns       number of columns of the fragment ({@link FragmentType#columns})
+  * @param d3            third dimension which is used in the MMA operation ({@link FragmentType#d3})
+  * @param dataType      dataType of the elements in the fragment ({@link FragmentType#datatype})
+  * @param fragmentKind  kind of the fragment ({@link FragmentType#fragmentKind})
+  * @param layout        layout of the fragment ({@link FragmentType#layout})
+  * @param matrixTile    matrix tile which should be loaded into the fragment
+  * @param fragment      fragment-Acceptor into which the `matrixTile` should be loaded
+  */
+def wmmaLoad(rows: nat, columns: nat, layers: nat, dt: data, frag: fragment, layout: matrixLayout,
+             matrixTile: exp[rows.columns.dt, read],
+             target: acc[fragment[rows, columns, layers, dt, frag, layout]]): comm
+
+/**
+  * Executes an MMA instruction using (multiple) Tensor Cores. <br>
+  * Calculates: aMatrix * bMatrix + cMatrix <br>
+  * This primitive needs to be executed by a full warp!
+  * @param m            number of rows of the `aMatrix`
+  * @param n            number of columns of the `bMatrix` and the `cMatrix`
+  * @param k            number of columns of the `aMatrix` and number of rows of the `bMatrix`
+  * @param layoutA      layout of the `aMatrix`
+  * @param layoutB      layout of the `bMatrix`
+  * @param dt1          datatype of elements of `aMatrix` and `bMatrix` ({@link FragmentType#datatype})
+  * @param dt2          datatype of elements of `cMatrix` and the resultMatrix ({@link FragmentType#datatype})
+  * @param aMatrix      first factor of type fragment
+  * @param bMatrix      second factor of type fragment
+  * @param cMatrix      accumulator of type fragment which is added to the product of `aMatrix` * `bMatrix`
+  * @param resultMatrix fragment-Accumulator in which the result is stored
+  *                     (inplace operations using the `cMatrix` as resultMatrix is possible)
+  */
+def wmmaMMA(m: nat, n: nat, k: nat,
+            layoutA: matrixLayout,
+            layoutB: matrixLayout,
+            dt1: data, dt2: data,
+            aMatrix: exp[fragment[m, k, n, dt1, fragment.A, layoutA], read],
+            bMatrix: exp[fragment[k, n, m, dt1, fragment.B, layoutB], read],
+            cMatrix: exp[fragment[m, n, k, dt2, fragment.ACC, matrixLayout.NONE], read],
+            resultMatrix: acc[fragment[m, n, k, dt2, fragment.ACC, matrixLayout.NONE]]): comm
+
+/**
+  * Stores the elements from a fragment with fragmentKind `Accumulator` into a
+  * matrix tile which resides in shared or global memory. <br>
+  * This primitive needs to be executed by a full warp!
+  * @param rows       number of rows of the fragment ({@link FragmentType#rows})
+  * @param columns    number of columns of the fragment ({@link FragmentType#columns})
+  * @param layers     third dimension which is used in the MMA operation ({@link FragmentType#d3})
+  * @param dt         dataType of the elements in the fragment ({@link FragmentType#datatype})
+  * @param value      fragment from which the elements should be stored
+  * @param matrixTile matrixTile-Acceptor in which the elements should be stored
+  */
+def wmmaStore(rows: nat, columns: nat, layers: nat, dt: data,
+              value: exp[fragment[rows, columns, layers, dt, fragment.ACC, matrixLayout.NONE], read],
+              matrixTile: acc[rows.columns.dt]): comm

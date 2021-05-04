@@ -1,7 +1,9 @@
 package shine
 
-import arithexpr.arithmetic.{ArithExpr, ContinuousRange, PosInf, Range, SimplifiedExpr}
-import shine.OpenCL.BuiltInFunctionCall
+import arithexpr.arithmetic.{ArithExpr, SimplifiedExpr}
+import shine.DPIA.Nat
+import shine.DPIA.Phrases.Phrase
+import shine.DPIA.Types.{DataType, ExpType, FragmentKind, MatrixLayoutIdentifier}
 
 package object cuda {
 
@@ -38,5 +40,12 @@ package object cuda {
   object globalDim {
     def apply(param: Int): ArithExpr with SimplifiedExpr =
       blockDim(param) * gridDim(param)
+  }
+
+  object AsFragment{
+    def apply(rows: Nat, columns: Nat, layers: Nat, dataType: DataType,
+              frag: FragmentKind, matrix: Phrase[ExpType]): shine.cuda.primitives.functional.AsFragment =
+      shine.cuda.primitives.functional.AsFragment(rows, columns, layers, dataType,
+        frag, MatrixLayoutIdentifier("ml"), matrix)
   }
 }

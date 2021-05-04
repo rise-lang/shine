@@ -19,16 +19,15 @@ object SeparateHostAndKernelCode {
     var kernelDefinitions = mutable.ArrayBuffer[KernelDef]()
     val hostDefinition = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case Run(localSize, globalSize, _, value) =>
+        case r@Run(localSize, globalSize) =>
           val name = s"k$kernelNum"
           kernelNum += 1
-          val (closedDef, args) = closeDefinition(value)
+          val (closedDef, args) = closeDefinition(r.input)
           val kernelDef = KernelDef(name, closedDef, localSize, globalSize)
           kernelDefinitions += kernelDef
           Stop(KernelCall(name, localSize, globalSize,
             kernelDef.paramTypes.map(_.dataType),
-            kernelDef.returnType.dataType,
-            args).asInstanceOf[Phrase[T]])
+            args)(kernelDef.returnType.dataType).asInstanceOf[Phrase[T]])
 
         // on the fly beta-reduction
         case Apply(fun, arg) =>
