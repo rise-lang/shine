@@ -1,0 +1,45 @@
+def barrier{local: Boolean, global: Boolean}(): comm
+
+// In a host program which contains host managed buffers,
+// A host execution is a section where only plain arrays are used
+def hostExecution{params: Map[Identifier[_ <: PhraseType], shine.OpenCL.AccessFlags]}
+                 (body: comm): comm
+
+def idxDistribute{parallelismLevel: shine.OpenCL.ParallelismLevel}
+                 (m: nat, n: nat, stride: nat, dt: data, array: exp[m.dt, read]): exp[n.dt, read]
+
+def idxDistributeAcc{parallelismLevel: shine.OpenCL.ParallelismLevel}
+                    (m: nat, n: nat, stride: nat, dt: data, array: acc[m.dt]): acc[n.dt]
+
+def kernelCallCmd{name: String,
+                  localSize: shine.OpenCL.LocalSize,
+                  globalSize: shine.OpenCL.GlobalSize,
+                  args: Seq[Phrase[ExpType]]}
+                 (dt: data, output: acc[dt]): comm
+
+def new(a: address, dt: data, f: var[dt] -> comm): comm
+
+def newDoubleBuffer(a: address, dt1: data, dt2: data, dt3: data, n: nat,
+                    in: exp[dt1, read], out: acc[dt2],
+                    f: ((var[n.dt3], comm), comm) -> comm): comm
+
+def newManagedBuffer{access: shine.OpenCL.AccessFlags}
+                    (dt: data, k: var[managed[dt]] -> comm): comm
+
+def parFor{level: shine.OpenCL.ParallelismLevel,
+           dim: Int,
+           unroll: Boolean,
+           prefix: String}
+          (init: nat, n: nat, step: nat,
+           dt: data,
+           out: acc[n.dt],
+           body: exp[idx[n], read] -> acc[dt] -> comm): comm
+
+def parForNat{level: shine.OpenCL.ParallelismLevel,
+              dim: Int,
+              unroll: Boolean,
+              prefix: String}
+             (init: nat, n: nat, step: nat,
+              ft: nat2data,
+              out: acc[n..ft],
+              body: (i: nat) -> acc[ft(i)] -> comm): comm

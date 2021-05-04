@@ -19,7 +19,7 @@ class EGraph[Data](
   val analysis: Analysis[Data],
   var pending: Vec[(ENode, EClassId)],
   var analysisPending: HashSet[(ENode, EClassId)],
-  var memo: HashMap[ENode, EClassId],
+  var memo: HashMap[(ENode, Type), EClassId],
   var unionFind: UnionFind,
   var classes: HashMap[EClassId, EClass[Data]],
   var classesByMatch: HashMap[Int, HashSet[EClassId]]
@@ -40,20 +40,23 @@ class EGraph[Data](
     classes(findMut(id))
 
   // returns the canonicalized enode and its eclass if it has one
-  def lookup(enode: ENode): (ENode, Option[EClassId]) = {
+  def lookup(enode: ENode, t: Type): (ENode, Option[EClassId]) = {
     val enode2 = enode.mapChildren(find)
-    val id = memo.get(enode2)
+    val id = memo.get(enode2, t)
     (enode2, id.map(find))
   }
 
-  def add(n: ENode): EClassId = {
-    val (enode, optec) = lookup(n)
+  def add(n: ENode, givenT: Type): EClassId = {
+    // we simplify the contained nats before adding the node to the graph
+    val t = Type.simplifyNats(givenT)
+    val (enode, optec) = lookup(n.map(id => id, Nat.simplify, DataType.simplifyNats), t)
     optec.getOrElse {
       val id = unionFind.makeSet()
       val eclass = new EClass(
         id = id,
+        t = t,
         nodes = Vec(enode),
-        data = analysis.make(this, enode),
+        data = analysis.make(this, enode, t),
         parents = Vec())
 
       enode.children().foreach { c =>
@@ -62,8 +65,8 @@ class EGraph[Data](
 
       pending += enode -> id // TODO: is this needed?
       classes += id -> eclass
-      assert(!memo.contains(enode))
-      memo += enode -> id
+      assert(!memo.contains(enode, t))
+      memo += (enode, t) -> id
 
       analysis.modify(this, id)
       id
@@ -71,7 +74,7 @@ class EGraph[Data](
   }
 
   def addExpr(expr: Expr): EClassId =
-    add(expr.node.mapChildren(addExpr))
+    add(expr.node.mapChildren(addExpr), expr.t)
 
   // checks whether two expressions are equivalent
   // returns a list of eclasses that represent both expressions
@@ -113,6 +116,7 @@ class EGraph[Data](
     val class2 = classes.remove(id2).get
     val class1 = classes(id1)
     assert(id1 == class1.id)
+    assert(class2.t == class1.t)
 
     pending ++= class2.parents
     analysis.merge(class1.data, class2.data) match {
@@ -135,9 +139,7 @@ class EGraph[Data](
     val nUnions = processUnions()
     val _ = rebuildClasses()
 
-    var assertOn = false
-    assert { assertOn = true; true }
-    if (assertOn) { checkMemo() }
+    assert { checkMemo(); true }
 
     nUnions
   }
@@ -147,10 +149,11 @@ class EGraph[Data](
     while (pending.nonEmpty) {
       while (pending.nonEmpty) {
         val (node, eclass) = pending.remove(pending.size - 1)
+        val t = get(eclass).t
 
         val node2 = node.mapChildren(findMut)
-        val prev = memo.get(node2)
-        memo += node2 -> eclass
+        val prev = memo.get(node2, t)
+        memo += (node2, t) -> eclass
         prev match {
           case Some(memoClass) =>
             val (_, didSomething) = union(memoClass, eclass)
@@ -164,8 +167,8 @@ class EGraph[Data](
         analysisPending.remove((node, id))
 
         val cid = findMut(id)
-        val node_data = analysis.make(this, node)
         val eclass = classes(cid)
+        val node_data = analysis.make(this, node, eclass.t)
         analysis.merge(eclass.data, node_data) match {
           case Some(Equal) | Some(Greater) => ()
           case Some(Less) | None =>
@@ -182,51 +185,50 @@ class EGraph[Data](
   }
 
   private def rebuildClasses(): Int = {
+    import Node.{ordering, eclassIdOrdering, natOrdering, dataTypeOrdering}
     classesByMatch.values.foreach(ids => ids.clear())
 
     var trimmed = 0
     for (eclass <- classes.values) {
       val oldNodeCount = eclass.nodeCount()
-      // TODO? in egg the nodes are sorted:
-      // eclass.nodes.mapInPlace(n => n.updateChildren(findMut))
-      // eclass.nodes.sortInPlace()
-      // eclass.nodes.distinctInPlace()
-      eclass.nodes = eclass.nodes.map(_.mapChildren(findMut)).distinct
+
+      // sort nodes for optimized search
+      val sortedNodes = eclass.nodes.mapInPlace(n => n.mapChildren(findMut))
+        .sorted
+      // remove duplicates
+      eclass.nodes.clear()
+      eclass.nodes += sortedNodes.head
+      for (nn <- sortedNodes.view.tail) {
+        if (nn != eclass.nodes.last) {
+          eclass.nodes += nn
+        }
+      }
+      // eclass.nodes = eclass.nodes.map(_.mapChildren(findMut)).distinct
 
       trimmed += oldNodeCount - eclass.nodeCount()
 
       def add(n: ENode): Unit =
         classesByMatch.getOrElseUpdate(n.matchHash(), HashSet.empty) += eclass.id
 
-      // TODO? in egg the nodes are sorted to remove duplicates where prev.matches(n)
-      eclass.nodes.distinctBy(_.matchHash()).foreach(add)
+      // TODO? in egg the nodes are sorted and duplicates where prev.matches(n) are not added
+      // .distinctBy(_.matchHash())
+      eclass.nodes.foreach(add)
     }
-
-    /* TODO: this is a useless check?
-    // check invariants if assertions are enabled
-    var assertOn = false
-    assert { assertOn = true; true }
-    if (assertOn) {
-      for (ids <- classesByMatch.values) {
-        val unique = ids.toSet
-        assert(ids.size == unique.size)
-      }
-    } */
 
     trimmed
   }
 
   private def checkMemo(): Boolean = {
-    val testMemo = HashMap.empty[ENode, EClassId]
+    val testMemo = HashMap.empty[(ENode, Type), EClassId]
 
     for ((id, eclass) <- classes) {
       assert(eclass.id == id);
       for (node <- eclass.nodes) {
-        testMemo.get(node) match {
+        testMemo.get(node, eclass.t) match {
           case None => ()
           case Some(old) => assert(find(old) == find(id))
         }
-        testMemo += node -> id
+        testMemo += (node, eclass.t) -> id
       }
     }
 

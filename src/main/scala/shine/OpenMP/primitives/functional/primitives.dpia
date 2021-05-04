@@ -1,0 +1,12 @@
+def depMapPar(n: nat, ft1: nat2data, ft2: nat2data,
+              f: (m: nat) -> exp[ft1(m), read] -> exp[ft2(m), write],
+              array: exp[n..ft1, read]): exp[n..ft2, write]
+
+def mapPar(n: nat, dt1: data, dt2: data,
+           f: exp[dt1, read] -> exp[dt2, write],
+           array: exp[n.dt1, read]): exp[n.dt2, write]
+
+def reducePar(n: nat, dt1: data, dt2: data,
+              f: exp[dt2, read] -> exp[dt1, read] -> exp[dt2, write],
+              init: exp[dt2, write],
+              array: exp[n.dt1, read]): exp[dt2, read]
