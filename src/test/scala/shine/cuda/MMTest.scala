@@ -177,7 +177,7 @@ class MMTest extends test_util.TestWithCUDA {
 
 
   //  matrixmultiplication of a mxk and a kx16 matrix
-  ignore("mmaTest for mxk * kxn matrices produces expected result") {
+  test("mmaTest for mxk * kxn matrices produces expected result") {
     val mTile = 16
     val nTile = 16
     val kTile = 16
@@ -203,8 +203,8 @@ class MMTest extends test_util.TestWithCUDA {
             Lambda[ExpType, FunType[ExpType, ExpType]](matrixA,
               //And matrixB
               Lambda[ExpType, ExpType](matrixB,
-                Transpose(n, m, f32, read,
-                  Join(n /^ nTile, nTile, read, ArrayType(m, f32),
+                Transpose(n, m, f32, write,
+                  Join(n /^ nTile, nTile, write, ArrayType(m, f32),
                   //Map over nTile-column-block of matrixB
                   Map(Local, 1)(n /^ nTile,
                     //A transposed column of matrixB
