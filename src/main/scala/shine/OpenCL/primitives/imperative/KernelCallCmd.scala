@@ -9,8 +9,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 final case class KernelCallCmd(name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, args: Seq[Phrase[ExpType]])(val dt: DataType, val output: Phrase[AccType]) extends CommandPrimitive {
   {
-    // Resolve https://github.com/rise-lang/shine/issues/165 first
-//    output :: accT(ManagedBufferType(dt))
+    output :: accT(dt)
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCallCmd = new KernelCallCmd(name, localSize.visitAndRebuild(v), globalSize.visitAndRebuild(v), args.map(VisitAndRebuild(_, v)))(v.data(dt), VisitAndRebuild(output, v))

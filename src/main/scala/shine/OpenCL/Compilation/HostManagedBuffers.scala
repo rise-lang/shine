@@ -156,7 +156,10 @@ object HostManagedBuffers {
         case _: dpia.New | _: Lambda[_, _] | _: dpia.Seq |
              _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
           Continue(p, this)
-        case _: ocl.KernelCallCmd => Continue(p, this)
+        case k@ocl.KernelCallCmd(name, ls, gs, args) =>
+          val newOutput = VisitAndRebuild(k.output, this)
+          Stop(ocl.KernelCallCmd(name, ls, gs, args.map(VisitAndRebuild(_, this)))(
+            newOutput.t.dataType, newOutput))
         case _: HostExecution => Stop(p)
         case unexpected => throw new Exception(s"did not expect $unexpected")
       }
