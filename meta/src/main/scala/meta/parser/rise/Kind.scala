@@ -12,7 +12,6 @@ object Kind {
     case object Nat extends AST
     case object Fragment extends AST
     case object MatrixLayout extends AST
-    case object Function extends AST
   }
 
   def Kind[_: P]: P[AST] = P(

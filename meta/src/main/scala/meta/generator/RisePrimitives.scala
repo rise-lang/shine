@@ -11,13 +11,13 @@ object RisePrimitives {
     os.walk.stream(risePath).filter(_.ext == "rise").foreach(path => {
 
       val definition = os.read(path)
-      parse(definition, rise.Expr.PrimitiveDeclarations(_)) match {
+      parse(definition, rise.Decl.PrimitiveDeclarations(_)) match {
         case failure: Parsed.Failure =>
           println(s"Failed to parse `${failure.extra.input}'")
           println(s"  $failure")
         case Parsed.Success(seq, _) =>
           seq.foreach {
-            case rise.Expr.AST.PrimitiveDeclaration(rise.Expr.AST.Identifier(name), scalaParams, typeSignature)
+            case rise.Decl.AST.PrimitiveDeclaration(rise.Decl.AST.Identifier(name), scalaParams, typeSignature)
                 if rise.isWellKindedType(typeSignature) =>
               val outputPath = (path / os.up) / s"$name.scala"
               println(s"Generate $outputPath")
@@ -51,7 +51,7 @@ import arithexpr.arithmetic._
                             |""".stripMargin
 
               os.write.over(outputPath, code)
-            case rise.Expr.AST.PrimitiveDeclaration(name, _, typeSignature) =>
+            case rise.Decl.AST.PrimitiveDeclaration(name, _, typeSignature) =>
               println(s"Could not generate code for `$name' as type signature `$typeSignature' is not well kinded.")
           }
       }
@@ -191,7 +191,6 @@ import arithexpr.arithmetic._
       case AST.Nat => "Nat"
       case AST.Fragment => "FragmentKind"
       case AST.MatrixLayout => "MatrixLayout"
-      case AST.Function => ???
     }
   }
 

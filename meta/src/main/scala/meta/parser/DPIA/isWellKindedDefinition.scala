@@ -4,8 +4,8 @@ import meta.parser._
 
 object isWellKindedDefinition {
 
-  def apply(params: Seq[Phrase.AST.Param], returnType: Type.AST): Boolean = {
-    import Phrase.AST._
+  def apply(params: Seq[Decl.AST.Param], returnType: Type.AST): Boolean = {
+    import Decl.AST._
     var isWellKindedFlag = true
     val env = params.foldLeft(Map.empty[String, Kind.AST]) {
       case (env, Param(Identifier(name), Left(kind))) =>

@@ -4,7 +4,7 @@ import fastparse.ScalaWhitespace._
 import fastparse._
 import meta.parser.shared.Identifier
 
-object Expr {
+object Decl {
   sealed trait AST
   object AST {
     case class Identifier(name: String) extends AST
