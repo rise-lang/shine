@@ -188,6 +188,9 @@ object VisitAndRebuild {
           visitDataTypeAndRebuild(r.snd, v))
       case ManagedBufferType(dt) =>
         ManagedBufferType(visitDataTypeAndRebuild(dt, v))
-      case d => d
+      case d => d match {
+        case _: ComposedType | _: BasicType | _: OpaqueType |
+             _: NatToDataApply | _: DataTypeIdentifier => d
+      }
     }
 }
