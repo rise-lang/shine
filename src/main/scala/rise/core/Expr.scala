@@ -49,9 +49,7 @@ final case class Literal(d: semantics.Data) extends Expr {
   override val t: Type = d.dataType
   override def setType(t: Type): Literal =
     if (t != this.t) {
-      throw TypeException(
-        "tried to set the type of a Literal, whose type should never be changed"
-      )
+      throw TypeException(s"cannot set the type of ${getClass}")
     } else {
       this
     }
@@ -65,10 +63,12 @@ final case class Opaque(e: Expr, override val t: Type) extends Expr {
 case class TypeAnnotation(e: Expr, annotation: Type) extends Expr {
   override val t : Type = TypePlaceholder
   override def toString: String = s"$e: $annotation"
-  override def setType(t: Type): TypeAnnotation = {
-    assert(t == TypePlaceholder)
-    this
-  }
+  override def setType(t: Type): TypeAnnotation =
+    if (t != this.t) {
+      throw TypeException(s"cannot set the type of ${getClass}")
+    } else {
+      this
+    }
 }
 case class TypeAssertion(e: Expr, assertion: Type) extends Expr {
   override val t : Type = TypePlaceholder
