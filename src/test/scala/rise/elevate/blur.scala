@@ -3,11 +3,9 @@ package rise.elevate
 import _root_.util.gen
 import elevate.core._
 import elevate.core.strategies.basic._
-import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
-import exploration.strategies.standardStrategies.{vectorization}
 import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D}
-import rise.core.DSL.{fun, l}
+import rise.core.DSL.{fun, l, lf64}
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
@@ -39,7 +37,7 @@ class blur extends test_util.Tests {
       in |> padClamp2D(1) // in: NxM -> (N+2) x (M+2)
         |> slide2D(3, 1) // -> MxNx3x3
         |> map(map(fun(sector=>
-          sector |> join |> reduce(add)(l(0.0)) |> fun(x => x/l(9.0))
+          sector |> join |> reduce(add)(lf64(0.0)) |> fun(x => x/lf64(9.0))
       )))
     )
   }

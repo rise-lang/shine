@@ -1,35 +1,46 @@
 package rise.elevate
 
 import java.io.{File, FileInputStream, FileOutputStream}
-
 import elevate.core._
 import elevate.core.strategies.basic.normalize
 import rise.elevate.rules.lowering.{lowerToC, parallel, vectorize}
 import _root_.util.gen
 import elevate.core.strategies.traversal._
 import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D, zipND}
-import rise.core.DSL.{fun, l}
+import rise.core.DSL.{fun, l, lf32, lf64, lu8}
 import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
-import rise.elevate.strategies.algorithmic.reorder
+import rise.elevate.strategies.halide.reorder
 import rise.elevate.strategies.normalForm._
-import rise.elevate.strategies.predicate.{isApplied, isMap, isReduce}
+import rise.elevate.strategies.predicate.{isApplied, isMap, isReduce, isReduceSeq}
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
 import _root_.util.gen.c.function
 import _root_.util.writeToTempFile
+import rise.elevate.strategies.tiling.tile
+import rise.elevate.util.{**!, makeClosed, λ}
 
 import scala.language.postfixOps
+import scala.runtime.Tuple2Zipped.Ops
 import scala.sys.process._
 import scala.util.Random
 
 // scalastyle:off
 class gauss extends test_util.Tests {
-
+  //private val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
+  def LCNFrewrite(a: Rise, s: Strategy[Rise]): Rise = {
+    val (closedA, nA) = makeClosed(a)
+    val na = DFNF()(RiseTraversable)(closedA).get
+    println(s"base: $a")
+    println(s"DFNF: $na")
+    val reordered = position(nA)(s).apply(na).get
+    println(s"reordered: $reordered")
+    reordered
+  }
   val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
     traversal.outermost(default.RiseTraversable)
   val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
@@ -46,13 +57,13 @@ class gauss extends test_util.Tests {
   )
 
   val N = 128
-  val M = 128
+  val M = 256
 
   val mulPair = fun(pair => fst(pair) * snd(pair))
 
   val gauss: Rise = {
-    fun(ArrayType(N, ArrayType(M, i8)))(in =>
-      fun(ArrayType(5, ArrayType(5, i8)))(weights =>
+    fun(ArrayType(N, ArrayType(M, int)))(in =>
+      fun(ArrayType(5, ArrayType(5, int)))(weights =>
         in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
           |> slide2D(5, 1) // -> MxN of 5x5 slides
           |> map(map(fun(sector => // sector:5x5
@@ -61,32 +72,97 @@ class gauss extends test_util.Tests {
       )
     )
   }
+
+
+  val sMulM: Rise = fun(int)(a =>
+      fun(ArrayType(N, ArrayType(M, int)))(A => A |> map(map(fun(Aij=>a*Aij))))
+  )
+
+  val mAddM: Rise = fun(ArrayType(N, ArrayType(M, int)))(a =>
+    fun(ArrayType(N, ArrayType(M, int)))(b =>
+      zip(a)(b) |> map(fun(rowPair =>
+        zip(fst(rowPair))(snd(rowPair)) |> map(fun(valPair =>
+          rise.core.DSL.Ops(fst(valPair)) + snd(valPair) // explicitly use rise.core.DSL.Ops, otherwise Scala will confuse rise.core.DSL.Ops + with String concatenation...
+        ))
+      ))
+    )
+  )
+
+
   val lowering = DFNF() `;` lowerToC
 
   // -- CPU ---------------------------------------------------------------
 
   val cpu: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
-    normalize.apply(fuseReduceMap `@` topDown[Rise])
+    fuseReduceMap `@` topDown[Rise]
 
-  test("CPU") {
-    run("cpu", cpu)
+  test("gauss") {
+    run("cpu", gauss, cpu)
   }
 
-  val cpuPar: Strategy[Rise] = cpu `;`
-    vectorize(64) `@` bottomUp[Rise]
 
-    //(parallel()    `@` outermost(isApplied(isMap))) `;;`
-    /*splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce)))) `;;`
-    reorder(List(1,3,4,2)) `;;`
-    vectorize(64) `@` innermost(isApplied(isApplied(isMap)))
-    */
+  test("sMulM"){
+    val tiling = DFNF()(default.RiseTraversable)
 
-  test("CPU par") {
-    run("CPU par", cpuPar)
+    val lowered = lowerToC.apply(sMulM).get
+    println("lowered: " + lowered)
+
+    val c = gen.openmp.function("gaussian").asStringFromExpr(lowered)
+    println("code: " + c)
   }
 
+
+  test("sMulM reorder"){
+    val reordered = LCNFrewrite(
+      sMulM,
+      body(body(reorder(Seq(2, 1) )))
+      //reorder(Seq(2, 1)) `@` innermost(isApplied(isApplied(isMap)))
+    )
+
+    val lowered = lowerToC.apply(reordered).get
+    println("lowered: " + lowered)
+
+    val c = gen.openmp.function("gaussian").asStringFromExpr(lowered)
+    println("code: " + c)
+    //run("test", test, cpu)
+  }
+
+  test("mAddM"){
+    val lowered = lowerToC.apply(mAddM).get
+    println("lowered: " + lowered)
+
+    val c = gen.openmp.function("gaussian").asStringFromExpr(lowered)
+    println("code: " + c)
+  }
+
+
+    /*
+    val cpuPar: Strategy[Rise] = cpu `;;`
+
+      //(vectorize(32) `@` innermost(isApplied(isMap)))  `;;`
+      (parallel()    `@` outermost(isApplied(isMap)))
+
+      //parallel() //`;`
+      //(vectorize(64) `@` bottomUp[Rise])
+
+      //(parallel()    `@` outermost(isApplied(isMap))) `;;`
+      /*splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce)))) `;;`
+      reorder(List(1,3,4,2)) `;;`
+      vectorize(64) `@` innermost(isApplied(isApplied(isMap)))
+      */
+  */
+  test("CPU reorder") {
+    LCNFrewrite(
+      gauss,
+      body(body(reorder(Seq(2,1)))) //`@` innermost(isApplied(isApplied(isApplied(isMap))))
+    )
+    //println(LCNFrewrite(gauss, body(body(reorder(Seq(1,3,2))))))
+    //run("CPU par", gauss, cpuPar)
+  }
+
+  /*
   val splitReduce = splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce))))
-  val reordering = reorder(List(1,2))
+  //val reordering = reorder(List(1,2))
   val vectorization = vectorize(64) `@` innermost(isApplied(isApplied(isMap)))
   test("vectorize") {
     val splitted = splitReduce.apply(gauss)
@@ -118,6 +194,7 @@ class gauss extends test_util.Tests {
     println("code: \n" + codeReordered)
 //    println("code: \n" + codeVectorized)
   }
+*/
 
 /*
   test("Executor test"){
@@ -131,64 +208,16 @@ class gauss extends test_util.Tests {
   }
 */
 
-  test("vectorization example"){
-
-    val N = 1024
-
-    // define algorithm
-    val mm: Rise =
-      fun(ArrayType(N, ArrayType(N, f32)))(a =>
-        fun(ArrayType(N, ArrayType(N, f32)))(b =>
-          a |> map(fun(ak =>
-            transpose(b) |> map(fun(bk =>
-              zip(ak)(bk) |>
-                map(fun(x => fst(x) * snd(x))) |>
-                reduce(add)(l(0.0f))
-            ))
-          ))
-        ))
-
-    // define strategies
-    val splitReduce = splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce))))
-    val reordering = reorder(List(1,2,3,4))
-    val vectorization = vectorize(64) `@` innermost(isApplied(isApplied(isMap)))
-
-    // apply strategies
-    val splitted = splitReduce.apply(mm)
-    val reordered = reordering.apply(splitted.get)
-    //val vectorized = vectorization.apply(reordered.get)
-
-    // lowering
-    val loweredDefault = (cpu `;` lowerToC).apply(mm)
-    val loweredSplitted = (cpu `;` lowerToC).apply(splitted.get)
-    val loweredReordered = (cpu `;` lowerToC).apply(reordered.get)
-    //val loweredVectorized = (cpu `;` lowerToC).apply(vectorized.get)
-
-    // code generation
-    val codeDefault = gen.openmp.function("mm").asStringFromExpr(loweredDefault.get)
-//    val codeSplitted = gen.openmp.function("gaussian").asStringFromExpr(loweredSplitted.get) // not valid
-    val codeReordered = gen.openmp.function("mm").asStringFromExpr(loweredReordered.get)
-    //val codeVectorized = gen.openmp.function("mm").asStringFromExpr(loweredVectorized.get)
-
-    // print results
-    println("mm: \n" + mm)
-    println("splitted: \n" + splitted.get)
-    println("reordered: \n" + reordered.get)
-    //println("vectorized: \n" + vectorized.get)
-
-    println("loweredMM: \n" + loweredDefault.get)
-    println("loweredSplitted: \n " + loweredSplitted.get)
-    println("loweredReordered: \n" + loweredReordered.get)
-    //println("loweredVectorized: \n" + loweredVectorized.get)
-
-    println("code: \n" + codeDefault)
-    println("code: \n" + codeReordered)
-    //println("code: \n" + codeVectorized)
-  }
-
-
   /// UTILS ////////////////////////////////////////////////////////////////////
-  def run(version: String, strategy: Strategy[Rise]): Unit ={
+  def run(version: String, expresion:Rise, strategy: Strategy[Rise]): Unit ={
+    println(version + ":")
+
+    val lowered = (strategy`;` lowerToC)(expresion)
+    println("lowered: " + lowered.get)
+
+    val c = gen.openmp.function("gaussian").asStringFromExpr(lowered.get)
+    println("code: " + c)
+
 
     def writeToFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
       import java.io._
@@ -219,40 +248,37 @@ class gauss extends test_util.Tests {
       val p = gen.openmp.function("gaussian").fromExpr(lowered.get)
 
 
-      val code = s"""
-      #include <stdio.h>
-      #include <stdlib.h>
-      #include <time.h>
+      s"""
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
-     ${function.asString(p)}
+${function.asString(p)}
 
-      int main(void){
-        uint8_t* in = calloc(${N*M}, sizeof(uint8_t));
-        uint8_t weights[] = ${genMatrixCode(gaussWeights)};
-        uint8_t* out = calloc(${N*M}, sizeof(uint8_t));
+int main(void){
+  int* in = calloc(${N*M}, sizeof(int));
+  int weights[] = ${genMatrixCode(gaussWeights)};
+  int* out = calloc(${N*M}, sizeof(int));
 
 
-        //measure time
-        struct timespec tp_start;
-        struct timespec tp_end;
-        clockid_t clk_id = CLOCK_MONOTONIC;
-        double duration = 0;
+  //measure time
+  struct timespec tp_start;
+  struct timespec tp_end;
+  clockid_t clk_id = CLOCK_MONOTONIC;
+  double duration = 0;
 
-        clock_gettime(clk_id, &tp_start);
-        gaussian(out, in, weights);
-        clock_gettime(clk_id, &tp_end);
+  clock_gettime(clk_id, &tp_start);
+  gaussian(out, in, weights);
+  clock_gettime(clk_id, &tp_end);
 
-        duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
-        duration = duration / 1000000;
+  duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
+  duration = duration / 1000000;
 
-        //print result
-        printf("%f\\n", duration);
+  //print result
+  printf("%f\\n", duration);
 
-        return 0;
-      }
-      """
-
-      code
+  return 0;
+}"""
     }
 
 /*
