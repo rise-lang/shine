@@ -23,9 +23,7 @@ import rise.elevate.strategies.traversal._
 
 import _root_.util.gen
 
-// scalastyle:off
-class tvmGemm extends test_util.Tests {
-
+object tvmGemm {
   val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
     traversal.outermost(default.RiseTraversable)
   val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
@@ -33,6 +31,7 @@ class tvmGemm extends test_util.Tests {
 
   //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
   val N = 1024
+
   val mm: Rise = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
@@ -52,10 +51,6 @@ class tvmGemm extends test_util.Tests {
   val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
     fuseReduceMap `@` topDown[Rise]
 
-  test("baseline") {
-    run("baseline",  baseline `;` lowerToC, openMP = false)
-  }
-
   // -- BLOCKING ---------------------------------------------------------------
 
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
@@ -66,20 +61,12 @@ class tvmGemm extends test_util.Tests {
       (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1,2,5,6,3,4))
 
-  test("blocking") {
-    run("blocking", blocking `;` lowerToC, openMP = false)
-  }
-
   // -- VECTORIZATION ----------------------------------------------------------
 
   val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
   val vectorization: Strategy[Rise] =
     blocking `;;`
       (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
-
-  test("vectorization") {
-    run("vectorization", (vectorization `;` lowerToC), openMP = true)
-  }
 
   // -- LOOP PERMUTATION -------------------------------------------------------
 
@@ -89,10 +76,6 @@ class tvmGemm extends test_util.Tests {
     (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
     reorder(List(1,2,5,3,6,4)) `;;`
     (vectorize(32) `@` innermost(isFullyAppliedMap))
-
-  test("loop permutation") {
-    run("loop_permutation", (loopPerm `;` lowerToC), openMP = true)
-  }
 
   // -- ARRAY PACKING ----------------------------------------------------------
 
@@ -114,20 +97,13 @@ class tvmGemm extends test_util.Tests {
     isLambda `;` ( (e: Rise) => body(inLambda(s))(e) ) <+ s
 
   val arrayPacking: Strategy[Rise] = packB `;;` loopPerm
-  test("array packing") {
-    run("array_packing", arrayPacking `;` lowerToC, openMP = true)
-  }
 
   // -- CACHE BLOCKS -----------------------------------------------------------
 
   val cacheBlocks: Strategy[Rise] = (
-    arrayPacking `;;` debug[Rise]("after arrayPacking") `;`
+    arrayPacking `;;`// debug[Rise]("after arrayPacking") `;`
       (unroll `@` innermost(isReduceSeq))
     )
-
-  test("cache blocks") {
-    run("cache_blocks", cacheBlocks `;` lowerToC, openMP = true)
-  }
 
   // -- PARALLEL ---------------------------------------------------------------
 
@@ -137,6 +113,35 @@ class tvmGemm extends test_util.Tests {
         outermost(isApplied(isLet))) `;;`
       (unroll `@` innermost(isReduceSeq))
     )
+}
+
+// scalastyle:off
+class tvmGemm extends test_util.Tests {
+  import tvmGemm._
+
+  test("baseline") {
+    run("baseline",  baseline `;` lowerToC, openMP = false)
+  }
+
+  test("blocking") {
+    run("blocking", blocking `;` lowerToC, openMP = false)
+  }
+
+  test("vectorization") {
+    run("vectorization", (vectorization `;` lowerToC), openMP = true)
+  }
+
+  test("loop permutation") {
+    run("loop_permutation", (loopPerm `;` lowerToC), openMP = true)
+  }
+
+  test("array packing") {
+    run("array_packing", arrayPacking `;` lowerToC, openMP = true)
+  }
+
+  test("cache blocks") {
+    run("cache_blocks", cacheBlocks `;` lowerToC, openMP = true)
+  }
 
   test("parallel") {
     run("parallel", par `;` lowerToC, openMP = true)
