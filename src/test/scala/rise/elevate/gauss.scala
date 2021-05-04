@@ -1,9 +1,9 @@
 package rise.elevate
 
-import java.io.File
+import java.io.{File, FileInputStream, FileOutputStream}
 
 import elevate.core._
-import elevate.core.strategies.basic.{normalize}
+import elevate.core.strategies.basic.normalize
 import rise.elevate.rules.lowering.{lowerToC, parallel, vectorize}
 import _root_.util.gen
 import elevate.core.strategies.traversal._
@@ -20,8 +20,9 @@ import rise.elevate.strategies.normalForm._
 import rise.elevate.strategies.predicate.{isApplied, isMap, isReduce}
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
-
 import _root_.util.gen.c.function
+import _root_.util.writeToTempFile
+
 import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.Random
@@ -36,7 +37,7 @@ class gauss extends test_util.Tests {
 
   //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
 
-  val gaussWeights: Seq[Seq[Int]] = Seq(
+  val gaussWeights: Seq[Seq[Number]] = Seq(
     Seq(1, 4, 6, 4,1),
     Seq(4,16,24,16,4),
     Seq(6,24,36,24,6),
@@ -44,18 +45,18 @@ class gauss extends test_util.Tests {
     Seq(1, 4, 6, 4,1)
   )
 
-  val N = 512
-  val M = 512
+  val N = 128
+  val M = 128
 
   val mulPair = fun(pair => fst(pair) * snd(pair))
 
   val gauss: Rise = {
-    fun(ArrayType(N, ArrayType(M, int)))(in =>
-      fun(ArrayType(5, ArrayType(5, int)))(weights =>
+    fun(ArrayType(N, ArrayType(M, i8)))(in =>
+      fun(ArrayType(5, ArrayType(5, i8)))(weights =>
         in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
           |> slide2D(5, 1) // -> MxN of 5x5 slides
           |> map(map(fun(sector => // sector:5x5
-            zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0)) |> fun(x => x/l(256)) //TODO Halide does a >> 8
+            zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0)) |> fun(x => x/l(256))
         )))
       )
     )
@@ -90,15 +91,15 @@ class gauss extends test_util.Tests {
   test("vectorize") {
     val splitted = splitReduce.apply(gauss)
     val reordered = reordering.apply(splitted.get)
-    //val vectorized = vectorization.apply(reordered.get)
+    val vectorized = vectorization.apply(reordered.get)
 
     val loweredDefault = (cpu `;` lowerToC).apply(gauss)
     val loweredSplitted = (cpu `;` lowerToC).apply(splitted.get)
     val loweredReordered = (cpu `;` lowerToC).apply(reordered.get)
-    //val loweredVectorized = (cpu `;` lowerToC).apply(vectorized.get)
+//    val loweredVectorized = (cpu `;` lowerToC).apply(vectorized.get)
 
     val codeDefault = gen.openmp.function("gaussian").asStringFromExpr(loweredDefault.get)
-    //    val codeSplitted = gen.openmp.function("gaussian").asStringFromExpr(loweredSplitted.get) // not valid
+//    val codeSplitted = gen.openmp.function("gaussian").asStringFromExpr(loweredSplitted.get) // not valid
     val codeReordered = gen.openmp.function("gaussian").asStringFromExpr(loweredReordered.get)
 //    val codeVectorized = gen.openmp.function("gaussian").asStringFromExpr(loweredVectorized.get)
 
@@ -200,11 +201,15 @@ class gauss extends test_util.Tests {
       w.close()
     }
 
-    def randomMatrix(dims: (Int, Int)): Seq[Seq[Int]] = {
-      Seq.fill(dims._1)(Seq.fill(dims._2)(Random.nextInt()))
+    def randomMatrix(generator: () => Number, dims: (Int, Int)): Seq[Seq[Number]] = {
+      Seq.fill(dims._1)(Seq.fill(dims._2)(generator()))
     }
 
-    def genMatrixCode(m: Seq[Seq[Int]]): String = {
+    def genMatrixFileCode(m: Seq[Seq[Number]]): String = {
+      m.map(_.mkString(",")).mkString("\n")
+    }
+
+    def genMatrixCode(m: Seq[Seq[Number]]): String = {
       "{\n"+m.map(_.mkString(",")).mkString(",\n")+"\n}"
     }
 
@@ -222,9 +227,10 @@ class gauss extends test_util.Tests {
      ${function.asString(p)}
 
       int main(void){
-        int in[] = ${genMatrixCode(randomMatrix((N,M)))}; //TODO read data from file (image) use lib?
-        int weights[] = ${genMatrixCode(gaussWeights)};
-        int out[${N*M}];
+        uint8_t* in = calloc(${N*M}, sizeof(uint8_t));
+        uint8_t weights[] = ${genMatrixCode(gaussWeights)};
+        uint8_t* out = calloc(${N*M}, sizeof(uint8_t));
+
 
         //measure time
         struct timespec tp_start;
@@ -261,14 +267,34 @@ class gauss extends test_util.Tests {
       s"gcc -Wall -o ${binFile.getAbsolutePath} ${srcFile.getAbsolutePath}" !!
 
     }
-  def run(path: String, name:String, times: Int): Unit = {
+
+  def generateInputs(expected: Seq[Either[(()=>Number, Int, Int), Seq[Seq[Number]]]]): Seq[Seq[Seq[Number]]] = {
+    expected.map {
+      case Left(generateTriple) => randomMatrix(generateTriple._1, (generateTriple._2, generateTriple._3))
+      case Right(fixedData) => fixedData
+    }
+  }
+
+  def run(path: String, name: String, times: Int, data: Seq[Either[(()=>Number, Int, Int), Seq[Seq[Number]]]]): Unit = {
+
     var runtimes: List[Double] = List.empty
-    for(i <- 1 to times){
+    for(_ <- 1 to times){
+
+      val inputs = generateInputs(data)
+      val inputFiles = inputs.map(m=>genMatrixFileCode(m)).map(data=>writeToTempFile("GaussInput","",data))
+      val persistentFiles = inputFiles.map(f=> {
+        val dest = new File("./exploration/gaussian/"+f.getName)
+        new FileOutputStream(dest).getChannel.transferFrom(new FileInputStream(f).getChannel,0, Long.MaxValue)
+        dest
+      })
+
+      println(persistentFiles)
+
       try {
         runtimes = (s"${new File(s"$path/$name").getAbsolutePath}" !!).toDouble :: runtimes
       }
       catch {
-        case e: Exception => println(e)
+        case e: Exception => println("Could not run Kernel: "+e)
       }
     }
     println("Med time " + runtimes.sorted.apply(runtimes.size/2))
@@ -278,7 +304,12 @@ class gauss extends test_util.Tests {
     val code = genCode(strategy, gauss)
     writeToFile("./exploration/gaussian", version, code)
     compile("./exploration/gaussian", version)
-    run("./exploration/gaussian", version, 10)
+    run(
+      "./exploration/gaussian",
+      version,
+      10,
+      Seq(Left((()=>Random.nextInt(256), N, M)), Right(gaussWeights))
+    )
   }
 //  def run(version: String,
 //          strategy: Strategy[Rise],
