@@ -5,7 +5,8 @@ import scala.sys.process._
 import java.io.{File, Writer, BufferedWriter, FileWriter}
 
 /** Defines how to output graphviz files for an [[EGraph]] */
-case class EGraphDot(egraph: EGraph[_]) {
+case class EGraphDot(egraph: EGraph[_],
+                     printTypes: Boolean = true) {
   def toSVG(path: String): Unit = {
     val dotPath = path.replace(".svg", ".dot")
     toFile(dotPath)
@@ -37,6 +38,7 @@ case class EGraphDot(egraph: EGraph[_]) {
       for ((node, i) <- eclass.nodes.zipWithIndex) {
         writeln(s"""    ${id.i}.$i[label = "${nodeLabel(node)}"]""")
       }
+      if (printTypes) writeln(s"""    label = "#${id.i} : ${eclass.t}"""")
       writeln("  }")
     }
 
@@ -51,7 +53,7 @@ case class EGraphDot(egraph: EGraph[_]) {
             (s"${id.i}.$i:n", s"cluster_${id.i}")
           } else {
             // .0 to pick an arbitrary node in the cluster
-            (s"${child.i}.0", s"cluster_${childLeader.i}")
+            (s"${childLeader.i}.0", s"cluster_${childLeader.i}")
           }
           writeln(s"  ${id.i}.$i$anchor -> $targetNode [lhead = $targetCluster, $label]")
           argI += 1

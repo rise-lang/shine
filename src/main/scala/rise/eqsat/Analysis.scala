@@ -32,7 +32,9 @@ class DefaultAnalysisData(var free: HashSet[Int],
                           var extractedExpr: Expr,
                           var extractedSize: Int)
 
-object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
+abstract class DefaultAnalysisCustomisable() extends Analysis[DefaultAnalysisData] {
+  def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit
+
   override def make(egraph: EGraph[DefaultAnalysisData], enode: ENode, t: Type): DefaultAnalysisData = {
     val free = HashSet.empty[Int]
     enode match {
@@ -51,7 +53,7 @@ object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
 
   override def merge(to: DefaultAnalysisData, from: DefaultAnalysisData): Option[Order] = {
     val beforeFreeCount = to.free.size
-    to.free ++= from.free
+    freeMerge(to.free, from.free)
     var didChange = beforeFreeCount != to.free.size
     assert(to.extractedSize > 0 && from.extractedSize > 0)
     if (to.extractedSize > from.extractedSize) {
@@ -61,4 +63,14 @@ object DefaultAnalysis extends Analysis[DefaultAnalysisData] {
     }
     if (didChange) { None } else { Some(Greater) }
   }
+}
+
+object DefaultAnalysis extends DefaultAnalysisCustomisable {
+  override def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit =
+    to ++= from // union
+}
+
+object DefaultAnalysisWithFreeIntersection extends DefaultAnalysisCustomisable {
+  override def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit =
+    to.filterInPlace(from.contains _) // intersection
 }

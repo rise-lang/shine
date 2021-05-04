@@ -29,30 +29,41 @@ class Reorder extends test_util.Tests {
 
   // FIXME: difficulties reaching all of the goals
   ignore("reorder 3D") {
-    def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
+    def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) =>
       depFun((dt1: DataType) => depFun((dt2: DataType) =>
       fun(i => fun(f =>
-        inner(i :: (n`.`m`.`o`.`dt1))(f) :: (n`.`m`.`o`.`dt2)
+        inner(f)(i :: (n`.`m`.`o`.`dt1)) :: (n`.`m`.`o`.`dt2)
       )))))))
     }
 
-    val expr = wrap(i => f => ***!(f) $ i)
-    val gold132 = wrap(i => f => (*!(T) o ***!(f) o *!(T)) $ i)
-    val gold213 = wrap(i => f => (T o ***!(f) o T) $ i) // not reached
-    val gold231 = wrap(i => f => (T o *!(T) o ***!(f) o *!(T) o T) $ i)
-    val gold321 = wrap(i => f => (*!(T) o T o *!(T) o ***!(f) o *!(T) o T o *!(T)) $ i)
-    val gold312 = wrap(i => f => (*!(T) o T o ***!(f) o T o *!(T)) $ i)
+    val expr = wrap(f => ***!(f))
+    val gold132 = wrap(f => *!(T) o ***!(f) o *!(T))
+    val gold213 = wrap(f => T o ***!(f) o T)
+    val gold231 = wrap(f => T o *!(T) o ***!(f) o *!(T) o T)
+    val gold321 = wrap(f => *!(T) o T o *!(T) o ***!(f) o *!(T) o T o *!(T))
+    val gold312 = wrap(f => *!(T) o T o ***!(f) o T o *!(T))
 
+    val rs = Seq(
+      rules.eta, rules.beta, rules.betaNat,
+      rules.etaAbstraction,
+      // rules.gentleEtaAbstraction,
+      /*rules.mapFusion,*/ rules.mapFission,
+      // rules.idAfter, rules.createTransposePair,
+      rules.transposePairAfter,
+      // rules.transposePairAfter2,
+      // rules.transposePairAfter3,
+      // rules.transposePairAfter4,
+      rules.mapMapFBeforeTranspose,// rules.transposeBeforeMapMapF
+    )
+
+    proveEquiv(expr, wrap(f => *(T) o *(**(f) o T)), rs)
+    proveEquiv(wrap(f => *(T) o *(**(f) o T)), wrap(f => *(T) o ***(f) o *(T)), rs)
+    proveEquiv(expr, wrap(f => *(T) o ***(f) o *(T)), rs)
+    // proveEquiv(expr, gold132, rs)
     proveEquiv(expr, Seq(
       gold132, gold213, gold231, gold321, gold312
-    ), Seq(
-      rules.eta, rules.beta, rules.betaNat,
-      // rules.etaAbstraction,
-      rules.mapFusion, rules.mapFission,
-      // rules.idAfter, rules.createTransposePair,
-      rules.transposePairAfter, rules.mapMapFBeforeTranspose
-    ))
+    ), rs)
   }
 
   // FIXME: difficulties reaching all of the goals

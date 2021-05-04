@@ -12,14 +12,13 @@ case class TimeLimit(duration: Long) extends StopReason {
 case object Done extends StopReason
 
 object Runner {
-  def withAnalysis[D](analysis: Analysis[D]): Runner[D] = new Runner(
-    egraph = EGraph.emptyWithAnalysis(analysis),
+  def init(): Runner = new Runner(
     iterations = Vec(),
     stopReasons = Vec(),
     done = _ => false,
 
     iterLimit = 30,
-    nodeLimit = 10_000,
+    nodeLimit = 100_000,
     timeLimit = Duration.ofSeconds(10).toNanos
   )
 }
@@ -28,52 +27,68 @@ object Runner {
   * This technique is called "equality saturation" in general.
   * @see [[https://docs.rs/egg/0.6.0/egg/struct.Runner.html]]
   */
-class Runner[D](var egraph: EGraph[D],
-                var iterations: Vec[Iteration],
-                var stopReasons: Vec[StopReason],
-                var done: Runner[D] => Boolean,
-                var iterLimit: Int,
-                var nodeLimit: Int,
-                var timeLimit: Long) {
-  def withIterationLimit(limit: Int): Runner[D] = {
+class Runner(var iterations: Vec[Iteration],
+             var stopReasons: Vec[StopReason],
+             var done: Runner => Boolean,
+             var iterLimit: Int,
+             var nodeLimit: Int,
+             var timeLimit: Long) {
+  def iterationCount(): Int =
+    iterations.size - 1
+
+  def withIterationLimit(limit: Int): Runner = {
     iterLimit = limit; this
   }
 
-  def withNodeLimit(limit: Int): Runner[D] = {
+  def withNodeLimit(limit: Int): Runner = {
     nodeLimit = limit; this
   }
 
-  def withTimeLimit(limit: Duration): Runner[D] = {
+  def withTimeLimit(limit: Duration): Runner = {
     timeLimit = limit.toNanos; this
   }
 
-  def doneWhen(f: Runner[D] => Boolean): Runner[D] = {
+  def doneWhen(f: Runner => Boolean): Runner = {
     done = f; this
   }
 
   def printReport(): Unit = {
     val searchTime = iterations.iterator.map(_.searchTime).sum
-    val applyTime = iterations.map(_.applyTime).sum
-    val rebuildTime = iterations.map(_.rebuildTime).sum
-    val totalTime = iterations.map(_.totalTime).sum
-    val nRebuilds = iterations.map(_.nRebuilds.toLong).sum
-    val nodes = iterations.last.egraphNodes
-    val classes = iterations.last.egraphClasses
+    val applyTime = iterations.iterator.map(_.applyTime).sum
+    val rebuildTime = iterations.iterator.map(_.rebuildTime).sum
+    val totalTime = iterations.iterator.map(_.totalTime).sum
+    val nRebuilds = iterations.iterator.map(_.nRebuilds.toLong).sum
     println("-- Runner report --")
     println(s"  Stop reasons: ${stopReasons.mkString(", ")}")
-    println(s"  Iterations: ${iterations.size}")
-    println(s"  EGraph size: $nodes nodes, $classes classes, ${egraph.memo.size} memo")
+    println(s"  Iterations: ${iterationCount()}")
+    val nodes = iterations.last.egraphNodes
+    val classes = iterations.last.egraphClasses
+    val memo = iterations.last.memoSize
+    println(s"  EGraph size: $nodes nodes, $classes classes, $memo memo")
     def ratio(a: Double, b: Double) = f"${a/b}%.2f"
     println(s"  Rebuilds: $nRebuilds, " +
-      s"${ratio(nRebuilds.toDouble, iterations.size.toDouble)} per iter")
+      s"${ratio(nRebuilds.toDouble, iterationCount().toDouble)} per iter")
     println(s"  Total time: ${util.prettyTime(totalTime)} (" +
       s"${ratio(searchTime.toDouble, totalTime.toDouble)} search, " +
       s"${ratio(applyTime.toDouble, totalTime.toDouble)} apply, " +
       s"${ratio(rebuildTime.toDouble, totalTime.toDouble)} rebuild)")
   }
 
-  def run(rules: Seq[Rewrite[D]]): Runner[D] = {
+  def run[D](egraph: EGraph[D], rules: Seq[Rewrite[D]]): Runner = {
     egraph.rebuild()
+
+    // iteration 0
+    iterations += new Iteration(
+      egraphNodes = egraph.nodeCount(),
+      egraphClasses = egraph.classCount(),
+      memoSize = egraph.memo.size,
+      applied = HashMap.empty,
+      searchTime = 0,
+      applyTime = 0,
+      rebuildTime = 0,
+      totalTime = 0,
+      nRebuilds = 0
+    )
 
     val startTime = System.nanoTime()
     while (true) {
@@ -82,7 +97,7 @@ class Runner[D](var egraph: EGraph[D],
       }
       if (stopReasons.nonEmpty) { return this }
 
-      val iter = runOne(rules)
+      val iter = runOne(egraph, rules)
       iterations += iter
 
       if (iter.applied.isEmpty) {
@@ -95,15 +110,15 @@ class Runner[D](var egraph: EGraph[D],
       if (iter.egraphNodes > nodeLimit) {
         stopReasons += NodeLimit(iter.egraphNodes)
       }
-      if (iterations.size >= iterLimit) {
-        stopReasons += IterationLimit(iterations.size)
+      if (iterationCount() >= iterLimit) {
+        stopReasons += IterationLimit(iterationCount())
       }
     }
 
     this
   }
 
-  private def runOne(rules: Seq[Rewrite[D]]): Iteration = {
+  private def runOne[D](egraph: EGraph[D], rules: Seq[Rewrite[D]]): Iteration = {
     val time0 = System.nanoTime()
 
     val matches = rules.map { r => r.search(egraph) }
@@ -130,6 +145,7 @@ class Runner[D](var egraph: EGraph[D],
     new Iteration(
       egraphNodes = egraph.nodeCount(),
       egraphClasses = egraph.classCount(),
+      memoSize = egraph.memo.size,
       applied = applied,
       searchTime = time1 - time0,
       applyTime = time2 - time1,
@@ -142,6 +158,7 @@ class Runner[D](var egraph: EGraph[D],
 
 class Iteration(val egraphNodes: Int,
                 val egraphClasses: Int,
+                val memoSize: Int,
                 // map from rule name to number of times it was newly applied
                 val applied: HashMap[String, Int],
                 val searchTime: Long,
@@ -152,6 +169,7 @@ class Iteration(val egraphNodes: Int,
   override def toString: String = {
     s"Iteration(#nodes: $egraphNodes, " +
       s"#classes: $egraphClasses, " +
+      s"#memo: $memoSize, " +
       s"applied: $applied, " +
       s"search: ${util.prettyTime(searchTime)}, " +
       s"apply: ${util.prettyTime(applyTime)}, " +
