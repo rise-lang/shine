@@ -9,10 +9,10 @@ object DPIAPrimitives {
     val shinePath = os.Path(sourceDir) / "shine"
     os.walk.stream(shinePath).filter(_.ext == "dpia").foreach(path => {
 
-      import DPIA.Phrase.AST._
+      import DPIA.Decl.AST._
 
       val definition = os.read(path)
-      parse(definition, DPIA.Phrase.PrimitiveDeclarations(_)) match {
+      parse(definition, DPIA.Decl.PrimitiveDeclarations(_)) match {
         case failure: Parsed.Failure =>
           println(s"Failed to parse `${failure.extra.input}'")
           println(s"  $failure")
@@ -60,7 +60,7 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
 
   def generateCaseClass(name: scala.meta.Type.Name,
                         scalaParamsString: String,
-                        params: Seq[DPIA.Phrase.AST.Param],
+                        params: Seq[DPIA.Decl.AST.Param],
                         returnType: DPIA.Type.AST): scala.meta.Defn.Class = {
     import scala.meta._
     import meta.parser.DPIA.Type.AST
@@ -91,7 +91,7 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
   }
 
   def generateParams(scalaParamsString: String,
-                     params: Seq[DPIA.Phrase.AST.Param]): List[List[scala.meta.Term.Param]] = {
+                     params: Seq[DPIA.Decl.AST.Param]): List[List[scala.meta.Term.Param]] = {
     import scala.meta._
 
     val scalaParams = if (scalaParamsString.nonEmpty) {
@@ -105,7 +105,7 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
     scalaParams ++ List(params.map(generateParam).toList)
   }
 
-  def generateParam(param: DPIA.Phrase.AST.Param): scala.meta.Term.Param = {
+  def generateParam(param: DPIA.Decl.AST.Param): scala.meta.Term.Param = {
     import scala.meta._
     import _root_.meta.parser.DPIA.Kind
     param"val ${Term.Name(param.id.name)}: ${
@@ -116,7 +116,7 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
     }"
   }
 
-  def generateTypeChecks(params: Seq[DPIA.Phrase.AST.Param]): scala.meta.Term.Block = {
+  def generateTypeChecks(params: Seq[DPIA.Decl.AST.Param]): scala.meta.Term.Block = {
     import scala.meta._
     q"""{
       ..${params.
@@ -169,7 +169,6 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
           case AST.Nat => Type.Name("Nat")
           case AST.Fragment => Type.Name("FragmentKind")
           case AST.MatrixLayout => Type.Name("MatrixLayout")
-          case AST.Function => ???
         }
       case AST.Access => Type.Name("AccessType")
     }
@@ -189,7 +188,6 @@ ${generateCaseClass(Type.Name(name), scalaParamsString, params, returnType)}
           case AST.Nat => Type.Name("NatKind")
           case AST.Fragment => ???
           case AST.MatrixLayout => ???
-          case AST.Function => ???
         }
       case AST.Access => Type.Name("AccessKind")
     }
