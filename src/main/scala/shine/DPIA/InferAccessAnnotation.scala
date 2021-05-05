@@ -532,14 +532,15 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case r.ForeignFunction(_) =>
+      case rp.foreignFunction(_, _) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case dt: rt.DataType =>
             expT(dataType(dt), read)
           case rt.FunType(in: rt.DataType, out) =>
             expT(in, read) ->: buildType(out)
-          case _ =>
-            throw Exception("This should not happen")
+          case rt.DepFunType(d: rt.DataTypeIdentifier, t) =>
+            dFunT(d, buildType(t))
+          case _ => throw Exception("This should not happen")
         }
         buildType(p.t)
 

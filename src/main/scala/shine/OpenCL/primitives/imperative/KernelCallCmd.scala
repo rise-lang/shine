@@ -7,11 +7,15 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-final case class KernelCallCmd(name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, args: Seq[Phrase[ExpType]])(val dt: DataType, val output: Phrase[AccType]) extends CommandPrimitive {
+final case class KernelCallCmd(name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, n: Int)(val inTs: Seq[DataType], val dt: DataType, val args: Seq[Phrase[ExpType]], val output: Phrase[AccType]) extends CommandPrimitive {
   {
+    args.zip(inTs).foreach({
+      case (args, inTs) =>
+        args :: expT(inTs, read)
+    })
     output :: accT(dt)
   }
   override val t: CommType = comm
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCallCmd = new KernelCallCmd(name, localSize.visitAndRebuild(v), globalSize.visitAndRebuild(v), args.map(VisitAndRebuild(_, v)))(v.data(dt), VisitAndRebuild(output, v))
-  def unwrap: (DataType, Phrase[AccType]) = (dt, output)
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCallCmd = new KernelCallCmd(name, localSize.visitAndRebuild(v), globalSize.visitAndRebuild(v), n)(inTs.map(v.data), v.data(dt), args.map(VisitAndRebuild(_, v)), VisitAndRebuild(output, v))
+  def unwrap: (Seq[DataType], DataType, Seq[Phrase[ExpType]], Phrase[AccType]) = (inTs, dt, args, output)
 }

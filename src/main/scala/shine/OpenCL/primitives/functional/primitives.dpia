@@ -11,22 +11,20 @@ def iterate(a: address, n: nat, m: nat, k: nat, dt: data,
             f: (l: nat) -> exp[(l*n).dt, read] -> exp[l.dt, write],
             array: exp[(m*(n^k)).dt, read]): exp[m.dt, write]
 
-def kernelCall{name: String,
-               localSize: shine.OpenCL.LocalSize,
-               globalSize: shine.OpenCL.GlobalSize,
-               inTs: Seq[DataType],
-               args: Seq[Phrase[ExpType]]}
-               (outT: data): exp[outT, write]
+def kernelCall{name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, n: Int}
+               (inTs: n*data,
+                outT: data,
+                args: n*exp[*inTs, read]): exp[outT, write]
 
 def map{level: shine.OpenCL.ParallelismLevel, dim: Int}
        (n: nat, dt1: data, dt2: data,
         f: exp[dt1, read] -> exp[dt2, write],
         array: exp[n.dt1, read]): exp[n.dt2, write]
 
-def openCLFunctionCall{name: String,
-                       inTs: Seq[DataType],
-                       args: Seq[Phrase[ExpType]]}
-                       (outT: data): exp[outT, write]
+def openCLFunctionCall{name: String, n: Int}
+                       (inTs: n*data,
+                        outT: data,
+                        args: n*exp[*inTs, read]): exp[outT, write]
 
 def reduceSeq{unroll: Boolean}
              (n: nat, a: address, dt1: data, dt2: data,

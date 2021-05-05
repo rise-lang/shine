@@ -9,9 +9,13 @@ object Type {
   sealed trait AST
   object AST {
     case class Identifier(name: String) extends AST
+    case class UnrolledIdentifier(name: String) extends AST
+
     case class FunType(inT: AST, outT: AST) extends AST
     case class DepFunType(id: Identifier, kind: Kind.AST, t: AST) extends AST
     case class ImplicitDepFunType(id: Identifier, kind: Kind.AST, t: AST) extends AST
+    case class VariadicFunType(n: Identifier, inTs: AST, outT: AST) extends AST
+    case class VariadicDepFunType(n: Identifier, id: Identifier, kind: Kind.AST, t: AST) extends AST
 
     case class ScalarType(t: String) extends AST
     case object NatType extends AST
@@ -53,6 +57,11 @@ object Type {
     def DepFunType: P[AST.DepFunType] =
       P("(" ~ IdentifierKindPair ~ ")" ~ "->" ~/ TypeSignature).map(AST.DepFunType.tupled)
 
+    def VariadicDepFunType: P[AST.VariadicDepFunType] =
+      P(Identifier.map(AST.Identifier) ~ "*" ~ "(" ~ "(" ~ IdentifierKindPair ~ ")" ~ "->" ~ ")" ~/ TypeSignature).map {
+        case (n, (id, kind), t) => AST.VariadicDepFunType(n, id, kind, t)
+      }
+
     def ImplicitDepFunType: P[AST.ImplicitDepFunType] =
       P("{" ~ IdentifierKindPair ~ "}" ~ "->" ~/ TypeSignature).
         map(AST.ImplicitDepFunType.tupled)
@@ -60,16 +69,22 @@ object Type {
     def FunType: P[AST.FunType] =
       P(NoCut(LeftTypeSignature) ~ "->" ~/ TypeSignature).map(AST.FunType.tupled)
 
+    def VariadicFunType: P[AST.VariadicFunType] =
+      P(Identifier.map(AST.Identifier) ~ "*" ~ "(" ~ NoCut(LeftTypeSignature) ~ "->" ~ ")" ~/ TypeSignature).map(
+        AST.VariadicFunType.tupled)
+
     // Types that can appear at the left of an function arrow
     def LeftTypeSignature: P[AST] = P(DataType.DataType | ("(" ~ TypeSignature ~ ")"))
 
-    P(DepFunType | ImplicitDepFunType | FunType | LeftTypeSignature)
+    P(DepFunType | VariadicDepFunType | ImplicitDepFunType | FunType | VariadicFunType | LeftTypeSignature)
   }
 
   def TypeIdentifier[_: P]: P[AST.Identifier] = P(Identifier).map(AST.Identifier)
 
   def IdentifierKindPair[_: P]: P[(AST.Identifier, Kind.AST)] =
     P(Identifier.map(AST.Identifier) ~ ":" ~ Kind.Kind)
+
+  def UnrolledTypeIdentifier[_: P]: P[AST.UnrolledIdentifier] = P("*" ~ Identifier).map(AST.UnrolledIdentifier)
 
   object DataType {
     def ScalarType[_: P]: P[AST.ScalarType] =
@@ -127,7 +142,7 @@ object Type {
     def DataType[_: P]: P[AST] =
       P(ScalarType | NatType | OpaqueType | IndexType | VectorType | FragmentType |
         ManagedBufferType | DepArrayType | ArrayType | DepPairType | NatToDataApply |
-        PairType | TypeIdentifier | ("(" ~ DataType ~ ")"))
+        PairType | UnrolledTypeIdentifier | TypeIdentifier | ("(" ~ DataType ~ ")"))
 
     def TypeName[_: P]: P[Unit] =
       P(ScalarType | NatType | "idx" | "vec" | "fragment" | "matrixLayout")

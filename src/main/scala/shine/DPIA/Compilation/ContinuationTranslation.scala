@@ -119,7 +119,7 @@ object ContinuationTranslation {
       con(array)(λ(expT((n + m)`.` dt, read))(x =>
         C(Drop(n, m, dt, x))))
 
-    case ffc@ForeignFunctionCall(funDecl, inTs, args) =>
+    case ffc@ForeignFunctionCall(funDecl, n) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
               exps: Seq[Phrase[ExpType]],
               inTs: Seq[DataType]): Phrase[CommType] = {
@@ -141,9 +141,9 @@ object ContinuationTranslation {
                         `new`.apply
                     }
                   backendNew(ffc.outT, tmp =>
-                    Assign(ffc.outT, tmp.wr, ForeignFunctionCall(funDecl, inTs :+ inT, exps :+ e)(ffc.outT)) `;`
+                    Assign(ffc.outT, tmp.wr, ForeignFunctionCall(funDecl, n)( inTs :+ inT, ffc.outT, exps :+ e)) `;`
                       C(tmp.rd))
-                case _ => C( ForeignFunctionCall(funDecl, inTs :+ inT, exps :+ e)(ffc.outT) )
+                case _ => C( ForeignFunctionCall(funDecl, n)(inTs :+ inT, ffc.outT, exps :+ e) )
               }))
           // with a `tail` of arguments left, rec
           case Seq( (arg, inT), tail@_* ) =>
@@ -152,7 +152,7 @@ object ContinuationTranslation {
         }
       }
 
-      rec(args zip inTs, Seq(), Seq())
+      rec(ffc.args zip ffc.inTs, Seq(), Seq())
 
     case Fst(dt1, dt2, pair) =>
       con(pair)(λ(expT(dt1 x dt2, read))(x =>
@@ -191,17 +191,17 @@ object ContinuationTranslation {
       con(value)(fun(value.t)(x =>
         con(f(x))(C)))
 
-    case ma@MakeArray(elements) =>
-      def rec(func: Vector[Phrase[ExpType]], imp: Vector[Phrase[ExpType]]): Phrase[CommType] = {
+    case ma@MakeArray(_) =>
+      def rec(func: Seq[Phrase[ExpType]], imp: Seq[Phrase[ExpType]]): Phrase[CommType] = {
         func match {
           case xf +: func => con(xf)(fun(expT(ma.dt, read))(xi =>
             rec(func, imp :+ xi)
           ))
-          case _ => C(MakeArray(imp)(ma.n, ma.dt))
+          case _ => C(MakeArray(ma.n)(ma.dt, imp))
         }
       }
 
-      rec(elements, Vector())
+      rec(ma.elements, Seq())
 
     case makeDepPair@MakeDepPair(a, fst, sndT, snd) =>
       // Allocate for the resulting dependent pair,
@@ -362,7 +362,7 @@ object ContinuationTranslation {
       `new`(map.n `.` map.dt2, λ(varT(map.n `.` map.dt2))(tmp =>
         acc(map)(tmp.wr) `;` C(tmp.rd)))
 
-    case fc@ocl.OpenCLFunctionCall(name, inTs, args) =>
+    case fc@ocl.OpenCLFunctionCall(name, n) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
               es: Seq[Phrase[ExpType]],
               inTs: Seq[DataType]): Phrase[CommType] = {
@@ -370,14 +370,14 @@ object ContinuationTranslation {
           // with only one argument left to process continue with the OpenCLFunction call
           case Seq( (arg, inT) ) =>
             con(arg)(λ(expT(inT, read))(e =>
-              C(ocl.OpenCLFunctionCall(name, inTs :+ inT, es :+ e)(fc.outT)) ))
+              C(ocl.OpenCLFunctionCall(name, n)(inTs :+ inT, fc.outT, es :+ e)) ))
           // with a `tail` of arguments left, rec
           case Seq( (arg, inT), tail@_* ) =>
             con(arg)(λ(expT(inT, read))(e => rec(tail, es :+ e, inTs :+ inT) ))
         }
       }
 
-      rec(args zip inTs, Seq(), Seq())
+      rec(fc.args zip fc.inTs, Seq(), Seq())
 
     case reduceSeq@ocl.ReduceSeq(unroll) =>
       val (n, a, dt1, dt2, f, init, array) = reduceSeq.unwrap

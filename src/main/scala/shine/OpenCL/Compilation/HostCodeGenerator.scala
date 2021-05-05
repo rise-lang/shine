@@ -25,8 +25,8 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
   override def name: String = "OpenCL Host"
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
-    case k@KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), args) =>
-      kernelCallCmd(name, ls, gs, k.output, args, env)
+    case k@KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), n) =>
+      kernelCallCmd(name, ls, gs, k.output, k.args, env)
     case n@NewManagedBuffer(access) =>
       val (dt, Lambda(v, p)) = n.unwrap
       newManagedBuffer(dt, access, v, p, env)

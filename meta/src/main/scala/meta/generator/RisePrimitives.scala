@@ -3,6 +3,9 @@ package meta.generator
 import fastparse.{Parsed, parse}
 import meta.parser._
 import meta.parser.rise.Kind
+import meta.parser.rise.Kind.AST
+
+import scala.meta.Term
 
 object RisePrimitives {
   def main(args: Array[String]): Unit = {
@@ -18,16 +21,11 @@ object RisePrimitives {
         case Parsed.Success(seq, _) =>
           seq.foreach {
             case rise.Decl.AST.PrimitiveDeclaration(rise.Decl.AST.Identifier(name), scalaParams, typeSignature)
-                if rise.isWellKindedType(typeSignature) =>
+                if rise.isWellKindedType(toParamList(definition, scalaParams), typeSignature) =>
               val outputPath = (path / os.up) / s"$name.scala"
               println(s"Generate $outputPath")
 
-              val generatedDef = scalaParams match {
-                case None =>
-                  generateObject(name, typeSignature)
-                case Some((start, end)) =>
-                  generateCaseClass(name, definition.substring(start, end), typeSignature)
-              }
+              val generatedDef = generate(name, toParamList(definition, scalaParams), typeSignature)
 
               import scala.meta._
               val packageName = path.relativeTo(risePath).segments.dropRight(1).foldLeft[Term.Ref](Term.Name("rise")) {
@@ -58,6 +56,22 @@ import arithexpr.arithmetic._
     })
   }
 
+  def toParamList(definition: String, scalaParams: Option[(Int, Int)]): Option[List[Term.Param]] = {
+    import scala.meta._
+    scalaParams.map { case (start, end) =>
+      s"def foo(${definition.substring(start, end)})".parse[Stat].get match {
+        case declDef: Decl.Def => declDef.paramss.head
+      }
+    }
+  }
+
+  def generate(name: String, params: Option[List[Term.Param]], typeSignature: rise.Type.AST): scala.meta.Term.Block =
+    params match {
+      case None => generateObject(name, typeSignature)
+      case Some(params) => generateCaseClass(name, params, typeSignature)
+    }
+
+
   def generateObject(name: String, typeSignature: rise.Type.AST): scala.meta.Term.Block = {
     import scala.meta._
     val generated = q"""{
@@ -83,12 +97,9 @@ import arithexpr.arithmetic._
     generated
   }
 
-  def generateCaseClass(name: String, paramsString: String, typeSignature: rise.Type.AST): scala.meta.Term.Block = {
+  def generateCaseClass(name: String, params: List[Term.Param], typeSignature: rise.Type.AST): scala.meta.Term.Block = {
     import scala.meta._
 
-    val params = s"def foo($paramsString)".parse[Stat].get match {
-      case declDef: Decl.Def => declDef.paramss.head
-    }
     val args: List[Term.Name] = params.map(p => Term.Name(p.name.value))
     val types: List[Type] = params.map(p => p.decltpe.get)
 
@@ -119,7 +130,11 @@ import arithexpr.arithmetic._
           }
         }
 
-        def unapply(arg: rise.core.Expr): Option[..$types] = arg match {
+        def unapply(arg: rise.core.Expr): ${if (types.length > 1) {
+          t"Option[(..$types)]"
+        } else {
+          t"Option[..$types]"}
+        } = arg match {
           case p: Primitive =>
             Some(..${generateMemberAccesses(args)})
           case _ => None
@@ -138,6 +153,30 @@ import arithexpr.arithmetic._
         q"expl((${Term.Name(id.name)}: ${Type.Name(kindName(kind))}) => ${generateTypeScheme(t)})"
       case rise.Type.AST.ImplicitDepFunType(id, kind, t) =>
         q"impl((${Term.Name(id.name)}: ${Type.Name(kindName(kind))}) => ${generateTypeScheme(t)})"
+      case rise.Type.AST.VariadicFunType(_, rise.Type.AST.UnrolledIdentifier(inTs), outT) =>
+        q"""${Term.Name(inTs)}.foldRight(${generateTypeScheme(outT)}: Type) {
+           case (lhsT, rhsT) => lhsT ->: rhsT
+        }"""
+      case rise.Type.AST.VariadicFunType(rise.Type.AST.Identifier(n), inTs, outT) =>
+        q"""Seq.fill(${Term.Name(n)})(${generateDataType(inTs)}).foldRight(${generateTypeScheme(outT)}: Type) {
+           case (lhsT, rhsT) => lhsT ->: rhsT
+        }"""
+      case rise.Type.AST.VariadicDepFunType(n, id, kind, t) =>
+        val (createIds, typeName) = kind match {
+          case AST.Data => (q"""DataTypeIdentifier(freshName("dt"), isExplicit = true)""", Type.Name("DataKind"))
+          case AST.Address => ???
+          case AST.Nat2Nat => ???
+          case AST.Nat2Data => ???
+          case AST.Nat => ???
+          case AST.Fragment => ???
+          case AST.MatrixLayout => ???
+        }
+        q"""{
+            val ${Pat.Var(Term.Name(id.name))} = Seq.fill(${Term.Name(n.name)})($createIds)
+            ${Term.Name(id.name)}.foldRight(${generateTypeScheme(t)}: Type) {
+              case (id, t) =>   DepFunType[$typeName, Type](id, t)
+            }
+         }"""
       case _ => generateDataType(typeAST)
     }
   }
@@ -146,6 +185,8 @@ import arithexpr.arithmetic._
     import scala.meta._
     typeAST match {
       case rise.Type.AST.Identifier(name) =>
+        Term.Name(name)
+      case rise.Type.AST.UnrolledIdentifier(name) =>
         Term.Name(name)
       case rise.Type.AST.ScalarType(t) =>
         t.parse[Term].get
@@ -177,7 +218,8 @@ import arithexpr.arithmetic._
       case rise.Type.AST.ManagedBufferType(dt) =>
         q"ManagedBufferType(${generateDataType(dt)})"
       case rise.Type.AST.FunType(_, _) | rise.Type.AST.DepFunType(_, _, _) |
-           rise.Type.AST.ImplicitDepFunType(_, _, _) => ???
+           rise.Type.AST.ImplicitDepFunType(_, _, _) | rise.Type.AST.VariadicFunType(_, _, _) |
+           rise.Type.AST.VariadicDepFunType(_, _, _, _) => ???
     }
   }
 

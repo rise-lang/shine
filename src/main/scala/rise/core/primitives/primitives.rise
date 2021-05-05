@@ -27,12 +27,13 @@ def natAsIndex: (n: nat) -> natType -> idx[n]
 def   let: {s: data} -> {t: data} -> s -> (s -> t) -> t
 def toMem: {t: data} -> t -> t
 
+// foreign functions
+def foreignFunction(funDecl: rise.core.ForeignFunction.Decl, n: Int):
+    n*((inTs: data) ->) (outT: data) -> n*(*inTs ->) outT
+
 // array ops
-// def makeArray(1): {t: data} -> t -> 1.t
-// def makeArray(2): {t: data} -> t -> t -> 2.t
-// def makeArray(3): {t: data} -> t -> t -> t -> 3.t
-// ...
-// def makeArray(n): {t: data} -> t -> t -> t -> ... -> t -> n.t
+def makeArray(n: Int): {dt: data} -> n*(dt ->) n.dt
+
 def generate: {n: nat} -> {t: data} -> (idx[n] -> t) -> n.t
 def idx: {n: nat} -> {t: data} -> idx[n] -> n.t -> t
 
