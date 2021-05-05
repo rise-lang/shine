@@ -14,6 +14,8 @@ final case class IntData(i: Int) extends Data(int) {
   override def toString: String = i.toString
 }
 
+final case class NatAsIntData(n: Nat) extends Data(int)
+
 final case class FloatData(f: Float) extends Data(f32) {
   override def toString: String = f.toString + "f"
 }

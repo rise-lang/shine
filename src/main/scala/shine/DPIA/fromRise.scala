@@ -673,31 +673,32 @@ object fromRise {
             Let(s, t, a, x, f)))
       }
 
-      case r.ForeignFunction(decl) =>
-        def collectTypes(t: PhraseType): (Vector[DataType], DataType) = {
+      case core.foreignFunction(decl, n) =>
+        def collectTypes(t: PhraseType): (Seq[DataTypeIdentifier], DataTypeIdentifier) = {
           t match {
-            case ExpType(dt: DataType, `read`) =>
-              (Vector(), dt)
-            case FunType(ExpType(dt: DataType, `read`), out) =>
+            case ExpType(dt: DataTypeIdentifier, `read`) => (Seq(), dt)
+            case FunType(ExpType(dt: DataTypeIdentifier, `read`), out) =>
               val (i, o) = collectTypes(out)
               (dt +: i, o)
-            case _ =>
-              throw new Exception("This should not be possible")
+            case DepFunType(_, t) => collectTypes(t)
+            case _ => throw new Exception("This should not be possible")
           }
         }
         val (inTs, outT) = collectTypes(t)
+        assert(inTs.length == n)
 
-        def buildFFCall(args: Vector[Phrase[ExpType]]
-                            ): Phrase[_ <: PhraseType] = {
-          val i = args.length
-          if (i < inTs.length) {
-            fun[ExpType](ExpType(inTs(i), read), a =>
-              buildFFCall(args :+ a))
-          } else {
-            ForeignFunctionCall(decl, inTs, args)(outT)
-          }
+        inTs.foldRight[Phrase[_ <: PhraseType]](
+          depFun[DataKind](outT)({
+            val args = Seq.tabulate(n)(i => Identifier(freshName("x"), ExpType(inTs(i), read)))
+            args.foldRight[Phrase[_ <: PhraseType]](
+              ForeignFunctionCall(decl, n)(inTs, outT, args)
+            ) {
+              case (arg, f) => Lambda(arg, f)
+            }
+          })
+        ) {
+          case (t, f) => depFun[DataKind](t)(f)
         }
-        buildFFCall(Vector())
 
       case core.generate() => fromType {
         case (expT(IndexType(n), `read`) ->: expT(t, `read`)) ->:
@@ -713,7 +714,7 @@ object fromRise {
                      ): Phrase[_ <: PhraseType] = t match {
           case FunType(in: ExpType, out) =>
             fun[ExpType](in, e => buildArrayPrimitive(out, elements :+ e))
-          case ExpType(ArrayType(_, et), _) => MakeArray(elements)(elements.size, et)
+          case ExpType(ArrayType(_, et), _) => MakeArray(elements.size)(et, elements)
           case _ => error(s"did not expect $t")
         }
         buildArrayPrimitive(t, Vector())

@@ -7,9 +7,11 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-final case class MakeArray(elements: Vector[Phrase[ExpType]])(val n: Nat, val dt: DataType) extends ExpPrimitive {
-  {}
+final case class MakeArray(n: Int)(val dt: DataType, val elements: Seq[Phrase[ExpType]]) extends ExpPrimitive {
+  {
+    elements.foreach(_ :: expT(dt, read))
+  }
   override val t: ExpType = expT(ArrayType(n, dt), read)
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): MakeArray = new MakeArray(elements.map(VisitAndRebuild(_, v)))(v.nat(n), v.data(dt))
-  def unwrap: (Nat, DataType) = (n, dt)
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): MakeArray = new MakeArray(n)(v.data(dt), elements.map(VisitAndRebuild(_, v)))
+  def unwrap: (DataType, Seq[Phrase[ExpType]]) = (dt, elements)
 }

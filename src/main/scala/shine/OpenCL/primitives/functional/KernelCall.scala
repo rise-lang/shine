@@ -7,8 +7,14 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-final case class KernelCall(name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, inTs: Seq[DataType], args: Seq[Phrase[ExpType]])(val outT: DataType) extends ExpPrimitive {
-  {}
+final case class KernelCall(name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, n: Int)(val inTs: Seq[DataType], val outT: DataType, val args: Seq[Phrase[ExpType]]) extends ExpPrimitive {
+  {
+    args.zip(inTs).foreach({
+      case (args, inTs) =>
+        args :: expT(inTs, read)
+    })
+  }
   override val t: ExpType = expT(outT, write)
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCall = new KernelCall(name, localSize.visitAndRebuild(v), globalSize.visitAndRebuild(v), inTs.map(v.data), args.map(VisitAndRebuild(_, v)))(v.data(outT))
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCall = new KernelCall(name, localSize.visitAndRebuild(v), globalSize.visitAndRebuild(v), n)(inTs.map(v.data), v.data(outT), args.map(VisitAndRebuild(_, v)))
+  def unwrap: (Seq[DataType], DataType, Seq[Phrase[ExpType]]) = (inTs, outT, args)
 }

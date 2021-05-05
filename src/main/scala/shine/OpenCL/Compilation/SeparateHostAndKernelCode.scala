@@ -25,9 +25,10 @@ object SeparateHostAndKernelCode {
           val (closedDef, args) = closeDefinition(r.input)
           val kernelDef = KernelDef(name, closedDef, localSize, globalSize)
           kernelDefinitions += kernelDef
-          Stop(KernelCall(name, localSize, globalSize,
+          Stop(KernelCall(name, localSize, globalSize, args.length)(
             kernelDef.paramTypes.map(_.dataType),
-            args)(kernelDef.returnType.dataType).asInstanceOf[Phrase[T]])
+            kernelDef.returnType.dataType,
+            args).asInstanceOf[Phrase[T]])
 
         // on the fly beta-reduction
         case Apply(fun, arg) =>
@@ -59,7 +60,7 @@ object SeparateHostAndKernelCode {
       freeNats match {
         case v +: rest => iterNats(
           DepLambda[NatKind](NatIdentifier(v.name, v.range))(definition),
-          Natural(v) +: args, rest)
+          Literal(NatAsIntData(v)) +: args, rest)
         case Nil => (definition, args)
       }
     }
