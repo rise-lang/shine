@@ -1,0 +1,5 @@
+fkt::Bool->F32
+fkt=\x->5F32
+
+f::F32-> F32
+f=\x->fkt x
