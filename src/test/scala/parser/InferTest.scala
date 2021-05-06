@@ -23,6 +23,34 @@ class InferTest extends  test_util.TestsWithExecutor {
   val testFilePath = "src/test/scala/parser/readFiles/inferTests/"
   type MapFkt = parse.MapFkt
 
+  test("parser should be able to parse 'AddWithTwoDifferentScalarTypes.rise'") {
+    val fileName: String = testFilePath + "AddWithTwoDifferentScalarTypes.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'AddWithTwoDifferentScalarTypes2.rise'") {
+    val fileName: String = testFilePath + "AddWithTwoDifferentScalarTypes2.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'AddWithTwoDifferentScalarTypes3.rise'") {
+    val fileName: String = testFilePath + "AddWithTwoDifferentScalarTypes3.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'AddWithTwoDifferentScalarTypes4.rise'") {
+    val fileName: String = testFilePath + "AddWithTwoDifferentScalarTypes4.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'AddWithTwoDifferentScalarTypes5.rise'") {
+    val fileName: String = testFilePath + "AddWithTwoDifferentScalarTypes5.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'AddWithTwoDifferentScalarTypes6.rise'") {
+    val fileName: String = testFilePath + "AddWithTwoDifferentScalarTypes6.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'AddWithTwoDifferentScalarTypes7.rise'") {
+    val fileName: String = testFilePath + "AddWithTwoDifferentScalarTypes7.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
   test("parser should be able to parse 'FctNameDoesNotExits.rise'") {
     val fileName: String = testFilePath + "FctNameDoesNotExits.rise"
     val riseExprByIdent = parseFile(fileName)
@@ -54,6 +82,12 @@ class InferTest extends  test_util.TestsWithExecutor {
   test("parser should be able to parse 'FctTakesNoArguments.rise'") {
     val fileName: String = testFilePath + "FctTakesNoArguments.rise"
     val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'TwoLambdasX.rise'") {
+    val fileName: String = testFilePath + "TwoLambdasX.rise"
+    val riseExprByIdent = parseFile(fileName)
+    val ex_f = riseExprByIdent.get("f").get
+    println("result:\n" +ex_f)
   }
   test("parser should be able to parse 'UseWrongTypeInAdd.rise'") {
     val fileName: String = testFilePath + "UseWrongTypeInAdd.rise"

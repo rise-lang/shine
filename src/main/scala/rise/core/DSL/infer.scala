@@ -16,6 +16,9 @@ object infer {
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map(), mapFkt)
+    println("Typed_E:\n"+ typed_e)
+    println("constraints:\n"+ constraints)
+    //println("ftvSubs:\n"+ ftvSubs)
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
     val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
@@ -201,7 +204,8 @@ object infer {
         constraints += TypeConstraint(t, i.t, span)
         (i.setType(t), Solution())
 
-      case Lambda(x, e) =>
+      case lam@Lambda(x, e) =>
+        val lamType = lam.t
         val tx = x.setType(genType(x))
         env.update(tx.name, tx.t)
         val (te, ftvSubsE) = constrained(e)
@@ -210,7 +214,12 @@ object infer {
         val exprT = genType(expr)
         //val span = Span.combineOptionSpan(x.span,e.span)
         val constraint = TypeConstraint(exprT, ft, span)
+        println("LambdaConstraint:\n"+ constraint)
         constraints += constraint
+        println("LambdaConstraint appended:\n"+ constraints +"\n tx= '"+ tx + "'\n tx.type= ' "+ tx.t+
+          "'\n TypeOfLambda= ' "+ lamType+
+          "'\nte= '"+te+"' \nft= '"+ ft+ "'\n span = "+ span)
+
         (Lambda(tx, te)(ft, span), ftvSubsE)
 
       case App(f, e) =>
