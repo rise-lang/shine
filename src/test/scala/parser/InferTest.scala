@@ -35,8 +35,16 @@ class InferTest extends  test_util.TestsWithExecutor {
     val fileName: String = testFilePath + "FctTakes1MoreArgument.rise"
     val riseExprByIdent = parseFile(fileName)
   }
+  test("parser should be able to parse 'FctTakesAnotherFunctionAndF32ButYouGiveWrongFunction.rise'") {
+    val fileName: String = testFilePath + "FctTakesAnotherFunctionAndF32ButYouGiveWrongFunction.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
   test("parser should be able to parse 'FctTakesAnotherFunctionButOnlyGetsSimpleType.rise'") {
     val fileName: String = testFilePath + "FctTakesAnotherFunctionButOnlyGetsSimpleType.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'FctTakesAnotherFunctionButYouGiveWrongFctType.rise'") {
+    val fileName: String = testFilePath + "FctTakesAnotherFunctionButYouGiveWrongFctType.rise"
     val riseExprByIdent = parseFile(fileName)
   }
   test("parser should be able to parse 'FctTakesDifferentType.rise'") {
@@ -47,5 +55,42 @@ class InferTest extends  test_util.TestsWithExecutor {
     val fileName: String = testFilePath + "FctTakesNoArguments.rise"
     val riseExprByIdent = parseFile(fileName)
   }
+  test("parser should be able to parse 'UseWrongTypeInAdd.rise'") {
+    val fileName: String = testFilePath + "UseWrongTypeInAdd.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
 
+  test("parser should be able to parse 'UseWrongTypeInAdd2.rise'") {
+    val fileName: String = testFilePath + "UseWrongTypeInAdd2.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+
+  test("parser should be able to parse 'UseWrongTypeInAdd3.rise'") {
+    val fileName: String = testFilePath + "UseWrongTypeInAdd3.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+
+  test("parser should be able to parse 'UseWrongTypeInAdd4.rise'") {
+    val fileName: String = testFilePath + "UseWrongTypeInAdd4.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+
+  test("parser should be able to parse 'UseWrongTypeInAdd5.rise'") {
+    val fileName: String = testFilePath + "UseWrongTypeInAdd5.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+
+  test("parser should be able to parse 'UseWrongTypeInPrimitiveJoin.rise'") {
+    val fileName: String = testFilePath + "UseWrongTypeInPrimitiveJoin.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+
+  test("parser should be able to parse 'UseWrongTypeInPrimitiveJoin2.rise'") {
+    val fileName: String = testFilePath + "UseWrongTypeInPrimitiveJoin2.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
+  test("parser should be able to parse 'UseWrongTypeInPrimitiveJoin3.rise'") {
+    val fileName: String = testFilePath + "UseWrongTypeInPrimitiveJoin3.rise"
+    val riseExprByIdent = parseFile(fileName)
+  }
 }
