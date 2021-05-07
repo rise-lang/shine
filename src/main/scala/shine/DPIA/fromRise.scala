@@ -4,7 +4,7 @@ import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
 import rise.elevate.Rise
 import rise.elevate.rules._
-import rise.core.{Opaque, TypeAnnotation, TypeAssertion, semantics => rs, types => rt}
+import rise.core.{Opaque, TypeAnnotation, semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
@@ -69,7 +69,6 @@ object fromRise {
     }
 
     case e@TypeAnnotation(_, _) => throw new Exception(s"Missing rule for ${e.getClass}")
-    case e@TypeAssertion(_, _) => throw new Exception(s"Missing rule for ${e.getClass}")
     case e@Opaque(_, _) => throw new Exception(s"Missing rule for ${e.getClass}")
     case p: r.Primitive => primitive(p, ptMap.get(p))
   }

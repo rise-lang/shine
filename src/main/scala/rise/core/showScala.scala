@@ -69,7 +69,6 @@ object showScala {
       case Identifier(name) => s"""Identifier("$name")(${`type`(e.t)})"""
       case p: Primitive => s"${p.name}.primitive"
       case TypeAnnotation(e, t) => s"TypeAnnotation(${expr(e)}, ${`type`(t)})"
-      case TypeAssertion(e, t) => s"TypeAssertion(${expr(e)}, ${`type`(t)})"
       case Opaque(e, t) => s"Opaque(${expr(e)}, ${`type`(t)})"
       case Literal(d) => s"Literal(${data(d)})"
       case App(f, a) => s"App(${expr(f)}, ${expr(a)})(${`type`(e.t)})"

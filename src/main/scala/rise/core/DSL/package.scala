@@ -83,7 +83,7 @@ package object DSL {
     def !:[T <: Expr](e: ToBeTyped[T]): ToBeTyped[Expr] = {
       val ftvT = infer.getFTVs(t).map(_.name).toSet
       val fvE = infer.collectFreeEnv(e)
-      e >>= (e => infer(TypeAnnotation(e, t), env=fvE, preserve=ftvT))
+      e >>= (e => infer(TypeAnnotation(e, t), extraEnv=fvE, extraPreserve=ftvT))
     }
   }
 

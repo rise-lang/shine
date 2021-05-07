@@ -40,7 +40,6 @@ package object core {
       case Literal(d)           => s"Literal($d)"
       case ff: ForeignFunction  => ff.toString
       case TypeAnnotation(e, t) => s"TypeAnnotation(${toEvaluableString(e)}, $t)"
-      case TypeAssertion(e, t)  => s"TypeAssertion(${toEvaluableString(e)}, $t)"
       case Opaque(e, t)         => s"Opaque(${toEvaluableString(e)}, $t)"
       case p: Primitive         => p.toString
     }

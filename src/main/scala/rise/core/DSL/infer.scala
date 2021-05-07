@@ -34,16 +34,17 @@ object infer {
     traverse(e, Traversal(Set()))._1
   }
 
-  def apply(e: Expr, env: Map[String, Type] = Map(), preserve : Set[String] = Set(),
+  def apply(e: Expr, extraEnv: Map[String, Type] = Map(), extraPreserve : Set[String] = Set(),
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
-    // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
-    // Collect FTVs in assertions and opaques; transform assertions into annotations
-    val (e_preserve, e_wo_assertions) = traverse(e, collectPreserve)
+    // Collect FTVs in opaques
+    val (preserve, _) = traverse(e, collectPreserve)
+    // Collect FVs in (possibly open) expression
+    val env = collectFreeEnv(e)
     // Collect constraints
-    val (typed_e, constraints) = constrainTypes(env)(e_wo_assertions)
+    val (typed_e, constraints) = constrainTypes(env ++ extraEnv)(e)
     // Solve constraints while preserving the FTVs in preserve
-    val solution = Constraint.solve(constraints, e_preserve ++ preserve, Seq())(explDep)
+    val solution = Constraint.solve(constraints, preserve ++ extraPreserve, Seq())(explDep)
     // Apply the solution
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
@@ -97,13 +98,8 @@ object infer {
   private val collectPreserve = new PureAccumulatorTraversal[Set[String]] {
     override val accumulator = SetMonoid
     override def expr: Expr => Pair[Expr] = {
-      // Transform assertions into annotations, collect FTVs
-      case TypeAssertion(e, t) =>
-        val (s, e1) = expr(e).unwrap
-        accumulate(s ++ getFTVs(t).map(_.name))(TypeAnnotation(e1, t) : Expr)
       // Collect FTVs
-      case Opaque(e, t) =>
-        accumulate(getFTVs(t).map(_.name).toSet)(Opaque(e, t) : Expr)
+      case Opaque(e, t) => accumulate(getFTVs(t).map(_.name).toSet)(Opaque(e, t) : Expr)
       case e => super.expr(e)
     }
   }
@@ -158,11 +154,6 @@ object infer {
       (DepApp(tf, x)(exprT), csF :+ c)
 
     case TypeAnnotation(e, t) =>
-      val (te, csE) = constrainTypes(env)(e)
-      val c = TypeConstraint(te.t, t)
-      (te, csE :+ c)
-
-    case TypeAssertion(e, t) =>
       val (te, csE) = constrainTypes(env)(e)
       val c = TypeConstraint(te.t, t)
       (te, csE :+ c)

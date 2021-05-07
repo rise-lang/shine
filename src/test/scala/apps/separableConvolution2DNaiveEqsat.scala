@@ -64,7 +64,6 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
       case Literal(_) => Nil
       case _: ForeignFunction => Nil
       case _: TypeAnnotation => throw new Exception("Type annotations should be gone.")
-      case _: TypeAssertion => throw new Exception("Type assertions should be gone.")
       case _: Opaque => throw new Exception("Opaque expressions should be gone.")
       case _: Primitive => Nil
     })

@@ -62,7 +62,6 @@ class showRise extends test_util.Tests {
         case DepApp(f, x)     => line(x.toString) <+: drawASTSimp(f)
         case Literal(d)       => line(d.toString)
         case TypeAnnotation(e, _) => drawASTSimp(e)
-        case TypeAssertion(e, _) => drawASTSimp(e)
         case Opaque(e, _) => drawASTSimp(e)
         case p: Primitive     => line(p.name)
       }
@@ -102,7 +101,6 @@ class showRise extends test_util.Tests {
         case Literal(d) => d.toString
 
         case TypeAnnotation(e, _) => lessBrackets(e, wrapped)
-        case TypeAssertion(e, _) => lessBrackets(e, wrapped)
         case Opaque(e, _) => lessBrackets(e, wrapped)
 
         case p: Primitive => p.name

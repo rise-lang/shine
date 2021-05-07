@@ -12,7 +12,6 @@ final case class ToBeTyped[+T <: Expr](private val e: T) {
       case Opaque(x, t) => expr(x)
       case tl@TopLevel(x, t) => expr(x)
       case TypeAnnotation(e, t) => expr(e)
-      case TypeAssertion(e, t) => expr(e)
       case p => super.`expr`(p.setType(TypePlaceholder))
     }
   }.expr(e).unwrap

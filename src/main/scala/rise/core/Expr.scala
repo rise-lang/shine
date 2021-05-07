@@ -70,12 +70,7 @@ case class TypeAnnotation(e: Expr, annotation: Type) extends Expr {
       this
     }
 }
-case class TypeAssertion(e: Expr, assertion: Type) extends Expr {
-  override val t : Type = TypePlaceholder
-  override def toString: String = s"$e !: $assertion"
-  override def setType(t: Type): TypeAnnotation =
-    throw TypeException(s"cannot set the type of ${getClass}")
-}
+
 
 abstract class Primitive extends Expr {
   override val t: Type = TypePlaceholder

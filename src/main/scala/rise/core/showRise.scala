@@ -275,7 +275,6 @@ class ShowRiseCompact {
     case Literal(d) => (true, dataSize(d), line(d.toString))
 
     case TypeAnnotation(e, _) => drawAST(e, wrapped)
-    case TypeAssertion(e, _) => drawAST(e, wrapped)
     case Opaque(e, _) => drawAST(e, wrapped)
 
     case p: Primitive => (true, 1, line(p.name))

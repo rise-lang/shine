@@ -168,8 +168,6 @@ object equality {
           equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[TypeKind](typeEnv)(t1)(t2) }
         case TypeAnnotation(e1, t1) => and { case TypeAnnotation(e2, t2) =>
           equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[TypeKind](typeEnv)(t1)(t2) }
-        case TypeAssertion(e1, t1) => and { case TypeAssertion(e2, t2) =>
-          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[TypeKind](typeEnv)(t1)(t2) }
         // TODO: TopLevel
         case a: Primitive => and { case b: Primitive => a.primEq(b) }
       })
@@ -208,7 +206,6 @@ object equality {
       case Literal(_: PairData) => 97
       case Opaque(e, t) => 101*hash(e) + 103*typeEq.hash[TypeKind](t)
       case TypeAnnotation(e, t) => 107*hash(e) + 109*typeEq.hash[TypeKind](t)
-      case TypeAssertion(e, t) => 113*hash(e) + 127*typeEq.hash[TypeKind](t)
       case p: Primitive => 131*p.name.hashCode() + 137*typeEq.hash[TypeKind](p.t)
     }
   }

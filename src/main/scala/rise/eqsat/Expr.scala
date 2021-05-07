@@ -141,8 +141,7 @@ object Expr {
       // note: we set the primitive type to a place holder here,
       // because we do not want type information at the node level
       case p: core.Primitive => Primitive(p.setType(core.types.TypePlaceholder))
-      case _: core.Opaque | _: core.TypeAnnotation | _: core.TypeAssertion =>
-        throw new Exception("this should not happen")
+      case _: core.Opaque | _: core.TypeAnnotation => throw new Exception("this should not happen")
     }, Type.fromNamed(expr.t, bound))
   }
 

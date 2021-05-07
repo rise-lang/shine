@@ -1,7 +1,7 @@
 package shine.DPIA
 
 import rise.{core => r}
-import rise.core.{Opaque, TypeAnnotation, TypeAssertion, primitives => rp, types => rt}
+import rise.core.{Opaque, TypeAnnotation, primitives => rp, types => rt}
 import rise.core.DSL.Type.{->:, ArrayTypeConstructors, TupleTypeConstructors, `(Addr)->:`, `(Nat)->:`, `(NatToNat)->:`, `.`, x}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
@@ -133,7 +133,6 @@ private class InferAccessAnnotation {
       case depA: r.DepApp[_] =>
         inferDepApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
       case _: TypeAnnotation => throw new Exception("Type annotations should be gone.")
-      case _: TypeAssertion => throw new Exception("Type assertions should be gone.")
       case _: Opaque => throw new Exception("Opaque expressions should be gone.")
       case p: r.Primitive => inferPrimitive(p)
     }
