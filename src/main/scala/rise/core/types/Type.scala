@@ -24,10 +24,7 @@ final case class FunType[T <: Type, U <: Type](inT: T, outT: U)
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DepFunType[K <: Kind: KindName, T <: Type](
-    x: K#I with Kind.Explicitness,
-    t: T
-) extends Type {
+final case class DepFunType[K <: Kind: KindName, T <: Type](x: K#I, t: T) extends Type {
   override def toString: String =
     s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
 }
@@ -36,15 +33,7 @@ final case class DepFunType[K <: Kind: KindName, T <: Type](
 
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String,
-                                    override val isExplicit: Boolean = false
-                                   ) extends DataType
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: DataTypeIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: DataTypeIdentifier = this.copy(isExplicit = false)
-}
+final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier
 
 sealed trait ScalarType extends DataType
 
@@ -98,16 +87,7 @@ object MatrixLayout {
   object None extends MatrixLayout
 }
 
-final case class MatrixLayoutIdentifier(name: String,
-                                        override val isExplicit: Boolean = false
-                                       ) extends MatrixLayout
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: MatrixLayoutIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: MatrixLayoutIdentifier =
-    this.copy(isExplicit = false)
-}
+final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with Kind.Identifier
 
 sealed trait FragmentKind
 
@@ -117,16 +97,7 @@ object FragmentKind {
   object Accumulator extends FragmentKind { override def toString = "Accumulator"}
 }
 
-final case class FragmentKindIdentifier(name: String,
-                                        override val isExplicit: Boolean = false
-                                       ) extends FragmentKind
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: FragmentKindIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: FragmentKindIdentifier =
-    this.copy(isExplicit = false)
-}
+final case class FragmentKindIdentifier(name: String) extends FragmentKind with Kind.Identifier
 
 object FragmentType {
   def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType = {
@@ -153,10 +124,7 @@ final case class ManagedBufferType(dt: DataType) extends DataType {
 
 }
 
-final case class DepPairType[K <: Kind: KindName](
-                            x: K#I,
-                            t: DataType
-                           ) extends DataType {
+final case class DepPairType[K <: Kind: KindName](x: K#I, t: DataType) extends DataType {
   type Kind = K
 
   // Note(federico): for pattern-matching purposes, if we ever need to
@@ -192,7 +160,7 @@ final case class DepArrayType(size: Nat, fdt: NatToData) extends DataType {
 
 object DepArrayType {
   def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1), isExplicit = true)
+    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
     DepArrayType(size, NatToDataLambda(n, f(n)))
   }
 }

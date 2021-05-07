@@ -6,9 +6,9 @@ object showScala {
   private def kindIdent[K <: Kind](x: K#I): String = {
     x match {
       case n: NatIdentifier =>
-        s"""NatIdentifier("${n.name}", ${n.range}, ${n.isExplicit})"""
-      case DataTypeIdentifier(n, isE) =>
-        s"""DataTypeIdentifier("$n", $isE)"""
+        s"""NatIdentifier("${n.name}", ${n.range})"""
+      case DataTypeIdentifier(n) =>
+        s"""DataTypeIdentifier("$n")"""
       case _ => throw new Exception(s"missing rule for $x")
     }
   }
@@ -17,7 +17,7 @@ object showScala {
     import arithexpr.arithmetic._
     n match {
       case n: NatIdentifier =>
-        s"""NatIdentifier("${n.name}", ${n.range}, ${n.isExplicit})"""
+        s"""NatIdentifier("${n.name}", ${n.range})"""
       case n: NamedVar =>
         s"""NamedVar("${n.name}", ${n.range})"""
       case Prod(factors) => factors.map(nat).mkString("(", " * ", ")")
@@ -50,7 +50,7 @@ object showScala {
         s"FunType(${`type`(inT)}, ${`type`(outT)})"
       case DepFunType(x, t) =>
         s"DepFunType(${kindIdent(x)}, ${`type`(t)})"
-      case DataTypeIdentifier(n, isE) => s"""DataTypeIdentifier("$n", $isE)"""
+      case DataTypeIdentifier(n) => s"""DataTypeIdentifier("$n")"""
       case ArrayType(n, e) =>
         s"ArrayType(${nat(n)}, ${`type`(e)})"
       case PairType(p1, p2) =>

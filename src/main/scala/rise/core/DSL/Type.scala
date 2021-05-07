@@ -12,34 +12,28 @@ object Type {
   // type level lambdas
   object n2dtFun {
     def apply(f: NatIdentifier => DataType): NatToDataLambda = {
-      val x = NatIdentifier(freshName("n"), isExplicit = true)
+      val x = NatIdentifier(freshName("n"))
       NatToDataLambda(x, f(x))
     }
 
-    def apply(
-               r: arithexpr.arithmetic.Range
-             )(f: NatIdentifier => DataType): NatToDataLambda = {
-      val x = NatIdentifier(freshName("n"), r, isExplicit = true)
+    def apply(r: arithexpr.arithmetic.Range)(f: NatIdentifier => DataType): NatToDataLambda = {
+      val x = NatIdentifier(freshName("n"), r)
       NatToDataLambda(x, f(x))
     }
 
-    def apply(
-               upperBound: Nat
-             )(f: NatIdentifier => DataType): NatToDataLambda = {
+    def apply(upperBound: Nat)(f: NatIdentifier => DataType): NatToDataLambda = {
       apply(RangeAdd(0, upperBound, 1))(f)
     }
   }
 
   object n2nFun {
     def apply(f: NatIdentifier => Nat): NatToNatLambda = {
-      val x = NatIdentifier(freshName("n2n"), isExplicit = true)
+      val x = NatIdentifier(freshName("n2n"))
       NatToNatLambda(x, f(x))
     }
 
-    def apply(
-               r: arithexpr.arithmetic.Range
-             )(f: NatIdentifier => Nat): NatToNatLambda = {
-      val x = NatIdentifier(freshName("n2n"), r, isExplicit = true)
+    def apply(r: arithexpr.arithmetic.Range)(f: NatIdentifier => Nat): NatToNatLambda = {
+      val x = NatIdentifier(freshName("n2n"), r)
       NatToNatLambda(x, f(x))
     }
 
@@ -93,27 +87,27 @@ object Type {
 
   object expl {
     def apply(w: NatFunctionWrapper[Type]): Type = {
-      val x = NatIdentifier(freshName("n"), isExplicit = true)
+      val x = NatIdentifier(freshName("n"))
       DepFunType[NatKind, Type](x, w.f(x))
     }
 
     def apply(w: DataTypeFunctionWrapper[Type]): Type = {
-      val x = DataTypeIdentifier(freshName("dt"), isExplicit = true)
+      val x = DataTypeIdentifier(freshName("dt"))
       DepFunType[DataKind, Type](x, w.f(x))
     }
 
     def apply(w: NatToDataFunctionWrapper[Type]): Type = {
-      val x = NatToDataIdentifier(freshName("n2d"), isExplicit = true)
+      val x = NatToDataIdentifier(freshName("n2d"))
       DepFunType[NatToDataKind, Type](x, w.f(x))
     }
 
     def apply(w: NatToNatFunctionWrapper[Type]): Type = {
-      val x = NatToNatIdentifier(freshName("n2n"), isExplicit = true)
+      val x = NatToNatIdentifier(freshName("n2n"))
       DepFunType[NatToNatKind, Type](x, w.f(x))
     }
 
     def apply(w: AddressSpaceFunctionWrapper[Type]): Type = {
-      val x = AddressSpaceIdentifier(freshName("a"), isExplicit = true)
+      val x = AddressSpaceIdentifier(freshName("a"))
       DepFunType[AddressSpaceKind, Type](x, w.f(x))
     }
   }
@@ -159,14 +153,14 @@ object Type {
   // dependent pairs
   object Nat {
     def `**`(f: Nat => DataType): Type = {
-      val x = NatIdentifier(freshName("n"), isExplicit = true)
+      val x = NatIdentifier(freshName("n"))
       DepPairType[NatKind](x, f(x))
     }
   }
 
   object NatCollection {
     def `**`(f: NatCollection => DataType): Type = {
-      val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
+      val x = NatCollectionIdentifier(freshName("ns"))
       DepPairType[NatCollectionKind](x, f(x))
     }
   }

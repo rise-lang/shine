@@ -427,7 +427,7 @@ object NamedRewriteDSL {
   def nApp(f: Pattern, x: NatPattern): Pattern =
     rc.DepApp[rct.NatKind](f, x)(TypePlaceholder)
   def nLam(name: String, e: Pattern): Pattern = {
-    val n = rct.NatIdentifier(name, isExplicit = true)
+    val n = rct.NatIdentifier(name)
     rc.DepLambda[rct.NatKind](n, e)(TypePlaceholder)
   }
   def l(d: rc.semantics.Data): Pattern = rc.Literal(d)
@@ -447,14 +447,14 @@ object NamedRewriteDSL {
   def take: Pattern = rcp.take.primitive
 
   implicit def placeholderAsNatPattern(p: `_`.type): NatPattern =
-    rct.NatIdentifier(rc.freshName("n"), isExplicit = false)
+    rct.NatIdentifier(rc.freshName("n"))
   implicit def stringAsNatPattern(name: String): NatPattern =
-    rct.NatIdentifier(name, isExplicit = false)
+    rct.NatIdentifier(name)
 
   implicit def placeholderAsDataTypePattern(p: `_`.type): DataTypePattern =
-    rct.DataTypeIdentifier(rc.freshName("dt"), isExplicit = false)
+    rct.DataTypeIdentifier(rc.freshName("dt"))
   implicit def stringAsDataTypePattern(name: String): DataTypePattern =
-    rct.DataTypeIdentifier(name, isExplicit = false)
+    rct.DataTypeIdentifier(name)
 
   val int: DataTypePattern = rct.int
   val f32: DataTypePattern = rct.f32

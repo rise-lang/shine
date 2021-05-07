@@ -44,9 +44,7 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 }
 
 object Constraint {
-  def canBeSubstituted(preserve: Set[String], i: Kind.Identifier with Kind.Explicitness): Boolean =
-    !(preserve.contains(i.name) || i.isExplicit)
-  def canBeSubstituted(preserve: Set[String], i: TypeIdentifier): Boolean =
+  def canBeSubstituted(preserve: Set[String], i: Kind.Identifier): Boolean =
     !preserve.contains(i.name)
 
   def solve(cs: Seq[Constraint], preserve: Set[String], trace: Seq[Constraint])
@@ -117,7 +115,7 @@ object Constraint {
             ) =>
             explDep match {
               case ExplicitDependence.On =>
-                val n = NatIdentifier(freshName("n"), isExplicit = true)
+                val n = NatIdentifier(freshName("n"))
                 /** Note(federico):
                   * This step recurses in both functions and makes dependence between type
                   * variables and n explicit (by replacing type variables with NatToData/NatToNat).
@@ -131,16 +129,16 @@ object Constraint {
                   substitute.natInType(n, `for`= nb, tb), n, preserve)
                 nTaSub ++ nTbSub ++ decomposed(
                     Seq(
-                      NatConstraint(n, na.asImplicit),
-                      NatConstraint(n, nb.asImplicit),
+                      NatConstraint(n, na),
+                      NatConstraint(n, nb),
                       TypeConstraint(nTa, nTb)
                     ))
               case ExplicitDependence.Off =>
-                val n = NatIdentifier(freshName("n"), isExplicit = true)
+                val n = NatIdentifier(freshName("n"))
                 decomposed(
                   Seq(
-                    NatConstraint(n, na.asImplicit),
-                    NatConstraint(n, nb.asImplicit),
+                    NatConstraint(n, na),
+                    NatConstraint(n, nb),
                     TypeConstraint(ta, tb)
                   )
                 )
@@ -149,11 +147,11 @@ object Constraint {
             DepFunType(dta: DataTypeIdentifier, ta),
             DepFunType(dtb: DataTypeIdentifier, tb)
             ) =>
-            val dt = DataTypeIdentifier(freshName("t"), isExplicit = true)
+            val dt = DataTypeIdentifier(freshName("t"))
             decomposed(
               Seq(
-                TypeConstraint(dt, dta.asImplicit),
-                TypeConstraint(dt, dtb.asImplicit),
+                TypeConstraint(dt, dta),
+                TypeConstraint(dt, dtb),
                 TypeConstraint(ta, tb)
               )
             )
@@ -167,11 +165,11 @@ object Constraint {
             DepPairType(x1: NatIdentifier, t1),
             DepPairType(x2: NatIdentifier, t2)
             ) =>
-            val n = NatIdentifier(freshName("n"), isExplicit = true)
+            val n = NatIdentifier(freshName("n"))
 
             decomposed(Seq(
-              NatConstraint(n, x1.asImplicit),
-              NatConstraint(n, x2.asImplicit),
+              NatConstraint(n, x1),
+              NatConstraint(n, x2),
               TypeConstraint(t1, t2)
             ))
 
@@ -179,11 +177,11 @@ object Constraint {
             DepPairType(x1: NatCollectionIdentifier, t1),
             DepPairType(x2: NatCollectionIdentifier, t2)
             ) =>
-            val n = NatCollectionIdentifier(freshName("n"), isExplicit = true)
+            val n = NatCollectionIdentifier(freshName("n"))
 
             decomposed(Seq(
-              NatCollectionConstraint(n, x1.asImplicit),
-              NatCollectionConstraint(n, x2.asImplicit),
+              NatCollectionConstraint(n, x1),
+              NatCollectionConstraint(n, x2),
               TypeConstraint(t1, t2)
             ))
 
@@ -234,10 +232,10 @@ object Constraint {
           case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a)
           case _ if a == b                 => Solution()
           case (NatToDataLambda(x1, dt1), NatToDataLambda(x2, dt2)) =>
-            val n = NatIdentifier(freshName("n"), isExplicit = true)
+            val n = NatIdentifier(freshName("n"))
             decomposed(Seq(
-              NatConstraint(n, x1.asImplicit),
-              NatConstraint(n, x2.asImplicit),
+              NatConstraint(n, x1),
+              NatConstraint(n, x2),
               TypeConstraint(dt1, dt2)
             ))
 
@@ -464,7 +462,7 @@ object Constraint {
           natToNat.unify(f1, f2, preserve) ++ unify(n1, n2, preserve)
         case _ => (f1, n1) match {
           case (f1: NatToNatIdentifier, n1: NatIdentifier) =>
-            val freshVar = NatIdentifier(freshName("n"), isExplicit = true)
+            val freshVar = NatIdentifier(freshName("n"))
             val lambda = NatToNatLambda(freshVar, substitute.natInNat(freshVar, n1, nat))
             Solution.subs(f1, lambda)
           case _ => ???
@@ -509,7 +507,7 @@ object Constraint {
       case NatToNatLambda(x1, body1) => f2 match {
         case id2: NatToNatIdentifier => Solution.subs(id2, f1)
         case NatToNatLambda(x2, body2) =>
-          val n = NatIdentifier(freshName("n"), isExplicit = true)
+          val n = NatIdentifier(freshName("n"))
           nat.unify(
             substitute.natInNat(n, `for` = x1, body1),
             substitute.natInNat(n, `for`=x2, body2),
@@ -554,7 +552,7 @@ object dependence {
         case ident: NatIdentifier
           if ident != depVar && Constraint.canBeSubstituted(preserve, ident) =>
           val sol = Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
-          accumulate(Seq(sol))(ident.asImplicit : Nat)
+          accumulate(Seq(sol))(ident: Nat)
         case n => super.nat(n)
       }
 

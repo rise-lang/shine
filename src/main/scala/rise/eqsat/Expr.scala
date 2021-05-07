@@ -156,12 +156,12 @@ object Expr {
       case NatApp(f, x) =>
         core.DepApp[rct.NatKind](toNamed(f, bound), Nat.toNamed(x, bound)) _
       case NatLambda(e) =>
-        val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
+        val i = rct.NatIdentifier(s"n${bound.nat.size}")
         core.DepLambda[rct.NatKind](i, toNamed(e, bound + i)) _
       case DataApp(f, x) =>
         core.DepApp[rct.DataKind](toNamed(f, bound), DataType.toNamed(x, bound)) _
       case DataLambda(e) =>
-        val i = rct.DataTypeIdentifier(s"dt${bound.data.size}", isExplicit = true)
+        val i = rct.DataTypeIdentifier(s"dt${bound.data.size}")
         core.DepLambda[rct.DataKind](i, toNamed(e, bound + i)) _
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _

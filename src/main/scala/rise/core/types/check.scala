@@ -81,8 +81,6 @@ object check {
       t1 match {
         case TypePlaceholder =>
           throw TypeException(s"TypePlaceholder found")
-        case i: Kind.Explicitness if !i.isExplicit =>
-          throw TypeException(s"Implicit type variable found")
         case _ => t1
       }
     }
