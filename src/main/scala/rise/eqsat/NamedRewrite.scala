@@ -9,7 +9,7 @@ object NamedRewrite {
   def init(name: String,
            rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern)
           ): Rewrite[DefaultAnalysisData] = {
-    import rise.core.DSL.infer.{preservingWithEnv, collectFreeEnv}
+    import rise.core.DSL.infer.{preserving, collectFreeEnv}
     import arithexpr.{arithmetic => ae}
 
     val (lhs, rhs) = rule
@@ -17,10 +17,10 @@ object NamedRewrite {
       assert(t == rct.TypePlaceholder)
       name -> rct.TypeIdentifier("t" + name)
     }
-    val typedLhs = preservingWithEnv(lhs, untypedFreeV, Set())
+    val typedLhs = preserving(lhs, untypedFreeV, Set())
     val freeV = collectFreeEnv(typedLhs)
     val (_, freeT) = rise.core.IsClosedForm.freeVars(typedLhs)
-    val typedRhs = preservingWithEnv(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
+    val typedRhs = preserving(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
 
     trait PatVarStatus
     case object Unknown extends PatVarStatus

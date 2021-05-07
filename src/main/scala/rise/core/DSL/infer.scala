@@ -34,27 +34,19 @@ object infer {
     traverse(e, Traversal(Set()))._1
   }
 
-  def preservingWithEnv(e: Expr, env: Map[String, Type], preserve: Set[Kind.Identifier]): Expr = {
-    val (typed_e, constraints) = constrainTypes(env)(e)
-    val solution = Constraint.solve(constraints, preserve, Seq())(
-      Flags.ExplicitDependence.Off)
-    solution(typed_e)
-  }
-
   // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
-  private [DSL] def apply(e: Expr,
-                          printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
-                          explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+  def apply(e: Expr, printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
+                     explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     // Collect FTVs in assertions and opaques; transform assertions into annotations
     val (preserve, e_wo_assertions) = traverse(e, collectPreserve)
-    infer.preserving(e_wo_assertions, preserve, printFlag, explDep)
+    infer.preserving(e_wo_assertions, Map(), preserve, printFlag, explDep)
   }
 
-  private [DSL] def preserving(wo_assertions: Expr, preserve : Set[Kind.Identifier],
+  def preserving(wo_assertions: Expr, env: Map[String, Type], preserve : Set[Kind.Identifier],
                                printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
                                explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     // Collect constraints
-    val (typed_e, constraints) = constrainTypes(Map())(wo_assertions)
+    val (typed_e, constraints) = constrainTypes(env)(wo_assertions)
     // Solve constraints while preserving the FTVs in preserve
     val solution = Constraint.solve(constraints, preserve, Seq())(explDep)
     // Apply the solution
