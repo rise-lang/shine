@@ -34,21 +34,16 @@ object infer {
     traverse(e, Traversal(Set()))._1
   }
 
-  // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
-  def apply(e: Expr, printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
-                     explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+  def apply(e: Expr, env: Map[String, Type] = Map(), preserve : Set[String] = Set(),
+            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
+            explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+    // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
     // Collect FTVs in assertions and opaques; transform assertions into annotations
-    val (preserve, e_wo_assertions) = traverse(e, collectPreserve)
-    infer.preserving(e_wo_assertions, Map(), preserve, printFlag, explDep)
-  }
-
-  def preserving(wo_assertions: Expr, env: Map[String, Type], preserve : Set[String],
-                               printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
-                               explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+    val (e_preserve, e_wo_assertions) = traverse(e, collectPreserve)
     // Collect constraints
-    val (typed_e, constraints) = constrainTypes(env)(wo_assertions)
+    val (typed_e, constraints) = constrainTypes(env)(e_wo_assertions)
     // Solve constraints while preserving the FTVs in preserve
-    val solution = Constraint.solve(constraints, preserve, Seq())(explDep)
+    val solution = Constraint.solve(constraints, e_preserve ++ preserve, Seq())(explDep)
     // Apply the solution
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
@@ -192,8 +187,7 @@ object infer {
 }
 
 object inferDependent {
-  def apply(e: ToBeTyped[Expr],
-            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off): Expr = infer(e match {
-    case ToBeTyped(e) => e
-  }, printFlag, Flags.ExplicitDependence.On)
+  def apply(e: ToBeTyped[Expr], env : Map[String, Type] = Map(), preserve : Set[String] = Set(),
+            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off): Expr =
+    infer(e match { case ToBeTyped(e) => e }, env, preserve, printFlag, Flags.ExplicitDependence.On)
 }
