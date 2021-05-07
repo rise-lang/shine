@@ -34,17 +34,15 @@ object infer {
     traverse(e, Traversal(Set()))._1
   }
 
-  def apply(e: Expr, extraEnv: Map[String, Type] = Map(), extraPreserve : Set[String] = Set(),
+  def apply(e: Expr, extraEnv: Map[String, Type] = Map(), preserve : Set[String] = Set(),
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
-    // Collect FTVs in opaques
-    val (preserve, _) = traverse(e, collectPreserve)
-    // Collect FVs in (possibly open) expression
+    // Collect FVs in the (possibly open) expression
     val env = collectFreeEnv(e)
     // Collect constraints
     val (typed_e, constraints) = constrainTypes(env ++ extraEnv)(e)
     // Solve constraints while preserving the FTVs in preserve
-    val solution = Constraint.solve(constraints, preserve ++ extraPreserve, Seq())(explDep)
+    val solution = Constraint.solve(constraints, preserve, Seq())(explDep)
     // Apply the solution
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
@@ -71,6 +69,7 @@ object infer {
     }
   }
 
+  // FIXME: deprecate in favour of IsClosedForm.FreeVars
   val FTVGathering = new PureAccumulatorTraversal[Seq[Kind.Identifier]] {
     override val accumulator = SeqMonoid
     override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = _ => {
@@ -87,21 +86,14 @@ object infer {
     }
   }
 
+  // FIXME: deprecate in favour of IsClosedForm.FreeVars
   def getFTVs(t: Type): Seq[Kind.Identifier] = {
     traverse(t, FTVGathering)._1.distinct
   }
 
+  // FIXME: deprecate in favour of IsClosedForm.FreeVars
   def getFTVsRec(e: Expr): Seq[Kind.Identifier] = {
     traverse(e, FTVGathering)._1.distinct
-  }
-
-  private val collectPreserve = new PureAccumulatorTraversal[Set[String]] {
-    override val accumulator = SetMonoid
-    override def expr: Expr => Pair[Expr] = {
-      // Collect FTVs
-      case Opaque(e, t) => accumulate(getFTVs(t).map(_.name).toSet)(Opaque(e, t) : Expr)
-      case e => super.expr(e)
-    }
   }
 
   private val genType : Expr => Type =
