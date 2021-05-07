@@ -18,8 +18,6 @@ object Decl {
   def PrimitiveDeclarations[_: P]: P[Seq[AST.PrimitiveDeclaration]] =
     P(Start ~ PrimitiveDeclaration.rep(1) ~ End)
 
-  // def drop(n: nat, m: nat, t: data, input: exp[n+m.t, read]): exp[m.t, read]
-  // def mapGlobal[dim: Int](n: nat, s: data, t: data, f: exp[s, read] -> exp[t, read], array: exp[n.s, read]): exp[n.t, read]
   def PrimitiveDeclaration[_: P]: P[AST.PrimitiveDeclaration] = {
     import scalaparse.Scala.TrailingCommaOps
     def ScalaParams: P[(Int, Int)] = {
