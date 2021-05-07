@@ -69,6 +69,9 @@ object IsClosedForm {
   def freeVars(expr: Expr): (Set[Identifier], Set[Kind.Identifier]) =
     traverse(expr, Visitor(Set(), Set()))._1
 
+  def freeVars(t: Type): (Set[Identifier], Set[Kind.Identifier]) =
+    traverse(t, Visitor(Set(), Set()))._1
+
   def apply(expr: Expr): Boolean = {
     val (freeV, freeT) = freeVars(expr)
     freeV.isEmpty && freeT.isEmpty

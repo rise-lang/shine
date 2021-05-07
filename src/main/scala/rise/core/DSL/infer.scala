@@ -34,13 +34,11 @@ object infer {
     traverse(e, Traversal(Set()))._1
   }
 
-  def apply(e: Expr, extraEnv: Map[String, Type] = Map(), preserve : Set[String] = Set(),
+  def apply(e: Expr, env: Map[String, Type] = Map(), preserve : Set[String] = Set(),
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
-    // Collect FVs in the (possibly open) expression
-    val env = collectFreeEnv(e)
     // Collect constraints
-    val (typed_e, constraints) = constrainTypes(env ++ extraEnv)(e)
+    val (typed_e, constraints) = constrainTypes(env)(e)
     // Solve constraints while preserving the FTVs in preserve
     val solution = Constraint.solve(constraints, preserve, Seq())(explDep)
     // Apply the solution
@@ -69,31 +67,14 @@ object infer {
     }
   }
 
-  // FIXME: deprecate in favour of IsClosedForm.FreeVars
-  val FTVGathering = new PureAccumulatorTraversal[Seq[Kind.Identifier]] {
-    override val accumulator = SeqMonoid
-    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = _ => {
-      case i: Kind.Explicitness => accumulate(if (!i.isExplicit) Seq(i) else Seq())(i.asInstanceOf[I])
-      case i => accumulate(Seq(i))(i)
-    }
-    override def nat: Nat => Pair[Nat] = ae => {
-      val ftvs = mutable.ListBuffer[Kind.Identifier]()
-      val r = ae.visitAndRebuild({
-        case i: NatIdentifier if !i.isExplicit => ftvs += i; i
-        case n => n
-      })
-      accumulate(ftvs.toSeq)(r)
-    }
+  // TODO: remove, use IsClosedForm.freeVars directly
+  def getFTVs(t: Type): Set[Kind.Identifier] = {
+    IsClosedForm.freeVars(t)._2
   }
 
-  // FIXME: deprecate in favour of IsClosedForm.FreeVars
-  def getFTVs(t: Type): Seq[Kind.Identifier] = {
-    traverse(t, FTVGathering)._1.distinct
-  }
-
-  // FIXME: deprecate in favour of IsClosedForm.FreeVars
-  def getFTVsRec(e: Expr): Seq[Kind.Identifier] = {
-    traverse(e, FTVGathering)._1.distinct
+  // TODO: remove, use IsClosedForm.freeVars directly
+  def getFTVsRec(e: Expr): Set[Kind.Identifier] = {
+    IsClosedForm.freeVars(e)._2
   }
 
   private val genType : Expr => Type =

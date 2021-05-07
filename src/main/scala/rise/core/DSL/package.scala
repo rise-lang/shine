@@ -81,9 +81,11 @@ package object DSL {
 
   implicit class TypeAssertionHelper(t: Type) {
     def !:[T <: Expr](e: ToBeTyped[T]): ToBeTyped[Expr] = {
-      val ftvT = infer.getFTVs(t).map(_.name).toSet
-      val fvE = infer.collectFreeEnv(e)
-      e >>= (e => infer(TypeAnnotation(e, t), extraEnv=fvE, extraPreserve=ftvT))
+      val preserve = infer.getFTVs(t).map(_.name)
+      e >>= (e => {
+        val env = infer.collectFreeEnv(e)
+        infer(TypeAnnotation(e, t), env, preserve)
+      })
     }
   }
 
