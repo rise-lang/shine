@@ -42,7 +42,7 @@ object infer {
     infer.preserving(e_wo_assertions, Map(), preserve, printFlag, explDep)
   }
 
-  def preserving(wo_assertions: Expr, env: Map[String, Type], preserve : Set[Kind.Identifier],
+  def preserving(wo_assertions: Expr, env: Map[String, Type], preserve : Set[String],
                                printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
                                explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     // Collect constraints
@@ -99,16 +99,16 @@ object infer {
     traverse(e, FTVGathering)._1.distinct
   }
 
-  private val collectPreserve = new PureAccumulatorTraversal[Set[Kind.Identifier]] {
+  private val collectPreserve = new PureAccumulatorTraversal[Set[String]] {
     override val accumulator = SetMonoid
     override def expr: Expr => Pair[Expr] = {
       // Transform assertions into annotations, collect FTVs
       case TypeAssertion(e, t) =>
         val (s, e1) = expr(e).unwrap
-        accumulate(s ++ getFTVs(t))(TypeAnnotation(e1, t) : Expr)
+        accumulate(s ++ getFTVs(t).map(_.name))(TypeAnnotation(e1, t) : Expr)
       // Collect FTVs
       case Opaque(e, t) =>
-        accumulate(getFTVs(t).toSet)(Opaque(e, t) : Expr)
+        accumulate(getFTVs(t).map(_.name).toSet)(Opaque(e, t) : Expr)
       case e => super.expr(e)
     }
   }

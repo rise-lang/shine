@@ -20,7 +20,7 @@ object NamedRewrite {
     val typedLhs = preserving(lhs, untypedFreeV, Set())
     val freeV = collectFreeEnv(typedLhs)
     val (_, freeT) = rise.core.IsClosedForm.freeVars(typedLhs)
-    val typedRhs = preserving(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
+    val typedRhs = preserving(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT.map(_.name))
 
     trait PatVarStatus
     case object Unknown extends PatVarStatus
