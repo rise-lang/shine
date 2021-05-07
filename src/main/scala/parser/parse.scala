@@ -1776,7 +1776,7 @@ the syntax-Tree has on top an Lambda-Expression
 
 
 
-    val ((psOrErr, spanBackslash),idName, newArgumentTypeList) = psOld match {
+    val ((psOrErr, spanBackslash),idName) = psOld match {
       case Left(p) => {
         val (identType, argumentTypeListNew) = giveNextLambdaIdentType(p.argumentsTypes) match {
           case None => (rt.TypePlaceholder, Nil)
@@ -1824,22 +1824,22 @@ the syntax-Tree has on top an Lambda-Expression
         val ret = p.spanList match {
           case Some(Nil) => throw new IllegalArgumentException("this should not happen to be Nil")
           case None => throw new IllegalArgumentException("this should not happen to be None")
-          case Some(span::Nil) => (parseMaybeAppExpr((ParseState(p.tokenStream,Nil, p.mapDepL, None, p.argumentsTypes),errorL)) , span )
-          case Some(span::l)=> ( parseMaybeAppExpr((ParseState(p.tokenStream,Nil, p.mapDepL, Some(l), p.argumentsTypes),errorL) ), span)
+          case Some(span::Nil) => (parseMaybeAppExpr((ParseState(p.tokenStream,Nil, p.mapDepL, None, argumentTypeListNew),errorL)) , span )
+          case Some(span::l)=> ( parseMaybeAppExpr((ParseState(p.tokenStream,Nil, p.mapDepL, Some(l), argumentTypeListNew),errorL) ), span)
         }
-        (ret, identifierName,argumentTypeListNew)
+        (ret, identifierName)
       }
       case Right(e) => {
         return (Right(e),errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
       }
     }
 
-    val (toks, expr,  mapDepL, spanList, newEL) = psOrErr match {
+    val (toks, expr,  mapDepL, spanList, newEL, newArgumentTypeList) = psOrErr match {
       case (Left(psNew),errorList2) => {
         //println("combine in Lambda: "+ psNew)
         val expr = combineExpressionsDependent(psNew.parsedSynElems, psNew.mapDepL.get)
         //println("\n\n\nSpanIsHere"+ expr.expr +" : "+ expr.expr.span+ "\n\n\n")
-        (psNew.tokenStream,expr, psNew.mapDepL, psNew.spanList, errorList2)
+        (psNew.tokenStream,expr, psNew.mapDepL, psNew.spanList, errorList2, psNew.argumentsTypes)
       }
       case (Right(e),errorList2) => return (Right(e),errorList2.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }

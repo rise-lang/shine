@@ -201,7 +201,11 @@ object infer {
           } else {
             i.t
           })
-        constraints += TypeConstraint(t, i.t, span)
+        val constraint = TypeConstraint(t, i.t, span)
+        println("IdentifierConstraint:\n"+ constraint)
+        constraints += constraint
+        println("IdentifierConstraint appended:\n"+ constraints +"\n t= '"+ t + "'\n i.t= ' "+ i.t+
+          "'\nIdentifier= '"+i+"'\n span = "+ span)
         (i.setType(t), Solution())
 
       case lam@Lambda(x, e) =>
@@ -228,7 +232,11 @@ object infer {
         val exprT = genType(expr)
         val span = Span.combineOptionSpan(f.span,e.span)
         val constraint = TypeConstraint(tf.t, FunType(te.t, exprT),span)
+        println("AppConstraint:\n"+ constraint)
         constraints += constraint
+        println("AppConstraint appended:\n"+ constraints +"\n tf= '"+ tf + "'\n tf.type= ' "+ tf.t+
+          "'\nte= '"+te++ "'\n te.type= ' "+ te.t+"' \nexprT= '"+ exprT+
+          "\nftvSubsF= '"+ ftvSubsF+"\nftvSubsE= '"+ ftvSubsE+ "'\n span = "+ span)
         (App(tf, te)(exprT, span), ftvSubsF <> ftvSubsE)
 
       case DepLambda(x, e) =>
@@ -279,7 +287,9 @@ object infer {
 
       case l: Literal => (l, Solution())
 
-      case p: Primitive => (p.setType(p.typeScheme), Solution())
+      case p: Primitive =>
+        println("PrimitiveConstraint: "+ p.typeScheme)
+        (p.setType(p.typeScheme), Solution())
     }
   }
 
