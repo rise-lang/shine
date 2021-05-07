@@ -9,9 +9,9 @@ sealed trait Kind {
 }
 
 object Kind {
-  trait Identifier {
-    def name: String
-  }
+  // Reexport rise's kind identifiers
+  import rise.core.types.Kind.{Identifier => rIdentifier}
+  type Identifier = rIdentifier
 
   trait IdentifierMaker[K <: Kind] {
     def makeIdentifier(): K#I
