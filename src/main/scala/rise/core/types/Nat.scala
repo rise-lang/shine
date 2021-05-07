@@ -20,10 +20,6 @@ class NatIdentifier(
 
   override def asImplicit: NatIdentifier = new NatIdentifier(name, range, false)
 
-  override def visitAndRebuild(f: ArithExpr => ArithExpr): ArithExpr = {
-    f(new NatIdentifier(name, range.visitAndRebuild(f), isExplicit))
-  }
-
   override def cloneSimplified(): NatIdentifier with SimplifiedExpr =
     new NatIdentifier(name, range, isExplicit) with SimplifiedExpr
 }
