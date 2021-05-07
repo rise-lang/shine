@@ -84,7 +84,8 @@ object Type {
   def IdentifierKindPair[_: P]: P[(AST.Identifier, Kind.AST)] =
     P(Identifier.map(AST.Identifier) ~ ":" ~ Kind.Kind)
 
-  def UnrolledTypeIdentifier[_: P]: P[AST.UnrolledIdentifier] = P("*" ~ Identifier).map(AST.UnrolledIdentifier)
+  def UnrolledTypeIdentifier[_: P]: P[AST.UnrolledIdentifier] =
+    P("*" ~ Identifier).map(AST.UnrolledIdentifier)
 
   object DataType {
     def ScalarType[_: P]: P[AST.ScalarType] =

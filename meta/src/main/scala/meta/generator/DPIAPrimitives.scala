@@ -140,7 +140,9 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
                    }"""
                 case Right(DPIA.Type.AST.VariadicType(n, typeAST)) =>
                   getUnrolledIds(typeAST) match {
-                    case Some(unrolledIds) =>
+                    case Seq() =>
+                      q"${Term.Name(param.id.name)}.foreach(_ :: ${generateTerm(typeAST)})"
+                    case unrolledIds =>
                       val zips = unrolledIds.foldLeft[Term](Term.Name(param.id.name)) {
                         case (term, id) => q"$term.zip(${Term.Name(id.name)})"
                       }
@@ -151,8 +153,6 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
                       q"""$zips.foreach {
                         case ($pattern) => $p :: ${generateTerm(typeAST)}
                       }"""
-                    case None =>
-                      q"${Term.Name(param.id.name)}.foreach(_ :: ${generateTerm(typeAST)})"
                   }
                 case Right(typeAST) =>
                   q"${Term.Name(param.id.name)} :: ${generateTerm(typeAST)}"
@@ -162,62 +162,50 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
     }"""
   }
 
-  def getUnrolledIds(typeAST: DPIA.Type.AST): Option[Seq[rise.Type.AST.UnrolledIdentifier]] = {
+  def getUnrolledIds(typeAST: DPIA.Type.AST): Seq[rise.Type.AST.UnrolledIdentifier] = {
     import DPIA.Type.AST
     typeAST match {
       case AST.ExpType(dataType, _) =>
         getUnrolledIds(dataType)
       case AST.AccType(dataType) =>
         getUnrolledIds(dataType)
-      case AST.CommType => None
+      case AST.CommType => Seq()
       case AST.PairType(lhs, rhs) =>
-        for {
-          ids1 <- getUnrolledIds(lhs)
-          ids2 <- getUnrolledIds(rhs)
-        } yield ids1 concat ids2
+        getUnrolledIds(lhs) concat getUnrolledIds(rhs)
       case AST.FunType(inT, outT) =>
-        for {
-          ids1 <- getUnrolledIds(inT)
-          ids2 <- getUnrolledIds(outT)
-        } yield ids1 concat ids2
+        getUnrolledIds(inT) concat getUnrolledIds(outT)
       case AST.DepFunType(_, _, t) =>
         getUnrolledIds(t)
-      case AST.Identifier(_) => None
+      case AST.Identifier(_) => Seq()
       case AST.VariadicType(n, ty) => throw new Exception("This function should not be called on a variadic type")
     }
   }
 
-  def getUnrolledIds(typeAST: rise.Type.AST): Option[Seq[rise.Type.AST.UnrolledIdentifier]] = {
+  def getUnrolledIds(typeAST: rise.Type.AST): Seq[rise.Type.AST.UnrolledIdentifier] = {
     import rise.Type.AST
     typeAST match {
-      case AST.Identifier(_) => None
-      case id@AST.UnrolledIdentifier(_) => Some(Seq(id))
+      case AST.Identifier(_) => Seq()
+      case id@AST.UnrolledIdentifier(_) => Seq(id)
       case AST.FunType(inT, outT) =>
-        for {
-          ids1 <- getUnrolledIds(inT)
-          ids2 <- getUnrolledIds(outT)
-        } yield ids1 concat ids2
+        getUnrolledIds(inT) concat getUnrolledIds(outT)
       case AST.DepFunType(_, _, t) =>
         getUnrolledIds(t)
       case AST.ImplicitDepFunType(_, _, t) =>
         getUnrolledIds(t)
       case AST.VariadicFunType(_, _, _) => throw new Exception("This function should not be called on a variadic type")
       case AST.VariadicDepFunType(_, _, _, _) => throw new Exception("This function should not be called on a variadic type")
-      case AST.ScalarType(_) => None
-      case AST.NatType => None
-      case AST.OpaqueType(_) => None
+      case AST.ScalarType(_) => Seq()
+      case AST.NatType => Seq()
+      case AST.OpaqueType(_) => Seq()
       case AST.VectorType(_, elemType) => getUnrolledIds(elemType)
-      case AST.IndexType(_) => None
+      case AST.IndexType(_) => Seq()
       case AST.PairType(lhs, rhs) =>
-        for {
-          ids1 <- getUnrolledIds(lhs)
-          ids2 <- getUnrolledIds(rhs)
-        } yield ids1 concat ids2
+        getUnrolledIds(lhs) concat getUnrolledIds(rhs)
       case AST.DepPairType(_, _, t) => getUnrolledIds(t)
-      case AST.NatToDataApply(_, _) => None
+      case AST.NatToDataApply(_, _) => Seq()
       case AST.NatToDataLambda(_, t) => getUnrolledIds(t)
       case AST.ArrayType(_, elemType) => getUnrolledIds(elemType)
-      case AST.DepArrayType(_, _) => None
+      case AST.DepArrayType(_, _) => Seq()
       case AST.FragmentType(_, _, _, dt, _, _) => getUnrolledIds(dt)
       case AST.ManagedBufferType(t) => getUnrolledIds(t)
     }
