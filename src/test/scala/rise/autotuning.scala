@@ -381,13 +381,32 @@ class autotuning extends test_util.Tests {
     writeToPath("convolution.c", program)
   }
 
-  test("test getParametersFromConstraint"){
-    // test method here
+  // WARNING! Check, if sleeping thread continues to run!!
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import scala.concurrent._
+  import scala.concurrent.duration._
+  import scala.language.postfixOps
 
-    // create some parameters by hand
-    // create some constraints
-
-    // check if all occurring parameters are collected properly
-
+  def runWithTimeout[T](timeoutMs: Long)(f: => T) : Option[T] = {
+    try{
+      Some(Await.result(Future(f), timeoutMs milliseconds))
+    }catch {
+      case e:TimeoutException => None
+    }
   }
+
+  // dummy function replace with codegen
+  def codegenDummy(parameter: Int):Int = {
+    println("thread goes sleeping")
+    Thread.sleep(parameter)
+    println("thread woke up")
+
+    parameter
+  }
+
+  test("timeout using Future"){
+    val result = runWithTimeout(50)(codegenDummy(100))
+    println("result: " + result)
+  }
+
 }
