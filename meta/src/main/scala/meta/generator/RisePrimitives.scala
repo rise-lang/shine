@@ -5,8 +5,6 @@ import meta.parser._
 import meta.parser.rise.Kind
 import meta.parser.rise.Kind.AST
 
-import scala.meta.Term
-
 object RisePrimitives {
   def main(args: Array[String]): Unit = {
     val sourceDir = args.head // excepts one argument that is the source directory of the rise repo (i.e. 'rise/src')
@@ -59,7 +57,7 @@ import arithexpr.arithmetic._
   }
 
   // parse scala parameters (i.e. parameters that are not part of the rise language) into a list of parameters
-  def toParamList(definition: String, scalaParams: Option[(Int, Int)]): Option[List[Term.Param]] = {
+  def toParamList(definition: String, scalaParams: Option[(Int, Int)]): Option[List[scala.meta.Term.Param]] = {
     import scala.meta._
     scalaParams.map { case (start, end) =>
       s"def foo(${definition.substring(start, end)})".parse[Stat].get match {
@@ -69,7 +67,9 @@ import arithexpr.arithmetic._
   }
 
   // generate either an object (if there are no scala parameters) or a case class (if there are some)
-  def generate(name: String, params: Option[List[Term.Param]], typeSignature: rise.Type.AST): scala.meta.Term.Block =
+  def generate(name: String,
+               params: Option[List[scala.meta.Term.Param]],
+               typeSignature: rise.Type.AST): scala.meta.Term.Block =
     params match {
       case None => generateObject(name, typeSignature)
       case Some(params) => generateCaseClass(name, params, typeSignature)
@@ -101,7 +101,9 @@ import arithexpr.arithmetic._
     generated
   }
 
-  def generateCaseClass(name: String, params: List[Term.Param], typeSignature: rise.Type.AST): scala.meta.Term.Block = {
+  def generateCaseClass(name: String,
+                        params: List[scala.meta.Term.Param],
+                        typeSignature: rise.Type.AST): scala.meta.Term.Block = {
     import scala.meta._
 
     val args: List[Term.Name] = params.map(p => Term.Name(p.name.value))
@@ -179,11 +181,16 @@ import arithexpr.arithmetic._
         //    ids.foldRight(t){ case (id, t) => DepFunType[DataKind](id, t) }
         // to represent n-many dependent function types: (id0: kind) -> (id1: kind) -> ... -> t
         val (createIds, typeName) = kind match {
-          case AST.Data => (q"""DataTypeIdentifier(freshName("dt"), isExplicit = true)""", Type.Name("DataKind"))
-          case AST.Address => (q"""AddressSpaceIdentifier(freshName("a"), isExplicit = true)""", Type.Name("AddressSpaceKind"))
-          case AST.Nat2Nat => (q"""NatToNatIdentifier(freshName("n2n"), isExplicit = true)""", Type.Name("NatToNatKind"))
-          case AST.Nat2Data => (q"""NatToDataIdentifier(freshName("n2d"), isExplicit = true)""", Type.Name("NatToDataKind"))
-          case AST.Nat => (q"""NatIdentifier(freshName("n"), isExplicit = true)""", Type.Name("NatKind"))
+          case AST.Data =>
+            (q"""DataTypeIdentifier(freshName("dt"), isExplicit = true)""", Type.Name("DataKind"))
+          case AST.Address =>
+            (q"""AddressSpaceIdentifier(freshName("a"), isExplicit = true)""", Type.Name("AddressSpaceKind"))
+          case AST.Nat2Nat =>
+            (q"""NatToNatIdentifier(freshName("n2n"), isExplicit = true)""", Type.Name("NatToNatKind"))
+          case AST.Nat2Data =>
+            (q"""NatToDataIdentifier(freshName("n2d"), isExplicit = true)""", Type.Name("NatToDataKind"))
+          case AST.Nat =>
+            (q"""NatIdentifier(freshName("n"), isExplicit = true)""", Type.Name("NatKind"))
           case AST.Fragment => throw new Exception("No support for Fragment Kind yet")
           case AST.MatrixLayout => throw new Exception("No support for Matrix Layout Kind yet")
         }
@@ -210,7 +217,7 @@ import arithexpr.arithmetic._
       case rise.Type.AST.NatType =>
         q"NatType"
       case rise.Type.AST.OpaqueType(name) =>
-        q"OpaqueType($name)"
+        q"OpaqueType(${Lit.String(name)})"
       case rise.Type.AST.VectorType(size, elemType) =>
         q"VectorType(${generateNat(size)}, ${generateDataType(elemType)})"
       case rise.Type.AST.IndexType(size) =>

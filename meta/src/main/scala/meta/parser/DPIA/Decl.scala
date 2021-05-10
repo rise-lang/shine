@@ -8,11 +8,17 @@ object Decl {
   sealed trait AST
   object AST {
     case class Identifier(name: String) extends AST
-    case class Param(id: Identifier, ty: Either[Kind.AST, Type.AST]) extends AST
+    case class Param(id: Identifier, ty: KindOrType) extends AST
     case class PrimitiveDeclaration(id: Identifier,
                                     scalaParams: Option[(Int, Int)],
                                     params: Seq[Param],
                                     returnType: Type.AST) extends AST
+  }
+
+  sealed trait KindOrType
+  object KindOrType {
+    final case class Kind(kind: meta.parser.DPIA.Kind.AST) extends KindOrType
+    final case class Type(typeAST: meta.parser.DPIA.Type.AST) extends KindOrType
   }
 
   def PrimitiveDeclarations[_: P]: P[Seq[AST.PrimitiveDeclaration]] =
@@ -27,8 +33,10 @@ object Decl {
     }
 
     def Param: P[AST.Param] = (
-          (Identifier.map(AST.Identifier) ~ ":" ~ Kind.Kind).map(pair => AST.Param(pair._1, Left(pair._2)))
-        | (Identifier.map(AST.Identifier) ~ ":" ~ Type.PhraseType).map(pair => AST.Param(pair._1, Right(pair._2)))
+          (Identifier.map(AST.Identifier) ~ ":" ~ Kind.Kind).map(
+            pair => AST.Param(pair._1, KindOrType.Kind(pair._2)))
+        | (Identifier.map(AST.Identifier) ~ ":" ~ Type.PhraseType).map(
+            pair => AST.Param(pair._1, KindOrType.Type(pair._2)))
       )
 
     def Params: P[Seq[AST.Param]] = Param.repTC(0)

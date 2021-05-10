@@ -1,5 +1,6 @@
 package meta.parser.DPIA
 
+import meta.parser.DPIA.Decl.KindOrType
 import meta.parser._
 
 object isWellKindedDefinition {
@@ -17,9 +18,9 @@ object isWellKindedDefinition {
       }
     }).getOrElse(Map.empty[String, Kind.AST])
     val env = params.foldLeft(incompleteEnv) {
-      case (env, Param(Identifier(name), Left(kind))) =>
+      case (env, Param(Identifier(name), KindOrType.Kind(kind))) =>
         env.updated(name, kind)
-      case (env, Param(Identifier(_), Right(typeAST))) =>
+      case (env, Param(Identifier(_), KindOrType.Type(typeAST))) =>
         if (!isWellKinded(typeAST, env, None))
           isWellKindedFlag = false
         env
