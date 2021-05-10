@@ -1,5 +1,7 @@
 package rise
 
+import java.util.concurrent.{Executors, TimeUnit}
+
 import arithexpr.arithmetic.{PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
@@ -356,11 +358,11 @@ class autotuning extends test_util.Tests {
   }
 
   // fix this
-  ignore("generate huge amount of code"){
+  test("generate huge amount of code"){
     // expression
     val e:Expr = convolutionOclGsLs(1024)
 
-    // define parameters
+    // define parameters to break the code-gen
     val parameters = Map(
       NatIdentifier("vec", isExplicit = true) -> (16: Nat),
       NatIdentifier("tile", isExplicit = true) -> (32: Nat),
@@ -373,26 +375,16 @@ class autotuning extends test_util.Tests {
     // substitute parameters
     val eWithParams = rise.core.substitute.natsInExpr(parameters, e)
 
-    println("start code generation")
-    val m = gen.opencl.hosted.fromExpr(eWithParams)
-    val program = shine.OpenCL.Module.translateToString(m) + main(1024)
+    println("run codegen with timeout ")
+    val result = util.runWithTimeout(10000)(rise.autotune.execute(eWithParams, main(1024)))
 
-    // write program to disk
-    writeToPath("convolution.c", program)
-  }
-
-  // WARNING! Check, if sleeping thread continues to run!!
-  import scala.concurrent.ExecutionContext.Implicits.global
-  import scala.concurrent._
-  import scala.concurrent.duration._
-  import scala.language.postfixOps
-
-  def runWithTimeout[T](timeoutMs: Long)(f: => T) : Option[T] = {
-    try{
-      Some(Await.result(Future(f), timeoutMs milliseconds))
-    }catch {
-      case e:TimeoutException => None
+    result match {
+      case Some(value) => println("success")
+      case None => println("timeout ")
     }
+
+    Thread.sleep(10000)
+    println("finished")
   }
 
   // dummy function replace with codegen
@@ -405,7 +397,8 @@ class autotuning extends test_util.Tests {
   }
 
   test("timeout using Future"){
-    val result = runWithTimeout(50)(codegenDummy(100))
+    val result = util.runWithTimeout(50)(codegenDummy(100))
+    Thread.sleep(1000)
     println("result: " + result)
   }
 
