@@ -1331,7 +1331,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
 
   def getArgumentTypes(typeOfFkt:rt.Type): List[rt.Type]={
     typeOfFkt match {
-      case rt.FunType(inT1, rt.FunType(inT2, outT)) => inT1::Nil
+      //case rt.FunType(inT1, rt.FunType(inT2, outT)) => inT1::Nil
       case rt.FunType(inT, outT) => inT::getArgumentTypes(outT)
       case DepFunType(x, t) => getArgumentTypes(t)
       case t => Nil //last Element is expected Type and should be ignored
@@ -1751,8 +1751,10 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
 
   def giveNextLambdaIdentType(argumentTypes:List[rt.Type]):Option[(rt.Type, List[rt.Type])]={
     argumentTypes match {
-      case head :: Nil => None //Todo: I don't know why but this line fixes the nbody.rise test, if something fails with a match Error in Solution and Nats look here
-      case ::(head, next) => Some((head, next))
+      //case head :: Nil => None //Todo: I don't know why but this line fixes the nbody.rise test, if something fails with a match Error in Solution and Nats look here
+      case head::next =>
+        println("\ngiveNextLambdaIdenType: "+ head + "::" + next)
+        Some((head, next))
       case Nil => None
     }
   }
@@ -1773,7 +1775,7 @@ the syntax-Tree has on top an Lambda-Expression
     if(parseState.tokenStream.isEmpty){
       return (Left(parseState),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
-    //println("parseLambda: " +parseState)
+    println("parseLambda: " +parseState)
     val (psOld,errorL) =
       (Left(ParseState(parseState.tokenStream, Nil,  parseState.mapDepL, parseState.spanList, parseState.argumentsTypes)),errorList) |>
         parseBackslash |>
@@ -1800,7 +1802,7 @@ the syntax-Tree has on top an Lambda-Expression
             case SLet(sp) =>
               throw new IllegalStateException("it is an Identifier expected not let: " + sp)
             case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
-            case SExpr(i) => (giveIdentWithCorrectType(i,identType)
+            case SExpr(i) => (i //Todo:giveIdentWithCorrectType(i,identType)
               , synElemListExpr.tail)
             case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
               " is not an Expression!")
