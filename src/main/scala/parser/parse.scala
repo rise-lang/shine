@@ -6,7 +6,7 @@ import o.{primitives => op}
 import rise.core.DSL.ToBeTyped
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.ForeignFunction
-import rise.core.types.{DataType, DepFunType, PairType, f32, vec}
+import rise.core.types.{DataType, DepFunType, PairType, TypePlaceholder, f32, vec}
 
 import scala.collection.mutable
 
@@ -1751,8 +1751,15 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
 
   def giveNextLambdaIdentType(argumentTypes:List[rt.Type]):Option[(rt.Type, List[rt.Type])]={
     argumentTypes match {
+      case head :: Nil => None //Todo: I don't know why but this line fixes the nbody.rise test, if something fails with a match Error in Solution and Nats look here
       case ::(head, next) => Some((head, next))
       case Nil => None
+    }
+  }
+  def giveIdentWithCorrectType(i:r.Expr, identType:rt.Type):r.Expr={
+    identType match {
+      case TypePlaceholder => i
+      case _ => i.setType(identType)
     }
   }
 
@@ -1793,7 +1800,8 @@ the syntax-Tree has on top an Lambda-Expression
             case SLet(sp) =>
               throw new IllegalStateException("it is an Identifier expected not let: " + sp)
             case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
-            case SExpr(i) => (i.setType(identType), synElemListExpr.tail)
+            case SExpr(i) => (giveIdentWithCorrectType(i,identType)
+              , synElemListExpr.tail)
             case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
               " is not an Expression!")
             case SData(t,_) => t match {
