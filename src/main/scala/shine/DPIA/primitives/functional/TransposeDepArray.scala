@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class TransposeDepArray(val n: Nat, val m: Nat, val ft: NatToData, val array: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     array :: expT(ArrayType(n, DepArrayType(m, ft)), read)
+    true
   }
   override val t: ExpType = expT(DepArrayType(n, n2dtFun { (i: NatIdentifier) => ArrayType(n, NatToDataApply(ft, i)) }), read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): TransposeDepArray = new TransposeDepArray(v.nat(n), v.nat(m), v.natToData(ft), VisitAndRebuild(array, v))

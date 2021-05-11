@@ -8,12 +8,13 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class DepMapPar(val n: Nat, val ft1: NatToData, val ft2: NatToData, val f: Phrase[DepFunType[NatKind, FunType[ExpType, ExpType]]], val array: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     f :: ({
       val m = f.t.x
       DepFunType[NatKind, PhraseType](m, FunType(expT(NatToDataApply(ft1, m), read), expT(NatToDataApply(ft2, m), write)))
     })
     array :: expT(DepArrayType(n, ft1), read)
+    true
   }
   override val t: ExpType = expT(DepArrayType(n, ft2), write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): DepMapPar = new DepMapPar(v.nat(n), v.natToData(ft1), v.natToData(ft2), VisitAndRebuild(f, v), VisitAndRebuild(array, v))

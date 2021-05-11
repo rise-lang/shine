@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class IdxVec(val n: Nat, val dt: DataType, val index: Phrase[ExpType], val vector: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     index :: expT(IndexType(n), read)
     vector :: expT(VectorType(n, dt), read)
+    true
   }
   override val t: ExpType = expT(dt, read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): IdxVec = new IdxVec(v.nat(n), v.data(dt), VisitAndRebuild(index, v), VisitAndRebuild(vector, v))

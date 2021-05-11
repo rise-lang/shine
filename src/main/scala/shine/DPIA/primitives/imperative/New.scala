@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class New(val dt: DataType, val f: Phrase[FunType[PhrasePairType[ExpType, AccType], CommType]]) extends CommandPrimitive {
-  {
+  assert {
     f :: FunType(PhrasePairType(expT(dt, read), accT(dt)), comm)
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): New = new New(v.data(dt), VisitAndRebuild(f, v))

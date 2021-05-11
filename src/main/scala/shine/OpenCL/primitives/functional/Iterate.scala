@@ -8,12 +8,13 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Iterate(val a: AddressSpace, val n: Nat, val m: Nat, val k: Nat, val dt: DataType, val f: Phrase[DepFunType[NatKind, FunType[ExpType, ExpType]]], val array: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     f :: ({
       val l = f.t.x
       DepFunType[NatKind, PhraseType](l, FunType(expT(ArrayType(l * n, dt), read), expT(ArrayType(l, dt), write)))
     })
     array :: expT(ArrayType(m * n.pow(k), dt), read)
+    true
   }
   override val t: ExpType = expT(ArrayType(m, dt), write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Iterate = new Iterate(v.addressSpace(a), v.nat(n), v.nat(m), v.nat(k), v.data(dt), VisitAndRebuild(f, v), VisitAndRebuild(array, v))

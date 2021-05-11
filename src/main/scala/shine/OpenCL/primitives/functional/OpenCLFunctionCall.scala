@@ -7,8 +7,19 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-final case class OpenCLFunctionCall(name: String, inTs: Seq[DataType], args: Seq[Phrase[ExpType]])(val outT: DataType) extends ExpPrimitive {
-  {}
+final case class OpenCLFunctionCall(name: String, n: Int)(val inTs: Seq[DataType], val outT: DataType, val args: Seq[Phrase[ExpType]]) extends ExpPrimitive {
+  assert {
+    {
+      typeAssert(args.length == n, "args" + ".length == " + "n" + " is not true")
+      typeAssert(inTs.length == n, "inTs" + ".length == " + "n" + " is not true")
+      args.zip(inTs).foreach({
+        case (args, inTs) =>
+          args :: expT(inTs, read)
+      })
+    }
+    true
+  }
   override val t: ExpType = expT(outT, write)
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): OpenCLFunctionCall = new OpenCLFunctionCall(name, inTs.map(v.data), args.map(VisitAndRebuild(_, v)))(v.data(outT))
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): OpenCLFunctionCall = new OpenCLFunctionCall(name, n)(inTs.map(v.data), v.data(outT), args.map(VisitAndRebuild(_, v)))
+  def unwrap: (Seq[DataType], DataType, Seq[Phrase[ExpType]]) = (inTs, outT, args)
 }

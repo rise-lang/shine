@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Split(val n: Nat, val m: Nat, val a: AccessType, val dt: DataType, val array: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     array :: expT(ArrayType(m * n, dt), a)
+    true
   }
   override val t: ExpType = expT(ArrayType(m, ArrayType(n, dt)), a)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Split = new Split(v.nat(n), v.nat(m), v.access(a), v.data(dt), VisitAndRebuild(array, v))

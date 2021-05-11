@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class GenerateCont(val n: Nat, val dt: DataType, val f: Phrase[FunType[ExpType, FunType[FunType[ExpType, CommType], CommType]]]) extends ExpPrimitive {
-  {
+  assert {
     f :: FunType(expT(IndexType(n), read), FunType(FunType(expT(dt, read), comm), comm))
+    true
   }
   override val t: ExpType = expT(ArrayType(n, dt), read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): GenerateCont = new GenerateCont(v.nat(n), v.data(dt), VisitAndRebuild(f, v))

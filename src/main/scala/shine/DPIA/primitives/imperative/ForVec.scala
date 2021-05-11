@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class ForVec(val n: Nat, val dt: DataType, val out: Phrase[AccType], val loopBody: Phrase[FunType[ExpType, FunType[AccType, CommType]]]) extends CommandPrimitive {
-  {
+  assert {
     out :: accT(VectorType(n, dt))
     loopBody :: FunType(expT(IndexType(n), read), FunType(accT(dt), comm))
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): ForVec = new ForVec(v.nat(n), v.data(dt), VisitAndRebuild(out, v), VisitAndRebuild(loopBody, v))
