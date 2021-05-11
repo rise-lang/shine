@@ -1,7 +1,9 @@
 package parser
 
 import java.nio.file.Paths
-import scala.tools.nsc.util.StringUtil
+import rise.{core => r, openCL => o}
+import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
+import o.{primitives => op}
 
 /*
 https://stackoverflow.com/questions/38243530/custom-exception-in-scala is reference
@@ -357,3 +359,39 @@ final case class ErrorList(){
 //__________________________________________________________________________________________________________
 //ConstraintTypeError
 abstract sealed class ConstraintTypeError(span: Span) extends ErrorMessages(span)
+
+case class IdentConstraintError(span: Span, expectedT:rt.Type, foundT:rt.Type) extends ConstraintTypeError(span){
+  override def description(): String = "expected '" + expectedT + "' but found '"+foundT+ "'"
+}
+
+case class LambdaConstraintError(span: Span, expectedT:rt.Type, foundT:rt.Type) extends ConstraintTypeError(span){
+  override def description(): String = "expected '" + expectedT + "' but found '"+foundT+ "'"
+}
+
+case class AppConstraintError(span: Span, expectedT:rt.Type, foundTLeft:rt.Type, foundTRight:rt.Type) extends ConstraintTypeError(span){
+  override def description(): String = "expected '" + expectedT + "' but found App('"+foundTLeft+ "','"+
+    foundTRight+"')"
+}
+
+case class DepLambdaConstraintError(span: Span, expectedT:rt.Type, foundT:rt.Type) extends ConstraintTypeError(span){
+  override def description(): String = "expected '" + expectedT + "' but found '"+foundT+ "'"
+}
+
+case class DepAppConstraintError(span: Span, expectedT:rt.Type, foundTLeft:rt.Type, foundTRight:rt.Type) extends ConstraintTypeError(span){
+  override def description(): String = "expected '" + expectedT + "' but found DepApp('"+foundTLeft+ "','"+
+    foundTRight+"')"
+}
+
+case class TypeAnnotationConstraintError(span: Span, foundT:rt.Type, annotatedT:rt.Type) extends ConstraintTypeError(span){
+  override def description(): String = "annotated '" + annotatedT + "' but found '"+foundT+"'"
+}
+
+case class TypeAssertionConstraintError(span: Span, foundT:rt.Type, annotatedT:rt.Type, freezeAnnT:rt.Type) extends ConstraintTypeError(span){
+  override def description(): String = "annotated '" + annotatedT + "' but found '"+
+    foundT+"' or found freeze Type '"+freezeAnnT+"'"
+}
+
+//case class OpaqueConstraintError(span: Span, foundT:rt.Type, annotatedT:rt.Type, freezeAnnT:rt.Type) extends ConstraintTypeError(span){
+//  override def description(): String = "annotated '" + annotatedT + "' but found '"+
+//    foundT+"' or found freeze Type '"+freezeAnnT+"'"
+//}
