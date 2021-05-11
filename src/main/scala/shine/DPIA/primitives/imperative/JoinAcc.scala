@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class JoinAcc(val n: Nat, val m: Nat, val dt: DataType, val array: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     array :: accT(ArrayType(n * m, dt))
+    true
   }
   override val t: AccType = accT(ArrayType(n, ArrayType(m, dt)))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): JoinAcc = new JoinAcc(v.nat(n), v.nat(m), v.data(dt), VisitAndRebuild(array, v))

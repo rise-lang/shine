@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class MapSndAcc(val dt1: DataType, val dt2: DataType, val dt3: DataType, val f: Phrase[FunType[AccType, AccType]], val record: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     f :: FunType(accT(dt3), accT(dt2))
     record :: accT(PairType(dt1, dt3))
+    true
   }
   override val t: AccType = accT(PairType(dt1, dt2))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): MapSndAcc = new MapSndAcc(v.data(dt1), v.data(dt2), v.data(dt3), VisitAndRebuild(f, v), VisitAndRebuild(record, v))

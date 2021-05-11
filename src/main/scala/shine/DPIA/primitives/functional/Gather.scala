@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Gather(val n: Nat, val m: Nat, val dt: DataType, val indices: Phrase[ExpType], val input: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     indices :: expT(ArrayType(m, IndexType(n)), read)
     input :: expT(ArrayType(n, dt), read)
+    true
   }
   override val t: ExpType = expT(ArrayType(m, dt), read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Gather = new Gather(v.nat(n), v.nat(m), v.data(dt), VisitAndRebuild(indices, v), VisitAndRebuild(input, v))
