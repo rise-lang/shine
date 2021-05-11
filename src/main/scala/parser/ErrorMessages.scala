@@ -1,5 +1,6 @@
 package parser
 
+import java.nio.file.Paths
 import scala.tools.nsc.util.StringUtil
 
 /*
@@ -12,6 +13,7 @@ trait ParserError { self: Throwable =>
 
 
 abstract sealed class ErrorMessages(span:Span) {
+  val errorStackTraceElem = Thread.currentThread.getStackTrace().tail.tail.tail.tail.head
   val fileReader = span.file
   val begin = span.begin
   val end = span.end
@@ -31,9 +33,12 @@ abstract sealed class ErrorMessages(span:Span) {
     throw new Exception("descriptionError method must be overridden")
   }
   def returnMessage():String ={
+    val e = errorStackTraceElem
+    val filePath = Paths.get("src/main/scala/"+e.getClassName.substring(0,e.getClassName.indexOf('.'))+"/"+e.getFileName+":"+e.getLineNumber).toUri
+
     val m = span.returnMessage()
     val important = importantPart(m)
-    val before = span.file.sourceLines(begin.column).substring(begin.row)
+    val before = span.file.sourceLines(begin.column).substring(0, begin.row)
     val after = span.file.sourceLines(end.column).substring(end.row)
 
     //exact location of error, related code of error, short description of error
@@ -41,7 +46,10 @@ abstract sealed class ErrorMessages(span:Span) {
     val relatedCode = before + important + after
     val desc = description()
 
-    val message = desc + " : " + loc + " : '" + relatedCode +"'"
+    val message = desc + " : " + loc + " : '" + relatedCode +"'" + " <<<"+
+      e.getLineNumber + " in '" + e.getMethodName + "' in '" +e.getFileName + "' " + filePath +">>>"
+      //e.getClassName + " "+
+
     message
   }
 
