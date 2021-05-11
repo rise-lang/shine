@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class IdxDistributeAcc(parallelismLevel: shine.OpenCL.ParallelismLevel)(val m: Nat, val n: Nat, val stride: Nat, val dt: DataType, val array: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     array :: accT(ArrayType(m, dt))
+    true
   }
   override val t: AccType = accT(ArrayType(n, dt))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): IdxDistributeAcc = new IdxDistributeAcc(parallelismLevel)(v.nat(m), v.nat(n), v.nat(stride), v.data(dt), VisitAndRebuild(array, v))

@@ -8,7 +8,6 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Comment(comment: String)() extends CommandPrimitive {
-  {}
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Comment = new Comment(comment)()
 }

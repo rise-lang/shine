@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class For(unroll: Boolean)(val n: Nat, val loopBody: Phrase[FunType[ExpType, CommType]]) extends CommandPrimitive {
-  {
+  assert {
     loopBody :: FunType(expT(IndexType(n), read), comm)
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): For = new For(unroll)(v.nat(n), VisitAndRebuild(loopBody, v))

@@ -8,7 +8,6 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Barrier(local: Boolean, global: Boolean)() extends CommandPrimitive {
-  {}
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Barrier = new Barrier(local, global)()
 }

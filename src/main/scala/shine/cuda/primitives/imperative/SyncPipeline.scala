@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class SyncPipeline(val pipe: Phrase[ExpType]) extends CommandPrimitive {
-  {
+  assert {
     pipe :: expT(OpaqueType("pipeline"), read)
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): SyncPipeline = new SyncPipeline(VisitAndRebuild(pipe, v))

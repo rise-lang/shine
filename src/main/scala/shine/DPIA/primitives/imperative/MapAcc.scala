@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class MapAcc(val n: Nat, val dt1: DataType, val dt2: DataType, val f: Phrase[FunType[AccType, AccType]], val array: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     f :: FunType(accT(dt1), accT(dt2))
     array :: accT(ArrayType(n, dt1))
+    true
   }
   override val t: AccType = accT(ArrayType(n, dt2))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): MapAcc = new MapAcc(v.nat(n), v.data(dt1), v.data(dt2), VisitAndRebuild(f, v), VisitAndRebuild(array, v))

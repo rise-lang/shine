@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class WmmaLoad(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: FragmentKind, val layout: MatrixLayout, val matrixTile: Phrase[ExpType], val target: Phrase[AccType]) extends CommandPrimitive {
-  {
+  assert {
     matrixTile :: expT(ArrayType(rows, ArrayType(columns, dt)), read)
     target :: accT(FragmentType(rows, columns, layers, dt, frag, layout))
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): WmmaLoad = new WmmaLoad(v.nat(rows), v.nat(columns), v.nat(layers), v.data(dt), frag, layout, VisitAndRebuild(matrixTile, v), VisitAndRebuild(target, v))

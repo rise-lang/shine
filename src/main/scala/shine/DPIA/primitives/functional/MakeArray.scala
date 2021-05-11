@@ -8,8 +8,12 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class MakeArray(n: Int)(val dt: DataType, val elements: Seq[Phrase[ExpType]]) extends ExpPrimitive {
-  {
-    elements.foreach(_ :: expT(dt, read))
+  assert {
+    {
+      typeAssert(elements.length == n, "elements" + ".length == " + "n" + " is not true")
+      elements.foreach(_ :: expT(dt, read))
+    }
+    true
   }
   override val t: ExpType = expT(ArrayType(n, dt), read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): MakeArray = new MakeArray(n)(v.data(dt), elements.map(VisitAndRebuild(_, v)))
