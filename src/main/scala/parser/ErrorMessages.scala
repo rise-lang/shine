@@ -33,7 +33,7 @@ abstract sealed class ErrorMessages(span:Span) {
   def returnMessage():String ={
     val m = span.returnMessage()
     val important = importantPart(m)
-    val before = span.file.sourceLines(begin.column).substring(0,begin.row)
+    val before = span.file.sourceLines(begin.column).substring(begin.row)
     val after = span.file.sourceLines(end.column).substring(end.row)
 
     //exact location of error, related code of error, short description of error
@@ -41,7 +41,7 @@ abstract sealed class ErrorMessages(span:Span) {
     val relatedCode = before + important + after
     val desc = description()
 
-    val message = desc + " : " + loc + " : "
+    val message = desc + " : " + loc + " : '" + relatedCode +"'"
     message
   }
 
@@ -345,3 +345,7 @@ final case class ErrorList(){
   def getDeepestElemPos():Int =this.deepestError
   def getDeepestElem():PreAndErrorSynElems =this.errorList(this.deepestError).getOrElse(throw new IllegalStateException("Rules should not be the deepest elem"))
 }
+
+//__________________________________________________________________________________________________________
+//ConstraintTypeError
+abstract sealed class ConstraintTypeError(span: Span) extends ErrorMessages(span)

@@ -11,8 +11,10 @@ case class Location (column: Int, row: Int){
   //row and line positive numbers
   require(row >= 0, "row is negative")
   require(column >= 0, "column is negative")
+  val c = column+1
+  val r = row+1
 
-  override def toString: String = s"($column,$row)"
+  override def toString: String = s"($c,$r)"
   def ==(end:Location) = this.column == end.column && this.row == end.row
 }
 
@@ -28,7 +30,7 @@ case class Span(file: FileReader, begin: Location, end: Location) {
     if(begin.row==end.row){
       end.toString + " in " + file.fileName
     }else{
-      "("+begin.column+"," + begin.row+"-"+end.row+")" + " in " + file.fileName
+      "("+begin.c+"," + begin.r+"-"+end.r+")" + " in " + file.fileName
     }
   }else{
     begin.toString+ "-"+end.toString + " in " + file.fileName
