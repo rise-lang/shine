@@ -2,7 +2,7 @@ package rise.eqsat
 
 import rise.core.Expr
 import rise.elevate.tvmGemm
-import Basic.proveEquiv
+import Basic.proveEquivBENF
 
 class TvmGemm extends test_util.Tests {
   test("TVM GEMM") {
@@ -17,7 +17,7 @@ class TvmGemm extends test_util.Tests {
       // tvmGemm.par(mm).get
     ))
 
-    proveEquiv(mm, variants, Seq(
+    proveEquivBENF(mm, variants, Seq(
       rules.eta, rules.beta, rules.betaNat,
       rules.mapFusion, rules.mapFission,
       rules.reduceSeq, rules.reduceSeqMapFusion,

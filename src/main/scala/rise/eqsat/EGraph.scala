@@ -46,6 +46,18 @@ class EGraph[Data](
     (enode2, id.map(find))
   }
 
+  def makeEmptyEClass(simplifiedT: Type): EClassId = {
+    val newId = unionFind.makeSet()
+    val newEclass = new EClass(
+      id = newId,
+      t = simplifiedT,
+      nodes = Vec(),
+      data = analysis.empty(this, simplifiedT),
+      parents = Vec())
+    classes += newId -> newEclass
+    newId
+  }
+
   def add(n: ENode, givenT: Type): EClassId = {
     // we simplify the contained nats before adding the node to the graph
     val t = Type.simplifyNats(givenT)
@@ -139,7 +151,11 @@ class EGraph[Data](
     val nUnions = processUnions()
     val _ = rebuildClasses()
 
-    assert { checkMemo(); true }
+    assert {
+      TypeCheck(this)
+      checkMemo()
+      true
+    }
 
     nUnions
   }
@@ -163,7 +179,8 @@ class EGraph[Data](
       }
 
       while (analysisPending.nonEmpty) {
-        val (node, id) = analysisPending.last
+        // note: using .last is really slow, traversing all the map
+        val (node, id) = analysisPending.head
         analysisPending.remove((node, id))
 
         val cid = findMut(id)

@@ -97,6 +97,11 @@ object NamedRewrite {
           PatternNode(DataLambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(_, _) => ???
 
+        case rc.App(rc.App(NamedRewriteDSL.Composition(_), f), g) =>
+          PatternNode(Composition(
+            makePat(f, bound, isRhs, matchType = true),
+            makePat(g, bound, isRhs, matchType = false)))
+
         // note: we do not match for the type of applied functions, as we can always infer it:
         //       app(f : et -> at, e : et) : at
         case rc.App(f, e) =>
@@ -497,6 +502,9 @@ object NamedRewriteDSL {
   implicit def stringAsDataTypePattern(name: String): DataTypePattern =
     rct.DataTypeIdentifier(name, isExplicit = false)
 
+  def t(name: String): TypePattern =
+    rct.TypeIdentifier(name)
+
   val int: DataTypePattern = rct.int
   val f32: DataTypePattern = rct.f32
 
@@ -520,26 +528,33 @@ object NamedRewriteDSL {
     @inline def notFree(notFree: String): NamedRewrite.Condition =
       NamedRewrite.NotFreeIn(notFree, in)
   }
-/*
+
   // combinatory
 
   implicit final class MakeComposition(private val f: Pattern) extends AnyVal {
-    @inline def >>(g: Pattern): Pattern = app(app(Composition, f), g)
+    @inline def >>(g: Pattern): Pattern = app(app(Composition(), f), g)
   }
   implicit final class MakeCompositionString(private val f: String) extends AnyVal {
-    @inline def >>(g: Pattern): Pattern = app(app(Composition, f), g)
+    @inline def >>(g: Pattern): Pattern = app(app(Composition(), f), g)
   }
-  case object Composition extends rc.Primitive {
+  case class Composition(override val t: rct.Type = TypePlaceholder) extends rc.Primitive {
     import rise.core.DSL.Type.{impl, ->:}
-    override def typeScheme: TypePattern =
+
+    override def name: String = ">>"
+
+    override def typeScheme: rct.Type =
       impl { a: rct.TypeIdentifier =>
       impl { b: rct.TypeIdentifier =>
       impl { c: rct.TypeIdentifier =>
         (a ->: b) ->: (b ->: c) ->: (a ->: c)
       }}}
     override def primEq(obj: rc.Primitive): Boolean =
-      obj == Composition
-  }
+      obj match {
+        case _: Composition => true
+        case _ => false
+      }
 
- */
+    override def setType(t: rct.Type): rc.Primitive =
+      Composition(t)
+  }
 }

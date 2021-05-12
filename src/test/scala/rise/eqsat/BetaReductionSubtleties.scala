@@ -53,21 +53,26 @@ class BetaReductionSubtleties extends test_util.Tests {
     val goal = Expr.fromNamed(
       transpose(transpose(in)))
 
-    // works with parallel application
+    // extraction works with parallel application
     proveEquiv(start, goal, Seq(rules.beta, rules.removeTransposePair))
+    proveEquiv(start, goal, Seq(rules.betaExtract, rules.removeTransposePair))
 
-    // does not work with sequential application
-    val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
-    val startId = egraph.addExpr(start)
-    egraph.rebuild()
-    for (_ <- 0 until 4) {
-      rules.removeTransposePair.apply(egraph,
-        rules.removeTransposePair.search(egraph))
+    // extraction does not work with sequential application
+    def seqCheck(betaRule: rules.Rule): Boolean = {
+      val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
+      val startId = egraph.addExpr(start)
       egraph.rebuild()
-      rules.beta.apply(egraph, rules.beta.search(egraph))
-      egraph.rebuild()
+      for (_ <- 0 until 4) {
+        rules.removeTransposePair.apply(egraph,
+          rules.removeTransposePair.search(egraph))
+        egraph.rebuild()
+        betaRule.apply(egraph, betaRule.search(egraph))
+        egraph.rebuild()
+      }
+      Pattern.fromExpr(goal).compile()
+        .searchEClass(egraph, startId).isDefined
     }
-    assert(Pattern.fromExpr(goal).compile()
-      .searchEClass(egraph, startId).isEmpty)
+    assert(seqCheck(rules.beta))
+    assert(!seqCheck(rules.betaExtract))
   }
 }

@@ -166,12 +166,29 @@ case class ConditionalApplier[D](cond: (EGraph[D], EClassId, Subst) => Boolean,
   }
 }
 
-/** An [[Applier]] that shifts the DeBruijn indices of a variable.
-  * @note It works by extracting an expression from the [[EGraph]] in order to shift it.
-  */
+/** An [[Applier]] that shifts the DeBruijn indices of a variable */
 case class ShiftedApplier(v: PatternVar, newV: PatternVar,
                           shift: Expr.Shift, cutoff: Expr.Shift,
                           applier: Applier[DefaultAnalysisData])
+  extends Applier[DefaultAnalysisData] {
+  override def patternVars(): Set[Any] =
+    applier.patternVars() - newV + v
+
+  override def applyOne(egraph: EGraph[DefaultAnalysisData],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    val subst2 = subst.deepClone()
+    subst2.insert(newV, EClass.shifted(subst(v), shift, cutoff, egraph))
+    applier.applyOne(egraph, eclass, subst2)
+  }
+}
+
+/** An [[Applier]] that shifts the DeBruijn indices of a variable.
+  * @note It works by extracting an expression from the [[EGraph]] in order to shift it.
+  */
+case class ShiftedExtractApplier(v: PatternVar, newV: PatternVar,
+                                 shift: Expr.Shift, cutoff: Expr.Shift,
+                                 applier: Applier[DefaultAnalysisData])
   extends Applier[DefaultAnalysisData] {
   override def patternVars(): Set[Any] =
     applier.patternVars() - newV + v
@@ -301,7 +318,7 @@ object ShiftedTypeCheckApplier {
 /** An [[Applier]] that performs beta-reduction.
   * @note It works by extracting an expression from the [[EGraph]] in order to beta-reduce it.
   */
-case class BetaApplier(body: PatternVar, subs: PatternVar)
+case class BetaExtractApplier(body: PatternVar, subs: PatternVar)
   extends Applier[DefaultAnalysisData] {
   override def patternVars(): Set[Any] =
     Set(body, subs)
@@ -316,10 +333,40 @@ case class BetaApplier(body: PatternVar, subs: PatternVar)
   }
 }
 
+/** An [[Applier]] that performs beta-reduction.
+  * @note It works by directly transforming [[EClass]]es.
+  */
+case class BetaApplier(body: PatternVar, subs: PatternVar)
+  extends Applier[DefaultAnalysisData] {
+  override def patternVars(): Set[Any] =
+    Set(body, subs)
+
+  override def applyOne(egraph: EGraph[DefaultAnalysisData],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    Vec(EClass.withArgument(subst(body), subst(subs), egraph))
+  }
+}
+
+/** An [[Applier]] that performs beta-reduction for nat-dependent functions.
+  * @note It works by directly transforming [[EClass]]es.
+  */
+case class BetaNatApplier(body: PatternVar, subs: NatPatternVar)
+  extends Applier[DefaultAnalysisData] {
+  override def patternVars(): Set[Any] =
+    Set(body, subs)
+
+  override def applyOne(egraph: EGraph[DefaultAnalysisData],
+                        eclass: EClassId,
+                        subst: Subst): Vec[EClassId] = {
+    Vec(EClass.withNatArgument(subst(body), subst(subs), egraph))
+  }
+}
+
 /** An [[Applier]] that performs beta-reduction for nat-dependent functions.
   * @note It works by extracting an expression from the [[EGraph]] in order to beta-reduce it.
   */
-case class BetaNatApplier(body: PatternVar, subs: NatPatternVar)
+case class BetaNatExtractApplier(body: PatternVar, subs: NatPatternVar)
   extends Applier[DefaultAnalysisData] {
   override def patternVars(): Set[Any] =
     Set(body, subs)

@@ -32,6 +32,18 @@ case class Type(node: TypeNode[Type, Nat, DataType]) {
   def replace(index: Int, subs: DataType): Type = {
     ???
   }
+
+  // substitutes %n0 for arg in this
+  def withNatArgument(arg: Nat): Type = {
+    replace(0, arg.shifted(1, 0))
+      .shifted((-1, 0), (0, 0))
+  }
+
+  // substitutes %dt0 for arg in this
+  def withDataArgument(arg: DataType): Type = {
+    replace(0, arg.shifted((0, 1), (0, 0)))
+      .shifted((0, -1), (0, 0))
+  }
 }
 
 case class DataType(node: DataTypeNode[Nat, DataType]) {

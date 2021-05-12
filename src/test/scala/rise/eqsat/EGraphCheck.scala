@@ -28,4 +28,85 @@ class EGraphCheck extends test_util.Tests {
       NatAdd(Nat(NatVar(1)), Nat(NatAdd(Nat(NatVar(0)), Nat(NatVar(2)))))))))
     assert(x == x2)
   }
+
+  test("EClass withArgument") {
+    import ExprDSL._
+
+    def check(body: Expr, arg: Expr): Unit = {
+      val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
+      val b = egraph.addExpr(body)
+      val a = egraph.addExpr(arg)
+      val r = EClass.withArgument(b, a, egraph)
+      val result = Extractor.init(egraph, AstSize).findBestOf(r)._2
+      assert(result == (body withArgument arg))
+    }
+
+    check(
+      app(%(0, f32 ->: f32), %(1, f32)),
+      app(%(0, f32 ->: f32 ->: f32), %(1, f32))
+    )
+    check(
+      app(%(6, f32 ->: f32), app(%(5, f32 ->: f32), %(0, f32))),
+      %(0, f32)
+    )
+  }
+
+  test("EClass withNatArgument") {
+    import ExprDSL._
+
+    def check(body: Expr, arg: Nat): Unit = {
+      val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
+      val b = egraph.addExpr(body)
+      val r = EClass.withNatArgument(b, arg, egraph)
+      val result = Extractor.init(egraph, AstSize).findBestOf(r)._2
+      assert(result == (body withNatArgument arg))
+    }
+
+    check(
+      nLam(transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      )),
+      `%n`(0)
+    )
+    check(
+      transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      ),
+      cst(1)
+    )
+
+    check(
+      transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      ),
+      `%n`(1)
+    )
+    check(
+      transpose(
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0))) ->:
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0)))
+      ),
+      cst(1)
+    )
+    check(
+      nApp(nLam(transpose(
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0)))
+      )), `%n`(1),
+        (`%n`(0)`.`(`%n`(1)`.``%dt`(0))) ->:
+        (`%n`(1)`.`(`%n`(0)`.``%dt`(0)))
+      ),
+      cst(1)
+    )
+    check(
+      transpose(
+        (cst(1)`.`(`%n`(0)`.``%dt`(0))) ->:
+        (`%n`(0)`.`(cst(1)`.``%dt`(0)))
+      ),
+      `%n`(0)
+    )
+  }
 }

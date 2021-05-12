@@ -19,7 +19,7 @@ object Runner {
 
     iterLimit = 30,
     nodeLimit = 100_000,
-    timeLimit = Duration.ofSeconds(10).toNanos
+    timeLimit = Duration.ofSeconds(20).toNanos
   )
 }
 
@@ -98,6 +98,7 @@ class Runner(var iterations: Vec[Iteration],
       if (stopReasons.nonEmpty) { return this }
 
       val iter = runOne(egraph, rules)
+      println(iter)
       iterations += iter
 
       if (iter.applied.isEmpty) {

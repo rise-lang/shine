@@ -8,77 +8,22 @@ import rise.core.{semantics, primitives => rcp, types => rct}
 case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
   override def toString: String = s"($node : $t)"
 
-  /** Shifts De-Bruijn indices up or down if they are >= cutoff
-    * @todo some traversals could be avoided for 0-shifts? */
+  /** Shifts De-Bruijn indices up or down if they are >= cutoff */
   def shifted(shift: Expr.Shift, cutoff: Expr.Shift): Expr = {
-    Expr(node match {
-      case Var(index) =>
-        val delta = if (index >= cutoff._1) shift._1 else 0
-        Var(index + delta)
-      case Lambda(e) =>
-        Lambda(e.shifted(shift, cutoff.copy(_1 = cutoff._1 + 1)))
-      case App(f, e) =>
-        App(f.shifted(shift, cutoff), e.shifted(shift, cutoff))
-      case NatLambda(e) =>
-        NatLambda(e.shifted(shift, cutoff.copy(_2 = cutoff._2 + 1)))
-      case NatApp(f, x) =>
-        NatApp(f.shifted(shift, cutoff), x.shifted(shift._2, cutoff._2))
-      case DataLambda(e) =>
-        DataLambda(e.shifted(shift, cutoff.copy(_3 = cutoff._3 + 1)))
-      case DataApp(f, x) =>
-        DataApp(f.shifted(shift, cutoff), x.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
-      case Literal(_) | Primitive(_) => node
-    }, t.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
+    Expr(NodeSubs.shifted(node, shift, cutoff){ case (e, s, c) => e.shifted(s, c) },
+      t.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
   }
 
   def replace(index: Int, subs: Expr): Expr = {
-    node match {
-      case Var(idx) if idx == index => subs
-      case Var(_) => this
-      case Lambda(e) =>
-        // TODO: could shift lazily
-        val e2 = e.replace(index + 1, subs.shifted((1, 0, 0), (0, 0, 0)))
-        Expr(Lambda(e2), t)
-      case App(f, e) =>
-        val f2 = f.replace(index, subs)
-        val e2 = e.replace(index, subs)
-        Expr(App(f2, e2), t)
-      case NatLambda(e) =>
-        // TODO: could shift lazily
-        val subs2 = subs.shifted((0, 1, 0), (0, 0, 0))
-        Expr(NatLambda(e.replace(index, subs2)), t)
-      case NatApp(f, x) =>
-        Expr(NatApp(f.replace(index, subs), x), t)
-      case DataLambda(e) =>
-        // TODO: could shift lazily
-        val subs2 = subs.shifted((0, 0, 1), (0, 0, 0))
-        Expr(DataLambda(e.replace(index, subs2)), t)
-      case DataApp(f, x) =>
-        Expr(DataApp(f.replace(index, subs), x), t)
-      case Literal(_) | Primitive(_) => this
-    }
+    NodeSubs.replace(node, index, subs)
+    { n => Expr(n, t) }
+    { case (e, i, s) => e.replace(i, s) }
+    { case (e, s, c) => e.shifted(s, c) }
   }
 
   def replace(index: Int, subs: Nat): Expr = {
-    Expr(node match {
-      case _: Var | _: Literal | _: Primitive => node
-      case Lambda(e) =>
-        Lambda(e.replace(index, subs))
-      case App(f, e) =>
-        val f2 = f.replace(index, subs)
-        val e2 = e.replace(index, subs)
-        App(f2, e2)
-      case NatLambda(e) =>
-        // TODO: could shift lazily
-        val e2 = e.replace(index + 1, subs.shifted(1, 0))
-        NatLambda(e2)
-      case NatApp(f, x) =>
-        NatApp(f.replace(index, subs), x.replace(index, subs))
-      case DataLambda(e) =>
-        DataLambda(e.replace(index, subs))
-      case DataApp(f, x) =>
-        DataApp(f.replace(index, subs), x.replace(index, subs))
-    }, t.replace(index, subs))
+    Expr(NodeSubs.replace(node, index, subs){ case (e, i, s) => e.replace(i, s) },
+      t.replace(index, subs))
   }
 
   // substitutes %0 for arg in this
@@ -166,6 +111,15 @@ object Expr {
         core.DepLambda[rct.DataKind](i, toNamed(e, bound + i)) _
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _
+
+      case Composition(f, g) =>
+        val f2 = f.shifted((1, 0, 0), (0, 0, 0))
+        val g2 = g.shifted((1, 0, 0), (0, 0, 0))
+        val argT: Type = f2.t.node match {
+          case FunType(inT, _) => inT
+          case _ => throw new Exception("this should not happen")
+        }
+        return toNamed(ExprDSL.lam(argT, ExprDSL.app(f2, ExprDSL.app(g2, Expr(Var(0), argT)))), bound)
     })(Type.toNamed(expr.t, bound))
   }
 

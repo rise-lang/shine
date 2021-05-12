@@ -4,8 +4,12 @@ import scala.language.postfixOps
 import scala.sys.process._
 import java.io.{File, Writer, BufferedWriter, FileWriter}
 
-/** Defines how to output graphviz files for an [[EGraph]] */
+/** Defines how to output graphviz files for an [[EGraph]]
+  * @param flooding: if not empty,
+  *   only print classes which are reachable from the given ones
+  */
 case class EGraphDot(egraph: EGraph[_],
+                     flooding: Seq[EClassId] = Seq(),
                      printTypes: Boolean = true) {
   def toSVG(path: String): Unit = {
     val dotPath = path.replace(".svg", ".dot")
@@ -31,31 +35,49 @@ case class EGraphDot(egraph: EGraph[_],
     writeln("  compound=true")
     writeln("  clusterrank=local")
 
+    val classesToPrint = if (flooding.isEmpty) {
+      egraph.classes.values.toSeq
+    } else {
+      val todo = Vec(flooding: _*)
+      val visited = HashSet[EClassId]()
+      while (todo.nonEmpty) {
+        val next = todo.remove(todo.size - 1)
+
+        if (!visited.contains(next)) {
+          visited += next
+          egraph.get(next).nodes.foreach { n =>
+            n.children().foreach(todo.addOne)
+          }
+        }
+      }
+      visited.map(egraph.get).toSeq
+    }
+
     // define all the nodes, clustered by eclass
-    for ((id, eclass) <- egraph.classes) {
-      writeln(s"  subgraph cluster_${id.i} {")
+    for (eclass <- classesToPrint) {
+      writeln(s"  subgraph cluster_${eclass.id.i} {")
       writeln("    style=dotted")
       for ((node, i) <- eclass.nodes.zipWithIndex) {
-        writeln(s"""    ${id.i}.$i[label = "${nodeLabel(node)}"]""")
+        writeln(s"""    ${eclass.id.i}.$i[label = "${nodeLabel(node)}"]""")
       }
-      if (printTypes) writeln(s"""    label = "#${id.i} : ${eclass.t}"""")
+      if (printTypes) writeln(s"""    label = "#${eclass.id.i} : ${eclass.t}"""")
       writeln("  }")
     }
 
-    for ((id, eclass) <- egraph.classes) {
+    for (eclass <- classesToPrint) {
       for ((node, i) <- eclass.nodes.zipWithIndex) {
         var argI = 0
         val childrenCount = node.childrenCount()
         node.children().foreach { child =>
           val (anchor, label) = edge(argI, childrenCount)
           val childLeader = egraph.find(child)
-          val (targetNode, targetCluster) = if (childLeader == id) {
-            (s"${id.i}.$i:n", s"cluster_${id.i}")
+          val (targetNode, targetCluster) = if (childLeader == eclass.id) {
+            (s"${eclass.id.i}.$i:n", s"cluster_${eclass.id.i}")
           } else {
             // .0 to pick an arbitrary node in the cluster
             (s"${childLeader.i}.0", s"cluster_${childLeader.i}")
           }
-          writeln(s"  ${id.i}.$i$anchor -> $targetNode [lhead = $targetCluster, $label]")
+          writeln(s"  ${eclass.id.i}.$i$anchor -> $targetNode [lhead = $targetCluster, $label]")
           argI += 1
         }
       }
@@ -89,6 +111,7 @@ case class EGraphDot(egraph: EGraph[_],
       case DataLambda(_) => "Λ : data"
       case Literal(d) => s"$d"
       case Primitive(p) => s"${p.toString.trim}"
+      case Composition(_, _) => ">>"
     }
   }
 }

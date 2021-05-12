@@ -106,3 +106,19 @@ object AstDepth extends CostFunction[Int] {
   def cost(enode: ENode, costs: EClassId => Int): Int =
     1 + enode.children().foldLeft(0) { case (acc, eclass) => acc.max(costs(eclass)) }
 }
+
+object AppCount extends CostFunction[Int] {
+  def cost(enode: ENode, costs: EClassId => Int): Int = {
+    val thisCount = enode match {
+      case App(_, _) => 1
+      case _ => 0
+    }
+    enode.children().foldLeft(thisCount) { case (acc, eclass) => acc + costs(eclass) }
+  }
+}
+
+case class LexicographicCost[A, B](a: CostFunction[A], b: CostFunction[B])
+  extends CostFunction[(A, B)] {
+  override def cost(enode: ENode, costs: EClassId => (A, B)): (A, B) =
+    (a.cost(enode, id => costs(id)._1), b.cost(enode, id => costs(id)._2))
+}

@@ -21,6 +21,8 @@ sealed trait Node[+E, +N, +DT] {
     case NatLambda(e) => NatLambda(fe(e))
     case DataApp(f, x) => DataApp(fe(f), fdt(x))
     case DataLambda(e) => DataLambda(fe(e))
+
+    case Composition(f, g) => Composition(fe(f), fe(g))
   }
 
   def mapChildren[OE](fc: E => OE): Node[OE, N, DT] =
@@ -33,6 +35,8 @@ sealed trait Node[+E, +N, +DT] {
     case NatLambda(e) => Iterator(e)
     case DataApp(f, _) => Iterator(f)
     case DataLambda(e) => Iterator(e)
+
+    case Composition(f, g) => Iterator(f, g)
   }
   def childrenCount(): Int =
     children().length
@@ -59,6 +63,8 @@ sealed trait Node[+E, +N, +DT] {
     case DataLambda(_) => 6
     case Literal(d) => 13 * d.hashCode()
     case Primitive(p) => 17 * p.setType(rct.TypePlaceholder).hashCode()
+
+    case Composition(_, _) => 0
   }
 
   // Returns true if this enode matches another enode.
@@ -75,6 +81,8 @@ sealed trait Node[+E, +N, +DT] {
     case (Primitive(p1), Primitive(p2)) =>
       // TODO: type should not be inside the primitive?
       p1.setType(rct.TypePlaceholder) == p2.setType(rct.TypePlaceholder)
+
+    case (Composition(_, _), Composition(_, _)) => true
     case _ => false
   }
 }
@@ -95,6 +103,10 @@ case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Noth
   override def toString: String = p.toString.trim
 }
 
+case class Composition[E](f: E, g: E) extends Node[E, Nothing, Nothing] {
+  override def toString: String = s"$f >> $g"
+}
+
 object Node {
   import math.Ordering.Implicits.seqOrdering
 
@@ -108,6 +120,8 @@ object Node {
     case DataLambda(e) => Seq(e)
     case Literal(_) => Seq()
     case Primitive(_) => Seq()
+
+    case Composition(f, g) => Seq(f, g)
   }
 
   implicit val natOrdering: Ordering[Nat] = new Ordering[Nat] {
@@ -219,6 +233,12 @@ object Node {
         case (Literal(d1), Literal(d2)) => dataOrdering.compare(d1, d2)
         case (Literal(_), _) => -1
         case (_, Literal(_)) => 1
+
+        case (Composition(f1, g1), Composition(f2, g2)) =>
+          implicitly[Ordering[(E, E)]].compare((f1, g1), (f2, g2))
+        case (Composition(_, _), _) => -1
+        case (_, Composition(_, _)) => 1
+
         // FIXME: does not work for mapGlobal(dim)
         case (Primitive(p1), Primitive(p2)) => p1.name compare p2.name
         case _ => ???

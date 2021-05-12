@@ -28,12 +28,22 @@ object rules {
       -->
     BetaNatApplier(?(0), `?n`(0))
   )
+  val betaExtract: Rule = Rewrite.init("beta-extract",
+    app(lam(?(0)), ?(1)).compile()
+      -->
+    BetaExtractApplier(?(0), ?(1))
+  )
+  val betaNatExtract: Rule = Rewrite.init("beta-nat-extract",
+    nApp(nLam(?(0)), `?n`(0)).compile()
+      -->
+    BetaNatExtractApplier(?(0), `?n`(0))
+  )
 
   import rise.core.types.{Nat, DataType, Type}
   import NamedRewriteDSL._
 
   val etaAbstraction: Rule = NamedRewrite.init("eta-abstraction",
-    ("f" :: ("a" ->: ("b": Type))) --> lam("x", app("f", "x"))
+    ("f" :: (t("a") ->: t("b"))) --> lam("x", app("f", "x"))
   )
   // FIXME: does not work as intended
   // Avoids excessive lam("y", app(lam("x", app("f", "x")), "y"))
@@ -228,11 +238,67 @@ object rules {
     nApp(nApp(slide, "sz"), 1) --> app(nApp(rcp.rotateValues.primitive, "sz"), lam("x", "x"))
   )
 
-  /*
   object combinatory {
-    val composition: Rule = NamedRewrite.init("composition",
-      app("f", app("g", "x")) --> app("g" >> "f", "x")
+    val compositionIntro: Rule = NamedRewrite.init("composition-intro",
+      // only do this when `x` is not a function
+      app("f", app("g", "x" :: ("dt": DataType))) --> app("g" >> "f", "x")
+    )
+    val compositionElim: Rule = NamedRewrite.init("composition-elim",
+      app("g" >> "f", "x") --> app("f", app("g", "x"))
+    )
+    val compositionAssoc1: Rule = NamedRewrite.init("composition-assoc-1",
+      (("f" >> "g") >> "h") --> ("f" >> ("g" >> "h"))
+    )
+    val compositionAssoc2: Rule = NamedRewrite.init("composition-assoc-2",
+      ("f" >> ("g" >> "h")) --> (("f" >> "g") >> "h")
+    )
+
+    val mapFusion: Rule = NamedRewrite.init("map-fusion-cnf",
+      (app(map, "f") >> app(map, "g"))
+        -->
+      app(map, "f" >> "g")
+    )
+    val mapFission: Rule = NamedRewrite.init("map-fission-cnf",
+      app(map, ("f" :: (("a": DataType) ->: ("b": DataType))) >> "g")
+        -->
+      (app(map, "f") >> app(map, "g"))
+    )
+
+    val removeTransposePair: Rule = NamedRewrite.init("remove-transpose-pair-cnf",
+      (transpose >> transpose) --> lam("x", "x")
+    )
+    val compositionRightId: Rule = NamedRewrite.init("composition-right-id",
+      ("f" >> lam("x", "x")) --> "f"
+    )
+    val compositionLeftId: Rule = NamedRewrite.init("composition-left-id",
+      (lam("x", "x") >> "f") --> "f"
+    )
+
+    val mapSlideBeforeTranspose: Rule = NamedRewrite.init("map-slide-before-transpose-cnf",
+      (app(map, nApp(nApp(slide, "sz"), "sp")) >> transpose)
+        -->
+      (transpose >> nApp(nApp(slide, "sz"), "sp") >> app(map, transpose))
+    )
+    val slideBeforeMapMapF: Rule = NamedRewrite.init("slide-before-map-map-f-cnf",
+      (nApp(nApp(slide, "sz"), "sp") >> app(map, app(map, "f")))
+        -->
+      (app(map, "f") >> nApp(nApp(slide, "sz"), "sp"))
+    )
+    val slideBeforeMap: Rule = NamedRewrite.init("slide-before-map-cnf",
+      (app(map, "f") >> nApp(nApp(slide, "sz"), "sp"))
+        -->
+      (nApp(nApp(slide, "sz"), "sp") >> app(map, app(map, "f")))
+    )
+
+    val transposePairAfter: Rule = NamedRewrite.init("transpose-pair-after-cnf",
+      ("f" :: (t("in") ->: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))) -->
+      ("f" >> transpose >> transpose)
+    )
+
+    val mapMapFBeforeTranspose: Rule = NamedRewrite.init("map-map-f-before-transpose-cnf",
+      (app(map, app(map, "f")) >> transpose)
+        -->
+      (transpose >> app(map, app(map, "f")))
     )
   }
-   */
 }

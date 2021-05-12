@@ -10,6 +10,9 @@ case object Greater extends Order
   * @see [[https://docs.rs/egg/0.6.0/egg/trait.Analysis.html]]
   */
 trait Analysis[Data] {
+  // useful if empty e-classes are created
+  def empty(egraph: EGraph[Data], t: Type): Data
+
   def make(egraph: EGraph[Data], enode: ENode, t: Type): Data
 
   // - if `to < from` then `to` should be assigned to `from`
@@ -24,42 +27,132 @@ trait Analysis[Data] {
 }
 
 object NoAnalysis extends Analysis[()] {
+  override def empty(egraph: EGraph[Unit], t: Type): Unit = ()
   override def make(egraph: EGraph[()], enode: ENode, t: Type): () = ()
   override def merge(to: (), from: ()): Option[Order] = Some(Equal)
 }
 
 class DefaultAnalysisData(var free: HashSet[Int],
-                          var extractedExpr: Expr,
-                          var extractedSize: Int)
+                          var freeNat: HashSet[Int],
+                          var freeDataType: HashSet[Int],
+                          var extracted: Option[(Expr, Int)]) {
+  def extractedExpr: Expr = extracted.get._1
+  def extractedSize: Int = extracted.get._2
+}
 
 abstract class DefaultAnalysisCustomisable() extends Analysis[DefaultAnalysisData] {
+  override def empty(egraph: EGraph[DefaultAnalysisData], t: Type): DefaultAnalysisData =
+    new DefaultAnalysisData(HashSet(), HashSet(), HashSet(), None)
+
   def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit
 
   override def make(egraph: EGraph[DefaultAnalysisData], enode: ENode, t: Type): DefaultAnalysisData = {
     val free = HashSet.empty[Int]
-    enode match {
-      case Var(index) => free += index
-      case Lambda(e) =>
-        free ++= egraph.getMut(e).data.free.filter(idx => idx != 0).map(idx => idx - 1)
-      // note: we are not collecting free nat/type variables yet
-      // case NatLambda(_) => ???
-      // case DataLambda(_) => ???
-      case _ => enode.children().foreach(c => free ++= egraph.getMut(c).data.free)
+    val freeNat = HashSet.empty[Int]
+    val freeDataType = HashSet.empty[Int]
+
+    def flatten(i: Seq[(Seq[Int], Seq[Int])]): (Seq[Int], Seq[Int]) =
+      i.foldRight((Seq.empty[Int], Seq.empty[Int]))
+      { case ((ns1, dts1), (ns2, dts2)) => (ns1 ++ ns2, dts1 ++ dts2) }
+
+    def commit(ndts: (Seq[Int], Seq[Int])): Unit = {
+      freeNat ++= ndts._1
+      freeDataType ++= ndts._2
     }
-    val extractedExpr = Expr(enode.mapChildren(c => egraph.getMut(c).data.extractedExpr), t)
-    val extractedSize = enode.children().foldLeft(1) { case (acc, c) => acc + egraph.getMut(c).data.extractedSize }
-    new DefaultAnalysisData(free, extractedExpr, extractedSize)
+
+    def collectFreeNat(n: Nat): (Seq[Int], Seq[Int]) = {
+      n.node match {
+        case NatVar(index) => (Seq(index), Seq())
+        case node => flatten(node.map(collectFreeNat).nats().toSeq)
+      }
+    }
+
+    def collectFreeDataType(dt: DataType): (Seq[Int], Seq[Int]) = {
+      dt.node match {
+        case DataTypeVar(index) => (Seq(), Seq(index))
+        case node => flatten(DataTypeNode.collect(node.map(collectFreeNat, collectFreeDataType)))
+      }
+    }
+
+    def collectFreeType(t: Type): (Seq[Int], Seq[Int]) = {
+      t.node match {
+        case FunType(inT, outT) =>
+          flatten(Seq(collectFreeType(inT), collectFreeType(outT)))
+        case NatFunType(t) =>
+          val (ns, dts) = collectFreeType(t)
+          (ns.filter(idx => idx != 0).map(idx => idx - 1), dts)
+        case DataFunType(t) =>
+          val (ns, dts) = collectFreeType(t)
+          (ns, dts.filter(idx => idx != 0).map(idx => idx - 1))
+        case dt: DataTypeNode[Nat, DataType] => collectFreeDataType(DataType(dt))
+      }
+    }
+
+    enode match {
+      case Var(index) =>
+        free += index
+      case Lambda(e) =>
+        val ed = egraph.getMut(e).data
+        free ++= ed.free.filter(idx => idx != 0).map(idx => idx - 1)
+        freeNat ++= ed.freeNat
+        freeDataType ++= ed.freeDataType
+      case NatLambda(e) =>
+        val ed = egraph.getMut(e).data
+        free ++= ed.free
+        freeNat ++= ed.freeNat.filter(idx => idx != 0).map(idx => idx - 1)
+        freeDataType ++= ed.freeDataType
+      case DataLambda(e) =>
+        val ed = egraph.getMut(e).data
+        free ++= ed.free
+        freeNat ++= ed.freeNat
+        freeDataType ++= ed.freeDataType.filter(idx => idx != 0).map(idx => idx - 1)
+      case _ => enode.map({ c =>
+        val cd = egraph.getMut(c).data
+        free ++= cd.free
+        freeNat ++= cd.freeNat
+        freeDataType ++= cd.freeDataType
+      }, { n => commit(collectFreeNat(n)) }, { dt => commit(collectFreeDataType(dt)) })
+    }
+    commit(collectFreeType(t))
+
+    def computeExtracted(): Option[(Expr, Int)] = {
+      var extractedSize = 1
+      val extractedExpr = Expr(enode.mapChildren { c =>
+        egraph.getMut(c).data.extracted match {
+          case None => return None
+          case Some((e, s)) =>
+            extractedSize += s
+            e
+        }
+      }, t)
+      Some(extractedExpr, extractedSize)
+    }
+
+    new DefaultAnalysisData(free, freeNat, freeDataType, computeExtracted())
   }
 
   override def merge(to: DefaultAnalysisData, from: DefaultAnalysisData): Option[Order] = {
     val beforeFreeCount = to.free.size
+    val beforeFreeNatCount = to.freeNat.size
+    val beforeFreeDataTypeCount = to.freeDataType.size
     freeMerge(to.free, from.free)
-    var didChange = beforeFreeCount != to.free.size
-    assert(to.extractedSize > 0 && from.extractedSize > 0)
-    if (to.extractedSize > from.extractedSize) {
-      to.extractedExpr = from.extractedExpr
-      to.extractedSize = from.extractedSize
-      didChange = true
+    freeMerge(to.freeNat, from.freeNat)
+    freeMerge(to.freeDataType, from.freeDataType)
+    var didChange =
+      beforeFreeCount != to.free.size ||
+      beforeFreeNatCount != to.freeNat.size ||
+      beforeFreeDataTypeCount != to.freeDataType.size
+    (to.extracted, from.extracted) match {
+      case (None, _) =>
+        to.extracted = from.extracted
+        didChange = true
+      case (Some(_), None) =>
+      case (Some((_, toESize)), Some((_, fromESize))) =>
+        assert(toESize > 0 && fromESize > 0)
+        if (toESize > fromESize) {
+          to.extracted = from.extracted
+          didChange = true
+        }
     }
     if (didChange) { None } else { Some(Greater) }
   }
@@ -72,5 +165,5 @@ object DefaultAnalysis extends DefaultAnalysisCustomisable {
 
 object DefaultAnalysisWithFreeIntersection extends DefaultAnalysisCustomisable {
   override def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit =
-    to.filterInPlace(from.contains _) // intersection
+    to.filterInPlace(from.contains) // intersection
 }

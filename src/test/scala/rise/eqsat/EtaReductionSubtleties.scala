@@ -10,13 +10,15 @@ class EtaReductionSubtleties extends test_util.Tests {
     val goal = Expr.fromNamed(introduceDataFuns(1, _ => f =>
       f(0)))
 
+    // note: breaks advanced Var TypeCheck
+    // note: saturates without finding the goal with rules.beta
     proveEquiv(start, goal,
-      Seq(rules.eta, rules.beta),
+      Seq(rules.eta, rules.betaExtract),
       DefaultAnalysisWithFreeIntersection)
 
     try {
       proveEquiv(start, goal,
-        Seq(rules.eta, rules.beta))
+        Seq(rules.eta, rules.betaExtract))
       assert(false)
     } catch {
       case CouldNotProveEquiv =>
@@ -30,13 +32,15 @@ class EtaReductionSubtleties extends test_util.Tests {
     val goal = Expr.fromNamed(introduceDataFuns(1, dts => f =>
       fun(dts(1))(z => fun(_ => f(0))(z))))
 
+    // note: breaks advanced Var TypeCheck
+    // note: saturates without finding the goal with rules.beta
     proveEquiv(start, goal,
-      Seq(rules.eta, rules.beta),
+      Seq(rules.eta, rules.betaExtract),
       DefaultAnalysisWithFreeIntersection)
 
     try {
       proveEquiv(start, goal,
-        Seq(rules.eta, rules.beta))
+        Seq(rules.eta, rules.betaExtract))
       assert(false)
     } catch {
       case CouldNotProveEquiv =>

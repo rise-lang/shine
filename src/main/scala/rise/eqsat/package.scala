@@ -22,8 +22,27 @@ package object eqsat {
   def BENF(e: Expr): Expr = {
     val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
     val id = egraph.addExpr(e)
-    Runner.init().run(egraph, Seq(rules.eta, rules.beta, rules.betaNat))
+    Runner.init().run(egraph, Seq(
+      rules.eta,
+      // rules.beta, rules.betaNat
+      rules.betaExtract, rules.betaNatExtract
+    ))
     val extractor = Extractor.init(egraph, AstSize)
+    val (_, normalized) = extractor.findBestOf(id)
+    normalized
+  }
+
+  // Combinator Normal Form
+  def CNF(e: Expr): Expr = {
+    val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
+    val id = egraph.addExpr(e)
+    Runner.init().run(egraph, Seq(
+      rules.eta,
+      // rules.beta, rules.betaNat,
+      rules.betaExtract, rules.betaNatExtract,
+      rules.combinatory.compositionIntro
+    ))
+    val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     val (_, normalized) = extractor.findBestOf(id)
     normalized
   }
