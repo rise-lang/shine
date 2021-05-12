@@ -60,7 +60,7 @@ class gauss extends test_util.Tests {
     normalize.apply(fuseReduceMap `@` topDown[Rise])
 
   val splitReduce = splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce))))
-  val reordering = reorder(List(1,2,4,5)) // expected to work
+  val reordering = reorder(List(1,2,4,3)) // expected to work
   //val reordering = reorder(List(1,2)) // Works, but I have no idea what's going on
 
   val vectorization = vectorize(64) `@` innermost(isApplied(isApplied(isMap)))
