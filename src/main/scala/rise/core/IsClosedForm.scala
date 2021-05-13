@@ -11,6 +11,9 @@ object IsClosedForm {
   {
     override val accumulator = PairMonoid(SetMonoid, SetMonoid)
 
+    val extractNatIdentifiers : Nat => Set[Kind.Identifier] =
+      _.varList.map(v => NatIdentifier(v.name, v.range)).toSet
+
     override def identifier[I <: Identifier]: VarType => I => Pair[I] = vt => i => {
       for { t2 <- `type`(i.t);
             i2 <- if (vt == Reference && !boundV(i)) {
@@ -28,11 +31,7 @@ object IsClosedForm {
     }
 
     override def nat: Nat => Pair[Nat] = n => {
-      val free = n.varList.foldLeft(Set[Kind.Identifier]()) {
-        case (free, v: NamedVar) if !boundT(NatIdentifier(v)) => free + NatIdentifier(v)
-        case (free, _) => free
-      }
-      accumulate((Set(), free))(n)
+      accumulate((Set(), extractNatIdentifiers(n).diff(boundT)))(n)
     }
 
     override def expr: Expr => Pair[Expr] = {
