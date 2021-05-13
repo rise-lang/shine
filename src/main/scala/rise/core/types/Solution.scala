@@ -132,9 +132,11 @@ case class Solution(ts: Map[Type, Type],
     combine(this, other)
   }
 
+  type Scope = Set[Kind.Identifier]
+
   // def apply(constraints: Seq[Constraint]): Seq[Constraint] = constraints.map(apply)
-  def apply(constraints: Seq[ScopedConstraint]): Seq[ScopedConstraint] =
-    constraints.map {case ScopedConstraint(c, s) => ScopedConstraint(apply(c), s)}
+  def apply(constraints: Seq[(Constraint, Scope)]): Seq[(Constraint, Scope)] =
+    constraints.map {case (c, s) => (apply(c), s)}
 
   def apply(constraint: Constraint): Constraint = constraint match {
     case TypeConstraint(a, b) => TypeConstraint(apply(a), apply(b))

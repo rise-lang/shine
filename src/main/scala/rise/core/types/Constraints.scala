@@ -43,13 +43,13 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
   override def toString: String = s"$a ~ $b"
 }
 
-case class ScopedConstraint(constr : Constraint, preserve : Set[Kind.Identifier])
-
 object Constraint {
+  type Scope = Set[Kind.Identifier]
+
   def canBeSubstituted(preserve: Set[Kind.Identifier], i: Kind.Identifier): Boolean =
     !preserve.contains(i)
 
-  def solve(cs: Seq[ScopedConstraint], trace: Seq[Constraint])
+  def solve(cs: Seq[(Constraint, Scope)], trace: Seq[Constraint])
      (implicit explDep: Flags.ExplicitDependence): Solution =
   solveRec(cs, Nil, trace)
   /* faster but not always enough:
@@ -61,23 +61,23 @@ object Constraint {
   }
   */
 
-  def solveRec(cs: Seq[ScopedConstraint], rs: Seq[ScopedConstraint], trace: Seq[Constraint])
+  def solveRec(cs: Seq[(Constraint, Scope)], rs: Seq[(Constraint, Scope)], trace: Seq[Constraint])
               (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
     case (Nil, Nil) => Solution()
     case (Nil, _) => error(s"could not solve constraints ${rs}")(trace)
     case (scoped +: cs, _) =>
-      val ScopedConstraint(c, scope) = scoped
+      val (c, scope) = scoped
       val s = try { solveOne(c, scope, trace) }
               catch { case e: InferenceException =>
                 println(e.msg)
-                return solveRec(cs, rs :+ ScopedConstraint(c, scope), trace) }
+                return solveRec(cs, rs :+ (c, scope), trace) }
       s ++ solve(s.apply(rs ++ cs), trace)
   }
 
   // scalastyle:off method.length
   def solveOne(c: Constraint, preserve : Set[Kind.Identifier], trace: Seq[Constraint]) (implicit explDep: Flags.ExplicitDependence): Solution = {
     implicit val _trace: Seq[Constraint] = trace
-    def decomposed(cs: Seq[Constraint], preserve : Set[Kind.Identifier]) = solve(cs.map(ScopedConstraint(_, preserve)), c +: trace)
+    def decomposed(cs: Seq[Constraint], preserve : Set[Kind.Identifier]) = solve(cs.map((_, preserve)), c +: trace)
 
     c match {
       case TypeConstraint(a, b) =>
@@ -316,7 +316,7 @@ object Constraint {
 
     def unify(a: Nat, b: Nat, preserve : Set[Kind.Identifier])
              (implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs.map(ScopedConstraint(_, preserve)), NatConstraint(a, b) +: trace)
+      def decomposed(cs: Seq[Constraint]) = solve(cs.map((_, preserve)), NatConstraint(a, b) +: trace)
       (a, b) match {
         case (i: NatIdentifier, _) => nat.unifyIdent(i, b, preserve)
         case (_, i: NatIdentifier) => nat.unifyIdent(i, a, preserve)
@@ -477,7 +477,7 @@ object Constraint {
     def unify(a: BoolExpr, b: BoolExpr, preserve : Set[Kind.Identifier])(
       implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
     ): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs.map(ScopedConstraint(_, preserve)), BoolConstraint(a, b) +: trace)
+      def decomposed(cs: Seq[Constraint]) = solve(cs.map((_, preserve)), BoolConstraint(a, b) +: trace)
       (a, b) match {
         case _ if a == b => Solution()
         case (ArithPredicate(lhs1, rhs1, op1), ArithPredicate(lhs2, rhs2, op2)) if op1 == op2 =>
