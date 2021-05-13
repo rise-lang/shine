@@ -178,7 +178,7 @@ class circularBuffering extends test_util.Tests {
 
   private def openEquality(typedA: Rise, b: Rise): Boolean = {
     import rise.core.DSL._
-    val typedB: Rise = toBeTyped(b) !: typedA.t
+    val typedB: Rise = toBeTyped(b) !: typedA
     makeClosed(typedA) =~= makeClosed(typedB)
   }
 

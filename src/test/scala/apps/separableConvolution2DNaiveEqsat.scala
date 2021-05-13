@@ -79,8 +79,8 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
                                 expandStrats: immutable.Seq[ExpandStrategy],
                                 filterStrat: Strategy[Rise] = BENF): Unit = {
     // FIXME: ad-hoc closing mechanism
-    val closedStart = makeClosed(BENF(start).get !: start.t)
-    val closedGoal = makeClosed(eraseType(BENF(goal).get) !: start.t)
+    val closedStart = makeClosed(BENF(start).get !: start)
+    val closedGoal = makeClosed(eraseType(BENF(goal).get) !: start)
 
     val visited = mutable.Set[ExprWrapper]()
     val unvisited = mutable.Set[ExprWrapper](ExprWrapper(closedStart))

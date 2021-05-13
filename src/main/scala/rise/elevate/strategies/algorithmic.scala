@@ -31,7 +31,7 @@ object algorithmic {
       gx match {
         case App(f2, gx2) =>
           if (gx2 =~= x) {
-            Success(map(f2) >> map(f) !: e.t)
+            Success(map(f2) >> map(f) !: e)
           } else {
             mapFirstFissionRec(x, fun(e => f(preserveType(f2)(e))), gx2)
           }
@@ -63,7 +63,7 @@ object algorithmic {
 
     e match {
       case App(primitives.map(), Lambda(x, gx)) => mapFullFissionRec(x, gx) match {
-        case Some(p) => Success(p !: e.t)
+        case Some(p) => Success(p !: e)
         case None => Failure(mapFullFission)
       }
       case _ => Failure(mapFullFission)

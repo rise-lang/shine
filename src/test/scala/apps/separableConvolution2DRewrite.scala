@@ -37,7 +37,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toBeTyped(na) !: nb.t
+    val uab: Rise = toBeTyped(na) !: nb
     makeClosed(uab) =~~= makeClosed(nb)
   }
 

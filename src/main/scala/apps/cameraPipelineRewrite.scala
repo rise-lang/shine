@@ -157,7 +157,7 @@ object cameraPipelineRewrite {
   // idx i >> f -> map f >> idx i
   def idxAfterF: Strategy[Rise] = {
     case expr @ App(f, App(App(p.idx(), i), in)) =>
-      Success(p.idx(i)(p.map(f)(in)) !: expr.t)
+      Success(p.idx(i)(p.map(f)(in)) !: expr)
     case _ => Failure(idxAfterF)
   }
 
@@ -383,18 +383,18 @@ object cameraPipelineRewrite {
 
   def letHoist: Strategy[Rise] = {
     case expr @ App(f, App(App(p.let(), v), Lambda(x, b))) =>
-      Success(letf(lambda(eraseType(x), preserveType(f)(b)))(v) !: expr.t)
+      Success(letf(lambda(eraseType(x), preserveType(f)(b)))(v) !: expr)
     // TODO: normal form / non-map specific?
     case expr @ App(App(p.map(), Lambda(y,
       App(App(p.let(), v), Lambda(x, b))
     )), in) if !contains[Rise](y).apply(v) =>
-      Success(letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v) !: expr.t)
+      Success(letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v) !: expr)
     case expr @ App(p.map(), Lambda(y,
       App(App(p.let(), v), Lambda(x, b))
     )) if !contains[Rise](y).apply(v) =>
       Success(fun(in =>
         letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v)
-      ) !: expr.t)
+      ) !: expr)
     case _ => Failure(letHoist)
   }
 
@@ -404,7 +404,7 @@ object cameraPipelineRewrite {
       argument(argument({
         case expr @ App(Lambda(x, color_correct), matrix) =>
           Success(letf(lambda(toBeTyped(x), color_correct))(
-            p.mapSeq(p.mapSeq(fun(x => x)))(matrix)) !: expr.t)
+            p.mapSeq(p.mapSeq(fun(x => x)))(matrix)) !: expr)
         case _ => Failure(precomputeColorCorrectionMatrix)
       })) `;`
       normalize.apply(gentleBetaReduction() <+ letHoist)
@@ -422,7 +422,7 @@ object cameraPipelineRewrite {
           argument(function(isEqualTo(p.generate.primitive))) `;`
           argument({ curve =>
             Success(letf(fun(x => x))(
-              p.mapSeq(fun(x => x))(curve)) !: curve.t)
+              p.mapSeq(fun(x => x))(curve)) !: curve)
           })
         )
       ))) `;`

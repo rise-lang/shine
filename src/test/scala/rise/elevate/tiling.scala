@@ -34,7 +34,7 @@ class tiling extends test_util.Tests {
   def betaEtaEquals(a: Rise, b: Rise): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toBeTyped(na) !: nb.t
+    val uab: Rise = toBeTyped(na) !: nb
     makeClosed(uab) =~~= makeClosed(nb)
   }
   // Check that DSL makes sense

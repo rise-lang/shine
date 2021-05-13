@@ -5,6 +5,7 @@ import rise.core.primitives._
 import rise.core.semantics._
 import rise.core.traverse._
 import rise.core.types._
+import rise.elevate.rewrite
 
 import scala.language.implicitConversions
 
@@ -76,14 +77,8 @@ package object DSL {
     def `@`(i: ToBeTyped[Expr]): ToBeTyped[App] = idx(i)(e)
   }
 
-  implicit class TypeAssertionHelper(t: Type) {
-    def !:[T <: Expr](e: ToBeTyped[T]): ToBeTyped[Expr] = {
-      val preserve = infer.getFTVs(t).map(_.name)
-      e >>= (e => {
-        val env = infer.collectFreeEnv(e)
-        infer(TypeAnnotation(e, t), env, preserve)
-      })
-    }
+  implicit class TypeAssertionHelper(lhs: Expr) {
+    def !:[T <: Expr](e: ToBeTyped[T]): ToBeTyped[Expr] = rewrite(lhs)(e)
   }
 
   implicit class TypeAnnotationHelper(t: Type) {
