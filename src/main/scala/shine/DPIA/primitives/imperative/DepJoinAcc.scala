@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class DepJoinAcc(val n: Nat, val lenF: NatToNat, val dt: DataType, val array: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     array :: accT(ArrayType(BigSum(from = 0, upTo = n - 1, (i: Nat) => lenF(i)), dt))
+    true
   }
   override val t: AccType = accT(DepArrayType(n, n2dtFun { (i: NatIdentifier) => ArrayType(lenF(i), dt) }))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): DepJoinAcc = new DepJoinAcc(v.nat(n), v.natToNat(lenF), v.data(dt), VisitAndRebuild(array, v))

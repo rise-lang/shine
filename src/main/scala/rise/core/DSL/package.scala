@@ -564,21 +564,33 @@ package object DSL {
   def lu8(v: Int): ToBeTyped[Expr] = cast(l(v)) :: u8
 
   object foreignFun {
-    def apply(name: String, t: Type): ToBeTyped[ForeignFunction] = {
-      toBeTyped(ForeignFunction(ForeignFunction.Decl(name, None))(t))
+    def apply(name: String, t: Type): ToBeTyped[Expr] = {
+      apply(ForeignFunction.Decl(name, None), t)
     }
 
-    def apply(
-               name: String,
-               params: Seq[String],
-               body: String,
-               t: Type
-             ): ToBeTyped[ForeignFunction] = {
-      toBeTyped(
-        ForeignFunction(
-          ForeignFunction.Decl(name, Some(ForeignFunction.Def(params, body)))
-        )(t)
-      )
+    def apply(name: String,
+              params: Seq[String],
+              body: String,
+              t: Type
+             ): ToBeTyped[Expr] = {
+      apply(ForeignFunction.Decl(name, Some(ForeignFunction.Def(params, body))), t)
+    }
+
+    def apply(decl: ForeignFunction.Decl, t: Type): ToBeTyped[Expr] = {
+      def collectTypes(t: Type): (Seq[DataType], DataType) = {
+        t match {
+          case dt: DataType => (Vector(), dt)
+          case FunType(dt: DataType, out) =>
+            val (i, o) = collectTypes(out)
+            (dt +: i, o)
+          case _ => throw new Exception("This should not be possible")
+        }
+      }
+      val (inTs, outT) = collectTypes(t)
+      val ff: ToBeTyped[Expr] = foreignFunction(decl, inTs.size).apply
+      inTs.foldLeft(ff) {
+        case (f, t) => f.apply(t)
+      }.apply(outT)
     }
   }
 

@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class ToMem(val a: AddressSpace, val dt: DataType, val input: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     input :: expT(dt, write)
+    true
   }
   override val t: ExpType = expT(dt, read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): ToMem = new ToMem(v.addressSpace(a), v.data(dt), VisitAndRebuild(input, v))

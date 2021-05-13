@@ -191,8 +191,8 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
 
     case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
 
-    case OpenCLFunctionCall(name, _, args) =>
-      CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
+    case fc@OpenCLFunctionCall(name, _) =>
+      CCodeGen.codeGenForeignCall(name, fc.args, env, Nil, cont)
 
     case idx: ocl.IdxDistribute => path match {
       // TODO: ensure that i % stride == init ?

@@ -97,14 +97,15 @@ object HostManagedBuffers {
           collectWrites(lhs, metadata.host_writes)
           collectReads(rhs, allocs, metadata.host_reads)
           Stop(p)
-        case k@ocl.KernelCallCmd(_, _, _, in) =>
-          in.foreach(collectReads(_, allocs, metadata.device_reads))
+        case k@ocl.KernelCallCmd(_, _, _, _) =>
+          k.args.foreach(collectReads(_, allocs, metadata.device_reads))
           collectWrites(k.output, metadata.device_writes)
-          ((k.output, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
+          ((k.output, DEVICE_WRITE) +: k.args.map(_ -> DEVICE_READ)).foreach {
             case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
             case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
             case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
             case (Natural(_), _) =>
+            case (Literal(NatAsIntData(_)), _) =>
             case (unexpected, _) => throw new Exception(s"did not expect $unexpected")
           }
           Stop(p)
@@ -154,12 +155,13 @@ object HostManagedBuffers {
           val x2 = managed(x)._2.asInstanceOf[Identifier[VarType]]
           Continue(ocl.NewManagedBuffer(access)(dt, Lambda(x2, body)), this)
         case _: dpia.New | _: Lambda[_, _] | _: dpia.Seq |
-             _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
+             _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) | Literal(NatAsIntData(_)) =>
           Continue(p, this)
-        case k@ocl.KernelCallCmd(name, ls, gs, args) =>
+        case k@ocl.KernelCallCmd(name, ls, gs, n) =>
           val newOutput = VisitAndRebuild(k.output, this)
-          Stop(ocl.KernelCallCmd(name, ls, gs, args.map(VisitAndRebuild(_, this)))(
-            newOutput.t.dataType, newOutput))
+          val newArgs = k.args.map(VisitAndRebuild(_, this))
+          Stop(ocl.KernelCallCmd(name, ls, gs, n)(
+            newArgs.map(_.t.dataType), newOutput.t.dataType, k.args.map(VisitAndRebuild(_, this)), newOutput))
         case _: HostExecution => Stop(p)
         case unexpected => throw new Exception(s"did not expect $unexpected")
       }
@@ -234,8 +236,8 @@ object HostManagedBuffers {
       case PadClamp(_, _, _, _, e) =>
         collectReads(e, allocs, reads)
       case Cast(_, _, e) => collectReads(e, allocs, reads)
-      case ForeignFunctionCall(_, _, es) =>
-        es.foreach {
+      case ffc@ForeignFunctionCall(_, _) =>
+        ffc.args.foreach {
           collectReads(_, allocs, reads)
         }
       case NatAsIndex(_, e) => collectReads(e, allocs, reads)
@@ -245,8 +247,8 @@ object HostManagedBuffers {
       case MakePair(_, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Reorder(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case MakeArray(es) =>
-        es.foreach {
+      case m@MakeArray(_) =>
+        m.elements.foreach {
           collectReads(_, allocs, reads)
         }
       case Gather(_, _, _, e1, e2) =>

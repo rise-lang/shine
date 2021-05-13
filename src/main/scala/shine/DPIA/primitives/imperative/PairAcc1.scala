@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class PairAcc1(val dt1: DataType, val dt2: DataType, val pair: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     pair :: accT(PairType(dt1, dt2))
+    true
   }
   override val t: AccType = accT(dt1)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): PairAcc1 = new PairAcc1(v.data(dt1), v.data(dt2), VisitAndRebuild(pair, v))

@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class NatAsIndex(val n: Nat, val e: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     e :: expT(NatType, read)
+    true
   }
   override val t: ExpType = expT(IndexType(n), read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): NatAsIndex = new NatAsIndex(v.nat(n), VisitAndRebuild(e, v))

@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class IdxDistribute(parallelismLevel: shine.OpenCL.ParallelismLevel)(val m: Nat, val n: Nat, val stride: Nat, val dt: DataType, val array: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     array :: expT(ArrayType(m, dt), read)
+    true
   }
   override val t: ExpType = expT(ArrayType(n, dt), read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): IdxDistribute = new IdxDistribute(parallelismLevel)(v.nat(m), v.nat(n), v.nat(stride), v.data(dt), VisitAndRebuild(array, v))

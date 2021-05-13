@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class NewManagedBuffer(access: shine.OpenCL.AccessFlags)(val dt: DataType, val k: Phrase[FunType[PhrasePairType[ExpType, AccType], CommType]]) extends CommandPrimitive {
-  {
+  assert {
     k :: FunType(PhrasePairType(expT(ManagedBufferType(dt), read), accT(ManagedBufferType(dt))), comm)
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): NewManagedBuffer = new NewManagedBuffer(access)(v.data(dt), VisitAndRebuild(k, v))

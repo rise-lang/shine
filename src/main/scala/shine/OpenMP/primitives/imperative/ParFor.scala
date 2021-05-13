@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class ParFor(val n: Nat, val dt: DataType, val out: Phrase[AccType], val body: Phrase[FunType[ExpType, FunType[AccType, CommType]]]) extends CommandPrimitive {
-  {
+  assert {
     out :: accT(ArrayType(n, dt))
     body :: FunType(expT(IndexType(n), read), FunType(accT(dt), comm))
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): ParFor = new ParFor(v.nat(n), v.data(dt), VisitAndRebuild(out, v), VisitAndRebuild(body, v))

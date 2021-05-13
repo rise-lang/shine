@@ -4,17 +4,26 @@ import arithexpr.arithmetic.RangeAdd
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.TypeCheck._
 
+import scala.annotation.elidable
+import scala.annotation.elidable.ASSERTION
+
 
 package object Types {
+  @elidable(ASSERTION)
+  def typeAssert[T <: PhraseType](p: Phrase[T], pt: PhraseType): Unit = {
+    if (!(p checkTypeEqOrSubtype pt))
+      throw new java.lang.AssertionError(s"Type error: found ${p.t}, expected $pt")
+  }
+
+  @elidable(ASSERTION)
+  def typeAssert(boolean: Boolean, msg: => String): Unit = {
+    if (!boolean)
+      throw new java.lang.AssertionError(s"Type error: $msg")
+  }
+
   implicit class ReverseInferenceHelper(pt: PhraseType) {
-    def ::[T <: PhraseType](p: Phrase[T]): Unit =
-      if (!(p checkTypeEqOrSubtype pt)) {
-        throw new Exception(s"Type error: found ${p.t}, expected $pt")
-      }
-    def `:`[T <: PhraseType](p: Phrase[T]): Unit =
-      if (!(p checkTypeEqOrSubtype pt)) {
-        throw new Exception(s"Type error: found ${p.t}, expected $pt")
-      }
+    def ::[T <: PhraseType](p: Phrase[T]): Unit = typeAssert(p, pt)
+    def `:`[T <: PhraseType](p: Phrase[T]): Unit = typeAssert(p, pt)
   }
 
   type NatDependentFunctionType[T <: PhraseType] = DepFunType[NatKind, T]

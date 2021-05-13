@@ -29,9 +29,10 @@ def depZip(n: nat, ft1: nat2data, ft2: nat2data,
 
 def drop(n: nat, m: nat, dt: data, array: exp[n+m.dt, read]): exp[m.dt, read]
 
-def foreignFunctionCall{funDecl: rise.core.ForeignFunction.Decl,
-                        inTs: Seq[DataType],
-                        args: Seq[Phrase[ExpType]]}(outT: data): exp[outT, read]
+def foreignFunctionCall{funDecl: rise.core.ForeignFunction.Decl, n: Int}
+                        (inTs: n*data,
+                         outT: data,
+                         args: n*exp[*inTs, read]): exp[outT, read]
 
 def fst(dt1: data, dt2: data, pair: exp[(dt1, dt2), read]): exp[dt1, read]
 
@@ -58,7 +59,7 @@ def join(n: nat, m: nat, a: access, dt: data, array: exp[n.m.dt, a]): exp[(n*m).
 def let(dt1: data, dt2: data, a: access, value: exp[dt1, read],
         f: exp[dt1, read] -> exp[dt2, a]): exp[dt2, a]
 
-def makeArray{elements: Vector[Phrase[ExpType]]}(n: nat, dt: data): exp[n.dt, read]
+def makeArray{n: Int}(dt: data, elements: n*exp[dt, read]): exp[n.dt, read]
 
 // def makeDepPair(...)
 

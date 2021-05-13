@@ -212,8 +212,8 @@ object InsertMemoryBarriers {
       case PadClamp(_, _, _, _, e) =>
         collectReads(e, allocs, reads)
       case Cast(_, _, e) => collectReads(e, allocs, reads)
-      case ForeignFunctionCall(_, _, es) =>
-        es.foreach {
+      case ffc@ForeignFunctionCall(_, _) =>
+        ffc.args.foreach {
           collectReads(_, allocs, reads)
         }
       case NatAsIndex(_, e) => collectReads(e, allocs, reads)
@@ -223,8 +223,8 @@ object InsertMemoryBarriers {
       case MakePair(_, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Reorder(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case MakeArray(es) =>
-        es.foreach {
+      case m@MakeArray(_) =>
+        m.elements.foreach {
           collectReads(_, allocs, reads)
         }
       case Gather(_, _, _, e1, e2) =>

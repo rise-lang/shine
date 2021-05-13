@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class DepZip(val n: Nat, val ft1: NatToData, val ft2: NatToData, val e1: Phrase[ExpType], val e2: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     e1 :: expT(DepArrayType(n, ft1), read)
     e2 :: expT(DepArrayType(n, ft2), read)
+    true
   }
   override val t: ExpType = expT(DepArrayType(n, n2dtFun { (i: NatIdentifier) => PairType(NatToDataApply(ft1, i), NatToDataApply(ft2, i)) }), read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): DepZip = new DepZip(v.nat(n), v.natToData(ft1), v.natToData(ft2), VisitAndRebuild(e1, v), VisitAndRebuild(e2, v))

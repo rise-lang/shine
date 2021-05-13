@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class CycleAcc(val n: Nat, val m: Nat, val dt: DataType, val input: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     input :: accT(ArrayType(m, dt))
+    true
   }
   override val t: AccType = accT(ArrayType(n, dt))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): CycleAcc = new CycleAcc(v.nat(n), v.nat(m), v.data(dt), VisitAndRebuild(input, v))
