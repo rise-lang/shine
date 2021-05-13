@@ -33,7 +33,9 @@ final case class DepFunType[K <: Kind: KindName, T <: Type](x: K#I, t: T) extend
 
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier
+final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
+  override def toString : String = name
+}
 
 sealed trait ScalarType extends DataType
 
@@ -87,7 +89,9 @@ object MatrixLayout {
   object None extends MatrixLayout
 }
 
-final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with Kind.Identifier
+final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with Kind.Identifier {
+  override def toString : String = name
+}
 
 sealed trait FragmentKind
 
@@ -97,7 +101,9 @@ object FragmentKind {
   object Accumulator extends FragmentKind { override def toString = "Accumulator"}
 }
 
-final case class FragmentKindIdentifier(name: String) extends FragmentKind with Kind.Identifier
+final case class FragmentKindIdentifier(name: String) extends FragmentKind with Kind.Identifier {
+  override def toString : String = name
+}
 
 object FragmentType {
   def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType = {

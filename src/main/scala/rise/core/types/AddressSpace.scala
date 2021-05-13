@@ -3,7 +3,9 @@ package rise.core.types
 // TODO: should not be in the core
 sealed trait AddressSpace
 
-final case class AddressSpaceIdentifier(name: String) extends AddressSpace with Kind.Identifier
+final case class AddressSpaceIdentifier(name: String) extends AddressSpace with Kind.Identifier {
+  override def toString : String = name
+}
 
 // scalastyle:off public.methods.have.type
 object AddressSpace {
