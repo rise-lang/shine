@@ -46,10 +46,7 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 case class ScopedConstraint(constr : Constraint, preserve : Set[Kind.Identifier])
 
 object Constraint {
-  def canBeSubstituted(preserve: Set[Kind.Identifier],
-                       i: Kind.Identifier with Kind.Explicitness): Boolean =
-    !(preserve.contains(i) || i.isExplicit)
-  def canBeSubstituted(preserve: Set[Kind.Identifier], i: TypeIdentifier): Boolean =
+  def canBeSubstituted(preserve: Set[Kind.Identifier], i: Kind.Identifier): Boolean =
     !preserve.contains(i)
 
   def solve(cs: Seq[ScopedConstraint], trace: Seq[Constraint])
@@ -80,7 +77,7 @@ object Constraint {
   // scalastyle:off method.length
   def solveOne(c: Constraint, preserve : Set[Kind.Identifier], trace: Seq[Constraint]) (implicit explDep: Flags.ExplicitDependence): Solution = {
     implicit val _trace: Seq[Constraint] = trace
-    def decomposed(cs: Seq[Constraint]) = solve(cs.map(ScopedConstraint(_, preserve)), c +: trace)
+    def decomposed(cs: Seq[Constraint], preserve : Set[Kind.Identifier]) = solve(cs.map(ScopedConstraint(_, preserve)), c +: trace)
 
     c match {
       case TypeConstraint(a, b) =>
@@ -99,22 +96,21 @@ object Constraint {
           _: IndexType  | _: VectorType)
             if a =~= b => Solution()
           case (IndexType(sa), IndexType(sb)) =>
-            decomposed(Seq(NatConstraint(sa, sb)))
+            decomposed(Seq(NatConstraint(sa, sb)), preserve)
           case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
-            decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+            decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)), preserve)
           case (VectorType(sa, ea), VectorType(sb, eb)) =>
-            decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+            decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)), preserve)
           case (FragmentType(rowsa, columnsa, d3a, dta, fragTypea, layouta), FragmentType(rowsb, columnsb, d3b, dtb, fragTypeb, layoutb)) =>
             decomposed(Seq(NatConstraint(rowsa, rowsb), NatConstraint(columnsa, columnsb), NatConstraint(d3a, d3b),
-              TypeConstraint(dta, dtb), FragmentTypeConstraint(fragTypea, fragTypeb), MatrixLayoutConstraint(layouta, layoutb)))
+              TypeConstraint(dta, dtb), FragmentTypeConstraint(fragTypea, fragTypeb), MatrixLayoutConstraint(layouta, layoutb)),
+              preserve)
           case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
-            decomposed(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb)))
+            decomposed(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb)), preserve)
           case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
-            decomposed(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2)))
+            decomposed(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2)), preserve)
           case (FunType(ina, outa), FunType(inb, outb)) =>
-            decomposed(
-              Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb))
-            )
+            decomposed(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb)), preserve)
           case (
             DepFunType(na: NatIdentifier, ta),
             DepFunType(nb: NatIdentifier, tb)
@@ -135,19 +131,18 @@ object Constraint {
                   substitute.natInType(n, `for`= nb, tb), n, preserve)
                 nTaSub ++ nTbSub ++ decomposed(
                     Seq(
-                      NatConstraint(n, na.asImplicit),
-                      NatConstraint(n, nb.asImplicit),
+                      NatConstraint(n, na),
+                      NatConstraint(n, nb),
                       TypeConstraint(nTa, nTb)
-                    ))
+                    ), preserve - na - nb)
               case ExplicitDependence.Off =>
                 val n = NatIdentifier(freshName("n"), isExplicit = true)
                 decomposed(
                   Seq(
-                    NatConstraint(n, na.asImplicit),
-                    NatConstraint(n, nb.asImplicit),
+                    NatConstraint(n, na),
+                    NatConstraint(n, nb),
                     TypeConstraint(ta, tb)
-                  )
-                )
+                  ), preserve - na - nb)
             }
           case (
             DepFunType(dta: DataTypeIdentifier, ta),
@@ -156,11 +151,10 @@ object Constraint {
             val dt = DataTypeIdentifier(freshName("t"), isExplicit = true)
             decomposed(
               Seq(
-                TypeConstraint(dt, dta.asImplicit),
-                TypeConstraint(dt, dtb.asImplicit),
+                TypeConstraint(dt, dta),
+                TypeConstraint(dt, dtb),
                 TypeConstraint(ta, tb)
-              )
-            )
+              ), preserve - dta - dtb)
           case (
             DepFunType(_: AddressSpaceIdentifier, _),
             DepFunType(_: AddressSpaceIdentifier, _)
@@ -174,10 +168,10 @@ object Constraint {
             val n = NatIdentifier(freshName("n"), isExplicit = true)
 
             decomposed(Seq(
-              NatConstraint(n, x1.asImplicit),
-              NatConstraint(n, x2.asImplicit),
+              NatConstraint(n, x1),
+              NatConstraint(n, x2),
               TypeConstraint(t1, t2)
-            ))
+            ), preserve - x1 - x2)
 
           case (
             DepPairType(x1: NatCollectionIdentifier, t1),
@@ -186,10 +180,10 @@ object Constraint {
             val n = NatCollectionIdentifier(freshName("n"), isExplicit = true)
 
             decomposed(Seq(
-              NatCollectionConstraint(n, x1.asImplicit),
-              NatCollectionConstraint(n, x2.asImplicit),
+              NatCollectionConstraint(n, x1),
+              NatCollectionConstraint(n, x2),
               TypeConstraint(t1, t2)
-            ))
+            ), preserve - x1 - x2)
 
           case (
             NatToDataApply(f: NatToDataIdentifier, _),
@@ -225,7 +219,7 @@ object Constraint {
         df match {
           case _: DepFunType[_, _] =>
             val applied = liftDependentFunctionType(df)(arg)
-            decomposed(Seq(TypeConstraint(applied, t)))
+            decomposed(Seq(TypeConstraint(applied, t)), preserve)
           case _ =>
             error(s"expected a dependent function type, but got $df")
         }
@@ -240,10 +234,10 @@ object Constraint {
           case (NatToDataLambda(x1, dt1), NatToDataLambda(x2, dt2)) =>
             val n = NatIdentifier(freshName("n"), isExplicit = true)
             decomposed(Seq(
-              NatConstraint(n, x1.asImplicit),
-              NatConstraint(n, x2.asImplicit),
+              NatConstraint(n, x1),
+              NatConstraint(n, x2),
               TypeConstraint(dt1, dt2)
-            ))
+            ), preserve - x1 - x2)
 
           case _ => error(s"cannot unify $a and $b")
         }
