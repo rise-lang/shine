@@ -7,9 +7,9 @@ case class InferenceException(msg: String, trace: Seq[Constraint], span:Option[p
   extends Exception {
   override def toString: String = span match {
     case Some(sp) =>     s"inference exception in $sp: $msg\n${trace.mkString("---- trace ----\n",
-      "\n", "\n---------------")}"
+      "\n", "\n---------------")}"// + trace.isEmpty //trace is almost every time empty
     case None =>    s"inference exception: $msg\n${trace.mkString("---- trace ----\n",
-      "\n", "\n---------------")}"
+      "\n", "\n---------------")}"// + trace.isEmpty
   }
 }
 

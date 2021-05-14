@@ -71,6 +71,9 @@ abstract sealed class ErrorMessages(span:Option[Span]) {
     }
   }
 
+  override def toString: String = returnMessage()
+
+
   def ==(error:ErrorMessages): Boolean = error.s==this.s&&error.description().equals(this.description())
 }
 
@@ -397,7 +400,7 @@ abstract sealed class ConstraintError(span: Option[Span]) extends ErrorMessages(
 }
 
 abstract sealed class AppLikeConstraintError(span: Option[Span]) extends ConstraintError(span){
-  override def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.tail.head
+  override def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.tail.tail.head
   override def getTypes():List[rt.Type] = constraintTypes match {
     case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
     case Some(cT)=> cT match {
