@@ -183,7 +183,21 @@ object Basic {
         goal.searchEClass(egraph, startId).isDefined
       }
       println(s"found: ${found.map(_._2).mkString(", ")}")
-      println(s"not found: ${notFound.map(_._2).mkString(", ")}")
+      println(s"not found: ${notFound.map(_._2).mkString(", ")}");
+      {
+        import PatternDSL._
+        val pat: Pattern = lam(lam(app(app(map, lam(
+          app(transpose >> app(map,
+            app(zip, %(0)) >>
+            app(app(prim(rc.primitives.reduceSeq.primitive),
+              lam(lam(app(
+                ?(0) >> app(add, %(1)),
+                %(0))))),
+              l(rc.semantics.FloatData(0)))
+          ), %(1))
+        )), %(1))))
+        println(pat.compile().searchEClass(egraph, startId))
+      }
       throw CouldNotProveEquiv
     }
   }

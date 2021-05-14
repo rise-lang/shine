@@ -167,6 +167,15 @@ object PatternDSL {
   implicit final class PNodeWithType(private val t: TypePattern) extends AnyVal {
     @inline def ::(n: PNode): Pattern = Pattern(PatternNode(n), t)
   }
+  implicit final class PatternComposition(private val f: Pattern) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = Pattern(PatternNode(Composition(f, g)), TypePatternAny)
+  }
+  implicit final class PVarComposition(private val f: PatternVar) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = (f: Pattern) >> g
+  }
+  implicit final class PNodeComposition(private val f: PNode) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = (f: Pattern) >> g
+  }
 
   def `?n`(index: Int): NatPatternVar = NatPatternVar(index)
   val `?n`: NatPattern = NatPatternAny

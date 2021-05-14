@@ -264,6 +264,30 @@ object rules {
       (app(map, "f") >> app(map, "g"))
     )
 
+    val reduceSeqMapFusion: Rule = NamedRewrite.init("reduce-seq-map-fusion-cnf",
+      (app(map, "g") >> app(app(rcp.reduceSeq.primitive, "f"), "init"))
+        -->
+      app(app(rcp.reduceSeq.primitive,
+        lam("acc", lam("x", app(app("f", "acc"), app("g", "x"))))),
+        // lam("acc", "g" >> app("f", "acc"))),
+        // lam("acc", lam("x", app("g" >> app("f", "acc"), "x")))),
+        "init")
+    )
+
+    def splitJoin(n: Int): Rule = NamedRewrite.init(s"split-join-cnf-$n",
+      app(map, "f")
+        -->
+      (nApp(split, n) >> app(map, app(map, "f")) >> join)
+    )
+    def blockedReduce(n: Int): Rule = NamedRewrite.init(s"blocked-reduce-cnf-$n",
+      app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init")
+        -->
+      (nApp(split, n) >> app(app(rcp.reduceSeq.primitive,
+        lam("acc", lam("y", app(app("op", "acc"),
+          app(app(app(reduce, "op"), "init"), "y"))))),
+        "init"))
+    )
+
     val removeTransposePair: Rule = NamedRewrite.init("remove-transpose-pair-cnf",
       (transpose >> transpose) --> lam("x", "x")
     )

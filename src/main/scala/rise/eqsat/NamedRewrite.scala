@@ -234,7 +234,8 @@ object NamedRewrite {
       assert(s1 != s2)
       val cutoff = s1
       val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
-      ShiftedApplier(pv1, pv2, shift, cutoff, applier)
+      // TODO: or ShiftedApplier?
+      ShiftedExtractApplier(pv1, pv2, shift, cutoff, applier)
     }
 
     def patMkShiftCheck(s1: Expr.Shift, pv1: PatternVar)

@@ -112,14 +112,22 @@ object Expr {
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _
 
-      case Composition(f, g) =>
+      case Composition(f, g) => /*
         val f2 = f.shifted((1, 0, 0), (0, 0, 0))
         val g2 = g.shifted((1, 0, 0), (0, 0, 0))
         val argT: Type = f2.t.node match {
           case FunType(inT, _) => inT
           case _ => throw new Exception("this should not happen")
         }
-        return toNamed(ExprDSL.lam(argT, ExprDSL.app(f2, ExprDSL.app(g2, Expr(Var(0), argT)))), bound)
+        return toNamed(ExprDSL.lam(argT, ExprDSL.app(g2, ExprDSL.app(f2, Expr(Var(0), argT)))), bound)
+        */
+        val ft = Type.toNamed(f.t, bound)
+        val gt = Type.toNamed(g.t, bound)
+        val t = Type.toNamed(expr.t, bound)
+        core.App(core.App(
+          NamedRewriteDSL.Composition(rct.FunType(ft, rct.FunType(gt, t))),
+          toNamed(f, bound))(rct.FunType(gt, t)),
+          toNamed(g, bound)) _
     })(Type.toNamed(expr.t, bound))
   }
 
