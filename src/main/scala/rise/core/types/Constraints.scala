@@ -1,7 +1,7 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
-import parser.Span
+import parser.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, Span, TypeConstraintError}
 import rise.core.DSL.Type.n2dtFun
 import rise.core.{freshName, substitute}
 import rise.core.lifting.liftDependentFunctionType
@@ -11,38 +11,60 @@ import rise.core.types.InferenceException.error
 import scala.collection.mutable
 
 trait Constraint{
-  val span:Option[parser.Span]
+  val constraintTypeError:ConstraintError
 }
-case class TypeConstraint(a: Type, b: Type, override val span: Option[Span]) extends Constraint {
-  override def toString: String = s"$a  ~  $b"
+case class TypeConstraint(a: Type, b: Type, override val constraintTypeError:ConstraintError) extends Constraint {
+  //override def toString: String = s"$a  ~  $b"
+  constraintTypeError.defineTypes(a,b)
+  override def toString: String = constraintTypeError.toString
 }
-case class NatConstraint(a: Nat, b: Nat, override val span: Option[Span]) extends Constraint {
-  override def toString: String = s"$a  ~  $b"
+case class NatConstraint(a: Nat, b: Nat, override val constraintTypeError:NatConstraintError) extends Constraint {
+  //override def toString: String = s"$a  ~  $b"
+  constraintTypeError.defineNats(a,b)
+  override def toString: String = constraintTypeError.toString
 }
 case class BoolConstraint(a: arithexpr.arithmetic.BoolExpr,
                           b: arithexpr.arithmetic.BoolExpr,
-                          override val span: Option[Span]
+                          override val constraintTypeError:BoolConstraintError
                          ) extends Constraint {
-  override def toString: String = s"$a  ~  $b"
+  //override def toString: String = s"$a  ~  $b"
+  constraintTypeError.defineBools(a,b)
+  override def toString: String = constraintTypeError.toString
 }
-case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace, override val span: Option[Span])
+case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace, override val constraintTypeError:AddrConstraintError)
   extends Constraint {
-  override def toString: String = s"$a  ~  $b"
+  //override def toString: String = s"$a  ~  $b"
+  constraintTypeError.defineAddrs(a,b)
+  override def toString: String = constraintTypeError.toString
 }
-case class NatToDataConstraint(a: NatToData, b: NatToData, override val span: Option[Span])
+case class NatToDataConstraint(a: NatToData, b: NatToData, override val constraintTypeError:NatToDataConstraintError)
   extends Constraint {
-  override def toString: String = s"$a  ~  $b"
+  //override def toString: String = s"$a  ~  $b"
+  constraintTypeError.defineNatToDatas(a,b)
+  override def toString: String = constraintTypeError.toString
 }
-case class DepConstraint[K <: Kind](df: Type, arg: K#T, t: Type, override val span: Option[Span])
+case class DepConstraint[K <: Kind](df: Type, arg: K#T, t: Type, override val constraintTypeError:DepAppConstraintError)
   extends Constraint {
-  override def toString: String = s"$df ($arg) ~ $t"
+  //override def toString: String = s"$df ($arg) ~ $t"
+  constraintTypeError.defineTypesDep(t, df, arg)
+  override def toString: String = constraintTypeError.toString
 }
-case class NatCollectionConstraint(a: NatCollection, b: NatCollection, override val span: Option[Span])
+case class NatCollectionConstraint(a: NatCollection, b: NatCollection,
+                                   override val constraintTypeError:NatCollectionConstraintError)
   extends Constraint {
-  override def toString: String = s"$a ~ $b"
+  //override def toString: String = s"$a ~ $b"
+  constraintTypeError.defineNatCollection(a,b)
+  override def toString: String = constraintTypeError.toString
 }
 
 object Constraint {
+  //Todo: put these NatConstraintErrors outside of Constraint maybe
+  def NatCTE(cTE: ConstraintError) = NatConstraintError(cTE.sp)
+  def NatToDataCTE(cTE: ConstraintError) = NatToDataConstraintError(cTE.sp)
+  def NatCollCTE(cTE: ConstraintError) = NatCollectionConstraintError(cTE.sp)
+  def TypeCTE(cTE: ConstraintError) = TypeConstraintError(cTE.sp)
+
+
   def solve(cs: Seq[Constraint], trace: Seq[Constraint])
      (implicit explDep: Flags.ExplicitDependence): Solution =
   solveRec(cs, Nil, trace)
@@ -58,13 +80,13 @@ object Constraint {
   def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint])
               (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
     case (Nil, Nil) => Solution()
-    case (Nil, _) => error(s"could not solve constraints ${rs} ", Span.getSpanListOfSeq(rs))(trace)
+    case (Nil, _) => error(s"could not solve constraints ${rs} ")(trace)
     case (c +: cs, _) =>
       val s = try {
         solveOne(c, trace)
       } catch {
         case e: InferenceException =>
-          println(e.msg + " in " + c.span)
+          println(e.msg + " in " + c.constraintTypeError.s)
           return solveRec(cs, rs :+ c, trace)
       }
       s ++ solve(s.apply(rs ++ cs), trace)
@@ -77,34 +99,34 @@ object Constraint {
     def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace)
 
     c match {
-      case TypeConstraint(a, b, sp) =>
+      case TypeConstraint(a, b, cTE) =>
         (a, b) match {
           case (TypePlaceholder, _) => Solution()
           case (_, TypePlaceholder) => Solution()
           case (i: TypeIdentifier, _) => unifyTypeIdent(i, b)
           case (_, i: TypeIdentifier) => unifyTypeIdent(i, a)
           case (i: DataTypeIdentifier, dt: DataType) =>
-            unifyDataTypeIdent(i, dt,sp)
+            unifyDataTypeIdent(i, dt,cTE)
           case (dt: DataType, i: DataTypeIdentifier) =>
-            unifyDataTypeIdent(i, dt,sp)
+            unifyDataTypeIdent(i, dt,cTE)
           case (_: ScalarType | _: NatType.type |
                 _: IndexType  | _: VectorType,
           _: ScalarType | _: NatType.type |
           _: IndexType  | _: VectorType)
             if a == b => Solution()
           case (IndexType(sa), IndexType(sb)) =>
-            decomposed(Seq(NatConstraint(sa, sb, sp)))
+            decomposed(Seq(NatConstraint(sa, sb, NatCTE(cTE))))
           case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
-            decomposed(Seq(NatConstraint(sa, sb, sp), TypeConstraint(ea, eb, sp)))
+            decomposed(Seq(NatConstraint(sa, sb, NatCTE(cTE)), TypeConstraint(ea, eb, TypeCTE(cTE))))
           case (VectorType(sa, ea), VectorType(sb, eb)) =>
-            decomposed(Seq(NatConstraint(sa, sb, sp), TypeConstraint(ea, eb, sp)))
+            decomposed(Seq(NatConstraint(sa, sb, NatCTE(cTE)), TypeConstraint(ea, eb, TypeCTE(cTE))))
           case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
-            decomposed(Seq(NatConstraint(sa, sb, sp), NatToDataConstraint(ea, eb, sp)))
+            decomposed(Seq(NatConstraint(sa, sb, NatCTE(cTE)), NatToDataConstraint(ea, eb, NatToDataCTE(cTE))))
           case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
-            decomposed(Seq(TypeConstraint(pa1, pb1, sp), TypeConstraint(pa2, pb2, sp)))
+            decomposed(Seq(TypeConstraint(pa1, pb1, TypeCTE(cTE)), TypeConstraint(pa2, pb2, TypeCTE(cTE))))
           case (FunType(ina, outa), FunType(inb, outb)) =>
             decomposed(
-              Seq(TypeConstraint(ina, inb, sp), TypeConstraint(outa, outb, sp))
+              Seq(TypeConstraint(ina, inb, TypeCTE(cTE)), TypeConstraint(outa, outb, TypeCTE(cTE)))
             )
           case (
             DepFunType(na: NatIdentifier, ta),
@@ -128,17 +150,17 @@ object Constraint {
                 )
                 nTaSub ++ nTbSub ++ decomposed(
                     Seq(
-                      NatConstraint(n, na.asImplicit, sp),
-                      NatConstraint(n, nb.asImplicit, sp),
-                      TypeConstraint(nTa, nTb, sp)
+                      NatConstraint(n, na.asImplicit, NatCTE(cTE)),
+                      NatConstraint(n, nb.asImplicit, NatCTE(cTE)),
+                      TypeConstraint(nTa, nTb, TypeCTE(cTE))
                     ))
               case ExplicitDependence.Off =>
                 val n = NatIdentifier(freshName("n"), isExplicit = true)
                 decomposed(
                   Seq(
-                    NatConstraint(n, na.asImplicit, sp),
-                    NatConstraint(n, nb.asImplicit, sp),
-                    TypeConstraint(ta, tb, sp)
+                    NatConstraint(n, na.asImplicit, NatCTE(cTE)),
+                    NatConstraint(n, nb.asImplicit, NatCTE(cTE)),
+                    TypeConstraint(ta, tb, TypeCTE(cTE))
                   )
                 )
             }
@@ -149,9 +171,9 @@ object Constraint {
             val dt = DataTypeIdentifier(freshName("t"), isExplicit = true)
             decomposed(
               Seq(
-                TypeConstraint(dt, dta.asImplicit, sp),
-                TypeConstraint(dt, dtb.asImplicit, sp),
-                TypeConstraint(ta, tb, sp)
+                TypeConstraint(dt, dta.asImplicit, TypeCTE(cTE)),
+                TypeConstraint(dt, dtb.asImplicit, TypeCTE(cTE)),
+                TypeConstraint(ta, tb, TypeCTE(cTE))
               )
             )
           case (
@@ -167,9 +189,9 @@ object Constraint {
             val n = NatIdentifier(freshName("n"), isExplicit = true)
 
             decomposed(Seq(
-              NatConstraint(n, x1.asImplicit, sp),
-              NatConstraint(n, x2.asImplicit, sp),
-              TypeConstraint(t1, t2, sp)
+              NatConstraint(n, x1.asImplicit, NatCTE(cTE)),
+              NatConstraint(n, x2.asImplicit, NatCTE(cTE)),
+              TypeConstraint(t1, t2, TypeCTE(cTE))
             ))
 
           case (
@@ -179,9 +201,9 @@ object Constraint {
             val n = NatCollectionIdentifier(freshName("n"), isExplicit = true)
 
             decomposed(Seq(
-              NatCollectionConstraint(n, x1.asImplicit, sp),
-              NatCollectionConstraint(n, x2.asImplicit, sp),
-              TypeConstraint(t1, t2, sp)
+              NatCollectionConstraint(n, x1.asImplicit, NatCollCTE(cTE)),
+              NatCollectionConstraint(n, x2.asImplicit, NatCollCTE(cTE)),
+              TypeConstraint(t1, t2, TypeCTE(cTE))
             ))
 
           case (
@@ -210,7 +232,7 @@ object Constraint {
             Solution.subs(b, dt) // substitute apply by data type
 
           case _ =>
-            error(s"cannot unify $a and $b",sp)
+            error(s"cannot unify $a and $b")
         }
 
 
@@ -220,31 +242,31 @@ object Constraint {
             val applied = liftDependentFunctionType(df)(arg)
             decomposed(Seq(TypeConstraint(applied, t, sp)))
           case _ =>
-            error(s"expected a dependent function type, but got $df", sp)
+            error(s"expected a dependent function type, but got $df")
         }
 
-      case NatConstraint(a, b, sp) => nat.unify(a, b, sp)
-      case BoolConstraint(a, b, sp) => bool.unify(a, b, sp)
-      case NatToDataConstraint(a, b, sp) =>
+      case NatConstraint(a, b, cTE) => nat.unify(a, b, cTE.span)
+      case BoolConstraint(a, b, cTE) => bool.unify(a, b, cTE.span)
+      case NatToDataConstraint(a, b, cTE) =>
         (a, b) match {
-          case (i: NatToDataIdentifier, _) => natToData.unifyIdent(i, b, sp)
-          case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a, sp)
+          case (i: NatToDataIdentifier, _) => natToData.unifyIdent(i, b, cTE.span)
+          case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a, cTE.span)
           case _ if a == b                 => Solution()
           case (NatToDataLambda(x1, dt1), NatToDataLambda(x2, dt2)) =>
             val n = NatIdentifier(freshName("n"), isExplicit = true)
             decomposed(Seq(
-              NatConstraint(n, x1.asImplicit, sp),
-              NatConstraint(n, x2.asImplicit, sp),
-              TypeConstraint(dt1, dt2, sp)
+              NatConstraint(n, x1.asImplicit, NatCTE(cTE)),
+              NatConstraint(n, x2.asImplicit, NatCTE(cTE)),
+              TypeConstraint(dt1, dt2, TypeCTE(cTE))
             ))
 
-          case _ => error(s"cannot unify $a and $b", sp)
+          case _ => error(s"cannot unify $a and $b")
         }
 
-      case NatCollectionConstraint(a, b, sp) =>
+      case NatCollectionConstraint(a, b, cTE) =>
         (a,b) match {
-          case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b, sp)
-          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, b, sp)
+          case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b, cTE.sp)
+          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, b, cTE.sp)
           case _ if a == b                    => Solution()
           case (NatCollectionFromArray(e1), NatCollectionFromArray(e2)) =>
             // What to do here???
@@ -260,7 +282,7 @@ object Constraint {
   }
 
   // FIXME: datatypes and types are mixed up
-  def unifyDataTypeIdent(i: DataTypeIdentifier, t: DataType, sp:Option[Span])(
+  def unifyDataTypeIdent(i: DataTypeIdentifier, t: DataType, constraintTypeError:ConstraintError)(
     implicit trace: Seq[Constraint]
   ): Solution = {
     t match {
@@ -272,11 +294,11 @@ object Constraint {
         } else if (!j.isExplicit) {
           Solution.subs(j, i)
         } else {
-          error(s"cannot unify $i and $j, they are both explicit", sp)
+          error(s"cannot unify $i and $j, they are both explicit")
         }
       case _ if i.isExplicit =>
-        error(s"cannot substitute $i, it is explicit", sp)
-      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t", sp)
+        error(s"cannot substitute $i, it is explicit")
+      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
       case _ if !i.isExplicit => Solution.subs(i, t)
     }
   }
@@ -287,7 +309,7 @@ object Constraint {
     def unify(a: Nat, b: Nat, sp:Option[Span])(
       implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
     ): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs, NatConstraint(a, b, sp) +: trace)
+      def decomposed(cs: Seq[Constraint]) = solve(cs, NatConstraint(a, b, NatConstraintError(sp)) +: trace)
       (a, b) match {
         case (i: NatIdentifier, _) => nat.unifyIdent(i, b, sp)
         case (_, i: NatIdentifier) => nat.unifyIdent(i, a, sp)
@@ -301,11 +323,13 @@ object Constraint {
         case (Sum(Cst(k1) :: IfThenElse(c1, t1, e1) :: Nil),
           Sum(Cst(k2) :: IfThenElse(c2, t2, e2) :: Nil)) if k1 == k2 =>
           decomposed(Seq(
-            NatConstraint(t1, t2, sp), NatConstraint(e1, e2, sp), BoolConstraint(c1, c2, sp)
+            NatConstraint(t1, t2, NatConstraintError(sp)),
+            NatConstraint(e1, e2, NatConstraintError(sp)), BoolConstraint(c1, c2, BoolConstraintError(sp))
           ))
         case (IfThenElse(c1, t1, e1), IfThenElse(c2, t2, e2)) =>
           decomposed(Seq(
-            NatConstraint(t1, t2, sp), NatConstraint(e1, e2, sp), BoolConstraint(c1, c2, sp)
+            NatConstraint(t1, t2, NatConstraintError(sp)),
+            NatConstraint(e1, e2, NatConstraintError(sp)), BoolConstraint(c1, c2, BoolConstraintError(sp))
           ))
         case (s: arithexpr.arithmetic.Sum, _) => nat.unifySum(s, b, sp)
         case (_, s: arithexpr.arithmetic.Sum) => nat.unifySum(s, a, sp)
@@ -452,11 +476,12 @@ object Constraint {
     def unify(a: BoolExpr, b: BoolExpr, sp:Option[Span])(
       implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
     ): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs, BoolConstraint(a, b, sp) +: trace)
+      def decomposed(cs: Seq[Constraint]) = solve(cs, BoolConstraint(a, b, BoolConstraintError(sp)) +: trace)
       (a, b) match {
         case _ if a == b => Solution()
         case (ArithPredicate(lhs1, rhs1, op1), ArithPredicate(lhs2, rhs2, op2)) if op1 == op2 =>
-          decomposed(Seq(NatConstraint(lhs1, lhs2, sp), NatConstraint(rhs1, rhs2, sp)))
+          decomposed(Seq(NatConstraint(lhs1, lhs2,
+            NatConstraintError(sp)), NatConstraint(rhs1, rhs2, NatConstraintError(sp))))
         case _ => error(s"cannot unify $a and $b",sp)
       }
     }

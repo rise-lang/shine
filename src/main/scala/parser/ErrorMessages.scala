@@ -4,6 +4,8 @@ import java.nio.file.Paths
 import rise.{core => r, openCL => o}
 import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
+import parser.parse.SpanPlaceholder
+import rise.core.types.{Kind, Type}
 
 /*
 https://stackoverflow.com/questions/38243530/custom-exception-in-scala is reference
@@ -14,21 +16,23 @@ trait ParserError { self: Throwable =>
 
 
 
-abstract sealed class ErrorMessages(span:Span) {
-  val errorStackTraceElem = Thread.currentThread.getStackTrace().tail.tail.tail.tail.head
-  val fileReader = span.file
-  val begin = span.begin
-  val end = span.end
-  val s = span
-  private def underline(str:String):String = {
-    var s:String = ""
-    for( a <- str){ s = s + a + "\u0332" }
-    s
+abstract sealed class ErrorMessages(span:Option[Span]) {
+  val sp = span
+  val s = span.getOrElse(SpanPlaceholder)
+  def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.head
+  val errorStackTraceElem = getErrorStackTraceElem()
+  val fileReader = s.file
+  val begin = s.begin
+  val end = s.end
+  private def underline(string:String):String = {
+    var str:String = ""
+    for( a <- string){ str = str + a + "\u0332" }
+    str
   }
 
   private def importantPart(str: String): String = {
-    val s: String = underline(str)
-    s
+    val string: String = underline(str)
+    string
   }
 
   def description():String= {
@@ -38,13 +42,17 @@ abstract sealed class ErrorMessages(span:Span) {
     val e = errorStackTraceElem
     val filePath = Paths.get("src/main/scala/"+e.getClassName.substring(0,e.getClassName.indexOf('.'))+"/"+e.getFileName+":"+e.getLineNumber).toUri
 
-    val m = span.returnMessage()
+    val (m,before,after, loc) = span match {
+      case Some(sp) => (
+        sp.returnMessage(),
+        sp.file.sourceLines(begin.column).substring(0, begin.row),
+        sp.file.sourceLines(end.column).substring(end.row),
+        sp.toString    //exact location of error, related code of error, short description of error
+      )
+      case None => ("","","","")
+    }
     val important = importantPart(m)
-    val before = span.file.sourceLines(begin.column).substring(0, begin.row)
-    val after = span.file.sourceLines(end.column).substring(end.row)
 
-    //exact location of error, related code of error, short description of error
-    val loc =  span.toString
     val relatedCode = before + important + after
     val desc = description()
 
@@ -58,9 +66,8 @@ abstract sealed class ErrorMessages(span:Span) {
   def throwException():Unit ={
     val message = returnMessage()
 
-    val sp = span
     throw new Exception(message) with ParserError {
-      override def span: Span = sp
+      override def span: Span = s
     }
   }
 
@@ -70,7 +77,7 @@ abstract sealed class ErrorMessages(span:Span) {
 //______________________________________________________________________________________________________
 //Lexer
 
-abstract sealed class PreAndErrorToken(span: Span) extends ErrorMessages(span)
+abstract sealed class PreAndErrorToken(span: Span) extends ErrorMessages(Some(span))
 
 final case class EndOfLine(span:Span) extends PreAndErrorToken(span){
   require(span.begin == span.end, "span.begin is unequal to span.end")
@@ -202,7 +209,7 @@ final case class IdentifierExpectedNotTypeIdentifier(name: String, span:Span)
 //Parser
 
 
-abstract sealed class PreAndErrorSynElems(span: Span, whatToParse: String) extends ErrorMessages(span){
+abstract sealed class PreAndErrorSynElems(span: Span, whatToParse: String) extends ErrorMessages(Some(span)){
   def subDescription():String= {
     throw new Exception("SubDescriptionError method must be overridden")
   }
@@ -353,42 +360,262 @@ final case class ErrorList(){
   override def toString: String =  returnDeepestElem()+returnList()
   def getList():List[Either[UsedOrFailedRule, PreAndErrorSynElems]]=this.errorList
   def getDeepestElemPos():Int =this.deepestError
-  def getDeepestElem():PreAndErrorSynElems =this.errorList(this.deepestError).getOrElse(throw new IllegalStateException("Rules should not be the deepest elem"))
+  def getDeepestElem():PreAndErrorSynElems =this.errorList(this.deepestError).
+    getOrElse(throw new IllegalStateException("Rules should not be the deepest elem"))
 }
 
 //__________________________________________________________________________________________________________
 //ConstraintTypeError
-abstract sealed class ConstraintTypeError(span: Span) extends ErrorMessages(span)
+abstract sealed class ConstraintInputTypes()
+  case class ExpectedAndFoundT(expectedT:rt.Type,foundT:rt.Type) extends ConstraintInputTypes
+  case class ExpectedAndFoundTLeftAndRight(expectedT:rt.Type,foundTLeft:rt.Type,
+                                           foundTRight:rt.Type) extends ConstraintInputTypes
+  case class ExpectedAndFoundTLeftAndRightDep[K <: Kind](expectedT:rt.Type,foundTLeft:rt.Type,
+                                         foundTRight:K#T) extends ConstraintInputTypes
+  case class ExpectedAndFoundN(expected:rt.Nat,found:rt.Nat) extends ConstraintInputTypes
+  case class ExpectedAndFoundB(expected:arithexpr.arithmetic.BoolExpr,found:arithexpr.arithmetic.BoolExpr) extends ConstraintInputTypes
+  case class ExpectedAndFoundA(expected:rt.AddressSpace,found:rt.AddressSpace) extends ConstraintInputTypes
+  case class ExpectedAndFoundNatToData(expected:rt.NatToData,found:rt.NatToData) extends ConstraintInputTypes
+  case class ExpectedAndFoundNatCollection(expected:rt.NatCollection, found:rt.NatCollection) extends ConstraintInputTypes
 
-case class IdentConstraintError(span: Span, expectedT:rt.Type, foundT:rt.Type) extends ConstraintTypeError(span){
-  override def description(): String = "expected '" + expectedT + "' but found '"+foundT+ "'"
+//Todo: find better solution than SpanPlaceholder
+abstract sealed class ConstraintError(span: Option[Span]) extends ErrorMessages(span){
+  var constraintTypes: Option[ConstraintInputTypes] = None
+  def getTypes():List[rt.Type] = constraintTypes match {
+    case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
+    case Some(cT)=> cT match {
+      case ExpectedAndFoundT(eT, fT) => eT::fT::Nil
+      case _ => throw new IllegalStateException("wrong ConstraintType")
+    }
+  }
+  def defineTypes(expectedT:rt.Type, foundT:rt.Type): Unit ={
+    constraintTypes match {
+      case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+      case None => constraintTypes = Some(ExpectedAndFoundT(expectedT, foundT))
+    }
+  }
 }
 
-case class LambdaConstraintError(span: Span, expectedT:rt.Type, foundT:rt.Type) extends ConstraintTypeError(span){
-  override def description(): String = "expected '" + expectedT + "' but found '"+foundT+ "'"
+abstract sealed class AppLikeConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.tail.head
+  override def getTypes():List[rt.Type] = constraintTypes match {
+    case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
+    case Some(cT)=> cT match {
+      case ExpectedAndFoundTLeftAndRight(expectedT, foundTLeft, foundTRight) => expectedT :: foundTLeft :: foundTRight::Nil
+      case a => throw new IllegalStateException("wrong ConstraintType: "+ a)
+    }
+  }
+
+  override def defineTypes(expectedT: Type, foundT: Type): Unit = throw new IllegalStateException("not call this function")
+  def defineTypes(expectedT:rt.Type, foundTLeft:rt.Type, foundTRight:rt.Type): Unit ={
+    constraintTypes match {
+      case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+      case None => constraintTypes = Some(ExpectedAndFoundTLeftAndRight(expectedT, foundTLeft, foundTRight))
+    }
+  }
 }
 
-case class AppConstraintError(span: Span, expectedT:rt.Type, foundTLeft:rt.Type, foundTRight:rt.Type) extends ConstraintTypeError(span){
-  override def description(): String = "expected '" + expectedT + "' but found App('"+foundTLeft+ "','"+
-    foundTRight+"')"
+case class TypeConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def description(): String = {
+    val expectedT::foundT::Nil = getTypes()
+    "expected '" + expectedT + "' but found '"+foundT+ "'"
+  }
 }
 
-case class DepLambdaConstraintError(span: Span, expectedT:rt.Type, foundT:rt.Type) extends ConstraintTypeError(span){
-  override def description(): String = "expected '" + expectedT + "' but found '"+foundT+ "'"
+case class IdentConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def description(): String = {
+    val expectedT::foundT::Nil = getTypes()
+    "expected '" + expectedT + "' but found '"+foundT+ "'"
+  }
 }
 
-case class DepAppConstraintError(span: Span, expectedT:rt.Type, foundTLeft:rt.Type, foundTRight:rt.Type) extends ConstraintTypeError(span){
-  override def description(): String = "expected '" + expectedT + "' but found DepApp('"+foundTLeft+ "','"+
-    foundTRight+"')"
+case class LambdaConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def description(): String = {
+    val expectedT::foundT::Nil = getTypes()
+    "expected '" + expectedT + "' but found '"+foundT+ "'"
+  }
 }
 
-case class TypeAnnotationConstraintError(span: Span, foundT:rt.Type, annotatedT:rt.Type) extends ConstraintTypeError(span){
-  override def description(): String = "annotated '" + annotatedT + "' but found '"+foundT+"'"
+case class AppConstraintError(span: Option[Span]) extends AppLikeConstraintError(span){
+  override def defineTypes(expectedT:rt.Type, foundT:rt.Type): Unit ={
+    constraintTypes match {
+      case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+      case None => constraintTypes = {
+        val (inTofE, exT) = foundT match {
+          case rt.FunType(inT, outT) =>  (inT, outT)
+          case _ => throw new IllegalStateException("FunType is expected")
+        }
+        val inTofF = expectedT
+        Some(ExpectedAndFoundTLeftAndRight(exT, inTofF, inTofE))
+      }
+    }
+  }
+  override def description(): String = {
+    val expectedT::foundTLeft::foundTRight::Nil = getTypes()
+    "expected '" + expectedT + "' but found App('"+foundTLeft+ "','"+
+      foundTRight+"')"
+  }
 }
 
-case class TypeAssertionConstraintError(span: Span, foundT:rt.Type, annotatedT:rt.Type, freezeAnnT:rt.Type) extends ConstraintTypeError(span){
-  override def description(): String = "annotated '" + annotatedT + "' but found '"+
-    foundT+"' or found freeze Type '"+freezeAnnT+"'"
+case class DepLambdaConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def description(): String = {
+    val expectedT::foundT::Nil = getTypes()
+    "expected '" + expectedT + "' but found '"+foundT+ "'"
+  }
+}
+
+case class DepAppConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
+  override def defineTypes(expectedT: Type, foundT: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
+  def defineTypesDep[K <: Kind](expectedT:rt.Type, foundTLeft:rt.Type, foundRight:K#T): Unit ={
+    constraintTypes match {
+      case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+      case None => constraintTypes =
+        Some(ExpectedAndFoundTLeftAndRightDep(expectedT, foundTLeft, foundRight))
+    }
+  }
+  def getTypesDep[K <: Kind]():(rt.Type, rt.Type, K#T) = constraintTypes match {
+    case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
+    case Some(cT) => cT match {
+      case ExpectedAndFoundTLeftAndRightDep(expectedT,foundTLeft, foundTRight) => foundTRight match {
+        //case fR:K#T => (expectedT, foundTLeft, fR) //abstract type pattern K#T is unchecked since it is eliminated by erasure
+        case fR => (expectedT, foundTLeft, fR.asInstanceOf[K#T])
+      }
+      case a => throw new IllegalStateException("wrong ConstraintType: "+ a)
+    }
+  }
+  override def description(): String = {
+    val (expectedT,foundLeft,foundRight) = getTypesDep()
+    val foundRightStr: String = foundRight.toString
+    "expected '" + expectedT + "' but found DepApp('"+foundLeft+ "','"+
+      foundRightStr+"')"
+  }
+}
+
+case class TypeAnnotationConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def description(): String = {
+    val annotatedT::foundT::Nil = getTypes()
+    "annotated '" + annotatedT + "' but found '"+foundT+"'"
+  }
+}
+
+case class TypeAssertionConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def description(): String = {
+    val annotatedT::freezeAnnT::Nil = getTypes()
+    "annotated '" + annotatedT +"' but found freeze Type '"+freezeAnnT+"'"
+  }
+}
+
+case class NatConstraintError(span: Option[Span]) extends ConstraintError(span){
+  def getNats():List[rt.Nat] = constraintTypes match {
+    case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
+    case Some(cT)=> cT match {
+      case ExpectedAndFoundN(eT, fT) => eT::fT::Nil
+      case _ => throw new IllegalStateException("wrong ConstraintType")
+    }
+  }
+
+  override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
+  override def defineTypes(expectedT: Type, foundT: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
+  def defineNats(expectedT:rt.Nat, foundT:rt.Nat): Unit ={
+    constraintTypes match {
+      case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+      case None => constraintTypes = Some(ExpectedAndFoundN(expectedT, foundT))
+    }
+  }
+  override def description(): String = {
+    val expectedT::foundT::Nil = getNats()
+    "expected '" + expectedT + "' but found '"+foundT+ "'"
+  }
+}
+
+  case class BoolConstraintError(span: Option[Span]) extends ConstraintError(span){
+    override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
+    override def defineTypes(expectedT: Type, foundT: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
+    def getBools():List[arithexpr.arithmetic.BoolExpr] = constraintTypes match {
+      case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
+      case Some(cT)=> cT match {
+        case ExpectedAndFoundB(eT, fT) => eT::fT::Nil
+        case _ => throw new IllegalStateException("wrong ConstraintType")
+      }
+    }
+    def defineBools(expectedT:arithexpr.arithmetic.BoolExpr, foundT:arithexpr.arithmetic.BoolExpr): Unit ={
+      constraintTypes match {
+        case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+        case None => constraintTypes = Some(ExpectedAndFoundB(expectedT, foundT))
+      }
+    }
+    override def description(): String = {
+      val expectedT::foundT::Nil = getBools()
+      "expected '" + expectedT + "' but found '"+foundT+ "'"
+    }
+  }
+
+case class AddrConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
+  override def defineTypes(expected: Type, found: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
+  def getAddrs():List[rt.AddressSpace] = constraintTypes match {
+    case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
+    case Some(cT)=> cT match {
+      case ExpectedAndFoundA(eT, fT) => eT::fT::Nil
+      case _ => throw new IllegalStateException("wrong ConstraintType")
+    }
+  }
+  def defineAddrs(expected:rt.AddressSpace, found:rt.AddressSpace): Unit ={
+    constraintTypes match {
+      case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+      case None => constraintTypes = Some(ExpectedAndFoundA(expected, found))
+    }
+  }
+  override def description(): String = {
+    val expected::found::Nil = getAddrs()
+    "expected '" + expected + "' but found '"+found+ "'"
+  }
+}
+
+
+case class NatToDataConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
+  override def defineTypes(expected: Type, found: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
+  def getNatToDatas():List[rt.NatToData] = constraintTypes match {
+    case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
+    case Some(cT)=> cT match {
+      case ExpectedAndFoundNatToData(eT, fT) => eT::fT::Nil
+      case _ => throw new IllegalStateException("wrong ConstraintType")
+    }
+  }
+  def defineNatToDatas(expected:rt.NatToData, found:rt.NatToData): Unit ={
+    constraintTypes match {
+      case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+      case None => constraintTypes = Some(ExpectedAndFoundNatToData(expected, found))
+    }
+  }
+  override def description(): String = {
+    val expected::found::Nil = getNatToDatas()
+    "expected '" + expected + "' but found '"+found+ "'"
+  }
+}
+
+case class NatCollectionConstraintError(span: Option[Span]) extends ConstraintError(span){
+  override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
+  override def defineTypes(expected: Type, found: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
+  def getNatCollection():List[rt.NatCollection] = constraintTypes match {
+    case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
+    case Some(cT)=> cT match {
+      case ExpectedAndFoundNatCollection(eT, fT) => eT::fT::Nil
+      case _ => throw new IllegalStateException("wrong ConstraintType")
+    }
+  }
+  def defineNatCollection(expected:rt.NatCollection, found:rt.NatCollection): Unit ={
+    constraintTypes match {
+      case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
+      case None => constraintTypes = Some(ExpectedAndFoundNatCollection(expected, found))
+    }
+  }
+  override def description(): String = {
+    val expected::found::Nil = getNatCollection()
+    "expected '" + expected + "' but found '"+found+ "'"
+  }
 }
 
 //case class OpaqueConstraintError(span: Span, foundT:rt.Type, annotatedT:rt.Type, freezeAnnT:rt.Type) extends ConstraintTypeError(span){

@@ -105,12 +105,12 @@ object Span {
     }
   }
   def getSpanOfFirstElemInSeq(seq: Seq[rise.core.types.Constraint]): Option[parser.Span]= seq match {
-    case Seq(first, tail @ _*) =>first.span
+    case Seq(first, tail @ _*) =>Some(first.constraintTypeError.s)
     case Seq() => None
   }
 
-  def getSpanListOfSeq(seq: Seq[rise.core.types.Constraint]): List[Option[parser.Span]]= seq match {
-    case Seq(first, tail @ _*) =>first.span :: getSpanListOfSeq(tail)
+  def getSpanListOfSeq(seq: Seq[rise.core.types.Constraint]): List[parser.Span]= seq match {
+    case Seq(first, tail @ _*) =>first.constraintTypeError.s :: getSpanListOfSeq(tail)
     case Seq() => Nil
   }
 }

@@ -1,9 +1,19 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr
+import parser.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError}
+import rise.core.types.Solution.{AddrCTE, BoolCTE, DepCTE, NatCTE, NatToDataCTE, TypeCTE}
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
+  def NatCTE(cTE: ConstraintError) = NatConstraintError(cTE.sp)
+  def NatToDataCTE(cTE: ConstraintError) = NatToDataConstraintError(cTE.sp)
+  def NatCollCTE(cTE: ConstraintError) = NatCollectionConstraintError(cTE.sp)
+  def TypeCTE(cTE: ConstraintError) = TypeConstraintError(cTE.sp)
+  def AddrCTE(cTE: ConstraintError) = AddrConstraintError(cTE.sp)
+  def BoolCTE(cTE: ConstraintError) = BoolConstraintError(cTE.sp)
+  def DepCTE(cTE: ConstraintError) = DepAppConstraintError(cTE.sp)
+
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
   def subs(ta: Type, tb: Type): Solution = {
     Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map())
@@ -117,26 +127,26 @@ case class Solution(ts: Map[Type, Type],
 
   def apply(constraints: Seq[Constraint]): Seq[Constraint] = {
     constraints.map {
-      case TypeConstraint(a, b, sp) =>
-        TypeConstraint(apply(a), apply(b), sp)
-      case AddressSpaceConstraint(a, b, sp) =>
-        AddressSpaceConstraint(apply(a), apply(b), sp)
-      case NatConstraint(a, b, sp) =>
-        NatConstraint(apply(a), apply(b), sp)
-      case BoolConstraint(a, b, sp) =>
-        BoolConstraint(apply(a), apply(b), sp)
-      case NatToDataConstraint(a, b, sp) =>
-        NatToDataConstraint(apply(a), apply(b), sp)
-      case DepConstraint(df, arg: Nat, t, sp) =>
-        DepConstraint[NatKind](apply(df), apply(arg), apply(t), sp)
-      case DepConstraint(df, arg: DataType, t, sp) =>
+      case TypeConstraint(a, b, cTE) =>
+        TypeConstraint(apply(a), apply(b), TypeCTE(cTE))
+      case AddressSpaceConstraint(a, b, cTE) =>
+        AddressSpaceConstraint(apply(a), apply(b), AddrCTE(cTE))
+      case NatConstraint(a, b, cTE) =>
+        NatConstraint(apply(a), apply(b), NatCTE(cTE))
+      case BoolConstraint(a, b, cTE) =>
+        BoolConstraint(apply(a), apply(b), BoolCTE(cTE))
+      case NatToDataConstraint(a, b, cTE) =>
+        NatToDataConstraint(apply(a), apply(b), NatToDataCTE(cTE))
+      case DepConstraint(df, arg: Nat, t, cTE) =>
+        DepConstraint[NatKind](apply(df), apply(arg), apply(t), DepCTE(cTE))
+      case DepConstraint(df, arg: DataType, t, cTE) =>
         DepConstraint[DataKind](
           apply(df),
           apply(arg).asInstanceOf[DataType],
-          apply(t), sp
+          apply(t), DepCTE(cTE)
         )
-      case DepConstraint(df, arg: AddressSpace, t, sp) =>
-        DepConstraint[AddressSpaceKind](apply(df), apply(arg), apply(t), sp)
+      case DepConstraint(df, arg: AddressSpace, t, cTE) =>
+        DepConstraint[AddressSpaceKind](apply(df), apply(arg), apply(t), DepCTE(cTE))
     }
   }
 }
