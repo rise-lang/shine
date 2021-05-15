@@ -19,8 +19,8 @@ class gemvCheck extends test_util.Tests {
       .asInstanceOf[NatDepFunType[_ <: Type]].t
       .asInstanceOf[NatDepFunType[_ <: Type]].x
     assertResult(
-      DepFunType(N,
-        DepFunType(M,
+      DepFunType(NatKind, N,
+        DepFunType(NatKind, M,
           ArrayType(M, ArrayType(N, f32)) ->:
             (ArrayType(N, f32) ->: (ArrayType(M, f32) ->:
             (f32 ->: (f32 ->: ArrayType(M, f32)))))

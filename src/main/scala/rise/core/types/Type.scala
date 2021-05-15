@@ -5,8 +5,8 @@ import rise.core._
 import rise.core.equality._
 
 sealed trait Type {
-  def =~=(b: Type): Boolean = typeAlphaEq[TypeKind](this)(b)
-  def =~~=(b: Type): Boolean = typePartialAlphaEq[TypeKind](this)(b)
+  def =~=(b: Type): Boolean = typeAlphaEq[Type](this)(b)
+  def =~~=(b: Type): Boolean = typePartialAlphaEq[Type](this)(b)
 }
 
 object TypePlaceholder extends Type {
@@ -24,12 +24,11 @@ final case class FunType[T <: Type, U <: Type](inT: T, outT: U)
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DepFunType[K <: Kind: KindName, T <: Type](
-    x: K#I with Kind.Explicitness,
-    t: T
-) extends Type {
-  override def toString: String =
-    s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
+final case class DepFunType[T, I <: Kind.Identifier, U <: Type]
+                           (kind: Kind[T, I],
+                            x: I with Kind.Explicitness,
+                            t: U) extends Type {
+  override def toString: String = s"(${x.name}: ${kind.name} -> $t)"
 }
 
 // == Data types ==============================================================
@@ -153,18 +152,8 @@ final case class ManagedBufferType(dt: DataType) extends DataType {
 
 }
 
-final case class DepPairType[K <: Kind: KindName](
-                            x: K#I,
-                            t: DataType
-                           ) extends DataType {
-  type Kind = K
-
-  // Note(federico): for pattern-matching purposes, if we ever need to
-  // recover the kind name from a pattern-match over just DataType
-  val kindName: KindName[K] = implicitly[KindName[K]]
-
-  override def toString: String =
-    s"(${x.name}: ${kindName.get} ** $t)"
+final case class DepPairType[T, I <: Kind.Identifier](kind: Kind[T, I], x: I, t: DataType) extends DataType {
+  override def toString: String = s"(${x.name}: ${kind.name} ** $t)"
 }
 
 

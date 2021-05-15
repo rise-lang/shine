@@ -32,7 +32,7 @@ class asum extends test_util.TestsWithExecutor {
     val typed = high_level.toExpr
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
-    assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N), f32))) {
+    assertResult(DepFunType(NatKind, N, FunType(inputT(N), f32))) {
       typed.t
     }
   }

@@ -73,24 +73,24 @@ object NamedRewrite {
         //       lam(x : xt, e : et) : xt -> et
         case rc.Lambda(x, e) =>
           PatternNode(Lambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(x: rct.NatIdentifier, e) =>
+        case rc.DepLambda(rct.NatKind, x: rct.NatIdentifier, e) =>
           PatternNode(NatLambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(x: rct.DataTypeIdentifier, e) =>
+        case rc.DepLambda(rct.DataKind, x: rct.DataTypeIdentifier, e) =>
           PatternNode(DataLambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(_, _) => ???
+        case rc.DepLambda(_, _, _) => ???
 
         // note: we do not match for the type of applied functions, as we can always infer it:
         //       app(f : et -> at, e : et) : at
         case rc.App(f, e) =>
           PatternNode(App(makePat(f, bound, isRhs, matchType = false), makePat(e, bound, isRhs)))
-        case rc.DepApp(f, x: rct.Nat) =>
+        case rc.DepApp(rct.NatKind, f, x: rct.Nat) =>
           PatternNode(NatApp(
             makePat(f, bound, isRhs, matchType = false), makeNPat(x, bound, isRhs)))
-        case rc.DepApp(f, x: rct.DataType) =>
+        case rc.DepApp(rct.DataKind, f, x: rct.DataType) =>
           PatternNode(DataApp(
             makePat(f, bound, isRhs, matchType = false), makeDTPat(x, bound, isRhs)))
 
-        case rc.DepApp(_, _) => ???
+        case rc.DepApp(_, _, _) => ???
         case rc.Literal(d) => PatternNode(Literal(d))
         // note: we set the primitive type to a place holder here,
         // because we do not want type information at the node level
@@ -144,7 +144,7 @@ object NamedRewrite {
           DataTypePatternNode(PairType(makeDTPat(dt1, bound, isRhs), makeDTPat(dt2, bound, isRhs)))
         case rct.ArrayType(s, et) =>
           DataTypePatternNode(ArrayType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
-        case _: rct.DepArrayType | _: rct.DepPairType[_] |
+        case _: rct.DepArrayType | _: rct.DepPairType[_, _] |
              _: rct.NatToDataApply | _: rct.FragmentType =>
           throw new Exception(s"did not expect $dt")
       }
@@ -154,11 +154,11 @@ object NamedRewrite {
         case dt: rct.DataType => makeDTPat(dt, bound, isRhs)
         case rct.FunType(a, b) =>
           TypePatternNode(FunType(makeTPat(a, bound, isRhs), makeTPat(b, bound, isRhs)))
-        case rct.DepFunType(x: rct.NatIdentifier, t) =>
+        case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) =>
           TypePatternNode(NatFunType(makeTPat(t, bound + x, isRhs)))
-        case rct.DepFunType(x: rct.DataTypeIdentifier, t) =>
+        case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) =>
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
-        case rct.DepFunType(_, _) => ???
+        case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>
           assert(freeT(i))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
@@ -425,10 +425,10 @@ object NamedRewriteDSL {
   def lam(name: String, e: Pattern): Pattern =
     rc.Lambda(rc.Identifier(name)(TypePlaceholder), e)(TypePlaceholder)
   def nApp(f: Pattern, x: NatPattern): Pattern =
-    rc.DepApp[rct.NatKind](f, x)(TypePlaceholder)
+    rc.DepApp(rct.NatKind, f, x)(TypePlaceholder)
   def nLam(name: String, e: Pattern): Pattern = {
     val n = rct.NatIdentifier(name, isExplicit = true)
-    rc.DepLambda[rct.NatKind](n, e)(TypePlaceholder)
+    rc.DepLambda(rct.NatKind, n, e)(TypePlaceholder)
   }
   def l(d: rc.semantics.Data): Pattern = rc.Literal(d)
 

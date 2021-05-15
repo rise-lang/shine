@@ -249,7 +249,7 @@ class tiling extends test_util.Tests {
   def wrapInLambda[T <: Expr](dim: Int,
                               f: ToBeTyped[Identifier] => ToBeTyped[T],
                               genInputType: List[Nat] => ArrayType,
-                              natIds: List[Nat] = List()): ToBeTyped[DepLambda[NatKind]] = {
+                              natIds: List[Nat] = List()): ToBeTyped[DepLambda[Nat, NatIdentifier]] = {
     dim match {
       case 1 => depFun((n: Nat) => fun(genInputType( natIds :+ n))(f))
       case d => depFun((n: Nat) => wrapInLambda(d - 1, f, genInputType, natIds :+ n))

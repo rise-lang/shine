@@ -114,7 +114,7 @@ case object dotPrinter {
             |${recurse(e, eID)}
             |$parent -> $eID ${edgeLabel("arg")};""".stripMargin
 
-        case DepLambda(x, e) if !inlineLambdaIdentifier =>
+        case DepLambda(kind, x, e) if !inlineLambdaIdentifier =>
           val id = getID(x)
           val expr = getID(e)
           s"""$parent ${attr(fillWhite + Label("Λ").bold.toString)}
@@ -123,13 +123,13 @@ case object dotPrinter {
             |$id ${attr(fillWhite + Label(x.name).orange.toString)}
             |${recurse(e, expr)}""".stripMargin
 
-        case DepLambda(x, e) if inlineLambdaIdentifier =>
+        case DepLambda(_, x, e) if inlineLambdaIdentifier =>
           val expr = getID(e)
           s"""$parent ${attr(fillWhite + Label(s"Λ.${x.name}").toString)}
             |$parent -> $expr ${edgeLabel("body")};
             |${recurse(e, expr)}""".stripMargin
 
-        case DepApp(f, e) if applyNodes =>
+        case DepApp(_, f, e) if applyNodes =>
           val fun = getID(f)
           val arg = getID(e)
           s"""
@@ -139,7 +139,7 @@ case object dotPrinter {
             |$arg ${attr(fillWhite + Label(e.toString).toString)}
             |${recurse(f, fun)}""".stripMargin
 
-        case DepApp(f, e) if !applyNodes =>
+        case DepApp(_, f, e) if !applyNodes =>
           val eID = getID(e)
           s"""
             |${recurse(f, parent)}

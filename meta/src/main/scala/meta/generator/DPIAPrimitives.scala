@@ -140,23 +140,22 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
     case DPIA.Type.AST.CommType               => t"CommType"
     case DPIA.Type.AST.PairType(lhs, rhs) => t"PhrasePairType[${generatePhraseType(lhs)}, ${generatePhraseType(rhs)}]"
     case DPIA.Type.AST.FunType(inT, outT) => t"FunType[${generatePhraseType(inT)}, ${generatePhraseType(outT)}]"
-    case DPIA.Type.AST.DepFunType(id, kind, t) => t"DepFunType[${generateKindType(kind)}, ${generatePhraseType(t)}]"
+    case DPIA.Type.AST.DepFunType(id, kind, t) => t"DepFunType[${generateKindIdentifierType(kind)}, ${generatePhraseType(t)}]"
     case DPIA.Type.AST.Identifier(name) => Type.Name(name)
     case DPIA.Type.AST.VariadicType(_, _) => throw new Exception("Can not generate Phrase Type for Variadic Type")
   }
 
-  // generate Scala type for representing the DPIA/rise kinds themselves
-  def generateKindType(kindAST: DPIA.Kind.AST): scala.meta.Type = kindAST match {
+  def generateKindIdentifierType(kindAST: DPIA.Kind.AST): scala.meta.Type = kindAST match {
     case DPIA.Kind.AST.RiseKind(riseKind) => riseKind match {
-        case rise.Kind.AST.Data =>      Type.Name("DataKind")
-        case rise.Kind.AST.Address =>   Type.Name("AddressSpaceKind")
-        case rise.Kind.AST.Nat2Nat =>   Type.Name("NatToNatKind")
-        case rise.Kind.AST.Nat2Data =>  Type.Name("NatToDataKind")
-        case rise.Kind.AST.Nat =>       Type.Name("NatKind")
-        case rise.Kind.AST.Fragment => throw new Exception("Can not generate Kind for Fragment")
-        case rise.Kind.AST.MatrixLayout => throw new Exception("Can not generate Kind for Matrix Layout")
-      }
-    case DPIA.Kind.AST.Access =>        Type.Name("AccessKind")
+      case rise.Kind.AST.Data =>      Type.Name("DataTypeIdentifier")
+      case rise.Kind.AST.Address =>   Type.Name("AddressSpaceIdentifier")
+      case rise.Kind.AST.Nat2Nat =>   Type.Name("NatToNatIdentifier")
+      case rise.Kind.AST.Nat2Data =>  Type.Name("NatToDataIdentifier")
+      case rise.Kind.AST.Nat =>       Type.Name("NatIdentifier")
+      case rise.Kind.AST.Fragment => throw new Exception("Can not generate Kind for Fragment")
+      case rise.Kind.AST.MatrixLayout => throw new Exception("Can not generate Kind for Matrix Layout")
+    }
+    case DPIA.Kind.AST.Access =>        Type.Name("AccessTypeIdentifier")
     case DPIA.Kind.AST.VariadicKind(_, _) => throw new Exception("Can not generate Kind for Variadic Kind")
   }
 
@@ -287,7 +286,7 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
     case DPIA.Type.AST.FunType(inT, outT) =>
       q"FunType(${generateTerm(inT)}, ${generateTerm(outT)})"
     case DPIA.Type.AST.DepFunType(id, kind, t) =>
-      q"DepFunType[${generateKindType(kind)}, PhraseType](${Term.Name(id.name)}, ${generateTerm(t)})"
+      q"DepFunType(${generateKindType(kind)}, ${Term.Name(id.name)}, ${generateTerm(t)})"
     case DPIA.Type.AST.VariadicType(_, _) => throw new Exception("Can not generate Term for Variadic Type")
   }
 
@@ -295,6 +294,21 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
     case DPIA.Type.Access.AST.Identifier(name) => Term.Name(name)
     case DPIA.Type.Access.AST.Read => Term.Name("read")
     case DPIA.Type.Access.AST.Write =>Term.Name("write")
+  }
+
+  // generate Scala type for representing the DPIA/rise kinds themselves
+  def generateKindType(kindAST: DPIA.Kind.AST): scala.meta.Term = kindAST match {
+    case DPIA.Kind.AST.RiseKind(riseKind) => riseKind match {
+      case rise.Kind.AST.Data =>      Term.Name("DataKind")
+      case rise.Kind.AST.Address =>   Term.Name("AddressSpaceKind")
+      case rise.Kind.AST.Nat2Nat =>   Term.Name("NatToNatKind")
+      case rise.Kind.AST.Nat2Data =>  Term.Name("NatToDataKind")
+      case rise.Kind.AST.Nat =>       Term.Name("NatKind")
+      case rise.Kind.AST.Fragment => throw new Exception("Can not generate Kind for Fragment")
+      case rise.Kind.AST.MatrixLayout => throw new Exception("Can not generate Kind for Matrix Layout")
+    }
+    case DPIA.Kind.AST.Access =>        Term.Name("AccessKind")
+    case DPIA.Kind.AST.VariadicKind(_, _) => throw new Exception("Can not generate Kind for Variadic Kind")
   }
 
   def generateVisitAndRebuild(name: scala.meta.Type.Name,
