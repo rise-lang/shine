@@ -99,14 +99,32 @@ object infer {
 
   private val collectPreserve = new PureAccumulatorTraversal[Set[Kind.Identifier]] {
     override val accumulator = SetMonoid
+
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = _ => {
+      case i: Kind.Explicitness =>
+        accumulate(if (i.isExplicit) Set(i) else Set())(i.asInstanceOf[I])
+      case i => accumulate(Set())(i)
+    }
+
+    override def nat: Nat => Pair[Nat] = ae => {
+      val pres = mutable.ListBuffer[Kind.Identifier]()
+      val r = ae.visitAndRebuild({
+        case i: NatIdentifier if i.isExplicit => pres += i; i
+        case n => n
+      })
+      accumulate(pres.toSet)(r)
+    }
+
     override def expr: Expr => Pair[Expr] = {
       // Transform assertions into annotations, collect FTVs
       case TypeAssertion(e, t) =>
-        val (s, e1) = expr(e).unwrap
-        accumulate(s ++ getFTVs(t))(TypeAnnotation(e1, t) : Expr)
+        val (s1, e1) = expr(e).unwrap
+        val (s2, _) = `type`(t).unwrap
+        accumulate(s1 ++ s2 ++ getFTVs(t))(TypeAnnotation(e1, t) : Expr)
       // Collect FTVs
       case Opaque(e, t) =>
-        accumulate(getFTVs(t).toSet)(Opaque(e, t) : Expr)
+        val (s, _) = `type`(t).unwrap
+        accumulate(s ++ getFTVs(t).toSet)(Opaque(e, t) : Expr)
       case e => super.expr(e)
     }
   }
