@@ -68,12 +68,12 @@ class algorithmic extends test_util.Tests {
 
     val addTuple = fun(x => fst(x) + snd(x))
 
-    val mapReduce = depLambda[NatKind](M, depLambda[NatKind](N,
+    val mapReduce = depLambda(NatKind, M, depLambda(NatKind, N,
       fun(ArrayType(M, ArrayType(N, f32)))(i =>
         map(reduce(fun(x => fun(a => x + a)))(lf32(0.0f))) $ i)))
 
     val reduceMap: Rise =
-      depLambda[NatKind](M, depLambda[NatKind](N,
+      depLambda(NatKind, M, depLambda(NatKind, N,
         fun(ArrayType(M, ArrayType(N, f32)))(i =>
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc)(y)))(generate(fun(IndexType(M) ->: f32)(_ => lf32(0.0f)))) $ transpose(i))))
@@ -94,7 +94,7 @@ class algorithmic extends test_util.Tests {
     val N = NatIdentifier("N", isExplicit = true)
     val K = NatIdentifier("K", isExplicit = true)
 
-    val mm = depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+    val mm = depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
           a |> map(fun(ak =>
@@ -104,7 +104,7 @@ class algorithmic extends test_util.Tests {
                   lf32(0.0f)))))))))))
 
     def goldMKN(reduceFun: ToBeTyped[Rise]): ToBeTyped[Rise] = {
-      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
             a |> map(fun(ak =>
@@ -145,7 +145,7 @@ class algorithmic extends test_util.Tests {
     val K = NatIdentifier("K", isExplicit = true)
 
     val mmMKN = {
-      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
             map(fun(ak =>
@@ -197,7 +197,7 @@ class algorithmic extends test_util.Tests {
 
     // this one is constructed more similar to what the rewrite rules will create
     val goldKMNAlternative =
-      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
             reduceSeq(
@@ -216,7 +216,7 @@ class algorithmic extends test_util.Tests {
 
     // unfortunately, the order of zip arguments is important
     val goldKMNAlternative2 =
-      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
             reduceSeq(
@@ -273,7 +273,7 @@ class algorithmic extends test_util.Tests {
     val K = NatIdentifier("K", isExplicit = true)
 
     val mm =
-      DFNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      DFNF(depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
           map(fun(ak =>

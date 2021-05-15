@@ -39,27 +39,26 @@ object fromRise {
       val ee = expression(e, ptMap).asInstanceOf[Phrase[PhraseType]]
       Apply(ef, ee)
 
-    case r.DepLambda(x, e) => x match {
+    case r.DepLambda(kind, x, e) => x match {
       case ni: rt.NatIdentifier =>
-        DepLambda[NatKind](natIdentifier(ni))(expression(e, ptMap))
+        DepLambda(NatKind, natIdentifier(ni))(expression(e, ptMap))
       case dti: rt.DataTypeIdentifier =>
-        DepLambda[DataKind](dataTypeIdentifier(dti))(expression(e, ptMap))
+        DepLambda(DataKind, dataTypeIdentifier(dti))(expression(e, ptMap))
       case addri: rt.AddressSpaceIdentifier =>
-        DepLambda[AddressSpaceKind](
-          addressSpaceIdentifier(addri))(expression(e, ptMap))
+        DepLambda(AddressSpaceKind, addressSpaceIdentifier(addri))(expression(e, ptMap))
     }
 
-    case r.DepApp(f, x) =>
-      def depApp[K <: Kind](f: r.Expr, arg: K#T): DepApply[K, PhraseType] =
-        DepApply[K, PhraseType](
-          expression(f, ptMap).asInstanceOf[Phrase[DepFunType[K, PhraseType]]],
+    case r.DepApp(kind, f, x) =>
+      def depApp[T, I <: Kind.Identifier](kind: Kind[T, I], f: r.Expr, arg: T): DepApply[T, I, PhraseType] =
+        DepApply[T, I, PhraseType](kind,
+          expression(f, ptMap).asInstanceOf[Phrase[DepFunType[I, PhraseType]]],
           arg)
 
       x match {
-        case n: Nat             => depApp[NatKind](f, n)
-        case dt: rt.DataType    => depApp[DataKind](f, dataType(dt))
-        case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
-        case n2n: rt.NatToNat   => depApp[NatToNatKind](f, nat2nat(n2n))
+        case n: Nat             => depApp(NatKind, f, n)
+        case dt: rt.DataType    => depApp(DataKind, f, dataType(dt))
+        case a: rt.AddressSpace => depApp(AddressSpaceKind, f, addressSpace(a))
+        case n2n: rt.NatToNat   => depApp(NatToNatKind, f, nat2nat(n2n))
       }
 
     case r.Literal(d) => d match {
@@ -98,12 +97,10 @@ object fromRise {
   }
 
   object depFun {
-    def apply[K <: Kind](x: K#I): Object {
-      def apply[T <: PhraseType](body: Phrase[T])
-                                (implicit kn: KindName[K]): DepLambda[K, T]
+    def apply[T, I <: Kind.Identifier](kind: Kind[T, I], x: I): Object {
+      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
     } = new {
-      def apply[T <: PhraseType](body: Phrase[T])
-                                (implicit kn: KindName[K]): DepLambda[K, T] = DepLambda(x, body)
+      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
     }
   }
 
@@ -136,7 +133,7 @@ object fromRise {
         case nFunT(n, expT(`NatType`, `read`) ->:
           expT(IndexType(_), `read`))
         =>
-        depFun[NatKind](n)(
+        depFun(NatKind, n)(
           fun[ExpType](expT(NatType, read), e =>
             NatAsIndex(n, e)))
       }
@@ -275,7 +272,7 @@ object fromRise {
           expT(ArrayType(n, _), `read`) ->:
           expT(_, `read`))
         =>
-        depFun[AddressSpaceKind](a)(
+        depFun(AddressSpaceKind, a)(
           fun[ExpType ->: ExpType ->: ExpType](
             expT(t, read) ->: expT(s, read) ->: expT(t, write), f =>
               fun[ExpType](expT(t, write), i =>
@@ -290,7 +287,7 @@ object fromRise {
           expT(ArrayType(n, _), `read`) ->:
           expT(_, `read`))
         =>
-        depFun[AddressSpaceKind](a)(
+        depFun(AddressSpaceKind, a)(
           fun[ExpType ->: ExpType ->: ExpType](
             expT(t, read) ->: expT(s, read) ->: expT(t, write), f =>
               fun[ExpType](expT(t, write), i =>
@@ -332,7 +329,7 @@ object fromRise {
         case nFunT(n, expT(ArrayType(_, t), a) ->:
           expT(ArrayType(m, ArrayType(_, _)), _))
         =>
-        depFun[NatKind](n)(
+        depFun(NatKind, n)(
           fun[ExpType](expT({m*n}`.`t, a), e =>
             Split(n, m, a, t, e)))
       }
@@ -342,8 +339,8 @@ object fromRise {
           expT(ArrayType(insz, t), `read`) ->:
           expT(ArrayType(np1, ArrayType(_, _)), `read`)))
         =>
-        depFun[NatKind](sz)(
-          depFun[NatKind](sp)(
+        depFun(NatKind, sz)(
+          depFun(NatKind, sp)(
             fun[ExpType](expT(insz`.`t, read), e =>
               Slide(np1-1, sz, sp, t, e))))
       }
@@ -354,8 +351,8 @@ object fromRise {
             expT(ArrayType(insz, _), `read`) ->:
             expT(ArrayType(n, _), `read`)))
         =>
-        depFun[NatKind](alloc)(
-          depFun[NatKind](sz)(
+        depFun(NatKind, alloc)(
+          depFun(NatKind, sz)(
             fun[ExpType ->: ExpType](
               expT(s, read) ->: expT(t, write), load =>
                 fun[ExpType](expT(insz`.`s, read), e =>
@@ -368,7 +365,7 @@ object fromRise {
           (inT @ expT(ArrayType(m, s), `read`)) ->:
           expT(ArrayType(n, t), `write`))
         =>
-          depFun[NatKind](tile)(
+          depFun(NatKind, tile)(
             fun[ExpType ->: ExpType](fa ->: fb, f =>
               fun[ExpType](inT, e =>
                 DepTile(n, tile, m-n, s, t, f, e))))
@@ -380,7 +377,7 @@ object fromRise {
             expT(ArrayType(insz, _), `read`) ->:
             expT(ArrayType(n, _), `read`))
         =>
-        depFun[NatKind](sz)(
+        depFun(NatKind, sz)(
           fun[ExpType ->: ExpType](
             expT(s, read) ->: expT(s, write), wr =>
               fun[ExpType](expT(insz`.`s, read), e =>
@@ -393,9 +390,9 @@ object fromRise {
           expT(ArrayType(insz, _), `read`) ->:
           expT(ArrayType(n, _), `read`))))
         =>
-        depFun[AddressSpaceKind](a)(
-          depFun[NatKind](alloc)(
-            depFun[NatKind](sz)(
+        depFun(AddressSpaceKind, a)(
+          depFun(NatKind, alloc)(
+            depFun(NatKind, sz)(
               fun[ExpType ->: ExpType](
                 expT(s, read) ->: expT(t, write), load =>
                   fun[ExpType](expT(insz`.`s, read), e =>
@@ -408,8 +405,8 @@ object fromRise {
           expT(ArrayType(insz, _), `read`) ->:
           expT(ArrayType(n, _), `read`)))
         =>
-        depFun[AddressSpaceKind](a)(
-          depFun[NatKind](sz)(
+        depFun(AddressSpaceKind, a)(
+          depFun(NatKind, sz)(
               fun[ExpType ->: ExpType](
                 expT(t, read) ->: expT(t, write), write_t =>
                   fun[ExpType](expT(insz`.`t, read), e =>
@@ -420,9 +417,9 @@ object fromRise {
         case nFunT(n, n2nFunT(idxF, n2nFunT(idxFinv,
           expT(ArrayType(_, t), a) ->: expT(ArrayType(_, _), _))))
         =>
-        depFun[NatKind](n)(
-          depFun[NatToNatKind](idxF)(
-            depFun[NatToNatKind](idxFinv)(
+        depFun(NatKind, n)(
+          depFun(NatToNatKind, idxF)(
+            depFun(NatToNatKind, idxFinv)(
               fun[ExpType](expT(n`.`t, a), e =>
                 Reorder(n, t, a, idxF, idxFinv, e)))))
       }
@@ -459,7 +456,7 @@ object fromRise {
         case nFunT(n, expT(ArrayType(nm, t), `read`) ->:
           expT(ArrayType(_, _), `read`))
         =>
-        depFun[NatKind](n)(
+        depFun(NatKind, n)(
           fun[ExpType](expT(nm`.`t, read), e => Take(n, nm-n, t, e)))
       }
 
@@ -467,7 +464,7 @@ object fromRise {
         case nFunT(n, expT(ArrayType(nm, t), `read`) ->:
           expT(ArrayType(_, _), `read`))
         =>
-        depFun[NatKind](n)(
+        depFun(NatKind, n)(
           fun[ExpType](expT(nm`.`t, read), e =>
             Drop(n, nm-n, t, e)))
       }
@@ -478,8 +475,8 @@ object fromRise {
           expT(ArrayType(n, _), `read`) ->:
           expT(ArrayType(_, _), `read`)))
         =>
-        depFun[NatKind](l)(
-          depFun[NatKind](q)(
+        depFun(NatKind, l)(
+          depFun(NatKind, q)(
             fun[ExpType](expT(t, read), cst =>
               fun[ExpType](expT(n`.`t, read), e =>
                 PadCst(n, l, q, t, cst, e)))))
@@ -489,7 +486,7 @@ object fromRise {
         case nFunT(r,
           expT(ArrayType(n, t), `write`) ->: _)
         =>
-        depFun[NatKind](r)(
+        depFun(NatKind, r)(
           fun[ExpType](expT(n`.`t, `write`), e =>
             PadEmpty(n, r, t, e)))
       }
@@ -499,8 +496,8 @@ object fromRise {
           expT(ArrayType(n, t), `read`) ->:
           expT(ArrayType(_, _), `read`)))
         =>
-        depFun[NatKind](l)(
-          depFun[NatKind](q)(
+        depFun(NatKind, l)(
+          depFun(NatKind, q)(
             fun[ExpType](expT(n`.`t, read), e =>
               PadClamp(n, l, q, t, e))))
       }
@@ -680,7 +677,7 @@ object fromRise {
             case FunType(ExpType(dt: DataTypeIdentifier, `read`), out) =>
               val (i, o) = collectTypes(out)
               (dt +: i, o)
-            case DepFunType(_, t) => collectTypes(t)
+            case DepFunType(_, _, t) => collectTypes(t)
             case _ => throw new Exception("This should not be possible")
           }
         }
@@ -688,7 +685,7 @@ object fromRise {
         assert(inTs.length == n)
 
         inTs.foldRight[Phrase[_ <: PhraseType]](
-          depFun[DataKind](outT)({
+          depFun(DataKind, outT)({
             val args = Seq.tabulate(n)(i => Identifier(freshName("x"), ExpType(inTs(i), read)))
             args.foldRight[Phrase[_ <: PhraseType]](
               ForeignFunctionCall(decl, n)(inTs, outT, args)
@@ -697,7 +694,7 @@ object fromRise {
             }
           })
         ) {
-          case (t, f) => depFun[DataKind](t)(f)
+          case (t, f) => depFun(DataKind, t)(f)
         }
 
       case core.generate() => fromType {
@@ -726,7 +723,7 @@ object fromRise {
           expT(ArrayType(insz, _), `read`) ->:
           expT(ArrayType(m, _), `write`) )
         =>
-        depFun[NatKind](k)(
+        depFun(NatKind, k)(
           fun[`(nat)->:`[ExpType ->: ExpType]](
             l ->: (expT(ln`.`t, read) ->: expT(l`.`t, write)), f =>
               fun[ExpType](expT(insz`.`t, read), e =>
@@ -740,7 +737,7 @@ object fromRise {
           expT(ArrayType(insz, _), `read`) ->:
           expT(ArrayType(m, _), `write`) ))
         =>
-        depFun[AddressSpaceKind](a)(depFun[NatKind](k)(
+        depFun(AddressSpaceKind, a)(depFun(NatKind, k)(
           fun[`(nat)->:`[ExpType ->: ExpType]](
             l ->: (expT(ln`.`t, read) ->: expT(l`.`t, write)), f =>
               fun[ExpType](expT(insz`.`t, read), e =>
@@ -752,7 +749,7 @@ object fromRise {
           expT(ArrayType(mn, _), a) ->:
           expT(ArrayType(m, VectorType(_, t)), _))
         =>
-        depFun[NatKind](n)(
+        depFun(NatKind, n)(
           fun[ExpType](expT(mn`.`t, a), e =>
             AsVector(n, m, t, a, e)))
       }
@@ -762,7 +759,7 @@ object fromRise {
           expT(ArrayType(mn, _), a) ->:
           expT(ArrayType(m, VectorType(_, t)), _))
         =>
-        depFun[NatKind](n)(
+        depFun(NatKind, n)(
           fun[ExpType](expT(mn`.`t, read), e =>
             AsVectorAligned(n, m, t, a, e)))
       }
@@ -800,7 +797,7 @@ object fromRise {
       case rocl.oclToMem() => fromType {
         case aFunT(a, expT(t, `write`) ->: expT(_, `read`))
         =>
-        depFun[AddressSpaceKind](a)(
+        depFun(AddressSpaceKind, a)(
           fun[ExpType](expT(t, write), e =>
             ocl.ToMem(a, t, e)))
       }
@@ -811,8 +808,8 @@ object fromRise {
           expT(t, `write`) ->: _))))))
         =>
           import shine.OpenCL.{LocalSize, GlobalSize}
-          depFun[NatKind](ls1)(depFun[NatKind](ls2)(depFun[NatKind](ls3)(
-            depFun[NatKind](gs1)(depFun[NatKind](gs2)(depFun[NatKind](gs3)(
+          depFun(NatKind, ls1)(depFun(NatKind, ls2)(depFun(NatKind, ls3)(
+            depFun(NatKind, gs1)(depFun(NatKind, gs2)(depFun(NatKind, gs3)(
               fun[ExpType](expT(t, write), e =>
                 ocl.Run(LocalSize(ls1, ls2, ls3), GlobalSize(gs1, gs2, gs3))(t, e))))))))
       }
@@ -830,7 +827,7 @@ object fromRise {
 
       case core.makeDepPair() => fromType {
         case nFunT(fst, expT(sndT, a) ->: expT(_, _)) =>
-          depFun[NatKind](fst)(fun[ExpType](expT(sndT, a), snd => MakeDepPair(a, fst, sndT, snd)))
+          depFun(NatKind, fst)(fun[ExpType](expT(sndT, a), snd => MakeDepPair(a, fst, sndT, snd)))
       }
 
       case rcuda.globalToShared() => fromType {
@@ -964,7 +961,7 @@ object fromRise {
     case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
     case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
     case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
-    case rt.DepPairType(x, t) =>
+    case rt.DepPairType(_, x, t) =>
       x match {
       case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
       case _ => ???

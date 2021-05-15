@@ -141,20 +141,20 @@ case class Solution(ts: Map[Type, Type],
       case FragmentTypeConstraint(a, b) => FragmentTypeConstraint(apply(a), apply(b))
       case NatToDataConstraint(a, b) => NatToDataConstraint(apply(a), apply(b))
       case NatCollectionConstraint(a, b) => NatCollectionConstraint(apply(a), apply(b))
-      case DepConstraint(df, arg: Nat, t) => DepConstraint[NatKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: DataType, t) =>
-        DepConstraint[DataKind](apply(df), apply(arg).asInstanceOf[DataType], apply(t))
-      case DepConstraint(df, arg: Type, t) =>
-        DepConstraint[TypeKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: AddressSpace, t) =>
-        DepConstraint[AddressSpaceKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: NatToData, t) =>
-        DepConstraint[NatToDataKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: NatToNat, t) =>
-        DepConstraint[NatToNatKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: NatCollection, t) =>
-        DepConstraint[NatCollectionKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(_, _, _) => throw new Exception("Impossible case")
+      case DepConstraint(NatKind, df, arg: Nat, t) => DepConstraint(NatKind, apply(df), apply(arg), apply(t))
+      case DepConstraint(DataKind, df, arg: DataType, t) =>
+        DepConstraint(DataKind, apply(df), apply(arg).asInstanceOf[DataType], apply(t))
+      case DepConstraint(TypeKind, df, arg: Type, t) =>
+        DepConstraint(TypeKind, apply(df), apply(arg), apply(t))
+      case DepConstraint(AddressSpaceKind, df, arg: AddressSpace, t) =>
+        DepConstraint(AddressSpaceKind, apply(df), apply(arg), apply(t))
+      case DepConstraint(NatToDataKind, df, arg: NatToData, t) =>
+        DepConstraint(NatToDataKind, apply(df), apply(arg), apply(t))
+      case DepConstraint(NatToNatKind, df, arg: NatToNat, t) =>
+        DepConstraint(NatToNatKind, apply(df), apply(arg), apply(t))
+      case DepConstraint(NatCollectionKind, df, arg: NatCollection, t) =>
+        DepConstraint(NatCollectionKind, apply(df), apply(arg), apply(t))
+      case DepConstraint(_, _, _, _) => throw new Exception("Impossible case")
     }
   }
 }

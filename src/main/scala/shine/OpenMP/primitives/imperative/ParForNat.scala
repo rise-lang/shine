@@ -7,12 +7,12 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-final case class ParForNat(val n: Nat, val ft: NatToData, val out: Phrase[AccType], val body: Phrase[DepFunType[NatKind, FunType[AccType, CommType]]]) extends CommandPrimitive {
+final case class ParForNat(val n: Nat, val ft: NatToData, val out: Phrase[AccType], val body: Phrase[DepFunType[NatIdentifier, FunType[AccType, CommType]]]) extends CommandPrimitive {
   assert {
     out :: accT(DepArrayType(n, ft))
     body :: ({
       val i = body.t.x
-      DepFunType[NatKind, PhraseType](i, FunType(accT(NatToDataApply(ft, i)), comm))
+      DepFunType(NatKind, i, FunType(accT(NatToDataApply(ft, i)), comm))
     })
     true
   }

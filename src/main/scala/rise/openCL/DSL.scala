@@ -2,7 +2,7 @@ package rise.openCL
 
 import rise.core.DSL._
 import rise.core.{Expr, Primitive}
-import rise.core.types.AddressSpaceKind
+import rise.core.types.AddressSpace
 import shine.OpenCL.{GlobalSize, LocalSize}
 
 object DSL {
@@ -32,17 +32,17 @@ object DSL {
                                    to: ToBeTyped[A],
                                    f: ToBeTyped[B]
                                  ): ToBeTyped[rise.core.Lambda] = fun(x => to(f(x)))
-  val toGlobal: ToBeTyped[rise.core.DepApp[AddressSpaceKind]] = toMem(
+  val toGlobal: ToBeTyped[rise.core.DepApp[AddressSpace]] = toMem(
     rise.core.types.AddressSpace.Global
   )
   def toGlobalFun[T <: Expr](f: ToBeTyped[T]): ToBeTyped[rise.core.Lambda] =
     toFun(toGlobal, f)
-  val toLocal: ToBeTyped[rise.core.DepApp[AddressSpaceKind]] = toMem(
+  val toLocal: ToBeTyped[rise.core.DepApp[AddressSpace]] = toMem(
     rise.core.types.AddressSpace.Local
   )
   def toLocalFun[T <: Expr](f: ToBeTyped[T]): ToBeTyped[rise.core.Lambda] =
     toFun(toLocal, f)
-  val toPrivate: ToBeTyped[rise.core.DepApp[AddressSpaceKind]] = toMem(
+  val toPrivate: ToBeTyped[rise.core.DepApp[AddressSpace]] = toMem(
     rise.core.types.AddressSpace.Private
   )
   def toPrivateFun[T <: Expr](f: ToBeTyped[T]): ToBeTyped[rise.core.Lambda] =

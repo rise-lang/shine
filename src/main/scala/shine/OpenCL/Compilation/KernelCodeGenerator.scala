@@ -46,7 +46,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
 
     case f: ocl.ParForNat =>
       f.body match {
-        case DepLambda(i: NatIdentifier, Lambda(o, p)) =>
+        case DepLambda(NatKind, i: NatIdentifier, Lambda(o, p)) =>
           OpenCLCodeGen.codeGenOpenCLParForNat(f, f.n, f.out, i, o, p, env)
         case _ => throw new Exception("This should not happen")
       }

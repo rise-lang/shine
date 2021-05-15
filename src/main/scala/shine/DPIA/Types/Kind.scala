@@ -3,101 +3,48 @@ package shine.DPIA.Types
 import shine.DPIA
 import shine.DPIA.NatIdentifier
 
-sealed trait Kind {
-  type T
-  type I <: Kind.Identifier
+sealed trait Kind[+T, +I <: Kind.Identifier] {
+  def name: String
+  def makeIdentifier: I
 }
 
 object Kind {
   trait Identifier {
     def name: String
   }
-
-  trait IdentifierMaker[K <: Kind] {
-    def makeIdentifier(): K#I
-  }
-
-  implicit object DataTypeIdentifierMaker
-    extends IdentifierMaker[DataKind] {
-    override def makeIdentifier(): DataTypeIdentifier =
-      DataTypeIdentifier(DPIA.freshName("dt"))
-  }
-  implicit object NatIdentifierMaker
-    extends IdentifierMaker[NatKind] {
-    override def makeIdentifier(): NatIdentifier =
-      NatIdentifier(DPIA.freshName("n"))
-  }
-  implicit object AddrIdentifierMaker
-    extends IdentifierMaker[AddressSpaceKind] {
-    override def makeIdentifier(): AddressSpaceIdentifier =
-      AddressSpaceIdentifier(DPIA.freshName("addr"))
-  }
-  implicit object AccessTypeIdentifierMaker
-    extends IdentifierMaker[AccessKind] {
-    override def makeIdentifier(): AccessTypeIdentifier =
-      AccessTypeIdentifier(DPIA.freshName("access"))
-  }
 }
 
-sealed trait PhraseKind extends Kind {
-  override type T = PhraseType
+case object PhraseKind extends Kind[PhraseType, Kind.Identifier] {
+  override def name: String = "phrase"
+  override def makeIdentifier: Kind.Identifier = ???
 }
 
-sealed trait DataKind extends Kind {
-  override type T = DataType
-  override type I = DataTypeIdentifier
+case object DataKind extends Kind[DataType, DataTypeIdentifier] {
+  override def name: String = "data"
+  override def makeIdentifier: DataTypeIdentifier = DataTypeIdentifier(DPIA.freshName("dt"))
 }
 
-sealed trait NatKind extends Kind {
-  override type T = DPIA.Nat
-  override type I = DPIA.NatIdentifier
+case object NatKind extends Kind[DPIA.Nat, DPIA.NatIdentifier] {
+  override def name: String = "nat"
+  override def makeIdentifier: NatIdentifier = NatIdentifier(DPIA.freshName("n"))
 }
 
-sealed trait AddressSpaceKind extends Kind {
-  override type T = AddressSpace
-  override type I = AddressSpaceIdentifier
+case object AddressSpaceKind extends Kind[AddressSpace, AddressSpaceIdentifier] {
+  override def name: String = "addressSpace"
+  override def makeIdentifier: AddressSpaceIdentifier = AddressSpaceIdentifier(DPIA.freshName("addr"))
 }
 
-sealed trait AccessKind extends Kind {
-  override type T = AccessType
-  override type I = AccessTypeIdentifier
+case object AccessKind extends Kind[AccessType, AccessTypeIdentifier] {
+  override def name: String = "access"
+  override def makeIdentifier: AccessTypeIdentifier = AccessTypeIdentifier(DPIA.freshName("access"))
 }
 
-sealed trait NatToNatKind extends Kind {
-  override type T = NatToNat
-  override type I = NatToNatIdentifier
+case object NatToNatKind extends Kind[NatToNat, NatToNatIdentifier] {
+  override def name: String = "nat->nat"
+  override def makeIdentifier: NatToNatIdentifier = NatToNatIdentifier(DPIA.freshName("n2n"))
 }
 
-sealed trait NatToDataKind extends Kind {
-  override type T = NatToData
-  override type I = NatToDataIdentifier
-}
-
-trait KindName[K <: Kind] {
-  def get: String
-}
-
-object KindName {
-  implicit val phraseKN: KindName[PhraseKind] = new KindName[PhraseKind] {
-    def get = "phrase"
-  }
-  implicit val natKN: KindName[NatKind] = new KindName[NatKind] {
-    def get = "nat"
-  }
-  implicit val dataKN: KindName[DataKind] = new KindName[DataKind] {
-    def get = "data"
-  }
-  implicit val addressSpaceKN: KindName[AddressSpaceKind] =
-    new KindName[AddressSpaceKind] {
-    def get = "addressSpace"
-  }
-  implicit val accessKN: KindName[AccessKind] = new KindName[AccessKind] {
-    def get = "access"
-  }
-  implicit val n2nKN: KindName[NatToNatKind] = new KindName[NatToNatKind] {
-    def get = "nat->nat"
-  }
-  implicit val n2dtKN: KindName[NatToDataKind] = new KindName[NatToDataKind] {
-    def get = "nat->data"
-  }
+case object NatToDataKind extends Kind[NatToData, NatToDataIdentifier] {
+  override def name: String = "nat->data"
+  override def makeIdentifier: NatToDataIdentifier = NatToDataIdentifier(DPIA.freshName("n2d"))
 }

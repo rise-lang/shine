@@ -37,7 +37,7 @@ object IsClosedForm {
 
     override def expr: Expr => Pair[Expr] = {
       case Lambda(x, b) => this.copy(boundV = boundV + x).expr(b)
-      case DepLambda(x, b) => this.copy(boundT = boundT + x).expr(b)
+      case DepLambda(_, x, b) => this.copy(boundT = boundT + x).expr(b)
       case e => super.expr(e)
     }
 
@@ -56,10 +56,10 @@ object IsClosedForm {
     }
 
     override def `type`[T <: Type]: T => Pair[T] = {
-      case d@DepFunType(x, t) =>
+      case d@DepFunType(_, x, t) =>
         for { p <- this.copy(boundT = boundT + x).`type`(t) }
           yield (p._1, d.asInstanceOf[T])
-      case d@DepPairType(x, dt) =>
+      case d@DepPairType(_, x, dt) =>
         for { p <- this.copy(boundT = boundT + x).datatype(dt) }
           yield (p._1, d.asInstanceOf[T])
       case t => super.`type`(t)

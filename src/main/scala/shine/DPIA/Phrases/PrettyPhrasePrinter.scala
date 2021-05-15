@@ -8,7 +8,7 @@ object PrettyPhrasePrinter {
     p match {
       case app: Apply[a, T] => s"(${apply(app.fun)})(${apply(app.arg)})"
 
-      case app: DepApply[_, T] => s"(${apply(app.fun)})(${app.arg})"
+      case app: DepApply[_, _, T] => s"(${apply(app.fun)})(${app.arg})"
 
       case p1: Proj1[a, b] => s"π1(${apply(p1.pair)})"
 
@@ -25,7 +25,7 @@ object PrettyPhrasePrinter {
 
       case Lambda(param, body) => s"λ ${apply(param)}: ${param.t} -> ${apply(body)}"
 
-      case dl @ DepLambda(param, body) => s"Λ (${param.name}: ${dl.kn.get}) -> ${apply(body)}"
+      case DepLambda(kind, param, body) => s"Λ (${param.name}: ${kind.name}) -> ${apply(body)}"
 
       case LetNat(binder, defn, body) => s"nLet ${binder.name} = ${apply(defn)} in ${apply(body)}"
 

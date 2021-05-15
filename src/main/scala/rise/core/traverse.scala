@@ -54,9 +54,9 @@ object traverse {
       case PairType(p1, p2) =>
         for {p11 <- `type`(p1); p21 <- `type`(p2)}
           yield PairType(p11, p21)
-      case pair@DepPairType(x, e) =>
+      case DepPairType(kind, x, e) =>
         for {x1 <- typeIdentifierDispatch(Binding)(x); e1 <- `type`(e)}
-          yield DepPairType(x1, e1)(pair.kindName)
+          yield DepPairType(kind, x1, e1)
       case IndexType(n) =>
         for {n1 <- natDispatch(Reference)(n)}
           yield IndexType(n1)
@@ -115,23 +115,9 @@ object traverse {
       case FunType(a, b) =>
         for {a1 <- `type`(a); b1 <- `type`(b)}
           yield FunType(a1, b1)
-      case DepFunType(x, t) => x match {
-        case n: NatIdentifier =>
-          for { n1 <- typeIdentifierDispatch(Binding)(n); t1 <- `type`(t)}
-            yield DepFunType[NatKind, Type](n1, t1)
-        case dt: DataTypeIdentifier =>
-          for { dt1 <- typeIdentifierDispatch(Binding)(dt); t1 <- `type`(t)}
-            yield DepFunType[DataKind, Type](dt1, t1)
-        case a: AddressSpaceIdentifier =>
-          for { a1 <- typeIdentifierDispatch(Binding)(a); t1 <- `type`(t)}
-            yield DepFunType[AddressSpaceKind, Type](a1, t1)
-        case n2n: NatToNatIdentifier =>
-          for { n2n1 <- typeIdentifierDispatch(Binding)(n2n); t1 <- `type`(t)}
-            yield DepFunType[NatToNatKind, Type](n2n1, t1)
-        case n2d: NatToDataIdentifier =>
-          for { n2d1 <- typeIdentifierDispatch(Binding)(n2d); t1 <- `type`(t)}
-            yield DepFunType[NatToDataKind, Type](n2d1, t1)
-      }
+      case DepFunType(kind, x, t) =>
+        for { n1 <- typeIdentifierDispatch(Binding)(x); t1 <- `type`(t)}
+          yield DepFunType(kind, n1, t1)
     }).asInstanceOf[M[T]]
 
     def expr : Expr => M[Expr] = {
@@ -148,31 +134,26 @@ object traverse {
           e1 <- expr(e)
           t1 <- `type`(a.t)
         } yield App(f1, e1)(t1)
-      case dl@DepLambda(x,e) => x match {
-        case n: NatIdentifier =>
-          for {n1 <- typeIdentifierDispatch(Binding)(n); e1 <- expr(e); t1 <- `type`(dl.t)}
-            yield DepLambda[NatKind](n1, e1)(t1)
-        case dt: DataTypeIdentifier =>
-          for {dt1 <- typeIdentifierDispatch(Binding)(dt); e1 <- expr(e); t1 <- `type`(dl.t)}
-            yield DepLambda[DataKind](dt1, e1)(t1)
-      }
-      case da@DepApp(f, x) => x match {
-        case n: Nat =>
-          for {f1 <- expr(f); n1 <- natDispatch(Reference)(n); t1 <- `type`(da.t)}
-            yield DepApp[NatKind](f1, n1)(t1)
-        case dt: DataType =>
-          for {f1 <- expr(f); dt1 <- `type`(dt); t1 <- `type`(da.t)}
-            yield DepApp[DataKind](f1, dt1)(t1)
-        case a: AddressSpace =>
-          for {f1 <- expr(f); a1 <- addressSpace(a); t1 <- `type`(da.t)}
-            yield DepApp[AddressSpaceKind](f1, a1)(t1)
-        case n2n: NatToNat =>
-          for {f1 <- expr(f); n2n1 <- natToNat(n2n); t1 <- `type`(da.t)}
-            yield DepApp[NatToNatKind](f1, n2n1)(t1)
-        case n2d: NatToData =>
-          for {f1 <- expr(f); n2d1 <- natToData(n2d); t1 <- `type`(da.t)}
-            yield DepApp[NatToDataKind](f1, n2d1)(t1)
-      }
+      case dl@DepLambda(kind, x,e) =>
+        for {n1 <- typeIdentifierDispatch(Binding)(x); e1 <- expr(e); t1 <- `type`(dl.t)}
+          yield DepLambda(kind, n1, e1)(t1)
+      case da@DepApp(NatKind, f, x: Nat) =>
+        for {f1 <- expr(f); n1 <- natDispatch(Reference)(x); t1 <- `type`(da.t)}
+          yield DepApp(NatKind, f1, n1)(t1)
+      case da@DepApp(DataKind, f, x: DataType) =>
+        for {f1 <- expr(f); dt1 <- `type`(x); t1 <- `type`(da.t)}
+          yield DepApp(DataKind, f1, dt1)(t1)
+      case da@DepApp(AddressSpaceKind, f, x: AddressSpace) =>
+        for {f1 <- expr(f); a1 <- addressSpace(x); t1 <- `type`(da.t)}
+          yield DepApp(AddressSpaceKind, f1, a1)(t1)
+      case da@DepApp(NatToNatKind, f, x: NatToNat) =>
+        for {f1 <- expr(f); n2n1 <- natToNat(x); t1 <- `type`(da.t)}
+          yield DepApp(NatToNatKind, f1, n2n1)(t1)
+      case da@DepApp(NatToDataKind, f, x: NatToData) =>
+        for {f1 <- expr(f); n2d1 <- natToData(x); t1 <- `type`(da.t)}
+          yield DepApp(NatToDataKind, f1, n2d1)(t1)
+      case DepApp(_, _, _) =>
+        ???
       case Literal(d) =>
         for { d1 <- data(d) }
           yield Literal(d1)
