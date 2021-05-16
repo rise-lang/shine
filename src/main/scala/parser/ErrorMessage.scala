@@ -16,7 +16,7 @@ trait ParserError { self: Throwable =>
 
 
 
-abstract sealed class ErrorMessages(span:Option[Span]) {
+abstract sealed class ErrorMessage(span:Option[Span]) {
   val sp = span
   val s = span.getOrElse(SpanPlaceholder)
   def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.head
@@ -74,13 +74,13 @@ abstract sealed class ErrorMessages(span:Option[Span]) {
   override def toString: String = returnMessage()
 
 
-  def ==(error:ErrorMessages): Boolean = error.s==this.s&&error.description().equals(this.description())
+  def ==(error:ErrorMessage): Boolean = error.s==this.s&&error.description().equals(this.description())
 }
 
 //______________________________________________________________________________________________________
 //Lexer
 
-abstract sealed class PreAndErrorToken(span: Span) extends ErrorMessages(Some(span))
+abstract sealed class PreAndErrorToken(span: Span) extends ErrorMessage(Some(span))
 
 final case class EndOfLine(span:Span) extends PreAndErrorToken(span){
   require(span.begin == span.end, "span.begin is unequal to span.end")
@@ -212,7 +212,7 @@ final case class IdentifierExpectedNotTypeIdentifier(name: String, span:Span)
 //Parser
 
 
-abstract sealed class PreAndErrorSynElems(span: Span, whatToParse: String) extends ErrorMessages(Some(span)){
+abstract sealed class PreAndErrorSynElems(span: Span, whatToParse: String) extends ErrorMessage(Some(span)){
   def subDescription():String= {
     throw new Exception("SubDescriptionError method must be overridden")
   }
@@ -382,7 +382,7 @@ abstract sealed class ConstraintInputTypes()
   case class ExpectedAndFoundNatCollection(expected:rt.NatCollection, found:rt.NatCollection) extends ConstraintInputTypes
 
 //Todo: find better solution than SpanPlaceholder
-abstract sealed class ConstraintError(span: Option[Span]) extends ErrorMessages(span){
+abstract sealed class ConstraintError(span: Option[Span]) extends ErrorMessage(span){
   var constraintTypes: Option[ConstraintInputTypes] = None
   def getTypes():List[rt.Type] = constraintTypes match {
     case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
