@@ -33,9 +33,20 @@ object traverse {
       case t: TypeIdentifier => typeIdentifier(vt)(t)
     }).asInstanceOf[M[I]]
     def natDispatch : VarType => Nat => M[Nat] = vt => {
-      case i : NatIdentifier =>
-        bind(typeIdentifier(vt)(i))(nat)
+      case i : NatIdentifier => bind(typeIdentifier(vt)(i))(nat)
       case n => nat(n)
+    }
+    def matrixLayoutDispatch : VarType => MatrixLayout => M[MatrixLayout] = vt => {
+      case i : MatrixLayoutIdentifier => bind(typeIdentifier(vt)(i))(matrixLayout)
+      case m => matrixLayout(m)
+    }
+    def fragmentKindDispatch : VarType => FragmentKind => M[FragmentKind] = vt => {
+      case i : FragmentKindIdentifier => bind(typeIdentifier(vt)(i))(fragmentKind)
+      case m => fragmentKind(m)
+    }
+    def dataTypeDispatch : VarType => DataType => M[DataType] = vt => {
+      case i : DataTypeIdentifier => bind(typeIdentifier(vt)(i))(datatype)
+      case d => datatype(d)
     }
 
     def addressSpace : AddressSpace => M[AddressSpace] = return_
@@ -46,7 +57,7 @@ object traverse {
       case NatType               => return_(NatType : DataType)
       case s : ScalarType        => return_(s : DataType)
       case ArrayType(n, d) =>
-        for {n1 <- natDispatch(Reference)(n); d1 <- `type`[DataType](d)}
+        for {n1 <- natDispatch(Reference)(n); d1 <- dataTypeDispatch(Reference)(d)}
           yield ArrayType(n1, d1)
       case DepArrayType(n, n2d) =>
         for {n1 <- natDispatch(Reference)(n); n2d1 <- natToData(n2d)}
@@ -54,22 +65,26 @@ object traverse {
       case PairType(p1, p2) =>
         for {p11 <- `type`(p1); p21 <- `type`(p2)}
           yield PairType(p11, p21)
-      case pair@DepPairType(x, e) =>
-        for {x1 <- typeIdentifierDispatch(Binding)(x); e1 <- `type`(e)}
-          yield DepPairType(x1, e1)(pair.kindName)
+      case pair@DepPairType(x, d) =>
+        for {x1 <- typeIdentifierDispatch(Binding)(x); d1 <- dataTypeDispatch(Reference)(d)}
+          yield DepPairType(x1, d1)(pair.kindName)
       case IndexType(n) =>
         for {n1 <- natDispatch(Reference)(n)}
           yield IndexType(n1)
-      case VectorType(n, e) =>
-        for {n1 <- natDispatch(Reference)(n); e1 <- `type`(e)}
-          yield VectorType(n1, e1)
+      case VectorType(n, d) =>
+        for {n1 <- natDispatch(Reference)(n); d1 <- dataTypeDispatch(Reference)(d)}
+          yield VectorType(n1, d1)
       case ManagedBufferType(dt) =>
-        for {dt1 <- datatype(dt)}
+        for {dt1 <- dataTypeDispatch(Reference)(dt)}
           yield ManagedBufferType(dt1)
       case o: OpaqueType => return_(o: DataType)
       case FragmentType(rows, columns, d3, dt, fragKind, layout) =>
-        for {rows1 <- nat(rows); columns1 <- nat(columns); d31 <- nat(d3); dt1 <- datatype(dt);
-          fragKind1 <- fragmentKind(fragKind); layout1 <- matrixLayout(layout)}
+        for {rows1 <- natDispatch(Reference)(rows);
+             columns1 <- natDispatch(Reference)(columns);
+             d31 <- natDispatch(Reference)(d3);
+             dt1 <- dataTypeDispatch(Reference)(dt);
+             fragKind1 <- fragmentKindDispatch(Reference)(fragKind);
+             layout1 <- matrixLayoutDispatch(Reference)(layout)}
         yield FragmentType(rows1, columns1, d31, dt1, fragKind1, layout1)
       case NatToDataApply(ntdf, n) =>
         for {ntdf1 <- natToData(ntdf); n1 <- natDispatch(Reference)(n)}
@@ -85,9 +100,9 @@ object traverse {
 
     def natToData : NatToData => M[NatToData] = {
       case i : NatToDataIdentifier => return_(i.asInstanceOf[NatToData])
-      case NatToDataLambda(x, e) =>
-        for { x1 <- typeIdentifierDispatch(Binding)(x); e1 <- `type`(e) }
-          yield NatToDataLambda(x1, e1)
+      case NatToDataLambda(x, d) =>
+        for { x1 <- typeIdentifierDispatch(Binding)(x); d1 <- dataTypeDispatch(Reference)(d) }
+          yield NatToDataLambda(x1, d1)
     }
 
     def data : Data => M[Data] = {
@@ -109,9 +124,8 @@ object traverse {
 
     def `type`[T <: Type ] : T => M[T] = t => (t match {
       case TypePlaceholder => return_(TypePlaceholder)
-      case i: DataTypeIdentifier => typeIdentifierDispatch(Reference)(i)
       case i: TypeIdentifier => typeIdentifierDispatch(Reference)(i)
-      case dt: DataType => datatype(dt)
+      case dt: DataType => dataTypeDispatch(Reference)(dt)
       case FunType(a, b) =>
         for {a1 <- `type`(a); b1 <- `type`(b)}
           yield FunType(a1, b1)
