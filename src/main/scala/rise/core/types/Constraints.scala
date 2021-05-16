@@ -47,8 +47,7 @@ object Constraint {
   def canBeSubstituted(preserve: Set[Kind.Identifier], i: Kind.Identifier): Boolean =
     !preserve.contains(i)
 
-  def solve(cs: Seq[Constraint], preserve: Set[Kind.Identifier], trace: Seq[Constraint])
-     (implicit explDep: Flags.ExplicitDependence): Solution =
+  def solve(cs: Seq[Constraint], preserve: Set[Kind.Identifier], trace: Seq[Constraint]): Solution =
   solveRec(cs,  Nil, preserve, trace)
   /* faster but not always enough:
    cs match {
@@ -59,8 +58,7 @@ object Constraint {
   }
   */
 
-  def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], preserve: Set[Kind.Identifier], trace: Seq[Constraint])
-              (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
+  def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], preserve: Set[Kind.Identifier], trace: Seq[Constraint]): Solution = (cs, rs) match {
     case (Nil, Nil) => Solution()
     case (Nil, _) => error(s"could not solve constraints ${rs}")(trace)
     case (c +: cs, _) =>
@@ -72,7 +70,7 @@ object Constraint {
   }
 
   // scalastyle:off method.length
-  def solveOne(c: Constraint, preserve : Set[Kind.Identifier], trace: Seq[Constraint]) (implicit explDep: Flags.ExplicitDependence): Solution = {
+  def solveOne(c: Constraint, preserve : Set[Kind.Identifier], trace: Seq[Constraint]): Solution = {
     implicit val _trace: Seq[Constraint] = trace
     def decomposedPreserve(cs: Seq[Constraint], preserve : Set[Kind.Identifier]) = solve(cs, preserve, c +: trace)
     def decomposed(cs: Seq[Constraint]) = solve(cs, preserve, c +: trace)
@@ -112,33 +110,12 @@ object Constraint {
             DepFunType(na: NatIdentifier, ta),
             DepFunType(nb: NatIdentifier, tb)
             ) =>
-            explDep match {
-              case ExplicitDependence.On =>
-                val n = NatIdentifier(freshName("n"), isExplicit = true)
-                /** Note(federico):
-                  * This step recurses in both functions and makes dependence between type
-                  * variables and n explicit (by replacing type variables with NatToData/NatToNat).
-                  *
-                  * Perhaps this can be moved away from constraint solving, and pulled up in the
-                  * initial constrain-types phase?
-                  */
-                val (nTa, nTaSub) = dependence.explicitlyDependent(
-                  substitute.natInType(n, `for`=na, ta), n, preserve + n)
-                val (nTb, nTbSub) = dependence.explicitlyDependent(
-                  substitute.natInType(n, `for`= nb, tb), n, preserve + n)
-                nTaSub ++ nTbSub ++ decomposedPreserve(Seq(
-                  NatConstraint(n, na),
-                  NatConstraint(n, nb),
-                  TypeConstraint(nTa, nTb),
-                ), preserve + n - na)
-              case ExplicitDependence.Off =>
-                val n = NatIdentifier(freshName("n"), isExplicit = true)
-                decomposedPreserve(Seq(
-                  NatConstraint(n, na),
-                  NatConstraint(n, nb),
-                  TypeConstraint(ta, tb),
-                ), preserve + n - na - nb)
-            }
+              val n = NatIdentifier(freshName("n"), isExplicit = true)
+              decomposedPreserve(Seq(
+                NatConstraint(n, na),
+                NatConstraint(n, nb),
+                TypeConstraint(ta, tb),
+              ), preserve + n - na - nb)
           case (
             DepFunType(dta: DataTypeIdentifier, ta),
             DepFunType(dtb: DataTypeIdentifier, tb)
@@ -307,7 +284,7 @@ object Constraint {
     import arithexpr.arithmetic._
 
     def unify(a: Nat, b: Nat, preserve : Set[Kind.Identifier])
-             (implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence): Solution = {
+             (implicit trace: Seq[Constraint]): Solution = {
       def decomposed(cs: Seq[Constraint]) = solve(cs, preserve, NatConstraint(a, b) +: trace)
       (a, b) match {
         case (i: NatIdentifier, _) => nat.unifyIdent(i, b, preserve)
@@ -406,7 +383,8 @@ object Constraint {
       }
     }
 
-    def tryPivots(n: Nat, value: Nat, preserve : Set[Kind.Identifier])(implicit trace: Seq[Constraint]): Solution = {
+    def tryPivots(n: Nat, value: Nat, preserve : Set[Kind.Identifier])
+                 (implicit trace: Seq[Constraint]): Solution = {
       potentialPivots(n, preserve).foreach(pivotSolution(_, n, value) match {
         case Some(s) => return s
         case None    =>
@@ -414,19 +392,20 @@ object Constraint {
       error(s"could not pivot $n = $value")
     }
 
-    def unifyProd(p: Nat, n: Nat, preserve : Set[Kind.Identifier])(implicit trace: Seq[Constraint]): Solution = {
+    def unifyProd(p: Nat, n: Nat, preserve : Set[Kind.Identifier])
+                 (implicit trace: Seq[Constraint]): Solution = {
       // n = p --> 1 = p * (1/n)
       tryPivots(p /^ n, 1, preserve)
     }
 
-    def unifySum(s: Sum, n: Nat, preserve : Set[Kind.Identifier])(implicit trace: Seq[Constraint]): Solution = {
+    def unifySum(s: Sum, n: Nat, preserve : Set[Kind.Identifier])
+                (implicit trace: Seq[Constraint]): Solution = {
       // n = s --> 0 = s + (-n)
       tryPivots(s - n, 0, preserve)
     }
 
-    def unifyIdent(i: NatIdentifier, n: Nat, preserve : Set[Kind.Identifier])(
-      implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
-    ): Solution = n match {
+    def unifyIdent(i: NatIdentifier, n: Nat, preserve : Set[Kind.Identifier])
+                  (implicit trace: Seq[Constraint]): Solution = n match {
       case j: NatIdentifier =>
         if (i == j) {
           Solution()
@@ -445,9 +424,8 @@ object Constraint {
       case _       => error(s"cannot unify $i and $n")
     }
 
-    def unifyApply(apply: NatToNatApply, nat: Nat, preserve: Set[Kind.Identifier])(
-      implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
-    ): Solution = {
+    def unifyApply(apply: NatToNatApply, nat: Nat, preserve: Set[Kind.Identifier])
+                  (implicit trace: Seq[Constraint]): Solution = {
       val NatToNatApply(f1, n1) = apply
       nat match {
         case NatToNatApply(f2, n2) =>
@@ -466,9 +444,8 @@ object Constraint {
   private object bool {
     import arithexpr.arithmetic._
 
-    def unify(a: BoolExpr, b: BoolExpr, preserve : Set[Kind.Identifier])(
-      implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
-    ): Solution = {
+    def unify(a: BoolExpr, b: BoolExpr, preserve : Set[Kind.Identifier])
+             (implicit trace: Seq[Constraint]): Solution = {
       def decomposed(cs: Seq[Constraint]) = solve(cs, preserve, BoolConstraint(a, b) +: trace)
       (a, b) match {
         case _ if a == b => Solution()
@@ -480,7 +457,8 @@ object Constraint {
   }
 
   object natToData {
-    def unifyIdent(i: NatToDataIdentifier, n: NatToData)(implicit trace: Seq[Constraint]): Solution = n match {
+    def unifyIdent(i: NatToDataIdentifier, n: NatToData)
+                  (implicit trace: Seq[Constraint]): Solution = n match {
       case j: NatToDataIdentifier =>
         if (i == j) {
           Solution()
@@ -492,9 +470,8 @@ object Constraint {
   }
 
   object natToNat {
-    def unify(f1: NatToNat, f2: NatToNat, preserve: Set[Kind.Identifier])(
-      implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
-    ): Solution = f1 match {
+    def unify(f1: NatToNat, f2: NatToNat, preserve: Set[Kind.Identifier])
+             (implicit trace: Seq[Constraint]): Solution = f1 match {
       case id1: NatToNatIdentifier => Solution.subs(id1, f2)
       case NatToNatLambda(x1, body1) => f2 match {
         case id2: NatToNatIdentifier => Solution.subs(id2, f1)
@@ -509,9 +486,8 @@ object Constraint {
   }
 
   object natCollection {
-    def unifyIdent(i: NatCollectionIdentifier, n: NatCollection, preserve : Set[Kind.Identifier])(
-        implicit trace: Seq[Constraint]
-      ): Solution = n match {
+    def unifyIdent(i: NatCollectionIdentifier, n: NatCollection, preserve : Set[Kind.Identifier])
+                  (implicit trace: Seq[Constraint]): Solution = n match {
       case j: NatCollectionIdentifier =>
         if (i == j) {
           Solution()
@@ -527,43 +503,4 @@ object Constraint {
     case _               => false
   }
 
-}
-
-object dependence {
-  /*
-   * Given a type t which is in the scope of a natIdentifier depVar,
-   * explicitly represent the dependence by replacing identifiers in t
-   * with applied nat-to-X functions.
-   */
-  def explicitlyDependent(t: Type, depVar: NatIdentifier, preserve : Set[Kind.Identifier]): (Type, Solution) = {
-    val visitor = new PureAccumulatorTraversal[Seq[Solution]] {
-      override val accumulator = SeqMonoid
-
-      override def nat: Nat => Pair[Nat] = {
-        case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n : Nat)
-        case ident: NatIdentifier
-          if ident != depVar && Constraint.canBeSubstituted(preserve, ident) =>
-          val sol = Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
-          accumulate(Seq(sol))(ident.asImplicit : Nat)
-        case n => super.nat(n)
-      }
-
-      override def `type`[T <: Type] : T => Pair[T] = {
-        case n2d@NatToDataApply(_, x) if x == depVar => return_(n2d : T)
-        case ident@TypeIdentifier(i) =>
-          val application = NatToDataApply(NatToDataIdentifier(freshName("nnf")), depVar)
-          val sol = Solution.subs(ident, application)
-          accumulate(Seq(sol))(ident.asInstanceOf[T])
-        case e => super.`type`(e)
-      }
-
-      def apply(t: Type): (Type, Solution) = {
-        val (sols, rewrittenT) = traverse(t, this)
-        val solution = sols.foldLeft(Solution())(_ ++ _)
-        (solution.apply(rewrittenT), solution)
-      }
-    }
-
-    visitor(t)
-  }
 }

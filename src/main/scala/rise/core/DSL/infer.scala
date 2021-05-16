@@ -37,15 +37,14 @@ object infer {
   type ExprEnv = Map[String, Type]
 
   def apply(e: Expr, exprEnv: ExprEnv = Map(), typeEnv : Set[Kind.Identifier] = Set(),
-            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
-            explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
+            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off): Expr = {
     // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
     // Collect FTVs in assertions and opaques; transform assertions into annotations
     val (e_preserve, e_wo_assertions) = traverse(e, collectPreserve)
     // Collect constraints
     val (typed_e, constraints) = constrainTypes(exprEnv, e_preserve ++ typeEnv)(e_wo_assertions)
     // Solve constraints while preserving the FTVs in preserve
-    val solution = Constraint.solve(constraints, e_preserve ++ typeEnv, Seq())(explDep)
+    val solution = Constraint.solve(constraints, e_preserve ++ typeEnv, Seq())
     // Apply the solution
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
@@ -204,10 +203,4 @@ object infer {
     override def natToData : NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
     override def natToNat : NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
   }
-}
-
-object inferDependent {
-  def apply(e: ToBeTyped[Expr], env : Map[String, Type] = Map(), preserve : Set[Kind.Identifier] = Set(),
-            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off): Expr =
-    infer(e match { case ToBeTyped(e) => e }, env, preserve, printFlag, Flags.ExplicitDependence.On)
 }
