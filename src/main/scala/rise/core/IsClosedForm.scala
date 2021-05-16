@@ -36,7 +36,12 @@ object IsClosedForm {
     }
 
     override def expr: Expr => Pair[Expr] = {
-      case Lambda(x, b) => this.copy(boundV = boundV + x).expr(b)
+      case l@Lambda(x, e) =>
+        // The binder's type itself might contain free type variables
+        val ((fVx, fTx), x1) = identifier(Binding)(x).unwrap
+        val ((fVe, fTe), e1) = this.copy(boundV = boundV + x1).expr(e).unwrap
+        val ((fVt, fTt), t1) = `type`(l.t).unwrap
+        accumulate((fVx ++ fVe ++ fVt, fTx ++ fTe ++ fTt))(Lambda(x1, e1)(t1) : Expr)
       case DepLambda(x, b) => this.copy(boundT = boundT + x).expr(b)
       case e => super.expr(e)
     }
