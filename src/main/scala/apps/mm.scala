@@ -207,9 +207,8 @@ object mm {
     val N = At(0).length
     val M = B(0).length
 
-    val run = kernel.as[ScalaFunction `(`
-      Int `,` Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]]
-      `)=>` Array[Float]]
+    val run = kernel.as[Args `(`
+      Int `,` Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]], Array[Float]]
     run(localSize, globalSize)(N `,` M `,` O `,` At `,` B)
   }
 }

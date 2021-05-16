@@ -87,7 +87,7 @@ class dependentTypes extends test_util.Tests {
          |    }
          |    return 0;
          |}""".stripMargin
-         Execute(testCode)
+   Execute(testCode)
   }
 
   test("Dependent pair match with reduction") {

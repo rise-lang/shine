@@ -292,13 +292,13 @@ object sgemm {
                      alpha: Float, beta: Float,
                      M: Int, N: Int, K: Int): (Array[Float], TimeSpan[Time.ms]) = {
 
-    val runKernel = kernel.as[ScalaFunction `(`
+    val runKernel = kernel.as[Args `(`
       Int `,` Int `,` Int `,`
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Float `,`
-      Float `)=>` Array[Float]]
+      Float, Array[Float]]
 
     runKernel(N `,` M `,` K `,` A `,` B `,` C `,` alpha `,` beta)
   }

@@ -17,7 +17,7 @@ object unsharpMask {
   val exp: ToBeTyped[Expr] = foreignFun("exp", f32 ->: f32)
 
   private def larr_f32(s: Seq[Float]): ToBeTyped[Expr] = {
-    larr(s.map(semantics.FloatData))
+    larr(s.map(semantics.FloatData.apply))
   }
 
   val kPi = 3.14159265358979310000f;

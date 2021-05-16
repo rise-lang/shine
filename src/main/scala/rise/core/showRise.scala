@@ -71,10 +71,10 @@ object DrawTree {
   }
 
   sealed abstract class Cxt
-  final case object L extends Cxt
-  final case object LR extends Cxt
-  final case object R extends Cxt
-  final case object U extends Cxt
+  case object L extends Cxt
+  case object LR extends Cxt
+  case object R extends Cxt
+  case object U extends Cxt
 
   def mergeCxt(a: Cxt, b: Cxt): Cxt = (a, b) match {
     case (_, U)  => U

@@ -16,7 +16,7 @@ object harrisCornerDetectionHalide {
   private val dot = C2D.dot
 
   private def larr_f32(s: Seq[Float]): ToBeTyped[Expr] = {
-    larr(s.map(semantics.FloatData))
+    larr(s.map(semantics.FloatData.apply))
   }
 
   val gray: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(

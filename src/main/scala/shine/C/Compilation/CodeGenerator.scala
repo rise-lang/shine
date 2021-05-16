@@ -22,10 +22,10 @@ import scala.language.implicitConversions
 object CodeGenerator {
   sealed trait PathExpr
   sealed trait PairAccess extends PathExpr
-  final case object FstMember extends PairAccess
-  final case object SndMember extends PairAccess
+  case object FstMember extends PairAccess
+  case object SndMember extends PairAccess
   final case class CIntExpr(num: Nat) extends PathExpr
-  final case object DPairSnd extends PathExpr
+  case object DPairSnd extends PathExpr
 
   implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
 
@@ -609,7 +609,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
           case other => throw new Exception(s"Expected a Dependent Pair but $other found instead")
         }
-      case _ =>
+      case null =>
         throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
     }
   }
@@ -671,7 +671,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
         case (Identifier(name, ExpType(dt, a)), declRef) =>
           (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt), a)), declRef)
-        case x => x
+        case x@null => x
       }
       C.AST.Block(immutable.Seq(p |> this.cmd(env.copy(identEnv = newIdentEnv))))
     })

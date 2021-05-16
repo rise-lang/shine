@@ -11,19 +11,19 @@ import rise.elevate.rules.traversal.{argument, argumentOf, body, function}
 object fission {
 
   def bodyFission: Strategy[Strategy[Rise]] = rule("bodyFission", {
-    case body(Seq(f: Strategy[Rise], s: Strategy[Rise])) => Success(seq(body(f))(body(s)))
+    case body(Seq(f: Strategy[Rise]@unchecked, s: Strategy[Rise]@unchecked)) => Success(seq(body(f))(body(s)))
   })
 
   def functionFission: Strategy[Strategy[Rise]] = rule("functionFission", {
-    case function(Seq(f: Strategy[Rise], s: Strategy[Rise])) => Success(seq(function(f))(function(s)))
+    case function(Seq(f: Strategy[Rise]@unchecked, s: Strategy[Rise]@unchecked)) => Success(seq(function(f))(function(s)))
   })
 
   def argumentFission: Strategy[Strategy[Rise]] = rule("argumentFission", {
-    case argument(Seq(f: Strategy[Rise], s: Strategy[Rise])) => Success(seq(argument(f))(argument(s)))
+    case argument(Seq(f: Strategy[Rise]@unchecked, s: Strategy[Rise]@unchecked)) => Success(seq(argument(f))(argument(s)))
   })
 
   def argumentOfFission: Strategy[Strategy[Rise]] = rule("argumentOfFission", {
-    case argumentOf(x: Rise, Seq(f: Strategy[Rise], s: Strategy[Rise])) => Success(seq(argumentOf(x,f))(argumentOf(x,s)))
+    case argumentOf(x: Rise, Seq(f: Strategy[Rise]@unchecked, s: Strategy[Rise]@unchecked)) => Success(seq(argumentOf(x,f))(argumentOf(x,s)))
   })
 
   // Fissioned-Normal-Form: Every single strategy application starts from the root

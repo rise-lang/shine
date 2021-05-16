@@ -85,7 +85,7 @@ object localLaplacian {
   ))
 
   private def larr_f32(s: Seq[Float]): ToBeTyped[Expr] = {
-    larr(s.map(semantics.FloatData))
+    larr(s.map(semantics.FloatData.apply))
   }
 
   val floating: ToBeTyped[Expr] = depFun((h: Nat, w: Nat) => fun(

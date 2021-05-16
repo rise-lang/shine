@@ -126,9 +126,8 @@ object mriQ {
     val localSize = LocalSize(256)
     val globalSize = GlobalSize(K)
 
-    val f = k.as[ScalaFunction `(`
-      Int `,` Array[Float] `,` Array[Float]
-      `)=>` Array[Float]]
+    val f = k.as[Args `(`
+      Int `,` Array[Float] `,` Array[Float], Array[Float]]
     f(localSize, globalSize)(K `,` phiR `,` phiI)
   }
 
@@ -196,11 +195,10 @@ object mriQ {
     val localSize = LocalSize(256 / 4)
     val globalSize = GlobalSize(X)
 
-    val f = k.as[ScalaFunction `(`
+    val f = k.as[Args `(`
       Int `,` Int `,`
       Array[Float] `,` Array[Float] `,` Array[Float] `,`
-      Array[Float] `,` Array[Float] `,` Array[Float]
-      `)=>` Array[Float]]
+      Array[Float] `,` Array[Float] `,` Array[Float], Array[Float]]
     f(localSize, globalSize)(
       K `,` X `,` x `,` y `,` z `,` Qr `,` Qi `,` kvalues
     )

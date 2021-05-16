@@ -94,7 +94,7 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
       } else {
         val expansion = expandStrats.flatMap { s =>
           unvisited.iterator.flatMap(c => s(c.e))
-            .flatMap(c => mayApply(filterStrat, c).map(ExprWrapper))
+            .flatMap(c => mayApply(filterStrat, c).map(ExprWrapper.apply))
         }
         println(s"expanded by ${expansion.size}")
         unvisited.clear()

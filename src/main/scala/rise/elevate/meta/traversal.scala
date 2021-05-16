@@ -22,7 +22,7 @@ object traversal {
     override def oneUsingState: Strategy[Strategy[Rise]] => Strategy[Strategy[Rise]] = oneHandlingState(true)
 
     def oneHandlingState: Boolean => Strategy[Strategy[Rise]] => Strategy[Strategy[Rise]] = carryOverState => s => {
-      case Seq(first: Strategy[Rise], second: Strategy[Rise]) => s(first) match {
+      case Seq(first: Strategy[Rise]@unchecked, second: Strategy[Rise]@unchecked) => s(first) match {
         case Success(x: Strategy[Rise]) => Success(seq(x)(second))
         case Failure(state) => if (carryOverState)
           state(second).mapSuccess(seq(first)(_)) else
@@ -34,9 +34,9 @@ object traversal {
       case some(s) => ???
       case oneUsingState(s) => ???
 
-      case body(p) => s(p).mapSuccess(body)
-      case function(p) => s(p).mapSuccess(function)
-      case argument(p) => s(p).mapSuccess(argument)
+      case body(p) => s(p).mapSuccess(body.apply)
+      case function(p) => s(p).mapSuccess(function.apply)
+      case argument(p) => s(p).mapSuccess(argument.apply)
       case argumentOf(x,p) => s(p).mapSuccess(argumentOf(x,_))
 
       case topDown(p) => s(p).mapSuccess(topDown[Rise](_)(ev))
@@ -60,7 +60,7 @@ object traversal {
 
   case class inBody(s: Strategy[Strategy[Rise]]) extends Strategy[Strategy[Rise]] {
     def apply(e: Strategy[Rise]): RewriteResult[Strategy[Rise]] = e match {
-      case body(x: Strategy[Rise]) => s(x).mapSuccess(body)
+      case body(x: Strategy[Rise]) => s(x).mapSuccess(body.apply)
       case _ => Failure(s)
     }
   }

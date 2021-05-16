@@ -55,15 +55,6 @@ package object OpenCL {
       BuiltInFunctionCall("get_group_id", param, ContinuousRange(0, get_num_groups(param)))
   }
 
-  trait FunctionHelper {
-    type T
-    type R
-    type F = T => R
-  }
-
-
-  type `)=>`[TT, RR] = FunctionHelper { type T = TT; type R = RR }
-
   sealed trait HList {
     def length: Int
     def toList: List[Any]
@@ -85,7 +76,7 @@ package object OpenCL {
 
   type `,`[L <: HList, N] = HCons[L, N]
 
-  type `(`[L <: ScalaFunction, N] = HCons[L, N]
+  type `(`[L <: Args, N] = HCons[HNil.type, N]
 
   implicit class HNilHelper[V](v1: V) {
     def `,`[V2](v2: V2): HCons[HCons[HNil.type, V], V2] = HCons(HCons(HNil, v1), v2)
@@ -93,5 +84,5 @@ package object OpenCL {
     def `;`: HCons[HNil.type, V] = HCons(HNil, v1)
   }
 
-  type ScalaFunction = HNil.type
+  type Args = HNil.type
 }

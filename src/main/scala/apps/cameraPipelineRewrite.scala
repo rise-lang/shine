@@ -207,7 +207,7 @@ object cameraPipelineRewrite {
     toA(normalizeInput) `;` toB(normalizeInput)
 
   def zipSameId: Strategy[Rise] = (
-    unifySingleInputs(argument, s => function(argument(s))) `;`
+    unifySingleInputs(argument.apply, s => function(argument(s))) `;`
     anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion)
   ) <+ debugS("zipSameId failed")
 
@@ -277,7 +277,7 @@ object cameraPipelineRewrite {
     function(isEqualTo(p.generate.primitive)) `;`
     argument(body(
       function(function(function(isEqualTo(p.select.primitive)))) `;`
-      unifyMapInputs(scala.collection.Seq(argument, s => function(argument(s))))
+      unifyMapInputs(scala.collection.Seq(argument.apply, s => function(argument(s))))
     )) `;` mapOutsideGenerateSelect() `;`
     argument(argument(normalizeInput) `;` repeat(mapFusion))
   }
@@ -286,7 +286,7 @@ object cameraPipelineRewrite {
     // TODO: can work for arbitrary size arrays
     function(function(function(isEqualTo(p.makeArray(3).primitive)))) `;`
     unifyMapInputs(scala.collection.Seq(
-      argument,
+      argument.apply,
       s => function(argument(s)),
       s => function(function(argument(s)))
     )) `;`

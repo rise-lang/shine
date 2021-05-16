@@ -66,8 +66,8 @@ class MMTest extends test_util.TestWithCUDA {
 
     //Execute kernel
     if (executeCudaTests) {
-      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` scala.Array[scala.Array[Float]] `,`
-        scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
+      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[Args `(` scala.Array[scala.Array[Float]] `,`
+        scala.Array[scala.Array[Float]], scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
       val (result, _) = scalaFun(matrixATest `,` matrixBTest)
 
@@ -158,8 +158,8 @@ class MMTest extends test_util.TestWithCUDA {
 
     //Execute kernel
     if (executeCudaTests) {
-      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(` Int `,` scala.Array[scala.Array[Float]] `,`
-        scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
+      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[Args `(` Int `,` scala.Array[scala.Array[Float]] `,`
+        scala.Array[scala.Array[Float]], scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
       val (result, _) = scalaFun(kTest `,` matrixATest `,` matrixBTest)
 
@@ -308,9 +308,9 @@ class MMTest extends test_util.TestWithCUDA {
 
     //Execute kernel
     if (executeCudaTests) {
-      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
+      val scalaFun = KernelNoSizes(kernel, compilerOptions).as[Args `(`
         Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,`
-        scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
+        scala.Array[scala.Array[Float]], scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(32))
 
       val (result, _) = scalaFun(mTest `,` nTest `,` kTest `,` matrixATest `,` matrixBTest)
 

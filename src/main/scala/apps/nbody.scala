@@ -198,9 +198,8 @@ object nbody {
     assert(pos.length % 4 == 0)
     val N = pos.length / 4
 
-    val f = k.as[ScalaFunction `(`
-      Int `,` Array[Float] `,` Array[Float] `,` Float `,` Float
-      `)=>` Array[Float]]
+    val f = k.as[Args `(`
+      Int `,` Array[Float] `,` Array[Float] `,` Float `,` Float, Array[Float]]
     f(localSize, globalSize)(N `,` pos `,` vel `,` espSqr `,` deltaT)
   }
 

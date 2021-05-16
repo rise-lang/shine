@@ -208,10 +208,9 @@ object gemv {
     val localSize = cgo17_localSize
     val globalSize = GlobalSize(M)
 
-    val run = kernel.as[ScalaFunction `(`
+    val run = kernel.as[Args `(`
       Int `,` Int `,` Array[Array[Float]] `,`
-      Array[Float] `,` Array[Float] `,` Float `,` Float
-    `)=>` Array[Float]]
+      Array[Float] `,` Array[Float] `,` Float `,` Float, Array[Float]]
     run(localSize, globalSize)(N `,` M `,` mat `,` xs `,` ys `,` alpha `,` beta)
   }
 }

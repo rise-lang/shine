@@ -29,7 +29,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   extends C.Compilation.CodeGenerator(decls, ranges) {
   override def name: String = "OpenCL"
 
-  override def translationContext: TranslationContext =
+  override def translationContext: shine.OpenCL.Compilation.TranslationContext =
     new OpenCL.Compilation.TranslationContext()
 
   override def updatedRanges(key: String,
@@ -399,7 +399,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
                   ExpType(DataType.substitute(
                     NamedVar(cI.name, range),
                     `for` = i, in = dt), read)), declRef)
-              case x => x
+              case null => null
             }) |> (env =>
 
               range.numVals match {

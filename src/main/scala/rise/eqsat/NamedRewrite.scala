@@ -66,7 +66,7 @@ object NamedRewrite {
         case i: rc.Identifier if freeV.contains(i.name) =>
           makePatVar(i.name,
             (bound.expr.size, bound.nat.size, bound.data.size),
-            patVars, PatternVar, if (isRhs) { Unknown } else { Known })
+            patVars, PatternVar.apply, if (isRhs) { Unknown } else { Known })
         case i: rc.Identifier => PatternNode(Var(bound.indexOf(i)))
 
         // note: we do not match for the type of lambda bodies, as we can always infer it:
@@ -101,7 +101,7 @@ object NamedRewrite {
       n match {
         case i: rct.NatIdentifier if freeT(i) =>
           makePatVar(i.name, bound.nat.size, natPatVars,
-            NatPatternVar, if (isRhs) { Unknown } else { Known })
+            NatPatternVar.apply, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
           NatPatternNode(NatVar(bound.indexOf(i)))
         case ae.Cst(c) =>
@@ -119,7 +119,7 @@ object NamedRewrite {
         // try to pivot the equality around a fresh pattern variable instead
         case ae.Sum(_) | ae.Prod(_) if !isRhs =>
           val nv = rct.NatIdentifier(s"_nv${natsToPivot.size}")
-          val pv = makePatVar(nv.name, bound.nat.size, natPatVars, NatPatternVar, Known)
+          val pv = makePatVar(nv.name, bound.nat.size, natPatVars, NatPatternVar.apply, Known)
           natsToPivot.addOne((n, nv, bound.nat.size, pv))
           pv
         case _ => throw new Exception(s"did not expect $n")
@@ -129,7 +129,7 @@ object NamedRewrite {
       dt match {
         case i: rct.DataTypeIdentifier if freeT(i) =>
           makePatVar(i.name, (bound.nat.size, bound.data.size),
-            dataTypePatVars, DataTypePatternVar, if (isRhs) { Unknown } else { Known })
+            dataTypePatVars, DataTypePatternVar.apply, if (isRhs) { Unknown } else { Known })
         case i: rct.DataTypeIdentifier =>
           DataTypePatternNode(DataTypeVar(bound.indexOf(i)))
         case s: rct.ScalarType =>
@@ -162,7 +162,7 @@ object NamedRewrite {
         case i: rct.TypeIdentifier =>
           assert(freeT(i))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
-            typePatVars, TypePatternVar, if (isRhs) { Unknown } else { Known })
+            typePatVars, TypePatternVar.apply, if (isRhs) { Unknown } else { Known })
         case rct.TypePlaceholder =>
           throw new Exception(s"did not expect $t, something was not infered")
       }
@@ -320,7 +320,7 @@ object NamedRewrite {
           def fromNamed(n: rct.Nat): NatPattern = {
             n match {
               case i: rct.NatIdentifier =>
-                makePatVar(i.name, shift, natPatVars, NatPatternVar, Unknown)
+                makePatVar(i.name, shift, natPatVars, NatPatternVar.apply, Unknown)
               case PosInf => NatPatternNode(NatPosInf)
               case NegInf => NatPatternNode(NatNegInf)
               case Cst(c) => NatPatternNode(NatCst(c))
@@ -365,7 +365,7 @@ object NamedRewrite {
                     val valuePat = fromNamed(value)
                     val updateShifts = shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)
                     val pivotPat = makePatVar(potentialPivot.name, shift, natPatVars,
-                      NatPatternVar, Known)
+                      NatPatternVar.apply, Known)
                     updateShifts(ComputeNatApplier(pivotPat, valuePat,
                       shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)(pivotSuccess)))
                   case None => pivotFailure

@@ -11,9 +11,8 @@ lazy val riseAndShine = (project in file("."))
       "-DexecuteCudaTests=false", "-Xss26m"),
 
     scalacOptions ++= Seq(
-      "-Wunused:nowarn",
       //      "-Xfatal-warnings",
-      "-rewrite",
+//      "-rewrite",
       "-source:3.0-migration",
       //      "-indent",
       //      "-new-syntax",
