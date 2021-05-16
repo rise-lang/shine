@@ -19,8 +19,8 @@ trait ParserError { self: Throwable =>
 abstract sealed class ErrorMessage(span:Option[Span]) {
   val sp = span
   val s = span.getOrElse(SpanPlaceholder)
-  def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.head
-  val errorStackTraceElem = getErrorStackTraceElem()
+  //def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.head
+  //val errorStackTraceElem = getErrorStackTraceElem()
   val fileReader = s.file
   val begin = s.begin
   val end = s.end
@@ -39,8 +39,9 @@ abstract sealed class ErrorMessage(span:Option[Span]) {
     throw new Exception("descriptionError method must be overridden")
   }
   def returnMessage():String ={
-    val e = errorStackTraceElem
-    val filePath = Paths.get("src/main/scala/"+e.getClassName.substring(0,e.getClassName.indexOf('.'))+"/"+e.getFileName+":"+e.getLineNumber).toUri
+    val c = begin.column+1
+    val r = begin.row+1
+    val filePath = Paths.get(fileReader.fileName+":"+c+":"+r).toUri
 
     val (m,before,after, loc) = span match {
       case Some(sp) => (
@@ -57,7 +58,7 @@ abstract sealed class ErrorMessage(span:Option[Span]) {
     val desc = description()
 
     val message = desc + " : " + loc + " : '" + relatedCode +"'" + " <<<"+
-      e.getLineNumber + " in '" + e.getMethodName + "' in '" +e.getFileName + "' " + filePath +">>>"
+      filePath +">>>"
       //e.getClassName + " "+
 
     message
@@ -400,8 +401,7 @@ abstract sealed class ConstraintError(span: Option[Span]) extends ErrorMessage(s
 }
 
 abstract sealed class AppLikeConstraintError(span: Option[Span]) extends ConstraintError(span){
-  override def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.tail.tail.head
-  override def getTypes():List[rt.Type] = constraintTypes match {
+   override def getTypes():List[rt.Type] = constraintTypes match {
     case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
     case Some(cT)=> cT match {
       case ExpectedAndFoundTLeftAndRight(expectedT, foundTLeft, foundTRight) => expectedT :: foundTLeft :: foundTRight::Nil
