@@ -42,9 +42,13 @@ object infer {
     // Collect FTVs in assertions and opaques; transform assertions into annotations
     val (e_preserve, e_wo_assertions) = traverse(e, collectPreserve)
     // Collect constraints
-    val (typed_e, constraints) = constrainTypes(exprEnv, e_preserve ++ typeEnv)(e_wo_assertions)
+    val (typed_e, constraints) = constrainTypes(exprEnv)(e_wo_assertions)
+    // Collect free variables both before and after constraint gathering:
+    // Some types in the collected constraints might not be present after constraint gathering (Fixme: BUG?)
+    val ftvs = IsClosedForm.freeVars(e_wo_assertions)._2.toSet ++ IsClosedForm.freeVars(typed_e)._2.toSet
+    val toSubstitute = (ftvs removedAll e_preserve) removedAll typeEnv
     // Solve constraints while preserving the FTVs in preserve
-    val solution = Constraint.solve(constraints, e_preserve ++ typeEnv, Seq())
+    val solution = Constraint.solve(constraints, toSubstitute, Seq())
     // Apply the solution
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
