@@ -35,9 +35,8 @@ object infer {
   }
 
   type ExprEnv = Map[String, Type]
-  type TypeEnv = Set[Kind.Identifier]
 
-  def apply(e: Expr, exprEnv: ExprEnv = Map(), typeEnv : TypeEnv = Set(),
+  def apply(e: Expr, exprEnv: ExprEnv = Map(), typeEnv : Set[Kind.Identifier] = Set(),
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off,
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
@@ -46,7 +45,7 @@ object infer {
     // Collect constraints
     val (typed_e, constraints) = constrainTypes(exprEnv, e_preserve ++ typeEnv)(e_wo_assertions)
     // Solve constraints while preserving the FTVs in preserve
-    val solution = Constraint.solve(constraints, Seq())(explDep)
+    val solution = Constraint.solve(constraints, e_preserve ++ typeEnv, Seq())(explDep)
     // Apply the solution
     val res = traverse(typed_e, Visitor(solution))
     if (printFlag == Flags.PrintTypesAndTypeHoles.On) {
@@ -134,11 +133,11 @@ object infer {
   private def ifTyped[T] : Type => T => Seq[T] =
     t => c => if (t == TypePlaceholder) Nil else Seq(c)
 
-  def constrainTypes(exprEnv : ExprEnv, typeEnv : TypeEnv) : Expr => (Expr, Seq[(Constraint, TypeEnv)]) = {
+  def constrainTypes(exprEnv : ExprEnv, typeEnv : Set[Kind.Identifier]) : Expr => (Expr, Seq[Constraint]) = {
     case i: Identifier =>
       val t = exprEnv.getOrElse(i.name,
         if (i.t == TypePlaceholder) error(s"$i has no type")(Seq()) else i.t )
-      val c = (TypeConstraint(t, i.t), typeEnv)
+      val c = TypeConstraint(t, i.t)
       (i.setType(t), Nil :+ c)
 
     case expr@Lambda(x, e) =>
@@ -146,19 +145,18 @@ object infer {
       val exprEnv1 : Map[String, Type] = exprEnv + (tx.name -> tx.t)
       val (te, cs) = constrainTypes(exprEnv1, typeEnv)(e)
       val ft = FunType(tx.t, te.t)
-      val cs1 = ifTyped(expr.t)((TypeConstraint(expr.t, ft), typeEnv))
+      val cs1 = ifTyped(expr.t)(TypeConstraint(expr.t, ft))
       (Lambda(tx, te)(ft), cs ++ cs1)
 
     case expr@App(f, e) =>
       val (tf, csF) = constrainTypes(exprEnv, typeEnv)(f)
       val (te, csE) = constrainTypes(exprEnv, typeEnv)(e)
       val exprT = genType(expr)
-      val c = (TypeConstraint(tf.t, FunType(te.t, exprT)), typeEnv)
+      val c = TypeConstraint(tf.t, FunType(te.t, exprT))
       (App(tf, te)(exprT), csF ++ csE :+ c)
 
     case expr@DepLambda(x, e) =>
-      val typeEnv1 = typeEnv + x
-      val (te, csE) = constrainTypes(exprEnv, typeEnv1)(e)
+      val (te, csE) = constrainTypes(exprEnv, typeEnv)(e)
       val exprT = genType(expr)
       val tf = x match {
         case n: NatIdentifier =>
@@ -170,23 +168,23 @@ object infer {
         case n2n: NatToNatIdentifier =>
           DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
       }
-      val csE1 = ifTyped(expr.t)((TypeConstraint(expr.t, tf.t), typeEnv1))
+      val csE1 = ifTyped(expr.t)(TypeConstraint(expr.t, tf.t))
       (tf, csE ++ csE1)
 
     case expr@DepApp(f, x) =>
       val (tf, csF) = constrainTypes(exprEnv, typeEnv)(f)
       val exprT = genType(expr)
-      val c = (DepConstraint(tf.t, x, exprT), typeEnv)
+      val c = DepConstraint(tf.t, x, exprT)
       (DepApp(tf, x)(exprT), csF :+ c)
 
     case TypeAnnotation(e, t) =>
       val (te, csE) = constrainTypes(exprEnv, typeEnv)(e)
-      val c = (TypeConstraint(te.t, t), typeEnv)
+      val c = TypeConstraint(te.t, t)
       (te, csE :+ c)
 
     case TypeAssertion(e, t) =>
       val (te, csE) = constrainTypes(exprEnv, typeEnv)(e)
-      val c = (TypeConstraint(te.t, t), typeEnv)
+      val c = TypeConstraint(te.t, t)
       (te, csE :+ c)
 
     case o: Opaque => (o, Nil)

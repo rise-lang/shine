@@ -44,14 +44,12 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 }
 
 object Constraint {
-  type Scope = Set[Kind.Identifier]
-
   def canBeSubstituted(preserve: Set[Kind.Identifier], i: Kind.Identifier): Boolean =
     !preserve.contains(i)
 
-  def solve(cs: Seq[(Constraint, Scope)], trace: Seq[Constraint])
+  def solve(cs: Seq[Constraint], preserve: Set[Kind.Identifier], trace: Seq[Constraint])
      (implicit explDep: Flags.ExplicitDependence): Solution =
-  solveRec(cs, Nil, trace)
+  solveRec(cs,  Nil, preserve, trace)
   /* faster but not always enough:
    cs match {
     case Nil => Solution()
@@ -61,24 +59,23 @@ object Constraint {
   }
   */
 
-  def solveRec(cs: Seq[(Constraint, Scope)], rs: Seq[(Constraint, Scope)], trace: Seq[Constraint])
+  def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], preserve: Set[Kind.Identifier], trace: Seq[Constraint])
               (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
     case (Nil, Nil) => Solution()
     case (Nil, _) => error(s"could not solve constraints ${rs}")(trace)
-    case (scoped +: cs, _) =>
-      val (c, scope) = scoped
-      val s = try { solveOne(c, scope, trace) }
+    case (c +: cs, _) =>
+      val s = try { solveOne(c, preserve, trace) }
               catch { case e: InferenceException =>
                 println(e.msg)
-                return solveRec(cs, rs :+ (c, scope), trace) }
-      s ++ solve(s.apply(rs ++ cs), trace)
+                return solveRec(cs, rs :+ c, preserve, trace) }
+      s ++ solve(s.apply(rs ++ cs), preserve, trace)
   }
 
   // scalastyle:off method.length
   def solveOne(c: Constraint, preserve : Set[Kind.Identifier], trace: Seq[Constraint]) (implicit explDep: Flags.ExplicitDependence): Solution = {
     implicit val _trace: Seq[Constraint] = trace
-    def scopedDecomposed(cs: Seq[(Constraint, Scope)]) = solve(cs, c +: trace)
-    def decomposed(cs: Seq[Constraint]) = solve(cs.map((_, preserve)), c +: trace)
+    def decomposedPreserve(cs: Seq[Constraint], preserve : Set[Kind.Identifier]) = solve(cs, preserve, c +: trace)
+    def decomposed(cs: Seq[Constraint]) = solve(cs, preserve, c +: trace)
 
     c match {
       case TypeConstraint(a, b) =>
@@ -129,29 +126,29 @@ object Constraint {
                   substitute.natInType(n, `for`=na, ta), n, preserve + n)
                 val (nTb, nTbSub) = dependence.explicitlyDependent(
                   substitute.natInType(n, `for`= nb, tb), n, preserve + n)
-                nTaSub ++ nTbSub ++ scopedDecomposed(Seq(
-                  (NatConstraint(n, na), preserve + n - na),
-                  (NatConstraint(n, nb), preserve + n - nb),
-                  (TypeConstraint(nTa, nTb), preserve + n),
-                ))
+                nTaSub ++ nTbSub ++ decomposedPreserve(Seq(
+                  NatConstraint(n, na),
+                  NatConstraint(n, nb),
+                  TypeConstraint(nTa, nTb),
+                ), preserve + n - na)
               case ExplicitDependence.Off =>
                 val n = NatIdentifier(freshName("n"), isExplicit = true)
-                scopedDecomposed(Seq(
-                  (NatConstraint(n, na), preserve + n - na),
-                  (NatConstraint(n, nb), preserve + n - nb),
-                  (TypeConstraint(ta, tb), preserve),
-                ))
+                decomposedPreserve(Seq(
+                  NatConstraint(n, na),
+                  NatConstraint(n, nb),
+                  TypeConstraint(ta, tb),
+                ), preserve + n - na - nb)
             }
           case (
             DepFunType(dta: DataTypeIdentifier, ta),
             DepFunType(dtb: DataTypeIdentifier, tb)
             ) =>
             val dt = DataTypeIdentifier(freshName("t"), isExplicit = true)
-            scopedDecomposed(Seq(
-              (TypeConstraint(dt, dta), preserve + dt - dta),
-              (TypeConstraint(dt, dtb), preserve + dt - dtb),
-              (TypeConstraint(ta, tb), preserve),
-            ))
+            decomposedPreserve(Seq(
+              TypeConstraint(dt, dta),
+              TypeConstraint(dt, dtb),
+              TypeConstraint(ta, tb),
+            ), preserve + dt - dta - dtb)
           case (
             DepFunType(_: AddressSpaceIdentifier, _),
             DepFunType(_: AddressSpaceIdentifier, _)
@@ -163,22 +160,22 @@ object Constraint {
             DepPairType(x2: NatIdentifier, t2)
             ) =>
             val n = NatIdentifier(freshName("n"), isExplicit = true)
-            scopedDecomposed(Seq(
-              (NatConstraint(n, x1), preserve + n - x1),
-              (NatConstraint(n, x2), preserve + n - x2),
-              (TypeConstraint(t1, t2), preserve),
-            ))
+            decomposedPreserve(Seq(
+              NatConstraint(n, x1),
+              NatConstraint(n, x2),
+              TypeConstraint(t1, t2),
+            ), preserve + n - x1 - x2)
 
           case (
             DepPairType(x1: NatCollectionIdentifier, t1),
             DepPairType(x2: NatCollectionIdentifier, t2)
             ) =>
             val n = NatCollectionIdentifier(freshName("n"), isExplicit = true)
-            scopedDecomposed(Seq(
-              (NatCollectionConstraint(n, x1), preserve + n - x1),
-              (NatCollectionConstraint(n, x2), preserve + n - x2),
-              (TypeConstraint(t1, t2), preserve),
-            ))
+            decomposedPreserve(Seq(
+              NatCollectionConstraint(n, x1),
+              NatCollectionConstraint(n, x2),
+              TypeConstraint(t1, t2),
+            ), preserve + n - x1 - x2)
 
           case (
             NatToDataApply(f: NatToDataIdentifier, _),
@@ -228,11 +225,11 @@ object Constraint {
           case _ if a == b                 => Solution()
           case (NatToDataLambda(x1, dt1), NatToDataLambda(x2, dt2)) =>
             val n = NatIdentifier(freshName("n"), isExplicit = true)
-            scopedDecomposed(Seq(
-              (NatConstraint(n, x1), preserve + n - x1),
-              (NatConstraint(n, x2), preserve + n - x2),
-              (TypeConstraint(dt1, dt2), preserve),
-            ))
+            decomposedPreserve(Seq(
+              NatConstraint(n, x1),
+              NatConstraint(n, x2),
+              TypeConstraint(dt1, dt2),
+            ), preserve + n - x1 - x2)
 
           case _ => error(s"cannot unify $a and $b")
         }
@@ -311,7 +308,7 @@ object Constraint {
 
     def unify(a: Nat, b: Nat, preserve : Set[Kind.Identifier])
              (implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs.map((_, preserve)), NatConstraint(a, b) +: trace)
+      def decomposed(cs: Seq[Constraint]) = solve(cs, preserve, NatConstraint(a, b) +: trace)
       (a, b) match {
         case (i: NatIdentifier, _) => nat.unifyIdent(i, b, preserve)
         case (_, i: NatIdentifier) => nat.unifyIdent(i, a, preserve)
@@ -472,7 +469,7 @@ object Constraint {
     def unify(a: BoolExpr, b: BoolExpr, preserve : Set[Kind.Identifier])(
       implicit trace: Seq[Constraint], explDep: Flags.ExplicitDependence
     ): Solution = {
-      def decomposed(cs: Seq[Constraint]) = solve(cs.map((_, preserve)), BoolConstraint(a, b) +: trace)
+      def decomposed(cs: Seq[Constraint]) = solve(cs, preserve, BoolConstraint(a, b) +: trace)
       (a, b) match {
         case _ if a == b => Solution()
         case (ArithPredicate(lhs1, rhs1, op1), ArithPredicate(lhs2, rhs2, op2)) if op1 == op2 =>
@@ -533,13 +530,12 @@ object Constraint {
 }
 
 object dependence {
-  type Scope = Set[Kind.Identifier]
   /*
    * Given a type t which is in the scope of a natIdentifier depVar,
    * explicitly represent the dependence by replacing identifiers in t
    * with applied nat-to-X functions.
    */
-  def explicitlyDependent(t: Type, depVar: NatIdentifier, preserve : Scope): (Type, Solution) = {
+  def explicitlyDependent(t: Type, depVar: NatIdentifier, preserve : Set[Kind.Identifier]): (Type, Solution) = {
     val visitor = new PureAccumulatorTraversal[Seq[Solution]] {
       override val accumulator = SeqMonoid
 
