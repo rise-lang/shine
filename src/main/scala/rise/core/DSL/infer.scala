@@ -132,7 +132,7 @@ object infer {
   private def ifTyped[T] : Type => T => Seq[T] =
     t => c => if (t == TypePlaceholder) Nil else Seq(c)
 
-  def constrainTypes(exprEnv : ExprEnv, typeEnv : Set[Kind.Identifier]) : Expr => (Expr, Seq[Constraint]) = {
+  def constrainTypes(exprEnv : ExprEnv) : Expr => (Expr, Seq[Constraint]) = {
     case i: Identifier =>
       val t = exprEnv.getOrElse(i.name,
         if (i.t == TypePlaceholder) error(s"$i has no type")(Seq()) else i.t )
@@ -141,22 +141,21 @@ object infer {
 
     case expr@Lambda(x, e) =>
       val tx = x.setType(genType(x))
-      val exprEnv1 : Map[String, Type] = exprEnv + (tx.name -> tx.t)
-      val (te, cs) = constrainTypes(exprEnv1, typeEnv)(e)
+      val exprEnv1 = exprEnv + (tx.name -> tx.t)
+      val (te, cs) = constrainTypes(exprEnv1)(e)
       val ft = FunType(tx.t, te.t)
       val cs1 = ifTyped(expr.t)(TypeConstraint(expr.t, ft))
       (Lambda(tx, te)(ft), cs ++ cs1)
 
     case expr@App(f, e) =>
-      val (tf, csF) = constrainTypes(exprEnv, typeEnv)(f)
-      val (te, csE) = constrainTypes(exprEnv, typeEnv)(e)
+      val (tf, csF) = constrainTypes(exprEnv)(f)
+      val (te, csE) = constrainTypes(exprEnv)(e)
       val exprT = genType(expr)
       val c = TypeConstraint(tf.t, FunType(te.t, exprT))
       (App(tf, te)(exprT), csF ++ csE :+ c)
 
     case expr@DepLambda(x, e) =>
-      val (te, csE) = constrainTypes(exprEnv, typeEnv)(e)
-      val exprT = genType(expr)
+      val (te, csE) = constrainTypes(exprEnv)(e)
       val tf = x match {
         case n: NatIdentifier =>
           DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
@@ -171,18 +170,18 @@ object infer {
       (tf, csE ++ csE1)
 
     case expr@DepApp(f, x) =>
-      val (tf, csF) = constrainTypes(exprEnv, typeEnv)(f)
+      val (tf, csF) = constrainTypes(exprEnv)(f)
       val exprT = genType(expr)
       val c = DepConstraint(tf.t, x, exprT)
       (DepApp(tf, x)(exprT), csF :+ c)
 
     case TypeAnnotation(e, t) =>
-      val (te, csE) = constrainTypes(exprEnv, typeEnv)(e)
+      val (te, csE) = constrainTypes(exprEnv)(e)
       val c = TypeConstraint(te.t, t)
       (te, csE :+ c)
 
     case TypeAssertion(e, t) =>
-      val (te, csE) = constrainTypes(exprEnv, typeEnv)(e)
+      val (te, csE) = constrainTypes(exprEnv)(e)
       val c = TypeConstraint(te.t, t)
       (te, csE :+ c)
 
