@@ -548,9 +548,9 @@ class autotuning extends test_util.Tests {
   }
 
   // fix this
-  test("generate huge amount of code"){
+  test("generate huge amount of code") {
     // expression
-    val e:Expr = convolutionOclGsLs(1024)
+    val e: Expr = convolutionOclGsLs(1024)
 
     // define parameters to break the code-gen
     val parameters = Map(
@@ -566,30 +566,32 @@ class autotuning extends test_util.Tests {
     val eWithParams = rise.core.substitute.natsInExpr(parameters, e)
 
     println("run codegen with timeout ")
-    val result = util.runWithTimeout(10000)(rise.autotune.execute(eWithParams, main(1024)))
+    //    val result = util.runWithTimeout(10000)(rise.autotune.execute(eWithParams, main(1024)))
+    val result = rise.autotune.execute(eWithParams, main(1024))
 
-    result match {
-      case Some(value) => println("success")
-      case None => println("timeout ")
-    }
+    //    result match {
+    //      case Some(value) => println("success")
+    //      case None => println("timeout ")
+    //    }
+    //
+    //    Thread.sleep(10000)
+    //    println("finished")
+    //  }
 
-    Thread.sleep(10000)
-    println("finished")
-  }
+    //  // dummy function replace with codegen
+    //  def codegenDummy(parameter: Int):Int = {
+    //    println("thread goes sleeping")
+    //    Thread.sleep(parameter)
+    //    println("thread woke up")
+    //
+    //    parameter
+    //  }
 
-  // dummy function replace with codegen
-  def codegenDummy(parameter: Int):Int = {
-    println("thread goes sleeping")
-    Thread.sleep(parameter)
-    println("thread woke up")
-
-    parameter
-  }
-
-  test("timeout using Future"){
-    val result = util.runWithTimeout(50)(codegenDummy(100))
-    Thread.sleep(1000)
-    println("result: " + result)
+    //  test("timeout using Future"){
+    //    val result = util.runWithTimeout(50)(codegenDummy(100))
+    //    Thread.sleep(1000)
+    //    println("result: " + result)
+    //  }
   }
 
 }
