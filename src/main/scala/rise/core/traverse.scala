@@ -63,6 +63,10 @@ object traverse {
       case VectorType(n, e) =>
         for {n1 <- natDispatch(Reference)(n); e1 <- `type`(e)}
           yield VectorType(n1, e1)
+      case ManagedBufferType(dt) =>
+        for {dt1 <- datatype(dt)}
+          yield ManagedBufferType(dt1)
+      case o: OpaqueType => return_(o: DataType)
       case FragmentType(rows, columns, d3, dt, fragKind, layout) =>
         for {rows1 <- nat(rows); columns1 <- nat(columns); d31 <- nat(d3); dt1 <- datatype(dt);
           fragKind1 <- fragmentKind(fragKind); layout1 <- matrixLayout(layout)}
@@ -172,10 +176,18 @@ object traverse {
       case Literal(d) =>
         for { d1 <- data(d) }
           yield Literal(d1)
+      case TypeAnnotation(e, t) =>
+        for { e1 <- expr(e); t1 <- `type`(t)}
+          yield TypeAnnotation(e1, t1)
+      case TypeAssertion(e, t) =>
+        for { e1 <- expr(e); t1 <- `type`(t)}
+          yield TypeAssertion(e1, t1)
+      case Opaque(e, t) =>
+        for { e1 <- expr(e); t1 <- `type`(t)}
+          yield Opaque(e1, t1)
       case p : Primitive =>
-        for { t1 <- `type`(p.t)}
+        for { t1 <- `type`(p.t) }
           yield p.setType(t1)
-
     }
   }
 
@@ -190,7 +202,7 @@ object traverse {
     implicit val accumulator : Monoid[F]
     implicit val wrapperMonad : Monad[M]
     def accumulate[T] : F => T => Pair[T] = f => t => wrapperMonad.return_((f, t))
-    override def monad : PairMonoidMonad[F,M] = new PairMonoidMonad[F,M] {
+    override protected[this] implicit def monad : PairMonoidMonad[F,M] = new PairMonoidMonad[F,M] {
       override val monoid = implicitly(accumulator)
       override val monad = implicitly(wrapperMonad)
     }

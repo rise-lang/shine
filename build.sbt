@@ -16,8 +16,8 @@ lazy val commonSettings = Seq(
 )
 
 lazy val riseAndShine = (project in file("."))
-  .aggregate(executor, CUexecutor, clap)
-  .dependsOn(meta, riseAndShineMacros, arithExpr, executor, CUexecutor, elevate, clap)
+  .aggregate(executor, CUexecutor)
+  .dependsOn(meta, arithExpr, executor, CUexecutor, elevate)
   .settings(
     name          := "riseAndShine",
     version       := "1.0",
@@ -52,7 +52,16 @@ lazy val riseAndShine = (project in file("."))
 lazy val generateRISEPrimitives = taskKey[Unit]("Generate RISE Primitives")
 
 generateRISEPrimitives := {
-  runner.value.run("meta.RisePrimitiveGenerator",
+  runner.value.run("meta.generator.RisePrimitives",
+    (dependencyClasspath in Compile).value.files,
+    Seq((scalaSource in Compile).value.getAbsolutePath),
+    streams.value.log).failed foreach (sys error _.getMessage)
+}
+
+lazy val generateDPIAPrimitives = taskKey[Unit]("Generate DPIA Primitives")
+
+generateDPIAPrimitives := {
+  runner.value.run("meta.generator.DPIAPrimitives",
     (dependencyClasspath in Compile).value.files,
     Seq((scalaSource in Compile).value.getAbsolutePath),
     streams.value.log).failed foreach (sys error _.getMessage)
@@ -67,14 +76,6 @@ lazy val meta = (project in file("meta"))
     libraryDependencies += "com.lihaoyi" %% "scalaparse" % "2.2.2",
     libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.7.3",
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.10",
-  )
-
-lazy val riseAndShineMacros = (project in file("macros"))
-  .settings(
-    name := "riseAndShineMacros",
-    version := "1.0",
-    commonSettings,
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   )
 
 lazy val arithExpr  = project in file("lib/arithexpr")
@@ -92,17 +93,3 @@ lazy val docs = (project in file("riseAndShine-docs"))
   )
   .enablePlugins(MdocPlugin)
   .dependsOn(riseAndShine)
-
-lazy val buildClap = taskKey[Unit]("Builds clap library")
-buildClap := {
-  import scala.language.postfixOps
-  import scala.sys.process._
-  "echo y" #| (baseDirectory.value + "buildClap.sh") !
-}
-
-lazy val clap = (project in file("lib/clap"))
-  .settings(
-    compile := ((compile in Compile) dependsOn buildClap).value,
-    test := ((test in Test) dependsOn buildClap).value
-  )
-

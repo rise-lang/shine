@@ -19,13 +19,13 @@ object SeparateHostAndKernelCode {
     var kernelDefinitions = mutable.ArrayBuffer[KernelDef]()
     val hostDefinition = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case Run(localSize, globalSize, _, value) =>
+        case r@Run(localSize, globalSize) =>
           val name = s"k$kernelNum"
           kernelNum += 1
-          val (closedDef, args) = closeDefinition(value)
+          val (closedDef, args) = closeDefinition(r.input)
           val kernelDef = KernelDef(name, closedDef, localSize, globalSize)
           kernelDefinitions += kernelDef
-          Stop(KernelCall(name, localSize, globalSize,
+          Stop(KernelCall(name, localSize, globalSize, args.length)(
             kernelDef.paramTypes.map(_.dataType),
             kernelDef.returnType.dataType,
             args).asInstanceOf[Phrase[T]])
@@ -60,7 +60,7 @@ object SeparateHostAndKernelCode {
       freeNats match {
         case v +: rest => iterNats(
           DepLambda[NatKind](NatIdentifier(v.name, v.range))(definition),
-          Natural(v) +: args, rest)
+          Literal(NatAsIntData(v)) +: args, rest)
         case Nil => (definition, args)
       }
     }

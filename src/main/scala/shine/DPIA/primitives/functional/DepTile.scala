@@ -8,9 +8,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.macros.Primitive.expPrimitive
 
-@expPrimitive
 final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
                          dt1: DataType, dt2: DataType,
                          processTiles: Phrase[ExpType ->: ExpType],
@@ -28,4 +26,8 @@ final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
     expT(allTiles `.d` (i => (depSize(i) `.` dt2)), write))
   array :: expT((n + haloSize)`.`dt1, read)
   override val t: ExpType = expT(n`.`dt2, write)
+
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
+    DepTile(v.nat(n), v.nat(tileSize), v.nat(haloSize), v.data(dt1), v.data(dt2),
+      VisitAndRebuild(processTiles, v), VisitAndRebuild(array, v))
 }

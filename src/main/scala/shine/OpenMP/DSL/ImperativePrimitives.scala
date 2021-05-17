@@ -19,7 +19,7 @@ object parFor {
 
 object `parForVec` {
   def apply(n: Nat,
-            st: ScalarType,
+            st: DataType,
             out: Phrase[AccType],
             f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ForVec =
     ForVec(n, st, out, λ(expT(idx(n), read))(i => λ(accT(st))(o => f(i)(o) )))

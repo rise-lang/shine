@@ -43,6 +43,12 @@ object NatIdentifier {
   def apply(name: String, isExplicit: Boolean): NatIdentifier =
     apply(name, RangeUnknown, isExplicit)
 
+  def apply(name: String, range: Range): NatIdentifier =
+    apply(name, range, isExplicit = false)
+
+  def apply(name: String): NatIdentifier =
+    apply(name, isExplicit = false)
+
   def apply(nv: NamedVar, isExplicit: Boolean, isTuningParam: Boolean): NatIdentifier =
     new NatIdentifier(nv.name, nv.range, isExplicit, isTuningParam)
 }

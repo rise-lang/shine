@@ -158,7 +158,13 @@ class CPrinter extends Printer {
     println(l.name + ": ;")
   }
 
-  private def printTypedefDecl(t: TypedefDecl): Unit = ???
+  private def printTypedefDecl(t: TypedefDecl): Unit = {
+    print("typedef ")
+    print(typeName(t.t))
+    print(" ")
+    print(t.name)
+    println(";")
+  }
 
   private def printStructTypeDecl(decl: StructTypeDecl): Unit = {
     print(decl.name) // struct name

@@ -3,7 +3,6 @@ package shine.DPIA
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Operators, _}
-import shine.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional.{DepIdx, Idx, IdxVec, NatAsIndex}
 
@@ -12,15 +11,15 @@ import scala.language.implicitConversions
 package object DSL {
 
   implicit class BinOps(lhs: Phrase[ExpType]) {
-    def +(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.ADD, lhs, rhs)
-    def -(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.SUB, lhs, rhs)
-    def *(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.MUL, lhs, rhs)
-    def /(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.DIV, lhs, rhs)
-    def %(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.MOD, lhs, rhs)
-    def >(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.GT, lhs, rhs)
-    def <(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.LT, lhs, rhs)
-    def =:=(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.EQ, lhs, rhs)
-    def unary_- = UnaryOp(Operators.Unary.NEG, lhs)
+    def +(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.ADD, lhs, rhs)
+    def -(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.SUB, lhs, rhs)
+    def *(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.MUL, lhs, rhs)
+    def /(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.DIV, lhs, rhs)
+    def %(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.MOD, lhs, rhs)
+    def >(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.GT, lhs, rhs)
+    def <(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.LT, lhs, rhs)
+    def =:=(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.EQ, lhs, rhs)
+    def unary_- : UnaryOp = UnaryOp(Operators.Unary.NEG, lhs)
   }
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {

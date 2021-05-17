@@ -65,6 +65,11 @@ object check {
       // ----------- Literal
       expr `:` d.dataType
 
+    // Annotations and assertions should be gone after type inference
+    case TypeAnnotation(e, t) => e `:` t
+    case TypeAssertion(e, t) => e `:` t
+    case Opaque(e, t) => e `:` t
+
     case p: Primitive =>
       expr `:` p.t
   }

@@ -44,8 +44,11 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
 }
 
 object Constraint {
-  val canBeSubstituted : Set[Kind.Identifier] => Kind.Identifier with Kind.Explicitness => Boolean =
-    preserve => i => !(preserve.contains(i) || i.isExplicit)
+  def canBeSubstituted(preserve: Set[Kind.Identifier],
+                       i: Kind.Identifier with Kind.Explicitness): Boolean =
+    !(preserve.contains(i) || i.isExplicit)
+  def canBeSubstituted(preserve: Set[Kind.Identifier], i: TypeIdentifier): Boolean =
+    !preserve.contains(i)
 
   def solve(cs: Seq[Constraint], preserve: Set[Kind.Identifier], trace: Seq[Constraint])
      (implicit explDep: Flags.ExplicitDependence): Solution =
@@ -81,8 +84,8 @@ object Constraint {
         (a, b) match {
           case (TypePlaceholder, _) => Solution()
           case (_, TypePlaceholder) => Solution()
-          case (i: TypeIdentifier, _) => unifyTypeIdent(i, b)
-          case (_, i: TypeIdentifier) => unifyTypeIdent(i, a)
+          case (i: TypeIdentifier, _) => unifyTypeIdent(i, b, preserve)
+          case (_, i: TypeIdentifier) => unifyTypeIdent(i, a, preserve)
           case (i: DataTypeIdentifier, dt: DataType) =>
             unifyDataTypeIdent(i, dt, preserve)
           case (dt: DataType, i: DataTypeIdentifier) =>
@@ -254,16 +257,20 @@ object Constraint {
 
       case MatrixLayoutConstraint(a, b) =>
         (a, b) match {
-          case (i: MatrixLayoutIdentifier, _) if (canBeSubstituted(preserve)(i)) => Solution.subs(i, b)
-          case (_, i: MatrixLayoutIdentifier) if (canBeSubstituted(preserve)(i)) => Solution.subs(i, a)
+          case (i: MatrixLayoutIdentifier, _) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, b)
+          case (_, i: MatrixLayoutIdentifier) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
         }
 
       case FragmentTypeConstraint(a, b) =>
         (a, b) match {
-          case (i: FragmentKindIdentifier, _) if (canBeSubstituted(preserve)(i)) => Solution.subs(i, b)
-          case (_, i: FragmentKindIdentifier) if (canBeSubstituted(preserve)(i)) => Solution.subs(i, a)
+          case (i: FragmentKindIdentifier, _) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, b)
+          case (_, i: FragmentKindIdentifier) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
         }
@@ -271,8 +278,16 @@ object Constraint {
   }
   // scalastyle:on method.length
 
-  def unifyTypeIdent(i: TypeIdentifier, t: Type): Solution = {
-    Solution.subs(i, t)
+  def unifyTypeIdent(i: TypeIdentifier, t: Type, preserve: Set[Kind.Identifier]): Solution = {
+    t match {
+      case _ if canBeSubstituted(preserve, i) =>
+        Solution.subs(i, t)
+      case _ if i == t => Solution()
+      case i2: TypeIdentifier if canBeSubstituted(preserve, i2) =>
+        Solution.subs(i2, i)
+      case _ =>
+        throw new Exception(s"$i cannot be substituted for $t")
+    }
   }
 
   // FIXME: datatypes and types are mixed up
@@ -282,17 +297,20 @@ object Constraint {
       case j: DataTypeIdentifier =>
         if (i == j) {
           Solution()
-        } else if (canBeSubstituted(preserve)(i)) {
+        } else if (canBeSubstituted(preserve, i)) {
           Solution.subs(i, j)
-        } else if (canBeSubstituted(preserve)(j)) {
+        } else if (canBeSubstituted(preserve, j)) {
           Solution.subs(j, i)
         } else {
           error(s"cannot unify $i and $j, they are both explicit or in $preserve")
         }
       case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
       case _ =>
-        if (canBeSubstituted(preserve)(i)) Solution.subs(i, t)
-        else error(s"cannot substitute $i, it is explicit")
+        if (canBeSubstituted(preserve, i)) {
+          Solution.subs(i, t)
+        } else {
+          error(s"cannot substitute $i, it is explicit")
+        }
     }
   }
 
@@ -328,13 +346,13 @@ object Constraint {
         case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b, preserve)
         case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a, preserve)
         case (arithexpr.arithmetic.Mod(x1, m1),
-          arithexpr.arithmetic.Mod(x2: NatIdentifier, m2))
-          if m1 == m2 && canBeSubstituted(preserve)(x2) =>
+        arithexpr.arithmetic.Mod(x2: NatIdentifier, m2))
+          if m1 == m2 && canBeSubstituted(preserve, x2) =>
           val k = NatIdentifier("k", RangeAdd(0, PosInf, 1), isExplicit = false)
           Solution.subs(x2, k*m1 + x1%m1)
         case (arithexpr.arithmetic.Mod(x2: NatIdentifier, m2),
-          arithexpr.arithmetic.Mod(x1, m1))
-          if m1 == m2 && canBeSubstituted(preserve)(x2) =>
+        arithexpr.arithmetic.Mod(x1, m1))
+          if m1 == m2 && canBeSubstituted(preserve, x2) =>
           val k = NatIdentifier("k", RangeAdd(0, PosInf, 1), isExplicit = false)
           Solution.subs(x2, k*m1 + x1%m1)
         case _ => error(s"cannot unify $a and $b")
@@ -346,7 +364,7 @@ object Constraint {
         .Map[NatIdentifier, Integer]()
         .withDefault(_ => 0)
       ArithExpr.visit(n, {
-        case v: NatIdentifier if canBeSubstituted(preserve)(v) => free_occurrences(v) += 1
+        case v: NatIdentifier if canBeSubstituted(preserve, v) => free_occurrences(v) += 1
         case _ =>
       })
       free_occurrences.toMap
@@ -423,15 +441,15 @@ object Constraint {
       case j: NatIdentifier =>
         if (i == j) {
           Solution()
-        } else if (canBeSubstituted(preserve)(i)) {
+        } else if (canBeSubstituted(preserve, i)) {
           Solution.subs(i, j)
-        } else if (canBeSubstituted(preserve)(j)) {
+        } else if (canBeSubstituted(preserve, j)) {
           Solution.subs(j, i)
         } else {
           error(s"cannot unify $i and $j")
         }
       case fx: NatToNatApply => unifyApply(fx, i, preserve)
-      case _ if !ArithExpr.contains(n, i) && (canBeSubstituted(preserve)(i)) =>
+      case _ if !ArithExpr.contains(n, i) && (canBeSubstituted(preserve, i)) =>
         Solution.subs(i, n)
       case p: Prod => unifyProd(p, i, preserve)
       case s: Sum  => unifySum(s, i, preserve)
@@ -534,7 +552,8 @@ object dependence {
 
       override def nat: Nat => Pair[Nat] = {
         case n2n@NatToNatApply(_, n) if n == depVar => return_(n2n : Nat)
-        case ident: NatIdentifier if ident != depVar && Constraint.canBeSubstituted(preserve)(ident) =>
+        case ident: NatIdentifier
+          if ident != depVar && Constraint.canBeSubstituted(preserve, ident) =>
           val sol = Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
           accumulate(Seq(sol))(ident.asImplicit : Nat)
         case n => super.nat(n)

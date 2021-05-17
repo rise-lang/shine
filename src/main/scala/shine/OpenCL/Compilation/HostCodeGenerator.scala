@@ -2,7 +2,7 @@ package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
 import shine.C
-import shine.C.AST._
+import shine.C.AST.{OpaqueType => _, _}
 import shine.C.Compilation.CodeGenerator
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -13,23 +13,25 @@ import shine.OpenCL._
 import scala.collection.{immutable, mutable}
 
 object HostCodeGenerator {
-  def apply(): HostCodeGenerator =
-    new HostCodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
+  def apply(kernelModules: Seq[KernelModule]): HostCodeGenerator = new HostCodeGenerator(
+    mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), kernelModules)
 }
 
 case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Declarations,
-                             override val ranges: C.Compilation.CodeGenerator.Ranges)
+                             override val ranges: C.Compilation.CodeGenerator.Ranges,
+                             kernelModules: Seq[KernelModule])
   extends CodeGenerator(decls, ranges)
 {
   override def name: String = "OpenCL Host"
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
-    case KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), output, args) =>
-      kernelCallCmd(name, ls, gs, output, args, env)
-    case NewManagedBuffer(dt, access, Lambda(v, p)) =>
+    case k@KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), n) =>
+      kernelCallCmd(name, ls, gs, k.output, k.args, env)
+    case n@NewManagedBuffer(access) =>
+      val (dt, Lambda(v, p)) = n.unwrap
       newManagedBuffer(dt, access, v, p, env)
-    case HostExecution(params, body) =>
-      hostExecution(params, body, env)
+    case h@HostExecution(params) =>
+      hostExecution(params, h.body, env)
     case phrase => phrase |> super.cmd(env)
   }
 
@@ -39,14 +41,22 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
                             output: Phrase[AccType],
                             args: Seq[Phrase[ExpType]],
                             env: Environment): Stmt = {
-    val arg_count = 1 + args.size
+    import shine.DPIA.Types.AddressSpace
+
+    val calledKernel = kernelModules.flatMap(km => km.kernels.filter(_.name == name)) match {
+      case Seq(k) => k
+      case Seq() => throw new Exception(s"could not find kernel named $name")
+      case _ => throw new Exception(s"found multiple kernels named $name")
+    }
+    val temporaries = calledKernel.paramKinds.zip(calledKernel.code.params).flatMap { case (pk, p) =>
+      if (pk.kind == ParamKind.Kind.temporary) {
+        Some((pk.typ, p.t.asInstanceOf[shine.OpenCL.AST.PointerType].a))
+      } else {
+        None
+      }
+    }
+    val arg_count = 1 + args.size + temporaries.size
     output |> acc(env, Nil, outputC => expSeq(args, env, argsC => {
-      val loadKernel = C.AST.DeclStmt(C.AST.VarDecl(name, C.AST.OpaqueType("Kernel"), Some(
-        C.AST.FunCall(C.AST.DeclRef("loadKernel"), Seq(
-          C.AST.DeclRef("ctx"),
-          C.AST.DeclRef(name)
-        ))
-      )))
       val outputSync = deviceBufferSync("b0", outputC, output.t.dataType, DEVICE_WRITE)
       val argSyncs = (args zip argsC).zipWithIndex.flatMap { case ((arg, argC), i) =>
         arg.t.dataType match {
@@ -66,26 +76,29 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
       val declArgs = C.AST.DeclStmt(C.AST.VarDecl("args", argsTy, Some(
         ArrayLiteral(argsTy,
           kernelArg(0, output.t.dataType, outputC) +:
-          (args zip argsC).zipWithIndex.map { case ((arg, argC), i) =>
+          ((args zip argsC).zipWithIndex.map { case ((arg, argC), i) =>
             kernelArg(i + 1, arg.t.dataType, argC)
-          }
+          } ++ temporaries.zipWithIndex.map {
+            case ((dt, AddressSpace.Local), i) =>
+              kernelLocalArg(i + 1 + args.size, dt)
+            case ((_, a), _) => throw new Exception(s"codegen is not implemented for temporaries in $a")
+          })
         )
       )))
       val launchKernel = C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("launchKernel"), Seq(
         C.AST.DeclRef("ctx"),
-        C.AST.DeclRef(name),
+        C.AST.StructMemberAccess(
+          C.AST.UnaryExpr(C.AST.UnaryOperator.*, C.AST.DeclRef("self")),
+          C.AST.DeclRef(name)
+        ),
         C.AST.DeclRef("global_size"),
         C.AST.DeclRef("local_size"),
         C.AST.Literal(s"$arg_count"),
         C.AST.DeclRef("args")
       )))
-      val destroyKernel = C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("destroyKernel"), Seq(
-        C.AST.DeclRef("ctx"),
-        C.AST.DeclRef(name)
-      )))
       C.AST.Block(
-        Seq(loadKernel, outputSync) ++ argSyncs ++
-        Seq(declGlobalSize, declLocalSize, declArgs, launchKernel, destroyKernel)
+        Seq(outputSync) ++ argSyncs ++
+        Seq(declGlobalSize, declLocalSize, declArgs, launchKernel)
       )
     }))
   }
@@ -159,7 +172,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
 
   override def typ(dt: DataType): Type = dt match {
     case ManagedBufferType(_) => C.AST.OpaqueType("Buffer")
-    case ContextType => C.AST.OpaqueType("Context")
+    case OpaqueType(name) => C.AST.OpaqueType(name)
     case _ => super.typ(dt)
   }
 
@@ -189,8 +202,8 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
       case a: shine.DPIA.Types.ArrayType =>
         C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
       case a: DepArrayType => ??? // TODO
-      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | _: shine.DPIA.Types.FragmentType
-           | _: pipeline.type | ContextType =>
+      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | _: OpaqueType |
+           _: shine.DPIA.Types.FragmentType =>
         throw new Exception(s"did not expect ${dt}")
     }
 
@@ -225,4 +238,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
       case _: ManagedBufferType => C.AST.DeclRef(s"b$i")
       case _ => e
     }))
+
+  private def kernelLocalArg(i: Int, dt: DataType): Expr =
+    C.AST.FunCall(C.AST.DeclRef("LARG"), Seq(bufferSize(dt)))
 }

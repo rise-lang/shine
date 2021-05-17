@@ -12,8 +12,8 @@ import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 import util.gen.c.function
 
-class separableConvolution2DCheck extends test_util.Tests {
-  private def wrapExpr(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
+object separableConvolution2DCheck {
+  def wrapExpr(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
@@ -21,6 +21,10 @@ class separableConvolution2DCheck extends test_util.Tests {
       depFun(RangeAdd(12, PosInf, 4), (w: Nat) =>
         fun(h`.`w`.`f32)(a => e(a))))
   }
+}
+
+class separableConvolution2DCheck extends test_util.Tests {
+  import separableConvolution2DCheck._
 
   private val H = 20
   private val W = 80
