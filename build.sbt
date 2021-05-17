@@ -16,8 +16,8 @@ lazy val commonSettings = Seq(
 )
 
 lazy val riseAndShine = (project in file("."))
-  .aggregate(executor, CUexecutor)
-  .dependsOn(meta, riseAndShineMacros, arithExpr, executor, CUexecutor, elevate)
+  .aggregate(executor, CUexecutor, clap)
+  .dependsOn(meta, riseAndShineMacros, arithExpr, executor, CUexecutor, elevate, clap)
   .settings(
     name          := "riseAndShine",
     version       := "1.0",
@@ -92,3 +92,17 @@ lazy val docs = (project in file("riseAndShine-docs"))
   )
   .enablePlugins(MdocPlugin)
   .dependsOn(riseAndShine)
+
+lazy val buildClap = taskKey[Unit]("Builds clap library")
+buildClap := {
+  import scala.language.postfixOps
+  import scala.sys.process._
+  "echo y" #| (baseDirectory.value + "buildClap.sh") !
+}
+
+lazy val clap = (project in file("lib/clap"))
+  .settings(
+    compile := ((compile in Compile) dependsOn buildClap).value,
+    test := ((test in Test) dependsOn buildClap).value
+  )
+
