@@ -12,12 +12,12 @@ object Pattern {
     Pattern(PatternNode(pnode), TypePattern.fromType(e.t))
   }
 
-  implicit def patternToApplier[D](pattern: Pattern): Applier[D] = new Applier[D] {
+  implicit def patternToApplier[ED, ND, TD](pattern: Pattern): Applier[ED, ND, TD] = new Applier[ED, ND, TD] {
     override def toString: String = pattern.toString
 
     override def patternVars(): Set[Any] = pattern.patternVars()
 
-    override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
+    override def applyOne(egraph: EGraph[ED, ND, TD], eclass: EClassId, subst: Subst): Vec[EClassId] = {
       def missingRhsTy[T](): T = throw new Exception("unknown type on right-hand side")
       def pat(p: Pattern): EClassId = {
         p.p match {
@@ -27,26 +27,26 @@ object Pattern {
             egraph.add(enode, `type`(p.t))
         }
       }
-      def nat(p: NatPattern): Nat = {
+      def nat(p: NatPattern): NatId = {
         p match {
           case w: NatPatternVar => subst(w)
-          case NatPatternNode(n) => Nat(n.map(nat))
+          case NatPatternNode(n) => egraph.add(n.map(nat))
           case NatPatternAny => missingRhsTy()
         }
       }
-      def data(pat: DataTypePattern): DataType = {
+      def data(pat: DataTypePattern): DataTypeId = {
         pat match {
           case w: DataTypePatternVar => subst(w)
-          case DataTypePatternNode(n) => DataType(n.map(nat, data))
+          case DataTypePatternNode(n) => egraph.add(n.map(nat, data))
           case DataTypePatternAny => missingRhsTy()
         }
       }
-      def `type`(pat: TypePattern): Type = {
+      def `type`(pat: TypePattern): TypeId = {
         pat match {
           case w: TypePatternVar => subst(w)
-          case TypePatternNode(n) => Type(n.map(`type`, nat, data))
+          case TypePatternNode(n) => egraph.add(n.map(`type`, nat, data))
           case TypePatternAny => missingRhsTy()
-          case dtp: DataTypePattern => Type(data(dtp).node)
+          case dtp: DataTypePattern => data(dtp)
         }
       }
 
@@ -91,12 +91,13 @@ case class CompiledPattern(pat: Pattern, prog: ematching.Program) {
 }
 
 object CompiledPattern {
-  implicit def patternToSearcher[D](cpat: CompiledPattern): Searcher[D] = new Searcher[D] {
+  implicit def patternToSearcher[ED, ND, TD](cpat: CompiledPattern)
+  : Searcher[ED, ND, TD] = new Searcher[ED, ND, TD] {
     override def toString: String = cpat.toString
 
     override def patternVars(): Set[Any] = cpat.pat.patternVars()
 
-    override def search(egraph: EGraph[D]): Vec[SearchMatches] = {
+    override def search(egraph: EGraph[ED, ND, TD]): Vec[SearchMatches] = {
       cpat.pat.p match {
         case PatternNode(node) =>
           egraph.classesByMatch.get(node.matchHash()) match {
@@ -109,13 +110,13 @@ object CompiledPattern {
       }
     }
 
-    override def searchEClass(egraph: EGraph[D], eclass: EClassId): Option[SearchMatches] = {
+    override def searchEClass(egraph: EGraph[ED, ND, TD], eclass: EClassId): Option[SearchMatches] = {
       val substs = cpat.prog.run(egraph, eclass)
       if (substs.isEmpty) { None } else { Some(SearchMatches(eclass, substs)) }
     }
   }
 
-  implicit def patternToApplier[D](cpat: CompiledPattern): Applier[D] =
+  implicit def patternToApplier[ED, ND, TD](cpat: CompiledPattern): Applier[ED, ND, TD] =
     Pattern.patternToApplier(cpat.pat)
 }
 
@@ -126,8 +127,10 @@ object PatternDSL {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = lhs -> rhs
   }
   implicit final class RewriteArrowCPattern(private val lhs: CompiledPattern) extends AnyVal {
-    @inline def -->[D](rhs: Pattern): (Searcher[D], Applier[D]) = (lhs: Searcher[D]) -> rhs
-    @inline def -->[D](rhs: Applier[D]): (Searcher[D], Applier[D]) = (lhs: Searcher[D]) -> rhs
+    @inline def -->[ED, ND, TD](rhs: Pattern): (Searcher[ED, ND, TD], Applier[ED, ND, TD]) =
+      (lhs: Searcher[ED, ND, TD]) -> rhs
+    @inline def -->[ED, ND, TD](rhs: Applier[ED, ND, TD]): (Searcher[ED, ND, TD], Applier[ED, ND, TD]) =
+      (lhs: Searcher[ED, ND, TD]) -> rhs
   }
   implicit final class RewriteArrowPNode(private val lhs: PNode) extends AnyVal {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = (lhs: Pattern) -> rhs

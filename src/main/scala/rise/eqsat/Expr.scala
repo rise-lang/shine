@@ -3,11 +3,61 @@ package rise.eqsat
 import rise.core
 import rise.core.{semantics, primitives => rcp, types => rct}
 
+object ExprWithHashCons {
+  def nat[ED, ND, DT](egraph: EGraph[ED, ND, DT])(dt: NatId): Nat =
+    Nat(egraph(dt)._1.map(nat(egraph)))
+
+  def dataType[ED, ND, DT](egraph: EGraph[ED, ND, DT])(dt: DataTypeId): DataType =
+    DataType(egraph(dt)._1.map(nat(egraph), dataType(egraph)))
+
+  def `type`[ED, ND, DT](egraph: EGraph[ED, ND, DT])(t: TypeId): Type =
+    Type(egraph(t)._1.map(`type`(egraph), nat(egraph), dataType(egraph)))
+
+  def expr[ED, ND, DT](egraph: EGraph[ED, ND, DT])(e: ExprWithHashCons): Expr =
+    Expr(e.node.map(expr(egraph), nat(egraph), dataType(egraph)), `type`(egraph)(e.t))
+}
+
+case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId], t: TypeId) {
+  override def toString: String = s"($node : $t)"
+
+  /** Shifts De-Bruijn indices up or down if they are >= cutoff */
+  def shifted[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], shift: Expr.Shift, cutoff: Expr.Shift): ExprWithHashCons = {
+    ExprWithHashCons(NodeSubs.shifted(egraph, node, shift, cutoff){ case (e, s, c) => e.shifted(egraph, s, c) },
+      NodeSubs.Type.shifted(egraph, t, (shift._2, shift._3), (cutoff._2, cutoff._3)))
+  }
+
+  def replace[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], index: Int, subs: ExprWithHashCons): ExprWithHashCons = {
+    NodeSubs.replace(node, index, subs)
+    { n => ExprWithHashCons(n, t) }
+    { case (e, i, s) => e.replace(egraph, i, s) }
+    { case (e, s, c) => e.shifted(egraph, s, c) }
+  }
+
+  def replace[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], index: Int, subs: NatId): ExprWithHashCons = {
+    ExprWithHashCons(NodeSubs.replace(egraph, node, index, subs){ case (e, i, s) => e.replace(egraph, i, s) },
+      NodeSubs.Type.replace(egraph, t, index, subs))
+  }
+
+  // substitutes %0 for arg in this
+  def withArgument[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], arg: ExprWithHashCons): ExprWithHashCons = {
+    val argS = arg.shifted(egraph, (1, 0, 0), (0, 0, 0))
+    val bodyR = this.replace(egraph, 0, argS)
+    bodyR.shifted(egraph, (-1, 0, 0), (0, 0, 0))
+  }
+
+  // substitutes %n0 for arg in this
+  def withNatArgument[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], arg: NatId): ExprWithHashCons = {
+    val argS = NodeSubs.Nat.shifted(egraph, arg, 1, 0)
+    val bodyR = this.replace(egraph, 0, argS)
+    bodyR.shifted(egraph, (0, -1, 0), (0, 0, 0))
+  }
+}
+
 // TODO: could also be outside of eqsat package
 /** A Rise expression based on DeBruijn indexing */
 case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
   override def toString: String = s"($node : $t)"
-
+/*
   /** Shifts De-Bruijn indices up or down if they are >= cutoff */
   def shifted(shift: Expr.Shift, cutoff: Expr.Shift): Expr = {
     Expr(NodeSubs.shifted(node, shift, cutoff){ case (e, s, c) => e.shifted(s, c) },
@@ -37,6 +87,7 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
     replace(0, arg.shifted(1, 0))
       .shifted((0, -1, 0), (0, 0, 0))
   }
+ */
 }
 
 object Expr {

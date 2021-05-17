@@ -1,28 +1,39 @@
 package rise.eqsat
 
 object EGraph {
-  def emptyWithAnalysis[D](analysis: Analysis[D]): EGraph[D] = new EGraph(
-    analysis = analysis,
-    memo = HashMap.empty,
-    classes = HashMap.empty[EClassId, EClass[D]],
-    unionFind = UnionFind.empty,
-    pending = Vec.empty,
-    analysisPending = HashSet.empty,
-    classesByMatch = HashMap.empty
-  )
+  def emptyWithAnalysis[ED, ND, TD](analysis: Analysis[ED, ND, TD])
+  : EGraph[ED, ND, TD] =
+    new EGraph(
+      analysis = analysis,
+      memo = HashMap.empty,
+      classes = HashMap.empty,
+      unionFind = UnionFind.empty,
+      pending = Vec.empty,
+      analysisPending = HashSet.empty,
+      classesByMatch = HashMap.empty,
+
+      nats = HashCons.empty,
+      dataTypes = HashCons.empty,
+      types = HashCons.empty
+    )
 }
 
 /** A data structure to keep track of equalities between expressions.
   * @see [[https://docs.rs/egg/0.6.0/egg/struct.EGraph.html]]
   */
-class EGraph[Data](
-  val analysis: Analysis[Data],
+class EGraph[ED, ND, TD](
+  val analysis: Analysis[ED, ND, TD],
   var pending: Vec[(ENode, EClassId)],
   var analysisPending: HashSet[(ENode, EClassId)],
-  var memo: HashMap[(ENode, Type), EClassId],
+
+  var memo: HashMap[(ENode, TypeId), EClassId],
   var unionFind: UnionFind,
-  var classes: HashMap[EClassId, EClass[Data]],
-  var classesByMatch: HashMap[Int, HashSet[EClassId]]
+  var classes: HashMap[EClassId, EClass[ED]],
+  var classesByMatch: HashMap[Int, HashSet[EClassId]],
+
+  var nats: HashCons[NatNode[NatId], NatId, ND],
+  var dataTypes: HashCons[DataTypeNode[NatId, DataTypeId], DataTypeId, TD],
+  var types: HashCons[TypeNode[TypeId, NatId, DataTypeId], NotDataTypeId, TD],
 ) {
   def nodeCount(): Int =
     classes.map { case (_, c) => c.nodeCount() }.iterator.sum
@@ -34,19 +45,31 @@ class EGraph[Data](
   def findMut(id: EClassId): EClassId =
     unionFind.findMut(id)
 
-  def get(id: EClassId): EClass[Data] =
+  def get(id: EClassId): EClass[ED] =
     classes(find(id))
-  def getMut(id: EClassId): EClass[Data] =
+  def getMut(id: EClassId): EClass[ED] =
     classes(findMut(id))
 
+  def apply(id: NatId): (NatNode[NatId], ND) =
+    nats.get(id)
+  def apply(id: DataTypeId): (DataTypeNode[NatId, DataTypeId], TD) =
+    dataTypes.get(id)
+  def apply(id: NotDataTypeId): (TypeNode[TypeId, NatId, DataTypeId], TD) =
+    types.get(id)
+  def apply(id: TypeId): (TypeNode[TypeId, NatId, DataTypeId], TD) =
+    id match {
+      case i: DataTypeId => apply(i)
+      case i: NotDataTypeId => apply(i)
+    }
+
   // returns the canonicalized enode and its eclass if it has one
-  def lookup(enode: ENode, t: Type): (ENode, Option[EClassId]) = {
+  def lookup(enode: ENode, t: TypeId): (ENode, Option[EClassId]) = {
     val enode2 = enode.mapChildren(find)
     val id = memo.get(enode2, t)
     (enode2, id.map(find))
   }
 
-  def makeEmptyEClass(simplifiedT: Type): EClassId = {
+  def makeEmptyEClass(simplifiedT: TypeId): EClassId = {
     val newId = unionFind.makeSet()
     val newEclass = new EClass(
       id = newId,
@@ -58,10 +81,8 @@ class EGraph[Data](
     newId
   }
 
-  def add(n: ENode, givenT: Type): EClassId = {
-    // we simplify the contained nats before adding the node to the graph
-    val t = Type.simplifyNats(givenT)
-    val (enode, optec) = lookup(n.map(id => id, Nat.simplify, DataType.simplifyNats), t)
+  def add(n: ENode, t: TypeId): EClassId = {
+    val (enode, optec) = lookup(n, t)
     optec.getOrElse {
       val id = unionFind.makeSet()
       val eclass = new EClass(
@@ -86,7 +107,80 @@ class EGraph[Data](
   }
 
   def addExpr(expr: Expr): EClassId =
-    add(expr.node.mapChildren(addExpr), expr.t)
+    add(expr.node.map(addExpr, addNat, addDataType), addType(expr.t))
+  def addExpr(expr: ExprWithHashCons): EClassId =
+    add(expr.node.map(addExpr, n => n, dt => dt), expr.t)
+
+  def add(n: NatNode[NatId]): NatId = {
+    import rise.core.{types => rct}
+    import arithexpr.arithmetic._
+
+    // TODO: avoid code duplication with other named conversions
+    def toNamed(n: NatNode[NatId]): rct.Nat =
+      n match {
+        case NatVar(index) => rct.NatIdentifier(s"n$index")
+        case NatCst(value) => Cst(value)
+        case NatNegInf => NegInf
+        case NatPosInf => PosInf
+        case NatAdd(a, b) => idToNamed(a) + idToNamed(b)
+        case NatMul(a, b) => idToNamed(a) * idToNamed(b)
+        case NatPow(b, e) => idToNamed(b).pow(idToNamed(e))
+        case NatMod(a, b) => idToNamed(a) % idToNamed(b)
+        case NatIntDiv(a, b) => idToNamed(a) / idToNamed(b)
+      }
+
+    def idToNamed(id: NatId): rct.Nat =
+      toNamed(this(id)._1)
+
+    def fromNamed(n: rct.Nat): NatNode[NatId] = {
+      n match {
+        case i: rct.NatIdentifier => NatVar(i.name.drop(1).toInt)
+        case PosInf => NatPosInf
+        case NegInf => NatNegInf
+        case Cst(c) => NatCst(c)
+        case Sum(Nil) => NatCst(0)
+        case Sum(t +: ts) => ts.foldRight(fromNamed(t)) { case (t, acc) =>
+          NatAdd(add(fromNamed(t)), add(acc))
+        }
+        case Prod(Nil) => NatCst(1)
+        case Prod(t +: ts) => ts.foldRight(fromNamed(t)) { case (t, acc) =>
+          NatMul(add(fromNamed(t)), add(acc))
+        }
+        case Pow(b, e) =>
+          NatPow(add(fromNamed(b)), add(fromNamed(e)))
+        case Mod(a, b) =>
+          NatMod(add(fromNamed(a)), add(fromNamed(b)))
+        case IntDiv(a, b) =>
+          NatIntDiv(add(fromNamed(a)), add(fromNamed(b)))
+        case _ => throw new Exception(s"no support for $n")
+      }
+    }
+
+    nats.addWithSimplification(n, NatId, n => fromNamed(toNamed(n)), n => analysis.makeNat(this, n))
+  }
+
+  def addNat(n: Nat): NatId = {
+    def rec(n: Nat): NatId =
+      add(n.node.map(rec))
+
+    rec(Nat.simplify(n))
+  }
+
+  def add(dt: DataTypeNode[NatId, DataTypeId]): DataTypeId =
+    dataTypes.add(dt, dt => analysis.makeDataType(this, dt), DataTypeId)
+
+  def addDataType(dt: DataType): DataTypeId =
+    add(dt.node.map(addNat, addDataType))
+
+  def add(t: TypeNode[TypeId, NatId, DataTypeId]): TypeId = {
+    t match {
+      case dt: DataTypeNode[NatId, DataTypeId] => add(dt)
+      case _ => types.add(t, t => analysis.makeType(this, t), NotDataTypeId)
+    }
+  }
+
+  def addType(t: Type): TypeId =
+    add(t.node.map(addType, addNat, addDataType))
 
   // checks whether two expressions are equivalent
   // returns a list of eclasses that represent both expressions
@@ -202,7 +296,7 @@ class EGraph[Data](
   }
 
   private def rebuildClasses(): Int = {
-    import Node.{ordering, eclassIdOrdering, natOrdering, dataTypeOrdering}
+    import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering}
     classesByMatch.values.foreach(ids => ids.clear())
 
     var trimmed = 0
@@ -236,7 +330,7 @@ class EGraph[Data](
   }
 
   private def checkMemo(): Boolean = {
-    val testMemo = HashMap.empty[(ENode, Type), EClassId]
+    val testMemo = HashMap.empty[(ENode, TypeId), EClassId]
 
     for ((id, eclass) <- classes) {
       assert(eclass.id == id);

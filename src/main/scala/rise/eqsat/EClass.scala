@@ -2,7 +2,7 @@ package rise.eqsat
 
 /** A class of equivalent nodes */
 class EClass[D](val id: EClassId,
-                val t: Type, // NOTE: this is close to analysis data
+                val t: TypeId, // NOTE: this is close to analysis data
                 var nodes: Vec[ENode],
                 var data: D,
                 var parents: Vec[(ENode, EClassId)]) {
@@ -11,9 +11,10 @@ class EClass[D](val id: EClassId,
 
 // TODO: can we prove that infinite loops are not possible, is the procedure even correct?
 // TODO: should the visited map have a more global scope for better memoization?
+// FIXME: broken by hash-consing
 object EClass {
   // TODO: generalize eclass transformation traversal?
-  def shifted(eclass: EClassId, shift: Expr.Shift, cutoff: Expr.Shift, egraph: EGraph[DefaultAnalysisData]): EClassId = {
+  def shifted(eclass: EClassId, shift: Expr.Shift, cutoff: Expr.Shift, egraph: DefaultAnalysis.EGraph): EClassId = {
     // (eclass, shift, cutoff) -> result
     val visited = HashMap[(EClassId, Expr.Shift, Expr.Shift), EClassId]()
 
@@ -35,13 +36,14 @@ object EClass {
             visited += (id, shift, cutoff) -> id
             id
           } else {
-            val t = Type.simplifyNats(
-              eclass.t.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
+            val t = ???
+              // eclass.t.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
             val dummy = egraph.makeEmptyEClass(t)
             visited += (id, shift, cutoff) -> dummy
             val finalId = eclass.nodes.foldLeft(dummy) { case (currentId, enode) =>
               // visited += (egraph.find(id), shift, cutoff) -> currentId
-              val newId = egraph.add(NodeSubs.shifted(enode, shift, cutoff)(rec), t)
+
+              val newId = ??? /// egraph.add(NodeSubs.shifted(enode, shift, cutoff)(rec), t)
               egraph.union(newId, currentId)._1
             }
             visited += (egraph.find(id), shift, cutoff) -> finalId
@@ -53,7 +55,7 @@ object EClass {
     rec(eclass, shift, cutoff)
   }
 
-  def replace(eclass: EClassId, index: Int, subs: EClassId, egraph: EGraph[DefaultAnalysisData]): EClassId = {
+  def replace(eclass: EClassId, index: Int, subs: EClassId, egraph: DefaultAnalysis.EGraph): EClassId = {
     // (eclass, index, subs) -> result
     val visited = HashMap[(EClassId, Int, EClassId), EClassId]()
 
@@ -91,11 +93,11 @@ object EClass {
     rec(eclass, index, subs)
   }
 
-  def replace(eclass: EClassId, index: Int, subs: Nat, egraph: EGraph[DefaultAnalysisData]): EClassId = {
+  def replace(eclass: EClassId, index: Int, subs: NatId, egraph: DefaultAnalysis.EGraph): EClassId = {
     // (eclass, index, subs) -> result
-    val visited = HashMap[(EClassId, Int, Nat), EClassId]()
+    val visited = HashMap[(EClassId, Int, NatId), EClassId]()
 
-    def rec(_id: EClassId, index: Int, subs: Nat): EClassId = {
+    def rec(_id: EClassId, index: Int, subs: NatId): EClassId = {
       val id = egraph.find(_id)
       visited.get(id, index, subs) match {
         case Some(computedId) =>
@@ -107,12 +109,14 @@ object EClass {
             visited += (id, index, subs) -> id
             id
           } else {
-            val t = Type.simplifyNats(eclass.t.replace(index, subs))
+            val t = ???
+            // Type.simplifyNats(eclass.t.replace(index, subs))
             val dummy = egraph.makeEmptyEClass(t)
             visited += (id, index, subs) -> dummy
             val finalId = eclass.nodes.foldLeft(dummy) { case (currentId, enode) =>
               // visited += (egraph.find(id), index, subs) -> currentId
-              val newId = egraph.add(NodeSubs.replace(enode, index, subs)(rec), t)
+              val newId = ???
+              // egraph.add(NodeSubs.replace(enode, index, subs)(rec), t)
               egraph.union(newId, currentId)._1
             }
             visited += (egraph.find(id), index, subs) -> finalId
@@ -125,15 +129,15 @@ object EClass {
   }
 
   // substitutes %0 for arg in body
-  def withArgument(body: EClassId, arg: EClassId, egraph: EGraph[DefaultAnalysisData]): EClassId = {
+  def withArgument(body: EClassId, arg: EClassId, egraph: DefaultAnalysis.EGraph): EClassId = {
     val sArg = shifted(arg, (1, 0, 0), (0, 0, 0), egraph)
     val rBody = replace(body, 0, sArg, egraph)
     shifted(rBody, (-1, 0, 0), (0, 0, 0), egraph)
   }
 
   // substitutes %n0 for arg in this
-  def withNatArgument(body: EClassId, arg: Nat, egraph: EGraph[DefaultAnalysisData]): EClassId = {
-    val sArg = arg.shifted(1, 0)
+  def withNatArgument(body: EClassId, arg: NatId, egraph: DefaultAnalysis.EGraph): EClassId = {
+    val sArg = NodeSubs.Nat.shifted(egraph, arg, 1, 0)
     val rBody = replace(body, 0, sArg, egraph)
     shifted(rBody, (0, -1, 0), (0, 0, 0), egraph)
   }

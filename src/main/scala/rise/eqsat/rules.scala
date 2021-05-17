@@ -4,14 +4,14 @@ import PatternDSL._
 import rise.core.{primitives => rcp}
 
 object rules {
-  type Rule = Rewrite[DefaultAnalysisData]
+  type Rule = DefaultAnalysis.Rewrite
 
   def containsIdent(v: PatternVar, ident: Var)
-                   (egraph: EGraph[DefaultAnalysisData], eclass: EClassId, subst: Subst): Boolean =
+                   (egraph: DefaultAnalysis.EGraph, eclass: EClassId, subst: Subst): Boolean =
     egraph.getMut(subst(v)).data.free.contains(ident.index)
 
-  def neg[D](cond: (EGraph[D], EClassId, Subst) => Boolean)
-            (egraph: EGraph[D], eclass: EClassId, subst: Subst): Boolean =
+  def neg[ED, ND, TD](cond: (EGraph[ED, ND, TD], EClassId, Subst) => Boolean)
+                     (egraph: EGraph[ED, ND, TD], eclass: EClassId, subst: Subst): Boolean =
     !cond(egraph, eclass, subst)
 
   // TODO: find a way to combine different analysis requirements?

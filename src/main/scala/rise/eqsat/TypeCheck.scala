@@ -5,27 +5,33 @@ object TypeCheck {
     override def toString: String = s"type error: $msg"
   }
 
-  def apply[D](egraph: EGraph[D]) = {
-    def assertSameType(t1: Type, t2: Type): Unit =
+  def apply[ED, ND, TD](egraph: EGraph[ED, ND, TD]) = {
+    def assertSameType(t1: TypeId, t2: TypeId): Unit =
       if (t1 != t2) {
-        egraph.dot().toSVG("/tmp/typeErrorEgraph.svg")
-        throw Error(s"$t1 != $t2")
+        // egraph.dot().toSVG("/tmp/typeErrorEgraph.svg")
+        val humanReadable = ExprWithHashCons.`type`(egraph) _
+        throw Error(s"$t1 != $t2 (${humanReadable(t1)} != ${humanReadable(t2)})")
       }
 
-    def unwrapFunType(t: Type): (Type, Type) =
-      t.node match {
+    def unwrapNotDataTypeId(t: TypeId): NotDataTypeId =
+      t match {
+        case _: DataTypeId => throw Error("did not expect data type")
+        case i: NotDataTypeId => i
+      }
+    def unwrapFunType(t: TypeId): (TypeId, TypeId) =
+      egraph(unwrapNotDataTypeId(t))._1 match {
         case FunType(inT, outT) => (inT, outT)
-        case _ => throw Error(s"expected function type, found $t")
+        case node => throw Error(s"expected function type, found $node")
       }
-    def unwrapNatFunType(t: Type): Type =
-      t.node match {
+    def unwrapNatFunType(t: TypeId): TypeId =
+      egraph(unwrapNotDataTypeId(t))._1 match {
         case NatFunType(t) => t
-        case _ => throw Error(s"expected nat function type, found $t")
+        case node => throw Error(s"expected nat function type, found $node")
       }
-    def unwrapDataFunType(t: Type): Type =
-      t.node match {
+    def unwrapDataFunType(t: TypeId): TypeId =
+      egraph(unwrapNotDataTypeId(t))._1 match {
         case DataFunType(t) => t
-        case _ => throw Error(s"expected data function type, found $t")
+        case node => throw Error(s"expected data function type, found $node")
       }
 
     for (eclass <- egraph.classes.values) {
@@ -34,7 +40,7 @@ object TypeCheck {
         node match {
           case Var(index) =>
             val visited = HashSet[(ENode, EClassId, Int)]()
-            def checkVarTy[D](eclass: EClass[D], index: Int, ty: Type): Unit = {
+            def checkVarTy[D](eclass: EClass[D], index: Int, ty: TypeId): Unit = {
               for ((node, pid) <- eclass.parents) {
                 if (!visited.contains((node, pid, index))) {
                   visited += ((node, pid, index))
@@ -67,10 +73,10 @@ object TypeCheck {
             assertSameType(egraph.get(e).t, outT)
           case NatApp(f, x) =>
             val ft = unwrapNatFunType(egraph.get(f).t)
-            assertSameType(t, Type.simplifyNats(ft.withNatArgument(x)))
+            assertSameType(t, NodeSubs.Type.withNatArgument(egraph, ft, x))
           case DataApp(f, x) =>
             val ft = unwrapDataFunType(egraph.get(f).t)
-            assertSameType(t, ft.withDataArgument(x))
+            assertSameType(t, NodeSubs.Type.withDataArgument(egraph, ft, x))
           case NatLambda(e) =>
             val ft = unwrapNatFunType(t)
             assertSameType(ft, egraph.get(e).t)
@@ -78,7 +84,8 @@ object TypeCheck {
             val ft = unwrapDataFunType(t)
             assertSameType(ft, egraph.get(e).t)
           case Literal(d) =>
-            assertSameType(t, Type.fromNamed(d.dataType))
+            // TODO: more efficient egraph.addTypeFromNamed?
+            assertSameType(t, egraph.addType(Type.fromNamed(d.dataType)))
           case Primitive(_) =>
             // TODO: check p.typeScheme consistency?
 
@@ -86,7 +93,7 @@ object TypeCheck {
             val (fInT, fOutT) = unwrapFunType(egraph.get(f).t)
             val (gInT, gOutT) = unwrapFunType(egraph.get(g).t)
             assertSameType(fOutT, gInT)
-            assertSameType(t, Type(FunType(fInT, gOutT)))
+            assertSameType(t, egraph.add(FunType(fInT, gOutT)))
         }
       }
     }

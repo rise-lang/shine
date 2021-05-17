@@ -6,11 +6,21 @@ import scala.collection.mutable
   * based on the [[https://egraphs-good.github.io/ `egg` library]].
   */
 package object eqsat {
-  type ENode = Node[EClassId, Nat, DataType]
+  type ENode = Node[EClassId, NatId, DataTypeId]
   type PNode = Node[Pattern, NatPattern, DataTypePattern]
 
   /** A key to identify [[EClass]]es within an [[EGraph]] */
   case class EClassId(i: Int)
+
+  /** A key to identify interned nats */
+  case class NatId(i: Int)
+
+  /** A key to identify interned types */
+  sealed trait TypeId
+  /** A key to identify interned data types */
+  case class DataTypeId(i: Int) extends TypeId
+  /** A key to identify interned types which are not data types */
+  case class NotDataTypeId(i: Int) extends TypeId
 
   type Vec[T] = mutable.ArrayBuffer[T]
   val Vec: mutable.ArrayBuffer.type = mutable.ArrayBuffer
@@ -19,6 +29,7 @@ package object eqsat {
   type HashSet[V] = mutable.HashSet[V]
   val HashSet: mutable.HashSet.type = mutable.HashSet
 
+  // TODO: could keep hash-consed nats/types?
   def BENF(e: Expr): Expr = {
     val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
     val id = egraph.addExpr(e)
@@ -29,7 +40,7 @@ package object eqsat {
     ))
     val extractor = Extractor.init(egraph, AstSize)
     val (_, normalized) = extractor.findBestOf(id)
-    normalized
+    ExprWithHashCons.expr(egraph)(normalized)
   }
 
   // Combinator Normal Form
@@ -44,6 +55,6 @@ package object eqsat {
     ))
     val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     val (_, normalized) = extractor.findBestOf(id)
-    normalized
+    ExprWithHashCons.expr(egraph)(normalized)
   }
 }

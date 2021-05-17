@@ -1,4 +1,5 @@
 package rise.eqsat
+import rise.eqsat
 
 sealed trait Order
 case object Less extends Order
@@ -8,85 +9,88 @@ case object Greater extends Order
 /** Explains how arbitrary analysis data associated with an [[EClass]]
   * is maintained across [[EGraph]] operations.
   * @see [[https://docs.rs/egg/0.6.0/egg/trait.Analysis.html]]
+  * @todo try to reduce the generics boilerplate with Scala 3 features
   */
-trait Analysis[Data] {
+trait Analysis[ED, ND, TD] {
   // useful if empty e-classes are created
-  def empty(egraph: EGraph[Data], t: Type): Data
+  def empty(egraph: EGraph[ED, ND, TD], t: TypeId): ED
 
-  def make(egraph: EGraph[Data], enode: ENode, t: Type): Data
+  def make(egraph: EGraph[ED, ND, TD], enode: ENode, t: TypeId): ED
+  def makeNat(egraph: EGraph[ED, ND, TD], node: NatNode[NatId]): ND
+  def makeDataType(egraph: EGraph[ED, ND, TD],
+                   node: DataTypeNode[NatId, DataTypeId]): TD
+  def makeType(egraph: EGraph[ED, ND, TD],
+               node: TypeNode[TypeId, NatId, DataTypeId]): TD
 
   // - if `to < from` then `to` should be assigned to `from`
   // - if `to > from` then `to` should be unmodified
   // - if `to = from` then `to` should be unmodified
   // - if they cannot be compared, then `to` should be modified
-  def merge(to: Data, from: Data): Option[Order]
+  def merge(to: ED, from: ED): Option[Order]
 
-  def modify(egraph: EGraph[Data], id: EClassId): Unit = {}
+  def modify(egraph: EGraph[ED, ND, TD], id: EClassId): Unit = {}
 
-  def preUnion(egraph: EGraph[Data], id1: EClassId, id2: EClassId): Unit = {}
+  def preUnion(egraph: EGraph[ED, ND, TD], id1: EClassId, id2: EClassId): Unit = {}
 }
 
-object NoAnalysis extends Analysis[()] {
-  override def empty(egraph: EGraph[Unit], t: Type): Unit = ()
-  override def make(egraph: EGraph[()], enode: ENode, t: Type): () = ()
+object NoAnalysis extends Analysis[(), (), ()] {
+  override def empty(egraph: EGraph[(), (), ()], t: TypeId): Unit = ()
+  override def make(egraph: EGraph[(), (), ()], enode: ENode, t: TypeId): () = ()
+
+  override def makeNat(egraph: EGraph[(), (), ()], node: NatNode[NatId]): () = ()
+  override def makeDataType(egraph: EGraph[(), (), ()],
+                            node: DataTypeNode[NatId, DataTypeId]): () = ()
+  override def makeType(egraph: EGraph[(), (), ()],
+                        node: TypeNode[TypeId, NatId, DataTypeId]): () = ()
+
   override def merge(to: (), from: ()): Option[Order] = Some(Equal)
 }
 
-class DefaultAnalysisData(var free: HashSet[Int],
-                          var freeNat: HashSet[Int],
-                          var freeDataType: HashSet[Int],
-                          var extracted: Option[(Expr, Int)]) {
-  def extractedExpr: Expr = extracted.get._1
-  def extractedSize: Int = extracted.get._2
+object DefaultAnalysis extends DefaultAnalysisCustomisable() {
+  override def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit =
+    to ++= from // union
+
+  type Data = DefaultAnalysisCustomisable.Data
+  type NatData = DefaultAnalysisCustomisable.NatData
+  type TypeData = DefaultAnalysisCustomisable.TypeData
+
+  type EGraph = rise.eqsat.EGraph[Data, NatData, TypeData]
+  type Searcher = rise.eqsat.Searcher[Data, NatData, TypeData]
+  type Applier = rise.eqsat.Applier[Data, NatData, TypeData]
+  type Rewrite = rise.eqsat.Rewrite[Data, NatData, TypeData]
 }
 
-abstract class DefaultAnalysisCustomisable() extends Analysis[DefaultAnalysisData] {
-  override def empty(egraph: EGraph[DefaultAnalysisData], t: Type): DefaultAnalysisData =
-    new DefaultAnalysisData(HashSet(), HashSet(), HashSet(), None)
+object DefaultAnalysisCustomisable {
+  class Data(var free: HashSet[Int],
+             var freeNat: HashSet[Int],
+             var freeDataType: HashSet[Int],
+             var extracted: Option[(ExprWithHashCons, Int)]) {
+    def extractedExpr: ExprWithHashCons = extracted.get._1
+    def extractedSize: Int = extracted.get._2
+  }
+
+  class NatData(var freeNat: HashSet[Int])
+  class TypeData(var freeNat: HashSet[Int],
+                 var freeDataType: HashSet[Int])
+}
+
+abstract class DefaultAnalysisCustomisable() extends Analysis[
+  DefaultAnalysisCustomisable.Data,
+  DefaultAnalysisCustomisable.NatData,
+  DefaultAnalysisCustomisable.TypeData
+] {
+  import DefaultAnalysisCustomisable._
+  import DefaultAnalysis._
+
+  override def empty(egraph: EGraph, t: TypeId): Data =
+    new Data(HashSet(), HashSet(), HashSet(), None)
 
   def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit
 
-  override def make(egraph: EGraph[DefaultAnalysisData], enode: ENode, t: Type): DefaultAnalysisData = {
+  override def make(egraph: EGraph, enode: ENode, t: TypeId): Data = {
     val free = HashSet.empty[Int]
     val freeNat = HashSet.empty[Int]
     val freeDataType = HashSet.empty[Int]
-
-    def flatten(i: Seq[(Seq[Int], Seq[Int])]): (Seq[Int], Seq[Int]) =
-      i.foldRight((Seq.empty[Int], Seq.empty[Int]))
-      { case ((ns1, dts1), (ns2, dts2)) => (ns1 ++ ns2, dts1 ++ dts2) }
-
-    def commit(ndts: (Seq[Int], Seq[Int])): Unit = {
-      freeNat ++= ndts._1
-      freeDataType ++= ndts._2
-    }
-
-    def collectFreeNat(n: Nat): (Seq[Int], Seq[Int]) = {
-      n.node match {
-        case NatVar(index) => (Seq(index), Seq())
-        case node => flatten(node.map(collectFreeNat).nats().toSeq)
-      }
-    }
-
-    def collectFreeDataType(dt: DataType): (Seq[Int], Seq[Int]) = {
-      dt.node match {
-        case DataTypeVar(index) => (Seq(), Seq(index))
-        case node => flatten(DataTypeNode.collect(node.map(collectFreeNat, collectFreeDataType)))
-      }
-    }
-
-    def collectFreeType(t: Type): (Seq[Int], Seq[Int]) = {
-      t.node match {
-        case FunType(inT, outT) =>
-          flatten(Seq(collectFreeType(inT), collectFreeType(outT)))
-        case NatFunType(t) =>
-          val (ns, dts) = collectFreeType(t)
-          (ns.filter(idx => idx != 0).map(idx => idx - 1), dts)
-        case DataFunType(t) =>
-          val (ns, dts) = collectFreeType(t)
-          (ns, dts.filter(idx => idx != 0).map(idx => idx - 1))
-        case dt: DataTypeNode[Nat, DataType] => collectFreeDataType(DataType(dt))
-      }
-    }
 
     enode match {
       case Var(index) =>
@@ -106,18 +110,33 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[DefaultAnalysisDat
         free ++= ed.free
         freeNat ++= ed.freeNat
         freeDataType ++= ed.freeDataType.filter(idx => idx != 0).map(idx => idx - 1)
-      case _ => enode.map({ c =>
-        val cd = egraph.getMut(c).data
-        free ++= cd.free
-        freeNat ++= cd.freeNat
-        freeDataType ++= cd.freeDataType
-      }, { n => commit(collectFreeNat(n)) }, { dt => commit(collectFreeDataType(dt)) })
+      case _ => enode.map(
+        { c =>
+          val d = egraph.getMut(c).data
+          free ++= d.free
+          freeNat ++= d.freeNat
+          freeDataType ++= d.freeDataType
+        },
+        { n =>
+          val d = egraph(n)._2
+          freeNat ++= d.freeNat
+        },
+        { dt =>
+          val d = egraph(dt)._2
+          freeNat ++= d.freeNat
+          freeDataType ++= d.freeDataType
+        }
+      )
     }
-    commit(collectFreeType(t))
+    {
+      val d = egraph(t)._2
+      freeNat ++= d.freeNat
+      freeDataType ++= d.freeDataType
+    }
 
-    def computeExtracted(): Option[(Expr, Int)] = {
+    def computeExtracted(): Option[(ExprWithHashCons, Int)] = {
       var extractedSize = 1
-      val extractedExpr = Expr(enode.mapChildren { c =>
+      val extractedExpr = ExprWithHashCons(enode.mapChildren { c =>
         egraph.getMut(c).data.extracted match {
           case None => return None
           case Some((e, s)) =>
@@ -128,10 +147,60 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[DefaultAnalysisDat
       Some(extractedExpr, extractedSize)
     }
 
-    new DefaultAnalysisData(free, freeNat, freeDataType, computeExtracted())
+    new Data(free, freeNat, freeDataType, computeExtracted())
   }
 
-  override def merge(to: DefaultAnalysisData, from: DefaultAnalysisData): Option[Order] = {
+  override def makeNat(egraph: EGraph, node: NatNode[NatId]): NatData = {
+    val freeNat = HashSet[Int]()
+    node match {
+      case NatVar(index) => freeNat += index
+      case node => node.map(n => freeNat ++= egraph(n)._2.freeNat)
+    }
+    new NatData(freeNat)
+  }
+
+  override def makeDataType(egraph: EGraph, node: DataTypeNode[NatId, DataTypeId]): TypeData = {
+    val freeNat = HashSet[Int]()
+    val freeDataType = HashSet[Int]()
+    node match {
+      case DataTypeVar(index) => freeDataType += index
+      case node => node.map(
+        { n => freeNat ++= egraph(n)._2.freeNat },
+        { dt =>
+          val d = egraph(dt)._2
+          freeNat ++= d.freeNat
+          freeDataType ++= d.freeDataType
+        })
+    }
+    new TypeData(freeNat, freeDataType)
+  }
+
+  override def makeType(egraph: EGraph, node: TypeNode[TypeId, NatId, DataTypeId]): TypeData = {
+    val freeNat = HashSet[Int]()
+    val freeDataType = HashSet[Int]()
+    def acc(d: TypeData): Unit = {
+      freeNat ++= d.freeNat
+      freeDataType ++= d.freeDataType
+    }
+    node match {
+      case FunType(inT, outT) =>
+        acc(egraph(inT)._2)
+        acc(egraph(outT)._2)
+      case NatFunType(t) =>
+        val d = egraph(t)._2
+        freeNat ++= d.freeNat.iterator.filter(idx => idx != 0).map(idx => idx - 1)
+        freeDataType ++= d.freeDataType
+      case DataFunType(t) =>
+        val d = egraph(t)._2
+        freeNat ++= d.freeNat
+        freeDataType ++= d.freeDataType.iterator.filter(idx => idx != 0).map(idx => idx - 1)
+      case _: DataTypeNode[_, _] =>
+        throw new Exception("this should not happen")
+    }
+    new TypeData(freeNat, freeDataType)
+  }
+
+  override def merge(to: Data, from: Data): Option[Order] = {
     val beforeFreeCount = to.free.size
     val beforeFreeNatCount = to.freeNat.size
     val beforeFreeDataTypeCount = to.freeDataType.size
@@ -140,8 +209,8 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[DefaultAnalysisDat
     freeMerge(to.freeDataType, from.freeDataType)
     var didChange =
       beforeFreeCount != to.free.size ||
-      beforeFreeNatCount != to.freeNat.size ||
-      beforeFreeDataTypeCount != to.freeDataType.size
+        beforeFreeNatCount != to.freeNat.size ||
+        beforeFreeDataTypeCount != to.freeDataType.size
     (to.extracted, from.extracted) match {
       case (None, _) =>
         to.extracted = from.extracted
@@ -158,12 +227,7 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[DefaultAnalysisDat
   }
 }
 
-object DefaultAnalysis extends DefaultAnalysisCustomisable {
-  override def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit =
-    to ++= from // union
-}
-
-object DefaultAnalysisWithFreeIntersection extends DefaultAnalysisCustomisable {
+object DefaultAnalysisWithFreeIntersection extends DefaultAnalysisCustomisable() {
   override def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit =
     to.filterInPlace(from.contains) // intersection
 }
