@@ -56,7 +56,7 @@ class Basic extends test_util.Tests {
         in |> map(f(0) >> f(1) >> f(2) >> f(3))),
       withArrayAndFuns(4, in => f =>
         in |> map(f(0)) |> map(f(1)) |> map(f(2)) |> map(f(3))),
-      Seq(rules.eta, rules.beta, rules.mapFission)
+      Seq(rules.eta, rules.betaExtract, rules.mapFission)
     )
   }
 
@@ -78,7 +78,7 @@ class Basic extends test_util.Tests {
         in |> map(f(0) >> f(1) >> f(2) >> f(3))),
       withArrayAndFuns(4, in => f =>
         in |> map(f(0)) >> map(f(1) >> f(2) >> f(3))),
-      Seq(rules.eta, rules.beta, rules.mapFission, rules.mapFusion)
+      Seq(rules.eta, rules.betaExtract, rules.mapFission, rules.mapFusion)
     )
   }
 
@@ -110,7 +110,7 @@ class Basic extends test_util.Tests {
         slide(3)(1) >> slide(4)(2) >> map(map(map(f)))),
       wrap(f =>
         map(f) >> slide(3)(1) >> slide(4)(2)),
-      Seq(rules.eta, rules.beta, rules.mapFusion, rules.mapFission, rules.slideBeforeMapMapF)
+      Seq(rules.eta, rules.betaExtract, rules.mapFusion, rules.mapFission, rules.slideBeforeMapMapF)
     )
   }
 }
@@ -118,26 +118,26 @@ class Basic extends test_util.Tests {
 object Basic {
   def proveEquivBENF(start: rise.core.Expr,
                      goal: rise.core.Expr,
-                     rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
+                     rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
     proveEquivBENF(start, Seq(goal), rules)
   }
 
   def proveEquivCNF(start: rise.core.Expr,
                     goal: rise.core.Expr,
-                    rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
+                    rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
     proveEquivCNF(start, Seq(goal), rules)
   }
 
   def proveEquiv(start: Expr,
                  goal: Expr,
-                 rules: Seq[Rewrite[DefaultAnalysisData]],
-                 analysis: Analysis[DefaultAnalysisData] = DefaultAnalysis): Unit = {
+                 rules: Seq[DefaultAnalysis.Rewrite],
+                 analysis: DefaultAnalysisCustomisable = DefaultAnalysis): Unit = {
     proveEquiv(start, Seq(goal), rules, analysis)
   }
 
   def proveEquivBENF(start: rise.core.Expr,
                      goals: Seq[rise.core.Expr],
-                     rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
+                     rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
     val normStart = BENF(Expr.fromNamed(start))
     val normGoals = goals.map(g => BENF(Expr.fromNamed(g)))
     println(s"normalized start: ${Expr.toNamed(normStart)}")
@@ -149,7 +149,7 @@ object Basic {
 
   def proveEquivCNF(start: rise.core.Expr,
                     goals: Seq[rise.core.Expr],
-                    rules: Seq[Rewrite[DefaultAnalysisData]]): Unit = {
+                    rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
     val normStart = CNF(Expr.fromNamed(start))
     val normGoals = goals.map(g => CNF(Expr.fromNamed(g)))
     println(s"normalized start: ${Expr.toNamed(normStart)}")
@@ -161,8 +161,8 @@ object Basic {
 
   def proveEquiv(start: Expr,
                  goals: Seq[Expr],
-                 rules: Seq[Rewrite[DefaultAnalysisData]],
-                 analysis: Analysis[DefaultAnalysisData]): Unit = {
+                 rules: Seq[DefaultAnalysis.Rewrite],
+                 analysis: DefaultAnalysisCustomisable): Unit = {
     val goalPatterns = goals.map(Pattern.fromExpr(_).compile())
 
     val egraph = EGraph.emptyWithAnalysis(analysis)

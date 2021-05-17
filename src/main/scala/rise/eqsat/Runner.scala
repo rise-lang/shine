@@ -74,7 +74,7 @@ class Runner(var iterations: Vec[Iteration],
       s"${ratio(rebuildTime.toDouble, totalTime.toDouble)} rebuild)")
   }
 
-  def run[D](egraph: EGraph[D], rules: Seq[Rewrite[D]]): Runner = {
+  def run[ED, ND, TD](egraph: EGraph[ED, ND, TD], rules: Seq[Rewrite[ED, ND, TD]]): Runner = {
     egraph.rebuild()
 
     // iteration 0
@@ -119,7 +119,8 @@ class Runner(var iterations: Vec[Iteration],
     this
   }
 
-  private def runOne[D](egraph: EGraph[D], rules: Seq[Rewrite[D]]): Iteration = {
+  private def runOne[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+                                 rules: Seq[Rewrite[ED, ND, TD]]): Iteration = {
     val time0 = System.nanoTime()
 
     val matches = rules.map { r => r.search(egraph) }

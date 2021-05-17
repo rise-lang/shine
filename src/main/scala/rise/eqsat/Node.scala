@@ -124,10 +124,15 @@ object Node {
     case Composition(f, g) => Seq(f, g)
   }
 
-  implicit val natOrdering: Ordering[Nat] = new Ordering[Nat] {
-    def compare(n1: Nat, n2: Nat): Int = {
+  implicit val natIdOrdering: Ordering[NatId] = new Ordering[NatId] {
+    def compare(id1: NatId, id2: NatId): Int =
+      id1.i compare id2.i
+  }
+/*
+  implicit val natOrdering: Ordering[NatNode[NatId]] = new Ordering[NatNode[NatId]] {
+    def compare(n1: NatNode[NatId], n2: NatNode[NatId]): Int = {
       implicit val ord: Ordering[Nat] = this
-      (n1.node, n2.node) match {
+      (n1, n2) match {
         case (NatCst(c1), NatCst(c2)) => c1 compare c2
         /* case (Sum(ts1), Sum(ts2)) =>
           implicitly[Ordering[Seq[Nat]]].compare(ts1, ts2)
@@ -137,12 +142,18 @@ object Node {
       }
     }
   }
-
-  implicit val dataTypeOrdering: Ordering[DataType] = new Ordering[DataType] {
-    def compare(dt1: DataType, dt2: DataType): Int =
+*/
+  implicit val dataTypeIdOrdering: Ordering[DataTypeId] = new Ordering[DataTypeId] {
+    def compare(id1: DataTypeId, id2: DataTypeId): Int =
+      id1.i compare id2.i
+  }
+/*
+  implicit val dataTypeOrdering: Ordering[DataTypeNode[NatId, DataTypeId]] =
+    new Ordering[DataTypeNode[NatId, DataTypeId]] {
+    def compare(dt1: DataTypeNode[NatId, DataTypeId], dt2: DataTypeNode[NatId, DataTypeId]): Int =
       ???
   }
-
+*/
   implicit val scalarDataOrdering: Ordering[semantics.ScalarData] =
     new Ordering[semantics.ScalarData] {
     import semantics._
@@ -164,6 +175,7 @@ object Node {
       }
   }
 
+  // TODO: hash-cons literals data?
   implicit val dataOrdering: Ordering[semantics.Data] = new Ordering[semantics.Data] {
     import semantics._
 

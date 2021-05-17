@@ -9,7 +9,7 @@ object TvmGemm {
     val mm: Expr = tvmGemm.mm
     val variants = util.printTime("Elevate rewrite", Seq(
       tvmGemm.baseline(mm).get,
-      tvmGemm.blocking(mm).get,
+      tvmGemm.blockingPartial(mm).get,
       // tvmGemm.vectorization(mm).get,
       // tvmGemm.loopPerm(mm).get,
       // tvmGemm.arrayPacking(mm).get,
@@ -43,7 +43,7 @@ object TvmGemm {
       rules.reduceSeq,
       rules.combinatory.reduceSeqMapFusion,
       rules.combinatory.splitJoin(32),
-      rules.combinatory.blockedReduce(4),
+      // rules.combinatory.blockedReduce(4),
     ))
   }
 }
@@ -53,7 +53,7 @@ class TvmGemm extends test_util.Tests {
     val mm: Expr = tvmGemm.mm
     val variants = util.printTime("Elevate rewrite", Seq(
       tvmGemm.baseline(mm).get,
-      tvmGemm.blocking(mm).get,
+      tvmGemm.blockingPartial(mm).get,
       // tvmGemm.vectorization(mm).get,
       // tvmGemm.loopPerm(mm).get,
       // tvmGemm.arrayPacking(mm).get,
@@ -87,7 +87,7 @@ class TvmGemm extends test_util.Tests {
       rules.reduceSeq,
       rules.combinatory.reduceSeqMapFusion,
       rules.combinatory.splitJoin(32),
-      rules.combinatory.blockedReduce(4),
+      // rules.combinatory.blockedReduce(4),
     ))
   }
 }

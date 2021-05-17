@@ -18,7 +18,7 @@ object NamedRewrite {
   def init(name: String,
            rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
            conditions: Seq[NamedRewrite.Condition] = Seq(),
-          ): Rewrite[DefaultAnalysisData] = {
+          ): DefaultAnalysis.Rewrite = {
     import rise.core.DSL.infer.{preservingWithEnv, collectFreeEnv}
     import arithexpr.{arithmetic => ae}
 
@@ -196,7 +196,7 @@ object NamedRewrite {
     val lhsPat = makePat(typedLhs, Expr.Bound.empty, isRhs = false)
     val rhsPat = makePat(typedRhs, Expr.Bound.empty, isRhs = true)
 
-    type Applier = rise.eqsat.Applier[DefaultAnalysisData]
+    type Applier = DefaultAnalysis.Applier
     def shiftAppliers[S, V](pvm: PatternVarMap[S, V],
                             mkShift: (S, V) => (S, V) => Applier => Applier,
                             mkShiftCheck: (S, V) => (S, V) => Applier => Applier,
@@ -411,7 +411,7 @@ object NamedRewrite {
       }
     }
 
-    val searcher: Searcher[DefaultAnalysisData] = lhsPat.compile()
+    val searcher: DefaultAnalysis.Searcher = lhsPat.compile()
     val cond = conditions.foldRight((a: Applier) => a) { case (c, acc) =>
       c match {
         case NotFreeIn(notFree, in) =>
@@ -426,7 +426,7 @@ object NamedRewrite {
             case ((s, _, _), (pv, Known)) => (s, pv)
           }.get
           val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
-          def condF(egraph: EGraph[DefaultAnalysisData], eclass: EClassId, subst: Subst): Boolean =
+          def condF(egraph: DefaultAnalysis.EGraph, eclass: EClassId, subst: Subst): Boolean =
             !egraph.getMut(subst(iPV)).data.free.contains(nfIndex)
           (a: Applier) => ConditionalApplier(condF, Set(iPV), acc(a))
       }

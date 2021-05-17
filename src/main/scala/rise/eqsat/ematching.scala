@@ -16,15 +16,15 @@ object ematching {
     * @todo we could use heterogeneous or generic registers to avoid code duplication
     */
   case class AbstractMachine(regs: Vec[EClassId],
-                             nRegs: Vec[Nat],
-                             tRegs: Vec[Type]) {
+                             nRegs: Vec[NatId],
+                             tRegs: Vec[TypeId]) {
     def reg(r: Reg): EClassId = regs(r.n)
-    def nReg(r: NatReg): Nat = nRegs(r.n)
-    def tReg(r: TypeReg): Type = tRegs(r.n)
+    def nReg(r: NatReg): NatId = nRegs(r.n)
+    def tReg(r: TypeReg): TypeId = tRegs(r.n)
 
-    def run[D](egraph: EGraph[D],
-               instructions: Seq[Instruction],
-               yieldFn: () => Unit): Unit = {
+    def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+                        instructions: Seq[Instruction],
+                        yieldFn: () => Unit): Unit = {
       var instrs = instructions
       while (instrs.nonEmpty) {
         instrs.head match {
@@ -38,7 +38,7 @@ object ematching {
               matched.map(
                 id => regs += id,
                 n => nRegs += n,
-                dt => tRegs += Type(dt.node)
+                dt => tRegs += dt
               )
               run(egraph, instrs.tail, yieldFn)
             })
@@ -48,9 +48,9 @@ object ematching {
               return
             }
           case NatBind(node, i) =>
-            val matched = nReg(i)
-            if (matched.node.map(_ => ()) == node) {
-              matched.node.map(n => nRegs += n)
+            val matched = egraph(nReg(i))._1
+            if (matched.map(_ => ()) == node) {
+              matched.map(n => nRegs += n)
             } else {
               return
             }
@@ -59,12 +59,12 @@ object ematching {
               return
             }
           case TypeBind(node, i) =>
-            val matched = tReg(i)
-            if (matched.node.map(_ => (), _ => (), _ => ()) == node) {
-              matched.node.map(
+            val matched = egraph(tReg(i))._1
+            if (matched.map(_ => (), _ => (), _ => ()) == node) {
+              matched.map(
                 t => tRegs += t,
                 n => nRegs += n,
-                dt => tRegs += Type(dt.node)
+                dt => tRegs += dt
               )
             } else {
               return
@@ -74,7 +74,7 @@ object ematching {
               return
             }
           case DataTypeCheck(i) =>
-            if (!tReg(i).node.isInstanceOf[DataTypeNode[_, _]]) {
+            if (!egraph(tReg(i))._1.isInstanceOf[DataTypeNode[_, _]]) {
               return
             }
         }
@@ -108,7 +108,7 @@ object ematching {
                 var n2r: HashMap[NatPatternVar, NatReg],
                 var t2r: HashMap[TypePatternVar, TypeReg],
                 var dt2r: HashMap[DataTypePatternVar, TypeReg]) {
-    def run[D](egraph: EGraph[D], eclass: EClassId): Vec[Subst] = {
+    def run[ED, ND, TD](egraph: EGraph[ED, ND, TD], eclass: EClassId): Vec[Subst] = {
       val machine = AbstractMachine.init(eclass)
 
       val substs = Vec.empty[Subst]
@@ -117,7 +117,7 @@ object ematching {
         val substNats = VecMap(n2r.iterator.map { case (v, reg) => (v, machine.nReg(reg)) }.to(Vec))
         val substTypes = VecMap(t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) }.to(Vec))
         val substDataTypes = VecMap(dt2r.iterator.map { case (v, reg) =>
-          (v, DataType(machine.tReg(reg).node.asInstanceOf[DataTypeNode[Nat, DataType]]))
+          (v, machine.tReg(reg).asInstanceOf[DataTypeId])
         }.to(Vec))
         substs += Subst(substExprs, substNats, substTypes, substDataTypes)
       })
@@ -139,7 +139,7 @@ object ematching {
 
   def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
     import scala.math.Ordering.Implicits._
-    import Node.{ordering, eclassIdOrdering, natOrdering, dataTypeOrdering}
+    import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering}
 
     if (eclass.nodes.size < 50) {
       eclass.nodes.filter(n => node.matches(n)).foreach(f)

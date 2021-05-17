@@ -8,7 +8,7 @@ import java.io.{File, Writer, BufferedWriter, FileWriter}
   * @param flooding: if not empty,
   *   only print classes which are reachable from the given ones
   */
-case class EGraphDot(egraph: EGraph[_],
+case class EGraphDot(egraph: EGraph[_, _, _],
                      flooding: Seq[EClassId] = Seq(),
                      printTypes: Boolean = true) {
   def toSVG(path: String): Unit = {

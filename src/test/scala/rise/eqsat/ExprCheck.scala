@@ -1,6 +1,7 @@
 package rise.eqsat
 
 class ExprCheck extends test_util.Tests {
+  /* FIXME
   test("withArgument") {
     import ExprDSL._
 
@@ -119,7 +120,7 @@ class ExprCheck extends test_util.Tests {
       )
     )
   }
-
+*/
   test("fromNamed") {
     val named: Seq[rise.core.Expr] = {
       import rise.core.types._
