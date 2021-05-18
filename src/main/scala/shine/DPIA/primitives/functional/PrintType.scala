@@ -3,9 +3,7 @@ package shine.DPIA.primitives.functional
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.macros.Primitive.expPrimitive
 
-@expPrimitive
 final case class PrintType(msg: String,
                            dt: DataType,
                            access: AccessType,
@@ -15,4 +13,7 @@ final case class PrintType(msg: String,
 
   input :: expT(dt, access)
   override val t: ExpType = expT(dt, access)
+
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
+    PrintType(msg, v.data(dt), v.access(access), VisitAndRebuild(input, v))
 }

@@ -25,12 +25,13 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
   override def name: String = "OpenCL Host"
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
-    case KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), output, args) =>
-      kernelCallCmd(name, ls, gs, output, args, env)
-    case NewManagedBuffer(dt, access, Lambda(v, p)) =>
+    case k@KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), args) =>
+      kernelCallCmd(name, ls, gs, k.output, args, env)
+    case n@NewManagedBuffer(access) =>
+      val (dt, Lambda(v, p)) = n.unwrap
       newManagedBuffer(dt, access, v, p, env)
-    case HostExecution(params, body) =>
-      hostExecution(params, body, env)
+    case h@HostExecution(params) =>
+      hostExecution(params, h.body, env)
     case phrase => phrase |> super.cmd(env)
   }
 
@@ -202,7 +203,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
         C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
       case a: DepArrayType => ??? // TODO
       case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | _: OpaqueType |
-           _: shine.DPIA.Types.FragmentType | _: pipeline.type =>
+           _: shine.DPIA.Types.FragmentType =>
         throw new Exception(s"did not expect ${dt}")
     }
 

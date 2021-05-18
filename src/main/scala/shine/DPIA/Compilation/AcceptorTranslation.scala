@@ -90,7 +90,7 @@ object AcceptorTranslation {
     case AsVector(n, m, dt, access, array) =>
       acc(array)(AsVectorAcc(n, m, dt, A))
 
-    case AsVectorAligned(n, m, w, dt, array) =>
+    case AsVectorAligned(n, m, dt, access, array) =>
       acc(array)(AsVectorAcc(n, m, dt, A))
 
     case DepIdx(n, ft, index, array) =>
@@ -225,7 +225,7 @@ object AcceptorTranslation {
             y, x, A)))))
 
     case Scatter(n, m, dt, indices, input) =>
-      con(indices)(fun(expT(m`.`idx(n), read))(y =>
+      con(indices)(fun(expT(n`.`idx(m), read))(y =>
         acc(input)(ScatterAcc(n, m, dt, y, A))))
 
     case slide@Slide(n, sz, sp, dt, input) =>
@@ -283,12 +283,12 @@ object AcceptorTranslation {
             λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
           x)))
 
-    case ocl.KernelCall(name, localSize, globalSize, inTs, outT, args) =>
+    case ocl.KernelCall(name, localSize, globalSize, _, args) =>
       def rec(ts: Seq[Phrase[ExpType]],
-                  es: Seq[Phrase[ExpType]]): Phrase[CommType] = {
+              es: Seq[Phrase[ExpType]]): Phrase[CommType] = {
         ts match {
           case Nil =>
-            oclImp.KernelCallCmd(name, localSize, globalSize, A, es)
+            oclImp.KernelCallCmd(name, localSize, globalSize, es)(A.t.dataType, A)
           case Seq(arg, tail@_*) =>
             con(arg)(λ(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
         }
@@ -303,7 +303,7 @@ object AcceptorTranslation {
           λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
           x, A)))
 
-    case ocl.OpenCLFunctionCall(name, inTs, outT, args) =>
+    case fc@ocl.OpenCLFunctionCall(name, inTs, args) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
                   exps: Seq[Phrase[ExpType]],
                   inTs: Seq[DataType]): Phrase[CommType] = {
@@ -311,7 +311,7 @@ object AcceptorTranslation {
           // with only one argument left to process return the assignment of the OpenCLFunction call
           case Seq( (arg, inT) ) =>
             con(arg)(λ(expT(inT, read))(e =>
-              A :=|outT| ocl.OpenCLFunctionCall(name, inTs :+ inT, outT, exps :+ e) ))
+              A :=|fc.outT| ocl.OpenCLFunctionCall(name, inTs :+ inT, exps :+ e)(fc.outT) ))
           // with a `tail` of arguments left, recurse
           case Seq( (arg, inT), tail@_* ) =>
             con(arg)(λ(expT(inT, read))(e => rec(tail, exps :+ e, inTs :+ inT) ))
@@ -321,17 +321,17 @@ object AcceptorTranslation {
       rec(args zip inTs, Seq(), Seq())
 
     // CUDA
-    case cuda.AsFragment(rows, columns, d3, dataType, fragmentKind, matrix, layout) =>
+    case cuda.AsFragment(rows, columns, layers, dataType, fragmentKind, layout, matrix) =>
       con(matrix)(λ(ExpType(ArrayType(rows, ArrayType(columns, dataType)), read))(matrix =>
-        cudaImp.WmmaLoad(rows, columns, d3, dataType, fragmentKind, layout, matrix, A)))
+        cudaImp.WmmaLoad(rows, columns, layers, dataType, fragmentKind, layout, matrix, A)))
 
-    case cuda.AsMatrix(rows, columns, d3, dataType, fragment) =>
+    case cuda.AsMatrix(rows, columns, layers, dataType, fragment) =>
       con(fragment)(λ(ExpType(fragment.t.dataType, read))(fragment =>
-        cudaImp.WmmaStore(rows, columns, d3, dataType, fragment, A)))
+        cudaImp.WmmaStore(rows, columns, layers, dataType, fragment, A)))
 
-    case cuda.GenerateFragment(rows, columns, d3, dataType, fill, fragmentKind, layout) =>
+    case cuda.GenerateFragment(rows, columns, layers, dataType, frag, layout, fill) =>
       con(fill)(λ(ExpType(dataType, read))(fill =>
-        cudaImp.WmmaFill(rows, columns, d3, dataType, fill, fragmentKind, layout, A)))
+        cudaImp.WmmaFill(rows, columns, layers, dataType, frag, layout, fill, A)))
 
     case map@cuda.Map(level, dim) =>
       val (n, dt1, dt2, f, array) = map.unwrap
@@ -340,17 +340,17 @@ object AcceptorTranslation {
           λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
           x, A)))
 
-    case cuda.MapFragmentElements(fragType, fragment, fun) =>
-      con(fragment)(λ(expT(fragType, read))(input =>
-        shine.cuda.primitives.imperative.ForFragmentElements(fragType, input, A,
-          λ(expT(fragType.dataType, read))(x =>
-            λ(accT(fragType.dataType))(o =>
+    case cuda.MapFragment(rows, columns, layers, dt, frag, layout, fun, input) =>
+      con(input)(λ(expT(FragmentType(rows, columns, layers, dt, frag, layout), read))(input =>
+        shine.cuda.primitives.imperative.ForFragment(rows, columns, layers, dt, frag, layout, input, A,
+          λ(expT(dt, read))(x =>
+            λ(accT(dt))(o =>
               acc(fun(x))(o))))))
 
     case cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix) =>
       con(aMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.AMatrix, layoutA), read))(aMatrix =>
         con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layoutB), read))(bMatrix =>
-          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc), read))(cMatrix =>
+          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, FragmentKind.Accumulator, MatrixLayout.None), read))(cMatrix =>
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
   }
 }

@@ -186,6 +186,11 @@ object VisitAndRebuild {
       case r: PairType =>
         PairType(visitDataTypeAndRebuild(r.fst, v),
           visitDataTypeAndRebuild(r.snd, v))
-      case d => d
+      case ManagedBufferType(dt) =>
+        ManagedBufferType(visitDataTypeAndRebuild(dt, v))
+      case d => d match {
+        case _: ComposedType | _: BasicType | _: OpaqueType |
+             _: NatToDataApply | _: DataTypeIdentifier => d
+      }
     }
 }

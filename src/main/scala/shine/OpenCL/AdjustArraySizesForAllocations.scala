@@ -8,7 +8,7 @@ import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.OpenCL.{primitives => ocl}
 import shine.cuda.{primitives => cuda}
-import shine.cuda.primitives.functional.{AsMatrix, GenerateFragment, MapFragmentElements, TensorMatMultAdd, AsFragment}
+import shine.cuda.primitives.functional.{AsMatrix, GenerateFragment, MapFragment, TensorMatMultAdd, AsFragment}
 import shine.cuda.warpDim
 
 object AdjustArraySizesForAllocations {
@@ -85,7 +85,7 @@ object AdjustArraySizesForAllocations {
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunctionCall |
            _: BinOp | _: UnaryOp | _: GenerateFragment |
-           _: AsMatrix | _: AsFragment | _: MapFragmentElements |
+           _: AsMatrix | _: AsFragment | _: MapFragment |
            _: TensorMatMultAdd => parallInfo
 
       //TODO visit value first?
@@ -113,7 +113,7 @@ object AdjustArraySizesForAllocations {
           }
           val stride = determineStride(parallLevel, dim, addrSpace)
 
-          val outerDimension = ocl.imperative.IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
+          val outerDimension = ocl.imperative.IdxDistributeAcc(parallLevel)(adjSize, oldSize, stride, adjElemT, A)
 
           val arr = identifier(freshName("x"), accT(adjElemT))
           val mapFunBody = adjustedAcceptor(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
@@ -149,7 +149,7 @@ object AdjustArraySizesForAllocations {
           }
           val stride = determineStride(parallLevel, dim, addrSpace)
 
-          val outerDimension = ocl.imperative.IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E)
+          val outerDimension = ocl.imperative.IdxDistribute(parallLevel)(adjSize, oldSize, stride, adjElemT, E)
 
           val arr = identifier(freshName("arr"), expT(adjElemT, read))
           val mapFunBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
