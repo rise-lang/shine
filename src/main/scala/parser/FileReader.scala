@@ -1,6 +1,8 @@
 package parser
 
 import java.io.{File, FileInputStream, FileNotFoundException}
+import java.net.URI
+import java.nio.file.Paths
 
 /*
 reads the File and saves the name and the content of the file as an Array of Strings
@@ -11,6 +13,9 @@ case class FileReader(fileName: String) {
 
   val sourceLines: Array[String] = preLexer(readFile(fileName))
 
+  def toUri():URI=Paths.get(fileName).toUri
+
+  def ==(other:FileReader):Boolean=this.fileName==other.fileName
 
   private def preLexer(array: Array[String]): Array[String] ={
     deleteSimpleComments(array)

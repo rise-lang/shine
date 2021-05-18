@@ -22,8 +22,8 @@ abstract sealed class ErrorMessage(span:Option[Span]) {
   //def getErrorStackTraceElem():StackTraceElement=Thread.currentThread.getStackTrace().tail.tail.tail.tail.head
   //val errorStackTraceElem = getErrorStackTraceElem()
   val fileReader = s.file
-  val begin = s.begin
-  val end = s.end
+  val begin = s.range.begin
+  val end = s.range.end
   private def underline(string:String):String = {
     var str:String = ""
     for( a <- string){ str = str + a + "\u0332" }
@@ -84,108 +84,110 @@ abstract sealed class ErrorMessage(span:Option[Span]) {
 abstract sealed class PreAndErrorToken(span: Span) extends ErrorMessage(Some(span))
 
 final case class EndOfLine(span:Span) extends PreAndErrorToken(span){
-  require(span.begin == span.end, "span.begin is unequal to span.end")
+  require(begin == end, "begin is unequal to end")
   override def description() = "End of Line"
 }
 final case class EndOfFile(span:Span) extends PreAndErrorToken(span){
-  require(span.begin == span.end, "span.begin is unequal to span.end")
+  require(begin == end, "begin is unequal to end")
   override def description() = "End of File"
 }
 final case class UnknownSymbol(c:Char, span:Span) extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The character '" + c + "' is unknown"
 }
 final case class OnlyOneEqualSign(span:Span) extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "Only one EqualSign"
 }
 final case class NegSign(span:Span) extends PreAndErrorToken(span){
-  require(span.begin == span.end, "span.begin is unequal to span.end")
+  require(begin == end, "begin is unequal to end")
   override def description() = "A Negative Sign"
 }
 final case class IdentifierWithNotAllowedSymbol(unknownSymbol:Char, str:String, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The Identifier '" + str + "' has an unknown Symbol '" + unknownSymbol + "'"
 }
 final case class IdentifierBeginsWithUnderscore(span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "Identifier with an Underscore"
 }
 final case class IdentifierBeginsWithDigits(str:String, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The Identifier '"+ str+ "' begins with an Digits/a Number"
 }
 final case class NumberWithUnknownSymbol(unknownSymbol: Char, str:String, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The Number '" + str + "' has an unknown Symbol '" + unknownSymbol + "'"
 }
 final case class F32DeclaredAsI8(number:Float, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The number '" + number + "' is an F32 Number but it is declared as I8"
 }
 final case class F32DeclaredAsI32(number:Float, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The number '" + number + "' is an F32 Number but it is declared as I32"
 }
 final case class IdentifierBeginsWithAF32Number(str:String, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The Identifier '"+ str+ "' begins with a F32 Number"
 }
 final case class NumberWithUnderscore(str:String, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The Number '"+ str+ "' has an underscore in it"
 }
 final case class NotExpectedToken(expectedToken:String, givenToken:String, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "It is an '"+ expectedToken +"' expected. The Lexeme '" + givenToken +
     "' is not an '"+ expectedToken+ "'!"
 }
 
 final case class NotExpectedTwoBackslash(expectedToken:String, span:Span)
   extends PreAndErrorToken(span){
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "It is an '"+ expectedToken +"' expected. But we have here two '\\'!"
 }
 
 final case class ToShortToBeThisToken(expectedLength:Int, token:String, span:Span)
   extends PreAndErrorToken(span){
   require(expectedLength >0, "expectedLength is less or equal to zero")
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "the given length is less than "+ expectedLength +" for "+ token +"!"
 }
 final case class NOTanBinOperator(symbol: String, span:Span)
   extends PreAndErrorToken(span) {
-  require(span.begin == span.end, "span.begin is unequal to span.end")
+  require(begin == end, "begin is unequal to end")
   override def description() = "The Symbol '" + symbol + "' is not an Operator"
 }
 final case class NOTanUnOperator(symbol: String, span:Span)
   extends PreAndErrorToken(span) {
-  require(span.begin == span.end, "span.begin is unequal to span.end")
+  require(begin == end, "begin is unequal to end")
   override def description() = "The Symbol '" + symbol + "' is not an Operator"
 }
 
 final case class UnknownType(str: String, span:Span) extends PreAndErrorToken(span) {
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The Type '" + str + "' is not an accepted Type in RISE"
 }
 
 final case class UnknownKind(str: String, span:Span) extends PreAndErrorToken(span) {
-  require(span.begin.column == span.end.column, "not in one column")
+  require(begin.column == end.column, "not in one column")
   override def description() = "The Kind '" + str + "' is not an accepted Kind in RISE"
 }
 
 abstract sealed class ThisTokenShouldntBeHere(token: Token, span:Span)
   extends PreAndErrorToken(span) {
-  require(token.s.begin.column == token.s.end.column, "not in one column")
+  val begin_token = token.s.range.begin
+  val end_token = token.s.range.end
+  require(begin_token.column == end_token.column, "not in one column")
   override def description() = "The Token '" + token.toString + "' was not here expected"
 }
 

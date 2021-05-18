@@ -24,7 +24,8 @@ class LexerTest extends  AnyFlatSpec {
         EqualsSign(_)::Backslash(_)::Identifier("a",_)::Arrow(_)::
         Backslash(_)::Identifier("x",_)::Arrow(_)::
         Identifier("concat",_):: Identifier("a",_)::Identifier("x",
-        Span(FileReader("src/test/scala/parser/readFiles/filesToLex/arrayType.rise"), Location(1, 21), Location(1,22)))::EndNamedExpr(_)
+        Span(FileReader("src/test/scala/parser/readFiles/filesToLex/arrayType.rise"),
+        Range(Location(1, 21), Location(1,22))))::EndNamedExpr(_)
         :: Nil => true
       case BeginTypAnnotatedIdent(_):: Identifier("f", _)::
         DoubleColons(_) :: NatNumber(5,_) :: Dot(_)::ScalarType(IntTyp(), _)::

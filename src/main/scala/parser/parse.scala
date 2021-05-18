@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 object parse {
 
-  val SpanPlaceholder = Span(FileReader("src/test/scala/parser/readFiles/Placeholder.rise"), Location(0,0), Location(0,0))
+  val SpanPlaceholder = Span(FileReader("src/test/scala/parser/readFiles/Placeholder.rise"), Range(Location(0,0), Location(0,0)))
 
 
   def giveEveryExpr(map:MapFkt):MapExpr={
@@ -1854,7 +1854,7 @@ the syntax-Tree has on top an Lambda-Expression
       case (Right(e),errorList2) => return (Right(e),errorList2.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
     val spanOfBackslash = parseState.tokenStream.head.s
-    val span = Span(spanOfBackslash.file,spanOfBackslash.begin, expr.span.head.end)
+    val span = Span(spanOfBackslash.file,Range(spanOfBackslash.range.begin, expr.span.head.range.end))
     val lambda = r.Lambda(idName, expr)(rt.TypePlaceholder, Some(span))
     val myNewParseState = ParseState(toks, SExpr(lambda) :: parseState.parsedSynElems, mapDepL, spanList, newArgumentTypeList)
     //println("myNewParseState: "+ myNewParseState)
