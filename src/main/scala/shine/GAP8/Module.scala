@@ -30,6 +30,10 @@ object Module {
        |""".stripMargin
   }
 
+  /**
+    * Transforms C.Module to GAP8.Module by adding necessary declarations, structure unpacking code, and changing
+    * interface of the generated function to conform with the GAP8 low-level accelerator function interface.
+    * */
   def fromCModule(cmodule: C.Module): Module = {
 
     val accFunction = cmodule
@@ -82,12 +86,16 @@ object Module {
         Seq(ParamKind(DPIA.Types.OpaqueType("void*"), C.AST.ParamKind.Kind.input))
     )
 
+    /**
+      * TODO: Add support for adding the appropriate host code for the GAP8 platform. This wraps only one accelerator
+      * function in GAP8.Module, host code being an empty C.Module for now.
+      * */
     Module(
-      cmodule.copy(
+      C.Module(Seq(), Seq(), Seq()),
+      Seq(cmodule.copy(
         decls = cmodule.decls ++ Seq(structDecl),
         functions = cmodule.functions.filterNot(_.name.equalsIgnoreCase(clusterFunctionName)) ++ Seq(wrappedFunction)
-      ),
-      Seq()
+      ))
     )
 
   }
