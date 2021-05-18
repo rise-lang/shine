@@ -105,7 +105,7 @@ class autotuning extends test_util.Tests {
         in[i] = 1;
       }
 
-      foo(ctx, output, input, input);
+      foo_init_run(ctx, output, input, input);
 
       float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
 

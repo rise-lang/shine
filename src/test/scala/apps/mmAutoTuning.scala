@@ -1,7 +1,6 @@
 package apps
 
 
-import apps.mm.id
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.autotune
 import rise.core._
@@ -16,6 +15,8 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 
 class mmAutoTuning extends test_util.Tests {
+
+  val id = fun(x => x)
 
   val main: (Int, Int, Int) => String = (N,M,O) => {
     s"""
@@ -33,11 +34,12 @@ class mmAutoTuning extends test_util.Tests {
         inA[i] = 1;
       }
 
-      float* inB = hostBufferSync(ctx, inputA, M * O * sizeof(float), HOST_WRITE);
+      float* inB = hostBufferSync(ctx, inputB, M * O * sizeof(float), HOST_WRITE);
       for (int i = 0; i < N; i++) {
         inB[i] = 1;
       }
-      foo(ctx, outputC, inputA, inputB);
+
+      foo_init_run(ctx, outputC, inputA, inputB);
 
       float* out = hostBufferSync(ctx, output, N * O * sizeof(float), HOST_READ);
 
