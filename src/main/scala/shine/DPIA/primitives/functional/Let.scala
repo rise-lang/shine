@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Let(val dt1: DataType, val dt2: DataType, val a: AccessType, val value: Phrase[ExpType], val f: Phrase[FunType[ExpType, ExpType]]) extends ExpPrimitive {
-  {
+  assert {
     value :: expT(dt1, read)
     f :: FunType(expT(dt1, read), expT(dt2, a))
+    true
   }
   override val t: ExpType = expT(dt2, a)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Let = new Let(v.data(dt1), v.data(dt2), v.access(a), VisitAndRebuild(value, v), VisitAndRebuild(f, v))

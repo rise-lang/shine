@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Seq(val c1: Phrase[CommType], val c2: Phrase[CommType]) extends CommandPrimitive {
-  {
+  assert {
     c1 :: comm
     c2 :: comm
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Seq = new Seq(VisitAndRebuild(c1, v), VisitAndRebuild(c2, v))

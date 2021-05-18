@@ -496,9 +496,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case MakeArray(elems) => path match {
+    case m@MakeArray(_) => path match {
       case (i: CIntExpr) :: ps => try {
-        elems(i.eval) |> exp(env, ps, cont)
+        m.elements(i.eval) |> exp(env, ps, cont)
       } catch {
         case NotEvaluableException() => error(s"could not evaluate $i")
       }
@@ -509,8 +509,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case DepIdx(_, _, i, e) => e |> exp(env, CIntExpr(i) :: path, cont)
 
-    case ffc@ForeignFunctionCall(f, inTs, args) =>
-      CCodeGen.codeGenForeignFunctionCall(f, inTs, ffc.outT, args, env, fe =>
+    case ffc@ForeignFunctionCall(f, _) =>
+      CCodeGen.codeGenForeignFunctionCall(f, ffc.inTs, ffc.outT, ffc.args, env, fe =>
         generateAccess(ffc.outT, fe, path, env, cont)
       )
 
@@ -830,6 +830,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
+        case NatAsIntData(n) =>
+          C.AST.Literal(n.toString)
         case ArrayData(a) => d.dataType match {
           case ArrayType(_, ArrayType(_, _)) =>
             codeGenLiteral(ArrayData(a.flatten(d => d.asInstanceOf[ArrayData].a)))

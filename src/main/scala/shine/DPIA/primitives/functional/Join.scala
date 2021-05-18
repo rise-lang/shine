@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Join(val n: Nat, val m: Nat, val a: AccessType, val dt: DataType, val array: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     array :: expT(ArrayType(n, ArrayType(m, dt)), a)
+    true
   }
   override val t: ExpType = expT(ArrayType(n * m, dt), a)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Join = new Join(v.nat(n), v.nat(m), v.access(a), v.data(dt), VisitAndRebuild(array, v))

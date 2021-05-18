@@ -283,18 +283,18 @@ object AcceptorTranslation {
             λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
           x)))
 
-    case ocl.KernelCall(name, localSize, globalSize, _, args) =>
+    case kc@ocl.KernelCall(name, localSize, globalSize, n) =>
       def rec(ts: Seq[Phrase[ExpType]],
               es: Seq[Phrase[ExpType]]): Phrase[CommType] = {
         ts match {
           case Nil =>
-            oclImp.KernelCallCmd(name, localSize, globalSize, es)(A.t.dataType, A)
+            oclImp.KernelCallCmd(name, localSize, globalSize, n)(kc.inTs, kc.outT, kc.args, A)
           case Seq(arg, tail@_*) =>
             con(arg)(λ(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
         }
       }
 
-      rec(args, Seq())
+      rec(kc.args, Seq())
 
     case map@ocl.Map(level, dim) =>
       val (n, dt1, dt2, f, array) = map.unwrap
@@ -303,7 +303,7 @@ object AcceptorTranslation {
           λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
           x, A)))
 
-    case fc@ocl.OpenCLFunctionCall(name, inTs, args) =>
+    case fc@ocl.OpenCLFunctionCall(name, n) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
                   exps: Seq[Phrase[ExpType]],
                   inTs: Seq[DataType]): Phrase[CommType] = {
@@ -311,14 +311,14 @@ object AcceptorTranslation {
           // with only one argument left to process return the assignment of the OpenCLFunction call
           case Seq( (arg, inT) ) =>
             con(arg)(λ(expT(inT, read))(e =>
-              A :=|fc.outT| ocl.OpenCLFunctionCall(name, inTs :+ inT, exps :+ e)(fc.outT) ))
+              A :=|fc.outT| ocl.OpenCLFunctionCall(name, n)(inTs :+ inT, fc.outT, exps :+ e) ))
           // with a `tail` of arguments left, recurse
           case Seq( (arg, inT), tail@_* ) =>
             con(arg)(λ(expT(inT, read))(e => rec(tail, exps :+ e, inTs :+ inT) ))
         }
       }
 
-      rec(args zip inTs, Seq(), Seq())
+      rec(fc.args zip fc.inTs, Seq(), Seq())
 
     // CUDA
     case cuda.AsFragment(rows, columns, layers, dataType, fragmentKind, layout, matrix) =>

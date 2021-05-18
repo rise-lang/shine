@@ -11,11 +11,8 @@ def idxDistribute{parallelismLevel: shine.OpenCL.ParallelismLevel}
 def idxDistributeAcc{parallelismLevel: shine.OpenCL.ParallelismLevel}
                     (m: nat, n: nat, stride: nat, dt: data, array: acc[m.dt]): acc[n.dt]
 
-def kernelCallCmd{name: String,
-                  localSize: shine.OpenCL.LocalSize,
-                  globalSize: shine.OpenCL.GlobalSize,
-                  args: Seq[Phrase[ExpType]]}
-                 (dt: data, output: acc[dt]): comm
+def kernelCallCmd{name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, n: Int}
+                 (inTs: n*data, dt: data, args: n*exp[*inTs, read], output: acc[dt]): comm
 
 def new(a: address, dt: data, f: var[dt] -> comm): comm
 

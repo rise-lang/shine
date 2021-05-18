@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class IdxVecAcc(val n: Nat, val dt: DataType, val index: Phrase[ExpType], val vector: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     index :: expT(IndexType(n), read)
     vector :: accT(VectorType(n, dt))
+    true
   }
   override val t: AccType = accT(dt)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): IdxVecAcc = new IdxVecAcc(v.nat(n), v.data(dt), VisitAndRebuild(index, v), VisitAndRebuild(vector, v))

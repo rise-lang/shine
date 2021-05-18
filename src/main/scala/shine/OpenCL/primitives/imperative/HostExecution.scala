@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class HostExecution(params: Map[Identifier[_ <: PhraseType], shine.OpenCL.AccessFlags])(val body: Phrase[CommType]) extends CommandPrimitive {
-  {
+  assert {
     body :: comm
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): HostExecution = new HostExecution(params.map({

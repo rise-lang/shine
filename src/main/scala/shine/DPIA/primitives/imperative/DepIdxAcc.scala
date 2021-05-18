@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class DepIdxAcc(val n: Nat, val ft: NatToData, val index: Nat, val array: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     array :: accT(DepArrayType(n, ft))
+    true
   }
   override val t: AccType = accT(NatToDataApply(ft, index))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): DepIdxAcc = new DepIdxAcc(v.nat(n), v.natToData(ft), v.nat(index), VisitAndRebuild(array, v))

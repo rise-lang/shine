@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class Transpose(val n: Nat, val m: Nat, val dt: DataType, val a: AccessType, val array: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     array :: expT(ArrayType(n, ArrayType(m, dt)), a)
+    true
   }
   override val t: ExpType = expT(ArrayType(m, ArrayType(n, dt)), a)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Transpose = new Transpose(v.nat(n), v.nat(m), v.data(dt), v.access(a), VisitAndRebuild(array, v))

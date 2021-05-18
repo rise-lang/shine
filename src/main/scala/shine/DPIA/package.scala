@@ -142,6 +142,12 @@ package object DPIA {
     }
   }
 
+  object dFunT {
+    def apply(d: rt.DataTypeIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[DataKind, PhraseType](fromRise.dataTypeIdentifier(d), t)
+    }
+  }
+
   object aFunT {
     def apply(a: rt.AddressSpaceIdentifier, t: PhraseType): PhraseType = {
       DepFunType[AddressSpaceKind, PhraseType](

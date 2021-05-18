@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class GenerateFragment(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: FragmentKind, val layout: MatrixLayout, val fill: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     fill :: expT(dt, read)
+    true
   }
   override val t: ExpType = expT(FragmentType(rows, columns, layers, dt, frag, layout), write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): GenerateFragment = new GenerateFragment(v.nat(rows), v.nat(columns), v.nat(layers), v.data(dt), frag, layout, VisitAndRebuild(fill, v))

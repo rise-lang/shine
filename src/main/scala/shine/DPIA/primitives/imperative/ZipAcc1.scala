@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class ZipAcc1(val n: Nat, val dt1: DataType, val dt2: DataType, val array: Phrase[AccType]) extends AccPrimitive {
-  {
+  assert {
     array :: accT(ArrayType(n, PairType(dt1, dt2)))
+    true
   }
   override val t: AccType = accT(ArrayType(n, dt1))
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): ZipAcc1 = new ZipAcc1(v.nat(n), v.data(dt1), v.data(dt2), VisitAndRebuild(array, v))

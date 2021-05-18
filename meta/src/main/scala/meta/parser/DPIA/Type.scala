@@ -16,6 +16,8 @@ object Type {
     case class FunType(inT: AST, outT: AST) extends AST
     case class DepFunType(id: Identifier, kind: Kind.AST, t: AST) extends AST
     case class Identifier(name: String) extends AST
+
+    case class VariadicType(n: Identifier, ty: AST) extends AST
   }
 
   object Access {
@@ -60,6 +62,10 @@ object Type {
 
     def NonFunPhraseType: P[AST] = P( ExpType | AccType | VarType | CommType | PairType | DepFunType )
 
-    P( FunType | NonFunPhraseType )
+    def OnlyPhraseType: P[AST] = P( FunType | NonFunPhraseType )
+
+    def VariadicType: P[AST] = P(Identifier.map(AST.Identifier) ~ "*" ~ OnlyPhraseType).map(AST.VariadicType.tupled)
+
+    OnlyPhraseType | VariadicType
   }
 }

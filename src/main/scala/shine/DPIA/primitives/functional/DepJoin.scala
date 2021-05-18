@@ -8,8 +8,9 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class DepJoin(val n: Nat, val lenF: NatToNat, val dt: DataType, val array: Phrase[ExpType]) extends ExpPrimitive {
-  {
+  assert {
     array :: expT(DepArrayType(n, n2dtFun { (i: NatIdentifier) => ArrayType(lenF(i), dt) }), read)
+    true
   }
   override val t: ExpType = expT(ArrayType(BigSum(from = 0, upTo = n - 1, (i: Nat) => lenF(i)), dt), read)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): DepJoin = new DepJoin(v.nat(n), v.natToNat(lenF), v.data(dt), VisitAndRebuild(array, v))

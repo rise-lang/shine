@@ -8,9 +8,10 @@ import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 final case class WmmaStore(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val value: Phrase[ExpType], val matrixTile: Phrase[AccType]) extends CommandPrimitive {
-  {
+  assert {
     value :: expT(FragmentType(rows, columns, layers, dt, FragmentKind.Accumulator, MatrixLayout.None), read)
     matrixTile :: accT(ArrayType(rows, ArrayType(columns, dt)))
+    true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): WmmaStore = new WmmaStore(v.nat(rows), v.nat(columns), v.nat(layers), v.data(dt), VisitAndRebuild(value, v), VisitAndRebuild(matrixTile, v))
