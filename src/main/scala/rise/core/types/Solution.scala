@@ -1,7 +1,8 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr
-import parser.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError}
+import parser.ErrorMessage.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError}
+import parser.ErrorMessage.NatCollectionConstraintError
 import rise.core.types.Solution.{AddrCTE, BoolCTE, DepCTE, NatCTE, NatToDataCTE, TypeCTE}
 import rise.core.{Expr, substitute, traversal}
 

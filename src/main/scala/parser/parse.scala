@@ -3,6 +3,7 @@ package parser //old branch 17. Dezember 2020
 import rise.{core => r, openCL => o}
 import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
+import parser.ErrorMessage.{ErrorList, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, UsedOrFailedRule, isFailed, isMatched, isParsing}
 import rise.core.DSL.ToBeTyped
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.ForeignFunction
@@ -294,7 +295,7 @@ object parse {
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     val ParseState(tokens, parsedSynElems, mapDepL, spanList, argumentsTypes) = parseState
     if (tokens.isEmpty) {
-      val e = TokListIsEmpty(SpanPlaceholder, "Ident")
+      val e = ErrorMessage.TokListIsEmpty(SpanPlaceholder, "Ident")
       return (Right(e),errorList.add(e))
     }
     val nextToken :: remainderTokens = tokens
@@ -323,7 +324,7 @@ object parse {
         }
       }
       case tok => {
-        val e = NotCorrectToken(tok, "Ident", "Ident")
+        val e = ErrorMessage.NotCorrectToken(tok, "Ident", "Ident")
         (Right(e),errorList.add(e))
       }
     }
@@ -350,7 +351,7 @@ object parse {
         case Some(RAddrSpace()) => throw new IllegalStateException("DepAddrSpace is not implemented yet")
       }
       case t => {
-        val e = NotCorrectToken(t, "TypeIdent", "TypeIdent")
+        val e = ErrorMessage.NotCorrectToken(t, "TypeIdent", "TypeIdent")
         (Right(e),errorList.add(e))
       }
     }
@@ -362,7 +363,7 @@ object parse {
     //println("parseTypeIdent: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList, argumentsTypes) = parseState
     if (tokens.isEmpty) {
-      val e = TokListIsEmpty(SpanPlaceholder, "TypeIdent")
+      val e = ErrorMessage.TokListIsEmpty(SpanPlaceholder, "TypeIdent")
       return (Right(e),errorList.add(e))
     }
     val nextToken :: remainderTokens = tokens
@@ -371,7 +372,7 @@ object parse {
       case TypeIdentifier(name, spanId) => (Left(ParseState(remainderTokens, SType(rt.TypeIdentifier(name), spanId) :: parsedSynElems,
        mapDepL, spanList, argumentsTypes)),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       case tok => {
-        val e =NotCorrectToken(tok, "TypeIdent", "TypeIdent")
+        val e =ErrorMessage.NotCorrectToken(tok, "TypeIdent", "TypeIdent")
         (Right(e),errorList.add(e))
       }
     }
@@ -437,13 +438,13 @@ object parse {
             }
           }
           case notAtype => {
-            val e = NotCorrectToken(typeToken, "ScalarType", "TypeAnnotation")
+            val e = ErrorMessage.NotCorrectToken(typeToken, "ScalarType", "TypeAnnotation")
             (Right(e),errorList.add(e))
           }
         }
       }
       case notAColon => {
-        val e = NotCorrectToken(notAColon, "Colon", "TypeAnnotation")
+        val e = ErrorMessage.NotCorrectToken(notAColon, "Colon", "TypeAnnotation")
         (Right(e),errorList.add(e))
       }
     }
@@ -463,7 +464,7 @@ object parse {
         val parsedInType = getScalarType(concreteType)
         val inT = parsedInType match {
           case None => {
-            val e = NotAcceptedScalarType(sp, concreteType,"VecType")
+            val e = ErrorMessage.NotAcceptedScalarType(sp, concreteType,"VecType")
             return (Right(e),errorList.add(e))
           }
           case Some(value) => value
@@ -472,7 +473,7 @@ object parse {
           mapDepL, spanList, argumentsTypes)),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       }
       case notAtype => {
-        val e = NotCorrectToken(notAtype, "VectorType", "VecType")
+        val e = ErrorMessage.NotCorrectToken(notAtype, "VectorType", "VecType")
         (Right(e),errorList.add(e))
       }
     }
@@ -492,7 +493,7 @@ object parse {
         val parsedInType = getScalarType(typ)
         val inT = parsedInType match {
           case None => {
-            val e = NotAcceptedScalarType(spanTyp, typ,"ScalarType")
+            val e = ErrorMessage.NotAcceptedScalarType(spanTyp, typ,"ScalarType")
             return (Right(e), errorList.add(e))
           }
           case Some(value) => value
@@ -501,7 +502,7 @@ object parse {
           errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       }
       case notAtype => {
-        val e = NotCorrectToken(notAtype, "ScalarType", "ScalarType")
+        val e = ErrorMessage.NotCorrectToken(notAtype, "ScalarType", "ScalarType")
         (Right(e), errorList.add(e))
       }
     }
@@ -576,12 +577,12 @@ object parse {
           }
         }
         case notAnDepArrow => {
-          val e = NotCorrectToken(notAnDepArrow, "DepArrow", "KindWithDepArrow")
+          val e = ErrorMessage.NotCorrectToken(notAnDepArrow, "DepArrow", "KindWithDepArrow")
           (Right(e),errorList.add(e))
         }
       }
       case t => {
-        val e = NotCorrectToken(t, "Kind", "KindWithDepArrow")
+        val e = ErrorMessage.NotCorrectToken(t, "Kind", "KindWithDepArrow")
         (Right(e),errorList.add(e))
       }
     }
@@ -619,7 +620,7 @@ object parse {
               case Some(mL)=> mL.update(nameOfIdentifier, RAddrSpace())
             }
             case ki => {
-              val e = NotCorrectKind(span, ki, "KindWithDepArrow")
+              val e = ErrorMessage.NotCorrectKind(span, ki, "KindWithDepArrow")
               return (Right(e),errorList.add(e))
             }
           }
@@ -638,7 +639,7 @@ object parse {
                     case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](
                       rt.AddressSpaceIdentifier(nameOfIdentifier), outT), sp)
                     case ki => {
-                      val e = NotCorrectKind(sp, ki, "KindWithDepArrow")
+                      val e = ErrorMessage.NotCorrectKind(sp, ki, "KindWithDepArrow")
                       return (Right(e),errorL.add(e))
                     }
                   }
@@ -654,12 +655,12 @@ object parse {
           }
         }
         case notAnDepArrow => {
-          val e = NotCorrectToken(notAnDepArrow, "DepArrow", "KindWithDepArrow")
+          val e = ErrorMessage.NotCorrectToken(notAnDepArrow, "DepArrow", "KindWithDepArrow")
           (Right(e),errorList.add(e))
         }
       }
       case t => {
-        val e = NotCorrectToken(t, "Kind", "KindWithDepArrow")
+        val e = ErrorMessage.NotCorrectToken(t, "Kind", "KindWithDepArrow")
         (Right(e),errorList.add(e))
       }
     }
@@ -669,7 +670,7 @@ object parse {
   private def isMinLen(l:List[Token], minLen: Int, whatToParse:String):Option[PreAndErrorSynElems]={
     if (l.length < minLen) {
       if(l.isEmpty){
-        return Some(TokListIsEmpty(SpanPlaceholder, whatToParse))
+        return Some(ErrorMessage.TokListIsEmpty(SpanPlaceholder, whatToParse))
       }
       return Some(TokListTooSmall(l, minLen, whatToParse))
     }
@@ -731,7 +732,7 @@ object parse {
     nextToken match {
       case Arrow(_) =>
       case tok => {
-        val e = NotCorrectToken(tok, "Arrow", "Arrow")
+        val e = ErrorMessage.NotCorrectToken(tok, "Arrow", "Arrow")
         return (Right(e),errorList.add(e))
       }
     }
@@ -1117,7 +1118,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
     case e :: list => {
       Right(NotCorrectSynElem(e, "Identifier", whatToParse))
     }
-    case Nil => Right(SynListIsEmpty(SpanPlaceholder, whatToParse))
+    case Nil => Right(ErrorMessage.SynListIsEmpty(SpanPlaceholder, whatToParse))
   }
 }
 
@@ -1310,7 +1311,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
       }
       case SSeq(_,sp)::Nil => {
-        val e = SynListIsEmpty(sp, whatToParse)
+        val e = ErrorMessage.SynListIsEmpty(sp, whatToParse)
         return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
       }
       case x::list => {
@@ -1318,7 +1319,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
       }
       case Nil =>{
-        val e = SynListIsEmpty(SpanPlaceholder, whatToParse)
+        val e = ErrorMessage.SynListIsEmpty(SpanPlaceholder, whatToParse)
         return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
       }
     }
@@ -1645,7 +1646,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
           case EndTypAnnotatedIdent(_) => (Left(p),eL.add(UsedOrFailedRule(isMatched(), whatToParse)))
           case RParentheses(_) => (Left(p),eL.add(UsedOrFailedRule(isMatched(), whatToParse)))
           case a => {
-            val e = NotCorrectToken(a, "Arrow, EndTypAnn or RParentheses", "FunctionType")
+            val e = ErrorMessage.NotCorrectToken(a, "Arrow, EndTypAnn or RParentheses", "FunctionType")
             (Right(e),eL.add(e))
           }
         }
@@ -1706,7 +1707,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
 
         val (e1, sp1) = getExprAndSpan(synElems.head,parseState).get
         if(synElems.tail.isEmpty) {
-          val e = SynListIsEmpty(sp1, "Composition")
+          val e = ErrorMessage.SynListIsEmpty(sp1, "Composition")
           return (Right(e),eL.add(e))
         }
         val (e2, sp2) = getExprAndSpan(synElems.tail.head,parseState).get
@@ -2154,7 +2155,7 @@ the syntax-Tree has on top an Lambda-Expression
                                     newPS.parsedSynElems.head
                                   }else {
                                     if(newPS.parsedSynElems.isEmpty){
-                                      val e = SynListIsEmpty(newPS.tokenStream.head.s, "MaybeAppExpr")
+                                      val e = ErrorMessage.SynListIsEmpty(newPS.tokenStream.head.s, "MaybeAppExpr")
                                       return (Right(e), newEL.add(e))
                                     }
                                     val expr = combineExpressionsDependent(newPS.parsedSynElems, newPS.mapDepL.get)
@@ -2174,7 +2175,7 @@ the syntax-Tree has on top an Lambda-Expression
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     val ParseState(tokens, parsedExprs, mapDepL, spanList,argumentsTypes) = parseState
     if (tokens.isEmpty) {
-      val e = TokListIsEmpty(SpanPlaceholder, "EqualsSign")
+      val e = ErrorMessage.TokListIsEmpty(SpanPlaceholder, "EqualsSign")
       return (Right(e),errorList.add(e))
     }
     val nextToken :: remainderTokens = tokens
@@ -2182,7 +2183,7 @@ the syntax-Tree has on top an Lambda-Expression
     nextToken match {
       case EqualsSign(_) =>
       case tok => {
-        val e = NotCorrectToken(tok, "EqualsSign", "EqualsSign")
+        val e = ErrorMessage.NotCorrectToken(tok, "EqualsSign", "EqualsSign")
         return (Right(e),errorList.add(e))
       }
     }
@@ -2196,7 +2197,7 @@ the syntax-Tree has on top an Lambda-Expression
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     val ParseState(tokens, parsedExprs, mapDepL, spanList,argumentsTypes) = parseState
     if (tokens.isEmpty) {
-      val e = TokListIsEmpty(SpanPlaceholder, "DoubleColons")
+      val e = ErrorMessage.TokListIsEmpty(SpanPlaceholder, "DoubleColons")
       return (Right(e),errorList.add(e))
     }
     val nextToken :: remainderTokens = tokens
@@ -2204,7 +2205,7 @@ the syntax-Tree has on top an Lambda-Expression
     nextToken match {
       case DoubleColons(_) =>
       case tok => {
-        val e = NotCorrectToken(tok, "DoubleColons", "DoubleColons" )
+        val e = ErrorMessage.NotCorrectToken(tok, "DoubleColons", "DoubleColons" )
         return (Right(e),errorList.add(e))
       }
     }
@@ -2218,7 +2219,7 @@ the syntax-Tree has on top an Lambda-Expression
     val whatToParse = "AddrSpaceType"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     if (parseState.tokenStream.isEmpty) {
-      val e = TokListIsEmpty(SpanPlaceholder, "AddrSpacerType")
+      val e = ErrorMessage.TokListIsEmpty(SpanPlaceholder, "AddrSpacerType")
       return (Right(e),errorList.add(e))
     }
     val nextToken :: remainderTokens = parseState.tokenStream
@@ -2236,7 +2237,7 @@ the syntax-Tree has on top an Lambda-Expression
           errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       }
       case tok => {
-        val e = NotCorrectToken(tok, "addrSpaceType", "AddrSpaceType")
+        val e = ErrorMessage.NotCorrectToken(tok, "addrSpaceType", "AddrSpaceType")
         (Right(e),errorList.add(e))
       }
     }
@@ -2255,7 +2256,7 @@ the syntax-Tree has on top an Lambda-Expression
           SExpr(r.primitives.not(Some(span))) :: parseState.parsedSynElems, parseState.mapDepL, parseState.spanList, parseState.argumentsTypes) )
       }
       case tok => {
-        val e = NotCorrectToken(tok, "UnOp", "UnOperator")
+        val e = ErrorMessage.NotCorrectToken(tok, "UnOp", "UnOperator")
         return (Right(e), errorList.add(e))
       }
     }
@@ -2268,7 +2269,7 @@ the syntax-Tree has on top an Lambda-Expression
     //println("ParseNumber: " + parseState)
     val ParseState(tokens, parsedSynElems, mapDepL, spanList,argumentsTypes)  = parseState
     if(tokens.isEmpty){
-      val e = TokListIsEmpty(SpanPlaceholder, "Number")
+      val e = ErrorMessage.TokListIsEmpty(SpanPlaceholder, "Number")
       return (Right(e),errorList.add(e))
     }
     val nextToken :: remainderTokens = tokens
@@ -2283,7 +2284,7 @@ the syntax-Tree has on top an Lambda-Expression
       case F64(number, span) =>
         Left(ParseState(remainderTokens, SExpr(r.Literal(rS.DoubleData(number),Some(span))) :: parsedSynElems, mapDepL, spanList,argumentsTypes) )
       case tok => {
-        val e = NotCorrectToken(tok, "Integer of Float", "Number")
+        val e = ErrorMessage.NotCorrectToken(tok, "Integer of Float", "Number")
         return (Right(e),errorList.add(e))
       }
     }
@@ -2324,12 +2325,12 @@ the syntax-Tree has on top an Lambda-Expression
         case tok => {
           //println("Das hier kann nicht sein, weil alle Operatoren müsste ich abgedeckt haben. BinOp: '" + tok +
           //  "' is no BinOperator!")
-          val e = NotCorrectToken(BinOp(op, span), "BinOp", "BinOp")
+          val e = ErrorMessage.NotCorrectToken(BinOp(op, span), "BinOp", "BinOp")
           return (Right(e),errorList.add(e))
         }
       }
       case tok => {
-        val e = NotCorrectToken(tok, "BinOp", "BinOp")
+        val e = ErrorMessage.NotCorrectToken(tok, "BinOp", "BinOp")
         return (Right(e),errorList.add(e))
       }
     }
@@ -2348,7 +2349,7 @@ the syntax-Tree has on top an Lambda-Expression
         SExpr(r.Identifier(body)(rt.TypePlaceholder, Some(span)))::parsedSynElems, mapDepL, spanList,argumentsTypes) ),
         errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       case tok => {
-        val e = NotCorrectToken(tok, "ForeignFctBodyColumn", whatToParse)
+        val e = ErrorMessage.NotCorrectToken(tok, "ForeignFctBodyColumn", whatToParse)
         (Right(e),errorList.add(e))
       }
     }
@@ -2365,7 +2366,7 @@ the syntax-Tree has on top an Lambda-Expression
       case Comma(_) => (Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList,argumentsTypes) ),
         errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       case tok => {
-        val e = NotCorrectToken(tok, "Comma", "Comma")
+        val e = ErrorMessage.NotCorrectToken(tok, "Comma", "Comma")
         (Right(e),errorList.add(e))
       }
     }
@@ -2383,7 +2384,7 @@ the syntax-Tree has on top an Lambda-Expression
       case DepArrow(_) => (Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList,argumentsTypes) ),
         errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       case tok => {
-        val e = NotCorrectToken(tok, "DepArrow", "DepArrow")
+        val e = ErrorMessage.NotCorrectToken(tok, "DepArrow", "DepArrow")
         (Right(e),errorList.add(e))
       }
     }
@@ -2399,7 +2400,7 @@ the syntax-Tree has on top an Lambda-Expression
       case Colon(_) => (Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList,argumentsTypes) ),
         errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       case tok => {
-        val e = NotCorrectToken(tok, "Colon", "Colon")
+        val e = ErrorMessage.NotCorrectToken(tok, "Colon", "Colon")
         (Right(e),errorList.add(e))
       }
     }
@@ -2419,7 +2420,7 @@ the syntax-Tree has on top an Lambda-Expression
       case Dot(_) => (Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList,argumentsTypes) ),
         errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       case tok => {
-        val e = NotCorrectToken(tok, "Dot", "Dot")
+        val e = ErrorMessage.NotCorrectToken(tok, "Dot", "Dot")
         (Right(e),errorList.add(e))
       }
     }
@@ -2435,7 +2436,7 @@ the syntax-Tree has on top an Lambda-Expression
         case ForeignKeyword(_) => Left(ParseState(remainderTokens, parsedSynElems,
           mapDepL, spanList,argumentsTypes) )
         case tok => {
-          val e = NotCorrectToken(tok, whatToParse, whatToParse)
+          val e = ErrorMessage.NotCorrectToken(tok, whatToParse, whatToParse)
           return (Right(e),errorList.add(e))
         }
       }
@@ -2454,7 +2455,7 @@ the syntax-Tree has on top an Lambda-Expression
       case TypeIdentifier(name, spanTypeIdentifier) =>Left(ParseState(remainderTokens,
         SNat(NIdentifier(rt.NatIdentifier(name)), spanTypeIdentifier)::parsedSynElems, mapDepL, spanList,argumentsTypes) )
       case tok => {
-        val e = NotCorrectToken(tok, "NatNumber or TypeIdent", "Nat")
+        val e = ErrorMessage.NotCorrectToken(tok, "NatNumber or TypeIdent", "Nat")
         return (Right(e),errorList.add(e))
       }
     }
@@ -2471,7 +2472,7 @@ the syntax-Tree has on top an Lambda-Expression
       case TypeIdentifier(name, sp) =>Left(ParseState(remainderTokens,
         SData(DIdentifier(rt.DataTypeIdentifier(name)), sp)::parsedSynElems, mapDepL, spanList,argumentsTypes) )
       case a => {
-        val e = NotCorrectToken(a, "TypeIdent", "Data")
+        val e = ErrorMessage.NotCorrectToken(a, "TypeIdent", "Data")
         return (Right(e),errorList.add(e))
       }
     }
@@ -2491,7 +2492,7 @@ the syntax-Tree has on top an Lambda-Expression
     val p = nextToken match {
       case LBracket(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList,argumentsTypes) )
       case tok => {
-        val e = NotCorrectToken(tok, "LBracket", "LBracket")
+        val e = ErrorMessage.NotCorrectToken(tok, "LBracket", "LBracket")
         return (Right(e),errorList.add(e))
       }
     }
@@ -2507,7 +2508,7 @@ the syntax-Tree has on top an Lambda-Expression
     val p = nextToken match {
       case RBracket(_) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, spanList,argumentsTypes) )
       case tok => {
-        val e = NotCorrectToken(tok, "RBracket", "RBracket")
+        val e = ErrorMessage.NotCorrectToken(tok, "RBracket", "RBracket")
         return (Right(e),errorList.add(e))
       }
     }
@@ -2523,7 +2524,7 @@ the syntax-Tree has on top an Lambda-Expression
     val p  =nextToken match {
       case LBraces(sp) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, Some(sp::Nil),argumentsTypes))
       case tok => {
-        val e = NotCorrectToken(tok, whatToParse, whatToParse)
+        val e = ErrorMessage.NotCorrectToken(tok, whatToParse, whatToParse)
         return (Right(e),errorList.add(e))
       }
     }
@@ -2538,7 +2539,7 @@ the syntax-Tree has on top an Lambda-Expression
     val p  =nextToken match {
       case RBraces(sp) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, Some(sp::Nil),argumentsTypes))
       case tok => {
-        val e = NotCorrectToken(tok, whatToParse, whatToParse)
+        val e = ErrorMessage.NotCorrectToken(tok, whatToParse, whatToParse)
         return (Right(e),errorList.add(e))
       }
     }
@@ -2554,7 +2555,7 @@ the syntax-Tree has on top an Lambda-Expression
     val p  =nextToken match {
       case LParentheses(sp) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, Some(sp::Nil),argumentsTypes))
       case tok => {
-        val e = NotCorrectToken(tok, "LParentheses", "LParentheses")
+        val e = ErrorMessage.NotCorrectToken(tok, "LParentheses", "LParentheses")
         return (Right(e),errorList.add(e))
       }
     }
@@ -2578,7 +2579,7 @@ the syntax-Tree has on top an Lambda-Expression
     val p = nextToken match {
       case RParentheses(sp) => Left(ParseState(remainderTokens, parsedSynElems, mapDepL, Some(sp::spanL ::Nil),argumentsTypes) )
       case tok => {
-        val e = NotCorrectToken(tok, "RParentheses", "RParentheses")
+        val e = ErrorMessage.NotCorrectToken(tok, "RParentheses", "RParentheses")
         return (Right(e),errorList.add(e))
       }
     }

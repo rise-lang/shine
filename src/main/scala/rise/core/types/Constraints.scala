@@ -1,7 +1,8 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
-import parser.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, Span, TypeConstraintError}
+import parser.ErrorMessage.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError}
+import parser.Span
 import rise.core.DSL.Type.n2dtFun
 import rise.core.{freshName, substitute}
 import rise.core.lifting.liftDependentFunctionType

@@ -2,6 +2,7 @@ package parser
 
 
 import OpType.{BinOpType, UnaryOpType}
+import parser.ErrorMessage.{EndOfFile, EndOfLine, F32DeclaredAsI32, F32DeclaredAsI8, IdentifierBeginsWithAF32Number, IdentifierBeginsWithDigits, IdentifierExpectedNotTypeIdentifier, IdentifierWithNotAllowedSymbol, NOTanBinOperator, NotExpectedToken, NotExpectedTwoBackslash, NumberWithUnknownSymbol, OnlyOneEqualSign, PreAndErrorToken, ThisTokenShouldntBeHereExpectedArrowOrDots, ToShortToBeThisToken, TypeIdentifierExpectedNotIdentifier, UnknownKind, UnknownSymbol, UnknownType}
 
 
 //alles muss in ein Try gemappt werden
@@ -358,11 +359,11 @@ case class RecognizeLexeme(fileReader: FileReader){
       }
       case Left(Arrow(span)) => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        return Right(NotExpectedToken("=>", "->", Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))))
+        return Right(ErrorMessage.NotExpectedToken("=>", "->", Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))))
       }
       case Left(a) => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        return Right(NotExpectedToken("Arrow or Dots", a.toString, Span(fileReader,
+        return Right(ErrorMessage.NotExpectedToken("Arrow or Dots", a.toString, Span(fileReader,
           Range(loc, Location(loc.column, loc.row+1)))))
       }
       case Right(a) => {
@@ -471,7 +472,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     case (Left(TypeIdentifier(name, span)), r) => {
       return Right(IdentifierExpectedNotTypeIdentifier(name, span))
     }
-    case (Left(a), _) => return Right(NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s))
+    case (Left(a), _) => return Right(ErrorMessage.NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s))
     case (Right(a), _) => {
       return Right(a)
     }
@@ -497,12 +498,12 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
     case Left(DepArrow(_)) => {
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      return Right(NotExpectedToken("->", "=>", Span(fileReader,
+      return Right(ErrorMessage.NotExpectedToken("->", "=>", Span(fileReader,
         Range(loc, Location(loc.column, loc.row+1)))))
     }
     case Left(a) => {
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      return Right(NotExpectedToken("Arrow or Dots", a.toString, Span(fileReader,
+      return Right(ErrorMessage.NotExpectedToken("Arrow or Dots", a.toString, Span(fileReader,
         Range(loc, Location(loc.column, loc.row+1)))))
     }
     case Right(a) => {
@@ -540,7 +541,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         case Arrow(_) => {
           //nothing to do
         }
-        case t => NotExpectedToken("=>", t.toString, t.s).throwException()
+        case t => ErrorMessage.NotExpectedToken("=>", t.toString, t.s).throwException()
       }
     }
     case Arrow(_) => {
@@ -548,7 +549,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
     case a => {
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      return Right(ThisTokenShouldntBeHereExpectedArrowOrDots(a, Span(fileReader,
+      return Right(ErrorMessage.ThisTokenShouldntBeHereExpectedArrowOrDots(a, Span(fileReader,
         Range(loc, Location(loc.column, loc.row+1)))))
     }
   }
@@ -567,10 +568,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
       h = h++ "'"
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      Right(EndOfFile(new Span(fileReader, loc)))
+      Right(ErrorMessage.EndOfFile(new Span(fileReader, loc)))
     }else if(arr(column).length <= row ){
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
-      Right(EndOfLine(new Span(fileReader, loc)))
+      Right(ErrorMessage.EndOfLine(new Span(fileReader, loc)))
     }else{
       Left((column, row))
     }
@@ -594,7 +595,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     }
     if (arr(column).length <= row) {
       val loc: Location = Location(column, row)
-      return Right(EndOfLine(new Span(fileReader, loc)))
+      return Right(ErrorMessage.EndOfLine(new Span(fileReader, loc)))
     }
     arr(column)(row) match {
       case '(' => {
@@ -652,7 +653,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
               row = row + 2
             }
             case a => {
-              return Right(NotExpectedToken("->", a, span))
+              return Right(ErrorMessage.NotExpectedToken("->", a, span))
             }
           }
         }
@@ -685,7 +686,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
               }
               if(arr(column).length <= row){
                 val loc = Location(column, row)
-                return Right(EndOfLine(new Span(fileReader, loc)))
+                return Right(ErrorMessage.EndOfLine(new Span(fileReader, loc)))
               }
               lexDot(column, row) match {
                 case Left(dot) => {
@@ -774,14 +775,14 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
               if(arr(column)(row).isWhitespace && arr(column).length <=row+1){
                 val loc: Location = Location(column, row) //endLocation is equal to startLocation
 //                println("column: "+ column + ", row: " + row)
-                return Right(EndOfLine(new Span(fileReader, loc)))
+                return Right(ErrorMessage.EndOfLine(new Span(fileReader, loc)))
               }
               if(arr(column)(row).equals('#')){
                 throw new IllegalStateException(
                   "Every '#' should have been removed in the preLexer. This is an IllegalState of the Lexer.")
               }else{
                 val loc: Location = Location(column, row) //endLocation is equal to startLocation
-                return Right(NotExpectedToken("Some Number or String",
+                return Right(ErrorMessage.NotExpectedToken("Some Number or String",
                   arr(column)(row).toString, Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))))
               }
             }
@@ -791,7 +792,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                 if (ident.isInstanceOf[TypeIdentifier]) {
                   list = list.::(ident)
                 } else {
-                  return Right(TypeIdentifierExpectedNotIdentifier(ident.toString, ident.s))
+                  return Right(ErrorMessage.TypeIdentifierExpectedNotIdentifier(ident.toString, ident.s))
                 }
               }
               case (Right(e), _) => return Right(e)
@@ -1055,7 +1056,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             row = r
             list=list.::(Identifier(name, span))
           }
-          case (Left(a), _) => NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s).throwException()
+          case (Left(a), _) => ErrorMessage.NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s).throwException()
           case (Right(a), _) => {
             a.throwException()
           }
@@ -1342,7 +1343,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       } else if (otherKnownSymbol(symbol)) {
         //Todo:Maybe this with lexTypAnnotationToken works fine, so that I can delete this here
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        val ex = NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator or a BinOperator",
+        val ex = ErrorMessage.NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator or a BinOperator",
           "" + symbol, Span(fileReader, Range(loc, Location(loc.column, loc.row+1))))
         ex.throwException()
       } else if (symbol.isWhitespace && column+1>=arr.length && arr(column).length-1 <=row) {
@@ -1551,7 +1552,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("\\", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+        Right(ErrorMessage.NotExpectedToken("\\", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
       }
     }
   }
@@ -1565,7 +1566,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("[", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+        Right(ErrorMessage.NotExpectedToken("[", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
       }
     }
   }
@@ -1578,7 +1579,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("(", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+        Right(ErrorMessage.NotExpectedToken("(", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
       }
     }
   }
@@ -1591,7 +1592,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("{", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+        Right(ErrorMessage.NotExpectedToken("{", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
       }
     }
   }
@@ -1605,7 +1606,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("]", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+        Right(ErrorMessage.NotExpectedToken("]", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
       }
     }
   }
@@ -1632,7 +1633,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken(".", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+        Right(ErrorMessage.NotExpectedToken(".", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
       }
     }
   }
@@ -1642,7 +1643,7 @@ private def lexDeporNormalArrow(column:Int, row: Int, arr: Array[String], symbol
 Either[Token,PreAndErrorToken]={
   if(arr(column).length <= row +1){
     val loc:Location = Location(column, row) //endLocation is equal to startLocation
-    Right(ToShortToBeThisToken(2, symbol, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+    Right(ErrorMessage.ToShortToBeThisToken(2, symbol, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
   }else{
     val beginLoc:Location = Location(column, row)
     val endLoc:Location = Location(column, row+1)
@@ -1655,7 +1656,7 @@ Either[Token,PreAndErrorToken]={
         Left(DepArrow(span))
       }
       case a => {
-        Right(NotExpectedToken(symbol, a, span))
+        Right(ErrorMessage.NotExpectedToken(symbol, a, span))
       }
     }
   }
@@ -1669,7 +1670,7 @@ requirements:  no whitespace at arr(column)(row)
   Either[Token,PreAndErrorToken]= {
     if(arr(column).length<=row){
         val loc = Location(column, row)
-      return Right(EndOfLine(new Span(fileReader, loc)))
+      return Right(ErrorMessage.EndOfLine(new Span(fileReader, loc)))
     }
     arr(column)(row) match {
       case ':' => {
@@ -1684,7 +1685,7 @@ requirements:  no whitespace at arr(column)(row)
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken(":", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+        Right(ErrorMessage.NotExpectedToken(":", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
       }
     }
   }
@@ -1702,7 +1703,7 @@ requirements:  no whitespace at arr(column)(row)
           val span:Span = Span(fileReader,Range(beginLoc, endLoc))
           arr(column).substring(row, row+2) match {
             case "==" => {
-              Right(NotExpectedToken("=", "==", span))
+              Right(ErrorMessage.NotExpectedToken("=", "==", span))
             }
             case a => {
               val loc:Location = Location(column, row) //endLocation is equal to startLocation
@@ -1713,7 +1714,7 @@ requirements:  no whitespace at arr(column)(row)
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(NotExpectedToken("=", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
+        Right(ErrorMessage.NotExpectedToken("=", ""+ a, Span(fileReader,Range(loc,Location(loc.column, loc.row+1)))))
       }
     }
   }
@@ -1722,7 +1723,7 @@ requirements:  no whitespace at arr(column)(row)
   Either[Token,PreAndErrorToken]= {
     if(arr(column).length>=row+2){
       val loc:Location = Location(column, row)
-      Right(EndOfLine(new Span(fileReader, loc)))
+      Right(ErrorMessage.EndOfLine(new Span(fileReader, loc)))
     }
     val beginLoc:Location = Location(column, row)
     val endLoc:Location = Location(column, row+1)
@@ -1731,7 +1732,7 @@ requirements:  no whitespace at arr(column)(row)
         Left(DoubleColons(Span(fileReader,Range(beginLoc, endLoc))))
       }
       case a => {
-        Right(NotExpectedToken("::", ""+ a, Span(fileReader,Range(beginLoc, endLoc))))
+        Right(ErrorMessage.NotExpectedToken("::", ""+ a, Span(fileReader,Range(beginLoc, endLoc))))
       }
     }
   }
@@ -1751,7 +1752,7 @@ if '==' then two steps else only one step
         } else { // ->
           val locStart: Location = Location(column, row)
           val locEnd: Location = Location(column, row + 1)
-          Right(NotExpectedToken("-", "->", Span(fileReader, Range(locStart, locEnd))))
+          Right(ErrorMessage.NotExpectedToken("-", "->", Span(fileReader, Range(locStart, locEnd))))
         }
       }
       case '+' => { // +
@@ -1813,7 +1814,7 @@ if '==' then two steps else only one step
     val (pos, substring, locStart) = lexName(column, row, arr)
     if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
-      (Right(UnknownType(substring, Span(fileReader,Range(locStart, locEnd)))),pos+1)
+      (Right(ErrorMessage.UnknownType(substring, Span(fileReader,Range(locStart, locEnd)))),pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
       val span =  Span(fileReader,Range(locStart, locEnd))
@@ -1831,7 +1832,7 @@ if '==' then two steps else only one step
   (Either[Token,PreAndErrorToken],Int) = {
     if(row+3 >= arr(column).length){
       val loc = Location(column, row)
-      return (Right(EndOfLine(new Span(fileReader, loc))),row)
+      return (Right(ErrorMessage.EndOfLine(new Span(fileReader, loc))),row)
     }
     //println("lexVectorType: "+ arr(column).substring(row,row+2))
     arr(column).substring(row,row+2) match{
@@ -1843,7 +1844,7 @@ if '==' then two steps else only one step
         case _ =>{
           val locBegin = Location(column, row)
           val locEnd = Location(column, row+3)
-          (Right(UnknownType(arr(column).substring(row,row+3),
+          (Right(ErrorMessage.UnknownType(arr(column).substring(row,row+3),
             Span(fileReader, Range(locBegin, locEnd)))),row)
         }
       }
@@ -1856,7 +1857,7 @@ if '==' then two steps else only one step
     if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
       //print("Error in lexVectorType: ("+column + " , " + row + ")" + " :: Pos is " + pos)
-      (Right(UnknownType(substring, Span(fileReader,Range(locStart, locEnd)))),pos+1)
+      (Right(ErrorMessage.UnknownType(substring, Span(fileReader,Range(locStart, locEnd)))),pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
       val span =  Span(fileReader,Range(locStart, locEnd))
@@ -1885,7 +1886,7 @@ if '==' then two steps else only one step
         case "AddrSpace" => (Left(Kind(AddrSpace(), span)), pos)
         case "Nat" => (Left(Kind(Nat(), span)), pos)
 
-        case a => (Right(UnknownKind(substring, span)),pos)
+        case a => (Right(ErrorMessage.UnknownKind(substring, span)),pos)
       }
     }
   }
@@ -2102,10 +2103,10 @@ two steps
         Left(DepArrow(span))
       }
       case Left(Arrow(span)) => {
-        return Right(NotExpectedToken("=>", "->", span))
+        return Right(ErrorMessage.NotExpectedToken("=>", "->", span))
       }
       case Left(a) => {
-        Right(NotExpectedToken("=>", a.toString, a.s))
+        Right(ErrorMessage.NotExpectedToken("=>", a.toString, a.s))
       }
       case Right(e) => Right(e)
     }

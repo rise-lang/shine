@@ -1,11 +1,12 @@
 package rise.core.DSL
 
 import Type.freshTypeIdentifier
+import parser.ErrorMessage.{AppConstraintError, DepAppConstraintError, DepLambdaConstraintError, IdentConstraintError, LambdaConstraintError, TypeAnnotationConstraintError, TypeAssertionConstraintError}
 import rise.core._
 import rise.core.traversal.{Continue, Result, Stop}
 import rise.core.types.InferenceException.error
 import rise.core.types._
-import parser.{AppConstraintError, DepAppConstraintError, DepLambdaConstraintError, IdentConstraintError, LambdaConstraintError, Span, TypeAnnotationConstraintError, TypeAssertionConstraintError, parse}
+import parser.{Span, parse}
 import parser.parse.MapFkt
 
 import scala.collection.mutable

@@ -1,11 +1,11 @@
-package parser
+package parser.ErrorMessage
 
-import java.nio.file.Paths
-import rise.{core => r, openCL => o}
-import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
-import o.{primitives => op}
+import parser._
 import parser.parse.SpanPlaceholder
 import rise.core.types.{Kind, Type}
+import rise.core.{types => rt}
+
+import java.nio.file.Paths
 //__________________________________________AnsiColors
 abstract sealed class AnsiColor_enum()
 final case class BLACK() extends AnsiColor_enum{
