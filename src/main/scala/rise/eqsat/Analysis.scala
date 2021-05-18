@@ -17,8 +17,6 @@ trait Analysis[ED, ND, TD] {
 
   def make(egraph: EGraph[ED, ND, TD], enode: ENode, t: TypeId): ED
   def makeNat(egraph: EGraph[ED, ND, TD], node: NatNode[NatId]): ND
-  def makeDataType(egraph: EGraph[ED, ND, TD],
-                   node: DataTypeNode[NatId, DataTypeId]): TD
   def makeType(egraph: EGraph[ED, ND, TD],
                node: TypeNode[TypeId, NatId, DataTypeId]): TD
 
@@ -38,8 +36,6 @@ object NoAnalysis extends Analysis[(), (), ()] {
   override def make(egraph: EGraph[(), (), ()], enode: ENode, t: TypeId): () = ()
 
   override def makeNat(egraph: EGraph[(), (), ()], node: NatNode[NatId]): () = ()
-  override def makeDataType(egraph: EGraph[(), (), ()],
-                            node: DataTypeNode[NatId, DataTypeId]): () = ()
   override def makeType(egraph: EGraph[(), (), ()],
                         node: TypeNode[TypeId, NatId, DataTypeId]): () = ()
 
@@ -79,7 +75,6 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[
   DefaultAnalysisCustomisable.NatData,
   DefaultAnalysisCustomisable.TypeData
 ] {
-  import DefaultAnalysisCustomisable._
   import DefaultAnalysis._
 
   override def empty(egraph: EGraph, t: TypeId): Data =
@@ -159,22 +154,6 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[
     new NatData(freeNat)
   }
 
-  override def makeDataType(egraph: EGraph, node: DataTypeNode[NatId, DataTypeId]): TypeData = {
-    val freeNat = HashSet[Int]()
-    val freeDataType = HashSet[Int]()
-    node match {
-      case DataTypeVar(index) => freeDataType += index
-      case node => node.map(
-        { n => freeNat ++= egraph(n)._2.freeNat },
-        { dt =>
-          val d = egraph(dt)._2
-          freeNat ++= d.freeNat
-          freeDataType ++= d.freeDataType
-        })
-    }
-    new TypeData(freeNat, freeDataType)
-  }
-
   override def makeType(egraph: EGraph, node: TypeNode[TypeId, NatId, DataTypeId]): TypeData = {
     val freeNat = HashSet[Int]()
     val freeDataType = HashSet[Int]()
@@ -194,8 +173,13 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[
         val d = egraph(t)._2
         freeNat ++= d.freeNat
         freeDataType ++= d.freeDataType.iterator.filter(idx => idx != 0).map(idx => idx - 1)
-      case _: DataTypeNode[_, _] =>
-        throw new Exception("this should not happen")
+      case dt: DataTypeNode[NatId, DataTypeId] =>
+        dt match {
+          case DataTypeVar(index) => freeDataType += index
+          case node => node.map(
+            { n => freeNat ++= egraph(n)._2.freeNat },
+            { dt => acc(egraph(dt)._2) })
+        }
     }
     new TypeData(freeNat, freeDataType)
   }

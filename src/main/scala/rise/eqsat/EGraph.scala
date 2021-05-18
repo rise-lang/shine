@@ -69,13 +69,13 @@ class EGraph[ED, ND, TD](
     (enode2, id.map(find))
   }
 
-  def makeEmptyEClass(simplifiedT: TypeId): EClassId = {
+  def makeEmptyEClass(t: TypeId): EClassId = {
     val newId = unionFind.makeSet()
     val newEclass = new EClass(
       id = newId,
-      t = simplifiedT,
+      t = t,
       nodes = Vec(),
-      data = analysis.empty(this, simplifiedT),
+      data = analysis.empty(this, t),
       parents = Vec())
     classes += newId -> newEclass
     newId
@@ -156,6 +156,7 @@ class EGraph[ED, ND, TD](
       }
     }
 
+    // FIXME: simplifying recursively on every add might be too expensive?
     nats.addWithSimplification(n, NatId, n => fromNamed(toNamed(n)), n => analysis.makeNat(this, n))
   }
 
@@ -167,7 +168,7 @@ class EGraph[ED, ND, TD](
   }
 
   def add(dt: DataTypeNode[NatId, DataTypeId]): DataTypeId =
-    dataTypes.add(dt, dt => analysis.makeDataType(this, dt), DataTypeId)
+    dataTypes.add(dt, dt => analysis.makeType(this, dt), DataTypeId)
 
   def addDataType(dt: DataType): DataTypeId =
     add(dt.node.map(addNat, addDataType))

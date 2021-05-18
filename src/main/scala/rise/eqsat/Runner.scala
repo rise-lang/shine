@@ -18,8 +18,8 @@ object Runner {
     done = _ => false,
 
     iterLimit = 30,
-    nodeLimit = 100_000,
-    timeLimit = Duration.ofSeconds(20).toNanos
+    nodeLimit = 600_000,
+    timeLimit = Duration.ofSeconds(30).toNanos
   )
 }
 
