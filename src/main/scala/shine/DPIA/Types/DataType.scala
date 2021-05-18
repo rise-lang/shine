@@ -17,18 +17,19 @@ sealed trait MatrixLayout
 object MatrixLayout {
   object Row_Major extends MatrixLayout { override def toString = "Row_Major" }
   object Col_Major extends MatrixLayout { override def toString = "Col_Major" }
+  object None extends MatrixLayout
 }
 
 final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with Kind.Identifier {
-  var layout: Option[MatrixLayout] = None
+  var layout: MatrixLayout = MatrixLayout.None
 
   override def toString: String = name
 
   def setLayout(matrixLayout: MatrixLayout): Unit = {
-    if (layout.isEmpty)
-      layout = Some(matrixLayout)
-    else if (layout.get != matrixLayout)
-      throw new Exception(s"could not unify ${layout.get} and $matrixLayout")
+    if (layout == MatrixLayout.None)
+      layout = matrixLayout
+    else if (layout != matrixLayout)
+      throw new Exception(s"could not unify $layout and $matrixLayout")
   }
 }
 
@@ -40,51 +41,40 @@ object FragmentKind {
   object Accumulator extends FragmentKind { override def toString = "Accumulator"}
 }
 
-//This can be used to create fragments of kind `Accumulator` which does not need a layout
-object FragmentType {
-  def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType =
-    FragmentType(rows, columns, d3, dataType, FragmentKind.Accumulator, null)
-}
-
 /**
   * Represents a CUDA-fragment which represents a tile of a matrix which is stored in registers of a warp. <br>
   * Fragments of kind `Accumulator` does not have a layout. So the `layout` of fragments of kind `Accumulator`
   * can be ignored.
   * @param rows         number of rows
   * @param columns      number of columns
-  * @param d3           third dimension which is used in the MMA operation
+  * @param layers           third dimension which is used in the MMA operation
   * @param dataType     dataType of the elements
   * @param fragmentKind kind of the fragment {@link FragmentKind}
   * @param layout       layout of the fragment {@link MatrixLayout}
   */
 final case class FragmentType(rows: Nat,
                               columns: Nat,
-                              d3: Nat,
+                              layers: Nat,
                               dataType: DataType,
                               fragmentKind: FragmentKind,
                               layout: MatrixLayout) extends BasicType {
   override def toString: String =
-    if (fragmentKind == FragmentKind.Accumulator)
-      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
-    else
-      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
+    s"Fragment[$rows,$columns,$layers,$dataType,$fragmentKind,$layout]"
 
   override def equals(o: Any): Boolean = {
     o match {
       case f: FragmentType =>
         f.fragmentKind match {
           case FragmentKind.Accumulator =>
-            f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType)
+            f.rows.equals(rows) && f.columns.equals(columns) && f.layers.equals(layers) && f.dataType.equals(dataType)
           case _ =>
-            f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType) &&
+            f.rows.equals(rows) && f.columns.equals(columns) && f.layers.equals(layers) && f.dataType.equals(dataType) &&
               f.fragmentKind.equals(fragmentKind) && f.layout.equals(layout)
         }
       case _ => false
     }
   }
 }
-
-object pipeline extends BasicType { override def toString = "pipeline" }
 
 object bool extends ScalarType { override def toString: String = "bool" }
 
@@ -153,7 +143,7 @@ final case class PairType(fst: DataType, snd: DataType) extends ComposedType {
   override def toString: String = s"($fst x $snd)"
 }
 
-sealed case class VectorType(size: Nat, elemType: ScalarType)
+sealed case class VectorType(size: Nat, elemType: DataType)
   extends BasicType
 {
   override def toString: String = s"<$size>$elemType"
@@ -161,7 +151,7 @@ sealed case class VectorType(size: Nat, elemType: ScalarType)
 
 object vec {
   @inline
-  def apply(size: Nat, elemType: ScalarType): VectorType =
+  def apply(size: Nat, elemType: DataType): VectorType =
     VectorType(size, elemType)
 }
 
@@ -211,7 +201,7 @@ object DataType {
       case f: FragmentType =>
         FragmentType(ArithExpr.substitute(f.rows, Map((`for`, ae))),
           ArithExpr.substitute(f.columns, Map((`for`, ae))),
-          ArithExpr.substitute(f.d3, Map((`for`, ae))),
+          ArithExpr.substitute(f.layers, Map((`for`, ae))),
           substitute(ae, `for`, f.dataType), f.fragmentKind, f.layout)
       case a: DepArrayType =>
         val subMap = Map((`for`, ae))
@@ -267,7 +257,7 @@ object DataType {
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
     case _: DataTypeIdentifier | _: NatToDataApply | _: OpaqueType |
-         _: FragmentType | _: pipeline.type =>
+         _: FragmentType =>
       throw new Exception("This should not happen")
   }
 

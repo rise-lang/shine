@@ -27,17 +27,18 @@ def natAsIndex: (n: nat) -> natType -> idx[n]
 def   let: {s: data} -> {t: data} -> s -> (s -> t) -> t
 def toMem: {t: data} -> t -> t
 
+// foreign functions
+def foreignFunction(funDecl: rise.core.ForeignFunction.Decl, n: Int):
+    n*((inTs: data) ->) (outT: data) -> n*(*inTs ->) outT
+
 // array ops
-// def makeArray(1): {t: data} -> t -> 1.t
-// def makeArray(2): {t: data} -> t -> t -> 2.t
-// def makeArray(3): {t: data} -> t -> t -> t -> 3.t
-// ...
-// def makeArray(n): {t: data} -> t -> t -> t -> ... -> t -> n.t
+def makeArray(n: Int): {dt: data} -> n*(dt ->) n.dt
+
 def generate: {n: nat} -> {t: data} -> (idx[n] -> t) -> n.t
 def idx: {n: nat} -> {t: data} -> idx[n] -> n.t -> t
 
 def take:   (n: nat) -> {m: nat} -> {t: data} -> (n+m).t -> n.t
-  def drop:   (n: nat) -> {m: nat} -> {t: data} -> (n+m).t -> m.t
+def drop:   (n: nat) -> {m: nat} -> {t: data} -> (n+m).t -> m.t
 def concat: {n: nat} -> {m: nat} -> {t: data} -> n.t -> m.t -> (n+m).t
 
 def split: (n: nat) -> {m: nat} -> {t: data} -> (m*n).t -> m.n.t
@@ -56,8 +57,8 @@ def scatter: {n: nat} -> {m: nat} -> {t: data} -> n.idx[m] -> n.t -> m.t
 def reorder: {t: data} -> (n: nat) -> (idxF: nat2nat) -> (idxFinv: nat2nat) -> n.t -> n.t
 
 def padCst:   {n: nat} -> (l: nat) -> (r: nat) -> {t: data} -> t -> n.t -> (l+n+r).t
-def padClamp: {n: nat} -> (l: nat) -> (r: nat) -> {t: data} -> n.t -> (l+n+r).t
-def padEmpty: {n: nat} ->             (r: nat) -> {t: data} -> n.t -> (n+r).t
+def padClamp: {n: nat} -> (l: nat) -> (r: nat) -> {t: data} ->      n.t -> (l+n+r).t
+def padEmpty: {n: nat} ->             (r: nat) -> {t: data} ->      n.t ->   (n+r).t
 
 def   zip: {n: nat} -> {s: data} -> {t: data} -> n.s -> n.t -> n.(s, t)
 def unzip: {n: nat} -> {s: data} -> {t: data} -> n.(s, t) -> (n.s, n.t)

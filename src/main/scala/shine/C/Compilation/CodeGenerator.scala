@@ -112,12 +112,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         CCodeGen.codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
       case f@For(unroll) =>
-        val (i, p) = f.unwrapBody
-        CCodeGen.codeGenFor(f.n, i, p, unroll, env)
+        f.loopBody match {
+          case Lambda(i, p) =>
+            CCodeGen.codeGenFor(f.n, i, p, unroll, env)
+          case _ => throw new Exception("This should not happen")
+        }
 
       case f@ForNat(unroll) =>
-        val (i, p) = f.unwrapBody
-        CCodeGen.codeGenForNat(f.n, i, p, unroll, env)
+        f.loopBody match {
+          case shine.DPIA.Phrases.DepLambda(i, p) =>
+            CCodeGen.codeGenForNat(f.n, i, p, unroll, env)
+          case _ => throw new Exception("This should not happen")
+        }
 
       case Proj1(pair) => Lifting.liftPair(pair)._1 |> cmd(env)
       case Proj2(pair) => Lifting.liftPair(pair)._2 |> cmd(env)
@@ -438,7 +444,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case Pad(n, l, r, _, pad, array) => path match {
+    case PadCst(n, l, r, _, pad, array) => path match {
       case (i: CIntExpr) :: ps =>
         pad |> exp(env, ps, padExpr =>
           genPad(n, l, r, padExpr, padExpr, i, ps, array, env, cont))
@@ -490,9 +496,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case MakeArray(_, elems) => path match {
+    case m@MakeArray(_) => path match {
       case (i: CIntExpr) :: ps => try {
-        elems(i.eval) |> exp(env, ps, cont)
+        m.elements(i.eval) |> exp(env, ps, cont)
       } catch {
         case NotEvaluableException() => error(s"could not evaluate $i")
       }
@@ -503,9 +509,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case DepIdx(_, _, i, e) => e |> exp(env, CIntExpr(i) :: path, cont)
 
-    case ForeignFunctionCall(f, inTs, outT, args) =>
-      CCodeGen.codeGenForeignFunctionCall(f, inTs, outT, args, env, fe =>
-        generateAccess(outT, fe, path, env, cont)
+    case ffc@ForeignFunctionCall(f, _) =>
+      CCodeGen.codeGenForeignFunctionCall(f, ffc.inTs, ffc.outT, ffc.args, env, fe =>
+        generateAccess(ffc.outT, fe, path, env, cont)
       )
 
     case Proj1(pair) => SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1) |> exp(env, path, cont)
@@ -543,7 +549,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case shine.DPIA.Types.f32 => C.AST.Type.float
         case shine.DPIA.Types.f64 => C.AST.Type.double
         case _: shine.DPIA.Types.IndexType => C.AST.Type.int
-        case _: shine.DPIA.Types.VectorType | _: FragmentType | _: pipeline.type =>
+        case _: shine.DPIA.Types.VectorType | _: FragmentType =>
           throw new Exception(s"$b types in C are not supported")
       }
       case a: shine.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
@@ -824,6 +830,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
+        case NatAsIntData(n) =>
+          C.AST.Literal(n.toString)
         case ArrayData(a) => d.dataType match {
           case ArrayType(_, ArrayType(_, _)) =>
             codeGenLiteral(ArrayData(a.flatten(d => d.asInstanceOf[ArrayData].a)))
@@ -856,7 +864,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       })
     }
 
-    def codeGenForeignFunctionCall(funDecl: ForeignFunction.Declaration,
+    def codeGenForeignFunctionCall(funDecl: rise.core.ForeignFunction.Decl,
                                    inTs: collection.Seq[DataType],
                                    outT: DataType,
                                    args: collection.Seq[Phrase[ExpType]],
