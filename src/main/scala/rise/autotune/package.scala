@@ -14,6 +14,7 @@ import rise.openCL.DSL.oclRun
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.reflect.runtime.universe.typeOf
 
 
 package object autotune {
@@ -412,14 +413,14 @@ package object autotune {
 
           // use integer range then
 
-          val x = List.range(start.evalInt, stop.evalInt+1)
-          val values = x.filter(_ % stepWidth == 0)
+//          val x = List.range(start.evalInt, stop.evalInt+1)
+//          val values = x.filter(_ % stepWidth == 0)
 
           //          listToString(values)
 
           start.eval match {
-            case 0 => listToString(List(start.evalInt+1, stop.evalInt))
-            case _ => listToString(List(start.evalInt, stop.evalInt))
+            case 0 => valuesListToString(List(start.evalInt+1, stop.evalInt))
+            case _ => valuesListToString(List(start.evalInt, stop.evalInt))
           }
         }
 
@@ -435,11 +436,11 @@ package object autotune {
               val values:List[Int] = powers.map(power => scala.math.pow(mul.evalInt, power).toInt)
 
               //              listToString(values)
-              listToString(List(start.evalInt, stop.evalInt))
+              valuesListToString(List(start.evalInt, stop.evalInt))
             }
             case false =>
               //              listToString(List.range(start.evalInt, stop.evalInt+1))
-              listToString(List(start.evalInt, stop.evalInt))
+              valuesListToString(List(start.evalInt, stop.evalInt))
           }
         }
         case _ => {
@@ -451,7 +452,7 @@ package object autotune {
       // get dependencies and constraints from map
       val dependencies = parametersWDC(elem)._2.size match {
         case 0 => "[]"
-        case _ =>  listToString(parametersWDC(elem)._2.toList)
+        case _ =>  elementListToString(parametersWDC(elem)._2.toList)
       }
 
       val constraints = parametersWDC(elem)._1.size match {
@@ -468,22 +469,34 @@ package object autotune {
                   case _ => (0, 0, 0) // todo catch other types of ranges
                 }
 
-                val startConstraint = n.toString + " >= " + start
-                val stopConstraint = n.toString + " <= " + stop
-                val stepConstraint = n.toString + " % " + step + " == 0"
+                // if stop is PosInf, remove constraint (already catched by the range of parameter)
+                stop.toString match {
+                  case "PosInf" =>{
+                    val startConstraint = n.toString + " >= " + start
+                    val stepConstraint = n.toString + " % " + step + " == 0"
 
-                startConstraint + " && " + stopConstraint + " && " + stepConstraint
+                    startConstraint + " and " + stepConstraint
+                  }
+                  case _ => {
+                    val startConstraint = n.toString + " >= " + start
+                    val stopConstraint = n.toString + " <= " + stop
+                    val stepConstraint = n.toString + " % " + step + " == 0"
+
+                    startConstraint + " and " + stopConstraint + " and " + stepConstraint
+                  }
+                }
+
               }
-              case _ => {
-                // todo check for '/^'  which is not evaluable by python!
-                // any other case just take it and to string
-                //                case "/^" => // occurrence of "/^"
-                constraint.toString
+              case PredicateConstraint(n) => {
+                n.toString.contains("/^") match {
+                  case true => constraint.toString.replace("/^", "/")
+                  case false => constraint.toString
+                }
               }
             }
             constraintsList += constraintString
           })
-          listToString(constraintsList.filter(elem => elem.size != 0).toList)
+          elementListToString(constraintsList.filter(elem => elem.size != 0).toList)
         }
       }
 
@@ -552,18 +565,22 @@ package object autotune {
     }
   }
 
-  def listToString(list: List[Any]): String = {
-
-    var valueString = "["
-    list.foreach(value => {
-      valueString += "" + value + ", "
-    })
-
-    var valueStringFinal= valueString.dropRight(2)
-    valueStringFinal += "]"
-
-    valueStringFinal
+  def valuesListToString(list: List[Any]):String = {
+      var valuesString = ""
+      list.foreach(value => {
+        valuesString += value.toString +  ", "
+      })
+      "["  + valuesString.dropRight(2) + "]"
   }
+
+  def elementListToString(list: List[Any]):String = {
+    var valuesString = ""
+    list.foreach(value => {
+      valuesString += "\"" + value.toString + "\"" + ", "
+    })
+    "["  + valuesString.dropRight(2) + "]"
+  }
+
 
   //  def TuningResult(drop)
 
