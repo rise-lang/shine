@@ -12,4 +12,4 @@
 	url = https://github.com/rise-lang/arithexpr.git
 [submodule "lib/clap"]
 	path = lib/clap
-	url = git@github.com:michel-steuwer/clap.git
+	url = https://github.com/michel-steuwer/clap.git
