@@ -113,7 +113,7 @@ object ErrorMessage {
       give_char_n_times(box_indent, '-', Some(indentColour))+"\n"
 
     var res =""
-    for(i <- start_column until end_column){
+    for(i <- start_column until end_column+1){
       val (uL,iC) =if(i==important_column){
         (Some(underl),indentColour_ImportantColumn)
       }else{

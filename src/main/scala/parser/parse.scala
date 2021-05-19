@@ -37,7 +37,7 @@ object parse {
     val shineLambda: MapFkt = parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState) match {
       case Left(map) => map
       case Right(errorOrState) => {
-        println(errorOrState)
+        //println(errorOrState)
         throw new RuntimeException("failed parsing : " + errorOrState)
       }
     }
@@ -1104,10 +1104,10 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
   parsedSynElems match {
     case SExpr(id@r.Identifier(name))::list => {
       val s  = seq.appended(name +"\n")
-      println("SequenzString: "+ s)
+      //println("SequenzString: "+ s)
       subGetSequenceStrings(s,list) match{
         case Right(e) => if(e.isInstanceOf[SynListIsEmpty]){
-          println("SequenzStringEnd: "+ s)
+          //println("SequenzStringEnd: "+ s)
           Left(s, id.span.get)
         }else{
           Right(e)
@@ -1302,7 +1302,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
       case SSeq(seqBody,spBody)::SSeq(seqParam, spParam)::list => {
         val body = giveAsOneString(seqBody.toSeq)
         val bodyWithBraces ="{\n"+body+"}"
-        println("body: '"+ bodyWithBraces+"'" + " ; '"+ seqBody.isEmpty+"'")
+        //println("body: '"+ bodyWithBraces+"'" + " ; '"+ seqBody.isEmpty+"'")
         r.ForeignFunction(r.ForeignFunction.Decl(identifierFkt.name,
           Some(ForeignFunction.Def(seqParam.toSeq, bodyWithBraces))))(typeOfFkt, Some(spBody+spParam))
       }
@@ -1754,7 +1754,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
     argumentTypes match {
       //case head :: Nil => None //Todo: I don't know why but this line fixes the nbody.rise test, if something fails with a match Error in Solution and Nats look here
       case head::next =>
-        println("\ngiveNextLambdaIdenType: "+ head + "::" + next)
+        //println("\ngiveNextLambdaIdenType: "+ head + "::" + next)
         Some((head, next))
       case Nil => None
     }
@@ -1776,7 +1776,7 @@ the syntax-Tree has on top an Lambda-Expression
     if(parseState.tokenStream.isEmpty){
       return (Left(parseState),errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
-    println("parseLambda: " +parseState)
+    //println("parseLambda: " +parseState)
     val (psOld,errorL) =
       (Left(ParseState(parseState.tokenStream, Nil,  parseState.mapDepL, parseState.spanList, parseState.argumentsTypes)),errorList) |>
         parseBackslash |>

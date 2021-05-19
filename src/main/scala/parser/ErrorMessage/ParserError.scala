@@ -13,10 +13,16 @@ trait ParserError { self: Throwable =>
   val what_exp:String
   val help:Option[String]
   val name_of_error:String
+  var viewOriginal = false
 
   val begin = span.range.begin
   val end = span.range.end
 
+  def get_sourceLines():Array[String] = if(viewOriginal){
+    span.file.sourceLines_withoutPreLexer
+  }else{
+    span.file.sourceLines
+  }
   /*
   problem: we have multiple lines where we look on, so we have to define for each Exeption individually
   what is important
@@ -49,20 +55,13 @@ trait ParserError { self: Throwable =>
   }
 
   override def toString: String = {
-    //    val (middle,before,after, loc) = (
-    //            span.returnMessage(),
-    //            span.file.sourceLines(begin.column).substring(0, begin.row),
-    //            span.file.sourceLines(end.column).substring(end.row),
-    //            span.toString    //exact location of error, related code of error, short description of error
-    //          )
-
     val (start_column, end_column, important_column,
     important_row_Begin, important_row_End)= getPos()
 
     val underl = ErrorMessage.Underline_With_Char('^', RED())
 
     val error = ErrorMessage.give_error(span.file.fileName, description_error,what_exp,help,name_of_error,
-      start_column,end_column,span.file.sourceLines, underl, important_column, important_row_Begin,
+      start_column,end_column,get_sourceLines(), underl, important_column, important_row_Begin,
       important_row_End)
     error
   }
@@ -93,6 +92,14 @@ object PreAndErrorToken{
 
 abstract sealed class PreAndErrorToken(override val span: Span) extends Error with ParserError{
   override val name_of_error: String = "LexerError"
+}
+
+final case class ExpectedArrowButGotTwoDash(override val span:Span) extends PreAndErrorToken(span){
+  require(begin.column == end.column, "not in one column")
+  override val description_error = "expected '->' but '--' is a comment and that destroyed it"
+  override val what_exp = "this is the start of a comment"
+  override val help = Some("delete one '-'")
+  viewOriginal = true
 }
 
 final case class EndOfLine(override val span:Span) extends PreAndErrorToken(span){

@@ -215,7 +215,7 @@ case class DepLambdaConstraintError(override val span: Option[Span]) extends Typ
   }
 }
 
-case class DepAppConstraintError(override val span: Option[Span]) extends AppLikeConstraintError(span){
+case class DepAppConstraintError(override val span: Option[Span]) extends Error with ConstraintError{
   override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
   override def defineTypes(expectedT: Type, foundT: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
   def defineTypesDep[K <: Kind](expectedT:rt.Type, foundTLeft:rt.Type, foundRight:K#T): Unit ={
@@ -241,6 +241,7 @@ case class DepAppConstraintError(override val span: Option[Span]) extends AppLik
     "expected '" + expectedT + "' but found DepApp('"+foundLeft+ "','"+
       foundRightStr+"')"
   }
+  override val name_of_error: String = "DepAppConstraintError"
   override val what_exp: String = "here problems with DepAppConstraint"
   override val help: Option[String] = None
 

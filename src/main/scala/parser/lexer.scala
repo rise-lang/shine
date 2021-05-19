@@ -2,7 +2,7 @@ package parser
 
 
 import OpType.{BinOpType, UnaryOpType}
-import parser.ErrorMessage.{EndOfFile, EndOfLine, F32DeclaredAsI32, F32DeclaredAsI8, IdentifierBeginsWithAF32Number, IdentifierBeginsWithDigits, IdentifierExpectedNotTypeIdentifier, IdentifierWithNotAllowedSymbol, NOTanBinOperator, NotExpectedToken, NotExpectedTwoBackslash, NumberWithUnknownSymbol, OnlyOneEqualSign, PreAndErrorToken, ThisTokenShouldntBeHereExpectedArrowOrDots, ToShortToBeThisToken, TypeIdentifierExpectedNotIdentifier, UnknownKind, UnknownSymbol, UnknownType}
+import parser.ErrorMessage.{EndOfFile, EndOfLine, ExpectedArrowButGotTwoDash, F32DeclaredAsI32, F32DeclaredAsI8, IdentifierBeginsWithAF32Number, IdentifierBeginsWithDigits, IdentifierExpectedNotTypeIdentifier, IdentifierWithNotAllowedSymbol, NOTanBinOperator, NotExpectedToken, NotExpectedTwoBackslash, NumberWithUnknownSymbol, OnlyOneEqualSign, PreAndErrorToken, ThisTokenShouldntBeHereExpectedArrowOrDots, ToShortToBeThisToken, TypeIdentifierExpectedNotIdentifier, UnknownKind, UnknownSymbol, UnknownType}
 
 
 object RecognizeLexeme{
@@ -58,7 +58,7 @@ case class RecognizeLexeme(fileReader: FileReader){
       case Left((c, r)) => {
         column = c
         row = r
-        println("lexing begins at : ( "+ column +" , " + row + " )" )
+        //println("lexing begins at : ( "+ column +" , " + row + " )" )
       }
       case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
         " but this should not be able to happen")
@@ -601,7 +601,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
 
   private def lexTypAnnotationToken(oldColumn:Int, oldRow:Int, l:List[Token]):Either[(Int, Int, List[Token]),
     PreAndErrorToken] = {
-    println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
+    //println("lexerTypAnnotationExpression: "+ l + " ( "+ oldColumn + " , " + oldRow + " )")
     val arr: Array[String] = fileReader.sourceLines
     var row = oldRow
     var column = oldColumn
@@ -993,7 +993,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       lexIdentifier(column, row) match {
         case (Right(_), _) => (list,column,row)
         case (Left(a), r) => {
-          println(a)
+          //println(a)
           var newRow = r
           //            val i: Token = a
           skipWhitespaceWhitoutNewLine(column, newRow) match {
@@ -1234,7 +1234,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           }
         }else{
             if (a.isWhitespace && column+1>=arr.length && arr(column).length-1 <=row) {
-              println("exit typeRecognizingInNoAppExpr:: "+"column: "+ column + ", row: " + row)
+              //println("exit typeRecognizingInNoAppExpr:: "+"column: "+ column + ", row: " + row)
               return (list,column, row)
             }
               typeRecognizingInNoAppExpr(column,row, list, a, arr) match{
@@ -1344,7 +1344,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     var column = c
     var row = r
     var list = li
-    println("typeRecognizingInNoAppExpr:: "+ "column: "+ column + ", row: " + row)
+    //println("typeRecognizingInNoAppExpr:: "+ "column: "+ column + ", row: " + row)
   differentCasesSymbolInTypeRecognizing(column, row, list, symbol, arr) match{
     case Left((c,r,l))=>{
       column =c
@@ -1369,7 +1369,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           "" + symbol, Span(fileReader, Range(loc, Location(loc.column, loc.row+1))))
         throw ex
       } else if (symbol.isWhitespace && column+1>=arr.length && arr(column).length-1 <=row) {
-        println("exit typeRecognizingInNoAppExpr:: "+"column: "+ column + ", row: " + row)
+        //println("exit typeRecognizingInNoAppExpr:: "+"column: "+ column + ", row: " + row)
         return Left((column, row,list))
       } else {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
@@ -1691,7 +1691,15 @@ requirements:  no whitespace at arr(column)(row)
   private def lexDotsOrArrow(column:Int, row: Int, arr: Array[String]= fileReader.sourceLines):
   Either[Token,PreAndErrorToken]= {
     if(arr(column).length<=row){
-        val loc = Location(column, row)
+      val loc = Location(column, row)
+      val lineWithComments = fileReader.sourceLines_withoutPreLexer(column)
+      if(lineWithComments.contains("--")){
+        if(lineWithComments.indexOf("--") == arr(column).length){
+          val locEnd = Location(column, row+2)
+          return Right(ExpectedArrowButGotTwoDash(Span(fileReader,Range(loc,locEnd))))
+        }
+      }
+      //println("EndOfLine:"+ arr(column).length +"<="+row + " , "+arr(column))
       return Right(ErrorMessage.EndOfLine(new Span(fileReader, loc)))
     }
     arr(column)(row) match {
@@ -1844,7 +1852,7 @@ if '==' then two steps else only one step
       getConcreteScalarType(substring,span) match{
         case Left(concreteType)=>(Left(ScalarType(concreteType, span)),pos)
         case Right(error) => {
-          println("In lexScalarType: "+ error)
+          //println("In lexScalarType: "+ error)
           (Right(error), pos)
         }
       }

@@ -1109,11 +1109,12 @@ class LexerTest extends  AnyFlatSpec {
   "RecognizeLexeme" should "work for TypWith-" in {
     val fileName: String = errorFilePath + "TypWith-.rise"
     val file: FileReader =  FileReader(fileName)
-    val thrown = intercept[Exception] {
+    //val thrown = intercept[parser.ErrorMessage.PreAndErrorToken] {
       RecognizeLexeme(file)
-    }
-    val expected: String = "End of Line : (1,4) in src/test/scala/parser/readFiles/filesToError/TypWith-.rise : "
-    thrown.getMessage should equal(expected)
+    //}
+//    throw thrown
+//    val expected: String = ""
+//    thrown.getMessage should equal(expected)
   }
 
 }

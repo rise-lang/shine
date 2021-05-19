@@ -11,7 +11,8 @@ case class FileReader(fileName: String) {
   require(fileName != null, "FileName should not be null")
   require(fileName.endsWith(".rise"), "not a RISE file") //if not, it's not a RISE file
 
-  val sourceLines: Array[String] = preLexer(readFile(fileName))
+  val sourceLines_withoutPreLexer = readFile(fileName)
+  val sourceLines: Array[String] = preLexer(sourceLines_withoutPreLexer)
 
   def toUri():URI=Paths.get(fileName).toUri
 

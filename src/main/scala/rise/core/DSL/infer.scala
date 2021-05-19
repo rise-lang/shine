@@ -17,8 +17,8 @@ object infer {
             explDep: Flags.ExplicitDependence = Flags.ExplicitDependence.Off): Expr = {
     val constraints = mutable.ArrayBuffer[Constraint]()
     val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map(), mapFkt)
-    println("Typed_E:\n"+ typed_e)
-    println("constraints:\n"+ constraints)
+    //println("Typed_E:\n"+ typed_e)
+    //println("constraints:\n"+ constraints)
     //println("ftvSubs:\n"+ ftvSubs)
     val solution = unfreeze(ftvSubs, Constraint.solve(constraints.toSeq, Seq())(explDep))
     val res = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
@@ -36,10 +36,10 @@ object infer {
         override def visitExpr(e: Expr): traversal.Result[Expr] = {
           e match {
             case h@primitives.typeHole(msg, None) =>
-              println(s"found type hole ${msg}: ${h.t}")
+              //println(s"found type hole ${msg}: ${h.t}")
               holeFound = true
             case p@primitives.printType(msg, None) =>
-              println(s"$msg : ${p.t} (Rise level)")
+              //println(s"$msg : ${p.t} (Rise level)")
             case _ =>
           }
           traversal.Continue(e, this)
@@ -203,10 +203,10 @@ object infer {
             i.t
           })
         val constraint = TypeConstraint(t, i.t, IdentConstraintError(span))
-        println("IdentifierConstraint:\n"+ constraint)
+        //println("IdentifierConstraint:\n"+ constraint)
         constraints += constraint
-        println("IdentifierConstraint appended:\n"+ constraints +"\n t= '"+ t + "'\n i.t= ' "+ i.t+
-          "'\nIdentifier= '"+i+"'\n span = "+ span)
+        //println("IdentifierConstraint appended:\n"+ constraints +"\n t= '"+ t + "'\n i.t= ' "+ i.t+
+//          "'\nIdentifier= '"+i+"'\n span = "+ span)
         (i.setType(t), Solution())
 
       case lam@Lambda(x, e) =>
@@ -219,11 +219,11 @@ object infer {
         val exprT = genType(expr)
         //val span = Span.combineOptionSpan(x.span,e.span)
         val constraint = TypeConstraint(exprT, ft, LambdaConstraintError(span))
-        println("LambdaConstraint:\n"+ constraint)
+        //println("LambdaConstraint:\n"+ constraint)
         constraints += constraint
-        println("LambdaConstraint appended:\n"+ constraints +"\n tx= '"+ tx + "'\n tx.type= ' "+ tx.t+
-          "'\n TypeOfLambda= ' "+ lamType+
-          "'\nte= '"+te+"' \nft= '"+ ft+ "'\n span = "+ span)
+        //println("LambdaConstraint appended:\n"+ constraints +"\n tx= '"+ tx + "'\n tx.type= ' "+ tx.t+
+//          "'\n TypeOfLambda= ' "+ lamType+
+//          "'\nte= '"+te+"' \nft= '"+ ft+ "'\n span = "+ span)
 
         (Lambda(tx, te)(ft, span), ftvSubsE)
 
@@ -233,11 +233,11 @@ object infer {
         val exprT = genType(expr)
         val span = Span.combineOptionSpan(f.span,e.span)
         val constraint = TypeConstraint(tf.t, FunType(te.t, exprT),AppConstraintError(span))
-        println("AppConstraint:\n"+ constraint)
+        //println("AppConstraint:\n"+ constraint)
         constraints += constraint
-        println("AppConstraint appended:\n"+ constraints +"\n tf= '"+ tf + "'\n tf.type= ' "+ tf.t+
-          "'\nte= '"+te++ "'\n te.type= ' "+ te.t+"' \nexprT= '"+ exprT+
-          "\nftvSubsF= '"+ ftvSubsF+"\nftvSubsE= '"+ ftvSubsE+ "'\n span = "+ span)
+        //println("AppConstraint appended:\n"+ constraints +"\n tf= '"+ tf + "'\n tf.type= ' "+ tf.t+
+//          "'\nte= '"+te++ "'\n te.type= ' "+ te.t+"' \nexprT= '"+ exprT+
+//          "\nftvSubsF= '"+ ftvSubsF+"\nftvSubsE= '"+ ftvSubsE+ "'\n span = "+ span)
         (App(tf, te)(exprT, span), ftvSubsF <> ftvSubsE)
 
       case DepLambda(x, e) =>
@@ -289,7 +289,7 @@ object infer {
       case l: Literal => (l, Solution())
 
       case p: Primitive =>
-        println("PrimitiveConstraint: "+ p.typeScheme)
+        //println("PrimitiveConstraint: "+ p.typeScheme)
         (p.setType(p.typeScheme), Solution())
     }
   }

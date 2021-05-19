@@ -237,11 +237,11 @@ object Constraint {
         }
 
 
-      case DepConstraint(df, arg, t, sp) =>
+      case DepConstraint(df, arg, t, cTE) =>
         df match {
           case _: DepFunType[_, _] =>
             val applied = liftDependentFunctionType(df)(arg)
-            decomposed(Seq(TypeConstraint(applied, t, sp)))
+            decomposed(Seq(TypeConstraint(applied, t, TypeCTE(cTE))))
           case _ =>
             error(s"expected a dependent function type, but got $df")
         }
