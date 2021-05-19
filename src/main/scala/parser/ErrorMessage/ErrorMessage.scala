@@ -165,7 +165,7 @@ object ErrorMessage {
         val (underlined_code, pos_start_underline,length_to_underline) = which_case match {
           case This_isSubset() =>
             throw new IllegalStateException("this should not happen, because the whole line is always a overset to an part of the line")
-          case Other_isSubset() =>
+          case Other_isSubset() | Both_Equal()=>
             //println("other_IsSubset:'"+res+"'")
             val code = codeLines(column)
             (code.substring(0,important_row_Begin)+ colour+code.substring(important_row_Begin,important_row_End)+

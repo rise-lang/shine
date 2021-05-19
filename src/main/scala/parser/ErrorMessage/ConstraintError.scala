@@ -35,7 +35,7 @@ trait ConstraintError { self: Throwable =>
   problem: we have multiple lines where we look on, so we have to define for each Exeption individually
   what is important
    */
-  def getImportantPos():(Int,Int,Int) = throw new IllegalStateException("this has to be overwritten")
+  def getImportantPos():Option[(Int,Int,Int)] = throw new IllegalStateException("this has to be overwritten")
   /*
   if None returned then failure
    */
@@ -57,7 +57,7 @@ trait ConstraintError { self: Throwable =>
       important_row_Begin = Some(begin.row)
       important_row_End = Some(end.row)
     }else{
-      val (iC, iRB, iRE) =getImportantPos()
+      val (iC, iRB, iRE) =getImportantPos().get
       important_column=Some(iC)
       important_row_Begin=Some(iRB)
       important_row_End=Some(iRE)
@@ -131,6 +131,15 @@ abstract sealed class TypeConstraintError(override val span: Option[Span]) exten
 case class EqualityTypeConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
   override val what_exp: String = "here problems with TypeConstraint"
   override val help: Option[String] = None
+
+  override def getImportantPos(): Option[(Int, Int, Int)] = {
+    span match {
+      case Some(s) => {
+        Some((s.range.begin.column, s.range.begin.row, s.file.sourceLines(s.range.begin.column).length))
+      }
+      case None => ???
+    }
+  }
 }
 
 case class IdentConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
@@ -141,6 +150,20 @@ case class IdentConstraintError(override val span: Option[Span]) extends TypeCon
 case class LambdaConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
   override val what_exp: String = "here problems with LambdaConstraint"
   override val help: Option[String] = None
+  override def getImportantPos(): Option[(Int, Int, Int)] = {
+    span match {
+      case Some(s) => {
+        val r = s.whereIs("->").get
+        val c = r.end.column
+        if(c==s.range.begin.column){
+          Some(c,s.range.begin.row,r.end.row)
+        }else{
+          Some(c,0,r.end.row)
+        }
+      }
+      case None => ???
+    }
+  }
 }
 
 case class AppConstraintError(override val span: Option[Span]) extends AppLikeConstraintError(span){
@@ -164,11 +187,32 @@ case class AppConstraintError(override val span: Option[Span]) extends AppLikeCo
   }
   override val what_exp: String = "here problems with AppConstraint"
   override val help: Option[String] = None
+
+  override def getImportantPos(): Option[(Int, Int, Int)] = span match {
+    case Some(s) => {
+      Some((s.range.end.column, 0, s.range.end.row))
+    }
+    case None => ???
+  }
 }
 
 case class DepLambdaConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
   override val what_exp: String = "here problems with DepLambdaConstraint"
   override val help: Option[String] = None
+  override def getImportantPos(): Option[(Int, Int, Int)] = {
+    span match {
+      case Some(s) => {
+        val r = s.whereIs("=>").get
+        val c = r.end.column
+        if(c==s.range.begin.column){
+          Some(c,s.range.begin.row,r.end.row)
+        }else{
+          Some(c,0,r.end.row)
+        }
+      }
+      case None => ???
+    }
+  }
 }
 
 case class DepAppConstraintError(override val span: Option[Span]) extends AppLikeConstraintError(span){
@@ -199,6 +243,13 @@ case class DepAppConstraintError(override val span: Option[Span]) extends AppLik
   }
   override val what_exp: String = "here problems with DepAppConstraint"
   override val help: Option[String] = None
+
+  override def getImportantPos(): Option[(Int, Int, Int)] = span match {
+    case Some(s) => {
+      Some((s.range.end.column, 0, s.range.end.row))
+    }
+    case None => ???
+  }
 }
 
 case class TypeAnnotationConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
@@ -208,6 +259,13 @@ case class TypeAnnotationConstraintError(override val span: Option[Span]) extend
   }
   override val what_exp: String = "here problems with TypeAnnotationConstraint"
   override val help: Option[String] = None
+
+  override def getImportantPos(): Option[(Int, Int, Int)] = span match {
+    case Some(s) => {
+      Some((s.range.end.column, 0, s.range.end.row))
+    }
+    case None => ???
+  }
 }
 
 case class TypeAssertionConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
@@ -217,6 +275,13 @@ case class TypeAssertionConstraintError(override val span: Option[Span]) extends
   }
   override val what_exp: String = "here problems with TypeAssertionConstraint"
   override val help: Option[String] = None
+
+  override def getImportantPos(): Option[(Int, Int, Int)] = span match {
+    case Some(s) => {
+      Some((s.range.end.column, 0, s.range.end.row))
+    }
+    case None => ???
+  }
 }
 
 case class NatConstraintError(override val span: Option[Span]) extends Error with ConstraintError{

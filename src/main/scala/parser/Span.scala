@@ -4,6 +4,7 @@ abstract sealed class SubsetCase()
 final case class This_isSubset() extends SubsetCase
 final case class Other_isSubset() extends SubsetCase
 final case class None_isSubset() extends SubsetCase
+final case class Both_Equal() extends SubsetCase
 
 final case class Range(begin: Location, end: Location){
   // TODO make more solid (begin is safe to be smaller than end etc)
@@ -40,7 +41,11 @@ final case class Range(begin: Location, end: Location){
 
   def whoIsSubset(other:Range):SubsetCase={
     if(this.isSubsetOf(other)){
-      This_isSubset()
+      if(this==other){
+        Both_Equal()
+      }else{
+        This_isSubset()
+      }
     }else if(other.isSubsetOf(this)){
       Other_isSubset()
     }else{
@@ -93,6 +98,17 @@ final case class Span(file: FileReader, range:Range) {
   override def toString = range.toString + Console.BLUE+ "->" +Console.RESET+ file.toUri()
 
   def ==(other: Span): Boolean = this.range==other.range &&other.file==this.file
+
+  def whereIs(searched:String):Option[Range]={
+    for(i <- range.begin.column until  range.end.column+1){
+      if(file.sourceLines(i) contains searched){
+        val rowB = file.sourceLines(i) indexOf searched
+        val rowE = rowB+searched.size
+        return Some(Range(Location(i,rowB),Location(i,rowE)))
+      }
+    }
+    None
+  }
 
   def isAfter(other:Span):Boolean={
     if(this.file==other.file){
