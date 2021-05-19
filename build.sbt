@@ -45,8 +45,8 @@ lazy val riseAndShine = (project in file("."))
         "com.lihaoyi" %% "os-lib" % "0.7.3"
     ),
 
-    compile := ((compile in Compile) dependsOn generateRISEPrimitives).value,
-    test    := ((test in Test) dependsOn generateRISEPrimitives).value
+    compile := ((compile in Compile) dependsOn (generateRISEPrimitives, clap)).value,
+    test    := ((test in Test) dependsOn (generateRISEPrimitives, clap)).value
   )
 
 lazy val generateRISEPrimitives = taskKey[Unit]("Generate RISE Primitives")
@@ -93,3 +93,15 @@ lazy val docs = (project in file("riseAndShine-docs"))
   )
   .enablePlugins(MdocPlugin)
   .dependsOn(riseAndShine)
+
+lazy val clap = taskKey[Unit]("Builds Clap library")
+
+clap := {
+  import scala.language.postfixOps
+  import scala.sys.process._
+  //noinspection PostfixMethodCall
+  "echo y" #| (baseDirectory.value + "/lib/clap/buildClap.sh") !
+}
+
+
+
