@@ -1,0 +1,91 @@
+{
+  "application_name": "MM",
+  "optimization_objectives": ["runtime"],
+  "feasible_output": {
+        "enable_feasible_predictor": true
+  },
+  "hypermapper_mode" : {
+    "mode" : "client-server"
+  },
+  "design_of_experiment": {
+    "doe_type": "random sampling",
+    "number_of_samples": 1
+  },
+  "local_search_random_points": 100,
+  "optimization_iterations": 2,
+  "input_parameters" : {
+    "N": {
+      "parameter_type" : "ordinal",
+      "values" : [64]
+    },
+    "M": {
+      "parameter_type" : "ordinal",
+      "values" : [128]
+    },
+    "O": {
+      "parameter_type" : "ordinal",
+      "values" : [128]
+    },
+    "v_3": {
+      "parameter_type" : "integer",
+      "values" : [1, 128],
+      "constraints" : ["v_3 % 4 == 0", "v_7 % v_3 == 0"],
+      "dependencies" : ["v_7"]
+    },
+    "v_4": {
+      "parameter_type" : "integer",
+      "values" : [1, 128],
+      "constraints" : ["v_5 % v_4 == 0"],
+      "dependencies" : ["v_5"]
+    },
+    "v_5": {
+      "parameter_type" : "integer",
+      "values" : [1, 128],
+      "constraints" : ["N % v_5 == 0", "v_5 % 4 == 0"],
+      "dependencies" : ["N"]
+    },
+    "v_6": {
+      "parameter_type" : "integer",
+      "values" : [1, 128],
+      "constraints" : ["v_6 % 4 == 0", "v_5*v_8 % v_6 == 0"],
+      "dependencies" : ["v_5", "v_8"]
+    },
+    "v_7": {
+      "parameter_type" : "integer",
+      "values" : [1, 128],
+      "constraints" : ["M % v_7 == 0", "v_7 % 4 == 0"],
+      "dependencies" : ["M"]
+    },
+    "v_8": {
+      "parameter_type" : "integer",
+      "values" : [1, 128],
+      "constraints" : ["O % v_8 == 0"],
+      "dependencies" : ["O"]
+    },
+    "ls_0": {
+      "parameter_type" : "integer",
+      "values" : [1, 128],
+      "constraints" : ["gs_0 % ls_0 == 0"],
+      "dependencies" : ["gs_0"]
+    },
+    "ls_1": {
+      "parameter_type" : "integer",
+      "values" : [1, 64],
+      "constraints" : ["gs_1 % ls_1 == 0"],
+      "dependencies" : ["gs_1"]
+    },
+    "gs_0": {
+      "parameter_type" : "integer",
+      "values" : [1, 128],
+      "constraints" : ["128 % gs_0 == 0"],
+      "dependencies" : []
+    },
+    "gs_1": {
+      "parameter_type" : "integer",
+      "values" : [1, 64],
+      "constraints" : ["64 % gs_1 == 0"],
+      "dependencies" : []
+    }
+  }
+}
+
