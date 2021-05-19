@@ -1,7 +1,7 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
-import parser.ErrorMessage.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError}
+import parser.ErrorMessage.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, EqualityTypeConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError}
 import parser.Span
 import rise.core.DSL.Type.n2dtFun
 import rise.core.{freshName, substitute}
@@ -14,7 +14,7 @@ import scala.collection.mutable
 trait Constraint{
   val constraintTypeError:ConstraintError
 }
-case class TypeConstraint(a: Type, b: Type, override val constraintTypeError:ConstraintError) extends Constraint {
+case class TypeConstraint(a: Type, b: Type, override val constraintTypeError:TypeConstraintError) extends Constraint {
   //override def toString: String = s"$a  ~  $b"
   constraintTypeError.defineTypes(a,b)
   override def toString: String = constraintTypeError.toString
@@ -60,10 +60,10 @@ case class NatCollectionConstraint(a: NatCollection, b: NatCollection,
 
 object Constraint {
   //Todo: put these NatConstraintErrors outside of Constraint maybe
-  def NatCTE(cTE: ConstraintError) = NatConstraintError(cTE.sp)
-  def NatToDataCTE(cTE: ConstraintError) = NatToDataConstraintError(cTE.sp)
-  def NatCollCTE(cTE: ConstraintError) = NatCollectionConstraintError(cTE.sp)
-  def TypeCTE(cTE: ConstraintError) = TypeConstraintError(cTE.sp)
+  def NatCTE(cTE: ConstraintError) = NatConstraintError(cTE.span)
+  def NatToDataCTE(cTE: ConstraintError) = NatToDataConstraintError(cTE.span)
+  def NatCollCTE(cTE: ConstraintError) = NatCollectionConstraintError(cTE.span)
+  def TypeCTE(cTE: ConstraintError) = EqualityTypeConstraintError(cTE.span)
 
 
   def solve(cs: Seq[Constraint], trace: Seq[Constraint])
@@ -87,7 +87,7 @@ object Constraint {
         solveOne(c, trace)
       } catch {
         case e: InferenceException =>
-          println(e.msg + " in " + c.constraintTypeError.s)
+          println(e.msg + " in " + c.constraintTypeError.span)
           return solveRec(cs, rs :+ c, trace)
       }
       s ++ solve(s.apply(rs ++ cs), trace)
@@ -266,8 +266,8 @@ object Constraint {
 
       case NatCollectionConstraint(a, b, cTE) =>
         (a,b) match {
-          case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b, cTE.sp)
-          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, b, cTE.sp)
+          case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b, cTE.span)
+          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, b, cTE.span)
           case _ if a == b                    => Solution()
           case (NatCollectionFromArray(e1), NatCollectionFromArray(e2)) =>
             // What to do here???

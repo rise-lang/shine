@@ -5,6 +5,28 @@ import OpType.{BinOpType, UnaryOpType}
 import parser.ErrorMessage.{EndOfFile, EndOfLine, F32DeclaredAsI32, F32DeclaredAsI8, IdentifierBeginsWithAF32Number, IdentifierBeginsWithDigits, IdentifierExpectedNotTypeIdentifier, IdentifierWithNotAllowedSymbol, NOTanBinOperator, NotExpectedToken, NotExpectedTwoBackslash, NumberWithUnknownSymbol, OnlyOneEqualSign, PreAndErrorToken, ThisTokenShouldntBeHereExpectedArrowOrDots, ToShortToBeThisToken, TypeIdentifierExpectedNotIdentifier, UnknownKind, UnknownSymbol, UnknownType}
 
 
+object RecognizeLexeme{
+  val knownCharacters = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',', '.', '[', ']')
+  /*
+  is the Symbol '(', ')',  '\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' or '!'
+  It is not relevant here, that "asdf=3234" is not allowed,
+  it is only relevant here, that '=' is a known symbol
+   */
+  def otherKnownSymbol(c:Char): Boolean = {
+    knownCharacters(c) //set.contains(c)
+  }
+  val binarySymbol= Set('-', '+', '*', '/', '%' , '>', '<', '=')
+  val unarySymbol= Set('~', '!')
+  val scalarTypes= Set("Bool", "I16","I32","F64","NatTyp")
+  val kinds = Set("Data","AddrSpace","Nat")
+  /*
+  it is only relevant here, that '=' is a known symbol
+   */
+  def isBinaryOperatorSymbol(c:Char): Boolean = {
+    binarySymbol(c) //set.contains(c)
+  }
+}
+
 //alles muss in ein Try gemappt werden
 //Try{ file= openFile(); parse(file);}catch{...}finally{file.close}
 
@@ -92,7 +114,7 @@ case class RecognizeLexeme(fileReader: FileReader){
               "Here should be an '::' or '=', but whitout this nothing new can be started")
           }
         }
-        case (Right(a),_)=> a.throwException()
+        case (Right(a),_)=> throw a
       }
     }else{
     throw new IllegalStateException(
@@ -136,7 +158,7 @@ case class RecognizeLexeme(fileReader: FileReader){
 
       }
       case (Right(a), _) => {
-        a.throwException()
+        throw a
       }
     }
 
@@ -159,7 +181,7 @@ case class RecognizeLexeme(fileReader: FileReader){
         list=list.::(a)
       }
       case (Right(a), _) => {
-        a.throwException()
+        throw a
       }
     }
 
@@ -169,7 +191,7 @@ case class RecognizeLexeme(fileReader: FileReader){
         list=list.::(a)
       }
       case Right(a) => {
-        a.throwException()
+        throw a
       }
     }
     val res = lexerForeignFctParameterList(column, row,list)
@@ -206,7 +228,7 @@ case class RecognizeLexeme(fileReader: FileReader){
         list=list.::(a)
       }
       case (Right(a), _) => {
-        a.throwException()
+        throw a
       }
     }
 
@@ -223,7 +245,7 @@ case class RecognizeLexeme(fileReader: FileReader){
         list=list.::(a)
       }
       case Right(a) => {
-        a.throwException()
+        throw a
       }
     }
 
@@ -258,7 +280,7 @@ case class RecognizeLexeme(fileReader: FileReader){
         list=list.::(a)
       }
       case (Right(a), _) => {
-        a.throwException()
+        throw a
       }
     }
 
@@ -275,7 +297,7 @@ case class RecognizeLexeme(fileReader: FileReader){
         list=list.::(a)
       }
       case Right(a) => {
-        a.throwException()
+        throw a
       }
     }
 
@@ -541,7 +563,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         case Arrow(_) => {
           //nothing to do
         }
-        case t => ErrorMessage.NotExpectedToken("=>", t.toString, t.s).throwException()
+        case t => throw ErrorMessage.NotExpectedToken("=>", t.toString, t.s)
       }
     }
     case Arrow(_) => {
@@ -901,7 +923,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
       case Left(a) => a
       case Right(EndOfLine(_)) => return startNewTypAnnoationOrNewExpr(oldColumn+1,0,l)
       case Right(e) => {
-        e.throwException()
+        throw e
         return l
       }
     }
@@ -1056,9 +1078,9 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             row = r
             list=list.::(Identifier(name, span))
           }
-          case (Left(a), _) => ErrorMessage.NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s).throwException()
+          case (Left(a), _) => throw ErrorMessage.NotExpectedToken("Identifier or TypeIdentifier", a.toString, a.s)
           case (Right(a), _) => {
-            a.throwException()
+            throw a
           }
         }
       }
@@ -1103,7 +1125,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         ", but there is nothing! '" + arr(column) + "'")
       case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
     }
-    if (isBinaryOperatorSymbol(arr(column)(row))) {
+    if (RecognizeLexeme.isBinaryOperatorSymbol(arr(column)(row))) {
       lexBinOperator(column, row) match {
         case Left(BinOp(BinOpType.EQ, span)) => {
           row = row + 2
@@ -1120,7 +1142,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
               row = row+2
               list = list.::(arrow)
             }
-            case Right(e) => e.throwException()
+            case Right(e) => throw e
           }
         }
       }
@@ -1130,10 +1152,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         case '\\' => {
           lexerLambda(column, row, list) match {
             case Right(eLambda) => if(!eLambda.isInstanceOf[IdentifierExpectedNotTypeIdentifier]) {
-              eLambda.throwException()
+              throw eLambda
             }else{
               lexerDepLambda(column, row, list) match {
-                case Right(eDepLambda) => eDepLambda.throwException()
+                case Right(eDepLambda) => throw eDepLambda
                 case Left(p) => return p
               }
             }
@@ -1206,7 +1228,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                       row = r
                       list = l
                     }
-                    case Right(e) => e.throwException()
+                    case Right(e) => throw e
               }
             }
           }
@@ -1221,7 +1243,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                   row = r
                   list = l
                 }
-                case Right(e) => e.throwException()
+                case Right(e) => throw e
               }
           }
         }
@@ -1337,22 +1359,22 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
             list = list.::(a)
           }
           case (Right(a), _) => {
-            a.throwException()
+            throw a
           }
         }
-      } else if (otherKnownSymbol(symbol)) {
+      } else if (RecognizeLexeme.otherKnownSymbol(symbol)) {
         //Todo:Maybe this with lexTypAnnotationToken works fine, so that I can delete this here
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
         val ex = ErrorMessage.NotExpectedToken("an Identifier or a Number or \\ or a Brace or a UnOperator or a BinOperator",
           "" + symbol, Span(fileReader, Range(loc, Location(loc.column, loc.row+1))))
-        ex.throwException()
+        throw ex
       } else if (symbol.isWhitespace && column+1>=arr.length && arr(column).length-1 <=row) {
         println("exit typeRecognizingInNoAppExpr:: "+"column: "+ column + ", row: " + row)
         return Left((column, row,list))
       } else {
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
         val ex = UnknownSymbol(symbol, Span(fileReader, Range(loc, Location(loc.column, loc.row+1))))
-        ex.throwException()
+        throw ex
       }
     }
   }
@@ -1796,6 +1818,7 @@ if '==' then two steps else only one step
     }
   }
 
+
   private def getConcreteScalarType(substring:String, span:Span):Either[ConcreteType, PreAndErrorToken]={
     substring match {//different Types in RISE //Todo: not completed yet
       //Types
@@ -1812,7 +1835,7 @@ if '==' then two steps else only one step
   private def lexScalarType(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):
   (Either[Token,PreAndErrorToken],Int) = {
     val (pos, substring, locStart) = lexName(column, row, arr)
-    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
+    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | RecognizeLexeme.otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
       (Right(ErrorMessage.UnknownType(substring, Span(fileReader,Range(locStart, locEnd)))),pos+1)
     }else{
@@ -1854,7 +1877,7 @@ if '==' then two steps else only one step
   private def lexVectorTypeWithGivenLength(column:Int, row:Int, len:Int, arr:Array[String] = fileReader.sourceLines):
   (Either[Token,PreAndErrorToken],Int) = {
     val (pos, substring, locStart) = lexName(column, row, arr)
-    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
+    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | RecognizeLexeme.otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
       //print("Error in lexVectorType: ("+column + " , " + row + ")" + " :: Pos is " + pos)
       (Right(ErrorMessage.UnknownType(substring, Span(fileReader,Range(locStart, locEnd)))),pos+1)
@@ -1874,7 +1897,7 @@ if '==' then two steps else only one step
   private def lexKind(column:Int, row:Int,  arr:Array[String] = fileReader.sourceLines):
   (Either[Token,PreAndErrorToken],Int) = {
     val (pos, substring, locStart) = lexName(column, row, arr)
-    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
+    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | RecognizeLexeme.otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
       (Right(UnknownKind(substring, Span(fileReader,Range(locStart, locEnd)))),pos+1)
     }else{
@@ -1909,7 +1932,7 @@ if '==' then two steps else only one step
   private def lexIdentifier( column:Int, row:Int, arr:Array[String] = fileReader.sourceLines):
   (Either[Token,PreAndErrorToken],Int) = {
     val (pos, substring, locStart) = lexName(column, row, arr)
-    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))){
+    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | RecognizeLexeme.otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
       (Right(IdentifierWithNotAllowedSymbol(arr(column)(pos), arr(column).substring(row, pos+1),
         Span(fileReader,Range(locStart, locEnd)))), pos+1)
@@ -1940,13 +1963,13 @@ if '==' then two steps else only one step
   (Either[Token,PreAndErrorToken],Int) = {
     var r: Int = row + 1
     var substring: String = arr(column).substring(row, r)
-    while (r-1 < arr(column).length && arr(column).substring(row, r).matches("[0-9]+[.]?[0-9]*")) {
+    while (r-1 < arr(column).length && arr(column).substring(row, r).matches(Number.regex)) {
       substring= arr(column).substring(row, r)
       r = r + 1
     }
     val locStart:Location = Location(column, row)
     val pos:Int = r-1
-    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | otherKnownSymbol(arr(column)(pos)))) {
+    if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | RecognizeLexeme.otherKnownSymbol(arr(column)(pos)))) {
       lexNumberComplexMatch(column, row, arr, substring, locStart, pos)
     } else if(substring.matches("[0-9]+")){
       val locEnd:Location = Location(column, pos)
@@ -2055,24 +2078,6 @@ private def createIdentifierBeginsWithAF32Number(column:Int,row:Int,  pos:Int, l
   (IdentifierBeginsWithAF32Number(arr(column).substring(row, pos+1), Span(fileReader, Range(locStart, locEnd))),
     pos+1)
 }
-
-  /*
-  is the Symbol '(', ')',  '\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' or '!'
-  It is not relevant here, that "asdf=3234" is not allowed,
-  it is only relevant here, that '=' is a known symbol
-   */
-  def otherKnownSymbol(c:Char): Boolean = {
-    val set:Set[Char] = Set('(', ')', '\\', ':', '-', '+', '*', '/', '%' , '>', '<', '=' ,'!', ',', '.', '[', ']')
-    set(c) //set.contains(c)
-  }
-
-  /*
-  it is only relevant here, that '=' is a known symbol
-   */
-  def isBinaryOperatorSymbol(c:Char): Boolean = {
-    val set:Set[Char] = Set('-', '+', '*', '/', '%' , '>', '<', '=')
-    set(c) //set.contains(c)
-  }
 
 
   /*

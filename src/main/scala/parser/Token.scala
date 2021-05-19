@@ -51,20 +51,26 @@ sealed abstract class Token (span: Span){
     override def toString = "'}'"
   }
 
+  object Identifier{
+    val regex = "[a-z][a-zA-Z0-9_]*"
+  }
   // example: "split"
   final case class Identifier (name: String, span: Span) extends Token(span){
     require(!name.isEmpty, "String is empty")
     //<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
-    require(name.matches("[a-z][a-zA-Z0-9_]*"), "'"+name+ "' has not the preffered structure")
+    require(name.matches(Identifier.regex), "'"+name+ "' has not the preffered structure")
     require(begin.column == end.column, "not in one column")
 
     override def toString = s"<$name :Identifier>"
   }
 
+  object TypeIdentifier{
+    val regex = "[A-Z][a-zA-Z0-9_]*"
+  }
   final case class TypeIdentifier (name: String, span: Span) extends Token(span){
     require(!name.isEmpty, "String is empty")
     //<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
-    require(name.matches("[A-Z][a-zA-Z0-9_]*"), "'"+name+"'has not the preffered structure in " + span)
+    require(name.matches(TypeIdentifier.regex), "'"+name+"'has not the preffered structure in " + span)
     require(begin.column == end.column, "not in one column")
 
     override def toString = s"<$name :TypeIdentifier>"
@@ -178,6 +184,10 @@ import OpType.BinOpType._
     require(begin.column == end.column, "begin.column is unequal to end.column")
     require((begin.row +1) == end.row, "UnOP: (begin.row +1) should be end.row: "+ span)
     override def toString = opType.toString
+  }
+
+  object Number{
+    val regex = "[0-9]+[.]?[0-9]*"
   }
 
   // example: "32" which is saved as <32, intN>

@@ -1,19 +1,19 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr
-import parser.ErrorMessage.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError}
+import parser.ErrorMessage.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, EqualityTypeConstraintError}
 import parser.ErrorMessage.NatCollectionConstraintError
 import rise.core.types.Solution.{AddrCTE, BoolCTE, DepCTE, NatCTE, NatToDataCTE, TypeCTE}
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
-  def NatCTE(cTE: ConstraintError) = NatConstraintError(cTE.sp)
-  def NatToDataCTE(cTE: ConstraintError) = NatToDataConstraintError(cTE.sp)
-  def NatCollCTE(cTE: ConstraintError) = NatCollectionConstraintError(cTE.sp)
-  def TypeCTE(cTE: ConstraintError) = TypeConstraintError(cTE.sp)
-  def AddrCTE(cTE: ConstraintError) = AddrConstraintError(cTE.sp)
-  def BoolCTE(cTE: ConstraintError) = BoolConstraintError(cTE.sp)
-  def DepCTE(cTE: ConstraintError) = DepAppConstraintError(cTE.sp)
+  def NatCTE(cTE: ConstraintError) = NatConstraintError(cTE.span)
+  def NatToDataCTE(cTE: ConstraintError) = NatToDataConstraintError(cTE.span)
+  def NatCollCTE(cTE: ConstraintError) = NatCollectionConstraintError(cTE.span)
+  def TypeCTE(cTE: ConstraintError) = EqualityTypeConstraintError(cTE.span)
+  def AddrCTE(cTE: ConstraintError) = AddrConstraintError(cTE.span)
+  def BoolCTE(cTE: ConstraintError) = BoolConstraintError(cTE.span)
+  def DepCTE(cTE: ConstraintError) = DepAppConstraintError(cTE.span)
 
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
   def subs(ta: Type, tb: Type): Solution = {
