@@ -30,12 +30,12 @@ class mmAutoTuning extends test_util.Tests {
       Buffer outputC = createBuffer(ctx, N * O *  sizeof(float), HOST_READ | DEVICE_WRITE);
 
       float* inA = hostBufferSync(ctx, inputA, N * M * sizeof(float), HOST_WRITE);
-      for (int i = 0; i < N; i++) {
+      for (int i = 0; i < N * M ; i++) {
         inA[i] = 1;
       }
 
       float* inB = hostBufferSync(ctx, inputB, M * O * sizeof(float), HOST_WRITE);
-      for (int i = 0; i < N; i++) {
+      for (int i = 0; i < M * O; i++) {
         inB[i] = 1;
       }
 
@@ -156,15 +156,17 @@ class mmAutoTuning extends test_util.Tests {
   test("wrap OCL run"){
     val e:Expr = mmNVIDIA
 
-    val e2 = tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
-      tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
+    val e2 = tuningParam("ls0", RangeMul(1,128,2),(ls0: Nat) => tuningParam("ls1", RangeMul(1,128,2), (ls1: Nat) =>
+      tuningParam("gs0", RangeMul(1,128,2), (gs0: Nat) => tuningParam("gs1", RangeMul(1,128,2), (gs1: Nat) =>
         wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(e)))))
 
-    println("e: \n " + e)
-    println("e2: \n" + e2)
+//    println("e: \n " + e)
+//    println("e2: \n" + e2)
 
     //
-    val tuner = Tuner(main(64, 128, 128), 10, "MM", "autotuning", Some("/home/jo/development/rise-lang/shine/autotuning/configs/mm.json"), Some("/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py"))
+//    val tuner = Tuner(main(64, 128, 128), 10, "MM", "autotuning", Some("/home/jo/development/rise-lang/shine/autotuning/configs/rs_cot.json"), Some("/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py"))
+    val tuner = Tuner(main(64, 128, 128), 10, "MM", "autotuning", Some("/home/jo/development/rise-lang/shine/autotuning/configs/rs_cot.json"), None)
+//    val tuner = Tuner(main(64, 128, 128), 10, "MM")
     val result = autotune.search(tuner)(e2)
 
     val best = autotune.getBest(result.samples)
