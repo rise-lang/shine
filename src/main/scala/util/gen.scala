@@ -86,6 +86,41 @@ object gen {
     }
   }
 
+  object gap8 {
+
+    import shine.OpenMP
+    import shine.GAP8
+
+    object function {
+      def fromExpr: Expr => GAP8.Module =
+        gen.gap8.function().fromExpr
+
+      def asStringFromExpr: Expr => String = {
+        gen.gap8.function().asStringFromExpr
+      }
+
+      def asString: CModule => String =
+        gen.functionAsString
+    }
+
+    case class function(name: String = "foo") {
+      def fromExpr: Expr => GAP8.Module =
+        functionFromExpr(name, OpenMP.CodeGenerator()) andThen
+          GAP8.Module.fromCModule
+
+      def asStringFromExpr: Expr => String =
+        functionAsStringFromExpr(name, OpenMP.CodeGenerator())
+
+      private def functionAsStringFromExpr(name: String = "foo",
+                                           gen: CCodeGenerator = CCodeGenerator()
+                                          ): Expr => String =
+        functionFromExpr(name, gen) andThen
+          GAP8.Module.fromCModule andThen
+          GAP8.Module.translateToString andThen
+          run(SyntaxChecker(_))
+    }
+  }
+
   object opencl {
     import shine.OpenCL
 
