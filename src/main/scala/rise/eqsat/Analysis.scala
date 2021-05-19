@@ -1,5 +1,4 @@
 package rise.eqsat
-import rise.eqsat
 
 sealed trait Order
 case object Less extends Order
@@ -54,6 +53,7 @@ object DefaultAnalysis extends DefaultAnalysisCustomisable() {
   type Searcher = rise.eqsat.Searcher[Data, NatData, TypeData]
   type Applier = rise.eqsat.Applier[Data, NatData, TypeData]
   type Rewrite = rise.eqsat.Rewrite[Data, NatData, TypeData]
+  type Predicate = rise.eqsat.Predicate[Data, NatData, TypeData]
 }
 
 object DefaultAnalysisCustomisable {

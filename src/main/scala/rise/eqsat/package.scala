@@ -33,7 +33,7 @@ package object eqsat {
   def BENF(e: Expr): Expr = {
     val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
     val id = egraph.addExpr(e)
-    Runner.init().run(egraph, Seq(
+    Runner.init().run(egraph, NoPredicate(), Seq(
       rules.eta,
       // rules.beta, rules.betaNat
       rules.betaExtract, rules.betaNatExtract
@@ -47,7 +47,7 @@ package object eqsat {
   def CNF(e: Expr): Expr = {
     val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
     val id = egraph.addExpr(e)
-    Runner.init().run(egraph, Seq(
+    Runner.init().run(egraph, NoPredicate(), Seq(
       rules.eta,
       // rules.beta, rules.betaNat,
       rules.betaExtract, rules.betaNatExtract,

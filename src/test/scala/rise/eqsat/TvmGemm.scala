@@ -2,7 +2,6 @@ package rise.eqsat
 
 import rise.core.Expr
 import rise.elevate.tvmGemm
-import Basic.{proveEquivCNF, proveEquivBENF}
 
 object TvmGemm {
   def main(args: Array[String]): Unit = {
@@ -16,20 +15,8 @@ object TvmGemm {
       // tvmGemm.cacheBlocks(mm).get,
       // tvmGemm.par(mm).get
     ))
-    /*
-        proveEquivBENF(mm, variants(0), Seq(
-          rules.eta,
-          rules.betaExtract, rules.betaNatExtract,
-          // rules.beta, rules.betaNat,
-          // rules.mapFusion, rules.mapFission,
-          rules.reduceSeq, rules.reduceSeqMapFusion,
-          // rules.splitJoin(32), rules.blockedReduce(4),
-          // rules.splitBeforeMap, rules.transposePairAfter,
-          // rules.mapMapFBeforeTranspose,
-          // rules.liftReduce
-        ))
-    */
-    proveEquivCNF(mm, variants, Seq(
+
+    ProveEquiv.init().runCNF(mm, variants, Seq(
       rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.combinatory.compositionAssoc1,
       rules.combinatory.compositionAssoc2,
@@ -49,6 +36,8 @@ object TvmGemm {
 }
 
 class TvmGemm extends test_util.Tests {
+  private val proveEquiv = ProveEquiv.init()
+
   test("TVM GEMM") {
     val mm: Expr = tvmGemm.mm
     val variants = util.printTime("Elevate rewrite", Seq(
@@ -73,7 +62,7 @@ class TvmGemm extends test_util.Tests {
       // rules.liftReduce
     ))
 */
-    proveEquivCNF(mm, variants, Seq(
+    proveEquiv.runCNF(mm, variants, Seq(
       rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.combinatory.compositionAssoc1,
       rules.combinatory.compositionAssoc2,

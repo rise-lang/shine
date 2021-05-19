@@ -4,7 +4,6 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.primitives._
 import rise.core.types._
-import Basic.proveEquiv
 
 class BetaReductionSubtleties extends test_util.Tests {
   test("incomplete beta-reduction") {
@@ -54,8 +53,8 @@ class BetaReductionSubtleties extends test_util.Tests {
       transpose(transpose(in)))
 
     // extraction works with parallel application
-    proveEquiv(start, goal, Seq(rules.beta, rules.removeTransposePair))
-    proveEquiv(start, goal, Seq(rules.betaExtract, rules.removeTransposePair))
+    ProveEquiv.init().run(start, goal, Seq(rules.beta, rules.removeTransposePair))
+    ProveEquiv.init().run(start, goal, Seq(rules.betaExtract, rules.removeTransposePair))
 
     // extraction does not work with sequential application
     def seqCheck(betaRule: rules.Rule): Boolean = {

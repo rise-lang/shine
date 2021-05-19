@@ -29,7 +29,8 @@ class Rewrite[ED, ND, DT](val name: String,
   def search(egraph: EGraph[ED, ND, DT]): Vec[SearchMatches] =
     searcher.search(egraph)
 
-  def apply(egraph: EGraph[ED, ND, DT], matches: Vec[SearchMatches]): Vec[EClassId] =
+  def apply(egraph: EGraph[ED, ND, DT],
+            matches: Vec[SearchMatches]): Vec[EClassId] =
     applier.applyMatches(egraph, matches)
 
   // TODO: remove this, change to named free test

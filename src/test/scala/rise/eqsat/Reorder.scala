@@ -4,10 +4,24 @@ import rise.core.Expr
 import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.types._
-import Basic.{proveEquivBENF, proveEquivCNF}
 import rise.elevate.util._
 
 class Reorder extends test_util.Tests {
+  private val reorderRules = Seq(
+    rules.combinatory.compositionAssoc1,
+    rules.combinatory.compositionAssoc2,
+    rules.combinatory.compositionIntro,
+    rules.combinatory.compositionLeftId,
+    rules.combinatory.compositionRightId,
+    rules.combinatory.mapFusion,
+    rules.combinatory.mapFission,
+    rules.combinatory.transposePairAfter,
+    rules.combinatory.mapMapFBeforeTranspose,
+  )
+
+  private val proveEquiv = ProveEquiv.init()
+      .withFilter(AstSizePredicate(100))
+
   test("reorder 2D") {
     def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] = {
       depFun((n: Nat) => depFun((m: Nat) =>
@@ -20,19 +34,9 @@ class Reorder extends test_util.Tests {
     val expr: Expr = wrap(i => f => **!(f) $ i)
     val gold: Expr = wrap(i => f => (T o **!(f) o T) $ i)
 
-    proveEquivCNF(expr, gold, Seq(
-      rules.combinatory.compositionAssoc1,
-      rules.combinatory.compositionAssoc2,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionLeftId,
-      rules.combinatory.compositionRightId,
-      rules.combinatory.mapFusion,
-      rules.combinatory.mapFission,
-      rules.combinatory.transposePairAfter,
-      rules.combinatory.mapMapFBeforeTranspose,
-    ))
+    proveEquiv.runCNF(expr, gold, reorderRules)
 
-    proveEquivBENF(expr, gold, Seq(
+    proveEquiv.runBENF(expr, gold, Seq(
       rules.eta, rules.beta, rules.betaNat,
       rules.mapFusion, rules.mapFission,
       rules.transposePairAfter, rules.mapMapFBeforeTranspose
@@ -55,19 +59,9 @@ class Reorder extends test_util.Tests {
     val gold321 = wrap(f => *!(T) o T o *!(T) o ***!(f) o *!(T) o T o *!(T))
     val gold312 = wrap(f => *!(T) o T o ***!(f) o T o *!(T))
 
-    proveEquivCNF(expr, Seq(
+    proveEquiv.runCNF(expr, Seq(
       gold132, gold213, gold231, gold321, gold312
-    ), Seq(
-      rules.combinatory.compositionAssoc1,
-      rules.combinatory.compositionAssoc2,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionLeftId,
-      rules.combinatory.compositionRightId,
-      rules.combinatory.mapFusion,
-      rules.combinatory.mapFission,
-      rules.combinatory.transposePairAfter,
-      rules.combinatory.mapMapFBeforeTranspose,
-    ))
+    ), reorderRules)
 
     // FIXME: difficulties reaching all of the goals using BENF
     /*
@@ -108,19 +102,9 @@ class Reorder extends test_util.Tests {
     val gold4321: Expr = wrap(i => f => (**!(T) o *!(T) o T o **!(T) o *!(T) o **!(T) o ****!(f) o
       **!(T) o *!(T) o **!(T) o T o  *!(T) o **!(T)) $ i)
 
-    proveEquivCNF(expr, Seq(
+    proveEquiv.runCNF(expr, Seq(
       gold1243, gold1324, gold2134, gold4321
-    ), Seq(
-      rules.combinatory.compositionAssoc1,
-      rules.combinatory.compositionAssoc2,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionLeftId,
-      rules.combinatory.compositionRightId,
-      rules.combinatory.mapFusion,
-      rules.combinatory.mapFission,
-      rules.combinatory.transposePairAfter,
-      rules.combinatory.mapMapFBeforeTranspose,
-    ))
+    ), reorderRules)
 
     // FIXME: difficulties reaching all of the goals with BENF
     /*

@@ -6,7 +6,6 @@ import rise.core.DSL._
 import rise.core.semantics.FloatData
 import rise.core.types._
 import rise.eqsat.rules
-import rise.eqsat.Basic.{proveEquivBENF, proveEquivCNF}
 
 class separableConvolution2DEqsat extends test_util.Tests {
   val weights2d = binomialWeights2d
@@ -63,15 +62,17 @@ class separableConvolution2DEqsat extends test_util.Tests {
     ))
   }
 
+  private val proveEquiv = rise.eqsat.ProveEquiv.init()
+
   // -- algorithmic
 
   test("base to factorised") {
-    proveEquivBENF(wrapExpr(base(weights2d)), wrapExpr(factorised(weightsV)(weightsH)),
+    proveEquiv.runBENF(wrapExpr(base(weights2d)), wrapExpr(factorised(weightsV)(weightsH)),
       Seq(separateDot))
   }
 
   test("base to factorised (CNF)") {
-    proveEquivCNF(wrapExpr(base(weights2d)), wrapExpr(factorised(weightsV)(weightsH)),
+    proveEquiv.runCNF(wrapExpr(base(weights2d)), wrapExpr(factorised(weightsV)(weightsH)),
       Seq(rules.combinatory.compositionElim,
         rules.combinatory.compositionAssoc1,
         rules.combinatory.compositionAssoc2,
@@ -80,12 +81,12 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("base to factorised (VH)") {
-    proveEquivBENF(wrapExpr(base(weights2d)), wrapExpr(factorisedVH(weightsV)(weightsH)),
+    proveEquiv.runBENF(wrapExpr(base(weights2d)), wrapExpr(factorisedVH(weightsV)(weightsH)),
       Seq(separateDotT))
   }
 
   test("base to factorised (VH, CNF)") {
-    proveEquivCNF(wrapExpr(base(weights2d)), wrapExpr(factorisedVH(weightsV)(weightsH)),
+    proveEquiv.runCNF(wrapExpr(base(weights2d)), wrapExpr(factorisedVH(weightsV)(weightsH)),
       Seq(rules.combinatory.compositionElim,
         rules.combinatory.compositionAssoc1,
         rules.combinatory.compositionAssoc2,
@@ -95,7 +96,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
 
   test("base to scanline") {
     // FIXME: rules.beta does not work here
-    proveEquivBENF(wrapExpr(base(weights2d)), wrapExpr(scanline(weightsV)(weightsH)), Seq(
+    proveEquiv.runBENF(wrapExpr(base(weights2d)), wrapExpr(scanline(weightsV)(weightsH)), Seq(
       rules.eta, rules.betaExtract, rules.removeTransposePair,
       rules.mapFusion, rules.mapFission,
       rules.slideBeforeMap, rules.mapSlideBeforeTranspose, rules.slideBeforeMapMapF,
@@ -104,7 +105,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("base to scanline (CNF)") {
-    proveEquivCNF(wrapExpr(base(weights2d)), wrapExpr(scanline(weightsV)(weightsH)), Seq(
+    proveEquiv.runCNF(wrapExpr(base(weights2d)), wrapExpr(scanline(weightsV)(weightsH)), Seq(
       rules.combinatory.compositionElim,
       rules.combinatory.compositionAssoc1,
       rules.combinatory.compositionAssoc2,
@@ -122,14 +123,14 @@ class separableConvolution2DEqsat extends test_util.Tests {
   }
 
   test("scanline to separated") {
-    proveEquivBENF(wrapExpr(scanline(weightsV)(weightsH)),
+    proveEquiv.runBENF(wrapExpr(scanline(weightsV)(weightsH)),
       wrapExpr(separated(weightsV)(weightsH)), Seq(
       rules.eta, rules.betaExtract, rules.mapFission, rules.mapFusion
     ))
   }
 
   test("scanline to separated (CNF)") {
-    proveEquivCNF(wrapExpr(scanline(weightsV)(weightsH)),
+    proveEquiv.runCNF(wrapExpr(scanline(weightsV)(weightsH)),
       wrapExpr(separated(weightsV)(weightsH)), Seq(
         rules.combinatory.compositionAssoc1,
         rules.combinatory.compositionAssoc2,
@@ -141,34 +142,34 @@ class separableConvolution2DEqsat extends test_util.Tests {
   // -- lowering
 
   test("base to baseSeq") {
-    proveEquivBENF(wrapExpr(base(weights2d)), wrapExpr(baseSeq(weights2d)), Seq(
+    proveEquiv.runBENF(wrapExpr(base(weights2d)), wrapExpr(baseSeq(weights2d)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
   test("factorised to factorisedSeq") {
-    proveEquivBENF(wrapExpr(factorised(weightsV)(weightsH)),
+    proveEquiv.runBENF(wrapExpr(factorised(weightsV)(weightsH)),
       wrapExpr(factorisedSeq(weightsV)(weightsH)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
   test("separated to separatedSeq") {
-    proveEquivBENF(wrapExpr(separated(weightsV)(weightsH)),
+    proveEquiv.runBENF(wrapExpr(separated(weightsV)(weightsH)),
       wrapExpr(separatedSeq(weightsV)(weightsH)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq, rules.toMemAfterMapSeq
     ))
   }
 
   test("scanline to scanlineSeq") {
-    proveEquivBENF(wrapExpr(scanline(weightsV)(weightsH)),
+    proveEquiv.runBENF(wrapExpr(scanline(weightsV)(weightsH)),
       wrapExpr(scanlineSeq(weightsV)(weightsH)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
   test("scanline to regRotSeq") {
-    proveEquivBENF(wrapExpr(scanline(weightsV)(weightsH)),
+    proveEquiv.runBENF(wrapExpr(scanline(weightsV)(weightsH)),
       wrapExpr(regRotSeq(weightsV)(weightsH)), Seq(
       rules.reduceSeqUnroll, rules.mapSeq, rules.rotateValuesScalar, rules.iterateStream
     ))

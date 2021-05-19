@@ -4,11 +4,10 @@ import rise.core.Expr
 import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.types._
-import Basic.{proveEquivBENF, proveEquivCNF}
 import rise.elevate.util._
 
 class Tiling extends test_util.Tests {
-  val minimalRules = Seq(
+  private val minimalRules = Seq(
     rules.combinatory.compositionAssoc1,
     rules.combinatory.compositionAssoc2,
     rules.combinatory.compositionIntro,
@@ -17,12 +16,14 @@ class Tiling extends test_util.Tests {
     rules.combinatory.splitJoin(tileSize),
   )
 
-  val reorderRules = Seq(
+  private val reorderRules = Seq(
     rules.combinatory.mapFusion,
     rules.combinatory.mapFission,
     rules.combinatory.transposePairAfter,
     rules.combinatory.mapMapFBeforeTranspose,
   )
+
+  private val proveEquiv = ProveEquiv.init()
 
   test("tile 1D") {
     def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
@@ -36,7 +37,7 @@ class Tiling extends test_util.Tests {
     val expr = wrap(f => *(f))
     val gold = wrap(f => J o **(f) o S)
 
-    proveEquivCNF(expr, gold, minimalRules)
+    proveEquiv.runCNF(expr, gold, minimalRules)
   }
 
   // TODO: ignore tests below? takes 40s
@@ -58,7 +59,7 @@ class Tiling extends test_util.Tests {
       wrap(f => J o **(J) o *(T) o ****(f) o *(T) o **(S) o S)
     )
 
-    proveEquivCNF(expr, golds, minimalRules ++ reorderRules)
+    proveEquiv.runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 
   test("tile 3D") {
@@ -88,7 +89,7 @@ class Tiling extends test_util.Tests {
         ****(S) o **(S) o S),
     )
 
-    proveEquivCNF(expr, golds, minimalRules ++ reorderRules)
+    proveEquiv.runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 
   test("tile 4D") {
@@ -133,6 +134,6 @@ class Tiling extends test_util.Tests {
         ******(S) o ****(S) o **(S) o S),
     )
 
-    proveEquivCNF(expr, golds, minimalRules ++ reorderRules)
+    proveEquiv.runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 }

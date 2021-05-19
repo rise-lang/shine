@@ -74,7 +74,10 @@ class Runner(var iterations: Vec[Iteration],
       s"${ratio(rebuildTime.toDouble, totalTime.toDouble)} rebuild)")
   }
 
-  def run[ED, ND, TD](egraph: EGraph[ED, ND, TD], rules: Seq[Rewrite[ED, ND, TD]]): Runner = {
+  def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+                      filter: Predicate[ED, ND, TD],
+                      rules: Seq[Rewrite[ED, ND, TD]],
+                      roots: Seq[EClassId] = Seq()): Runner = {
     egraph.rebuild()
 
     // iteration 0
@@ -97,8 +100,11 @@ class Runner(var iterations: Vec[Iteration],
       }
       if (stopReasons.nonEmpty) { return this }
 
-      val iter = runOne(egraph, rules)
+      val iter = runOne(egraph, filter, rules)
       println(iter)
+      if (roots.nonEmpty) {
+        println(s"> 100: ${Dijkstra.countAstSizeLimit(egraph, roots, 100)}")
+      }
       iterations += iter
 
       if (iter.applied.isEmpty) {
@@ -119,7 +125,9 @@ class Runner(var iterations: Vec[Iteration],
     this
   }
 
+  // TODO: use filter
   private def runOne[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+                                 filter: Predicate[ED, ND, TD],
                                  rules: Seq[Rewrite[ED, ND, TD]]): Iteration = {
     val time0 = System.nanoTime()
 

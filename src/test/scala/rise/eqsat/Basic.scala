@@ -29,7 +29,7 @@ class Basic extends test_util.Tests {
   }
 
   test("map fusion") {
-    proveEquivBENF(
+    ProveEquiv.init().runBENF(
       withArrayAndFuns(4, in => f =>
         in |> map(f(0)) |> map(f(1)) |> map(f(2)) |> map(f(3))),
       withArrayAndFuns(4, in => f =>
@@ -39,7 +39,7 @@ class Basic extends test_util.Tests {
   }
 
   test("map fusion (CNF)") {
-    proveEquivCNF(
+    ProveEquiv.init().runCNF(
       withArrayAndFuns(4, in => f =>
         in |> map(f(0)) |> map(f(1)) |> map(f(2)) |> map(f(3))),
       withArrayAndFuns(4, in => f =>
@@ -51,7 +51,7 @@ class Basic extends test_util.Tests {
   }
 
   test("map fission") {
-    proveEquivBENF(
+    ProveEquiv.init().runBENF(
       withArrayAndFuns(4, in => f =>
         in |> map(f(0) >> f(1) >> f(2) >> f(3))),
       withArrayAndFuns(4, in => f =>
@@ -61,7 +61,7 @@ class Basic extends test_util.Tests {
   }
 
   test("map fission (CNF)") {
-    proveEquivCNF(
+    ProveEquiv.init().runCNF(
       withArrayAndFuns(4, in => f =>
         in |> map(f(0) >> f(1) >> f(2) >> f(3))),
       withArrayAndFuns(4, in => f =>
@@ -73,7 +73,7 @@ class Basic extends test_util.Tests {
   }
 
   test("map first fission") {
-    proveEquivBENF(
+    ProveEquiv.init().runBENF(
       withArrayAndFuns(4, in => f =>
         in |> map(f(0) >> f(1) >> f(2) >> f(3))),
       withArrayAndFuns(4, in => f =>
@@ -83,7 +83,7 @@ class Basic extends test_util.Tests {
   }
 
   test("map first fission (CNF)") {
-    proveEquivCNF(
+    ProveEquiv.init().runCNF(
       withArrayAndFuns(4, in => f =>
         in |> map(f(0) >> f(1) >> f(2) >> f(3))),
       withArrayAndFuns(4, in => f =>
@@ -105,7 +105,7 @@ class Basic extends test_util.Tests {
         inner(f :: dt1 ->: dt2) :: ((n`.`dt1) ->: `_`)
       ))))
 
-    proveEquivBENF(
+    ProveEquiv.init().runBENF(
       wrap(f =>
         slide(3)(1) >> slide(4)(2) >> map(map(map(f)))),
       wrap(f =>
@@ -116,94 +116,6 @@ class Basic extends test_util.Tests {
 }
 
 object Basic {
-  def proveEquivBENF(start: rise.core.Expr,
-                     goal: rise.core.Expr,
-                     rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
-    proveEquivBENF(start, Seq(goal), rules)
-  }
-
-  def proveEquivCNF(start: rise.core.Expr,
-                    goal: rise.core.Expr,
-                    rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
-    proveEquivCNF(start, Seq(goal), rules)
-  }
-
-  def proveEquiv(start: Expr,
-                 goal: Expr,
-                 rules: Seq[DefaultAnalysis.Rewrite],
-                 analysis: DefaultAnalysisCustomisable = DefaultAnalysis): Unit = {
-    proveEquiv(start, Seq(goal), rules, analysis)
-  }
-
-  def proveEquivBENF(start: rise.core.Expr,
-                     goals: Seq[rise.core.Expr],
-                     rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
-    val normStart = BENF(Expr.fromNamed(start))
-    val normGoals = goals.map(g => BENF(Expr.fromNamed(g)))
-    println(s"normalized start: ${Expr.toNamed(normStart)}")
-    for ((goal, i) <- normGoals.zipWithIndex) {
-      println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
-    }
-    proveEquiv(normStart, normGoals, rules, DefaultAnalysis)
-  }
-
-  def proveEquivCNF(start: rise.core.Expr,
-                    goals: Seq[rise.core.Expr],
-                    rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
-    val normStart = CNF(Expr.fromNamed(start))
-    val normGoals = goals.map(g => CNF(Expr.fromNamed(g)))
-    println(s"normalized start: ${Expr.toNamed(normStart)}")
-    for ((goal, i) <- normGoals.zipWithIndex) {
-      println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
-    }
-    proveEquiv(normStart, normGoals, rules, DefaultAnalysis)
-  }
-
-  def proveEquiv(start: Expr,
-                 goals: Seq[Expr],
-                 rules: Seq[DefaultAnalysis.Rewrite],
-                 analysis: DefaultAnalysisCustomisable): Unit = {
-    val goalPatterns = goals.map(Pattern.fromExpr(_).compile())
-
-    val egraph = EGraph.emptyWithAnalysis(analysis)
-    val startId = egraph.addExpr(start)
-    // val goalId = runner.egraph.addExpr(goal)
-    val runner = Runner.init().doneWhen { _ =>
-        goalPatterns.forall(_.searchEClass(egraph, startId).isDefined)
-        // note: could also use this to get a faster procedure,
-        // but it would allow rewriting the goal as well, not just the start
-        // r.egraph.findMut(startId) == r.egraph.findMut(goalId)
-    }.run(egraph, rules)
-    runner.printReport()
-
-    if (!runner.stopReasons.contains(Done)) {
-      runner.iterations.foreach(println)
-      // egraph.dot().toSVG("/tmp/egraph.svg")
-      val (found, notFound) = goalPatterns.zipWithIndex.partition { case (goal, _) =>
-        goal.searchEClass(egraph, startId).isDefined
-      }
-      println(s"found: ${found.map(_._2).mkString(", ")}")
-      println(s"not found: ${notFound.map(_._2).mkString(", ")}");
-      {
-        import PatternDSL._
-        val pat: Pattern = lam(lam(app(app(map, lam(
-          app(transpose >> app(map,
-            app(zip, %(0)) >>
-            app(app(prim(rc.primitives.reduceSeq.primitive),
-              lam(lam(app(
-                ?(0) >> app(add, %(1)),
-                %(0))))),
-              l(rc.semantics.FloatData(0)))
-          ), %(1))
-        )), %(1))))
-        println(pat.compile().searchEClass(egraph, startId))
-      }
-      throw CouldNotProveEquiv
-    }
-  }
-
-  case object CouldNotProveEquiv extends Exception
-
   import rise.core.DSL._
   import rise.core.DSL.Type._
 
