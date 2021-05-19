@@ -25,9 +25,9 @@ class mmAutoTuning extends test_util.Tests {
     const int O = ${O};
     int main(int argc, char** argv) {
       Context ctx = createDefaultContext();
-      Buffer inputA = createBuffer(ctx, N * M * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-      Buffer inputB = createBuffer(ctx, M * O * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-      Buffer outputC = createBuffer(ctx, N * O *  sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+      Buffer inputA = createBuffer(ctx, N * M * sizeof(float), HOST_WRITE | DEVICE_READ);
+      Buffer inputB = createBuffer(ctx, M * O * sizeof(float), HOST_WRITE | DEVICE_READ);
+      Buffer outputC = createBuffer(ctx, N * O *  sizeof(float), HOST_READ | DEVICE_WRITE);
 
       float* inA = hostBufferSync(ctx, inputA, N * M * sizeof(float), HOST_WRITE);
       for (int i = 0; i < N; i++) {
@@ -39,9 +39,9 @@ class mmAutoTuning extends test_util.Tests {
         inB[i] = 1;
       }
 
-      foo_init_run(ctx, outputC, inputA, inputB);
+      foo_init_run(ctx, outputC, N, M, O, inputA, inputB);
 
-      float* out = hostBufferSync(ctx, output, N * O * sizeof(float), HOST_READ);
+      float* out = hostBufferSync(ctx, outputC, N * O * sizeof(float), HOST_READ);
 
 //    todo add error checking
 
@@ -185,13 +185,15 @@ class mmAutoTuning extends test_util.Tests {
       NatIdentifier("v7", isExplicit = true) -> (128: Nat),
       NatIdentifier("v8", isExplicit = true) -> (16: Nat),
     )
-    val e:Expr = mmNVIDIA
-    val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
+    val e: Expr = mmNVIDIA
 
-    println("e: " + e)
-    println("e2: " + e2)
+    val e2 = tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
+      tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
+        wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(e)))))
 
-    val result = autotune.execute(e2, main(64, 128, 128))
+    val e3 = rise.core.substitute.natsInExpr(goodParameters, e2)
+
+    val result = autotune.execute(e3, main(64, 128, 128))
     println("result: " + result)
   }
 
