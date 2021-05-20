@@ -1,8 +1,9 @@
 package parser.ErrorMessage
 
 import parser.Span
-import rise.core.types.{Kind, Type}
-import rise.core.{types => rt}
+import rise.core.types.{DataType, DepFunType, FunType, Kind, Type, TypeIdentifier, TypePlaceholder}
+import rise.core.{DepApp, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, types => rt}
+import rise.{core => r}
 
 //__________________________________________________________________________________________________________
 //ConstraintTypeError
@@ -25,6 +26,7 @@ trait ConstraintError { self: Throwable =>
   val what_exp:String
   val help:Option[String]
   val name_of_error:String
+  val expr:r.Expr
 
   //Todo: find better solution than SpanPlaceholder
   var constraintTypes: Option[ConstraintInputTypes] = None
@@ -80,10 +82,60 @@ trait ConstraintError { self: Throwable =>
 
     val underl = ErrorMessage.Underline_With_Char('^', RED())
 
-    val error = ErrorMessage.give_error(sp.file.fileName, description_error(),what_exp,help,name_of_error,
+    val (newWhatExpr, newHelp) = getWhatExprAndOption
+    val error = ErrorMessage.give_error(sp.file.fileName, description_error(),newWhatExpr,newHelp,name_of_error,
       start_column,end_column,sp.file.sourceLines, underl, important_column, important_row_Begin,
       important_row_End)
     error
+  }
+
+  def getWhatExprAndOption: (String,Option[String]) ={
+    val help = expr match {
+      case Identifier(name) => Some("Identifier '"+name+"' has probably a different type <-"+ expr.span.get)
+      case Lambda(x, e) => Some("Lambda")
+      case r.App(f, e) => Some("App")
+      case DepLambda(x, e) => Some("DepLambda")
+      case DepApp(f, x) => Some("DepApp")
+      case Literal(d, span) => Some("Literal")
+      case primitive: Primitive => Some("Primitive")
+    }
+    constraintTypes match {
+      case Some(cT) => cT match {
+        case ExpectedAndFoundT(expectedT, foundT) =>{
+          val what_exp = "here `"+foundT+"` but expected `"+expectedT+"`"
+          (what_exp,help)
+        }
+        case ExpectedAndFoundTLeftAndRight(expectedT, foundTLeft, foundTRight) =>{
+          val what_exp = "here (`"+foundTLeft+"`,`"+foundTRight+"`) but expected `"+expectedT+"`"
+          (what_exp,help)
+        }
+        case ExpectedAndFoundTLeftAndRightDep(expectedT, foundTLeft, foundTRight) =>{
+          val what_exp = "here (`"+foundTLeft+"`,`"+foundTRight+"`) but expected `"+expectedT+"`"
+          (what_exp,help)
+        }
+        case ExpectedAndFoundN(expected, found) =>{
+          val what_exp = "here `"+found+"` but expected `"+expected+"`"
+          (what_exp,help)
+        }
+        case ExpectedAndFoundB(expected, found) =>{
+          val what_exp = "here `"+found+"` but expected `"+expected+"`"
+          (what_exp,help)
+        }
+        case ExpectedAndFoundA(expected, found) =>{
+          val what_exp = "here `"+found+"` but expected `"+expected+"`"
+          (what_exp,help)
+        }
+        case ExpectedAndFoundNatToData(expected, found) =>{
+          val what_exp = "here `"+found+"` but expected `"+expected+"`"
+          (what_exp,help)
+        }
+        case ExpectedAndFoundNatCollection(expected, found) =>{
+          val what_exp = "here `"+found+"` but expected `"+expected+"`"
+          (what_exp,help)
+        }
+      }
+      case None =>throw new IllegalStateException("ConstraintTypes are not initialised yet")
+    }
   }
 }
 
@@ -128,7 +180,7 @@ abstract sealed class TypeConstraintError(override val span: Option[Span]) exten
   override val name_of_error: String = "TypeConstraintError"
 }
 
-case class EqualityTypeConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
+case class EqualityTypeConstraintError(override val span: Option[Span], override val expr: Expr) extends TypeConstraintError(span){
   override val what_exp: String = "here problems with TypeConstraint"
   override val help: Option[String] = None
 
@@ -142,12 +194,12 @@ case class EqualityTypeConstraintError(override val span: Option[Span]) extends 
   }
 }
 
-case class IdentConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
+case class IdentConstraintError(override val span: Option[Span], override val expr: Expr) extends TypeConstraintError(span){
   override val what_exp: String = "here problems with IdentConstraint"
   override val help: Option[String] = None
 }
 
-case class LambdaConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
+case class LambdaConstraintError(override val span: Option[Span], override val expr: Expr) extends TypeConstraintError(span){
   override val what_exp: String = "here problems with LambdaConstraint"
   override val help: Option[String] = None
   override def getImportantPos(): Option[(Int, Int, Int)] = {
@@ -166,7 +218,7 @@ case class LambdaConstraintError(override val span: Option[Span]) extends TypeCo
   }
 }
 
-case class AppConstraintError(override val span: Option[Span]) extends AppLikeConstraintError(span){
+case class AppConstraintError(override val span: Option[Span], override val expr: Expr) extends AppLikeConstraintError(span){
   override def defineTypes(expectedT:rt.Type, foundT:rt.Type): Unit ={
     constraintTypes match {
       case Some(_) => throw new IllegalStateException("You are not supposed to call this function two times")
@@ -196,7 +248,7 @@ case class AppConstraintError(override val span: Option[Span]) extends AppLikeCo
   }
 }
 
-case class DepLambdaConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
+case class DepLambdaConstraintError(override val span: Option[Span], override val expr: Expr) extends TypeConstraintError(span){
   override val what_exp: String = "here problems with DepLambdaConstraint"
   override val help: Option[String] = None
   override def getImportantPos(): Option[(Int, Int, Int)] = {
@@ -215,7 +267,7 @@ case class DepLambdaConstraintError(override val span: Option[Span]) extends Typ
   }
 }
 
-case class DepAppConstraintError(override val span: Option[Span]) extends Error with ConstraintError{
+case class DepAppConstraintError(override val span: Option[Span], override val expr: Expr) extends Error with ConstraintError{
   override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
   override def defineTypes(expectedT: Type, foundT: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
   def defineTypesDep[K <: Kind](expectedT:rt.Type, foundTLeft:rt.Type, foundRight:K#T): Unit ={
@@ -253,7 +305,7 @@ case class DepAppConstraintError(override val span: Option[Span]) extends Error 
   }
 }
 
-case class TypeAnnotationConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
+case class TypeAnnotationConstraintError(override val span: Option[Span], override val expr: Expr) extends TypeConstraintError(span){
   override def description_error(): String = {
     val annotatedT::foundT::Nil = getTypes()
     "annotated '" + annotatedT + "' but found '"+foundT+"'"
@@ -269,7 +321,7 @@ case class TypeAnnotationConstraintError(override val span: Option[Span]) extend
   }
 }
 
-case class TypeAssertionConstraintError(override val span: Option[Span]) extends TypeConstraintError(span){
+case class TypeAssertionConstraintError(override val span: Option[Span], override val expr: Expr) extends TypeConstraintError(span){
   override def description_error(): String = {
     val annotatedT::freezeAnnT::Nil = getTypes()
     "annotated '" + annotatedT +"' but found freeze Type '"+freezeAnnT+"'"
@@ -285,7 +337,7 @@ case class TypeAssertionConstraintError(override val span: Option[Span]) extends
   }
 }
 
-case class NatConstraintError(override val span: Option[Span]) extends Error with ConstraintError{
+case class NatConstraintError(override val span: Option[Span], override val expr: Expr) extends Error with ConstraintError{
   def getNats():List[rt.Nat] = constraintTypes match {
     case None => throw new IllegalStateException("ConstraintTypes are not initialised yet")
     case Some(cT)=> cT match {
@@ -312,7 +364,7 @@ case class NatConstraintError(override val span: Option[Span]) extends Error wit
   override val help: Option[String] = None
 }
 
-case class BoolConstraintError(override val span: Option[Span]) extends Error with ConstraintError{
+case class BoolConstraintError(override val span: Option[Span], override val expr: Expr) extends Error with ConstraintError{
   override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
   override def defineTypes(expectedT: Type, foundT: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
   def getBools():List[arithexpr.arithmetic.BoolExpr] = constraintTypes match {
@@ -337,7 +389,7 @@ case class BoolConstraintError(override val span: Option[Span]) extends Error wi
   override val help: Option[String] = None
 }
 
-case class AddrConstraintError(override val span: Option[Span]) extends Error with ConstraintError{
+case class AddrConstraintError(override val span: Option[Span], override val expr: Expr) extends Error with ConstraintError{
   override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
   override def defineTypes(expected: Type, found: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
   def getAddrs():List[rt.AddressSpace] = constraintTypes match {
@@ -363,7 +415,7 @@ case class AddrConstraintError(override val span: Option[Span]) extends Error wi
 }
 
 
-case class NatToDataConstraintError(override val span: Option[Span]) extends Error with ConstraintError{
+case class NatToDataConstraintError(override val span: Option[Span], override val expr: Expr) extends Error with ConstraintError{
   override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
   override def defineTypes(expected: Type, found: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
   def getNatToDatas():List[rt.NatToData] = constraintTypes match {
@@ -388,7 +440,7 @@ case class NatToDataConstraintError(override val span: Option[Span]) extends Err
   override val help: Option[String] = None
 }
 
-case class NatCollectionConstraintError(override val span: Option[Span]) extends Error with ConstraintError{
+case class NatCollectionConstraintError(override val span: Option[Span], override val expr: Expr) extends Error with ConstraintError{
   override def getTypes(): List[Type] = throw new IllegalStateException("this function should not be used in NatConstraintError")
   override def defineTypes(expected: Type, found: Type): Unit =throw new IllegalStateException("this function should not be used in NatConstraintError")
   def getNatCollection():List[rt.NatCollection] = constraintTypes match {

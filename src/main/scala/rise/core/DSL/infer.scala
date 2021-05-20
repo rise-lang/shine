@@ -180,7 +180,7 @@ object infer {
                 case Some(fkt) => fkt match { //Todo: We need the implementation at some point too, now we only use the Type
                   case parse.HMExpr(e) => {
                     val subExpr = e.toExprWithMapFkt(mF)
-                    constraints += TypeConstraint(subExpr.t, subExpr.t, IdentConstraintError(span))
+                    constraints += TypeConstraint(subExpr.t, subExpr.t, IdentConstraintError(span, subExpr))
                     return (subExpr, Solution())
                   }
                   case parse.HMType(t) => error(s"$i has a type but no implementation: "+ t, span)(Seq())
@@ -188,7 +188,7 @@ object infer {
                     //It creates an InferExp, because Nat needs to be combined with DepApp and not with App
                     //and because we are not able to change it here, this solution to put Nat here, can not work
                   {
-                    constraints += TypeConstraint(NatType, NatType, IdentConstraintError(span))
+                    constraints += TypeConstraint(NatType, NatType, IdentConstraintError(span,expr))
                     nat match {
                       case parse.NNumber(n) => return (n.toExpr, Solution())
                       case parse.NIdentifier(n) => error(s"only explicit values are accepted in declaring Nat: "+ n, span)(Seq())
@@ -202,7 +202,7 @@ object infer {
           } else {
             i.t
           })
-        val constraint = TypeConstraint(t, i.t, IdentConstraintError(span))
+        val constraint = TypeConstraint(t, i.t, IdentConstraintError(span,expr))
         //println("IdentifierConstraint:\n"+ constraint)
         constraints += constraint
         //println("IdentifierConstraint appended:\n"+ constraints +"\n t= '"+ t + "'\n i.t= ' "+ i.t+
@@ -218,7 +218,7 @@ object infer {
         val ft = FunType(tx.t, te.t)
         val exprT = genType(expr)
         //val span = Span.combineOptionSpan(x.span,e.span)
-        val constraint = TypeConstraint(exprT, ft, LambdaConstraintError(span))
+        val constraint = TypeConstraint(exprT, ft, LambdaConstraintError(span,expr))
         //println("LambdaConstraint:\n"+ constraint)
         constraints += constraint
         //println("LambdaConstraint appended:\n"+ constraints +"\n tx= '"+ tx + "'\n tx.type= ' "+ tx.t+
@@ -232,7 +232,7 @@ object infer {
         val (te, ftvSubsE) = constrained(e)
         val exprT = genType(expr)
         val span = Span.combineOptionSpan(f.span,e.span)
-        val constraint = TypeConstraint(tf.t, FunType(te.t, exprT),AppConstraintError(span))
+        val constraint = TypeConstraint(tf.t, FunType(te.t, exprT),AppConstraintError(span,expr))
         //println("AppConstraint:\n"+ constraint)
         constraints += constraint
         //println("AppConstraint appended:\n"+ constraints +"\n tf= '"+ tf + "'\n tf.type= ' "+ tf.t+
@@ -257,27 +257,27 @@ object infer {
               DepFunType[NatToNatKind, Type](n2n, te.t), span
             )
         }
-        val constraint = TypeConstraint(exprT, tf.t, DepLambdaConstraintError(span))
+        val constraint = TypeConstraint(exprT, tf.t, DepLambdaConstraintError(span,expr))
         constraints += constraint
         (tf, ftvSubsE)
 
       case DepApp(f, x) =>
         val (tf, ftvSubsF) = constrained(f)
         val exprT = genType(expr)
-        val constraint = DepConstraint(tf.t, x, exprT,DepAppConstraintError(span))
+        val constraint = DepConstraint(tf.t, x, exprT,DepAppConstraintError(span,expr))
         constraints += constraint
         (DepApp(tf, x)(exprT, span), ftvSubsF)
 
       case TypeAnnotation(e, t) =>
         val (te, ftvSubsE) = constrained(e)
-        val constraint = TypeConstraint(te.t, t,TypeAnnotationConstraintError(span))
+        val constraint = TypeConstraint(te.t, t,TypeAnnotationConstraintError(span,expr))
         constraints += constraint
         (te, ftvSubsE)
 
       case TypeAssertion(e, t) =>
         val ftvSubsT = getFTVSubs(t)
         val (te, ftvSubsE) = constrained(e)
-        val constraint = TypeConstraint(te.t, freeze(ftvSubsT, t),TypeAssertionConstraintError(span))
+        val constraint = TypeConstraint(te.t, freeze(ftvSubsT, t),TypeAssertionConstraintError(span,expr))
         constraints += constraint
         (te, ftvSubsE <> ftvSubsT)
 

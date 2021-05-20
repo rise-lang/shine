@@ -7,13 +7,13 @@ import rise.core.types.Solution.{AddrCTE, BoolCTE, DepCTE, NatCTE, NatToDataCTE,
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
-  def NatCTE(cTE: ConstraintError) = NatConstraintError(cTE.span)
-  def NatToDataCTE(cTE: ConstraintError) = NatToDataConstraintError(cTE.span)
-  def NatCollCTE(cTE: ConstraintError) = NatCollectionConstraintError(cTE.span)
-  def TypeCTE(cTE: ConstraintError) = EqualityTypeConstraintError(cTE.span)
-  def AddrCTE(cTE: ConstraintError) = AddrConstraintError(cTE.span)
-  def BoolCTE(cTE: ConstraintError) = BoolConstraintError(cTE.span)
-  def DepCTE(cTE: ConstraintError) = DepAppConstraintError(cTE.span)
+  def NatCTE(cTE: ConstraintError) = NatConstraintError(cTE.span, cTE.expr)
+  def NatToDataCTE(cTE: ConstraintError) = NatToDataConstraintError(cTE.span, cTE.expr)
+  def NatCollCTE(cTE: ConstraintError) = NatCollectionConstraintError(cTE.span, cTE.expr)
+  def TypeCTE(cTE: ConstraintError) = EqualityTypeConstraintError(cTE.span, cTE.expr)
+  def AddrCTE(cTE: ConstraintError) = AddrConstraintError(cTE.span, cTE.expr)
+  def BoolCTE(cTE: ConstraintError) = BoolConstraintError(cTE.span, cTE.expr)
+  def DepCTE(cTE: ConstraintError) = DepAppConstraintError(cTE.span, cTE.expr)
 
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
   def subs(ta: Type, tb: Type): Solution = {
