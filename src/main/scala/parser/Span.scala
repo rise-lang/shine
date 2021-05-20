@@ -1,5 +1,7 @@
 package parser
 
+import java.nio.file.Paths
+
 abstract sealed class SubsetCase()
 final case class This_isSubset() extends SubsetCase
 final case class Other_isSubset() extends SubsetCase
@@ -94,8 +96,10 @@ final case class Location (column: Int, row: Int){
 
 final case class Span(file: FileReader, range:Range) {
   def this(file: FileReader, loc: Location) = this(file, Range(loc, loc))
+
+  val toUri = Paths.get(file.fileName+":"+range.begin.column+1+":"+range.begin.row+1).toUri
   //def this(file: FileReader, begin: Location, end: Location) = this(file, Range(begin, end))
-  override def toString = range.toString + Console.BLUE+ "->" +Console.RESET+ file.toUri()
+  override def toString = range.toString + Console.BLUE+ "->" +Console.RESET+ toUri
 
   def ==(other: Span): Boolean = this.range==other.range &&other.file==this.file
 

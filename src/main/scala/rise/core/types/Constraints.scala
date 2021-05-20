@@ -15,47 +15,47 @@ trait Constraint{
   val constraintTypeError:ConstraintError
 }
 case class TypeConstraint(a: Type, b: Type, override val constraintTypeError:TypeConstraintError) extends Constraint {
-  //override def toString: String = s"$a  ~  $b"
+  override def toString: String = s"$a  ~  $b"
   constraintTypeError.defineTypes(a,b)
-  override def toString: String = constraintTypeError.toString
+//  override def toString: String = constraintTypeError.toString
 }
 case class NatConstraint(a: Nat, b: Nat, override val constraintTypeError:NatConstraintError) extends Constraint {
-  //override def toString: String = s"$a  ~  $b"
+  override def toString: String = s"$a  ~  $b"
   constraintTypeError.defineNats(a,b)
-  override def toString: String = constraintTypeError.toString
+//  override def toString: String = constraintTypeError.toString
 }
 case class BoolConstraint(a: arithexpr.arithmetic.BoolExpr,
                           b: arithexpr.arithmetic.BoolExpr,
                           override val constraintTypeError:BoolConstraintError
                          ) extends Constraint {
-  //override def toString: String = s"$a  ~  $b"
+  override def toString: String = s"$a  ~  $b"
   constraintTypeError.defineBools(a,b)
-  override def toString: String = constraintTypeError.toString
+//  override def toString: String = constraintTypeError.toString
 }
 case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace, override val constraintTypeError:AddrConstraintError)
   extends Constraint {
-  //override def toString: String = s"$a  ~  $b"
+  override def toString: String = s"$a  ~  $b"
   constraintTypeError.defineAddrs(a,b)
-  override def toString: String = constraintTypeError.toString
+//  override def toString: String = constraintTypeError.toString
 }
 case class NatToDataConstraint(a: NatToData, b: NatToData, override val constraintTypeError:NatToDataConstraintError)
   extends Constraint {
-  //override def toString: String = s"$a  ~  $b"
+  override def toString: String = s"$a  ~  $b"
   constraintTypeError.defineNatToDatas(a,b)
-  override def toString: String = constraintTypeError.toString
+//  override def toString: String = constraintTypeError.toString
 }
 case class DepConstraint[K <: Kind](df: Type, arg: K#T, t: Type, override val constraintTypeError:DepAppConstraintError)
   extends Constraint {
-  //override def toString: String = s"$df ($arg) ~ $t"
+  override def toString: String = s"$df ($arg) ~ $t"
   constraintTypeError.defineTypesDep(t, df, arg)
-  override def toString: String = constraintTypeError.toString
+//  override def toString: String = constraintTypeError.toString
 }
 case class NatCollectionConstraint(a: NatCollection, b: NatCollection,
                                    override val constraintTypeError:NatCollectionConstraintError)
   extends Constraint {
-  //override def toString: String = s"$a ~ $b"
+  override def toString: String = s"$a ~ $b"
   constraintTypeError.defineNatCollection(a,b)
-  override def toString: String = constraintTypeError.toString
+//  override def toString: String = constraintTypeError.toString
 }
 
 object Constraint {
@@ -81,7 +81,7 @@ object Constraint {
   def solveRec(cs: Seq[Constraint], rs: Seq[Constraint], trace: Seq[Constraint])
               (implicit explDep: Flags.ExplicitDependence): Solution = (cs, rs) match {
     case (Nil, Nil) => Solution()
-    case (Nil, _) => error(s"could not solve constraints ${rs} ")(trace)
+    case (Nil, _) => error(s"could not solve constraints", rs.head.constraintTypeError.span, rs)(trace)
     case (c +: cs, _) =>
       val s = try {
         solveOne(c, trace)
@@ -233,7 +233,7 @@ object Constraint {
             Solution.subs(b, dt) // substitute apply by data type
 
           case _ =>
-            error(s"cannot unify $a and $b")
+            error(s"cannot unify $a and $b", cTE.span)
         }
 
 
@@ -243,7 +243,7 @@ object Constraint {
             val applied = liftDependentFunctionType(df)(arg)
             decomposed(Seq(TypeConstraint(applied, t, TypeCTE(cTE))))
           case _ =>
-            error(s"expected a dependent function type, but got $df")
+            error(s"expected a dependent function type, but got $df", cTE.span)
         }
 
       case NatConstraint(a, b, cTE) => nat.unify(a, b, cTE.span)
@@ -261,7 +261,7 @@ object Constraint {
               TypeConstraint(dt1, dt2, TypeCTE(cTE))
             ))
 
-          case _ => error(s"cannot unify $a and $b")
+          case _ => error(s"cannot unify $a and $b", cTE.span)
         }
 
       case NatCollectionConstraint(a, b, cTE) =>
@@ -295,11 +295,11 @@ object Constraint {
         } else if (!j.isExplicit) {
           Solution.subs(j, i)
         } else {
-          error(s"cannot unify $i and $j, they are both explicit")
+          error(s"cannot unify $i and $j, they are both explicit", constraintTypeError.span)
         }
       case _ if i.isExplicit =>
-        error(s"cannot substitute $i, it is explicit")
-      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
+        error(s"cannot substitute $i, it is explicit", constraintTypeError.span)
+      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t", constraintTypeError.span)
       case _ if !i.isExplicit => Solution.subs(i, t)
     }
   }
