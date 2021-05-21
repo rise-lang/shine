@@ -1,7 +1,7 @@
 package rise.eqsat
 
 object Extractor {
-  def init[C](egraph: EGraph[_], costFunction: CostFunction[C])
+  def init[C](egraph: EGraph[_, _, _], costFunction: CostFunction[C])
              (implicit costCmp: math.Ordering[C]): Extractor[C] = {
     val costs = HashMap.empty[EClassId, (C, ENode)]
     val e = new Extractor(costFunction, costs, egraph)
@@ -15,25 +15,25 @@ object Extractor {
   */
 class Extractor[Cost](val costFunction: CostFunction[Cost],
                       val costs: HashMap[EClassId, (Cost, ENode)],
-                      val egraph: EGraph[_])
+                      val egraph: EGraph[_, _, _])
                      (implicit costCmp: math.Ordering[Cost]) {
-  def findBestOf(eclass: EClassId): (Cost, Expr) =
+  def findBestOf(eclass: EClassId): (Cost, ExprWithHashCons) =
     findBestRec(eclass, HashMap.empty)
 
   def findBestCostOf(eclass: EClassId): Cost =
     costs(egraph.find(eclass))._1
 
   private def findBestRec(eclass: EClassId,
-                          addedMemo: HashMap[EClassId, Expr]
-                         ): (Cost, Expr) = {
+                          addedMemo: HashMap[EClassId, ExprWithHashCons]
+                         ): (Cost, ExprWithHashCons) = {
     val id = egraph.find(eclass)
     val (bestCost, bestNode) = costs(id)
     (bestCost, addedMemo.get(id) match {
       case Some(idExpr) => idExpr
       case None =>
-        def childF(id: EClassId): Expr =
+        def childF(id: EClassId): ExprWithHashCons =
           findBestRec(id, addedMemo)._2
-        val expr = Expr(bestNode.mapChildren(childF), egraph.get(id).t)
+        val expr = ExprWithHashCons(bestNode.mapChildren(childF), egraph.get(id).t)
         assert(!addedMemo.contains(id))
         addedMemo += id -> expr
         expr
@@ -105,4 +105,20 @@ object AstSize extends CostFunction[Int] {
 object AstDepth extends CostFunction[Int] {
   def cost(enode: ENode, costs: EClassId => Int): Int =
     1 + enode.children().foldLeft(0) { case (acc, eclass) => acc.max(costs(eclass)) }
+}
+
+object AppCount extends CostFunction[Int] {
+  def cost(enode: ENode, costs: EClassId => Int): Int = {
+    val thisCount = enode match {
+      case App(_, _) => 1
+      case _ => 0
+    }
+    enode.children().foldLeft(thisCount) { case (acc, eclass) => acc + costs(eclass) }
+  }
+}
+
+case class LexicographicCost[A, B](a: CostFunction[A], b: CostFunction[B])
+  extends CostFunction[(A, B)] {
+  override def cost(enode: ENode, costs: EClassId => (A, B)): (A, B) =
+    (a.cost(enode, id => costs(id)._1), b.cost(enode, id => costs(id)._2))
 }

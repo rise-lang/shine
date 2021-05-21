@@ -5,37 +5,6 @@ import rise.core.{types => rct}
 /** A Rise arithmetic expression based on DeBruijn indexing */
 case class Nat(node: NatNode[Nat]) {
   override def toString: String = node.toString
-
-  /** Shifts DeBruijn indices up or down if they are >= cutoff */
-  def shifted(shift: Nat.Shift, cutoff: Nat.Shift): Nat = {
-    Nat(node match {
-      case NatVar(index) =>
-        val delta = if (index >= cutoff) shift else 0
-        NatVar(index + delta)
-      case NatCst(value) =>
-        NatCst(value)
-      case NatPosInf => NatPosInf
-      case NatNegInf => NatNegInf
-      case NatAdd(a, b) =>
-        NatAdd(a.shifted(shift, cutoff), b.shifted(shift, cutoff))
-      case NatMul(a, b) =>
-        NatMul(a.shifted(shift, cutoff), b.shifted(shift, cutoff))
-      case NatPow(b, e) =>
-        NatPow(b.shifted(shift, cutoff), e.shifted(shift, cutoff))
-      case NatMod(a, b) =>
-        NatMod(a.shifted(shift, cutoff), b.shifted(shift, cutoff))
-      case NatIntDiv(a, b) =>
-        NatIntDiv(a.shifted(shift, cutoff), b.shifted(shift, cutoff))
-    })
-  }
-
-  def replace(index: Int, subs: Nat): Nat = {
-    node match {
-      case NatVar(i) if index == i => subs
-      case nv: NatVar => Nat(nv)
-      case other => Nat(other.map(_.replace(index, subs)))
-    }
-  }
 }
 
 object Nat {

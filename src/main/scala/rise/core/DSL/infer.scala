@@ -16,8 +16,6 @@ object infer {
 
       override def expr: Expr => Pair[Expr] = {
         case Lambda(x, e) => this.copy(bound = bound + x.name).expr(e)
-        // FIXME: work around type annotation should not be a primitive bug
-        case TypeAnnotation(e, _) => this.expr(e)
         case e => super.expr(e)
       }
 

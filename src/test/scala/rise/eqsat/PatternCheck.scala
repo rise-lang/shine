@@ -2,9 +2,9 @@ package rise.eqsat
 
 class PatternCheck extends test_util.Tests {
   test("simple match") {
-    val commuteAdd1: Rewrite[DefaultAnalysisData] = {
+    val commuteAdd1: DefaultAnalysis.Rewrite = {
       import PatternDSL._
-      Rewrite.init[DefaultAnalysisData]("commute-add-1",
+      Rewrite.init("commute-add-1",
         app(app(add, ?(0) :: `?dt`(0)), ?(1)).compile()
           -->
         (app(app(add :: `?dt`(0) ->: `?dt`(0) ->: `?dt`(0),
@@ -12,7 +12,7 @@ class PatternCheck extends test_util.Tests {
           ?(0) :: `?dt`(0)) :: `?dt`(0)))
     }
 
-    val commuteAdd2: Rewrite[DefaultAnalysisData] = {
+    val commuteAdd2: DefaultAnalysis.Rewrite = {
       import NamedRewriteDSL._
       NamedRewrite.init("commute-add-2",
         app(app(add, "x"), "y")
