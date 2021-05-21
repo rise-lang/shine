@@ -2,7 +2,7 @@ package parser.ErrorMessage
 
 import parser.Span
 import rise.core.types.{DataType, DepFunType, FunType, Kind, Type, TypeIdentifier, TypePlaceholder}
-import rise.core.{DepApp, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, types => rt}
+import rise.core.{DepApp, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, types => rt, primitives=>rp}
 import rise.{core => r}
 
 //__________________________________________________________________________________________________________
@@ -92,12 +92,17 @@ trait ConstraintError { self: Throwable =>
   def getWhatExprAndOption: (String,Option[String]) ={
     val help = expr match {
       case Identifier(name) => Some("Identifier '"+name+"' has probably a different type <-"+ expr.span.get)
-      case Lambda(x, e) => Some("Lambda")
-      case r.App(f, e) => Some("App")
-      case DepLambda(x, e) => Some("DepLambda")
-      case DepApp(f, x) => Some("DepApp")
-      case Literal(d, span) => Some("Literal")
-      case primitive: Primitive => Some("Primitive")
+      case Lambda(x, e) => Some("Lambda('"+x+"'): "+e)
+      case r.App(r.App(rp.add(sp), x1),x2)=> if(x1.t!=x2.t){
+        Some(x1.t.toString+"!="+x2.t.toString+" but Add needs that both arguments are the same type")
+      }else{
+        Some("Add is used but they seem to have the same type")
+      }
+      case r.App(f, e) => Some("App('"+f+"'): "+e)
+      case DepLambda(x, e) => Some("DepLambda('"+x+"'): "+e)
+      case DepApp(f, x) => Some("DepApp('"+f+"'): "+x)
+      case Literal(d, span) => Some("Literal('"+d+"')")
+      case primitive: Primitive => Some("Primitive: "+primitive)
     }
     constraintTypes match {
       case Some(cT) => cT match {
