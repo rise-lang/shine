@@ -102,9 +102,12 @@ class Runner(var iterations: Vec[Iteration],
 
       val iter = runOne(egraph, filter, rules)
       println(iter)
-      if (roots.nonEmpty) {
-        println(s"> 100: ${Dijkstra.countAstSizeLimit(egraph, roots, 100)}")
-      }
+      /*
+      egraph.analysis match {
+        case _: DefaultAnalysisCustomisable if roots.nonEmpty =>
+          Prototype.countLimits(egraph, roots, arrayLimit = 4)
+        case _ =>
+      }*/
       iterations += iter
 
       if (iter.applied.isEmpty) {

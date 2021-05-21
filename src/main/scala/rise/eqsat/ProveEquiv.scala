@@ -5,13 +5,15 @@ case object CouldNotProveEquiv extends Exception
 object ProveEquiv {
   def init(): ProveEquiv = new ProveEquiv(
     filter = NoPredicate(),
-    analysis = DefaultAnalysis
+    analysis = DefaultAnalysis,
+    arrayLimit = 10,
   )
 }
 
 class ProveEquiv(
   var filter: DefaultAnalysis.Predicate,
-  var analysis: DefaultAnalysisCustomisable
+  var analysis: DefaultAnalysisCustomisable,
+  var arrayLimit: Int,
 ) {
   def withFilter(filter: DefaultAnalysis.Predicate): ProveEquiv = {
     this.filter = filter

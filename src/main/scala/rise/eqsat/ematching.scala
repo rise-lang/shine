@@ -144,7 +144,7 @@ object ematching {
     if (eclass.nodes.size < 50) {
       eclass.nodes.filter(n => node.matches(n)).foreach(f)
     } else {
-      assert(eclass.nodes.sliding(2).forall(w => w(0) < w(1)))
+      // assert(eclass.nodes.sliding(2).forall(w => w(0) < w(1)))
       // binary search
       eclass.nodes.view.map(_.map(_ => (), _ => (), _ => ())).search(node) match {
         case scala.collection.Searching.Found(found) =>
@@ -163,7 +163,7 @@ object ematching {
           val start = findStart(found)
           val end = findEnd(found)
           val matching = eclass.nodes.iterator.slice(start, end + 1)
-          assert(matching.size == eclass.nodes.count(n => node.matches(n)))
+          // assert(matching.size == eclass.nodes.count(n => node.matches(n)))
           matching.foreach(f)
         case scala.collection.Searching.InsertionPoint(_) => ()
       }

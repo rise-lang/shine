@@ -20,7 +20,7 @@ class Reorder extends test_util.Tests {
   )
 
   private val proveEquiv = ProveEquiv.init()
-      .withFilter(AstSizePredicate(100))
+      //.withFilter(AstSizePredicate(100))
 
   test("reorder 2D") {
     def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] = {
