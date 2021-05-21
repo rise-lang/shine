@@ -23,11 +23,12 @@ object Dijkstra {
       x.cost compare y.cost
   }
 
-  def countAstSizeLimit[ED, ND, TD](egraph: EGraph[ED, ND, TD],
-                                    roots: Seq[EClassId],
-                                    limit: Int): Int = {
+  def countAstSizeLimit(egraph: DefaultAnalysis.EGraph,
+                        roots: Seq[EClassId],
+                        limit: Int): Int = {
     def nodeCost(n: ENode) = 1
 
+    // 1. Find the shortest path to the roots
     val costSoFar = HashMap(roots.map(r => r -> 0): _*)
     val todo = PriorityQueue(roots.map(r => Todo(0, r)): _*)
 
@@ -46,6 +47,13 @@ object Dijkstra {
       }
     }
 
-    costSoFar.count { case (_, c) => c > limit }
+    // 2. Count nodes which only participate in paths with too much cost
+    //    (costSoFar + minimumCost)
+    costSoFar.count {
+      case (id, c) =>
+        val minimumCost = egraph.get(id).data.extracted.map(_._2.toDouble)
+          .getOrElse(Double.PositiveInfinity)
+        (c + minimumCost) > limit.toDouble
+    }
   }
 }
