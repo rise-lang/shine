@@ -29,6 +29,7 @@ class Rewrite[ED, ND, DT](val name: String,
   def search(egraph: EGraph[ED, ND, DT]): Vec[SearchMatches] =
     searcher.search(egraph)
 
+  // the substitution insides `matches` may be modified
   def apply(egraph: EGraph[ED, ND, DT],
             matches: Vec[SearchMatches]): Vec[EClassId] =
     applier.applyMatches(egraph, matches)
@@ -70,8 +71,11 @@ trait Applier[ED, ND, TD] {
   //
   // This should return a list of eclasses you'd like to
   // be unioned with `eclass`. There can be zero, one, or many.
+  //
+  // `subst` may be modified
   def applyOne(egraph: EGraph[ED, ND, TD], eclass: EClassId, subst: Subst): Vec[EClassId]
 
+  // the substitutions inside `matches` may be modified
   def applyMatches(egraph: EGraph[ED, ND, TD], matches: Vec[SearchMatches]): Vec[EClassId] = {
     val added = Vec.empty[EClassId]
     for (mat <- matches) {
@@ -178,9 +182,8 @@ case class ShiftedApplier(v: PatternVar, newV: PatternVar,
   override def applyOne(egraph: DefaultAnalysis.EGraph,
                         eclass: EClassId,
                         subst: Subst): Vec[EClassId] = {
-    val subst2 = subst.deepClone()
-    subst2.insert(newV, ??? /* EClass.shifted(subst(v), shift, cutoff, egraph) */)
-    applier.applyOne(egraph, eclass, subst2)
+    subst.insert(newV, ??? /* EClass.shifted(subst(v), shift, cutoff, egraph) */)
+    applier.applyOne(egraph, eclass, subst)
   }
 }
 
@@ -199,9 +202,8 @@ case class ShiftedExtractApplier(v: PatternVar, newV: PatternVar,
                         subst: Subst): Vec[EClassId] = {
     val extract = egraph.getMut(subst(v)).data.extractedExpr
     val shifted = extract.shifted(egraph, shift, cutoff)
-    val subst2 = subst.deepClone()
-    subst2.insert(newV, egraph.addExpr(shifted))
-    applier.applyOne(egraph, eclass, subst2)
+    subst.insert(newV, egraph.addExpr(shifted))
+    applier.applyOne(egraph, eclass, subst)
   }
 }
 
@@ -233,9 +235,8 @@ case class ShiftedNatApplier[ED, ND, DT](v: NatPatternVar, newV: NatPatternVar,
                         subst: Subst): Vec[EClassId] = {
     val nat = subst(v)
     val shifted = NodeSubs.Nat.shifted(egraph, nat, shift, cutoff)
-    val subst2 = subst.deepClone()
-    subst2.insert(newV, shifted)
-    applier.applyOne(egraph, eclass, subst2)
+    subst.insert(newV, shifted)
+    applier.applyOne(egraph, eclass, subst)
   }
 }
 
@@ -265,9 +266,8 @@ case class ShiftedDataTypeApplier[ED, ND, DT](v: DataTypePatternVar, newV: DataT
                         subst: Subst): Vec[EClassId] = {
     val dt = subst(v)
     val shifted = NodeSubs.DataType.shifted(egraph, dt, shift, cutoff)
-    val subst2 = subst.deepClone()
-    subst2.insert(newV, shifted)
-    applier.applyOne(egraph, eclass, subst2)
+    subst.insert(newV, shifted)
+    applier.applyOne(egraph, eclass, subst)
   }
 }
 
@@ -297,9 +297,8 @@ case class ShiftedTypeApplier[ED, ND, DT](v: TypePatternVar, newV: TypePatternVa
                         subst: Subst): Vec[EClassId] = {
     val t = subst(v)
     val shifted = NodeSubs.Type.shifted(egraph, t, shift, cutoff)
-    val subst2 = subst.deepClone()
-    subst2.insert(newV, shifted)
-    applier.applyOne(egraph, eclass, subst2)
+    subst.insert(newV, shifted)
+    applier.applyOne(egraph, eclass, subst)
   }
 }
 
@@ -405,9 +404,8 @@ case class ComputeNatApplier[ED, ND, TD](v: NatPatternVar, value: NatPattern,
     // TODO: can we be more efficient here?
     val actualValue = Nat.fromNamedGeneric(
       ComputeNat.toNamed(egraph, value, subst), ni => ni.name.drop(1).toInt)
-    val subst2 = subst.deepClone()
-    subst2.insert(v, egraph.addNat(actualValue))
-    applier.applyOne(egraph, eclass, subst2)
+    subst.insert(v, egraph.addNat(actualValue))
+    applier.applyOne(egraph, eclass, subst)
   }
 }
 

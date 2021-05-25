@@ -9,7 +9,10 @@ object EGraph {
       classes = HashMap.empty,
       unionFind = UnionFind.empty,
       pending = Vec.empty,
-      analysisPending = scala.collection.mutable.LinkedHashSet.empty,
+      analysisPending = {
+        import Node.{ordering, natIdOrdering, dataTypeIdOrdering, eclassIdOrdering}
+        collection.mutable.TreeSet.empty[(ENode, EClassId)]
+      },
       classesByMatch = HashMap.empty,
 
       nats = HashCons.empty,
@@ -24,7 +27,10 @@ object EGraph {
 class EGraph[ED, ND, TD](
   val analysis: Analysis[ED, ND, TD],
   var pending: Vec[(ENode, EClassId)],
-  var analysisPending: scala.collection.mutable.LinkedHashSet[(ENode, EClassId)],
+  // NOTE: TreeSet has faster pop than HashSet,
+  // can also look into something like IndexSet
+  // https://docs.rs/indexmap/1.0.2/indexmap/set/struct.IndexSet.html#method.pop
+  var analysisPending: collection.mutable.TreeSet[(ENode, EClassId)],
 
   var memo: HashMap[(ENode, TypeId), EClassId],
   var unionFind: UnionFind,
@@ -264,7 +270,6 @@ class EGraph[ED, ND, TD](
   private def processUnions(): Int = {
     var nUnions = 0
     while (pending.nonEmpty) {
-      util.printTime("pending", {
       while (pending.nonEmpty) {
         val (node, eclass) = pending.remove(pending.size - 1)
         val t = get(eclass).t
@@ -278,16 +283,12 @@ class EGraph[ED, ND, TD](
             if (didSomething) nUnions += 1
           case None => ()
         }
-      }})
+      }
 
-      util.printTime("analysis pending", {
       while (analysisPending.nonEmpty) {
         // note: using .last is really slow, traversing all the map
-        val (node, id) = util.printTime("analysis pending pop", {
         val (node, id) = analysisPending.head
         analysisPending.remove((node, id))
-        (node, id)
-        })
 
         val cid = findMut(id)
         val eclass = classes(cid)
@@ -295,12 +296,10 @@ class EGraph[ED, ND, TD](
         analysis.merge(eclass.data, node_data) match {
           case Some(Equal) | Some(Greater) => ()
           case Some(Less) | None =>
-            util.printTime("analysis pending extend", {
             analysisPending ++= eclass.parents
-            })
             analysis.modify(this, cid)
         }
-      }})
+      }
     }
 
     assert(pending.isEmpty)
@@ -336,11 +335,12 @@ class EGraph[ED, ND, TD](
         classesByMatch.getOrElseUpdate(n.matchHash(), HashSet.empty) += eclass.id
 
       // TODO? in egg the nodes are sorted and duplicates where prev.matches(n) are not added
-      // .distinctBy(_.matchHash())
       // eclass.nodes.foreach(add)
       eclass.nodes.headOption match {
         case None =>
         case Some(first) =>
+          add(first)
+
           var prev = first
           for (n <- eclass.nodes.view.tail) {
             if (!prev.matches(n)) {
