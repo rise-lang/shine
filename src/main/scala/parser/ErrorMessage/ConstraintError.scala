@@ -223,6 +223,7 @@ case class LambdaConstraintError(override val span: Option[Span], override val e
   }
 }
 
+//Todo: delete AppLikeConstraint
 case class AppConstraintError(override val span: Option[Span], override val expr: Expr) extends AppLikeConstraintError(span){
   override def defineTypes(expectedT:rt.Type, foundT:rt.Type): Unit ={
     constraintTypes match {

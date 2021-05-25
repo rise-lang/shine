@@ -414,42 +414,6 @@ object parse {
       case _ => (Left(parseState),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
     }
   }
-
-  def parseTypeAnnotation(inputEPState: InputEPState): OutputEPState = {
-    val whatToParse = "TypeAnnotation"
-    val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    val ParseState(tokens, _,  mapDepL, spanList, argumentsTypes) = parseState
-    val colonToken :: typeToken :: remainderTokens = tokens
-
-    colonToken match {
-      case Colon(_) => {
-        //if a type Annotation exist, we set the type new of the Identifier
-        typeToken match {
-          case ScalarType(typ, sp) => {
-            //Todo: Complex Alg for Types Parsing
-            val t = getScalarType(typ)
-            t match {
-              case None => {
-                val e = NotAcceptedScalarType(sp, typ,"TypeAnnotation")
-                (Right(e),errorList.add(e))
-              }
-              case Some(parsedType) => (Left(ParseState(remainderTokens, SType(parsedType, sp) :: parseState.parsedSynElems,
-                 mapDepL, spanList, argumentsTypes)),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
-            }
-          }
-          case notAtype => {
-            val e = ErrorMessage.NotCorrectToken(typeToken, "ScalarType", "TypeAnnotation")
-            (Right(e),errorList.add(e))
-          }
-        }
-      }
-      case notAColon => {
-        val e = ErrorMessage.NotCorrectToken(notAColon, "Colon", "TypeAnnotation")
-        (Right(e),errorList.add(e))
-      }
-    }
-  }
-
   def parseVecType(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "VecType"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
@@ -2275,7 +2239,7 @@ the syntax-Tree has on top an Lambda-Expression
     val nextToken :: remainderTokens = tokens
 
     val p = nextToken match {
-      case I8(number, span) =>
+      case I16(number, span) =>//Todo: use rS.ShortData
         Left(ParseState(remainderTokens, SExpr(r.Literal(rS.IntData(number), Some(span))) :: parsedSynElems, mapDepL, spanList,argumentsTypes) )
       case I32(number, span) =>
         Left(ParseState(remainderTokens, SExpr(r.Literal(rS.IntData(number),Some(span))) :: parsedSynElems, mapDepL, spanList,argumentsTypes) )

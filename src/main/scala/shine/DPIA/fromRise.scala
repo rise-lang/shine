@@ -73,6 +73,7 @@ object fromRise {
     case rs.ArrayData(a) => OpSem.ArrayData(a.map(data).toVector)
     case rs.PairData(a, b) => OpSem.PairData(data(a), data(b))
     case rs.BoolData(b) => OpSem.BoolData(b)
+    case rs.ShortData(s) => OpSem.IntData(s) //it exist no ShortData yet
     case rs.IntData(i) => OpSem.IntData(i)
     case rs.FloatData(f) => OpSem.FloatData(f)
     case rs.DoubleData(d) => OpSem.DoubleData(d)

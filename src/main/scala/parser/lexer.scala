@@ -2010,7 +2010,7 @@ private def lexNumberComplexMatch(column: Int, row: Int,  arr: Array[String], su
     if (substring.matches("[0-9]+")) {
       if (arr(column).substring(pos, pos + 2) == "I8") {
         val locEnd: Location = Location(column, pos + 2)
-        (Left(I8(substring.toInt.toShort, Span(fileReader, Range(locStart, locEnd)))),pos+2)
+        (Left(I16(substring.toInt.toShort, Span(fileReader, Range(locStart, locEnd)))),pos+2)
       } else if (arr(column).substring(pos, pos + 3) == "I32") {
         val locEnd: Location = Location(column, pos + 3)
         (Left(I32(substring.toInt, Span(fileReader, Range(locStart, locEnd)))),pos + 3)

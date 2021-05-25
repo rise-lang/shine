@@ -194,7 +194,7 @@ import OpType.BinOpType._
   abstract sealed class Number (span: Span) extends Token(span){
     require(begin.column == end.column, "not in one column")
   }
-    final case class I8(number: Short, span: Span) extends Number(span) {
+    final case class I16(number: Short, span: Span) extends Number(span) {
       override def toString = s"<$number:I8>"
     }
 

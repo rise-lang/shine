@@ -234,7 +234,7 @@ object Constraint {
             Solution.subs(b, dt) // substitute apply by data type
 
           case _ =>
-            error(s"cannot unify $a and $b", cTE.span)
+            error("cannot unify:",cTE.span,Seq(c))//error(s"cannot unify $a and $b", cTE.span)
         }
 
 
