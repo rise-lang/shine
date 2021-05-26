@@ -14,10 +14,7 @@ object EGraph {
         collection.mutable.TreeSet.empty[(ENode, EClassId)]
       },
       classesByMatch = HashMap.empty,
-
-      nats = HashCons.empty,
-      dataTypes = HashCons.empty,
-      types = HashCons.empty
+      hashConses = HashConses.emptyWithAnalysis(analysis),
     )
 }
 
@@ -36,10 +33,7 @@ class EGraph[ED, ND, TD](
   var unionFind: UnionFind,
   var classes: HashMap[EClassId, EClass[ED]],
   var classesByMatch: HashMap[Int, HashSet[EClassId]],
-
-  var nats: HashCons[NatNode[NatId], NatId, ND],
-  var dataTypes: HashCons[DataTypeNode[NatId, DataTypeId], DataTypeId, TD],
-  var types: HashCons[TypeNode[TypeId, NatId, DataTypeId], NotDataTypeId, TD],
+  var hashConses: HashConses[ND, TD],
 ) {
   def nodeCount(): Int =
     classes.map { case (_, c) => c.nodeCount() }.iterator.sum
@@ -57,16 +51,13 @@ class EGraph[ED, ND, TD](
     classes(findMut(id))
 
   def apply(id: NatId): (NatNode[NatId], ND) =
-    nats.get(id)
+    hashConses(id)
   def apply(id: DataTypeId): (DataTypeNode[NatId, DataTypeId], TD) =
-    dataTypes.get(id)
+    hashConses(id)
   def apply(id: NotDataTypeId): (TypeNode[TypeId, NatId, DataTypeId], TD) =
-    types.get(id)
+    hashConses(id)
   def apply(id: TypeId): (TypeNode[TypeId, NatId, DataTypeId], TD) =
-    id match {
-      case i: DataTypeId => apply(i)
-      case i: NotDataTypeId => apply(i)
-    }
+    hashConses(id)
 
   // returns the canonicalized enode and its eclass if it has one
   def lookup(enode: ENode, t: TypeId): (ENode, Option[EClassId]) = {
@@ -123,77 +114,20 @@ class EGraph[ED, ND, TD](
       addNat, addDataType
     ), addType(expr.t))._2
 
-  def add(n: NatNode[NatId]): NatId = {
-    import rise.core.{types => rct}
-    import arithexpr.arithmetic._
-
-    // TODO: avoid code duplication with other named conversions
-    def toNamed(n: NatNode[NatId]): rct.Nat =
-      n match {
-        case NatVar(index) => rct.NatIdentifier(s"n$index")
-        case NatCst(value) => Cst(value)
-        case NatNegInf => NegInf
-        case NatPosInf => PosInf
-        case NatAdd(a, b) => idToNamed(a) + idToNamed(b)
-        case NatMul(a, b) => idToNamed(a) * idToNamed(b)
-        case NatPow(b, e) => idToNamed(b).pow(idToNamed(e))
-        case NatMod(a, b) => idToNamed(a) % idToNamed(b)
-        case NatIntDiv(a, b) => idToNamed(a) / idToNamed(b)
-      }
-
-    def idToNamed(id: NatId): rct.Nat =
-      toNamed(this(id)._1)
-
-    def fromNamed(n: rct.Nat): NatNode[NatId] = {
-      n match {
-        case i: rct.NatIdentifier => NatVar(i.name.drop(1).toInt)
-        case PosInf => NatPosInf
-        case NegInf => NatNegInf
-        case Cst(c) => NatCst(c)
-        case Sum(Nil) => NatCst(0)
-        case Sum(t +: ts) => ts.foldRight(fromNamed(t)) { case (t, acc) =>
-          NatAdd(add(fromNamed(t)), add(acc))
-        }
-        case Prod(Nil) => NatCst(1)
-        case Prod(t +: ts) => ts.foldRight(fromNamed(t)) { case (t, acc) =>
-          NatMul(add(fromNamed(t)), add(acc))
-        }
-        case Pow(b, e) =>
-          NatPow(add(fromNamed(b)), add(fromNamed(e)))
-        case Mod(a, b) =>
-          NatMod(add(fromNamed(a)), add(fromNamed(b)))
-        case IntDiv(a, b) =>
-          NatIntDiv(add(fromNamed(a)), add(fromNamed(b)))
-        case _ => throw new Exception(s"no support for $n")
-      }
-    }
-
-    // FIXME: simplifying recursively on every add might be too expensive?
-    nats.addWithSimplification(n, NatId, n => fromNamed(toNamed(n)), n => analysis.makeNat(this, n))
-  }
-
-  def addNat(n: Nat): NatId = {
-    def rec(n: Nat): NatId =
-      add(n.node.map(rec))
-
-    rec(Nat.simplify(n))
-  }
+  def add(n: NatNode[NatId]): NatId =
+    hashConses.add(n)
+  def addNat(n: Nat): NatId =
+    hashConses.addNat(n)
 
   def add(dt: DataTypeNode[NatId, DataTypeId]): DataTypeId =
-    dataTypes.add(dt, dt => analysis.makeType(this, dt), DataTypeId)
-
+    hashConses.add(dt)
   def addDataType(dt: DataType): DataTypeId =
-    add(dt.node.map(addNat, addDataType))
+    hashConses.addDataType(dt)
 
-  def add(t: TypeNode[TypeId, NatId, DataTypeId]): TypeId = {
-    t match {
-      case dt: DataTypeNode[NatId, DataTypeId] => add(dt)
-      case _ => types.add(t, t => analysis.makeType(this, t), NotDataTypeId)
-    }
-  }
-
+  def add(t: TypeNode[TypeId, NatId, DataTypeId]): TypeId =
+    hashConses.add(t)
   def addType(t: Type): TypeId =
-    add(t.node.map(addType, addNat, addDataType))
+    hashConses.addType(t)
 
   // checks whether two expressions are equivalent
   // returns a list of eclasses that represent both expressions
@@ -269,7 +203,7 @@ class EGraph[ED, ND, TD](
 
   private def processUnions(): Int = {
     var nUnions = 0
-    while (pending.nonEmpty) {
+    while (pending.nonEmpty || analysisPending.nonEmpty) {
       while (pending.nonEmpty) {
         val (node, eclass) = pending.remove(pending.size - 1)
         val t = get(eclass).t
@@ -374,5 +308,110 @@ class EGraph[ED, ND, TD](
     }
 
     true
+  }
+
+  // returns (eliminatedClasses, eliminatedNodes)
+  def filter(predicate: Predicate[ED, ND, TD]): (Int, Int) = {
+    assert(pending.isEmpty)
+    assert(analysisPending.isEmpty)
+
+    predicate match {
+      case NoPredicate() => return (0, 0)
+      case _ =>
+    }
+
+    val originalClasses = classes
+    val originalUnionFind = unionFind
+    val originalNodeCount = nodeCount()
+
+    memo.clear()
+    unionFind = UnionFind.empty
+    classes = HashMap.empty
+    classesByMatch.clear()
+
+    val toEliminate = HashSet.empty[EClassId]
+    val (rt1, _) = util.time {
+      for (eclass <- originalClasses.values) {
+        if (!predicate(hashConses, eclass)) {
+          toEliminate += eclass.id
+        }
+      }
+    }
+
+    def enodeToEliminate(n: ENode): Boolean =
+      n.children().exists(toEliminate)
+
+    val (rt2, _) = util.time {
+      var spread = true
+      while (spread) {
+        spread = false
+
+        for (eclass <- originalClasses.values) {
+          if (!toEliminate(eclass.id)) {
+            if (eclass.parents.forall { case (pn, pid) => toEliminate(originalUnionFind.findMut(pid)) || enodeToEliminate(pn) } ||
+              eclass.nodes.forall(enodeToEliminate)) {
+
+              toEliminate += eclass.id
+              spread = true
+            }
+          }
+        }
+      }
+    }
+
+    val (rt3, _) = util.time {
+      val newIds = HashMap.empty[EClassId, EClassId]
+      for (eclass <- originalClasses.values) {
+        if (!toEliminate(eclass.id)) {
+          val newId = unionFind.makeSet()
+          newIds += eclass.id -> newId
+
+          val newEclass = new EClass(
+            id = newId,
+            t = eclass.t,
+            nodes = Vec(),
+            data = analysis.empty(this, eclass.t),
+            parents = Vec())
+          classes += newId -> newEclass
+        }
+      }
+
+      for (eclass <- originalClasses.values) {
+        if (!toEliminate(eclass.id)) {
+          val newEClass = classes(newIds(eclass.id))
+
+          newEClass.parents = eclass.parents.flatMap { case (pn, pid) =>
+            val id = originalUnionFind.findMut(pid)
+            if (toEliminate(id) || enodeToEliminate(pn)) {
+              None
+            } else {
+              Some((pn.mapChildren(newIds), newIds(id)))
+            }
+          }
+
+          newEClass.nodes = eclass.nodes.flatMap { c =>
+            if (enodeToEliminate(c)) {
+              None
+            } else {
+              val newC = c.mapChildren(newIds)
+              memo += (newC, newEClass.t) -> newEClass.id
+              analysisPending += ((newC, newEClass.id))
+              Some(newC)
+            }
+          }
+        }
+      }
+    }
+
+    println("boo")
+
+    val (rt4, _) = util.time(rebuild())
+
+    val eliminatedClasses = originalClasses.size - classCount()
+    val eliminatedNodes = originalNodeCount - nodeCount()
+    println(s"filter eliminated $eliminatedClasses classes" +
+      s" and $eliminatedNodes nodes " +
+      s" in ${Seq(rt1, rt2, rt3, rt4).map(util.prettyTime).mkString(" + ")}")
+    (eliminatedClasses, eliminatedNodes)
   }
 }

@@ -4,11 +4,30 @@ import rise.eqsat.ematching.MNode
 
 // TODO: think about what the predicate interface should be
 trait Predicate[ED, ND, TD] {
-  def apply(egraph: EGraph[ED, ND, TD], id: EClassId): Boolean
+  def apply(hc: HashConses[ND, TD], ec: EClass[ED]): Boolean
 }
 
 case class NoPredicate[ED, ND, TD]() extends Predicate[ED, ND, TD] {
-  def apply(egraph: EGraph[ED, ND, TD], id: EClassId): Boolean = true
+  override def apply(hc: HashConses[ND, TD], ec: EClass[ED]): Boolean = true
+}
+
+case class ArrayDimensionPredicate[ED, ND, TD](limit: Int) extends Predicate[ED, ND, TD] {
+  override def apply(hc: HashConses[ND, TD], ec: EClass[ED]): Boolean = {
+    def countArrayDims(t: TypeId): Int = {
+      hc(t)._1 match {
+        case FunType(inT, outT) =>
+          countArrayDims(inT) max countArrayDims(outT)
+        case NatFunType(t) => countArrayDims(t)
+        case DataFunType(t) => countArrayDims(t)
+        case ArrayType(_, et) => 1 + countArrayDims(et)
+        case PairType(dt1, dt2) =>
+          countArrayDims(dt1) max countArrayDims(dt2)
+        case _ => 0
+      }
+    }
+
+    countArrayDims(ec.t) <= limit
+  }
 }
 
 object Prototype {
@@ -44,40 +63,6 @@ object Prototype {
     arrayLimit: Int,
     // limit: Cost
   ): Unit = {
-    var counter = 0
-    var nonSingletonEdges = 0
-    var singletonEdges = 0
-    for (eclass <- egraph.classes.values) {
-      def arrayCount(t: TypeId): Int = {
-        egraph(t)._1 match {
-          case FunType(inT, outT) =>
-            arrayCount(inT) max arrayCount(outT)
-          case NatFunType(t) => arrayCount(t)
-          case DataFunType(t) => arrayCount(t)
-          case ArrayType(_, et) => 1 + arrayCount(et)
-          case PairType(dt1, dt2) =>
-            arrayCount(dt1) max arrayCount(dt2)
-          case _ => 0
-        }
-      }
-      if (arrayCount(eclass.t) > arrayLimit) {
-        counter += 1
-      }
-      for ((_, p) <- eclass.parents) {
-        if (egraph.get(p).parents.size == 1) {
-          singletonEdges += 1
-        } else {
-          nonSingletonEdges += 1
-        }
-      }
-    }
-
-    if (counter > 0) {
-      println(s"LIMIT REACHED ON $counter E-CLASSES")
-      println(s"could remove $nonSingletonEdges non-singleton edges")
-      println(s"could remove $singletonEdges singleton edges")
-    }
-
     /*
     // 1. Find the shortest path to the roots
     val costSoFar = HashMap(roots.map(r => r -> Cost.zero): _*)

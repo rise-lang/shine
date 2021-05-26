@@ -17,9 +17,10 @@ object Runner {
     stopReasons = Vec(),
     done = _ => false,
 
-    iterLimit = 30,
+    iterLimit = 60,
     nodeLimit = 600_000,
-    timeLimit = Duration.ofSeconds(30).toNanos
+    timeLimit = Duration.ofSeconds(30).toNanos,
+    scheduler = SimpleScheduler
   )
 }
 
@@ -32,7 +33,8 @@ class Runner(var iterations: Vec[Iteration],
              var done: Runner => Boolean,
              var iterLimit: Int,
              var nodeLimit: Int,
-             var timeLimit: Long) {
+             var timeLimit: Long,
+             var scheduler: Scheduler) {
   def iterationCount(): Int =
     iterations.size - 1
 
@@ -46,6 +48,10 @@ class Runner(var iterations: Vec[Iteration],
 
   def withTimeLimit(limit: Duration): Runner = {
     timeLimit = limit.toNanos; this
+  }
+
+  def withScheduler(sched: Scheduler): Runner = {
+    scheduler = sched; this
   }
 
   def doneWhen(f: Runner => Boolean): Runner = {
@@ -108,9 +114,9 @@ class Runner(var iterations: Vec[Iteration],
           Prototype.countLimits(egraph, roots, arrayLimit = 4)
         case _ =>
       }*/
-      iterations += iter
 
-      if (iter.applied.isEmpty) {
+      if (iter.applied.isEmpty &&
+        scheduler.canSaturate(iterations.size)) {
         stopReasons += Saturated
       }
       val elapsed = System.nanoTime() - startTime
@@ -123,24 +129,30 @@ class Runner(var iterations: Vec[Iteration],
       if (iterationCount() >= iterLimit) {
         stopReasons += IterationLimit(iterationCount())
       }
+
+      iterations += iter
     }
 
     this
   }
 
   // TODO: use filter
+  // TODO: could check limits in-between searches and matches like in egg
   private def runOne[ED, ND, TD](egraph: EGraph[ED, ND, TD],
                                  filter: Predicate[ED, ND, TD],
                                  rules: Seq[Rewrite[ED, ND, TD]]): Iteration = {
     val time0 = System.nanoTime()
+    val i = iterations.size
 
-    val matches = rules.map { r => r.search(egraph) }
+    val matches = rules.map { r =>
+      scheduler.searchRewrite(i, egraph, r)
+    }
 
     val time1 = System.nanoTime()
 
     val applied = HashMap.empty[String, Int]
     rules.zip(matches).map { case (r, ms) =>
-      val newlyApplied = r.apply(egraph, ms).size
+      val newlyApplied = scheduler.applyRewrite(i, egraph, r, ms)
       if (newlyApplied > 0) {
         applied.updateWith(r.name) {
           case Some(count) => Some(count + newlyApplied)
@@ -154,6 +166,8 @@ class Runner(var iterations: Vec[Iteration],
     val nRebuilds = egraph.rebuild()
 
     val time3 = System.nanoTime()
+
+    egraph.filter(filter)
 
     new Iteration(
       egraphNodes = egraph.nodeCount(),

@@ -15,8 +15,8 @@ trait Analysis[ED, ND, TD] {
   def empty(egraph: EGraph[ED, ND, TD], t: TypeId): ED
 
   def make(egraph: EGraph[ED, ND, TD], enode: ENode, t: TypeId): ED
-  def makeNat(egraph: EGraph[ED, ND, TD], node: NatNode[NatId]): ND
-  def makeType(egraph: EGraph[ED, ND, TD],
+  def makeNat(hc: HashConses[ND, TD], node: NatNode[NatId]): ND
+  def makeType(hc: HashConses[ND, TD],
                node: TypeNode[TypeId, NatId, DataTypeId]): TD
 
   // - if `to < from` then `to` should be assigned to `from`
@@ -34,8 +34,8 @@ object NoAnalysis extends Analysis[(), (), ()] {
   override def empty(egraph: EGraph[(), (), ()], t: TypeId): Unit = ()
   override def make(egraph: EGraph[(), (), ()], enode: ENode, t: TypeId): () = ()
 
-  override def makeNat(egraph: EGraph[(), (), ()], node: NatNode[NatId]): () = ()
-  override def makeType(egraph: EGraph[(), (), ()],
+  override def makeNat(hc: HashConses[(), ()], node: NatNode[NatId]): () = ()
+  override def makeType(hc: HashConses[(), ()],
                         node: TypeNode[TypeId, NatId, DataTypeId]): () = ()
 
   override def merge(to: (), from: ()): Option[Order] = Some(Equal)
@@ -50,6 +50,7 @@ object DefaultAnalysis extends DefaultAnalysisCustomisable() {
   type TypeData = DefaultAnalysisCustomisable.TypeData
 
   type EGraph = rise.eqsat.EGraph[Data, NatData, TypeData]
+  type HashConses = rise.eqsat.HashConses[NatData, TypeData]
   type Searcher = rise.eqsat.Searcher[Data, NatData, TypeData]
   type Applier = rise.eqsat.Applier[Data, NatData, TypeData]
   type Rewrite = rise.eqsat.Rewrite[Data, NatData, TypeData]
@@ -145,16 +146,16 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[
     new Data(free, freeNat, freeDataType, computeExtracted())
   }
 
-  override def makeNat(egraph: EGraph, node: NatNode[NatId]): NatData = {
+  override def makeNat(hc: HashConses, node: NatNode[NatId]): NatData = {
     val freeNat = HashSet[Int]()
     node match {
       case NatVar(index) => freeNat += index
-      case node => node.map(n => freeNat ++= egraph(n)._2.freeNat)
+      case node => node.map(n => freeNat ++= hc(n)._2.freeNat)
     }
     new NatData(freeNat)
   }
 
-  override def makeType(egraph: EGraph, node: TypeNode[TypeId, NatId, DataTypeId]): TypeData = {
+  override def makeType(hc: HashConses, node: TypeNode[TypeId, NatId, DataTypeId]): TypeData = {
     val freeNat = HashSet[Int]()
     val freeDataType = HashSet[Int]()
     def acc(d: TypeData): Unit = {
@@ -163,22 +164,22 @@ abstract class DefaultAnalysisCustomisable() extends Analysis[
     }
     node match {
       case FunType(inT, outT) =>
-        acc(egraph(inT)._2)
-        acc(egraph(outT)._2)
+        acc(hc(inT)._2)
+        acc(hc(outT)._2)
       case NatFunType(t) =>
-        val d = egraph(t)._2
+        val d = hc(t)._2
         freeNat ++= d.freeNat.iterator.filter(idx => idx != 0).map(idx => idx - 1)
         freeDataType ++= d.freeDataType
       case DataFunType(t) =>
-        val d = egraph(t)._2
+        val d = hc(t)._2
         freeNat ++= d.freeNat
         freeDataType ++= d.freeDataType.iterator.filter(idx => idx != 0).map(idx => idx - 1)
       case dt: DataTypeNode[NatId, DataTypeId] =>
         dt match {
           case DataTypeVar(index) => freeDataType += index
           case node => node.map(
-            { n => freeNat ++= egraph(n)._2.freeNat },
-            { dt => acc(egraph(dt)._2) })
+            { n => freeNat ++= hc(n)._2.freeNat },
+            { dt => acc(hc(dt)._2) })
         }
     }
     new TypeData(freeNat, freeDataType)

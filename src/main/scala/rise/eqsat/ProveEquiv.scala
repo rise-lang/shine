@@ -7,6 +7,7 @@ object ProveEquiv {
     filter = NoPredicate(),
     analysis = DefaultAnalysis,
     arrayLimit = 10,
+    transformRunner = r => r
   )
 }
 
@@ -14,6 +15,7 @@ class ProveEquiv(
   var filter: DefaultAnalysis.Predicate,
   var analysis: DefaultAnalysisCustomisable,
   var arrayLimit: Int,
+  var transformRunner: Runner => Runner,
 ) {
   def withFilter(filter: DefaultAnalysis.Predicate): ProveEquiv = {
     this.filter = filter
@@ -22,6 +24,11 @@ class ProveEquiv(
 
   def withAnalysis(analysis: DefaultAnalysisCustomisable): ProveEquiv = {
     this.analysis = analysis
+    this
+  }
+
+  def withRunnerTransform(f: Runner => Runner): ProveEquiv = {
+    transformRunner = f
     this
   }
 
@@ -65,12 +72,16 @@ class ProveEquiv(
           goals: Seq[Expr],
           rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
     val goalPatterns = goals.map(Pattern.fromExpr(_).compile())
+    var remainingGoalPatterns = goalPatterns
 
     val egraph = EGraph.emptyWithAnalysis(analysis)
     val startId = egraph.addExpr(start)
     // val goalId = runner.egraph.addExpr(goal)
-    val runner = Runner.init().doneWhen { _ =>
-      goalPatterns.forall(_.searchEClass(egraph, startId).isDefined)
+    val runner = transformRunner(Runner.init()).doneWhen { r =>
+      (r.iterations.size % 3 == 0) && util.printTime("goal check", {
+        remainingGoalPatterns = remainingGoalPatterns.filter(_.searchEClass(egraph, startId).isEmpty)
+        remainingGoalPatterns.isEmpty
+      })
       // note: could also use this to get a faster procedure,
       // but it would allow rewriting the goal as well, not just the start
       // r.egraph.findMut(startId) == r.egraph.findMut(goalId)

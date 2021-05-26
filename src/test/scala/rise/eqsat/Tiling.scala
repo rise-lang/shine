@@ -37,7 +37,7 @@ class Tiling extends test_util.Tests {
     val expr = wrap(f => *(f))
     val gold = wrap(f => J o **(f) o S)
 
-    proveEquiv.runCNF(expr, gold, minimalRules)
+    ProveEquiv.init().runCNF(expr, gold, minimalRules)
   }
 
   // TODO: ignore tests below? takes 40s
@@ -59,7 +59,9 @@ class Tiling extends test_util.Tests {
       wrap(f => J o **(J) o *(T) o ****(f) o *(T) o **(S) o S)
     )
 
-    proveEquiv.runCNF(expr, golds, minimalRules ++ reorderRules)
+    ProveEquiv.init()
+      .withFilter(ArrayDimensionPredicate(4))
+      .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 
   test("tile 3D") {

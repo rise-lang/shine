@@ -1,6 +1,6 @@
 package benchmarks.eqsat
 
-import rise.eqsat.{rules, ProveEquiv}
+import rise.eqsat.{rules, ProveEquiv, BackoffScheduler}
 import rise.core.Expr
 import rise.core.DSL._
 import rise.core.DSL.Type._
@@ -18,6 +18,11 @@ object reorder {
     rules.combinatory.transposePairAfter,
     rules.combinatory.mapMapFBeforeTranspose,
   )
+
+  private val proveEquiv = ProveEquiv.init()
+    .withRunnerTransform(r => r
+      .withTimeLimit(java.time.Duration.ofMinutes(5))
+      .withScheduler(BackoffScheduler.init()))
 
   private def T: ToBeTyped[Expr] = rise.core.primitives.transpose
   private def *(x: ToBeTyped[Expr]): ToBeTyped[Expr] = rise.core.primitives.map(x)
@@ -41,7 +46,7 @@ object reorder {
     val gold321 = wrap(f => *(T) o T o *(T) o ***(f) o *(T) o T o *(T))
     val gold312 = wrap(f => *(T) o T o ***(f) o T o *(T))
 
-    ProveEquiv.init().runCNF(expr, Seq(
+    proveEquiv.runCNF(expr, Seq(
       gold132, gold213, gold231, gold321, gold312
     ), reorderRules)
   }
@@ -62,7 +67,7 @@ object reorder {
     val gold4321: Expr = wrap(i => f => (**(T) o *(T) o T o **(T) o *(T) o **(T) o ****(f) o
       **(T) o *(T) o **(T) o T o  *(T) o **(T)) $ i)
 
-    ProveEquiv.init().runCNF(expr, Seq(
+    proveEquiv.runCNF(expr, Seq(
       gold1243, gold1324, gold2134, gold4321
     ), reorderRules)
   }
