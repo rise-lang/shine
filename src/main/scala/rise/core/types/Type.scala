@@ -24,10 +24,7 @@ final case class FunType[T <: Type, U <: Type](inT: T, outT: U)
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DepFunType[K <: Kind: KindName, T <: Type](
-    x: K#I with Kind.Explicitness,
-    t: T
-) extends Type {
+final case class DepFunType[K <: Kind: KindName, T <: Type](x: K#I, t: T) extends Type {
   override def toString: String =
     s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
 }
@@ -192,7 +189,7 @@ final case class DepArrayType(size: Nat, fdt: NatToData) extends DataType {
 
 object DepArrayType {
   def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1), isExplicit = true)
+    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
     DepArrayType(size, NatToDataLambda(n, f(n)))
   }
 }

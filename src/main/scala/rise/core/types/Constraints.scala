@@ -110,7 +110,7 @@ object Constraint {
             DepFunType(na: NatIdentifier, ta),
             DepFunType(nb: NatIdentifier, tb)
             ) =>
-              val n = NatIdentifier(freshName("n"), isExplicit = true)
+              val n = NatIdentifier(freshName("n"))
               decomposedPreserve(Seq(
                 NatConstraint(n, na),
                 NatConstraint(n, nb),
@@ -120,7 +120,7 @@ object Constraint {
             DepFunType(dta: DataTypeIdentifier, ta),
             DepFunType(dtb: DataTypeIdentifier, tb)
             ) =>
-            val dt = DataTypeIdentifier(freshName("t"), isExplicit = true)
+            val dt = DataTypeIdentifier(freshName("t"))
             decomposedPreserve(Seq(
               TypeConstraint(dt, dta),
               TypeConstraint(dt, dtb),
@@ -136,7 +136,7 @@ object Constraint {
             DepPairType(x1: NatIdentifier, t1),
             DepPairType(x2: NatIdentifier, t2)
             ) =>
-            val n = NatIdentifier(freshName("n"), isExplicit = true)
+            val n = NatIdentifier(freshName("n"))
             decomposedPreserve(Seq(
               NatConstraint(n, x1),
               NatConstraint(n, x2),
@@ -147,7 +147,7 @@ object Constraint {
             DepPairType(x1: NatCollectionIdentifier, t1),
             DepPairType(x2: NatCollectionIdentifier, t2)
             ) =>
-            val n = NatCollectionIdentifier(freshName("n"), isExplicit = true)
+            val n = NatCollectionIdentifier(freshName("n"))
             decomposedPreserve(Seq(
               NatCollectionConstraint(n, x1),
               NatCollectionConstraint(n, x2),
@@ -201,7 +201,7 @@ object Constraint {
           case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a)
           case _ if a == b                 => Solution()
           case (NatToDataLambda(x1, dt1), NatToDataLambda(x2, dt2)) =>
-            val n = NatIdentifier(freshName("n"), isExplicit = true)
+            val n = NatIdentifier(freshName("n"))
             decomposedPreserve(Seq(
               NatConstraint(n, x1),
               NatConstraint(n, x2),
@@ -432,7 +432,7 @@ object Constraint {
           natToNat.unify(f1, f2, preserve) ++ unify(n1, n2, preserve)
         case _ => (f1, n1) match {
           case (f1: NatToNatIdentifier, n1: NatIdentifier) =>
-            val freshVar = NatIdentifier(freshName("n"), isExplicit = true)
+            val freshVar = NatIdentifier(freshName("n"))
             val lambda = NatToNatLambda(freshVar, substitute.natInNat(freshVar, n1, nat))
             Solution.subs(f1, lambda)
           case _ => ???
@@ -476,7 +476,7 @@ object Constraint {
       case NatToNatLambda(x1, body1) => f2 match {
         case id2: NatToNatIdentifier => Solution.subs(id2, f1)
         case NatToNatLambda(x2, body2) =>
-          val n = NatIdentifier(freshName("n"), isExplicit = true)
+          val n = NatIdentifier(freshName("n"))
           nat.unify(
             substitute.natInNat(n, `for` = x1, body1),
             substitute.natInNat(n, `for`=x2, body2),

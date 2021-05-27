@@ -19,10 +19,7 @@ package object DSL {
     x >>= (x => e >>= (e => toBeTyped(Lambda(x, e)(TypePlaceholder))))
   def app(f: ToBeTyped[Expr], e: ToBeTyped[Expr]): ToBeTyped[App] =
     f >>= (f => e >>= (e => toBeTyped(App(f, e)(TypePlaceholder))))
-  def depLambda[K <: Kind: KindName](
-                                      x: K#I with Kind.Explicitness,
-                                      e: ToBeTyped[Expr]
-                                    ): ToBeTyped[DepLambda[K]] =
+  def depLambda[K <: Kind: KindName](x: K#I, e: ToBeTyped[Expr]): ToBeTyped[DepLambda[K]] =
     e >>= (e => toBeTyped(DepLambda[K](x, e)(TypePlaceholder)))
   def depApp[K <: Kind](f: ToBeTyped[Expr], x: K#T): ToBeTyped[DepApp[K]] =
     f >>= (f => toBeTyped(DepApp[K](f, x)(TypePlaceholder)))
@@ -406,35 +403,35 @@ package object DSL {
     def apply(r: arithexpr.arithmetic.Range,
               w: NatFunction1Wrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[NatKind]] = {
-      val n = NatIdentifier(freshName("n"), r, isExplicit = true)
+      val n = NatIdentifier(freshName("n"), r)
       depLambda[NatKind](n, w.f(n))
     }
 
     def apply(w: NatFunction1Wrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[NatKind]] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
-      val n = NatIdentifier(freshName("n"), r, isExplicit = true)
+      val n = NatIdentifier(freshName("n"), r)
       depLambda[NatKind](n, w.f(n))
     }
 
     def apply(w: NatFunction2Wrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[NatKind]] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
-      val n1 = NatIdentifier(freshName("n"), r, isExplicit = true)
+      val n1 = NatIdentifier(freshName("n"), r)
       depLambda[NatKind](n1, depFun((n2: Nat) => w.f(n1, n2)))
     }
 
     def apply(w: NatFunction3Wrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[NatKind]] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
-      val n1 = NatIdentifier(freshName("n"), r, isExplicit = true)
+      val n1 = NatIdentifier(freshName("n"), r)
       depLambda[NatKind](n1, depFun((n2: Nat, n3: Nat) => w.f(n1, n2, n3)))
     }
 
     def apply(w: NatFunction4Wrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[NatKind]] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
-      val n1 = NatIdentifier(freshName("n"), r, isExplicit = true)
+      val n1 = NatIdentifier(freshName("n"), r)
       depLambda[NatKind](n1, depFun((n2: Nat, n3: Nat, n4: Nat) =>
         w.f(n1, n2, n3, n4)))
     }
@@ -442,32 +439,32 @@ package object DSL {
     def apply(w: NatFunction5Wrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[NatKind]] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
-      val n1 = NatIdentifier(freshName("n"), r, isExplicit = true)
+      val n1 = NatIdentifier(freshName("n"), r)
       depLambda[NatKind](n1, depFun((n2: Nat, n3: Nat, n4: Nat, n5: Nat) =>
         w.f(n1, n2, n3, n4, n5)))
     }
 
     def apply(w: DataTypeFunctionWrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[DataKind]] = {
-      val x = DataTypeIdentifier(freshName("dt"), isExplicit = true)
+      val x = DataTypeIdentifier(freshName("dt"))
       depLambda[DataKind](x, w.f(x))
     }
 
     def apply(w: NatToDataFunctionWrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[NatToDataKind]] = {
-      val x = NatToDataIdentifier(freshName("n2d"), isExplicit = true)
+      val x = NatToDataIdentifier(freshName("n2d"))
       depLambda[NatToDataKind](x, w.f(x))
     }
 
     def apply(w: NatToNatFunctionWrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[NatToNatKind]] = {
-      val x = NatToNatIdentifier(freshName("n2n"), isExplicit = true)
+      val x = NatToNatIdentifier(freshName("n2n"))
       depLambda[NatToNatKind](x, w.f(x))
     }
 
     def apply(w: AddressSpaceFunctionWrapper[ToBeTyped[Expr]]
              ): ToBeTyped[DepLambda[AddressSpaceKind]] = {
-      val x = AddressSpaceIdentifier(freshName("a"), isExplicit = true)
+      val x = AddressSpaceIdentifier(freshName("a"))
       depLambda[AddressSpaceKind](x, w.f(x))
     }
   }

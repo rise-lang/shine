@@ -6,7 +6,7 @@ object showScala {
   private def kindIdent[K <: Kind](x: K#I): String = {
     x match {
       case n: NatIdentifier =>
-        s"""NatIdentifier("${n.name}", ${n.range}, ${n.isExplicit})"""
+        s"""NatIdentifier("${n.name}", ${n.range})"""
       case DataTypeIdentifier(n, isE) =>
         s"""DataTypeIdentifier("$n", $isE)"""
       case _ => throw new Exception(s"missing rule for $x")
@@ -17,7 +17,7 @@ object showScala {
     import arithexpr.arithmetic._
     n match {
       case n: NatIdentifier =>
-        s"""NatIdentifier("${n.name}", ${n.range}, ${n.isExplicit})"""
+        s"""NatIdentifier("${n.name}", ${n.range})"""
       case n: NamedVar =>
         s"""NamedVar("${n.name}", ${n.range})"""
       case Prod(factors) => factors.map(nat).mkString("(", " * ", ")")

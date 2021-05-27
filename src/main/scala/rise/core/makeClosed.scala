@@ -6,36 +6,22 @@ import rise.core.types._
 object makeClosed {
   def apply(e: Expr): Expr = withCount(e)._1
   def withCount(e: Expr): (Expr, Int) = {
-    val emptySubs: (Map[Type, Type],
-      Map[NatIdentifier, Nat],
-      Map[AddressSpaceIdentifier, AddressSpace],
-      Map[NatToDataIdentifier, NatToData]) = (Map(), Map(), Map(), Map())
-
-    val (expr, (ts, ns, as, n2ds)) = IsClosedForm.varsToClose(e)._2.foldLeft((e, emptySubs))((acc, ftv) => acc match {
-      case (expr, (ts, ns, as, n2ds)) => ftv match {
+    val (expr, ts) = IsClosedForm.varsToClose(e)._2.foldLeft((e, Map[Type, Type]()))((acc, ftv) => acc match {
+      case (expr, ts) => ftv match {
         case i: TypeIdentifier =>
           val dt = DataTypeIdentifier(freshName("dt"), isExplicit = true)
-          (DepLambda[DataKind](dt, expr)(DepFunType[DataKind, Type](dt, expr.t)),
-            (ts ++ Map(i -> dt), ns, as , n2ds))
+          (DepLambda[DataKind](dt, expr)(DepFunType[DataKind, Type](dt, expr.t)), (ts ++ Map(i -> dt)))
         case i: DataTypeIdentifier =>
-          val dt = i.asExplicit
-          (DepLambda[DataKind](dt, expr)(DepFunType[DataKind, Type](dt, expr.t)),
-            (ts ++ Map(i -> dt), ns, as , n2ds))
+          (DepLambda[DataKind](i, expr)(DepFunType[DataKind, Type](i, expr.t)), ts)
         case i: NatIdentifier =>
-          val n = i.asExplicit
-          (DepLambda[NatKind](n, expr)(DepFunType[NatKind, Type](n, expr.t)),
-            (ts, ns ++ Map(i -> n), as, n2ds))
+          (DepLambda[NatKind](i, expr)(DepFunType[NatKind, Type](i, expr.t)), ts)
         case i: AddressSpaceIdentifier =>
-          val a = i.asExplicit
-          (DepLambda[AddressSpaceKind](a, expr)(DepFunType[AddressSpaceKind, Type](a, expr.t)),
-            (ts, ns, as ++ Map(i -> a), n2ds))
+          (DepLambda[AddressSpaceKind](i, expr)(DepFunType[AddressSpaceKind, Type](i, expr.t)), ts)
         case i: NatToDataIdentifier =>
-          val n2d = i.asExplicit
-          (DepLambda[NatToDataKind](n2d, expr)(DepFunType[NatToDataKind, Type](n2d, expr.t)),
-            (ts, ns, as, n2ds ++ Map(i -> n2d)))
+          (DepLambda[NatToDataKind](i, expr)(DepFunType[NatToDataKind, Type](i, expr.t)), ts)
         case i => throw TypeException(s"${i.getClass} is not supported yet")
       }
     })
-    (new Solution(ts, ns, as, Map.empty, Map.empty, n2ds, Map.empty, Map.empty)(expr), ts.size + ns.size + as.size + n2ds.size)
+    (new Solution(ts, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty)(expr), ts.size)
   }
 }

@@ -128,10 +128,10 @@ object Type {
       case dt: DataTypeNode[Nat, DataType] => DataType.toNamed(DataType(dt), bound)
       case FunType(a, b) => rct.FunType(toNamed(a, bound), toNamed(b, bound))
       case NatFunType(t) =>
-        val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
+        val i = rct.NatIdentifier(s"n${bound.nat.size}")
         rct.DepFunType[rct.NatKind, rct.Type](i, toNamed(t, bound + i))
       case DataFunType(t) =>
-        val i = rct.DataTypeIdentifier(s"n${bound.data.size}", isExplicit = true)
+        val i = rct.DataTypeIdentifier(s"n${bound.data.size}")
         rct.DepFunType[rct.DataKind, rct.Type](i, toNamed(t, bound + i))
     }
   }

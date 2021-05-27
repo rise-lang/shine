@@ -30,11 +30,7 @@ final case class App(f: Expr, e: Expr)(override val t: Type)
   override def setType(t: Type): App = this.copy(f, e)(t)
 }
 
-final case class DepLambda[K <: Kind: KindName](
-    x: K#I with Kind.Explicitness,
-    e: Expr
-)(override val t: Type)
-    extends Expr {
+final case class DepLambda[K <: Kind: KindName](x: K#I, e: Expr)(override val t: Type) extends Expr {
   val kindName: String = implicitly[KindName[K]].get
   override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
 }

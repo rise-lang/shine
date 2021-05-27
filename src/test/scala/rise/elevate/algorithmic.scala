@@ -63,8 +63,8 @@ class algorithmic extends test_util.Tests {
   // Swap Nesting of map and reduce
 
   test("lift reduce") {
-    val M = NatIdentifier("M", isExplicit = true)
-    val N = NatIdentifier("N", isExplicit = true)
+    val M = NatIdentifier("M")
+    val N = NatIdentifier("N")
 
     val addTuple = fun(x => fst(x) + snd(x))
 
@@ -90,9 +90,9 @@ class algorithmic extends test_util.Tests {
   // Tests and Expressions related to loop reordering in Matrix Multiplication
 
   test("MM to MM-LoopMKN") {
-    val M = NatIdentifier("M", isExplicit = true)
-    val N = NatIdentifier("N", isExplicit = true)
-    val K = NatIdentifier("K", isExplicit = true)
+    val M = NatIdentifier("M")
+    val N = NatIdentifier("N")
+    val K = NatIdentifier("K")
 
     val mm = depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
@@ -140,9 +140,9 @@ class algorithmic extends test_util.Tests {
 
   // This one just serves as documentation for different mm-rise-expressions
   ignore("MM-LoopMKN to MM-LoopKMN") {
-    val M = NatIdentifier("M", isExplicit = true)
-    val N = NatIdentifier("N", isExplicit = true)
-    val K = NatIdentifier("K", isExplicit = true)
+    val M = NatIdentifier("M")
+    val N = NatIdentifier("N")
+    val K = NatIdentifier("K")
 
     val mmMKN = {
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
@@ -268,9 +268,9 @@ class algorithmic extends test_util.Tests {
 
   // todo remove once PLDI-TVM tests are in
   ignore("mm tile + reorder") {
-    val M = NatIdentifier("M", isExplicit = true)
-    val N = NatIdentifier("N", isExplicit = true)
-    val K = NatIdentifier("K", isExplicit = true)
+    val M = NatIdentifier("M")
+    val N = NatIdentifier("N")
+    val K = NatIdentifier("K")
 
     val mm =
       DFNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
