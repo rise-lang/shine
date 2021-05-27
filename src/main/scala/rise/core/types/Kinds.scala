@@ -9,11 +9,6 @@ object Kind {
   trait Identifier {
     def name: String
   }
-  trait Explicitness {
-    val isExplicit: Boolean
-    def asExplicit: Explicitness
-    def asImplicit: Explicitness
-  }
 }
 
 sealed trait TypeKind extends Kind {

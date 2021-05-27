@@ -121,7 +121,7 @@ object equality {
     val hashType: Type => Int = {
       case TypePlaceholder => 5
       case TypeIdentifier(_) => 7
-      case DataTypeIdentifier(_, _) => 11
+      case DataTypeIdentifier(_) => 11
       case FunType(inT, outT) => 13 * hashType(inT) + 17 * hashType(outT)
       case DepFunType(_, t) => 19 * hashType(t)
       case st: ScalarType => 29 * st.hashCode()

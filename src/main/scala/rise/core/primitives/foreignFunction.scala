@@ -21,7 +21,7 @@ object foreignFunction {
     override val name: String = "foreignFunction"
     override def setType(ty: Type): Primitive = Primitive(funDecl, n)(ty)
     override def typeScheme: Type = {
-      val inTs = Seq.fill(n)(DataTypeIdentifier(freshName("dt"), isExplicit = true))
+      val inTs = Seq.fill(n)(DataTypeIdentifier(freshName("dt")))
       inTs.foldRight(expl { (outT: DataType) => inTs.foldRight(outT: Type)({
         case (lhsT, rhsT) =>
           lhsT ->: rhsT

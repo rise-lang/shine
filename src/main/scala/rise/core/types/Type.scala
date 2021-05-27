@@ -13,9 +13,7 @@ object TypePlaceholder extends Type {
   override def toString: String = "?"
 }
 
-final case class TypeIdentifier(name: String)
-    extends Type
-    with Kind.Identifier {
+final case class TypeIdentifier(name: String) extends Type with Kind.Identifier {
   override def toString: String = "_" + name
 }
 
@@ -33,14 +31,8 @@ final case class DepFunType[K <: Kind: KindName, T <: Type](x: K#I, t: T) extend
 
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String,
-                                    override val isExplicit: Boolean = false
-                                   ) extends DataType
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: DataTypeIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: DataTypeIdentifier = this.copy(isExplicit = false)
+final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
+  override def toString: String = name
 }
 
 sealed trait ScalarType extends DataType
@@ -95,15 +87,8 @@ object MatrixLayout {
   object None extends MatrixLayout
 }
 
-final case class MatrixLayoutIdentifier(name: String,
-                                        override val isExplicit: Boolean = false
-                                       ) extends MatrixLayout
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: MatrixLayoutIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: MatrixLayoutIdentifier =
-    this.copy(isExplicit = false)
+final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with Kind.Identifier {
+  override def toString: String = name
 }
 
 sealed trait FragmentKind
@@ -114,15 +99,8 @@ object FragmentKind {
   object Accumulator extends FragmentKind { override def toString = "Accumulator"}
 }
 
-final case class FragmentKindIdentifier(name: String,
-                                        override val isExplicit: Boolean = false
-                                       ) extends FragmentKind
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: FragmentKindIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: FragmentKindIdentifier =
-    this.copy(isExplicit = false)
+final case class FragmentKindIdentifier(name: String) extends FragmentKind with Kind.Identifier {
+  override def toString: String = name
 }
 
 object FragmentType {

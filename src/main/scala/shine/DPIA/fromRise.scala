@@ -942,11 +942,11 @@ object fromRise {
     case rt.AddressSpace.Local => AddressSpace.Local
     case rt.AddressSpace.Private => AddressSpace.Private
     case rt.AddressSpace.Constant => AddressSpace.Constant
-    case rt.AddressSpaceIdentifier(name, _) => AddressSpaceIdentifier(name)
+    case rt.AddressSpaceIdentifier(name) => AddressSpaceIdentifier(name)
   }
 
   def nat2nat(n2n: rt.NatToNat): NatToNat = n2n match {
-    case rt.NatToNatIdentifier(name, _) =>
+    case rt.NatToNatIdentifier(name) =>
       NatToNatIdentifier(name)
     case rt.NatToNatLambda(x, body) =>
       NatToNatLambda(x.range, NatIdentifier(x.name), body)
@@ -990,7 +990,7 @@ object fromRise {
     case rt.MatrixLayout.Row_Major => MatrixLayout.Row_Major
     case rt.MatrixLayout.Col_Major => MatrixLayout.Col_Major
     case rt.MatrixLayout.None => MatrixLayout.None
-    case rt.MatrixLayoutIdentifier(name, _) => layouts.getOrElseUpdate(name, MatrixLayoutIdentifier(name))
+    case rt.MatrixLayoutIdentifier(name) => layouts.getOrElseUpdate(name, MatrixLayoutIdentifier(name))
     case _ => throw new Exception("this should not happen")
   }
 
@@ -1013,12 +1013,12 @@ object fromRise {
   def ntd(ntd: rt.NatToData): NatToData= ntd match {
     case rt.NatToDataLambda(n, body) =>
       NatToDataLambda(natIdentifier(n), dataType(body))
-    case rt.NatToDataIdentifier(x, _) => NatToDataIdentifier(x)
+    case rt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
   }
 
   def ntn(ntn: rt.NatToNat): NatToNat= ntn match {
     case rt.NatToNatLambda(n, body) => NatToNatLambda(natIdentifier(n), body)
-    case rt.NatToNatIdentifier(x, _) => NatToNatIdentifier(x)
+    case rt.NatToNatIdentifier(x) => NatToNatIdentifier(x)
   }
 
   def dataTypeIdentifier(dt: rt.DataTypeIdentifier): DataTypeIdentifier =

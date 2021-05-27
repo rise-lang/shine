@@ -9,7 +9,7 @@ object makeClosed {
     val (expr, ts) = IsClosedForm.varsToClose(e)._2.foldLeft((e, Map[Type, Type]()))((acc, ftv) => acc match {
       case (expr, ts) => ftv match {
         case i: TypeIdentifier =>
-          val dt = DataTypeIdentifier(freshName("dt"), isExplicit = true)
+          val dt = DataTypeIdentifier(freshName("dt"))
           (DepLambda[DataKind](dt, expr)(DepFunType[DataKind, Type](dt, expr.t)), (ts ++ Map(i -> dt)))
         case i: DataTypeIdentifier =>
           (DepLambda[DataKind](i, expr)(DepFunType[DataKind, Type](i, expr.t)), ts)

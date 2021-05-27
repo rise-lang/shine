@@ -87,14 +87,14 @@ object uniqueNames {
           } yield DepLambda[NatKind](x2, b2)(t2)
 
         case d@DepLambda(x: DataTypeIdentifier, b) =>
-          val x2 = DataTypeIdentifier(s"dt$nextDtN", x.isExplicit)
+          val x2 = DataTypeIdentifier(s"dt$nextDtN")
           for {
             b2 <- renameInExpr(b)(values, types + (x -> x2))
             t2 <- renameInTypes(d.t)(types)
           } yield DepLambda[DataKind](x2, b2)(t2)
 
         case d@DepLambda(x: AddressSpaceIdentifier, b) =>
-          val x2 = AddressSpaceIdentifier(s"a$nextAN", x.isExplicit)
+          val x2 = AddressSpaceIdentifier(s"a$nextAN")
           for {
             b2 <- renameInExpr(b)(values, types + (x -> x2))
             t2 <- renameInTypes(d.t)(types)
