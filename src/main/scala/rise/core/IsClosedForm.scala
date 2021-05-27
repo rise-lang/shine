@@ -91,19 +91,28 @@ object IsClosedForm {
   }
 
   def freeVars(expr: Expr): (Seq[Identifier], Seq[Kind.Identifier]) = {
-    val (fV, fT) = traverse(expr, Visitor(Set(), Set()))._1
+    val ((fV, fT), _) = traverse(expr, Visitor(Set(), Set()))
     (fV.ordered, fT.ordered)
+  }
+
+  def freeVars(t: Type): Seq[Kind.Identifier] = {
+    val ((_, ftv), _) = traverse(t, Visitor(Set(), Set()))
+    ftv.ordered
+  }
+
+  // Exclude matrix layout and fragment kind identifiers, since they cannot currently be bound
+  def needsClosing : Seq[Kind.Identifier] => Seq[Kind.Identifier] = _.flatMap {
+    case i : MatrixLayoutIdentifier => Seq()
+    case i : FragmentKindIdentifier => Seq()
+    case e => Seq(e)
   }
 
   def varsToClose(expr : Expr): (Seq[Identifier], Seq[Kind.Identifier]) = {
     val (fV, fT) = freeVars(expr)
-    // Exclude matrix layout and fragment kind identifiers, since they cannot currently be bound
-    (fV, fT.flatMap {
-      case i : MatrixLayoutIdentifier => Seq()
-      case i : FragmentKindIdentifier => Seq()
-      case e => Seq(e)
-    })
+    (fV, needsClosing(fT))
   }
+
+  def varsToClose(t : Type): Seq[Kind.Identifier] = needsClosing(freeVars(t))
 
   def apply(expr: Expr): Boolean = {
     val (freeV, freeT) = varsToClose(expr)
