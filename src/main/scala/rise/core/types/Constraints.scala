@@ -268,14 +268,14 @@ object Constraint {
         } else if (canBeSubstituted(preserve, j)) {
           Solution.subs(j, i)
         } else {
-          error(s"cannot unify $i and $j, they are both explicit or in $preserve")
+          error(s"cannot unify $i and $j, they are both in $preserve")
         }
       case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
       case _ =>
         if (canBeSubstituted(preserve, i)) {
           Solution.subs(i, t)
         } else {
-          error(s"cannot substitute $i, it is explicit")
+          error(s"cannot substitute $i, it is $preserve")
         }
     }
   }
