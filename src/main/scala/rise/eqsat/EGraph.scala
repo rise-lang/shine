@@ -188,8 +188,9 @@ class EGraph[ED, ND, TD](
     (id1, true)
   }
 
-  def rebuild(): Int = {
+  def rebuild(filter: Predicate[ED, ND, TD] = NoPredicate()): Int = {
     val nUnions = processUnions()
+    val _ = this.filter(filter)
     val _ = rebuildClasses()
 
     assert {
@@ -311,7 +312,7 @@ class EGraph[ED, ND, TD](
   }
 
   // returns (eliminatedClasses, eliminatedNodes)
-  def filter(predicate: Predicate[ED, ND, TD]): (Int, Int) = {
+  private def filter(predicate: Predicate[ED, ND, TD]): (Int, Int) = {
     assert(pending.isEmpty)
     assert(analysisPending.isEmpty)
 
@@ -320,37 +321,42 @@ class EGraph[ED, ND, TD](
       case _ =>
     }
 
-    val originalClasses = classes
-    val originalUnionFind = unionFind
+    val originalClassCount = classCount()
     val originalNodeCount = nodeCount()
 
-    memo.clear()
-    unionFind = UnionFind.empty
-    classes = HashMap.empty
-    classesByMatch.clear()
-
+    // 1. collect classes to eliminate
     val toEliminate = HashSet.empty[EClassId]
     val (rt1, _) = util.time {
-      for (eclass <- originalClasses.values) {
-        if (!predicate(hashConses, eclass)) {
+      for (eclass <- classes.values) {
+        assert(eclass.id == findMut(eclass.id))
+        if (!predicate(this, eclass)) {
           toEliminate += eclass.id
         }
       }
     }
 
-    def enodeToEliminate(n: ENode): Boolean =
-      n.children().exists(toEliminate)
+    if (toEliminate.isEmpty) {
+      return (0, 0)
+    }
 
+    def eclassToEliminate(id: EClassId): Boolean =
+      toEliminate(findMut(id))
+    def enodeToEliminate(n: ENode): Boolean =
+      n.children().exists(id => eclassToEliminate(id))
+
+    // 2. also eliminate classes that would become
+    // unreachable or dead ends
     val (rt2, _) = util.time {
       var spread = true
       while (spread) {
         spread = false
 
-        for (eclass <- originalClasses.values) {
+        for (eclass <- classes.values) {
           if (!toEliminate(eclass.id)) {
-            if (eclass.parents.forall { case (pn, pid) => toEliminate(originalUnionFind.findMut(pid)) || enodeToEliminate(pn) } ||
-              eclass.nodes.forall(enodeToEliminate)) {
-
+            val unreachable = eclass.parents.nonEmpty &&
+              eclass.parents.forall { case (pn, pid) => eclassToEliminate(pid) || enodeToEliminate(pn) }
+            val deadEnd = eclass.nodes.forall(enodeToEliminate)
+            if (unreachable || deadEnd) {
               toEliminate += eclass.id
               spread = true
             }
@@ -359,59 +365,32 @@ class EGraph[ED, ND, TD](
       }
     }
 
+    // 3. perform the actual elimination
     val (rt3, _) = util.time {
-      val newIds = HashMap.empty[EClassId, EClassId]
-      for (eclass <- originalClasses.values) {
-        if (!toEliminate(eclass.id)) {
-          val newId = unionFind.makeSet()
-          newIds += eclass.id -> newId
-
-          val newEclass = new EClass(
-            id = newId,
-            t = eclass.t,
-            nodes = Vec(),
-            data = analysis.empty(this, eclass.t),
-            parents = Vec())
-          classes += newId -> newEclass
+      classes.filterInPlace { case (id, _) =>
+        !toEliminate(id)
+      }
+      classes.foreach { case (_, eclass) =>
+        eclass.parents.filterInPlace { case (pn, pid) =>
+          !(eclassToEliminate(pid) || enodeToEliminate(pn))
+        }
+        eclass.nodes.filterInPlace { c =>
+          !enodeToEliminate(c)
         }
       }
-
-      for (eclass <- originalClasses.values) {
-        if (!toEliminate(eclass.id)) {
-          val newEClass = classes(newIds(eclass.id))
-
-          newEClass.parents = eclass.parents.flatMap { case (pn, pid) =>
-            val id = originalUnionFind.findMut(pid)
-            if (toEliminate(id) || enodeToEliminate(pn)) {
-              None
-            } else {
-              Some((pn.mapChildren(newIds), newIds(id)))
-            }
-          }
-
-          newEClass.nodes = eclass.nodes.flatMap { c =>
-            if (enodeToEliminate(c)) {
-              None
-            } else {
-              val newC = c.mapChildren(newIds)
-              memo += (newC, newEClass.t) -> newEClass.id
-              analysisPending += ((newC, newEClass.id))
-              Some(newC)
-            }
-          }
-        }
+      memo.filterInPlace { case (_, id) =>
+        !eclassToEliminate(id)
       }
     }
 
-    println("boo")
+    // FIXME: we are currently not updating the analysis data
+    //  to account for removals
 
-    val (rt4, _) = util.time(rebuild())
-
-    val eliminatedClasses = originalClasses.size - classCount()
+    val eliminatedClasses = originalClassCount - classCount()
     val eliminatedNodes = originalNodeCount - nodeCount()
     println(s"filter eliminated $eliminatedClasses classes" +
-      s" and $eliminatedNodes nodes " +
-      s" in ${Seq(rt1, rt2, rt3, rt4).map(util.prettyTime).mkString(" + ")}")
+      s" and $eliminatedNodes nodes" +
+      s" in ${Seq(rt1, rt2, rt3).map(util.prettyTime).mkString(" + ")}")
     (eliminatedClasses, eliminatedNodes)
   }
 }

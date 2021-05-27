@@ -163,11 +163,9 @@ class Runner(var iterations: Vec[Iteration],
 
     val time2 = System.nanoTime()
 
-    val nRebuilds = egraph.rebuild()
+    val nRebuilds = egraph.rebuild(filter)
 
     val time3 = System.nanoTime()
-
-    egraph.filter(filter)
 
     new Iteration(
       egraphNodes = egraph.nodeCount(),
