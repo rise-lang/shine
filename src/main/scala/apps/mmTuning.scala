@@ -1,24 +1,25 @@
 package apps
 
 import java.io.{File, FileOutputStream, PrintWriter}
-
 import mm._
 import opencl.executor.Executor
 import shine.OpenCL.{GlobalSize, LocalSize}
-import util.gen
+import util.{gen, writeToPath}
+
+import java.nio.file.{Files, Paths}
 
 object mmTuning {
 
   // we don't tune input size
-  private val N = 64
-  private val M = 128
-  private val O = 128
+//  private val N = 64
+//  private val M = 128
+//  private val O = 128
 //
 //  private val N = 512
 //  private val M = 1024
 //  private val O = 1024
 
-  private def randGold(): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
+  private def randGold(N:Int, M:Int, O:Int): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
     val rand = new scala.util.Random
     val At = Array.fill(O, N)(rand.nextInt(6).toFloat)
     val B = Array.fill(O, M)(rand.nextInt(6).toFloat)
@@ -26,24 +27,88 @@ object mmTuning {
     (At, B, gold)
   }
 
+  def fileToArray(file: String, dim0: Int, dim1:Int):Array[Array[Float]] = {
+    val array  = Array.ofDim[Float](dim0, dim1)
+
+    val bufferedSource = io.Source.fromFile(file)
+
+    var i = 0
+    for (line <- bufferedSource.getLines()) {
+      val cols = line.split(",").map(_.trim.toFloat)
+      array(i) = cols
+      i +=1
+    }
+    bufferedSource.close
+
+    array
+  }
+
+  def arrayToString(array: Array[Array[Float]]):String ={
+
+    var AtString = ""
+    array.foreach(row => {
+      var rowString = ""
+      row.foreach(elem => {
+        rowString += elem.toString + ","
+      })
+      AtString += rowString.dropRight(1) + "\n"
+    })
+
+
+    AtString
+  }
+
+  private def randGold2(N:Int, M:Int, O:Int): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
+//    private def randGold2(N:Int, M:Int, O:Int) = {
+
+      val files = !Files.exists(Paths.get("At.csv")) || !Files.exists(Paths.get("B.csv")) || !Files.exists(Paths.get("gold.csv"))
+      if(files) {
+
+      val rand = new scala.util.Random
+        val At = Array.fill(O, N)(rand.nextInt(6).toFloat)
+        val B = Array.fill(O, M)(rand.nextInt(6).toFloat)
+        println("compute gold")
+        val gold = computeGold(N, M, O, At, B)
+        println("compute gold finished")
+
+        writeToPath("At.csv", arrayToString(At))
+        writeToPath("B.csv", arrayToString(B))
+        writeToPath("gold.csv", arrayToString(gold))
+      }else{
+        println("read from files")
+      }
+
+      val At = fileToArray("At.csv", O, N)
+      val B = fileToArray("B.csv", O, M)
+      val gold = fileToArray("gold.csv", N, M).flatten
+
+
+      (At, B, gold)
+  }
+
   // main
   def main(args: Array[String]): Unit = {
     Executor.loadLibrary()
     Executor.init()
 
+    val N = args(0).toInt
+    val M = args(1).toInt
+    val O = args(2).toInt
+
+
     // read in values from args
-    val v3 = args(0).toInt
-    val v4 = args(1).toInt
-    val v5 = args(2).toInt
-    val v6 = args(3).toInt
-    val v7 = args(4).toInt
-    val v8 = args(5).toInt
+    val v3 = args(3).toInt
+    val v4 = args(4).toInt
+    val v5 = args(5).toInt
+    val v6 = args(6).toInt
+    val v7 = args(7).toInt
+    val v8 = args(8).toInt
 
     // global local size
-    val ls0 = args(6).toInt
-    val ls1 = args(7).toInt
-    val gs0 = args(8).toInt
-    val gs1 = args(9).toInt
+    val ls0 = args(9).toInt
+    val ls1 = args(10).toInt
+    val gs0 = args(11).toInt
+    val gs1 = args(12).toInt
 //
 //    println("v3: " + v3)
 //    println("v4: " + v4)
@@ -68,9 +133,7 @@ object mmTuning {
     val kernel = genMMKernel(v3, v4, v5, v6, v7, v8)
 
     // create random values
-    println("compute gold")
-    val (at, b, gold) = randGold()
-    println("compute gold finished")
+    val (at, b, gold) = randGold2(N,M,O)
 
     // run kernel
     try{
