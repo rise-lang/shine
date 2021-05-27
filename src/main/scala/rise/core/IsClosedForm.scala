@@ -6,15 +6,32 @@ import rise.core.traverse._
 import rise.core.types._
 
 object IsClosedForm {
+  case class OrderedSet[T](ordered : Seq[T], unique : Set[T])
+  object OrderedSet {
+    def one[T] : T => OrderedSet[T] = t => OrderedSet(Seq(t), Set(t))
+    def add[T] : T => OrderedSet[T] => OrderedSet[T] = t => ts =>
+      if (ts.unique.contains(t)) ts else OrderedSet(t +: ts.ordered, ts.unique + t)
+    def empty[T] : OrderedSet[T] = OrderedSet(Seq(), Set())
+    def append[T] : OrderedSet[T] => OrderedSet[T] => OrderedSet[T] = x => y => {
+      val ordered = x.ordered.filter(!y.unique.contains(_)) ++ y.ordered
+      val unique = x.unique ++ y.unique
+      OrderedSet(ordered, unique)
+    }
+  }
+  implicit def OrderedSetMonoid[T] : Monoid[OrderedSet[T]] = new Monoid[OrderedSet[T]] {
+    def empty : OrderedSet[T] = OrderedSet.empty
+    def append : OrderedSet[T] => OrderedSet[T] => OrderedSet[T] = OrderedSet.append
+  }
+
   case class Visitor(boundV: Set[Identifier], boundT: Set[Kind.Identifier])
-    extends PureAccumulatorTraversal[(Set[Identifier], Set[Kind.Identifier])]
+    extends PureAccumulatorTraversal[(OrderedSet[Identifier], OrderedSet[Kind.Identifier])]
   {
-    override val accumulator = PairMonoid(SetMonoid, SetMonoid)
+    override val accumulator = PairMonoid(OrderedSetMonoid, OrderedSetMonoid)
 
     override def identifier[I <: Identifier]: VarType => I => Pair[I] = vt => i => {
       for { t2 <- `type`(i.t);
             i2 <- if (vt == Reference && !boundV(i)) {
-                    accumulate((Set(i), Set()))(i)
+                    accumulate((OrderedSet.one(i : Identifier), OrderedSet.empty))(i)
                   } else {
                     return_(i)
                   }}
@@ -23,16 +40,16 @@ object IsClosedForm {
 
     override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = {
       case Reference => i =>
-        if (boundT(i)) return_(i) else accumulate((Set(), Set(i)))(i)
+        if (boundT(i)) return_(i) else accumulate((OrderedSet.empty, OrderedSet.one(i : Kind.Identifier)))(i)
       case _ => return_
     }
 
     override def nat: Nat => Pair[Nat] = n => {
-      val free = n.varList.foldLeft(Set[Kind.Identifier]()) {
-        case (free, v: NamedVar) if !boundT(NatIdentifier(v)) => free + NatIdentifier(v)
+      val free = n.varList.foldLeft(OrderedSet.empty[Kind.Identifier]) {
+        case (free, v: NamedVar) if !boundT(NatIdentifier(v)) => OrderedSet.add(NatIdentifier(v) : Kind.Identifier)(free)
         case (free, _) => free
       }
-      accumulate((Set(), free))(n)
+      accumulate((OrderedSet.empty, free))(n)
     }
 
     override def expr: Expr => Pair[Expr] = {
@@ -41,7 +58,9 @@ object IsClosedForm {
         val ((fVx, fTx), x1) = identifier(Binding)(x).unwrap
         val ((fVe, fTe), e1) = this.copy(boundV = boundV + x1).expr(e).unwrap
         val ((fVt, fTt), t1) = `type`(l.t).unwrap
-        accumulate((fVx ++ fVe ++ fVt, fTx ++ fTe ++ fTt))(Lambda(x1, e1)(t1) : Expr)
+        val fV = OrderedSet.append(OrderedSet.append(fVx)(fVe))(fVt)
+        val fT = OrderedSet.append(OrderedSet.append(fTx)(fTe))(fTt)
+        accumulate((fV, fT))(Lambda(x1, e1)(t1): Expr)
       case DepLambda(x, b) => this.copy(boundT = boundT + x).expr(b)
       case e => super.expr(e)
     }
@@ -71,8 +90,10 @@ object IsClosedForm {
     }
   }
 
-  def freeVars(expr: Expr): (Set[Identifier], Set[Kind.Identifier]) =
-    traverse(expr, Visitor(Set(), Set()))._1
+  def freeVars(expr: Expr): (Seq[Identifier], Seq[Kind.Identifier]) = {
+    val (fV, fT) = traverse(expr, Visitor(Set(), Set()))._1
+    (fV.ordered, fT.ordered)
+  }
 
   def varsToClose(expr : Expr): (Seq[Identifier], Seq[Kind.Identifier]) = {
     val (fV, fT) = freeVars(expr)

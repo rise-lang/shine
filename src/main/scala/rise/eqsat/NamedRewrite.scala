@@ -19,7 +19,7 @@ object NamedRewrite {
     }
     val typedLhs = infer(lhs, untypedFreeV, Set())
     val freeV = infer.collectFreeEnv(typedLhs)
-    val (_, freeT) = rise.core.IsClosedForm.freeVars(typedLhs)
+    val freeT = rise.core.IsClosedForm.freeVars(typedLhs)._2.toSet
     val typedRhs = infer(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
 
     trait PatVarStatus
