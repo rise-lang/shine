@@ -71,16 +71,17 @@ class ProveEquiv(
   def run(start: Expr,
           goals: Seq[Expr],
           rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
-    val goalPatterns = goals.map(Pattern.fromExpr(_).compile())
-    var remainingGoalPatterns = goalPatterns
+    var remainingGoals = goals
 
     val egraph = EGraph.emptyWithAnalysis(analysis)
     val startId = egraph.addExpr(start)
+    def goalReached(g: Expr): Boolean =
+      egraph.lookupExpr(g).contains(egraph.find(startId))
     // val goalId = runner.egraph.addExpr(goal)
     val runner = transformRunner(Runner.init()).doneWhen { r =>
-      (r.iterations.size % 3 == 0) && util.printTime("goal check", {
-        remainingGoalPatterns = remainingGoalPatterns.filter(_.searchEClass(egraph, startId).isEmpty)
-        remainingGoalPatterns.isEmpty
+      util.printTime("goal check", {
+        remainingGoals = remainingGoals.filterNot(goalReached)
+        remainingGoals.isEmpty
       })
       // note: could also use this to get a faster procedure,
       // but it would allow rewriting the goal as well, not just the start
@@ -89,9 +90,9 @@ class ProveEquiv(
     runner.printReport()
 
     if (!runner.stopReasons.contains(Done)) {
-      runner.iterations.foreach(println)
-      val (found, notFound) = goalPatterns.zipWithIndex.partition { case (goal, _) =>
-        goal.searchEClass(egraph, startId).isDefined
+      // runner.iterations.foreach(println)
+      val (found, notFound) = goals.zipWithIndex.partition {
+        case (goal, _) => goalReached(goal)
       }
       println(s"found: ${found.map(_._2).mkString(", ")}")
       println(s"not found: ${notFound.map(_._2).mkString(", ")}")

@@ -23,8 +23,6 @@ class Tiling extends test_util.Tests {
     rules.combinatory.mapMapFBeforeTranspose,
   )
 
-  private val proveEquiv = ProveEquiv.init()
-
   test("tile 1D") {
     def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
       depFun((n: Nat) => depFun((m: Nat) =>
@@ -40,7 +38,6 @@ class Tiling extends test_util.Tests {
     ProveEquiv.init().runCNF(expr, gold, minimalRules)
   }
 
-  // TODO: ignore tests below? takes 40s
   test("tile 2D") {
     def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
       depFun((n: Nat) => depFun((m: Nat) =>
@@ -60,7 +57,7 @@ class Tiling extends test_util.Tests {
     )
 
     ProveEquiv.init()
-      .withRunnerTransform(r => r.withScheduler(BackoffScheduler.init()))
+      //.withRunnerTransform(r => r.withScheduler(BackoffScheduler.init()))
       .withFilter(ArrayDimensionPredicate(4))
       .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
@@ -92,7 +89,10 @@ class Tiling extends test_util.Tests {
         ****(S) o **(S) o S),
     )
 
-    proveEquiv.runCNF(expr, golds, minimalRules ++ reorderRules)
+    ProveEquiv.init()
+      //.withRunnerTransform(r => r.withScheduler(BackoffScheduler.init()))
+      .withFilter(ArrayDimensionPredicate(6))
+      .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 
   test("tile 4D") {
@@ -137,6 +137,9 @@ class Tiling extends test_util.Tests {
         ******(S) o ****(S) o **(S) o S),
     )
 
-    proveEquiv.runCNF(expr, golds, minimalRules ++ reorderRules)
+    ProveEquiv.init()
+      //.withRunnerTransform(r => r.withScheduler(BackoffScheduler.init()))
+      .withFilter(ArrayDimensionPredicate(8))
+      .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 }

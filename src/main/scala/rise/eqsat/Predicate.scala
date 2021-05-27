@@ -13,6 +13,7 @@ case class NoPredicate[ED, ND, TD]() extends Predicate[ED, ND, TD] {
 
 case class ArrayDimensionPredicate[ED, ND, TD](limit: Int) extends Predicate[ED, ND, TD] {
   override def apply(egraph: EGraph[ED, ND, TD], ec: EClass[ED]): Boolean = {
+    // TODO: e-class analysis?
     def countArrayDims(t: TypeId): Int = {
       egraph(t)._1 match {
         case FunType(inT, outT) =>
@@ -22,7 +23,8 @@ case class ArrayDimensionPredicate[ED, ND, TD](limit: Int) extends Predicate[ED,
         case ArrayType(_, et) => 1 + countArrayDims(et)
         case PairType(dt1, dt2) =>
           countArrayDims(dt1) max countArrayDims(dt2)
-        case _ => 0
+        case DataTypeVar(_) | ScalarType(_) | NatType |
+             VectorType(_, _) | IndexType(_) => 0
       }
     }
 
