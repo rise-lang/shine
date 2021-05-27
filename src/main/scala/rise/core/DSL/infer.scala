@@ -71,30 +71,6 @@ object infer {
     }
   }
 
-  val FTVGathering = new PureAccumulatorTraversal[Seq[Kind.Identifier]] {
-    override val accumulator = SeqMonoid
-    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = _ => {
-      case i: Kind.Explicitness => accumulate(if (!i.isExplicit) Seq(i) else Seq())(i.asInstanceOf[I])
-      case i => accumulate(Seq(i))(i)
-    }
-    override def nat: Nat => Pair[Nat] = ae => {
-      val ftvs = mutable.ListBuffer[Kind.Identifier]()
-      val r = ae.visitAndRebuild({
-        case i: NatIdentifier if !i.isExplicit => ftvs += i; i
-        case n => n
-      })
-      accumulate(ftvs.toSeq)(r)
-    }
-  }
-
-  def getFTVs(t: Type): Seq[Kind.Identifier] = {
-    traverse(t, FTVGathering)._1.distinct
-  }
-
-  def getFTVsRec(e: Expr): Seq[Kind.Identifier] = {
-    traverse(e, FTVGathering)._1.distinct
-  }
-
   private val collectPreserve = new PureAccumulatorTraversal[Set[Kind.Identifier]] {
     override val accumulator = SetMonoid
 
@@ -118,11 +94,11 @@ object infer {
       case TypeAssertion(e, t) =>
         val (s1, e1) = expr(e).unwrap
         val (s2, _) = `type`(t).unwrap
-        accumulate(s1 ++ s2 ++ getFTVs(t))(TypeAnnotation(e1, t) : Expr)
+        accumulate(s1 ++ s2 ++ IsClosedForm.varsToClose(t))(TypeAnnotation(e1, t) : Expr)
       // Collect FTVs
       case Opaque(e, t) =>
         val (s, _) = `type`(t).unwrap
-        accumulate(s ++ getFTVs(t).toSet)(Opaque(e, t) : Expr)
+        accumulate(s ++ IsClosedForm.varsToClose(t).toSet)(Opaque(e, t) : Expr)
       case e => super.expr(e)
     }
   }
