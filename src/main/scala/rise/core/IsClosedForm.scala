@@ -6,15 +6,15 @@ import rise.core.traverse._
 import rise.core.types._
 
 object IsClosedForm {
-  case class OrderedSet[T](ordered : Seq[T], unique : Set[T])
+  case class OrderedSet[T](seq : Seq[T], set : Set[T])
   object OrderedSet {
-    def one[T] : T => OrderedSet[T] = t => OrderedSet(Seq(t), Set(t))
-    def add[T] : T => OrderedSet[T] => OrderedSet[T] = t => ts =>
-      if (ts.unique.contains(t)) ts else OrderedSet(t +: ts.ordered, ts.unique + t)
     def empty[T] : OrderedSet[T] = OrderedSet(Seq(), Set())
+    def add[T] : T => OrderedSet[T] => OrderedSet[T] = t => ts =>
+      if (ts.set.contains(t)) ts else OrderedSet(t +: ts.seq, ts.set + t)
+    def one[T] : T => OrderedSet[T] = add(_)(empty)
     def append[T] : OrderedSet[T] => OrderedSet[T] => OrderedSet[T] = x => y => {
-      val ordered = x.ordered.filter(!y.unique.contains(_)) ++ y.ordered
-      val unique = x.unique ++ y.unique
+      val ordered = x.seq.filter(!y.set.contains(_)) ++ y.seq
+      val unique = x.set ++ y.set
       OrderedSet(ordered, unique)
     }
   }
@@ -90,14 +90,14 @@ object IsClosedForm {
     }
   }
 
-  def freeVars(expr: Expr): (Seq[Identifier], Seq[Kind.Identifier]) = {
+  def freeVars(expr: Expr): (OrderedSet[Identifier], OrderedSet[Kind.Identifier]) = {
     val ((fV, fT), _) = traverse(expr, Visitor(Set(), Set()))
-    (fV.ordered, fT.ordered)
+    (fV, fT)
   }
 
-  def freeVars(t: Type): Seq[Kind.Identifier] = {
+  def freeVars(t: Type): OrderedSet[Kind.Identifier] = {
     val ((_, ftv), _) = traverse(t, Visitor(Set(), Set()))
-    ftv.ordered
+    ftv
   }
 
   // Exclude matrix layout and fragment kind identifiers, since they cannot currently be bound
@@ -109,10 +109,10 @@ object IsClosedForm {
 
   def varsToClose(expr : Expr): (Seq[Identifier], Seq[Kind.Identifier]) = {
     val (fV, fT) = freeVars(expr)
-    (fV, needsClosing(fT))
+    (fV.seq, needsClosing(fT.seq))
   }
 
-  def varsToClose(t : Type): Seq[Kind.Identifier] = needsClosing(freeVars(t))
+  def varsToClose(t : Type): Seq[Kind.Identifier] = needsClosing(freeVars(t).seq)
 
   def apply(expr: Expr): Boolean = {
     val (freeV, freeT) = varsToClose(expr)
