@@ -6,7 +6,8 @@ import rise.core.types._
 object makeClosed {
   def apply(e: Expr): Expr = withCount(e)._1
   def withCount(e: Expr): (Expr, Int) = {
-    val (expr, ts) = IsClosedForm.varsToClose(e)._2.foldLeft((e, Map[Type, Type]()))((acc, ftv) => acc match {
+    val (_, ftvs) = IsClosedForm.varsToClose(e)
+    val (expr, ts) = ftvs.foldLeft((e, Map[Type, Type]()))((acc, ftv) => acc match {
       case (expr, ts) => ftv match {
         case i: TypeIdentifier =>
           val dt = DataTypeIdentifier(freshName("dt"))
@@ -22,6 +23,7 @@ object makeClosed {
         case i => throw TypeException(s"${i.getClass} is not supported yet")
       }
     })
-    (new Solution(ts, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty)(expr), ts.size)
+    val sol = new Solution(ts, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty, Map.empty)
+    (sol(expr), ftvs.length)
   }
 }
