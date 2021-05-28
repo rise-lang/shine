@@ -83,10 +83,10 @@ object infer {
       // Transform assertions into annotations, collect FTVs
       case TypeAssertion(e, t) =>
         val (s1, e1) = expr(e).unwrap
-        accumulate(s1 ++ IsClosedForm.varsToClose(t))(TypeAnnotation(e1, t) : Expr)
+        accumulate(s1 ++ IsClosedForm.freeVars(t).set)(TypeAnnotation(e1, t) : Expr)
       // Collect FTVs
       case Opaque(e, t) =>
-        accumulate(IsClosedForm.varsToClose(t).toSet)(Opaque(e, t) : Expr)
+        accumulate(IsClosedForm.freeVars(t).set)(Opaque(e, t) : Expr)
       case e => super.expr(e)
     }
   }
