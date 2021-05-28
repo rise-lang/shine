@@ -130,6 +130,9 @@ object traverse {
         for {a1 <- `type`(a); b1 <- `type`(b)}
           yield FunType(a1, b1)
       case DepFunType(x, t) => x match {
+        case i: TypeIdentifier =>
+          for { i1 <- typeIdentifierDispatch(Binding)(i); t1 <- `type`(t)}
+            yield DepFunType[TypeKind, Type](i1, t1)
         case n: NatIdentifier =>
           for { n1 <- typeIdentifierDispatch(Binding)(n); t1 <- `type`(t)}
             yield DepFunType[NatKind, Type](n1, t1)
@@ -163,6 +166,9 @@ object traverse {
           t1 <- `type`(a.t)
         } yield App(f1, e1)(t1)
       case dl@DepLambda(x,e) => x match {
+        case i: TypeIdentifier =>
+          for {i1 <- typeIdentifierDispatch(Binding)(i); e1 <- expr(e); t1 <- `type`(dl.t)}
+            yield DepLambda[TypeKind](i1, e1)(t1)
         case n: NatIdentifier =>
           for {n1 <- typeIdentifierDispatch(Binding)(n); e1 <- expr(e); t1 <- `type`(dl.t)}
             yield DepLambda[NatKind](n1, e1)(t1)

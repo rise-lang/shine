@@ -170,6 +170,8 @@ object traversal {
           case Identifier(_) => None
           case l @ Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)(l.t)))
           case dl @ DepLambda(x, e) => x match {
+            case i: TypeIdentifier =>
+              Some(s(e).mapSuccess(DepLambda[TypeKind](i, _)(dl.t)))
             case n: NatIdentifier =>
               Some(s(e).mapSuccess(DepLambda[NatKind](n, _)(dl.t)))
             case dt: DataTypeIdentifier =>
