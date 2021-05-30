@@ -413,14 +413,15 @@ class autotuning extends test_util.Tests {
 
     // what should bestSample look like?
 
-//    autotune.saveSamples("autotuning/RISE.csv", tuningResult)
+    autotune.saveSamples("autotuning/RISE.csv", tuningResult)
   }
 
   // works only, if you have access to experimental branch of hypermapper
-  ignore("search experimental"){
+  test("search experimental"){
     val e:Expr = convolutionOclGsLs(1024)
 
-    val tuner = Tuner(main(1024), 100, "RISE", "autotuning", Some("/home/jo/development/rise-lang/shine/autotuning/configs/convolution.json"), Some("/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py"))
+//    val tuner = Tuner(main(1024), 100, "RISE", "autotuning", Some("/home/jo/development/rise-lang/shine/autotuning/configs/convolution.json"), Some("/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py"))
+    val tuner = Tuner(main(1024), 100, "RISE", "autotuning", None, Some("/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py"))
 
     val tuningResult = autotune.search(tuner)(e)
 
@@ -548,7 +549,7 @@ class autotuning extends test_util.Tests {
   }
 
   // fix this
-  test("generate huge amount of code") {
+  ignore("generate huge amount of code") {
     // expression
     val e: Expr = convolutionOclGsLs(1024)
 

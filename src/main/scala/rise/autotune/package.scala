@@ -449,6 +449,12 @@ package object autotune {
         }
       }
 
+      //
+      val parameterEntry = tuner.hierarchicalHM match {
+        case Some(_) => {
+          // use constraints
+
+
       // get dependencies and constraints from map
       val dependencies = parametersWDC(elem)._2.size match {
         case 0 => "[]"
@@ -509,6 +515,23 @@ package object autotune {
            |   },
            |""".stripMargin
 
+
+          parameterEntry
+        }
+        case None => {
+          // don't use constraints
+
+          val parameterEntry =
+            s"""   "${elem.name}" : {
+               |       "parameter_type" : "integer",
+               |       "values" : ${parameterRange}
+               |   },
+               |""".stripMargin
+
+
+          parameterEntry
+        }
+      }
       parameter += parameterEntry
     })
 
