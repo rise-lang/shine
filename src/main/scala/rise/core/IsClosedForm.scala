@@ -27,15 +27,6 @@ object IsClosedForm {
       case _ => return_
     }
 
-//<<<<<<< HEAD
-//    override def nat: Nat => Option[Nat] = n => {
-//      val closed = n.varList.foldLeft(true) {
-//        case (c, v: NamedVar) => c && boundT(NatIdentifier(v, isExplicit = false, isTuningParam = false))
-//        case (c, _) => c
-//      }
-//      if (closed) Some(n) else None
-//    }
-//
     override def nat: Nat => Pair[Nat] = n => {
       val free = n.varList.foldLeft(Set[Kind.Identifier]()) {
         case (free, v: NamedVar) if !boundT(NatIdentifier(v, isExplicit = false, isTuningParam = false)) => free + NatIdentifier(v, isExplicit = false, isTuningParam = false)
