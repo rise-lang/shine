@@ -4,7 +4,7 @@ import Type.impl
 import util.monads._
 import rise.core.traverse._
 import rise.core.types._
-import rise.core.{DSL, Expr, Primitive}
+import rise.core.{DSL, Expr, IsClosedForm, Primitive}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
   override val t: Type = e.t
@@ -23,7 +23,7 @@ final case class TopLevel(e: Expr, inst: Solution = Solution())(
 object TopLevel {
   private def instantiate(t: Type): Solution = {
     import scala.collection.immutable.Map
-    infer.getFTVs(t).foldLeft(Solution())((subs, ftv) =>
+    IsClosedForm.varsToClose(t).foldLeft(Solution())((subs, ftv) =>
       subs match {
         case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
