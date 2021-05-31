@@ -30,6 +30,82 @@ object SimpleScheduler extends Scheduler {
     rewrite.search(egraph)
 }
 
+object CuttingScheduler {
+  def init(): CuttingScheduler = new CuttingScheduler(
+    notApplied = HashSet.empty,
+    notAppliedIteration = 0,
+    currentIteration = 0,
+    currentMatches = 0,
+    matchLimit = 100_000
+  )
+}
+
+class CuttingScheduler(var notApplied: HashSet[Object],
+                       var notAppliedIteration: Int,
+                       var currentIteration: Int,
+                       var currentMatches: Int,
+                       var matchLimit: Int) extends Scheduler {
+  def withMatchLimit(limit: Int): CuttingScheduler = {
+    matchLimit = limit; this
+  }
+
+  override def canSaturate(iteration: Int): Boolean =
+    notApplied.isEmpty
+
+  override def searchRewrite[ED, ND, TD](iteration: Int,
+                                         egraph: EGraph[ED, ND, TD],
+                                         rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] = {
+    if (iteration > currentIteration) {
+      println(s"not applied: ${notApplied.map(_.asInstanceOf[Rewrite[ED, ND, TD]].name).mkString(", ")}")
+      currentIteration = iteration
+      currentMatches = 0
+    }
+
+    val cut = currentMatches > matchLimit
+    val skip = notApplied.nonEmpty && !notApplied(rewrite)
+    if (cut || skip) {
+      if (notApplied.isEmpty) {
+        notAppliedIteration = currentIteration
+      }
+      if (currentIteration == notAppliedIteration) {
+        notApplied += rewrite
+      }
+      return Vec.empty
+    }
+
+    notApplied -= rewrite
+    val matches = rewrite.search(egraph)
+
+    def check(b: Boolean) =
+      if (!b) { throw new Exception("check") }
+    val totalMatches = matches.view.map(_.substs.size).sum
+    var uniqueSubsts = HashSet[Object]()
+    val totalSubsts = matches.view.map { m =>
+      check(m.substs.size == m.substs.toSet.size)
+      m.substs.view.map { s =>
+        uniqueSubsts ++= s.exprs.vec
+        check(s.exprs.vec.size == s.exprs.vec.toSet.size)
+        uniqueSubsts ++= s.nats.vec
+        check(s.nats.vec.size == s.nats.vec.toSet.size)
+        uniqueSubsts ++= s.types.vec
+        check(s.types.vec.size == s.types.vec.toSet.size)
+        uniqueSubsts ++= s.datatypes.vec
+        check(s.datatypes.vec.size == s.datatypes.vec.toSet.size)
+        s.exprs.size + s.nats.size + s.types.size + s.datatypes.size
+      }.sum
+    }.sum
+    if (uniqueSubsts.size != totalSubsts) {
+      println(s"${uniqueSubsts.size} unique sustitutions in total of ${totalSubsts}")
+      if (uniqueSubsts.size < 20) {
+        uniqueSubsts.foreach(println)
+      }
+    }
+    currentMatches += totalMatches
+
+    matches
+  }
+}
+
 class RuleStats(var timesApplied: Int,
                 var bannedUntil: Int,
                 var timesBanned: Int,

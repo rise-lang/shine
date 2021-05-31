@@ -118,6 +118,8 @@ case class VecMap[K, V](vec: Vec[(K, V)]) {
 
   def shallowClone(): VecMap[K, V] =
     VecMap(vec.clone())
+
+  def size: Int = vec.size
 }
 
 object VecMap {

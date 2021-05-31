@@ -59,16 +59,19 @@ object Prototype {
     }
   }
 
-  def countLimits[ED, ND, TD](
-    egraph: EGraph[ED, ND, TD],
+  def countLimits(
+    egraph: DefaultAnalysis.EGraph,
     roots: Seq[EClassId],
-    arrayLimit: Int,
     // limit: Cost
   ): Unit = {
-    /*
+    import Node.eclassIdOrdering
+
+    val limit = 50 // cut at 50 nodes long
+
+    util.printTime("count limits", {
     // 1. Find the shortest path to the roots
-    val costSoFar = HashMap(roots.map(r => r -> Cost.zero): _*)
-    val todo = HashSet(roots: _*)
+    val costSoFar = HashMap(roots.map(r => r -> 0): _*) // cost zero
+    val todo = scala.collection.mutable.TreeSet(roots: _*)
 
     while (todo.nonEmpty) {
       val id = todo.head
@@ -77,11 +80,11 @@ object Prototype {
       val eclass = egraph.get(id)
 
       for (n <- eclass.nodes) {
-        val costToChild = costSoFar(id) + Cost.ofNode(n)
+        val costToChild = costSoFar(id) + 1 // + cost of node
         for (child <- n.children()) {
           val csf = costSoFar.get(child)
           csf.map(_ => costToChild)
-          if (costSoFar.get(child).forall(costToChild < _)) {
+          if (costSoFar.get(child).forall(costToChild < _)) { // cost merge
             costSoFar(child) = costToChild
             todo += child
           }
@@ -91,12 +94,14 @@ object Prototype {
 
     // 2. Count nodes which only participate in paths with too much cost
     //    (costSoFar + minimumCost)
-    costSoFar.count {
+    val count = costSoFar.count {
       case (id, c) =>
         val minimumCost = egraph.get(id).data.extracted.map(_._2.toDouble)
           .getOrElse(Double.PositiveInfinity)
         (c + minimumCost) > limit.toDouble
     }
-     */
+
+    println(s"$count nodes could be pruned by size limit of $limit")
+    })
   }
 }

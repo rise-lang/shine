@@ -1,6 +1,6 @@
 package benchmarks.eqsat
 
-import rise.eqsat.{rules, ProveEquiv, BackoffScheduler}
+import rise.eqsat.{rules, ProveEquiv, BackoffScheduler, CuttingScheduler}
 import rise.core.Expr
 import rise.core.DSL._
 import rise.core.DSL.Type._
@@ -15,15 +15,15 @@ object reorder {
     rules.combinatory.compositionRightId,
     rules.combinatory.mapFusion,
     rules.combinatory.mapFission,
-    // rules.combinatory.transposePairAfter,
-    // rules.combinatory.mapMapFBeforeTranspose,
-    rules.combinatory.transposeAroundMapMapF
+    rules.combinatory.transposePairAfter,
+    rules.combinatory.mapMapFBeforeTranspose,
+    // rules.combinatory.transposeAroundMapMapF
   )
 
   private val proveEquiv = ProveEquiv.init()
     .withRunnerTransform(r => r
-      .withTimeLimit(java.time.Duration.ofMinutes(5))
-      /*.withScheduler(BackoffScheduler.init())*/)
+      .withTimeLimit(java.time.Duration.ofMinutes(10))
+      .withScheduler(CuttingScheduler.init()))
 
   private def T: ToBeTyped[Expr] = rise.core.primitives.transpose
   private def *(x: ToBeTyped[Expr]): ToBeTyped[Expr] = rise.core.primitives.map(x)
@@ -75,8 +75,8 @@ object reorder {
 
   def main(args: Array[String]): Unit = {
     val (time3D, _) = util.time(run3D())
-    // val (time4D, _) = util.time(run4D())
+    val (time4D, _) = util.time(run4D())
     println(s"total 3D time: ${util.prettyTime(time3D)}") // ~2s search on i7 desktop
-    // println(s"total 4D time: ${util.prettyTime(time4D)}")
+    println(s"total 4D time: ${util.prettyTime(time4D)}")
   }
 }
