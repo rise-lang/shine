@@ -26,17 +26,15 @@ class Rewrite[ED, ND, DT](val name: String,
                           val applier: Applier[ED, ND, DT]) {
   override def toString: String = s"$name:\n$searcher\n  -->\n$applier"
 
-  def search(egraph: EGraph[ED, ND, DT]): Vec[SearchMatches] =
-    searcher.search(egraph)
+  def search(egraph: EGraph[ED, ND, DT],
+             shc: SubstHashCons): Vec[SearchMatches] =
+    searcher.search(egraph, shc)
 
   // the substitution insides `matches` may be modified
   def apply(egraph: EGraph[ED, ND, DT],
+            shc: SubstHashCons,
             matches: Vec[SearchMatches]): Vec[EClassId] =
-    applier.applyMatches(egraph, matches)
-
-  // TODO: remove this, change to named free test
-  def when(cond: (EGraph[ED, ND, DT], EClassId, Subst) => Boolean): Rewrite[ED, ND, DT] =
-    new Rewrite(name, searcher, ConditionalApplier(cond, Set(), applier))
+    applier.applyMatches(egraph, shc, matches)
 }
 
 /** The left-hand side of a [[Rewrite]] rule.
@@ -48,11 +46,13 @@ trait Searcher[ED, ND, TD] {
   def patternVars(): Set[Any]
 
   // search one eclass, returning None if no matches can be found
-  def searchEClass(egraph: EGraph[ED, ND, TD], eclass: EClassId): Option[SearchMatches]
+  def searchEClass(egraph: EGraph[ED, ND, TD],
+                   shc: SubstHashCons,
+                   eclass: EClassId): Option[SearchMatches]
 
   // search the whole egraph, returning all matches
-  def search(egraph: EGraph[ED, ND, TD]): Vec[SearchMatches] = {
-    egraph.classes.keys.flatMap(id => searchEClass(egraph, id)).to(Vec)
+  def search(egraph: EGraph[ED, ND, TD], shc: SubstHashCons): Vec[SearchMatches] = {
+    egraph.classes.keys.flatMap(id => searchEClass(egraph, shc, id)).to(Vec)
   }
 }
 
@@ -73,14 +73,19 @@ trait Applier[ED, ND, TD] {
   // be unioned with `eclass`. There can be zero, one, or many.
   //
   // `subst` may be modified
-  def applyOne(egraph: EGraph[ED, ND, TD], eclass: EClassId, subst: Subst): Vec[EClassId]
+  def applyOne(egraph: EGraph[ED, ND, TD],
+               eclass: EClassId,
+               shc: SubstHashCons,
+               subst: Subst): Vec[EClassId]
 
   // the substitutions inside `matches` may be modified
-  def applyMatches(egraph: EGraph[ED, ND, TD], matches: Vec[SearchMatches]): Vec[EClassId] = {
+  def applyMatches(egraph: EGraph[ED, ND, TD],
+                   shc: SubstHashCons,
+                   matches: Vec[SearchMatches]): Vec[EClassId] = {
     val added = Vec.empty[EClassId]
     for (mat <- matches) {
       for (subst <- mat.substs) {
-        added ++= applyOne(egraph, mat.eclass, subst)
+        added ++= applyOne(egraph, mat.eclass, shc, subst)
           .flatMap { id =>
             val (to, didSomething) = egraph.union(id, mat.eclass)
             if (didSomething) { Some(to) } else { None }
@@ -127,6 +132,7 @@ object VecMap {
 }
 
 /** A substitution mapping variables to their match in the [[EGraph]] */
+/*
 case class Subst(exprs: VecMap[PatternVar, EClassId],
                  nats: VecMap[NatPatternVar, NatId],
                  types: VecMap[TypePatternVar, TypeId],
@@ -156,10 +162,11 @@ case class Subst(exprs: VecMap[PatternVar, EClassId],
 object Subst {
   def empty: Subst = Subst(VecMap.empty, VecMap.empty, VecMap.empty, VecMap.empty)
 }
+*/
 
 // note: the condition is more general in `egg`
 /** An [[Applier]] that checks a condition before applying another [[Applier]] */
-case class ConditionalApplier[ED, ND, DT](cond: (EGraph[ED, ND, DT], EClassId, Subst) => Boolean,
+case class ConditionalApplier[ED, ND, DT](cond: (EGraph[ED, ND, DT], EClassId, SubstHashCons, Subst) => Boolean,
                                           condPatternVars: Set[Any],
                                           applier: Applier[ED, ND, DT])
   extends Applier[ED, ND, DT] {
@@ -168,8 +175,11 @@ case class ConditionalApplier[ED, ND, DT](cond: (EGraph[ED, ND, DT], EClassId, S
   override def patternVars(): Set[Any] =
     applier.patternVars() ++ condPatternVars
 
-  override def applyOne(egraph: EGraph[ED, ND, DT], eclass: EClassId, subst: Subst): Vec[EClassId] = {
-    if (cond(egraph, eclass, subst)) { applier.applyOne(egraph, eclass, subst) } else { Vec() }
+  override def applyOne(egraph: EGraph[ED, ND, DT],
+                        eclass: EClassId,
+                        shc: SubstHashCons,
+                        subst: Subst): Vec[EClassId] = {
+    if (cond(egraph, eclass, shc, subst)) { applier.applyOne(egraph, eclass, shc, subst) } else { Vec() }
   }
 }
 
@@ -183,9 +193,10 @@ case class ShiftedApplier(v: PatternVar, newV: PatternVar,
 
   override def applyOne(egraph: DefaultAnalysis.EGraph,
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    subst.insert(newV, ??? /* EClass.shifted(subst(v), shift, cutoff, egraph) */)
-    applier.applyOne(egraph, eclass, subst)
+    ??? // subst.insert(newV, EClass.shifted(subst(v), shift, cutoff, egraph)
+    applier.applyOne(egraph, eclass, shc, subst)
   }
 }
 
@@ -201,11 +212,12 @@ case class ShiftedExtractApplier(v: PatternVar, newV: PatternVar,
 
   override def applyOne(egraph: DefaultAnalysis.EGraph,
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    val extract = egraph.getMut(subst(v)).data.extractedExpr
+    val extract = egraph.getMut(subst(v, shc)).data.extractedExpr
     val shifted = extract.shifted(egraph, shift, cutoff)
-    subst.insert(newV, egraph.addExpr(shifted))
-    applier.applyOne(egraph, eclass, subst)
+    val subst2 = shc.substInsert(newV, egraph.addExpr(shifted), subst)
+    applier.applyOne(egraph, eclass, shc, subst2)
   }
 }
 
@@ -216,10 +228,10 @@ object ShiftedCheckApplier {
   def apply(v: PatternVar, v2: PatternVar,
             shift: Expr.Shift, cutoff: Expr.Shift,
             applier: DefaultAnalysis.Applier): DefaultAnalysis.Applier =
-    ConditionalApplier({ case (egraph, _, subst) =>
-      val extract = egraph.getMut(subst(v)).data.extractedExpr
+    ConditionalApplier({ case (egraph, _, shc, subst) =>
+      val extract = egraph.getMut(subst(v, shc)).data.extractedExpr
       val shifted = extract.shifted(egraph, shift, cutoff)
-      val expected = egraph.getMut(subst(v2)).data.extractedExpr
+      val expected = egraph.getMut(subst(v2, shc)).data.extractedExpr
       shifted == expected
     }, Set(v, v2), applier)
 }
@@ -234,11 +246,12 @@ case class ShiftedNatApplier[ED, ND, DT](v: NatPatternVar, newV: NatPatternVar,
 
   override def applyOne(egraph: EGraph[ED, ND, DT],
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    val nat = subst(v)
+    val nat = subst(v, shc)
     val shifted = NodeSubs.Nat.shifted(egraph, nat, shift, cutoff)
-    subst.insert(newV, shifted)
-    applier.applyOne(egraph, eclass, subst)
+    val subst2 = shc.substInsert(newV, shifted, subst)
+    applier.applyOne(egraph, eclass, shc, subst2)
   }
 }
 
@@ -247,10 +260,10 @@ object ShiftedNatCheckApplier {
   def apply(v: NatPatternVar, v2: NatPatternVar,
             shift: Nat.Shift, cutoff: Nat.Shift,
             applier: DefaultAnalysis.Applier): DefaultAnalysis.Applier =
-    ConditionalApplier({ case (egraph, _, subst) =>
-      val nat = subst(v)
+    ConditionalApplier({ case (egraph, _, shc, subst) =>
+      val nat = subst(v, shc)
       val shifted = NodeSubs.Nat.shifted(egraph, nat, shift, cutoff)
-      val expected = subst(v2)
+      val expected = subst(v2, shc)
       shifted == expected
     }, Set(v, v2), applier)
 }
@@ -265,11 +278,12 @@ case class ShiftedDataTypeApplier[ED, ND, DT](v: DataTypePatternVar, newV: DataT
 
   override def applyOne(egraph: EGraph[ED, ND, DT],
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    val dt = subst(v)
+    val dt = subst(v, shc)
     val shifted = NodeSubs.DataType.shifted(egraph, dt, shift, cutoff)
-    subst.insert(newV, shifted)
-    applier.applyOne(egraph, eclass, subst)
+    val subst2 = shc.substInsert(newV, shifted, subst)
+    applier.applyOne(egraph, eclass, shc, subst2)
   }
 }
 
@@ -278,10 +292,10 @@ object ShiftedDataTypeCheckApplier {
   def apply(v: DataTypePatternVar, v2: DataTypePatternVar,
             shift: Type.Shift, cutoff: Type.Shift,
             applier: DefaultAnalysis.Applier): DefaultAnalysis.Applier =
-    ConditionalApplier({ case (egraph, _, subst) =>
-      val dt = subst(v)
+    ConditionalApplier({ case (egraph, _, shc, subst) =>
+      val dt = subst(v, shc)
       val shifted = NodeSubs.DataType.shifted(egraph, dt, shift, cutoff)
-      val expected = subst(v2)
+      val expected = subst(v2, shc)
       shifted == expected
     }, Set(v, v2), applier)
 }
@@ -296,11 +310,12 @@ case class ShiftedTypeApplier[ED, ND, DT](v: TypePatternVar, newV: TypePatternVa
 
   override def applyOne(egraph: EGraph[ED, ND, DT],
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    val t = subst(v)
+    val t = subst(v, shc)
     val shifted = NodeSubs.Type.shifted(egraph, t, shift, cutoff)
-    subst.insert(newV, shifted)
-    applier.applyOne(egraph, eclass, subst)
+    val subst2 = shc.substInsert(newV, shifted, subst)
+    applier.applyOne(egraph, eclass, shc, subst2)
   }
 }
 
@@ -309,10 +324,10 @@ object ShiftedTypeCheckApplier {
   def apply(v: TypePatternVar, v2: TypePatternVar,
             shift: Type.Shift, cutoff: Type.Shift,
             applier: DefaultAnalysis.Applier): DefaultAnalysis.Applier =
-    ConditionalApplier({ case (egraph, _, subst) =>
-      val t = subst(v)
+    ConditionalApplier({ case (egraph, _, shc, subst) =>
+      val t = subst(v, shc)
       val shifted = NodeSubs.Type.shifted(egraph, t, shift, cutoff)
-      val expected = subst(v2)
+      val expected = subst(v2, shc)
       shifted == expected
     }, Set(v, v2), applier)
 }
@@ -327,9 +342,10 @@ case class BetaExtractApplier(body: PatternVar, subs: PatternVar)
 
   override def applyOne(egraph: DefaultAnalysis.EGraph,
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    val bodyEx = egraph.getMut(subst(body)).data.extractedExpr
-    val subsEx = egraph.getMut(subst(subs)).data.extractedExpr
+    val bodyEx = egraph.getMut(subst(body, shc)).data.extractedExpr
+    val subsEx = egraph.getMut(subst(subs, shc)).data.extractedExpr
     val result = bodyEx.withArgument(egraph, subsEx)
     Vec(egraph.addExpr(result))
   }
@@ -345,6 +361,7 @@ case class BetaApplier(body: PatternVar, subs: PatternVar)
 
   override def applyOne(egraph: DefaultAnalysis.EGraph,
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
     ??? // Vec(EClass.withArgument(subst(body), subst(subs), egraph))
   }
@@ -360,6 +377,7 @@ case class BetaNatApplier(body: PatternVar, subs: NatPatternVar)
 
   override def applyOne(egraph: DefaultAnalysis.EGraph,
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
     ??? // Vec(EClass.withNatArgument(subst(body), subst(subs), egraph))
   }
@@ -375,9 +393,10 @@ case class BetaNatExtractApplier(body: PatternVar, subs: NatPatternVar)
 
   override def applyOne(egraph: DefaultAnalysis.EGraph,
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    val bodyEx = egraph.getMut(subst(body)).data.extractedExpr
-    val subsNat = subst(subs)
+    val bodyEx = egraph.getMut(subst(body, shc)).data.extractedExpr
+    val subsNat = subst(subs, shc)
     val result = bodyEx.withNatArgument(egraph, subsNat)
     Vec(egraph.addExpr(result))
   }
@@ -387,9 +406,9 @@ case class BetaNatExtractApplier(body: PatternVar, subs: NatPatternVar)
 object ComputeNatCheckApplier {
   def apply[ED, ND, TD](v: NatPatternVar, expected: NatPattern,
                         applier: Applier[ED, ND, TD]): Applier[ED, ND, TD] =
-    ConditionalApplier({ case (egraph, _, subst) =>
+    ConditionalApplier({ case (egraph, _, shc, subst) =>
       // TODO: can we be more efficient here?
-      ComputeNat.toNamed(egraph, v, subst) == ComputeNat.toNamed(egraph, expected, subst)
+      ComputeNat.toNamed(egraph, v, shc, subst) == ComputeNat.toNamed(egraph, expected, shc, subst)
     }, expected.patternVars() + v, applier)
 }
 
@@ -402,32 +421,36 @@ case class ComputeNatApplier[ED, ND, TD](v: NatPatternVar, value: NatPattern,
 
   override def applyOne(egraph: EGraph[ED, ND, TD],
                         eclass: EClassId,
+                        shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
     // TODO: can we be more efficient here?
     val actualValue = Nat.fromNamedGeneric(
-      ComputeNat.toNamed(egraph, value, subst), ni => ni.name.drop(1).toInt)
-    subst.insert(v, egraph.addNat(actualValue))
-    applier.applyOne(egraph, eclass, subst)
+      ComputeNat.toNamed(egraph, value, shc, subst), ni => ni.name.drop(1).toInt)
+    val subst2 = shc.substInsert(v, egraph.addNat(actualValue), subst)
+    applier.applyOne(egraph, eclass, shc, subst2)
   }
 }
 
 private object ComputeNat {
   import arithexpr.arithmetic._
 
-  def toNamed[ED, ND, TD](egraph: EGraph[ED, ND, TD], n: NatPattern, subst: Subst): rct.Nat = {
+  def toNamed[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+                          n: NatPattern,
+                          shc: SubstHashCons,
+                          subst: Subst): rct.Nat = {
     n match {
       case NatPatternAny => throw new Exception("")
-      case pv: NatPatternVar => toNamed(egraph, subst(pv))
+      case pv: NatPatternVar => toNamed(egraph, subst(pv, shc))
       case NatPatternNode(node) => node match {
         case NatVar(index) => rct.NatIdentifier(s"n$index")
         case NatCst(value) => Cst(value)
         case NatNegInf => NegInf
         case NatPosInf => PosInf
-        case NatAdd(a, b) => toNamed(egraph, a, subst) + toNamed(egraph, b, subst)
-        case NatMul(a, b) => toNamed(egraph, a, subst) * toNamed(egraph, b, subst)
-        case NatPow(b, e) => toNamed(egraph, b, subst).pow(toNamed(egraph, e, subst))
-        case NatMod(a, b) => toNamed(egraph, a, subst) % toNamed(egraph, b, subst)
-        case NatIntDiv(a, b) => toNamed(egraph, a, subst) / toNamed(egraph, b, subst)
+        case NatAdd(a, b) => toNamed(egraph, a, shc, subst) + toNamed(egraph, b, shc, subst)
+        case NatMul(a, b) => toNamed(egraph, a, shc, subst) * toNamed(egraph, b, shc, subst)
+        case NatPow(b, e) => toNamed(egraph, b, shc, subst).pow(toNamed(egraph, e, shc, subst))
+        case NatMod(a, b) => toNamed(egraph, a, shc, subst) % toNamed(egraph, b, shc, subst)
+        case NatIntDiv(a, b) => toNamed(egraph, a, shc, subst) / toNamed(egraph, b, shc, subst)
       }
     }
   }

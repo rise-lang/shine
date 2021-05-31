@@ -426,8 +426,8 @@ object NamedRewrite {
             case ((s, _, _), (pv, Known)) => (s, pv)
           }.get
           val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
-          def condF(egraph: DefaultAnalysis.EGraph, eclass: EClassId, subst: Subst): Boolean =
-            !egraph.getMut(subst(iPV)).data.free.contains(nfIndex)
+          def condF(egraph: DefaultAnalysis.EGraph, eclass: EClassId, shc: SubstHashCons, subst: Subst): Boolean =
+            !egraph.getMut(subst(iPV, shc)).data.free.contains(nfIndex)
           (a: Applier) => ConditionalApplier(condF, Set(iPV), acc(a))
       }
     }

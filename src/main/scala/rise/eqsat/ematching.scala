@@ -108,17 +108,19 @@ object ematching {
                 var n2r: HashMap[NatPatternVar, NatReg],
                 var t2r: HashMap[TypePatternVar, TypeReg],
                 var dt2r: HashMap[DataTypePatternVar, TypeReg]) {
-    def run[ED, ND, TD](egraph: EGraph[ED, ND, TD], eclass: EClassId): Vec[Subst] = {
+    def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+                        eclass: EClassId,
+                        hashcons: SubstHashCons): Vec[Subst] = {
       val machine = AbstractMachine.init(eclass)
 
       val substs = Vec.empty[Subst]
       machine.run(egraph, instructions.toSeq, { () =>
-        val substExprs = VecMap(v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) }.to(Vec))
-        val substNats = VecMap(n2r.iterator.map { case (v, reg) => (v, machine.nReg(reg)) }.to(Vec))
-        val substTypes = VecMap(t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) }.to(Vec))
-        val substDataTypes = VecMap(dt2r.iterator.map { case (v, reg) =>
+        val substExprs = hashcons.exprSubst(v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) })
+        val substNats = hashcons.natSubst(n2r.iterator.map { case (v, reg) => (v, machine.nReg(reg)) })
+        val substTypes = hashcons.typeSubst(t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) })
+        val substDataTypes = hashcons.dataTypeSubst(dt2r.iterator.map { case (v, reg) =>
           (v, machine.tReg(reg).asInstanceOf[DataTypeId])
-        }.to(Vec))
+        })
         substs += Subst(substExprs, substNats, substTypes, substDataTypes)
       })
 

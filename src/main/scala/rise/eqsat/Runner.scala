@@ -143,16 +143,17 @@ class Runner(var iterations: Vec[Iteration],
                                  rules: Seq[Rewrite[ED, ND, TD]]): Iteration = {
     val time0 = System.nanoTime()
     val i = iterations.size
+    val shc = SubstHashCons.empty
 
     val matches = rules.map { r =>
-      scheduler.searchRewrite(i, egraph, r)
+      scheduler.searchRewrite(i, egraph, shc, r)
     }
 
     val time1 = System.nanoTime()
 
     val applied = HashMap.empty[String, Int]
     rules.zip(matches).map { case (r, ms) =>
-      val newlyApplied = scheduler.applyRewrite(i, egraph, r, ms)
+      val newlyApplied = scheduler.applyRewrite(i, egraph, shc, r, ms)
       if (newlyApplied > 0) {
         applied.updateWith(r.name) {
           case Some(count) => Some(count + newlyApplied)

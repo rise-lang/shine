@@ -7,8 +7,11 @@ object rules {
   type Rule = DefaultAnalysis.Rewrite
 
   def containsIdent(v: PatternVar, ident: Var)
-                   (egraph: DefaultAnalysis.EGraph, eclass: EClassId, subst: Subst): Boolean =
-    egraph.getMut(subst(v)).data.free.contains(ident.index)
+                   (egraph: DefaultAnalysis.EGraph,
+                    eclass: EClassId,
+                    shc: SubstHashCons,
+                    subst: Subst): Boolean =
+    egraph.getMut(subst(v, shc)).data.free.contains(ident.index)
 
   def neg[ED, ND, TD](cond: (EGraph[ED, ND, TD], EClassId, Subst) => Boolean)
                      (egraph: EGraph[ED, ND, TD], eclass: EClassId, subst: Subst): Boolean =
@@ -45,13 +48,6 @@ object rules {
   val etaAbstraction: Rule = NamedRewrite.init("eta-abstraction",
     ("f" :: (t("a") ->: t("b"))) --> lam("x", app("f", "x"))
   )
-  // FIXME: does not work as intended
-  // Avoids excessive lam("y", app(lam("x", app("f", "x")), "y"))
-  val gentleEtaAbstraction: Rule = Rewrite.init("gentle-eta-abstraction",
-    etaAbstraction.searcher -> etaAbstraction.applier
-  ) when { case (egraph, eclass, _) =>
-    egraph.get(eclass).nodes.exists(n => !n.matches(Lambda(())))
-  }
 
   val eta: Rule = NamedRewrite.init("eta",
     lam("x", app("f", "x")) --> "f",

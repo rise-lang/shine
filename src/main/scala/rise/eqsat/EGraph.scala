@@ -132,8 +132,9 @@ class EGraph[ED, ND, TD](
   // checks whether two expressions are equivalent
   // returns a list of eclasses that represent both expressions
   def equivs(e1: Expr, e2: Expr): Vec[EClassId] = {
-    val matches1 = Pattern.fromExpr(e1).compile().search(this)
-    val matches2 = Pattern.fromExpr(e2).compile().search(this)
+    val shc = SubstHashCons.empty
+    val matches1 = Pattern.fromExpr(e1).compile().search(this, shc)
+    val matches2 = Pattern.fromExpr(e2).compile().search(this, shc)
     val equivClasses = Vec.empty[EClassId]
     for (m1 <- matches1) {
       val ec1 = find(m1.eclass)

@@ -11,14 +11,16 @@ trait Scheduler {
   def canSaturate(iteration: Int): Boolean
   def searchRewrite[ED, ND, TD](iteration: Int,
                                 egraph: EGraph[ED, ND, TD],
+                                shc: SubstHashCons,
                                 rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches]
 
   // returns the number of applications
   def applyRewrite[ED, ND, TD](iteration: Int,
                                egraph: EGraph[ED, ND, TD],
+                               shc: SubstHashCons,
                                rewrite: Rewrite[ED, ND, TD],
                                matches: Vec[SearchMatches]): Int =
-    rewrite.apply(egraph, matches).size
+    rewrite.apply(egraph, shc, matches).size
 }
 
 object SimpleScheduler extends Scheduler {
@@ -26,8 +28,9 @@ object SimpleScheduler extends Scheduler {
 
   override def searchRewrite[ED, ND, TD](iteration: Int,
                                          egraph: EGraph[ED, ND, TD],
+                                         shc: SubstHashCons,
                                          rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] =
-    rewrite.search(egraph)
+    rewrite.search(egraph, shc)
 }
 
 object CuttingScheduler {
@@ -35,18 +38,16 @@ object CuttingScheduler {
     notApplied = HashSet.empty,
     notAppliedIteration = 0,
     currentIteration = 0,
-    currentMatches = 0,
-    matchLimit = 100_000
+    hashConsSizeLimit = 100_000
   )
 }
 
 class CuttingScheduler(var notApplied: HashSet[Object],
                        var notAppliedIteration: Int,
                        var currentIteration: Int,
-                       var currentMatches: Int,
-                       var matchLimit: Int) extends Scheduler {
-  def withMatchLimit(limit: Int): CuttingScheduler = {
-    matchLimit = limit; this
+                       var hashConsSizeLimit: Int) extends Scheduler {
+  def withHashConsSizeLimit(limit: Int): CuttingScheduler = {
+    hashConsSizeLimit = limit; this
   }
 
   override def canSaturate(iteration: Int): Boolean =
@@ -54,14 +55,16 @@ class CuttingScheduler(var notApplied: HashSet[Object],
 
   override def searchRewrite[ED, ND, TD](iteration: Int,
                                          egraph: EGraph[ED, ND, TD],
+                                         shc: SubstHashCons,
                                          rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] = {
     if (iteration > currentIteration) {
       println(s"not applied: ${notApplied.map(_.asInstanceOf[Rewrite[ED, ND, TD]].name).mkString(", ")}")
       currentIteration = iteration
-      currentMatches = 0
     }
 
-    val cut = currentMatches > matchLimit
+    val currentHashConsSize =
+      shc.exprs.memo.size + shc.nats.memo.size + shc.types.memo.size + shc.dataTypes.memo.size
+    val cut = currentHashConsSize > hashConsSizeLimit
     val skip = notApplied.nonEmpty && !notApplied(rewrite)
     if (cut || skip) {
       if (notApplied.isEmpty) {
@@ -74,11 +77,10 @@ class CuttingScheduler(var notApplied: HashSet[Object],
     }
 
     notApplied -= rewrite
-    val matches = rewrite.search(egraph)
-
+    val matches = rewrite.search(egraph, shc)
+/*
     def check(b: Boolean) =
       if (!b) { throw new Exception("check") }
-    val totalMatches = matches.view.map(_.substs.size).sum
     var uniqueSubsts = HashSet[Object]()
     val totalSubsts = matches.view.map { m =>
       check(m.substs.size == m.substs.toSet.size)
@@ -100,7 +102,8 @@ class CuttingScheduler(var notApplied: HashSet[Object],
         uniqueSubsts.foreach(println)
       }
     }
-    currentMatches += totalMatches
+
+ */
 
     matches
   }
@@ -172,6 +175,7 @@ class BackoffScheduler(var defaultMatchLimit: Int,
 
   override def searchRewrite[ED, ND, TD](iteration: Int,
                                          egraph: EGraph[ED, ND, TD],
+                                         shc: SubstHashCons,
                                          rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] = {
     val rs = ruleStats(rewrite)
 
@@ -179,7 +183,7 @@ class BackoffScheduler(var defaultMatchLimit: Int,
       return Vec.empty
     }
 
-    val matches = rewrite.search(egraph)
+    val matches = rewrite.search(egraph, shc)
 
     val totalLen = matches.view.map(_.substs.size).sum
     val threshold = rs.matchLimit << rs.timesBanned

@@ -16,7 +16,9 @@ object TvmGemm {
       // tvmGemm.par(mm).get
     ))
 
-    ProveEquiv.init().runCNF(mm, variants, Seq(
+    ProveEquiv.init()
+      .withFilter(ArrayDimensionPredicate(5))
+      .runCNF(mm, variants, Seq(
       rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.combinatory.compositionAssoc1,
       rules.combinatory.compositionAssoc2,
@@ -25,8 +27,9 @@ object TvmGemm {
       rules.combinatory.compositionRightId,
       rules.combinatory.mapFusion,
       rules.combinatory.mapFission,
-      rules.combinatory.transposePairAfter,
-      rules.combinatory.mapMapFBeforeTranspose,
+      // rules.combinatory.transposePairAfter,
+      // rules.combinatory.mapMapFBeforeTranspose,
+      rules.combinatory.transposeAroundMapMapF,
       rules.reduceSeq,
       rules.combinatory.reduceSeqMapFusion,
       rules.combinatory.splitJoin(32),

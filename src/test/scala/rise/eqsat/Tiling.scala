@@ -57,7 +57,6 @@ class Tiling extends test_util.Tests {
     )
 
     ProveEquiv.init()
-      //.withRunnerTransform(r => r.withScheduler(BackoffScheduler.init()))
       .withFilter(ArrayDimensionPredicate(4))
       .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
