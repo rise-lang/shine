@@ -115,6 +115,8 @@ object ematching {
 
       val substs = Vec.empty[Subst]
       machine.run(egraph, instructions.toSeq, { () =>
+        // TODO: use ordered hashmaps to maximize sharing?
+        //  first register to be picked should be the deepest in the list
         val substExprs = hashcons.exprSubst(v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) })
         val substNats = hashcons.natSubst(n2r.iterator.map { case (v, reg) => (v, machine.nReg(reg)) })
         val substTypes = hashcons.typeSubst(t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) })

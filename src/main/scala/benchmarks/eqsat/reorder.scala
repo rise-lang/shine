@@ -20,11 +20,6 @@ object reorder {
     // rules.combinatory.transposeAroundMapMapF
   )
 
-  private val proveEquiv = ProveEquiv.init()
-    .withRunnerTransform(r => r
-      .withTimeLimit(java.time.Duration.ofMinutes(10))
-      .withScheduler(CuttingScheduler.init()))
-
   private def T: ToBeTyped[Expr] = rise.core.primitives.transpose
   private def *(x: ToBeTyped[Expr]): ToBeTyped[Expr] = rise.core.primitives.map(x)
   private def **(x: ToBeTyped[Expr]): ToBeTyped[Expr] = *(*(x))
@@ -43,11 +38,17 @@ object reorder {
     val expr = wrap(f => ***(f))
     val gold132 = wrap(f => *(T) o ***(f) o *(T))
     val gold213 = wrap(f => T o ***(f) o T)
+    // all below should be implied by gold132 and gold213 modulo associativity
     val gold231 = wrap(f => T o *(T) o ***(f) o *(T) o T)
     val gold321 = wrap(f => *(T) o T o *(T) o ***(f) o *(T) o T o *(T))
     val gold312 = wrap(f => *(T) o T o ***(f) o T o *(T))
 
-    proveEquiv.runCNF(expr, Seq(
+    ProveEquiv.init()
+      .withRunnerTransform(r => r.withIterationLimit(3))
+      .withEndRules(Seq(
+        rules.combinatory.compositionAssoc1,
+        rules.combinatory.compositionAssoc2))
+      .runCNF(expr, Seq(
       gold132, gold213, gold231, gold321, gold312
     ), reorderRules)
   }
@@ -65,12 +66,26 @@ object reorder {
     val gold1243: Expr = wrap(i => f => (**(T) o ****(f) o **(T)) $ i)
     val gold1324: Expr = wrap(i => f => (*(T) o ****(f) o *(T)) $ i)
     val gold2134: Expr = wrap(i => f => (T o ****(f) o T) $ i)
+    // should be implied by above goals modulo associativity
     val gold4321: Expr = wrap(i => f => (**(T) o *(T) o T o **(T) o *(T) o **(T) o ****(f) o
       **(T) o *(T) o **(T) o T o *(T) o **(T)) $ i)
 
-    proveEquiv.runCNF(expr, Seq(
-      gold1243, gold1324, gold2134, gold4321
-    ), reorderRules)
+    // ****(f) =
+    // **(T) o ****(f) o **(T) =
+    // *(T) o ****(f) o *(T) =
+    // T o ****(f) o T
+    //  implies (untyped or polymorphic typed)
+    // = **(T) o *(T) o T o **(T) o *(T) o **(T) o ****(f) o
+    //      **(T) o *(T) o **(T) o T o *(T) o **(T)
+
+    ProveEquiv.init()
+      .withRunnerTransform(r => r.withIterationLimit(5))
+      .withEndRules(Seq(
+        rules.combinatory.compositionAssoc1,
+        rules.combinatory.compositionAssoc2))
+      .runCNF(expr, Seq(
+        gold1243, gold1324, gold2134, gold4321
+      ), reorderRules)
   }
 
   def main(args: Array[String]): Unit = {

@@ -108,17 +108,20 @@ class Runner(var iterations: Vec[Iteration],
 
       val iter = runOne(egraph, filter, rules)
       println(iter)
-
+/*
       egraph.analysis match {
         case _: DefaultAnalysisCustomisable if roots.nonEmpty =>
           Prototype.countLimits(egraph, roots)
         case _ =>
       }
-
+*/
       if (iter.applied.isEmpty &&
         scheduler.canSaturate(iterations.size)) {
         stopReasons += Saturated
       }
+
+      iterations += iter
+
       val elapsed = System.nanoTime() - startTime
       if (elapsed > timeLimit) {
         stopReasons += TimeLimit(elapsed)
@@ -129,8 +132,6 @@ class Runner(var iterations: Vec[Iteration],
       if (iterationCount() >= iterLimit) {
         stopReasons += IterationLimit(iterationCount())
       }
-
-      iterations += iter
     }
 
     this
@@ -153,6 +154,8 @@ class Runner(var iterations: Vec[Iteration],
 
     val applied = HashMap.empty[String, Int]
     rules.zip(matches).map { case (r, ms) =>
+      // TODO: extract Substs as proper maps or vecmaps during rewrite application?
+      //  for faster access and local inserts
       val newlyApplied = scheduler.applyRewrite(i, egraph, shc, r, ms)
       if (newlyApplied > 0) {
         applied.updateWith(r.name) {
