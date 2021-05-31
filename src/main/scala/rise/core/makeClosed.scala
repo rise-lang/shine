@@ -11,7 +11,7 @@ object makeClosed {
       Map[AddressSpaceIdentifier, AddressSpace],
       Map[NatToDataIdentifier, NatToData]) = (Map(), Map(), Map(), Map())
 
-    val (expr, (ts, ns, as, n2ds)) = DSL.infer.getFTVsRec(e).foldLeft((e, emptySubs))((acc, ftv) => acc match {
+    val (expr, (ts, ns, as, n2ds)) = IsClosedForm.varsToClose(e)._2.foldLeft((e, emptySubs))((acc, ftv) => acc match {
       case (expr, (ts, ns, as, n2ds)) => ftv match {
         case i: TypeIdentifier =>
           val dt = DataTypeIdentifier(freshName("dt"), isExplicit = true)

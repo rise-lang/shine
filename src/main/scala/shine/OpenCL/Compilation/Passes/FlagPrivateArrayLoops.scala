@@ -4,7 +4,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.{CommType, PhraseType}
 import shine.DPIA.primitives.functional.{Idx, NatAsIndex}
 import shine.DPIA.primitives.imperative.{For, ForNat, IdxAcc}
-import shine.DPIA.{ArrayData, Nat}
+import shine.DPIA.{ArrayData, Nat, NatIdentifier}
 import shine.OpenCL.AddressSpace
 import shine.OpenCL.primitives.imperative.{New, ParFor, ParForNat}
 
@@ -44,9 +44,12 @@ object FlagPrivateArrayLoops {
           eliminateVars ++= indexingIdents
           Stop(p)
         case pf: ParFor if collectIdents(pf.out).exists(privMemIdents(_)) =>
-          val (i, o, _) = pf.unwrapBody
-          eliminateVars += i.name
-          Continue(p, this.copy(privMemIdents = privMemIdents + o))
+          pf.body match {
+            case Lambda(i, Lambda(o, _)) =>
+              eliminateVars += i.name
+              Continue(p, this.copy(privMemIdents = privMemIdents + o))
+            case _ => throw new Exception("This should not happen")
+          }
         case _ =>
           Continue(p, this)
       }
@@ -60,24 +63,30 @@ object FlagPrivateArrayLoops {
                                 eliminateVars: mutable.Set[String]): Phrase[CommType] = {
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case f@For(_) if (eliminateVars(f.unwrapBody._1.name)) =>
-          val (i, _) = f.unwrapBody
+        case f@For(_) if (eliminateVars(f.loopBody.asInstanceOf[Lambda[_, _]].param.name)) =>
+          val i = f.loopBody.asInstanceOf[Lambda[_, _]].param
           eliminateVars -= i.name
           Continue(For(unroll = true)(f.n, f.loopBody), this)
-        case f@ForNat(_) if (eliminateVars(f.unwrapBody._1.name)) =>
-          val (i, _) = f.unwrapBody
+        case f@ForNat(_) if (eliminateVars(f.loopBody.asInstanceOf[DepLambda[_, _]].x.name)) =>
+          val i = f.loopBody.asInstanceOf[DepLambda[_, _]].x
           eliminateVars -= i.name
           Continue(ForNat(unroll = true)(f.n, f.loopBody), this)
-        case pf@ParFor(level, dim, _) if (eliminateVars(pf.unwrapBody._1.name)) =>
-          val (i, _, _) = pf.unwrapBody
-          eliminateVars -= i.name
-          Continue(ParFor(level, dim, unroll = true)
-            (pf.n, pf.dt, pf.out, pf.loopBody, pf.init, pf.step), this)
-        case pf@ParForNat(level, dim, _) if (eliminateVars(pf.unwrapBody._1.name)) =>
-          val (i, _, _) = pf.unwrapBody
-          eliminateVars -= i.name
-          Continue(ParForNat(level, dim, unroll = true)
-            (pf.n, pf.ft, pf.out, pf.loopBody, pf.init, pf.step), this)
+        case pf@ParFor(level, dim, _, name) if (eliminateVars(pf.body.asInstanceOf[Lambda[_, _]].param.name)) =>
+          pf.body match {
+            case Lambda(i, _) =>
+              eliminateVars -= i.name
+              Continue(ParFor(level, dim, unroll = true, name)(
+                pf.init, pf.n, pf.step, pf.dt, pf.out, pf.body), this)
+            case _ => throw new Exception("This should not happen")
+          }
+        case pf@ParForNat(level, dim, _, name) if (eliminateVars(pf.body.asInstanceOf[DepLambda[_, _]].x.name)) =>
+          pf.body match {
+            case DepLambda(i: NatIdentifier, _) =>
+              eliminateVars -= i.name
+              Continue(ParForNat(level, dim, unroll = true, name)(
+                pf.init, pf.n, pf.step, pf.ft, pf.out, pf.body), this)
+            case _ => throw new Exception("This should not happen")
+          }
         case _ =>
           Continue(p, this)
       }

@@ -119,7 +119,7 @@ object lowering {
             isPairOrBasicType(out) => Success(l)
           case _ => Failure(containsComputation())
         }
-      case f@ForeignFunction(_) => Success(f)
+      case f@foreignFunction(_, _) => Success(f)
       case _ => Failure(containsComputation())
     }
   }

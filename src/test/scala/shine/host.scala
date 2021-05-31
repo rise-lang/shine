@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     in[i] = 0;
   }
 
-  foo(ctx, output, N, input);
+  foo_init_run(ctx, output, N, input);
 
   int32_t* out = hostBufferSync(ctx, output, N * sizeof(int32_t), HOST_READ);
 
@@ -111,8 +111,7 @@ int main(int argc, char** argv) {
     checkOutput(m)
   }
 
-  ignore("local memory") {
-    // TODO: clSetKernelArg(k, i, localMemSize, NULL);
+  test("local memory") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
       oclRun(LocalSize(16), GlobalSize(n))(
         in |> split(16) |> mapWorkGroup(0)(

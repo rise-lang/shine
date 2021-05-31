@@ -48,17 +48,42 @@ final case class DepApp[K <: Kind](f: Expr, x: K#T)(
 final case class Literal(d: semantics.Data) extends Expr {
   override val t: Type = d.dataType
   override def setType(t: Type): Literal =
-    throw TypeException(
-      "tried to set the type of a Literal, whose type should never be changed"
-    )
+    if (t != this.t) {
+      throw TypeException(s"cannot set the type of ${getClass}")
+    } else {
+      this
+    }
+}
+
+final case class Opaque(e: Expr, override val t: Type) extends Expr {
+  override def toString: String = s"{Opaque Expr: $t}"
+  override def setType(t: Type): TypeAnnotation =
+    throw TypeException(s"cannot set the type of ${getClass}")
+}
+case class TypeAnnotation(e: Expr, annotation: Type) extends Expr {
+  override val t : Type = TypePlaceholder
+  override def toString: String = s"$e: $annotation"
+  override def setType(t: Type): TypeAnnotation =
+    if (t != this.t) {
+      throw TypeException(s"cannot set the type of ${getClass}")
+    } else {
+      this
+    }
+}
+case class TypeAssertion(e: Expr, assertion: Type) extends Expr {
+  override val t : Type = TypePlaceholder
+  override def toString: String = s"$e !: $assertion"
+  override def setType(t: Type): TypeAnnotation =
+    throw TypeException(s"cannot set the type of ${getClass}")
 }
 
 abstract class Primitive extends Expr {
   override val t: Type = TypePlaceholder
+  def primEq(obj : Primitive) : Boolean
   def typeScheme: Type =
-    throw TypeException("typeScheme method must be overridden")
+    throw TypeException(s"typeScheme method must be overridden by ${getClass}")
   def name: String =
-    throw RenderException("the name of Primitive must be set")
+    throw RenderException(s"the name of Primitive must be set by ${getClass}")
   override def setType(t: Type): Primitive =
-    throw TypeException("setType method must be overridden")
+    throw TypeException(s"setType method must be overridden by ${getClass}")
 }

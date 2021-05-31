@@ -119,7 +119,7 @@ object ContinuationTranslation {
       con(array)(λ(expT((n + m)`.` dt, read))(x =>
         C(Drop(n, m, dt, x))))
 
-    case ForeignFunctionCall(funDecl, inTs, outT, args) =>
+    case ffc@ForeignFunctionCall(funDecl, n) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
               exps: Seq[Phrase[ExpType]],
               inTs: Seq[DataType]): Phrase[CommType] = {
@@ -127,7 +127,7 @@ object ContinuationTranslation {
           // with only one argument left to process return the assignment of the function call
           case Seq( (arg, inT) ) =>
             con(arg)(λ(expT(inT, read))(e =>
-              outT match {
+              ffc.outT match {
                 // TODO: this is an ugly fix to avoid calling the function multiple times
                 //  for pair assignment, see:
                 // https://github.com/rise-lang/shine/issues/58
@@ -140,10 +140,10 @@ object ContinuationTranslation {
                       case _ =>
                         `new`.apply
                     }
-                  backendNew(outT, tmp =>
-                    Assign(outT, tmp.wr, ForeignFunctionCall(funDecl, inTs :+ inT, outT, exps :+ e)) `;`
+                  backendNew(ffc.outT, tmp =>
+                    Assign(ffc.outT, tmp.wr, ForeignFunctionCall(funDecl, n)( inTs :+ inT, ffc.outT, exps :+ e)) `;`
                       C(tmp.rd))
-                case _ => C( ForeignFunctionCall(funDecl, inTs :+ inT, outT, exps :+ e) )
+                case _ => C( ForeignFunctionCall(funDecl, n)(inTs :+ inT, ffc.outT, exps :+ e) )
               }))
           // with a `tail` of arguments left, rec
           case Seq( (arg, inT), tail@_* ) =>
@@ -152,7 +152,7 @@ object ContinuationTranslation {
         }
       }
 
-      rec(args zip inTs, Seq(), Seq())
+      rec(ffc.args zip ffc.inTs, Seq(), Seq())
 
     case Fst(dt1, dt2, pair) =>
       con(pair)(λ(expT(dt1 x dt2, read))(x =>
@@ -191,17 +191,17 @@ object ContinuationTranslation {
       con(value)(fun(value.t)(x =>
         con(f(x))(C)))
 
-    case MakeArray(dt, elements) =>
-      def rec(func: Vector[Phrase[ExpType]], imp: Vector[Phrase[ExpType]]): Phrase[CommType] = {
+    case ma@MakeArray(_) =>
+      def rec(func: Seq[Phrase[ExpType]], imp: Seq[Phrase[ExpType]]): Phrase[CommType] = {
         func match {
-          case xf +: func => con(xf)(fun(expT(dt, read))(xi =>
+          case xf +: func => con(xf)(fun(expT(ma.dt, read))(xi =>
             rec(func, imp :+ xi)
           ))
-          case _ => C(MakeArray(dt, imp))
+          case _ => C(MakeArray(ma.n)(ma.dt, imp))
         }
       }
 
-      rec(elements, Vector())
+      rec(ma.elements, Seq())
 
     case makeDepPair@MakeDepPair(a, fst, sndT, snd) =>
       // Allocate for the resulting dependent pair,
@@ -257,10 +257,10 @@ object ContinuationTranslation {
       con(e)(λ(e.t)(x =>
         C(NatAsIndex(n, x))))
 
-    case Pad(n, l, r, dt, padExp, array) =>
+    case PadCst(n, l, r, dt, padExp, array) =>
       con(array)(λ(expT(n`.`dt, read))(x =>
         con(padExp)(λ(expT(dt, read))(p =>
-          C(Pad(n, l, r, dt, p, x))))))
+          C(PadCst(n, l, r, dt, p, x))))))
 
     case PadClamp(n, l, r, dt, array) =>
       con(array)(λ(expT(n`.`dt, read))(x =>
@@ -291,7 +291,8 @@ object ContinuationTranslation {
         acc(scanSeq)(tmp.wr) `;` C(tmp.rd) ))
 
     case slide@Slide(n, sz, sp, dt, input) =>
-      con(input)(λ(expT(slide.inputSize`.`dt, read))(x =>
+      val inputSize = sp*n+sz
+      con(input)(λ(expT(inputSize`.`dt, read))(x =>
         C(Slide(n, sz, sp, dt, x)) ))
 
     case Snd(dt1, dt2, pair) =>
@@ -361,7 +362,7 @@ object ContinuationTranslation {
       `new`(map.n `.` map.dt2, λ(varT(map.n `.` map.dt2))(tmp =>
         acc(map)(tmp.wr) `;` C(tmp.rd)))
 
-    case ocl.OpenCLFunctionCall(name, inTs, outT, args) =>
+    case fc@ocl.OpenCLFunctionCall(name, n) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
               es: Seq[Phrase[ExpType]],
               inTs: Seq[DataType]): Phrase[CommType] = {
@@ -369,22 +370,20 @@ object ContinuationTranslation {
           // with only one argument left to process continue with the OpenCLFunction call
           case Seq( (arg, inT) ) =>
             con(arg)(λ(expT(inT, read))(e =>
-              C(ocl.OpenCLFunctionCall(name, inTs :+ inT, outT, es :+ e)) ))
+              C(ocl.OpenCLFunctionCall(name, n)(inTs :+ inT, fc.outT, es :+ e)) ))
           // with a `tail` of arguments left, rec
           case Seq( (arg, inT), tail@_* ) =>
             con(arg)(λ(expT(inT, read))(e => rec(tail, es :+ e, inTs :+ inT) ))
         }
       }
 
-      rec(args zip inTs, Seq(), Seq())
+      rec(fc.args zip fc.inTs, Seq(), Seq())
 
     case reduceSeq@ocl.ReduceSeq(unroll) =>
-      val (n, initAddrSpace, dt1, dt2, f, init, array) =
-        ( reduceSeq.n, reduceSeq.initAddrSpace, reduceSeq.dt1, reduceSeq.dt2,
-          reduceSeq.f, reduceSeq.init, reduceSeq.array )
+      val (n, a, dt1, dt2, f, init, array) = reduceSeq.unwrap
 
       con(array)(λ(expT(n`.`dt1, read))(X =>
-        oclI.ReduceSeqI(n, initAddrSpace, dt1, dt2,
+        oclI.ReduceSeqI(n, a, dt1, dt2,
           λ(expT(dt2, read))(x =>
             λ(expT(dt1, read))(y =>
               λ(accT(dt2))(o => acc( f(x)(y) )( o )))),
@@ -400,7 +399,7 @@ object ContinuationTranslation {
     case cuda.GlobalToShared(dt, inputGlobal) =>
       val adj = AdjustArraySizesForAllocations(inputGlobal, dt, AddressSpace.Local)
 
-      shine.OpenCL.DSL.`new` (AddressSpace.Private) (pipeline, pipeline =>
+      shine.OpenCL.DSL.`new` (AddressSpace.Private) (OpaqueType("pipeline"), pipeline =>
         shine.OpenCL.DSL.`new` (AddressSpace.Local) (adj.dt, tmp =>
           acc(inputGlobal)(cudaIm.GlobalToSharedAcc(dt, pipeline.rd, tmp.wr)) `;`
             cudaIm.SyncPipeline(pipeline.rd) `;`
@@ -414,19 +413,18 @@ object ContinuationTranslation {
       `new`(n `.` dt2, λ(varT(n `.` dt2))(tmp =>
         acc(map)(tmp.wr) `;` C(tmp.rd)))
 
-    case mapFragmentElements@cuda.MapFragmentElements(fragType, fragment, fun) =>
-      val dt = fragType.dataType
-
+    case m@cuda.MapFragment(rows, columns, layers, dt, frag, layout, fun, input) =>
+      val fragType = FragmentType(rows, columns, layers, dt, frag, layout)
       shine.OpenCL.primitives.imperative.New(AddressSpace.Private, fragType,
         λ(VarType(fragType))(fragmentAcc =>
-          (if (fragment.t.accessType.toString == write.toString)
-            acc(fragment)(fragmentAcc.wr) `;`
-              cudaIm.ForFragmentElements(fragType, fragmentAcc.rd, fragmentAcc.wr,
+          (if (input.t.accessType.toString == write.toString)
+            acc(input)(fragmentAcc.wr) `;`
+              cudaIm.ForFragment(rows, columns, layers, dt, frag, layout, fragmentAcc.rd, fragmentAcc.wr,
                 λ(expT(dt, read))(x =>
                   λ(accT(dt))(o =>
                     acc(fun(x))(o))))
           else
-            acc(mapFragmentElements)(fragmentAcc.wr)) `;`
+            acc(m)(fragmentAcc.wr)) `;`
             C(fragmentAcc.rd)))
   }
 }

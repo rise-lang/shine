@@ -1,9 +1,8 @@
 package shine.DPIA
 
 import rise.{core => r}
-import rise.core.{types => rt}
-import rise.core.DSL.Type.{->:, `(Addr)->:`, `(Nat)->:`, `(NatToNat)->:`, x, TupleTypeConstructors, `.`, ArrayTypeConstructors}
-import rise.core.{primitives => rp}
+import rise.core.{Opaque, TypeAnnotation, TypeAssertion, primitives => rp, types => rt}
+import rise.core.DSL.Type.{->:, ArrayTypeConstructors, TupleTypeConstructors, `(Addr)->:`, `(Nat)->:`, `(NatToNat)->:`, `.`, x}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
 import rise.Cuda.{primitives => rocup}
@@ -133,6 +132,9 @@ private class InferAccessAnnotation {
         inferDepLambda(depL, ctx, isKernelParamFun)
       case depA: r.DepApp[_] =>
         inferDepApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
+      case _: TypeAnnotation => throw new Exception("Type annotations should be gone.")
+      case _: TypeAssertion => throw new Exception("Type assertions should be gone.")
+      case _: Opaque => throw new Exception("Opaque expressions should be gone.")
       case p: r.Primitive => inferPrimitive(p)
     }
     // the kernel output must be 'write'
@@ -530,14 +532,15 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case r.ForeignFunction(_) =>
+      case rp.foreignFunction(_, _) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case dt: rt.DataType =>
             expT(dataType(dt), read)
           case rt.FunType(in: rt.DataType, out) =>
             expT(in, read) ->: buildType(out)
-          case _ =>
-            throw Exception("This should not happen")
+          case rt.DepFunType(d: rt.DataTypeIdentifier, t) =>
+            dFunT(d, buildType(t))
+          case _ => throw Exception("This should not happen")
         }
         buildType(p.t)
 

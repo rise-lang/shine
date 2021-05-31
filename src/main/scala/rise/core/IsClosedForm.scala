@@ -6,62 +6,116 @@ import rise.core.traverse._
 import rise.core.types._
 
 object IsClosedForm {
-  case class Visitor(boundV: Set[Identifier], boundT: Set[Kind.Identifier]) extends Traversal[Option] {
-    override implicit def monad = OptionMonad
+  case class OrderedSet[T](seq : Seq[T], set : Set[T])
+  object OrderedSet {
+    def empty[T] : OrderedSet[T] = OrderedSet(Seq(), Set())
+    def add[T] : T => OrderedSet[T] => OrderedSet[T] = t => ts =>
+      if (ts.set.contains(t)) ts else OrderedSet(t +: ts.seq, ts.set + t)
+    def one[T] : T => OrderedSet[T] = add(_)(empty)
+    def append[T] : OrderedSet[T] => OrderedSet[T] => OrderedSet[T] = x => y => {
+      val ordered = x.seq.filter(!y.set.contains(_)) ++ y.seq
+      val unique = x.set ++ y.set
+      OrderedSet(ordered, unique)
+    }
+  }
+  implicit def OrderedSetMonoid[T] : Monoid[OrderedSet[T]] = new Monoid[OrderedSet[T]] {
+    def empty : OrderedSet[T] = OrderedSet.empty
+    def append : OrderedSet[T] => OrderedSet[T] => OrderedSet[T] = OrderedSet.append
+  }
 
-    override def identifier[I <: Identifier] : VarType => I => Option[I] = {
-      case Reference => i => if (boundV(i)) Some(i) else None
+  case class Visitor(boundV: Set[Identifier], boundT: Set[Kind.Identifier])
+    extends PureAccumulatorTraversal[(OrderedSet[Identifier], OrderedSet[Kind.Identifier])]
+  {
+    override val accumulator = PairMonoid(OrderedSetMonoid, OrderedSetMonoid)
+
+    override def identifier[I <: Identifier]: VarType => I => Pair[I] = vt => i => {
+      for { t2 <- `type`(i.t);
+            i2 <- if (vt == Reference && !boundV(i)) {
+                    accumulate((OrderedSet.one(i : Identifier), OrderedSet.empty))(i)
+                  } else {
+                    return_(i)
+                  }}
+        yield i2
+    }
+
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = {
+      case Reference => i =>
+        if (boundT(i)) return_(i) else accumulate((OrderedSet.empty, OrderedSet.one(i : Kind.Identifier)))(i)
       case _ => return_
     }
 
-    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Option[I] = {
-      case Reference => i => if (boundT(i)) Some(i) else None
-      case _ => return_
-    }
-
-    override def nat: Nat => Option[Nat] = n => {
-      val closed = n.varList.foldLeft(true) {
-        case (c, v: NamedVar) => c && boundT(NatIdentifier(v))
-        case (c, _) => c
+    override def nat: Nat => Pair[Nat] = n => {
+      val free = n.varList.foldLeft(OrderedSet.empty[Kind.Identifier]) {
+        case (free, v: NamedVar) if !boundT(NatIdentifier(v)) => OrderedSet.add(NatIdentifier(v) : Kind.Identifier)(free)
+        case (free, _) => free
       }
-      if (closed) Some(n) else None
+      accumulate((OrderedSet.empty, free))(n)
     }
 
-    override def expr: Expr => Option[Expr] = {
-      case Lambda(x, b) => this.copy(boundV = boundV + x).expr(b)
+    override def expr: Expr => Pair[Expr] = {
+      case l@Lambda(x, e) =>
+        // The binder's type itself might contain free type variables
+        val ((fVx, fTx), x1) = identifier(Binding)(x).unwrap
+        val ((fVe, fTe), e1) = this.copy(boundV = boundV + x1).expr(e).unwrap
+        val ((fVt, fTt), t1) = `type`(l.t).unwrap
+        val fV = OrderedSet.append(OrderedSet.append(fVx)(fVe))(fVt)
+        val fT = OrderedSet.append(OrderedSet.append(fTx)(fTe))(fTt)
+        accumulate((fV, fT))(Lambda(x1, e1)(t1): Expr)
       case DepLambda(x, b) => this.copy(boundT = boundT + x).expr(b)
       case e => super.expr(e)
     }
 
-    override def natToData : NatToData => Option[NatToData] = {
-      case d@NatToDataLambda(x, e) =>
-        for { _ <- this.copy(boundT = boundT + x).`type`(e) }
-          yield d
+    override def natToData: NatToData => Pair[NatToData] = {
+      case NatToDataLambda(x, e) =>
+        for { p <- this.copy(boundT = boundT + x).`type`(e) }
+          yield (p._1, NatToDataLambda(x, e))
       case t => super.natToData(t)
     }
 
-    override def natToNat: NatToNat => Option[NatToNat] = {
-      case d@NatToNatLambda(x, n) =>
-        for { _ <- this.copy(boundT = boundT + x).nat(n) }
-          yield d
+    override def natToNat: NatToNat => Pair[NatToNat] = {
+      case NatToNatLambda(x, n) =>
+        for { p <- this.copy(boundT = boundT + x).nat(n) }
+          yield (p._1, NatToNatLambda(x, n))
       case n => super.natToNat(n)
     }
 
-    override def `type`[T <: Type]: T => Option[T] = {
+    override def `type`[T <: Type]: T => Pair[T] = {
       case d@DepFunType(x, t) =>
-        for { _ <- this.copy(boundT = boundT + x).`type`(t) }
-          yield d.asInstanceOf[T]
+        for { p <- this.copy(boundT = boundT + x).`type`(t) }
+          yield (p._1, d.asInstanceOf[T])
       case d@DepPairType(x, dt) =>
-        for { _ <- this.copy(boundT = boundT + x).datatype(dt) }
-          yield d.asInstanceOf[T]
+        for { p <- this.copy(boundT = boundT + x).datatype(dt) }
+          yield (p._1, d.asInstanceOf[T])
       case t => super.`type`(t)
     }
   }
 
+  def freeVars(expr: Expr): (OrderedSet[Identifier], OrderedSet[Kind.Identifier]) = {
+    val ((fV, fT), _) = traverse(expr, Visitor(Set(), Set()))
+    (fV, fT)
+  }
+
+  def freeVars(t: Type): OrderedSet[Kind.Identifier] = {
+    val ((_, ftv), _) = traverse(t, Visitor(Set(), Set()))
+    ftv
+  }
+
+  // Exclude matrix layout and fragment kind identifiers, since they cannot currently be bound
+  def needsClosing : Seq[Kind.Identifier] => Seq[Kind.Identifier] = _.flatMap {
+    case i : MatrixLayoutIdentifier => Seq()
+    case i : FragmentKindIdentifier => Seq()
+    case e => Seq(e)
+  }
+
+  def varsToClose(expr : Expr): (Seq[Identifier], Seq[Kind.Identifier]) = {
+    val (fV, fT) = freeVars(expr)
+    (fV.seq, needsClosing(fT.seq))
+  }
+
+  def varsToClose(t : Type): Seq[Kind.Identifier] = needsClosing(freeVars(t).seq)
+
   def apply(expr: Expr): Boolean = {
-    traverse(expr, Visitor(Set(), Set())) match {
-      case None => false
-      case Some(e) => true
-    }
+    val (freeV, freeT) = varsToClose(expr)
+    freeV.isEmpty && freeT.isEmpty
   }
 }
