@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.Expr
 import rise.core.types._
 import rise.eqsat.{ProveEquiv, rules, ArrayDimensionPredicate}
+import ProveEquiv.syntax._
 
 object tiling {
   private val tileSize = 4

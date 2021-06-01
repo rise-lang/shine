@@ -1,5 +1,7 @@
 package rise.eqsat
 
+import scala.language.implicitConversions
+
 case object CouldNotProveEquiv extends Exception
 
 object ProveEquiv {
@@ -11,6 +13,12 @@ object ProveEquiv {
     endRules = Seq(),
     bidirectionalSearch = false,
   )
+
+  case class OneOrMore[T](seq: Seq[T])
+  object syntax {
+    implicit def one[T](t: T): OneOrMore[T] = OneOrMore(Seq(t))
+    implicit def more[T](s: Seq[T]): OneOrMore[T] = OneOrMore(s)
+  }
 }
 
 class ProveEquiv(
@@ -21,6 +29,8 @@ class ProveEquiv(
   var endRules: Seq[Rewrite[_, _, _]],
   var bidirectionalSearch: Boolean,
 ) {
+  import ProveEquiv.OneOrMore
+
   def withFilter(filter: DefaultAnalysis.Predicate): ProveEquiv = {
     this.filter = filter
     this
@@ -46,58 +56,55 @@ class ProveEquiv(
     this
   }
 
-  def runBENF(start: rise.core.Expr, goal: rise.core.Expr,
-              rules: Seq[DefaultAnalysis.Rewrite]): Unit =
-    runBENF(start, Seq(goal), rules)
-
-  def runBENF(start: rise.core.Expr,
-              goals: Seq[rise.core.Expr],
+  def runBENF(starts: OneOrMore[rise.core.Expr],
+              goals: OneOrMore[rise.core.Expr],
               rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
-    val normStart = BENF(Expr.fromNamed(start))
-    val normGoals = goals.map(g => BENF(Expr.fromNamed(g)))
-    println(s"normalized start: ${Expr.toNamed(normStart)}")
+    val normStarts = starts.seq.map(s => BENF(Expr.fromNamed(s)))
+    val normGoals = goals.seq.map(g => BENF(Expr.fromNamed(g)))
+    for ((start, i) <- normStarts.zipWithIndex) {
+      println(s"normalized start n°$i: ${Expr.toNamed(start)}")
+    }
     for ((goal, i) <- normGoals.zipWithIndex) {
       println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
     }
-    run(normStart, normGoals, rules)
+    run(OneOrMore(normStarts), OneOrMore(normGoals), rules)
   }
 
-  def runCNF(start: rise.core.Expr, goal: rise.core.Expr,
-             rules: Seq[DefaultAnalysis.Rewrite]): Unit =
-    runCNF(start, Seq(goal), rules)
-
-  def runCNF(start: rise.core.Expr,
-             goals: Seq[rise.core.Expr],
+  def runCNF(starts: OneOrMore[rise.core.Expr],
+             goals: OneOrMore[rise.core.Expr],
              rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
-    val normStart = CNF(Expr.fromNamed(start))
-    val normGoals = goals.map(g => CNF(Expr.fromNamed(g)))
-    println(s"normalized start: ${Expr.toNamed(normStart)}")
+    val normStarts = starts.seq.map(s => CNF(Expr.fromNamed(s)))
+    val normGoals = goals.seq.map(g => CNF(Expr.fromNamed(g)))
+    for ((start, i) <- normStarts.zipWithIndex) {
+      println(s"normalized start n°$i: ${Expr.toNamed(start)}")
+    }
     for ((goal, i) <- normGoals.zipWithIndex) {
       println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
     }
-    run(normStart, normGoals, rules)
+    run(OneOrMore(normStarts), OneOrMore(normGoals), rules)
   }
 
-  def run(start: Expr, goal: Expr,
-          rules: Seq[DefaultAnalysis.Rewrite]): Unit =
-    run(start, Seq(goal), rules)
-
-  def run(start: Expr,
-          goals: Seq[Expr],
-          rules: Seq[DefaultAnalysis.Rewrite]): Unit =
-    if (bidirectionalSearch) {
-      runBidirectional(start, goals, rules)
-    } else {
-      runUnidirectional(start, goals, rules)
+  def run(starts: OneOrMore[Expr],
+          goals: OneOrMore[Expr],
+          rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
+    val egraph = EGraph.emptyWithAnalysis(analysis)
+    val startId = starts.seq.tail.foldLeft(egraph.addExpr(starts.seq.head)) { case (id, e) =>
+      egraph.union(id, egraph.addExpr(e))._1
     }
 
-  def runUnidirectional(start: Expr,
+    if (bidirectionalSearch) {
+      runBidirectional(egraph, startId, goals.seq, rules)
+    } else {
+      runUnidirectional(egraph, startId, goals.seq, rules)
+    }
+  }
+
+  def runUnidirectional(egraph: DefaultAnalysis.EGraph,
+                        startId: EClassId,
                         goals: Seq[Expr],
                         rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
     var remainingGoals = goals
 
-    val egraph = EGraph.emptyWithAnalysis(analysis)
-    val startId = egraph.addExpr(start)
     def goalReached(g: Expr): Boolean =
       egraph.lookupExpr(g).contains(egraph.find(startId))
     val runner = transformRunner(Runner.init()).doneWhen { r =>
@@ -109,11 +116,10 @@ class ProveEquiv(
     afterRun(runner, egraph, startId, goals, i => goalReached(goals(i)))
   }
 
-  def runBidirectional(start: Expr,
+  def runBidirectional(egraph: DefaultAnalysis.EGraph,
+                       startId: EClassId,
                        goals: Seq[Expr],
                        rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
-    val egraph = EGraph.emptyWithAnalysis(analysis)
-    val startId = egraph.addExpr(start)
     val goalIds = goals.map(egraph.addExpr)
     val runner = transformRunner(Runner.init()).doneWhen { _ =>
       goalIds.forall(g => egraph.findMut(startId) == egraph.findMut(g))
@@ -121,11 +127,17 @@ class ProveEquiv(
     afterRun(runner, egraph, startId, goals, {
       i => egraph.findMut(startId) == egraph.findMut(goalIds(i))
     })
+
+    goals.foreach { g =>
+      assert(egraph.lookupExpr(g).contains(egraph.find(startId)))
+    }
   }
 
-  private def afterRun(runner: Runner, egraph: DefaultAnalysis.EGraph,
+  private def afterRun(runner: Runner,
+                       egraph: DefaultAnalysis.EGraph,
                        startId: EClassId,
-                       goals: Seq[Expr], goalReached: Int => Boolean): Unit = {
+                       goals: Seq[Expr],
+                       goalReached: Int => Boolean): Unit = {
     runner.printReport()
 
     if (!runner.stopReasons.contains(Done)) {

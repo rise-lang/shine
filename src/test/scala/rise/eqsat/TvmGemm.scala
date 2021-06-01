@@ -2,6 +2,7 @@ package rise.eqsat
 
 import rise.core.Expr
 import rise.elevate.tvmGemm
+import ProveEquiv.syntax._
 
 object TvmGemm {
   def main(args: Array[String]): Unit = {

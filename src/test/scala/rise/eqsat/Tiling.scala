@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.types._
 import rise.elevate.util._
+import ProveEquiv.syntax._
 
 class Tiling extends test_util.Tests {
   private val minimalRules = Seq(
@@ -66,7 +67,8 @@ class Tiling extends test_util.Tests {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) =>
       depFun((dt1: DataType) => depFun((dt2: DataType) =>
       fun(i => fun(f =>
-        inner(f)(i :: (n`.`m`.`o`.`dt1)) :: (n`.`m`.`o`.`dt2)
+        inner(f)(i :: //(n`.`m`.`o`.`dt1)) :: (n`.`m`.`o`.`dt2)
+          (n`.`n`.`n`.`dt1)) :: (n`.`n`.`n`.`dt2)
       )))))))
     }
 
@@ -99,7 +101,8 @@ class Tiling extends test_util.Tests {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) => depFun((p: Nat) =>
       depFun((dt1: DataType) => depFun((dt2: DataType) =>
       fun(i => fun(f =>
-        inner(f)(i :: (n`.`m`.`o`.`p`.`dt1)) :: (n`.`m`.`o`.`p`.`dt2)
+        inner(f)(i :: //(n`.`m`.`o`.`p`.`dt1)) :: (n`.`m`.`o`.`p`.`dt2)
+          (n`.`n`.`n`.`n`.`dt1)) :: (n`.`n`.`n`.`n`.`dt2)
       ))))))))
     }
 

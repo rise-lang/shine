@@ -1,16 +1,18 @@
 package apps
 
 import apps.separableConvolution2D._
-import apps.separableConvolution2DCheck.wrapExpr
 import rise.core.DSL._
 import rise.core.semantics.FloatData
 import rise.core.types._
 import rise.eqsat.rules
+import rise.eqsat.ProveEquiv.syntax._
 
 class separableConvolution2DEqsat extends test_util.Tests {
   val weights2d = binomialWeights2d
   val weightsV = binomialWeightsV
   val weightsH = binomialWeightsH
+
+  val wrapExpr = apps.separableConvolution2DCheck.wrapExpr : ToBeTyped[rise.core.Expr] => rise.core.Expr
 
   private val (separateDot, separateDotT) = {
     import rise.eqsat.NamedRewrite

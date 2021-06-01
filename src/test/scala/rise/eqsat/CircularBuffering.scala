@@ -1,6 +1,7 @@
 package rise.eqsat
 
 import rise.elevate.circularBuffering._
+import ProveEquiv.syntax._
 
 class CircularBuffering extends test_util.Tests {
   test("highLevel to inlined") {

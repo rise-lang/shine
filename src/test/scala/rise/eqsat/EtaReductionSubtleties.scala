@@ -2,6 +2,7 @@ package rise.eqsat
 
 import Basic._
 import rise.core.DSL._
+import ProveEquiv.syntax._
 
 class EtaReductionSubtleties extends test_util.Tests {
   test("missed eta-abstraction") {

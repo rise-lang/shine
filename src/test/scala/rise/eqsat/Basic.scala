@@ -2,6 +2,7 @@ package rise.eqsat
 
 import rise.{core => rc}
 import rise.core.{types => rct}
+import ProveEquiv.syntax._
 
 class Basic extends test_util.Tests {
   import Basic._
@@ -98,7 +99,7 @@ class Basic extends test_util.Tests {
   test("slideBeforeMapMapF") {
     val `_` = rct.TypePlaceholder
     def wrap(inner: ToBeTyped[rc.Expr] => ToBeTyped[rc.Expr])
-    : ToBeTyped[rc.Expr] =
+    : rc.Expr =
       depFun((n: rct.Nat) =>
       depFun((dt1: rct.DataType) => depFun((dt2: rct.DataType) =>
       fun(f =>
@@ -112,6 +113,22 @@ class Basic extends test_util.Tests {
         map(f) >> slide(3)(1) >> slide(4)(2)),
       Seq(rules.eta, rules.betaExtract, rules.mapFusion, rules.mapFission, rules.slideBeforeMapMapF)
     )
+  }
+
+  test("composition associativity") {
+    ProveEquiv.init().runCNF(
+      withArrayAndFuns(4, in => f =>
+        in |> map(((f(0) >> f(1)) >> f(2)) >> f(3))),
+      withArrayAndFuns(4, in => f =>
+        in |> map(f(0) >> (f(1) >> (f(2) >> f(3))))),
+      Seq(rules.combinatory.compositionAssoc1))
+
+    ProveEquiv.init().runCNF(
+      withArrayAndFuns(4, in => f =>
+        in |> map(f(0) >> (f(1) >> (f(2) >> f(3))))),
+      withArrayAndFuns(4, in => f =>
+        in |> map(((f(0) >> f(1)) >> f(2)) >> f(3))),
+      Seq(rules.combinatory.compositionAssoc2))
   }
 }
 
@@ -145,7 +162,7 @@ object Basic {
 
   def withArrayAndFuns(n: Int,
                        k: ToBeTyped[rc.Expr] => Seq[ToBeTyped[rc.Expr]] => ToBeTyped[rc.Expr]
-                      ): ToBeTyped[rc.Expr] = {
+                      ): rc.Expr = {
     impl { elemT: rct.DataType =>
       depFun((size: rct.Nat) => introduceDataFuns(n, _ => f => fun(size`.`elemT)(in => k(in)(f)))) }
   }

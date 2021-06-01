@@ -1,6 +1,7 @@
 package benchmarks.eqsat
 
 import rise.eqsat.{rules, ProveEquiv, BackoffScheduler, CuttingScheduler}
+import ProveEquiv.syntax._
 import rise.core.Expr
 import rise.core.DSL._
 import rise.core.DSL.Type._
@@ -44,6 +45,7 @@ object reorder {
     val gold312 = wrap(f => *(T) o T o ***(f) o T o *(T))
 
     ProveEquiv.init()
+      //.bidirectional()
       .withRunnerTransform(r => r.withIterationLimit(3))
       .withEndRules(Seq(
         rules.combinatory.compositionAssoc1,
@@ -58,7 +60,7 @@ object reorder {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) => depFun((p: Nat) =>
       depFun((dt1: DataType) => depFun((dt2: DataType) =>
       fun(i => fun(f =>
-        inner(i :: (n`.`m`.`o`.`p`.`dt1))(f) :: (n`.`m`.`o`.`p`.`dt2)
+        inner(i :: (n`.`n`.`n`.`n`.`dt1))(f) :: (n`.`n`.`n`.`n`.`dt2)
       ))))))))
     }
 
@@ -74,7 +76,7 @@ object reorder {
     // **(T) o ****(f) o **(T) =
     // *(T) o ****(f) o *(T) =
     // T o ****(f) o T
-    //  implies (untyped or polymorphic typed)
+    //  implies (untyped, polymorpic typed or same array dimensions)
     // = **(T) o *(T) o T o **(T) o *(T) o **(T) o ****(f) o
     //      **(T) o *(T) o **(T) o T o *(T) o **(T)
 
