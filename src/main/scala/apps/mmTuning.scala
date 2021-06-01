@@ -1,6 +1,6 @@
 package apps
 
-import java.io.{File, FileOutputStream, PrintWriter}
+import java.io.{BufferedWriter, File, FileOutputStream, FileWriter, PrintWriter}
 import mm._
 import opencl.executor.Executor
 import shine.OpenCL.{GlobalSize, LocalSize}
@@ -18,6 +18,7 @@ object mmTuning {
 //  private val N = 512
 //  private val M = 1024
 //  private val O = 1024
+  case class timestamps(init:Long, genExpr: Long, input: Long, genKernel: Long, run: Long, check: Long, cleanUp:Long, overall:Long)
 
   private def randGold(N:Int, M:Int, O:Int): (Array[Array[Float]], Array[Array[Float]], Array[Float]) = {
     val rand = new scala.util.Random
@@ -88,13 +89,18 @@ object mmTuning {
 
   // main
   def main(args: Array[String]): Unit = {
+    val overallStart = System.currentTimeMillis()
+    var times = Set.empty[timestamps]
+
+    val initStart = System.currentTimeMillis()
     Executor.loadLibrary()
     Executor.init()
+    val init = System.currentTimeMillis() - initStart
 
+    val inputStart = System.currentTimeMillis()
     val N = args(0).toInt
     val M = args(1).toInt
     val O = args(2).toInt
-
 
     // read in values from args
     val v3 = args(3).toInt
@@ -129,11 +135,16 @@ object mmTuning {
 //    val v7 = 128
 //    val v8 = 16
 
-    // generate kernel
-    val kernel = genMMKernel(v3, v4, v5, v6, v7, v8)
-
     // create random values
+    println("timestamp")
     val (at, b, gold) = randGold2(N,M,O)
+    val input = System.currentTimeMillis() - inputStart
+
+    // generate kernel
+    println("timestamp")
+    val genExprStart = System.currentTimeMillis()
+    val kernel = genMMKernel(v3, v4, v5, v6, v7, v8)
+    val genExpr = System.currentTimeMillis() - genExprStart
 
     // run kernel
     try{
@@ -142,25 +153,108 @@ object mmTuning {
 //      println("execute kernel")
 //      val result = runKernel(code, LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
 //      val result = runKernel(gen.OpenCLKernel(kernel), LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
+      println("timestamp")
+      val genKernelStart = System.currentTimeMillis()
+      try{
+        val magister = gen.opencl.kernel.fromExpr(kernel)
+        val genKernel = System.currentTimeMillis() - genKernelStart
 
-      val result = runKernel(gen.opencl.kernel.fromExpr(kernel), LocalSize((ls0, ls1)), GlobalSize((gs0, gs1)), at, b)
+        println("timestamp")
+        val runStart = System.currentTimeMillis()
+        try{
+          val result = runKernel(magister, LocalSize((ls0, ls1)), GlobalSize((gs0, gs1)), at, b)
+          val run = System.currentTimeMillis() - runStart
 
-//      val kernel2 = gen.OpenCLKernel(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(kernel, "")
+          //      val kernel2 = gen.OpenCLKernel(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(kernel, "")
 
-//      val runtime = Executor.execute(, ls0, ls1, 1, gs0, gs1, 1, (at, b))
+          //      val runtime = Executor.execute(, ls0, ls1, 1, gs0, gs1, 1, (at, b))
 
-      Executor.shutdown()
+          //      Executor.shutdown()
 
-      // check result
-      val testSame = util.assertSame(result._1, gold, "result is different from gold")
-//      println("unit: " + result._2.unit)
-      println(result._2.value)
+          // check result
+          println("timestamp")
+          val checkStart = System.currentTimeMillis()
+          try{
+            val testSame = util.assertSame(result._1, gold, "result is different from gold")
+            val check = System.currentTimeMillis() - checkStart
+            //      println("unit: " + result._2.unit)
+            println(result._2.value)
 
-//      val costfile = new PrintWriter(new FileOutputStream(new File("/home/jo/development/lift/atf/atfc/build/costfile.txt"), false))
-//      costfile.println(result._2.value.toString)
-//      costfile.close()
-      Executor.shutdown()
-      sys.exit(0)
+            //      val costfile = new PrintWriter(new FileOutputStream(new File("/home/jo/development/lift/atf/atfc/build/costfile.txt"), false))
+            //      costfile.println(result._2.value.toString)
+            //      costfile.close()
+            val cleanUpStart = System.currentTimeMillis()
+            Executor.shutdown()
+            val cleanUp = System.currentTimeMillis() - cleanUpStart
+
+            val overall = System.currentTimeMillis() - overallStart
+
+            // process times
+            val header = Files.exists(Paths.get("times.csv")) match {
+              case true => ""
+              case false => "N,M,O,v3,v4,v5,v6,v7,v8,runtime,init,genExpr,input,genKernel,run,check,cleanUp,overall\n"
+            }
+            val content = N.toString + "," + M.toString + "," + O.toString + "," + v3.toString + "," + v4.toString + "," + v5.toString + "," + v6.toString + "," + v7.toString + "," + v8.toString + "," + result._2.value.toString + "," + init.toString + "," + genExpr.toString + "," + input.toString + "," + genKernel.toString + "," + run.toString + "," + check.toString + "," + cleanUp.toString + "," + overall.toString + "\n"
+            val writer = new BufferedWriter(new FileWriter("times.csv", true));
+            writer.write(header + content);
+            writer.close();
+
+            sys.exit(0)
+          } catch{
+            case e:Throwable => {
+              val overall = System.currentTimeMillis() - overallStart
+
+              // process times
+              val header = Files.exists(Paths.get("times.csv")) match {
+                case true => ""
+                case false => "N,M,O,v3,v4,v5,v6,v7,v8,runtime,init,genExpr,input,genKernel,run,check,cleanUp,overall\n"
+              }
+              val content = N.toString + "," + M.toString + "," + O.toString + "," + v3.toString + "," + v4.toString + "," + v5.toString + "," + v6.toString + "," + v7.toString + "," + v8.toString + "," + result._2.value.toString + "," + init.toString + "," + genExpr.toString + "," + input.toString + "," + genKernel.toString + "," + run.toString + "," + "0" + "," + "0" + "," + overall.toString + "\n"
+              val writer = new BufferedWriter(new FileWriter("times.csv", true));
+              writer.write(header + content);
+              writer.close();
+
+              throw e
+            }
+          }
+
+        } catch{
+          case e:Throwable => {
+            val run = System.currentTimeMillis() - runStart
+            val overall = System.currentTimeMillis() - overallStart
+
+            // process times
+            val header = Files.exists(Paths.get("times.csv")) match {
+              case true => ""
+              case false => "N,M,O,v3,v4,v5,v6,v7,v8,runtime,init,genExpr,input,genKernel,run,check,cleanUp,overall\n"
+            }
+            val content = N.toString + "," + M.toString + "," + O.toString + "," + v3.toString + "," + v4.toString + "," + v5.toString + "," + v6.toString + "," + v7.toString + "," + v8.toString + "," + "0" + "," + init.toString + "," + genExpr.toString + "," + input.toString + "," + genKernel.toString + "," + run.toString + "," + "0" + "," + "0" + "," + overall.toString + "\n"
+            val writer = new BufferedWriter(new FileWriter("times.csv", true));
+            writer.write(header + content);
+            writer.close();
+
+            throw e
+          }
+        }
+
+      } catch{
+        case e:Throwable => {
+          val overall = System.currentTimeMillis() - overallStart
+          // process times
+          val header = Files.exists(Paths.get("times.csv")) match {
+            case true => ""
+            case false => "N,M,O,v3,v4,v5,v6,v7,v8,runtime,init,genExpr,input,genKernel,run,check,cleanUp,overall\n"
+          }
+          val content = N.toString + "," + M.toString + "," + O.toString + "," + v3.toString + "," + v4.toString + "," + v5.toString + "," + v6.toString + "," + v7.toString + "," + v8.toString + "," + "0" + "," + init.toString + "," + genExpr.toString + "," + input.toString + "," + "0" + "," + "0" + "," + "0" + "," + "0" + "," + overall.toString + "\n"
+          val writer = new BufferedWriter(new FileWriter("times.csv", true));
+          writer.write(header + content);
+          writer.close();
+
+          throw e
+        }
+
+      }
+
     }catch{
       case e:Throwable => {
         Executor.shutdown()
