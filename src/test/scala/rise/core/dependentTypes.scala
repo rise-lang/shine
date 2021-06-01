@@ -159,7 +159,7 @@ class dependentTypes extends test_util.Tests {
         depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))(array)
       ))
 
-    val inferred: Expr = infer(e)
+    val inferred: Expr = rise.core.DSL.infer(e)
     logger.debug(inferred)
     logger.debug(inferred.t)
     assert(inferred.t =~=
@@ -174,7 +174,7 @@ class dependentTypes extends test_util.Tests {
       depMapSeq(depFun((_: Nat) => reduceSeq(fun(x => fun(y => x + y)))(lf32(0.0f))))(array)
     ))
 
-    val inferred: Expr = infer(e)
+    val inferred: Expr = rise.core.DSL.infer(e)
     logger.debug(inferred)
     logger.debug(inferred.t)
     assert(inferred.t =~=
@@ -203,7 +203,7 @@ class dependentTypes extends test_util.Tests {
       }
     ))))
 
-    val inferred: Expr = infer(e)
+    val inferred: Expr = rise.core.DSL.infer(e)
     logger.debug(inferred)
     logger.debug(inferred.t)
     function.asStringFromExpr(inferred)

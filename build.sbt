@@ -5,7 +5,7 @@ lazy val riseAndShine = (project in file("."))
     name          := "riseAndShine",
     organization := "org.rise-lang",
     version       := "1.0",
-    scalaVersion := "3.0.0-RC3",
+    scalaVersion := "3.0.0",
 
     javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build",
       "-DexecuteCudaTests=false", "-Xss26m"),
@@ -25,13 +25,13 @@ lazy val riseAndShine = (project in file("."))
     fork := true,
 
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.2",
+      "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.3",
       // testing
       "junit" % "junit" % "4.11",
-      "org.scalatest" %% "scalatest" % "3.2.8" % "test",
+      "org.scalatest" %% "scalatest" % "3.2.9" % "test",
       "org.apache.logging.log4j" % "log4j-core" % "2.14.1",
 //      ("org.apache.logging.log4j" %% "log4j-api-scala" % "12.0").cross(CrossVersion.for3Use2_13),
-      "org.wvlet.airframe" %% "airframe-log" % "21.4.1",
+      "org.wvlet.airframe" %% "airframe-log" % "21.5.4",
         // json
       ("com.typesafe.play" %% "play-json" % "2.9.2").cross(CrossVersion.for3Use2_13)
     ),
@@ -70,7 +70,7 @@ lazy val docs       = (project in file("riseAndShine-docs"))
   .settings(
     moduleName := "riseAndShine-docs",
     mdocOut := file("docs-website/docs"),
-    scalaVersion := "3.0.0-RC3",
+    scalaVersion := "3.0.0",
   )
   .enablePlugins(MdocPlugin)
   .dependsOn(riseAndShine)
