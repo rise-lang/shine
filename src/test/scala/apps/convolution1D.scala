@@ -11,6 +11,7 @@ import rise.core._
 import rise.core.types._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
+import reflect.Selectable.reflectiveSelectable
 
 class convolution1D extends test_util.Tests {
   val binomialWeights = binomialWeightsV
@@ -21,7 +22,7 @@ class convolution1D extends test_util.Tests {
   ))
 
   val binomial: ToBeTyped[Expr] =
-    slide(3)(1) >> map(fun(nbh => dot(nbh)(binomialWeights)))
+    slide(3)(1) >> map(fun(nbh => separableConvolution2D.dot(nbh)(binomialWeights)))
 
   val binomialSeq: ToBeTyped[Expr] =
     slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
@@ -49,10 +50,10 @@ class convolution1D extends test_util.Tests {
     tileEpilogue(32)(f)(f)
   }
 
-  val binomialTileDep: ToBeTyped[Expr] = impl{ n: Nat =>
+  val binomialTileDep: ToBeTyped[Expr] = impl{ (n: Nat) =>
     // depSlide(34)(32) >>
     depTile(32)(
-      depMapSeq(depFun { i: Nat => // TODO: depMapGlobal(0)
+      depMapSeq(depFun { (i: Nat) => // TODO: depMapGlobal(0)
         import arithexpr.arithmetic.IfThenElse
         import arithexpr.arithmetic.BoolExpr.arithPredicate
         import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
@@ -149,7 +150,7 @@ class convolution1D extends test_util.Tests {
       depFun((n: Nat) => fun(((n+2)`.`f32) ->: (n`.`f32))(a =>
         a |>
         depSlide(n+2)(34)(32) >>
-        depMapSeq(depFun { i: Nat =>
+        depMapSeq(depFun { (i: Nat) =>
           import arithexpr.arithmetic.IfThenElse
           import arithexpr.arithmetic.BoolExpr.arithPredicate
           import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator

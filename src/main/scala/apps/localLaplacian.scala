@@ -139,14 +139,14 @@ object localLaplacian {
     )))
   ))
 
-  def sub3D: ToBeTyped[Expr] = impl { m: Nat => impl { n: Nat => impl { o: Nat => fun(
+  def sub3D: ToBeTyped[Expr] = impl { (m: Nat) => impl { (n: Nat) => impl { (o: Nat) => fun(
     (m`.`n`.`o`.`f32) ->: (m`.`n`.`o`.`f32) ->: (m`.`n`.`o`.`f32)
   )((a, b) =>
     zipND(3)(a, b) |> map(map(map(fun(p => fst(p) - snd(p)))))
   )}}}
 
   def laplacianOutput: ToBeTyped[Expr] =
-    impl { h: Nat => impl { w: Nat => impl { levels: Nat => fun(
+    impl { (h: Nat) => impl { (w: Nat) => impl { (levels: Nat) => fun(
       (h`.`w`.`f32) ->: (h`.`w`.`levels`.`f32) ->: (h`.`w`.`f32)
     )((inGPyramid, lPyramid) =>
       zipND(2)(inGPyramid, lPyramid) |> map(map(fun { p => // h.w.
@@ -157,7 +157,7 @@ object localLaplacian {
       }))
     )}}}
 
-  def add2D: ToBeTyped[Expr] = impl { m: Nat => impl { n: Nat => fun(
+  def add2D: ToBeTyped[Expr] = impl { (m: Nat) => impl { (n: Nat) => fun(
     (m`.`n`.`f32) ->: (m`.`n`.`f32) ->: (m`.`n`.`f32)
   )((a, b) =>
     zipND(2)(a, b) |> map(map(fun(p => fst(p) + snd(p))))
@@ -224,17 +224,17 @@ object localLaplacian {
       lookup(levels)(h+3)(w+3)(beta)(r)(g) |> fun(l =>
       // Make the processed Gaussian pyramid
       buildPyramid(0, pyramidLevels - 1, l, (_, last) =>
-        impl { hp: Nat => impl { wp: Nat => downsample3D(hp)(wp)(levels)(last) }},
+        impl { (hp: Nat) => impl { (wp: Nat) => downsample3D(hp)(wp)(levels)(last) }},
         gPyramid =>
       // Get its laplacian pyramid
       buildPyramid(pyramidLevels - 1, 0, gPyramid.last, (i, _) =>
-        impl { hp: Nat => impl { wp: Nat =>
+        impl { (hp: Nat) => impl { (wp: Nat) =>
           sub3D(gPyramid(i), upsample3D(hp)(wp)(levels)(gPyramid(i + 1)))
         }},
         lPyramid =>
       // Make the Gaussian pyramid of the input
       buildPyramid(0, pyramidLevels - 1, g, (_, last) =>
-        impl { hp: Nat => impl { wp: Nat => downsample2D(hp)(wp)(last) }},
+        impl { (hp: Nat) => impl { (wp: Nat) => downsample2D(hp)(wp)(last) }},
         inGPyramid =>
       // Make the laplacian pyramid of the output
       buildPyramidRec(-1, pyramidLevels - 1, 1, Seq(), (i, _) =>
@@ -242,7 +242,7 @@ object localLaplacian {
         outLPyramid =>
       // Make the gaussian pyramid of the output
       buildPyramid(pyramidLevels - 1, 0, outLPyramid.last, (i, last) =>
-        impl { hp: Nat => impl { wp: Nat =>
+        impl { (hp: Nat) => impl { (wp: Nat) =>
           add2D(upsample2D(hp)(wp)(last), outLPyramid(i))
         }},
         outGPyramid =>
@@ -282,20 +282,20 @@ object localLaplacian {
         lookup(levels)(h+3)(w+3)(beta)(r)(g) |> mapPar(mapSeq(mapSeq(id))) |> store(l =>
         // Make the processed Gaussian pyramid
         buildPyramid(0, pyramidLevels - 1, l, (_, last) =>
-          impl { hp: Nat => impl { wp: Nat =>
+          impl { (hp: Nat) => impl { (wp: Nat) =>
             downsample3D(hp)(wp)(levels)(last) |> mapPar(mapSeq(mapSeq(id))) |> toMem// |> letf
           }},
           gPyramid =>
         // Get its laplacian pyramid
         buildPyramid(pyramidLevels - 1, 0, gPyramid.last, (i, _) =>
-          impl { hp: Nat => impl { wp: Nat =>
+          impl { (hp: Nat) => impl { (wp: Nat) =>
             sub3D(gPyramid(i), upsample3D(hp)(wp)(levels)(gPyramid(i + 1))) |>
             mapPar(mapSeq(mapSeq(id))) |> toMem// |> letf
           }},
           lPyramid =>
         // Make the Gaussian pyramid of the input
         buildPyramid(0, pyramidLevels - 1, g, (_, last) =>
-          impl { hp: Nat => impl { wp: Nat =>
+          impl { (hp: Nat) => impl { (wp: Nat) =>
             downsample2D(hp)(wp)(last) |> mapPar(mapSeq(id)) |> toMem// |> letf
           }},
           inGPyramid =>
@@ -306,7 +306,7 @@ object localLaplacian {
           outLPyramid =>
         // Make the gaussian pyramid of the output
         buildPyramid(pyramidLevels - 1, 0, outLPyramid.last, (i, last) =>
-          impl { hp: Nat => impl { wp: Nat =>
+          impl { (hp: Nat) => impl { (wp: Nat) =>
             add2D(upsample2D(hp)(wp)(last), outLPyramid(i)) |>
             mapPar(mapSeq(id)) |> toMem// |> letf
           }},

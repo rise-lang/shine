@@ -25,7 +25,7 @@ object printType {
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
     override def setType(t: Type): Primitive = Primitive(msg)(t)
 
-    override def typeScheme: Type = impl{ t: TypeIdentifier => t ->: t }
+    override def typeScheme: Type = impl{ (t: TypeIdentifier) => t ->: t }
   }
 
   def unapply(arg: Expr): Option[String] = arg match {

@@ -14,8 +14,8 @@ object depTile extends Builder {
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
     override def setType(ty: Type): Primitive = Primitive()(ty)
     override def typeScheme: Type =
-      impl{ n: Nat => expl((tile: Nat) => impl{ halo: Nat =>
-        impl{ s: DataType => impl{ t: DataType =>
+      impl{ (n: Nat) => expl((tile: Nat) => impl{ (halo: Nat) =>
+        impl{ (s: DataType) => impl{ (t: DataType) =>
           import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
           import arithexpr.arithmetic.BoolExpr.arithPredicate
           import arithexpr.arithmetic.IfThenElse

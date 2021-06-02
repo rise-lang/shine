@@ -6,17 +6,18 @@ import rise.core.DSL.Type._
 import rise.core.primitives.{let => _, _}
 import rise.core.types._
 import HighLevelConstructs.reorderWithStride
+import reflect.Selectable.reflectiveSelectable
 
 object gemv {
   // we can use implicit type parameters and type annotations to specify the function type of mult
-  val mult = impl{ dt: DataType => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt) }
+  val mult = impl{ (dt: DataType) => fun(x => fst(x) * snd(x)) :: ((dt x dt) ->: dt) }
   val add = fun(x => fun(y => x + y))
-  val scal = impl { n: Nat =>
+  val scal = impl { (n: Nat) =>
     fun(xs => fun(a =>
       map(fun(x => a * x))(xs)
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
   }
-  val scalSeq = impl { n: Nat =>
+  val scalSeq = impl { (n: Nat) =>
     fun(xs => fun(a =>
       mapSeq(fun(x => a * x))(xs)
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
@@ -29,7 +30,7 @@ object gemv {
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
     zip(map(fun(row => alpha * dot(row, xs)))(mat))(scal(ys, beta)) |>
-    map(fun(x => x._1 + x._2))
+    map(fun(x => fst(x) + snd(x)))
   ))
 
   val gemvSequential = depFun((n: Nat, m: Nat) => fun(
@@ -37,7 +38,7 @@ object gemv {
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
     toMem(zip(mapSeq(fun(row => alpha * dotSeq(row, xs)))(mat))(scalSeq(ys, beta))) |>
-    mapSeq(fun(x => x._1 + x._2))
+    mapSeq(fun(x => fst(x) + snd(x)))
   ))
 
   object ocl {

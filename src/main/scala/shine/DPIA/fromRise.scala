@@ -19,7 +19,7 @@ object fromRise {
       val (fV, fT) = r.IsClosedForm.varsToClose(expr)
       throw new Exception(s"expression is not in closed form: $expr\n\n with type ${expr.t}\n free vars: $fV\n free type vars: $fT\n\n")
     }
-    val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
+    val bnfExpr = normalize(betaReduction)(expr).get
     val rwMap = inferAccess(bnfExpr)
     expression(bnfExpr, rwMap)
   }
@@ -42,11 +42,11 @@ object fromRise {
 
     case r.DepLambda(kind, x, e) => x match {
       case ni: rt.NatIdentifier =>
-        DepLambda(NatKind, natIdentifier(ni))(expression(e, ptMap))
+        DepLambda(NatKind, natIdentifier(ni), expression(e, ptMap))
       case dti: rt.DataTypeIdentifier =>
-        DepLambda(DataKind, dataTypeIdentifier(dti))(expression(e, ptMap))
+        DepLambda(DataKind, dataTypeIdentifier(dti), expression(e, ptMap))
       case addri: rt.AddressSpaceIdentifier =>
-        DepLambda(AddressSpaceKind, addressSpaceIdentifier(addri))(expression(e, ptMap))
+        DepLambda(AddressSpaceKind, addressSpaceIdentifier(addri), expression(e, ptMap))
     }
 
     case r.DepApp(kind, f, x) =>
@@ -97,12 +97,8 @@ object fromRise {
     Lambda(x, f(x))
   }
 
-  object depFun {
-    def apply[T, I <: Kind.Identifier](kind: Kind[T, I], x: I): Object {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
-    } = new {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
-    }
+  case class depFun[T, I <: Kind.Identifier](kind: Kind[T, I], x: I) {
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
   }
 
   private def primitive(p: r.Primitive,

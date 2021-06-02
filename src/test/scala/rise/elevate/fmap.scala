@@ -1,7 +1,7 @@
 package rise.elevate
 
 import elevate.core.strategies.traversal._
-import elevate.core.{Failure, Success}
+import elevate.core.RewriteResult._
 import rise.elevate.util._
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal._
@@ -9,9 +9,9 @@ import rise.elevate.rules.traversal.default._
 
 class fmap extends test_util.Tests {
 
-  val fmapRNF = rise.elevate.strategies.traversal.fmapRNF(RiseTraversable)
+  val fmapRNF = rise.elevate.strategies.traversal.fmapRNF(using RiseTraversable)
 
-  val mapped = rise.elevate.strategies.traversal.mapped(RiseTraversable)
+  val mapped = rise.elevate.strategies.traversal.mapped(using RiseTraversable)
 
   test("fmap basic level0") {
     assert(betaEtaEquals(

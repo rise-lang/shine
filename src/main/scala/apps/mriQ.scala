@@ -7,6 +7,7 @@ import rise.core.DSL.Type._
 import rise.core.types._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
+import reflect.Selectable.reflectiveSelectable
 
 object mriQ {
   private val phiMag = foreignFun("phiMag",
@@ -34,13 +35,13 @@ object mriQ {
   val computePhiMagHighLevel: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
-    map(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
+    map(fun(t => phiMag(fst(t))(snd(t))))(zip(phiR)(phiI))
   ))
 
   val computePhiMagOcl: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
-    mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
+    mapGlobal(fun(t => phiMag(fst(t))(snd(t))))(zip(phiR)(phiI))
   ))
 
   // FIXME: could not find original Lift expression, this is made up
@@ -50,8 +51,8 @@ object mriQ {
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
       map(fun(t =>
           kvalues |> reduceSeq(fun((acc, p) =>
-            qFun(t._1)(t._2._1)(t._2._2._1)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
-          ))(makePair(t._2._2._2._1)(t._2._2._2._2))
+            qFun(fst(t))(fst(snd(t)))(fst(snd(snd(t))))(fst(fst(fst(p))))(snd(fst(fst(p))))(snd(fst(p)))(snd(p))(acc)
+          ))(makePair(fst(snd(snd(snd(t)))))(snd(snd(snd(snd(t))))))
       ))
   ))
 
@@ -60,15 +61,15 @@ object mriQ {
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
     mapGlobal(fun(t =>
-      let (toPrivate(t._1))
+      let (toPrivate(fst(t)))
       be (sX =>
-        let (toPrivate(t._2._1))
+        let (toPrivate(fst(snd(t))))
         be (sY =>
-          let (toPrivate(t._2._2._1))
+          let (toPrivate(fst(snd(snd(t)))))
           be (sZ =>
             kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
-              qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
-            ))(makePair(t._2._2._2._1)(t._2._2._2._2))
+              qFun(sX)(sY)(sZ)(fst(fst(fst(p))))(snd(fst(fst(p))))(snd(fst(p)))(snd(p))(acc)
+            ))(makePair(fst(snd(snd(snd(t)))))(snd(snd(snd(snd(t))))))
           )
         )
       )

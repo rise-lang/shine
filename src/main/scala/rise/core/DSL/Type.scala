@@ -182,7 +182,7 @@ object Type {
   }
 
 
-  def freshTypeIdentifier: Type = impl { x: TypeIdentifier => x }
+  def freshTypeIdentifier: Type = impl { (x: TypeIdentifier) => x }
 
   implicit final class TypeConstructors(private val r: Type) extends AnyVal {
     @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
@@ -190,7 +190,7 @@ object Type {
 
   object ->: {
     def unapply[T <: Type, U <: Type](funType: FunType[T, U]): Option[(T, U)] = {
-      FunType.unapply(funType)
+      Some((funType.inT, funType.outT))
     }
   }
 

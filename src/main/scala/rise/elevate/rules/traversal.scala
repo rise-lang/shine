@@ -1,6 +1,7 @@
 package rise.elevate.rules
 
 import elevate.core._
+import elevate.core.RewriteResult._
 import rise.elevate.Rise
 import rise.core._
 import rise.core.types._

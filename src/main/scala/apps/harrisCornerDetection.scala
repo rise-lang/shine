@@ -10,6 +10,7 @@ import util.gen
 import shine.OpenCL.KernelExecutor._
 
 import scala.reflect.ClassTag
+import reflect.Selectable.reflectiveSelectable
 
 object harrisCornerDetection {
   private val C2D = separableConvolution2D
@@ -429,11 +430,11 @@ object harrisCornerDetection {
   ): Array[Array[Float]] = {
     val ix = C2D.computeGold(h, w, input, C2D.sobelXWeights2d)
     val iy = C2D.computeGold(h, w, input, C2D.sobelYWeights2d)
-    val ixx = computePointwiseGold(ix, { x: Float => x * x })
+    val ixx = computePointwiseGold(ix, { (x: Float) => x * x })
     val ixy = computePointwiseGold[(Float, Float), Float](zip2D(ix, iy), {
       case (a, b) => a * b
     })
-    val iyy = computePointwiseGold(iy, { x: Float => x * x })
+    val iyy = computePointwiseGold(iy, { (x: Float) => x * x })
     val sxx = C2D.computeGold(h, w, ixx, C2D.binomialWeights2d)
     val sxy = C2D.computeGold(h, w, ixy, C2D.binomialWeights2d)
     val syy = C2D.computeGold(h, w, iyy, C2D.binomialWeights2d)

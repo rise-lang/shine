@@ -78,7 +78,7 @@ package object util {
     name: String,
     r: elevate.core.RewriteResult[rise.elevate.Rise]
   ): Unit = r match {
-    case elevate.core.Success(p) => dotPrintTmp(name, p)
+    case elevate.core.RewriteResult.Success(p) => dotPrintTmp(name, p)
     case _ =>
   }
 

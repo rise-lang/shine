@@ -4,8 +4,9 @@ import elevate.core.strategies.{Traversable, basic}
 import elevate.core.strategies.basic.{applyNTimes, id}
 import elevate.core.strategies.traversal._
 import rise.elevate.strategies.traversal._
-import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import elevate.macros.StrategyMacro.strategy
+import elevate.core.{RewriteResult, Strategy}
+import elevate.core.RewriteResult._
+import elevate.core.macros.strategy
 import rise.elevate.Rise
 import rise.elevate.rules.algorithmic.fuseReduceMap
 import rise.elevate.rules.movement._
@@ -24,7 +25,7 @@ object algorithmic {
 
   // fission of the first function to be applied inside a map
   // *(g >> .. >> f) -> *g >> *(.. >> f)
-  @strategy def mapFirstFission: Strategy[Rise] = e => {
+  def mapFirstFission: Strategy[Rise] = strategy("mapFirstFission", e => {
     // TODO: this should be expressed with elevate strategies
     @scala.annotation.tailrec
     def mapFirstFissionRec(x: Identifier, f: ToBeTyped[Rise], gx: Rise): RewriteResult[Rise] = {
@@ -43,11 +44,11 @@ object algorithmic {
       case App(primitives.map(), Lambda(x, gx)) => mapFirstFissionRec(x, fun(e => e), gx)
       case _                                    => Failure(mapFirstFission)
     }
-  }
+  })
 
   // fission of all the functions chained inside a map
   // *(g >> .. >> f) -> *g >> .. >> *f
-  @strategy def mapFullFission: Strategy[Rise] = e => {
+  def mapFullFission: Strategy[Rise] = strategy("mapFullFission", e => {
     // TODO: this should be expressed with elevate strategies
     def mapFullFissionRec(x: Identifier, gx: Rise): Option[ToBeTyped[Rise]] = {
       gx match {
@@ -68,7 +69,7 @@ object algorithmic {
       }
       case _ => Failure(mapFullFission)
     }
-  }
+  })
 
   //scalastyle:off
   def normForReorder(implicit ev: Traversable[Rise]): Strategy[Rise] =
@@ -76,9 +77,10 @@ object algorithmic {
     (fuseReduceMap `@` topDown[Rise]) `;;`
     (fuseReduceMap `@` topDown[Rise]) `;;` RNF()
 
-  @strategy def reorder(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = normForReorder `;` (reorderRec(l) `@` topDown[Rise])
+  def reorder(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] =
+    strategy("reorder", normForReorder `;` (reorderRec(l) `@` topDown[Rise]))
 
-  @strategy def reorderRec(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
+  def reorderRec(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = strategy("reorderRec", e => {
 
     def freduce(s: Strategy[Rise]): Strategy[Rise] =
       function(function(argumentOf(reduceSeq.primitive, body(body(s)))))
@@ -114,5 +116,5 @@ object algorithmic {
       case Nil => id(e)
       case _ => Failure(reorderRec(l))
     }
-  }
+  })
 }

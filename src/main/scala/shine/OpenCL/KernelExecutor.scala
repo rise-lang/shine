@@ -85,7 +85,7 @@ object KernelExecutor {
       */
     def as[F <: FunctionHelper](localSize: LocalSize, globalSize: GlobalSize)
                                (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
-      hArgs: F#T => {
+      (hArgs: F#T) => {
         val args: List[Any] = hArgs.toList
         assert(kernel.inputParams.length == args.length)
 

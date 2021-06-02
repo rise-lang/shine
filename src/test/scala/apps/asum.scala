@@ -14,6 +14,7 @@ import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen.c.function
 
 import scala.util.Random
+import reflect.Selectable.reflectiveSelectable
 
 //noinspection TypeAnnotation
 class asum extends test_util.TestsWithExecutor {

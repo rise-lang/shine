@@ -28,23 +28,23 @@ object TopLevel {
         case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
             case i: TypeIdentifier =>
-              s.copy(ts = ts ++ Map(i -> impl{ x: TypeIdentifier => x }))
+              s.copy(ts = ts ++ Map(i -> impl{ (x: TypeIdentifier) => x }))
             case i: DataTypeIdentifier =>
-              s.copy(ts = ts ++ Map(i -> impl{ x: DataType => x }))
+              s.copy(ts = ts ++ Map(i -> impl{ (x: DataType) => x }))
             case i: NatIdentifier =>
-              s.copy(ns = ns ++ Map(i -> impl{ x: Nat => x }))
+              s.copy(ns = ns ++ Map(i -> impl{ (x: Nat) => x }))
             case i: AddressSpaceIdentifier =>
-              s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
+              s.copy(as = as ++ Map(i -> impl{ (x: AddressSpace) => x }))
             case i: MatrixLayoutIdentifier =>
-              s.copy(ms = ms ++ Map(i -> impl{ x: MatrixLayout => x }))
+              s.copy(ms = ms ++ Map(i -> impl{ (x: MatrixLayout) => x }))
             case i: FragmentKindIdentifier =>
-              s.copy(fs = fs ++ Map(i -> impl{ x: FragmentKind => x }))
+              s.copy(fs = fs ++ Map(i -> impl{ (x: FragmentKind) => x }))
             case i: NatToDataIdentifier =>
-              s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
+              s.copy(n2ds = n2ds ++ Map(i -> impl{ (x: NatToData) => x }))
             case i: NatToNatIdentifier =>
-              s.copy(n2ns = n2ns ++ Map(i -> impl{ x: NatToNat => x }))
+              s.copy(n2ns = n2ns ++ Map(i -> impl{ (x: NatToNat) => x }))
             case i: NatCollectionIdentifier =>
-              s.copy(natColls = natColls ++ Map(i -> impl{ x: NatCollection => x }))
+              s.copy(natColls = natColls ++ Map(i -> impl{ (x: NatCollection) => x }))
             case i =>
               throw TypeException(s"${i.getClass} is not supported yet")
           }
@@ -63,10 +63,10 @@ object TopLevel {
     traverse(t, new Visitor(ftvSubs, sol) {
         override def `type`[T <: Type] : T => Pure[T] = {
           case i: TypeIdentifier =>
-            ftvSubs.ts.get(i) match {
+            this.ftvSubs.ts.get(i) match {
               case None => super.`type`(i.asInstanceOf[T])
               case Some(j) =>
-                sol.ts.get(j) match {
+                this.sol.ts.get(j) match {
                   case Some(x) => return_(x.asInstanceOf[T])
                   case None    => super.`type`(i.asInstanceOf[T])
                 }

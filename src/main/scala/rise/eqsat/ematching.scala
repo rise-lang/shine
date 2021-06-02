@@ -133,9 +133,9 @@ object ematching {
   }
 
   /** A node without children for matching purposes */
-  type MNode = Node[(), (), ()]
-  type MNatNode = NatNode[()]
-  type MTypeNode = TypeNode[(), (), ()]
+  type MNode = Node[Unit, Unit, Unit]
+  type MNatNode = NatNode[Unit]
+  type MTypeNode = TypeNode[Unit, Unit, Unit]
 
   def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
     import scala.math.Ordering.Implicits._

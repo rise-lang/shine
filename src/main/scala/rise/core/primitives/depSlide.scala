@@ -14,7 +14,7 @@ object depSlide extends Builder {
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
     override def setType(ty: Type): Primitive = Primitive()(ty)
     override def typeScheme: Type =
-      expl{ n: Nat => expl((sz: Nat) => expl((sp: Nat) => impl{ t: DataType =>
+      expl{ (n: Nat) => expl((sz: Nat) => expl((sp: Nat) => impl{ (t: DataType) =>
         import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
         import arithexpr.arithmetic.BoolExpr.arithPredicate
         import arithexpr.arithmetic.IfThenElse

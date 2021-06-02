@@ -100,14 +100,14 @@ object cameraPipeline {
     )
   }
 
-  def interleaveX: ToBeTyped[Expr] = impl{ dt: DataType => impl{ h: Nat => impl{ w: Nat => fun(
+  def interleaveX: ToBeTyped[Expr] = impl{ (dt: DataType) => impl{ (h: Nat) => impl{ (w: Nat) => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: (h`.`(2*w)`.`dt)
   )((a, b) =>
     generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
     transpose >> map(transpose >> join)
   ) }}}
 
-  def interleaveY: ToBeTyped[Expr] = impl{ dt: DataType => impl{ h: Nat => impl{ w: Nat => fun(
+  def interleaveY: ToBeTyped[Expr] = impl{ (dt: DataType) => impl{ (h: Nat) => impl{ (w: Nat) => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: ((2*h)`.`w`.`dt)
   )((a, b) =>
     generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
@@ -280,7 +280,7 @@ object cameraPipeline {
       (lf32(1.0f) / kelvin - lf32(1.0f / 3200)) / lf32(1.0f / 7000 - 1.0f / 3200)
     (
       zipND(2)(matrix_3200, matrix_7000) |>
-        map(map(fun(p => p._1 * alpha + p._2 * (lf32(1.0f) - alpha)))) >>
+        map(map(fun(p => fst(p) * alpha + snd(p) * (lf32(1.0f) - alpha)))) >>
           map(map(fun(v => cast(v * lf32(256.0f)) :: i16))) // Q8.8 fixed point
       ) |> fun(matrix =>
         input |> transpose >>
@@ -434,8 +434,8 @@ object cameraPipeline {
       //  mapSeq(mapSeqUnroll(fun(x => x)))
       // )) >> join >> map(transpose) >> transpose >>
       // --
-      map(impl{ w: Nat => map(drop(1) >> take(w)) } >>
-        impl{ h: Nat => drop(1) >> take(h) }) >>
+      map(impl{ (w: Nat) => map(drop(1) >> take(w)) } >>
+        impl{ (h: Nat) => drop(1) >> take(h) }) >>
       fun(x => color_correct(2*h+2)(2*w+2)(hm)(wm)(x)
         (matrix_3200)(matrix_7000)(color_temp)) >>
       // TODO: reorder and store with elevate

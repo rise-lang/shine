@@ -22,14 +22,14 @@ import rise.elevate.NormalizedThen
 object defaultStrategies {
 
   val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
-    traversal.outermost(default.RiseTraversable)
+    traversal.outermost(using default.RiseTraversable)
   val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
-    traversal.innermost(default.RiseTraversable)
+    traversal.innermost(using default.RiseTraversable)
 
 
   // -- BASELINE ---------------------------------------------------------------
 
-  val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
+  val baseline: Strategy[Rise] = DFNF()(using default.RiseTraversable) `;`
     fuseReduceMap `@` topDown[Rise]
 
 
@@ -69,7 +69,7 @@ object defaultStrategies {
   val permuteB: Strategy[Rise] =
     splitJoin2(32) `;` DFNF() `;` argument(idAfter) `;`
       topDown(liftId()) `;` topDown(createTransposePair) `;` RNF() `;`
-      argument(argument(idAfter)) `;` normalize.apply(liftId()) `;`
+      argument(argument(idAfter)) `;` normalize(liftId()) `;`
       topDown(idToCopy)
 
   val packB: Strategy[Rise] =

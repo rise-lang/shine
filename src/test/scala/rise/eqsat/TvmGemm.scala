@@ -6,7 +6,7 @@ import Basic.proveEquiv
 
 class TvmGemm extends test_util.Tests {
   test("TVM GEMM") {
-    val mm: Expr = tvmGemm.mm
+    val mm: rise.core.Expr = tvmGemm.mm
     val baseline = tvmGemm.baseline(mm).get
     val blocking = tvmGemm.blocking(mm).get
     val vectorization = tvmGemm.vectorization(mm).get

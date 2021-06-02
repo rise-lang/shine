@@ -8,6 +8,7 @@ import HighLevelConstructs.padClamp2D
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 import util.gen.c.function
+import reflect.Selectable.reflectiveSelectable
 
 class Pad extends test_util.Tests {
   private val id = fun(x => x)

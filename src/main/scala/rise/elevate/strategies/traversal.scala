@@ -1,13 +1,13 @@
 package rise.elevate.strategies
 
 import elevate.core._
+import elevate.core.RewriteResult._
 import elevate.core.strategies.{Traversable, basic}
 import rise.core.primitives._
 import rise.elevate.rules.algorithmic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
-import elevate.macros.CombinatorMacro.combinator
-import elevate.macros.StrategyMacro.strategy
+import elevate.core.macros._
 import rise.elevate.Rise
 import rise.elevate.rules.traversal._
 import rise.elevate.strategies.algorithmic._
@@ -21,31 +21,27 @@ object traversal {
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  @combinator
   def fmap: Strategy[Rise] => Strategy[Rise] =
-    s => function(argumentOf(map.primitive, body(s)))
+    transformer("fmap", (s: Strategy[Rise]) => function(argumentOf(map.primitive, body(s))))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission
-  @combinator
-  def fmapRNF(implicit ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] =
-    s => DFNF() `;` mapFusion `;`
+  def fmapRNF(using ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] = transformer("fmapRNF",
+    (s: Strategy[Rise]) => DFNF() `;` mapFusion `;`
          DFNF() `;` fmap(s) `;`
-         DFNF() `;` one(mapFullFission)
+         DFNF() `;` one(mapFullFission))
 
   // applying a strategy to an expression nested in one or multiple lift `map`s
-  @combinator
-  def mapped(implicit ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] =
-    s => s <+ (e => fmapRNF(ev)(mapped(ev)(s))(e))
+  def mapped(using ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] =
+    transformer("mapped", s => s <+ (e => fmapRNF(using ev)(mapped(using ev)(s))(e)))
 
   // moves along RNF-normalized expression
   // e.g., expr == ***f o ****g o *h
   // move(0)(s) == s(***f o ****g o *h)
   // move(1)(s) == s(****g o *h)
   // move(2)(s) == s(*h)
-  @combinator
   def moveTowardsArgument(i: Int): Strategy[Rise] => Strategy[Rise] =
-    s => applyNTimes(i)((e: Strategy[Rise]) => argument(e))(s)
+    transformer("moveTowardsArgument", (s: Strategy[Rise]) => applyNTimes(i)((e: Strategy[Rise]) => argument(e))(s))
 
   // TRAVERSAL DSL as described in ICFP'20 /////////////////////////////////////
   implicit class AtHelper[P](s: Strategy[P]) {
@@ -55,39 +51,30 @@ object traversal {
       traversal(s)
   }
 
-  def outermost: Strategy[Rise] => Strategy[Rise] => Strategy[Rise] =
-    outermost(default.RiseTraversable)
+  def outermost(using ev: Traversable[Rise] = default.RiseTraversable): Strategy[Rise] => Strategy[Rise] => Strategy[Rise] =
+    combinator("outermost", {
+      predicate => s => topDown(predicate `;` s)
+    })
 
-  @combinator
-  def outermost(implicit ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] => Strategy[Rise] = {
-    predicate => s => topDown(predicate `;` s)
-  }
+  def innermost(using ev: Traversable[Rise] = default.RiseTraversable): Strategy[Rise] => Strategy[Rise] => Strategy[Rise] =
+    combinator("innermost", {
+      predicate => s => bottomUp(predicate `;` s)
+    })
 
-  def innermost: Strategy[Rise] => Strategy[Rise] => Strategy[Rise] =
-    traversal.innermost(default.RiseTraversable)
-
-  @combinator
-  def innermost(implicit ev: Traversable[Rise]): Strategy[Rise] => Strategy[Rise] => Strategy[Rise] = {
-    predicate => s => bottomUp(predicate `;` s)
-  }
-
-  @combinator
   def everywhere: Strategy[Rise] => Strategy[Rise] =
-    s => basic.normalize(default.RiseTraversable)(s)
+    transformer("everywhere", (s: Strategy[Rise]) => basic.normalize(s)(using default.RiseTraversable))
 
-  @combinator
   def check: Strategy[Rise] => Strategy[Rise] => Strategy[Rise] =
-    predicate => predicate `;` _
+    combinator("check", predicate => predicate `;` _)
 
-  @strategy
-  def mapNest(d: Int): Strategy[Rise] = p => (d match {
+  def mapNest(d: Int): Strategy[Rise] = strategy("mapNest", p => (d match {
     case x if x == 0 => Success(p)
     case x if x < 0  => Failure(mapNest(d))
     case _ => fmap(mapNest(d-1))(p)
-  })
+  }))
 
-  def blocking(implicit ev: Traversable[Rise]): Strategy[Rise] = {
-    basic.id `@` outermost(ev)(mapNest(2))
-    basic.id `@` outermost(ev)(isReduce)
+  def blocking(using ev: Traversable[Rise]): Strategy[Rise] = {
+    basic.id `@` outermost(using ev)(mapNest(2))
+    basic.id `@` outermost(using ev)(isReduce)
   }
 }

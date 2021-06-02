@@ -14,6 +14,7 @@ import util.gen
 import util.gen.c.function
 
 import scala.language.postfixOps
+import reflect.Selectable.reflectiveSelectable
 
 class Reduce extends test_util.TestsWithExecutor {
   val add = fun(a => fun(b => a + b))
@@ -66,7 +67,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(arr => arr
         |> oclReduceSeq (AddressSpace.Private)
-          (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t._1 + t._2))))
+          (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => fst(t) + snd(t)))))
           (initExp (n))
         |> mapSeq (fun(x => x))))
 

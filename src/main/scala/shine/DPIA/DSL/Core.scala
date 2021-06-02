@@ -33,9 +33,9 @@ object nFun {
 }
 
 trait depFunDef {
-  def apply[T, I <: Kind.Identifier](kind: Kind[T, I]): Object {
-    def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U]
-  } = new {
+  def apply[T, I <: Kind.Identifier](kind: Kind[T, I]): WithKind[T, I] = WithKind(kind)
+
+  case class WithKind[T, I <: Kind.Identifier](kind: Kind[T, I]) {
     def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U] = {
       val x = kind.makeIdentifier
       DepLambda(kind, x, f(x))

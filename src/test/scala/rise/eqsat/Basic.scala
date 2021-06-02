@@ -55,7 +55,7 @@ class Basic extends test_util.Tests {
   def withArrayAndFuns(n: Int,
                        k: ToBeTyped[rc.Expr] => Seq[ToBeTyped[rc.Expr]] => ToBeTyped[rc.Expr]
                       ): ToBeTyped[rc.Expr] = {
-    impl { elemT: rct.DataType =>
+    impl { (elemT: rct.DataType) =>
       depFun((size: rct.Nat) => introduceDataFuns(n, _ => f => fun(size`.`elemT)(in => k(in)(f)))) }
   }
 
@@ -90,13 +90,13 @@ class Basic extends test_util.Tests {
   }
 
   test("slideBeforeMapMapF") {
-    val `_` = rct.TypePlaceholder
+    val `__` = rct.TypePlaceholder
     def wrap(inner: ToBeTyped[rc.Expr] => ToBeTyped[rc.Expr])
     : ToBeTyped[rc.Expr] =
       depFun((n: rct.Nat) =>
       depFun((dt1: rct.DataType) => depFun((dt2: rct.DataType) =>
       fun(f =>
-        inner(f :: dt1 ->: dt2) :: ((n`.`dt1) ->: `_`)
+        inner(f :: dt1 ->: dt2) :: ((n`.`dt1) ->: `__`)
       ))))
 
     proveEquiv(

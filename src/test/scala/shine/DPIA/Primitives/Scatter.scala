@@ -8,6 +8,7 @@ import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
 import scala.language.postfixOps
+import reflect.Selectable.reflectiveSelectable
 
 class Scatter extends test_util.Tests {
   test("Reversing scatter should generate valid OpenCL") {

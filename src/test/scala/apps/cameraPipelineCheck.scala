@@ -97,8 +97,8 @@ float clamp_f32(float v, float l, float h) {
 #define pow_f32 powf
 """
 
-  val DFNF = rise.elevate.strategies.normalForm.DFNF()(alternative.RiseTraversable)
-  val CNF = rise.elevate.strategies.normalForm.CNF()(alternative.RiseTraversable)
+  val DFNF = rise.elevate.strategies.normalForm.DFNF()(using alternative.RiseTraversable)
+  val CNF = rise.elevate.strategies.normalForm.CNF()(using alternative.RiseTraversable)
 
   def check(
     lowered: Rise, callCFun: String => String,
@@ -379,7 +379,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
       f32 ->:
       (3`.`1920`.`2560`.`u8)
     assertClosedT(
-      impl{ h: Nat => impl{ w: Nat => camera_pipe(h)(w)(3)(4) }} :: cameraPipeT,
+      impl{ (h: Nat) => impl{ (w: Nat) => camera_pipe(h)(w)(3)(4) }} :: cameraPipeT,
       cameraPipeT
     )
   }

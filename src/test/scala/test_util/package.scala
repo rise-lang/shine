@@ -2,11 +2,11 @@ import opencl.executor.Executor
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
-import org.apache.logging.log4j.scala.Logging
 import util.{AssertSame, Time, TimeSpan}
+import wvlet.log.LogSupport
 
 package object test_util {
-  abstract class Tests extends AnyFunSuite with Matchers with Logging {
+  abstract class Tests extends AnyFunSuite with Matchers with LogSupport {
     def runsWithSameResult[R, U <: Time.Unit](runs: Seq[(String, (R, TimeSpan[U]))])
                                              (implicit assertSame: AssertSame[R]): Unit = {
       runs.tail.foreach(r => assertSame(r._2._1, runs.head._2._1, s"${r._1} had a different result"))

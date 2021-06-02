@@ -64,7 +64,7 @@ class CircularBuffering extends test_util.Tests {
     import rise.elevate.rules.traversal.alternative._
     import elevate.core.strategies.basic.normalize
 
-    val normGoal = normalize.apply(gentleBetaReduction() <+ etaReduction())(goal).get
+    val normGoal = normalize(gentleBetaReduction() <+ etaReduction())(goal).get
     println(s"normalized goal: $normGoal")
 
     Basic.proveEquiv(Expr.fromNamed(start), Expr.simplifyNats(Expr.fromNamed(normGoal)), rules)

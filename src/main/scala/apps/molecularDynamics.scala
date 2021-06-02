@@ -7,6 +7,7 @@ import rise.core.DSL.Type._
 import rise.core.types._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
+import reflect.Selectable.reflectiveSelectable
 
 object molecularDynamics {
   private val mdCompute = foreignFun("updateF",

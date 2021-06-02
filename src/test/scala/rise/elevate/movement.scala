@@ -15,8 +15,8 @@ class movement extends test_util.Tests {
 
   // transpose
 
-  val BENF = rise.elevate.strategies.normalForm.BENF()(RiseTraversable)
-  val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
+  val BENF = rise.elevate.strategies.normalForm.BENF()(using RiseTraversable)
+  val DFNF = rise.elevate.strategies.normalForm.DFNF()(using RiseTraversable)
 
   def betaEtaEquals(a: Rise, b: Rise): Boolean = {
     val na = BENF(a).get
@@ -48,10 +48,10 @@ class movement extends test_util.Tests {
         ((a, b, c, alpha, beta) =>
           (transpose o map(fun(ac =>
             map(fun(bc =>
-              (fun(x => (x * alpha) + beta * bc._2) o
-                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(lf32(0.0f))) $
-                zip(ac._1)(bc._1))) $
-              zip(transpose(b))(ac._2)))) $
+              (fun(x => (x * alpha) + beta * snd(bc)) o
+                reduceSeq(fun((acc, y) => acc + (fst(y) * snd(y))))(lf32(0.0f))) $
+                zip(fst(ac))(fst(bc)))) $
+              zip(transpose(b))(snd(ac))))) $
             zip(a)(c)
         )
       )

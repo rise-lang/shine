@@ -11,6 +11,7 @@ import shine.OpenCL.primitives.functional.{ReduceSeq, ToMem}
 import shine.cuda.KernelExecutor.KernelNoSizes
 import test_util.similar
 import util.gen
+import reflect.Selectable.reflectiveSelectable
 
 class MMTest extends test_util.TestWithCUDA {
   val n = NatIdentifier(freshName("n"))

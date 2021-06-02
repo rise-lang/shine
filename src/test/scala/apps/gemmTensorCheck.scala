@@ -6,6 +6,7 @@ import rise.core.Expr
 import shine.OpenCL._
 import shine.cuda.KernelExecutor.{KernelNoSizes, KernelWithSizes}
 import util._
+import reflect.Selectable.reflectiveSelectable
 
 //Cause some TypeChecking-Bugs the execution of the entire test-class could be fail
 //Running each test individually should be successfull

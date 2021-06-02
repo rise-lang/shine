@@ -8,10 +8,11 @@ import rise.core.types._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.KernelExecutor._
+import reflect.Selectable.reflectiveSelectable
 
 object kmeans {
   private val update = fun(f32 ->: (f32 x f32) ->: f32)((dist, pair) =>
-    dist + (pair._1 - pair._2) * (pair._1 - pair._2)
+    dist + (fst(pair) - snd(pair)) * (fst(pair) - snd(pair))
   )
 
   private val testF = foreignFun("test",
@@ -28,7 +29,7 @@ object kmeans {
       }""".stripMargin,
     f32 ->: (f32 x (int x int)) ->: (f32 x (int x int)))
 
-  private val select = fun(tuple => tuple._2._2)
+  private val select = fun(tuple => snd(snd(tuple)))
 
   // FIXME: could not find original Lift expression, this is made up
   val kmeansHighLevel: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(

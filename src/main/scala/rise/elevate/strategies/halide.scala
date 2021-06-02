@@ -10,12 +10,12 @@ import rise.elevate.strategies.tiling._
 
 object halide {
 
-  def reorder(perm: scala.collection.Seq[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = {
+  def reorder(perm: scala.collection.Seq[Int])(using ev: Traversable[Rise]): Strategy[Rise] = {
 
     def shiftDimension(i: Int): Strategy[Rise] = {
       i match {
         case 1 => loopInterchange
-        case x => loopInterchangeAtLevel(ev)(x-1) `;` moveTowardsArgument(1)(shiftDimension(i-1))
+        case x => loopInterchangeAtLevel(using ev)(x-1) `;` moveTowardsArgument(1)(shiftDimension(i-1))
       }
     }
 

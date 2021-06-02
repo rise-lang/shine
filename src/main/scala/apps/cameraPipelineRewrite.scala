@@ -4,6 +4,7 @@ import util.printTime
 import rise.core.{primitives => p, _}
 import rise.core.DSL._
 import elevate.core._
+import elevate.core.RewriteResult._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import rise.elevate.rules.traversal.alternative._
@@ -46,7 +47,7 @@ object cameraPipelineRewrite {
   }
 
   def takeDropTowardsInput: Strategy[Rise] = {
-    normalize.apply(
+    normalize(
       gentleBetaReduction() <+ etaReduction() <+
       takeAll <+ dropNothing <+
       mapFusion <+ mapIdentity <+
@@ -161,7 +162,7 @@ object cameraPipelineRewrite {
     case _ => Failure(idxAfterF)
   }
 
-  def normalizeSingleInput: Strategy[Rise] = normalize.apply(
+  def normalizeSingleInput: Strategy[Rise] = normalize(
     dropBeforeTake <+ dropBeforeMap <+ takeBeforeMap <+
     slideBeforeMap <+ mapFusion // <+ TODO
     // (not(isAppliedMap) `;` idxAfterF `;` debugS("idx"))
@@ -293,13 +294,13 @@ object cameraPipelineRewrite {
     argument(argument(normalizeInput) `;` repeat(mapFusion))
   }
 
-  def stronglyReducedForm: Strategy[Rise] = normalize.apply(
+  def stronglyReducedForm: Strategy[Rise] = normalize(
     betaReduction <+ etaReduction() <+
     removeTransposePair <+ mapFusion <+
     idxReduction <+ fstReduction <+ sndReduction
   )
 
-  def gentlyReducedForm: Strategy[Rise] = normalize.apply(
+  def gentlyReducedForm: Strategy[Rise] = normalize(
     gentleBetaReduction() <+ etaReduction() <+
     removeTransposePair <+ mapFusion <+
     idxReduction <+ fstReduction <+ sndReduction
@@ -307,7 +308,7 @@ object cameraPipelineRewrite {
 
   def demosaicCircularBuffers: Strategy[Rise] = {
     rewriteSteps(scala.collection.Seq(
-      normalize.apply(gentleBetaReduction()),
+      normalize(gentleBetaReduction()),
 
       takeDropTowardsInput,
 
@@ -373,7 +374,7 @@ object cameraPipelineRewrite {
 
   def precomputeSharpenStrengthX32: Strategy[Rise] = {
     // |> toMem() |> letf(fun(strength_x32 =>
-    normalize.apply(gentleBetaReduction()) `;`
+    normalize(gentleBetaReduction()) `;`
     afterTopLevel(
       function(argument( // sharpen
         ???
@@ -399,7 +400,7 @@ object cameraPipelineRewrite {
   }
 
   def precomputeColorCorrectionMatrix: Strategy[Rise] = {
-    normalize.apply(gentleBetaReduction()) `;`
+    normalize(gentleBetaReduction()) `;`
     afterTopLevel(
       argument(argument({
         case expr @ App(Lambda(x, color_correct), matrix) =>
@@ -407,14 +408,14 @@ object cameraPipelineRewrite {
             p.mapSeq(p.mapSeq(fun(x => x)))(matrix)) !: expr.t)
         case _ => Failure(precomputeColorCorrectionMatrix)
       })) `;`
-      normalize.apply(gentleBetaReduction() <+ letHoist)
+      normalize(gentleBetaReduction() <+ letHoist)
     )
   }
 
   def precomputeCurve: Strategy[Rise] = {
     // TODO: apply_curve curve:
     // |> mapSeq(fun(x => x)) |> letf(fun(curve =>
-    normalize.apply(gentleBetaReduction()) `;`
+    normalize(gentleBetaReduction()) `;`
     afterTopLevel(
       argument(function(argument(
         topDown(

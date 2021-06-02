@@ -2,7 +2,8 @@ package rise.elevate.meta
 
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.core.{Failure, RewriteResult, Strategy, Success}
+import elevate.core.{RewriteResult, Strategy}
+import elevate.core.RewriteResult._
 import rise.elevate.Rise
 import rise.elevate.rules.traversal._
 import elevate.core.strategies.Traversable
@@ -21,7 +22,7 @@ object traversal {
     override def oneUsingState: Strategy[Strategy[Rise]] => Strategy[Strategy[Rise]] = oneHandlingState(true)
 
     def oneHandlingState: Boolean => Strategy[Strategy[Rise]] => Strategy[Strategy[Rise]] = carryOverState => s => {
-      case Seq(first,second) => s(first) match {
+      case Seq(first: Strategy[Rise], second: Strategy[Rise]) => s(first) match {
         case Success(x: Strategy[Rise]) => Success(seq(x)(second))
         case Failure(state) => if (carryOverState)
           state(second).mapSuccess(seq(first)(_)) else

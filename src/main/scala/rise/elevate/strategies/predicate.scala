@@ -3,6 +3,7 @@ package rise.elevate.strategies
 import elevate.core._
 import elevate.core.strategies.predicate._
 import elevate.core.strategies.{Traversable, basic}
+import elevate.core.RewriteResult._
 import rise.core.DSL.ToBeTyped
 import rise.core._
 import rise.core.primitives._
@@ -87,10 +88,10 @@ object predicate {
 
   def isAppliedReduce: is = isAppliedBinaryFun(reduce.unapply, "Reduce")
 
-  case class isVectorizeablePrimitive()(implicit ev: Traversable[Rise]) extends Strategy[Rise] {
+  case class isVectorizeablePrimitive()(using ev: Traversable[Rise]) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case a@App(App(map(), f), input) if isComputation()(ev)(f) && !isVectorArray(a.t) => Success(a)
-      case r@App(App(App(reduce(), op), init), input) if isComputation()(ev)(op) => Success(r)
+      case a@App(App(map(), f), input) if isComputation()(using ev)(f) && !isVectorArray(a.t) => Success(a)
+      case r@App(App(App(reduce(), op), init), input) if isComputation()(using ev)(op) => Success(r)
       case _ => Failure(isVectorizeablePrimitive())
     }
   }

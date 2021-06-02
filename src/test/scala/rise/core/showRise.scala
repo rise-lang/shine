@@ -16,8 +16,8 @@ class showRise extends test_util.Tests {
 
   private val dotElemWeights = fun((weights, elem) =>
     oclReduceSeqUnroll(AddressSpace.Private)(fun((acc, pair) => {
-      val pixel = pair._1
-      val weight = pair._2
+      val pixel = fst(pair)
+      val weight = snd(pair)
       acc + (pixel * weight)
     }))(lf32(0.0f))(zip(join(elem))(weights))
   )

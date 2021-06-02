@@ -26,16 +26,23 @@ object IsClosedForm {
   case class Visitor(boundV: Set[Identifier], boundT: Set[Kind.Identifier])
     extends PureAccumulatorTraversal[(OrderedSet[Identifier], OrderedSet[Kind.Identifier])]
   {
-    override val accumulator = PairMonoid(OrderedSetMonoid, OrderedSetMonoid)
+    override val accumulator: Monoid[(OrderedSet[Identifier], OrderedSet[Kind.Identifier])] = PairMonoid(OrderedSetMonoid, OrderedSetMonoid)
 
     override def identifier[I <: Identifier]: VarType => I => Pair[I] = vt => i => {
-      for { t2 <- `type`(i.t);
-            i2 <- if (vt == Reference && !boundV(i)) {
-                    accumulate((OrderedSet.one(i : Identifier), OrderedSet.empty))(i)
-                  } else {
-                    return_(i)
-                  }}
-        yield i2
+//      for {  _ <- `type`(i.t);
+//            i2 <- if (vt == Reference && !boundV(i)) {
+//                    accumulate((OrderedSet.one(i : Identifier), OrderedSet.empty))(i)
+//                  } else {
+//                    return_(i)
+//                  }}
+//        yield i2
+      `type`(i.t).flatMap(_ =>
+        if (vt == Reference && !boundV(i)) {
+          accumulate((OrderedSet.one(i : Identifier), OrderedSet.empty))(i).map(i2 => i2)
+        } else {
+          return_(i).map(i2 => i2)
+        }
+      )
     }
 
     override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = {
@@ -67,36 +74,48 @@ object IsClosedForm {
 
     override def natToData: NatToData => Pair[NatToData] = {
       case NatToDataLambda(x, e) =>
-        for { p <- this.copy(boundT = boundT + x).`type`(e) }
-          yield (p._1, NatToDataLambda(x, e))
+ //       for { p <- this.copy(boundT = boundT + x).`type`(e) }
+ //          yield (p._1, NatToDataLambda(x, e))
+        val pp: Pure[((OrderedSet[Identifier], OrderedSet[Kind.Identifier]), DataType)] =
+          this.copy(boundT = boundT + x).`type`(e)
+        pp.map(p => (p._1, NatToDataLambda(x, e)))
       case t => super.natToData(t)
     }
 
     override def natToNat: NatToNat => Pair[NatToNat] = {
       case NatToNatLambda(x, n) =>
-        for { p <- this.copy(boundT = boundT + x).nat(n) }
-          yield (p._1, NatToNatLambda(x, n))
+//        for { p <- this.copy(boundT = boundT + x).nat(n) }
+//          yield (p._1, NatToNatLambda(x, n))
+        val pp: Pure[((OrderedSet[Identifier], OrderedSet[Kind.Identifier]), Nat)] =
+          this.copy(boundT = boundT + x).nat(n)
+        pp.map(p => (p._1, NatToNatLambda(x, n)))
       case n => super.natToNat(n)
     }
 
     override def `type`[T <: Type]: T => Pair[T] = {
       case d@DepFunType(_, x, t) =>
-        for { p <- this.copy(boundT = boundT + x).`type`(t) }
-          yield (p._1, d.asInstanceOf[T])
+//        for { p <- this.copy(boundT = boundT + x).`type`(t) }
+//          yield (p._1, d.asInstanceOf[T])
+        val pp: Pure[((OrderedSet[Identifier], OrderedSet[Kind.Identifier]), Type)] =
+          this.copy(boundT = boundT + x).`type`(t)
+        pp.map(p => (p._1, d.asInstanceOf[T]))
       case d@DepPairType(_, x, dt) =>
-        for { p <- this.copy(boundT = boundT + x).datatype(dt) }
-          yield (p._1, d.asInstanceOf[T])
+//        for { p <- this.copy(boundT = boundT + x).datatype(dt) }
+//          yield (p._1, d.asInstanceOf[T])
+        val pp: Pure[((OrderedSet[Identifier], OrderedSet[Kind.Identifier]), DataType)] =
+          this.copy(boundT = boundT + x).datatype(dt)
+        pp.map(p => (p._1, d.asInstanceOf[T]))
       case t => super.`type`(t)
     }
   }
 
   def freeVars(expr: Expr): (OrderedSet[Identifier], OrderedSet[Kind.Identifier]) = {
-    val ((fV, fT), _) = traverse(expr, Visitor(Set(), Set()))
+    val ((fV, fT), _) = rise.core.traverse.traverse(expr, Visitor(Set(), Set()))
     (fV, fT)
   }
 
   def freeVars(t: Type): OrderedSet[Kind.Identifier] = {
-    val ((_, ftv), _) = traverse(t, Visitor(Set(), Set()))
+    val ((_, ftv), _) = rise.core.traverse.traverse(t, Visitor(Set(), Set()))
     ftv
   }
 

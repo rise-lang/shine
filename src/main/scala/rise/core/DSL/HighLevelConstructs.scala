@@ -19,8 +19,8 @@ object HighLevelConstructs {
   // re-evaluating some points near the end.
   // WARNING: data-races will happen if processing tiles in parallel
   def tileShiftInwards(tileSize: Nat): ToBeTyped[Expr] =
-    impl{ n: Nat => impl{ haloSize: Nat =>
-    impl{ s: DataType => impl{ t: DataType =>
+    impl{ (n: Nat) => impl{ (haloSize: Nat) =>
+    impl{ (s: DataType) => impl{ (t: DataType) =>
     fun(processTiles =>
     fun(input => {
       val tiles = (n + tileSize - 1) / tileSize
@@ -49,21 +49,21 @@ object HighLevelConstructs {
     } :: (n `.` t)))}}}}
 
   def tileEpilogue(tileSize: Nat): ToBeTyped[Expr] =
-    impl{ n: Nat => impl{ haloSize: Nat =>
-    impl{ s: DataType => impl{ t: DataType =>
+    impl{ (n: Nat) => impl{ (haloSize: Nat) =>
+    impl{ (s: DataType) => impl{ (t: DataType) =>
     fun(f => fun(g => fun(a =>
       (concat(
         (a :: ((n + haloSize) `.` s)) |>
         take((n / tileSize) * tileSize + haloSize) |>
         slide(tileSize + haloSize)(tileSize) |>
-        impl{ sza: Nat => f ::
+        impl{ (sza: Nat) => f ::
           (sza`.`(tileSize + haloSize)`.`s) ->: (sza`.`tileSize`.`t) } |>
         join
       )(
         (a :: ((n + haloSize) `.` s)) |>
         drop((n / tileSize) * tileSize) |>
         slide(n % tileSize + haloSize)(n % tileSize) |>
-        impl{ szb: Nat => g ::
+        impl{ (szb: Nat) => g ::
           (szb`.`(n % tileSize + haloSize)`.`s) ->: (szb`.`(n % tileSize)`.`t) } |>
         join
       )) :: (n`.`t)
@@ -74,7 +74,7 @@ object HighLevelConstructs {
 
   val reorderWithStride: ToBeTyped[Expr] = {
     depFun((s: Nat) => {
-      impl { n: Nat =>
+      impl { (n: Nat) =>
         def f = n2nFun(n)(i => (i / (n /^ s)) + (s * (i % (n /^ s))))
         reorder(n)(f)(f)
       }
@@ -119,8 +119,8 @@ object HighLevelConstructs {
     fun(e => rec(n, e))
   }
 
-  def dropLast: ToBeTyped[Expr] = depFun((n: Nat) => impl { m: Nat =>
-    impl { dt: DataType =>
+  def dropLast: ToBeTyped[Expr] = depFun((n: Nat) => impl { (m: Nat) =>
+    impl { (dt: DataType) =>
       take(m) :: ((m + n) `.` dt) ->: (m `.` dt)
     }
   }

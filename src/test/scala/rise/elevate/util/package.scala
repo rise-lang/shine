@@ -11,8 +11,8 @@ package object util {
 
   // Rise-related utils
 
-  def betaEtaEquals(a: Rise, b: Rise)(implicit ev: Traversable[Rise]): Boolean =
-    BENF()(ev)(makeClosed(a)).get =~= BENF()(ev)(makeClosed(b)).get
+  def betaEtaEquals(a: Rise, b: Rise)(using ev: Traversable[Rise]): Boolean =
+    BENF()(using ev)(makeClosed(a)).get =~= BENF()(using ev)(makeClosed(b)).get
 
   val tileSize = 4
 

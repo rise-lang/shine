@@ -71,9 +71,9 @@ package object DSL {
               f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]) =
       NewDoubleBuffer(a, dt1, dt2, dt3.elemType, dt3.size, in, out,
         λ(varT(dt1) x CommType() x CommType())(ps => {
-          val    v: Phrase[VarType]  = ps._1._1
-          val swap: Phrase[CommType] = ps._1._2
-          val done: Phrase[CommType] = ps._2
+          val    v: Phrase[VarType]  = π1(π1(ps))
+          val swap: Phrase[CommType] = π2(π1(ps))
+          val done: Phrase[CommType] = π2(ps)
           f(v, swap, done)
         }))
   }

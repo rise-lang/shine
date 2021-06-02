@@ -10,6 +10,7 @@ import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeqUnroll
 import util.{Time, TimeSpan}
 import shine.OpenCL.KernelExecutor._
+import reflect.Selectable.reflectiveSelectable
 
 object convolution {
   private val id = fun(x => x)
@@ -22,8 +23,8 @@ object convolution {
 
   private val dotElemWeightsSeq = fun((weights, elem) =>
     oclReduceSeqUnroll(AddressSpace.Private)(fun((acc, pair) => {
-      val pixel = pair._1
-      val weight = pair._2
+      val pixel = fst(pair)
+      val weight = snd(pair)
       acc + (pixel * weight)
     }))(lf32(0.0f))(zip(join(elem))(weights)))
 

@@ -59,7 +59,7 @@ object SeparateHostAndKernelCode {
                 ): (Phrase[_ <: PhraseType], Seq[Phrase[ExpType]]) = {
       freeNats match {
         case v +: rest => iterNats(
-          DepLambda(NatKind, NatIdentifier(v.name, v.range))(definition),
+          DepLambda(NatKind, NatIdentifier(v.name, v.range), definition),
           Literal(NatAsIntData(v)) +: args, rest)
         case Nil => (definition, args)
       }

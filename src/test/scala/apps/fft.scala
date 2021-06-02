@@ -15,8 +15,8 @@ class fft extends test_util.Tests {
     val sinpi = foreignFun("sinpi", f64 ->: f64)
 
     val cmultandsum = fun(acc => fun(vt => {
-      val lres = acc._1 + (vt._1._1 * vt._2._1 - vt._1._2 * vt._2._2)
-      val rres = acc._2 + (vt._1._2 * vt._2._1 + vt._1._1 * vt._2._2)
+      val lres = fst(acc) + (fst(fst(vt)) * fst(snd(vt)) - snd(fst(vt)) * snd(snd(vt)))
+      val rres = snd(acc) + (snd(fst(vt)) * fst(snd(vt)) + fst(fst(vt)) * snd(snd(vt)))
       makePair(lres)(rres)
     }))
 
