@@ -30,15 +30,13 @@ final case class App(f: Expr, e: Expr)(override val t: Type)
   override def setType(t: Type): App = this.copy(f, e)(t)
 }
 
-final case class DepLambda[K <: Kind: KindName](x: K#I, e: Expr)(override val t: Type) extends Expr {
-  val kindName: String = implicitly[KindName[K]].get
-  override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
+final case class DepLambda[T, I <: Kind.Identifier](kind: Kind[T, I],x: I, e: Expr)(override val t: Type) extends Expr {
+  val kindName: String = kind.name
+  override def setType(t: Type): DepLambda[T, I] = this.copy(kind, x, e)(t)
 }
 
-final case class DepApp[K <: Kind](f: Expr, x: K#T)(
-    override val t: Type
-) extends Expr {
-  override def setType(t: Type): DepApp[K] = this.copy(f, x)(t)
+final case class DepApp[T](kind: Kind[T, _ <: Kind.Identifier], f: Expr, x: T)(override val t: Type) extends Expr {
+  override def setType(t: Type): DepApp[T] = this.copy(kind, f, x)(t)
 }
 
 final case class Literal(d: semantics.Data) extends Expr {

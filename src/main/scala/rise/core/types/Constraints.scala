@@ -34,7 +34,7 @@ case class NatToDataConstraint(a: NatToData, b: NatToData)
   extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
-case class DepConstraint[K <: Kind](df: Type, arg: K#T, t: Type)
+case class DepConstraint[T](kind: Kind[T, _ <: Kind.Identifier], df: Type, arg: T, t: Type)
   extends Constraint {
   override def toString: String = s"$df ($arg) ~ $t"
 }
@@ -107,8 +107,8 @@ object Constraint {
           case (FunType(ina, outa), FunType(inb, outb)) =>
             decomposed(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb)))
           case (
-            DepFunType(na: NatIdentifier, ta),
-            DepFunType(nb: NatIdentifier, tb)
+            DepFunType(NatKind, na: NatIdentifier, ta),
+            DepFunType(NatKind, nb: NatIdentifier, tb)
             ) =>
               val n = NatIdentifier(freshName("n"))
               decomposedPreserve(Seq(
@@ -117,8 +117,8 @@ object Constraint {
                 TypeConstraint(ta, tb),
               ), preserve + n - na - nb)
           case (
-            DepFunType(dta: DataTypeIdentifier, ta),
-            DepFunType(dtb: DataTypeIdentifier, tb)
+            DepFunType(DataKind, dta: DataTypeIdentifier, ta),
+            DepFunType(DataKind, dtb: DataTypeIdentifier, tb)
             ) =>
             val dt = DataTypeIdentifier(freshName("t"))
             decomposedPreserve(Seq(
@@ -127,14 +127,14 @@ object Constraint {
               TypeConstraint(ta, tb),
             ), preserve + dt - dta - dtb)
           case (
-            DepFunType(_: AddressSpaceIdentifier, _),
-            DepFunType(_: AddressSpaceIdentifier, _)
+            DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _),
+            DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _)
             ) =>
             ???
 
           case (
-            DepPairType(x1: NatIdentifier, t1),
-            DepPairType(x2: NatIdentifier, t2)
+            DepPairType(NatKind, x1: NatIdentifier, t1),
+            DepPairType(NatKind, x2: NatIdentifier, t2)
             ) =>
             val n = NatIdentifier(freshName("n"))
             decomposedPreserve(Seq(
@@ -144,8 +144,8 @@ object Constraint {
             ), preserve + n - x1 - x2)
 
           case (
-            DepPairType(x1: NatCollectionIdentifier, t1),
-            DepPairType(x2: NatCollectionIdentifier, t2)
+            DepPairType(NatCollectionKind, x1: NatCollectionIdentifier, t1),
+            DepPairType(NatCollectionKind, x2: NatCollectionIdentifier, t2)
             ) =>
             val n = NatCollectionIdentifier(freshName("n"))
             decomposedPreserve(Seq(
@@ -184,10 +184,10 @@ object Constraint {
         }
 
 
-      case DepConstraint(df, arg, t) =>
+      case DepConstraint(kind, df, arg, t) =>
         df match {
-          case _: DepFunType[_, _] =>
-            val applied = liftDependentFunctionType(df)(arg)
+          case _: DepFunType[_, _, _] =>
+            val applied = liftDependentFunctionType(kind, df)(arg)
             decomposed(Seq(TypeConstraint(applied, t)))
           case _ =>
             error(s"expected a dependent function type, but got $df")

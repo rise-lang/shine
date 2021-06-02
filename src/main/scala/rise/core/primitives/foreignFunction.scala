@@ -27,7 +27,7 @@ object foreignFunction {
           lhsT ->: rhsT
       }) }: Type)({
         case (id, t) =>
-          DepFunType[DataKind, Type](id, t)
+          DepFunType(DataKind, id, t)
       })
     }
     override def primEq(obj: rise.core.Primitive): Boolean = obj match {

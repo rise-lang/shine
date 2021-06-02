@@ -115,9 +115,9 @@ object Type {
     Type(t match {
       case dt: rct.DataType => DataType.fromNamed(dt, bound).node
       case rct.FunType(a, b) => FunType(fromNamed(a, bound), fromNamed(b, bound))
-      case rct.DepFunType(x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
-      case rct.DepFunType(x: rct.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
-      case rct.DepFunType(_, _) => ???
+      case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
+      case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
+      case rct.DepFunType(_, _, _) => ???
       case rct.TypePlaceholder | rct.TypeIdentifier(_) =>
         throw new Exception(s"did not expect $t")
     })
@@ -129,10 +129,10 @@ object Type {
       case FunType(a, b) => rct.FunType(toNamed(a, bound), toNamed(b, bound))
       case NatFunType(t) =>
         val i = rct.NatIdentifier(s"n${bound.nat.size}")
-        rct.DepFunType[rct.NatKind, rct.Type](i, toNamed(t, bound + i))
+        rct.DepFunType(rct.NatKind, i, toNamed(t, bound + i))
       case DataFunType(t) =>
         val i = rct.DataTypeIdentifier(s"n${bound.data.size}")
-        rct.DepFunType[rct.DataKind, rct.Type](i, toNamed(t, bound + i))
+        rct.DepFunType(rct.DataKind, i, toNamed(t, bound + i))
     }
   }
 
@@ -150,7 +150,7 @@ object DataType {
       case rct.IndexType(s) => IndexType(Nat.fromNamed(s, bound))
       case rct.PairType(dt1, dt2) => PairType(fromNamed(dt1, bound), fromNamed(dt2, bound))
       case rct.ArrayType(s, et) => ArrayType(Nat.fromNamed(s, bound), fromNamed(et, bound))
-      case _: rct.DepArrayType | _: rct.DepPairType[_] |
+      case _: rct.DepArrayType | _: rct.DepPairType[_, _] |
            _: rct.NatToDataApply | _: rct.FragmentType | _: rct.ManagedBufferType | _: rct.OpaqueType =>
         throw new Exception(s"did not expect $dt")
     })

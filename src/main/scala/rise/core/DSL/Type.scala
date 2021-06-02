@@ -90,27 +90,27 @@ object Type {
   object expl {
     def apply(w: NatFunctionWrapper[Type]): Type = {
       val x = NatIdentifier(freshName("n"))
-      DepFunType[NatKind, Type](x, w.f(x))
+      DepFunType(NatKind, x, w.f(x))
     }
 
     def apply(w: DataTypeFunctionWrapper[Type]): Type = {
       val x = DataTypeIdentifier(freshName("dt"))
-      DepFunType[DataKind, Type](x, w.f(x))
+      DepFunType(DataKind, x, w.f(x))
     }
 
     def apply(w: NatToDataFunctionWrapper[Type]): Type = {
       val x = NatToDataIdentifier(freshName("n2d"))
-      DepFunType[NatToDataKind, Type](x, w.f(x))
+      DepFunType(NatToDataKind, x, w.f(x))
     }
 
     def apply(w: NatToNatFunctionWrapper[Type]): Type = {
       val x = NatToNatIdentifier(freshName("n2n"))
-      DepFunType[NatToNatKind, Type](x, w.f(x))
+      DepFunType(NatToNatKind, x, w.f(x))
     }
 
     def apply(w: AddressSpaceFunctionWrapper[Type]): Type = {
       val x = AddressSpaceIdentifier(freshName("a"))
-      DepFunType[AddressSpaceKind, Type](x, w.f(x))
+      DepFunType(AddressSpaceKind, x, w.f(x))
     }
   }
 
@@ -156,24 +156,24 @@ object Type {
   object Nat {
     def `**`(f: Nat => DataType): Type = {
       val x = NatIdentifier(freshName("n"))
-      DepPairType[NatKind](x, f(x))
+      DepPairType(NatKind, x, f(x))
     }
   }
 
   object NatCollection {
     def `**`(f: NatCollection => DataType): Type = {
       val x = NatCollectionIdentifier(freshName("ns"))
-      DepPairType[NatCollectionKind](x, f(x))
+      DepPairType(NatCollectionKind, x, f(x))
     }
   }
 
   object `:Nat **` {
-    def unapply(arg: DepPairType[NatKind]): Option[(NatIdentifier, DataType)] =
+    def unapply(arg: DepPairType[Nat, NatIdentifier]): Option[(NatIdentifier, DataType)] =
       Some(arg.x, arg.t)
   }
 
   object `:NatCollection **` {
-    def unapply(arg: DepPairType[NatCollectionKind]): Option[(NatCollectionIdentifier, DataType)] =
+    def unapply(arg: DepPairType[NatCollection, NatCollectionIdentifier]): Option[(NatCollectionIdentifier, DataType)] =
       Some(arg.x, arg.t)
   }
 
@@ -191,7 +191,7 @@ object Type {
   }
 
   object `(Addr)->:` {
-    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(AddressSpaceIdentifier, T)] = {
+    def unapply[T, I <: Kind.Identifier, U <: Type](funType: DepFunType[T, I, U]): Option[(AddressSpaceIdentifier, U)] = {
       funType.x match {
         case a: AddressSpaceIdentifier => Some((a, funType.t))
         case _ => throw new Exception("Expected AddressSpace DepFunType")
@@ -200,7 +200,7 @@ object Type {
   }
 
   object `(Nat)->:` {
-    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatIdentifier, T)] = {
+    def unapply[T, I <: Kind.Identifier, U <: Type](funType: DepFunType[T, I, U]): Option[(NatIdentifier, U)] = {
       funType.x match {
         case n: NatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
@@ -209,7 +209,7 @@ object Type {
   }
 
   object `(NatToNat)->:` {
-    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatToNatIdentifier, T)] = {
+    def unapply[T, I <: Kind.Identifier, U <: Type](funType: DepFunType[T, I, U]): Option[(NatToNatIdentifier, U)] = {
       funType.x match {
         case n: NatToNatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected NatToNat DepFunType")

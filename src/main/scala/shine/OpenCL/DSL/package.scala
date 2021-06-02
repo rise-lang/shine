@@ -26,7 +26,7 @@ package object DSL {
   def parForNat(level: ParallelismLevel,
                 dim: Int,
                 unroll: Boolean
-               ): (Nat, NatToData, Phrase[AccType], Phrase[DepFunType[NatKind, FunType[AccType, CommType]]]) => ParForNat =
+               ): (Nat, NatToData, Phrase[AccType], Phrase[DepFunType[NatIdentifier, FunType[AccType, CommType]]]) => ParForNat =
     level match {
       case Global =>    ParForNat(level, dim, unroll, "gl_id_")(
         get_global_id(dim), _, get_global_size(dim), _, _, _)
@@ -39,7 +39,7 @@ package object DSL {
 
   private def parForBodyFunction(n:Nat, ft:NatToData,
                                  f:NatIdentifier => Phrase[AccType] => Phrase[CommType]
-                                ): DepLambda[NatKind, AccType ->: CommType] = {
+                                ): DepLambda[Nat, NatIdentifier, AccType ->: CommType] = {
     nFun(idx => λ(accT(ft(idx)))(o => f(idx)(o)), RangeAdd(0, n, 1))
   }
 

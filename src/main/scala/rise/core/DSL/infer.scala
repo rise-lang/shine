@@ -83,10 +83,10 @@ object infer {
       // Transform assertions into annotations, collect FTVs
       case TypeAssertion(e, t) =>
         val (s1, e1) = expr(e).unwrap
-        accumulate(s1 ++ IsClosedForm.varsToClose(t))(TypeAnnotation(e1, t) : Expr)
+        accumulate(s1 ++ IsClosedForm.freeVars(t).set)(TypeAnnotation(e1, t) : Expr)
       // Collect FTVs
       case Opaque(e, t) =>
-        accumulate(IsClosedForm.varsToClose(t).toSet)(Opaque(e, t) : Expr)
+        accumulate(IsClosedForm.freeVars(t).set)(Opaque(e, t) : Expr)
       case e => super.expr(e)
     }
   }
@@ -118,26 +118,17 @@ object infer {
       val c = TypeConstraint(tf.t, FunType(te.t, exprT))
       (App(tf, te)(exprT), csF ++ csE :+ c)
 
-    case expr@DepLambda(x, e) =>
+    case expr@DepLambda(kind, x, e) =>
       val (te, csE) = constrainTypes(exprEnv)(e)
-      val tf = x match {
-        case n: NatIdentifier =>
-          DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
-        case dt: DataTypeIdentifier =>
-          DepLambda[DataKind](dt, te)(DepFunType[DataKind, Type](dt, te.t))
-        case ad: AddressSpaceIdentifier =>
-          DepLambda[AddressSpaceKind](ad, te)(DepFunType[AddressSpaceKind, Type](ad, te.t))
-        case n2n: NatToNatIdentifier =>
-          DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
-      }
+      val tf = DepLambda(kind, x, te)(DepFunType(kind, x, te.t))
       val csE1 = ifTyped(expr.t)(TypeConstraint(expr.t, tf.t))
       (tf, csE ++ csE1)
 
-    case expr@DepApp(f, x) =>
+    case expr@DepApp(kind, f, x) =>
       val (tf, csF) = constrainTypes(exprEnv)(f)
       val exprT = genType(expr)
-      val c = DepConstraint(tf.t, x, exprT)
-      (DepApp(tf, x)(exprT), csF :+ c)
+      val c = DepConstraint(kind, tf.t, x, exprT)
+      (DepApp(kind, tf, x)(exprT), csF :+ c)
 
     case TypeAnnotation(e, t) =>
       val (te, csE) = constrainTypes(exprEnv)(e)

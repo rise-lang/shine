@@ -11,15 +11,15 @@ object makeClosed {
       case (expr, ts) => ftv match {
         case i: TypeIdentifier =>
           val dt = DataTypeIdentifier(freshName("dt"))
-          (DepLambda[DataKind](dt, expr)(DepFunType[DataKind, Type](dt, expr.t)), (ts ++ Map(i -> dt)))
+          (DepLambda(DataKind, dt, expr)(DepFunType(DataKind, dt, expr.t)), (ts ++ Map(i -> dt)))
         case i: DataTypeIdentifier =>
-          (DepLambda[DataKind](i, expr)(DepFunType[DataKind, Type](i, expr.t)), ts)
+          (DepLambda(DataKind, i, expr)(DepFunType(DataKind, i, expr.t)), ts)
         case i: NatIdentifier =>
-          (DepLambda[NatKind](i, expr)(DepFunType[NatKind, Type](i, expr.t)), ts)
+          (DepLambda(NatKind, i, expr)(DepFunType(NatKind, i, expr.t)), ts)
         case i: AddressSpaceIdentifier =>
-          (DepLambda[AddressSpaceKind](i, expr)(DepFunType[AddressSpaceKind, Type](i, expr.t)), ts)
+          (DepLambda(AddressSpaceKind, i, expr)(DepFunType(AddressSpaceKind, i, expr.t)), ts)
         case i: NatToDataIdentifier =>
-          (DepLambda[NatToDataKind](i, expr)(DepFunType[NatToDataKind, Type](i, expr.t)), ts)
+          (DepLambda(NatToDataKind, i, expr)(DepFunType(NatToDataKind, i, expr.t)), ts)
         case i => throw TypeException(s"${i.getClass} is not supported yet")
       }
     })

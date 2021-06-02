@@ -38,27 +38,24 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
   override def toString: String = s"($fun $arg)"
 }
 
-final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
-                                                      (implicit val kn: KindName[K])
-  extends Phrase[K `()->:` T] {
-  override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
-  override def toString: String = s"Λ(${x.name} : ${kn.get}). $body"
+final case class DepLambda[T, I <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I], x: I, body: Phrase[U])
+  extends Phrase[I `()->:` U] {
+  override val t: DepFunType[I, U] = DepFunType[I, U](kind, x, body.t)
+  override def toString: String = s"Λ(${x.name} : ${kind.name}). $body"
 }
 
 object DepLambda {
-  def apply[K <: Kind](x: K#I): Object {
-    def apply[T <: PhraseType](body: Phrase[T])
-                              (implicit kn: KindName[K]): DepLambda[K, T]
+  def apply[T, I <: Kind.Identifier](kind: Kind[T, I], x: I): Object {
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
   } = new {
-    def apply[T <: PhraseType](body: Phrase[T])
-                              (implicit kn: KindName[K]): DepLambda[K, T] = DepLambda(x, body)
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
   }
 }
 
-final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->:` T], arg: K#T)
-  extends Phrase[T] {
+final case class DepApply[T, I <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I], fun: Phrase[I `()->:` U], arg: T)
+  extends Phrase[U] {
 
-  override val t: T = PhraseType.substitute(arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[T]
+  override val t: U = PhraseType.substitute(kind, arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[U]
   override def toString: String = s"($fun $arg)"
 }
 
@@ -144,7 +141,7 @@ object Phrase {
             case l @ Lambda(x, _) =>
               val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
               Continue(l, Renaming(newMap))
-            case dl @ DepLambda(x, _) =>
+            case dl @ DepLambda(_, x, _) =>
               val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
               Continue(dl, Renaming(newMap))
             case _ => Continue(p, this)
@@ -249,9 +246,9 @@ object Phrase {
           // NatData is Natural
           // IndexData is AsIndex
         }
-        case DepApply(fun, arg) => (fun, arg) match {
+        case DepApply(_, fun, arg) => (fun, arg) match {
           case (f, a: Nat) =>
-            transientNatFromExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
+            transientNatFromExpr(liftDependentFunction(f.asInstanceOf[Phrase[NatIdentifier `()->:` ExpType]])(a))
           case _ => ???
         }
         case Proj1(pair) => transientNatFromExpr(liftPair(pair)._1)

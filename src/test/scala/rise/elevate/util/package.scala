@@ -19,7 +19,7 @@ package object util {
 
   // notation
   def T: ToBeTyped[Rise] = transpose
-  def S: ToBeTyped[DepApp[NatKind]] = split(tileSize) //slide(3)(1)
+  def S: ToBeTyped[DepApp[Nat]] = split(tileSize) //slide(3)(1)
   def J: ToBeTyped[Rise] = join
   def *(x: ToBeTyped[Rise]): ToBeTyped[App] = map(x)
   def **(x: ToBeTyped[Rise]): ToBeTyped[App] = map(map(x))
