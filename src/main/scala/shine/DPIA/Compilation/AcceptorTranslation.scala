@@ -25,13 +25,13 @@ object AcceptorTranslation {
     E match {
       // on the fly beta-reduction
       case Apply(fun, arg) => acc(Lifting.liftFunction(fun).reducing(arg))(A)
-      case DepApply(fun, arg) => arg match {
+      case DepApply(kind, fun, arg) => arg match {
         case a: Nat =>
-          acc(Lifting.liftDependentFunction[NatKind, ExpType](
-            fun.asInstanceOf[ Phrase[NatKind `()->:` ExpType]])(a))(A)
+          acc(Lifting.liftDependentFunction(
+            fun.asInstanceOf[ Phrase[NatIdentifier `()->:` ExpType]])(a))(A)
         case a: DataType =>
-          acc(Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
+          acc(Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[DataTypeIdentifier `()->:` ExpType]])(a))(A)
       }
 
       case e
@@ -103,7 +103,7 @@ object AcceptorTranslation {
     case depMapSeq@DepMapSeq(unroll) =>
       val (n, ft1, ft2, f, array) = depMapSeq.unwrap
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        DepMapSeqI(unroll)(n, ft1, ft2, _Λ_[NatKind]()((k: NatIdentifier) =>
+        DepMapSeqI(unroll)(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -115,7 +115,7 @@ object AcceptorTranslation {
       // Turn the f imperative by means of forwarding the acceptor translation
       con(input)(λ(expT(DepPairType(x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_[NatKind]()((fst: NatIdentifier) =>
+          _Λ_(NatKind)((fst: NatIdentifier) =>
             λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
               acc(f(fst)(snd))(A)
             )), pair)))
@@ -127,7 +127,7 @@ object AcceptorTranslation {
     case Iterate(n, m, k, dt, f, array) =>
       con(array)(λ(expT((m * n.pow(k))`.`dt, read))(x =>
         IterateIAcc(n, m, k, dt, A,
-          _Λ_[NatKind]()(l => λ(accT(l `.` dt))(o =>
+          _Λ_(NatKind)(l => λ(accT(l `.` dt))(o =>
             λ(expT((l * n)`.`dt, read))(x => acc(f(l)(x))(o)))),
           x)))
 
@@ -252,7 +252,7 @@ object AcceptorTranslation {
     // OpenMP
     case omp.DepMapPar(n, ft1, ft2, f, array) =>
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        ompI.DepMapParI(n, ft1, ft2, _Λ_[NatKind]()((k: NatIdentifier) =>
+        ompI.DepMapParI(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -271,7 +271,7 @@ object AcceptorTranslation {
     case depMap@ocl.DepMap(level, dim) =>
       val (n, ft1, ft2, f, array) = depMap.unwrap
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        oclI.DepMapI(level, dim)(n, ft1, ft2, _Λ_[NatKind]()((k: NatIdentifier) =>
+        oclI.DepMapI(level, dim)(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -279,7 +279,7 @@ object AcceptorTranslation {
     case ocl.Iterate(a, n, m, k, dt, f, array) =>
       con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x =>
         oclI.IterateIAcc(a, n, m, k, dt, A,
-          _Λ_[NatKind]()(l => λ(accT(l`.`dt))(o =>
+          _Λ_(NatKind)(l => λ(accT(l`.`dt))(o =>
             λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
           x)))
 

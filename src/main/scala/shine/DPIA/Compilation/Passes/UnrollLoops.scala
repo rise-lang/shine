@@ -25,7 +25,7 @@ object UnrollLoops {
             }
           case f@ForNat(true) =>
             f.loopBody match {
-              case shine.DPIA.Phrases.DepLambda(x, body) =>
+              case shine.DPIA.Phrases.DepLambda(kind, x, body) =>
                 Continue(unrollLoop(f.n, init = 0, step = 1, i =>
                   PhraseType.substitute(i, `for` = x, in = body)), this)
               case _ => throw new Exception("This should not happen")

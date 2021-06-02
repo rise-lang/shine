@@ -120,7 +120,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case f@ForNat(unroll) =>
         f.loopBody match {
-          case shine.DPIA.Phrases.DepLambda(i, p) =>
+          case shine.DPIA.Phrases.DepLambda(NatKind, i, p) =>
             CCodeGen.codeGenForNat(f.n, i, p, unroll, env)
           case _ => throw new Exception("This should not happen")
         }
@@ -134,11 +134,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       // on the fly beta-reduction
       case Apply(fun, arg) => Lifting.liftFunction(fun).reducing(arg) |> cmd(env)
-      case DepApply(fun, arg) => arg match {
+      case DepApply(kind, fun, arg) => arg match {
         case a: Nat =>
-          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[NatKind `()->:` CommType]])(a) |> cmd(env)
+          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[NatIdentifier `()->:` CommType]])(a) |> cmd(env)
         case a: DataType =>
-          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[DataKind `()->:` CommType]])(a) |> cmd(env)
+          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[NatIdentifier `()->:` CommType]])(a) |> cmd(env)
       }
 
       case DMatchI(x, inT, _, f, dPair) =>
@@ -171,7 +171,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), expr), C.AST.Literal("0")
             ) , fst)))
         })
-      case Apply(_, _) | DepApply(_, _) |
+      case Apply(_, _) | DepApply(_, _, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }, env)
@@ -289,7 +289,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case MkDPairSndAcc(_, _, a) => a |> acc(env, DPairSnd :: path, cont)
 
-    case phrase@(Apply(_, _) | DepApply(_, _) |
+    case phrase@(Apply(_, _) | DepApply(_, _, _) |
                  Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: AccPrimitive) =>
       error(s"Don't know how to generate code for $phrase")
   }
@@ -517,7 +517,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     case Proj1(pair) => SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1) |> exp(env, path, cont)
     case Proj2(pair) => SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2) |> exp(env, path, cont)
 
-    case phrase@(Apply(_, _) | DepApply(_, _) |
+    case phrase@(Apply(_, _) | DepApply(_, _, _) |
                  Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive) =>
       error(s"Don't know how to generate code for $phrase")
   }
@@ -638,7 +638,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case None => error("Parameter missing")
         case Some(Left(param)) => generateInlinedCall(l(param), env, args.tail, cont)
       }
-      case ndl: DepLambda[NatKind, _]@unchecked => args.headOption match {
+      case ndl: DepLambda[Nat, NatIdentifier, _]@unchecked => args.headOption match {
         case Some(Right(nat)) => generateInlinedCall(ndl(nat), env, args.tail, cont)
         case None => error("Parameter missing")
         case Some(Left(_)) => error("Expression phrase argument passed but nat expected")

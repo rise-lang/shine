@@ -44,13 +44,13 @@ object ContinuationTranslation {
 
       // on the fly beta-reduction
       case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)
-      case DepApply(fun, arg) => arg match {
+      case DepApply(kind, fun, arg) => arg match {
         case a: Nat =>
-          con(Lifting.liftDependentFunction[NatKind, ExpType](
-            fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(C)
+          con(Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[NatIdentifier `()->:` ExpType]])(a))(C)
         case a: DataType =>
-          con(Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(C)
+          con(Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[DataTypeIdentifier `()->:` ExpType]])(a))(C)
       }
 
       case IfThenElse(cond, thenP, elseP) =>
@@ -110,7 +110,7 @@ object ContinuationTranslation {
       // Turn the f imperative by means of forwarding the continuation translation
       con(input)(λ(expT(DepPairType(x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_[NatKind]()((fst: NatIdentifier) =>
+          _Λ_(NatKind)((fst: NatIdentifier) =>
             λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
               con(f(fst)(snd))(C)
             )), pair)))

@@ -37,7 +37,7 @@ private class InferAccessAnnotation {
 
   @tailrec
   private def funOutIsWrite(ePt: PhraseType): Boolean = ePt match {
-    case DepFunType(_, t) => funOutIsWrite(t)
+    case DepFunType(_, _, t) => funOutIsWrite(t)
     case FunType(_, t) => funOutIsWrite(t)
     case expT: ExpType => expT `<=` ExpType(expT.dataType, write)
     case _ => throw error("This should never happen.")
@@ -128,7 +128,7 @@ private class InferAccessAnnotation {
           ctx, isKernelParamFun)
       case appl: r.App =>
         inferApp(appl, ctx, addsKernelParam(e, isKernelParamFun))
-      case depL: r.DepLambda[_] =>
+      case depL: r.DepLambda[_, _] =>
         inferDepLambda(depL, ctx, isKernelParamFun)
       case depA: r.DepApp[_] =>
         inferDepApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
@@ -199,7 +199,7 @@ private class InferAccessAnnotation {
   }
 
   private def inferDepLambda(
-    depLambda: r.DepLambda[_],
+    depLambda: r.DepLambda[_, _],
     ctx: Context,
     kernelParamFun: Boolean
   ): (PhraseType, Subst) = {
@@ -207,16 +207,15 @@ private class InferAccessAnnotation {
     val depLambdaType =
       depLambda.x match {
         case n: rt.NatIdentifier =>
-          DepFunType[NatKind, PhraseType](natIdentifier(n), eType)
+          DepFunType(NatKind, natIdentifier(n), eType)
         case dt: rt.DataTypeIdentifier =>
-          DepFunType[DataKind, PhraseType](dataTypeIdentifier(dt), eType)
+          DepFunType(DataKind, dataTypeIdentifier(dt), eType)
         case ad: rt.AddressSpaceIdentifier =>
-          DepFunType[AddressSpaceKind, PhraseType](
-            addressSpaceIdentifier(ad), eType)
+          DepFunType(AddressSpaceKind, addressSpaceIdentifier(ad), eType)
         case n2n: rt.NatToNatIdentifier =>
-          DepFunType[NatToNatKind, PhraseType](natToNatIdentifier(n2n), eType)
+          DepFunType(NatToNatKind, natToNatIdentifier(n2n), eType)
         case n2d: rt.NatToDataIdentifier =>
-          DepFunType[NatToDataKind, PhraseType](natToDataIdentifier(n2d), eType)
+          DepFunType(NatToDataKind, natToDataIdentifier(n2d), eType)
       }
     ptAnnotationMap.put(depLambda, depLambdaType)
     (depLambdaType, eSubst)
@@ -230,17 +229,17 @@ private class InferAccessAnnotation {
     val (fType, fSubst) = inferPhraseTypes(depApp.f, ctx, kernelParamFun)
     val depAppType =
       depApp.x match {
-        case dt: rt.DataKind#T =>
-          Lifting.liftDependentFunctionType[DataKind](fType)(dataType(dt))
-        case addr: rt.AddressSpaceKind#T =>
-          Lifting.liftDependentFunctionType[AddressSpaceKind](fType)(
+        case dt: rt.DataType =>
+          Lifting.liftDependentFunctionType[DataType](fType)(dataType(dt))
+        case addr: rt.AddressSpace =>
+          Lifting.liftDependentFunctionType[AddressSpace](fType)(
             addressSpace(addr))
-        case n: rt.NatKind#T =>
-          Lifting.liftDependentFunctionType[NatKind](fType)(n)
-        case n2n: rt.NatToNatKind#T =>
-          Lifting.liftDependentFunctionType[NatToNatKind](fType)(ntn(n2n))
-        case n2d: rt.NatToDataKind#T =>
-          Lifting.liftDependentFunctionType[NatToDataKind](fType)(ntd(n2d))
+        case n: rt.Nat =>
+          Lifting.liftDependentFunctionType[Nat](fType)(n)
+        case n2n: rt.NatToNat =>
+          Lifting.liftDependentFunctionType[NatToNat](fType)(ntn(n2n))
+        case n2d: rt.NatToData =>
+          Lifting.liftDependentFunctionType[NatToData](fType)(ntd(n2d))
       }
     ptAnnotationMap.put(depApp, depAppType)
     (depAppType, fSubst)
@@ -538,7 +537,7 @@ private class InferAccessAnnotation {
             expT(dataType(dt), read)
           case rt.FunType(in: rt.DataType, out) =>
             expT(in, read) ->: buildType(out)
-          case rt.DepFunType(d: rt.DataTypeIdentifier, t) =>
+          case rt.DepFunType(rt.DataKind, d: rt.DataTypeIdentifier, t) =>
             dFunT(d, buildType(t))
           case _ => throw Exception("This should not happen")
         }
@@ -555,9 +554,9 @@ private class InferAccessAnnotation {
 
       case rp.depMapSeq() =>
         def buildType(t: rt.Type): PhraseType = t match {
-          case rt.FunType(rt.DepFunType(i, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
+          case rt.FunType(rt.DepFunType(rt.NatKind, i: rt.NatIdentifier, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
             rt.FunType(inArr@rt.DepArrayType(_, _), outArr@rt.DepArrayType(_, _))) =>
-            val iNat = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
+            val iNat = natIdentifier(i)
             nFunT(iNat, expT(dataType(elemInT), read) ->: expT(dataType(elemOutT), write)) ->:
               expT(dataType(inArr), read) ->: expT(dataType(outArr), write)
           case _ => error("did not expect t")
@@ -567,31 +566,24 @@ private class InferAccessAnnotation {
       case rp.dmatch() =>
         val a = accessTypeIdentifier()
         def buildType(t: rt.Type): PhraseType = t match {
-          case rt.FunType(rt.DepPairType(x, elemT),
-            rt.FunType(rt.DepFunType(i, rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
-            x match {
-              case x:rt.NatIdentifier =>
-                assert(i.isInstanceOf[rt.NatIdentifier])
-                val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
-                expT(DepPairType(natIdentifier(x), dataType(elemT)), read) ->:
-                  nFunT(i_, expT(dataType(app1), read) ->: expT(dataType(outT), a)) ->:
-                    expT(dataType(retT), a)
-              case _ => ???
-            }
+          case rt.FunType(rt.DepPairType(rt.NatKind, x: rt.NatIdentifier, elemT),
+            rt.FunType(rt.DepFunType(rt.NatKind, i: rt.NatIdentifier,
+              rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
+
+            val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
+            expT(DepPairType(natIdentifier(x), dataType(elemT)), read) ->:
+              nFunT(i_, expT(dataType(app1), read) ->: expT(dataType(outT), a)) ->:
+                expT(dataType(retT), a)
           case _ => error(s"did not expect t")
         }
         buildType(p.t)
 
       case rp.makeDepPair() =>
         def buildType(t: rt.Type): PhraseType = t match {
-          case rt.DepFunType(fst, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
+          case rt.DepFunType(rt.NatKind, fst: rt.NatIdentifier, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
             val a1 = accessTypeIdentifier()
-            fst match {
-              case fst:rt.NatIdentifier =>
-                val fst_ = natIdentifier(fst)
-                nFunT(fst_, expT(dataType(sndT), a1) ->: expT(dataType(outT), a1))
-              case _ => ???
-            }
+            val fst_ = natIdentifier(fst)
+            nFunT(fst_, expT(dataType(sndT), a1) ->: expT(dataType(outT), a1))
 
           case _ => error(s"did not expect $t")
         }
@@ -641,7 +633,7 @@ private class InferAccessAnnotation {
   ): Boolean =
     if (kernelParamFun)
       expr.t match {
-        case _: rt.FunType[_, _] | _: rt.DepFunType[_, _] => true
+        case _: rt.FunType[_, _] | _: rt.DepFunType[_, _, _] => true
         case _ => false
       }
     else false
@@ -663,7 +655,7 @@ private class InferAccessAnnotation {
           Success(outSubst(argSubst))
         )
       )
-    case (DepFunType(lx, la), DepFunType(rx, ra)) if lx == rx =>
+    case (DepFunType(_, lx, la), DepFunType(_, rx, ra)) if lx == rx =>
       subUnifyPhraseType(la, ra)
     case _ => Try(error(s"Cannot subunify $less and $larger."))
   }
@@ -671,7 +663,7 @@ private class InferAccessAnnotation {
   def `type`(ty: rt.Type): PhraseType = ty match {
     case dt: rt.DataType => ExpType(dataType(dt), accessTypeIdentifier())
     case rt.FunType(i, o) => `type`(i) ->: `type`(o)
-    case rt.DepFunType(i, t) => i match {
+    case rt.DepFunType(_, i, t) => i match {
       case dt: rt.DataTypeIdentifier =>
         dataTypeIdentifier(dt) ->: `type`(t)
       case n: rt.NatIdentifier =>
@@ -689,7 +681,7 @@ private class InferAccessAnnotation {
     case (rt.FunType(inT, outT), FunType(inPT, outPT)) =>
       checkConsistency(inT, inPT)
       checkConsistency(outT, outPT)
-    case (rt.DepFunType(x, t), DepFunType(y, pt)) =>
+    case (rt.DepFunType(_, x, t), DepFunType(_, y, pt)) =>
       if (x.name != y.name) error(s"Identifiers $x and $y differ")
       checkConsistency(t, pt)
     case (dt: rt.DataType, ExpType(dpt: DataType, _)) =>

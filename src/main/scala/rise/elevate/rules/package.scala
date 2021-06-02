@@ -15,8 +15,8 @@ package object rules {
   def betaReduction: Strategy[Rise] = {
     case App(Lambda(x, b), v) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
-    case DepApp(DepLambda(x, b), v) =>
-      Success(substitute.kindInExpr(v, `for` = x, in = b))
+    case DepApp(k1, DepLambda(k2, x, b), v) if k1 == k2 =>
+      Success(substitute.kindInExpr(k1, v, `for` = x, in = b))
     case _ => Failure(betaReduction)
   }
 
@@ -33,8 +33,8 @@ package object rules {
       Success(substitute.exprInExpr(v, `for` = x, in = b))
     case App(Lambda(x, b), v) if !containsAtLeast(1, x)(ev)(b) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
-    case DepApp(DepLambda(x, b), v) =>
-      Success(substitute.kindInExpr(v, `for` = x, in = b))
+    case DepApp(k1, DepLambda(k2, x, b), v) if k1 == k2 =>
+      Success(substitute.kindInExpr(k1, v, `for` = x, in = b))
     case _ => Failure(gentleBetaReduction())
   }
 
