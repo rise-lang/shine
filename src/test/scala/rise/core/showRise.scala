@@ -57,8 +57,7 @@ class showRise extends test_util.Tests {
         case i: Identifier => line(i.name)
         case Lambda(x, e)  => block(s"λ${x.name}", drawASTSimp(e))
         case App(f, e)     => drawASTSimp(f) :+> drawASTSimp(e)
-        case DepLambda(kind, x, e) =>
-          block(s"Λ${x.name}:${kind.name}", drawASTSimp(e))
+        case DepLambda(kind, x, e) => block(s"Λ${Kind.idName(kind, x)}:${kind.name}", drawASTSimp(e))
         case DepApp(_, f, x)     => line(x.toString) <+: drawASTSimp(f)
         case Literal(d)       => line(d.toString)
         case TypeAnnotation(e, _) => drawASTSimp(e)
@@ -88,14 +87,14 @@ class showRise extends test_util.Tests {
           if (wrapped) s"($fs $es)" else s"$fs $es"
 
         case DepLambda(kind, x, e) =>
-          val xs = s"${x.name}:${kind.name}"
+          val xs = s"${Kind.idName(kind, x)}:${kind.name}"
           val es = lessBrackets(e)
           if (wrapped) s"[Λ$xs. $es]" else s"Λ$xs. $es"
 
         case DepApp(_, f, x) =>
           val fs = f match {
-            case _: DepLambda[_, _] => lessBrackets(f, wrapped = true)
-            case _                  => lessBrackets(f)
+            case _: DepLambda[_, _, _] => lessBrackets(f, wrapped = true)
+            case _                     => lessBrackets(f)
           }
           if (wrapped) s"($fs $x)" else s"$fs $x"
 

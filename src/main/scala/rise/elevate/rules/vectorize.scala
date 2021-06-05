@@ -90,7 +90,7 @@ object vectorize {
 
   // padEmpty (p*v) (asScalar in) -> asScalar (padEmpty p in)
   @rule def padEmptyBeforeAsScalar: Strategy[Rise] = {
-    case App(DepApp(NatKind, padEmpty(), pv: Nat), App(asScalar(), in)) =>
+    case App(DepApp(_, padEmpty(), pv: Nat), App(asScalar(), in)) =>
       in.t match {
         case ArrayType(_, VectorType(v, _)) if (pv % v) == (0: Nat) =>
           Success(asScalar(padEmpty(pv / v)(in)))
@@ -100,7 +100,7 @@ object vectorize {
 
   // padEmpty p (asVector v in) -> asVector v (padEmpty (p*v) in)
   @rule def padEmptyBeforeAsVector: Strategy[Rise] = {
-    case e @ App(DepApp(NatKind, padEmpty(), p: Nat), App(asV @ DepApp(NatKind, _, v: Nat), in))
+    case e @ App(DepApp(_, padEmpty(), p: Nat), App(asV @ DepApp(_, _, v: Nat), in))
     if isAsVector(asV) =>
       Success(eraseType(asV)(padEmpty(p*v)(in)) !: e.t)
   }
@@ -108,10 +108,10 @@ object vectorize {
   // TODO: express as a combination of smaller rules
   @rule def alignSlide: Strategy[Rise] = {
     case e @ App(transpose(),
-      App(App(map(), DepApp(NatKind, asVector(), Cst(v))),
+      App(App(map(), DepApp(_, asVector(), Cst(v))),
         App(join(), App(App(map(), transpose()),
-          App(App(map(), DepApp(NatKind, padEmpty(), Cst(p))),
-            App(App(map(), DepApp(NatKind, DepApp(NatKind, slide(), Cst(3)), Cst(1))),
+          App(App(map(), DepApp(_, padEmpty(), Cst(p))),
+            App(App(map(), DepApp(_, DepApp(_, slide(), Cst(3)), Cst(1))),
               in
             )
           )
@@ -135,9 +135,9 @@ object vectorize {
       Success(r !: e.t)
 
     case e @ App(transpose(),
-      App(App(map(), DepApp(NatKind, asVector(), Cst(v))),
-        App(transpose(), App(DepApp(NatKind, padEmpty(), Cst(p)),
-          App(DepApp(NatKind, DepApp(NatKind, slide(), Cst(3)), Cst(1)), in)
+      App(App(map(), DepApp(_, asVector(), Cst(v))),
+        App(transpose(), App(DepApp(_, padEmpty(), Cst(p)),
+          App(DepApp(_, DepApp(_, slide(), Cst(3)), Cst(1)), in)
         ))
       )
     ) if p <= v =>
@@ -156,9 +156,9 @@ object vectorize {
   // TODO: express as a combination of smaller rules
   // FIXME: function f needs to be element-wise (a hidden mapVec)
   @rule def mapAfterShuffle: Strategy[Rise] = {
-    case e @ App(DepApp(NatKind, asVector(), v: Nat),
-      App(join(), App(DepApp(NatKind, DepApp(NatKind, slide(), v2: Nat), Cst(1)),
-        App(DepApp(NatKind, take(), t: Nat), App(asScalar(),
+    case e @ App(DepApp(_, asVector(), v: Nat),
+      App(join(), App(DepApp(_, DepApp(_, slide(), v2: Nat), Cst(1)),
+        App(DepApp(_, take(), t: Nat), App(asScalar(),
           App(App(map(), f), in)
         ))
       ))
@@ -172,9 +172,9 @@ object vectorize {
 
   // FIXME: this is very specific
   @rule def padEmptyBeforeZipAsVector: Strategy[Rise] = {
-    case e @ App(DepApp(NatKind, padEmpty(), p: Nat), App(
+    case e @ App(DepApp(_, padEmpty(), p: Nat), App(
       Lambda(x, App(App(zip(),
-        App(asV @ DepApp(NatKind, _, v: Nat), App(fst(), x2))),
+        App(asV @ DepApp(_, _, v: Nat), App(fst(), x2))),
         App(asV2, App(snd(), x3)))),
       in
     )) if x =~= x2 && x =~= x3 && isAsVector(asV) && asV =~= asV2 =>
@@ -186,8 +186,8 @@ object vectorize {
   }
 
   def isAsVector: Rise => Boolean = {
-    case DepApp(NatKind, asVector(), _: Nat) => true
-    case DepApp(NatKind, asVectorAligned(), _: Nat) => true
+    case DepApp(_, asVector(), _: Nat) => true
+    case DepApp(_, asVectorAligned(), _: Nat) => true
     case _ => false
   }
 

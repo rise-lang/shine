@@ -48,12 +48,12 @@ object check {
       expr `:` DepFunType(kind, x, t)
 
     case DepApp(kind, f, e) =>
-      val (x, t) = ctx `|-` f match {
-        case DepFunType(kind2, x, t) if kind == kind2 => (x, t)
+      val (k, x, t) = ctx `|-` f match {
+        case DepFunType(kind2, x, t) if kind == kind2 => (kind2, x, t)
         case t => throw TypeException(s"expected dependent function type and got $t")
       }
       // ----------- DepApp
-      expr `:` substitute.kindInType(kind, e, `for`= x, in = t)
+      expr `:` substitute.kindInType(k, e, `for`= x, in = t)
 
     case Literal(d) =>
       // ----------- Literal

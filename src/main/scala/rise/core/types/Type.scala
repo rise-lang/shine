@@ -13,7 +13,7 @@ object TypePlaceholder extends Type {
   override def toString: String = "?"
 }
 
-final case class TypeIdentifier(name: String) extends Type with Kind.Identifier {
+final case class TypeIdentifier(name: String) extends Type {
   override def toString: String = "_" + name
 }
 
@@ -22,17 +22,16 @@ final case class FunType[T <: Type, U <: Type](inT: T, outT: U)
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DepFunType[T, I <: Kind.Identifier, U <: Type]
-                           (kind: Kind[T, I],x: I, t: U) extends Type {
+final case class DepFunType[T, I, KI <: Kind.Identifier, U <: Type] (kind: Kind[T, I, KI],x: I, t: U) extends Type {
   override def toString: String =
-    s"(${x.name}: ${kind.name} -> $t)"
+    s"(${Kind.idName(kind, x)}: ${kind.name} -> $t)"
 }
 
 // == Data types ==============================================================
 
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
+final case class DataTypeIdentifier(name: String) extends DataType {
   override def toString: String = name
 }
 
@@ -88,7 +87,7 @@ object MatrixLayout {
   object None extends MatrixLayout
 }
 
-final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with Kind.Identifier {
+final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout {
   override def toString: String = name
 }
 
@@ -100,7 +99,7 @@ object FragmentKind {
   object Accumulator extends FragmentKind { override def toString = "Accumulator"}
 }
 
-final case class FragmentKindIdentifier(name: String) extends FragmentKind with Kind.Identifier {
+final case class FragmentKindIdentifier(name: String) extends FragmentKind {
   override def toString: String = name
 }
 
@@ -129,8 +128,8 @@ final case class ManagedBufferType(dt: DataType) extends DataType {
 
 }
 
-final case class DepPairType[T, I <: Kind.Identifier](kind: Kind[T, I], x: I, t: DataType) extends DataType {
-  override def toString: String = s"(${x.name}: ${kind.name} ** $t)"
+final case class DepPairType[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: I, t: DataType) extends DataType {
+  override def toString: String = s"(${Kind.idName(kind, x)}: ${kind.name} ** $t)"
 }
 
 

@@ -11,7 +11,7 @@ sealed trait NatToData {
   def apply(n: Nat): DataType = NatToDataApply(this, n)
 }
 
-final case class NatToDataIdentifier(name: String) extends NatToData with Kind.Identifier {
+final case class NatToDataIdentifier(name: String) extends NatToData {
   override def toString: String = name
 }
 

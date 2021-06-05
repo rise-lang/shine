@@ -3,6 +3,7 @@ package rise.core
 import util.monads._
 import arithexpr.arithmetic.NamedVar
 import rise.core.traverse._
+import rise.core.types.Kind.{IFragmentKind, IMatrixLayout, INat, INatToData}
 import rise.core.types._
 
 object IsClosedForm {
@@ -46,7 +47,7 @@ object IsClosedForm {
 
     override def nat: Nat => Pair[Nat] = n => {
       val free = n.varList.foldLeft(OrderedSet.empty[Kind.Identifier]) {
-        case (free, v: NamedVar) if !boundT(NatIdentifier(v)) => OrderedSet.add(NatIdentifier(v) : Kind.Identifier)(free)
+        case (free, v: NamedVar) if !boundT(INat(NatIdentifier(v))) => OrderedSet.add(INat(NatIdentifier(v)) : Kind.Identifier)(free)
         case (free, _) => free
       }
       accumulate((OrderedSet.empty, free))(n)
@@ -61,30 +62,30 @@ object IsClosedForm {
         val fV = OrderedSet.append(OrderedSet.append(fVx)(fVe))(fVt)
         val fT = OrderedSet.append(OrderedSet.append(fTx)(fTe))(fTt)
         accumulate((fV, fT))(Lambda(x1, e1)(t1): Expr)
-      case DepLambda(_, x, b) => this.copy(boundT = boundT + x).expr(b)
+      case DepLambda(k, x, b) => this.copy(boundT = boundT + Kind.toIdentifier(k, x)).expr(b)
       case e => super.expr(e)
     }
 
     override def natToData: NatToData => Pair[NatToData] = {
       case NatToDataLambda(x, e) =>
-        for { p <- this.copy(boundT = boundT + x).`type`(e) }
+        for { p <- this.copy(boundT = boundT + INat(x)).`type`(e) }
           yield (p._1, NatToDataLambda(x, e))
       case t => super.natToData(t)
     }
 
     override def natToNat: NatToNat => Pair[NatToNat] = {
       case NatToNatLambda(x, n) =>
-        for { p <- this.copy(boundT = boundT + x).nat(n) }
+        for { p <- this.copy(boundT = boundT + INat(x)).nat(n) }
           yield (p._1, NatToNatLambda(x, n))
       case n => super.natToNat(n)
     }
 
     override def `type`[T <: Type]: T => Pair[T] = {
-      case d@DepFunType(_, x, t) =>
-        for { p <- this.copy(boundT = boundT + x).`type`(t) }
+      case d@DepFunType(k, x, t) =>
+        for { p <- this.copy(boundT = boundT + Kind.toIdentifier(k, x)).`type`(t) }
           yield (p._1, d.asInstanceOf[T])
-      case d@DepPairType(_, x, dt) =>
-        for { p <- this.copy(boundT = boundT + x).datatype(dt) }
+      case d@DepPairType(k, x, dt) =>
+        for { p <- this.copy(boundT = boundT + Kind.toIdentifier(k, x)).datatype(dt) }
           yield (p._1, d.asInstanceOf[T])
       case t => super.`type`(t)
     }
@@ -102,8 +103,8 @@ object IsClosedForm {
 
   // Exclude matrix layout and fragment kind identifiers, since they cannot currently be bound
   def needsClosing : Seq[Kind.Identifier] => Seq[Kind.Identifier] = _.flatMap {
-    case i : MatrixLayoutIdentifier => Seq()
-    case i : FragmentKindIdentifier => Seq()
+    case IMatrixLayout(i) => Seq()
+    case IFragmentKind(i) => Seq()
     case e => Seq(e)
   }
 

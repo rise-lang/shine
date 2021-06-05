@@ -85,12 +85,12 @@ object lowering {
 
   // TODO: load identity instead, then change with other rules?
   @rule def circularBuffer(load: Expr): Strategy[Rise] = {
-    case e@DepApp(NatKind, DepApp(NatKind, slide(), sz: Nat), Cst(1)) => Success(
+    case e@DepApp(_, DepApp(_, slide(), sz: Nat), Cst(1)) => Success(
       p.circularBuffer(sz)(sz)(eraseType(load)) !: e.t)
   }
 
   @rule def rotateValues(write: Expr): Strategy[Rise] = {
-    case e@DepApp(NatKind, DepApp(NatKind, slide(), sz: Nat), Cst(1)) => Success(
+    case e@DepApp(_, DepApp(_, slide(), sz: Nat), Cst(1)) => Success(
       p.rotateValues(sz)(eraseType(write)) !: e.t)
   }
 
@@ -319,7 +319,7 @@ object lowering {
     }
 
     @rule def circularBuffer(a: AddressSpace): Strategy[Rise] = {
-      case e@DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), Cst(1)) =>
+      case e@DepApp(_, DepApp(_, slide(), n: Nat), Cst(1)) =>
         Success(
           oclCircularBuffer(a)(n)(n)(fun(x => x))
             !: e.t)
@@ -327,14 +327,14 @@ object lowering {
 
     @rule def circularBufferLoadFusion: Strategy[Rise] = {
       case e@App(App(
-        cb @ DepApp(NatKind, DepApp(NatKind, DepApp(AddressSpaceKind, oclCircularBuffer(), _), _), _),
+        cb @ DepApp(_, DepApp(_, DepApp(_, oclCircularBuffer(), _), _), _),
         load), App(App(map(), f), in)
       ) =>
         Success(eraseType(cb)(preserveType(f) >> load, in) !: e.t)
     }
 
     @rule def rotateValues(a: AddressSpace, write: Expr): Strategy[Rise] = {
-      case e@DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), Cst(1)) =>
+      case e@DepApp(_, DepApp(_, slide(), n: Nat), Cst(1)) =>
         Success(
           oclRotateValues(a)(n)(eraseType(write))
             !: e.t)

@@ -1,5 +1,6 @@
 package rise.eqsat
 
+import rise.core.types.Kind.{IDataType, INat, IType}
 import rise.core.types.TypePlaceholder
 import rise.{core => rc}
 import rise.core.{types => rct}
@@ -73,9 +74,9 @@ object NamedRewrite {
         //       lam(x : xt, e : et) : xt -> et
         case rc.Lambda(x, e) =>
           PatternNode(Lambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(rct.NatKind, x: rct.NatIdentifier, e) =>
+        case rc.DepLambda(_, x: rct.NatIdentifier, e) =>
           PatternNode(NatLambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(rct.DataKind, x: rct.DataTypeIdentifier, e) =>
+        case rc.DepLambda(_, x: rct.DataTypeIdentifier, e) =>
           PatternNode(DataLambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(_, _, _) => ???
 
@@ -83,10 +84,10 @@ object NamedRewrite {
         //       app(f : et -> at, e : et) : at
         case rc.App(f, e) =>
           PatternNode(App(makePat(f, bound, isRhs, matchType = false), makePat(e, bound, isRhs)))
-        case rc.DepApp(rct.NatKind, f, x: rct.Nat) =>
+        case rc.DepApp(_, f, x: rct.Nat) =>
           PatternNode(NatApp(
             makePat(f, bound, isRhs, matchType = false), makeNPat(x, bound, isRhs)))
-        case rc.DepApp(rct.DataKind, f, x: rct.DataType) =>
+        case rc.DepApp(_, f, x: rct.DataType) =>
           PatternNode(DataApp(
             makePat(f, bound, isRhs, matchType = false), makeDTPat(x, bound, isRhs)))
 
@@ -99,7 +100,7 @@ object NamedRewrite {
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
-        case i: rct.NatIdentifier if freeT(i) =>
+        case i: rct.NatIdentifier if freeT(INat(i)) =>
           makePatVar(i.name, bound.nat.size, natPatVars,
             NatPatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
@@ -127,7 +128,7 @@ object NamedRewrite {
 
     def makeDTPat(dt: rct.DataType, bound: Expr.Bound, isRhs: Boolean): DataTypePattern =
       dt match {
-        case i: rct.DataTypeIdentifier if freeT(i) =>
+        case i: rct.DataTypeIdentifier if freeT(IDataType(i)) =>
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             dataTypePatVars, DataTypePatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.DataTypeIdentifier =>
@@ -144,7 +145,7 @@ object NamedRewrite {
           DataTypePatternNode(PairType(makeDTPat(dt1, bound, isRhs), makeDTPat(dt2, bound, isRhs)))
         case rct.ArrayType(s, et) =>
           DataTypePatternNode(ArrayType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
-        case _: rct.DepArrayType | _: rct.DepPairType[_, _] |
+        case _: rct.DepArrayType | _: rct.DepPairType[_, _, _] |
              _: rct.NatToDataApply | _: rct.FragmentType =>
           throw new Exception(s"did not expect $dt")
       }
@@ -154,13 +155,13 @@ object NamedRewrite {
         case dt: rct.DataType => makeDTPat(dt, bound, isRhs)
         case rct.FunType(a, b) =>
           TypePatternNode(FunType(makeTPat(a, bound, isRhs), makeTPat(b, bound, isRhs)))
-        case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) =>
+        case rct.DepFunType(_, x: rct.NatIdentifier, t) =>
           TypePatternNode(NatFunType(makeTPat(t, bound + x, isRhs)))
-        case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) =>
+        case rct.DepFunType(_, x: rct.DataTypeIdentifier, t) =>
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
         case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>
-          assert(freeT(i))
+          assert(freeT(IType(i)))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             typePatVars, TypePatternVar, if (isRhs) { Unknown } else { Known })
         case rct.TypePlaceholder =>
