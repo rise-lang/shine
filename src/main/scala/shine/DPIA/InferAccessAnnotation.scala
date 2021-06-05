@@ -304,8 +304,8 @@ private class InferAccessAnnotation {
           (gs1 `(Nat)->:` (gs2 `(Nat)->:` (gs3 `(Nat)->:`
           ((t: rt.DataType) ->: (_: rt.DataType))
         ))))) =>
-          nFunT(ls1, nFunT(ls2, nFunT(ls3,
-            nFunT(gs1, nFunT(gs2, nFunT(gs3,
+          nFunT(fromRise.natIdentifier(ls1), nFunT(fromRise.natIdentifier(ls2), nFunT(fromRise.natIdentifier(ls3),
+            nFunT(fromRise.natIdentifier(gs1), nFunT(fromRise.natIdentifier(gs2), nFunT(fromRise.natIdentifier(gs3),
               expT(t, write) ->: expT(t, write)))))))
         case _ => error()
       }
@@ -350,7 +350,7 @@ private class InferAccessAnnotation {
         case n `(Nat)->:` ((dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
 
           val ai = accessTypeIdentifier()
-          nFunT(n, expT(dt1, ai) ->: expT(dt2, ai))
+          nFunT(fromRise.natIdentifier(n), expT(dt1, ai) ->: expT(dt2, ai))
         case _ => error()
       }
 
@@ -377,7 +377,7 @@ private class InferAccessAnnotation {
 
       case rp.natAsIndex() | rp.take() | rp.drop() => p.t match {
         case n `(Nat)->:` ((dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
-          nFunT(n, expT(dt1, read) ->: expT(dt2, read))
+          nFunT(fromRise.natIdentifier(n), expT(dt1, read) ->: expT(dt2, read))
         case _ => error()
       }
 
@@ -414,7 +414,7 @@ private class InferAccessAnnotation {
         case tile `(Nat)->:`
           (((s: rt.DataType) ->: (t: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType)) =>
-          nFunT(tile,
+          nFunT(fromRise.natIdentifier(tile),
             (expT(s, read) ->: expT(t, write)) ->:
             expT(inT, read) ->: expT(outT, write))
         case _ => error()
@@ -425,7 +425,7 @@ private class InferAccessAnnotation {
         case  sz `(Nat)->:`
           (((s: rt.DataType) ->: (_: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType)) =>
-          nFunT(sz,
+          nFunT(fromRise.natIdentifier(sz),
             (expT(s, read) ->: expT(s, write)) ->:
             expT(inT, read) ->: expT(outT, read))
         case _ => error()
@@ -435,7 +435,7 @@ private class InferAccessAnnotation {
         case alloc `(Nat)->:` (sz `(Nat)->:`
           (((s: rt.DataType) ->: (t: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType))) =>
-          nFunT(alloc, nFunT(sz,
+          nFunT(fromRise.natIdentifier(alloc), nFunT(fromRise.natIdentifier(sz),
             (expT(s, read) ->: expT(t, write)) ->:
             expT(inT, read) ->: expT(outT, read)))
         case _ => error()
@@ -446,7 +446,7 @@ private class InferAccessAnnotation {
           (((s: rt.DataType) ->: (_: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType))) =>
           aFunT(a,
-            nFunT(sz,
+            nFunT(fromRise.natIdentifier(sz),
               (expT(s, read) ->: expT(s, write)) ->:
               expT(inT, read) ->: expT(outT, read)))
         case _ => error()
@@ -457,7 +457,7 @@ private class InferAccessAnnotation {
           (((s: rt.DataType) ->: (t: rt.DataType)) ->:
             (inT: rt.ArrayType) ->: (outT: rt.ArrayType)))) =>
 
-          aFunT(a, nFunT(alloc, nFunT(sz,
+          aFunT(a, nFunT(fromRise.natIdentifier(alloc), nFunT(fromRise.natIdentifier(sz),
             (expT(s, read) ->: expT(t, write)) ->:
               expT(inT, read) ->: expT(outT, read))))
         case _ => error()
@@ -466,7 +466,7 @@ private class InferAccessAnnotation {
       case rp.slide() | rp.padClamp() => p.t match {
         case sz `(Nat)->:` (sp `(Nat)->:`
           ((dt1: rt.DataType) ->: (dt2: rt.DataType))) =>
-          nFunT(sz, nFunT(sp,
+          nFunT(fromRise.natIdentifier(sz), nFunT(fromRise.natIdentifier(sp),
             expT(dt1, read) ->: expT(dt2, read)))
         case _ => error()
       }
@@ -475,8 +475,8 @@ private class InferAccessAnnotation {
         case k `(Nat)->:`
           ((l `(Nat)->:` ((at1: rt.ArrayType) ->: (at2: rt.ArrayType))) ->:
             (at3: rt.ArrayType) ->: (at4: rt.ArrayType)) =>
-          nFunT(k,
-            nFunT(l, expT(at1, read) ->: expT(at2, write)) ->:
+          nFunT(fromRise.natIdentifier(k),
+            nFunT(fromRise.natIdentifier(l), expT(at1, read) ->: expT(at2, write)) ->:
             expT(at3, read) ->: expT(at4, write) )
         case _ => error()
       }
@@ -485,8 +485,8 @@ private class InferAccessAnnotation {
         case a `(Addr)->:` (k `(Nat)->:`
           ((l `(Nat)->:` ((at1: rt.ArrayType) ->: (at2: rt.ArrayType))) ->:
             (at3: rt.ArrayType) ->: (at4: rt.ArrayType))) =>
-          aFunT(a, nFunT(k,
-            nFunT(l, expT(at1, read) ->: expT(at2, write)) ->:
+          aFunT(a, nFunT(fromRise.natIdentifier(k),
+            nFunT(fromRise.natIdentifier(l), expT(at1, read) ->: expT(at2, write)) ->:
               expT(at3, read) ->: expT(at4, write) ))
         case _ => error()
       }
@@ -502,7 +502,7 @@ private class InferAccessAnnotation {
 
       case rp.padEmpty() => p.t match {
         case r `(Nat)->:` ((n`.`t) ->: (_`.`_)) =>
-          nFunT(r, expT(n`.`t, write) ->: expT((n + r)`.`t, write))
+          nFunT(fromRise.natIdentifier(r), expT(n`.`t, write) ->: expT((n + r)`.`t, write))
         case _ => error()
       }
 
@@ -510,7 +510,7 @@ private class InferAccessAnnotation {
         case l `(Nat)->:` (q `(Nat)->:`
           ((t: rt.DataType) ->: (n`.`_) ->: (_`.`_))) =>
 
-          nFunT(l, nFunT(q,
+          nFunT(fromRise.natIdentifier(l), nFunT(fromRise.natIdentifier(q),
             expT(t, read) ->: expT(n`.`t, read) ->:
               expT((l + n + q)`.`t, read)))
         case _ => error()
@@ -527,7 +527,7 @@ private class InferAccessAnnotation {
         case (n `(Nat)->:` (idxF `(NatToNat)->:` (idxFinv `(NatToNat)->:` ((_`.`t) ->: (_`.`_) )))) =>
 
           val ai = accessTypeIdentifier()
-          nFunT(n, n2nFunT(idxF, n2nFunT(idxFinv, expT(n`.`t, ai) ->: expT(n`.`t, ai))))
+          nFunT(fromRise.natIdentifier(n), n2nFunT(idxF, n2nFunT(idxFinv, expT(n`.`t, ai) ->: expT(n`.`t, ai))))
         case _ => error()
       }
 

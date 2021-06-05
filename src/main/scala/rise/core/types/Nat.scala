@@ -4,17 +4,9 @@ import arithexpr.arithmetic._
 import rise.core.types
 
 
-class NatIdentifier(override val name: String, override val range: Range = RangeUnknown) extends NamedVar(name, range) {
-  override lazy val toString: String = name
-  override def copy(r: Range): NatIdentifier = new NatIdentifier(name, r)
-  override def cloneSimplified(): NatIdentifier with SimplifiedExpr =
-    new NatIdentifier(name, range) with SimplifiedExpr
-}
-
 object NatIdentifier {
-  def apply(name: String): NatIdentifier = new NatIdentifier(name)
-  def apply(name: String, range: Range): NatIdentifier = new NatIdentifier(name, range)
-  def apply(nv: NamedVar): NatIdentifier = new NatIdentifier(nv.name, nv.range)
+  def apply(name: String): NatIdentifier = new NamedVar(name)
+  def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range)
 }
 
 final class NatToNatApply(val f: NatToNat, val n: Nat)

@@ -1,8 +1,9 @@
 package rise.core
 
-import arithexpr.arithmetic.ArithExpr
+import arithexpr.arithmetic.{ArithExpr, NamedVar}
 
 package object types {
+  type NatIdentifier = NamedVar
   type Nat = ArithExpr
 
   type ->[T1 <: Type, T2 <: Type] = FunType[T1, T2]

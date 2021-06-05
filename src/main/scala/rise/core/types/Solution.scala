@@ -91,7 +91,6 @@ case class Solution(ts: Map[Type, Type],
       case lambda@NatToDataLambda(x, body) =>
         val xSub = apply(x) match {
           case n: NatIdentifier => n
-          case n: arithexpr.arithmetic.NamedVar => NatIdentifier(n.name, n.range)
           case other => throw NonIdentifierInBinderException(lambda, other)
         }
         NatToDataLambda(xSub, apply(body).asInstanceOf[DataType])
@@ -104,7 +103,6 @@ case class Solution(ts: Map[Type, Type],
       case lambda@NatToNatLambda(x, body) =>
         val xSub = apply(x) match {
           case n: NatIdentifier => n
-          case n: arithexpr.arithmetic.NamedVar => NatIdentifier(n.name, n.range)
           case other => throw NonIdentifierInBinderException(lambda, other)
         }
         NatToNatLambda(xSub, apply(body))

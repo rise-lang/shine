@@ -13,10 +13,7 @@ object showScala {
   def nat(n: Nat): String = {
     import arithexpr.arithmetic._
     n match {
-      case n: NatIdentifier =>
-        s"""NatIdentifier("${n.name}", ${n.range})"""
-      case n: NamedVar =>
-        s"""NamedVar("${n.name}", ${n.range})"""
+      case n: NatIdentifier => s"""NatIdentifier("${n.name}", ${n.range})"""
       case Prod(factors) => factors.map(nat).mkString("(", " * ", ")")
       case Sum(terms) => terms.map(nat).mkString("(", " + ", ")")
       case Cst(c) => s"Cst($c)"

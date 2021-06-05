@@ -125,10 +125,6 @@ package object DPIA {
   }
 
   object nFunT {
-    def apply(n: rt.NatIdentifier, t: PhraseType): PhraseType = {
-      DepFunType(NatKind, fromRise.natIdentifier(n), t)
-    }
-
     def apply(n: NatIdentifier, t: PhraseType): PhraseType = {
       DepFunType(NatKind, n, t)
     }
