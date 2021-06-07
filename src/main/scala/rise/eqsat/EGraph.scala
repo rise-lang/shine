@@ -189,9 +189,10 @@ class EGraph[ED, ND, TD](
     (id1, true)
   }
 
-  def rebuild(filter: Predicate[ED, ND, TD] = NoPredicate()): Int = {
+  def rebuild(roots: Seq[EClassId],
+              filter: Predicate[ED, ND, TD] = NoPredicate()): Int = {
     val nUnions = processUnions()
-    val _ = this.filter(filter)
+    val _ = this.filter(filter, roots)
     val _ = rebuildClasses()
 
     assert {
@@ -313,14 +314,13 @@ class EGraph[ED, ND, TD](
   }
 
   // returns (eliminatedClasses, eliminatedNodes)
-  private def filter(predicate: Predicate[ED, ND, TD]): (Int, Int) = {
+  private def filter(predicate: Predicate[ED, ND, TD],
+                     roots: Seq[EClassId]): (Int, Int) = {
     assert(pending.isEmpty)
     assert(analysisPending.isEmpty)
 
-    predicate match {
-      case NoPredicate() => return (0, 0)
-      case _ =>
-    }
+    val rootsCanonical = roots.map(findMut).toSet
+    def isRoot(id: EClassId): Boolean = rootsCanonical(id)
 
     val originalClassCount = classCount()
     val originalNodeCount = nodeCount()
@@ -328,22 +328,31 @@ class EGraph[ED, ND, TD](
     // 1. collect classes to eliminate
     val toEliminate = HashSet.empty[EClassId]
     val (rt1, _) = util.time {
-      for (eclass <- classes.values) {
-        assert(eclass.id == findMut(eclass.id))
-        if (!predicate(this, eclass)) {
-          toEliminate += eclass.id
-        }
+      predicate match {
+        case NoPredicate() =>
+        case _ =>
+          predicate.start(this, roots)
+          for (eclass <- classes.values) {
+            assert(eclass.id == findMut(eclass.id))
+            if (!predicate(this, eclass)) {
+              assert(!isRoot(eclass.id))
+              toEliminate += eclass.id
+            }
+          }
+          predicate.stop()
       }
     }
 
+    /* TODO? and if no directional rewrite was triggered
     if (toEliminate.isEmpty) {
       return (0, 0)
     }
+   */
 
     def eclassToEliminate(id: EClassId): Boolean =
       toEliminate(findMut(id))
     def enodeToEliminate(n: ENode): Boolean =
-      n.children().exists(id => eclassToEliminate(id))
+      n.children().exists(eclassToEliminate)
 
     // 2. also eliminate classes that would become
     // unreachable or dead ends
@@ -354,16 +363,21 @@ class EGraph[ED, ND, TD](
 
         for (eclass <- classes.values) {
           if (!toEliminate(eclass.id)) {
-            val unreachable = eclass.parents.nonEmpty &&
+            val unreachable = !isRoot(eclass.id) &&
               eclass.parents.forall { case (pn, pid) => eclassToEliminate(pid) || enodeToEliminate(pn) }
             val deadEnd = eclass.nodes.forall(enodeToEliminate)
             if (unreachable || deadEnd) {
+              assert(!isRoot(eclass.id))
               toEliminate += eclass.id
               spread = true
             }
           }
         }
       }
+    }
+
+    if (toEliminate.isEmpty) {
+      return (0, 0)
     }
 
     // 3. perform the actual elimination

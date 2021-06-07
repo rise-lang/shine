@@ -4,8 +4,9 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.Expr
 import rise.core.types._
-import rise.eqsat.{ProveEquiv, rules, ArrayDimensionPredicate}
+import rise.eqsat.{ArrayDimensionPredicate, ASTSizePredicate, ProveEquiv, rules}
 import ProveEquiv.syntax._
+import rise.eqsat.PredicateDSL._
 
 object tiling {
   private val tileSize = 4
@@ -18,9 +19,9 @@ object tiling {
     rules.combinatory.splitJoin(tileSize),
     rules.combinatory.mapFusion,
     rules.combinatory.mapFission,
-    // rules.combinatory.transposePairAfter,
-    // rules.combinatory.mapMapFBeforeTranspose,
-    rules.combinatory.transposeAroundMapMapF
+    rules.combinatory.transposePairAfter,
+    rules.combinatory.mapMapFBeforeTranspose,
+    // rules.combinatory.transposeAroundMapMapF
   )
 
   private def T: ToBeTyped[Expr] = rise.core.primitives.transpose
@@ -52,7 +53,7 @@ object tiling {
     )
 
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(4))
+      .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(40))
       .runCNF(expr, golds, tilingRules)
   }
 
@@ -84,7 +85,7 @@ object tiling {
     )
 
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(6))
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(80))
       .runCNF(expr, golds, tilingRules)
   }
 
@@ -131,16 +132,16 @@ object tiling {
     )
 
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(8))
+      .withFilter(ArrayDimensionPredicate(8) && ASTSizePredicate(160))
       .runCNF(expr, golds, tilingRules)
   }
 
   def main(args: Array[String]): Unit = {
     val (time2D, _) = util.time(run2D())
-    // val (time3D, _) = util.time(run3D())
-    // val (time4D, _) = util.time(run4D())
+    val (time3D, _) = util.time(run3D())
+    val (time4D, _) = util.time(run4D())
     println(s"total 2D time: ${util.prettyTime(time2D)}") // ~25s search on i7 desktop
-    // println(s"total 3D time: ${util.prettyTime(time3D)}")
-    // println(s"total 4D time: ${util.prettyTime(time4D)}")
+    println(s"total 3D time: ${util.prettyTime(time3D)}")
+    println(s"total 4D time: ${util.prettyTime(time4D)}")
   }
 }

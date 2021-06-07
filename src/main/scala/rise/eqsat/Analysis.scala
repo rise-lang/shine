@@ -50,6 +50,7 @@ object DefaultAnalysis extends DefaultAnalysisCustomisable() {
   type TypeData = DefaultAnalysisCustomisable.TypeData
 
   type EGraph = rise.eqsat.EGraph[Data, NatData, TypeData]
+  type EClass = rise.eqsat.EClass[Data]
   type HashConses = rise.eqsat.HashConses[NatData, TypeData]
   type Searcher = rise.eqsat.Searcher[Data, NatData, TypeData]
   type Applier = rise.eqsat.Applier[Data, NatData, TypeData]

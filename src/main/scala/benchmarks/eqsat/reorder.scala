@@ -1,6 +1,6 @@
 package benchmarks.eqsat
 
-import rise.eqsat.{rules, ProveEquiv, BackoffScheduler, CuttingScheduler}
+import rise.eqsat.{ASTSizePredicate, BackoffScheduler, CuttingScheduler, ProveEquiv, rules}
 import ProveEquiv.syntax._
 import rise.core.Expr
 import rise.core.DSL._
@@ -11,9 +11,9 @@ object reorder {
   private val reorderRules = Seq(
     rules.combinatory.compositionAssoc1,
     rules.combinatory.compositionAssoc2,
-    rules.combinatory.compositionIntro,
-    rules.combinatory.compositionLeftId,
-    rules.combinatory.compositionRightId,
+    //rules.combinatory.compositionIntro.directed(),
+    //rules.combinatory.compositionLeftId.directed(),
+    //rules.combinatory.compositionRightId.directed(),
     rules.combinatory.mapFusion,
     rules.combinatory.mapFission,
     rules.combinatory.transposePairAfter,
@@ -39,17 +39,18 @@ object reorder {
     val expr = wrap(f => ***(f))
     val gold132 = wrap(f => *(T) o ***(f) o *(T))
     val gold213 = wrap(f => T o ***(f) o T)
-    // all below should be implied by gold132 and gold213 modulo associativity
+    // all below should be implied by gold132 and gold213 modulo associativity and types
     val gold231 = wrap(f => T o *(T) o ***(f) o *(T) o T)
     val gold321 = wrap(f => *(T) o T o *(T) o ***(f) o *(T) o T o *(T))
     val gold312 = wrap(f => *(T) o T o ***(f) o T o *(T))
 
     ProveEquiv.init()
+      .withFilter(ASTSizePredicate(35))
       //.bidirectional()
-      .withRunnerTransform(r => r.withIterationLimit(3))
-      .withEndRules(Seq(
-        rules.combinatory.compositionAssoc1,
-        rules.combinatory.compositionAssoc2))
+      //.withRunnerTransform(r => r.withIterationLimit(3))
+      //.withEndRules(Seq(
+      //  rules.combinatory.compositionAssoc1,
+      //  /*rules.combinatory.compositionAssoc2*/))
       .runCNF(expr, Seq(
       gold132, gold213, gold231, gold321, gold312
     ), reorderRules)
@@ -60,7 +61,8 @@ object reorder {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) => depFun((p: Nat) =>
       depFun((dt1: DataType) => depFun((dt2: DataType) =>
       fun(i => fun(f =>
-        inner(i :: (n`.`n`.`n`.`n`.`dt1))(f) :: (n`.`n`.`n`.`n`.`dt2)
+        inner(i :: (n`.`m`.`o`.`p`.`dt1))(f) :: (n`.`m`.`o`.`p`.`dt2)
+          // (n`.`n`.`n`.`n`.`dt1))(f) :: (n`.`n`.`n`.`n`.`dt2)
       ))))))))
     }
 
@@ -68,23 +70,16 @@ object reorder {
     val gold1243: Expr = wrap(i => f => (**(T) o ****(f) o **(T)) $ i)
     val gold1324: Expr = wrap(i => f => (*(T) o ****(f) o *(T)) $ i)
     val gold2134: Expr = wrap(i => f => (T o ****(f) o T) $ i)
-    // should be implied by above goals modulo associativity
+    // should be implied by above goals modulo associativity and types
     val gold4321: Expr = wrap(i => f => (**(T) o *(T) o T o **(T) o *(T) o **(T) o ****(f) o
       **(T) o *(T) o **(T) o T o *(T) o **(T)) $ i)
 
-    // ****(f) =
-    // **(T) o ****(f) o **(T) =
-    // *(T) o ****(f) o *(T) =
-    // T o ****(f) o T
-    //  implies (untyped, polymorpic typed or same array dimensions)
-    // = **(T) o *(T) o T o **(T) o *(T) o **(T) o ****(f) o
-    //      **(T) o *(T) o **(T) o T o *(T) o **(T)
-
     ProveEquiv.init()
+      .withFilter(ASTSizePredicate(100))
+      /*
       .withRunnerTransform(r => r.withIterationLimit(5))
       .withEndRules(Seq(
-        rules.combinatory.compositionAssoc1,
-        rules.combinatory.compositionAssoc2))
+        rules.combinatory.compositionAssoc1.directed()))*/
       .runCNF(expr, Seq(
         gold1243, gold1324, gold2134, gold4321
       ), reorderRules)

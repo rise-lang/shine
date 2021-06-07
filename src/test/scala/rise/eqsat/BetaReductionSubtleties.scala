@@ -61,14 +61,14 @@ class BetaReductionSubtleties extends test_util.Tests {
     def seqCheck(betaRule: rules.Rule): Boolean = {
       val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
       val startId = egraph.addExpr(start)
-      egraph.rebuild()
+      egraph.rebuild(Seq(startId))
       for (_ <- 0 until 4) {
         val shc = SubstHashCons.empty
         rules.removeTransposePair.apply(egraph, shc,
           rules.removeTransposePair.search(egraph, shc))
-        egraph.rebuild()
+        egraph.rebuild(Seq(startId))
         betaRule.apply(egraph, shc, betaRule.search(egraph, shc))
-        egraph.rebuild()
+        egraph.rebuild(Seq(startId))
       }
       val shc = SubstHashCons.empty
       Pattern.fromExpr(goal).compile()

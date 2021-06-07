@@ -24,13 +24,15 @@ object ematching {
 
     def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
                         instructions: Seq[Instruction],
-                        yieldFn: () => Unit): Unit = {
+                        yieldFn: Option[ENode] => Unit,
+                        rootMatch: Option[ENode]): Unit = {
       var instrs = instructions
       while (instrs.nonEmpty) {
         instrs.head match {
           case PushType(i) =>
             tRegs += egraph.get(reg(i)).t
           case Bind(node, i, out, nOut, tOut) =>
+            val isRoot = i == Reg(0)
             forEachMatchingNode(egraph.get(reg(i)), node, { matched =>
               regs.remove(out.n, regs.size - out.n)
               nRegs.remove(nOut.n, nRegs.size - nOut.n)
@@ -40,7 +42,13 @@ object ematching {
                 n => nRegs += n,
                 dt => tRegs += dt
               )
-              run(egraph, instrs.tail, yieldFn)
+              val rootMatch2 = if (isRoot) {
+                assert(rootMatch.isEmpty)
+                Some(matched)
+              } else {
+                rootMatch
+              }
+              run(egraph, instrs.tail, yieldFn, rootMatch2)
             })
             return
           case Compare(i, j) =>
@@ -81,7 +89,7 @@ object ematching {
         instrs = instrs.tail
       }
 
-      yieldFn()
+      yieldFn(rootMatch)
     }
   }
 
@@ -110,11 +118,11 @@ object ematching {
                 var dt2r: HashMap[DataTypePatternVar, TypeReg]) {
     def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
                         eclass: EClassId,
-                        hashcons: SubstHashCons): Vec[Subst] = {
+                        hashcons: SubstHashCons): Vec[(Option[ENode], Subst)] = {
       val machine = AbstractMachine.init(eclass)
 
-      val substs = Vec.empty[Subst]
-      machine.run(egraph, instructions.toSeq, { () =>
+      val substs = Vec.empty[(Option[ENode], Subst)]
+      val yieldFn = { rootENode: Option[ENode] =>
         // TODO: use ordered hashmaps to maximize sharing?
         //  first register to be picked should be the deepest in the list
         val substExprs = hashcons.exprSubst(v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) })
@@ -123,8 +131,10 @@ object ematching {
         val substDataTypes = hashcons.dataTypeSubst(dt2r.iterator.map { case (v, reg) =>
           (v, machine.tReg(reg).asInstanceOf[DataTypeId])
         })
-        substs += Subst(substExprs, substNats, substTypes, substDataTypes)
-      })
+        substs += ((rootENode, Subst(substExprs, substNats, substTypes, substDataTypes)))
+        ()
+      }
+      machine.run(egraph, instructions.toSeq, yieldFn, None)
 
       substs
     }

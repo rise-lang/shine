@@ -99,7 +99,9 @@ class separableConvolution2DEqsat extends test_util.Tests {
   test("base to scanline") {
     // FIXME: rules.beta does not work here
     proveEquiv.runBENF(wrapExpr(base(weights2d)), wrapExpr(scanline(weightsV)(weightsH)), Seq(
-      rules.eta, rules.betaExtract, rules.removeTransposePair,
+      rules.eta.directed(),
+      rules.betaExtract.directed(),
+      rules.removeTransposePair.directed(),
       rules.mapFusion, rules.mapFission,
       rules.slideBeforeMap, rules.mapSlideBeforeTranspose, rules.slideBeforeMapMapF,
       separateDotT

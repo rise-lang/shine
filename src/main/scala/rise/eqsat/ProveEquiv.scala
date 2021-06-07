@@ -15,6 +15,7 @@ object ProveEquiv {
   )
 
   case class OneOrMore[T](seq: Seq[T])
+
   object syntax {
     implicit def one[T](t: T): OneOrMore[T] = OneOrMore(Seq(t))
     implicit def more[T](s: Seq[T]): OneOrMore[T] = OneOrMore(s)
@@ -26,10 +27,10 @@ class ProveEquiv(
   var analysis: DefaultAnalysisCustomisable,
   var arrayLimit: Int,
   var transformRunner: Runner => Runner,
-  var endRules: Seq[Rewrite[_, _, _]],
+  var endRules: Seq[DefaultAnalysis.Rewrite],
   var bidirectionalSearch: Boolean,
 ) {
-  import ProveEquiv.OneOrMore
+  import ProveEquiv._
 
   def withFilter(filter: DefaultAnalysis.Predicate): ProveEquiv = {
     this.filter = filter
@@ -51,7 +52,7 @@ class ProveEquiv(
     this
   }
 
-  def withEndRules(rs: Seq[Rewrite[_, _, _]]): ProveEquiv = {
+  def withEndRules(rs: Seq[DefaultAnalysis.Rewrite]): ProveEquiv = {
     endRules = rs
     this
   }
@@ -99,10 +100,10 @@ class ProveEquiv(
     }
   }
 
-  def runUnidirectional(egraph: DefaultAnalysis.EGraph,
-                        startId: EClassId,
-                        goals: Seq[Expr],
-                        rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
+  private def runUnidirectional(egraph: DefaultAnalysis.EGraph,
+                                startId: EClassId,
+                                goals: Seq[Expr],
+                                rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
     var remainingGoals = goals
 
     def goalReached(g: Expr): Boolean =
@@ -116,10 +117,10 @@ class ProveEquiv(
     afterRun(runner, egraph, startId, goals, i => goalReached(goals(i)))
   }
 
-  def runBidirectional(egraph: DefaultAnalysis.EGraph,
-                       startId: EClassId,
-                       goals: Seq[Expr],
-                       rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
+  private def runBidirectional(egraph: DefaultAnalysis.EGraph,
+                               startId: EClassId,
+                               goals: Seq[Expr],
+                               rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
     val goalIds = goals.map(egraph.addExpr)
     val runner = transformRunner(Runner.init()).doneWhen { _ =>
       goalIds.forall(g => egraph.findMut(startId) == egraph.findMut(g))
@@ -142,6 +143,7 @@ class ProveEquiv(
 
     if (!runner.stopReasons.contains(Done)) {
       // runner.iterations.foreach(println)
+      // egraph.dot().toSVG("/home/basta/Documents/saturate-associativity.svg")
       val (found, notFound) = goals.indices.partition(goalReached)
 
       val idsToFind = notFound.map(i => egraph.addExpr(goals(i)))
@@ -151,7 +153,7 @@ class ProveEquiv(
       if (endRunner.stopReasons.contains(Done)) {
         return
       }
-
+      
       println(s"found: ${found.mkString(", ")}")
       val (endFound, neverFound) = notFound.zip(idsToFind).partition { case (_, id) =>
         egraph.findMut(startId) == egraph.findMut(id)

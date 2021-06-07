@@ -83,8 +83,8 @@ class Runner(var iterations: Vec[Iteration],
   def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
                       filter: Predicate[ED, ND, TD],
                       rules: Seq[Rewrite[ED, ND, TD]],
-                      roots: Seq[EClassId] = Seq()): Runner = {
-    egraph.rebuild()
+                      roots: Seq[EClassId]): Runner = {
+    egraph.rebuild(roots)
 
     // iteration 0
     iterations += new Iteration(
@@ -106,15 +106,15 @@ class Runner(var iterations: Vec[Iteration],
       }
       if (stopReasons.nonEmpty) { return this }
 
-      val iter = runOne(egraph, filter, rules)
+      val iter = runOne(egraph, roots, filter, rules)
       println(iter)
-
+/*
       egraph.analysis match {
         case _: DefaultAnalysisCustomisable if roots.nonEmpty =>
           Prototype.countLimits(egraph.asInstanceOf[DefaultAnalysis.EGraph], roots)
         case _ =>
       }
-
+*/
       if (iter.applied.isEmpty &&
         scheduler.canSaturate(iterations.size)) {
         stopReasons += Saturated
@@ -137,9 +137,9 @@ class Runner(var iterations: Vec[Iteration],
     this
   }
 
-  // TODO: use filter
   // TODO: could check limits in-between searches and matches like in egg
   private def runOne[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+                                 roots: Seq[EClassId],
                                  filter: Predicate[ED, ND, TD],
                                  rules: Seq[Rewrite[ED, ND, TD]]): Iteration = {
     val time0 = System.nanoTime()
@@ -167,7 +167,7 @@ class Runner(var iterations: Vec[Iteration],
 
     val time2 = System.nanoTime()
 
-    val nRebuilds = egraph.rebuild(filter)
+    val nRebuilds = egraph.rebuild(roots, filter)
 
     val time3 = System.nanoTime()
 

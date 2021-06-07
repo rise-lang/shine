@@ -121,14 +121,34 @@ class Basic extends test_util.Tests {
         in |> map(((f(0) >> f(1)) >> f(2)) >> f(3))),
       withArrayAndFuns(4, in => f =>
         in |> map(f(0) >> (f(1) >> (f(2) >> f(3))))),
-      Seq(rules.combinatory.compositionAssoc1))
+      Seq())
+  }
 
-    ProveEquiv.init().runCNF(
-      withArrayAndFuns(4, in => f =>
-        in |> map(f(0) >> (f(1) >> (f(2) >> f(3))))),
-      withArrayAndFuns(4, in => f =>
-        in |> map(((f(0) >> f(1)) >> f(2)) >> f(3))),
-      Seq(rules.combinatory.compositionAssoc2))
+  ignore("saturate associativity and fusion/fission") {
+    withFuns(4)
+    withFuns(5)
+    withFuns(6)
+    withFuns(7)
+    withFuns(9)
+    withFuns(10)
+
+    def withFuns(n: Int): Unit = {
+      try {
+        ProveEquiv.init().runCNF(
+          withArrayAndFuns(n, in => f =>
+            in |> map(f.reduce(_>>_))),
+          // unreachable by design
+          withArrayAndFuns(n, in => f =>
+            in |> map(f.reduce(_>>_)) >> split(2) >> join),
+          Seq(
+            rules.combinatory.mapFusion,
+            rules.combinatory.mapFission,
+            rules.combinatory.compositionAssoc1,
+            rules.combinatory.compositionAssoc2))
+      } catch {
+        case CouldNotProveEquiv =>
+      }
+    }
   }
 }
 

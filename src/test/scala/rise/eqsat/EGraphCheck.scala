@@ -8,14 +8,14 @@ class EGraphCheck extends test_util.Tests {
     val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
     val x = egraph.add(Var(0), egraph.addDataType(f32))
     val x2 = egraph.add(Var(0), egraph.addDataType(f32))
-    egraph.add(Var(0), egraph.addDataType(cst(1)`.`f32))
+    val x3 = egraph.add(Var(0), egraph.addDataType(cst(1)`.`f32))
     val add = egraph.add(Primitive(rcp.add.primitive), egraph.addType(f32 ->: f32 ->: f32))
     val addx = egraph.add(App(add, x), egraph.addType(f32 ->: f32))
-    egraph.add(App(addx, x2), egraph.addDataType(f32))
+    val root = egraph.add(App(addx, x2), egraph.addDataType(f32))
 
     val y = egraph.add(Var(1), egraph.addDataType(f32))
     egraph.union(x, y)
-    egraph.rebuild()
+    egraph.rebuild(Seq(root, x3))
 
     egraph.dot().toFile("/tmp/egraph-simple-add.dot")
   }

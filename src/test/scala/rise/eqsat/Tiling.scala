@@ -6,6 +6,7 @@ import rise.core.DSL.Type._
 import rise.core.types._
 import rise.elevate.util._
 import ProveEquiv.syntax._
+import PredicateDSL._
 
 class Tiling extends test_util.Tests {
   private val minimalRules = Seq(
@@ -57,8 +58,10 @@ class Tiling extends test_util.Tests {
       wrap(f => J o **(J) o *(T) o ****(f) o *(T) o **(S) o S)
     )
 
+    // ~12s on laptop with array dimension predicate
+    // ~6s  on laptop with ast size predicate on top
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(4))
+      .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(40))
       .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 
@@ -67,8 +70,7 @@ class Tiling extends test_util.Tests {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) =>
       depFun((dt1: DataType) => depFun((dt2: DataType) =>
       fun(i => fun(f =>
-        inner(f)(i :: //(n`.`m`.`o`.`dt1)) :: (n`.`m`.`o`.`dt2)
-          (n`.`n`.`n`.`dt1)) :: (n`.`n`.`n`.`dt2)
+        inner(f)(i :: (n`.`m`.`o`.`dt1)) :: (n`.`m`.`o`.`dt2)
       )))))))
     }
 
@@ -92,7 +94,7 @@ class Tiling extends test_util.Tests {
 
     ProveEquiv.init()
       //.withRunnerTransform(r => r.withScheduler(BackoffScheduler.init()))
-      .withFilter(ArrayDimensionPredicate(6))
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(80))
       .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 

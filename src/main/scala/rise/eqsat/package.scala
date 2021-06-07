@@ -34,10 +34,11 @@ package object eqsat {
     val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
     val id = egraph.addExpr(e)
     Runner.init().run(egraph, NoPredicate(), Seq(
-      rules.eta,
+      rules.eta.directed(),
       // rules.beta, rules.betaNat
-      rules.betaExtract, rules.betaNatExtract
-    ))
+      rules.betaExtract.directed(),
+      rules.betaNatExtract.directed()
+    ), Seq(id))
     val extractor = Extractor.init(egraph, AstSize)
     val (_, normalized) = extractor.findBestOf(id)
     ExprWithHashCons.expr(egraph)(normalized)
@@ -46,13 +47,15 @@ package object eqsat {
   // Combinator Normal Form
   def CNF(e: Expr): Expr = {
     val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
-    val id = egraph.addExpr(e)
+    val id = egraph.addExpr(BENF(e))
     Runner.init().run(egraph, NoPredicate(), Seq(
-      rules.eta,
+      rules.eta.directed(),
       // rules.beta, rules.betaNat,
-      rules.betaExtract, rules.betaNatExtract,
-      rules.combinatory.compositionIntro
-    ))
+      // rules.betaExtract.directed(),
+      // rules.betaNatExtract.directed(),
+      rules.combinatory.compositionIntro.directed(),
+      rules.combinatory.compositionAssoc1.directed()
+    ), Seq(id))
     val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     val (_, normalized) = extractor.findBestOf(id)
     ExprWithHashCons.expr(egraph)(normalized)
