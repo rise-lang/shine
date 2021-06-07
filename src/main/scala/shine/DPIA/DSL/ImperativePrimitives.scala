@@ -76,7 +76,7 @@ object streamNext {
     f: Phrase[ExpType ->: CommType]
   ): Phrase[CommType] = {
     Phrases.Apply(
-      Phrases.DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next, i),
+      Phrases.DepApply(NatKind, next, i),
       f
     )
   }

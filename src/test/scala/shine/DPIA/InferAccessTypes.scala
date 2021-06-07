@@ -102,7 +102,7 @@ class InferAccessTypes extends test_util.Tests {
     val splitArray = (depFun((n: Nat) => fun(8`.`rt.f32)(arr =>
       arr |> split(n)))).toExpr
     val infPt = inferAccess(splitArray).get(splitArray).asInstanceOf[
-      DepFunType[NatKind, FunType[ExpType, ExpType]]
+      DepFunType[NatIdentifier, FunType[ExpType, ExpType]]
     ]
     assertResult(read)(infPt.t.outT.accessType)
   }

@@ -3,12 +3,12 @@ package rise.core
 import rise.core.types._
 
 object showScala {
-  private def kindIdent[K <: Kind](x: K#I): String = {
+  private def kindIdent[I <: Kind.Identifier](x: I): String = {
     x match {
       case n: NatIdentifier =>
-        s"""NatIdentifier("${n.name}", ${n.range}, ${n.isExplicit})"""
-      case DataTypeIdentifier(n, isE) =>
-        s"""DataTypeIdentifier("$n", $isE)"""
+        s"""NatIdentifier("${n.name}", ${n.range})"""
+      case DataTypeIdentifier(n) =>
+        s"""DataTypeIdentifier("$n")"""
       case _ => throw new Exception(s"missing rule for $x")
     }
   }
@@ -17,7 +17,7 @@ object showScala {
     import arithexpr.arithmetic._
     n match {
       case n: NatIdentifier =>
-        s"""NatIdentifier("${n.name}", ${n.range}, ${n.isExplicit})"""
+        s"""NatIdentifier("${n.name}", ${n.range})"""
       case n: NamedVar =>
         s"""NamedVar("${n.name}", ${n.range})"""
       case Prod(factors) => factors.map(nat).mkString("(", " * ", ")")
@@ -48,9 +48,9 @@ object showScala {
       case TypeIdentifier(n) => s"""TypeIdentifier("$n")"""
       case FunType(inT, outT) =>
         s"FunType(${`type`(inT)}, ${`type`(outT)})"
-      case DepFunType(x, t) =>
+      case DepFunType(_, x, t) =>
         s"DepFunType(${kindIdent(x)}, ${`type`(t)})"
-      case DataTypeIdentifier(n, isE) => s"""DataTypeIdentifier("$n", $isE)"""
+      case DataTypeIdentifier(n) => s"""DataTypeIdentifier("$n")"""
       case ArrayType(n, e) =>
         s"ArrayType(${nat(n)}, ${`type`(e)})"
       case PairType(p1, p2) =>
@@ -74,12 +74,12 @@ object showScala {
       case Literal(d) => s"Literal(${data(d)})"
       case App(f, a) => s"App(${expr(f)}, ${expr(a)})(${`type`(e.t)})"
       case Lambda(x, b) => s"Lambda(${expr(x)}, ${expr(b)})(${`type`(e.t)})"
-      case DepApp(f, v: Nat) =>
-        s"DepApp[NatKind](${expr(f)}, $v)(${`type`(e.t)})"
-      case DepApp(f, v: AddressSpace) =>
-        s"DepApp[AddressSpaceKind](${expr(f)}, $v)(${`type`(e.t)})"
-      case DepApp(_, _) => ???
-      case DepLambda(x, b) => s"DepLambda(${kindIdent(x)}, ${expr(b)})(${`type`(e.t)})"
+      case DepApp(NatKind, f, v: Nat) =>
+        s"DepApp(NatKind, ${expr(f)}, $v)(${`type`(e.t)})"
+      case DepApp(AddressSpaceKind, f, v: AddressSpace) =>
+        s"DepApp(AddressSpaceKind, ${expr(f)}, $v)(${`type`(e.t)})"
+      case DepApp(_, _, _) => ???
+      case DepLambda(_, x, b) => s"DepLambda(${kindIdent(x)}, ${expr(b)})(${`type`(e.t)})"
     }
   }
 }

@@ -34,9 +34,9 @@ package object DPIA {
   type x[T1 <: PhraseType, T2 <: PhraseType] = PhrasePairType[T1, T2]
   type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]
   type `->p:`[T <: PhraseType, R <: PhraseType] = PassiveFunType[T, R]
-  type `()->:`[K <: Kind, R <: PhraseType] = DepFunType[K, R]
-  type `(nat)->:`[R <: PhraseType] = DepFunType[NatKind, R]
-  type `(dt)->:`[R <: PhraseType] = DepFunType[DataKind, R]
+  type `()->:`[I <: Kind.Identifier, R <: PhraseType] = DepFunType[I, R]
+  type `(nat)->:`[R <: PhraseType] = DepFunType[NatIdentifier, R]
+  type `(dt)->:`[R <: PhraseType] = DepFunType[DataTypeIdentifier, R]
   type VarType = ExpType x AccType
 
   object VarType {
@@ -94,10 +94,10 @@ package object DPIA {
   }
 
   implicit class DepFunTypeConstructor[R <: PhraseType](r: R) {
-    def ->:(i: DataTypeIdentifier): `()->:`[DataKind, R] = DepFunType[DataKind, R](i, r)
-    def ->:(n: NatIdentifier): `()->:`[NatKind, R] = DepFunType[NatKind, R](n, r)
-    def ->:(n: NatToNatIdentifier): `()->:`[NatToNatKind, R] = DepFunType[NatToNatKind, R](n, r)
-    def ->:(n: NatToDataIdentifier): `()->:`[NatToDataKind, R] = DepFunType[NatToDataKind, R](n, r)
+    def ->:(i: DataTypeIdentifier): `()->:`[DataTypeIdentifier, R] = DepFunType(DataKind, i, r)
+    def ->:(n: NatIdentifier): `()->:`[NatIdentifier, R] = DepFunType(NatKind, n, r)
+    def ->:(n: NatToNatIdentifier): `()->:`[NatToNatIdentifier, R] = DepFunType(NatToNatKind, n, r)
+    def ->:(n: NatToDataIdentifier): `()->:`[NatToDataIdentifier, R] = DepFunType(NatToDataKind, n, r)
   }
 
   object expT {
@@ -126,15 +126,14 @@ package object DPIA {
 
   object nFunT {
     def apply(n: rt.NatIdentifier, t: PhraseType): PhraseType = {
-      DepFunType[NatKind, PhraseType](fromRise.natIdentifier(n), t)
+      DepFunType(NatKind, fromRise.natIdentifier(n), t)
     }
 
     def apply(n: NatIdentifier, t: PhraseType): PhraseType = {
-      DepFunType[NatKind, PhraseType](n, t)
+      DepFunType(NatKind, n, t)
     }
 
-    def unapply[K <: Kind, T <: PhraseType](funType: DepFunType[K, T]
-                                           ): Option[(NatIdentifier, T)] = {
+    def unapply[I <: Kind.Identifier, U <: PhraseType](funType: DepFunType[I, U]): Option[(NatIdentifier, U)] = {
       funType.x match {
         case n: NatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
@@ -144,23 +143,21 @@ package object DPIA {
 
   object dFunT {
     def apply(d: rt.DataTypeIdentifier, t: PhraseType): PhraseType = {
-      DepFunType[DataKind, PhraseType](fromRise.dataTypeIdentifier(d), t)
+      DepFunType(DataKind, fromRise.dataTypeIdentifier(d), t)
     }
   }
 
   object aFunT {
     def apply(a: rt.AddressSpaceIdentifier, t: PhraseType): PhraseType = {
-      DepFunType[AddressSpaceKind, PhraseType](
-        fromRise.addressSpaceIdentifier(a), t)
+      DepFunType(AddressSpaceKind, fromRise.addressSpaceIdentifier(a), t)
     }
 
     def apply(a: AddressSpaceIdentifier, t: PhraseType): PhraseType = {
-      DepFunType[AddressSpaceKind, PhraseType](a, t)
+      DepFunType(AddressSpaceKind, a, t)
     }
 
-    def unapply[K <: Kind,
-      T <: PhraseType](funType: DepFunType[K, T]
-                      ): Option[(AddressSpaceIdentifier, T)] = {
+    def unapply[I <: Kind.Identifier, T <: PhraseType](funType: DepFunType[I, T]
+                                                      ): Option[(AddressSpaceIdentifier, T)] = {
       funType.x match {
         case a: AddressSpaceIdentifier => Some((a, funType.t))
         case _ => throw new Exception("Expected AddressSpace DepFunType")
@@ -170,15 +167,15 @@ package object DPIA {
 
   object n2nFunT {
     def apply(n: rt.NatToNatIdentifier, t: PhraseType): PhraseType = {
-      DepFunType[NatToNatKind, PhraseType](fromRise.natToNatIdentifier(n), t)
+      DepFunType(NatToNatKind, fromRise.natToNatIdentifier(n), t)
     }
 
     def apply(n: NatToNatIdentifier, t: PhraseType): PhraseType = {
-      DepFunType[NatToNatKind, PhraseType](n, t)
+      DepFunType(NatToNatKind, n, t)
     }
 
-    def unapply[K <: Kind, T <: PhraseType](funType: DepFunType[K, T]
-                                           ): Option[(NatToNatIdentifier, T)] = {
+    def unapply[I <: Kind.Identifier, T <: PhraseType](funType: DepFunType[I, T]
+                                                      ): Option[(NatToNatIdentifier, T)] = {
       funType.x match {
         case n: NatToNatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")

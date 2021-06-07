@@ -11,14 +11,8 @@ sealed trait NatToData {
   def apply(n: Nat): DataType = NatToDataApply(this, n)
 }
 
-final case class NatToDataIdentifier(name: String,
-                                     override val isExplicit: Boolean = false
-                                    ) extends NatToData
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: NatToDataIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: NatToDataIdentifier = this.copy(isExplicit = false)
+final case class NatToDataIdentifier(name: String) extends NatToData with Kind.Identifier {
+  override def toString: String = name
 }
 
 case class NatToDataLambda private (x: NatIdentifier, body: DataType)

@@ -1,83 +1,39 @@
 package rise.core.types
 
-sealed trait Kind {
-  type T
-  type I <: Kind.Identifier with T
+sealed trait Kind[+T, +I <: Kind.Identifier] {
+  def name :String
 }
 
 object Kind {
   trait Identifier {
     def name: String
   }
-  trait Explicitness {
-    val isExplicit: Boolean
-    def asExplicit: Explicitness
-    def asImplicit: Explicitness
-  }
 }
 
-sealed trait TypeKind extends Kind {
-  override type T = Type
-  override type I = TypeIdentifier
+case object TypeKind extends Kind[Type, TypeIdentifier] {
+  override def name: String = "type"
 }
 
-sealed trait DataKind extends Kind {
-  override type T = DataType
-  override type I = DataTypeIdentifier
+case object DataKind extends Kind[DataType, DataTypeIdentifier] {
+  override def name: String = "data"
 }
 
-sealed trait NatKind extends Kind {
-  override type T = Nat
-  override type I = NatIdentifier
+case object NatKind extends Kind[Nat, NatIdentifier] {
+  override def name: String = "nat"
 }
 
-sealed trait AddressSpaceKind extends Kind {
-  override type T = AddressSpace
-  override type I = AddressSpaceIdentifier
+case object AddressSpaceKind extends Kind[AddressSpace, AddressSpaceIdentifier] {
+  override def name: String = "addressSpace"
 }
 
-sealed trait NatToNatKind extends Kind {
-  override type T = NatToNat
-  override type I = NatToNatIdentifier
+case object NatToNatKind extends Kind[NatToNat, NatToNatIdentifier] {
+  override def name: String = "nat->nat"
 }
 
-sealed trait NatToDataKind extends Kind {
-  override type T = NatToData
-  override type I = NatToDataIdentifier
+case object NatToDataKind extends Kind[NatToData, NatToDataIdentifier] {
+  override def name: String = "nat->data"
 }
 
-sealed trait NatCollectionKind extends Kind {
-  override type T = NatCollection
-  override type I = NatCollectionIdentifier
-}
-
-trait KindName[K <: Kind] {
-  def get: String
-}
-
-object KindName {
-  implicit val typeKN: KindName[TypeKind] = new KindName[TypeKind] {
-    def get = "type"
-  }
-  implicit val dataKN: KindName[DataKind] = new KindName[DataKind] {
-    def get = "data"
-  }
-  implicit val natKN: KindName[NatKind] = new KindName[NatKind] {
-    def get = "nat"
-  }
-  implicit val addressSpaceKN: KindName[AddressSpaceKind] =
-    new KindName[AddressSpaceKind] {
-      def get = "addressSpace"
-    }
-  implicit val n2nKN: KindName[NatToNatKind] = new KindName[NatToNatKind] {
-    def get = "nat->nat"
-  }
-  implicit val n2dtKN: KindName[NatToDataKind] = new KindName[NatToDataKind] {
-    def get = "nat->data"
-  }
-
-  implicit val natsKN: KindName[NatCollectionKind] =
-    new KindName[NatCollectionKind] {
-      override def get: String = "nats"
-    }
+case object NatCollectionKind extends Kind[NatCollection, NatCollectionIdentifier] {
+  override def name: String = "nats"
 }

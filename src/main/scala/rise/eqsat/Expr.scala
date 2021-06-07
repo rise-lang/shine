@@ -127,16 +127,16 @@ object Expr {
       case i: core.Identifier => Var(bound.indexOf(i))
       case core.App(f, e) => App(fromNamed(f, bound), fromNamed(e, bound))
       case core.Lambda(i, e) => Lambda(fromNamed(e, bound + i))
-      case core.DepApp(f, n: rct.Nat) =>
+      case core.DepApp(rct.NatKind, f, n: rct.Nat) =>
         NatApp(fromNamed(f, bound), Nat.fromNamed(n, bound))
-      case core.DepApp(f, dt: rct.DataType) =>
+      case core.DepApp(rct.DataKind, f, dt: rct.DataType) =>
         DataApp(fromNamed(f, bound), DataType.fromNamed(dt, bound))
-      case core.DepApp(_, _) => ???
-      case core.DepLambda(n: rct.NatIdentifier, e) =>
+      case core.DepApp(_, _, _) => ???
+      case core.DepLambda(rct.NatKind, n: rct.NatIdentifier, e) =>
         NatLambda(fromNamed(e, bound + n))
-      case core.DepLambda(dt: rct.DataTypeIdentifier, e) =>
+      case core.DepLambda(rct.DataKind, dt: rct.DataTypeIdentifier, e) =>
         DataLambda(fromNamed(e, bound + dt))
-      case core.DepLambda(_, _) => ???
+      case core.DepLambda(_, _, _) => ???
       case core.Literal(d) => Literal(d)
       // note: we set the primitive type to a place holder here,
       // because we do not want type information at the node level
@@ -155,15 +155,15 @@ object Expr {
         val i = core.Identifier(s"x${bound.expr.size}")(Type.toNamed(funT.inT, bound))
         core.Lambda(i, toNamed(e, bound + i)) _
       case NatApp(f, x) =>
-        core.DepApp[rct.NatKind](toNamed(f, bound), Nat.toNamed(x, bound)) _
+        core.DepApp(rct.NatKind, toNamed(f, bound), Nat.toNamed(x, bound)) _
       case NatLambda(e) =>
-        val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
-        core.DepLambda[rct.NatKind](i, toNamed(e, bound + i)) _
+        val i = rct.NatIdentifier(s"n${bound.nat.size}")
+        core.DepLambda(rct.NatKind, i, toNamed(e, bound + i)) _
       case DataApp(f, x) =>
-        core.DepApp[rct.DataKind](toNamed(f, bound), DataType.toNamed(x, bound)) _
+        core.DepApp(rct.DataKind, toNamed(f, bound), DataType.toNamed(x, bound)) _
       case DataLambda(e) =>
-        val i = rct.DataTypeIdentifier(s"dt${bound.data.size}", isExplicit = true)
-        core.DepLambda[rct.DataKind](i, toNamed(e, bound + i)) _
+        val i = rct.DataTypeIdentifier(s"dt${bound.data.size}")
+        core.DepLambda(rct.DataKind, i, toNamed(e, bound + i)) _
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _
     })(Type.toNamed(expr.t, bound))

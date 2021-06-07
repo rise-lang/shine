@@ -8,20 +8,20 @@ import scala.language.{postfixOps, reflectiveCalls}
 object Lifting {
   import rise.core.lifting.{Expanding, Reducing, Result}
 
-  def liftDependentFunction[K <: Kind, T <: PhraseType](p: Phrase[K `()->:` T]): K#T => Phrase[T] = {
+  def liftDependentFunction[T, I <: Kind.Identifier, U <: PhraseType](p: Phrase[I `()->:` U]): T => Phrase[U] = {
     p match {
-      case l: DepLambda[K, T] =>
-        (arg: K#T) => PhraseType.substitute(arg, `for`=l.x, in=l.body)
-      case app: Apply[_, K `()->:` T] =>
+      case l: DepLambda[T, I, U]@unchecked =>
+        (arg: T) => PhraseType.substitute[T, I, U](l.kind, arg, `for`=l.x, in=l.body)
+      case app: Apply[_, I `()->:` U] =>
         val fun = liftFunction(app.fun).reducing
         liftDependentFunction(fun(app.arg))
-      case DepApply(f, arg) =>
+      case DepApply(_, f, arg) =>
         val fun = liftDependentFunction(f)
         liftDependentFunction(fun(arg))
-      case p1: Proj1[K `()->:` T, b] =>
+      case p1: Proj1[I `()->:` U, b] =>
         val pair = liftPair(p1.pair)
         liftDependentFunction(pair._1)
-      case p2: Proj2[a, K `()->:` T] =>
+      case p2: Proj2[a, I `()->:` U] =>
         val pair = liftPair(p2.pair)
         liftDependentFunction(pair._2)
       case Identifier(_, _) | IfThenElse(_, _, _) | LetNat(_, _, _) =>
@@ -38,7 +38,7 @@ object Lifting {
         Reducing((arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`)
       case app: Apply[_, T1 ->: T2] =>
         chain(liftFunction(app.fun).map(lf => lf(app.arg)))
-      case DepApply(f, arg) =>
+      case DepApply(_, f, arg) =>
         val fun = liftDependentFunction(f)
         liftFunction(fun(arg))
       case p1: Proj1[T1 ->: T2, b] =>
@@ -59,7 +59,7 @@ object Lifting {
       case app: Apply[_, ExpType ->: T] =>
         val fun = liftFunction(app.fun).reducing
         liftFunctionToNatLambda(fun(app.arg))
-      case DepApply(f, arg) =>
+      case DepApply(_, f, arg) =>
         val fun = liftDependentFunction(f)
         liftFunctionToNatLambda(fun(arg))
       case p1: Proj1[ExpType ->: T, b] =>
@@ -82,7 +82,7 @@ object Lifting {
       case app: Apply[_, T1 x T2] =>
         val fun = liftFunction(app.fun).reducing
         liftPair(fun(app.arg))
-      case DepApply(f, arg) =>
+      case DepApply(_, f, arg) =>
         val fun = liftDependentFunction(f)
         liftPair(fun(arg))
       case p1: Proj1[T1 x T2, b] =>
@@ -96,10 +96,10 @@ object Lifting {
     }
   }
 
-  def liftDependentFunctionType[K <: Kind](ty: PhraseType): K#T => PhraseType =
+  def liftDependentFunctionType[T](ty: PhraseType): T => PhraseType =
     ty match {
-      case DepFunType(x, t) =>
-        (a: K#T) => PhraseType.substitute(a, x, t)
+      case DepFunType(kind, x, t) =>
+        (a: T) => PhraseType.substitute(kind, a, x, t)
       case _ => throw new Exception(s"did not expect $ty")
     }
 }

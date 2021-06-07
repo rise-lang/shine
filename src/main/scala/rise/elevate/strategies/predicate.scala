@@ -26,7 +26,7 @@ object predicate {
   }
 
   def isLambda: is = is(_.isInstanceOf[Lambda], "Lambda")
-  def isDepLambda: is = is(_.isInstanceOf[DepLambda[_]], "DepLambda")
+  def isDepLambda: is = is(_.isInstanceOf[DepLambda[_, _]], "DepLambda")
   def isIdentifier: is = is(_.isInstanceOf[Identifier], "Identifier")
   def isApply: is = is(_.isInstanceOf[App], "Apply")
 
