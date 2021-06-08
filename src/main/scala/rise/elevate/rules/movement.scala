@@ -181,9 +181,7 @@ object movement {
 
   // slide n m >> padEmpty p -> padEmpty (p * m) >> slide n m
   @rule def padEmptyBeforeSlide: Strategy[Rise] = {
-    case e @ App(DepApp(NatKind, padEmpty(), p: Nat),
-      App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), m: Nat), in)
-    ) =>
+    case e @ App(DepApp(NatKind, padEmpty(), p: Nat), App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), m: Nat), in) ) =>
       Success(slide(n)(m)(padEmpty(p * m)(in)) !: e.t)
   }
 

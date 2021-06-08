@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.core.types.Type
+import rise.core.types.{Kind, Type}
 
 // scalastyle:off indentation multiple.string.literals method.length
 case object dotPrinter {
@@ -120,12 +120,12 @@ case object dotPrinter {
           s"""$parent ${attr(fillWhite + Label("Λ").bold.toString)}
             |$parent -> $id ${edgeLabel("id")};
             |$parent -> $expr ${edgeLabel("body")};
-            |$id ${attr(fillWhite + Label(x.name).orange.toString)}
+            |$id ${attr(fillWhite + Label(Kind.idName(kind, x)).orange.toString)}
             |${recurse(e, expr)}""".stripMargin
 
-        case DepLambda(_, x, e) if inlineLambdaIdentifier =>
+        case DepLambda(kind, x, e) if inlineLambdaIdentifier =>
           val expr = getID(e)
-          s"""$parent ${attr(fillWhite + Label(s"Λ.${x.name}").toString)}
+          s"""$parent ${attr(fillWhite + Label(s"Λ.${Kind.idName(kind, x)}").toString)}
             |$parent -> $expr ${edgeLabel("body")};
             |${recurse(e, expr)}""".stripMargin
 

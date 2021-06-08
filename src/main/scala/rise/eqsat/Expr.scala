@@ -132,10 +132,8 @@ object Expr {
       case core.DepApp(rct.DataKind, f, dt: rct.DataType) =>
         DataApp(fromNamed(f, bound), DataType.fromNamed(dt, bound))
       case core.DepApp(_, _, _) => ???
-      case core.DepLambda(rct.NatKind, n: rct.NatIdentifier, e) =>
-        NatLambda(fromNamed(e, bound + n))
-      case core.DepLambda(rct.DataKind, dt: rct.DataTypeIdentifier, e) =>
-        DataLambda(fromNamed(e, bound + dt))
+      case core.DepLambda(rct.NatKind, n: rct.NatIdentifier, e) => NatLambda(fromNamed(e, bound + n))
+      case core.DepLambda(rct.DataKind, dt: rct.DataTypeIdentifier, e) => DataLambda(fromNamed(e, bound + dt))
       case core.DepLambda(_, _, _) => ???
       case core.Literal(d) => Literal(d)
       // note: we set the primitive type to a place holder here,

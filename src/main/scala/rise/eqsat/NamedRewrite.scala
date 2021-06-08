@@ -1,5 +1,6 @@
 package rise.eqsat
 
+import rise.core.types.Kind.{IDataType, INat, IType}
 import rise.core.types.TypePlaceholder
 import rise.{core => rc}
 import rise.core.{types => rct}
@@ -99,7 +100,7 @@ object NamedRewrite {
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
-        case i: rct.NatIdentifier if freeT(i) =>
+        case i: rct.NatIdentifier if freeT(INat(i)) =>
           makePatVar(i.name, bound.nat.size, natPatVars,
             NatPatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
@@ -127,7 +128,7 @@ object NamedRewrite {
 
     def makeDTPat(dt: rct.DataType, bound: Expr.Bound, isRhs: Boolean): DataTypePattern =
       dt match {
-        case i: rct.DataTypeIdentifier if freeT(i) =>
+        case i: rct.DataTypeIdentifier if freeT(IDataType(i)) =>
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             dataTypePatVars, DataTypePatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.DataTypeIdentifier =>
@@ -144,7 +145,7 @@ object NamedRewrite {
           DataTypePatternNode(PairType(makeDTPat(dt1, bound, isRhs), makeDTPat(dt2, bound, isRhs)))
         case rct.ArrayType(s, et) =>
           DataTypePatternNode(ArrayType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
-        case _: rct.DepArrayType | _: rct.DepPairType[_, _] |
+        case _: rct.DepArrayType | _: rct.DepPairType[_, _, _] |
              _: rct.NatToDataApply | _: rct.FragmentType =>
           throw new Exception(s"did not expect $dt")
       }
@@ -160,7 +161,7 @@ object NamedRewrite {
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
         case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>
-          assert(freeT(i))
+          assert(freeT(IType(i)))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             typePatVars, TypePatternVar, if (isRhs) { Unknown } else { Known })
         case rct.TypePlaceholder =>

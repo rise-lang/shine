@@ -9,7 +9,7 @@ object substitute {
 
   // substitute in Expr
 
-  def kindInExpr[T, I <: Kind.Identifier](kind: Kind[T, I], x: T, `for`: I, in: Expr): Expr =
+  def kindInExpr[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: T, `for`: I, in: Expr): Expr =
     (kind, x, `for`) match {
       case (DataKind, dt: DataType, forDt: DataTypeIdentifier) =>
         dataTypeInExpr(dt, forDt, in)
@@ -100,7 +100,7 @@ object substitute {
 
   // substitute in Type
 
-  def kindInType[T, I <: Kind.Identifier, U <: Type](kind: Kind[T, I], x: T, `for`: I, in: U): U = {
+  def kindInType[T, I, KI <: Kind.Identifier, U <: Type](kind: Kind[T, I, KI], x: T, `for`: I, in: U): U = {
     (kind, x, `for`) match {
       case (DataKind, dt: DataType, forDt: DataTypeIdentifier) => typeInType(dt, forDt, in)
       case (NatKind, n: Nat, forN: NatIdentifier) => natInType(n, forN, in)
