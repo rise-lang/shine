@@ -320,6 +320,16 @@ object rules {
         -->
       (transpose >> app(map, app(map, "f")))
     )
+    val mapMapFBeforeTranspose1: Rule = NamedRewrite.init("map-map-f-before-transpose-cnf-1",
+      ("g" >> app(map, app(map, "f")) >> transpose)
+        -->
+      ("g" >> transpose >> app(map, app(map, "f")))
+    )
+    val mapMapFBeforeTranspose2: Rule = NamedRewrite.init("map-map-f-before-transpose-cnf-2",
+      (app(map, app(map, "f")) >> (transpose >> "g"))
+        -->
+      (transpose >> (app(map, app(map, "f")) >> "g"))
+    )
 
     val transposeAroundMapMapF: Rule = NamedRewrite.init("transpose-around-map-map-f-cnf",
       app(map, app(map, "f"))

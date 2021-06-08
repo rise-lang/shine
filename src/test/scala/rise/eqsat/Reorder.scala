@@ -9,7 +9,7 @@ import ProveEquiv.syntax._
 
 class Reorder extends test_util.Tests {
   private val reorderRulesCNF = Seq(
-    rules.combinatory.compositionAssoc1,
+    // rules.combinatory.compositionAssoc1,
     rules.combinatory.compositionAssoc2,
     // rules.combinatory.compositionIntro, //.directed(),
     // rules.combinatory.compositionLeftId, //.directed(),
@@ -18,6 +18,8 @@ class Reorder extends test_util.Tests {
     rules.combinatory.mapFission,
     rules.combinatory.transposePairAfter,
     rules.combinatory.mapMapFBeforeTranspose,
+    rules.combinatory.mapMapFBeforeTranspose1,
+    // rules.combinatory.mapMapFBeforeTranspose2,
   )
 
   private val reorderRulesBENF = Seq(
@@ -65,19 +67,21 @@ class Reorder extends test_util.Tests {
     val gold321 = wrap(f => *(T) o T o *(T) o ***(f) o *(T) o T o *(T))
     val gold312 = wrap(f => *(T) o T o ***(f) o T o *(T))
 
-    // ~1.5s on laptop
+    // ~1.5s on laptop with both assoc rules
+    // ~750ms on laptop with only one assoc rule
     ProveEquiv.init()
-      .withFilter(ASTSizePredicate(35))
+      .withFilter(ASTSizePredicate(50))
       .runCNF(expr, Seq(
         gold132, gold213, gold231, gold321, gold312
       ), reorderRulesCNF)
 
     // ~13s on laptop
+    /*
     ProveEquiv.init()
       .withFilter(ASTSizePredicate(50))
       .runBENF(expr, Seq(
         gold132, gold213, gold231, gold321, gold312
-      ), reorderRulesBENF)
+      ), reorderRulesBENF) */
   }
 
   test("reorder 4D") {
@@ -98,7 +102,7 @@ class Reorder extends test_util.Tests {
       **(T) o *(T) o **(T) o T o *(T) o **(T))
 
     ProveEquiv.init()
-      .withFilter(ASTSizePredicate(100))
+      .withFilter(ASTSizePredicate(150))
       /*.withRunnerTransform(r => r
         .withIterationLimit(5))
       .withEndRules(Seq(

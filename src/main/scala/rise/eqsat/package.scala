@@ -54,7 +54,8 @@ package object eqsat {
       // rules.betaExtract.directed(),
       // rules.betaNatExtract.directed(),
       rules.combinatory.compositionIntro.directed(),
-      rules.combinatory.compositionAssoc1.directed()
+      // rules.combinatory.compositionAssoc1.directed()
+      rules.combinatory.compositionAssoc2.directed(),
     ), Seq(id))
     val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     val (_, normalized) = extractor.findBestOf(id)
