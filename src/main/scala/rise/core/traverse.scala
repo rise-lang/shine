@@ -25,13 +25,13 @@ object traverse {
         yield i.setType(t1).asInstanceOf[I]
     def typeIdentifierDispatch[I <: Kind.Identifier] : VarType => I => M[I] = vt => i => (i match {
       case t: IType => typeIdentifier(vt)(t)
-      case n: INat => bind(bind(typeIdentifier(vt)(n))(i => nat(i.id)))(i => return_(INat(i.asInstanceOf[NatIdentifier])))
-      case dt: IDataType => bind(bind(typeIdentifier(vt)(dt))(i => datatype(i.id)))( i => return_(IDataType(i.asInstanceOf[DataTypeIdentifier])))
-      case a: IAddressSpace => bind(bind(typeIdentifier(vt)(a))(i => addressSpace(i.id)))( i => return_(IAddressSpace(i.asInstanceOf[AddressSpaceIdentifier])))
-      case m: IMatrixLayout => bind(bind(typeIdentifier(vt)(m))(i => matrixLayout(i.id)))( i => return_(IMatrixLayout(i.asInstanceOf[MatrixLayoutIdentifier])))
-      case f: IFragmentKind => bind(bind(typeIdentifier(vt)(f))(i => fragmentKind(i.id)))( i => return_(IFragmentKind(i.asInstanceOf[FragmentKindIdentifier])))
-      case n2n: INatToNat => bind(bind(typeIdentifier(vt)(n2n))(i => natToNat(i.id)))( i => return_(INatToNat(i.asInstanceOf[NatToNatIdentifier])))
-      case n2d: INatToData => bind(bind(typeIdentifier(vt)(n2d))(i => natToData(i.id)))( i => return_(INatToData(i.asInstanceOf[NatToDataIdentifier])))
+      case n: INat => bind(nat(n.id))(i => typeIdentifier(vt)(INat(i.asInstanceOf[NatIdentifier])))
+      case dt: IDataType => bind(datatype(dt.id))(i => typeIdentifier(vt)(IDataType(i.asInstanceOf[DataTypeIdentifier])))
+      case a: IAddressSpace => bind(addressSpace(a.id))(i => typeIdentifier(vt)(IAddressSpace(i.asInstanceOf[AddressSpaceIdentifier])))
+      case m: IMatrixLayout => bind(matrixLayout(m.id))(i => typeIdentifier(vt)(IMatrixLayout(i.asInstanceOf[MatrixLayoutIdentifier])))
+      case f: IFragmentKind => bind(fragmentKind(f.id))(i => typeIdentifier(vt)(IFragmentKind(i.asInstanceOf[FragmentKindIdentifier])))
+      case n2n: INatToNat => bind(natToNat(n2n.id))(i => typeIdentifier(vt)(INatToNat(i.asInstanceOf[NatToNatIdentifier])))
+      case n2d: INatToData => bind(natToData(n2d.id))(i => typeIdentifier(vt)(INatToData(i.asInstanceOf[NatToDataIdentifier])))
     }).asInstanceOf[M[I]]
     def natDispatch : VarType => Nat => M[Nat] = vt => {
       case i : NatIdentifier => bind(typeIdentifier(vt)(INat(i)))(i => nat(i.id))
