@@ -115,8 +115,8 @@ object Type {
     Type(t match {
       case dt: rct.DataType => DataType.fromNamed(dt, bound).node
       case rct.FunType(a, b) => FunType(fromNamed(a, bound), fromNamed(b, bound))
-      case rct.DepFunType(_, x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
-      case rct.DepFunType(_, x: rct.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
+      case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
+      case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
       case rct.DepFunType(_, _, _) => ???
       case rct.TypePlaceholder | rct.TypeIdentifier(_) =>
         throw new Exception(s"did not expect $t")

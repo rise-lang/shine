@@ -107,24 +107,24 @@ object Constraint {
             decomposed(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2)))
           case (FunType(ina, outa), FunType(inb, outb)) =>
             decomposed(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb)))
-          case (DepFunType(_, na: NatIdentifier, ta), DepFunType(_, nb: NatIdentifier, tb)) =>
+          case (DepFunType(NatKind, na: NatIdentifier, ta), DepFunType(NatKind, nb: NatIdentifier, tb)) =>
               val n = NatIdentifier(freshName("n"))
               decomposedPreserve(Seq(
                 NatConstraint(n, na),
                 NatConstraint(n, nb),
                 TypeConstraint(ta, tb),
               ), preserve + INat(n) - INat(na) - INat(nb))
-          case (DepFunType(_, dta: DataTypeIdentifier, ta), DepFunType(_, dtb: DataTypeIdentifier, tb)) =>
+          case (DepFunType(DataKind, dta: DataTypeIdentifier, ta), DepFunType(DataKind, dtb: DataTypeIdentifier, tb)) =>
             val dt = DataTypeIdentifier(freshName("t"))
             decomposedPreserve(Seq(
               TypeConstraint(dt, dta),
               TypeConstraint(dt, dtb),
               TypeConstraint(ta, tb),
             ), preserve + IDataType(dt) - IDataType(dta) - IDataType(dtb))
-          case (DepFunType(_, _: AddressSpaceIdentifier, _), DepFunType(_, _: AddressSpaceIdentifier, _)) =>
+          case (DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _), DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _)) =>
             ???
 
-          case (DepPairType(_, x1: NatIdentifier, t1), DepPairType(_, x2: NatIdentifier, t2)) =>
+          case (DepPairType(NatKind, x1: NatIdentifier, t1), DepPairType(NatKind, x2: NatIdentifier, t2)) =>
             val n = NatIdentifier(freshName("n"))
             decomposedPreserve(Seq(
               NatConstraint(n, x1),
@@ -132,7 +132,7 @@ object Constraint {
               TypeConstraint(t1, t2),
             ), preserve + INat(n) - INat(x1) - INat(x2))
 
-          case (DepPairType(_, x1: NatCollectionIdentifier, t1), DepPairType(_, x2: NatCollectionIdentifier, t2)) =>
+          case (DepPairType(NatCollectionKind, x1: NatCollectionIdentifier, t1), DepPairType(NatCollectionKind, x2: NatCollectionIdentifier, t2)) =>
             val n = NatCollectionIdentifier(freshName("n"))
             decomposedPreserve(Seq(
               NatCollectionConstraint(n, x1),

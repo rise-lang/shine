@@ -1,6 +1,6 @@
 package rise.core.types
 
-sealed trait Kind[+T, +I, KI <: Kind.Identifier] {
+sealed trait Kind[+T, +I, +KI <: Kind.Identifier] {
   def name :String
 }
 

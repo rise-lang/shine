@@ -537,7 +537,7 @@ private class InferAccessAnnotation {
             expT(dataType(dt), read)
           case rt.FunType(in: rt.DataType, out) =>
             expT(in, read) ->: buildType(out)
-          case rt.DepFunType(_, d: rt.DataTypeIdentifier, t) =>
+          case rt.DepFunType(rt.DataKind, d: rt.DataTypeIdentifier, t) =>
             dFunT(d, buildType(t))
           case _ => throw Exception("This should not happen")
         }
@@ -554,7 +554,7 @@ private class InferAccessAnnotation {
 
       case rp.depMapSeq() =>
         def buildType(t: rt.Type): PhraseType = t match {
-          case rt.FunType(rt.DepFunType(_, i: rt.NatIdentifier, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
+          case rt.FunType(rt.DepFunType(rt.NatKind, i: rt.NatIdentifier, rt.FunType(elemInT:rt.DataType, elemOutT:rt.DataType)),
             rt.FunType(inArr@rt.DepArrayType(_, _), outArr@rt.DepArrayType(_, _))) =>
             val iNat = natIdentifier(i)
             nFunT(iNat, expT(dataType(elemInT), read) ->: expT(dataType(elemOutT), write)) ->:
@@ -567,7 +567,7 @@ private class InferAccessAnnotation {
         val a = accessTypeIdentifier()
         def buildType(t: rt.Type): PhraseType = t match {
           case rt.FunType(rt.DepPairType(_, x: rt.NatIdentifier, elemT),
-            rt.FunType(rt.DepFunType(_, i: rt.NatIdentifier,
+            rt.FunType(rt.DepFunType(rt.NatKind, i: rt.NatIdentifier,
               rt.FunType(app1:rt.DataType, outT:rt.DataType)), retT:rt.DataType)) =>
 
             val i_ = natIdentifier(i.asInstanceOf[rt.NatIdentifier])
@@ -580,7 +580,7 @@ private class InferAccessAnnotation {
 
       case rp.makeDepPair() =>
         def buildType(t: rt.Type): PhraseType = t match {
-          case rt.DepFunType(_, fst: rt.NatIdentifier, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
+          case rt.DepFunType(rt.NatKind, fst: rt.NatIdentifier, rt.FunType(sndT:rt.DataType, outT:rt.DataType)) =>
             val a1 = accessTypeIdentifier()
             val fst_ = natIdentifier(fst)
             nFunT(fst_, expT(dataType(sndT), a1) ->: expT(dataType(outT), a1))

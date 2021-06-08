@@ -74,9 +74,9 @@ object NamedRewrite {
         //       lam(x : xt, e : et) : xt -> et
         case rc.Lambda(x, e) =>
           PatternNode(Lambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(_, x: rct.NatIdentifier, e) =>
+        case rc.DepLambda(rct.NatKind, x: rct.NatIdentifier, e) =>
           PatternNode(NatLambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(_, x: rct.DataTypeIdentifier, e) =>
+        case rc.DepLambda(rct.DataKind, x: rct.DataTypeIdentifier, e) =>
           PatternNode(DataLambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(_, _, _) => ???
 
@@ -84,10 +84,10 @@ object NamedRewrite {
         //       app(f : et -> at, e : et) : at
         case rc.App(f, e) =>
           PatternNode(App(makePat(f, bound, isRhs, matchType = false), makePat(e, bound, isRhs)))
-        case rc.DepApp(_, f, x: rct.Nat) =>
+        case rc.DepApp(rct.NatKind, f, x: rct.Nat) =>
           PatternNode(NatApp(
             makePat(f, bound, isRhs, matchType = false), makeNPat(x, bound, isRhs)))
-        case rc.DepApp(_, f, x: rct.DataType) =>
+        case rc.DepApp(rct.DataKind, f, x: rct.DataType) =>
           PatternNode(DataApp(
             makePat(f, bound, isRhs, matchType = false), makeDTPat(x, bound, isRhs)))
 
@@ -155,9 +155,9 @@ object NamedRewrite {
         case dt: rct.DataType => makeDTPat(dt, bound, isRhs)
         case rct.FunType(a, b) =>
           TypePatternNode(FunType(makeTPat(a, bound, isRhs), makeTPat(b, bound, isRhs)))
-        case rct.DepFunType(_, x: rct.NatIdentifier, t) =>
+        case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) =>
           TypePatternNode(NatFunType(makeTPat(t, bound + x, isRhs)))
-        case rct.DepFunType(_, x: rct.DataTypeIdentifier, t) =>
+        case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) =>
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
         case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>

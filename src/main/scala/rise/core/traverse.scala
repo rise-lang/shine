@@ -154,19 +154,19 @@ object traverse {
       case dl@DepLambda(kind, x,e) =>
         for {n1 <- typeIdentifierDispatch(Binding)(Kind.toIdentifier(kind, x)); e1 <- expr(e); t1 <- `type`(dl.t)}
           yield DepLambda(kind, Kind.fromIdentifier(kind, n1), e1)(t1)
-      case da@DepApp(_, f, x: Nat) =>
+      case da@DepApp(NatKind, f, x: Nat) =>
         for {f1 <- expr(f); n1 <- natDispatch(Reference)(x); t1 <- `type`(da.t)}
           yield DepApp(NatKind, f1, n1)(t1)
-      case da@DepApp(_, f, x: DataType) =>
+      case da@DepApp(DataKind, f, x: DataType) =>
         for {f1 <- expr(f); dt1 <- `type`(x); t1 <- `type`(da.t)}
           yield DepApp(DataKind, f1, dt1)(t1)
-      case da@DepApp(_, f, x: AddressSpace) =>
+      case da@DepApp(AddressSpaceKind, f, x: AddressSpace) =>
         for {f1 <- expr(f); a1 <- addressSpace(x); t1 <- `type`(da.t)}
           yield DepApp(AddressSpaceKind, f1, a1)(t1)
-      case da@DepApp(_, f, x: NatToNat) =>
+      case da@DepApp(NatToNatKind, f, x: NatToNat) =>
         for {f1 <- expr(f); n2n1 <- natToNat(x); t1 <- `type`(da.t)}
           yield DepApp(NatToNatKind, f1, n2n1)(t1)
-      case da@DepApp(_, f, x: NatToData) =>
+      case da@DepApp(NatToDataKind, f, x: NatToData) =>
         for {f1 <- expr(f); n2d1 <- natToData(x); t1 <- `type`(da.t)}
           yield DepApp(NatToDataKind, f1, n2d1)(t1)
       case DepApp(_, _, _) =>

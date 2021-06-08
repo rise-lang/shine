@@ -68,9 +68,9 @@ object showScala {
       case Literal(d) => s"Literal(${data(d)})"
       case App(f, a) => s"App(${expr(f)}, ${expr(a)})(${`type`(e.t)})"
       case Lambda(x, b) => s"Lambda(${expr(x)}, ${expr(b)})(${`type`(e.t)})"
-      case DepApp(_, f, v: Nat) =>
+      case DepApp(NatKind, f, v: Nat) =>
         s"DepApp(NatKind, ${expr(f)}, $v)(${`type`(e.t)})"
-      case DepApp(_, f, v: AddressSpace) =>
+      case DepApp(AddressSpaceKind, f, v: AddressSpace) =>
         s"DepApp(AddressSpaceKind, ${expr(f)}, $v)(${`type`(e.t)})"
       case DepApp(_, _, _) => ???
       case DepLambda(k, x, b) => s"DepLambda(${kindIdent(Kind.toIdentifier(k, x))}, ${expr(b)})(${`type`(e.t)})"

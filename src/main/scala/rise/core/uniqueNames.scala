@@ -85,21 +85,21 @@ object uniqueNames {
           t2 <- renameInTypes(l.t)(nats, dts, ass)
         } yield Lambda(x2, b2)(t2)
 
-        case d@DepLambda(_, x: NatIdentifier, b) =>
+        case d@DepLambda(NatKind, x: NatIdentifier, b) =>
           val x2 = NatIdentifier(s"n$nextNatN", x.range)
           for {
             b2 <- renameInExpr(b)(values, nats + (x -> x2), dts, ass)
             t2 <- renameInTypes(d.t)(nats + (x -> x2), dts, ass)
           } yield DepLambda(NatKind, x2, b2)(t2)
 
-        case d@DepLambda(_, x: DataTypeIdentifier, b) =>
+        case d@DepLambda(DataKind, x: DataTypeIdentifier, b) =>
           val x2 = DataTypeIdentifier(s"dt$nextDtN")
           for {
             b2 <- renameInExpr(b)(values, nats, dts + (x -> x2), ass)
             t2 <- renameInTypes(d.t)(nats, dts, ass)
           } yield DepLambda(DataKind, x2, b2)(t2)
 
-        case d@DepLambda(_, x: AddressSpaceIdentifier, b) =>
+        case d@DepLambda(AddressSpaceKind, x: AddressSpaceIdentifier, b) =>
           val x2 = AddressSpaceIdentifier(s"a$nextAN")
           for {
             b2 <- renameInExpr(b)(values, nats, dts, ass + (x -> x2))
@@ -112,17 +112,17 @@ object uniqueNames {
       override def `type`[T <: Type] : T => Pure[T] = {
         case i: DataTypeIdentifier => return_(dts.getOrElse(i, i).asInstanceOf[T])
 
-        case DepFunType(_, x: NatIdentifier, b) =>
+        case DepFunType(NatKind, x: NatIdentifier, b) =>
           val x2 = nats.getOrElse(x, NatIdentifier(s"n$nextNatN", x.range))
           for { b2 <- renameInTypes(b)(nats + (x -> x2), dts, ass) }
             yield DepFunType(NatKind, x2, b2).asInstanceOf[T]
 
-        case DepFunType(_, x: DataTypeIdentifier, b) =>
+        case DepFunType(DataKind, x: DataTypeIdentifier, b) =>
           val x2 = dts.getOrElse(x, DataTypeIdentifier(s"dt$nextDtN"))
           for { b2 <- renameInTypes(b)(nats, dts + (x -> x2), ass) }
             yield DepFunType(DataKind, x2, b2).asInstanceOf[T]
 
-        case DepFunType(_, x: AddressSpaceIdentifier, b) =>
+        case DepFunType(AddressSpaceKind, x: AddressSpaceIdentifier, b) =>
           val x2 = ass.getOrElse(x, AddressSpaceIdentifier(s"dt$nextAN"))
           for { b2 <- renameInTypes(b)(nats, dts, ass + (x -> x2)) }
             yield DepFunType(AddressSpaceKind, x2, b2).asInstanceOf[T]
