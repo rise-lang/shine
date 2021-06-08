@@ -7,7 +7,7 @@ import rise.core._
 object latex {
   import builderDSL._
   // LaTeX printer
-  def toLaTeX[T, I <: Kind.Identifier](kind: Kind[T, I]): String = kind match {
+  def toLaTeX[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI]): String = kind match {
     case TypeKind => "\\mathsf{type}"
     case DataKind => "\\mathsf{data}"
     case NatKind => "\\mathsf{nat}"
@@ -20,7 +20,7 @@ object latex {
     case NatToDataKind =>
       s"${toLaTeX(natkind)}\\hspace{-.25em}\\rightarrow\\hspace{-.25em}${toLaTeX(datakind)}"
   }
-  def kindToLaTeX[T, I <: Kind.Identifier](kind: Kind[T, I]): String = toLaTeX(kind)
+  def kindToLaTeX[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI]): String = toLaTeX(kind)
 
   def toLaTeX(t: Type): String = t match {
     case TypePlaceholder => s"?"
@@ -116,18 +116,18 @@ object latex {
     case primitive: Primitive => primitive.name
   }
 
-  private def kindIdentifier[T, I <: Kind.Identifier](kind: Kind[T, I], x: I): String =
+  private def kindIdentifier[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: I): String =
     kind.name match {
-      case "nat" => s"${x.name}: ${toLaTeX(NatKind)}"
+      case "nat" => s"${Kind.idName(kind, x)}: ${toLaTeX(NatKind)}"
     }
 
   object wellFormedTypes {
     val kinds: String =
-      kappa ::=  Seq(
+      kappa ::=  Seq[Kind[Any, Any, _ <: Kind.Identifier]](
         typekind, datakind, natkind, //natskind,
         ntdkind, ntnkind, addrkind,
         // matrixKind, fragmentKind
-      ) .map(kindToLaTeX)
+      ) .map(k => kindToLaTeX(k))
         .mkString(" \\mid ")
 
     val structuralRules: String = (
@@ -472,7 +472,7 @@ object latex {
     case class TypeKindPair(ty: Any/* Type | DataType | ... | String */, kind: Any/* Kind | String */) {
       override def toString: String = {
         val kindString = kind match {
-          case k: Kind[_, _] => toLaTeX(k)
+          case k: Kind[_, _, _] => toLaTeX(k)
           case _ => s"$kind"
         }
         val tyString = ty match {
@@ -555,7 +555,7 @@ object latex {
     sealed trait Set
     case class FiniteSet(members: Any*) extends Set {
       override def toString: String = members.map({
-        case kind: Kind[_, _] => toLaTeX(kind)
+        case kind: Kind[_, _, _] => toLaTeX(kind)
         case m => m.toString
       }).mkString("\\{", ", ", "\\}")
     }
