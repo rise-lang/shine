@@ -150,7 +150,7 @@ object DataType {
       case rct.IndexType(s) => IndexType(Nat.fromNamed(s, bound))
       case rct.PairType(dt1, dt2) => PairType(fromNamed(dt1, bound), fromNamed(dt2, bound))
       case rct.ArrayType(s, et) => ArrayType(Nat.fromNamed(s, bound), fromNamed(et, bound))
-      case _: rct.DepArrayType | _: rct.DepPairType[_, _] |
+      case _: rct.DepArrayType | _: rct.DepPairType[_, _, _] |
            _: rct.NatToDataApply | _: rct.FragmentType | _: rct.ManagedBufferType | _: rct.OpaqueType =>
         throw new Exception(s"did not expect $dt")
     })

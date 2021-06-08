@@ -6,7 +6,7 @@ sealed trait NatToNat {
   def apply(n: Nat): Nat = NatToNatApply(this, n)
 }
 
-final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier {
+final case class NatToNatIdentifier(name: String) extends NatToNat {
   override def toString: String = name
 }
 

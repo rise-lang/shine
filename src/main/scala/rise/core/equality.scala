@@ -2,6 +2,7 @@ package rise.core
 
 import rise.core.DSL._
 import rise.core.semantics._
+import rise.core.types.Kind.{IDataType, INat, INatToData, IType}
 import rise.core.types._
 import util.PatternMatching
 
@@ -15,7 +16,7 @@ object equality {
   }
 
   val equivNat: Env[Kind.Identifier] => Nat => Nat => Boolean = env => a => b => {
-    val natEnv = env.unwrap.collect { case (i: NatIdentifier, n: Nat) => (i, n) }
+    val natEnv = env.unwrap.collect { case (INat(i), INat(n)) => (i, n) }
     // substitutes elements on the left with elements on the right
     substitute.natsInNat(natEnv, a) == b
   }
@@ -55,8 +56,8 @@ object equality {
         case a : Type => and {case b : Type => equivType(env)(a)(b) }
         case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(ia, ib) }
         case a: AddressSpace => and { case b: AddressSpace => (a : AddressSpace) == (b : AddressSpace) }
-        case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(na, nb))(ba)(bb) }
-        case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataType](env.add(na, nb))(ba)(bb) }
+        case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(INat(na), INat(nb)))(ba)(bb) }
+        case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataType](env.add(INat(na), INat(nb)))(ba)(bb) }
         case NatCollectionFromArray(a) => and { case NatCollectionFromArray(b) => a == b } // FIXME: should use exprEq
       }
     }
@@ -69,8 +70,8 @@ object equality {
         case sa: ScalarType => and { case sb: ScalarType => sa == sb }
 
         // Base cases -> identifier lookup
-        case na: TypeIdentifier => and { case nb: TypeIdentifier => env.check(na, nb) }
-        case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier => env.check(na, nb)
+        case na: TypeIdentifier => and { case nb: TypeIdentifier => env.check(IType(na), IType(nb)) }
+        case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier => env.check(IDataType(na), IDataType(nb))
         }
 
         // Base cases -> identifier lookup in nat expressions
@@ -82,8 +83,8 @@ object equality {
         case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
           val and = PatternMatching.matchWithDefault(fb, false)
           equivNat(env)(na)(nb) && (fa match {
-            case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => env.check(na, nb) }
-            case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equivType(env.add(xa, xb))(ba)(bb) }
+            case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => env.check(INatToData(na), INatToData(nb)) }
+            case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equivType(env.add(INat(xa), INat(xb)))(ba)(bb) }
           })
         }
 
@@ -99,10 +100,10 @@ object equality {
 
         // Recursive cases -> binding tracking
         case DepFunType(ka, xa, ta) => and { case DepFunType(kb, xb, tb) =>
-          ka == kb && equivType(env.add(xa, xb))(ta)(tb)
+          ka == kb && equivType(env.add(Kind.toIdentifier(ka, xa), Kind.toIdentifier(kb, xb)))(ta)(tb)
         }
         case DepPairType(ka, xa, ta) => and { case DepPairType(kb, xb, tb) =>
-          ka == kb && equivType(env.add(xa, xb))(ta)(tb)
+          ka == kb && equivType(env.add(Kind.toIdentifier(ka, xa), Kind.toIdentifier(kb, xb)))(ta)(tb)
         }
       }
     }
@@ -163,7 +164,7 @@ object equality {
         case Lambda(xa, ta) => and { case Lambda(xb, tb) =>
           typeEq.equiv[Type](typeEnv)(xa.t)(xb.t) && equiv(typeEnv)(exprEnv.add(xa.name, xb.name))(ta)(tb) }
         case DepLambda(ka, xa, ea) => and { case DepLambda(kb, xb, eb) =>
-          ka == kb && equiv(typeEnv.add(xa, xb))(exprEnv)(ea)(eb) }
+          ka == kb && equiv(typeEnv.add(Kind.toIdentifier(ka, xa), Kind.toIdentifier(kb, xb)))(exprEnv)(ea)(eb) }
         case Opaque(e1, t1) => and { case Opaque(e2, t2) =>
           equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[Type](typeEnv)(t1)(t2) }
         case TypeAnnotation(e1, t1) => and { case TypeAnnotation(e2, t2) =>

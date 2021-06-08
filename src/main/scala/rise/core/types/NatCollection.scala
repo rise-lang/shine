@@ -26,7 +26,7 @@ sealed abstract class NatCollection {
   def apply(idxs: Nat*): Nat = new NatCollectionIndexing(this, idxs)
 }
 
-final case class NatCollectionIdentifier(name: String) extends NatCollection with Kind.Identifier {
+final case class NatCollectionIdentifier(name: String) extends NatCollection {
   override def toString: String = name
 }
 

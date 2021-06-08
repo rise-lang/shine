@@ -27,7 +27,7 @@ object typedLifting {
     }
   }
 
-  def liftDepFunExpr[T](kind: Kind[T, _ <: Kind.Identifier], p: Expr): Result[T => Expr] = {
+  def liftDepFunExpr[T,KI <: Kind.Identifier](kind: Kind[T, _, KI], p: Expr): Result[T => Expr] = {
     def chain(r: Result[Expr]): Result[T => Expr] =
       r.bind(
         liftDepFunExpr(kind, _),
