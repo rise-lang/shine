@@ -209,12 +209,17 @@ package object autotune {
     constraints.forall(c => c.substitute(map).isSatisfied())
   }
 
-  def execute(e: Expr, main: String): (Option[TimeSpan[Time.ms]], AutoTuningError)  = {
-    val m = gen.opencl.hosted.fromExpr(e)
-    val program = shine.OpenCL.Module.translateToString(m) + main
+  def execute(e: Expr, main: String, timeout: Long = 5000): (Option[TimeSpan[Time.ms]], AutoTuningError)  = {
+    val m = util.runWithTimeout(timeout)(gen.opencl.hosted.fromExpr(e))
+    m match {
+      case Some(_) =>{
+        val program = shine.OpenCL.Module.translateToString(m.get) + main
 
-    // execute program
-    util.ExecuteOpenCL.executeWithRuntime(program, "zero_copy")
+        // execute program
+        util.ExecuteOpenCL.executeWithRuntime(program, "zero_copy")
+      }
+      case None => (None, AutoTuningError(CODE_GENERATION_ERROR, Some("timeout after: " + timeout)))
+    }
   }
 
 
