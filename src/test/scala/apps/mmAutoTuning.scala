@@ -143,7 +143,7 @@ class mmAutoTuning extends test_util.Tests {
                 ))))))))
   }
 
-  test("get constraints"){
+  ignore("get constraints"){
     val e:Expr = mmNVIDIA
     println("e: \n" + e)
 
@@ -153,7 +153,7 @@ class mmAutoTuning extends test_util.Tests {
     println("constraints: \n" + constraints)
   }
 
-  test("wrap OCL run"){
+  ignore("wrap OCL run"){
     val e:Expr = mmNVIDIA
 
     val e2 = tuningParam("ls0", RangeMul(1,128,2),(ls0: Nat) => tuningParam("ls1", RangeMul(1,128,2), (ls1: Nat) =>
@@ -174,7 +174,7 @@ class mmAutoTuning extends test_util.Tests {
     println("best: " + best)
   }
 
-  test("execute mm"){
+  ignore("execute mm"){
     val goodParameters = Map(
       NatIdentifier("gs0", isExplicit = true) -> (128: Nat),
       NatIdentifier("gs1", isExplicit = true) -> (64: Nat),
@@ -199,7 +199,7 @@ class mmAutoTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("distribute constraints"){
+  ignore("distribute constraints"){
     val e = wrapOclRun(LocalSize(32, 8), GlobalSize(32, 8))(mmNVIDIA)
     val params = autotune.collectParameters(e)
     val constraints = autotune.collectConstraints(e, params)
