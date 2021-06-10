@@ -3,6 +3,7 @@ package rise.eqsat
 import rise.core.Expr
 import rise.elevate.tvmGemm
 import ProveEquiv.syntax._
+import rise.eqsat.PredicateDSL._
 
 object TvmGemm {
   def main(args: Array[String]): Unit = {
@@ -18,7 +19,7 @@ object TvmGemm {
     ))
 
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(5))
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(100))
       .runCNF(mm, variants, Seq(
       rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.combinatory.compositionAssoc1,

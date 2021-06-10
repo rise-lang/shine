@@ -10,11 +10,11 @@ import PredicateDSL._
 
 class Tiling extends test_util.Tests {
   private val minimalRules = Seq(
-    rules.combinatory.compositionAssoc1,
+    // rules.combinatory.compositionAssoc1,
     rules.combinatory.compositionAssoc2,
-    rules.combinatory.compositionIntro,
-    rules.combinatory.compositionLeftId,
-    rules.combinatory.compositionRightId,
+    // rules.combinatory.compositionIntro,
+    // rules.combinatory.compositionLeftId,
+    // rules.combinatory.compositionRightId,
     rules.combinatory.splitJoin(tileSize),
   )
 
@@ -60,6 +60,7 @@ class Tiling extends test_util.Tests {
 
     // ~12s on laptop with array dimension predicate
     // ~6s  on laptop with ast size predicate on top
+    // ~2s  on laptop with one sided assoc
     ProveEquiv.init()
       .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(40))
       .runCNF(expr, golds, minimalRules ++ reorderRules)
