@@ -3,6 +3,7 @@ package parser
 import java.io.{File, FileInputStream, FileNotFoundException}
 import java.net.URI
 import java.nio.file.Paths
+import scala.collection.mutable
 
 /*
 reads the File and saves the name and the content of the file as an Array of Strings
@@ -19,7 +20,40 @@ case class FileReader(fileName: String) {
   def ==(other:FileReader):Boolean=this.fileName==other.fileName
 
   private def preLexer(array: Array[String]): Array[String] ={
-    deleteSimpleComments(array)
+    val withoutComments = deleteSimpleComments(array)
+    cutAndPasteConstants(withoutComments)
+  }
+  /*
+  Constants are always defined only in one line
+   */
+  private def cutAndPasteConstants(array: Array[String]): Array[String] ={
+    type MapConstants = mutable.HashMap[String, String]
+    val constants:MapConstants = new MapConstants
+    val arr:Array[String] = Array.fill(array.length)("")
+    for(i<- 0 until array.length){
+      if (array(i).contains(":=")) {
+        val pos = array(i).indexOf(":=")
+        val name = array(i).substring(0,pos).trim
+        val content = array(i).substring(pos+2).strip()
+        constants.get(name) match {
+          case Some(value) => throw new IllegalStateException("The Constant '"
+            +name+"' is already defined with value '"+value+
+            "', we tried to overwrite it with '"+content+"'")
+          case None =>constants.update(name, content)
+        }
+      }else{
+        var updateLine = array(i)
+        for((n,c)<-constants){
+          if(updateLine.contains(n)){
+            val posBegin = updateLine.indexOf(n)
+            val posEnd = posBegin+n.length
+            updateLine = updateLine.substring(0,posBegin)+ c + updateLine.substring(posEnd)
+          }
+        }
+        arr(i)=updateLine
+      }
+    }
+    arr
   }
   private def deleteSimpleComments(array: Array[String]): Array[String] ={
     val arr:Array[String] = Array.fill(array.length)("")
