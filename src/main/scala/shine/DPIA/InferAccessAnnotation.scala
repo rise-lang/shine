@@ -681,8 +681,8 @@ private class InferAccessAnnotation {
     case (rt.FunType(inT, outT), FunType(inPT, outPT)) =>
       checkConsistency(inT, inPT)
       checkConsistency(outT, outPT)
-    case (rt.DepFunType(k, x, t), DepFunType(_, y, pt)) =>
-      if (rt.Kind.idName(k, x) != y.name) error(s"Identifiers $x and $y differ")
+    case (rt.DepFunType(kx, x, t), DepFunType(ky, y, pt)) =>
+      if (rt.Kind.idName(kx, x) != Kind.idName(ky, y)) error(s"Identifiers $x and $y differ")
       checkConsistency(t, pt)
     case (dt: rt.DataType, ExpType(dpt: DataType, _)) =>
 

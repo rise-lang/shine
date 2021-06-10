@@ -41,14 +41,14 @@ final case class PassiveFunType[T <: PhraseType, +R <: PhraseType](inT: T, outT:
   override def toString = s"($inT) ->p $outT"
 }
 
-final case class DepFunType[I <: Kind.Identifier, +R <: PhraseType](kind: Kind[_, I], x: I, t: R)
+final case class DepFunType[I, KI <: Kind.Identifier, +R <: PhraseType](kind: Kind[_, I, KI], x: I, t: R)
   extends PhraseType {
-  override def toString = s"(${x.name}: ${kind.name}) -> $t"
+  override def toString = s"(${Kind.idName(kind, x)}: ${kind.name}) -> $t"
 }
 
 object PhraseType {
 
-  def substitute[T, I <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I], x: T, `for`: I, in: Phrase[U]): Phrase[U] =
+  def substitute[T, I, KI <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I, KI], x: T, `for`: I, in: Phrase[U]): Phrase[U] =
     (x, `for`) match {
       case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
       case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
@@ -59,7 +59,7 @@ object PhraseType {
       case _ => throw new Exception(s"could not substitute $x for ${`for`} in $in")
     }
 
-  def substitute[T, I <: Kind.Identifier](kind: Kind[T, I], x: T, `for`: I, in: PhraseType): PhraseType =
+  def substitute[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: T, `for`: I, in: PhraseType): PhraseType =
     (x, `for`) match {
       case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
       case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
@@ -97,7 +97,7 @@ object PhraseType {
         FunType(substitute(dt, `for`, f.inT), substitute(dt, `for`, f.outT))
       case pf: PassiveFunType[_, _] =>
         PassiveFunType(substitute(dt, `for`, pf.inT), substitute(dt, `for`, pf.outT))
-      case df: DepFunType[_, _] =>
+      case df: DepFunType[_, _, _] =>
         DepFunType(df.kind, df.x, substitute(dt, `for`, df.t))
     }
   }
@@ -149,7 +149,7 @@ object PhraseType {
         FunType(substitute(n, `for`, f.inT), substitute(n, `for`, f.outT))
       case pf: PassiveFunType[_, _] =>
         PassiveFunType(substitute(n, `for`, pf.inT), substitute(n, `for`, pf.outT))
-      case df: DepFunType[_, _] =>
+      case df: DepFunType[_, _, _] =>
         DepFunType(df.kind, df.x, substitute(n, `for`, df.t))
     }
   }

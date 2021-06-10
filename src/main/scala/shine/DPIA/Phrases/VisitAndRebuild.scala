@@ -84,27 +84,27 @@ object VisitAndRebuild {
           case DepApply(_, p, a) => a match {
             case n: Nat =>
               DepApply(NatKind,
-                apply(p, v).asInstanceOf[Phrase[NatIdentifier `()->:` T]],
+                apply(p, v).asInstanceOf[Phrase[`(nat)->:`[T]]],
                 v.nat(n))
             case dt: DataType =>
               DepApply(DataKind,
-                apply(p, v).asInstanceOf[Phrase[DataTypeIdentifier `()->:` T]],
+                apply(p, v).asInstanceOf[Phrase[`(dt)->:`[T]]],
                 visitDataTypeAndRebuild(dt, v))
             case ad: AddressSpace =>
               DepApply(AddressSpaceKind,
-                apply(p, v).asInstanceOf[Phrase[AddressSpaceIdentifier `()->:` T]],
+                apply(p, v).asInstanceOf[Phrase[`(add)->:`[T]]],
                 v.addressSpace(ad))
             case ac: AccessType =>
               DepApply(AccessKind,
-                apply(p, v).asInstanceOf[Phrase[AccessTypeIdentifier `()->:` T]],
+                apply(p, v).asInstanceOf[Phrase[`(acc)->:`[T]]],
                 v.access(ac))
             case n2n: NatToNat =>
               DepApply(NatToNatKind,
-                apply(p, v).asInstanceOf[Phrase[NatToNatIdentifier `()->:` T]],
+                apply(p, v).asInstanceOf[Phrase[`(n2n)->:`[T]]],
                 v.natToNat(n2n))
             case n2d: NatToData =>
               DepApply(NatToDataKind,
-                apply(p, v).asInstanceOf[Phrase[NatToDataIdentifier `()->:` T]],
+                apply(p, v).asInstanceOf[Phrase[`(n2d)->:`[T]]],
                 v.natToData(n2d))
             case ph: PhraseType => ???
           }

@@ -50,9 +50,9 @@ object fromRise {
     }
 
     case r.DepApp(kind, f, x) =>
-      def depApp[T, I <: Kind.Identifier](kind: Kind[T, I], f: r.Expr, arg: T): DepApply[T, I, PhraseType] =
-        DepApply[T, I, PhraseType](kind,
-          expression(f, ptMap).asInstanceOf[Phrase[DepFunType[I, PhraseType]]],
+      def depApp[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], f: r.Expr, arg: T): DepApply[T, I, KI, PhraseType] =
+        DepApply[T, I, KI, PhraseType](kind,
+          expression(f, ptMap).asInstanceOf[Phrase[DepFunType[I, KI, PhraseType]]],
           arg)
 
       x match {
@@ -98,10 +98,10 @@ object fromRise {
   }
 
   object depFun {
-    def apply[T, I <: Kind.Identifier](kind: Kind[T, I], x: I): Object {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
+    def apply[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: I): Object {
+      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, KI, U]
     } = new {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
+      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, KI, U] = DepLambda(kind, x, body)
     }
   }
 

@@ -38,21 +38,21 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
   override def toString: String = s"($fun $arg)"
 }
 
-final case class DepLambda[T, I <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I], x: I, body: Phrase[U])
-  extends Phrase[I `()->:` U] {
-  override val t: DepFunType[I, U] = DepFunType[I, U](kind, x, body.t)
-  override def toString: String = s"Λ(${x.name} : ${kind.name}). $body"
+final case class DepLambda[T, I, KI <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I, KI], x: I, body: Phrase[U])
+  extends Phrase[DepFunType[I, KI, U]] {
+  override val t: DepFunType[I, KI, U] = DepFunType[I, KI, U](kind, x, body.t)
+  override def toString: String = s"Λ(${Kind.idName(kind, x)} : ${kind.name}). $body"
 }
 
 object DepLambda {
-  def apply[T, I <: Kind.Identifier](kind: Kind[T, I], x: I): Object {
-    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
+  def apply[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: I): Object {
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, KI, U]
   } = new {
-    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, KI, U] = DepLambda(kind, x, body)
   }
 }
 
-final case class DepApply[T, I <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I], fun: Phrase[I `()->:` U], arg: T)
+final case class DepApply[T, I, KI <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I, KI], fun: Phrase[DepFunType[I, KI, U]], arg: T)
   extends Phrase[U] {
 
   override val t: U = PhraseType.substitute(kind, arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[U]
@@ -141,8 +141,9 @@ object Phrase {
             case l @ Lambda(x, _) =>
               val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
               Continue(l, Renaming(newMap))
-            case dl @ DepLambda(_, x, _) =>
-              val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
+            case dl @ DepLambda(k, x, _) =>
+              val name = Kind.idName(k, x)
+              val newMap = idMap + (name -> freshName(name.takeWhile(_.isLetter)))
               Continue(dl, Renaming(newMap))
             case _ => Continue(p, this)
           }
@@ -248,7 +249,7 @@ object Phrase {
         }
         case DepApply(_, fun, arg) => (fun, arg) match {
           case (f, a: Nat) =>
-            transientNatFromExpr(liftDependentFunction(f.asInstanceOf[Phrase[NatIdentifier `()->:` ExpType]])(a))
+            transientNatFromExpr(liftDependentFunction(f.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a))
           case _ => ???
         }
         case Proj1(pair) => transientNatFromExpr(liftPair(pair)._1)

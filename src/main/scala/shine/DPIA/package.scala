@@ -34,9 +34,12 @@ package object DPIA {
   type x[T1 <: PhraseType, T2 <: PhraseType] = PhrasePairType[T1, T2]
   type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]
   type `->p:`[T <: PhraseType, R <: PhraseType] = PassiveFunType[T, R]
-  type `()->:`[I <: Kind.Identifier, R <: PhraseType] = DepFunType[I, R]
-  type `(nat)->:`[R <: PhraseType] = DepFunType[NatIdentifier, R]
-  type `(dt)->:`[R <: PhraseType] = DepFunType[DataTypeIdentifier, R]
+  type `(nat)->:`[R <: PhraseType] = DepFunType[NatIdentifier, Kind.INat, R]
+  type `(dt)->:`[R <: PhraseType] = DepFunType[DataTypeIdentifier, Kind.IDataType, R]
+  type `(add)->:`[R <: PhraseType] = DepFunType[AddressSpaceIdentifier, Kind.IAddressSpace, R]
+  type `(acc)->:`[R <: PhraseType] = DepFunType[AccessTypeIdentifier, Kind.IAccessType, R]
+  type `(n2n)->:`[R <: PhraseType] = DepFunType[NatToNatIdentifier, Kind.INatToNat, R]
+  type `(n2d)->:`[R <: PhraseType] = DepFunType[NatToDataIdentifier, Kind.INatToData, R]
   type VarType = ExpType x AccType
 
   object VarType {
@@ -94,10 +97,10 @@ package object DPIA {
   }
 
   implicit class DepFunTypeConstructor[R <: PhraseType](r: R) {
-    def ->:(i: DataTypeIdentifier): `()->:`[DataTypeIdentifier, R] = DepFunType(DataKind, i, r)
-    def ->:(n: NatIdentifier): `()->:`[NatIdentifier, R] = DepFunType(NatKind, n, r)
-    def ->:(n: NatToNatIdentifier): `()->:`[NatToNatIdentifier, R] = DepFunType(NatToNatKind, n, r)
-    def ->:(n: NatToDataIdentifier): `()->:`[NatToDataIdentifier, R] = DepFunType(NatToDataKind, n, r)
+    def ->:(i: DataTypeIdentifier): DepFunType[DataTypeIdentifier, Kind.IDataType, R] = DepFunType(DataKind, i, r)
+    def ->:(n: NatIdentifier): DepFunType[NatIdentifier, Kind.INat, R] = DepFunType(NatKind, n, r)
+    def ->:(n: NatToNatIdentifier): DepFunType[NatToNatIdentifier, Kind.INatToNat, R] = DepFunType(NatToNatKind, n, r)
+    def ->:(n: NatToDataIdentifier): DepFunType[NatToDataIdentifier, Kind.INatToData, R] = DepFunType(NatToDataKind, n, r)
   }
 
   object expT {
@@ -129,7 +132,7 @@ package object DPIA {
       DepFunType(NatKind, n, t)
     }
 
-    def unapply[I <: Kind.Identifier, U <: PhraseType](funType: DepFunType[I, U]): Option[(NatIdentifier, U)] = {
+    def unapply[KI <: Kind.Identifier, U <: PhraseType](funType: DepFunType[_, KI, U]): Option[(NatIdentifier, U)] = {
       funType.x match {
         case n: NatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
@@ -152,8 +155,8 @@ package object DPIA {
       DepFunType(AddressSpaceKind, a, t)
     }
 
-    def unapply[I <: Kind.Identifier, T <: PhraseType](funType: DepFunType[I, T]
-                                                      ): Option[(AddressSpaceIdentifier, T)] = {
+    def unapply[KI <: Kind.Identifier, T <: PhraseType](funType: DepFunType[_, KI, T]
+                                                       ): Option[(AddressSpaceIdentifier, T)] = {
       funType.x match {
         case a: AddressSpaceIdentifier => Some((a, funType.t))
         case _ => throw new Exception("Expected AddressSpace DepFunType")
@@ -170,8 +173,8 @@ package object DPIA {
       DepFunType(NatToNatKind, n, t)
     }
 
-    def unapply[I <: Kind.Identifier, T <: PhraseType](funType: DepFunType[I, T]
-                                                      ): Option[(NatToNatIdentifier, T)] = {
+    def unapply[KI <: Kind.Identifier, T <: PhraseType](funType: DepFunType[_, KI, T]
+                                                       ): Option[(NatToNatIdentifier, T)] = {
       funType.x match {
         case n: NatToNatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
