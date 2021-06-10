@@ -60,13 +60,11 @@ object ExecuteOpenCL {
 
   def getRuntimeFromClap(s: String): TimeSpan[Time.ms] = {
 
-    // Todo: check weird error, where the first line is an empty element
-    // avoid this error by removing first line
-
     // convert input String to array of Strings (line-wise)
     val sArray = s.split("\n")
 
-    //check if first line has empty element tag
+    // check weird error, where the first line has empty element tag
+    // avoid this error by removing first line
     val sCorrect = sArray(0).trim().takeRight(2) match {
       case "/>" => sArray.drop(1).mkString("\n")
       case _ => s
