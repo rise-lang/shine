@@ -47,7 +47,7 @@ case class FileReader(fileName: String) {
           if(updateLine.contains(n)){
             val posBegin = updateLine.indexOf(n)
             val posEnd = posBegin+n.length
-            updateLine = updateLine.substring(0,posBegin)+ c + updateLine.substring(posEnd)
+            updateLine = updateLine.substring(0,posBegin)+ "("+ c + ")"+ updateLine.substring(posEnd)
           }
         }
         arr(i)=updateLine
