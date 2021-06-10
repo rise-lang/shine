@@ -5,7 +5,7 @@ import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
 import parser.ErrorMessage.{ErrorList, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, UsedOrFailedRule, isFailed, isMatched, isParsing}
 import rise.core.DSL.ToBeTyped
-import rise.core.DSL.Type.TypeConstructors
+import rise.core.DSL.Type.TypeConstructors //Todo: delete TypeConstructors
 import rise.core.ForeignFunction
 import rise.core.types.{DataType, DepFunType, PairType, TypePlaceholder, f32, vec}
 
