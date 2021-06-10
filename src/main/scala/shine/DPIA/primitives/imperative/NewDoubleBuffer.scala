@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class NewDoubleBuffer(val dt1: DataType, val dt2: DataType, val dt3: DataType, val n: Nat, val in: Phrase[ExpType], val out: Phrase[AccType], val f: Phrase[FunType[PhrasePairType[PhrasePairType[PhrasePairType[ExpType, AccType], CommType], CommType], CommType]]) extends CommandPrimitive {
   assert {

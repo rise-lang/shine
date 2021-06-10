@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class NewManagedBuffer(access: shine.OpenCL.AccessFlags)(val dt: DataType, val k: Phrase[FunType[PhrasePairType[ExpType, AccType], CommType]]) extends CommandPrimitive {
   assert {
