@@ -1,4 +1,5 @@
 package parser
+import apps.convolution.{blurXTiled2D, blurXTiled2DSizes}
 import apps.nbody.{runKernel, runOriginalKernel}
 import org.scalatest.flatspec.AnyFlatSpec
 import parser.parse.{HMExpr, HMNat, HMType}
@@ -191,6 +192,31 @@ class parseTest extends  test_util.TestsWithExecutor {
       case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
       case a => fail("not a lambda: " + a)
     }
+  }
+
+  test("parser should be able to parse 'convolution.rise'"){
+    val fileName: String = testFilePath + "convolution.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName2: String = "nbody"
+    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!"))
+
+    val N = 512
+    val tileX = 256
+    val tileY = 1
+    val random = new scala.util.Random()
+    val matrix = Array.fill(N)(random.nextFloat() * 10.0f)
+    val weights = Array.fill(17)(random.nextFloat())
+
+    val (lsX, gsX) = blurXTiled2DSizes(N)
+    val kernelX = gen.OpenCLKernel(blurXTiled2D(N))
+    val kernelParser = gen.OpenCLKernel(ex_g)
+    test_util.runsWithSameResult(Seq(
+      ("parser NVIDIA", runKernel(kernelParser, lsX, gsX, matrix, weights)),
+      ("dpia X", runKernel(kernelX, lsX, gsX, matrix, weights))
+    ))
   }
 
   test("parser should be able to parse 'composition.rise'"){

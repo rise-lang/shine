@@ -1,0 +1,16 @@
+identity:=\x->x
+dotElemWeihts:=\weights->\elem->\acc->\pair->oclReduceSeqUnroll Private (+ acc (* (fst pair) (snd pair))) 0F32 (zip (join elem) weights)
+unslide2D:=join .(map ((map join) . transpose))
+slide2D:=\szOuter:Nat=>\stOuter:Nat=>\szInner:Nat=>\stInner:Nat=> (map transpose).(slide szOuter stOuter).(map (slide szInner stInner))
+
+blurXTiled2D::N:Nat=>N.N.F32->17.F32->N.N.F32
+blurXTiled2D=\N:Nat=>\matrix->\weights->
+  unslide2D . mapWorkGroup 1 (
+  mapWorkGroup 0 (
+  \tile-> mapLocal 1 (( 
+  mapLocal 0 (dotElemWeihts weights)
+  ). (slide2D 1N 1N 17N 1N) 
+  (toLocal (mapLocal 1 (mapLocal 0 identity) tile))
+  )
+  )
+  ) . (slide2D 4N 4N 144N 128N) . (padClamp2D 0 0 8 8) matrix
