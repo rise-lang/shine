@@ -89,29 +89,33 @@ case class RecognizeLexeme(fileReader: FileReader){
                   case "::" => {
                     return beginTypAnnotatedIdent(column, row, list)._1
                   }
-                  case a => throw new IllegalStateException(
-                    "Here should be an '::' or '=', but whitout this nothing new can be started")
+                  case a => throw NotExpectedToken("'::' or '='", a, Span(fileReader,
+                    Range(Location(column, newRow),Location(column, newRow+2))))
                 }
               } else {
-                throw new IllegalStateException(
-                  "Here should be an '::' or '=', but whitout this nothing new can be started")
+                throw NotExpectedToken("'::' or '='", arr(column).substring(newRow, newRow + 1),
+                  Span(fileReader,
+                  Range(Location(column, newRow),Location(column, newRow+1))))
               }
             }
             case "=" => {
               if (arr(column).length >= newRow + 2) {
                 arr(column).substring(newRow, newRow + 2) match {
-                  case "==" => throw new IllegalStateException(
-                    "Here should be an '::' or '=', but whitout this nothing new can be started")
+                  case "==" => throw NotExpectedToken("'::' or '='", "==", Span(fileReader,
+                    Range(Location(column, newRow),Location(column, newRow+2))))
                   case a => {
-                    throw new IllegalStateException("You can't start with a NamedExpr")
+                    throw NotExpectedToken("'::' or '='", a, Span(fileReader,
+                      Range(Location(column, newRow),Location(column, newRow+2))))
                   }
                 }
               } else {
-                throw new IllegalStateException("You can't start with a NamedExpr")
+                throw NotExpectedToken("'::' or '='", arr(column).substring(newRow, newRow + 1),
+                  Span(fileReader,
+                    Range(Location(column, newRow),Location(column, newRow+1))))
               }
             }
-            case a => throw new IllegalStateException(
-              "Here should be an '::' or '=', but whitout this nothing new can be started")
+            case a => throw NotExpectedToken("'::' or '='", a, Span(fileReader,
+              Range(Location(column, newRow),Location(column, newRow+2))))
           }
         }
         case (Right(a),_)=> throw a
@@ -866,16 +870,19 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                   case "::" => {
                     return endTypAnnotatedIdentBeginTypAnnotatedIdent(column, row, list)._1
                   }
-                  case _ =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+                  case a =>throw NotExpectedToken("'::' or '='", a, Span(fileReader,
+                      Range(Location(column, newRow),Location(column, newRow+2))))
                 }
               } else {
-                throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+                throw NotExpectedToken("'::' or '='", arr(column).substring(newRow, newRow + 1), Span(fileReader,
+                      Range(Location(column, newRow),Location(column, newRow+1))))
               }
             }
             case "=" => {
               if (arr(column).length >= row + 2) {
                 arr(column).substring(row, row + 2) match {
-                  case "==" =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+                  case "==" =>throw NotExpectedToken("'::' or '='", "==", Span(fileReader,
+                      Range(Location(column, newRow),Location(column, newRow+2))))
                   case a => {
                     return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
                   }
@@ -884,10 +891,11 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
                 return endTypAnnotatedIdentBeginNamedExpr(column, row, list)._1
               }
             }
-            case a =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started: "+ list)
+            case a =>throw NotExpectedToken("'::' or '='", a, Span(fileReader,
+              Range(Location(column, newRow),Location(column, newRow+2))))
           }
         }
-        case (Right(_), _) =>throw new IllegalStateException("Here should be an '::' or '=', but whitout this nothing new can be started")
+        case (Right(a), _) => throw a
       }
     }else {
       throw new IllegalStateException("Here should be an Identifier, but whitout an Identifier nothing new can be started")
