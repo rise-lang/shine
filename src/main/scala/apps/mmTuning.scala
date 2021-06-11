@@ -143,7 +143,8 @@ object mmTuning {
     // generate kernel
     println("timestamp")
     val genExprStart = System.currentTimeMillis()
-    val kernel = genMMKernel(v3, v4, v5, v6, v7, v8)
+    // FIXME: delete this file entirely?
+    val kernel = ??? // genMMKernel(v3, v4, v5, v6, v7, v8)
     val genExpr = System.currentTimeMillis() - genExprStart
 
     // run kernel

@@ -117,7 +117,7 @@ object Type {
 
   object impl {
     def apply[A](w: NatFunctionWrapper[A]): A = {
-      w.f(NatIdentifier(freshName("n"), isExplicit = false))
+      w.f(NatIdentifier(freshName("n")))
     }
 
     def apply[A](w: DataTypeFunctionWrapper[A]): A = {

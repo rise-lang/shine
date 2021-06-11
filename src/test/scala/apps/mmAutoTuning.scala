@@ -176,16 +176,16 @@ class mmAutoTuning extends test_util.Tests {
 
   ignore("execute mm"){
     val goodParameters = Map(
-      NatIdentifier("gs0", isExplicit = true) -> (128: Nat),
-      NatIdentifier("gs1", isExplicit = true) -> (64: Nat),
-      NatIdentifier("ls0", isExplicit = true) -> (32: Nat),
-      NatIdentifier("ls1", isExplicit = true) -> (32: Nat),
-      NatIdentifier("v3", isExplicit = true) -> (4: Nat),
-      NatIdentifier("v4", isExplicit = true) -> (8: Nat),
-      NatIdentifier("v5", isExplicit = true) -> (64: Nat),
-      NatIdentifier("v6", isExplicit = true) -> (128: Nat),
-      NatIdentifier("v7", isExplicit = true) -> (128: Nat),
-      NatIdentifier("v8", isExplicit = true) -> (16: Nat),
+      TuningParameter("gs0") -> (128: Nat),
+      TuningParameter("gs1") -> (64: Nat),
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (8: Nat),
+      TuningParameter("v5") -> (64: Nat),
+      TuningParameter("v6") -> (128: Nat),
+      TuningParameter("v7") -> (128: Nat),
+      TuningParameter("v8") -> (16: Nat),
     )
     val e: Expr = mmNVIDIA
 

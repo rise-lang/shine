@@ -46,13 +46,8 @@ object IsClosedForm {
     }
 
     override def nat: Nat => Pair[Nat] = n => {
-<<<<<<< HEAD
-      val free = n.varList.foldLeft(Set[Kind.Identifier]()) {
-        case (free, v: NamedVar) if !boundT(NatIdentifier(v, isExplicit = false, isTuningParam = false)) => free + NatIdentifier(v, isExplicit = false, isTuningParam = false)
-=======
       val free = n.varList.foldLeft(OrderedSet.empty[Kind.Identifier]) {
         case (free, v: NamedVar) if !boundT(INat(v)) => OrderedSet.add(INat(v) : Kind.Identifier)(free)
->>>>>>> master
         case (free, _) => free
       }
       accumulate((OrderedSet.empty, free))(n)

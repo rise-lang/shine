@@ -74,8 +74,14 @@ object infer {
   private val collectPreserve = new PureAccumulatorTraversal[Set[Kind.Identifier]] {
     override val accumulator = SetMonoid
 
+    override def nat: Nat => Pair[Nat] = n => n match {
+      case p@TuningParameter() => accumulate(Set(Kind.INat(p)))(n)
+      case n => return_(n)
+    }
+
     override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] = {
       case Binding => i => accumulate(Set(i))(i)
+      // FIXME? nat identifiers don't seem to be traversed here
       case _ => return_
     }
 
