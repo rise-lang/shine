@@ -23,11 +23,16 @@ struct KernelImpl {
 
 typedef cl_mem DeviceBuffer;
 
+Context createContext(const char* platform_subname, const char* device_type_str);
+Kernel loadKernelFromSource(Context ctx, const char* name, const char* source, size_t length);
+Kernel loadKernelFromFile(Context ctx, const char* name, const char* path);
+void launchKernel(
+  Context ctx, Kernel k,
+  const size_t* global_size, const size_t* local_size,
+  size_t arg_count, const KernelArg* args);
+
 const char* oclErrorToString(cl_int error);
 bool oclReportError(cl_int error, const char* msg);
 void oclFatalError(cl_int error, const char* msg);
-
-#define KARG(val) { sizeof(val), &val }
-#define LARG(size) { size, NULL }
 
 #endif

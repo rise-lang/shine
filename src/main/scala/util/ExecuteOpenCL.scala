@@ -8,9 +8,10 @@ object ExecuteOpenCL {
   case class Exception(msg: String) extends Throwable
 
   val runtimePath = "runtime/"
+  val platformPath = "runtime/ocl/"
   val executorHeadersPath = "lib/executor/lib/Executor/include/"
   val libs = "-lm -lOpenCL"
-  val includes = s"-I$runtimePath -I$executorHeadersPath"
+  val includes = s"-I$runtimePath -I$platformPath -I$executorHeadersPath"
   val libDirs: String = tryToFindOpenCLLibDir()
 
   def tryToFindOpenCLLibDir(): String = {
@@ -43,7 +44,7 @@ object ExecuteOpenCL {
       writeToPath(mainPath,
         s"""#include "host.c"
            |$mainSource""".stripMargin)
-      val sources = s"$mainPath $runtimePath/buffer_$buffer_impl.c $runtimePath/ocl.c"
+      val sources = s"$mainPath $platformPath/buffer_$buffer_impl.c $platformPath/ocl.c"
       (s"clang -O2 $sources $includes -o $binPath $libDirs $libs -Wno-parentheses-equality" !!)
       (Process(s"$binPath", new java.io.File(genDir.getAbsolutePath)) !!)
     } catch {
@@ -61,7 +62,7 @@ object ExecuteOpenCL {
     try {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
-      val sources = s"$src $runtimePath/buffer_$buffer_impl.c $runtimePath/ocl.c"
+      val sources = s"$src $platformPath/buffer_$buffer_impl.c $platformPath/ocl.c"
       (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
       (s"$bin" !!)
     } catch {
