@@ -3,6 +3,7 @@ package rise.core.types
 import arithexpr.arithmetic._
 import rise.core.types
 
+<<<<<<< HEAD
 class NatIdentifier(
     override val name: String,
     override val range: Range,
@@ -51,6 +52,12 @@ object NatIdentifier {
 
   def apply(nv: NamedVar, isExplicit: Boolean, isTuningParam: Boolean): NatIdentifier =
     new NatIdentifier(nv.name, nv.range, isExplicit, isTuningParam)
+=======
+
+object NatIdentifier {
+  def apply(name: String): NatIdentifier = new NamedVar(name)
+  def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range)
+>>>>>>> master
 }
 
 final class NatToNatApply(val f: NatToNat, val n: Nat)

@@ -22,7 +22,7 @@ class traverseTest extends test_util.Tests {
 
   class TypeTraceVisitor extends PureAccumulatorTraversal[Seq[Any]] {
     override val accumulator = SeqMonoid[Any]
-    override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Pair[I] =
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] =
       vt => i => accumulate(Seq(i))(i)
   }
 

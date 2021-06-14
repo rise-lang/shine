@@ -17,9 +17,9 @@ object TypeCheck {
         TypeCheck(q)
         errorIfNotEqOrSubtype(q.t, p.t.inT)
 
-      case DepLambda(_, p) => TypeCheck(p)
+      case DepLambda(_, _, p) => TypeCheck(p)
 
-      case DepApply(p, _) => TypeCheck(p)
+      case DepApply(_, p, _) => TypeCheck(p)
 
       case LetNat(_, defn, body) => TypeCheck(defn); TypeCheck(body)
 
@@ -116,8 +116,8 @@ object TypeCheck {
           accessSub == read && notContainingArrayType(bSub)
       case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
         subtypeCheck(superInT, subInT) && subtypeCheck(subOutT,  superOutT)
-      case (DepFunType(subInT, subOutT), DepFunType(superInT, superOutT)) =>
-        subInT == superInT && subtypeCheck(subOutT, superOutT)
+      case (DepFunType(kind1, subInT, subOutT), DepFunType(kind2, superInT, superOutT)) =>
+        kind1 == kind2 && subInT == superInT && subtypeCheck(subOutT, superOutT)
       case _ => false
     }
   }

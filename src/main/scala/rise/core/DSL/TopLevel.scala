@@ -3,8 +3,9 @@ package rise.core.DSL
 import Type.impl
 import util.monads._
 import rise.core.traverse._
+import rise.core.types.Kind._
 import rise.core.types._
-import rise.core.{DSL, Expr, Primitive}
+import rise.core.{DSL, Expr, IsClosedForm, Primitive}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
   override val t: Type = e.t
@@ -23,30 +24,28 @@ final case class TopLevel(e: Expr, inst: Solution = Solution())(
 object TopLevel {
   private def instantiate(t: Type): Solution = {
     import scala.collection.immutable.Map
-    infer.getFTVs(t).foldLeft(Solution())((subs, ftv) =>
+    IsClosedForm.varsToClose(t).foldLeft(Solution())((subs, ftv) =>
       subs match {
         case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
-            case i: TypeIdentifier =>
+            case IType(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: TypeIdentifier => x }))
-            case i: DataTypeIdentifier =>
+            case IDataType(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: DataType => x }))
-            case i: NatIdentifier =>
+            case INat(i) =>
               s.copy(ns = ns ++ Map(i -> impl{ x: Nat => x }))
-            case i: AddressSpaceIdentifier =>
+            case IAddressSpace(i) =>
               s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
-            case i: MatrixLayoutIdentifier =>
+            case IMatrixLayout(i) =>
               s.copy(ms = ms ++ Map(i -> impl{ x: MatrixLayout => x }))
-            case i: FragmentKindIdentifier =>
+            case IFragmentKind(i) =>
               s.copy(fs = fs ++ Map(i -> impl{ x: FragmentKind => x }))
-            case i: NatToDataIdentifier =>
+            case INatToData(i) =>
               s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
-            case i: NatToNatIdentifier =>
+            case INatToNat(i) =>
               s.copy(n2ns = n2ns ++ Map(i -> impl{ x: NatToNat => x }))
-            case i: NatCollectionIdentifier =>
+            case INatCollection(i) =>
               s.copy(natColls = natColls ++ Map(i -> impl{ x: NatCollection => x }))
-            case i =>
-              throw TypeException(s"${i.getClass} is not supported yet")
           }
       }
     )

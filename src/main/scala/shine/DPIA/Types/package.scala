@@ -26,42 +26,42 @@ package object Types {
     def `:`[T <: PhraseType](p: Phrase[T]): Unit = typeAssert(p, pt)
   }
 
-  type NatDependentFunctionType[T <: PhraseType] = DepFunType[NatKind, T]
+  type NatDependentFunctionType[T <: PhraseType] = DepFunType[NatIdentifier, T]
 
   object NatDependentFunctionType {
-    def apply[T <: PhraseType](n: NatIdentifier, t: T): DepFunType[NatKind, T] =
-      DepFunType[NatKind, T](n, t)
+    def apply[T <: PhraseType](n: NatIdentifier, t: T): DepFunType[NatIdentifier, T] =
+      DepFunType(NatKind, n, t)
   }
 
-  type TypeDependentFunctionType[T <: PhraseType] = DepFunType[DataKind, T]
+  type TypeDependentFunctionType[T <: PhraseType] = DepFunType[DataTypeIdentifier, T]
 
   object TypeDependentFunctionType {
     def apply[T <: PhraseType](
       dt: DataTypeIdentifier,
       t: T
-    ): DepFunType[DataKind, T] =
-      DepFunType[DataKind, T](dt, t)
+    ): DepFunType[DataTypeIdentifier, T] =
+      DepFunType(DataKind, dt, t)
   }
 
   type AddrSpaceDependentFunctionType[T <: PhraseType] =
-    DepFunType[AddressSpaceKind, T]
+    DepFunType[AddressSpaceIdentifier, T]
 
   object AddrSpaceDependentFunctionType {
     def apply[T <: PhraseType](
       addr: AddressSpaceIdentifier,
       t: T
-    ): DepFunType[AddressSpaceKind, T] =
-      DepFunType[AddressSpaceKind, T](addr, t)
+    ): DepFunType[AddressSpaceIdentifier, T] =
+      DepFunType(AddressSpaceKind, addr, t)
   }
 
-  type AccessDependentFunctionType[T <: PhraseType] = DepFunType[AccessKind, T]
+  type AccessDependentFunctionType[T <: PhraseType] = DepFunType[AccessTypeIdentifier, T]
 
   object AccessDependentFunctionType {
     def apply[T <: PhraseType](
       at: AccessTypeIdentifier,
       t: T
-    ): DepFunType[AccessKind, T] =
-      DepFunType[AccessKind, T](at, t)
+    ): DepFunType[AccessTypeIdentifier, T] =
+      DepFunType(AccessKind, at, t)
   }
 
   object n2dtFun {

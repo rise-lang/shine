@@ -58,7 +58,7 @@ object algorithmic {
 
   // padEmpty n >> padEmpty m -> padEmpty n + m
   @rule def padEmptyFusion: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), m: Nat), App(DepApp(padEmpty(), n: Nat), in)) =>
+    case e @ App(DepApp(NatKind, padEmpty(), m: Nat), App(DepApp(NatKind, padEmpty(), n: Nat), in)) =>
       Success(padEmpty(n+m)(in) !: e.t)
   }
 
@@ -135,7 +135,7 @@ object algorithmic {
   // constraint: n - m = u - v
   // v = u + m - n
   @rule def slideOverlap(u: Nat): Strategy[Rise] = {
-    case e @ DepApp(DepApp(slide(), n: Nat), m: Nat) =>
+    case e @ DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), m: Nat) =>
       val v = u + m - n
       Success((slide(u)(v) >> map(slide(n)(m)) >> join) !: e.t)
   }
@@ -144,12 +144,12 @@ object algorithmic {
 
   // slide n 1 >> drop l -> slide (n+l) 1 >> map(drop l)
   @rule def dropInSlide: Strategy[Rise] = {
-    case e@App(DepApp(drop(), l: Nat), App(DepApp(DepApp(slide(), n: Nat), Cst(1)), in)) =>
+    case e@App(DepApp(NatKind, drop(), l: Nat), App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), Cst(1)), in)) =>
       Success(app(map(drop(l)), app(slide(n + l)(1), preserveType(in))) !: e.t)
   }
   // slide n 1 >> take (N - r) -> slide (n+r) 1 >> map(take (n - r))
   @rule def takeInSlide: Strategy[Rise] = {
-    case e@App(t@DepApp(take(), rem: Nat), App(DepApp(DepApp(slide(), n: Nat), Cst(1)), in)) =>
+    case e@App(t@DepApp(NatKind, take(), rem: Nat), App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), Cst(1)), in)) =>
       t.t match {
         case FunType(ArrayType(size, _), _) =>
           val r = size - rem
@@ -159,18 +159,18 @@ object algorithmic {
   }
 
   @rule def dropNothing: Strategy[Rise] = {
-    case expr @ DepApp(drop(), Cst(0)) => Success(fun(x => x) !: expr.t)
+    case expr @ DepApp(NatKind, drop(), Cst(0)) => Success(fun(x => x) !: expr.t)
   }
 
   @rule def takeAll: Strategy[Rise] = {
-    case expr @ DepApp(take(), n: Nat) => expr.t match {
+    case expr @ DepApp(NatKind, take(), n: Nat) => expr.t match {
       case FunType(ArrayType(m, _), _) if n == m => Success(fun(x => x) !: expr.t)
       case _ => Failure(takeAll)
     }
   }
 
   @rule def padEmptyNothing: Strategy[Rise] = {
-    case e @ DepApp(padEmpty(), Cst(0)) => Success(fun(x => x) !: e.t)
+    case e @ DepApp(NatKind, padEmpty(), Cst(0)) => Success(fun(x => x) !: e.t)
   }
 
   @rule def mapIdentity: Strategy[Rise] = {
@@ -198,7 +198,7 @@ object algorithmic {
 
   // J >> drop d -> drop (d / m) >> J >> drop (d % m)
   @rule def dropBeforeJoin: Strategy[Rise] = {
-    case e @ App(DepApp(drop(), d: Nat), App(join(), in)) => in.t match {
+    case e @ App(DepApp(NatKind, drop(), d: Nat), App(join(), in)) => in.t match {
       case ArrayType(_, ArrayType(m, _)) =>
         Success(app(drop(d % m), join(drop(d / m)(in))) !: e.t)
       case _ => throw new Exception("this should not happen")
@@ -209,7 +209,7 @@ object algorithmic {
   // -> dropLast (d / m) >> J >> dropLast (d % m)
   // -> take (n - d / m) >> J >> take ((n - d / m)*m - d % m)
   @rule def takeBeforeJoin: Strategy[Rise] = {
-    case e @ App(DepApp(take(), nmd: Nat), App(join(), in)) => in.t match {
+    case e @ App(DepApp(NatKind, take(), nmd: Nat), App(join(), in)) => in.t match {
       case ArrayType(n, ArrayType(m, _)) =>
         val d = n*m - nmd
         val t1 = n - d / m
@@ -221,7 +221,7 @@ object algorithmic {
 
   // take n >> padEmpty m -> padEmpty m'
   @rule def removeTakeBeforePadEmpty: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), m: Nat), App(DepApp(take(), n: Nat), in)) =>
+    case e @ App(DepApp(NatKind, padEmpty(), m: Nat), App(DepApp(NatKind, take(), n: Nat), in)) =>
       in.t match {
         case ArrayType(size, _)
         if ArithExpr.isSmaller(size - n, m + 1).contains(true) =>
@@ -370,15 +370,15 @@ object algorithmic {
   // zip (slide n m a) (slide n m b) -> map unzip (slide n m (zip a b))
   @rule def slideOutsideZip: Strategy[Rise] = {
     case expr @ App(App(zip(),
-      App(DepApp(DepApp(slide(), n: Nat), m: Nat), a)),
-      App(DepApp(DepApp(slide(), n2: Nat), m2: Nat), b)
+      App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), m: Nat), a)),
+      App(DepApp(NatKind, DepApp(NatKind, slide(), n2: Nat), m2: Nat), b)
     ) if n == n2 && m == m2 =>
       Success(map(unzip)(slide(n)(m)(zip(a)(b))) !: expr.t)
   }
 
   // slide n m (zip a b) -> map zip (zip (slide n m a) (slide n m b))
   @rule def slideInsideZip: Strategy[Rise] = {
-    case expr @ App(DepApp(DepApp(slide(), n: Nat), m: Nat),
+    case expr @ App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), m: Nat),
       App(App(zip(), a), b)
     ) =>
       Success(map(fun(p => zip(fst(p))(snd(p))))(
@@ -441,8 +441,8 @@ object algorithmic {
   @rule def zipAsVectorUnzipSimplification: Strategy[Rise] = {
     case e @ App(
       Lambda(x, App(App(zip(),
-        App(DepApp(asVector(), v: Nat), App(fst(), x2))),
-        App(DepApp(asVector(), v2: Nat), App(snd(), x3)))),
+        App(DepApp(NatKind, asVector(), v: Nat), App(fst(), x2))),
+        App(DepApp(NatKind, asVector(), v2: Nat), App(snd(), x3)))),
       App(unzip(), in)
     ) if x =~= x2 && x =~= x3 && v == v2 =>
       println(in.t)

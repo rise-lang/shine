@@ -26,11 +26,11 @@ class FunDef(val name: String,
     ) = p match {
       case Apply(f, a) =>
         splitBodyAndParams(Lifting.liftFunction(f).reducing(a), ps, defs)
-      case DepApply(f, a) =>
+      case DepApply(_, f, a) =>
         splitBodyAndParams(Lifting.liftDependentFunction(f)(a), ps, defs)
       case l: Lambda[ExpType, _]@unchecked =>
         splitBodyAndParams(l.body, l.param +: ps, defs)
-      case ndl: DepLambda[_, _] =>
+      case ndl: DepLambda[_, _, _] =>
         splitBodyAndParams(ndl.body,
           Identifier(ndl.x.name, ExpType(int, read)) +: ps, defs)
       case ln:LetNat[ExpType, _]@unchecked =>

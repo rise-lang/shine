@@ -68,9 +68,9 @@ object InsertMemoryBarriers {
           }
         case f@ForNat(unroll) =>
           f.loopBody match {
-            case DepLambda(x, body) =>
+            case DepLambda(NatKind, x, body) =>
               Stop(ForNat(unroll)(f.n,
-                DepLambda[NatKind, CommType](x, visitLoopBody(body, allocs, metadata))))
+                DepLambda(NatKind, x, visitLoopBody(body, allocs, metadata))))
             case _ => throw new Exception("This should not happen")
           }
         case pf@ocl.ParFor(Local, dim, unroll, name) =>
@@ -92,19 +92,19 @@ object InsertMemoryBarriers {
           }
         case pf@ocl.ParForNat(Local, dim, unroll, name) =>
           pf.body match {
-            case DepLambda(i: NatIdentifier, Lambda(o, p)) =>
+            case DepLambda(NatKind, i: NatIdentifier, Lambda(o, p)) =>
               val outer_wg_writes = mutable.Map[Identifier[_ <: PhraseType], AddressSpace]()
               collectWrites(pf.out, allocs, outer_wg_writes)
               Stop(ocl.ParForNat(Local, dim, unroll, name)(pf.init, pf.n, pf.step, pf.ft, pf.out,
-                DepLambda[NatKind, AccType ->: CommType](i, Lambda(o,
+                DepLambda(NatKind, i, Lambda(o,
                   visitLoopBody(p, allocs, metadata, outer_wg_writes)))))
             case _ => throw new Exception("This should not happen")
           }
         case pf@ocl.ParForNat(level, dim, unroll, name) =>
           pf.body match {
-            case DepLambda(i: NatIdentifier, Lambda(o, p)) =>
+            case DepLambda(NatKind, i: NatIdentifier, Lambda(o, p)) =>
               Stop(ocl.ParForNat(level, dim, unroll, name)(pf.init, pf.n, pf.step, pf.ft, pf.out,
-                DepLambda[NatKind, AccType ->: CommType](i, Lambda(o,
+                DepLambda(NatKind, i, Lambda(o,
                   visitLoopBody(p, allocs, metadata)))))
             case _ => throw new Exception("This should not happen")
           }

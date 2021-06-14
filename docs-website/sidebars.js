@@ -33,6 +33,14 @@ module.exports = {
         //   ],
         // },
       ],
+    },
+    {
+      type: 'category',
+      label: 'Reference',
+      collapsed: false,
+      items: [
+        'language-reference/rise-types'
+      ],
     }
   ],
 };

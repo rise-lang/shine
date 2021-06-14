@@ -29,7 +29,7 @@ object cameraPipelineRewrite {
 
   case class depFunction(s: Strategy[Rise]) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case ap @ DepApp(f, x) => s(f).mapSuccess(DepApp(_, x)(ap.t))
+      case ap @ DepApp(kind, f, x) => s(f).mapSuccess(DepApp(kind, _, x)(ap.t))
       case _ => Failure(s)
     }
     override def toString: String = s"depFunction($s)"
