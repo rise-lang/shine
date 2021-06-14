@@ -11,7 +11,7 @@ object ExecuteOpenCL {
   val platformPath = "runtime/ocl/"
   val executorHeadersPath = "lib/executor/lib/Executor/include/"
   val libs = "-lm -lOpenCL"
-  val includes = s"-I$runtimePath -I$platformPath -I$executorHeadersPath"
+  val includes = s"-I$runtimePath -I$executorHeadersPath"
   val libDirs: String = tryToFindOpenCLLibDir()
 
   def tryToFindOpenCLLibDir(): String = {

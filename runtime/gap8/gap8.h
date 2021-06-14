@@ -3,6 +3,7 @@
 
 #include "pmsis.h"
 #include "gaplib/ImgIO.h"
+#include "../runtime.h"
 
 struct ContextImpl {
     struct pi_device cl_device;
@@ -20,6 +21,8 @@ struct BufferImpl {
 
 
 typedef void* DeviceBuffer;
+
+
 
 Context createContext(int device_id);
 Kernel loadKernel(void (*handler)(void*), size_t stack_size);

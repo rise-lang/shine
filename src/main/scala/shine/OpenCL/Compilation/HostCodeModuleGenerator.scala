@@ -63,7 +63,7 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
       val params = Seq(C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")), self) ++
         optionallyManagedParams(funDef.params, outParam).map(makeParam(gen))
       C.Module(
-        includes = immutable.Seq(IncludeSource("runtime.h")),
+        includes = immutable.Seq(IncludeSource("ocl/ocl.h")),
         decls = CModuleGenerator.collectTypeDeclarations(code, params) ++
           declarations ++ selfTypeDeclarations(gen, funDef.name),
         functions = immutable.Seq(
