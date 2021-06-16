@@ -170,39 +170,7 @@ object parse {
 
   def matchPrimitiveOrIdentifier(name: String, span: Span): SyntaxElement = {
     require(name.matches("[a-z][a-zA-Z0-9_]*"), "'" + name + "' has not the preffered structure")
-    //Todo: delete calcAcc and update, because they are only for testing added. These foreign function should be declared in the rise-File itself
-    val calcAcc = ForeignFunction(
-      ForeignFunction.Decl(name, Some(ForeignFunction.Def(Seq("p1", "p2", "deltaT", "espSqr", "acc"),
-        """{
-          |  float4 r;
-          |  r.xyz = p2.xyz - p1.xyz;
-          |  float distSqr = r.x*r.x + r.y*r.y + r.z*r.z;
-          |  float invDist = 1.0f / sqrt(distSqr + espSqr);
-          |  float invDistCube = invDist * invDist * invDist;
-          |  float s = invDistCube * p2.w;
-          |  float4 res;
-          |  res.xyz = acc.xyz + s * r.xyz;
-          |  return res;
-          |}
-          |""".stripMargin)))
-    )(vec(4, f32) ->: vec(4, f32) ->: f32 ->: f32 ->: vec(4, f32) ->: vec(4, f32), Some(span))
-    val update = ForeignFunction(
-      ForeignFunction.Decl(name, Some(ForeignFunction.Def(Seq("pos", "vel", "deltaT", "acceleration"),
-        """{
-          |  float4 newPos;
-          |  newPos.xyz = pos.xyz + vel.xyz * deltaT + 0.5f * acceleration.xyz * deltaT * deltaT;
-          |  newPos.w = pos.w;
-          |  float4 newVel;
-          |  newVel.xyz = vel.xyz + acceleration.xyz * deltaT;
-          |  newVel.w = vel.w;
-          |  return (struct Record_float4_float4){ newPos, newVel };
-          |}""".stripMargin)))
-    )(vec(4, f32) ->: vec(4, f32) ->: f32 ->: vec(4, f32) ->: PairType(vec(4, f32), vec(4, f32)), Some(span))
     name match {
-      //Todo: this functions please delete, because they should be declared via CFunction in the rise-File
-      case "updateP" => SExpr(update)
-      case "calcAccP" => SExpr(calcAcc)
-
       //openCL/primitives
       case "mapGlobal" => SIntToExpr(AltMapGlobal(), span)
       case "mapLocal" => SIntToExpr(AltMapLocal(), span)
@@ -213,7 +181,7 @@ object parse {
       case "oclCircularBuffer" => SExpr(op.oclCircularBuffer(Some(span)))
       case "oclRotateValues" => SExpr(op.oclRotateValues(Some(span)))
 
-      //openCL/TypedDSL //Todo: not sure if this with .toExpr is working. Test with nBody
+      //openCL/TypedDSL
       case "toGlobal" => SExpr(r.DepApp[rt.AddressSpaceKind](op.oclToMem(Some(span)),
         rt.AddressSpace.Global
       )(rt.TypePlaceholder, Some(span)))
@@ -283,7 +251,7 @@ object parse {
       case "asVector" => SExpr(rp.asVector(Some(span)))
       case "asScalar" => SExpr(rp.asScalar(Some(span)))
       case "vectorFromScalar" => SExpr(rp.vectorFromScalar(Some(span)))
-      case "printType" => SExpr(rp.printType("", Some(span)).primitive) //Todo: I was forced to delete span in debugType and typeHole because of the error with wrong number of arguments
+      case "printType" => SExpr(rp.printType("", Some(span)).primitive) //Todo: I was forced to delete span in printType and typeHole because of the error with wrong number of arguments
       case "typeHole" => SExpr(rp.typeHole("", Some(span)).primitive)
       case _ => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
     }

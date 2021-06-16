@@ -1,3 +1,26 @@
+calcAcc::4xF32->4xF32->F32->F32->4xF32->4xF32
+foreign calcAcc(p1,p2,deltaT, espSqr, acc){
+   float4 r;
+   r.xyz = p2.xyz - p1.xyz;
+   float distSqr = r.x*r.x + r.y*r.y + r.z*r.z;
+   float invDist = 1.0f / sqrt(distSqr + espSqr);
+   float invDistCube = invDist * invDist * invDist;
+   float s = invDistCube * p2.w;
+   float4 res;
+   res.xyz = acc.xyz + s * r.xyz;
+   return res;
+}
+update::4xF32->4xF32->F32->4xF32->(4xF32,4xF32)
+foreign update(pos, vel, deltaT, acceleration){
+  float4 newPos;
+  newPos.xyz = pos.xyz + vel.xyz * deltaT + 0.5f * acceleration.xyz * deltaT * deltaT;
+  newPos.w = pos.w;
+  float4 newVel;
+  newVel.xyz = vel.xyz + acceleration.xyz * deltaT;
+  newVel.w = vel.w;
+  return (struct Record_float4_float4){ newPos, newVel };
+}
+
 tileX::NatTyp
 tileX= 256N
 tileY::NatTyp
@@ -16,7 +39,7 @@ join . join .
           \bla->
           (mapLocal 0
             \p1A->
-            updateP (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
+            update (fst (fst p1A)) (snd (fst p1A)) deltaT (snd p1A)
           )
           (zip newP1Chunk bla)).
           (oclReduceSeq Local
@@ -28,7 +51,7 @@ join . join .
               \accDim-> (mapLocal 0
                 \p1B -> (oclReduceSeq Private
                   \accB->\p2B->
-                  calcAccP (fst (fst p1B)) p2B deltaT espSqr accB
+                  calcAcc (fst (fst p1B)) p2B deltaT espSqr accB
                 ) (snd p1B) (fst accDim)
               ) (zip newP1Chunk (snd accDim))
             ) (zip p2Local accA)
