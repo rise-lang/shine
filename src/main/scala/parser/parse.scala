@@ -521,7 +521,6 @@ object parse {
     parseKindWithDepArrow(inputEPState, true)
   }
 
-//Todo: combine with function above
   def parseKindWithDepArrow(inputEPState: InputEPState, isDepFunction: Boolean): OutputEPState = {
     val whatToParse = "KindWithDepArrow"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
@@ -560,8 +559,7 @@ object parse {
       parseType(input)
     }else{
       parseState.mapDepL match {
-        case None => throw new IllegalStateException("mapDepL is None")
-        case Some(mL)=> mL.update(nameOfIdentifier, concretKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
+        case Some(mL)=> mL.update(nameOfIdentifier, concretKind match {
           case Data() => RData()
           case Nat() => RNat()
           case AddrSpace() => RAddrSpace()
@@ -570,6 +568,7 @@ object parse {
             return (Right(e), errorList.add(e))
           }
         })
+        case None => throw new IllegalStateException("mapDepL is None")
       }
       parseMaybeAppExpr(input)
     }
@@ -587,7 +586,7 @@ object parse {
               case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](
                 rt.AddressSpaceIdentifier(nameOfIdentifier), outT), sp+spanIdent)
               case ki => {
-                val e = ErrorMessage.NotCorrectKind(sp, ki, "KindWithDepArrow")
+                val e = ErrorMessage.NotCorrectKind(sp, ki, whatToParse)
                 return (Right(e),errorL.add(e))
               }
             }
@@ -597,17 +596,21 @@ object parse {
               case None => throw new IllegalStateException("Span should not be None in DepLambdafkt")
               case Some(sp) => spanIdent + sp
             }
-            concretKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
+            concretKind match {
               case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier),
                 outT)(rt.TypePlaceholder, Some(span)))
               case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier),
                 outT)(rt.TypePlaceholder, Some(span)))
               case AddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](
                 rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder, Some(span)))
+              case ki => {
+                val e = ErrorMessage.NotCorrectKind(spanKind, ki, whatToParse)
+                return (Right(e),errorL.add(e))
+              }
             }
           }
           case wrongSynEl => {
-            val e = NotCorrectSynElem(wrongSynEl, "SType", "KindWithDepArrow")
+            val e = NotCorrectSynElem(wrongSynEl, "SType or SExpr", whatToParse)
             return (Right(e),errorL.add(e))
           }
         }
