@@ -301,26 +301,21 @@ object parse {
 
     nextToken match {
       case Identifier(name, span) => {
-        matchPrimitiveOrIdentifier(name, span) match {
-          case SLet(span) => (Left(ParseState(remainderTokens, SLet(span) :: parsedSynElems,
-            mapDepL, spanList, argumentsTypes)),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
-          case SIntToExpr(name, span) => (Left(ParseState(remainderTokens, SIntToExpr(name, span) :: parsedSynElems,
-            mapDepL, spanList, argumentsTypes)),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
-          case SExpr(r.Identifier(_)) => {
-            val ident = SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
-            (Left(ParseState(remainderTokens, ident :: parsedSynElems,mapDepL, spanList, argumentsTypes)),
-              errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
-          }
+        val synElem = matchPrimitiveOrIdentifier(name, span) match {
+          case SLet(span) => SLet(span)
+          case SIntToExpr(name, span) => SIntToExpr(name, span)
+          case SExpr(r.Identifier(_)) => SExpr(r.Identifier(name)(rt.TypePlaceholder, Some(span)))
           case SExpr(prim) => {
             if (prim.span.isEmpty) {
               throw new IllegalStateException("The span of '" + prim + "' is empty")
             }
-            (Left(ParseState(remainderTokens, SExpr(prim) :: parsedSynElems,mapDepL, spanList, argumentsTypes)),
-              errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
+            SExpr(prim)
           }
           case otherSyntaxElement => throw new IllegalStateException("The Syntax Element '" + otherSyntaxElement +
             "' was not expected from matchPrimitiveOrIdentifer")
         }
+        (Left(ParseState(remainderTokens, synElem :: parsedSynElems,
+          mapDepL, spanList, argumentsTypes)),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
       }
       case tok => {
         val e = ErrorMessage.NotCorrectToken(tok, "Ident", "Ident")
