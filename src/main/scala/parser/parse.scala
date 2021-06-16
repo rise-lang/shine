@@ -532,24 +532,17 @@ object parse {
           if (parseState.mapDepL.contains(nameOfIdentifier)) {
             throw new IllegalArgumentException("It exists already an DepLambda with this Name: " + nameOfIdentifier)
           }
-          concreteKind match {
-            case Data() => parseState.mapDepL match {
-              case None => throw new IllegalStateException("mapDepL is None")
-              case Some(mL)=> mL.update(nameOfIdentifier, RData())
-            }
-            case Nat() => parseState.mapDepL match {
-              case None => throw new IllegalStateException("mapDepL is None")
-              case Some(mL)=> mL.update(nameOfIdentifier, RNat())
-            }
-            case AddrSpace() => parseState.mapDepL match {
-              case None => throw new IllegalStateException("mapDepL is None")
-              case Some(mL)=> mL.update(nameOfIdentifier, RAddrSpace())
-            }
+          parseState.mapDepL match {
+            case None => throw new IllegalStateException("mapDepL is None")
+            case Some(mL) => mL.update(nameOfIdentifier,concreteKind match {
+            case Data() => RData()
+            case Nat() => RNat()
+            case AddrSpace() => RAddrSpace()
             case ki => {
               val e = ErrorMessage.NotCorrectKind(span, ki, "KindWithDepArrow")
               return (Right(e),errorList.add(e))
             }
-          }
+          })}
           //debug("Kind was in parseDepFunctionType parsed: " + concreteKind)
           parseType((ParseState(tokens.tail.tail, Nil,  parseState.mapDepL, parseState.spanList, parseState.argumentsTypes),errorList)) match {
             case (Right(e),errorL) => (Right(e),errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
