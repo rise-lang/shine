@@ -1452,21 +1452,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
     //debug("parseType: " + parseState)
     val (p, eL) =
       (Left(parseState),errorList) |>
-        (parseDepOrNormalFunctionType _ || parseSimpleType)
-    p match {
-      case Right(e) => (Right(e),eL.add(UsedOrFailedRule(isFailed(), whatToParse)))
-      case Left(pa) => (Left(ParseState(pa.tokenStream, pa.parsedSynElems,  pa.mapDepL, parseState.spanList, pa.argumentsTypes)),
-        eL.add(UsedOrFailedRule(isMatched(), whatToParse)))
-    }
-  }
-
-  def parseDepOrNormalFunctionType(inputEPState: InputEPState): OutputEPState = {
-    val whatToParse = "DepOrNormalFunctionType"
-    val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
-    //debug("parseType: " + parseState)
-    val (p,eL) =
-      (Left(parseState),errorList) |>
-        (parseDepFunctionType _ || parseFunctionType)
+        (parseDepFunctionType _ || parseFunctionType || parseSimpleType)
     p match {
       case Right(e) => (Right(e),eL.add(UsedOrFailedRule(isFailed(), whatToParse)))
       case Left(pa) => (Left(ParseState(pa.tokenStream, pa.parsedSynElems,  pa.mapDepL, parseState.spanList, pa.argumentsTypes)),
@@ -1760,7 +1746,7 @@ the syntax-Tree has on top an Lambda-Expression
     val (p,eL) = //Todo: change so that no Brackets are needed, only parentheses for Dep- and FunctionType
       (Left(parseState),errorList) |>
         parseLeftParentheses |>
-        parseDepOrNormalFunctionType |>
+        (parseDepFunctionType _ || parseFunctionType) |>
         parseRightParentheses
     p match {
       case Right(e) => (Right(e),eL.add(UsedOrFailedRule(isFailed(), whatToParse)))
