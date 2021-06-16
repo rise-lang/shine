@@ -1,7 +1,7 @@
 package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
-import parser.ErrorMessage.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, EqualityTypeConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError}
+import parser.ErrorMessage.{AddrConstraintError, BoolConstraintError, ConstraintError, DepAppConstraintError, EqualityTypeConstraintError, NatCollectionConstraintError, NatConstraintError, NatToDataConstraintError, TypeConstraintError, debug}
 import parser.Span
 import rise.core.DSL.Type.n2dtFun
 import rise.core.{freshName, substitute}
@@ -88,7 +88,7 @@ object Constraint {
         solveOne(c, trace)
       } catch {
         case e: InferenceException =>
-          println(e.msg + " in " + c.constraintTypeError.span)
+          debug(e.msg + " in " + c.constraintTypeError.span, "solveRec")
           return solveRec(cs, rs :+ c, trace)
       }
       s ++ solve(s.apply(rs ++ cs), trace)

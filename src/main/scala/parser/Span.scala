@@ -1,5 +1,7 @@
 package parser
 
+import parser.ErrorMessage.debug
+
 import java.nio.file.Paths
 
 abstract sealed class SubsetCase()
@@ -57,10 +59,10 @@ final case class Range(begin: Location, end: Location){
 
   def +(other:Range):Range={
     if(other.isAfter(this)){
-      println("after:"+  "this.begin: "+ this.begin +"; this.end : " + this.end  + ";other.begin: " + other.begin+ ";other.end: " + other.end)
+      //debug("after:"+  "this.begin: "+ this.begin +"; this.end : " + this.end  + ";other.begin: " + other.begin+ ";other.end: " + other.end)
       Range(this.begin, other.end)
     }else{
-      println("before:"+  "this.begin: "+ this.begin +"; this.end : " + this.end  + ";other.begin: " + other.begin+ ";other.end: " + other.end)
+      //debug("before:"+  "this.begin: "+ this.begin +"; this.end : " + this.end  + ";other.begin: " + other.begin+ ";other.end: " + other.end)
       Range(other.begin, this.end)
     }
   }
