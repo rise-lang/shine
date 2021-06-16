@@ -3,7 +3,7 @@ package parser //old branch 17. Dezember 2020
 import rise.{core => r, openCL => o}
 import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
-import parser.ErrorMessage.{ErrorList, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, UsedOrFailedRule, isFailed, isMatched, isParsing}
+import parser.ErrorMessage.{ErrorList, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
 import rise.core.DSL.ToBeTyped
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.ForeignFunction
@@ -33,17 +33,17 @@ object parse {
    * Precondition: Only valid Tokens in tokenList.
    */
   def apply(tokenList: List[Token]): MapExpr = {
-    val parseState: ParseState = ParseState(tokenList, Nil, None, None, Nil)
-    val shineLambda: MapFkt = parseTop(parseState) match {
+    debug.isOn = true
+    val shineLambda: MapFkt = parseTop(tokenList) match {
       case Left(map) => map
       case Right(errorOrState) => {
         //println(errorOrState)
         throw new RuntimeException("failed parsing : " + errorOrState)
       }
     }
-    println("parse: " + shineLambda)
+    debug("parse: " + shineLambda, "apply")
     val res = giveEveryExpr(shineLambda)
-    println("everyExpr: " + res)
+    debug("everyExpr: " + res, "apply")
     res
   }
 
@@ -951,20 +951,14 @@ object parse {
     e
   }
 
-  def parseTop(parseState: ParseState):
+  def parseTop(tokens:List[Token]):
   Either[MapFkt, ErrorList] = {
+    val whatToParse = "Top"
     val mapFkt = new MapFkt
-    if (parseState.tokenStream.isEmpty) {
-      throw new IllegalArgumentException("TokenStream is empty")
-    }
-    if (parseState.parsedSynElems.nonEmpty) {
-      throw new IllegalArgumentException("parsedSynElemnts has to be empty: " + parseState.parsedSynElems)
-    }
-
-    var tokenList = parseState.tokenStream
+    var tokenList = tokens
     while (!tokenList.isEmpty) {
-      //println("tokens: " + tokenList + " ,MapFkt: " + mapFkt)
-      tokenList = parseBottom(tokenList, mapFkt, parseState.spanList, parseState.argumentsTypes) match {
+      debug("tokens: " + tokenList + " ,MapFkt: " + mapFkt, whatToParse)
+      tokenList = parseBottom(tokenList, mapFkt, None, Nil) match {
         case Left(value) => value
         case Right(value) =>return Right(value)
       }
