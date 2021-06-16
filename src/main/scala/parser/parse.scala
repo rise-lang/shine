@@ -955,7 +955,7 @@ object parse {
     val whatToParse = "Top"
     val mapFkt = new MapFkt
     var tokenList = tokens
-    while (!tokenList.isEmpty) {
+    while (tokenList.nonEmpty) {
       debug("tokens: " + tokenList + " ,MapFkt: " + mapFkt, whatToParse)
       tokenList = parseBottom(tokenList, mapFkt, None, Nil) match {
         case Left(value) => value
@@ -966,31 +966,19 @@ object parse {
     Left(mapFkt)
   }
 
-  def parseBottom(tokenList:List[Token], mapFkt:MapFkt, spanList:BracesSpan,
-                  argumentsTypes:List[rt.Type]):Either[List[Token],ErrorList] = {
-    tokenList match {
+  def parseBottom(tokenList:List[Token], mapFkt:MapFkt, spanList:BracesSpan, argumentsTypes:List[rt.Type]):
+    Either[List[Token],ErrorList] = tokenList match {
       case token :: remainderTokens => {
         val p: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), spanList, argumentsTypes)
-        val psNew = token match {
-          case BeginTypAnnotatedIdent(_)=> {
-            parseTypAnnotatedIdent(p, mapFkt)
-          }
-          case BeginNamedExpr(_) => {
-            parseNamedExpr(p, mapFkt)
-          }
-          case BeginForeignFct(_)=> {
-            parseForeignFct(p, mapFkt)
-          }
+        token match {
+          case BeginTypAnnotatedIdent(_)=> parseTypAnnotatedIdent(p, mapFkt)
+          case BeginNamedExpr(_) => parseNamedExpr(p, mapFkt)
+          case BeginForeignFct(_)=> parseForeignFct(p, mapFkt)
           case a => throw new IllegalArgumentException("You have started with something different: " + a)
-        }
-        psNew match {
-          case Left(tokens) => Left(tokens)
-          case Right(e) => Right(e)
         }
       }
       case Nil => Right((TokListIsEmpty(SpanPlaceholder, "Bottom")::Nil).asInstanceOf[ErrorList])
     }
-  }
 
   def parseNamedExprWithNormalExpr(inputEPState: InputEPState):OutputEPState ={
     val (ps, errorList) = inputEPState
