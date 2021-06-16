@@ -5,7 +5,7 @@ import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
 import parser.ErrorMessage.{ErrorList, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, UsedOrFailedRule, isFailed, isMatched, isParsing}
 import rise.core.DSL.ToBeTyped
-import rise.core.DSL.Type.TypeConstructors //Todo: delete TypeConstructors
+import rise.core.DSL.Type.TypeConstructors
 import rise.core.ForeignFunction
 import rise.core.types.{DataType, DepFunType, PairType, TypePlaceholder, f32, vec}
 
@@ -957,51 +957,46 @@ object parse {
     if (parseState.tokenStream.isEmpty) {
       throw new IllegalArgumentException("TokenStream is empty")
     }
-    if (!parseState.parsedSynElems.isEmpty) {
+    if (parseState.parsedSynElems.nonEmpty) {
       throw new IllegalArgumentException("parsedSynElemnts has to be empty: " + parseState.parsedSynElems)
     }
 
     var tokenList = parseState.tokenStream
     while (!tokenList.isEmpty) {
       //println("tokens: " + tokenList + " ,MapFkt: " + mapFkt)
-      tokenList match {
-        case BeginTypAnnotatedIdent(_) :: remainderTokens => {
-          val p: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), parseState.spanList, parseState.argumentsTypes)
-          val psNew = parseTypAnnotatedIdent(p, mapFkt)
-          psNew match {
-            case Left(tokens) => {
-              tokenList = tokens
-            }
-            case Right(e) => return Right(e)
-          }
-        }
-        case BeginNamedExpr(_) :: remainderTokens => {
-          val p: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), parseState.spanList, parseState.argumentsTypes)
-          //println("p: " + p)
-          val psNew = parseNamedExpr(p, mapFkt)
-          //println("psNew: " + psNew)
-          psNew match {
-            case Left(tokens) => {
-              tokenList = tokens
-            }
-            case Right(errorL) => return Right(errorL)
-          }
-        }
-        case BeginForeignFct(_) :: remainderTokens => {
-          val p: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), parseState.spanList, parseState.argumentsTypes)
-          val psNew = parseForeignFct(p, mapFkt)
-          psNew match {
-            case Left(tokens) => {
-              tokenList = tokens
-            }
-            case Right(errorL) => return Right(errorL)
-          }
-        }
-        case a => throw new IllegalArgumentException("You have started with something different: " + a)
+      tokenList = parseBottom(tokenList, mapFkt, parseState.spanList, parseState.argumentsTypes) match {
+        case Left(value) => value
+        case Right(value) =>return Right(value)
       }
     }
 
     Left(mapFkt)
+  }
+
+  def parseBottom(tokenList:List[Token], mapFkt:MapFkt, spanList:BracesSpan,
+                  argumentsTypes:List[rt.Type]):Either[List[Token],ErrorList] = {
+    tokenList match {
+      case token :: remainderTokens => {
+        val p: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), spanList, argumentsTypes)
+        val psNew = token match {
+          case BeginTypAnnotatedIdent(_)=> {
+            parseTypAnnotatedIdent(p, mapFkt)
+          }
+          case BeginNamedExpr(_) => {
+            parseNamedExpr(p, mapFkt)
+          }
+          case BeginForeignFct(_)=> {
+            parseForeignFct(p, mapFkt)
+          }
+          case a => throw new IllegalArgumentException("You have started with something different: " + a)
+        }
+        psNew match {
+          case Left(tokens) => Left(tokens)
+          case Right(e) => Right(e)
+        }
+      }
+      case Nil => Right((TokListIsEmpty(SpanPlaceholder, "Bottom")::Nil).asInstanceOf[ErrorList])
+    }
   }
 
   def parseNamedExprWithNormalExpr(inputEPState: InputEPState):OutputEPState ={
