@@ -34,7 +34,7 @@ object parse {
    */
   def apply(tokenList: List[Token]): MapExpr = {
     val parseState: ParseState = ParseState(tokenList, Nil, None, None, Nil)
-    val shineLambda: MapFkt = parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState) match {
+    val shineLambda: MapFkt = parseTop(parseState) match {
       case Left(map) => map
       case Right(errorOrState) => {
         //println(errorOrState)
@@ -346,7 +346,7 @@ object parse {
             errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
         case Some(RData()) =>
           (Left(ParseState(parseState.tokenStream.tail, SData(DIdentifier(
-            rt.DataTypeIdentifier(name)), span) :: parseState.parsedSynElems, 
+            rt.DataTypeIdentifier(name)), span) :: parseState.parsedSynElems,
             parseState.mapDepL, parseState.spanList, parseState.argumentsTypes)),errorList.add(UsedOrFailedRule(isMatched(), whatToParse)))
         case Some(RAddrSpace()) => throw new IllegalStateException("DepAddrSpace is not implemented yet")
       }
@@ -951,7 +951,7 @@ object parse {
     e
   }
 
-  def parseTypAnnotatedIdentAndThenNamedExprAndOtherTypAnnotatedIdens(parseState: ParseState):
+  def parseTop(parseState: ParseState):
   Either[MapFkt, ErrorList] = {
     val mapFkt = new MapFkt
     if (parseState.tokenStream.isEmpty) {
@@ -961,27 +961,7 @@ object parse {
       throw new IllegalArgumentException("parsedSynElemnts has to be empty: " + parseState.parsedSynElems)
     }
 
-    var tokenList = parseState.tokenStream match {
-      case BeginTypAnnotatedIdent(_) :: remainderTokens => {
-        val ps: ParseState = ParseState(remainderTokens, Nil, Some(new MapDepL), parseState.spanList, parseState.argumentsTypes)
-        val psNew = parseTypAnnotatedIdent(ps, mapFkt)
-        //println("MapFkt after first TypeAnn: "+ mapFkt)
-        psNew match {
-          case Left(tokens) => if (!tokens.isEmpty) {
-            tokens
-          } else {
-            throw new IllegalStateException("We need an NamedExpr too, because of that it " +
-              "should not be possible only to have an TypAnnotatedIdent")
-          }
-          case Right(errorL) => return Right(errorL)
-        }
-      }
-      case BeginNamedExpr(_) :: remainderTokens => {
-        throw new IllegalArgumentException("You aren't allowed to start with an NamedExpr")
-      }
-      case a => throw new IllegalArgumentException("You have started with something different: " + a)
-    }
-
+    var tokenList = parseState.tokenStream
     while (!tokenList.isEmpty) {
       //println("tokens: " + tokenList + " ,MapFkt: " + mapFkt)
       tokenList match {
