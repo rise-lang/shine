@@ -15,8 +15,8 @@ object showDPIA {
 }
 
 case class showDPIA(showTypes : ShowTypes = Off) {
-  val TAB : String = "    "
-  def tabulate : String => String =
+  val TAB : String = "  "
+  def tab : String => String =
     _.linesIterator.map(l => if (l.isEmpty) l else TAB + l).mkString("\n")
 
   def showTypeId : Kind.Identifier => String = _.name
@@ -31,7 +31,8 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   def showAccess : AccessType => String = _.toString
   def showNatToNat : NatToNat => String = _.toString
   def showNatToData : NatToData => String = _.toString
-  def showTypeDo[T](kind : Kind[T, _], arg : T) : String = kind match {
+  def showType : PhraseType => String = _.toString
+  def showType[T](kind : Kind[T, _], arg : T) : String = kind match {
     case PhraseKind => showPhraseType(arg.asInstanceOf[PhraseType])
     case DataKind => showDataType(arg.asInstanceOf[DataType])
     case NatKind => showNat(arg.asInstanceOf[Nat])
@@ -42,40 +43,40 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   }
   def showPrim : Primitive[_] => String = {
     case Comment(s) => s"/* ${s} */"
-    case Seq(c1, c2) => s"{\n${tabulate(showPhrase(c1))};\n${tabulate(showPhrase(c2))}\n}"
-    case New(dt, f) => s"new (exp[${showDataType(dt)}] x acc[${showDataType(dt)}]) in ${showPhrase(f)}"
-    case Assign(dt, lhs, rhs) => s"${showTypedPhrase(DataKind, dt, lhs)} = ${showPhrase(rhs)}"
-    case IdxAcc(n, dt, idx, array) => s"${showTypedPhrase(DataKind, ArrayType(n, dt), array)}[${showPhrase(idx)}]"
-    case Idx(n, dt, idx, array) => s"${showTypedPhrase(DataKind, ArrayType(n, dt), array)}[${showPhrase(idx)}]"
-    case NatAsIndex(n, e) => s"${showTypedPhrase(NatKind, n, e)}"
-    case Drop(n, m, dt, e) => s"drop ${showNat(n)} ${showTypedPhrase(DataKind, ArrayType(n + m, dt), e)}"
-    case DropAcc(n, m, dt, e) => s"drop ${showNat(n)} ${showTypedPhrase(DataKind, ArrayType(n + m, dt), e)}"
-    case Take(n, m, dt, e) => s"take ${showNat(n)} ${showTypedPhrase(DataKind, ArrayType(n + m, dt), e)}"
-    case TakeAcc(n, m, dt, e) => s"take ${showNat(n)} ${showTypedPhrase(DataKind, ArrayType(n + m, dt), e)}"
-    case f : For => s"for ${showNat(f.n)}\n${tabulate(showPhrase(f.loopBody))}\n"
-    case f : ForNat => s"forNat ${showNat(f.n)}\n${tabulate(showPhrase(f.loopBody))}\n"
+    case Seq(c1, c2) => s"${showPhrase(c1)};\n${showPhrase(c2)}"
+    case New(dt, f) => s"(new (exp[${showDataType(dt)}] x acc[${showDataType(dt)}]) in \n${tab(showPhrase(f))}\n)\n"
+    case Assign(_, lhs, rhs) => s"${showTypedPhrase(lhs)} = ${showPhrase(rhs)}"
+    case IdxAcc(_, _, idx, array) => s"${showTypedPhrase(array)}[${showPhrase(idx)}]"
+    case Idx(_, _, idx, array) => s"${showTypedPhrase(array)}[${showPhrase(idx)}]"
+    case NatAsIndex(_, e) => showTypedPhrase(e)
+    case Drop(n, _, _, e) => s"(drop ${showNat(n)} ${showTypedPhrase(e)})"
+    case DropAcc(n, _, _, e) => s"(drop ${showNat(n)} ${showTypedPhrase(e)})"
+    case Take(n, _, _, e) => s"(take ${showNat(n)} ${showTypedPhrase(e)})"
+    case TakeAcc(n, _, _, e) => s"(take ${showNat(n)} ${showTypedPhrase(e)})"
+    case f : For => s"(for ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}\n)\n"
+    case f : ForNat => s"(forNat ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}\n)\n"
     case p => p.toString
   }
 
   def showKindedType[T](kind : Kind[T, _], t : T) : String = showTypes match {
-    case On => s"(${showTypeDo(kind, t)} : ${showKind(kind)})"
-    case Off => showTypeDo(kind, t)
+    case On => s"(${showType(kind, t)} : ${showKind(kind)})"
+    case Off => s"(${showType(kind, t)})"
   }
-  def showTypedPhrase[T,U <: PhraseType](kind : Kind[T, _], t : T, phrase : Phrase[U]) : String = showTypes match {
-    case On => s"(${showPhrase(phrase)} : ${showTypeDo(kind, t)})"
-    case Off => showPhrase(phrase)
+  def showTypedPhrase[T <: PhraseType](p : Phrase[T]) : String = showTypes match {
+    case On => s"(${showPhrase(p)} : ${showType(p.t)})"
+    case Off => s"(${showPhrase(p)})"
   }
   def showPhrase[T <: PhraseType] : Phrase[T] => String = {
     case Identifier(name, t) => if (showTypes == On) s"(${name} : ${t})" else name
-    case Lambda(param, body) => s"λ${showPhrase(param)}. ${showPhrase(body)}"
-    case Apply(fun, arg) => s"${showPhrase(fun)} ${showPhrase(arg)}"
-    case DepLambda(kind, x, body) => s"Λ${showKindedType(kind, x)}. ${showPhrase(body)}"
+    case Lambda(param, body) => s"(λ${showPhrase(param)}.\n${tab(showPhrase(body))}\n)\n"
+    case Apply(fun, arg) => s"(${showPhrase(fun)} ${showPhrase(arg)})"
+    case DepLambda(kind, x, body) => s"(Λ${showKindedType(kind, x)}.\n${tab(showPhrase(body))}\n)\n"
     case DepApply(kind, fun, arg) => s"${showPhrase(fun)} ${showKindedType(kind, arg)}"
-    case LetNat(binder, defn, body) => s"let ${showTypeId(binder.id)} = ${showPhrase(defn)} in ${showPhrase(body)}"
+    case LetNat(binder, defn, body) => s"(let ${showTypeId(binder.id)} = ${showPhrase(defn)} in \n${tab(showPhrase(body))}\n)\n"
     case PhrasePair(fst, snd) => s"(${showPhrase(fst)}, ${showPhrase(snd)})"
-    case Proj1(pair) => s"fst(${showPhrase(pair)})"
-    case Proj2(pair) => s"snd(${showPhrase(pair)})"
-    case IfThenElse(cond, thenP, elseP) => s"if ${showPhrase(cond)} then ${showPhrase(thenP)} else ${showPhrase(elseP)}"
+    case Proj1(pair) => s"(fst ${showPhrase(pair)})"
+    case Proj2(pair) => s"(snd ${showPhrase(pair)})"
+    case IfThenElse(cond, thenP, elseP) => s"(if ${showPhrase(cond)} then ${showPhrase(thenP)} else ${showPhrase(elseP)})"
     case UnaryOp(op, p) => s"${showUnary(op)} ${showPhrase(p)}"
     case BinOp(op, lhs, rhs) => s"${showPhrase(lhs)} ${showBinary(op)} ${showPhrase(rhs)}"
     case Literal(d) => showData(d)
