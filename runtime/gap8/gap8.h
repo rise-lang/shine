@@ -3,6 +3,9 @@
 
 #include "pmsis.h"
 #include "gaplib/ImgIO.h"
+
+typedef void* DeviceBuffer;
+
 #include "../runtime.h"
 
 struct ContextImpl {
@@ -19,13 +22,8 @@ struct BufferImpl {
     size_t byte_size;
 };
 
-
-typedef void* DeviceBuffer;
-
-
-
 Context createContext(int device_id);
-Kernel loadKernel(void (*handler)(void*), size_t stack_size);
+Kernel loadKernel(void (*handler)(void*), uint32_t stack_size);
 void launchKernel(
   Context ctx, Kernel k,
   int num_threads,

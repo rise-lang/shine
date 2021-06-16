@@ -23,50 +23,34 @@ Context createContext(int device_id){
     return context;
 }
 
-/**
- * 
-*/
 void destroyContext(Context ctx){
-    //pi_cluster_close(&(ctx->cl_device));
+    pi_cluster_close(&(ctx->cl_device));
 
-    //pmsis_l2_malloc_free(ctx->cl_configuration);
-    //pmsis_l2_malloc_free(ctx->cl_device);
-    //pmsis_l2_malloc_free(ctx);
+    pmsis_l2_malloc_free(&(ctx->cl_configuration), sizeof(struct pi_cluster_conf));
+    pmsis_l2_malloc_free(&(ctx->cl_device), sizeof(struct pi_device));
+    pmsis_l2_malloc_free(ctx, sizeof(struct ContextImpl));
     return;
 }
 
-/**
- * Ignore
-*/
 void waitFinished(Context ctx){
     return;
 }
 
-/**
- * Not actually loading Kernel from source, but NVM
-*/
-Kernel loadKernel(void (*handler)(void*), size_t stack_size){
+Kernel loadKernel(void (*handler)(void*), uint32_t stack_size){
     struct pi_cluster_task * cl_task = pmsis_l2_malloc(sizeof(struct pi_cluster_task));
     memset(cl_task, 0, sizeof(struct pi_cluster_task));
-    
-    /**
-     * Both of these entries are hardcoded.
-     * Existance of void cluster_entry_point(void* args); is presumed
-    */
+
     cl_task->entry = handler;
-    cl_task->stack_size = (uint32_t) stack_size;
+    cl_task->stack_size = stack_size;
 
     Kernel k = (Kernel) pmsis_l2_malloc(sizeof(struct KernelImpl));
     k->cl_task = cl_task;
     return k;
 }
 
-/**
- * 
-*/
 void destroyKernel(Context ctx, Kernel k){
-    //pmsis_l2_malloc_free(k->cl_task, sizeof(k->cl_task));
-    //pmsis_l2_malloc_free(k, sizeof(k));
+    pmsis_l2_malloc_free(k->cl_task, sizeof(struct pi_cluster_task));
+    pmsis_l2_malloc_free(k, sizeof(struct KernelImpl));
 }
 
 void launchKernel(

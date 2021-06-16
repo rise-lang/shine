@@ -1,5 +1,4 @@
-#include "../gap8.h"
-
+#include "gap8.h"
 
 Buffer createBuffer(Context ctx, size_t byte_size, AccessFlags access){
     Buffer buffer = (Buffer) pi_l2_malloc(sizeof(struct BufferImpl));
@@ -9,7 +8,6 @@ Buffer createBuffer(Context ctx, size_t byte_size, AccessFlags access){
 }
 
 void destroyBuffer(Context ctx, Buffer b){
-    
     pmsis_l2_malloc_free(b->inner, b->byte_size);
     pmsis_l2_malloc_free(b, sizeof(struct BufferImpl));
 }

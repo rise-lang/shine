@@ -15,13 +15,6 @@ typedef struct {
   void* value;
 } KernelArg;
 
-//#ifndef SHINE_TARGET_GAP8
-//    #include "ocl/ocl.h"
-//#else
-//    #include "gap8/gap8.h"
-//#endif
-#include "time_utils.h"
-
 typedef enum {
   HOST_READ = 1 << 0,
   HOST_WRITE = 1 << 1,

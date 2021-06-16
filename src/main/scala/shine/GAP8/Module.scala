@@ -19,12 +19,10 @@ object Module {
   def compose(ms: Seq[Module]): Module = ms.reduce(_ compose _)
 
   def translateToString(m: Module): String = {
-    //ocl hostcode gen here
     val accFunctions = m.acceleratorFunctions.map(C.Module.translateToString)
     val hostCode = C.Module.translateToString(m.hostCode)
 
     s"""
-       |#define SHINE_TARGET_GAP8
        |//Accelerator functions
        |${accFunctions.mkString("\n\n")}
        |//Host code

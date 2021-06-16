@@ -1,7 +1,6 @@
 #ifndef SHINE_OCL_H
 #define SHINE_OCL_H
 
-
 #define CL_TARGET_OPENCL_VERSION 120
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #ifdef __APPLE__
@@ -14,6 +13,7 @@
 typedef cl_mem DeviceBuffer;
 
 #include "../runtime.h"
+#include "time_utils.h"
 
 struct ContextImpl {
   cl_context inner;

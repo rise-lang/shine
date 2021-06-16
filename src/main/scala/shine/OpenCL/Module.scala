@@ -25,8 +25,6 @@ object Module {
   def translateToString(m: Module): String =
     s"""
        |${m.kernels.map(kernelSource).mkString("\n")}
-       |//Currently unnecessary but could work like this in future
-       |#define SHINE_TARGET_OCL
        |#define loadKernel(ctx, id)\\
        |  loadKernelFromSource(ctx, #id, id##_source, sizeof(id##_source) - 1)
        |${util.gen.c.function.asString(m.hostCode)}
