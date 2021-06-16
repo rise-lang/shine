@@ -526,62 +526,63 @@ object parse {
     val newPS = parseState.parsedSynElems.tail
 
     val tokens = parseState.tokenStream
-    tokens.head match {
-      case Kind(concreteKind, span) => tokens.tail.head match {
-        case DepArrow(_) => {
-          if (parseState.mapDepL.contains(nameOfIdentifier)) {
-            throw new IllegalArgumentException("It exists already an DepLambda with this Name: " + nameOfIdentifier)
-          }
-          parseState.mapDepL match {
-            case None => throw new IllegalStateException("mapDepL is None")
-            case Some(mL) => mL.update(nameOfIdentifier,concreteKind match {
-            case Data() => RData()
-            case Nat() => RNat()
-            case AddrSpace() => RAddrSpace()
-            case ki => {
-              val e = ErrorMessage.NotCorrectKind(span, ki, "KindWithDepArrow")
-              return (Right(e),errorList.add(e))
-            }
-          })}
-          //debug("Kind was in parseDepFunctionType parsed: " + concreteKind)
-          parseType((ParseState(tokens.tail.tail, Nil,  parseState.mapDepL, parseState.spanList, parseState.argumentsTypes),errorList)) match {
-            case (Right(e),errorL) => (Right(e),errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
-            case (Left(pS),errorL) => {
-              if (pS.parsedSynElems.tail.nonEmpty) throw new IllegalStateException("ParsedSynElems.tail has to be empty!") //Todo: write test
-              val depFun: SType = pS.parsedSynElems.head match {
-                case SType(outT, sp) => {
-                  concreteKind match {
-                    case Data() => SType(rt.DepFunType[rt.DataKind, rt.Type](
-                      rt.DataTypeIdentifier(nameOfIdentifier), outT), sp)
-                    case Nat() => SType(rt.DepFunType[rt.NatKind, rt.Type](
-                      rt.NatIdentifier(nameOfIdentifier), outT), sp)
-                    case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](
-                      rt.AddressSpaceIdentifier(nameOfIdentifier), outT), sp)
-                    case ki => {
-                      val e = ErrorMessage.NotCorrectKind(sp, ki, "KindWithDepArrow")
-                      return (Right(e),errorL.add(e))
-                    }
-                  }
-                }
-                case wrongSynEl => {
-                  val e = NotCorrectSynElem(wrongSynEl, "SType", "KindWithDepArrow")
-                  return (Right(e),errorL.add(e))
-                }
+    val (concretKind, span, rest)= tokens match {
+      case Kind(concreteKind, span)::DepArrow(_)::rest => (concreteKind,span, rest)
+      case Kind(_,_)::t ::_ => {
+        val e = ErrorMessage.NotCorrectToken(t, "DepArrow", whatToParse)
+        return (Right(e),errorList.add(e))
+      }
+      case t :: _ => {
+        val e = ErrorMessage.NotCorrectToken(t, "Kind", whatToParse)
+        return (Right(e),errorList.add(e))
+      }
+      case Nil =>{
+        val e = ErrorMessage.TokListIsEmpty(SpanPlaceholder, whatToParse)
+        return (Right(e),errorList.add(e))
+      }
+    }
+    if (parseState.mapDepL.contains(nameOfIdentifier)) {
+      throw new IllegalArgumentException("It exists already an DepLambda with this Name: " + nameOfIdentifier)
+    }
+    parseState.mapDepL match {
+      case None => throw new IllegalStateException("mapDepL is None")
+      case Some(mL) => mL.update(nameOfIdentifier,concretKind match {
+        case Data() => RData()
+        case Nat() => RNat()
+        case AddrSpace() => RAddrSpace()
+        case ki => {
+          val e = ErrorMessage.NotCorrectKind(span, ki, "KindWithDepArrow")
+          return (Right(e),errorList.add(e))
+        }
+      })}
+    parseType((ParseState(rest, Nil,  parseState.mapDepL, parseState.spanList,
+      parseState.argumentsTypes),errorList)) match {
+      case (Left(pS),errorL) => {
+        if (pS.parsedSynElems.tail.nonEmpty) throw new IllegalStateException("ParsedSynElems.tail has to be empty!") //Todo: write test
+        val depFun: SType = pS.parsedSynElems.head match {
+          case SType(outT, sp) => {
+            concretKind match {
+              case Data() => SType(rt.DepFunType[rt.DataKind, rt.Type](
+                rt.DataTypeIdentifier(nameOfIdentifier), outT), sp)
+              case Nat() => SType(rt.DepFunType[rt.NatKind, rt.Type](
+                rt.NatIdentifier(nameOfIdentifier), outT), sp)
+              case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](
+                rt.AddressSpaceIdentifier(nameOfIdentifier), outT), sp)
+              case ki => {
+                val e = ErrorMessage.NotCorrectKind(sp, ki, "KindWithDepArrow")
+                return (Right(e),errorL.add(e))
               }
-              (Left(ParseState(pS.tokenStream, depFun :: newPS,  pS.mapDepL, pS.spanList, pS.argumentsTypes)),
-                errorL.add(UsedOrFailedRule(isMatched(), whatToParse)))
             }
           }
+          case wrongSynEl => {
+            val e = NotCorrectSynElem(wrongSynEl, "SType", "KindWithDepArrow")
+            return (Right(e),errorL.add(e))
+          }
         }
-        case notAnDepArrow => {
-          val e = ErrorMessage.NotCorrectToken(notAnDepArrow, "DepArrow", "KindWithDepArrow")
-          (Right(e),errorList.add(e))
-        }
+        (Left(ParseState(pS.tokenStream, depFun :: newPS,  pS.mapDepL, pS.spanList, pS.argumentsTypes)),
+          errorL.add(UsedOrFailedRule(isMatched(), whatToParse)))
       }
-      case t => {
-        val e = ErrorMessage.NotCorrectToken(t, "Kind", "KindWithDepArrow")
-        (Right(e),errorList.add(e))
-      }
+      case (Right(e),errorL) => (Right(e),errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
   }
 
