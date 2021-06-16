@@ -514,19 +514,32 @@ object parse {
     }
   }
 
+  def parseKindWithDepArrowDepLambda(inputEPState: InputEPState): OutputEPState = {
+    parseKindWithDepArrow(inputEPState, false)
+  }
+  def parseKindWithDepArrowDepFunction(inputEPState: InputEPState): OutputEPState = {
+    parseKindWithDepArrow(inputEPState, true)
+  }
+
 //Todo: combine with function above
-  def parseKindWithDepArrowAfterForDepFunctionType(inputEPState: InputEPState): OutputEPState = {
+  def parseKindWithDepArrow(inputEPState: InputEPState, isDepFunction: Boolean): OutputEPState = {
     val whatToParse = "KindWithDepArrow"
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     //debug("parseKind: " + parseState)
-    val nameOfIdentifier: String = parseState.parsedSynElems.head match {
-      case SType(rt.TypeIdentifier(name), _) => name
+    val (nameOfIdentifier,(spanIdent,spanList)) = parseState.parsedSynElems.head match {
+      case SType(rt.TypeIdentifier(name), sp) => (name,if(isDepFunction){(sp,parseState.spanList)}else{
+        parseState.spanList match {
+          case Some(Nil) => throw new IllegalStateException("should not be Nil")
+          case None => throw new IllegalStateException("should not be None")
+          case Some(span :: Nil) => (sp + span, Some(Nil))
+          case Some(span :: l) => (sp + span, Some(l))
+      }})
       case t => throw new IllegalStateException("Here should be an TypeIdentifier and not '" + t + "'")
     }
     val newPS = parseState.parsedSynElems.tail
 
     val tokens = parseState.tokenStream
-    val (concretKind, span, rest)= tokens match {
+    val (concretKind, spanKind, rest)= tokens match {
       case Kind(concreteKind, span)::DepArrow(_)::rest => (concreteKind,span, rest)
       case Kind(_,_)::t ::_ => {
         val e = ErrorMessage.NotCorrectToken(t, "DepArrow", whatToParse)
@@ -541,37 +554,56 @@ object parse {
         return (Right(e),errorList.add(e))
       }
     }
-    if (parseState.mapDepL.contains(nameOfIdentifier)) {
-      throw new IllegalArgumentException("It exists already an DepLambda with this Name: " + nameOfIdentifier)
+    val input = (ParseState(rest, Nil,  parseState.mapDepL, spanList,
+      parseState.argumentsTypes),errorList)
+    val res = if(isDepFunction) {
+      parseType(input)
+    }else{
+      parseState.mapDepL match {
+        case None => throw new IllegalStateException("mapDepL is None")
+        case Some(mL)=> mL.update(nameOfIdentifier, concretKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
+          case Data() => RData()
+          case Nat() => RNat()
+          case AddrSpace() => RAddrSpace()
+          case ki => {
+            val e = NotCorrectKind(spanKind, ki, "KindWithDepArrow")
+            return (Right(e), errorList.add(e))
+          }
+        })
+      }
+      parseMaybeAppExpr(input)
     }
-    parseState.mapDepL match {
-      case None => throw new IllegalStateException("mapDepL is None")
-      case Some(mL) => mL.update(nameOfIdentifier,concretKind match {
-        case Data() => RData()
-        case Nat() => RNat()
-        case AddrSpace() => RAddrSpace()
-        case ki => {
-          val e = ErrorMessage.NotCorrectKind(span, ki, "KindWithDepArrow")
-          return (Right(e),errorList.add(e))
-        }
-      })}
-    parseType((ParseState(rest, Nil,  parseState.mapDepL, parseState.spanList,
-      parseState.argumentsTypes),errorList)) match {
+    res match {
       case (Left(pS),errorL) => {
+        if (parseState.mapDepL.contains(nameOfIdentifier)) throw new IllegalArgumentException("It exists already an DepLambda with this Name: " + nameOfIdentifier)
         if (pS.parsedSynElems.tail.nonEmpty) throw new IllegalStateException("ParsedSynElems.tail has to be empty!") //Todo: write test
-        val depFun: SType = pS.parsedSynElems.head match {
+        val depFun = pS.parsedSynElems.head match {
           case SType(outT, sp) => {
             concretKind match {
               case Data() => SType(rt.DepFunType[rt.DataKind, rt.Type](
-                rt.DataTypeIdentifier(nameOfIdentifier), outT), sp)
+                rt.DataTypeIdentifier(nameOfIdentifier), outT), sp+spanIdent)
               case Nat() => SType(rt.DepFunType[rt.NatKind, rt.Type](
-                rt.NatIdentifier(nameOfIdentifier), outT), sp)
+                rt.NatIdentifier(nameOfIdentifier), outT), sp+spanIdent)
               case AddrSpace() => SType(rt.DepFunType[rt.AddressSpaceKind, rt.Type](
-                rt.AddressSpaceIdentifier(nameOfIdentifier), outT), sp)
+                rt.AddressSpaceIdentifier(nameOfIdentifier), outT), sp+spanIdent)
               case ki => {
                 val e = ErrorMessage.NotCorrectKind(sp, ki, "KindWithDepArrow")
                 return (Right(e),errorL.add(e))
               }
+            }
+          }
+          case SExpr(outT) => {
+            val span = outT.span match {
+              case None => throw new IllegalStateException("Span should not be None in DepLambdafkt")
+              case Some(sp) => spanIdent + sp
+            }
+            concretKind match { //Todo: einfach Span direkt reingeben!!! Auch bei Lambda DepLambda etc.
+              case Data() => SExpr(r.DepLambda[rt.DataKind](rt.DataTypeIdentifier(nameOfIdentifier),
+                outT)(rt.TypePlaceholder, Some(span)))
+              case Nat() => SExpr(r.DepLambda[rt.NatKind](rt.NatIdentifier(nameOfIdentifier),
+                outT)(rt.TypePlaceholder, Some(span)))
+              case AddrSpace() => SExpr(r.DepLambda[rt.AddressSpaceKind](
+                rt.AddressSpaceIdentifier(nameOfIdentifier), outT)(rt.TypePlaceholder, Some(span)))
             }
           }
           case wrongSynEl => {
@@ -612,7 +644,7 @@ object parse {
       (Left(parseState),errorList) |>
         parseTypeIdent |>
         parseColon |>
-        parseKindWithDepArrowAfterForDepFunctionType
+        parseKindWithDepArrowDepFunction
     p match {
       case Right(e) => (Right(e),eL.add(UsedOrFailedRule(isFailed(), whatToParse)))
       case Left(pa) => (Left(ParseState(pa.tokenStream, pa.parsedSynElems,  pa.mapDepL, parseState.spanList,pa.argumentsTypes)),
@@ -635,7 +667,7 @@ object parse {
         parseBackslash |>
         parseTypeIdent |>
         parseColon |>
-        parseKindWithDepArrowAfterForDepLambda
+        parseKindWithDepArrowDepLambda
     p match {
       case Right(e) => (Right(e),eL.add(UsedOrFailedRule(isFailed(), whatToParse)))
       case Left(pa) => (Left(ParseState(pa.tokenStream, pa.parsedSynElems,  pa.mapDepL, parseState.spanList, pa.argumentsTypes)),
