@@ -44,17 +44,17 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   def showPrim : Primitive[_] => String = {
     case Comment(s) => s"/* ${s} */"
     case Seq(c1, c2) => s"${showPhrase(c1)};\n${showPhrase(c2)}"
-    case New(dt, f) => s"(new (exp[${showDataType(dt)}] x acc[${showDataType(dt)}]) in \n${tab(showPhrase(f))}\n)\n"
+    case New(dt, f) => s"new (exp[${showDataType(dt)}] x acc[${showDataType(dt)}]) in \n${tab(showPhrase(f))}"
     case Assign(_, lhs, rhs) => s"${showTypedPhrase(lhs)} = ${showPhrase(rhs)}"
     case IdxAcc(_, _, idx, array) => s"${showTypedPhrase(array)}[${showPhrase(idx)}]"
     case Idx(_, _, idx, array) => s"${showTypedPhrase(array)}[${showPhrase(idx)}]"
     case NatAsIndex(_, e) => showTypedPhrase(e)
-    case Drop(n, _, _, e) => s"(drop ${showNat(n)} ${showTypedPhrase(e)})"
-    case DropAcc(n, _, _, e) => s"(drop ${showNat(n)} ${showTypedPhrase(e)})"
-    case Take(n, _, _, e) => s"(take ${showNat(n)} ${showTypedPhrase(e)})"
-    case TakeAcc(n, _, _, e) => s"(take ${showNat(n)} ${showTypedPhrase(e)})"
-    case f : For => s"(for ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}\n)\n"
-    case f : ForNat => s"(forNat ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}\n)\n"
+    case Drop(n, _, _, e) => s"drop ${showNat(n)} ${showTypedPhrase(e)}"
+    case DropAcc(n, _, _, e) => s"drop ${showNat(n)} ${showTypedPhrase(e)}"
+    case Take(n, _, _, e) => s"take ${showNat(n)} ${showTypedPhrase(e)}"
+    case TakeAcc(n, _, _, e) => s"take ${showNat(n)} ${showTypedPhrase(e)}"
+    case f : For => s"for ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
+    case f : ForNat => s"forNat ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
     case p => p.toString
   }
 
@@ -68,17 +68,17 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   }
   def showPhrase[T <: PhraseType] : Phrase[T] => String = {
     case Identifier(name, t) => if (showTypes == On) s"(${name} : ${t})" else name
-    case Lambda(param, body) => s"(λ${showPhrase(param)}.\n${tab(showPhrase(body))}\n)\n"
-    case Apply(fun, arg) => s"(${showPhrase(fun)} ${showPhrase(arg)})"
-    case DepLambda(kind, x, body) => s"(Λ${showKindedType(kind, x)}.\n${tab(showPhrase(body))}\n)\n"
-    case DepApply(kind, fun, arg) => s"${showPhrase(fun)} ${showKindedType(kind, arg)}"
-    case LetNat(binder, defn, body) => s"(let ${showTypeId(binder.id)} = ${showPhrase(defn)} in \n${tab(showPhrase(body))}\n)\n"
-    case PhrasePair(fst, snd) => s"(${showPhrase(fst)}, ${showPhrase(snd)})"
-    case Proj1(pair) => s"(fst ${showPhrase(pair)})"
-    case Proj2(pair) => s"(snd ${showPhrase(pair)})"
-    case IfThenElse(cond, thenP, elseP) => s"(if ${showPhrase(cond)} then ${showPhrase(thenP)} else ${showPhrase(elseP)})"
-    case UnaryOp(op, p) => s"${showUnary(op)} ${showPhrase(p)}"
-    case BinOp(op, lhs, rhs) => s"${showPhrase(lhs)} ${showBinary(op)} ${showPhrase(rhs)}"
+    case Lambda(param, body) => s"λ${showTypedPhrase(param)}.\n${tab(showTypedPhrase(body))}\n"
+    case Apply(fun, arg) => s"${showTypedPhrase(fun)} ${showTypedPhrase(arg)}"
+    case DepLambda(kind, x, body) => s"Λ${showKindedType(kind, x)}.\n${tab(showTypedPhrase(body))}\n"
+    case DepApply(kind, fun, arg) => s"${showTypedPhrase(fun)} ${showKindedType(kind, arg)}"
+    case LetNat(binder, defn, body) => s"let ${showTypeId(binder.id)} = ${showTypedPhrase(defn)} in \n${tab(showTypedPhrase(body))}\n"
+    case PhrasePair(fst, snd) => s"${showTypedPhrase(fst)}, ${showTypedPhrase(snd)}"
+    case Proj1(pair) => s"fst ${showTypedPhrase(pair)}"
+    case Proj2(pair) => s"snd ${showTypedPhrase(pair)}"
+    case IfThenElse(cond, thenP, elseP) => s"if ${showTypedPhrase(cond)} then ${showTypedPhrase(thenP)} else ${showTypedPhrase(elseP)}"
+    case UnaryOp(op, p) => s"${showUnary(op)} ${showTypedPhrase(p)}"
+    case BinOp(op, lhs, rhs) => s"${showTypedPhrase(lhs)} ${showBinary(op)} ${showTypedPhrase(rhs)}"
     case Literal(d) => showData(d)
     case Natural(d) => showNat(d)
     case primitive: Primitive[_] => showPrim(primitive)
