@@ -1381,15 +1381,14 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
   mapFkt is by reference, and does not to be returned
    */
   def parseTypAnnotatedIdent(parseState: ParseState, mapFkt:MapFkt): Either[List[Token], ErrorList] = {
-    require(parseState.parsedSynElems.isEmpty, "parseState is not empty, but nothing should be in it yet")
     val whatToParse = "TypAnnotatedIdent"
     val psLambdaOld =
       (Left(parseState),ErrorList().add(UsedOrFailedRule(isParsing(), whatToParse))) |>
         parseIdent
 
     val (ps, identifierFkt, eL): (ParseState, r.Identifier, ErrorList) = psLambdaOld match {
-      case (Right(e),errorL) => return Right(errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
-      case (Left(p),errorL) => {
+      case (Right(e), errorL) => return Right(errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
+      case (Left(p), errorL) => {
         p.parsedSynElems.head match {
           case SExpr(id@r.Identifier(n)) => if (mapFkt.contains(n)) {
             //debug("Identifier does already exist: " + n + " , " + psLambdaOld)
@@ -1398,23 +1397,10 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
           } else {
             (p, id, errorL)
           }
-          case SLet(sp) =>
-            throw new IllegalStateException("it is an Identifier expected not let: " + sp)
-          case SExprClutched(expr, spanClutch) =>
-            throw new IllegalStateException("it is an Identifier expected not expr with spanClutch: " + expr + " ; " + spanClutch)
-          case SExpr(expr) => throw new IllegalStateException("it is an Identifier expected: " + expr)
-          case SType(t, _) => throw new IllegalStateException(
-            "it is an Identifier expected but an Type is completely false: " + t)
-          case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: " + prim)
-          case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
-          case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-          case SAddrSpace(addrSpace, _) => throw new RuntimeException(
-            "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-          case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+          case synElem => return Right(errorL.add(NotCorrectSynElem(synElem, "Identifier", whatToParse)))
         }
       }
     }
-
     val psNamedExprBefore = {
       (Left(ParseState(ps.tokenStream, Nil, ps.mapDepL, ps.spanList, ps.argumentsTypes)),eL) |>
         parseDoubleColons |>
