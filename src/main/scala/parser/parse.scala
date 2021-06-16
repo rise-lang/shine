@@ -974,7 +974,7 @@ object parse {
           case BeginTypAnnotatedIdent(_)=> parseTypAnnotatedIdent(p, mapFkt)
           case BeginNamedExpr(_) => parseNamedExpr(p, mapFkt)
           case BeginForeignFct(_)=> parseForeignFct(p, mapFkt)
-          case a => throw new IllegalArgumentException("You have started with something different: " + a)
+          case other => throw new IllegalArgumentException("You have started with something different: " + other)
         }
       }
       case Nil => Right((TokListIsEmpty(SpanPlaceholder, "Bottom")::Nil).asInstanceOf[ErrorList])
@@ -1378,7 +1378,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
   }
 
   /*
-  mapFkt is by reference, and does not to be returned
+  mapFkt is by reference, and does not need to be returned
    */
   def parseTypAnnotatedIdent(parseState: ParseState, mapFkt:MapFkt): Either[List[Token], ErrorList] = {
     val whatToParse = "TypAnnotatedIdent"
@@ -1387,11 +1387,10 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         parseIdent
 
     val (ps, identifierFkt, eL): (ParseState, r.Identifier, ErrorList) = psLambdaOld match {
-      case (Right(e), errorL) => return Right(errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
       case (Left(p), errorL) => {
         p.parsedSynElems.head match {
           case SExpr(id@r.Identifier(n)) => if (mapFkt.contains(n)) {
-            //debug("Identifier does already exist: " + n + " , " + psLambdaOld)
+            debug("Identifier does already exist: " + n + " , " + psLambdaOld, whatToParse)
             throw new IllegalStateException("We want to parse an TypAnnotatedIdent for " + n
               + " but this Identifier is already declared!")
           } else {
@@ -1400,6 +1399,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
           case synElem => return Right(errorL.add(NotCorrectSynElem(synElem, "Identifier", whatToParse)))
         }
       }
+      case (Right(_), errorL) => return Right(errorL.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
     val psNamedExprBefore = {
       (Left(ParseState(ps.tokenStream, Nil, ps.mapDepL, ps.spanList, ps.argumentsTypes)),eL) |>
@@ -1407,29 +1407,31 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         parseType
     }
 
-
     val (psNew,_) = psNamedExprBefore match {
-      case (Right(e),erL) => return Right(erL.add(UsedOrFailedRule(isFailed(), whatToParse)))
       case (Left(p),erL) => (p,erL.add(UsedOrFailedRule(isMatched(), whatToParse)))
+      case (Right(_),erL) => return Right(erL.add(UsedOrFailedRule(isFailed(), whatToParse)))
     }
 
     //debug("in the middle of TypAnnotatedIden: " + psNew)
     psNew.tokenStream match {
       case EndTypAnnotatedIdent(_) :: remainderTokens => {
-        val (typesList, _) = getTypesInList(psNew.parsedSynElems, None)
-        if (typesList.length != 1) {
-          throw new IllegalStateException("The TypesList should have lenght 1: " + typesList)
-        }
-        mapFkt.put(identifierFkt.name, HMType(typesList.head))
+        val singleType = getSingleTypeOfList(psNew.parsedSynElems, None)
+        mapFkt.put(identifierFkt.name, HMType(singleType))
         //debug("return TypAnnotatedIdent: " + remainderTokens + " <<<<>>>> " + mapFkt)
         Left(remainderTokens)
       }
-      case EndNamedExpr(_) :: remainderTokens => {
-        throw new IllegalStateException("TypAnnotatedIdent ends with an EndTypAnnotatedIdent, but end with EndNamedExpr")
-      }
-      case a => {
+      case other => {
         throw new IllegalStateException(
-          "TypAnnotatedIdent ends with an EndTypAnnotatedIdent, but we have no EndTypAnnotatedIdent at the end: " + a)
+          "TypAnnotatedIdent ends with an EndTypAnnotatedIdent, but we have no EndTypAnnotatedIdent at the end: " + other)
+      }
+    }
+  }
+
+  def getSingleTypeOfList(synElems: List[SyntaxElement], spanOp: Option[Span]): r.types.Type = {
+    getTypesInList(synElems, spanOp) match{
+      case (list, _) => list match {
+        case t::Nil=> t
+        case list => throw new IllegalStateException("The TypesList should have lenght 1: " + list)
       }
     }
   }
