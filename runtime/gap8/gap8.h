@@ -24,9 +24,6 @@ struct BufferImpl {
 
 Context createContext(int device_id);
 Kernel loadKernel(void (*handler)(void*), uint32_t stack_size);
-void launchKernel(
-  Context ctx, Kernel k,
-  int num_threads,
-  size_t arg_count, const KernelArg* args);
+void launchKernel(Context ctx, Kernel k, int num_threads, void* args);
 
 #endif

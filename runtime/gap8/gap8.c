@@ -53,12 +53,9 @@ void destroyKernel(Context ctx, Kernel k){
     pmsis_l2_malloc_free(k, sizeof(struct KernelImpl));
 }
 
-void launchKernel(
-  Context ctx, Kernel k,
-  int num_threads,
-  size_t arg_count, const KernelArg* args){
+void launchKernel(Context ctx, Kernel k, int num_threads, void* args){
 
-    k->cl_task->arg = args->value;
+    k->cl_task->arg = args;
     pi_cluster_send_task_to_cl(&(ctx->cl_device), k->cl_task);
 
 }
