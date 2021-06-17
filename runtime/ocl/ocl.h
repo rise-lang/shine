@@ -27,6 +27,14 @@ struct KernelImpl {
   cl_program program;
 };
 
+typedef struct {
+  size_t size;
+  void* value;
+} KernelArg;
+
+#define KARG(val) { sizeof(val), &val }
+#define LARG(size) { size, NULL }
+
 Context createContext(const char* platform_subname, const char* device_type_str);
 Kernel loadKernelFromSource(Context ctx, const char* name, const char* source, size_t length);
 Kernel loadKernelFromFile(Context ctx, const char* name, const char* path);
@@ -38,7 +46,5 @@ void launchKernel(
 const char* oclErrorToString(cl_int error);
 bool oclReportError(cl_int error, const char* msg);
 void oclFatalError(cl_int error, const char* msg);
-
-
 
 #endif

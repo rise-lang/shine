@@ -10,11 +10,6 @@ typedef struct ContextImpl* Context;
 typedef struct KernelImpl* Kernel;
 typedef struct BufferImpl* Buffer;
 
-typedef struct {
-  size_t size;
-  void* value;
-} KernelArg;
-
 typedef enum {
   HOST_READ = 1 << 0,
   HOST_WRITE = 1 << 1,
@@ -32,8 +27,5 @@ void* hostBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access
 DeviceBuffer deviceBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access);
 
 void destroyKernel(Context ctx, Kernel k);
-
-#define KARG(val) { sizeof(val), &val }
-#define LARG(size) { size, NULL }
 
 #endif
