@@ -121,12 +121,12 @@ class autotuning extends test_util.Tests {
 
   test("collect parameters") {
     val params = autotune.collectParameters(convolutionOclGsLsWrap)
-    assert(params.find(_.name == "vec").get.range == RangeAdd(0, 32, 1))
-    assert(params.find(_.name == "tile").get.range == RangeAdd(4, 32, 1))
-    assert(params.find(_.name == "ls0").get.range == RangeUnknown)
-    assert(params.find(_.name == "ls1").get.range == RangeUnknown)
-    assert(params.find(_.name == "gs0").get.range == RangeUnknown)
-    assert(params.find(_.name == "gs1").get.range == RangeUnknown)
+    assert(params.find(IsTuningParameter("vec")).get.range == RangeAdd(0, 32, 1))
+    assert(params.find(IsTuningParameter("tile")).get.range == RangeAdd(4, 32, 1))
+    assert(params.find(IsTuningParameter("ls0")).get.range == RangeUnknown)
+    assert(params.find(IsTuningParameter("ls1")).get.range == RangeUnknown)
+    assert(params.find(IsTuningParameter("gs0")).get.range == RangeUnknown)
+    assert(params.find(IsTuningParameter("gs1")).get.range == RangeUnknown)
     assert(params.size == 6)
   }
 
@@ -141,28 +141,28 @@ class autotuning extends test_util.Tests {
     println("constraints: \n" + constraints)
 
     val badParameters1 = Map(
-      NatIdentifier("vec", isExplicit = true) -> (5: Nat),
-      NatIdentifier("tile", isExplicit = true) -> (15: Nat)
+      TuningParameter("vec") -> (5: Nat),
+      TuningParameter("tile") -> (15: Nat)
     )
     assert(!autotune.checkConstraints(constraints, badParameters1))
 
     val badParameters2 = Map(
-      NatIdentifier("vec", isExplicit = true) -> (4: Nat),
-      NatIdentifier("tile", isExplicit = true) -> (13: Nat)
+      TuningParameter("vec") -> (4: Nat),
+      TuningParameter("tile") -> (13: Nat)
     )
     assert(!autotune.checkConstraints(constraints, badParameters2))
 
     /* FIXME: there is no `n >= tile` constraint collected
     val badParameters3 = Map(
-      NatIdentifier("vec", isExplicit = true) -> (8: Nat),
-      NatIdentifier("tile", isExplicit = true) -> (64: Nat)
+      TuningParameter("vec") -> (8: Nat),
+      TuningParameter("tile") -> (64: Nat)
     )
     assert(!autotune.checkConstraints(constraints, badParameters3))
     */
 
     val goodParameters = Map(
-      NatIdentifier("vec", isExplicit = true) -> (4: Nat),
-      NatIdentifier("tile", isExplicit = true) -> (16: Nat)
+      TuningParameter("vec") -> (4: Nat),
+      TuningParameter("tile") -> (16: Nat)
     )
     assert(autotune.checkConstraints(constraints, goodParameters))
     rise.core.substitute.natsInExpr(goodParameters, e)
@@ -241,7 +241,7 @@ class autotuning extends test_util.Tests {
           wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
         ))))
     val (nIdent, mIdent, oIdent) = e match {
-      case DepLambda(n: NatIdentifier, DepLambda(m: NatIdentifier, DepLambda(o: NatIdentifier, _))) =>
+      case DepLambda(NatKind, n: NatIdentifier, DepLambda(NatKind, m: NatIdentifier, DepLambda(NatKind, o: NatIdentifier, _))) =>
         (n, m, o)
       case _ => ???
     }
@@ -333,16 +333,16 @@ class autotuning extends test_util.Tests {
           nIdent -> n,
           mIdent -> m,
           oIdent -> o,
-          NatIdentifier("v3", isExplicit = true) -> v3,
-          NatIdentifier("v4", isExplicit = true) -> v4,
-          NatIdentifier("v5", isExplicit = true) -> v5,
-          NatIdentifier("v6", isExplicit = true) -> v6,
-          NatIdentifier("v7", isExplicit = true) -> v7,
-          NatIdentifier("v8", isExplicit = true) -> v8,
-          NatIdentifier("ls0", isExplicit = true) -> ls0,
-          NatIdentifier("ls1", isExplicit = true) -> ls1,
-          NatIdentifier("gs0", isExplicit = true) -> gs0,
-          NatIdentifier("gs1", isExplicit = true) -> gs1,
+          TuningParameter("v3") -> v3,
+          TuningParameter("v4") -> v4,
+          TuningParameter("v5") -> v5,
+          TuningParameter("v6") -> v6,
+          TuningParameter("v7") -> v7,
+          TuningParameter("v8") -> v8,
+          TuningParameter("ls0") -> ls0,
+          TuningParameter("ls1") -> ls1,
+          TuningParameter("gs0") -> gs0,
+          TuningParameter("gs1") -> gs1,
         )
         if (autotune.checkConstraints(constraints, map) != isGood) {
           val (sat, notSat) = constraints.partition(c =>
@@ -463,8 +463,8 @@ class autotuning extends test_util.Tests {
 
   test("execute convolution") {
     val goodParameters = Map(
-      NatIdentifier("vec", isExplicit = true) -> (4: Nat),
-      NatIdentifier("tile", isExplicit = true) -> (16: Nat)
+      TuningParameter("vec") -> (4: Nat),
+      TuningParameter("tile") -> (16: Nat)
     )
 
     val e: Expr = convolutionOcl(32)
@@ -573,12 +573,12 @@ class autotuning extends test_util.Tests {
 
     // define parameters to break the code-gen
     val parameters = Map(
-      NatIdentifier("vec", isExplicit = true) -> (16: Nat),
-      NatIdentifier("tile", isExplicit = true) -> (32: Nat),
-      NatIdentifier("gs0", isExplicit = true) -> (1: Nat),
-      NatIdentifier("gs1", isExplicit = true) -> (512: Nat),
-      NatIdentifier("ls0", isExplicit = true) -> (1: Nat),
-      NatIdentifier("ls1", isExplicit = true) -> (64: Nat)
+      TuningParameter("vec") -> (16: Nat),
+      TuningParameter("tile") -> (32: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (512: Nat),
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (64: Nat)
     )
 
     // substitute parameters

@@ -8,7 +8,7 @@ import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType, ScalarType, VectorType}
+import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, NatKind, PhraseType, ScalarType, VectorType}
 import shine.DPIA.primitives.functional._
 import shine.DPIA.{ArrayData, Compilation, Data, Nat, NatIdentifier, Phrases, VectorData, error, freshName}
 import shine.OpenMP.primitives.imperative.{ParFor, ParForNat}
@@ -38,7 +38,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       OpenMPCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
     case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) =>
       OpenMPCodeGen.codeGenParForVec(n, dt, a, i, o, p, env)
-    case ParForNat(n, _, a, DepLambda(i, Lambda(o, p))) =>
+    case ParForNat(n, _, a, DepLambda(NatKind, i, Lambda(o, p))) =>
       OpenMPCodeGen.codeGenParForNat(n, a, i, o, p, env)
     case phrase => phrase |> super.cmd(env)
   }

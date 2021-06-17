@@ -9,18 +9,18 @@ object substitute {
 
   // substitute in Expr
 
-  def kindInExpr[K <: Kind](x: K#T, `for`: K#I, in: Expr): Expr =
-    (x, `for`) match {
-      case (dt: DataType, forDt: DataTypeIdentifier) =>
+  def kindInExpr[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: T, `for`: I, in: Expr): Expr =
+    (kind, x, `for`) match {
+      case (DataKind, dt: DataType, forDt: DataTypeIdentifier) =>
         dataTypeInExpr(dt, forDt, in)
-      case (n: Nat, forN: NatIdentifier) => natInExpr(n, forN, in)
-      case (a: AddressSpace, forA: AddressSpaceIdentifier) =>
+      case (NatKind, n: Nat, forN: NatIdentifier) => natInExpr(n, forN, in)
+      case (AddressSpaceKind, a: AddressSpace, forA: AddressSpaceIdentifier) =>
         addressSpaceInExpr(a, forA, in)
-      case (n2n: NatToNat, forN2N: NatToNatIdentifier) =>
+      case (NatToNatKind, n2n: NatToNat, forN2N: NatToNatIdentifier) =>
         n2nInExpr(n2n, forN2N, in)
-      case (n2d: NatToData, forN2D: NatToDataIdentifier) =>
+      case (NatToDataKind, n2d: NatToData, forN2D: NatToDataIdentifier) =>
         n2dInExpr(n2d, forN2D, in)
-      case (_, _) => ???
+      case (_, _, _) => ???
     }
 
   def exprInExpr(expression : Expr, `for`: Expr, in: Expr): Expr = {
@@ -53,8 +53,8 @@ object substitute {
     case i: Identifier => Set(i)
     case Lambda(x, e) => FV(e) - x
     case App(f, e) => FV(f) ++ FV(e)
-    case DepLambda(_, e) => FV(e)
-    case DepApp(f, _) => FV(f)
+    case DepLambda(_, _, e) => FV(e)
+    case DepApp(_, f, _) => FV(f)
     case Literal(_) => Set()
     case TypeAnnotation(e, _) => FV(e)
     case TypeAssertion(e, _) => FV(e)
@@ -76,8 +76,8 @@ object substitute {
   def natsInExpr(subs: Map[NatIdentifier, Nat], in: Expr): Expr = {
     object Visitor extends PureTraversal {
       override def expr: Expr => Pure[Expr] = {
-        case Identifier(name) if subs.contains(NatIdentifier(name, isExplicit = true)) =>
-          return_(Literal(NatData(subs(NatIdentifier(name, isExplicit = true)))) : Expr)
+        case Identifier(name) if subs.contains(NatIdentifier(name)) =>
+          return_(Literal(NatData(subs(NatIdentifier(name)))) : Expr)
         case e => super.expr(e)
       }
 
@@ -104,20 +104,16 @@ object substitute {
 
   // substitute in Type
 
-  def kindInType[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =
-    (x, `for`) match {
-      case (dt: DataType, forDt: DataTypeIdentifier) =>
-        typeInType(dt, forDt, in)
-      case (n: Nat, forN: NatIdentifier) =>
-        natInType(n, forN, in)
-      case (a: AddressSpace, forA: AddressSpaceIdentifier) =>
-        addressSpaceInType(a, forA, in)
-      case (n2n: NatToNat, forN2N: NatToNatIdentifier) =>
-        n2nInType(n2n, forN2N, in)
-      case (n2d: NatToData, forN2D: NatToDataIdentifier) =>
-        n2dInType(n2d, forN2D, in)
-      case (_, _) => ???
+  def kindInType[T, I, KI <: Kind.Identifier, U <: Type](kind: Kind[T, I, KI], x: T, `for`: I, in: U): U = {
+    (kind, x, `for`) match {
+      case (DataKind, dt: DataType, forDt: DataTypeIdentifier) => typeInType(dt, forDt, in)
+      case (NatKind, n: Nat, forN: NatIdentifier) => natInType(n, forN, in)
+      case (AddressSpaceKind, a: AddressSpace, forA: AddressSpaceIdentifier) => addressSpaceInType(a, forA, in)
+      case (NatToNatKind, n2n: NatToNat, forN2N: NatToNatIdentifier) => n2nInType(n2n, forN2N, in)
+      case (NatToDataKind, n2d: NatToData, forN2D: NatToDataIdentifier) => n2dInType(n2d, forN2D, in)
+      case (_, _, _) => ???
     }
+  }
 
   def typeInType[B <: Type](ty: Type, `for`: Type, in: B): B = {
     object Visitor extends PureTraversal {

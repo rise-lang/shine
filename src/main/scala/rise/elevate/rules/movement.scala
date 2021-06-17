@@ -57,9 +57,9 @@ object movement {
   // split/slide
 
   def isSplitOrSlide(s: Expr): Boolean = s match {
-    case DepApp(DepApp(slide(), _: Nat), _: Nat) => true
-    case DepApp(split(), _: Nat)                 => true
-    case _                                       => false
+    case DepApp(NatKind, DepApp(NatKind, slide(), _: Nat), _: Nat) => true
+    case DepApp(NatKind, split(), _: Nat)                          => true
+    case _                                                         => false
   }
 
   def slideBeforeMapMapF: Strategy[Rise] = `S >> **f -> *f >> S`
@@ -70,13 +70,13 @@ object movement {
 
   def slideBeforeMap: Strategy[Rise] = `*f >> S -> S >> **f`
   @rule def `*f >> S -> S >> **f`: Strategy[Rise] = {
-    case e@App(s @ DepApp(DepApp(slide(), _: Nat), _: Nat), App(App(map(), f), y)) =>
+    case e@App(s @ DepApp(NatKind, DepApp(NatKind, slide(), _: Nat), _: Nat), App(App(map(), f), y)) =>
       Success((preserveType(y) |> eraseType(s) |> map(map(f))) !: e.t)
   }
 
   // *f >> S -> S >> **f
   @rule def splitBeforeMap: Strategy[Rise] = {
-    case e@App(s @ DepApp(split(), _: Nat), App(App(map(), f), y)) =>
+    case e@App(s @ DepApp(NatKind, split(), _: Nat), App(App(map(), f), y)) =>
       Success((preserveType(y) |> eraseType(s) |> map(map(f))) !: e.t)
   }
 
@@ -98,32 +98,32 @@ object movement {
 
   def dropBeforeMap: Strategy[Rise] = `*f >> drop n -> drop n >> *f`
   @rule def `*f >> drop n -> drop n >> *f`: Strategy[Rise] = {
-    case expr @ App(DepApp(drop(), n: Nat), App(App(map(), f), in)) =>
+    case expr @ App(DepApp(NatKind, drop(), n: Nat), App(App(map(), f), in)) =>
       Success(app(map(f), app(drop(n), preserveType(in))) !: expr.t)
   }
 
   def takeBeforeMap: Strategy[Rise] = `*f >> take n -> take n >> *f`
   @rule def `*f >> take n -> take n >> *f`: Strategy[Rise] = {
-    case expr @ App(DepApp(take(), n: Nat), App(App(map(), f), in)) =>
+    case expr @ App(DepApp(NatKind, take(), n: Nat), App(App(map(), f), in)) =>
       Success(app(map(f), app(take(n), preserveType(in))) !: expr.t)
   }
 
   // take n >> *f -> *f >> take n
   @rule def takeAfterMap: Strategy[Rise] = {
-    case e @ App(App(map(), f), App(DepApp(take(), n: Nat), in)) =>
+    case e @ App(App(map(), f), App(DepApp(NatKind, take(), n: Nat), in)) =>
       Success(take(n)(map(f)(in)) !: e.t)
   }
 
   def takeInZip: Strategy[Rise] = `take n (zip a b) -> zip (take n a) (take n b)`
   @rule def `take n (zip a b) -> zip (take n a) (take n b)`: Strategy[Rise] = {
-    case expr @ App(DepApp(take(), n), App(App(zip(), a), b)) =>
-      Success(zip(depApp(take, n)(a))(depApp(take, n)(b)) !: expr.t)
+    case expr @ App(DepApp(NatKind, take(), n), App(App(zip(), a), b)) =>
+      Success(zip(depApp(NatKind, take, n)(a))(depApp(NatKind, take, n)(b)) !: expr.t)
   }
 
   // zip (take n a) (take n b) -> take n (zip a b)
   @rule def takeOutisdeZip: Strategy[Rise] = {
     case e @ App(App(zip(),
-      App(DepApp(take(), n1: Nat), a)), App(DepApp(take(), n2: Nat), b)
+      App(DepApp(NatKind, take(), n1: Nat), a)), App(DepApp(NatKind, take(), n2: Nat), b)
     ) if n1 == n2 =>
       Success(take(n1)(zip(a)(b)) !: e.t)
   }
@@ -132,76 +132,74 @@ object movement {
   // TODO: can get any function out, see asScalarOutsidePair
   @rule def takeOutsidePair: Strategy[Rise] = {
     case e @ App(App(makePair(),
-      App(DepApp(take(), n: Nat), a)), App(DepApp(take(), m: Nat), b)
+      App(DepApp(NatKind, take(), n: Nat), a)), App(DepApp(NatKind, take(), m: Nat), b)
     ) =>
       Success((makePair(a)(b) |> mapFst(take(n)) |> mapSnd(take(m))) !: e.t)
   }
 
   def dropInZip: Strategy[Rise] = `drop n (zip a b) -> zip (drop n a) (drop n b)`
   @rule def `drop n (zip a b) -> zip (drop n a) (drop n b)`: Strategy[Rise] = {
-    case expr @ App(DepApp(drop(), n), App(App(zip(), a), b)) =>
-      Success(zip(depApp(drop, n)(a))(depApp(drop, n)(b)) !: expr.t)
+    case expr @ App(DepApp(NatKind, drop(), n), App(App(zip(), a), b)) =>
+      Success(zip(depApp(NatKind, drop, n)(a))(depApp(NatKind, drop, n)(b)) !: expr.t)
   }
 
   def takeInSelect: Strategy[Rise] = `take n (select t a b) -> select t (take n a) (take n b)`
   @rule def `take n (select t a b) -> select t (take n a) (take n b)`: Strategy[Rise] = {
-    case expr @ App(DepApp(take(), n), App(App(App(select(), t), a), b)) =>
-      Success(select(t)(depApp(take, n)(a), depApp(take, n)(b)) !: expr.t)
+    case expr @ App(DepApp(NatKind, take(), n), App(App(App(select(), t), a), b)) =>
+      Success(select(t)(depApp(NatKind, take, n)(a), depApp(NatKind, take, n)(b)) !: expr.t)
   }
 
   def dropInSelect: Strategy[Rise] = `drop n (select t a b) -> select t (drop n a) (drop n b)`
   @rule def `drop n (select t a b) -> select t (drop n a) (drop n b)`: Strategy[Rise] = {
-    case expr @ App(DepApp(drop(), n), App(App(App(select(), t), a), b)) =>
-      Success(select(t)(depApp(drop, n)(a), depApp(drop, n)(b)) !: expr.t)
+    case expr @ App(DepApp(NatKind, drop(), n), App(App(App(select(), t), a), b)) =>
+      Success(select(t)(depApp(NatKind, drop, n)(a), depApp(NatKind, drop, n)(b)) !: expr.t)
   }
 
   def dropBeforeTake: Strategy[Rise] = `take (n+m) >> drop m -> drop m >> take n`
   @rule def `take (n+m) >> drop m -> drop m >> take n`: Strategy[Rise] = {
-    case expr @ App(DepApp(drop(), m: Nat), App(DepApp(take(), nm: Nat), in)) =>
+    case expr @ App(DepApp(NatKind, drop(), m: Nat), App(DepApp(NatKind, take(), nm: Nat), in)) =>
       Success(app(take(nm - m), app(drop(m), preserveType(in))) !: expr.t)
   }
 
   def takeBeforeDrop: Strategy[Rise] = `drop m >> take n -> take (n+m) >> drop m`
   @rule def `drop m >> take n -> take (n+m) >> drop m`: Strategy[Rise] = {
-    case expr @ App(DepApp(take(), n: Nat), App(DepApp(drop(), m: Nat), in)) =>
+    case expr @ App(DepApp(NatKind, take(), n: Nat), App(DepApp(NatKind, drop(), m: Nat), in)) =>
       Success(app(drop(m), app(take(n+m), preserveType(in))) !: expr.t)
   }
 
   def takeBeforeSlide: Strategy[Rise] = `slide n m >> take t -> take (m * (t - 1) + n) >> slide n m`
   @rule def `slide n m >> take t -> take (m * (t - 1) + n) >> slide n m`: Strategy[Rise] = {
-    case expr @ App(DepApp(take(), t: Nat), App(DepApp(DepApp(slide(), n: Nat), m: Nat), in)) =>
+    case expr @ App(DepApp(NatKind, take(), t: Nat), App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), m: Nat), in)) =>
       Success(app(slide(n)(m), take(m * (t - 1) + n)(in)) !: expr.t)
   }
 
   def dropBeforeSlide: Strategy[Rise] = `slide n m >> drop d -> drop (d * m) >> slide n m`
   @rule def `slide n m >> drop d -> drop (d * m) >> slide n m`: Strategy[Rise] = {
-    case expr @ App(DepApp(drop(), d: Nat), App(DepApp(DepApp(slide(), n: Nat), m: Nat), in)) =>
+    case expr @ App(DepApp(NatKind, drop(), d: Nat), App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), m: Nat), in)) =>
       Success(app(slide(n)(m), drop(d * m)(in)) !: expr.t)
   }
 
   // slide n m >> padEmpty p -> padEmpty (p * m) >> slide n m
   @rule def padEmptyBeforeSlide: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), p: Nat),
-      App(DepApp(DepApp(slide(), n: Nat), m: Nat), in)
-    ) =>
+    case e @ App(DepApp(NatKind, padEmpty(), p: Nat), App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), m: Nat), in) ) =>
       Success(slide(n)(m)(padEmpty(p * m)(in)) !: e.t)
   }
 
   // map f >> padEmpty n -> padEmpty n >> map f
   @rule def padEmptyBeforeMap: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), n: Nat), App(App(map(), f), in)) =>
+    case e @ App(DepApp(NatKind, padEmpty(), n: Nat), App(App(map(), f), in)) =>
       Success(map(f)(padEmpty(n)(in)) !: e.t)
   }
 
   // transpose >> padEmpty n -> map (padEmpty n) >> transpose
   @rule def padEmptyBeforeTranspose: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), n: Nat), App(transpose(), in)) =>
+    case e @ App(DepApp(NatKind, padEmpty(), n: Nat), App(transpose(), in)) =>
       Success(transpose(map(padEmpty(n))(in)) !: e.t)
   }
 
   // padEmpty n (zip a b) -> zip (padEmpty n a) (padEmpty n b)
   @rule def padEmptyInsideZip: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), n: Nat), App(App(zip(), a), b)) =>
+    case e @ App(DepApp(NatKind, padEmpty(), n: Nat), App(App(zip(), a), b)) =>
       Success(zip(padEmpty(n)(a))(padEmpty(n)(b)) !: e.t)
   }
 
@@ -209,7 +207,7 @@ object movement {
   // zip (fst e) (snd e) |> padEmpty n ->
   // (mapFst padEmpty n) (mapSnd padEmpty n) |> fun(p => zip (fst p) (snd(p))
   @rule def padEmptyBeforeZip: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), n: Nat),
+    case e @ App(DepApp(NatKind, padEmpty(), n: Nat),
       App(App(zip(), App(fst(), e1)), App(snd(), e2)))
     if e1 =~= e2 =>
       Success((preserveType(e1) |>
@@ -282,15 +280,15 @@ object movement {
 
   def slideBeforeSplit: Strategy[Rise] = `slide(n)(s) >> split(k) -> slide(k+n-s)(k) >> map(slide(n)(s))`
   @rule def `slide(n)(s) >> split(k) -> slide(k+n-s)(k) >> map(slide(n)(s))`: Strategy[Rise] = {
-    case e@App(DepApp(split(), k: Nat), App(DepApp(DepApp(slide(), n: Nat), s: Nat), y)) =>
+    case e@App(DepApp(NatKind, split(), k: Nat), App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), s: Nat), y)) =>
       Success((preserveType(y) |> slide(k + n - s)(k) |> map(slide(n)(s))) !: e.t)
   }
 
   // TODO: what if s != 1?
   // slide(n)(s=1) >> slide(m)(k) -> slide(m+n-1)(k) >> map(slide(n)(1))
   @rule def slideBeforeSlide: Strategy[Rise] = {
-    case e@App(DepApp(DepApp(slide(), m: Nat), k: Nat),
-            App(DepApp(DepApp(slide(), n: Nat), s: Nat), in)
+    case e@App(DepApp(NatKind, DepApp(NatKind, slide(), m: Nat), k: Nat),
+            App(DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), s: Nat), in)
          ) if s == (1: Nat) =>
       Success((preserveType(in) |> slide(m+n-s)(k) |> map(slide(n)(s))) !: e.t)
   }

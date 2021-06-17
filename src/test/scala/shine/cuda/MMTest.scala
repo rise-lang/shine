@@ -98,7 +98,7 @@ class MMTest extends test_util.TestWithCUDA {
 
     //Kernel
     val simpleMatMulTile =
-      DepLambda[NatKind](k)(
+      DepLambda(NatKind, k)(
         Lambda[ExpType, FunType[ExpType, ExpType]](matrixATile,
           Lambda[ExpType, ExpType](matrixBTile,
             AsMatrix(mTile, nTile, kTile, f32,
@@ -196,9 +196,9 @@ class MMTest extends test_util.TestWithCUDA {
 
     //Kernel
     val simpleMatMul =
-      DepLambda[NatKind](m)(
-        DepLambda[NatKind](n)(
-          DepLambda[NatKind](k)(
+      DepLambda(NatKind, m)(
+        DepLambda(NatKind, n)(
+          DepLambda(NatKind, k)(
             //Input: matrixA
             Lambda[ExpType, FunType[ExpType, ExpType]](matrixA,
               //And matrixB

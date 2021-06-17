@@ -26,21 +26,19 @@ object λ extends funDef
 
 object nFun {
   def apply[T <: PhraseType](f: NatIdentifier => Phrase[T],
-                             range: arithexpr.arithmetic.Range): DepLambda[NatKind, T] = {
+                             range: arithexpr.arithmetic.Range): DepLambda[Nat, NatIdentifier, T] = {
     val x = NatIdentifier(freshName("n"), range)
-    DepLambda[NatKind, T](x, f(x))
+    DepLambda(NatKind, x, f(x))
   }
 }
 
 trait depFunDef {
-  def apply[K <: Kind](): Object {
-    def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T]
+  def apply[T, I <: Kind.Identifier](kind: Kind[T, I]): Object {
+    def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U]
   } = new {
-    def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T] = {
-      val x = w.makeIdentifier()
-      DepLambda(x, f(x))
+    def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U] = {
+      val x = kind.makeIdentifier
+      DepLambda(kind, x, f(x))
     }
   }
 }

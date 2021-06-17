@@ -7,16 +7,16 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
-final case class ParForNat(level: shine.OpenCL.ParallelismLevel, dim: Int, unroll: Boolean, prefix: String)(val init: Nat, val n: Nat, val step: Nat, val ft: NatToData, val out: Phrase[AccType], val body: Phrase[DepFunType[NatKind, FunType[AccType, CommType]]]) extends CommandPrimitive {
+final case class ParForNat(level: shine.OpenCL.ParallelismLevel, dim: Int, unroll: Boolean, prefix: String)(val init: Nat, val n: Nat, val step: Nat, val ft: NatToData, val out: Phrase[AccType], val body: Phrase[DepFunType[NatIdentifier, FunType[AccType, CommType]]]) extends CommandPrimitive {
   assert {
     out :: accT(DepArrayType(n, ft))
     body :: ({
       val i = body.t.x
-      DepFunType[NatKind, PhraseType](i, FunType(accT(NatToDataApply(ft, i)), comm))
+      DepFunType(NatKind, i, FunType(accT(NatToDataApply(ft, i)), comm))
     })
     true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): ParForNat = new ParForNat(level, dim, unroll, prefix)(v.nat(init), v.nat(n), v.nat(step), v.natToData(ft), VisitAndRebuild(out, v), VisitAndRebuild(body, v))
-  def unwrap: (Nat, Nat, Nat, NatToData, Phrase[AccType], Phrase[DepFunType[NatKind, FunType[AccType, CommType]]]) = (init, n, step, ft, out, body)
+  def unwrap: (Nat, Nat, Nat, NatToData, Phrase[AccType], Phrase[DepFunType[NatIdentifier, FunType[AccType, CommType]]]) = (init, n, step, ft, out, body)
 }

@@ -177,27 +177,27 @@ import arithexpr.arithmetic._
       case rise.Type.AST.VariadicDepFunType(n, ids, kind, t) =>
         // variadic dependent function type, e.g.:  n*((ids: kind) ->) t
         // generates:
-        //    val ids = Seq.fill(n)(DataTypeIdentifier(freshName("dt"), isExplicit = true))
+        //    val ids = Seq.fill(n)(DataTypeIdentifier(freshName("dt")))
         //    ids.foldRight(t){ case (id, t) => DepFunType[DataKind](id, t) }
         // to represent n-many dependent function types: (id0: kind) -> (id1: kind) -> ... -> t
-        val (createIds, typeName) = kind match {
+        val (createIds, kindName) = kind match {
           case AST.Data =>
-            (q"""DataTypeIdentifier(freshName("dt"), isExplicit = true)""", Type.Name("DataKind"))
+            (q"""DataTypeIdentifier(freshName("dt"))""", Term.Name("DataKind"))
           case AST.Address =>
-            (q"""AddressSpaceIdentifier(freshName("a"), isExplicit = true)""", Type.Name("AddressSpaceKind"))
+            (q"""AddressSpaceIdentifier(freshName("a"))""", Term.Name("AddressSpaceKind"))
           case AST.Nat2Nat =>
-            (q"""NatToNatIdentifier(freshName("n2n"), isExplicit = true)""", Type.Name("NatToNatKind"))
+            (q"""NatToNatIdentifier(freshName("n2n"))""", Term.Name("NatToNatKind"))
           case AST.Nat2Data =>
-            (q"""NatToDataIdentifier(freshName("n2d"), isExplicit = true)""", Type.Name("NatToDataKind"))
+            (q"""NatToDataIdentifier(freshName("n2d"))""", Term.Name("NatToDataKind"))
           case AST.Nat =>
-            (q"""NatIdentifier(freshName("n"), isExplicit = true)""", Type.Name("NatKind"))
+            (q"""NatIdentifier(freshName("n"))""", Term.Name("NatKind"))
           case AST.Fragment => throw new Exception("No support for Fragment Kind yet")
           case AST.MatrixLayout => throw new Exception("No support for Matrix Layout Kind yet")
         }
         q"""{
             val ${Pat.Var(Term.Name(ids.name))} = Seq.fill(${Term.Name(n.name)})($createIds)
             ${Term.Name(ids.name)}.foldRight(${generateTypeScheme(t)}: Type) {
-              case (id, t) =>   DepFunType[$typeName, Type](id, t)
+              case (id, t) =>   DepFunType($kindName, id, t)
             }
          }"""
       case _ => generateDataType(typeAST)

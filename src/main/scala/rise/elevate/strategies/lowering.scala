@@ -33,10 +33,10 @@ object lowering {
   def insert(expr: Rise): Strategy[Rise] = _ => Success(expr)
   def extract(what: Strategy[Rise]): Strategy[Rise] = (expr: Rise) => {
     what(expr).flatMapFailure(_ => expr match {
-      case App(f,e)        => extract(what)(f).flatMapFailure(_ => extract(what)(e))
-      case Lambda(x, e)    => extract(what)(x).flatMapFailure(_ => extract(what)(e))
-      case DepLambda(_, e) => extract(what)(e)
-      case DepApp(_, _)       => Failure(extract(what))
+      case App(f,e)           => extract(what)(f).flatMapFailure(_ => extract(what)(e))
+      case Lambda(x, e)       => extract(what)(x).flatMapFailure(_ => extract(what)(e))
+      case DepLambda(_, _, e) => extract(what)(e)
+      case DepApp(_, _, _)    => Failure(extract(what))
       case _: Identifier      => Failure(extract(what))
       case _: Literal         => Failure(extract(what))
       case _: TypeAnnotation  => throw new Exception("Type annotations should be gone.")

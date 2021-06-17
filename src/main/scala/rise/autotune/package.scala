@@ -46,9 +46,9 @@ package object autotune {
   // should we allow tuning params to be substituted during type inference?
   // this could allow to restrict the search space at compile time
   def tuningParam[A](name: String, w: NatFunctionWrapper[A]): A =
-    w.f(NatIdentifier(name, RangeUnknown, isExplicit = true, isTuningParam = true))
+    w.f(TuningParameter(name, RangeUnknown))
   def tuningParam[A](name: String, r: arithexpr.arithmetic.Range, w: NatFunctionWrapper[A]): A =
-    w.f(NatIdentifier(name, r, isExplicit = true, isTuningParam = true))
+    w.f(TuningParameter(name, r))
 
   // main search method using custom tuner
   def search(tuner:Tuner)(e:Expr): TuningResult = {
@@ -81,7 +81,7 @@ package object autotune {
     // compute function value as result for hypermapper
     val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
       val parametersValuesMap = header.zip(parametersValues).map { case (h, p) =>
-        NatIdentifier(h, isExplicit = true) -> (p.toInt: Nat)
+        NatIdentifier(h) -> (p.toInt: Nat)
       }.toMap
 
 
@@ -186,19 +186,7 @@ package object autotune {
       case l@Lambda(x,e) =>
         Lambda(x, wrapOclRun(localSize, globalSize)(e))(l.t)
       // depFun(x => e)
-      case dl@DepLambda(x, e) =>
-        x match {
-          case n: NatIdentifier =>
-            DepLambda[NatKind](n, wrapOclRun(localSize, globalSize)(e))(dl.t)
-          case dt: DataTypeIdentifier =>
-            DepLambda[DataKind](dt, wrapOclRun(localSize, globalSize)(e))(dl.t)
-          case a: AddressSpaceIdentifier =>
-            DepLambda[AddressSpaceKind](a, wrapOclRun(localSize, globalSize)(e))(dl.t)
-          case n2n: NatToNatIdentifier =>
-            DepLambda[NatToNatKind](n2n, wrapOclRun(localSize, globalSize)(e))(dl.t)
-          case n2d: NatToDataIdentifier =>
-            DepLambda[NatToDataKind](n2d, wrapOclRun(localSize, globalSize)(e))(dl.t)
-        }
+      case dl@DepLambda(kind, x, e) => DepLambda(kind, x, wrapOclRun(localSize, globalSize)(e))(dl.t)
       case e => oclRun(localSize, globalSize)(e)
     }
   }
@@ -228,7 +216,7 @@ package object autotune {
     traverse.traverse(e, new traverse.PureTraversal {
       override def nat: Nat => monads.Pure[Nat] = n =>
         return_(n.visitAndRebuild({
-          case n: NatIdentifier if n.isTuningParam =>
+          case n@TuningParameter() =>
             params += n
             n
           case ae => ae
@@ -241,8 +229,8 @@ package object autotune {
     @tailrec
     def iter(e: Expr, inputs: Set[NatIdentifier]): Set[NatIdentifier] = {
       e match {
-        case DepLambda(x: NatIdentifier, e) => iter(e, inputs + x)
-        case DepLambda(_, e) => iter(e, inputs)
+        case DepLambda(NatKind, x: NatIdentifier, e) => iter(e, inputs + x)
+        case DepLambda(_, _, e) => iter(e, inputs)
         case Lambda(_, e) => iter(e, inputs)
         case _ => inputs
       }
@@ -303,7 +291,7 @@ package object autotune {
     traverse.traverse(e, new traverse.PureTraversal {
       override def expr: Expr => monads.Pure[Expr] = { e =>
         e match {
-          case DepApp(DepApp(DepApp(DepApp(DepApp(DepApp(
+          case DepApp(NatKind, DepApp(NatKind, DepApp(NatKind, DepApp(NatKind, DepApp(NatKind, DepApp(NatKind,
             rise.openCL.primitives.oclRunPrimitive(),
             ls0: Nat), ls1: Nat), ls2: Nat),
             gs0: Nat), gs1: Nat), gs2: Nat)
@@ -527,7 +515,7 @@ package object autotune {
           // don't use constraints
 
           val parameterEntry =
-            s"""   "${elem.name}" : {
+            s"""   "${TuningParameterName(elem)}" : {
                |       "parameter_type" : "integer",
                |       "values" : ${parameterRange}
                |   },

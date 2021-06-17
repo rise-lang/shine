@@ -1,5 +1,6 @@
 package rise.eqsat
 
+import rise.core.types.Kind.{IDataType, INat, IType}
 import rise.core.types.TypePlaceholder
 import rise.{core => rc}
 import rise.core.{types => rct}
@@ -9,18 +10,18 @@ object NamedRewrite {
   def init(name: String,
            rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern)
           ): Rewrite[DefaultAnalysisData] = {
-    import rise.core.DSL.infer.{preservingWithEnv, collectFreeEnv}
+    import rise.core.DSL.infer
     import arithexpr.{arithmetic => ae}
 
     val (lhs, rhs) = rule
-    val untypedFreeV = collectFreeEnv(lhs).map { case (name, t) =>
+    val untypedFreeV = infer.collectFreeEnv(lhs).map { case (name, t) =>
       assert(t == rct.TypePlaceholder)
       name -> rct.TypeIdentifier("t" + name)
     }
-    val typedLhs = preservingWithEnv(lhs, untypedFreeV, Set())
-    val freeV = collectFreeEnv(typedLhs)
-    val (_, freeT) = rise.core.IsClosedForm.freeVars(typedLhs)
-    val typedRhs = preservingWithEnv(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
+    val typedLhs = infer(lhs, untypedFreeV, Set())
+    val freeV = infer.collectFreeEnv(typedLhs)
+    val freeT = rise.core.IsClosedForm.freeVars(typedLhs)._2.set
+    val typedRhs = infer(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
 
     trait PatVarStatus
     case object Unknown extends PatVarStatus
@@ -73,24 +74,24 @@ object NamedRewrite {
         //       lam(x : xt, e : et) : xt -> et
         case rc.Lambda(x, e) =>
           PatternNode(Lambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(x: rct.NatIdentifier, e) =>
+        case rc.DepLambda(rct.NatKind, x: rct.NatIdentifier, e) =>
           PatternNode(NatLambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(x: rct.DataTypeIdentifier, e) =>
+        case rc.DepLambda(rct.DataKind, x: rct.DataTypeIdentifier, e) =>
           PatternNode(DataLambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(_, _) => ???
+        case rc.DepLambda(_, _, _) => ???
 
         // note: we do not match for the type of applied functions, as we can always infer it:
         //       app(f : et -> at, e : et) : at
         case rc.App(f, e) =>
           PatternNode(App(makePat(f, bound, isRhs, matchType = false), makePat(e, bound, isRhs)))
-        case rc.DepApp(f, x: rct.Nat) =>
+        case rc.DepApp(rct.NatKind, f, x: rct.Nat) =>
           PatternNode(NatApp(
             makePat(f, bound, isRhs, matchType = false), makeNPat(x, bound, isRhs)))
-        case rc.DepApp(f, x: rct.DataType) =>
+        case rc.DepApp(rct.DataKind, f, x: rct.DataType) =>
           PatternNode(DataApp(
             makePat(f, bound, isRhs, matchType = false), makeDTPat(x, bound, isRhs)))
 
-        case rc.DepApp(_, _) => ???
+        case rc.DepApp(_, _, _) => ???
         case rc.Literal(d) => PatternNode(Literal(d))
         // note: we set the primitive type to a place holder here,
         // because we do not want type information at the node level
@@ -99,7 +100,7 @@ object NamedRewrite {
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
-        case i: rct.NatIdentifier if freeT(i) =>
+        case i: rct.NatIdentifier if freeT(INat(i)) =>
           makePatVar(i.name, bound.nat.size, natPatVars,
             NatPatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
@@ -127,7 +128,7 @@ object NamedRewrite {
 
     def makeDTPat(dt: rct.DataType, bound: Expr.Bound, isRhs: Boolean): DataTypePattern =
       dt match {
-        case i: rct.DataTypeIdentifier if freeT(i) =>
+        case i: rct.DataTypeIdentifier if freeT(IDataType(i)) =>
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             dataTypePatVars, DataTypePatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.DataTypeIdentifier =>
@@ -144,7 +145,7 @@ object NamedRewrite {
           DataTypePatternNode(PairType(makeDTPat(dt1, bound, isRhs), makeDTPat(dt2, bound, isRhs)))
         case rct.ArrayType(s, et) =>
           DataTypePatternNode(ArrayType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
-        case _: rct.DepArrayType | _: rct.DepPairType[_] |
+        case _: rct.DepArrayType | _: rct.DepPairType[_, _, _] |
              _: rct.NatToDataApply | _: rct.FragmentType =>
           throw new Exception(s"did not expect $dt")
       }
@@ -154,13 +155,13 @@ object NamedRewrite {
         case dt: rct.DataType => makeDTPat(dt, bound, isRhs)
         case rct.FunType(a, b) =>
           TypePatternNode(FunType(makeTPat(a, bound, isRhs), makeTPat(b, bound, isRhs)))
-        case rct.DepFunType(x: rct.NatIdentifier, t) =>
+        case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) =>
           TypePatternNode(NatFunType(makeTPat(t, bound + x, isRhs)))
-        case rct.DepFunType(x: rct.DataTypeIdentifier, t) =>
+        case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) =>
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
-        case rct.DepFunType(_, _) => ???
+        case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>
-          assert(freeT(i))
+          assert(freeT(IType(i)))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             typePatVars, TypePatternVar, if (isRhs) { Unknown } else { Known })
         case rct.TypePlaceholder =>
@@ -425,10 +426,10 @@ object NamedRewriteDSL {
   def lam(name: String, e: Pattern): Pattern =
     rc.Lambda(rc.Identifier(name)(TypePlaceholder), e)(TypePlaceholder)
   def nApp(f: Pattern, x: NatPattern): Pattern =
-    rc.DepApp[rct.NatKind](f, x)(TypePlaceholder)
+    rc.DepApp(rct.NatKind, f, x)(TypePlaceholder)
   def nLam(name: String, e: Pattern): Pattern = {
-    val n = rct.NatIdentifier(name, isExplicit = true)
-    rc.DepLambda[rct.NatKind](n, e)(TypePlaceholder)
+    val n = rct.NatIdentifier(name)
+    rc.DepLambda(rct.NatKind, n, e)(TypePlaceholder)
   }
   def l(d: rc.semantics.Data): Pattern = rc.Literal(d)
 
@@ -447,14 +448,14 @@ object NamedRewriteDSL {
   def take: Pattern = rcp.take.primitive
 
   implicit def placeholderAsNatPattern(p: `_`.type): NatPattern =
-    rct.NatIdentifier(rc.freshName("n"), isExplicit = false)
+    rct.NatIdentifier(rc.freshName("n"))
   implicit def stringAsNatPattern(name: String): NatPattern =
-    rct.NatIdentifier(name, isExplicit = false)
+    rct.NatIdentifier(name)
 
   implicit def placeholderAsDataTypePattern(p: `_`.type): DataTypePattern =
-    rct.DataTypeIdentifier(rc.freshName("dt"), isExplicit = false)
+    rct.DataTypeIdentifier(rc.freshName("dt"))
   implicit def stringAsDataTypePattern(name: String): DataTypePattern =
-    rct.DataTypeIdentifier(name, isExplicit = false)
+    rct.DataTypeIdentifier(name)
 
   val int: DataTypePattern = rct.int
   val f32: DataTypePattern = rct.f32
