@@ -106,11 +106,18 @@ package object autotune {
       }
     }
 
-
-    // todo make sure location can be relative path (necessary?)
     val hypermapperBinary = tuner.hierarchicalHM match {
       case Some(path) => os.Path.apply(path)
-      case None => os.Path.expandUser("~") / ".local" / "bin" / "hypermapper"
+      case None => {
+        // todo change this to environment variable
+
+        // check, where hypermapper was installed
+        val hypermapperBin = os.Path.expandUser("~") / ".local" / "bin" / "hypermapper"
+        os.isFile(hypermapperBin) match {
+          case true => hypermapperBin
+          case false => os.Path.apply("/usr/local/bin/hypermapper")
+        }
+      }
     }
 
     // todo make sure filename can be relative path
@@ -125,7 +132,8 @@ package object autotune {
     assert( os.isFile(hypermapperBinary) && os.isFile(configFile) )
 
     // spawn hypermapper process
-    val hypermapper = os.proc("python", hypermapperBinary, configFile).spawn()
+    val hypermapper = os.proc(hypermapperBinary, configFile).spawn()
+//    val hypermapper = os.proc("python", hypermapperBinary, configFile).spawn()
 
     // create output Seq
     var samples = new ListBuffer[Sample]()
