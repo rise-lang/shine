@@ -130,11 +130,11 @@ package object autotune {
     println("configFile: \n " + configFile)
     println("HMBinary: \n " + hypermapperBinary)
 
-    assert(os.isFile(hypermapperBinary))
-    println("hypermapper found")
+//    assert(os.isFile(hypermapperBinary))
+//    println("hypermapper found")
 
-    assert(os.isFile(configFile))
-    println("config file found")
+//    assert(os.isFile(configFile))
+//    println("config file found")
 
     // spawn hypermapper process
     val hypermapper = os.proc(hypermapperBinary, configFile).spawn()
