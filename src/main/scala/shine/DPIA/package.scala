@@ -16,7 +16,7 @@ package object DPIA {
   }
 
   type Nat = ArithExpr
-  type NatIdentifier = NamedVar with Kind.Identifier
+  type NatIdentifier = NamedVar
 
   object Nat {
     def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N =
@@ -24,8 +24,8 @@ package object DPIA {
   }
 
   object NatIdentifier {
-    def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
-    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
+    def apply(name: String): NatIdentifier = NamedVar(name)
+    def apply(name: String, range: Range): NatIdentifier = NamedVar(name, range)
   }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia
