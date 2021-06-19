@@ -9,7 +9,7 @@ sealed trait Kind[+T, +I, +KI <: Kind.Identifier] {
 }
 
 object Kind {
-  trait Identifier { def name: String }
+  sealed trait Identifier { def name: String }
   case class IPhraseType(id : Identifier) extends Identifier { def name : String = id.name }
   case class IDataType(id : DataTypeIdentifier) extends Identifier { def name : String = id.name }
   case class INat(id : NatIdentifier) extends Identifier { def name : String = id.name }
