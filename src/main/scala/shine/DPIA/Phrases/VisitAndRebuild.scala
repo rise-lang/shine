@@ -123,7 +123,7 @@ object VisitAndRebuild {
 
           case Literal(d) => Literal(d)
 
-          case Natural(n) => Natural(n)
+          case Natural(n) => Natural(v.nat(n))
 
           case UnaryOp(op, x) => UnaryOp(op, apply(x, v))
 
