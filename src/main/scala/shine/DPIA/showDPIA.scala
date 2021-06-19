@@ -55,6 +55,9 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case TakeAcc(n, _, _, e) => s"take ${showNat(n)} ${showTypedPhrase(e)}"
     case f : For => s"for ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
     case f : ForNat => s"forNat ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
+    case IterateStream(_, _, _, f, array) => s"iterate ${showPhrase(array)}\n${tab(showPhrase(f))}"
+    case RotateValues(_,_,_,wrt,in) => s"rotate ${showPhrase(in)}\n${tab(showPhrase(wrt))}"
+    case f : ReduceSeq => s"reduce ${showPhrase(f.array)} ${showPhrase(f.init)}\n${tab(showPhrase(f.f))}"
     case p => p.toString
   }
 
