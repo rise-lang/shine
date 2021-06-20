@@ -42,7 +42,7 @@ object fromRise {
 
     case r.DepLambda(kind, x, e) => x match {
       case ni: rt.NatIdentifier =>
-        DepLambda(NatKind, natIdentifier(ni))(expression(e, ptMap))
+        DepLambda(NatKind, ni)(expression(e, ptMap))
       case dti: rt.DataTypeIdentifier =>
         DepLambda(DataKind, dataTypeIdentifier(dti))(expression(e, ptMap))
       case addri: rt.AddressSpaceIdentifier =>
@@ -964,7 +964,7 @@ object fromRise {
     case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
     case rt.DepPairType(_, x, t) =>
       x match {
-      case x:rt.NatIdentifier => DepPairType(natIdentifier(x), dataType(t))
+      case x:rt.NatIdentifier => DepPairType(x, dataType(t))
       case _ => ???
     }
     case f: rt.FragmentType =>
@@ -1009,26 +1009,18 @@ object fromRise {
 
   def ntd(ntd: rt.NatToData): NatToData= ntd match {
     case rt.NatToDataLambda(n, body) =>
-      NatToDataLambda(natIdentifier(n), dataType(body))
+      NatToDataLambda(n, dataType(body))
     case rt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
   }
 
   def ntn(ntn: rt.NatToNat): NatToNat= ntn match {
-    case rt.NatToNatLambda(n, body) => NatToNatLambda(natIdentifier(n), body)
+    case rt.NatToNatLambda(n, body) => NatToNatLambda(n, body)
     case rt.NatToNatIdentifier(x) => NatToNatIdentifier(x)
   }
 
-  def dataTypeIdentifier(dt: rt.DataTypeIdentifier): DataTypeIdentifier =
-    DataTypeIdentifier(dt.name)
-  def natIdentifier(n: rt.NatIdentifier): NatIdentifier =
-    NatIdentifier(n.name, n.range)
-  def addressSpaceIdentifier(
-    a: rt.AddressSpaceIdentifier
-  ): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
-  def natToNatIdentifier(n: rt.NatToNatIdentifier): NatToNatIdentifier =
-    NatToNatIdentifier(n.name)
-  def natToDataIdentifier(n: rt.NatToDataIdentifier): NatToDataIdentifier =
-    NatToDataIdentifier(n.name)
-  def accessTypeIdentifier(): AccessTypeIdentifier =
-    AccessTypeIdentifier(freshName("access"))
+  def dataTypeIdentifier(dt: rt.DataTypeIdentifier): DataTypeIdentifier = DataTypeIdentifier(dt.name)
+  def addressSpaceIdentifier(a: rt.AddressSpaceIdentifier): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
+  def natToNatIdentifier(n: rt.NatToNatIdentifier): NatToNatIdentifier = NatToNatIdentifier(n.name)
+  def natToDataIdentifier(n: rt.NatToDataIdentifier): NatToDataIdentifier = NatToDataIdentifier(n.name)
+  def accessTypeIdentifier(): AccessTypeIdentifier = AccessTypeIdentifier(freshName("access"))
 }
