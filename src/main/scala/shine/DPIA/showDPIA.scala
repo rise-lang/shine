@@ -19,7 +19,6 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   def tab : String => String =
     _.linesIterator.map(l => if (l.isEmpty) l else TAB + l).mkString("\n")
 
-  def showTypeId : Kind.Identifier => String = _.name
   def showKind : Kind[_, _] => String = _.name
   def showUnary : Operators.Unary.Value => String = _.toString
   def showBinary : Operators.Binary.Value => String = _.toString
@@ -56,6 +55,20 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case f : For => s"for ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
     case f : ForNat => s"forNat ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
     case IterateStream(_, _, _, f, array) => s"iterate ${showPhrase(array)}\n${tab(showPhrase(f))}"
+    case Map(_, _, _, _, f, array) => s"map ${showPhrase(array)} \n ${showPhrase(f)}"
+    case f : MapSeq => s"map ${showPhrase(f.array)} \n ${showPhrase(f.f)}"
+    case Join(_, _, _, _, array) => s"join ${showPhrase(array)}"
+    case Fst(_, _, p) => s"fst ${showPhrase(p)}"
+    case Snd(_, _, p) => s"snd ${showPhrase(p)}"
+    case Transpose(_, _, _, _, array) => s"transpose ${showPhrase(array)}"
+    case TransposeAcc(_, _, _, array) => s"transpose ${showPhrase(array)}"
+    case MakePair(_, _, _, fst, snd) => s"makePair ${showPhrase(fst)} ${showPhrase(snd)}"
+    case MapRead(_, _, _, f, array) => s"map ${showPhrase(array)} ${showPhrase(f)}"
+    case Slide(_, sz, _, _, array) => s"slide ${showNat(sz)} ${showPhrase(array)}"
+    case f : MakeArray => s"makeArray ${f.elements.map(showPhrase).mkString(",")}"
+    case Generate(n, _, f) => s"generate ${showNat(n)} ${showPhrase(f)}"
+    case Zip(_, _, _, _, e1, e2) => s"zip ${showPhrase(e1)} ${showPhrase(e2)}"
+    case Cast(_, dt2, e) => s"cast ${showKindedType(DataKind, dt2)} ${showPhrase(e)}"
     case RotateValues(_,_,_,wrt,in) => s"rotate ${showPhrase(in)}\n${tab(showPhrase(wrt))}"
     case f : ReduceSeq => s"reduce ${showPhrase(f.array)} ${showPhrase(f.init)}\n${tab(showPhrase(f.f))}"
     case p => p.toString
@@ -75,10 +88,10 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case Apply(fun, arg) => s"${showTypedPhrase(fun)} ${showTypedPhrase(arg)}"
     case DepLambda(kind, x, body) => s"Λ${showKindedType(kind, x)}.\n${tab(showTypedPhrase(body))}\n"
     case DepApply(kind, fun, arg) => s"${showTypedPhrase(fun)} ${showKindedType(kind, arg)}"
-    case LetNat(binder, defn, body) => s"let ${showTypeId(binder.id)} = ${showTypedPhrase(defn)} in \n${tab(showTypedPhrase(body))}\n"
+    case LetNat(binder, defn, body) => s"let ${showKindedType(NatKind, binder.id)} = ${showTypedPhrase(defn)} in \n${tab(showTypedPhrase(body))}\n"
     case PhrasePair(fst, snd) => s"${showTypedPhrase(fst)}, ${showTypedPhrase(snd)}"
-    case Proj1(pair) => s"fst ${showTypedPhrase(pair)}"
-    case Proj2(pair) => s"snd ${showTypedPhrase(pair)}"
+    case Proj1(pair) => s"proj1 ${showTypedPhrase(pair)}"
+    case Proj2(pair) => s"proj2 ${showTypedPhrase(pair)}"
     case IfThenElse(cond, thenP, elseP) => s"if ${showTypedPhrase(cond)} then ${showTypedPhrase(thenP)} else ${showTypedPhrase(elseP)}"
     case UnaryOp(op, p) => s"${showUnary(op)} ${showTypedPhrase(p)}"
     case BinOp(op, lhs, rhs) => s"${showTypedPhrase(lhs)} ${showBinary(op)} ${showTypedPhrase(rhs)}"
