@@ -16,9 +16,10 @@ class Reorder extends test_util.Tests {
     // rules.combinatory.compositionRightId, //.directed(),
     rules.combinatory.mapFusion,
     rules.combinatory.mapFission,
-    rules.combinatory.transposePairAfter,
-    rules.combinatory.mapMapFBeforeTranspose,
-    rules.combinatory.mapMapFBeforeTranspose1,
+    rules.combinatory.transposeAroundMapMapF,
+    // rules.combinatory.transposePairAfter,
+    // rules.combinatory.mapMapFBeforeTranspose,
+    // rules.combinatory.mapMapFBeforeTranspose1,
     // rules.combinatory.mapMapFBeforeTranspose2,
   )
 
@@ -69,6 +70,7 @@ class Reorder extends test_util.Tests {
 
     // ~1.5s on laptop with both assoc rules
     // ~750ms on laptop with only one assoc rule
+    // ~250ms on laptop with transposeAroundMapMapF
     ProveEquiv.init()
       .withFilter(ASTSizePredicate(50))
       .runCNF(expr, Seq(
@@ -102,7 +104,7 @@ class Reorder extends test_util.Tests {
       **(T) o *(T) o **(T) o T o *(T) o **(T))
 
     ProveEquiv.init()
-      .withFilter(ASTSizePredicate(150))
+      //.withFilter(ASTSizePredicate(100))
       /*.withRunnerTransform(r => r
         .withIterationLimit(5))
       .withEndRules(Seq(

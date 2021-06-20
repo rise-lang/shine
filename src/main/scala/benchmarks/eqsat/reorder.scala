@@ -9,16 +9,19 @@ import rise.core.types._
 
 object reorder {
   private val reorderRules = Seq(
-    rules.combinatory.compositionAssoc1,
+    // rules.combinatory.compositionAssoc1,
     rules.combinatory.compositionAssoc2,
     //rules.combinatory.compositionIntro.directed(),
     //rules.combinatory.compositionLeftId.directed(),
     //rules.combinatory.compositionRightId.directed(),
-    rules.combinatory.mapFusion,
-    rules.combinatory.mapFission,
-    rules.combinatory.transposePairAfter,
-    rules.combinatory.mapMapFBeforeTranspose,
-    // rules.combinatory.transposeAroundMapMapF
+    // rules.combinatory.mapFusion,
+    // rules.combinatory.mapFission,
+    // rules.combinatory.transposePairAfter,
+    // rules.combinatory.mapMapFBeforeTranspose,
+    // rules.combinatory.mapMapFBeforeTranspose1,
+    rules.combinatory.transposeAroundMapMapF,
+    rules.combinatory.transposeAroundMapMapMapF,
+    rules.combinatory.transposeAroundMapMapMapMapF
   )
 
   private def T: ToBeTyped[Expr] = rise.core.primitives.transpose
@@ -45,7 +48,7 @@ object reorder {
     val gold312 = wrap(f => *(T) o T o ***(f) o T o *(T))
 
     ProveEquiv.init()
-      .withFilter(ASTSizePredicate(35))
+      .withFilter(ASTSizePredicate(50))
       //.bidirectional()
       //.withRunnerTransform(r => r.withIterationLimit(3))
       //.withEndRules(Seq(
@@ -75,7 +78,7 @@ object reorder {
       **(T) o *(T) o **(T) o T o *(T) o **(T)) $ i)
 
     ProveEquiv.init()
-      .withFilter(ASTSizePredicate(100))
+      .withFilter(ASTSizePredicate(80))
       /*
       .withRunnerTransform(r => r.withIterationLimit(5))
       .withEndRules(Seq(
@@ -88,7 +91,12 @@ object reorder {
   def main(args: Array[String]): Unit = {
     val (time3D, _) = util.time(run3D())
     val (time4D, _) = util.time(run4D())
-    println(s"total 3D time: ${util.prettyTime(time3D)}") // ~2s search on i7 desktop
+    // ~1ms search in untyped egg prototype
+    // ~4s search on i7 desktop without ast size filter
+    // ~1s search on i7 desktop with ast size filter
+    // ~0.1s search on i7 desktop with specialized rules
+    println(s"total 3D time: ${util.prettyTime(time3D)}")
+    // ~25s search on i7 with all above
     println(s"total 4D time: ${util.prettyTime(time4D)}")
   }
 }

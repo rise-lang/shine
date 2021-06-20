@@ -111,12 +111,23 @@ class ASTSizePredicate(limit: Int,
       val eclass = egraph.get(id)
       assert(mus == minimumUpstreamSize(id))
 
-      for (n <- eclass.nodes) {
-        val childrenMds = n.children().map { c =>
+      // for (n <- eclass.nodes) {
+      var i = 0
+      while (i < eclass.nodes.size) {
+        val n = eclass.nodes(i)
+
+        val children = n.children().toSeq
+        val childrenMds = children.map { c =>
           minimumDownstreamSize(egraph.get(c))
-        }.toSeq
+        }
         val nodeMds = 1 + childrenMds.sum
-        for ((child, childMds) <- n.children().zip(childrenMds)) {
+
+        // for ((child, childMds) <- n.children().zip(childrenMds)) {
+        var j = 0
+        while (j < children.size) {
+          val child = children(j)
+          val childMds = childrenMds(j)
+
           // the added minimum upstream size for the child is:
           // 1 for the newly constructed node
           // + the minimum downstream size of all the surrounding children
@@ -125,13 +136,17 @@ class ASTSizePredicate(limit: Int,
           // minus the minimum downstream size of the selected child
           val childMus = mus + nodeMds - childMds
           if (minimumUpstreamSize.get(child).forall(childMus < _)) {
-            minimumUpstreamSize.get(child).map(prevChildMus =>
+            minimumUpstreamSize.get(child).foreach(prevChildMus =>
               todo -= ((prevChildMus, child))
             )
             minimumUpstreamSize(child) = childMus
             todo += ((childMus, child))
           }
+
+          j += 1
         }
+
+        i += 1
       }
     }
   }

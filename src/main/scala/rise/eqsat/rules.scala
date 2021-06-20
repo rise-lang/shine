@@ -336,5 +336,17 @@ object rules {
         -->
       (transpose >> app(map, app(map, "f")) >> transpose)
     )
+
+    val transposeAroundMapMapMapF: Rule = NamedRewrite.init("transpose-around-map-map-map-f-cnf",
+      app(map, app(map, app(map, "f")))
+        -->
+      (app(map, transpose) >> app(map, app(map, app(map, "f"))) >> app(map, transpose))
+    )
+
+    val transposeAroundMapMapMapMapF: Rule = NamedRewrite.init("transpose-around-map-map-map-map-f-cnf",
+      app(map, app(map, app(map, app(map, "f"))))
+        -->
+      (app(map, app(map, transpose)) >> app(map, app(map, app(map, app(map, "f")))) >> app(map, app(map, transpose)))
+    )
   }
 }

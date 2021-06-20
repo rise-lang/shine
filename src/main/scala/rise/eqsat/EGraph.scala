@@ -191,9 +191,9 @@ class EGraph[ED, ND, TD](
 
   def rebuild(roots: Seq[EClassId],
               filter: Predicate[ED, ND, TD] = NoPredicate()): Int = {
-    val nUnions = processUnions()
-    val _ = this.filter(filter, roots)
-    val _ = rebuildClasses()
+    val nUnions = util.printTime("process unions", processUnions())
+    val _ = util.printTime("filter", this.filter(filter, roots))
+    val _ = util.printTime("rebuild classes", rebuildClasses())
 
     assert {
       TypeCheck(this)
@@ -207,6 +207,7 @@ class EGraph[ED, ND, TD](
   private def processUnions(): Int = {
     var nUnions = 0
     while (pending.nonEmpty || analysisPending.nonEmpty) {
+      util.printTime("nodes", {
       while (pending.nonEmpty) {
         val (node, eclass) = pending.remove(pending.size - 1)
         val t = get(eclass).t
@@ -220,8 +221,9 @@ class EGraph[ED, ND, TD](
             if (didSomething) nUnions += 1
           case None => ()
         }
-      }
+      }})
 
+      util.printTime("analysis", {
       while (analysisPending.nonEmpty) {
         // note: using .last is really slow, traversing all the map
         val (node, id) = analysisPending.head
@@ -236,7 +238,7 @@ class EGraph[ED, ND, TD](
             analysisPending ++= eclass.parents
             analysis.modify(this, cid)
         }
-      }
+      }})
     }
 
     assert(pending.isEmpty)

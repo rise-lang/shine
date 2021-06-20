@@ -5,6 +5,7 @@ import rise.elevate.tvmGemm
 import ProveEquiv.syntax._
 import rise.eqsat.PredicateDSL._
 
+/*
 object TvmGemm {
   def main(args: Array[String]): Unit = {
     val mm: Expr = tvmGemm.mm
@@ -21,13 +22,13 @@ object TvmGemm {
     ProveEquiv.init()
       .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(100))
       .runCNF(mm, variants, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
-      rules.combinatory.compositionAssoc1,
+      // rules.eta, rules.betaExtract, rules.betaNatExtract,
+      // rules.combinatory.compositionAssoc1,
       rules.combinatory.compositionAssoc2,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionLeftId,
-      rules.combinatory.compositionRightId,
-      rules.combinatory.mapFusion,
+      // rules.combinatory.compositionIntro,
+      // rules.combinatory.compositionLeftId,
+      // rules.combinatory.compositionRightId,
+      // rules.combinatory.mapFusion,
       rules.combinatory.mapFission,
       // rules.combinatory.transposePairAfter,
       // rules.combinatory.mapMapFBeforeTranspose,
@@ -39,6 +40,7 @@ object TvmGemm {
     ))
   }
 }
+*/
 
 class TvmGemm extends test_util.Tests {
   private val proveEquiv = ProveEquiv.init()

@@ -11,17 +11,19 @@ import rise.eqsat.PredicateDSL._
 object tiling {
   private val tileSize = 4
   private val tilingRules = Seq(
-    rules.combinatory.compositionAssoc1,
-    rules.combinatory.compositionAssoc2,
-    rules.combinatory.compositionIntro,
-    rules.combinatory.compositionLeftId,
-    rules.combinatory.compositionRightId,
+    // rules.combinatory.compositionAssoc1,
+    rules.combinatory.compositionAssoc2,//.directed(),
+    // rules.combinatory.compositionIntro,
+    // rules.combinatory.compositionLeftId,
+    // rules.combinatory.compositionRightId,
     rules.combinatory.splitJoin(tileSize),
-    rules.combinatory.mapFusion,
-    rules.combinatory.mapFission,
-    rules.combinatory.transposePairAfter,
-    rules.combinatory.mapMapFBeforeTranspose,
-    // rules.combinatory.transposeAroundMapMapF
+    // rules.combinatory.mapFusion,
+    // rules.combinatory.mapFission,
+    // rules.combinatory.transposePairAfter,
+    // rules.combinatory.mapMapFBeforeTranspose,
+    rules.combinatory.transposeAroundMapMapF,
+    rules.combinatory.transposeAroundMapMapMapF,
+    rules.combinatory.transposeAroundMapMapMapMapF,
   )
 
   private def T: ToBeTyped[Expr] = rise.core.primitives.transpose
@@ -85,6 +87,9 @@ object tiling {
     )
 
     ProveEquiv.init()
+      .withRunnerTransform(r => r
+        .withNodeLimit(10_000_000)
+        .withTimeLimit(java.time.Duration.ofMinutes(10)))
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(80))
       .runCNF(expr, golds, tilingRules)
   }

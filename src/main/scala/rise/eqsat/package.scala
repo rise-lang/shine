@@ -34,10 +34,10 @@ package object eqsat {
     val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
     val id = egraph.addExpr(e)
     Runner.init().run(egraph, NoPredicate(), Seq(
-      rules.eta.directed(),
+      rules.eta,//.directed(),
       // rules.beta, rules.betaNat
-      rules.betaExtract.directed(),
-      rules.betaNatExtract.directed()
+      rules.betaExtract,//.directed(),
+      rules.betaNatExtract,//.directed()
     ), Seq(id))
     val extractor = Extractor.init(egraph, AstSize)
     val (_, normalized) = extractor.findBestOf(id)
@@ -53,9 +53,9 @@ package object eqsat {
       // rules.beta, rules.betaNat,
       // rules.betaExtract.directed(),
       // rules.betaNatExtract.directed(),
-      rules.combinatory.compositionIntro.directed(),
+      rules.combinatory.compositionIntro,//.directed(),
       // rules.combinatory.compositionAssoc1.directed()
-      rules.combinatory.compositionAssoc2.directed(),
+      rules.combinatory.compositionAssoc2,//.directed(),
     ), Seq(id))
     val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     val (_, normalized) = extractor.findBestOf(id)

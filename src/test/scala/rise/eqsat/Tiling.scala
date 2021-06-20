@@ -23,6 +23,7 @@ class Tiling extends test_util.Tests {
     rules.combinatory.mapFission,
     rules.combinatory.transposePairAfter,
     rules.combinatory.mapMapFBeforeTranspose,
+    rules.combinatory.mapMapFBeforeTranspose1,
   )
 
   test("tile 1D") {
