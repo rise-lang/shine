@@ -619,6 +619,9 @@ private class InferAccessAnnotation {
         case ((dt: rt.DataType) ->: _) ->: (fragType: rt.FragmentType) ->: _ =>
           (expT(dt, read) ->: expT(dt, write)) ->: expT(fragType, read) ->: expT(fragType, write)
       }
+
+      case rise.GAP8.primitives.gap8RunPrimitive() =>
+        ???
     }
 
     checkConsistency(p.t, primitiveType)

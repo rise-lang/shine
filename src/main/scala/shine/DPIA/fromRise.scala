@@ -930,6 +930,9 @@ object fromRise {
       case core.reduce() =>
         throw new Exception(s"$p has no implementation")
 
+      case rise.GAP8.primitives.gap8RunPrimitive() =>
+        throw new Exception("To be implemented")
+
       case _ => throw new Exception(s"Missing rule for $p")
     }
   }
