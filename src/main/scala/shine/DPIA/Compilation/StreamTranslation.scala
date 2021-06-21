@@ -26,11 +26,11 @@ object StreamTranslation {
       case DepApply(_, fun, arg) => arg match {
         case a: Nat => str(
           Lifting.liftDependentFunction(
-            fun.asInstanceOf[Phrase[NatIdentifier `()->:` ExpType]])(a)
+            fun.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a)
         )(C)
         case a: DataType => str(
           Lifting.liftDependentFunction(
-            fun.asInstanceOf[Phrase[DataTypeIdentifier `()->:` ExpType]])(a)
+            fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a)
         )(C)
       }
 

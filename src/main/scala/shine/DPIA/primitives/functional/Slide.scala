@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class Slide(val n: Nat, val sz: Nat, val sp: Nat, val dt: DataType, val input: Phrase[ExpType]) extends ExpPrimitive {
   assert {

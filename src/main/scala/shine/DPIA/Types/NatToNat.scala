@@ -44,7 +44,7 @@ object NatToNatLambda {
   }
 }
 
-final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier {
+final case class NatToNatIdentifier(name: String) extends NatToNat {
   override lazy val toString: String = name
 }
 

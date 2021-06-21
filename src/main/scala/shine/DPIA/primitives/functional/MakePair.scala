@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class MakePair(val dt1: DataType, val dt2: DataType, val a: AccessType, val fst: Phrase[ExpType], val snd: Phrase[ExpType]) extends ExpPrimitive {
   assert {

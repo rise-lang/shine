@@ -17,6 +17,6 @@ object AddressSpace {
   //}
 }
 
-final case class AddressSpaceIdentifier(name: String) extends AddressSpace with Kind.Identifier {
+final case class AddressSpaceIdentifier(name: String) extends AddressSpace {
   override def toString: String = name
 }

@@ -28,10 +28,10 @@ object AcceptorTranslation {
       case DepApply(kind, fun, arg) => arg match {
         case a: Nat =>
           acc(Lifting.liftDependentFunction(
-            fun.asInstanceOf[ Phrase[NatIdentifier `()->:` ExpType]])(a))(A)
+            fun.asInstanceOf[ Phrase[`(nat)->:`[ExpType]]])(a))(A)
         case a: DataType =>
           acc(Lifting.liftDependentFunction(
-            fun.asInstanceOf[Phrase[DataTypeIdentifier `()->:` ExpType]])(a))(A)
+            fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a))(A)
       }
 
       case e
