@@ -30,9 +30,9 @@ class FunDef(val name: String,
         splitBodyAndParams(Lifting.liftDependentFunction(f)(a), ps, defs)
       case l: Lambda[ExpType, _]@unchecked =>
         splitBodyAndParams(l.body, l.param +: ps, defs)
-      case ndl: DepLambda[_, _, _] =>
+      case ndl: DepLambda[_, _, _, _] =>
         splitBodyAndParams(ndl.body,
-          Identifier(ndl.x.name, ExpType(int, read)) +: ps, defs)
+          Identifier(Kind.idName(ndl.kind, ndl.x), ExpType(int, read)) +: ps, defs)
       case ln:LetNat[ExpType, _]@unchecked =>
         splitBodyAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
       case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, defs.reverse)

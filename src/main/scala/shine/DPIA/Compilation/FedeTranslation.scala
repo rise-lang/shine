@@ -29,10 +29,10 @@ object FedeTranslation {
       case DepApply(kind, fun, arg) => arg match {
         case a: Nat => fedAcc(env)(
           Lifting.liftDependentFunction(
-            fun.asInstanceOf[Phrase[NatIdentifier `()->:` ExpType]])(a))(C)
+            fun.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a))(C)
         case a: DataType => fedAcc(env)(
           Lifting.liftDependentFunction(
-            fun.asInstanceOf[Phrase[DataTypeIdentifier `()->:` ExpType]])(a))(C)
+            fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a))(C)
       }
 
       case IfThenElse(cond, thenP, elseP) => ???

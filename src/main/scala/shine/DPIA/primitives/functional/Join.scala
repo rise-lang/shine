@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class Join(val n: Nat, val m: Nat, val a: AccessType, val dt: DataType, val array: Phrase[ExpType]) extends ExpPrimitive {
   assert {
