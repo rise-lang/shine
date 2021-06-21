@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class TransposeAcc(val n: Nat, val m: Nat, val dt: DataType, val array: Phrase[AccType]) extends AccPrimitive {
   assert {

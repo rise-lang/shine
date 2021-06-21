@@ -136,9 +136,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Apply(fun, arg) => Lifting.liftFunction(fun).reducing(arg) |> cmd(env)
       case DepApply(kind, fun, arg) => arg match {
         case a: Nat =>
-          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[NatIdentifier `()->:` CommType]])(a) |> cmd(env)
+          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[`(nat)->:`[CommType]]])(a) |> cmd(env)
         case a: DataType =>
-          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[NatIdentifier `()->:` CommType]])(a) |> cmd(env)
+          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[`(nat)->:`[CommType]]])(a) |> cmd(env)
       }
 
       case DMatchI(x, inT, _, f, dPair) =>
@@ -638,7 +638,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case None => error("Parameter missing")
         case Some(Left(param)) => generateInlinedCall(l(param), env, args.tail, cont)
       }
-      case ndl: DepLambda[Nat, NatIdentifier, _]@unchecked => args.headOption match {
+      case ndl: DepLambda[Nat, NatIdentifier, Kind.INat, _]@unchecked => args.headOption match {
         case Some(Right(nat)) => generateInlinedCall(ndl(nat), env, args.tail, cont)
         case None => error("Parameter missing")
         case Some(Left(_)) => error("Expression phrase argument passed but nat expected")

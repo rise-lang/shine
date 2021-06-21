@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class GenerateFragment(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: FragmentKind, val layout: MatrixLayout, val fill: Phrase[ExpType]) extends ExpPrimitive {
   assert {

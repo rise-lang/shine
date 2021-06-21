@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class IdxDistribute(parallelismLevel: shine.OpenCL.ParallelismLevel)(val m: Nat, val n: Nat, val stride: Nat, val dt: DataType, val array: Phrase[ExpType]) extends ExpPrimitive {
   assert {
