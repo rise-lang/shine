@@ -1,0 +1,2 @@
+def run{cores: import shine.DPIA.Nat}
+        (dt: data, input: exp[dt, write]): exp[dt, write]
