@@ -152,11 +152,13 @@ object mm {
     }
 
     for (i <- 0 until n) {
-      for (k <- 0 until o) {
-          for (j <- 0 until m) {
-          output(i)(j) += At(k)(i) * B(k)(j)
+      for (j <- 0 until m) {
+        var sum = 0.0f
+        for (k <- 0 until o) {
+          sum += At(k)(i) * B(k)(j)
         }
 
+        output(i)(j) = sum
       }
     }
 
