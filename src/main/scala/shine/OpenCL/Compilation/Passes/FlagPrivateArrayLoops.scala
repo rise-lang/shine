@@ -67,9 +67,11 @@ object FlagPrivateArrayLoops {
           val i = f.loopBody.asInstanceOf[Lambda[_, _]].param
           eliminateVars -= i.name
           Continue(For(unroll = true)(f.n, f.loopBody), this)
-        case f@ForNat(_) if (eliminateVars(f.loopBody.asInstanceOf[DepLambda[_, _ <: Kind.Identifier, _]].x.name)) =>
-          val i = f.loopBody.asInstanceOf[DepLambda[_, _ <: Kind.Identifier, _]].x
-          eliminateVars -= i.name
+        case f@ForNat(_) if (eliminateVars(Kind.idName(
+          f.loopBody.asInstanceOf[DepLambda[_, _, _ <: Kind.Identifier, _]].kind,
+          f.loopBody.asInstanceOf[DepLambda[_, _, _ <: Kind.Identifier, _]].x))) =>
+          val b = f.loopBody.asInstanceOf[DepLambda[_, _, _ <: Kind.Identifier, _]]
+          eliminateVars -= Kind.idName(b.kind, b.x)
           Continue(ForNat(unroll = true)(f.n, f.loopBody), this)
         case pf@ParFor(level, dim, _, name) if (eliminateVars(pf.body.asInstanceOf[Lambda[_, _]].param.name)) =>
           pf.body match {
@@ -79,7 +81,9 @@ object FlagPrivateArrayLoops {
                 pf.init, pf.n, pf.step, pf.dt, pf.out, pf.body), this)
             case _ => throw new Exception("This should not happen")
           }
-        case pf@ParForNat(level, dim, _, name) if (eliminateVars(pf.body.asInstanceOf[DepLambda[_, _ <: Kind.Identifier, _]].x.name)) =>
+        case pf@ParForNat(level, dim, _, name) if (eliminateVars(Kind.idName(
+          pf.body.asInstanceOf[DepLambda[_, _, _ <: Kind.Identifier, _]].kind,
+          pf.body.asInstanceOf[DepLambda[_, _, _ <: Kind.Identifier, _]].x))) =>
           pf.body match {
             case DepLambda(NatKind, i: NatIdentifier, _) =>
               eliminateVars -= i.name

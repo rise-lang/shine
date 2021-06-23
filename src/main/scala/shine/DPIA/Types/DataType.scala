@@ -20,7 +20,7 @@ object MatrixLayout {
   object None extends MatrixLayout
 }
 
-final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout with Kind.Identifier {
+final case class MatrixLayoutIdentifier(name: String) extends MatrixLayout {
   var layout: MatrixLayout = MatrixLayout.None
 
   override def toString: String = name
@@ -169,8 +169,7 @@ object NatToDataApply {
     Some((arg.f, arg.n))
 }
 
-final case class DataTypeIdentifier(name: String)
-  extends DataType with Kind.Identifier {
+final case class DataTypeIdentifier(name: String) extends DataType {
   override def toString: String = name
 }
 

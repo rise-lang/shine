@@ -6,6 +6,7 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class WmmaMMA(val m: Nat, val n: Nat, val k: Nat, val layoutA: MatrixLayout, val layoutB: MatrixLayout, val dt1: DataType, val dt2: DataType, val aMatrix: Phrase[ExpType], val bMatrix: Phrase[ExpType], val cMatrix: Phrase[ExpType], val resultMatrix: Phrase[AccType]) extends CommandPrimitive {
   assert {
