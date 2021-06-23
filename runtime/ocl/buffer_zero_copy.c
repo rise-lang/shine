@@ -1,4 +1,4 @@
-#include "runtime.h"
+#include "ocl.h"
 
 struct BufferImpl {
   cl_mem mem;

@@ -40,19 +40,17 @@ object SobelFilter {
   )
 
   /**
-    * TODO: Rewire generated parameters to GAP8 cluster function interface (void* args).
-    * Should be fixed with GAP8 specific Code generator
     * TODO: Embed sobelX and sobelY matrices
     * */
   val clusterFun: ToBeTyped[Rise] = depFun((n: Nat, m: Nat) =>
-    fun((n`.`m`.`u32) ->: (3`.`3`.`u32) ->: (3`.`3`.`u32) ->: (n`.`m`.`u32))((pic, h_w, v_w) =>
+    fun((n`.`m`.`u8) ->: (3`.`3`.`int) ->: (3`.`3`.`int) ->: (n`.`m`.`u8))((pic, h_w, v_w) =>
       pic |>
         padClamp2D(l = 1, r = 1) |>
         slide2D(sz = 3, st = 1) |>
         mapPar(mapSeq(fun(submat => {
-          zip(submat |> join)(h_w |> join) |> map(fun(x => fst(x) * snd(x))) |> reduceSeq(add)(cast(l(0)) :: u32) |> letf(h =>
-            zip(submat |> join)(v_w |> join) |> map(fun(x => fst(x) * snd(x))) |> reduceSeq(add)(cast(l(0)) :: u32) |> letf(v =>
-              gapSqrt(h * h + v * v)
+          zip(submat |> join)(h_w |> join) |> map(fun(x => (cast(fst(x)) :: u32) * cast(snd(x)) :: u32)) |> reduceSeq(add)(cast(l(0)) :: u32) |> letf(h =>
+            zip(submat |> join)(v_w |> join) |> map(fun(x => (cast(fst(x)) :: u32) * cast(snd(x)) :: u32)) |> reduceSeq(add)(cast(l(0)) :: u32) |> letf(v =>
+              cast(gapSqrt(h * h + v * v)) :: u8
             )
           )
         }
@@ -60,7 +58,7 @@ object SobelFilter {
     )
   )
 
-  val functionCode = util.gen.openmp.function("cluster_core_task").asStringFromExpr(clusterFun)
+  val functionCode = util.gen.gap8.function("cluster_core_task").asStringFromExpr(clusterFun)
 
   val code =
     s"""
@@ -143,10 +141,10 @@ object SobelFilter {
        |     memset(cl_params, 0, sizeof(struct cluster_params));
        |     cl_params->n1 = IMG_LINES;
        |     cl_params->n2 = IMG_COLS;
-       |     cl_params->e3 = (uint32_t*)ImageIn_L2;
-       |     cl_params->output = (uint32_t*)ImageOut_L2;
-       |     cl_params->e4 = (uint32_t*)G_X;
-       |     cl_params->e5 = (uint32_t*)G_Y;
+       |     cl_params->e3 = ImageIn_L2;
+       |     cl_params->output = ImageOut_L2;
+       |     cl_params->e4 = G_X;
+       |     cl_params->e5 = G_Y;
        |
        |     struct pi_cluster_task * cl_task = pmsis_l2_malloc(sizeof(struct pi_cluster_task));
        |     memset(cl_task, 0, sizeof(struct pi_cluster_task));
