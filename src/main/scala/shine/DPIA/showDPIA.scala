@@ -19,7 +19,7 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   def tab : String => String =
     _.linesIterator.map(l => if (l.isEmpty) l else TAB + l).mkString("\n")
 
-  def showKind : Kind[_, _] => String = _.name
+  def showKind : Kind[_, _, _] => String = _.name
   def showUnary : Operators.Unary.Value => String = _.toString
   def showBinary : Operators.Binary.Value => String = _.toString
   def showData : Data => String = _.toString
@@ -31,7 +31,7 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   def showNatToNat : NatToNat => String = _.toString
   def showNatToData : NatToData => String = _.toString
   def showType : PhraseType => String = _.toString
-  def showType[T](kind : Kind[T, _], arg : T) : String = kind match {
+  def showType[T](kind : Kind[T, _, _], arg : T) : String = kind match {
     case PhraseKind => showPhraseType(arg.asInstanceOf[PhraseType])
     case DataKind => showDataType(arg.asInstanceOf[DataType])
     case NatKind => showNat(arg.asInstanceOf[Nat])
@@ -74,7 +74,7 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case p => p.toString
   }
 
-  def showKindedType[T](kind : Kind[T, _], t : T) : String = showTypes match {
+  def showKindedType[T](kind : Kind[T, _, _], t : T) : String = showTypes match {
     case On => s"(${showType(kind, t)} : ${showKind(kind)})"
     case Off => s"(${showType(kind, t)})"
   }
