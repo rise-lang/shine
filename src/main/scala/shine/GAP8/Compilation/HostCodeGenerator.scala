@@ -4,10 +4,11 @@ import shine.C.AST.ParamDecl
 import shine.C.Compilation.CodeGenerator
 import shine.C.Compilation.CodeGenerator.{Declarations, Ranges}
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{CommType, DataType}
+import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
 import shine.GAP8.primitives.imperative.KernelCallCmd
 import shine._
 
+import scala.collection.mutable
 import scala.language.postfixOps
 
 case class HostCodeGenerator(
@@ -18,10 +19,17 @@ case class HostCodeGenerator(
   override def name: String = "GAP8 Host"
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
-    case KernelCallCmd(kernelName, numCores) =>
+    case k@KernelCallCmd(kernelName, numCores) =>
+      //output of type Phrase[AccType]
+      //Needed to be piped through shine.C.Compilation.acc
+      //k.output |> acc(env, Nil, outputCont => expSeq())
+
+      //output |> acc(env, Nil, outputC => expSeq())
+
       val calledKernel = acceleratorFunctions
         .filter(module => module.functions.map(_.name).contains(kernelName))
         .head
+
 
 
 
@@ -64,6 +72,18 @@ case class HostCodeGenerator(
       C.AST.Block(bufferSyncStatements.map(_._1) ++ Seq(packedKernelArgs) ++ Seq(launchKernel))
 
     case phrase => phrase |> super.cmd(env)
+  }
+
+  private def expSeq(ps: collection.Seq[Phrase[ExpType]],
+                     env: Environment,
+                     k: collection.Seq[Expr] => Stmt): Stmt = {
+    def iter(ps: collection.Seq[Phrase[ExpType]], res: mutable.ArrayBuffer[Expr]): Stmt =
+      ps match {
+        case p +: ps => p |> exp(env, Nil, e => iter(ps, res += e))
+        case _ => k(res)
+      }
+
+    iter(ps, new mutable.ArrayBuffer[Expr]())
   }
 
   override def typ(dt: DataType): Type = super.typ(dt)

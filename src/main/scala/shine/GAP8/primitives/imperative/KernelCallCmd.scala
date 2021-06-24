@@ -6,8 +6,14 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import shine.DPIA.Types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class KernelCallCmd(name: String, cores: Int)() extends CommandPrimitive {
+final case class KernelCallCmd(name: String, cores: Int)(val dt: DataType, val output: Phrase[AccType]) extends CommandPrimitive {
+  assert {
+    output :: accT(dt)
+    true
+  }
   override val t: CommType = comm
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCallCmd = new KernelCallCmd(name, cores)()
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelCallCmd = new KernelCallCmd(name, cores)(v.data(dt), VisitAndRebuild(output, v))
+  def unwrap: (DataType, Phrase[AccType]) = (dt, output)
 }
