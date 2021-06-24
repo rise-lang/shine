@@ -28,7 +28,7 @@ class Scatter extends test_util.Tests {
     val f = k.as[ScalaFunction `(` Array[Int] `)=>` Array[Int]]
     val input = (1 to N).toArray
     val expected = input.reverse
-    val (r, _) = util.withExecutor {
+    val (r, _) = test_util.withExecutor {
       f(lS, gS)(input `;`)
     }
     util.assertSame(r, expected, "unexpected result")
@@ -55,7 +55,7 @@ class Scatter extends test_util.Tests {
     val f = k.as[ScalaFunction `(` Array[Int] `)=>` Array[Int]]
     val input = Array.fill(2)((1 to N).toArray)
     val expected = input(0).reverse
-    val (r, _) = util.withExecutor {
+    val (r, _) = test_util.withExecutor {
       f(lS, gS)(input.flatten `;`)
     }
     util.assertSame(r, expected, "unexpected result")

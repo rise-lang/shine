@@ -1,5 +1,7 @@
 import opencl.executor.Executor
-import org.scalatest.BeforeAndAfter
+import org.scalactic.source.Position
+import org.scalatest.exceptions.TestCanceledException
+import org.scalatest.{BeforeAndAfter, Tag}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.logging.log4j.scala.Logging
@@ -15,13 +17,54 @@ package object test_util {
   }
 
   abstract class TestsWithExecutor extends Tests with BeforeAndAfter {
+    var openclIsAvailable = true
     before {
-      Executor.loadLibrary()
-      Executor.init()
+      try {
+        Executor.loadLibrary()
+        Executor.init()
+      } catch {
+        case _: UnsatisfiedLinkError =>
+          openclIsAvailable = false
+      }
     }
 
     after {
-      Executor.shutdown()
+      try {
+        Executor.shutdown()
+      } catch {
+        case _: UnsatisfiedLinkError =>
+      }
+    }
+
+    override protected def test(testName: String, testTags: Tag*)
+                               (testFun: => Any)
+                               (implicit pos: Position): Unit = {
+      super.test(testName, testTags:_*) {
+        // try to execute test ...
+        try {
+          testFun
+        } catch {
+          // ... only if execution fails due to a unsatisfied link error we
+          // enforce the assumption that OpenCL must be available.
+          case _: UnsatisfiedLinkError =>
+            assume(openclIsAvailable)
+        }
+      }
+    }
+  }
+
+  def withExecutor[T](f: => T): T = {
+    import opencl.executor._
+
+    try {
+      Executor.loadLibrary()
+      Executor.init()
+      try f
+      finally Executor.shutdown()
+    } catch {
+      case e: UnsatisfiedLinkError =>
+        throw new TestCanceledException("OpenCL not available", e, 0)
+      case e : Throwable => throw e
     }
   }
 

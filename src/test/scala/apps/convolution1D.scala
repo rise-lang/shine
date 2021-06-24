@@ -102,7 +102,7 @@ class convolution1D extends test_util.Tests {
   }
 
   test("binomialTile compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    test_util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(2), binomialTile)
       // expected to fail:
       // checkOCL(130, LocalSize(1), GlobalSize(2), binomialTile)
@@ -110,7 +110,7 @@ class convolution1D extends test_util.Tests {
   }
 
   test("binomialTileShiftInwardsGP compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    test_util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(64), binomialTileShiftInwardsGP)
       checkOCL(132, LocalSize(1), GlobalSize(64), binomialTileShiftInwardsGP)
       checkOCL(148, LocalSize(1), GlobalSize(64), binomialTileShiftInwardsGP)
@@ -118,7 +118,7 @@ class convolution1D extends test_util.Tests {
   }
 
   test("binomialTileShiftInwardsWLP compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    test_util.withExecutor {
       checkOCL(128, LocalSize(16), GlobalSize(128), binomialTileShiftInwardsWLP)
       checkOCL(132, LocalSize(32), GlobalSize(128), binomialTileShiftInwardsWLP)
       checkOCL(148, LocalSize(64), GlobalSize(128), binomialTileShiftInwardsWLP)
@@ -127,7 +127,7 @@ class convolution1D extends test_util.Tests {
 
   // TODO: nat normal form + concat codegen
   ignore("binomialTileEpilogue compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    test_util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(2), binomialTileEpilogue)
       checkOCL(132, LocalSize(1), GlobalSize(2), binomialTileEpilogue)
       checkOCL(148, LocalSize(1), GlobalSize(2), binomialTileEpilogue)
@@ -136,7 +136,7 @@ class convolution1D extends test_util.Tests {
 
   // TODO: codegen + parallelism
   ignore("binomialTileDep compiles to valid OpenCL that passes checks") {
-    util.withExecutor {
+    test_util.withExecutor {
       checkOCL(128, LocalSize(1), GlobalSize(1), binomialTileDep)
       checkOCL(132, LocalSize(1), GlobalSize(1), binomialTileDep)
       checkOCL(148, LocalSize(1), GlobalSize(1), binomialTileDep)

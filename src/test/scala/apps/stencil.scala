@@ -227,7 +227,9 @@ class stencil extends test_util.Tests {
   }
 
   test("Basic 1D addition stencil") {
-    BasicStencil1D(1024, 5).run(LocalSize(4), GlobalSize(4)).correctness.check()
+    test_util.withExecutor {
+      BasicStencil1D(1024, 5).run(LocalSize(4), GlobalSize(4)).correctness.check()
+    }
   }
 
   ignore("Partitioned 1D addition stencil, with specialised area handling") {
@@ -238,10 +240,12 @@ class stencil extends test_util.Tests {
   }
 
   test("Basic 2D addition stencil") {
-    BasicStencil2D(256, stencilSize = 11)
-      .run(LocalSize(2), GlobalSize(4))
-      .correctness
-      .check()
+    test_util.withExecutor {
+      BasicStencil2D(256, stencilSize = 11)
+        .run(LocalSize(2), GlobalSize(4))
+        .correctness
+        .check()
+    }
   }
 
   ignore("Partitioned 2D addition stencil") {
