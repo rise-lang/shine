@@ -1,4 +1,4 @@
-#include "runtime.h"
+#include "ocl.h"
 #include <string.h>
 
 const char* oclErrorToString(cl_int error) {
