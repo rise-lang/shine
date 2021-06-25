@@ -13,7 +13,7 @@ case class FileReader(fileName: String) {
   require(fileName.endsWith(".rise"), "not a RISE file") //if not, it's not a RISE file
 
   val sourceLines_withoutPreLexer = readFile(fileName)
-  val sourceLines: Array[String] = preLexer(sourceLines_withoutPreLexer)
+  val sourceLines: Array[String] = preLexer(preprocessor(sourceLines_withoutPreLexer))
 
   def toUri():URI=Paths.get(fileName).toUri
 
@@ -21,7 +21,10 @@ case class FileReader(fileName: String) {
 
   private def preLexer(array: Array[String]): Array[String] ={
     val withoutComments = deleteSimpleComments(array)
-    cutAndPasteConstants(withoutComments)
+    withoutComments
+  }
+  private def preprocessor(array: Array[String]): Array[String] ={
+    cutAndPasteConstants(array)
   }
   /*
   Constants are always defined only in one line
@@ -34,7 +37,11 @@ case class FileReader(fileName: String) {
       if (array(i).contains(":=")) {
         val pos = array(i).indexOf(":=")
         val name = array(i).substring(0,pos).trim
-        val content = array(i).substring(pos+2).strip()
+        val content = if(array(i).contains("--")){
+          array(i).substring(pos+2, array(i).indexOf("--")).strip()
+        }else{
+          array(i).substring(pos+2).strip()
+        }
         constants.get(name) match {
           case Some(value) => throw new IllegalStateException("The Constant '"
             +name+"' is already defined with value '"+value+
@@ -44,7 +51,7 @@ case class FileReader(fileName: String) {
       }else{
         var updateLine = array(i)
         for((n,c)<-constants){
-          if(updateLine.contains(n)){
+          while(updateLine.contains(n)){
             val posBegin = updateLine.indexOf(n)
             val posEnd = posBegin+n.length
             updateLine = updateLine.substring(0,posBegin)+ "("+ c + ")"+ updateLine.substring(posEnd)

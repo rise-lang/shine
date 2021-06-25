@@ -26,6 +26,18 @@ class parseTest extends  test_util.TestsWithExecutor {
   //HashMap<r.Identifier, Option[r.Expr]> ist das oberste
   type MapFkt = parse.MapFkt
 
+  test("parser should be able to parse 'addMatrix.rise'"){
+    val fileName: String = testFilePath + "addMatrix.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "matrixaddition"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
+
+    println(gen.OpenCLKernel(ex))
+  }
+
   test("parser should be able to parse 'arrayType.rise'"){
     val fileName: String = testFilePath + "arrayType.rise"
     val file: FileReader = new FileReader(fileName)
