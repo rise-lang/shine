@@ -86,7 +86,7 @@ object ExecuteOpenCL {
   def executeWithRuntime(code: String, buffer_impl: String): (Option[TimeSpan[Time.ms]], AutoTuningError) = {
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
-    val sources = s"$src $runtimePath/buffer_$buffer_impl.c $runtimePath/ocl.c"
+    val sources = s"$src ${platformPath}buffer_$buffer_impl.c ${platformPath}ocl.c"
     try {
       //        (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
       (s"timeout 5s clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
