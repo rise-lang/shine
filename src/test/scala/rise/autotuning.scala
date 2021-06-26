@@ -2,7 +2,6 @@ package rise
 
 
 import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, RangeUnknown}
-import java.util.concurrent.{Executors, TimeUnit}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
 import rise.core.primitives.{let => _, _}
@@ -11,10 +10,11 @@ import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
-import rise.autotune.{Tuner, generateJSON, tuningParam, wrapOclRun}
+
+import rise.autotune._
+
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
-import util.{gen, writeToPath}
 
 class autotuning extends test_util.Tests {
   val convolution: ToBeTyped[Expr] =
@@ -120,7 +120,7 @@ class autotuning extends test_util.Tests {
   }
 
   test("collect parameters") {
-    val params = autotune.collectParameters(convolutionOclGsLsWrap)
+    val params = autotune.constraints.collectParameters(convolutionOclGsLsWrap)
     assert(params.find(IsTuningParameter("vec")).get.range == RangeAdd(0, 32, 1))
     assert(params.find(IsTuningParameter("tile")).get.range == RangeAdd(4, 32, 1))
     assert(params.find(IsTuningParameter("ls0")).get.range == RangeUnknown)
@@ -132,25 +132,25 @@ class autotuning extends test_util.Tests {
 
   test("collect constraints") {
     val e: Expr = convolutionOclGsLsWrap
-    autotune.collectConstraints(e, autotune.collectParameters(e)).foreach(println)
+    autotune.constraints.collectConstraints(e, autotune.constraints.collectParameters(e)).foreach(println)
   }
 
   test("substitute parameters") {
     val e: Expr = convolution(32)
-    val constraints = autotune.collectConstraints(e, autotune.collectParameters(e))
+    val constraints = autotune.constraints.collectConstraints(e, autotune.constraints.collectParameters(e))
     println("constraints: \n" + constraints)
 
     val badParameters1 = Map(
       TuningParameter("vec") -> (5: Nat),
       TuningParameter("tile") -> (15: Nat)
     )
-    assert(!autotune.checkConstraints(constraints, badParameters1))
+    assert(!autotune.constraints.checkConstraints(constraints, badParameters1))
 
     val badParameters2 = Map(
       TuningParameter("vec") -> (4: Nat),
       TuningParameter("tile") -> (13: Nat)
     )
-    assert(!autotune.checkConstraints(constraints, badParameters2))
+    assert(!autotune.constraints.checkConstraints(constraints, badParameters2))
 
     /* FIXME: there is no `n >= tile` constraint collected
     val badParameters3 = Map(
@@ -164,7 +164,7 @@ class autotuning extends test_util.Tests {
       TuningParameter("vec") -> (4: Nat),
       TuningParameter("tile") -> (16: Nat)
     )
-    assert(autotune.checkConstraints(constraints, goodParameters))
+    assert(autotune.constraints.checkConstraints(constraints, goodParameters))
     rise.core.substitute.natsInExpr(goodParameters, e)
   }
 
@@ -245,8 +245,8 @@ class autotuning extends test_util.Tests {
         (n, m, o)
       case _ => ???
     }
-    val params = autotune.collectParameters(e)
-    val constraints = autotune.collectConstraints(e, params)
+    val params = autotune.constraints.collectParameters(e)
+    val constraints = autotune.constraints.collectConstraints(e, params)
     // note: v5 multiple of 4, contiguous memory constraint is missing
 
     // n, m, o, v3, v4, v5, v6, v7, v8, ls0, ls1, gs0, gs1
@@ -344,7 +344,7 @@ class autotuning extends test_util.Tests {
           TuningParameter("gs0") -> gs0,
           TuningParameter("gs1") -> gs1,
         )
-        if (autotune.checkConstraints(constraints, map) != isGood) {
+        if (autotune.constraints.checkConstraints(constraints, map) != isGood) {
           val (sat, notSat) = constraints.partition(c =>
             c.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]).isSatisfied())
           println("satisfied:")
@@ -358,9 +358,9 @@ class autotuning extends test_util.Tests {
   }
 
   test("generateJSON") {
-    val parameters = autotune.collectParameters(convolution)
-    val constraints = autotune.collectConstraints(convolution, parameters)
-    val json = autotune.generateJSON(parameters, constraints, Tuner(main(32)))
+    val parameters = autotune.constraints.collectParameters(convolution)
+    val constraints = autotune.constraints.collectConstraints(convolution, parameters)
+    val json = autotune.configFileGeneration.generateJSON(parameters, constraints, Tuner(main(32)))
 
     val gold =
       """{
@@ -425,8 +425,7 @@ class autotuning extends test_util.Tests {
   ignore("search experimental") {
     val e: Expr = convolutionOclGsLs(1024)
 
-    //    val tuner = Tuner(main(1024), 100, "RISE", "autotuning", Some("/home/jo/development/rise-lang/shine/autotuning/configs/convolution.json"), Some("/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py"))
-    val tuner = Tuner(main(1024), 10, "RISE", "autotuning", None, Some("/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py"))
+    val tuner = Tuner(main(1024), 10, "RISE", "autotuning", None, true )
 
     val tuningResult = autotune.search(tuner)(e)
 
@@ -443,10 +442,10 @@ class autotuning extends test_util.Tests {
   ignore("distribute constraints") {
     val e: Expr = convolutionOclGsLs(1024)
     val tuner = Tuner(main(1024), 10)
-    val params = autotune.collectParameters(e)
-    val constraints = autotune.collectConstraints(e, params)
+    val params = autotune.constraints.collectParameters(e)
+    val constraints = autotune.constraints.collectConstraints(e, params)
 
-    val distribution = autotune.distributeConstraints(params, constraints)
+    val distribution = autotune.configFileGeneration.distributeConstraints(params, constraints)
 
     println("output: \n")
     distribution.foreach(elem => {
@@ -457,7 +456,7 @@ class autotuning extends test_util.Tests {
     })
 
     println("\nnow generate json")
-    val json = generateJSON(params, constraints, tuner)
+    val json = autotune.configFileGeneration.generateJSON(params, constraints, tuner)
     println("json: \n" + json)
   }
 
@@ -470,7 +469,7 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOcl(32)
     val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
 
-    val result = autotune.execute(e2, main(32))
+    val result = autotune.execution.execute(e2, main(32))
 
     // check if result has valid runtime
     assert(result._1.isDefined)
@@ -514,7 +513,7 @@ class autotuning extends test_util.Tests {
     }
     """
 
-    val result = autotune.execute(e, main)
+    val result = autotune.execution.execute(e, main)
 
     // check if result has valid runtime
     assert(result._1.isDefined)
@@ -542,7 +541,7 @@ class autotuning extends test_util.Tests {
   <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
 </trace>
     """
-    assert(util.ExecuteOpenCL.getRuntimeFromClap(xmlString).value.toFloat == 0.010112f)
+    assert(autotune.execution.getRuntimeFromClap(xmlString).value.toFloat == 0.010112f)
   }
 
   test("text xml parsing with corrupted xml string") {
@@ -564,7 +563,7 @@ class autotuning extends test_util.Tests {
 </trace>
 
     """
-    assert(util.ExecuteOpenCL.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
+    assert(autotune.execution.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
   }
 
   test("generate huge amount of code") {
@@ -586,7 +585,7 @@ class autotuning extends test_util.Tests {
 
     println("run codegen with timeout ")
     // WARNING: timeout does not stop the thread, it only returns to the host thread
-    val result = rise.autotune.execute(eWithParams, main(1024))
+    val result = rise.autotune.execution.execute(eWithParams, main(1024))
 
     print("result: " + result)
     assert(result._2.errorLevel.equals(autotune.CODE_GENERATION_ERROR))
