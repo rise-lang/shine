@@ -1,1 +1,1 @@
-def kernelCallCmd{name: String, cores: Int}(dt: data, output: acc[dt]): comm
+def kernelCallCmd{name: String, cores: Int, n: Int}(inTs: n*data, dt: data, args: n*exp[*inTs, read], output: acc[dt]): comm
