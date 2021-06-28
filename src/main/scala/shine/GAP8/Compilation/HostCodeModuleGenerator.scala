@@ -15,9 +15,11 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
 
   override def createOutputParam(outT: ExpType): Identifier[AccType] = ???
 
-  override def toImperative(gen: HostCodeGenerator, funDef: FunDef, outParam: Identifier[AccType]): Phrase[ExpType] => Phrase[CommType] = ???
+  override def toImperative(gen: HostCodeGenerator, funDef: FunDef, outParam: Identifier[AccType]): Phrase[ExpType] => Phrase[CommType] =
+    C.Compilation.ModuleGenerator.toImperative(gen, funDef, outParam)
 
-  override def imperativeToModule(gen: HostCodeGenerator, funDef: FunDef, outParam: Identifier[AccType]): Phrase[CommType] => Module = ???
+  override def imperativeToModule(gen: HostCodeGenerator, funDef: FunDef, outParam: Identifier[AccType]): Phrase[CommType] => Module =
+    
 
   def generateClusterEntryPoint(entryPointName: String, taskFunction: String): C.AST.Function = {
     C.AST.Function(
