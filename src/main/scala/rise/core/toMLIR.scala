@@ -23,7 +23,7 @@ object toMLIR {
   }
 
   private def createInOp(i: Identifier, n: Int): String = {
-    s"""[&] {
+    s"""[&] {  // InOp
        |  auto type = ${fromType(i.t)};
        |  return b.create<InOp>(loc, TypeRange{type}, funcOp.getArgument($n));
        |}()""".stripMargin
@@ -32,11 +32,16 @@ object toMLIR {
   private def toCppBuilderAPI(exp :Expr, env: Map[Identifier, String]): String = exp match {
     case id: Identifier => env(id)
     case l@Lambda(x, e) =>
-      s"""[&] {
+      val params = collectParams(x, e)
+      val body = findBody(e)
+      val updatedEnv = params.zipWithIndex.foldLeft(env) {
+        case (env, (p, i)) => env.updated(p, s"args[$i]")
+      }
+      s"""[&] {  // LambdaOp
          |  auto type = ${fromType(l.t)};
          |  auto fun = [&](OpBuilder& b, Location loc, MutableArrayRef<BlockArgument> args) {
          |    OpBuilder::InsertionGuard guard(b);
-         |    return ${toCppBuilderAPI(e, env.updated(x, "args[0]"))};
+         |    return ${toCppBuilderAPI(body, updatedEnv)};
          |  };
          |  return b.create<LambdaOp>(loc, type, fun);
          |}()""".stripMargin
@@ -54,7 +59,7 @@ object toMLIR {
             case add() => "AddFOp"
             case mul() => "MulFOp"
           }
-          s"""[&] {
+          s"""[&] {  // EmbedOp
              |  auto type = ${fromType(a.t)};
              |  $argsDecls;
              |  auto fun = [&](OpBuilder& b, Location loc, MutableArrayRef<BlockArgument> args) {
@@ -64,7 +69,7 @@ object toMLIR {
              |  return b.create<EmbedOp>(loc, type, ValueRange{ $argsRefs }, fun);
              |}()""".stripMargin
         case f =>
-          s"""[&] {
+          s"""[&] {  // ApplyOp
              |  auto type = ${fromType(a.t)};
              |  $argsDecls;
              |  auto fun = ${toCppBuilderAPI(f, env)};
@@ -72,7 +77,7 @@ object toMLIR {
              |}()""".stripMargin
       }
     case l@Literal(d) =>
-      s"""[&] {
+      s"""[&] {  // LiteralOp
          |  auto type = ${fromType(l.t)};
          |  return b.create<LiteralOp>(loc, type, LiteralAttr::get(b.getContext(), type, "${d.toString}"));
          |}()""".stripMargin
@@ -84,18 +89,32 @@ object toMLIR {
     case TypeAssertion(e, assertion) => ???
   }
 
-  @tailrec
-  private def findFunction(expr: Expr): Expr = expr match {
-    case App(f, _) => findFunction(f)
-    case _ => expr
-  }
-
   private def collectArgs(expr: Expr, arg: Expr): Seq[Expr] = collectArgs(expr, Seq(arg))
 
   @tailrec
   private def collectArgs(expr: Expr, args: Seq[Expr]): Seq[Expr] = expr match {
     case App(f, arg) => collectArgs(f, arg +: args)
     case _ => args
+  }
+
+  private def collectParams(param: Identifier, expr: Expr): Seq[Identifier] = collectParams(expr, Seq(param))
+
+  @tailrec
+  private def collectParams(expr: Expr, params: Seq[Identifier]): Seq[Identifier] = expr match {
+    case Lambda(p, e) => collectParams(e, params :+ p)
+    case _ => params
+  }
+
+  @tailrec
+  private def findFunction(expr: Expr): Expr = expr match {
+    case App(f, _) => findFunction(f)
+    case _ => expr
+  }
+
+  @tailrec
+  private def findBody(expr: Expr): Expr = expr match {
+    case Lambda(_, e) => findBody(e)
+    case _ => expr
   }
 
   private def fromType(ty: Type): String = ty match {
@@ -147,7 +166,7 @@ object toMLIR {
 
   private def primitiveToCppBuilderAPI(p: Primitive): String = (p, p.t) match {
     case (zip(), (n`.`dt1) ->: (_`.`dt2) ->: _) =>
-      s"""[&] {
+      s"""[&] {  // ZipOp
          |  auto type = ${fromType(p.t)};
          |  auto n = rise::NatAttr::get(b.getContext(), ${fromNat(n)});
          |  auto dt1 = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt1)});
@@ -155,7 +174,7 @@ object toMLIR {
          |  return b.create<ZipOp>(loc, type, n, dt1, dt2);
          |}()""".stripMargin
     case (map(), (dt1 ->: dt2) ->: (n`.`_) ->: _) =>
-      s"""[&] {
+      s"""[&] {  // MapOp
          |  auto type = ${fromType(p.t)};
          |  auto n = rise::NatAttr::get(b.getContext(), ${fromNat(n)});
          |  auto dt1 = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt1)});
@@ -163,7 +182,7 @@ object toMLIR {
          |  return b.create<MapOp>(loc, type, n, dt1, dt2);
          |}()""".stripMargin
     case (reduceSeq(), (dt1 ->: dt2 ->: _) ->: _ ->: (n`.`_) ->: _) =>
-      s"""[&] {
+      s"""[&] {  // ReduceSeqOp
          |  auto type = ${fromType(p.t)};
          |  auto n = rise::NatAttr::get(b.getContext(), ${fromNat(n)});
          |  auto dt1 = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt1)});
@@ -172,14 +191,14 @@ object toMLIR {
          |  return b.create<ReduceSeqOp>(loc, type, n, dt1, dt2, lowerTo);
          |}()""".stripMargin
     case (fst(), (dt1 x dt2) ->: _) =>
-      s"""[&] {
+      s"""[&] {  // FstOp
          |  auto type = ${fromType(p.t)};
          |  auto dt1 = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt1)});
          |  auto dt2 = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt2)});
          |  return b.create<FstOp>(loc, type, dt1, dt2);
          |}()""".stripMargin
     case (snd(), (dt1 x dt2) ->: _) =>
-      s"""[&] {
+      s"""[&] {  // SndOp
          |  auto type = ${fromType(p.t)};
          |  auto dt1 = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt1)});
          |  auto dt2 = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt2)});
