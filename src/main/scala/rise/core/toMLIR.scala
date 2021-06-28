@@ -204,6 +204,14 @@ object toMLIR {
          |  auto dt2 = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt2)});
          |  return b.create<SndOp>(loc, type, dt1, dt2);
          |}()""".stripMargin
+    case (transpose(), (n`.`(m`.`dt)) ->: _) =>
+      s"""[&] {  // TransposeOp
+         |  auto type = ${fromType(p.t)};
+         |  auto n = rise::NatAttr::get(b.getContext(), ${fromNat(n)});
+         |  auto m = rise::NatAttr::get(b.getContext(), ${fromNat(m)});
+         |  auto dt = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt)});
+         |  return b.create<TransposeOp>(loc, type, n, m, dt);
+         |}()""".stripMargin
   }
 
 }
