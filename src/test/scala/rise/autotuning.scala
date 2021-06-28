@@ -20,7 +20,7 @@ class autotuning extends test_util.Tests {
   val convolution: ToBeTyped[Expr] =
   // tileShiftInwards should constrain n >= tile
   // slideVectors and slide should constrain tile % vec = 0
-    tuningParam("vec", RangeAdd(0, 32, 1), (vec: Nat) =>
+    tuningParam("vec", RangeAdd(1, 32, 1), (vec: Nat) =>
       tuningParam("tile", RangeAdd(4, 32, 1), (tile: Nat) =>
         depFun(RangeAdd(1, PosInf, vec), (n: Nat) =>
           fun(3 `.` f32)(weights =>
@@ -35,7 +35,7 @@ class autotuning extends test_util.Tests {
   val convolutionOcl: ToBeTyped[Expr] =
   // tileShiftInwards should constrain n >= tile
   // slideVectors and slide should constrain tile % vec = 0
-    tuningParam("vec", RangeAdd(0, 32, 1), (vec: Nat) =>
+    tuningParam("vec", RangeAdd(1, 32, 1), (vec: Nat) =>
       tuningParam("tile", RangeAdd(4, 32, 1), (tile: Nat) =>
         depFun(RangeAdd(1, PosInf, vec), (n: Nat) =>
           fun(3 `.` f32)(weights =>
@@ -61,7 +61,7 @@ class autotuning extends test_util.Tests {
       tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
         tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
           tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-            tuningParam("vec", RangeAdd(0, 32, 1), (vec: Nat) =>
+            tuningParam("vec", RangeAdd(1, 32, 1), (vec: Nat) =>
               tuningParam("tile", RangeAdd(4, 1024, 1), (tile: Nat) =>
                 depFun(RangeAdd(1, PosInf, vec), (n: Nat) =>
                   fun(3 `.` f32)(weights =>
@@ -121,7 +121,7 @@ class autotuning extends test_util.Tests {
 
   test("collect parameters") {
     val params = autotune.constraints.collectParameters(convolutionOclGsLsWrap)
-    assert(params.find(IsTuningParameter("vec")).get.range == RangeAdd(0, 32, 1))
+    assert(params.find(IsTuningParameter("vec")).get.range == RangeAdd(1, 32, 1))
     assert(params.find(IsTuningParameter("tile")).get.range == RangeAdd(4, 32, 1))
     assert(params.find(IsTuningParameter("ls0")).get.range == RangeUnknown)
     assert(params.find(IsTuningParameter("ls1")).get.range == RangeUnknown)
@@ -381,13 +381,13 @@ class autotuning extends test_util.Tests {
         | },
         | "optimization_iterations" : 100,
         | "input_parameters" : {
-        |   "tile" : {
-        |       "parameter_type" : "integer",
-        |       "values" : [4, 32]
+        |   "tuned_tile" : {
+        |       "parameter_type" : "ordinal",
+        |       "values" : [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
         |   },
-        |   "vec" : {
-        |       "parameter_type" : "integer",
-        |       "values" : [1, 32]
+        |   "tuned_vec" : {
+        |       "parameter_type" : "ordinal",
+        |       "values" : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
         |   }
         | }
         |}
@@ -409,7 +409,7 @@ class autotuning extends test_util.Tests {
     // test full tuning run
     val e: Expr = convolutionOcl(32)
 
-    val tuningResult = autotune.search(Tuner(main(32)))(e)
+    val tuningResult = autotune.search(Tuner(main(32), 100))(e)
 
     println("tuningResult: \n")
     tuningResult.samples.foreach(elem => println(elem))
@@ -425,7 +425,7 @@ class autotuning extends test_util.Tests {
   ignore("search experimental") {
     val e: Expr = convolutionOclGsLs(1024)
 
-    val tuner = Tuner(main(1024), 10, "RISE", "autotuning", None, true )
+    val tuner = Tuner(main(1024), 1000, "RISE", "autotuning", Timeouts(5000, 5000, 5000), None, true )
 
     val tuningResult = autotune.search(tuner)(e)
 
@@ -469,7 +469,7 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOcl(32)
     val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
 
-    val result = autotune.execution.execute(e2, main(32))
+    val result = autotune.execution.execute(e2, main(32), Timeouts(5000, 5000, 5000))
 
     // check if result has valid runtime
     assert(result._1.isDefined)
@@ -513,7 +513,7 @@ class autotuning extends test_util.Tests {
     }
     """
 
-    val result = autotune.execution.execute(e, main)
+    val result = autotune.execution.execute(e, main, Timeouts(5000, 5000, 5000))
 
     // check if result has valid runtime
     assert(result._1.isDefined)
@@ -585,7 +585,7 @@ class autotuning extends test_util.Tests {
 
     println("run codegen with timeout ")
     // WARNING: timeout does not stop the thread, it only returns to the host thread
-    val result = rise.autotune.execution.execute(eWithParams, main(1024))
+    val result = rise.autotune.execution.execute(eWithParams, main(1024), Timeouts(5000, 5000, 5000))
 
     print("result: " + result)
     assert(result._2.errorLevel.equals(autotune.CODE_GENERATION_ERROR))

@@ -14,12 +14,17 @@ import rise.autotune.constraints._
 import rise.autotune.configFileGeneration._
 import rise.autotune.execution._
 
+import scala.language.postfixOps
+import scala.sys.process._
+
 package object autotune {
 
+  case class Timeouts(codgenerationTimeout: Long, compilationTimeout: Long, executionTimeout: Long)
   case class Tuner(main:String,
                    iterations: Int = 100,
                    name:String = "RISE",
                    output:String = "autotuning",
+                   timeouts:Timeouts = Timeouts(5000, 5000, 5000),
                    configFile:Option[String] = None,
                    hierarchicalHM: Boolean = false)
 
@@ -35,7 +40,6 @@ package object autotune {
   def tuningParam[A](name: String, r: arithexpr.arithmetic.Range, w: NatFunctionWrapper[A]): A =
     w.f(TuningParameter(name, r))
 
-  // main search method using custom tuner
   def search(tuner:Tuner)(e:Expr): TuningResult = {
     // timestamp of starting point
     val start = System.currentTimeMillis()
@@ -46,9 +50,13 @@ package object autotune {
     // collect constraints
     val constraints = collectConstraints(e, parameters)
 
+    // create output directory
+    ("mkdir -p " + tuner.output !!)
+
     // generate json if necessary
     tuner.configFile match {
       case None => {
+        println("generate configuration file")
         // open file
         val file = new PrintWriter(new FileOutputStream(new File(tuner.output + "/" + tuner.name + ".json"), false))
 
@@ -56,7 +64,7 @@ package object autotune {
         file.write(generateJSON(parameters, constraints, tuner))
         file.close()
       }
-      case _ => println("no generation of json")
+      case _ => println("use given configuration file")
     }
 
     println("parameters: \n" + parameters)
@@ -72,7 +80,7 @@ package object autotune {
       checkConstraints(constraints, parametersValuesMap) match {
         case true => {
           // execute
-          val result = execute(rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main)
+          val result = execute(rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main, tuner.timeouts)
 
           result._1 match {
             case Some(_) =>
@@ -94,6 +102,8 @@ package object autotune {
       case Some(filename) => os.Path.apply(filename)
       case None => os.pwd / tuner.output / (tuner.name + ".json")
     }
+
+    println("configFile: " + configFile)
 
     // check if hypermapper is installed and config file exists
     assert(os.isFile(os.Path.apply("/usr/bin/hypermapper")) && os.isFile(configFile))
@@ -143,11 +153,6 @@ package object autotune {
       }
     }
 
-
-    // delete tmp json file
-    //    val fileDelete = new File("autotuning/tmp.json")
-    //    fileDelete.delete()
-
     TuningResult(samples.toSeq)
   }
 
@@ -164,24 +169,24 @@ package object autotune {
     }
   }
 
-  def applyBest(e: Expr, samples: Seq[Sample]): Expr = {
-    val best = getBest(samples)
-    best match {
-      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters, e)
-      case None => e // maybe throw exception?
-    }
-  }
-
-  def applySample(e: Expr, sample: Sample): Expr = {
-    rise.core.substitute.natsInExpr(sample.parameters, e)
-  }
-
   def getBest(samples: Seq[Sample]): Option[Sample] = {
     val best = samples.reduceLeft(min)
     best.runtime match {
       case Some(_) => Some(best)
       case None => None
     }
+  }
+
+  def applyBest(e: Expr, samples: Seq[Sample]): Expr = {
+    val best = getBest(samples)
+    best match {
+      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters, e)
+      case None => e
+    }
+  }
+
+  def applySample(e: Expr, sample: Sample): Expr = {
+    rise.core.substitute.natsInExpr(sample.parameters, e)
   }
 
   // write tuning results into csv file

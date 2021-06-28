@@ -8,37 +8,34 @@ import scala.sys.process._
 
 object execution {
 
-  def execute(e: Expr, main: String, timeout: Long = 5000): (Option[TimeSpan[Time.ms]], AutoTuningError)  = {
-    val m = autoTuningUtils.runWithTimeout(timeout)(gen.opencl.hosted.fromExpr(e))
+  def execute(e: Expr, main: String, timeouts: Timeouts): (Option[TimeSpan[Time.ms]], AutoTuningError)  = {
+    val m = autoTuningUtils.runWithTimeout(timeouts.codgenerationTimeout)(gen.opencl.hosted.fromExpr(e))
     m match {
       case Some(_) =>{
         val program = shine.OpenCL.Module.translateToString(m.get) + main
 
         // execute program
-        executeWithRuntime(program, "zero_copy")
+        executeWithRuntime(program, "zero_copy", timeouts.compilationTimeout, timeouts.executionTimeout)
       }
-      case None => (None, AutoTuningError(CODE_GENERATION_ERROR, Some("timeout after: " + timeout)))
+      case None => (None, AutoTuningError(CODE_GENERATION_ERROR, Some("timeout after: " + timeouts.codgenerationTimeout)))
     }
   }
 
-  def executeWithRuntime(code: String, buffer_impl: String): (Option[TimeSpan[Time.ms]], AutoTuningError) = {
+  def executeWithRuntime(code: String, buffer_impl: String, compilationTimeout: Long, executionTimeout: Long): (Option[TimeSpan[Time.ms]], AutoTuningError) = {
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
     val sources = s"$src ${platformPath}buffer_$buffer_impl.c ${platformPath}ocl.c"
     try {
-      //        (s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
-      (s"timeout 5s clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
+      (s"timeout ${compilationTimeout/1000}s clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
     } catch {
       case e:Throwable => {
         println("compile error: " + e)
-        //          throw Exception("COMPILATION_ERROR")
 
         (None, AutoTuningError(COMPILATION_ERROR, Some(e.toString)))
       }
     }
     try{
-      val result = (s"timeout 5s runtime/clap_wrapper.sh $bin" !!)
-      //      println("result: " + result)
+      val result = (s"timeout ${executionTimeout/1000}s runtime/clap_wrapper.sh $bin" !!)
       val runtime = getRuntimeFromClap(result)
 
       (Some(runtime), AutoTuningError(NO_ERROR, None))
