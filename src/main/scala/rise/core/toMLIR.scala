@@ -10,6 +10,8 @@ import scala.annotation.tailrec
 object toMLIR {
 
   def toCppBuilderAPI(exp :Expr): String = {
+    freshName.reset()
+
     @tailrec
     def extractBody(e: Expr, env: Map[Identifier, String], i: Int): (Expr, Map[Identifier, String]) = e match {
       case Lambda(x, body) => extractBody(body, env.updated(x, createInOp(x, i+1)), i+1)
@@ -34,12 +36,13 @@ object toMLIR {
     case l@Lambda(x, e) =>
       val params = collectParams(x, e)
       val body = findBody(e)
+      val argsName = freshName("args")
       val updatedEnv = params.zipWithIndex.foldLeft(env) {
-        case (env, (p, i)) => env.updated(p, s"args[$i]")
+        case (env, (p, i)) => env.updated(p, s"$argsName[$i]")
       }
       s"""[&] {  // LambdaOp
          |  auto type = ${fromType(l.t)};
-         |  auto fun = [&](OpBuilder& b, Location loc, MutableArrayRef<BlockArgument> args) {
+         |  auto fun = [&](OpBuilder& b, Location loc, MutableArrayRef<BlockArgument> $argsName) {
          |    OpBuilder::InsertionGuard guard(b);
          |    return ${toCppBuilderAPI(body, updatedEnv)};
          |  };
@@ -82,11 +85,8 @@ object toMLIR {
          |  return b.create<LiteralOp>(loc, type, LiteralAttr::get(b.getContext(), type, "${d.toString}"));
          |}()""".stripMargin
     case primitive: Primitive => primitiveToCppBuilderAPI(primitive)
-    case DepLambda(kind, x, e) => ???
-    case DepApp(kind, f, x) => ???
-    case Opaque(e, t) => ???
-    case TypeAnnotation(e, annotation) => ???
-    case TypeAssertion(e, assertion) => ???
+    case _: DepLambda[_, _, _] | _: DepApp[_, _] => ???
+    case _: Opaque| _: TypeAnnotation | _: TypeAssertion => ???
   }
 
   private def collectArgs(expr: Expr, arg: Expr): Seq[Expr] = collectArgs(expr, Seq(arg))
@@ -123,7 +123,7 @@ object toMLIR {
       s"rise::FunType::get(b.getContext(), ${fromType(inT)}, ${fromType(outT)})"
     case TypePlaceholder => ???
     case TypeIdentifier(name) => ???
-    case DepFunType(kind, x, t) => ???
+    case DepFunType(_, _, _) => ???
   }
 
   private def fromDataType(dt: DataType): String = dt match {
@@ -212,6 +212,19 @@ object toMLIR {
          |  auto dt = rise::DataTypeAttr::get(b.getContext(), ${fromType(dt)});
          |  return b.create<TransposeOp>(loc, type, n, m, dt);
          |}()""".stripMargin
+  }
+
+  object freshName {
+    private var counter = -1
+
+    def reset(): Unit = {
+      counter = -1
+    }
+
+    def apply(prefix: String): String = {
+      counter += 1
+      prefix + counter
+    }
   }
 
 }
