@@ -2,7 +2,7 @@ package parser
 
 
 import OpType.{BinOpType, UnaryOpType}
-import parser.ErrorMessage.{EndOfFile, EndOfLine, ExpectedArrowButGotTwoDash, F32DeclaredAsI32, F32DeclaredAsI8, IdentifierBeginsWithAF32Number, IdentifierBeginsWithDigits, IdentifierExpectedNotTypeIdentifier, IdentifierWithNotAllowedSymbol, NOTanBinOperator, NotExpectedToken, NotExpectedTwoBackslash, NumberWithUnknownSymbol, OnlyOneEqualSign, PreAndErrorToken, ThisTokenShouldntBeHereExpectedArrowOrDots, ToShortToBeThisToken, TypeIdentifierExpectedNotIdentifier, UnknownKind, UnknownSymbol, UnknownType, debug}
+import parser.ErrorMessage.{AllLinesAreEmpty, EndOfFile, EndOfLine, ExpectedArrowButGotTwoDash, F32DeclaredAsI32, F32DeclaredAsI8, IdentifierBeginsWithAF32Number, IdentifierBeginsWithDigits, IdentifierExpectedNotTypeIdentifier, IdentifierWithNotAllowedSymbol, NOTanBinOperator, NotExpectedToken, NotExpectedTwoBackslash, NumberWithUnknownSymbol, OnlyOneEqualSign, PreAndErrorToken, ThisTokenShouldntBeHereExpectedArrowOrDots, ToShortToBeThisToken, TypeIdentifierExpectedNotIdentifier, UnknownKind, UnknownSymbol, UnknownType, debug}
 
 
 object RecognizeLexeme{
@@ -60,12 +60,9 @@ case class RecognizeLexeme(fileReader: FileReader){
         row = r
         //debug("lexing begins at : ( "+ column +" , " + row + " )" )
       }
-      case Right(EndOfFile(_)) => throw new RuntimeException("Here occoured a EndOfFile Exeption," +
-        " but this should not be able to happen")
-      case Right(EndOfLine(span)) => throw new RuntimeException("At position ("
-        + span.range.begin.column + "," + span.range.begin.row + " is an expression expected " +
-        ", but there is nothing! '" + arr(column) + "'")
-      case Right(p) => throw new RuntimeException("This PreAndErrorToken was not expected: " + p)
+      case Right(EndOfFile(span)) => throw EndOfFile(span)
+      case Right(EndOfLine(span)) => throw AllLinesAreEmpty(span)
+      case Right(p) => throw p
     }
 
     if (arr(column)(row).isLetter) {

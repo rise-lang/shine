@@ -108,6 +108,12 @@ final case class EndOfLine(override val span:Span) extends PreAndErrorToken(span
   override val what_exp = "no end of Line here expected"
   override val help = Some("this error is not your fault")
 }
+final case class AllLinesAreEmpty(override val span:Span) extends PreAndErrorToken(span){
+  require(begin == end, "begin is unequal to end")
+  override val description_error = "All Lines are empty"
+  override val what_exp = "every line is empty"
+  override val help = Some("your file is empty")
+}
 final case class EndOfFile(override val span:Span) extends PreAndErrorToken(span){
   require(begin == end, "begin is unequal to end")
   override val description_error: String = "End of File"

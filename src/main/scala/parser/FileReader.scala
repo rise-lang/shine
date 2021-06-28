@@ -1,5 +1,7 @@
 package parser
 
+import parser.ErrorMessage.debug
+
 import java.io.{File, FileInputStream, FileNotFoundException}
 import java.net.URI
 import java.nio.file.Paths
@@ -26,6 +28,14 @@ case class FileReader(fileName: String) {
   private def preprocessor(array: Array[String]): Array[String] ={
     cutAndPasteConstants(array)
   }
+
+  private def notPartOfAnotherIdentifier(updateLine:String, posBegin: Int):Boolean={
+    if(posBegin== -1){
+      false
+    }else{
+      !((posBegin>0&&updateLine(posBegin -1).isLetter)||(updateLine.length>posBegin+1&&updateLine(posBegin +1).isLetter))
+    }
+  }
   /*
   Constants are always defined only in one line
    */
@@ -33,6 +43,7 @@ case class FileReader(fileName: String) {
     type MapConstants = mutable.HashMap[String, String]
     val constants:MapConstants = new MapConstants
     val arr:Array[String] = Array.fill(array.length)("")
+    //get Makros
     for(i<- 0 until array.length){
       if (array(i).contains(":=")) {
         val pos = array(i).indexOf(":=")
@@ -49,16 +60,27 @@ case class FileReader(fileName: String) {
           case None =>constants.update(name, content)
         }
       }else{
-        var updateLine = array(i)
+        arr(i)=array(i)
+      }
+    }
+    //update
+    for(i<- 0 until arr.length){
+        var updateLine = arr(i)
+        debug("updateLine("+i+"):'"+updateLine+"'", "Preprocessor")
         for((n,c)<-constants){
-          while(updateLine.contains(n)){
-            val posBegin = updateLine.indexOf(n)
-            val posEnd = posBegin+n.length
-            updateLine = updateLine.substring(0,posBegin)+ "("+ c + ")"+ updateLine.substring(posEnd)
+          var begin = 0
+          var posBegin = updateLine.indexOf(n, begin)
+          while(posBegin!= -1){
+            if(notPartOfAnotherIdentifier(updateLine, posBegin)){
+              val posEnd = posBegin+n.length
+              updateLine = updateLine.substring(0,posBegin)+ "("+ c + ")"+ updateLine.substring(posEnd)
+            }else{
+              begin=posBegin+1
+            }
+            posBegin = updateLine.indexOf(n, begin)
           }
         }
         arr(i)=updateLine
-      }
     }
     arr
   }
