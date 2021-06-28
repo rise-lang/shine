@@ -37,6 +37,17 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     println(gen.OpenCLKernel(ex))
   }
+  test("parser should be able to parse 'addMatrixDifferentOrder.rise'"){
+    val fileName: String = testFilePath + "addMatrixDifferentOrder.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "matrixaddition"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
+
+    println(gen.OpenCLKernel(ex))
+  }
 
   test("parser should be able to parse 'arrayType.rise'"){
     val fileName: String = testFilePath + "arrayType.rise"

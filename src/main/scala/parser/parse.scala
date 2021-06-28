@@ -1141,7 +1141,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
       (Left(parseState), ErrorList().add(UsedOrFailedRule(isParsing(), whatToParse))) |>
         parseForeignFctKeyWord |>
         parseIdent
-    val (ps, identifierFkt, typeOfFkt): (ParseState, r.Identifier, r.types.Type) = psLambdaOld match {
+    val (ps, identifierFkt, typeOfFkt): (ParseState, r.Identifier, Option[r.types.Type]) = psLambdaOld match {
       case Right(e) => return Right(errorList.add(UsedOrFailedRule(isFailed(), whatToParse)))
       case Left(p) => {
         p.parsedSynElems.head match {
@@ -1149,14 +1149,14 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
             mapFkt.get(n) match {
               case None => {
                 //debug("Identifier doesn't exist: " + n + " , " + psLambdaOld)
-                throw new IllegalStateException("We want to parse an NamedExpr for " + n +
-                  " but this Identifier is not declared yet!")
+                (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapDepL, p.spanList, p.argumentsTypes),
+                  id, None)
               }
               case Some(HMExpr(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
               case Some(HMNat(n)) => throw new IllegalStateException("Name of a Nat: " + n)
               case Some(HMType(typeFkt)) =>
                 (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapDepL, p.spanList, p.argumentsTypes),
-                  id.setType(typeFkt), typeFkt)
+                  id.setType(typeFkt), Some(typeFkt))
             }
           case SLet(sp) =>
             throw new IllegalStateException("it is an Identifier expected not let: " + sp)
@@ -1187,8 +1187,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
 
           case EndForeignFct(span) :: remainderTokens => {
             mapFkt.get(identifierFkt.name) match {
-              case None => throw new IllegalStateException("Identifier seems not to be in the Map: " +
-                identifierFkt.name + " , " + mapFkt)
+              case None => (remainderTokens, p.parsedSynElems, p.mapDepL.get)
               case Some(HMNat(n)) => throw new IllegalStateException("Name of a Nat: " + n)
               case Some(HMExpr(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
               case Some(HMType(t)) =>
@@ -1210,13 +1209,13 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         }
       }
     }
-    val expr = synElemList match{
+    var expr = synElemList match{
       case SSeq(seqBody,spBody)::SSeq(seqParam, spParam)::list => {
         val body = giveAsOneString(seqBody.toSeq)
         val bodyWithBraces ="{\n"+body+"}"
         //debug("body: '"+ bodyWithBraces+"'" + " ; '"+ seqBody.isEmpty+"'")
         r.ForeignFunction(r.ForeignFunction.Decl(identifierFkt.name,
-          Some(ForeignFunction.Def(seqParam.toSeq, bodyWithBraces))))(typeOfFkt, Some(spBody+spParam))
+          Some(ForeignFunction.Def(seqParam.toSeq, bodyWithBraces))))(typeOfFkt.getOrElse(rt.TypePlaceholder), Some(spBody+spParam))
       }
       case SSeq(_,_)::x::list => {
         val e = NotCorrectSynElem(x, "SSeq (second position)", whatToParse)
@@ -1235,7 +1234,15 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         return Right(newEL.add(e).add(UsedOrFailedRule(isFailed(), whatToParse)))
       }
     }
-    mapFkt.update(identifierFkt.name, HMExpr(rd.ToBeTyped(expr)))
+    typeOfFkt match {
+      case Some(tOF) => {
+        expr = expr.setType(tOF)
+        //debug("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
+        require(expr.span != None, "expr is None!")
+      }
+      case None =>
+    }
+    mapFkt.update(identifierFkt.name, HMExpr(expr))
     //debug("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)
     errorList.add(UsedOrFailedRule(isMatched(), whatToParse))
     Left(tokenList)
