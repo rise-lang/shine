@@ -85,8 +85,9 @@ object toMLIR {
          |  return b.create<LiteralOp>(loc, type, LiteralAttr::get(b.getContext(), type, "${d.toString}"));
          |}()""".stripMargin
     case primitive: Primitive => primitiveToCppBuilderAPI(primitive)
-    case _: DepLambda[_, _, _] | _: DepApp[_, _] => ???
-    case _: Opaque| _: TypeAnnotation | _: TypeAssertion => ???
+    case _: DepLambda[_, _, _] | _: DepApp[_, _] |
+         _: Opaque| _: TypeAnnotation | _: TypeAssertion =>
+      throw new Exception(s"This expression ($exp) is not supported in MLIR (yet).")
   }
 
   private def collectArgs(expr: Expr, arg: Expr): Seq[Expr] = collectArgs(expr, Seq(arg))
@@ -121,47 +122,32 @@ object toMLIR {
     case dt: DataType => fromDataType(dt)
     case FunType(inT, outT) =>
       s"rise::FunType::get(b.getContext(), ${fromType(inT)}, ${fromType(outT)})"
-    case TypePlaceholder => ???
-    case TypeIdentifier(name) => ???
-    case DepFunType(_, _, _) => ???
+    case TypePlaceholder | TypeIdentifier(_) | DepFunType(_, _, _) =>
+      throw new Exception(s"This type ($ty) is not supported in MLIR (yet).")
   }
 
   private def fromDataType(dt: DataType): String = dt match {
     case scalarType: ScalarType => scalarType match {
-      case `bool` =>  ???
       case `int` => s"rise::ScalarType::get(b.getContext(), IntegerType::get(b.getContext()))"
-      case `i8` => ???
-      case `i16` => ???
-      case `i32` => ???
-      case `i64` => ???
-      case `u8` => ???
-      case `u16` => ???
-      case `u32` => ???
-      case `u64` => ???
       case `f16` => s"rise::ScalarType::get(b.getContext(), Float16Type::get(b.getContext()))"
       case `f32` => s"rise::ScalarType::get(b.getContext(), Float32Type::get(b.getContext()))"
       case `f64` => s"rise::ScalarType::get(b.getContext(), Float64Type::get(b.getContext()))"
+      case `bool` | `i8` | `i16` | `i32` | `i64` | `u8` | `u16` | `u32` | `u64` =>
+        throw new Exception(s"This scalar type ($scalarType) is not supported in MLIR (yet).")
     }
     case NatType => s"rise::ScalarType::get(b.getContext(), IntegerType::get(b.getContext()))"
     case PairType(dt1, dt2) =>
       s"rise::Tuple::get(b.getContext(), ${fromDataType(dt1)}, ${fromDataType(dt2)})"
     case ArrayType(size, elemType) =>
       s"rise::ArrayType::get(b.getContext(), ${fromNat(size)}, ${fromDataType(elemType)})"
-    case DataTypeIdentifier(name) => ???
-    case OpaqueType(name) => ???
-    case VectorType(size, elemType) => ???
-    case IndexType(size) => ???
-    case FragmentType(rows, columns, d3, dataType, fragmentKind, layout) => ???
-    case ManagedBufferType(dt) => ???
-    case DepPairType(kind, x, t) => ???
-    case apply: NatToDataApply => ???
-    case DepArrayType(size, fdt) => ???
+    case VectorType(_, _) | DataTypeIdentifier(_) | OpaqueType(_) | IndexType(_) | FragmentType(_, _, _, _, _, _) |
+         ManagedBufferType(_) | DepPairType(_, _, _) | _: NatToDataApply | DepArrayType(_, _) =>
+      throw new Exception(s"This data type ($dt) is not supported in MLIR (yet).")
   }
 
   private def fromNat(nat: Nat): String = nat match {
-    case Cst(c) =>
-      s"rise::Nat::get(b.getContext(), ${c.toString})"
-    case _ => ???
+    case Cst(c) => s"rise::Nat::get(b.getContext(), ${c.toString})"
+    case _      => throw new Exception(s"This nat ($nat) is not supported in MLIR (yet).")
   }
 
   private def primitiveToCppBuilderAPI(p: Primitive): String = (p, p.t) match {
