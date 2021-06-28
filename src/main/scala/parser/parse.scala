@@ -1369,12 +1369,13 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
           case SExpr(id@r.Identifier(n)) =>
             mapFkt.get(n) match {
               case Some(elem) => {
-                debug("Identifier does already exist: " + n + " , " + psLambdaOld, whatToParse)
+                //debug("Identifier does already exist: " + n + " , " + psLambdaOld, whatToParse)
                 elem match {
-                  case HMExpr(e) => e.span match {
-                    case Some(value) => return Right(errorL.add(NamedExprAlreadyExist(n, id.span.get, value, whatToParse)))
-                    case None => (p, id, errorL)
-                  }
+                  case HMExpr(e) => if(e.t.isInstanceOf[rt.TypePlaceholder.type]) {
+                      (p, id, errorL)
+                    }else{
+                      return Right(errorL.add(NamedExprAlreadyExist(n, id.span.get, e.span.get, whatToParse)))
+                    }
                   case HMType(t) => return Right(errorL.add(TypAnnotationAlreadyExist(n, id.span.get, whatToParse)))
                   case HMNat(nat) => return Right(errorL.add(NatAlreadyExist(n, id.span.get, nat.span, whatToParse)))
                 }
@@ -1401,7 +1402,13 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
     psNew.tokenStream match {
       case EndTypAnnotatedIdent(_) :: remainderTokens => {
         val singleType = getSingleTypeOfList(psNew.parsedSynElems, None)
-        mapFkt.put(identifierFkt.name, HMType(singleType))
+        mapFkt.get(identifierFkt.name) match {
+          case Some(elem) => elem match {
+            case HMExpr(e) => mapFkt.put(identifierFkt.name, HMExpr(e.setType(singleType)))
+            case _ => throw new IllegalStateException("no declaration was already checked, but now there is one")
+          }
+          case None => mapFkt.put(identifierFkt.name, HMType(singleType))
+        }
         //debug("return TypAnnotatedIdent: " + remainderTokens + " <<<<>>>> " + mapFkt)
         Left(remainderTokens)
       }
