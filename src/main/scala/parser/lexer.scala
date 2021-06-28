@@ -561,6 +561,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
         case Arrow(_) => {
           //nothing to do
         }
+        case DepArrow(_) =>
         case t => throw ErrorMessage.NotExpectedToken("=>", t.toString, t.s)
       }
     }
@@ -669,6 +670,10 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
           val span: Span = Span(fileReader, Range(beginLoc, endLoc))
           arr(column).substring(row, row + 2) match {
             case "->" => {
+              list = list.::(Arrow(span))
+              row = row + 2
+            }
+            case "=>" => {
               list = list.::(Arrow(span))
               row = row + 2
             }

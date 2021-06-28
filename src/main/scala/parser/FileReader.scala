@@ -29,11 +29,11 @@ case class FileReader(fileName: String) {
     cutAndPasteConstants(array)
   }
 
-  private def notPartOfAnotherIdentifier(updateLine:String, posBegin: Int):Boolean={
+  private def notPartOfAnotherIdentifier(updateLine:String, posBegin: Int, name:String):Boolean={
     if(posBegin== -1){
       false
     }else{
-      !((posBegin>0&&updateLine(posBegin -1).isLetter)||(updateLine.length>posBegin+1&&updateLine(posBegin +1).isLetter))
+      !((posBegin>0&&updateLine(posBegin -1).isLetter)||(updateLine.length>posBegin+1&&updateLine(posBegin+name.length).isLetter))
     }
   }
   /*
@@ -63,15 +63,17 @@ case class FileReader(fileName: String) {
         arr(i)=array(i)
       }
     }
+    debug(constants.toString(), "PreProcessor")
     //update
     for(i<- 0 until arr.length){
         var updateLine = arr(i)
-        debug("arr("+i+1+"):'"+updateLine+"'", "Preprocessor")
+        val line = i+1
         for((n,c)<-constants){
           var begin = 0
           var posBegin = updateLine.indexOf(n, begin)
           while(posBegin!= -1){
-            if(notPartOfAnotherIdentifier(updateLine, posBegin)){
+            if(notPartOfAnotherIdentifier(updateLine, posBegin, n)){
+//              println("pos"+ posBegin+ ":"+n +":"+c)
               val posEnd = posBegin+n.length
               updateLine = updateLine.substring(0,posBegin)+ "("+ c + ")"+ updateLine.substring(posEnd)
             }else{
@@ -80,6 +82,7 @@ case class FileReader(fileName: String) {
             posBegin = updateLine.indexOf(n, begin)
           }
         }
+      debug("arr("+line+"):'"+updateLine+"'", "Preprocessor")
         arr(i)=updateLine
     }
     arr
