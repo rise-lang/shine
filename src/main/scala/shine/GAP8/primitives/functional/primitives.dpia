@@ -1,1 +1,1 @@
-def run{cores: nat}(dt: data, input: exp[dt, write]): exp[dt, write]
+def run{cores: Nat}(dt: data, input: exp[dt, write]): exp[dt, write]
