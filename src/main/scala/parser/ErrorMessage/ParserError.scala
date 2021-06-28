@@ -352,6 +352,28 @@ final case class NotCorrectSynElem(wrongSynElem: parser.parse.SyntaxElement,expe
   override val help: Option[String] = None
 }
 
+final case class NamedExprAlreadyExist(Ident: String, override val span:Span, spanExpr:Span, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  require(begin.column == end.column, "not in one column")
+  override val description_error: String = "It exist already the Declaration of the Expr '"+ Ident+ "'"
+  override val what_exp: String = "Expr already exitsts in "+ spanExpr.toUri
+  override val help: Option[String] = Some("You can only define a expression one time")
+}
+final case class NatAlreadyExist(Ident: String, override val span:Span, spanExpr:Span, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  require(begin.column == end.column, "not in one column")
+  override val description_error: String = "It exist already the Declaration of the Nat '"+ Ident+ "'"
+  override val what_exp: String = "Nat already exitsts in "+ spanExpr.toUri
+  override val help: Option[String] = Some("You can only define a nat one time")
+}
+final case class TypAnnotationAlreadyExist(Ident: String, override val span:Span, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  require(begin.column == end.column, "not in one column")
+  override val description_error: String = "It exist already the Typannotation '"+ Ident+ "'"
+  override val what_exp: String = "Typannotation already exitsts"// exists in"+  spanOfOldTypannotation.toUri
+  override val help: Option[String] = Some("You can define the Expr with '='")
+}
+
 //__________________________________________________________________________________________________________
 abstract sealed class UseOrFailState()
 final case class isParsing() extends UseOrFailState

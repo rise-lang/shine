@@ -66,7 +66,7 @@ case class FileReader(fileName: String) {
     //update
     for(i<- 0 until arr.length){
         var updateLine = arr(i)
-        debug("updateLine("+i+"):'"+updateLine+"'", "Preprocessor")
+        debug("arr("+i+1+"):'"+updateLine+"'", "Preprocessor")
         for((n,c)<-constants){
           var begin = 0
           var posBegin = updateLine.indexOf(n, begin)

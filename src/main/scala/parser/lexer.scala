@@ -69,7 +69,7 @@ case class RecognizeLexeme(fileReader: FileReader){
       lexIdentifier(column, row) match {
         case (Left(a), r) => {
           a match {
-            case Identifier("foreign", span) => throw new IllegalStateException("You can't start with an foreign Function")
+            case Identifier("foreign", span) => return beginForeignFct(column, row, list)._1
             case _ =>
           }
           var newRow = r
@@ -101,14 +101,11 @@ case class RecognizeLexeme(fileReader: FileReader){
                   case "==" => throw NotExpectedToken("'::' or '='", "==", Span(fileReader,
                     Range(Location(column, newRow),Location(column, newRow+2))))
                   case a => {
-                    throw NotExpectedToken("'::' or '='", a, Span(fileReader,
-                      Range(Location(column, newRow),Location(column, newRow+2))))
+                    return beginNamedExpr(column, row, list)._1
                   }
                 }
               } else {
-                throw NotExpectedToken("'::' or '='", arr(column).substring(newRow, newRow + 1),
-                  Span(fileReader,
-                    Range(Location(column, newRow),Location(column, newRow+1))))
+                throw return beginNamedExpr(column, row, list)._1
               }
             }
             case a => throw NotExpectedToken("'::' or '='", a, Span(fileReader,
@@ -1511,6 +1508,32 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Token]):Either[TokenAn
     val span = Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))
     list = list.::(BeginTypAnnotatedIdent(span))
     lexerTypAnnotatedIdent(column, row, list)
+  }
+
+  private def beginForeignFct(column: Int, row: Int, l: List[Token]):TokenAndPos = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))
+    list = list.::(BeginForeignFct(span))
+    var (newList, c, r) = lexerForeignFct(column, row, list)
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
+      newList = newList.::(EndForeignFct(new Span(fileReader, Location(c, r))))
+    }
+    //debug("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
+    (newList, c, r)
+  }
+
+  private def beginNamedExpr(column: Int, row: Int, l: List[Token]):TokenAndPos = {
+    var list = l
+    val loc: Location = Location(column, row)
+    val span = Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))
+    list = list.::(BeginNamedExpr(span))
+    var (newList, c, r) = lexerNamedExpr(column, row, list)
+    if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
+      newList = newList.::(EndForeignFct(new Span(fileReader, Location(c, r))))
+    }
+    //debug("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
+    (newList, c, r)
   }
 
 

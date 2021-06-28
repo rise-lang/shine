@@ -3,7 +3,7 @@ package parser //old branch 17. Dezember 2020
 import rise.{core => r, openCL => o}
 import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
-import parser.ErrorMessage.{ErrorList, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
+import parser.ErrorMessage.{ErrorList, NamedExprAlreadyExist, NatAlreadyExist, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
 import rise.core.DSL.ToBeTyped
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.ForeignFunction
@@ -20,7 +20,7 @@ object parse {
     val m= new MapExpr
     map.foreach{
       case (name, elems) => elems match {
-        case HMExpr(e) => m.update(name, e.toExprWithMapFkt(map))
+        case HMExpr(e) => m.update(name, ToBeTyped(e).toExprWithMapFkt(map))
         case HMType(t) => { //error: Every fkt should be initialised yet
           throw new RuntimeException("The function '"+name+"' is not implemented: "+ t)
         }
@@ -97,7 +97,7 @@ object parse {
   final case class RAddrSpace() extends RiseKind
 
   sealed trait HashMapElems
-  final case class HMExpr(e:rd.ToBeTyped[r.Expr]) extends HashMapElems
+  final case class HMExpr(e:r.Expr) extends HashMapElems
   final case class HMType(t:r.types.Type) extends HashMapElems
   final case class HMNat(n:SNat) extends HashMapElems
 
@@ -1262,7 +1262,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
       (Left(parseState),ErrorList().add(UsedOrFailedRule(isParsing(), whatToParse))) |>
         parseIdent
 
-    val (ps, identifierFkt, typeOfFkt): (ParseState, r.Identifier, r.types.Type) = psLambdaOld match {
+    val (ps, identifierFkt, typeOfFkt): (ParseState, r.Identifier, Option[r.types.Type]) = psLambdaOld match {
       case Right(e) => return Right(errorList.add(UsedOrFailedRule(isParsing(), whatToParse)))
       case Left(p) => {
         p.parsedSynElems.head match {
@@ -1270,14 +1270,14 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
             mapFkt.get(n) match {
               case None => {
                 //debug("Identifier doesn't exist: " + n + " , " + psLambdaOld)
-                throw new IllegalStateException("We want to parse an NamedExpr for " + n +
-                  " but this Identifier is not declared yet!")
+                (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapDepL, p.spanList, p.argumentsTypes),
+                  id, None)
               }
               case Some(HMExpr(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
               case Some(HMNat(n)) => throw new IllegalStateException("Name of a Nat: "+ n)
               case Some(HMType(typeFkt)) =>
                 (ParseState(p.tokenStream, parseState.parsedSynElems, p.mapDepL, p.spanList, p.argumentsTypes),
-                  id.setType(typeFkt), typeFkt)
+                  id.setType(typeFkt), Some(typeFkt))
             }
           case SLet(sp) =>
             throw new IllegalStateException("it is an Identifier expected not let: " + sp)
@@ -1295,11 +1295,17 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         }
       }
     }
-    val argumentList = getArgumentTypes(typeOfFkt)
-    val psWithNewArgumentList = ParseState(ps.tokenStream, ps.parsedSynElems, ps.mapDepL, ps.spanList, argumentList)
-    val (psNamedExprBefore,newEL) = {
-      (Left(psWithNewArgumentList),errorList) |>(parseNamedExprWithOnlyOneNat _||parseNamedExprWithNormalExpr)
+    val (psNamedExprBefore,newEL) = typeOfFkt match {
+      case Some(typeOF) => {
+        val argumentList = getArgumentTypes(typeOF)
+        val psWithNewArgumentList = ParseState(ps.tokenStream, ps.parsedSynElems, ps.mapDepL, ps.spanList, argumentList)
+        (Left(psWithNewArgumentList), errorList) |> (parseNamedExprWithOnlyOneNat _ || parseNamedExprWithNormalExpr)
+      }
+      case None => {
+        (Left(ps), errorList) |> (parseNamedExprWithOnlyOneNat _ || parseNamedExprWithNormalExpr)
+      }
     }
+
 
 
     val (tokenList,synElemList, mapDepL) = psNamedExprBefore match {
@@ -1308,25 +1314,8 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
       }
       case Left(p) => {
         p.tokenStream match {
-
           case EndNamedExpr(_) :: remainderTokens => {
-            mapFkt.get(identifierFkt.name) match {
-              case None => throw new IllegalStateException("Identifier seems not to be in the Map: " +
-                identifierFkt.name + " , " + mapFkt)
-              case Some(HMNat(n)) => throw new IllegalStateException("Name of a Nat: "+ n)
-              case Some(HMExpr(e)) => throw new IllegalStateException("The Lambda-Fkt should't be initiated yet!: " + e)
-              case Some(HMType(t)) =>
-                //Todo: I have to add Types in the Identifiers in Lambda and delete it after it, after this this if-clause makes sense
-                //                if(!l.isEmpty){
-                //                throw new IllegalStateException("The List should be empty! But it isn't. " +
-                //                  "Probably we have one or more Types in the " +
-                //                  "TypAnnotationIdent declared than the NamedExpr really has. Types left: " + l + "\nTypes defined: " + typesDefined + "\nNamedExpr: " + p.parsedSynElems)
-                //              }else{
-                //Todo: We have to give the Identifier (identifierFkt/p.map.get(n)) now a Type
-
-                (remainderTokens, p.parsedSynElems, p.mapDepL.get)
-              //              }
-            }
+           (remainderTokens, p.parsedSynElems, p.mapDepL.get)
           }
           case _ => {
             throw new IllegalStateException("NewExpr ends with an EndNamedExpr, but we have no EndNamedExpr at the end")
@@ -1352,19 +1341,15 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
       }
     //debug("\n\n\n Before combining the Expr in parseNamedExpr \n\n\n")
     var expr = combineExpressionsDependent(synElemList, mapDepL)
-    expr = expr.setType(typeOfFkt)
-
-    //debug("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
-
-    require(expr.span != None, "expr is None!")
-//    rd.ToBeTyped(expr) match {
-//      case rd.ToBeTyped(e) => require(e.span != None, "expr is now in ToBeTyped without infer None")
-//      case _ => throw new IllegalStateException("this should not be happening")
-//    }
-//    //debug("before requre MapFkt: '"+ mapFkt + "' for the Expr: '"+ expr + "' with Type: '"+ expr.t + "'")
-//    require(rd.ToBeTyped(expr).toExpr.span != None, "expr is now with ToBeType.toExpr None!")
-
-    mapFkt.update(identifierFkt.name, HMExpr(rd.ToBeTyped(expr)))
+    typeOfFkt match {
+      case Some(tOF) => {
+        expr = expr.setType(tOF)
+        //debug("expr finished: " + expr + " with type: " + expr.t + "   (should have Type: " + typeOfFkt + " ) ")
+        require(expr.span != None, "expr is None!")
+      }
+      case None =>
+    }
+    mapFkt.update(identifierFkt.name, HMExpr(expr))
     //debug("map updated: " + mapFkt + "\nRemainderTokens: " + tokenList)
     Left(tokenList)
   }
@@ -1381,13 +1366,21 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
     val (ps, identifierFkt, eL): (ParseState, r.Identifier, ErrorList) = psLambdaOld match {
       case (Left(p), errorL) => {
         p.parsedSynElems.head match {
-          case SExpr(id@r.Identifier(n)) => if (mapFkt.contains(n)) {
-            debug("Identifier does already exist: " + n + " , " + psLambdaOld, whatToParse)
-            throw new IllegalStateException("We want to parse an TypAnnotatedIdent for " + n
-              + " but this Identifier is already declared!")
-          } else {
-            (p, id, errorL)
-          }
+          case SExpr(id@r.Identifier(n)) =>
+            mapFkt.get(n) match {
+              case Some(elem) => {
+                debug("Identifier does already exist: " + n + " , " + psLambdaOld, whatToParse)
+                elem match {
+                  case HMExpr(e) => e.span match {
+                    case Some(value) => return Right(errorL.add(NamedExprAlreadyExist(n, id.span.get, value, whatToParse)))
+                    case None => (p, id, errorL)
+                  }
+                  case HMType(t) => return Right(errorL.add(TypAnnotationAlreadyExist(n, id.span.get, whatToParse)))
+                  case HMNat(nat) => return Right(errorL.add(NatAlreadyExist(n, id.span.get, nat.span, whatToParse)))
+                }
+              }
+              case None =>(p, id, errorL)
+            }
           case synElem => return Right(errorL.add(NotCorrectSynElem(synElem, "Identifier", whatToParse)))
         }
       }
