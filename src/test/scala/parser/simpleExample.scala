@@ -8,27 +8,92 @@ import rise.openCL.primitives.oclReduceSeq
 import util._
 
 class parseTest extends  test_util.TestsWithExecutor {
-  private val v = vec(4, f32)
-  private val add = foreignFun("add",
-    Seq("a", "b"),
-    """{
+  test("matrixaddition"){
+    val v = vec(4, f32)
+    val add = foreignFun("add",
+      Seq("a", "b"),
+      """{
 	  |  float4 res;
-    |  res.xyz = a.xyz + b.xyz;
-    |  return res;
-    |  }
-    |""".stripMargin,
-    v->:v->:v
-  )
-  val matrixaddition: ToBeTyped[Expr] = depFun((n: Nat)=>fun(
-    (n`.`n`.`v)->:(n`.`n`.`v)->:(n`.`n`.`v)
-  )((matA, matB)=>
-    mapGlobal(1)(fun(row=>
-      mapLocal(0)(fun(elem=>
+|  res.xyz = a.xyz + b.xyz;
+|  return res;
+|  }
+|""".stripMargin,
+      v->:v->:v
+    )
+    val matrixaddition: ToBeTyped[Expr] = depFun((n: Nat)=>fun(
+      (n`.`n`.`v)->:(n`.`n`.`v)->:(n`.`n`.`v)
+    )((matA, matB)=>
+      mapGlobal(1)(fun(row=>
+        mapLocal(0)(fun(elem=>
           add(fst(elem))(snd(elem))
-      )) $ zip(fst(row))(snd(row))
-    )) $ zip(matA)(matB)
-  ))
+        )) $ zip(fst(row))(snd(row))
+      )) $ zip(matA)(matB)
+    ))
 
-  val kernel = gen.OpenCLKernel(matrixaddition)
-  println(kernel)
+    val kernel = gen.OpenCLKernel(matrixaddition)
+    println(kernel)
+  }
+
+  /*
+  rise.core.types.InferenceException was thrown.
+inference exception: could not solve constraints: List((_n185._n171.<4>f32 -> (_n185._n171.<4>f32 -> _n185._n171.<2>f64))  ~  (n132.n132.<4>f32 -> (n132.n132.<4>f32 -> n132.n132.<4>f32)))
+---- trace ----
+
+---------------
+   */
+  test("matrixaddition: falscher Typ"){
+    val v1 = vec(4, f32)
+    val v2 = vec(2, f64)
+    val add = foreignFun("add",
+      Seq("a", "b"),
+      """{
+	  |  float4 res;
+|  res.xyz = a.xyz + b.xyz;
+|  return res;
+|  }
+|""".stripMargin,
+      v1->:v1->:v2
+    )
+    val matrixaddition: ToBeTyped[Expr] = depFun((n: Nat)=>fun(
+      (n`.`n`.`v1)->:(n`.`n`.`v1)->:(n`.`n`.`v1)
+    )((matA, matB)=>
+      mapGlobal(1)(fun(row=>
+        mapLocal(0)(fun(elem=>
+          add(fst(elem))(snd(elem))
+        )) $ zip(fst(row))(snd(row))
+      )) $ zip(matA)(matB)
+    ))
+
+    val kernel = gen.OpenCLKernel(matrixaddition)
+    println(kernel)
+  }
+  /*not found: value row
+        mapGlobal(1)(fun(row==>
+   */
+//  test("matrixaddition"){
+//    val v = vec(4, f32)
+//    val add = foreignFun("add",
+//      Seq("a", "b"),
+//      """{
+//	  |  float4 res;
+//|  res.xyz = a.xyz + b.xyz;
+//|  return res;
+//|  }
+//|""".stripMargin,
+//      v->:v->:v
+//    )
+//    val matrixaddition: ToBeTyped[Expr] = depFun((n: Nat)=>fun(
+//      (n`.`n`.`v)->:(n`.`n`.`v)->:(n`.`n`.`v)
+//    )((matA, matB)=>
+//      mapGlobal(1)(fun(row==>
+//        mapLocal(0)(fun(elem=>
+//          add(fst(elem))(snd(elem))
+//        )) $ zip(fst(row))(snd(row))
+//      )) $ zip(matA)(matB)
+//    ))
+//
+//    val kernel = gen.OpenCLKernel(matrixaddition)
+//    println(kernel)
+//  }
+
 }

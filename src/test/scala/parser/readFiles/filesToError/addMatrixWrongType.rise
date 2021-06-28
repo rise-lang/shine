@@ -1,0 +1,14 @@
+matrixaddition::N:Nat=>N.N.V1->N.N.V1->N.N.V1
+matrixaddition=\N:Nat=>\matA->\matB->
+  mapGlobal 1 (\row->mapLocal 0 (
+    \elem->addV (fst elem) (snd elem))
+      (zip(fst row) (snd row)))
+    (zip matA matB)
+V1:=4xF32
+V2:=4xF32
+addV::V1->V1->V2
+foreign addV(a,b){
+  float4 res;
+  res.xyz = a.xyz + b.xyz;
+  return res;
+}

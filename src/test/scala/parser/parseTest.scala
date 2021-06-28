@@ -2953,6 +2953,25 @@ class parseTest extends  test_util.TestsWithExecutor {
   //-----------------------------------------------------------------------------------------------------
   //Error-Tests //Todo: " .. (.. (..).. " as an ErrorTest
 
+  test("parser should be able to parse 'addMatrixWrongType.rise'"){
+    val fileName: String = errorFilePath + "addMatrixWrongType.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+//    val thrown = intercept[rt.InferenceException] {
+      parse(lexer.tokens)
+//    }
+    //thrown.msg should equal(" fkt has no type")
+  }
+  test("parser should be able to parse 'addMatrixTooLongArrow.rise'"){
+    val fileName: String = errorFilePath + "addMatrixTooLongArrow.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    //    val thrown = intercept[rt.InferenceException] {
+    parse(lexer.tokens)
+    //    }
+    //thrown.msg should equal(" fkt has no type")
+  }
+
   test("parser should be able to parse 'fx.rise'"){
     val fileName: String = errorFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
