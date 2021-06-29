@@ -779,7 +779,9 @@ object parse {
         }
         val (n, spanOfN) = synE.tail.head match {
           case SExpr(r.Literal(rS.IntData(len), spanOfLen)) => (len, spanOfLen)
-          case _ => throw new IllegalStateException("For this Primitive '" + name + "' we expect to see an lenght in Int")
+          case SExpr(r.Literal(rS.NatData(len), spanOfLen)) => (len.eval, spanOfLen)
+          case SNat(NNumber(len), spanOfLen) => (len.eval, Some(spanOfLen))
+          case _ => throw new IllegalStateException("For this Primitive '" + name + "' we expect to see the lenght in Int or Nat")
         }
         synE = synE.tail.tail
         spanOfN match {

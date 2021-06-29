@@ -216,14 +216,14 @@ final case class ToShortToBeThisToken(expectedLength:Int, token:String, override
 }
 final case class NOTanBinOperator(symbol: String, override val span:Span)
   extends PreAndErrorToken(span) {
-  require(begin == end, "begin is unequal to end")
+  require(begin.column == end.column, "not in one column")
   override val description_error: String = "The Symbol '" + symbol + "' is not an Binary Operator"
   override val what_exp: String = "no Binary Operator"
   override val help: Option[String] = Some("allowed binaryOperators '"+RecognizeLexeme.binarySymbol.toString()+"'")
 }
 final case class NOTanUnOperator(symbol: String, override val span:Span)
   extends PreAndErrorToken(span) {
-  require(begin == end, "begin is unequal to end")
+  require(begin.column == end.column, "not in one column")
   override val description_error: String = "The Symbol '" + symbol + "' is not an Unary Operator"
   override val what_exp: String = "no Unary Operator"
   override val help: Option[String] = Some("allowed unary Operators '"+RecognizeLexeme.unarySymbol.toString()+"'")
