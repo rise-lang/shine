@@ -2957,11 +2957,25 @@ class parseTest extends  test_util.TestsWithExecutor {
     val fileName: String = errorFilePath + "addMatrixWrongType.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-//    val thrown = intercept[rt.InferenceException] {
-      parse(lexer.tokens)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "matrixaddition"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
+
+    //    val thrown = intercept[rt.InferenceException] {
+    println(gen.OpenCLKernel(ex))
 //    }
     //thrown.msg should equal(" fkt has no type")
   }
+  /*
+  ParserError: Arrow is only with one '-' not two '--' `-->`
+ --> file:///home/visualjames/Documents/Universitaet/Bachelorarbeit/Repos/IntegrateRISE/shine/src/test/scala/parser/readFiles/filesToError/addMatrixTooLongArrow.rise:3:20
+     |-------
+3    |   mapGlobal 1 (\row-->mapLocal 0 (
+     |                    ^^^ expected is an Arrow: '->'
+     |-------
+     | help: For comments you need a withespace after '--' and for Arrows you write only '->'
+   */
   test("parser should be able to parse 'addMatrixTooLongArrow.rise'"){
     val fileName: String = errorFilePath + "addMatrixTooLongArrow.rise"
     val file: FileReader = new FileReader(fileName)

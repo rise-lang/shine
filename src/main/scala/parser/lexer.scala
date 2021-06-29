@@ -15,6 +15,7 @@ object RecognizeLexeme{
   def otherKnownSymbol(c:Char): Boolean = {
     knownCharacters(c) //set.contains(c)
   }
+  val commentSymbol= Set('>', '<', '#', '+', '%' , '&', '$', '!','*', '.')
   val binarySymbol= Set('-', '+', '*', '/', '%' , '>', '<', '=')
   val unarySymbol= Set('~', '!')
   val scalarTypes= Set("Bool", "I16","I32","F64","NatTyp")
@@ -24,6 +25,10 @@ object RecognizeLexeme{
    */
   def isBinaryOperatorSymbol(c:Char): Boolean = {
     binarySymbol(c) //set.contains(c)
+  }
+
+  def isNoCommentSymbol(c:Char): Boolean = {
+    !commentSymbol(c) //set.contains(c)
   }
 }
 
@@ -1098,7 +1103,9 @@ case class RecognizeLexeme(fileReader: FileReader){
         row = ro
         list = li
       }
-      case Right(EndOfLine(_)) =>
+      case Right(EndOfLine(Span(file, Range(begin, Location(end_column, end_row))))) => if(end_column+1>=arr.length){
+       return (list, end_column,end_row)
+      }
       case Right(e) => throw e
     }
 
@@ -1382,7 +1389,7 @@ case class RecognizeLexeme(fileReader: FileReader){
     list = list.::(BeginNamedExpr(span))
     var (newList, c, r) = lexerNamedExpr(column, row, list)
     if((!newList.head.isInstanceOf[EndTypAnnotatedIdent])&&(!newList.head.isInstanceOf[EndNamedExpr])&&(!newList.head.isInstanceOf[EndForeignFct])){
-      newList = newList.::(EndForeignFct(new Span(fileReader, Location(c, r))))
+      newList = newList.::(EndNamedExpr(new Span(fileReader, Location(c, r))))
     }
     //debug("endTypAnnotatedIdentBeginNamedExpr ended: "+  newList)
     (newList, c, r)
@@ -1693,14 +1700,15 @@ if '==' then two steps else only one step
         Left(BinOp(OpType.BinOpType.GT, Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))))
       }
       case '=' => {
-        if (arr(column).length <= row + 1 || arr(column).substring(row, row + 2) != "=="||arr(column).substring(row, row + 2) != "=>") {
-          val loc: Location = Location(column, row)
-          Right(OnlyOneEqualSign(Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))))
-        } else if (arr(column).substring(row, row + 2) != "=>") {
-          val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          Right(NotExpectedToken("==", "=>", Span(fileReader, Range(loc, Location(loc.column, loc.row + 1)))))
-        }
-        else { // ==
+        if (arr(column).length <= row + 1 || arr(column).substring(row, row + 2) != "==") {
+          if (arr(column).substring(row, row + 2) == "=>") {
+            val loc: Location = Location(column, row) //endLocation is equal to startLocation
+            Right(NotExpectedToken("=>", "==", Span(fileReader, Range(loc, Location(loc.column, loc.row + 1)))))
+          }else{
+            val loc: Location = Location(column, row)
+            Right(OnlyOneEqualSign(Span(fileReader, Range(loc, Location(loc.column, loc.row+1)))))
+          }
+        } else { // ==
           val beginLoc: Location = Location(column, row)
           val endLoc: Location = Location(column, row + 1)
           Left(BinOp(OpType.BinOpType.EQ, Span(fileReader, Range(beginLoc, endLoc))))
@@ -1869,10 +1877,16 @@ if '==' then two steps else only one step
       (Left(NatNumber(arr(column).substring(row, pos-1).toInt, Span(fileReader,Range(locStart, locEnd)))),pos-1)
     }else if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | RecognizeLexeme.otherKnownSymbol(arr(column)(pos)))) {
       lexNumberComplexMatch(column, row, arr, substring, locStart, pos)
-    } else if(substring.matches("[0-9]+")){
-      val locEnd:Location = Location(column, pos)
-      //(Left(I32(substring.toInt, Span(fileReader,Range(locStart, locEnd)))),pos)
-      (Left(NatNumber(substring.toInt, Span(fileReader,Range(locStart, locEnd)))),pos)
+    } else if(substring.matches("[0-9]+")||pos < arr(column).length &&(arr(column)(pos).isWhitespace||arr(column)(pos)=='.')){
+      if(substring.contains('.')){
+        val pos_dot = substring.indexOf('.')
+        val new_pos = row+pos_dot
+        val locEnd:Location = Location(column, new_pos)
+        (Left(NatNumber(substring.substring(0,pos_dot).toInt, Span(fileReader,Range(locStart, locEnd)))),new_pos)
+      }else{
+        val locEnd:Location = Location(column, pos)
+        (Left(NatNumber(substring.toInt, Span(fileReader,Range(locStart, locEnd)))),pos)
+      }
     }else{
       val locEnd:Location = Location(column, pos)
       (Left(F32(substring.toFloat, Span(fileReader,Range(locStart, locEnd)))),pos)

@@ -4,6 +4,7 @@ import rise.{core => r, openCL => o}
 import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
 import parser.ErrorMessage.{ErrorList, NamedExprAlreadyExist, NatAlreadyExist, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
+import parser.OpType.BinOpType
 import rise.core.DSL.ToBeTyped
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.ForeignFunction
@@ -687,7 +688,14 @@ object parse {
     nextToken match {
       case Arrow(_) =>
       case tok => {
-        val e = ErrorMessage.NotCorrectToken(tok, "Arrow", "Arrow")
+        val e:PreAndErrorSynElems = tok match {
+          case BinOp(BinOpType.SUB,span) => if(span.file.sourceLines(span.range.end.column).substring(span.range.end.row,span.range.end.row+2)=="->"){
+            ErrorMessage.TooLongArrow(Span(span.file, Range(span.range.begin, Location(span.range.end.column, span.range.end.row+2))), "Arrow")
+          }else{
+            ErrorMessage.NotCorrectToken(tok, "->", "Arrow")
+          }
+          case _ => ErrorMessage.NotCorrectToken(tok, "->", "Arrow")
+        }
         return (Right(e),errorList.add(e))
       }
     }
@@ -1870,6 +1878,7 @@ the syntax-Tree has on top an Lambda-Expression
 
   def parseArrayType(inputEPState: InputEPState): OutputEPState = {
     val whatToParse = "ArrayType"
+    debug(inputEPState._1.toString, "ArrayType")
     val (parseState,errorList) = (inputEPState._1, inputEPState._2.add(UsedOrFailedRule(isParsing(), whatToParse)))
     //debug("parseIndexType: " + parseState)
     val (p,eL) =

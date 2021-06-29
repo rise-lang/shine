@@ -33,7 +33,7 @@ case class FileReader(fileName: String) {
     if(posBegin== -1){
       false
     }else{
-      !((posBegin>0&&updateLine(posBegin -1).isLetter)||(updateLine.length>posBegin+1&&updateLine(posBegin+name.length).isLetter))
+      !((posBegin>0&&updateLine(posBegin -1).isLetter)||(updateLine.length>posBegin+name.length&&updateLine(posBegin+name.length).isLetter))
     }
   }
   /*
@@ -90,11 +90,15 @@ case class FileReader(fileName: String) {
   private def deleteSimpleComments(array: Array[String]): Array[String] ={
     val arr:Array[String] = Array.fill(array.length)("")
     for(i<- 0 until array.length){
-      if (array(i).contains("--")) {
+      arr(i) = if (array(i).contains("--")) {
        val pos = array(i).indexOf("--")
-       arr(i) = array(i).substring(0, pos)
+        if(array(i).length<=pos+2||RecognizeLexeme.isNoCommentSymbol(array(i)(pos+2))){
+          array(i).substring(0, pos)
+        }else{
+          array(i)
+        }
       }else{
-        arr(i)=array(i)
+        array(i)
       }
     }
     arr

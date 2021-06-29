@@ -5,7 +5,7 @@ matrixaddition=\N:Nat=>\matA->\matB->
       (zip(fst row) (snd row)))
     (zip matA matB)
 V1:=4xF32
-V2:=4xF32
+V2:=2xF32
 addV::V1->V1->V2
 foreign addV(a,b){
   float4 res;

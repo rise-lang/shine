@@ -320,6 +320,14 @@ final case class NotCorrectToken(token: Token, expectedToken:String, whatToParse
   override val help: Option[String] = None
 }
 
+final case class TooLongArrow(override val span:Span, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  require(begin.column == end.column, "not in one column")
+  override val description_error: String = "Arrow is only with one '-' not two '--'"
+  override val what_exp: String = "expected is an Arrow: '->'"
+  override val help: Option[String] = Some("For comments you need a withespace after '--' and for Arrows you write only '->'")
+}
+
 final case class NoKindWithThisName(kind: TypeIdentifier, whatToParse: String)
   extends PreAndErrorSynElems(kind.span, whatToParse){
   require(begin.column == end.column, "not in one column")

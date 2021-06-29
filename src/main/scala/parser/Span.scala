@@ -13,7 +13,7 @@ final case class Both_Equal() extends SubsetCase
 final case class Range(begin: Location, end: Location){
   // TODO make more solid (begin is safe to be smaller than end etc)
   if(end.column == begin.column){
-    require(end.row >= begin.row, "they have the same column/line and end.row is before begin.row")
+    require(end.row >= begin.row, "they have the same column/line and end.row is before begin.row: "+ begin.toString + " ; "+ end.toString)
   }
   require(end.column >= begin.column, "end.column is before begin.column")
 
