@@ -20,7 +20,7 @@ import o.{primitives => op, TypedDSL => dsl}
 
 
 class parseTest extends  test_util.TestsWithExecutor {
-  parser.ErrorMessage.debug.isOn = true
+  parser.ErrorMessage.debug.isOn = false
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
   val errorFilePath = "src/test/scala/parser/readFiles/filesToError/"
   //HashMap<r.Identifier, Option[r.Expr]> ist das oberste

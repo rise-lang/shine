@@ -454,7 +454,7 @@ final case class ErrorList(){
         getOrElse(throw new IllegalStateException("Rules should not be the deepest elem")).toString
   }
   def returnList():String = {
-    var s = "\nfull ErrorList:\n"
+    var s = "\nErrorList with 'depth;step:which rule used or which error occoured'\n"
     val l = this.errorList.reverse
     var space = 1
 
@@ -465,7 +465,7 @@ final case class ErrorList(){
       }
       l(i) match {
         case Left(r)=> {
-          s = s+retSpace(space)+space+";"+i+".th: "+r.toString()+ "\n"
+          s = s+retSpace(space)+r.toString()+"at "+GREEN() +space+RESET()+" depth and "+GREEN()+i+RESET()+" step"+ "\n"
           r.state match{
             case isParsing()=> space += 1
             case isMatched()=> space -= 1
@@ -473,7 +473,7 @@ final case class ErrorList(){
           }
         }
         case Right(e)=> {
-          s = s +retSpace(space)+space+";"+i+".th:\n"+ e.toString + "\n"
+          s = "At "+ YELLOW()+space+RESET()+" depth and "+YELLOW()+i+RESET()+" step occoured the error:\n"+ e.toString + "\n"
           space -= 1
         }
       }
