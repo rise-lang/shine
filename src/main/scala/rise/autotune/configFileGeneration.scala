@@ -1,7 +1,7 @@
 package rise.autotune
 
 import arithexpr.arithmetic.{RangeAdd, RangeMul, Var}
-import rise.core.types.{NatIdentifier, TuningParameterName}
+import rise.core.types.{NatIdentifier}
 
 import scala.collection.mutable.ListBuffer
 import constraints._

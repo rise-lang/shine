@@ -41,26 +41,16 @@ package object autotune {
     w.f(TuningParameter(name, r))
 
   def search(tuner:Tuner)(e:Expr): TuningResult = {
-    // timestamp of starting point
     val start = System.currentTimeMillis()
-
-    // collect parameters
     val parameters = collectParameters(e)
-
-    // collect constraints
     val constraints = collectConstraints(e, parameters)
-
-    // create output directory
     ("mkdir -p " + tuner.output !!)
 
     // generate json if necessary
     tuner.configFile match {
       case None => {
         println("generate configuration file")
-        // open file
         val file = new PrintWriter(new FileOutputStream(new File(tuner.output + "/" + tuner.name + ".json"), false))
-
-        // write to file and close
         file.write(generateJSON(parameters, constraints, tuner))
         file.close()
       }
@@ -75,23 +65,17 @@ package object autotune {
       val parametersValuesMap = header.zip(parametersValues).map { case (h, p) =>
         NatIdentifier(h) -> (p.toInt: Nat)
       }.toMap
-
-
       checkConstraints(constraints, parametersValuesMap) match {
         case true => {
           // execute
           val result = execute(rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main, tuner.timeouts)
-
           result._1 match {
             case Some(_) =>
-              // true
               Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
             case None =>
-              // false
               Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
           }
         }
-        // constraints error
         case false => {
           Sample(parametersValuesMap, None, System.currentTimeMillis() - start, AutoTuningError(CONSTRAINTS_ERROR, None))
         }
@@ -108,7 +92,6 @@ package object autotune {
     // check if hypermapper is installed and config file exists
     assert(os.isFile(os.Path.apply("/usr/bin/hypermapper")) && os.isFile(configFile))
 
-    // spawn hypermapper process
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
     // main tuning loop

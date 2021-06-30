@@ -1,6 +1,5 @@
 package rise
 
-
 import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
@@ -10,11 +9,11 @@ import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
+import apps.separableConvolution2D.weightsSeqVecUnroll
+import shine.OpenCL.{GlobalSize, LocalSize}
 
 import rise.autotune._
 
-import apps.separableConvolution2D.weightsSeqVecUnroll
-import shine.OpenCL.{GlobalSize, LocalSize}
 
 class autotuning extends test_util.Tests {
   val convolution: ToBeTyped[Expr] =
