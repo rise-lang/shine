@@ -2,6 +2,8 @@ package parser.ErrorMessage
 
 import parser.{ConcreteKind, ConcreteType, Identifier, RecognizeLexeme, Span, Token, TypeIdentifier}
 
+import scala.collection.mutable
+
 //__________________________________________ParserError
 
 /*
@@ -412,17 +414,17 @@ final case class UsedOrFailedRule(state: UseOrFailState, whatToParse: String){
 
 final case class ErrorList(){
   private var errorList: List[Either[UsedOrFailedRule, PreAndErrorSynElems]] = Nil
-  private var deepestError: Int = -1
+  private var deepestErrorPos: Int = -1
 
   def add(e:PreAndErrorSynElems):ErrorList={
-    if(errorList.isEmpty || deepestError.equals(-1)){
-      deepestError = 0
+    if(errorList.isEmpty || deepestErrorPos.equals(-1)){
+      deepestErrorPos = 0
     }else{
-      errorList(deepestError) match {
+      errorList(deepestErrorPos) match {
         case Right(newE)=> if(e.span.isAfter(newE.span)){
-          deepestError = 0
+          deepestErrorPos = 0
         } else {
-          deepestError += 1
+          deepestErrorPos += 1
         }
         case Left(usedOrFailedRule) => throw new IllegalStateException("Rules dont save spans and because of that can not be the deepest elem: "+ usedOrFailedRule)
       }
@@ -432,8 +434,8 @@ final case class ErrorList(){
     this
   }
   def add(r:UsedOrFailedRule):ErrorList={
-    if(!deepestError.equals(-1)){
-      deepestError += 1
+    if(!deepestErrorPos.equals(-1)){
+      deepestErrorPos += 1
     }
     errorList = Left(r)::errorList
     this
@@ -446,44 +448,120 @@ final case class ErrorList(){
     val str = ""
     String.format("%-"+space+"s", str)
   }
-  def returnDeepestElem():String = {
+  def deepestErrorPos_ReverseList():Int={
     //in returnList I reverse the List, so I have to reverse the number too!
-    val dErrorInReverseList = errorList.length-this.deepestError-1
-    "deepest Error at "+ dErrorInReverseList + ":\n"+
-      this.errorList(this.deepestError).
+    errorList.length-this.deepestErrorPos-1
+  }
+  def returnDeepestElem():String = {
+    val dErrorInReverseList = deepestErrorPos_ReverseList()
+      "deepest Error at step "+ dErrorInReverseList + ":\n"+
+      this.errorList(this.deepestErrorPos).
         getOrElse(throw new IllegalStateException("Rules should not be the deepest elem")).toString
   }
-  def returnList():String = {
+
+  /*
+  return (Full list, only deepest parts)
+   */
+  def returnList():(String,String) = {
     var s = "\nErrorList with 'depth;step:which rule used or which error occoured'\n"
+    var ret = s
     val l = this.errorList.reverse
-    var space = 1
+    var depth = 1
+    var depth_of_deepestElem= -1
+    val dErrorInReverseList = deepestErrorPos_ReverseList()
 
     for(i <- 0 until l.size){
-      if(space<0){
+      if(depth<0){
         println(s)
-        throw new IllegalStateException("Oh no space is negative")
+        throw new IllegalStateException("Oh no depth is negative")
       }
-      l(i) match {
+      val oldDepth = depth
+      val el = l(i) match {
         case Left(r)=> {
-          s = s+retSpace(space)+r.toString()+"at "+GREEN() +space+RESET()+" depth and "+GREEN()+i+RESET()+" step"+ "\n"
+          val elem = retSpace(depth)+r.toString()+" at "+GREEN() +depth+RESET()+" depth and "+GREEN()+i+RESET()+" step"+ "\n"
           r.state match{
-            case isParsing()=> space += 1
-            case isMatched()=> space -= 1
-            case isFailed() => space -= 1
+            case isParsing()=> depth += 1
+            case isMatched()=> depth -= 1
+            case isFailed() => depth -= 1
           }
+          elem
         }
         case Right(e)=> {
-          s = "At "+ YELLOW()+space+RESET()+" depth and "+YELLOW()+i+RESET()+" step occoured the error:\n"+ e.toString + "\n"
-          space -= 1
+          val elem = "At "+ YELLOW()+depth+RESET()+" depth and "+YELLOW()+i+RESET()+" step occoured the error:\n"+ e.toString + "\n"
+          depth -= 1
+          elem
         }
       }
+      s = s + el
+      if(dErrorInReverseList==i+1){
+        depth_of_deepestElem = depth
+      }
+      if(dErrorInReverseList<=i&&oldDepth>=depth_of_deepestElem){
+        ret = ret + el
+      }
     }
-    s
+    (s,ret)
   }
-  override def toString: String =  returnDeepestElem()+returnList()
+
+  def isMinPosAndDepth(pos:Int, depth:Int, minPos:Int, minDepth:Int):Boolean={
+    if(pos>=minPos&&depth>=minDepth) true else false
+  }
+
+  def getMaxDepthAndPos(map:MapError):(Int,Int)={
+    var depth = -1
+    var pos = -1
+    for(x<-map){
+      if(x._1._2>depth){
+        pos = x._1._1
+        depth = x._1._2
+      }
+    }
+    (pos,depth)
+  }
+
+  def returnList2():String = {
+    var s = "\nErrorList with 'depth;step:which rule used or which error occoured'\n"
+    val map = getMap()
+    val minPos = deepestErrorPos_ReverseList() -30
+    val maxDepth = getMaxDepthAndPos(map)._2
+    val minDepth = maxDepth -1
+    val mapCompact = map.filter(x=>isMinPosAndDepth(x._1._1, x._1._2, minPos, minDepth))
+    mapCompact.toString()
+  }
+  /*
+Map[(position,depth), Beschreibung]
+ */
+  type MapError = mutable.HashMap[(Int,Int), String]
+  def getMap():MapError = {
+    val l = this.errorList.reverse
+    var depth = 1
+
+    val map = new MapError
+    for(i <- 0 until l.size){
+      val el = l(i) match {
+        case Left(r)=> {
+          val elem = (i,depth,/*retSpace(depth)+*/r.toString()+" at "+GREEN() +depth+RESET()+" depth and "+GREEN()+i+RESET()+" step"+ "\n")
+          r.state match{
+            case isParsing()=> depth += 1
+            case isMatched()=> depth -= 1
+            case isFailed() => depth -= 1
+          }
+          elem
+        }
+        case Right(e)=> {
+          val elem = (i,depth,"At "+ YELLOW()+depth+RESET()+" depth and "+YELLOW()+i+RESET()+" step occoured the error:\n"+ e.toString + "\n")
+          depth -= 1
+          elem
+        }
+      }
+      map.update((el._1,el._2),el._3)
+    }
+    map
+  }
+  override def toString: String =  returnList()._2
   def getList():List[Either[UsedOrFailedRule, PreAndErrorSynElems]]=this.errorList
-  def getDeepestElemPos():Int =this.deepestError
-  def getDeepestElem():PreAndErrorSynElems =this.errorList(this.deepestError).
+  def getDeepestElemPos():Int =this.deepestErrorPos
+  def getDeepestElem():PreAndErrorSynElems =this.errorList(this.deepestErrorPos).
     getOrElse(throw new IllegalStateException("Rules should not be the deepest elem"))
 }
 

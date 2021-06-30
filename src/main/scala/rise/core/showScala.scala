@@ -39,6 +39,7 @@ object showScala {
       case VectorData(v) => v.map(data).mkString("VectorData(Seq(", ",", "))")
       case ArrayData(a) => a.map(data).mkString("ArrayData(Seq(", ",", "))")
       case PairData(p1, p2) => s"PairData(${data(p1)}, ${data(p2)})"
+      case ShortData(s)=> s"ShortData($s)"
     }
   }
 
