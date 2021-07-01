@@ -162,6 +162,13 @@ object HostManagedBuffers {
           val newArgs = k.args.map(VisitAndRebuild(_, this))
           Stop(ocl.KernelCallCmd(name, ls, gs, n)(
             newArgs.map(_.t.dataType), newOutput.t.dataType, k.args.map(VisitAndRebuild(_, this)), newOutput))
+
+        case k@shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n) =>
+          val newOutput = VisitAndRebuild(k.output, this)
+          val newArgs = k.args.map(VisitAndRebuild(_, this))
+          Stop(shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n)(
+            newArgs.map(_.t.dataType), newOutput.t.dataType, k.args.map(VisitAndRebuild(_, this)), newOutput
+          ))
         case _: HostExecution => Stop(p)
         case unexpected => throw new Exception(s"did not expect $unexpected")
       }

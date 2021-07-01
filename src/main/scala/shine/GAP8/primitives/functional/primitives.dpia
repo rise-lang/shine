@@ -1,1 +1,3 @@
+def kernelCall{name: String, cores: Int, n:Int}(inTs: n*data, outT: data, args: n*exp[*inTs, read]): exp[outT, write]
+
 def run{cores: Nat}(dt: data, input: exp[dt, write]): exp[dt, write]

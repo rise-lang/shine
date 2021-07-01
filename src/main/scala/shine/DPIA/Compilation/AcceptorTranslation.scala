@@ -352,5 +352,16 @@ object AcceptorTranslation {
         con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layoutB), read))(bMatrix =>
           con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, FragmentKind.Accumulator, MatrixLayout.None), read))(cMatrix =>
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
+
+    //GAP8
+    case kc@shine.GAP8.primitives.functional.KernelCall(name, cores, n) =>
+      def rec(ts: Seq[Phrase[ExpType]], es: Seq[Phrase[ExpType]]): Phrase[CommType] = ts match {
+        case Nil =>
+          shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n)(kc.inTs, kc.outT, kc.args, A)
+        case Seq(arg, tail@_*) =>
+          con(arg)(λ(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
+      }
+
+      rec(kc.args, Seq())
   }
 }

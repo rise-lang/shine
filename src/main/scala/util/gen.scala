@@ -119,6 +119,43 @@ object gen {
           GAP8.Module.translateToString andThen
           run(SyntaxChecker(_))
     }
+
+    type HostedModule = GAP8.Module
+
+    object hosted {
+      def fromExpr: Expr => HostedModule = gen.gap8.hosted().fromExpr
+      def fromPhrase: Phrase => HostedModule = gen.gap8.hosted().fromPhrase
+      def asString: HostedModule => String = GAP8.Module.translateToString
+    }
+
+    case class hosted(name: String = "foo"){
+
+      def funDefToCModule(): FunDef => C.Module =
+        shine.C.Compilation.ModuleGenerator.funDefToModule(shine.C.Compilation.CodeGenerator())
+
+
+      def fromExpr: Expr => HostedModule = exprToPhrase andThen fromPhrase
+
+      def fromPhrase: Phrase => HostedModule =
+        partialHostCompiler(name) composeWith
+          ((((x: FunDef) => x) x map(funDefToCModule())) andThen hostFunDefToHostPart)
+
+      private val hostFunDefToHostPart: ((FunDef, Seq[C.Module])) => (C.Module, Seq[C.Module]) = {
+        case (hostModule, acceleratorModule) =>
+          val gen = shine.GAP8.Compilation.HostCodeGenerator(acceleratorModule)
+          (shine.GAP8.Compilation.HostCodeModuleGenerator.funDefToModule(gen)(hostModule), acceleratorModule)
+      }
+
+      private def partialHostCompiler(hostFunName: String): PartialCompiler[
+        Phrase,
+        HostedModule,
+        (FunDef, Seq[FunDef]),
+        (C.Module, Seq[C.Module])
+      ] = PartialCompiler.functor(
+        GAP8.Compilation.SeparateHostAndAcceleratorCode.separate(hostFunName),
+        (GAP8.Module.apply _).tupled
+      )
+    }
   }
 
   object opencl {
