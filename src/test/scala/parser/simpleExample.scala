@@ -67,6 +67,35 @@ inference exception: could not solve constraints: List((_n185._n171.<4>f32 -> (_
     val kernel = gen.OpenCLKernel(matrixaddition)
     println(kernel)
   }
+
+  test("two_times_square"){
+    val two_times_square: ToBeTyped[Expr] = fun(
+      f32->:f32
+    )(a=>
+      mul(l(2.0f))(mul(a)(a))
+    )
+
+    val kernel = gen.OpenCLKernel(two_times_square)
+    println(kernel)
+  }
+  /*
+  inference exception: could not solve constraints: List((f64 -> f64)  ~  (f32 -> f32))
+---- trace ----
+
+---------------
+   */
+  test("two_times_square: float_error"){
+    val two_times_square: ToBeTyped[Expr] = fun(
+      f32->:f32
+    )(a=>
+      mul(l(2.0))(mul(a)(a))
+    )
+
+    val thrown = intercept[rise.core.types.InferenceException] {
+      gen.OpenCLKernel(two_times_square)
+    }
+    println(thrown)
+  }
   /*not found: value row
         mapGlobal(1)(fun(row==>
    */

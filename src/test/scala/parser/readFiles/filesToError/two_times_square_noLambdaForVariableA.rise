@@ -1,0 +1,2 @@
+two_times_square::F32->F32
+two_times_square=* 2.0 (* a a)

@@ -1837,11 +1837,14 @@ if '==' then two steps else only one step
     val (pos, substring, locStart) = lexName(column, row, arr)
     if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | RecognizeLexeme.otherKnownSymbol(arr(column)(pos)))){
       val locEnd:Location = Location(column, pos+1)
+      val span = Span(fileReader,Range(locStart, locEnd))
+      debug("Span_Error: "+ span.toString, "lexIdentifier")
       (Right(IdentifierWithNotAllowedSymbol(arr(column)(pos), arr(column).substring(row, pos+1),
-        Span(fileReader,Range(locStart, locEnd)))), pos+1)
+        span)), pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
       val span = Span(fileReader,Range(locStart, locEnd))
+      debug("Span: "+ span.toString, "lexIdentifier")
     substring match {
       case "Local" => (Left(AddrSpaceType(substring, span)),pos)
       case "Global" => (Left(AddrSpaceType(substring, span)),pos)
@@ -1873,11 +1876,14 @@ if '==' then two steps else only one step
     val locStart:Location = Location(column, row)
     val pos:Int = r-1
     if(substring.matches("[0-9]+[.]")){ //"5." is the beginning of an array, only "5.2" is an Float
+      debug("NatNumber1", "lexNumber")
       val locEnd:Location = Location(column, pos-1)
       (Left(NatNumber(arr(column).substring(row, pos-1).toInt, Span(fileReader,Range(locStart, locEnd)))),pos-1)
     }else if(pos < arr(column).length && !(arr(column)(pos).isWhitespace | RecognizeLexeme.otherKnownSymbol(arr(column)(pos)))) {
+      debug("ComplexNumber", "lexNumber")
       lexNumberComplexMatch(column, row, arr, substring, locStart, pos)
-    } else if(substring.matches("[0-9]+")||pos < arr(column).length &&(arr(column)(pos).isWhitespace||arr(column)(pos)=='.')){
+    } else if(substring.matches("[0-9]+")||pos < arr(column).length &&arr(column)(pos)=='.'){
+      debug("NatNumber2", "lexNumber")
       if(substring.contains('.')){
         val pos_dot = substring.indexOf('.')
         val new_pos = row+pos_dot

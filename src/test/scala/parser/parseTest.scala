@@ -20,7 +20,7 @@ import o.{primitives => op, TypedDSL => dsl}
 
 
 class parseTest extends  test_util.TestsWithExecutor {
-  parser.ErrorMessage.debug.isOn = false
+  parser.ErrorMessage.debug.isOn = true
   val testFilePath = "src/test/scala/parser/readFiles/filesToLex/"
   val errorFilePath = "src/test/scala/parser/readFiles/filesToError/"
   //HashMap<r.Identifier, Option[r.Expr]> ist das oberste
@@ -2638,6 +2638,19 @@ class parseTest extends  test_util.TestsWithExecutor {
     println(f1)
   }
 
+  test("parser should be able to parse 'two_times_square.rise'"){
+    val fileName: String = testFilePath + "two_times_square.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "f"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
+
+    val kernel = gen.OpenCLKernel(ex)
+    println(kernel)
+  }
+
   test("parser should be able to parse 'TupleType.rise'"){
     val fileName: String = testFilePath + "TupleType.rise"
     val file: FileReader = new FileReader(fileName)
@@ -2962,9 +2975,10 @@ class parseTest extends  test_util.TestsWithExecutor {
     val functionName: String = "matrixaddition"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
 
-    //    val thrown = intercept[rt.InferenceException] {
+    val thrown = intercept[rt.InferenceException] {
     println(gen.OpenCLKernel(ex))
-//    }
+    }
+    println(thrown)
     //thrown.msg should equal(" fkt has no type")
   }
   /*
@@ -2977,13 +2991,13 @@ class parseTest extends  test_util.TestsWithExecutor {
      | help: For comments you need a withespace after '--' and for Arrows you write only '->'
    */
   test("parser should be able to parse 'addMatrixTooLongArrow.rise'"){
-    val fileName: String = errorFilePath + "addMatrixTooLongArrow.rise"
+    val fileName: String = /*errorFilePath*/"/home/visualjames/Test/" + "addMatrixTooLongArrow.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    //    val thrown = intercept[rt.InferenceException] {
+    val thrown = intercept[rt.InferenceException] {
     parse(lexer.tokens)
-    //    }
-    //thrown.msg should equal(" fkt has no type")
+        }
+    println(thrown)
   }
 
   test("parser should be able to parse 'fx.rise'"){

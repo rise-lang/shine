@@ -99,7 +99,7 @@ final case class Location (column: Int, row: Int){
 final case class Span(file: FileReader, range:Range) {
   def this(file: FileReader, loc: Location) = this(file, Range(loc, loc))
 
-  val toUri = Paths.get(file.fileName+":"+range.begin.column+1+":"+range.begin.row+1).toUri
+  val toUri = Paths.get(file.fileName+":"+(range.begin.column+1)+":"+(range.begin.row+1)).toUri
   //def this(file: FileReader, begin: Location, end: Location) = this(file, Range(begin, end))
   override def toString = range.toString + Console.BLUE+ "->" +Console.RESET+ toUri
 
