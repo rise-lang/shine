@@ -224,6 +224,7 @@ object AcceptorTranslation {
               acc(f(x)(y))(o)))),
             y, x, A)))))
 
+
     case Scatter(n, m, dt, indices, input) =>
       con(indices)(fun(expT(n`.`idx(m), read))(y =>
         acc(input)(ScatterAcc(n, m, dt, y, A))))
@@ -319,6 +320,22 @@ object AcceptorTranslation {
       }
 
       rec(fc.args zip fc.inTs, Seq(), Seq())
+
+    case ocl.ScanSeq(n, a, dt1, dt2, f, init, array) =>
+      con(array)(λ(expT(n`.`dt1, read))(x =>
+        con(init)(λ(expT(dt2, read))(y =>
+          oclI.ScanSeqI(n, a, dt1, dt2,
+            λ(expT(dt1, read))(x => λ(expT(dt2, read))(y => λ(accT(dt2))(o =>
+              acc(f(x)(y))(o)))),
+            y, x, A)))))
+
+    case ocl.ScanSeqInclusive(n, a, dt1, dt2, f, init, array) =>
+      con(array)(λ(expT(n`.`dt1, read))(x =>
+        con(init)(λ(expT(dt2, read))(y =>
+          oclI.ScanSeqInclusiveI(n, a, dt1, dt2,
+            λ(expT(dt1, read))(x => λ(expT(dt2, read))(y => λ(accT(dt2))(o =>
+              acc(f(x)(y))(o)))),
+            y, x, A)))))
 
     // CUDA
     case cuda.AsFragment(rows, columns, layers, dataType, fragmentKind, layout, matrix) =>
