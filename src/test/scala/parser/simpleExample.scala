@@ -96,6 +96,25 @@ inference exception: could not solve constraints: List((_n185._n171.<4>f32 -> (_
     }
     println(thrown)
   }
+
+  /*
+/home/visualjames/Documents/Universitaet/Bachelorarbeit/Repos/IntegrateRISE/shine/src/test/scala/parser/simpleExample.scala:110:10
+type mismatch;
+ found   : Unit
+ required: rise.core.DSL.ToBeTyped[rise.core.Expr]
+    )(x=>( )
+   */
+//  test("noExpressionInBraces"){
+//    val f: ToBeTyped[Expr] = fun(
+//      f32->:f32
+//    )(x=>( )
+//    )
+//
+//    val thrown = intercept[rise.core.types.InferenceException] {
+//      gen.OpenCLKernel(f)
+//    }
+//    println(thrown)
+//  }
   /*not found: value row
         mapGlobal(1)(fun(row==>
    */
