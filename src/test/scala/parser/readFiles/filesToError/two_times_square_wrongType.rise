@@ -1,0 +1,2 @@
+two_times_square::F32->F64
+two_times_square=\a->* 2.0F64 (* a a)

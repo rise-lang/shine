@@ -6,6 +6,13 @@ import rise.core.types.{Kind, Type}
 import rise.core.{types => rt}
 
 import java.nio.file.Paths
+//__________________________________________Exceptionclass
+case class ParserException(msg: String)
+  extends Exception {
+  override def toString: String = msg
+}
+
+
 //__________________________________________AnsiColors
 abstract sealed class AnsiColor_enum()
 final case class BLACK() extends AnsiColor_enum{

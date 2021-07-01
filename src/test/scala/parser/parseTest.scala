@@ -2,6 +2,7 @@ package parser
 import apps.convolution.{blurXTiled2D, blurXTiled2DSizes}
 import apps.nbody.{runKernel, runOriginalKernel}
 import org.scalatest.flatspec.AnyFlatSpec
+import parser.ErrorMessage.ParserException
 import parser.parse.{HMExpr, HMNat, HMType}
 import rise.core
 import rise.core.{DepApp, DepLambda, Lambda, Literal, Primitive}
@@ -2644,7 +2645,7 @@ class parseTest extends  test_util.TestsWithExecutor {
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val riseExprByIdent = parse(lexer.tokens)
 
-    val functionName: String = "f"
+    val functionName: String = "two_times_square"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
 
     val kernel = gen.OpenCLKernel(ex)
@@ -2970,15 +2971,10 @@ class parseTest extends  test_util.TestsWithExecutor {
     val fileName: String = errorFilePath + "addMatrixWrongType.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName: String = "matrixaddition"
-    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
-
     val thrown = intercept[rt.InferenceException] {
-    println(gen.OpenCLKernel(ex))
+      parse(lexer.tokens)
     }
-    println(thrown)
+    println(thrown.toString)
     //thrown.msg should equal(" fkt has no type")
   }
   /*
@@ -2994,10 +2990,10 @@ class parseTest extends  test_util.TestsWithExecutor {
     val fileName: String = /*errorFilePath*/"/home/visualjames/Test/" + "addMatrixTooLongArrow.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[rt.InferenceException] {
-    parse(lexer.tokens)
-        }
-    println(thrown)
+    val thrown = intercept[ParserException] {
+      parse(lexer.tokens)
+    }
+    println(thrown.toString)
   }
 
   test("parser should be able to parse 'fx.rise'"){
@@ -3010,15 +3006,23 @@ class parseTest extends  test_util.TestsWithExecutor {
     thrown.msg should equal(" fkt has no type")
   }
 
+  /*
+  ParserError: No Expression inside of the braces `( )`
+ --> file:///home/visualjames/Documents/Universitaet/Bachelorarbeit/Repos/IntegrateRISE/shine/src/test/scala/parser/readFiles/filesToError/noExpressionInBraces.rise:2:7
+     |-------
+2    | f=\x->( )
+     |       ^^^ no expression here
+     |-------
+     | help: braces need logic inside
+   */
   test("parser should not be able to parse 'noExpressionInBraces.rise'"){
     val fileName: String = errorFilePath + "noExpressionInBraces.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[RuntimeException] {
+    val thrown = intercept[ParserException] {
       parse(lexer.tokens)
     }
-
-    thrown.getMessage should equal("There was no Expression in Braces at posstion (0 , 1 : List('(', ')', <EndNamedExpr>)")
+    println(thrown.toString)
   }
 
 }

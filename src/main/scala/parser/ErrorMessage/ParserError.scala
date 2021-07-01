@@ -384,6 +384,13 @@ final case class TypAnnotationAlreadyExist(Ident: String, override val span:Span
   override val help: Option[String] = Some("You can define the Expr with '='")
 }
 
+final case class NoExprInBraces(override val span:Span, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  override val description_error: String = "No Expression inside of the braces"
+  override val what_exp: String = "no expression here"
+  override val help: Option[String] = Some("braces need logic inside")
+}
+
 //__________________________________________________________________________________________________________
 abstract sealed class UseOrFailState()
 final case class isParsing() extends UseOrFailState

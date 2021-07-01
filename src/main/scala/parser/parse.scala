@@ -3,7 +3,7 @@ package parser //old branch 17. Dezember 2020
 import rise.{core => r, openCL => o}
 import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
-import parser.ErrorMessage.{ErrorList, NamedExprAlreadyExist, NatAlreadyExist, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
+import parser.ErrorMessage.{ErrorList, NamedExprAlreadyExist, NatAlreadyExist, NoExprInBraces, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, ParserException, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
 import parser.OpType.BinOpType
 import rise.core.DSL.ToBeTyped
 import rise.core.DSL.Type.TypeConstructors
@@ -23,7 +23,7 @@ object parse {
       case (name, elems) => elems match {
         case HMExpr(e) => m.update(name, ToBeTyped(e).toExprWithMapFkt(map))
         case HMType(t) => { //error: Every fkt should be initialised yet
-          throw new RuntimeException("The function '"+name+"' is not implemented: "+ t)
+          throw new ParserException("The function '"+name+"' is not implemented: "+ t)
         }
         case HMNat(n) => //ignore
       }
@@ -38,7 +38,7 @@ object parse {
       case Left(map) => map
       case Right(errorOrState) => {
         //debug(errorOrState)
-        throw new RuntimeException("failed parsing : " + errorOrState)
+        throw new ParserException(errorOrState.toString)
       }
     }
     debug("parse: " + shineLambda, "apply")
@@ -797,12 +797,12 @@ object parse {
           case Some(spa2) => createSIntToExpr(name, n, span + spa2)
         }
       }
-      case SAddrSpace(addrSpace, _) => throw new RuntimeException(
+      case SAddrSpace(addrSpace, _) => throw new ParserException(
         "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-      case SType(t, _) => throw new RuntimeException("List should't have Types at this beginning position! " + t)
-      case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
-      case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-      case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+      case SType(t, _) => throw new ParserException("List should't have Types at this beginning position! " + t)
+      case SData(t, _) => throw new ParserException("List should't have any Data at this position! " + t)
+      case SNat(t, _) => throw new ParserException("List should't have any Nats at this position! " + t)
+      case SSeq(seq, _) => throw new ParserException("List should't have any Seq at this position! " + seq)
     }
     (e, synE)
   }
@@ -934,7 +934,7 @@ object parse {
         }
         synE = synE.tail
       }
-      case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+      case SSeq(seq, _) => throw new ParserException("List should't have any Seq at this position! " + seq)
     }
 
     (e, synE)
@@ -1176,11 +1176,11 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
           case SType(t, _) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: " + t)
           case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: " + prim)
-          case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
-          case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-          case SAddrSpace(addrSpace, _) => throw new RuntimeException(
+          case SData(t, _) => throw new ParserException("List should't have any Data at this position! " + t)
+          case SNat(t, _) => throw new ParserException("List should't have any Nats at this position! " + t)
+          case SAddrSpace(addrSpace, _) => throw new ParserException(
             "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-          case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+          case SSeq(seq, _) => throw new ParserException("List should't have any Seq at this position! " + seq)
         }
       }
     }
@@ -1304,11 +1304,11 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
           case SType(t, _) => throw new IllegalStateException(
             "it is an Identifier expected but an Type is completely false: " + t)
           case SIntToExpr(prim, _) => throw new IllegalStateException("it is an Identifier expected: " + prim)
-          case SData(t, _) => throw new RuntimeException("List should't have any Data at this position! " + t)
-          case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-          case SAddrSpace(addrSpace, _) => throw new RuntimeException(
+          case SData(t, _) => throw new ParserException("List should't have any Data at this position! " + t)
+          case SNat(t, _) => throw new ParserException("List should't have any Nats at this position! " + t)
+          case SAddrSpace(addrSpace, _) => throw new ParserException(
             "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-          case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+          case SSeq(seq, _) => throw new ParserException("List should't have any Seq at this position! " + seq)
         }
       }
     }
@@ -1354,7 +1354,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         }
         case SData(data, span) =>
         case SAddrSpace(addrSpace, span) =>
-        case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+        case SSeq(seq, _) => throw new ParserException("List should't have any Seq at this position! " + seq)
       }
     //debug("\n\n\n Before combining the Expr in parseNamedExpr \n\n\n")
     var expr = combineExpressionsDependent(synElemList, mapDepL)
@@ -1479,10 +1479,10 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
             }
           }
         }
-        case SNat(t, _) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-        case SAddrSpace(addrSpace, _) => throw new RuntimeException(
+        case SNat(t, _) => throw new ParserException("List should't have any Nats at this position! " + t)
+        case SAddrSpace(addrSpace, _) => throw new ParserException(
           "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-        case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+        case SSeq(seq, _) => throw new ParserException("List should't have any Seq at this position! " + seq)
       }
     } else {
       spanOp match {
@@ -1578,7 +1578,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
       case SExpr(expr) => Some((expr, expr.span.get))
       case SExprClutched(expr, sp) => Some((expr, sp))
       case _ => {
-        //debug("Abort; getExprAndSpan because not accepted beggining types: " + parseState)
+        debug("Abort; not accepted beggining types: " + parseState, "getExprAndSpan")
         None
       }
     }
@@ -1701,29 +1701,29 @@ the syntax-Tree has on top an Lambda-Expression
             case SType(t, _) =>
               synElemListExpr.tail.head match {
                 case SExpr(i) => (i.setType(t), synElemListExpr.tail.tail)
-                case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+                case a => throw new ParserException("Here is an Expression expected, but " + a +" is not an Expression!")
               }
             case SLet(sp) =>
               throw new IllegalStateException("it is an Identifier expected not let: " + sp)
             case SExprClutched(_,_) => throw new IllegalStateException("SExprClutched is not expected here")
             case SExpr(i) => (i //Todo:giveIdentWithCorrectType(i,identType)
               , synElemListExpr.tail)
-            case SIntToExpr(prim, _) => throw new RuntimeException("Here is an Expression expected, but " + prim +
+            case SIntToExpr(prim, _) => throw new ParserException("Here is an Expression expected, but " + prim +
               " is not an Expression!")
             case SData(t,_) => t match {
               case DIdentifier(data) => synElemListExpr.tail.head match {
                 case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
-                case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+                case a => throw new ParserException("Here is an Expression expected, but " + a +" is not an Expression!")
               }
               case DType(data) => synElemListExpr.tail.head match {
                 case SExpr(i) => (i.setType(data), synElemListExpr.tail.tail)
-                case a => throw new RuntimeException("Here is an Expression expected, but " + a +" is not an Expression!")
+                case a => throw new ParserException("Here is an Expression expected, but " + a +" is not an Expression!")
               }
             }
-            case SNat(t,_) => throw new RuntimeException("List should't have any Nats at this position! " + t)
-            case SAddrSpace(addrSpace,_) => throw new RuntimeException(
+            case SNat(t,_) => throw new ParserException("List should't have any Nats at this position! " + t)
+            case SAddrSpace(addrSpace,_) => throw new ParserException(
               "List should't have AddrSpaceTypes at this beginning position! " + addrSpace)
-            case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+            case SSeq(seq, _) => throw new ParserException("List should't have any Seq at this position! " + seq)
           }
         }
         require(synElemListMaybeTIdent.isEmpty, "the List should be empty")
@@ -1839,10 +1839,12 @@ the syntax-Tree has on top an Lambda-Expression
 
     p match {
       case Left(pState) => {
-        if(pState.parsedSynElems.isEmpty){
-          val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RParentheses])
-          throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
-            " : "+ parseState.tokenStream.toString())
+        if(pState.parsedSynElems.isEmpty){//( ), no expr in braces
+          val lBrace_span = parseState.tokenStream.head.s
+          val rBrace_span = parseState.tokenStream.tail.head.s
+          val span = Span(lBrace_span.file, Range(lBrace_span.range.begin, rBrace_span.range.end))
+          val error = NoExprInBraces(span, whatToParse)
+          throw new ParserException(error.toString)
         }
         val spanClutch = pState.spanList match {
           case None => throw new IllegalStateException("Here should SpanList not be NONE")
@@ -1859,7 +1861,7 @@ the syntax-Tree has on top an Lambda-Expression
             case SIntToExpr(name, _) => SIntToExpr(name, spanClutch)
             case SNat(nat, _) => SNat(nat, spanClutch)
             case SType(t, _) => SType(t, spanClutch)
-            case SSeq(seq, _) => throw new RuntimeException("List should't have any Seq at this position! " + seq)
+            case SSeq(seq, _) => throw new ParserException("List should't have any Seq at this position! " + seq)
           }
         }else {
           val newExpr = combineExpressionsDependent(pState.parsedSynElems, pState.mapDepL.get)
@@ -1911,7 +1913,7 @@ the syntax-Tree has on top an Lambda-Expression
               case NIdentifier(n) => SType(rt.ArrayType(n, t.asInstanceOf[rt.DataType]), span)
             }
           }
-          case a => throw new RuntimeException("List should't have only Nat at this position! " + a)
+          case a => throw new ParserException("List should't have only Nat at this position! " + a)
         }
         val newL = ty :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
@@ -1946,7 +1948,7 @@ the syntax-Tree has on top an Lambda-Expression
               case NIdentifier(nat) => SType(rt.IndexType(nat), span)
             }
           }
-          case a => throw new RuntimeException("List should't have only Identifier at this position! " + a)
+          case a => throw new ParserException("List should't have only Identifier at this position! " + a)
         }
         val newL = ty :: Nil
         val li:List[SyntaxElement] = parseState.parsedSynElems.reverse ++ newL
@@ -1973,7 +1975,7 @@ the syntax-Tree has on top an Lambda-Expression
       case Left(pState) => {
         if(pState.parsedSynElems.isEmpty){
           val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RParentheses])
-          throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
+          throw new ParserException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
         val (tL, tLSpan) = getTypesInList(pState.parsedSynElems, None)
@@ -2005,7 +2007,7 @@ the syntax-Tree has on top an Lambda-Expression
       case Left(pState) => {
         if(pState.parsedSynElems.isEmpty){
           val rBraceIndex = parseState.tokenStream.indexWhere(p=> p.isInstanceOf[RParentheses])
-          throw new RuntimeException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
+          throw new ParserException("There was no Expression in Braces at posstion (" + 0 + " , " + rBraceIndex +
             " : "+ parseState.tokenStream.toString())
         }
         val (tL, spanTL) = getTypesInList(pState.parsedSynElems, None)
