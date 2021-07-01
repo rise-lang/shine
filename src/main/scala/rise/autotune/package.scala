@@ -67,6 +67,7 @@ package object autotune {
       }.toMap
       checkConstraints(constraints, parametersValuesMap) match {
         case true => {
+          println("constraints true")
           // execute
           val result = execute(rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main, tuner.timeouts)
           result._1 match {
@@ -77,6 +78,7 @@ package object autotune {
           }
         }
         case false => {
+          println("constraints false")
           Sample(parametersValuesMap, None, System.currentTimeMillis() - start, AutoTuningError(CONSTRAINTS_ERROR, None))
         }
       }
@@ -90,7 +92,7 @@ package object autotune {
     println("configFile: " + configFile)
 
     // check if hypermapper is installed and config file exists
-    assert(os.isFile(os.Path.apply("/usr/bin/hypermapper")) && os.isFile(configFile))
+    assert((os.isFile(os.Path.apply("/usr/local/bin/hypermapper")) || os.isFile(os.Path.apply("/usr/bin/hypermapper"))) && os.isFile(configFile))
 
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
