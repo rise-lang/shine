@@ -2987,7 +2987,7 @@ class parseTest extends  test_util.TestsWithExecutor {
      | help: For comments you need a withespace after '--' and for Arrows you write only '->'
    */
   test("parser should be able to parse 'addMatrixTooLongArrow.rise'"){
-    val fileName: String = /*errorFilePath*/"/home/visualjames/Test/" + "addMatrixTooLongArrow.rise"
+    val fileName: String = errorFilePath/*"/home/visualjames/Test/"*/ + "addMatrixTooLongArrow.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val thrown = intercept[ParserException] {
