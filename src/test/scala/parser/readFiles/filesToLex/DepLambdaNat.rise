@@ -1,2 +1,2 @@
 f::NeverGiveUp:Nat=>NeverGiveUp.I32->NeverGiveUp.I32
-f=\NeverGiveUp:Nat=>\arr->arr
+f=NeverGiveUp:Nat=>arr->arr

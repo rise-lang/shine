@@ -1,4 +1,4 @@
-identity:=\x->x
+identity:=x->x
 
 calcAcc::4xF32->4xF32->F32->F32->4xF32->4xF32
 foreign calcAcc(p1,p2,deltaT, espSqr, acc){
@@ -27,24 +27,24 @@ tileX:= 256N
 tileY:= 1N
 
 nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32)
-nbody=\N:Nat=>\pos->\vel->\espSqr->\deltaT->
+nbody=N:Nat=>pos->vel->espSqr->deltaT->
 join . join . (mapWorkGroup 1 
-join . (mapWorkGroup 0 \p1Chunk -> 
-  \newP1Chunk-> 
-  (mapLocal 1 \bla->
-    (mapLocal 0 \p1-> 
+join . (mapWorkGroup 0 p1Chunk -> 
+  newP1Chunk-> 
+  (mapLocal 1 bla->
+    (mapLocal 0 p1-> 
 	update (fst (fst p1)) (snd (fst p1)) deltaT (snd p1))
     (zip newP1Chunk bla)). 
     (oclReduceSeq Local (
-	\accA->\p2->
+	accA->p2->
   	  let (toLocal (mapLocal 1 (mapLocal 0 identity) p2))(
-    \p2Local -> (mapLocal 1 \accDim-> 
-	(mapLocal 0 \p1 -> (oclReduceSeq Private \accB->\p2-> 
+    p2Local -> (mapLocal 1 accDim-> 
+	(mapLocal 0 p1 -> (oclReduceSeq Private accB->p2-> 
 	calcAcc (fst (fst p1)) p2 deltaT espSqr accB) 
     (snd p1) (fst accDim)) 
    (zip newP1Chunk (snd accDim))) 
   (zip p2Local accA))
-   )(mapLocal 1 (mapLocal 0 identity) (generate \plh1-> generate \plh2->vectorFromScalar 0F32)))
+   )(mapLocal 1 (mapLocal 0 identity) (generate plh1-> generate plh2->vectorFromScalar 0F32)))
           . (split tileY). ( split tileX ) pos
         (zip(toLocal(mapLocal 0 identity (fst (unzip p1Chunk))))(snd (unzip p1Chunk)))
         ). (split tileX)

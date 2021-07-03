@@ -1,2 +1,2 @@
 g::N:Nat=>D:Data=>N.F32
-g= \N:Nat=>\D:Data=>generate (\x -> 0F32)
+g= N:Nat=>D:Data=>generate (x -> 0F32)

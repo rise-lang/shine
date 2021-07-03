@@ -4,4 +4,4 @@ f:: F32->F32
 foreign g(x,y){
    return x*y;
 }
-f=\x->g x x
+f=x->g x x

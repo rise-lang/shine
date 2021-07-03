@@ -35,7 +35,7 @@ class parseTest extends  test_util.TestsWithExecutor {
 
     val functionName: String = "matrixaddition"
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
-
+    println(lexer.tokens)
     println(gen.OpenCLKernel(ex))
   }
   test("parser should be able to parse 'addMatrixDifferentOrder.rise'"){
@@ -78,7 +78,7 @@ class parseTest extends  test_util.TestsWithExecutor {
       case Some(Span(file, Range(begin, end))) => {
         file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayType.rise")
         begin.row should equal(2)
-        end.row should equal(22)
+        end.row should equal(20)
         begin.column should equal(1)
         end.column should equal(1)
       }
@@ -353,8 +353,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(17)
-            end.row should equal(18)
+            begin.row should equal(16)
+            end.row should equal(17)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -363,8 +363,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(14)
-            end.row should equal(15)
+            begin.row should equal(13)
+            end.row should equal(14)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -373,8 +373,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(12)
-            end.row should equal(13)
+            begin.row should equal(11)
+            end.row should equal(12)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -383,8 +383,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(3)
-            end.row should equal(4)
+            begin.row should equal(2)
+            end.row should equal(3)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -393,8 +393,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(10)
-            end.row should equal(11)
+            begin.row should equal(9)
+            end.row should equal(10)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -403,8 +403,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(7)
-            end.row should equal(8)
+            begin.row should equal(6)
+            end.row should equal(7)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -413,8 +413,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(10)
-            end.row should equal(13)
+            begin.row should equal(9)
+            end.row should equal(12)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -423,8 +423,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(10)
-            end.row should equal(15)
+            begin.row should equal(9)
+            end.row should equal(14)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -433,8 +433,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(7)
-            end.row should equal(15)
+            begin.row should equal(6)
+            end.row should equal(14)
             begin.column should equal(1)
             end.column should equal(1)
           }
@@ -443,8 +443,8 @@ class parseTest extends  test_util.TestsWithExecutor {
           case None => fail("The Span should not be None")
           case Some(Span(file, Range(begin, end))) => {
             file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/Complex2.rise")
-            begin.row should equal(7)
-            end.row should equal(18)
+            begin.row should equal(6)
+            end.row should equal(17)
             begin.column should equal(1)
             end.column should equal(1)
           }

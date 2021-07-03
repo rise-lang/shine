@@ -7,16 +7,16 @@
 
 -- nxn-Matrix
 f::N:Nat=>M:Nat=>N.M.F32->M.N.F32->N.N.F32 --TypeAnnotation
-f=\N:Nat=>\M:Nat=>
-\mat1->\mat2->
+f=N:Nat=>M:Nat=>
+mat1->mat2->
 mapSeq --I go through the rows of the first matrix
 (
-\vec1->
+vec1->
 mapSeq --and we go through the columns of the second matrix
 (
-\vec2 ->
-    reduceSeq (\acc:F32->\arg:F32-> + acc arg) 0F32 --this is simply vektoraddition
-        (toMem (mapSeq (\x:(F32,F32)->* (fst x) (snd x)) (zip vec1 vec2)))
+vec2 ->
+    reduceSeq (acc:F32->arg:F32-> + acc arg) 0F32 --this is simply vektoraddition
+        (toMem (mapSeq (x:(F32,F32)->* (fst x) (snd x)) (zip vec1 vec2)))
 )--
 (transpose mat2)
 )

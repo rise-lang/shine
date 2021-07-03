@@ -1,2 +1,2 @@
 f::Bool->Bool
-f=\b->(!b )
+f=b->(!b )

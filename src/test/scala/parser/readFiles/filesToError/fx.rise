@@ -1,2 +1,2 @@
 f::I32->I32
-f=\x-> fkt x
+f=x-> fkt x

@@ -1,6 +1,6 @@
 f::F32->F32
 h::F32->F32
 g::F32->F32
-g=\x->(+ x x)
-f=\x->x
-h=\x->f (+ x x)
+g=x->(+ x x)
+f=x->x
+h=x->f (+ x x)

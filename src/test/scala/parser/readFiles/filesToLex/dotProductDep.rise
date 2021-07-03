@@ -1,4 +1,4 @@
 f::N:Nat=>D:Data=>N.D->N.D->D
-f=\N:Nat=>\D:Data=>\vec1->\vec2 ->
-    reduceSeq (\acc:D->\arg:D-> + acc arg) 0
-        (toMem ((mapSeq (\x:(D,D)->* (fst x) (snd x)) (zip vec1 vec2))))
+f=N:Nat=>D:Data=>vec1->vec2 ->
+    reduceSeq (acc:D->arg:D-> + acc arg) 0
+        (toMem ((mapSeq (x:(D,D)->* (fst x) (snd x)) (zip vec1 vec2))))

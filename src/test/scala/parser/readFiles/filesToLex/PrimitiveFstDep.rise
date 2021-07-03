@@ -1,2 +1,2 @@
 f::D:Data=>(D,I32)->D
-f=\D:Data=>\t->fst t
+f=D:Data=>t->fst t
