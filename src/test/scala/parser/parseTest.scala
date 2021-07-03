@@ -2990,10 +2990,10 @@ class parseTest extends  test_util.TestsWithExecutor {
     val fileName: String = errorFilePath/*"/home/visualjames/Test/"*/ + "addMatrixTooLongArrow.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-//    val thrown = intercept[ParserException] {
+    val thrown = intercept[ParserException] {
       parse(lexer.tokens)
-//    }
-//    println(thrown.toString)
+    }
+    println(thrown.toString)
   }
 
   test("parser should be able to parse 'fx.rise'"){

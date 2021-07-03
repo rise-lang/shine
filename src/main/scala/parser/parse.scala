@@ -1292,10 +1292,10 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         debug("typeofFkt: "+ ps.tokenStream, "NamedExpr")
         val argumentList = getArgumentTypes(typeOF)
         val psWithNewArgumentList = ParseState(ps.tokenStream, ps.parsedSynElems, ps.mapDepL, ps.spanList, argumentList)
-        (Left(psWithNewArgumentList), errorList) |> (parseMaybeAppExpr _ || parseNat)
+        (Left(psWithNewArgumentList), errorList) |> parseMaybeAppExpr
       }
       case None => {
-        (Left(ps), errorList) |> (parseMaybeAppExpr _ || parseNat)
+        (Left(ps), errorList) |> parseMaybeAppExpr
       }
     }
 
