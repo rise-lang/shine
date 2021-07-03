@@ -21,10 +21,10 @@ foreign update(pos, vel, deltaT, acceleration){
   return (struct Record_float4_float4){ newPos, newVel };
 }
 
-tileX::NatTyp
-tileX= 256N
-tileY::NatTyp
-tileY= 1N
+TileX::NatTyp --Types and other things should be imported with an TypeIdentifer not Identifier, so that we have an good separation
+TileX= 256N
+TileY::NatTyp
+TileY= 1N
 
 nbody::N:Nat=>N.4xF32->N.4xF32->F32->F32->N.(4xF32,4xF32) --4xF32 for vec(4,f32)
 nbody=N:Nat=>pos->vel->espSqr->deltaT->
@@ -58,7 +58,7 @@ join . join .
           )
 
           )(mapLocal 1 (mapLocal 0 (x2->x2)) (generate plh1-> generate plh2->vectorFromScalar 0F32)))--N.N.4xF32
-          . (split tileY). ( split tileX ) pos--(N/256).1.256.4xF32
+          . (split TileY). ( split TileX ) pos--(N/256).1.256.4xF32
         (zip(toLocal(mapLocal 0 (x3->x3) (fst (unzip p1Chunk))))(snd (unzip p1Chunk)))--zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
-        ). (split tileX)
+        ). (split TileX)
       ). (split N) ( zip pos vel)
