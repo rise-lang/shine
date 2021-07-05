@@ -1,8 +1,29 @@
 package rise.core.types
 
 import arithexpr.arithmetic._
-import rise.core.types
 
+object IsTuningParameter {
+  def apply(name: String)(ni: NatIdentifier): Boolean =
+    ni.name == TuningParameter.prefix + name
+}
+
+object TuningParameter {
+  val prefix = "tuned_"
+  def apply(name: String): NatIdentifier = NatIdentifier(prefix + name)
+  def apply(name: String, range: Range): NatIdentifier = NatIdentifier(prefix + name, range)
+  def unapply(ni: NatIdentifier): Boolean = {
+    if (ni.name.startsWith(prefix)) {
+      true
+    } else {
+      false
+    }
+  }
+}
+
+object TuningParameterName {
+  def apply(ni: NatIdentifier): String =
+    ni.name.drop(TuningParameter.prefix.length)
+}
 
 object NatIdentifier {
   def apply(name: String): NatIdentifier = new NamedVar(name)
