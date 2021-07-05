@@ -90,7 +90,7 @@ class autotuning extends test_util.Tests {
       input |> mapGlobal(0)(fun(x => alpha * x)))
     ))
 
-  //scalastyle:off
+  // scalastyle:off
   val main: Int => String = iterations => {
     s"""
     const int N = ${iterations};
@@ -117,7 +117,7 @@ class autotuning extends test_util.Tests {
     }
     """
   }
-  //scalastyle:on
+  // scalastyle:on
 
   test("collect parameters") {
     val params = autotune.constraints.collectParameters(convolutionOclGsLsWrap)
@@ -312,7 +312,7 @@ class autotuning extends test_util.Tests {
     val constraints = autotune.constraints.collectConstraints(convolution, parameters)
     val json = autotune.configFileGeneration.generateJSON(parameters, constraints, Tuner(main(32)))
 
-    //scalastyle:off
+    // scalastyle:off
     val gold =
       """{
         | "application_name" : "RISE",
@@ -343,7 +343,7 @@ class autotuning extends test_util.Tests {
         | }
         |}
         |""".stripMargin
-    //scalastyle:on
+    // scalastyle:on
 
     assert(json.equals(gold))
   }
@@ -377,7 +377,15 @@ class autotuning extends test_util.Tests {
   ignore("search experimental") {
     val e: Expr = convolutionOclGsLs(1024)
 
-    val tuner = Tuner(main(1024), 1000, "RISE", "autotuning", Timeouts(5000, 5000, 5000), None, true )
+    val tuner = Tuner(
+      main(1024),
+      1000,
+      "RISE",
+      "autotuning",
+      Timeouts(5000, 5000, 5000),
+      None,
+      true
+    )
 
     val tuningResult = autotune.search(tuner)(e)
 
@@ -434,7 +442,7 @@ class autotuning extends test_util.Tests {
   test("execute scal") {
     val e: Expr = scalOcl(32)
 
-    //scalastyle:off
+    // scalastyle:off
     val main =
       """
     const int N = 32;
@@ -465,7 +473,7 @@ class autotuning extends test_util.Tests {
       return EXIT_SUCCESS;
     }
     """
-    //scalastyle:on
+    // scalastyle:on
 
     val result = autotune.execution.execute(e, main, Timeouts(5000, 5000, 5000))
 
@@ -479,7 +487,7 @@ class autotuning extends test_util.Tests {
 
   test("test xml parsing") {
 
-    //scalastyle:off
+    // scalastyle:off
     val xmlString =
       """
 <trace date="2021-03-30 18:04:26" profiler_version="0.1.0" ocl_version="1.2">
@@ -497,12 +505,12 @@ class autotuning extends test_util.Tests {
   <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
 </trace>
     """
-    //scalastyle:on
+    // scalastyle:on
     assert(autotune.execution.getRuntimeFromClap(xmlString).value.toFloat == 0.010112f)
   }
 
   test("text xml parsing with corrupted xml string") {
-    //scalastyle:off
+    // scalastyle:off
     val corruptedXmlString =
       """<trace date="2021-04-01 18:42:51" profiler_version="0.1.0" ocl_version="1.2"/>
 <trace date="2021-04-01 18:42:51" profiler_version="0.1.0" ocl_version="1.2">
@@ -520,7 +528,7 @@ class autotuning extends test_util.Tests {
   <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
 </trace>
     """
-    //scalastyle:on
+    // scalastyle:on
     assert(autotune.execution.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
   }
 

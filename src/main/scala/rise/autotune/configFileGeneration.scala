@@ -8,7 +8,10 @@ import constraints._
 
 object configFileGeneration {
 
-  def generateJSON(p: Parameters, c: Set[Constraint], tuner: Tuner): String = {
+  def generateJSON(p: Parameters,
+                   c: Set[Constraint],
+                   tuner: Tuner)
+  : String = {
 
     val parametersWDC = distributeConstraints(p, c)
 

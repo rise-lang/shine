@@ -46,6 +46,7 @@ package object autotune {
     w.f(TuningParameter(name, r))
 
   def search(tuner: Tuner)(e: Expr): TuningResult = {
+
     val start = System.currentTimeMillis()
     val parameters = collectParameters(e)
     val constraints = collectConstraints(e, parameters)

@@ -47,10 +47,8 @@ object execution {
     val bin = createTempFile("bin-", "").getAbsolutePath
     val sources = s"$src ${platformPath}buffer_$buffer_impl.c ${platformPath}ocl.c"
     try {
-      //scalastyle:off
       (s"timeout ${compilationTimeout/1000}s " +
         s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
-      //scalastyle:on
     } catch {
       case e: Throwable => {
         println("compile error: " + e)
