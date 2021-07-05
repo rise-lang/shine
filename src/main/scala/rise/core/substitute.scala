@@ -73,21 +73,25 @@ object substitute {
     Visitor.expr(in).unwrap
   }
 
-  def natInExpr(ae: Nat, `for`: NatIdentifier, in: Expr): Expr = {
+  def natsInExpr(subs: Map[NatIdentifier, Nat], in: Expr): Expr = {
     object Visitor extends PureTraversal {
       override def expr: Expr => Pure[Expr] = {
-        case Identifier(name) if (`for`.name == name) => return_(Literal(NatData(ae)) : Expr)
+        case Identifier(name) if subs.contains(NatIdentifier(name)) =>
+          return_(Literal(NatData(subs(NatIdentifier(name)))): Expr)
         case e => super.expr(e)
       }
 
       override def nat: Nat => Pure[Nat] = e =>
-        return_(substitute.natInNat(ae, `for`, e))
+        return_(substitute.natsInNat(subs, e))
 
       override def `type`[T <: Type]: T => Pure[T] = t =>
-        return_(substitute.natInType(ae, `for`, t))
+        return_(substitute.natsInType(subs, t))
     }
     Visitor.expr(in).unwrap
   }
+
+  def natInExpr(ae: Nat, `for`: NatIdentifier, in: Expr): Expr =
+    natsInExpr(Map(`for` -> ae), in)
 
   def addressSpaceInExpr(a: AddressSpace,
                          `for`: AddressSpaceIdentifier,
@@ -123,13 +127,16 @@ object substitute {
     traverse(in, Visitor)
   }
 
-  def natInType[T <: Type](n: Nat, `for`: NatIdentifier, in: T): T = {
+  def natsInType[T <: Type](subs: Map[NatIdentifier, Nat], in: T): T = {
     object Visitor extends PureTraversal {
       override def nat: Nat => Pure[Nat] = in1 =>
-        return_(substitute.natInNat(n, `for`, in1))
+        return_(substitute.natsInNat(subs, in1))
     }
     traverse(in, Visitor)
   }
+
+  def natInType[T <: Type](n: Nat, `for`: NatIdentifier, in: T): T =
+    natsInType(Map(`for` -> n), in)
 
   def natInDataType(n: Nat, `for`: NatIdentifier, in: DataType): DataType = {
     object Visitor extends PureTraversal {

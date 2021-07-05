@@ -53,7 +53,7 @@ object ExecuteOpenCL {
         throw Exception(s"execution failed: $e")
     } finally {
       new scala.reflect.io.Directory(new java.io.File(genDir.getAbsolutePath))
-          .deleteRecursively()
+        .deleteRecursively()
     }
   }
 

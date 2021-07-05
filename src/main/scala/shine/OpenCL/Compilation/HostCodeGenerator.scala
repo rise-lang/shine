@@ -197,8 +197,10 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
   private def bufferSize(dt: DataType): Expr =
     dt match {
       case ManagedBufferType(dt) => bufferSize(dt)
-      case _: ScalarType | _: IndexType | _: VectorType | _: PairType =>
+      case _: ScalarType | _: IndexType | _: VectorType =>
         C.AST.Literal(s"sizeof(${typ(dt)})")
+      case PairType(fst, snd) =>
+        C.AST.BinaryExpr(bufferSize(fst), BinaryOperator.+, bufferSize(snd))
       case a: shine.DPIA.Types.ArrayType =>
         C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
       case a: DepArrayType => ??? // TODO
