@@ -3,7 +3,7 @@ package rise.autotune
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{ArithExpr, BoolExpr, RangeAdd, RangeMul}
 import rise.core.{DepApp, DepLambda, Expr, Lambda, traverse}
-import rise.core.types.{ArrayType, DataType, Nat, NatIdentifier, NatKind, TuningParameter, VectorType}
+import rise.core.types._
 import util.monads
 import scala.annotation.tailrec
 
@@ -42,6 +42,14 @@ object constraints {
 
   def checkConstraints(constraints: Set[Constraint], values: Map[NatIdentifier, Nat]): Boolean = {
     val map = values.asInstanceOf[Map[ArithExpr, ArithExpr]]
+//    println("\n")
+//    constraints.foreach(elem => {
+//      val const = elem.substitute(map)
+//      val sat = const.isSatisfied()
+//      println("const: " + const)
+//      println("sat: " + sat)
+//    })
+//    println("\n")
     constraints.forall(c => c.substitute(map).isSatisfied())
   }
 
@@ -94,7 +102,8 @@ object constraints {
     traverse.traverse(e, new traverse.PureTraversal {
       override def expr: Expr => monads.Pure[Expr] = { e =>
         e match {
-          case DepApp(NatKind, DepApp(NatKind, DepApp(NatKind, DepApp(NatKind, DepApp(NatKind, DepApp(NatKind,
+          case DepApp(NatKind, DepApp(NatKind, DepApp(NatKind,
+          DepApp(NatKind, DepApp(NatKind, DepApp(NatKind,
           rise.openCL.primitives.oclRunPrimitive(),
           ls0: Nat), ls1: Nat), ls2: Nat),
           gs0: Nat), gs1: Nat), gs2: Nat)

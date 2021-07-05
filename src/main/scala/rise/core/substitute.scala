@@ -77,7 +77,7 @@ object substitute {
     object Visitor extends PureTraversal {
       override def expr: Expr => Pure[Expr] = {
         case Identifier(name) if subs.contains(NatIdentifier(name)) =>
-          return_(Literal(NatData(subs(NatIdentifier(name)))) : Expr)
+          return_(Literal(NatData(subs(NatIdentifier(name)))): Expr)
         case e => super.expr(e)
       }
 

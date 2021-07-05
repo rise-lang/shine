@@ -8,7 +8,7 @@ import constraints._
 
 object configFileGeneration {
 
-  def generateJSON(p: Parameters, c:Set[Constraint], tuner: Tuner): String = {
+  def generateJSON(p: Parameters, c: Set[Constraint], tuner: Tuner): String = {
 
     val parametersWDC = distributeConstraints(p, c)
 
@@ -54,11 +54,17 @@ object configFileGeneration {
           start.eval match {
             case 1 => {
               stepWidth match {
-                case 1 => valuesListToString(List.range(start.evalInt, stop.evalInt + 1).filter(_ % stepWidth == 0))
-                case _ => valuesListToString(List(1) ++ List.range(start.evalInt, stop.evalInt + 1).filter(_ % stepWidth == 0))
+                case 1 => valuesListToString(
+                  List.range(start.evalInt, stop.evalInt + 1)
+                    .filter(_ % stepWidth == 0))
+                case _ => valuesListToString(
+                  List(1) ++ List.range(start.evalInt, stop.evalInt + 1)
+                    .filter(_ % stepWidth == 0))
               }
             }
-            case _ => valuesListToString(List.range(start.evalInt, stop.evalInt+1).filter(_ % stepWidth == 0))
+            case _ => valuesListToString(
+              List.range(start.evalInt, stop.evalInt+1)
+                .filter(_ % stepWidth == 0))
           }
         }
 
@@ -69,7 +75,9 @@ object configFileGeneration {
             case true => {
               val maxVal = scala.math.log(stop.evalInt)/scala.math.log(mul.evalDouble)
 
-              valuesListToString(List.range(start.evalInt, maxVal.toInt+1).map(power => scala.math.pow(mul.evalInt, power).toInt))
+              valuesListToString(
+                List.range(start.evalInt, maxVal.toInt+1)
+                  .map(power => scala.math.pow(mul.evalInt, power).toInt))
             }
             case false =>
               valuesListToString(List.range(start.evalInt, stop.evalInt))
@@ -106,7 +114,8 @@ object configFileGeneration {
                       case _ => (0, 0, 0) // todo catch other types of ranges
                     }
 
-                    // if stop is PosInf, remove constraint (already catched by the range of parameter)
+                    // if stop is PosInf, remove constraint
+                    // (already catched by the range of parameter)
                     stop.toString match {
                       case "PosInf" =>{
                         val startConstraint = n.toString + " >= " + start
@@ -176,7 +185,7 @@ object configFileGeneration {
     file
   }
 
-  def valuesListToString(list: List[Any]):String = {
+  def valuesListToString(list: List[Any]): String = {
     var valuesString = ""
     list.foreach(value => {
       valuesString += value.toString +  ", "
@@ -184,7 +193,7 @@ object configFileGeneration {
     "["  + valuesString.dropRight(2) + "]"
   }
 
-  def elementListToString(list: List[Any]):String = {
+  def elementListToString(list: List[Any]): String = {
     var valuesString = ""
     list.foreach(value => {
       valuesString += "\"" + value.toString + "\"" + ", "
@@ -192,10 +201,13 @@ object configFileGeneration {
     "["  + valuesString.dropRight(2) + "]"
   }
 
-  def distributeConstraints(parameters: Parameters, constraints: Set[Constraint]): Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])] =  {
+  def distributeConstraints(parameters: Parameters,
+                            constraints: Set[Constraint]
+                           ): Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])] =  {
 
     // initialize output map and add parameters
-    val parametersWDC = scala.collection.mutable.Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]()
+    val parametersWDC = scala.collection.mutable.
+      Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]()
     parameters.foreach(param => {
       parametersWDC(param) = (Set.empty[Constraint], Set.empty[NatIdentifier])
     })
@@ -217,14 +229,21 @@ object configFileGeneration {
               parametersInConstraint.foreach(candidate => {
 
                 // check if pointer occurs in other parameters' dependencies  (avoid cycles)
-                parametersWDC.filter(paramWDC => !(paramWDC._1.name.equals(candidate.name))).exists(paramWDC => {
+                parametersWDC.filter(
+                  paramWDC => !(paramWDC._1.name.equals(candidate.name))
+                ).exists(paramWDC => {
                   paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
                 }) match {
                   case false => {
                     // use this candidate
                     // add candidate to output map
                     val elem = parametersWDC(candidate)
-                    parametersWDC(candidate) = (elem._1 + constraint, elem._2 ++ parametersInConstraint.filter(param => !(param.name.equals(candidate.name))))
+                    parametersWDC(candidate) = (
+                      elem._1 + constraint,
+                      elem._2 ++ parametersInConstraint.filter(
+                        param => !(param.name.equals(candidate.name))
+                      )
+                    )
                   }
                   case true => // use next candidate
                 }
@@ -234,7 +253,12 @@ object configFileGeneration {
               val candidate = candidates.last
 
               val elem = parametersWDC(candidate)
-              parametersWDC(candidate) = (elem._1 + constraint, elem._2 ++ parametersInConstraint.filter(param => !(param.name.equals(candidate.name))))
+              parametersWDC(candidate) = (
+                elem._1 + constraint,
+                elem._2 ++ parametersInConstraint.filter(
+                  param => !(param.name.equals(candidate.name))
+                )
+              )
               // should go to n
             }
           }
@@ -247,14 +271,21 @@ object configFileGeneration {
           parametersInConstraint.foreach(candidate => {
 
             // check if pointer occurs in other parameters' dependencies  (avoid cycles)
-            parametersWDC.filter(paramWDC => !(paramWDC._1.name.equals(candidate.name))).exists(paramWDC => {
-              paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
-            }) match {
+            parametersWDC.filter(
+              paramWDC => !(paramWDC._1.name.equals(candidate.name)))
+              .exists(paramWDC => {
+                paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
+              }) match {
               case false => {
                 // use this candidate
                 // add candidate to output map
                 val elem = parametersWDC(candidate)
-                parametersWDC(candidate) = (elem._1 + constraint, elem._2 ++ parametersInConstraint.filter(param => !(param.name.equals(candidate.name))))
+                parametersWDC(candidate) = (
+                  elem._1 + constraint,
+                  elem._2 ++ parametersInConstraint.filter(
+                    param => !(param.name.equals(candidate.name))
+                  )
+                )
               }
               case true => // use next candidate
             }
@@ -266,7 +297,9 @@ object configFileGeneration {
   }
 
   // helper function to collect occurring parameters from a constraint
-  def getParametersFromConstraint(parameters: Parameters, constraint: Constraint):Set[NatIdentifier] = {
+  def getParametersFromConstraint(parameters: Parameters,
+                                  constraint: Constraint)
+  : Set[NatIdentifier] = {
 
     // collect parameters as vars in constraint
     val parametersInConstraint = constraint match {

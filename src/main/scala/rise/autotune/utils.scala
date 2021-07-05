@@ -7,7 +7,7 @@ object autoTuningUtils {
   // WARNING: does not kill the thread, we only return to host program
   // Thread.stop() is deprecated and cannot be used here
   // add option to stop thread in unsafe way
-  def runWithTimeout[T](timeoutMs: Long)(f: => T) : Option[T] = {
+  def runWithTimeout[T](timeoutMs: Long)(f: => T): Option[T] = {
     try {
       val executor = Executors.newSingleThreadExecutor()
       val res = executor.invokeAll(java.util.Arrays.asList(new java.util.concurrent.Callable[T] {

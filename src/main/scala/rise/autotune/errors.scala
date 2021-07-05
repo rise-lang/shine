@@ -9,4 +9,4 @@ case object CODE_GENERATION_ERROR extends AutoTuningErrorLevel
 case object COMPILATION_ERROR extends AutoTuningErrorLevel
 case object EXECUTION_ERROR extends AutoTuningErrorLevel
 
-case class AutoTuningError(errorLevel: AutoTuningErrorLevel, message:Option[String])
+case class AutoTuningError(errorLevel: AutoTuningErrorLevel, message: Option[String])

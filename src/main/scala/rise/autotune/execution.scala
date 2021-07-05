@@ -8,27 +8,51 @@ import scala.sys.process._
 
 object execution {
 
-  def execute(e: Expr, main: String, timeouts: Timeouts): (Option[TimeSpan[Time.ms]], AutoTuningError)  = {
-    val m = autoTuningUtils.runWithTimeout(timeouts.codgenerationTimeout)(gen.opencl.hosted.fromExpr(e))
+  def execute(e: Expr,
+              main: String,
+              timeouts: Timeouts)
+  : (Option[TimeSpan[Time.ms]], AutoTuningError)  = {
+
+    val m = autoTuningUtils.runWithTimeout(
+      timeouts.codgenerationTimeout)(gen.opencl.hosted.fromExpr(e)
+    )
     m match {
-      case Some(_) =>{
+      case Some(_) => {
         val program = shine.OpenCL.Module.translateToString(m.get) + main
 
         // execute program
-        executeWithRuntime(program, "zero_copy", timeouts.compilationTimeout, timeouts.executionTimeout)
+        executeWithRuntime(
+          program,
+          "zero_copy",
+          timeouts.compilationTimeout,
+          timeouts.executionTimeout
+        )
       }
-      case None => (None, AutoTuningError(CODE_GENERATION_ERROR, Some("timeout after: " + timeouts.codgenerationTimeout)))
+      case None => (
+        None,
+        AutoTuningError(
+          CODE_GENERATION_ERROR,
+          Some("timeout after: " + timeouts.codgenerationTimeout)
+        )
+      )
     }
   }
 
-  def executeWithRuntime(code: String, buffer_impl: String, compilationTimeout: Long, executionTimeout: Long): (Option[TimeSpan[Time.ms]], AutoTuningError) = {
+  def executeWithRuntime(code: String,
+                         buffer_impl: String,
+                         compilationTimeout: Long, executionTimeout: Long)
+  : (Option[TimeSpan[Time.ms]], AutoTuningError) = {
+
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
     val sources = s"$src ${platformPath}buffer_$buffer_impl.c ${platformPath}ocl.c"
     try {
-      (s"timeout ${compilationTimeout/1000}s clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
+      //scalastyle:off
+      (s"timeout ${compilationTimeout/1000}s " +
+        s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
+      //scalastyle:on
     } catch {
-      case e:Throwable => {
+      case e: Throwable => {
         println("compile error: " + e)
 
         (None, AutoTuningError(COMPILATION_ERROR, Some(e.toString)))

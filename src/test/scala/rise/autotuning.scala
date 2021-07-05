@@ -90,6 +90,7 @@ class autotuning extends test_util.Tests {
       input |> mapGlobal(0)(fun(x => alpha * x)))
     ))
 
+  //scalastyle:off
   val main: Int => String = iterations => {
     s"""
     const int N = ${iterations};
@@ -116,6 +117,7 @@ class autotuning extends test_util.Tests {
     }
     """
   }
+  //scalastyle:on
 
   test("collect parameters") {
     val params = autotune.constraints.collectParameters(convolutionOclGsLsWrap)
@@ -130,12 +132,15 @@ class autotuning extends test_util.Tests {
 
   test("collect constraints") {
     val e: Expr = convolutionOclGsLsWrap
-    autotune.constraints.collectConstraints(e, autotune.constraints.collectParameters(e)).foreach(println)
+    autotune.constraints.collectConstraints(e,
+      autotune.constraints.collectParameters(e))
+      .foreach(println)
   }
 
   test("substitute parameters") {
     val e: Expr = convolution(32)
-    val constraints = autotune.constraints.collectConstraints(e, autotune.constraints.collectParameters(e))
+    val constraints = autotune.constraints.collectConstraints(e,
+      autotune.constraints.collectParameters(e))
     println("constraints: \n" + constraints)
 
     val badParameters1 = Map(
@@ -183,10 +188,13 @@ class autotuning extends test_util.Tests {
           wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
         ))))
     val (nIdent, mIdent, oIdent) = e match {
-      case DepLambda(NatKind, n: NatIdentifier, DepLambda(NatKind, m: NatIdentifier, DepLambda(NatKind, o: NatIdentifier, _))) =>
+      case DepLambda(NatKind,
+      n: NatIdentifier,
+      DepLambda(NatKind, m: NatIdentifier, DepLambda(NatKind, o: NatIdentifier, _))) =>
         (n, m, o)
       case _ => ???
     }
+
     val params = autotune.constraints.collectParameters(e)
     val constraints = autotune.constraints.collectConstraints(e, params)
     // note: v5 multiple of 4, contiguous memory constraint is missing
@@ -304,6 +312,7 @@ class autotuning extends test_util.Tests {
     val constraints = autotune.constraints.collectConstraints(convolution, parameters)
     val json = autotune.configFileGeneration.generateJSON(parameters, constraints, Tuner(main(32)))
 
+    //scalastyle:off
     val gold =
       """{
         | "application_name" : "RISE",
@@ -334,6 +343,7 @@ class autotuning extends test_util.Tests {
         | }
         |}
         |""".stripMargin
+    //scalastyle:on
 
     assert(json.equals(gold))
   }
@@ -424,6 +434,7 @@ class autotuning extends test_util.Tests {
   test("execute scal") {
     val e: Expr = scalOcl(32)
 
+    //scalastyle:off
     val main =
       """
     const int N = 32;
@@ -454,6 +465,7 @@ class autotuning extends test_util.Tests {
       return EXIT_SUCCESS;
     }
     """
+    //scalastyle:on
 
     val result = autotune.execution.execute(e, main, Timeouts(5000, 5000, 5000))
 
@@ -466,6 +478,8 @@ class autotuning extends test_util.Tests {
   }
 
   test("test xml parsing") {
+
+    //scalastyle:off
     val xmlString =
       """
 <trace date="2021-03-30 18:04:26" profiler_version="0.1.0" ocl_version="1.2">
@@ -483,10 +497,12 @@ class autotuning extends test_util.Tests {
   <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
 </trace>
     """
+    //scalastyle:on
     assert(autotune.execution.getRuntimeFromClap(xmlString).value.toFloat == 0.010112f)
   }
 
   test("text xml parsing with corrupted xml string") {
+    //scalastyle:off
     val corruptedXmlString =
       """<trace date="2021-04-01 18:42:51" profiler_version="0.1.0" ocl_version="1.2"/>
 <trace date="2021-04-01 18:42:51" profiler_version="0.1.0" ocl_version="1.2">
@@ -503,8 +519,8 @@ class autotuning extends test_util.Tests {
   <mem_object type="Buffer" flag="CL_MEM_WRITE_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="2"/>
   <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="128" id="1"/>
 </trace>
-
     """
+    //scalastyle:on
     assert(autotune.execution.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
   }
 
@@ -527,7 +543,11 @@ class autotuning extends test_util.Tests {
 
     println("run codegen with timeout ")
     // WARNING: timeout does not stop the thread, it only returns to the host thread
-    val result = rise.autotune.execution.execute(eWithParams, main(1024), Timeouts(5000, 5000, 5000))
+    val result = autotune.execution.execute(
+      eWithParams,
+      main(1024),
+      Timeouts(5000, 5000, 5000)
+    )
 
     print("result: " + result)
     assert(result._2.errorLevel.equals(autotune.CODE_GENERATION_ERROR))

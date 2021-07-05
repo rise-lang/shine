@@ -20,17 +20,22 @@ import scala.sys.process._
 package object autotune {
 
   case class Timeouts(codgenerationTimeout: Long, compilationTimeout: Long, executionTimeout: Long)
-  case class Tuner(main:String,
+  case class Tuner(main: String,
                    iterations: Int = 100,
-                   name:String = "RISE",
-                   output:String = "autotuning",
-                   timeouts:Timeouts = Timeouts(5000, 5000, 5000),
-                   configFile:Option[String] = None,
+                   name: String = "RISE",
+                   output: String = "autotuning",
+                   timeouts: Timeouts = Timeouts(5000, 5000, 5000),
+                   configFile: Option[String] = None,
                    hierarchicalHM: Boolean = false)
 
-  case class Sample(parameters: Map[NatIdentifier, Nat], runtime: Option[TimeSpan[Time.ms]], timestamp: Long, autoTuningError: AutoTuningError)
-  case class TuningResult(samples: Seq[Sample]) // todo add meta information (configuration, times, samples, ...)
-  case class AutoTuningError(errorLevel: AutoTuningErrorLevel, message:Option[String])
+  case class Sample(parameters: Map[NatIdentifier, Nat],
+                    runtime: Option[TimeSpan[Time.ms]],
+                    timestamp: Long,
+                    autoTuningError: AutoTuningError)
+
+  // todo add meta information (configuration, times, samples, ...)
+  case class TuningResult(samples: Seq[Sample])
+  case class AutoTuningError(errorLevel: AutoTuningErrorLevel, message: Option[String])
   type Parameters = Set[NatIdentifier]
 
   // should we allow tuning params to be substituted during type inference?
@@ -40,7 +45,7 @@ package object autotune {
   def tuningParam[A](name: String, r: arithexpr.arithmetic.Range, w: NatFunctionWrapper[A]): A =
     w.f(TuningParameter(name, r))
 
-  def search(tuner:Tuner)(e:Expr): TuningResult = {
+  def search(tuner: Tuner)(e: Expr): TuningResult = {
     val start = System.currentTimeMillis()
     val parameters = collectParameters(e)
     val constraints = collectConstraints(e, parameters)
@@ -50,7 +55,9 @@ package object autotune {
     tuner.configFile match {
       case None => {
         println("generate configuration file")
-        val file = new PrintWriter(new FileOutputStream(new File(tuner.output + "/" + tuner.name + ".json"), false))
+        val file = new PrintWriter(
+          new FileOutputStream(
+            new File(tuner.output + "/" + tuner.name + ".json"), false))
         file.write(generateJSON(parameters, constraints, tuner))
         file.close()
       }
@@ -69,7 +76,8 @@ package object autotune {
         case true => {
           println("constraints true")
           // execute
-          val result = execute(rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main, tuner.timeouts)
+          val result = execute(
+            rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main, tuner.timeouts)
           result._1 match {
             case Some(_) =>
               Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
@@ -79,7 +87,12 @@ package object autotune {
         }
         case false => {
           println("constraints false")
-          Sample(parametersValuesMap, None, System.currentTimeMillis() - start, AutoTuningError(CONSTRAINTS_ERROR, None))
+          Sample(
+            parametersValuesMap,
+            None,
+            System.currentTimeMillis() - start,
+            AutoTuningError(CONSTRAINTS_ERROR, None)
+          )
         }
       }
     }
@@ -92,15 +105,23 @@ package object autotune {
     println("configFile: " + configFile)
 
     // check if hypermapper is installed and config file exists
-    assert((os.isFile(os.Path.apply("/usr/local/bin/hypermapper")) || os.isFile(os.Path.apply("/usr/bin/hypermapper"))) && os.isFile(configFile))
+    assert(
+      (os.isFile(os.Path.apply("/usr/local/bin/hypermapper"))
+        || os.isFile(os.Path.apply("/usr/bin/hypermapper")))
+        && os.isFile(configFile)
+    )
 
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
+    var i = 0
     // main tuning loop
     var samples = new ListBuffer[Sample]()
     var done = false
     while (hypermapper.isAlive() && !done) {
       hypermapper.stdout.readLine() match {
+        case null =>
+          done = true
+          println("End of HyperMapper -- error")
         case "End of HyperMapper" =>
           done = true
           println("End of HyperMapper -- done")
@@ -111,7 +132,7 @@ package object autotune {
           println(s"Best point found\nHeaders: ${headers}Values: ${values}")
         case request if request.contains("warning") =>
           println(s"[Hypermapper] $request")
-        case request =>
+        case request if request.contains("Request") =>
           println(s"Request: $request")
           val numberOfEvalRequests = request.split(" ")(1).toInt
           // read in header
@@ -128,13 +149,15 @@ package object autotune {
             // append response
             sample.runtime match {
               case None => response += s"${parametersValues.mkString(",")},-1,False\n"
-              case Some(value) => response += s"${parametersValues.mkString(",")},${value.value},True\n"
+              case Some(value) =>
+                response += s"${parametersValues.mkString(",")},${value.value},True\n"
             }
           }
           print(s"Response: $response")
           // send response to Hypermapper
           hypermapper.stdin.write(response)
           hypermapper.stdin.flush()
+        case error => println("error: " + error)
       }
     }
 
@@ -149,7 +172,8 @@ package object autotune {
       case l@Lambda(x,e) =>
         Lambda(x, wrapOclRun(localSize, globalSize)(e))(l.t)
       // depFun(x => e)
-      case dl@DepLambda(kind, x, e) => DepLambda(kind, x, wrapOclRun(localSize, globalSize)(e))(dl.t)
+      case dl@DepLambda(kind, x, e) =>
+        DepLambda(kind, x, wrapOclRun(localSize, globalSize)(e))(dl.t)
       case e => oclRun(localSize, globalSize)(e)
     }
   }
