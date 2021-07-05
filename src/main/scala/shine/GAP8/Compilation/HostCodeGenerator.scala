@@ -80,8 +80,8 @@ case class HostCodeGenerator(
           C.AST.DeclRef("ctx"),
           C.AST.StructMemberAccess(
             C.AST.UnaryExpr(C.AST.UnaryOperator.*, C.AST.DeclRef("self")),
-            // Dubious hardcoded k0
-            C.AST.DeclRef("k0")
+            // Dubious hardcoded cluster_core_task
+            C.AST.DeclRef("cluster_core_task")
           ),
           C.AST.Literal(s"${numCores}"),
           C.AST.DeclRef("cl_params")
@@ -208,6 +208,11 @@ case class HostCodeGenerator(
     )))
   }
 
-  override def typ(dt: DataType): Type = super.typ(dt)
+  //override def typ(dt: DataType): Type = super.typ(dt)
+  override def typ(dt: DataType): Type = dt match {
+    case ManagedBufferType(_) => C.AST.OpaqueType("Buffer")
+    case OpaqueType(name) => C.AST.OpaqueType(name)
+    case _ => super.typ(dt)
+  }
 
 }

@@ -19,7 +19,7 @@ object SeparateHostAndAcceleratorCode {
     val hostDefinition = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
         case r@shine.GAP8.primitives.functional.Run(cores) =>
-          val name = "host_func"
+          val name = "cluster_core_task"
           val (closedDef, args) = closeDefinition(r.input)
           val funDef = FunDef(name, closedDef)
           accFunctionDefinitions += funDef

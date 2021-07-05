@@ -35,9 +35,10 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
     shine.OpenCL.Compilation.HostCodeModuleGenerator.imperativePasses(funDef, outParam) andThen
       generateCode(gen, funDef, outParam) andThen
       makeHostCodeModule(gen, funDef, outParam)
-    
 
-  def generateCode(gen: HostCodeGenerator, funDef: FunDef, outParam: Identifier[AccType]): Phrase[CommType] => (Seq[Decl], Stmt) = {
+  def generateCode(gen: HostCodeGenerator,
+                   funDef: FunDef,
+                   outParam: Identifier[AccType]): Phrase[CommType] => (Seq[Decl], Stmt) = {
     val env = shine.DPIA.Compilation.CodeGenerator.Environment(
       optionallyManagedParams(funDef.params, outParam)
         .map(p => p -> C.AST.DeclRef(p.name)).toMap,
@@ -92,20 +93,21 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
     C.AST.Function(
       code = C.AST.FunDecl(s"${selfName}_init",
         returnType = C.AST.Type.void,
-        params = Seq(ctx, self),
+        params = Seq(self),
         body = C.AST.Block(gen.acceleratorFunctions.flatMap { km =>
           km.functions.map(k => C.AST.ExprStmt(C.AST.Assignment(
             C.AST.StructMemberAccess(
               C.AST.UnaryExpr(C.AST.UnaryOperator.*, C.AST.DeclRef("self")),
               C.AST.DeclRef(k.name)),
             C.AST.FunCall(C.AST.DeclRef("loadKernel"), Seq(
-              C.AST.DeclRef("ctx"), C.AST.DeclRef(k.name)
+              //C.AST.DeclRef("ctx"), C.AST.DeclRef(k.name)
+              C.AST.DeclRef(k.name),
+              C.AST.Literal("2048")
             ))
           )))
         })
       ),
       paramKinds = Seq(
-        ParamKind.input(OpaqueType("Context")),
         ParamKind.output(OpaqueType(selfT.name)))
     )
   }
@@ -145,7 +147,7 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
         body = C.AST.Block(Seq(
           C.AST.DeclStmt(C.AST.VarDecl(funDef.name, selfT, None)),
           C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(s"${funDef.name}_init"), Seq(
-            C.AST.DeclRef("ctx"), C.AST.UnaryExpr(C.AST.UnaryOperator.&, C.AST.DeclRef(funDef.name))
+            C.AST.UnaryExpr(C.AST.UnaryOperator.&, C.AST.DeclRef(funDef.name))
           ))),
           C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(s"${funDef.name}_run"),
             Seq(C.AST.DeclRef("ctx"), C.AST.UnaryExpr(C.AST.UnaryOperator.&, C.AST.DeclRef(funDef.name))) ++

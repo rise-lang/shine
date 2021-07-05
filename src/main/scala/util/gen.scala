@@ -111,12 +111,15 @@ object gen {
       def asStringFromExpr: Expr => String =
         functionAsStringFromExpr(name, OpenMP.CodeGenerator())
 
+      /**
+        * Accelerator function only - Injects unpacking code
+        * */
       private def functionAsStringFromExpr(name: String = "foo",
                                            gen: CCodeGenerator = CCodeGenerator()
                                           ): Expr => String =
         functionFromExpr(name, gen) andThen
-          GAP8.Module.fromCModule andThen
-          GAP8.Module.translateToString andThen
+          GAP8.Module.injectUnpacking andThen
+          C.Module.translateToString andThen
           run(SyntaxChecker(_))
     }
 
