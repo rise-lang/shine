@@ -98,15 +98,33 @@ object ErrorMessage {
       description_error+" `"+codeLines(important_column).substring(important_row_Begin,important_row_End)+"`"+"\n"+
       give_char_n_times(important_column.toString.length, ' ', None)+
       indentColour_ImportantColumn.toString+"-->"+Console.RESET+" "+filePath+"\n"
-
     val help_message = help match {
-      case Some(h) => giveIndent(None, BLUE(), indentationBefore,indentationAfter) + "help: " + h +"\n"
+      case Some(h) => get_help_message(BLUE(), indentationBefore, indentationAfter, h, description_error.toString.length+10)
       case None => ""
     }
+
     res + give_code(what_exp,name_of_error,start_column,end_column,
       codeLines,underl,important_column,important_row_Begin,important_row_End,
       indentationBefore,indentationAfter,indentColour,indentColour_ImportantColumn
     ) + help_message
+  }
+
+  private def get_help_message(color: AnsiColor_enum, indentationBefore: Int, indentationAfter: Int, h: String, length_of_line:Int): String ={
+    val length = h.length
+    var ret = ""
+    var step=0
+    while(step<length) {
+      var next_step = step+length_of_line
+      val ss = if(next_step>=length)h.substring(step).length else h.substring(step, next_step).lastIndexOf(' ')
+      next_step = step + ss
+      if(step==0){
+        ret = ret + giveIndent(None, color, indentationBefore,indentationAfter) + "help: "+h.substring(step, next_step) +"\n"
+      }else{
+        ret = ret + giveIndent(None, color, indentationBefore,indentationAfter+5) + h.substring(step, next_step) +"\n"
+      }
+      step = next_step
+    }
+    ret
   }
 
   //Todo:if important column: BLUE, else CYAN as a colour for indentation

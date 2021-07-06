@@ -116,6 +116,12 @@ final case class AllLinesAreEmpty(override val span:Span) extends PreAndErrorTok
   override val what_exp = "every line is empty"
   override val help = Some("your file is empty")
 }
+final case class NotTypAnnotationOrNamedExprOrForeignFct(override val span:Span) extends PreAndErrorToken(span){
+  require(begin == end, "begin is unequal to end")
+  override val description_error: String = "No beginning of an Definition of an Type or of an Expression"
+  override val what_exp: String = "no beginning of an TypeAnnotation, NamedExpr or ForeignFct here"
+  override val help: Option[String] = Some("you have to begin with an name and the symbol '=' or '::' for a NamedExpr or TypAnnotation or with the keyword 'foreign' and a name for the ForeignFct")
+}
 final case class EndOfFile(override val span:Span) extends PreAndErrorToken(span){
   require(begin == end, "begin is unequal to end")
   override val description_error: String = "End of File"

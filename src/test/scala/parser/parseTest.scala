@@ -3025,4 +3025,14 @@ class parseTest extends  test_util.TestsWithExecutor {
     println(thrown.toString)
   }
 
+  test("parser should not be able to parse 'two_times_square_test.rise'"){
+    val fileName: String = errorFilePath + "two_times_square_test.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val thrown = intercept[ParserException] {
+      parse(lexer.tokens)
+    }
+    println(thrown.toString)
+  }
+
 }

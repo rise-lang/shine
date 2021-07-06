@@ -2,7 +2,7 @@ package parser
 
 
 import OpType.{BinOpType, UnaryOpType}
-import parser.ErrorMessage.{AllLinesAreEmpty, EndOfFile, EndOfLine, ExpectedArrowButGotTwoDash, F32DeclaredAsI32, F32DeclaredAsI8, IdentifierBeginsWithAF32Number, IdentifierBeginsWithDigits, IdentifierExpectedNotTypeIdentifier, IdentifierWithNotAllowedSymbol, NOTanBinOperator, NotExpectedToken, NotExpectedTwoBackslash, NumberWithUnknownSymbol, OnlyOneEqualSign, PreAndErrorToken, ThisTokenShouldntBeHereExpectedArrowOrDots, ToShortToBeThisToken, TypeIdentifierExpectedNotIdentifier, UnknownKind, UnknownSymbol, UnknownType, debug}
+import parser.ErrorMessage.{AllLinesAreEmpty, EndOfFile, EndOfLine, ExpectedArrowButGotTwoDash, F32DeclaredAsI32, F32DeclaredAsI8, IdentifierBeginsWithAF32Number, IdentifierBeginsWithDigits, IdentifierExpectedNotTypeIdentifier, IdentifierWithNotAllowedSymbol, NOTanBinOperator, NotExpectedToken, NotExpectedTwoBackslash, NotTypAnnotationOrNamedExprOrForeignFct, NumberWithUnknownSymbol, OnlyOneEqualSign, PreAndErrorToken, ThisTokenShouldntBeHereExpectedArrowOrDots, ToShortToBeThisToken, TypeIdentifierExpectedNotIdentifier, UnknownKind, UnknownSymbol, UnknownType, debug}
 
 
 object RecognizeLexeme{
@@ -52,6 +52,9 @@ case class RecognizeLexeme(fileReader: FileReader){
 
   private def lexNamedExprOrTypAnnotatedIdentOrForeignFct(oldColumn:Int, oldRow:Int, l:List[Token]):List[Token] =  {
     val arr: Array[String]= fileReader.sourceLines
+    if(arr.isEmpty){
+      throw new IllegalArgumentException("File is empty: "+ fileReader.toUri())
+    }
     var row = oldRow
     var column = oldColumn
     require(row>=0, "row is not allowed to be negative")
@@ -122,8 +125,10 @@ case class RecognizeLexeme(fileReader: FileReader){
         case (Right(a),_)=> throw a
       }
     }else{
-    throw new IllegalStateException(
-      "Here is at the Beginning in line " + column + " a Identifier expected, but here is no Identifier!")
+      val loc = Location(column, row)
+      throw NotTypAnnotationOrNamedExprOrForeignFct(Span(fileReader, Range(loc, loc)))
+//    throw new IllegalStateException(
+//      "Here is at the Beginning in line " + column + " a Identifier expected, but here is no Identifier!")
     }
     throw new IllegalStateException("Until Here should nothing come")
   }
