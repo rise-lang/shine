@@ -14,21 +14,19 @@ object toMLIR {
 
     @tailrec
     def extractBody(e: Expr, env: Map[Identifier, String], i: Int): (Expr, Map[Identifier, String]) = e match {
-      case Lambda(x, body) => extractBody(body, env.updated(x, createInOp(x, i+1)), i+1)
+      case Lambda(x, body) => extractBody(body, env.updated(x, s"in$i"), i+1)
       case _ => (e, env)
     }
 
     val (body, env) = extractBody(exp, Map(), 0)
-    s"""[](OpBuilder& b, Location loc, FuncOp funcOp) {
+    val inputArgs = if (env.isEmpty) {
+      ""
+    } else {
+      ", " + env.values.toSeq.sorted.map(x => s"Value $x").mkString(", ")
+    }
+    s"""[](OpBuilder& b, Location loc$inputArgs) {
        |  return ${toCppBuilderAPI(body, env)};
        |}""".stripMargin
-  }
-
-  private def createInOp(i: Identifier, n: Int): String = {
-    s"""[&] {  // InOp
-       |  auto type = ${fromType(i.t)};
-       |  return b.create<InOp>(loc, TypeRange{type}, funcOp.getArgument($n));
-       |}()""".stripMargin
   }
 
   private def toCppBuilderAPI(exp :Expr, env: Map[Identifier, String]): String = exp match {
