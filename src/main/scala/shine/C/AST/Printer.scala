@@ -8,13 +8,13 @@ trait Printer {
 
   def printDecl(d: Decl): Unit
 
-  def printExpr(e: Expr): Unit
+  def printExpr(e: Expr, parenthesize: Boolean): Unit
 
   def printStmt(s: Stmt): Unit
 
   def typeName(t: Type): String
 
-  def toString(e: ArithExpr) : String
+  def printArithExpr(e: ArithExpr, parenthesize: Boolean) : String
 
   protected val sb: StringBuilder = new StringBuilder
   protected var indent: Int = 0
@@ -51,7 +51,7 @@ class CPrinter extends Printer {
 
     n match {
       case d: Decl => printDecl(d)
-      case e: Expr => printExpr(e)
+      case e: Expr => printExpr(e, parenthesize = false)
       case s: Stmt => printStmt(s)
     }
 
@@ -67,20 +67,35 @@ class CPrinter extends Printer {
     case s: StructTypeDecl => printStructTypeDecl(s)
   }
 
-  override def printExpr(e: Expr): Unit = e match {
-    case a: Assignment => printAssignment(a)
+  override def printExpr(e: Expr, parenthesize: Boolean): Unit = e match {
+    case a: Assignment =>
+      printMaybe(parenthesize)(
+        printAssignment(a)
+      )
     case d: DeclRef => printDeclRef(d)
     case f: FunCall => printFunCall(f)
     case s: StructMemberAccess => printStructMemberAccess(s)
     case a: ArraySubscript => printArraySubscript(a)
-    case u: UnaryExpr => printUnaryExpr(u)
-    case b: BinaryExpr => printBinaryExpr(b)
-    case t: TernaryExpr => printTernaryExpr(t)
-    case c: Cast => printCast(c)
+    case u: UnaryExpr =>
+      printMaybe(parenthesize)(
+        printUnaryExpr(u)
+      )
+    case b: BinaryExpr =>
+      printMaybe(parenthesize)(
+        printBinaryExpr(b)
+      )
+    case t: TernaryExpr =>
+      printMaybe(parenthesize)(
+        printTernaryExpr(t)
+      )
+    case c: Cast =>
+      printMaybe(parenthesize)(
+        printCast(c)
+      )
     case l: Literal => printLiteral(l)
     case al: ArrayLiteral => printArrayLiteral(al)
     case rl: RecordLiteral => printRecordLiteral(rl)
-    case a: ArithmeticExpr => printArithmeticExpr(a)
+    case a: ArithmeticExpr => printArithmeticExpr(a, parenthesize)
   }
 
   override def printStmt(s: Stmt): Unit = s match {
@@ -97,7 +112,7 @@ class CPrinter extends Printer {
     case c: Comment => printComment(c)
     case c: Code => printCode(c)
     case e: ExprStmt =>
-      printExpr(e.expr)
+      printExpr(e.expr, parenthesize = false)
       print(";")
   }
 
@@ -125,7 +140,7 @@ class CPrinter extends Printer {
         // float name[s];
         print(s"${typeName(a.getBaseType)} ${v.name}[${ a.getSizes match {
           case None => ""
-          case Some(s) => toString(s)
+          case Some(s) => printArithExpr(s, parenthesize = false)
         } }]")
       case p: PointerType => print(s"${typeName(p.valueType)}* ${v.name}")
     }
@@ -133,7 +148,7 @@ class CPrinter extends Printer {
       case None =>
       case Some(init) =>
         print(" = ")
-        printExpr(init)
+        printExpr(init, parenthesize = false)
     }
   }
 
@@ -146,7 +161,7 @@ class CPrinter extends Printer {
       case _: UnionType => ???
       case a: ArrayType => print(s"${typeName(a.getBaseType)} ${p.name}[${ a.getSizes match {
         case None => ""
-        case Some(s) => toString(s)}
+        case Some(s) => printArithExpr(s, parenthesize = false)}
       }]")
       case pt: PointerType => print(s"${typeName(pt.valueType)}* ${p.name}")
       case _: FragmentType =>
@@ -199,23 +214,24 @@ class CPrinter extends Printer {
   private def printForLoop(f: ForLoop): Unit = {
     print("for (")
     printDeclStmt(f.init)
-    printExpr(f.cond)
-    print(";")
-    printExpr(f.increment)
+    print(" ")
+    printExpr(f.cond, parenthesize = false)
+    print("; ")
+    printExpr(f.increment, parenthesize = false)
     print(") ")
     printBlock(f.body)
   }
 
   private def printWhileLoop(w: WhileLoop): Unit = {
     print("while (")
-    printExpr(w.cond)
+    printExpr(w.cond, parenthesize = false)
     print(") ")
     printStmt(w.body)
   }
 
   private def printIfThenElse(i: shine.C.AST.IfThenElse): Unit = {
     print("if (")
-    printExpr(i.cond)
+    printExpr(i.cond, parenthesize = false)
     print(") ")
     printStmt(i.trueBody)
 
@@ -241,7 +257,7 @@ class CPrinter extends Printer {
 
   private def printReturn(r: Return): Unit = {
     print("return ")
-    r.x.map(printExpr)
+    r.x.foreach(printExpr(_, parenthesize = false))
     println(";")
   }
 
@@ -260,9 +276,9 @@ class CPrinter extends Printer {
 
   // Exprs
   private def printAssignment(a: Assignment): Unit = {
-    printExpr(a.lvalue)
+    printExpr(a.lvalue, parenthesize = false)
     print(" = ")
-    printExpr(a.rvalue)
+    printExpr(a.rvalue, parenthesize = false)
   }
 
   private def printDeclRef(d: DeclRef): Unit = {
@@ -274,62 +290,49 @@ class CPrinter extends Printer {
     print("(")
     if (f.args.nonEmpty) {
       f.args.take(f.args.length - 1).foreach(a => {
-        printExpr(a)
+        printExpr(a, parenthesize = false)
         print(", ")
       })
-      printExpr(f.args.last)
+      printExpr(f.args.last, parenthesize = false)
     }
     print(")")
   }
 
   private def printArraySubscript(a: ArraySubscript): Unit = {
-    printExpr(a.array)
+    printExpr(a.array, parenthesize = true)
     print("[")
-    printExpr(a.index)
+    printExpr(a.index, parenthesize = false)
     print("]")
   }
 
   private def printStructMemberAccess(s: StructMemberAccess): Unit = {
-    printExpr(s.struct)
+    printExpr(s.struct, parenthesize = true)
     print(".")
     printDeclRef(s.member)
   }
 
   private def printUnaryExpr(u: UnaryExpr): Unit = {
-    print("(")
     print(u.op.toString)
-    print("(")
-    printExpr(u.e)
-    print("))")
+    printExpr(u.e, parenthesize = true)
   }
 
   private def printBinaryExpr(b: BinaryExpr): Unit = {
-    print("(")
-    printExpr(b.lhs)
-    print(" ")
-    print(b.op.toString)
-    print(" ")
-    printExpr(b.rhs)
-    print(")")
+    printExpr(b.lhs, parenthesize = true)
+    print(s" ${b.op.toString} ")
+    printExpr(b.rhs, parenthesize = true)
   }
 
   private def printTernaryExpr(t: TernaryExpr): Unit = {
-    print("(")
-      print("(")
-        printExpr(t.cond)
-      print(") ? (")
-        printExpr(t.thenE)
-      print(") : (")
-        printExpr(t.elseE)
-      print(")")
-    print(")")
+    printExpr(t.cond, parenthesize = true)
+    print(" ? ")
+    printExpr(t.thenE, parenthesize = true)
+    print(" : ")
+    printExpr(t.elseE, parenthesize = true)
   }
 
   private def printCast(c: Cast): Unit = {
-    print("(")
     print(s"(${typeName(c.t)})")
-    printExpr(c.e)
-    print(")")
+    printExpr(c.e, parenthesize = true)
   }
 
   private def printLiteral(l: Literal): Unit = {
@@ -337,73 +340,100 @@ class CPrinter extends Printer {
   }
 
   private def printArrayLiteral(al: ArrayLiteral): Unit = {
-    print("((")
+    print("(")
     if (al.t.const) { print("const ") }
     print(s"${typeName(al.t.getBaseType)}[${ al.t.getSizes match {
       case None => ""
-      case Some(s) => toString(s)
+      case Some(s) => printArithExpr(s, parenthesize = false)
     } }]")
     print("){")
     var first = true
     al.inits.foreach { e =>
       if (first) { first = false  }
       else { print(", ") }
-      printExpr(e)
+      printExpr(e, parenthesize = false)
     }
-    print("})")
+    print("}")
   }
 
   private def printRecordLiteral(rl: RecordLiteral): Unit = {
     print(s"(${typeName(rl.t)})")
     print("{ ")
-    printExpr(rl.fst)
+    printExpr(rl.fst, parenthesize = false)
     print(", ")
-    printExpr(rl.snd)
+    printExpr(rl.snd, parenthesize = false)
     print(" }")
   }
 
-  private def printArithmeticExpr(a: ArithmeticExpr): Unit = {
-    print(toString(a.ae))
+  private def printArithmeticExpr(a: ArithmeticExpr, parenthesize: Boolean): Unit = {
+    print(printArithExpr(a.ae, parenthesize))
   }
+
+  private def printMaybe(parenthesize: Boolean)(p: => Unit): Unit = {
+    if (parenthesize) print("(")
+    p
+    if (parenthesize) print(")")
+  }
+
 
   // Types
   def typeName(t: Type): String = t.toString
 
-  override def toString(e: ArithExpr) : String = {
+  override def printArithExpr(e: ArithExpr, parenthesize: Boolean) : String = {
     e match {
       case Cst(c) => c.toString
       case Pow(b, ex) =>
         ex match {
-          case Cst(2) => s"(${toString(b)} * ${toString(b)})"
-          case _ => "(int)pow((float)" + toString (b) + ", " + toString (ex) + ")"
+          case Cst(2) =>
+            maybe(parenthesize)(
+              s"${printArithExpr(b, parenthesize = true)} * ${printArithExpr(b, parenthesize = true)}"
+            )
+          case _ =>
+            s"(int)pow((float) ${printArithExpr(b, parenthesize = false)}, " +
+              s"${printArithExpr(ex, parenthesize = false)})"
         }
-      case Log(b, x) => "(int)log"+b+"((float)"+toString(x)+")"
-      case Prod(es) => "(" + es.foldLeft("1")( (s: String, e: ArithExpr) => {
-        s + (e match {
-          case Pow(b, Cst(-1)) => " / (" + toString(b) + ")"
-          case _ => " * " + toString(e)
-        })
-      } ).drop(4) + ")" // drop(4) removes the initial "1 * "
-      case Sum(es) => "(" + es.map(toString).reduce( _ + " + " + _  ) + ")"
-      case Mod(a,n) => "(" + toString(a) + " % " + toString(n) + ")"
+      case Log(b, x) => s"(int)log$b((float)${printArithExpr(x, parenthesize = false)})"
+      case Prod(es) => maybe(parenthesize)(es.foldLeft("1")((s, e) => {
+          s + (e match {
+            case Pow(b, Cst(-1)) => " / " + printArithExpr(b, parenthesize = true)
+            case _ => " * " + printArithExpr(e, parenthesize = true)
+          })
+        } ).drop(4) // drop(4) removes the initial "1 * "
+      )
+      case Sum(es) =>
+        maybe(parenthesize)(
+          s"${es.map(printArithExpr(_, parenthesize = true)).reduce(_+" + "+_)}"
+        )
+      case Mod(a,n) =>
+        maybe(parenthesize)(
+          s"${printArithExpr(a, parenthesize = true)} % ${printArithExpr(n, parenthesize = true)}"
+        )
       case v: Var => v.toString
-      case IntDiv(n, d) => "(" + toString(n) + " / " + toString(d) + ")"
-      case lu: Lookup => "lookup" + lu.id + "(" + toString(lu.index) + ")"
+      case IntDiv(n, d) =>
+        maybe(parenthesize)(
+          s"${printArithExpr(n, parenthesize = true)} / ${printArithExpr(d, parenthesize = true)}"
+        )
+      case lu: Lookup => "lookup" + lu.id + "(" + printArithExpr(lu.index, parenthesize = false) + ")"
       case i: arithexpr.arithmetic.IfThenElse =>
-        s"((${toString(i.test)}) ? " +
-          s"${toString(i.t)} : ${toString(i.e)})"
+        maybe(parenthesize)(
+          s"${printBoolExpr(i.test)} ? " +
+          s"${printArithExpr(i.t, parenthesize = true)} : ${printArithExpr(i.e, parenthesize = true)}"
+        )
       case natFunCall:NatFunCall => natFunCall.callAndParameterListString
-//      case aeFun:ArithExprFunction => aeFun.name
-//      case bs:BigSum => bs.toString
-      case sp: SteppedCase => toString(sp.intoIfChain())
+      case sp: SteppedCase => printArithExpr(sp.intoIfChain(), parenthesize)
       case otherwise => throw new Exception(s"Don't know how to print $otherwise")
     }
   }
 
-  private def toString(boolExpr: BoolExpr):String = boolExpr match {
+  private def printBoolExpr(boolExpr: BoolExpr):String = boolExpr match {
     case BoolExpr.True => "true"
     case BoolExpr.False => "false"
     case BoolExpr.ArithPredicate(lhs, rhs, op) =>
-      s"(${toString(lhs)} $op ${toString(rhs)})"
+      s"${printArithExpr(lhs, parenthesize = true)} $op ${printArithExpr(rhs, parenthesize = true)}"
   }
+
+  private def maybe(parenthesize: Boolean)(s: String): String =
+    (if (parenthesize) "(" else "") + s + (if (parenthesize) ")" else "")
+
+
 }
