@@ -25,13 +25,21 @@ package object autotune {
                    name: String = "RISE",
                    output: String = "autotuning",
                    timeouts: Timeouts = Timeouts(5000, 5000, 5000),
+                   executionIterations: Int = 10,
                    configFile: Option[String] = None,
                    hierarchicalHM: Boolean = false)
 
   case class Sample(parameters: Map[NatIdentifier, Nat],
                     runtime: Option[TimeSpan[Time.ms]],
                     timestamp: Long,
-                    autoTuningError: AutoTuningError)
+                    autoTuningError: AutoTuningError,
+                    tuningTimes: TuningTimes)
+
+  case class TuningTimes(roundTrip: Option[TimeSpan[Time.ms]],
+                         codegen: Option[TimeSpan[Time.ms]],
+                         compilation: Option[TimeSpan[Time.ms]],
+                         execution: Option[TimeSpan[Time.ms]]
+                        )
 
   // todo add meta information (configuration, times, samples, ...)
   case class TuningResult(samples: Seq[Sample])
@@ -70,29 +78,37 @@ package object autotune {
 
     // compute function value as result for hypermapper
     val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
+      val roundTripStart = System.currentTimeMillis()
+
       val parametersValuesMap = header.zip(parametersValues).map { case (h, p) =>
         NatIdentifier(h) -> (p.toInt: Nat)
       }.toMap
+
       checkConstraints(constraints, parametersValuesMap) match {
         case true => {
-          println("constraints true")
           // execute
           val result = execute(
-            rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main, tuner.timeouts)
-          result._1 match {
-            case Some(_) =>
-              Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
-            case None =>
-              Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
-          }
+            rise.core.substitute.natsInExpr(parametersValuesMap, e),
+            tuner.main,
+            tuner.timeouts,
+            tuner.executionIterations
+          )
+          val roundTripTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - roundTripStart).toDouble))
+          Sample(
+            parametersValuesMap,
+            result.runtime,
+            System.currentTimeMillis() - start,
+            result.error,
+            TuningTimes(roundTripTime, result.codegenTime, result.compilationTime, result.executionTime))
         }
         case false => {
-          println("constraints false")
+          val roundTripTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - roundTripStart).toDouble))
           Sample(
             parametersValuesMap,
             None,
             System.currentTimeMillis() - start,
-            AutoTuningError(CONSTRAINTS_ERROR, None)
+            AutoTuningError(CONSTRAINTS_ERROR, None),
+            TuningTimes(roundTripTime, None, None, None)
           )
         }
       }
@@ -114,7 +130,7 @@ package object autotune {
 
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
-    var i = 0
+    var i = 1
     // main tuning loop
     var samples = new ListBuffer[Sample]()
     var done = false
@@ -145,6 +161,11 @@ package object autotune {
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
             // compute sample (including function value aka runtime)
             val sample = computeSample(header, parametersValues)
+            println("[" + i.toString + "/" + tuner.iterations + "]")
+            println(sample)
+            println(sample.autoTuningError)
+            println(sample.runtime)
+            i += 1
             // append sample to Samples
             samples += sample
             // append response
@@ -161,6 +182,9 @@ package object autotune {
         case error => println("error: " + error)
       }
     }
+
+    // save samples to file
+    saveSamples(tuner.output + "/" + tuner.name + ".csv", TuningResult(samples.toSeq))
 
     TuningResult(samples.toSeq)
   }
@@ -201,15 +225,26 @@ package object autotune {
 
   // write tuning results into csv file
   def saveSamples(path: String, tuningResult: TuningResult): Unit = {
+    // create unique filepath
+    val file = new File(path);
+    val uniqueFilepath = file.exists() match {
+      case true => path.substring(0, path.length-4) + "_" + System.currentTimeMillis() + ".csv"
+      case false => path
+    }
+
     // write header
     var header = ""
     tuningResult.samples(0).parameters.foreach(param => {
       header += param._1.name + ","
     })
     header += "runtime" + ","
+    header += "timestamp" + ","
+    header += "round trip" + ","
+    header += "code generation" + ","
+    header += "compilation" + ","
+    header += "execution" + ","
     header += "error level" + ","
-    header += "error message" + ","
-    header += "timestamp"
+    header += "error message"
     header += "\n"
 
     // write content
@@ -227,23 +262,40 @@ package object autotune {
         case None => content += "-1" + ","
       }
 
+      // write timestamp
+      content += sample.timestamp.toString + ","
+
+      sample.tuningTimes.roundTrip match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
+      sample.tuningTimes.codegen match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
+      sample.tuningTimes.compilation match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
+      sample.tuningTimes.execution match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
+
       // write error level
       content += sample.autoTuningError.errorLevel.toString + ","
 
       // write error message
       sample.autoTuningError.message match {
         case Some(value) => content += value.toString + ","
-        case None => content += "" + ","
+        case None => content += ""
       }
-
-      // write timestamp
-      content += sample.timestamp
 
       // finish line
       content += "\n"
     })
 
-    writeToPath(path, header + content)
+    writeToPath(uniqueFilepath, header + content)
   }
 
   private def min(s1: Sample, s2: Sample): Sample = {

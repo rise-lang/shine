@@ -3,70 +3,108 @@ package rise.autotune
 import rise.core.Expr
 import util.ExecuteOpenCL.{includes, libDirs, libs, platformPath}
 import util.{Time, TimeSpan, createTempFile, gen, writeToTempFile}
+
+import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.sys.process._
 
+case class ExecutionResult(runtime: Option[TimeSpan[Time.ms]],
+                           error: AutoTuningError,
+                           codegenTime: Option[TimeSpan[Time.ms]],
+                           compilationTime: Option[TimeSpan[Time.ms]],
+                           executionTime: Option[TimeSpan[Time.ms]],
+                          )
 object execution {
 
   def execute(e: Expr,
               main: String,
-              timeouts: Timeouts)
-  : (Option[TimeSpan[Time.ms]], AutoTuningError)  = {
+              timeouts: Timeouts,
+              executionIterations: Int)
+  : ExecutionResult = {
 
+    val codegenStart = System.currentTimeMillis()
     val m = autoTuningUtils.runWithTimeout(
       timeouts.codgenerationTimeout)(gen.opencl.hosted.fromExpr(e)
     )
+    val codegenTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - codegenStart).toDouble)
     m match {
       case Some(_) => {
         val program = shine.OpenCL.Module.translateToString(m.get) + main
 
         // execute program
-        executeWithRuntime(
+        val result = executeWithRuntime(
           program,
           "zero_copy",
           timeouts.compilationTimeout,
-          timeouts.executionTimeout
+          timeouts.executionTimeout,
+          executionIterations
         )
+
+        ExecutionResult(result._1, result._2, Some(codegenTime), result._3, result._4)
       }
-      case None => (
+      case None => ExecutionResult(
         None,
         AutoTuningError(
           CODE_GENERATION_ERROR,
-          Some("timeout after: " + timeouts.codgenerationTimeout)
-        )
+          Some("timeout after: " + timeouts.codgenerationTimeout),
+        ),
+        Some(codegenTime),
+        None,
+        None
       )
     }
   }
 
   def executeWithRuntime(code: String,
                          buffer_impl: String,
-                         compilationTimeout: Long, executionTimeout: Long)
-  : (Option[TimeSpan[Time.ms]], AutoTuningError) = {
+                         compilationTimeout: Long,
+                         executionTimeout: Long,
+                         executionIterations: Int)
+  : (Option[TimeSpan[Time.ms]],
+    AutoTuningError,
+    Option[TimeSpan[Time.ms]],
+    Option[TimeSpan[Time.ms]]) = {
 
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
     val sources = s"$src ${platformPath}buffer_$buffer_impl.c ${platformPath}ocl.c"
+
+    val compilationStart = System.currentTimeMillis()
     try {
-      (s"timeout ${compilationTimeout/1000}s " +
+      (s"timeout ${compilationTimeout.toDouble/1000.toDouble}s " +
         s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
     } catch {
       case e: Throwable => {
-        println("compile error: " + e)
-
-        (None, AutoTuningError(COMPILATION_ERROR, Some(e.toString)))
+        val compilationTime = (System.currentTimeMillis() - compilationStart).toDouble
+        (
+          None,
+          AutoTuningError(COMPILATION_ERROR, Some(e.toString)),
+          Some(TimeSpan.inMilliseconds(compilationTime)),
+          None
+        )
       }
     }
+    val compilationTime = TimeSpan.inMilliseconds(System.currentTimeMillis().toDouble - compilationStart)
+    val executionStart = System.currentTimeMillis()
     try{
-      val result = (s"timeout ${executionTimeout/1000}s runtime/clap_wrapper.sh $bin" !!)
-      val runtime = getRuntimeFromClap(result)
+      val runtimes = ListBuffer.empty[Double]
+      for (i <- Range(0, executionIterations)){
+        val result = (s"timeout ${executionTimeout.toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin" !!)
+        val runtime = getRuntimeFromClap(result)
+        runtimes += runtime.value
+      }
 
-      (Some(runtime), AutoTuningError(NO_ERROR, None))
+      // get median
+      val runtime = TimeSpan.inMilliseconds(runtimes.toSeq.sorted.apply(executionIterations/2))
+
+      val executionTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - executionStart).toDouble)
+
+      (Some(runtime), AutoTuningError(NO_ERROR, None), Some(compilationTime), Some(executionTime))
     } catch {
       // todo check error codes here
       case e: Throwable => {
-        println("execution error: " + e)
-
-        (None, AutoTuningError(EXECUTION_ERROR, Some(e.toString)))
+        val executionTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - executionStart).toDouble)
+        (None, AutoTuningError(EXECUTION_ERROR, Some(e.toString)), Some(compilationTime), Some(executionTime))
       }
     }
   }

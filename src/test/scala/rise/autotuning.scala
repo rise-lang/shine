@@ -383,6 +383,7 @@ class autotuning extends test_util.Tests {
       "RISE",
       "autotuning",
       Timeouts(5000, 5000, 5000),
+      10,
       None,
       true
     )
@@ -429,12 +430,12 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOcl(32)
     val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
 
-    val result = autotune.execution.execute(e2, main(32), Timeouts(5000, 5000, 5000))
+    val result = autotune.execution.execute(e2, main(32), Timeouts(5000, 5000, 5000), 10)
 
     // check if result has valid runtime
-    assert(result._1.isDefined)
+    assert(result.runtime.isDefined)
     // check if no error was reported
-    assert(result._2.errorLevel.equals(autotune.NO_ERROR))
+    assert(result.error.errorLevel.equals(autotune.NO_ERROR))
 
     println("result: " + result)
   }
@@ -475,12 +476,12 @@ class autotuning extends test_util.Tests {
     """
     // scalastyle:on
 
-    val result = autotune.execution.execute(e, main, Timeouts(5000, 5000, 5000))
+    val result = autotune.execution.execute(e, main, Timeouts(5000, 5000, 5000), 10)
 
     // check if result has valid runtime
-    assert(result._1.isDefined)
+    assert(result.runtime.isDefined)
     // check if no error was reported
-    assert(result._2.errorLevel == autotune.NO_ERROR)
+    assert(result.error.errorLevel == autotune.NO_ERROR)
 
     println("result: \n" + result)
   }
@@ -554,10 +555,11 @@ class autotuning extends test_util.Tests {
     val result = autotune.execution.execute(
       eWithParams,
       main(1024),
-      Timeouts(5000, 5000, 5000)
+      Timeouts(5000, 5000, 5000),
+      10
     )
 
     print("result: " + result)
-    assert(result._2.errorLevel.equals(autotune.CODE_GENERATION_ERROR))
+    assert(result.error.errorLevel.equals(autotune.CODE_GENERATION_ERROR))
   }
 }
