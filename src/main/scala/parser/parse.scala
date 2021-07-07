@@ -960,6 +960,7 @@ object parse {
       case rp.neg(_) => true
       case rp.mod(_) => true
       case rp.not(_) => true
+      case _ => false
     }
   }
 

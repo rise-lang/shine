@@ -3001,10 +3001,10 @@ class parseTest extends  test_util.TestsWithExecutor {
     val fileName: String = errorFilePath + "fx.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[rt.InferenceException] {
+    val thrown = intercept[No_Type_For_Variable] {
       parse(lexer.tokens)
     }
-    thrown.msg should equal(" fkt has no type")
+    println(thrown)
   }
 
   /*
