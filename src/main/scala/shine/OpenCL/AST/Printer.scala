@@ -18,10 +18,10 @@ class Printer extends shine.C.AST.CPrinter {
     case _ => super.printDecl(d)
   }
 
-  override def printExpr(e: Expr): Unit = e match {
+  override def printExpr(e: Expr, parenthesize: Boolean): Unit = e match {
     case vs: VectorSubscript => printVectorSubscript(vs)
     case vl: VectorLiteral => printVectorLiteral(vl)
-    case _ => super.printExpr(e)
+    case _ => super.printExpr(e, parenthesize)
   }
 
   override def printStmt(s: Stmt): Unit = s match {
@@ -46,10 +46,10 @@ class Printer extends shine.C.AST.CPrinter {
     case _ => super.typeName(t)
   }
 
-  override def toString(e: ArithExpr): String = e match {
+  override def printArithExpr(e: ArithExpr, parenthesize: Boolean): String = e match {
     case of: BuiltInFunctionCall => of.toString
 
-    case _ => super.toString(e)
+    case _ => super.printArithExpr(e, parenthesize)
   }
 
   def printKernelDecl(k: KernelDecl): Unit = {
@@ -117,7 +117,7 @@ class Printer extends shine.C.AST.CPrinter {
       case None =>
       case Some(init) =>
         print(" = ")
-        printExpr(init)
+        printExpr(init, parenthesize = false)
     }
   }
 
@@ -130,7 +130,7 @@ class Printer extends shine.C.AST.CPrinter {
   }
 
   def printVectorSubscript(vs: VectorSubscript): Unit = {
-    printExpr(vs.vector)
+    printExpr(vs.vector, parenthesize = true)
     vs.index match {
       case ArithmeticExpr(arithexpr.arithmetic.Cst(c)) =>
         print(s".s$c")
@@ -144,10 +144,10 @@ class Printer extends shine.C.AST.CPrinter {
     val VectorType(m, dt, _) = vl.t
     print(s"(${typeName(dt)}$m)")
     print("(")
-    printExpr(vl.values.head)
+    printExpr(vl.values.head, parenthesize = false)
     for (v <- vl.values.tail) {
       print(", ")
-      printExpr(v)
+      printExpr(v, parenthesize = false)
     }
     print(")")
   }
