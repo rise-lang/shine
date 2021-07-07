@@ -15,11 +15,20 @@ case class ExecutionResult(runtime: Option[TimeSpan[Time.ms]],
                            executionTime: Option[TimeSpan[Time.ms]],
                           )
 object execution {
+  var best:Option[Double] = None
+
+  // logger to avoid printing of stderr
+  val logger = new ProcessLogger {
+    def out(s: => String): Unit = s
+    def err(s: => String): Unit = s
+    def buffer[T](f: => T): T = f
+  }
 
   def execute(e: Expr,
               main: String,
               timeouts: Timeouts,
-              executionIterations: Int)
+              executionIterations: Int,
+              speedup: Double)
   : ExecutionResult = {
 
     val codegenStart = System.currentTimeMillis()
@@ -37,7 +46,8 @@ object execution {
           "zero_copy",
           timeouts.compilationTimeout,
           timeouts.executionTimeout,
-          executionIterations
+          executionIterations,
+          speedup
         )
 
         ExecutionResult(result._1, result._2, Some(codegenTime), result._3, result._4)
@@ -59,7 +69,8 @@ object execution {
                          buffer_impl: String,
                          compilationTimeout: Long,
                          executionTimeout: Long,
-                         executionIterations: Int)
+                         executionIterations: Int,
+                         speedup: Double)
   : (Option[TimeSpan[Time.ms]],
     AutoTuningError,
     Option[TimeSpan[Time.ms]],
@@ -88,14 +99,34 @@ object execution {
     val executionStart = System.currentTimeMillis()
     try{
       val runtimes = ListBuffer.empty[Double]
-      for (i <- Range(0, executionIterations)){
-        val result = (s"timeout ${executionTimeout.toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin" !!)
+
+      var i = 0
+      var speedupCondition = false
+      while(!speedupCondition && i < executionIterations){
+
+        val result = (s"timeout ${executionTimeout.toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin" !!(logger))
         val runtime = getRuntimeFromClap(result)
+
+        speedupCondition = best match {
+          case Some(value) => runtime.value > value * speedup
+          case None => false
+        }
+
         runtimes += runtime.value
+        i += 1
       }
 
       // get median
-      val runtime = TimeSpan.inMilliseconds(runtimes.toSeq.sorted.apply(executionIterations/2))
+      val runtime = TimeSpan.inMilliseconds(runtimes.toSeq.sorted.apply(i/2))
+
+      // update or init global best
+      best = best match{
+        case Some(value) => runtime.value < value match {
+          case true => Some(runtime.value)
+          case false => best
+        }
+        case None => Some(runtime.value)
+      }
 
       val executionTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - executionStart).toDouble)
 

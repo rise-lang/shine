@@ -26,6 +26,7 @@ package object autotune {
                    output: String = "autotuning",
                    timeouts: Timeouts = Timeouts(5000, 5000, 5000),
                    executionIterations: Int = 10,
+                   speedup: Double = 100,
                    configFile: Option[String] = None,
                    hierarchicalHM: Boolean = false)
 
@@ -91,7 +92,8 @@ package object autotune {
             rise.core.substitute.natsInExpr(parametersValuesMap, e),
             tuner.main,
             tuner.timeouts,
-            tuner.executionIterations
+            tuner.executionIterations,
+            tuner.speedup
           )
           val roundTripTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - roundTripStart).toDouble))
           Sample(
@@ -160,11 +162,12 @@ package object autotune {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
             // compute sample (including function value aka runtime)
+            print("[" + i.toString + "/" + tuner.iterations + "] : ")
             val sample = computeSample(header, parametersValues)
-            println("[" + i.toString + "/" + tuner.iterations + "]")
+            println(sample.runtime)
             println(sample)
             println(sample.autoTuningError)
-            println(sample.runtime)
+            println()
             i += 1
             // append sample to Samples
             samples += sample

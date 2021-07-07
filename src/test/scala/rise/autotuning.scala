@@ -384,6 +384,7 @@ class autotuning extends test_util.Tests {
       "autotuning",
       Timeouts(5000, 5000, 5000),
       10,
+      100,
       None,
       true
     )
@@ -430,7 +431,7 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOcl(32)
     val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
 
-    val result = autotune.execution.execute(e2, main(32), Timeouts(5000, 5000, 5000), 10)
+    val result = autotune.execution.execute(e2, main(32), Timeouts(5000, 5000, 5000), 10, 100)
 
     // check if result has valid runtime
     assert(result.runtime.isDefined)
@@ -476,7 +477,7 @@ class autotuning extends test_util.Tests {
     """
     // scalastyle:on
 
-    val result = autotune.execution.execute(e, main, Timeouts(5000, 5000, 5000), 10)
+    val result = autotune.execution.execute(e, main, Timeouts(5000, 5000, 5000), 10, 100)
 
     // check if result has valid runtime
     assert(result.runtime.isDefined)
@@ -556,7 +557,8 @@ class autotuning extends test_util.Tests {
       eWithParams,
       main(1024),
       Timeouts(5000, 5000, 5000),
-      10
+      10,
+      100
     )
 
     print("result: " + result)
