@@ -1,1 +1,2 @@
-* 2 ()
+two_times_square = a->* 2 (* a a)
+two_times_square :: F32->F32

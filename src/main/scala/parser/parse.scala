@@ -1,14 +1,12 @@
 package parser //old branch 17. Dezember 2020
 
 import rise.{core => r, openCL => o}
-import r.{DSL => rd, primitives => rp, semantics => rS, types => rt}
+import r.{DepApp, DepLambda, ForeignFunction, Lambda, Literal, Primitive, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
-import parser.ErrorMessage.{ErrorList, NamedExprAlreadyExist, NatAlreadyExist, NoExprInBraces, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, ParserException, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
+import parser.ErrorMessage.{ErrorList, FunctionWithNoDefinition, FunctionWithNoType, NamedExprAlreadyExist, NatAlreadyExist, NoExprInBraces, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, ParserException, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
 import parser.OpType.BinOpType
 import rise.core.DSL.ToBeTyped
-import rise.core.DSL.Type.TypeConstructors
-import rise.core.ForeignFunction
-import rise.core.types.{DataType, DepFunType, PairType, TypePlaceholder, f32, vec}
+import rise.core.types.{DepFunType,TypePlaceholder}
 
 import scala.collection.mutable
 
@@ -18,12 +16,17 @@ object parse {
 
 
   def giveEveryExpr(map:MapFkt):MapExpr={
+    val whatToParse = "giveEveryExpr"
     val m= new MapExpr
     map.foreach{
       case (name, elems) => elems match {
-        case HMExpr(e) => m.update(name, ToBeTyped(e).toExprWithMapFkt(map))
+        case HMExpr(e) => if(e.t.isInstanceOf[rt.TypePlaceholder.type]) {
+          throw FunctionWithNoType(name, e, whatToParse)
+        }else{
+          m.update(name, ToBeTyped(e).toExprWithMapFkt(map))
+        }
         case HMType(t) => { //error: Every fkt should be initialised yet
-          throw new ParserException("The function '"+name+"' is not implemented: "+ t)
+          throw FunctionWithNoDefinition(name,whatToParse)
         }
         case HMNat(n) => //ignore
       }
@@ -925,7 +928,11 @@ object parse {
         val span = span_e
         natElem match {
           case NIdentifier(nat) => e = r.DepApp[rt.NatKind](e, nat)(rt.TypePlaceholder, Some(span))
-          case NNumber(nat) => e = r.DepApp[rt.NatKind](e, nat)(rt.TypePlaceholder, Some(span))
+          case NNumber(nat) => if(expr_is_Operator(e)) {
+            e = r.App(e, r.Literal(rS.FloatData(nat.eval.toFloat)))(rt.TypePlaceholder, Some(span))
+          }else {
+            e = r.DepApp[rt.NatKind](e, nat)(rt.TypePlaceholder, Some(span))
+          }
         }
         synE = synE.tail
       }
@@ -933,6 +940,27 @@ object parse {
     }
 
     (e, synE)
+  }
+
+  private def expr_is_Operator(expr:r.Expr):Boolean= expr match {
+    case r.Identifier(name) => false
+    case Lambda(x, e) =>false
+    case r.App(f, e) =>expr_is_Operator(f)
+    case DepLambda(x, e) =>false
+    case DepApp(f, x) =>false
+    case Literal(d, span) =>false
+    case primitive: Primitive => primitive match {
+      case rp.add(_) => true
+      case rp.sub(_) => true
+      case rp.mul(_) => true
+      case rp.div(_) => true
+      case rp.equal(_) => true
+      case rp.gt(_) => true
+      case rp.lt(_) => true
+      case rp.neg(_) => true
+      case rp.mod(_) => true
+      case rp.not(_) => true
+    }
   }
 
   private def combineExpressionsDependent(synElemList: List[SyntaxElement], mapDepL: MapDepL): r.Expr = {
@@ -2326,7 +2354,7 @@ the syntax-Tree has on top an Lambda-Expression
     val nextToken :: remainderTokens = tokens
 
     val p = nextToken match {
-      case NatNumber(number, spanNat) => Left(ParseState(remainderTokens, SNat(NNumber(number:rt.Nat),spanNat)::parsedSynElems,
+      case NatNumber(number, spanNat) =>Left(ParseState(remainderTokens, SNat(NNumber(number:rt.Nat),spanNat)::parsedSynElems,
         mapDepL, spanList,argumentsTypes) )
       case TypeIdentifier(name, spanTypeIdentifier) =>Left(ParseState(remainderTokens,
         SNat(NIdentifier(rt.NatIdentifier(name)), spanTypeIdentifier)::parsedSynElems, mapDepL, spanList,argumentsTypes) )

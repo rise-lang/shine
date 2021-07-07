@@ -2,9 +2,10 @@ package parser
 import apps.convolution.{blurXTiled2D, blurXTiled2DSizes}
 import apps.nbody.{runKernel, runOriginalKernel}
 import org.scalatest.flatspec.AnyFlatSpec
-import parser.ErrorMessage.ParserException
+import parser.ErrorMessage.{FunctionWithNoType, No_Type_For_Variable, ParserException}
 import parser.parse.{HMExpr, HMNat, HMType}
 import rise.core
+import rise.core.types.InferenceException
 import rise.core.{DepApp, DepLambda, Lambda, Literal, Primitive}
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.gen
@@ -3029,10 +3030,10 @@ class parseTest extends  test_util.TestsWithExecutor {
     val fileName: String = errorFilePath + "two_times_square_test.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val thrown = intercept[ParserException] {
-      parse(lexer.tokens)
-    }
-    println(thrown.toString)
+//    val thrown = intercept[InferenceException] {
+      println(parse(lexer.tokens))
+//    }
+//    println(thrown.toString)
   }
 
 }

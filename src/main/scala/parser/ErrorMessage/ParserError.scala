@@ -397,6 +397,20 @@ final case class NoExprInBraces(override val span:Span, whatToParse: String)
   override val help: Option[String] = Some("braces need logic inside")
 }
 
+final case class FunctionWithNoType(name:String, e:rise.core.Expr, whatToParse: String)
+  extends PreAndErrorSynElems(e.span.get, whatToParse){
+  override val description_error: String = "Function '"+name+"' has no type"
+  override val what_exp: String = "no type was defined"
+  override val help: Option[String] = Some("Please write an Typannotation with the name'"+ name+"' and the annotation '::'")
+}
+
+final case class FunctionWithNoDefinition(name:String, whatToParse: String)
+  extends PreAndErrorSynElems(parser.parse.SpanPlaceholder, whatToParse){
+  override val description_error: String = "Function '"+name+"' was declared but not initialisied"
+  override val what_exp: String = "definition for an expr which is not defined"
+  override val help: Option[String] = Some("Please write an Definition with the name'"+ name+"' and the annotation '=' or define an CFunction with the keyword 'foreign' and the name '"+name+"'")
+}
+
 //__________________________________________________________________________________________________________
 abstract sealed class UseOrFailState()
 final case class isParsing() extends UseOrFailState

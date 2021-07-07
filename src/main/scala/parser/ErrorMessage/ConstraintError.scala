@@ -1,8 +1,10 @@
 package parser.ErrorMessage
 
+import arithexpr.arithmetic.Cst
 import parser.Span
+import rise.core.semantics.FloatData
 import rise.core.types.{DataType, DepFunType, FunType, Kind, Type, TypeIdentifier, TypePlaceholder}
-import rise.core.{DepApp, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, types => rt, primitives=>rp}
+import rise.core.{DepApp, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, primitives => rp, types => rt}
 import rise.{core => r}
 
 //__________________________________________________________________________________________________________
@@ -294,6 +296,16 @@ case class DepAppConstraintError(override val span: Option[Span], override val e
     }
   }
   override def description_error(): String = {
+//    expr match {
+//      case DepApp(f, x) => {
+//        val type_of_right_side = x match {
+//          case FloatData(f)=> rt.f32
+//          case Cst(n)=> FloatData(n.toFloat)
+//        }
+//        return "DepApp("+f+","+type_of_right_side+")"
+//      }
+//      case _ => ???
+//    }
     val (expectedT,foundLeft,foundRight) = getTypesDep()
     val foundRightStr: String = foundRight.toString
     "expected '" + expectedT + "' but found DepApp('"+foundLeft+ "','"+
@@ -471,6 +483,18 @@ case class NatCollectionConstraintError(override val span: Option[Span], overrid
   override val help: Option[String] = None
 }
 
+//______________________________________________________other InferenceException
+
+abstract sealed class InferenceException(override val span: Span) extends Error with ParserError{
+  override val name_of_error: String = "InferenceException"
+}
+
+final case class No_Type_For_Variable(override val span: Span, expr: Expr) extends InferenceException(span){
+  val name = ErrorMessage.give_code_without_highlighting(span)
+  override val description_error: String = "Variable is not defined:"
+  override val what_exp: String = "has no type"
+  override val help: Option[String] = Some(s"define a variable with '$name->'")
+}
 //case class OpaqueConstraintError(span: Span, foundT:rt.Type, annotatedT:rt.Type, freezeAnnT:rt.Type) extends ConstraintTypeError(span){
 //  override def description(): String = "annotated '" + annotatedT + "' but found '"+
 //    foundT+"' or found freeze Type '"+freezeAnnT+"'"

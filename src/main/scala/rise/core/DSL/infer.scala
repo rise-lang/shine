@@ -4,7 +4,7 @@ import Type.freshTypeIdentifier
 import parser.ErrorMessage.{AppConstraintError, DepAppConstraintError, DepLambdaConstraintError, IdentConstraintError, LambdaConstraintError, TypeAnnotationConstraintError, TypeAssertionConstraintError}
 import rise.core._
 import rise.core.traversal.{Continue, Result, Stop}
-import rise.core.types.InferenceException.error
+import rise.core.types.InferenceException.{error, error_no_type}
 import rise.core.types._
 import parser.{Span, parse}
 import parser.parse.MapFkt
@@ -195,9 +195,9 @@ object infer {
                     }
                   }
                 }
-                case None =>error(s"$i has no type", span)(Seq())
+                case None =>error_no_type(expr)(Seq())
               }
-              case None =>error(s"$i has no type", span)(Seq())
+              case None =>error_no_type(expr)(Seq())
             }
           } else {
             i.t

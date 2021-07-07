@@ -219,5 +219,10 @@ object ErrorMessage {
       case None => res
     }
   }
+
+  def give_code_without_highlighting(span:Span): String ={
+    if(span.range.begin.column!=span.range.end.column) ???
+    span.file.sourceLines(span.range.begin.column).substring(span.range.begin.row,span.range.end.row)
+  }
 }
 

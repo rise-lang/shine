@@ -1,6 +1,6 @@
 package rise.core.types
 
-import parser.ErrorMessage.{BLUE, ErrorMessage, YELLOW}
+import parser.ErrorMessage.{BLUE, ErrorMessage, No_Type_For_Variable, YELLOW}
 
 import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.xml.NodeSeq
@@ -31,6 +31,11 @@ object InferenceException {
     throw InferenceException(msg, rs,trace,span)
   def error(msg: String,span:Option[parser.Span])(implicit trace: Seq[Constraint]): Nothing =
     throw InferenceException(msg, Nil,trace,span)
+  def error_no_type(expr:rise.core.Expr)(implicit trace: Seq[Constraint]): Nothing = expr.span match {
+    case Some(sp) => throw No_Type_For_Variable(sp,expr)
+    case None =>throw InferenceException(s"$expr has no type", Nil,trace,None)
+  }
+
 }
 
 case class NonIdentifierInBinderException[T](lambda: T,
