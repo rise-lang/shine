@@ -188,6 +188,8 @@ package object autotune {
 
     // save samples to file
     saveSamples(tuner.output + "/" + tuner.name + ".csv", TuningResult(samples.toSeq))
+    // copy result
+    ("mv " + tuner.name + "_output_samples.csv" + " " + tuner.output !!)
 
     TuningResult(samples.toSeq)
   }
