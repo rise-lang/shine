@@ -354,6 +354,7 @@ object KernelExecutor {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     (getOutputType(dt) match {
       case shine.DPIA.Types.int => output.asIntArray()
+      case shine.DPIA.Types.i32 => output.asIntArray()
       case shine.DPIA.Types.f32 => output.asFloatArray()
       case shine.DPIA.Types.f64 => output.asDoubleArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +

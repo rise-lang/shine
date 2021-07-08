@@ -18,7 +18,7 @@ object ScanSeqInclusiveI {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
-    comment("oclScanSeq")`;`
+    comment("oclScanSeqInclusive")`;`
       `new`(a)(dt2, accumulator =>
         acc(init)(accumulator.wr) `;`
           ((out `@` NatAsIndex(n+1, Natural(0))) :=| dt2 | accumulator.rd) `;`
