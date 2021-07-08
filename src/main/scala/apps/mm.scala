@@ -69,10 +69,15 @@ object mm {
     ))
   }
 
-
   val mmNVIDIA = mmNVIDIAWithParams(4, 8, 64, 128, 128, 16)
 
   def mmNVIDIAWithParams(v3: Nat, v4: Nat, v5: Nat, v6: Nat, v7: Nat, v8: Nat): ToBeTyped[Expr] = {
+    depFun((n: Nat, m: Nat, o: Nat) =>
+      mmNVIDIAWithParams(n, m, o, v3, v4, v5, v6, v7, v8)
+    )
+  }
+
+  def mmNVIDIAWithParams(n: Nat, m: Nat, o: Nat, v3: Nat, v4: Nat, v5: Nat, v6: Nat, v7: Nat, v8: Nat): ToBeTyped[Expr] = {
 
     //    A(o,n) x B(o,m)
     //    v3 // divides v7
@@ -82,7 +87,7 @@ object mm {
     //    v7 // tile-width B
     //    v8 // tile-height A,B
 
-    depFun((n: Nat, m: Nat, o: Nat) => fun(
+    fun(
       (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
     )((at, b) =>
       at |>
@@ -139,7 +144,7 @@ object mm {
                 map(transpose) |> join |> map(join) |> transpose // v7.v5.f
             )) |> join |> transpose // v5.M.f
         )) |> join // N.M.f
-    ))
+    )
   }
 
   def computeGold(n: Int, m: Int, o: Int,
