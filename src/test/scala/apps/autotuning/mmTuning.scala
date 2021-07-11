@@ -8,6 +8,7 @@ import rise.core.DSL.Type._
 import rise.autotune
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
+import util.gen
 
 class mmTuning extends test_util.Tests {
 
@@ -84,6 +85,9 @@ class mmTuning extends test_util.Tests {
     )
 
     val mm0 = rise.core.substitute.natsInExpr(params0, mm)
+
+    println("codeHosted: \n" + gen.opencl.hosted.asString( gen.opencl.hosted.fromExpr(mm0)))
+
     val result0 = autotune.execution.execute(mm0, main(1024, 1024, 1024), Timeouts(5000, 5000, 5000), 10, 100)
     println("result0: " + result0.runtime)
 
