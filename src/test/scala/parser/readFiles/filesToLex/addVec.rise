@@ -1,0 +1,6 @@
+addVec::4xF32->4xF32->4xF32
+foreign addVec(a,b){
+    float4 res;
+    res.xyz = a.xyz + b.xyz;
+    return res;
+}

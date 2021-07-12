@@ -105,6 +105,21 @@ inference exception: could not solve constraints: List((_n185._n171.<4>f32 -> (_
     println(kernel)
   }
 
+  test("syntax ugly2"){
+    val addVec: ToBeTyped[Expr] = foreignFun("addVec",
+      Seq("a", "b"),
+      """{
+	  |  float4 res;
+    |  res.xyz = a.xyz + b.xyz;
+    |  return res;
+    |  }
+    |""".stripMargin,
+      vec(4, f32)->:vec(4, f32)->:vec(4, f32)
+    )
+    val kernel = gen.OpenCLKernel(addVec)
+    println(kernel)
+  }
+
   /*
 /home/visualjames/Documents/Universitaet/Bachelorarbeit/Repos/IntegrateRISE/shine/src/test/scala/parser/simpleExample.scala:110:10
 type mismatch;
