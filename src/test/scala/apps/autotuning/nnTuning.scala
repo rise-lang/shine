@@ -1,8 +1,7 @@
 package apps.autotuning
 
-
-
-import rise.autotune.{tuningParam, wrapOclRun}
+import rise.autotune
+import rise.autotune.{Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
@@ -10,8 +9,6 @@ import rise.core.types._
 import rise.core.primitives._
 import rise.openCL.DSL._
 import shine.OpenCL.{GlobalSize, LocalSize}
-
-
 import util.gen
 
 class nnTuning extends test_util.Tests {
@@ -70,14 +67,15 @@ class nnTuning extends test_util.Tests {
           float lat = 2.0f;
           float lng = 2.0f;
 
-          foo_init_run(ctx, output, K, input, lat, lng);
+//          foo_init_run(ctx, output, K, input, lat, lng);
+          foo_init_run(ctx, output, input, lat, lng);
 
           float* out = hostBufferSync(ctx, output, K * sizeof(float), HOST_READ);
 
-          for (int i = 0; i < K ; i++) {
-             printf(" %f ", out[i]);
-          }
-          printf("\\n");
+//          for (int i = 0; i < K ; i++) {
+//             printf(" %f ", out[i]);
+//          }
+//          printf("\\n");
 
     //    todo add error checking
 
@@ -116,16 +114,53 @@ class nnTuning extends test_util.Tests {
     val params = Map(
       TuningParameter("n") -> (4: Nat),
       TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("gs0") -> (8: Nat),
+      TuningParameter("gs0") -> (8: Nat)
     )
 
     val nn2 = rise.core.substitute.natsInExpr(params, nn)
     println("nn2: \n" + nn2)
 
-    val code = gen.opencl.kernel.asStringFromExpr(nn2)
-    println("code: \n" + code)
+    val codeHosted = gen.opencl.hosted.fromExpr(nn2)
+    println("codeHosted: \n" + codeHosted)
+    println("codeHosted: \n" + gen.opencl.hosted.asString(codeHosted))
+
+    val program = shine.OpenCL.Module.translateToString(codeHosted) + main(8,4)
+
+    println("program: " + program )
+
   }
 
+  test("execute nn"){
 
+    println("nn: \n" + nn)
 
+    val params = Map(
+      TuningParameter("n") -> (4: Nat),
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("gs0") -> (8: Nat)
+    )
+
+    val nn2 = rise.core.substitute.natsInExpr(params, nn)
+    println("nn2: \n" + nn2)
+
+    val result = autotune.execution.execute(nn2, main(8,4), Timeouts(5000, 5000, 5000), 10, 100)
+
+    println("result: " + result)
+
+  }
+
+  test("search nn"){
+
+    // todo add constraints to config file
+    val tuner = Tuner(main(1024,512), 100, "nn", "autotuning/nn", Timeouts(10000, 10000, 10000), 10, 100, Some("/home/jo/development/rise-lang/shine/autotuning/config/nn_1024.json"), false)
+
+    val tuningResult = autotune.search(tuner)(nn)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: \n" + bestSample)
+    println("runtime: \n" + bestSample.get.runtime)
+  }
 }

@@ -1,0 +1,32 @@
+{
+ "application_name" : "nn",
+ "optimization_objectives" : ["runtime"],
+ "hypermapper_mode" : {
+   "mode" : "client-server"
+ },
+ "feasible_output" : {
+   "enable_feasible_predictor" : true,
+   "name" : "Valid",
+   "true_value" : "True",
+   "false_value" : "False"
+ },
+ "design_of_experiment" : {
+   "doe_type" : "random sampling",
+   "number_of_samples" : 30
+ },
+ "optimization_iterations" : 0,
+ "input_parameters" : {
+   "tuned_n" : {
+       "parameter_type" : "ordinal",
+       "values" : [512]
+   },
+   "tuned_gs0" : {
+       "parameter_type" : "ordinal",
+       "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+   },
+   "tuned_ls0" : {
+       "parameter_type" : "ordinal",
+       "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+   }
+ }
+}
