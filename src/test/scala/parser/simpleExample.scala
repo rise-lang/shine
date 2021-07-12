@@ -97,6 +97,14 @@ inference exception: could not solve constraints: List((_n185._n171.<4>f32 -> (_
     println(thrown)
   }
 
+  test("syntax ugly"){
+    val addArray: ToBeTyped[Expr] = depFun((n: Nat)=>fun((n`.`f32)->:f32)(
+      arr=> reduceSeq(add)(l(0f))$ arr
+    ))
+    val kernel = gen.CProgram(addArray)
+    println(kernel)
+  }
+
   /*
 /home/visualjames/Documents/Universitaet/Bachelorarbeit/Repos/IntegrateRISE/shine/src/test/scala/parser/simpleExample.scala:110:10
 type mismatch;

@@ -5,8 +5,8 @@ import r.{DepApp, DepLambda, ForeignFunction, Lambda, Literal, Primitive, primit
 import o.{primitives => op}
 import parser.ErrorMessage.{ErrorList, FunctionWithNoDefinition, FunctionWithNoType, NamedExprAlreadyExist, NatAlreadyExist, NoExprInBraces, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, ParserException, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
 import parser.OpType.BinOpType
-import rise.core.DSL.ToBeTyped
-import rise.core.types.{DepFunType,TypePlaceholder}
+import r.DSL.ToBeTyped
+import rt.{DataType, DepFunType, FunType, TypePlaceholder}
 
 import scala.collection.mutable
 
@@ -942,26 +942,37 @@ object parse {
     (e, synE)
   }
 
-  private def expr_is_Operator(expr:r.Expr):Boolean= expr match {
+  //Todo: loop logic: if we are deeper in primitive or the function name,
+  // we exactly check the correct position if there is expecteted to be a DepFunType or an FunType
+  private def expr_is_Operator(expr:r.Expr, loop:Int=0):Boolean= expr match {
     case r.Identifier(name) => false
     case Lambda(x, e) =>false
-    case r.App(f, e) =>expr_is_Operator(f)
+    case r.App(f, e) =>expr_is_Operator(f,loop+1)
     case DepLambda(x, e) =>false
     case DepApp(f, x) =>false
     case Literal(d, span) =>false
-    case primitive: Primitive => primitive match {
-      case rp.add(_) => true
-      case rp.sub(_) => true
-      case rp.mul(_) => true
-      case rp.div(_) => true
-      case rp.equal(_) => true
-      case rp.gt(_) => true
-      case rp.lt(_) => true
-      case rp.neg(_) => true
-      case rp.mod(_) => true
-      case rp.not(_) => true
-      case _ => false
+    case primitive: Primitive => primitive.t match {
+      case TypePlaceholder => true
+      case rt.TypeIdentifier(name) => true
+      case FunType(inT, outT) => true
+      case DepFunType(x, t) => false
+      case dataType: DataType => true
     }
+//
+//      primitive match {
+//      case rp.reduceSeq(_) => true
+//      case rp.add(_) => true
+//      case rp.sub(_) => true
+//      case rp.mul(_) => true
+//      case rp.div(_) => true
+//      case rp.equal(_) => true
+//      case rp.gt(_) => true
+//      case rp.lt(_) => true
+//      case rp.neg(_) => true
+//      case rp.mod(_) => true
+//      case rp.not(_) => true
+//      case _ => false
+//    }
   }
 
   private def combineExpressionsDependent(synElemList: List[SyntaxElement], mapDepL: MapDepL): r.Expr = {
@@ -1613,7 +1624,7 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         //var synElems = ps.parsedSynElems.tail.reverse
         var synElems = ps.parsedSynElems
 
-        val (e1, sp1) = getExprAndSpan(synElems.head,parseState).get
+        val (e1, sp1) = getExprAndSpan(synElems.head,ps).get
         if(synElems.tail.isEmpty) {
           val e = ErrorMessage.SynListIsEmpty(sp1, "Composition")
           return (Right(e),eL.add(e))

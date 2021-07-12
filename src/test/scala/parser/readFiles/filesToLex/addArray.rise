@@ -1,0 +1,2 @@
+addArray::N:Nat=>N.F32->F32
+addArray= N:Nat=>arr  ->reduceSeq add 0 arr
