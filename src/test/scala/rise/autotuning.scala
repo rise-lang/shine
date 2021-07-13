@@ -91,32 +91,64 @@ class autotuning extends test_util.Tests {
     ))
 
   // scalastyle:off
-  val main: Int => String = iterations => {
+  val init: Int => String = (N) => {
     s"""
-    const int N = ${iterations};
-    int main(int argc, char** argv) {
-      Context ctx = createDefaultContext();
-      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
-
-      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
-      for (int i = 0; i < N; i++) {
-        in[i] = 1;
-      }
-
-      foo_init_run(ctx, output, input, input);
-
-      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-
-//    todo add error checking
-
-      destroyBuffer(ctx, input);
-      destroyBuffer(ctx, output);
-      destroyContext(ctx);
-      return EXIT_SUCCESS;
-    }
-    """
+       |const int N = ${N};
+       |
+       |Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+       |Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+       |
+       |float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+       |for (int i = 0; i < N; i++) {
+       |  in[i] = 1;
+       |}
+       |
+       |// synchronize before entering timed section
+       |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
+       |
+       |""".stripMargin
   }
+
+  val compute =
+    s"""
+       |fun_run(ctx, &fun, output, input, input);
+       |""".stripMargin
+
+  val finish =
+    s"""
+       |// TODO: could check output here
+       |
+       |destroyBuffer(ctx, input);
+       |destroyBuffer(ctx, output);
+       |""".stripMargin
+
+//
+//  val main: Int => String = iterations => {
+//    s"""
+//    const int N = ${iterations};
+//    int main(int argc, char** argv) {
+//      Context ctx = createDefaultContext();
+//      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+//      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+//
+//      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+//      for (int i = 0; i < N; i++) {
+//        in[i] = 1;
+//      }
+//
+//      foo_init_run(ctx, output, input, input);
+//
+//      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+//
+////    todo add error checking
+//
+//      destroyBuffer(ctx, input);
+//      destroyBuffer(ctx, output);
+//      destroyContext(ctx);
+//      return EXIT_SUCCESS;
+//    }
+//    """
+//  }
   // scalastyle:on
 
   test("collect parameters") {
@@ -310,7 +342,18 @@ class autotuning extends test_util.Tests {
   test("generateJSON") {
     val parameters = autotune.constraints.collectParameters(convolution)
     val constraints = autotune.constraints.collectConstraints(convolution, parameters)
-    val json = autotune.configFileGeneration.generateJSON(parameters, constraints, Tuner(main(32)))
+    val tuner = Tuner(
+      hostCode = HostCode(init(32), compute, finish),
+      samples = 100,
+      name = "RISE",
+      output = "autotuning",
+      timeouts =Timeouts(5000, 5000, 5000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None,
+      hierarchicalHM = false
+    )
+    val json = autotune.configFileGeneration.generateJSON(parameters, constraints, tuner)
 
     // scalastyle:off
     val gold =
@@ -361,7 +404,11 @@ class autotuning extends test_util.Tests {
     // test full tuning run
     val e: Expr = convolutionOcl(32)
 
-    val tuningResult = autotune.search(Tuner(main(32), 100))(e)
+    val tuner = Tuner(
+      hostCode = HostCode(init(32), compute, finish),
+    )
+
+    val tuningResult = autotune.search(tuner)(e)
 
     println("tuningResult: \n")
     tuningResult.samples.foreach(elem => println(elem))
@@ -378,15 +425,15 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOclGsLs(1024)
 
     val tuner = Tuner(
-      main(1024),
-      1000,
-      "RISE",
-      "autotuning",
-      Timeouts(5000, 5000, 5000),
-      10,
-      100,
-      None,
-      true
+      hostCode = HostCode(init(1024), compute, finish),
+      samples = 100,
+      name = "RISE",
+      output = "autotuning",
+      timeouts =Timeouts(5000, 5000, 5000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None,
+      hierarchicalHM = true
     )
 
     val tuningResult = autotune.search(tuner)(e)
@@ -403,7 +450,7 @@ class autotuning extends test_util.Tests {
   // only important for automatic json generation for hm constraints support
   ignore("distribute constraints") {
     val e: Expr = convolutionOclGsLs(1024)
-    val tuner = Tuner(main(1024), 10)
+    val tuner = Tuner(HostCode(init(1024), compute, finish), samples = 10)
     val params = autotune.constraints.collectParameters(e)
     val constraints = autotune.constraints.collectConstraints(e, params)
 
@@ -431,53 +478,68 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOcl(32)
     val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
 
-    val result = autotune.execution.execute(e2, main(32), Timeouts(5000, 5000, 5000), 10, 100)
+    val result = autotune.execution.execute(
+      expression = e2,
+      hostCode = HostCode(init(32), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 10,
+      speedupFactor = 100)
 
-    // check if result has valid runtime
+//     check if result has valid runtime
     assert(result.runtime.isDefined)
-    // check if no error was reported
+//     check if no error was reported
     assert(result.error.errorLevel.equals(autotune.NO_ERROR))
-
+//
     println("result: " + result)
   }
 
   test("execute scal") {
-    val e: Expr = scalOcl(32)
+    val e: Expr = scalOcl(1024)
 
     // scalastyle:off
-    val main =
-      """
-    const int N = 32;
-    int main(int argc, char** argv) {
-      Context ctx = createDefaultContext();
-      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
-
-      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
-      for (int i = 0; i < N; i++) {
-        in[i] = 1;
-      }
-
-      foo_init_run(ctx, output, input, 4);
-
-      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-
-      for (int i = 0; i < N; i++) {
-        if (out[i] != 4) {
-          fprintf(stderr, "wrong output: %f\n", out[i]);
-          exit(EXIT_FAILURE);
-        }
-      }
-
-      destroyBuffer(ctx, input);
-      destroyBuffer(ctx, output);
-      destroyContext(ctx);
-      return EXIT_SUCCESS;
+    val init: Int => String = (N) => {
+      s"""
+         |const int N = ${N};
+         |
+         |Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+         |Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+         |
+         |float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+         |for (int i = 0; i < N; i++) {
+         |  in[i] = 1;
+         |}
+         |
+         |// synchronize before entering timed section
+         |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
+         |
+         |""".stripMargin
     }
-    """
+
+    val compute =
+      s"""
+         |fun_run(ctx, &fun, output, input, 4);
+         |""".stripMargin
+
+    val finish =
+      s"""
+         |  float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+         |         |  for (int i = 0; i < N; i++) {
+         |    if (out[i] != 4) {
+         |       exit(EXIT_FAILURE);
+         |    }
+         |  }
+         |
+         |destroyBuffer(ctx, input);
+         |destroyBuffer(ctx, output);
+         |""".stripMargin
     // scalastyle:on
 
-    val result = autotune.execution.execute(e, main, Timeouts(5000, 5000, 5000), 10, 100)
+    val result = autotune.execution.execute(
+      expression = e,
+      hostCode = HostCode(init(1024), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 10,
+      speedupFactor = 100)
 
     // check if result has valid runtime
     assert(result.runtime.isDefined)
@@ -508,7 +570,7 @@ class autotuning extends test_util.Tests {
 </trace>
     """
     // scalastyle:on
-    assert(autotune.execution.getRuntimeFromClap(xmlString).value.toFloat == 0.010112f)
+    assert(autotune.execution.getRuntimeFromClap(xmlString)(0).value.toFloat == 0.010112f)
   }
 
   test("text xml parsing with corrupted xml string") {
@@ -531,7 +593,89 @@ class autotuning extends test_util.Tests {
 </trace>
     """
     // scalastyle:on
-    assert(autotune.execution.getRuntimeFromClap(corruptedXmlString).value.toFloat == 0.158819f)
+    assert(autotune.execution.getRuntimeFromClap(corruptedXmlString)(0).value.toFloat == 0.158819f)
+  }
+
+  test("test xml parsing for multiple runtimes"){
+    // scalastyle:off
+    val xmlString =
+      """<trace date="2021-07-12 19:22:15" profiler_version="0.1.0" ocl_version="1.2">
+        <device name="NVIDIA GeForce RTX 2070" id="1"/>
+        <queue properties="CL_QUEUE_PROFILING_ENABLE" device_id="1" id="1"/>
+        <program build_options="-cl-fast-relaxed-math -Werror -cl-std=CL1.2" id="1"/>
+        <kernel name="k0" program_id="1" id="1"/>
+        <kernel_instance kernel_id="1" id="1" unique_id="1" command_queue_id="1">
+          <event forced="true" queued="1626110536128169248" submit="1626110536128172352" start="1626110536128271232" end="1626110536132397760"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="2" unique_id="2" command_queue_id="1">
+          <event forced="true" queued="1626110536132419072" submit="1626110536132421024" start="1626110536132424704" end="1626110536136711168"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="3" unique_id="3" command_queue_id="1">
+          <event forced="true" queued="1626110536136718592" submit="1626110536136720448" start="1626110536136944000" end="1626110536140495232"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="4" unique_id="4" command_queue_id="1">
+          <event forced="true" queued="1626110536140501856" submit="1626110536140503712" start="1626110536140507840" end="1626110536144057344"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="5" unique_id="5" command_queue_id="1">
+          <event forced="true" queued="1626110536144064256" submit="1626110536144066080" start="1626110536144069632" end="1626110536147620736"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="6" unique_id="6" command_queue_id="1">
+          <event forced="true" queued="1626110536147629792" submit="1626110536147632224" start="1626110536148222976" end="1626110536152535744"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="7" unique_id="7" command_queue_id="1">
+          <event forced="true" queued="1626110536152542432" submit="1626110536152544736" start="1626110536152768672" end="1626110536156320768"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="8" unique_id="8" command_queue_id="1">
+          <event forced="true" queued="1626110536156329088" submit="1626110536156331584" start="1626110536156336288" end="1626110536160467648"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="9" unique_id="9" command_queue_id="1">
+          <event forced="true" queued="1626110536160474304" submit="1626110536160476608" start="1626110536161701984" end="1626110536165956064"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <kernel_instance kernel_id="1" id="10" unique_id="10" command_queue_id="1">
+          <event forced="true" queued="1626110536165962976" submit="1626110536165965248" start="1626110536165970848" end="1626110536170273792"/>
+          <offset_range/>
+          <global_range dim="3" x="8192" y="1024" z="1"/>
+          <local_range dim="3" x="16" y="8" z="1"/>
+        </kernel_instance>
+        <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="268435456" id="1"/>
+        <mem_object type="Buffer" flag="CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR" size="68" id="2"/>
+        <mem_object type="Buffer" flag="CL_MEM_WRITE_ONLY|CL_MEM_ALLOC_HOST_PTR" size="268435456" id="3"/>
+      </trace>
+      """
+
+    // scalastyle:on
+
+    val gold = Seq(4.126528, 4.286464, 3.551232, 3.549504, 3.551104, 4.312768, 3.552096, 4.13136, 4.25408, 4.302944)
+    val runtimes = autotune.execution.getRuntimeFromClap(xmlString)
+
+    assert(runtimes.map(elem => elem.value) == gold)
   }
 
   test("generate huge amount of code") {
@@ -555,7 +699,7 @@ class autotuning extends test_util.Tests {
     // WARNING: timeout does not stop the thread, it only returns to the host thread
     val result = autotune.execution.execute(
       eWithParams,
-      main(1024),
+      HostCode(init(1024), compute, finish),
       Timeouts(5000, 5000, 5000),
       10,
       100

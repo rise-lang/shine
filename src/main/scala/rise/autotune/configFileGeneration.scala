@@ -36,7 +36,7 @@ object configFileGeneration {
        |   "doe_type" : "random sampling",
        |   "number_of_samples" : ${doe}
        | },
-       | "optimization_iterations" : ${tuner.iterations},
+       | "optimization_iterations" : ${tuner.samples},
        | "input_parameters" : {
        |""".stripMargin
 
