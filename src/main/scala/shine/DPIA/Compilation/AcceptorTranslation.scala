@@ -354,6 +354,11 @@ object AcceptorTranslation {
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
 
     //GAP8
+    case r@shine.GAP8.primitives.functional.Run(cores) => {
+      ???
+    }
+
+
     case kc@shine.GAP8.primitives.functional.KernelCall(name, cores, n) =>
       def rec(ts: Seq[Phrase[ExpType]], es: Seq[Phrase[ExpType]]): Phrase[CommType] = ts match {
         case Nil =>
