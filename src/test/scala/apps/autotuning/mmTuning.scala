@@ -8,7 +8,6 @@ import rise.core.DSL.Type._
 import rise.autotune
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
-import util.gen
 
 class mmTuning extends test_util.Tests {
 
@@ -25,42 +24,48 @@ class mmTuning extends test_util.Tests {
                       mmNVIDIAWithParams(m, n, o, v3, v4, v5, v6, v7, v8)
                     )))))))))
 
-  val main: (Int, Int, Int) => String = (N,M,O) => {
+  val init: (Int, Int, Int) => String = (N,M,O) => {
     s"""
-        const int N = ${N};
-        const int M = ${M};
-        const int O = ${O};
-        int main(int argc, char** argv) {
-          srand(time(NULL));
-          Context ctx = createDefaultContext();
-          Buffer inputA = createBuffer(ctx, N * M * sizeof(float), HOST_WRITE | DEVICE_READ);
-          Buffer inputB = createBuffer(ctx, M * O * sizeof(float), HOST_WRITE | DEVICE_READ);
-          Buffer outputC = createBuffer(ctx, N * O *  sizeof(float), HOST_READ | DEVICE_WRITE);
-
-          float* inA = hostBufferSync(ctx, inputA, N * M * sizeof(float), HOST_WRITE);
-          for (int i = 0; i < N * M ; i++) {
-            inA[i] = (float)(rand());
-          }
-
-          float* inB = hostBufferSync(ctx, inputB, M * O * sizeof(float), HOST_WRITE);
-          for (int i = 0; i < M * O; i++) {
-            inB[i] = (float)(rand());
-          }
-
-          foo_init_run(ctx, outputC, inputA, inputB);
-
-          float* out = hostBufferSync(ctx, outputC, N * O * sizeof(float), HOST_READ);
-
-    //    todo add error checking
-
-          destroyBuffer(ctx, inputA);
-          destroyBuffer(ctx, inputB);
-          destroyBuffer(ctx, outputC);
-          destroyContext(ctx);
-          return EXIT_SUCCESS;
-        }
-        """
+       |const int N = ${N};
+       |const int M = ${M};
+       |const int O = ${O};
+       |
+       |srand(time(NULL));
+       |
+       |Buffer inputA = createBuffer(ctx, N * M * sizeof(float), HOST_WRITE | DEVICE_READ);
+       |Buffer inputB = createBuffer(ctx, M * O * sizeof(float), HOST_WRITE | DEVICE_READ);
+       |Buffer outputC = createBuffer(ctx, N * O *  sizeof(float), HOST_READ | DEVICE_WRITE);
+       |
+       |float* inA = hostBufferSync(ctx, inputA, N * M * sizeof(float), HOST_WRITE);
+       |for (int i = 0; i < N * M ; i++) {
+       |  inA[i] = (float)(rand());
+       |}
+       |
+       |float* inB = hostBufferSync(ctx, inputB, M * O * sizeof(float), HOST_WRITE);
+       |for (int i = 0; i < M * O; i++) {
+       |  inB[i] = (float)(rand());
+       |}
+       |
+       |// synchronize before entering timed section
+       |deviceBufferSync(ctx, inputA, N * M * sizeof(float), DEVICE_READ);
+       |deviceBufferSync(ctx, inputB, M * O * sizeof(float), DEVICE_READ);
+       |
+       |""".stripMargin
   }
+
+  val compute =
+    s"""
+       |fun_run(ctx, &fun, outputC, inputA, inputB);
+       |""".stripMargin
+
+  val finish =
+    s"""
+       |// TODO: could check output here
+       |
+       |destroyBuffer(ctx, inputA);
+       |destroyBuffer(ctx, inputB);
+       |destroyBuffer(ctx, outputC);
+       |""".stripMargin
 
   test("mm example config"){
     val mm: Expr =
@@ -85,10 +90,13 @@ class mmTuning extends test_util.Tests {
     )
 
     val mm0 = rise.core.substitute.natsInExpr(params0, mm)
-
-    println("codeHosted: \n" + gen.opencl.hosted.asString( gen.opencl.hosted.fromExpr(mm0)))
-
-    val result0 = autotune.execution.execute(mm0, main(1024, 1024, 1024), Timeouts(5000, 5000, 5000), 10, 100)
+    val result0 = autotune.execution.execute(
+      expression = mm0,
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 100,
+      speedupFactor = 100
+    )
     println("result0: " + result0.runtime)
 
     val params1 = Map(
@@ -108,7 +116,13 @@ class mmTuning extends test_util.Tests {
     )
 
     val mm1 = rise.core.substitute.natsInExpr(params1, mm)
-    val result1 = autotune.execution.execute(mm1, main(1024, 1024, 1024), Timeouts(5000, 5000, 5000), 10, 100)
+    val result1 = autotune.execution.execute(
+      expression = mm1,
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 10,
+      speedupFactor = 100
+    )
     println("result1: " + result1.runtime)
 
     val params2 = Map(
@@ -128,7 +142,13 @@ class mmTuning extends test_util.Tests {
     )
 
     val mm2 = rise.core.substitute.natsInExpr(params2, mm)
-    val result2 = autotune.execution.execute(mm2, main(1024, 1024, 1024), Timeouts(5000, 5000, 5000), 10, 100)
+    val result2 = autotune.execution.execute(
+      expression = mm2,
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 10,
+      speedupFactor = 100
+    )
     println("result2: " + result2.runtime)
   }
 
@@ -137,7 +157,17 @@ class mmTuning extends test_util.Tests {
       tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
         wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
 
-    val tuner = Tuner(main(64, 128, 128), 100, "rs_cot_128", "autotuning/mm_128", Timeouts(5000, 5000, 1000), 10, 100, Some("/home/jo/development/rise-lang/shine/autotuning/config/rs_cot_128.json"), true)
+    val tuner = Tuner(
+      hostCode = HostCode(init(64, 128, 128), compute, finish),
+      samples = 100,
+      name = "rs_cot_128",
+      output = "autotuning/mm_128",
+      timeouts = Timeouts(5000, 5000, 1000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some("/home/jo/development/rise-lang/shine/autotuning/config/rs_cot_128.json"),
+      hierarchicalHM = true
+    )
 
     val tuningResult = autotune.search(tuner)(mm)
 
@@ -157,7 +187,17 @@ class mmTuning extends test_util.Tests {
           wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
         ))))
 
-    val tuner = Tuner(main(1024, 1024, 1024), 100, "rs_cot_1024", "autotuning/mm_1024", Timeouts(1000, 1000, 1000), 10, 100, Some("/home/jo/development/rise-lang/shine/autotuning/config/rs_cot_1024.json"), true)
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      samples = 10,
+      name = "rs_cot_1024",
+      output = "autotuning/mm_1024",
+      timeouts = Timeouts(1000, 1000, 1000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some("/home/jo/development/rise-lang/shine/autotuning/config/rs_cot_1024.json"),
+      hierarchicalHM = true
+    )
 
     val tuningResult = autotune.search(tuner)(mm)
 
@@ -168,6 +208,5 @@ class mmTuning extends test_util.Tests {
     println("bestSample: \n" + bestSample)
     println("runtime: \n" + bestSample.get.runtime)
   }
-
 
 }
