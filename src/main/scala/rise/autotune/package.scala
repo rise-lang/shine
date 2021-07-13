@@ -19,14 +19,14 @@ import scala.sys.process._
 
 package object autotune {
 
-  case class Timeouts(codgenerationTimeout: Long, compilationTimeout: Long, executionTimeout: Long)
-  case class Tuner(main: String,
-                   iterations: Int = 100,
+  case class Timeouts(codegenerationTimeout: Long, compilationTimeout: Long, executionTimeout: Long)
+  case class Tuner(hostCode: HostCode,
+                   samples: Int = 100,
                    name: String = "RISE",
                    output: String = "autotuning",
                    timeouts: Timeouts = Timeouts(5000, 5000, 5000),
                    executionIterations: Int = 10,
-                   speedup: Double = 100,
+                   speedupFactor: Double = 100,
                    configFile: Option[String] = None,
                    hierarchicalHM: Boolean = false)
 
@@ -41,6 +41,8 @@ package object autotune {
                          compilation: Option[TimeSpan[Time.ms]],
                          execution: Option[TimeSpan[Time.ms]]
                         )
+
+  case class HostCode(init: String, compute: String, finish: String)
 
   // todo add meta information (configuration, times, samples, ...)
   case class TuningResult(samples: Seq[Sample])
@@ -90,10 +92,10 @@ package object autotune {
           // execute
           val result = execute(
             rise.core.substitute.natsInExpr(parametersValuesMap, e),
-            tuner.main,
+            tuner.hostCode,
             tuner.timeouts,
             tuner.executionIterations,
-            tuner.speedup
+            tuner.speedupFactor
           )
           val roundTripTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - roundTripStart).toDouble))
           Sample(
@@ -162,7 +164,7 @@ package object autotune {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
             // compute sample (including function value aka runtime)
-            print("[" + i.toString + "/" + tuner.iterations + "] : ")
+            print("[" + i.toString + "/" + tuner.samples + "] : ")
             val sample = computeSample(header, parametersValues)
             println(sample.runtime)
             println(sample)

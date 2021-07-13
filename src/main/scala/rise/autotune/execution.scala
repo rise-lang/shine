@@ -24,21 +24,43 @@ object execution {
     def buffer[T](f: => T): T = f
   }
 
-  def execute(e: Expr,
-              main: String,
+  def execute(expression: Expr,
+              hostCode: HostCode,
               timeouts: Timeouts,
               executionIterations: Int,
-              speedup: Double)
+              speedupFactor: Double)
   : ExecutionResult = {
 
     val codegenStart = System.currentTimeMillis()
     val m = autoTuningUtils.runWithTimeout(
-      timeouts.codgenerationTimeout)(gen.opencl.hosted.fromExpr(e)
+      timeouts.codegenerationTimeout)(gen.opencl.hosted("fun").fromExpr(expression)
     )
     val codegenTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - codegenStart).toDouble)
     m match {
       case Some(_) => {
-        val program = shine.OpenCL.Module.translateToString(m.get) + main
+
+        val program =
+          s"""
+             |${shine.OpenCL.Module.translateToString(m.get)}
+             |
+             |int main() {
+             |  assertReasonableTimeResolution();
+             |  Context ctx = createDefaultContext();
+             |  fun_t fun;
+             |  fun_init(ctx, &fun);
+             |
+             |  ${hostCode.init}
+             |  waitFinished(ctx);
+             |
+             |  for (int sample = 0; sample < ${executionIterations}; sample++) {
+             |    ${hostCode.compute}
+             |    waitFinished(ctx);
+             |  }
+             |  ${hostCode.finish}
+             |  destroyContext(ctx);
+             |  return EXIT_SUCCESS;
+             |}
+             |""".stripMargin
 
         // execute program
         val result = executeWithRuntime(
@@ -47,7 +69,7 @@ object execution {
           timeouts.compilationTimeout,
           timeouts.executionTimeout,
           executionIterations,
-          speedup
+          speedupFactor
         )
 
         ExecutionResult(result._1, result._2, Some(codegenTime), result._3, result._4)
@@ -56,7 +78,7 @@ object execution {
         None,
         AutoTuningError(
           CODE_GENERATION_ERROR,
-          Some("timeout after: " + timeouts.codgenerationTimeout),
+          Some("timeout after: " + timeouts.codegenerationTimeout),
         ),
         Some(codegenTime),
         None,
@@ -98,26 +120,24 @@ object execution {
     val compilationTime = TimeSpan.inMilliseconds(System.currentTimeMillis().toDouble - compilationStart)
     val executionStart = System.currentTimeMillis()
     try{
-      val runtimes = ListBuffer.empty[Double]
-
-      var i = 0
-      var speedupCondition = false
-      while(!speedupCondition && i < executionIterations){
 
         val result = (s"timeout ${executionTimeout.toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin" !!(logger))
-        val runtime = getRuntimeFromClap(result)
+        val runtimes = getRuntimeFromClap(result)
+//        println("runtimes: " + runtimes)
 
-        speedupCondition = best match {
-          case Some(value) => runtime.value > value * speedup
-          case None => false
-        }
+//        speedupCondition = best match {
+//          case Some(value) => runtime(0).value > value * speedup
+//          case None => false
+//        }
 
-        runtimes += runtime.value
-        i += 1
-      }
+//        runtimes += runtime(0).value
+//        i += 1
+//      }
+//      val runtimes_sorted = runtimes.sorted
+//      println("runtimes_sorted: " + runtimes_sorted)
 
       // get median
-      val runtime = TimeSpan.inMilliseconds(runtimes.toSeq.sorted.apply(i/2))
+      val runtime = runtimes.sorted.apply(executionIterations/2)
 
       // update or init global best
       best = best match{
@@ -140,7 +160,7 @@ object execution {
     }
   }
 
-  def getRuntimeFromClap(s: String): TimeSpan[Time.ms] = {
+  def getRuntimeFromClap(s: String): Seq[TimeSpan[Time.ms]] = {
     // convert input String to array of Strings (line-wise)
     val sArray = s.split("\n")
 
@@ -153,11 +173,16 @@ object execution {
 
     // load xml as string and compute runtime
     val clapResult = scala.xml.XML.loadString(sCorrect)
-    val start = (clapResult \\ "@start").toString().toLong
-    val end = (clapResult \\ "@end").toString().toLong
-    val runtime = end - start
 
-    // convert to ms
-    TimeSpan.inMilliseconds(runtime.toDouble/1000000)
+    val startSeq = (clapResult \\ "@start")
+    val endSeq = (clapResult \\ "@end")
+
+    val runtimes = (startSeq zip endSeq).map(timespan => {
+      TimeSpan.inMilliseconds(
+        (timespan._2.toString().toLong - timespan._1.toString().toLong)
+          .toDouble/1000000)
+    })
+
+    runtimes
   }
 }
