@@ -55,10 +55,17 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
       val self = C.AST.ParamDecl("self", C.AST.PointerType(selfT))
       val params = Seq(C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")), self) ++
         optionallyManagedParams(funDef.params, outParam).map(makeParam(gen))
+
+      val collectedTypeDeclarations = C.Compilation.ModuleGenerator.collectTypeDeclarations(code, params)
+      //TODO: Fix, hacky
+      val withoutClusterParams = collectedTypeDeclarations.filterNot {
+        case C.AST.StructTypeDecl(name, _) =>
+          name.equalsIgnoreCase("struct cluster_params")
+      }
+
       C.Module(
         includes = immutable.Seq(IncludeSource("gap8/gap8.h")),
-        decls = C.Compilation.ModuleGenerator.collectTypeDeclarations(code, params) ++
-          declarations ++ selfTypeDeclarations(gen, funDef.name),
+        decls = withoutClusterParams ++ declarations ++ selfTypeDeclarations(gen, funDef.name),
         functions = immutable.Seq(
           selfInitFunction(gen, funDef.name),
           selfDestroyFunction(gen, funDef.name),

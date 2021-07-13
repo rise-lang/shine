@@ -39,13 +39,15 @@ case class HostCodeGenerator(
         //DeviceBuffer b0 = deviceBufferSync(ctx, moutput, (8 * sizeof(int32_t)), DEVICE_WRITE);
         val outputSync = (deviceBufferSync("b0", outputC, k.output.t.dataType), "b0")
         val argSyncs = (k.args zip argsC).zipWithIndex.flatMap{
-          case ((arg, argC), i) =>
+          case ((arg, argC), i) => {
+            val varName = s"b${i + 1}"
             arg.t.dataType match {
               case _: ManagedBufferType =>
-                val varName = s"b${i + 1}"
                 Some((deviceBufferSync(varName, argC, arg.t.dataType)), varName)
-              case _ => None
+              case _ =>
+                Some(C.AST.DeclStmt(C.AST.VarDecl(varName, typ(arg.t.dataType), Some(argC))), varName)
             }
+          }
         }
 
         //struct cluster_params* cl_params = (struct cluster_params*) pmsis_l2_malloc(sizeof(struct cluster_params));
