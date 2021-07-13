@@ -9,7 +9,7 @@
   },
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 100
+    "number_of_samples": 10
   },
   "hypermapper_mode" : {
     "mode" : "client-server"
