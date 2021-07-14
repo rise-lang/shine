@@ -189,9 +189,10 @@ package object autotune {
     }
 
     // save samples to file
-    saveSamples(tuner.output + "/" + tuner.name + ".csv", TuningResult(samples.toSeq))
-    // copy result
-    ("mv " + tuner.name + "_output_samples.csv" + " " + tuner.output !!)
+    val destination = saveSamples(tuner.output + "/" + tuner.name + ".csv", TuningResult(samples.toSeq))
+
+    // copy hm result
+    ("mv " + tuner.name + "_output_samples.csv " + destination.substring(0, destination.length - 4) + "_hm.csv" !!)
 
     TuningResult(samples.toSeq)
   }
@@ -231,7 +232,7 @@ package object autotune {
   }
 
   // write tuning results into csv file
-  def saveSamples(path: String, tuningResult: TuningResult): Unit = {
+  def saveSamples(path: String, tuningResult: TuningResult): String = {
     // create unique filepath
     val file = new File(path);
     val uniqueFilepath = file.exists() match {
@@ -303,6 +304,12 @@ package object autotune {
     })
 
     writeToPath(uniqueFilepath, header + content)
+
+    uniqueFilepath
+  }
+
+  def moveHMResult(source: String, destination: String): Unit = {
+
   }
 
   private def min(s1: Sample, s2: Sample): Sample = {

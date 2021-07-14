@@ -43,7 +43,7 @@ object execution {
           s"""
              |${shine.OpenCL.Module.translateToString(m.get)}
              |
-             |int main() {
+             |int main(int argc, char** argv) {
              |  assertReasonableTimeResolution();
              |  Context ctx = createDefaultContext();
              |  fun_t fun;
@@ -52,7 +52,8 @@ object execution {
              |  ${hostCode.init}
              |  waitFinished(ctx);
              |
-             |  for (int sample = 0; sample < ${executionIterations}; sample++) {
+             |  int iterations = atoi(argv[1]);
+             |  for (int sample = 0; sample < iterations; sample++) {
              |    ${hostCode.compute}
              |    waitFinished(ctx);
              |  }
@@ -61,6 +62,8 @@ object execution {
              |  return EXIT_SUCCESS;
              |}
              |""".stripMargin
+
+//        println("program: \n" + program)
 
         // execute program
         val result = executeWithRuntime(
@@ -92,7 +95,7 @@ object execution {
                          compilationTimeout: Long,
                          executionTimeout: Long,
                          executionIterations: Int,
-                         speedup: Double)
+                         speedupFactor: Double)
   : (Option[TimeSpan[Time.ms]],
     AutoTuningError,
     Option[TimeSpan[Time.ms]],
@@ -121,23 +124,32 @@ object execution {
     val executionStart = System.currentTimeMillis()
     try{
 
-        val result = (s"timeout ${executionTimeout.toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin" !!(logger))
-        val runtimes = getRuntimeFromClap(result)
-//        println("runtimes: " + runtimes)
+      // execute once to check speedup factor
+      val result = (s"timeout ${(executionTimeout*1).toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin 1" !!(logger))
+      val runtimes = getRuntimeFromClap(result)
 
-//        speedupCondition = best match {
-//          case Some(value) => runtime(0).value > value * speedup
-//          case None => false
-//        }
+      // check if speedup condition is met or current best is not initialized
+      val repeat = best match {
+        case Some(bestValue) => runtimes(0).value < bestValue * speedupFactor
+        case None => true
+      }
 
-//        runtimes += runtime(0).value
-//        i += 1
-//      }
-//      val runtimes_sorted = runtimes.sorted
-//      println("runtimes_sorted: " + runtimes_sorted)
+      // repeat execution with execution iterations
+      val runtime = repeat match {
+        case true => {
 
-      // get median
-      val runtime = runtimes.sorted.apply(executionIterations/2)
+          // repeat execution with execution iterations
+          val result = (s"timeout ${(executionTimeout*executionIterations).toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin $executionIterations" !!(logger))
+          val runtimes = getRuntimeFromClap(result)
+
+          // get median
+          executionIterations match {
+            case 1 => runtimes.sorted.apply(0)
+            case _ => runtimes.sorted.apply(executionIterations/2)
+          }
+        }
+        case false => runtimes(0)
+      }
 
       // update or init global best
       best = best match{
