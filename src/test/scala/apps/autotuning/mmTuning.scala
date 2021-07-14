@@ -67,7 +67,7 @@ class mmTuning extends test_util.Tests {
        |destroyBuffer(ctx, outputC);
        |""".stripMargin
 
-  test("mm example config"){
+  ignore("mm example config"){
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
@@ -97,7 +97,7 @@ class mmTuning extends test_util.Tests {
       executionIterations = 100,
       speedupFactor = 100
     )
-    println("result0: " + result0.runtime)
+    println("result0: " + result0)
 
     val params1 = Map(
       TuningParameter("n") -> (1024: Nat),
@@ -152,7 +152,7 @@ class mmTuning extends test_util.Tests {
     println("result2: " + result2.runtime)
   }
 
-  test("mm tuning 128"){
+  ignore("mm tuning 128"){
     val mm = tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
       tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
         wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
@@ -189,7 +189,7 @@ class mmTuning extends test_util.Tests {
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      samples = 10,
+      samples = 500,
       name = "rs_cot_1024",
       output = "autotuning/mm_1024",
       timeouts = Timeouts(1000, 1000, 1000),
