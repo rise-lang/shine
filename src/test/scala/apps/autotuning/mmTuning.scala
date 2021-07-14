@@ -199,14 +199,17 @@ class mmTuning extends test_util.Tests {
       hierarchicalHM = true
     )
 
-    val tuningResult = autotune.search(tuner)(mm)
+    val iterations = 10
+    for (i <- Range(0, iterations)){
+      val tuningResult = autotune.search(tuner)(mm)
+    }
 
-    println("tuningResult: \n")
-    tuningResult.samples.foreach(elem => println(elem))
-
-    val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: \n" + bestSample)
-    println("runtime: \n" + bestSample.get.runtime)
+//    println("tuningResult: \n")
+//    tuningResult.samples.foreach(elem => println(elem))
+//
+//    val bestSample = autotune.getBest(tuningResult.samples)
+//    println("bestSample: \n" + bestSample)
+//    println("runtime: \n" + bestSample.get.runtime)
   }
 
 }
