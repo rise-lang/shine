@@ -46,7 +46,7 @@ class nnTuning extends test_util.Tests {
        |  float lat = (float)(rand() % 100);
        |  float lng = (float)(rand() % 100);
        |
-       |  float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+       |  deviceBufferSync(ctx, input, 2 * N * sizeof(float), DEVICE_READ);
        |""".stripMargin
   }
 
