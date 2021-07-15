@@ -2,7 +2,7 @@ package shine.GAP8
 
 import apps.SobelFilter
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import scala.language.postfixOps
 import scala.sys.process._
 
@@ -22,7 +22,6 @@ case class Executor(gapSdkPath: String, target: ExecutionTarget, OS: TargetOpera
     * 8. Profit
     * */
 
-  //val protoFilesPath = "/proto"
   val protoFilesPath = "runtime/"
   val gapv2scriptPath = "configs/gapuino_v2.sh"
 
@@ -33,7 +32,7 @@ case class Executor(gapSdkPath: String, target: ExecutionTarget, OS: TargetOpera
   def execute(code: String): String = {
     val tmpDir = Files.createTempDirectory("")
     val tmpSourceFile = Files.createTempFile(tmpDir, "code-", ".c")
-    val fullProtoFilesPath = Path.of(protoFilesPath)
+    val fullProtoFilesPath = Paths.get(protoFilesPath)
 
     Files
       .walk(fullProtoFilesPath, 2)
@@ -41,18 +40,22 @@ case class Executor(gapSdkPath: String, target: ExecutionTarget, OS: TargetOpera
         if (!filePath.equals(fullProtoFilesPath)){
           Files.copy(
             filePath,
-            Path.of(tmpDir.toString, filePath.toString.substring(fullProtoFilesPath.toString.length))
+            Paths.get(tmpDir.toString, filePath.toString.substring(fullProtoFilesPath.toString.length))
           )
         }
     })
 
-    Files.writeString(tmpSourceFile, code)
+    util.writeToFile(tmpSourceFile.toFile, code)
+    //Files.writeString(tmpSourceFile, code)
 
-    val makefilePath = Path.of(tmpDir.toAbsolutePath.toString, "Makefile")
-    val lines = Files.readString(makefilePath)
-    Files.writeString(makefilePath, lines.replaceAll("#APP_NAME_PLACEHOLDER|#APP_MAIN_SRC_PLACEHOLDER", tmpSourceFile.getFileName.toString))
+    val makefilePath = Paths.get(tmpDir.toAbsolutePath.toString, "Makefile")
+    //val lines = Files.readString(makefilePath)
+    //val lines = Files.readAllLines(makefilePath)
+    val lines = util.readFile(makefilePath.toString)
+    //Files.writeString(makefilePath, lines.replaceAll("#APP_NAME_PLACEHOLDER|#APP_MAIN_SRC_PLACEHOLDER", tmpSourceFile.getFileName.toString))
+    util.writeToFile(makefilePath.toFile, lines.replaceAll("#APP_NAME_PLACEHOLDER|#APP_MAIN_SRC_PLACEHOLDER", tmpSourceFile.getFileName.toString))
 
-    val pathToConfigScript = Path.of(gapSdkPath, gapv2scriptPath)
+    val pathToConfigScript = Paths.get(gapSdkPath, gapv2scriptPath)
 
     val cleanBuildRunSeq =
       s"""
