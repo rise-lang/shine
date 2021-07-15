@@ -308,10 +308,6 @@ package object autotune {
     uniqueFilepath
   }
 
-  def moveHMResult(source: String, destination: String): Unit = {
-
-  }
-
   private def min(s1: Sample, s2: Sample): Sample = {
     s1.runtime match {
       case Some(s1Runtime) => {
