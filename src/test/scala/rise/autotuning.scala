@@ -121,9 +121,15 @@ class autotuning extends test_util.Tests {
 
 
   // function to check cycle in parameter dependencies
-  def check_no_cycle(distribution: Map[NatIdentifier, (Set[constraints.Constraint], Set[NatIdentifier])]): Boolean = {
+  def check_no_cycle(distribution: Map[NatIdentifier,
+    (Set[constraints.Constraint], Set[NatIdentifier])]
+                    ): Boolean = {
 
-    def check_no_cycle_rec(param: NatIdentifier, dependencies: Set[NatIdentifier], distribution: Map[NatIdentifier, (Set[constraints.Constraint], Set[NatIdentifier])]): Boolean = {
+    def check_no_cycle_rec(param: NatIdentifier,
+                           dependencies: Set[NatIdentifier],
+                           distribution: Map[NatIdentifier,
+                             (Set[constraints.Constraint], Set[NatIdentifier])]
+                          ): Boolean = {
       dependencies.size match {
         case 0 => true
         case _ => {
@@ -443,7 +449,8 @@ class autotuning extends test_util.Tests {
     val C = NatIdentifier("C")
 
     // create example with no cycle
-    val distributionNoCycle = scala.collection.mutable.Map[NatIdentifier, (Set[constraints.Constraint], Set[NatIdentifier])]()
+    val distributionNoCycle = scala.collection.mutable.Map[NatIdentifier,
+      (Set[constraints.Constraint], Set[NatIdentifier])]()
     val dependenciesNoCycleA = Set(B)
     val dependenciesNoCycleB = Set.empty[NatIdentifier]
     val dependenciesNoCycleC = Set(C)
@@ -455,7 +462,8 @@ class autotuning extends test_util.Tests {
     assert(check_no_cycle(distributionNoCycle.toMap))
 
     // create example with cycle
-    val distributionCycle = scala.collection.mutable.Map[NatIdentifier, (Set[constraints.Constraint], Set[NatIdentifier])]()
+    val distributionCycle = scala.collection.mutable.Map[NatIdentifier,
+      (Set[constraints.Constraint], Set[NatIdentifier])]()
     val dependenciesCycleA = Set(B)
     val dependenciesCycleB = Set(C)
     val dependenciesCycleC = Set(A)
