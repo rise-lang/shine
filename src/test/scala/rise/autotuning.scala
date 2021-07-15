@@ -121,34 +121,6 @@ class autotuning extends test_util.Tests {
        |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
        |""".stripMargin
-
-//
-//  val main: Int => String = iterations => {
-//    s"""
-//    const int N = ${iterations};
-//    int main(int argc, char** argv) {
-//      Context ctx = createDefaultContext();
-//      Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-//      Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
-//
-//      float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
-//      for (int i = 0; i < N; i++) {
-//        in[i] = 1;
-//      }
-//
-//      foo_init_run(ctx, output, input, input);
-//
-//      float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-//
-////    todo add error checking
-//
-//      destroyBuffer(ctx, input);
-//      destroyBuffer(ctx, output);
-//      destroyContext(ctx);
-//      return EXIT_SUCCESS;
-//    }
-//    """
-//  }
   // scalastyle:on
 
   test("collect parameters") {
