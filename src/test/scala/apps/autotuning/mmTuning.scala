@@ -24,7 +24,8 @@ class mmTuning extends test_util.Tests {
                       mmNVIDIAWithParams(m, n, o, v3, v4, v5, v6, v7, v8)
                     )))))))))
 
-  val init: (Int, Int, Int) => String = (N,M,O) => {
+  // scalastyle:off
+  val init: (Int, Int, Int) => String = (N, M, O) => {
     s"""
        |const int N = ${N};
        |const int M = ${M};
@@ -66,8 +67,9 @@ class mmTuning extends test_util.Tests {
        |destroyBuffer(ctx, inputB);
        |destroyBuffer(ctx, outputC);
        |""".stripMargin
+  // scalastyle:on
 
-  test("mm example config"){
+  test("mm example config") {
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
@@ -152,7 +154,7 @@ class mmTuning extends test_util.Tests {
     println("result2: " + result2.runtime)
   }
 
-  test("mm tuning 128"){
+  test("mm tuning 128") {
     val mm = tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
       tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
         wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
@@ -175,12 +177,11 @@ class mmTuning extends test_util.Tests {
     tuningResult.samples.foreach(elem => println(elem))
 
     val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: "+ bestSample)
+    println("bestSample: " + bestSample)
     println("runtime: " + bestSample.get.runtime)
   }
 
-
-  test("mm tuning 1024"){
+  test("mm tuning 1024") {
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>

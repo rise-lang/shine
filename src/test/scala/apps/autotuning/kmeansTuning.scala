@@ -74,7 +74,7 @@ class kmeansTuning extends test_util.Tests {
       tuningParam("gs0", (gs0: Nat) =>
         wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(kmeansTuning)))
 
-
+  // scalastyle:off
   val init: (Int, Int, Int) => String = (p, c, f) => {
     s"""
        |  const int P = ${p};
@@ -111,6 +111,7 @@ class kmeansTuning extends test_util.Tests {
        |  destroyBuffer(ctx, clusters);
        |  destroyBuffer(ctx, output);
        |""".stripMargin
+  // scalastyle:on
 
 
   test("execute kmeans"){

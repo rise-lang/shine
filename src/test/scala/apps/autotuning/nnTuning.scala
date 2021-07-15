@@ -31,6 +31,7 @@ class nnTuning extends test_util.Tests {
     tuningParam("gs0", (gs0: Nat) =>
       wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(nnTuning)))
 
+  // scalastyle:off
   val init: (Int) => String = (N) => {
     s"""
        |  const int N = ${N};
@@ -62,6 +63,7 @@ class nnTuning extends test_util.Tests {
        |  destroyBuffer(ctx, input);
        |  destroyBuffer(ctx, output);
        |""".stripMargin
+  // scalastyle:on
 
 
   test("execute nn"){

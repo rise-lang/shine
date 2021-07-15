@@ -30,6 +30,7 @@ class nBodyTuning extends test_util.Tests {
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(nbodyTuning)
           ))))
 
+  // scalastyle:off
   val init: (Int) => String = (N) => {
     s"""
        |  const int N = ${N};
@@ -67,6 +68,7 @@ class nBodyTuning extends test_util.Tests {
        |  destroyBuffer(ctx, clusters);
        |  destroyBuffer(ctx, output);
        |""".stripMargin
+  // scalastyle:on
 
 
   test("execute nbodyNoTuning"){

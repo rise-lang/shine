@@ -25,6 +25,7 @@ class mriqTuning extends test_util.Tests {
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computeQOcl)
           ))))
 
+  // scalastyle:off
   val initPhiMag: (Int) => String = (K) => {
     s"""
        |  const int K = ${K};
@@ -125,6 +126,7 @@ class mriqTuning extends test_util.Tests {
        |
        |  destroyBuffer(ctx, output);
        |""".stripMargin
+  // scalastyle:on
 
 
   test("execute computePhiMag"){
