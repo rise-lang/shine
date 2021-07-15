@@ -18,7 +18,7 @@ class Printer extends shine.OpenCL.AST.Printer {
     case _ => super.printStmt(s)
   }
 
-  override def toString(e: ArithExpr): String = e match {
+  override def printArithExpr(e: ArithExpr, parenthesize: Boolean): String = e match {
     case of: BuiltInFunctionCall =>
       of.name match {
         case "get_num_groups" => s"gridDim.${(of.param + 'x').toChar}"
@@ -27,7 +27,7 @@ class Printer extends shine.OpenCL.AST.Printer {
         case "get_group_id" => s"blockIdx.${(of.param + 'x').toChar}"
       }
 
-    case _ => super.toString(e)
+    case _ => super.printArithExpr(e, parenthesize)
   }
 
   override def printKernelDecl(k: KernelDecl): Unit = {
