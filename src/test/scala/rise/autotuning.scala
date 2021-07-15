@@ -10,7 +10,6 @@ import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.openCL.DSL._
 import apps.separableConvolution2D.weightsSeqVecUnroll
-import com.sun.tools.classfile.Dependencies
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
 
