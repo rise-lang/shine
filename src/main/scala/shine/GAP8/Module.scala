@@ -19,7 +19,10 @@ object Module {
   def compose(ms: Seq[Module]): Module = ms.reduce(_ compose _)
 
   def translateToString(m: Module): String = {
-    val accFunctions = m.acceleratorFunctions.map(C.Module.translateToString)
+    val accFunctions = m.acceleratorFunctions
+      .map(injectUnpacking)
+      .map(C.Module.translateToString)
+
     val hostCode = C.Module.translateToString(m.hostCode)
 
     s"""
@@ -30,12 +33,27 @@ object Module {
        |""".stripMargin
   }
 
-  /**
-    * Transforms C.Module to GAP8.Module by adding necessary declarations, structure unpacking code, and changing
-    * interface of the generated function to conform with the GAP8 low-level accelerator function interface.
-    * */
   def fromCModule(cmodule: C.Module): Module = {
+    Module(
+      C.Module(Seq(), Seq(), Seq()),
+      Seq(cmodule)
+    )
+  }
 
+  /**
+    * Injects necessary declarations and structure unpacking code. Changes interface of the generated function
+    * to conform with the GAP8 low-level accelerator function interface
+    * */
+  def injectUnpacking(cmodule: C.Module): C.Module = {
+    val unpacked = generateUnpackingCode(cmodule)
+
+    cmodule.copy(
+      decls = unpacked._1,
+      functions = unpacked._2
+    )
+  }
+
+  private def generateUnpackingCode(cmodule: C.Module): (Seq[C.AST.Decl], Seq[C.AST.Function]) = {
     val accFunction = cmodule
       .functions
       .find(_.name.equalsIgnoreCase(clusterFunctionName))
@@ -86,17 +104,8 @@ object Module {
         Seq(ParamKind(DPIA.Types.OpaqueType("void*"), C.AST.ParamKind.Kind.input))
     )
 
-    /**
-      * TODO: Add support for adding the appropriate host code for the GAP8 platform. This wraps only one accelerator
-      * function in GAP8.Module, host code being an empty C.Module for now.
-      * */
-    Module(
-      C.Module(Seq(), Seq(), Seq()),
-      Seq(cmodule.copy(
-        decls = cmodule.decls ++ Seq(structDecl),
-        functions = cmodule.functions.filterNot(_.name.equalsIgnoreCase(clusterFunctionName)) ++ Seq(wrappedFunction)
-      ))
-    )
+    val otherFunctions = cmodule.functions.filterNot(_.name.equalsIgnoreCase(clusterFunctionName))
 
+    (cmodule.decls ++ Seq(structDecl), otherFunctions ++ Seq(wrappedFunction))
   }
 }
