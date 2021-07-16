@@ -7,7 +7,7 @@ class NatIdentifier(
     override val name: String,
     override val range: Range,
     override val isExplicit: Boolean,
-    val isTuningParam: Boolean
+    override val isTuningParam: Boolean
 ) extends NamedVar(name, range)
     with types.Kind.Identifier
     with types.Kind.Explicitness {

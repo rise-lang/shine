@@ -130,16 +130,51 @@ object KernelExecutor {
             val errorMessage = "Cannot run kernel:\n" ++ problems.reduce(_ ++ _)
             throw new Exception(errorMessage)
         }
+//
+//        val runtime = Executor.execute(kernelJNI,
+//          ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
+//          ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
+//          ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
+//          ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
+//          ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
+//          ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
+//          kernelArgs.toArray
+//        )
+//
 
-        val runtime = Executor.execute(kernelJNI,
+        val iterations = 100
+//
+//        val runtime = Executor.evaluate(kernelJNI,
+//          ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
+//          ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
+//          ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
+//          ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
+//          ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
+//          ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
+//          kernelArgs.toArray,
+//          iterations,
+//          10000
+//        )
+
+        val runtimes = Executor.benchmark(kernelJNI,
           ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
           ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
           ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
           ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
           ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
           ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
-          kernelArgs.toArray
+          kernelArgs.toArray,
+          iterations,
+          1000
         )
+
+//        println("runtimes: \n")
+//        runtimes.foreach(elem => {
+//          println(elem)
+//        })
+
+        val runtime  = runtimes.sorted.apply(runtimes.length/2)
+//        println("\nruntime: " + runtime)
 
         val output = castToOutputType[F#R](outputParam._2.typ, outputArg)
 
