@@ -141,7 +141,7 @@ class kmeansTuning extends test_util.Tests {
   }
 
 
-  test("search nn"){
+  test("search kmeans"){
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
