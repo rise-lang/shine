@@ -55,7 +55,7 @@ class codegen extends test_util.Tests {
 
     val hostedModule = util.gen.gap8.hosted.fromExpr(expr)
     val code = GAP8.Module.translateToString(hostedModule)
-
+    
     findDeviceBufferSync(2, code)
     checkCoreNumber(4, code)
     findParamsStruct("int32_t*", 2, code)

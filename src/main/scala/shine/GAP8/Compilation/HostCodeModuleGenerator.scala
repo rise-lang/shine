@@ -80,6 +80,7 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
                 ParamKind.output(outParam) +: funDef.params.map(ParamKind.input)
           ),
           selfInitRunFunction(gen, funDef, outParam),
+          generateKickoffFunc("__main")
         )
       )
   }
@@ -187,6 +188,7 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
       .map(_._1.asInstanceOf[Identifier[_ <: BasePhraseType]]).getOrElse(p)
     )
 
+  //TODO: Utilize
   def generateClusterEntryPoint(entryPointName: String, taskFunction: String): C.AST.Function = {
     C.AST.Function(
       code = C.AST.FunDecl(
@@ -219,13 +221,9 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
         returnType = C.AST.Type.int,
         params = Seq(
           C.AST.ParamDecl("argc", C.AST.Type.int),
-          C.AST.ParamDecl("argv", C.AST.PointerType(C.AST.Type.char))
+          C.AST.ParamDecl("argv", C.AST.PointerType(C.AST.PointerType(C.AST.Type.char)))
         ),
         body = C.AST.Block(Seq(
-          C.AST.ExprStmt(C.AST.FunCall(
-            C.AST.DeclRef("printf"),
-            Seq(C.AST.Literal(s"\n\n\t *** ${entryPointName} ***\n\n"))
-          )),
           C.AST.Return(
             C.AST.FunCall(
               C.AST.DeclRef("pmsis_kickoff"),
@@ -243,14 +241,5 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
         ParamKind(DPIA.Types.OpaqueType("char*"), C.AST.ParamKind.Kind.input)
       )
     )
-  }
-
-  /**
-    * struct cluster_params cl_params;
-    * cl_params.e621 = b1;
-    * cl_params.output = b0;
-    * */
-  def generatePackingCode(structName: String, params: Seq[ParamDecl]): Seq[C.AST.Stmt] = {
-    ???
   }
 }
