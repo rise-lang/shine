@@ -16,7 +16,9 @@ object SyntaxChecker {
   @throws[SyntaxChecker.Exception]("if code doesn't pass the syntax check")
   def apply(code: String, extension: String = ".c", options: String = defaultOptions): Unit = {
     try {
-      val f = writeToTempFile("code-", extension, code)
+      val f = writeToTempFile("code-", extension,
+      // define loadKernel for syntax checking
+      """#define loadKernel(ctx, k) loadKernelFromFile(ctx, "", "")""" + '\n' + code)
       s"clang -fsyntax-only $options ${f.getAbsolutePath}" !!
     } catch {
       case _: Throwable =>
@@ -30,13 +32,6 @@ object SyntaxChecker {
 
   @throws[SyntaxChecker.Exception]("if code doesn't pass the OpenCL syntax check")
   def checkOpenCL(code: String): Unit = {
-    // define loadKernel for syntax checking
-    val withLoadKernel = """#define loadKernel(ctx, k) loadKernelFromFile(ctx, "", "")""" + '\n' + code
-      apply(withLoadKernel, ".cl", "-Xclang -finclude-default-header -cl-std=CL1.2")
-  }
-
-  @throws[SyntaxChecker.Exception]
-  def checkGap8(code: String): Unit = {
-    apply(code, ".c", "")
+    apply(code, ".cl", "-Xclang -finclude-default-header -cl-std=CL1.2")
   }
 }
