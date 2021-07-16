@@ -9,6 +9,7 @@ import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.Rise
 import shine.GAP8
+import util.{ExecuteOpenCL, SyntaxChecker}
 
 class codegen extends test_util.Tests {
 
@@ -55,11 +56,10 @@ class codegen extends test_util.Tests {
     val hostedModule = util.gen.gap8.hosted.fromExpr(expr)
     val code = GAP8.Module.translateToString(hostedModule)
 
-    println(code)
-
     findDeviceBufferSync(2, code)
     checkCoreNumber(4, code)
     findParamsStruct("int32_t*", 2, code)
+    //SyntaxChecker(code)
   }
 
   test("Variable size") {
@@ -74,8 +74,6 @@ class codegen extends test_util.Tests {
     checkCoreNumber(8, code)
     findParamsStruct("int32_t*", 2, code)
     findParamsStruct("int", 1, code)
-
-    println(code)
   }
 
   test("Matmul") {
@@ -99,7 +97,7 @@ class codegen extends test_util.Tests {
     findParamsStruct("float*", 3, code)
     findParamsStruct("int", 3, code)
 
-    println(code)
+    //println(code)
   }
 
   test("Sobel filter on GAP8") {
@@ -124,13 +122,11 @@ class codegen extends test_util.Tests {
     val hostedModule = util.gen.gap8.hosted.fromExpr(expr)
     val code = GAP8.Module.translateToString(hostedModule)
 
-    //println(code)
 
     findDeviceBufferSync(4, code)
     checkCoreNumber(8, code)
     findParamsStruct("uint8_t*", 2, code)
     findParamsStruct("int", 2, code)
     findParamsStruct("int*", 2, code)
-
   }
 }

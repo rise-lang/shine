@@ -1,8 +1,6 @@
 package shine.GAP8
 
-import apps.SobelFilter
-
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
 import scala.language.postfixOps
 import scala.sys.process._
 
@@ -73,6 +71,8 @@ case class Executor(gapSdkPath: String, target: ExecutionTarget, OS: TargetOpera
 }
 
 object Executor {
+  val gapLibPath = "libs/gap_lib"
+
   def apply(sdkPath: String) = new Executor(sdkPath, Gvsoc, FreeRTOS, Host)
   def apply(sdkPath: String, target: ExecutionTarget, OS: TargetOperatingSystem, IO: InputOutput) =
     new Executor(sdkPath, target, OS, IO)
