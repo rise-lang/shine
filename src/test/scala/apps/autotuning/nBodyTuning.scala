@@ -1,8 +1,8 @@
 package apps.autotuning
 
-import apps.nbody.{nbodyNVIDIDAWithParams}
+import apps.nbody._
 import rise.autotune
-import rise.autotune.{HostCode, Timeouts, Tuner, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core._
 import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
@@ -12,14 +12,14 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 class nBodyTuning extends test_util.Tests {
 
-  val nbodyNoTuning = nbodyNVIDIDAWithParams(256, 1)
+  val nbodyNoTuning = nbodyNVIDIAWithParams(256, 1)
 
   // could not solve constraints
   val nbodyTuning:ToBeTyped[Expr] =
     tuningParam("n", (n: Nat) =>
       tuningParam("tileX", (tileX: Nat) =>
         tuningParam("tileY", (tileY: Nat) =>
-          nbodyNVIDIDAWithParams(n, tileX, tileY)
+          nbodyNVIDIAWithParams(n, tileX, tileY)
         )))
 
   val nbody:Expr =
@@ -81,7 +81,8 @@ class nBodyTuning extends test_util.Tests {
       hostCode = HostCode(init(512), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100
+      speedupFactor = 100,
+      execution = Median,
     )
 
     println("result: " + result)
@@ -109,7 +110,8 @@ class nBodyTuning extends test_util.Tests {
       hostCode = HostCode(init(512), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100
+      speedupFactor = 100,
+      execution = Median
     )
 
     println("result: " + result)
@@ -140,7 +142,8 @@ class nBodyTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = Some("/home/jo/development/rise-lang/shine/autotuning/config/nbody_1024.json"),
-      true
+      hierarchicalHM = true,
+      execution = Median
     )
 
     val tuningResult = autotune.search(tuner)(nbody)

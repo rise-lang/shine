@@ -1,7 +1,7 @@
 package apps.autotuning
 
 import rise.autotune
-import rise.autotune.{HostCode, Timeouts, Tuner, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
@@ -84,7 +84,8 @@ class nnTuning extends test_util.Tests {
       hostCode = HostCode(init(1024), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100
+      speedupFactor = 100,
+      execution = Median
     )
 
     println("result: " + result)
@@ -117,7 +118,8 @@ class nnTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile =Some("/home/jo/development/rise-lang/shine/autotuning/config/nn_1024.json"),
-      true
+      hierarchicalHM = true,
+      execution = Median
     )
 
     val tuningResult = autotune.search(tuner)(nn)

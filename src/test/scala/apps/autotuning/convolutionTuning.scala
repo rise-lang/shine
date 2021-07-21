@@ -5,7 +5,7 @@ import rise.core.DSL.Type._
 import HighLevelConstructs._
 import apps.separableConvolution2D
 import rise.autotune
-import rise.autotune.{HostCode, Timeouts, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Timeouts, tuningParam, wrapOclRun}
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
@@ -162,7 +162,8 @@ class convolutionTuning extends test_util.Tests {
         hostCode = HostCode(init(N), compute, finish),
         timeouts = Timeouts(5000, 5000, 5000),
         executionIterations = 10,
-        speedupFactor = 100
+        speedupFactor = 100,
+        execution = Median
       )
 
       println("result: " + result)
@@ -191,7 +192,8 @@ class convolutionTuning extends test_util.Tests {
       hostCode = HostCode(init(N), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100
+      speedupFactor = 100,
+      execution = Median
     )
 
     println("result: " + result)

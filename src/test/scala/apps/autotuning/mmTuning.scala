@@ -74,58 +74,60 @@ class mmTuning extends test_util.Tests {
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
           wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
-
-    val params0 = Map(
-      TuningParameter("n") -> (1024: Nat),
-      TuningParameter("m") -> (1024: Nat),
-      TuningParameter("o") -> (1024: Nat),
-      TuningParameter("ls0") -> (16: Nat),
-      TuningParameter("ls1") -> (16: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (256: Nat),
-      TuningParameter("v3") -> (4: Nat),
-      TuningParameter("v4") -> (1: Nat),
-      TuningParameter("v5") -> (4: Nat),
-      TuningParameter("v6") -> (64: Nat),
-      TuningParameter("v7") -> (256: Nat),
-      TuningParameter("v8") -> (32: Nat)
-    )
-
-    val mm0 = rise.core.substitute.natsInExpr(params0, mm)
-    val result0 = autotune.execution.execute(
-      expression = mm0,
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 100,
-      speedupFactor = 100
-    )
-    println("result0: " + result0.runtime)
-
-    val params1 = Map(
-      TuningParameter("n") -> (1024: Nat),
-      TuningParameter("m") -> (1024: Nat),
-      TuningParameter("o") -> (1024: Nat),
-      TuningParameter("ls0") -> (4: Nat),
-      TuningParameter("ls1") -> (32: Nat),
-      TuningParameter("gs0") -> (128: Nat),
-      TuningParameter("gs1") -> (64: Nat),
-      TuningParameter("v3") -> (4: Nat),
-      TuningParameter("v4") -> (1: Nat),
-      TuningParameter("v5") -> (32: Nat),
-      TuningParameter("v6") -> (128: Nat),
-      TuningParameter("v7") -> (8: Nat),
-      TuningParameter("v8") -> (128: Nat)
-    )
-
-    val mm1 = rise.core.substitute.natsInExpr(params1, mm)
-    val result1 = autotune.execution.execute(
-      expression = mm1,
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 10,
-      speedupFactor = 100
-    )
-    println("result1: " + result1.runtime)
+//
+//    val params0 = Map(
+//      TuningParameter("n") -> (1024: Nat),
+//      TuningParameter("m") -> (1024: Nat),
+//      TuningParameter("o") -> (1024: Nat),
+//      TuningParameter("ls0") -> (16: Nat),
+//      TuningParameter("ls1") -> (16: Nat),
+//      TuningParameter("gs0") -> (1024: Nat),
+//      TuningParameter("gs1") -> (256: Nat),
+//      TuningParameter("v3") -> (4: Nat),
+//      TuningParameter("v4") -> (1: Nat),
+//      TuningParameter("v5") -> (4: Nat),
+//      TuningParameter("v6") -> (64: Nat),
+//      TuningParameter("v7") -> (256: Nat),
+//      TuningParameter("v8") -> (32: Nat)
+//    )
+//
+//    val mm0 = rise.core.substitute.natsInExpr(params0, mm)
+//    val result0 = autotune.execution.execute(
+//      expression = mm0,
+//      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+//      timeouts = Timeouts(5000, 5000, 5000),
+//      executionIterations = 100,
+//      speedupFactor = 100,
+//      execution = Median
+//    )
+//    println("result0: " + result0.runtime)
+//
+//    val params1 = Map(
+//      TuningParameter("n") -> (1024: Nat),
+//      TuningParameter("m") -> (1024: Nat),
+//      TuningParameter("o") -> (1024: Nat),
+//      TuningParameter("ls0") -> (4: Nat),
+//      TuningParameter("ls1") -> (32: Nat),
+//      TuningParameter("gs0") -> (128: Nat),
+//      TuningParameter("gs1") -> (64: Nat),
+//      TuningParameter("v3") -> (4: Nat),
+//      TuningParameter("v4") -> (1: Nat),
+//      TuningParameter("v5") -> (32: Nat),
+//      TuningParameter("v6") -> (128: Nat),
+//      TuningParameter("v7") -> (8: Nat),
+//      TuningParameter("v8") -> (128: Nat)
+//    )
+//
+//    val mm1 = rise.core.substitute.natsInExpr(params1, mm)
+//    val result1 = autotune.execution.execute(
+//      expression = mm1,
+//      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+//      timeouts = Timeouts(5000, 5000, 5000),
+//      executionIterations = 10,
+//      speedupFactor = 100,
+//      execution = Median
+//    )
+//    println("result1: " + result1.runtime)
 
     val params2 = Map(
       TuningParameter("n") -> (1024: Nat),
@@ -148,8 +150,9 @@ class mmTuning extends test_util.Tests {
       expression = mm2,
       hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 10,
-      speedupFactor = 100
+      executionIterations = 100,
+      speedupFactor = 100,
+      execution = Minimum
     )
     println("result2: " + result2.runtime)
   }

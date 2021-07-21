@@ -28,6 +28,7 @@ package object autotune {
                    executionIterations: Int = 10,
                    speedupFactor: Double = 100,
                    configFile: Option[String] = None,
+                   execution: RuntimeStyle = Median,
                    hierarchicalHM: Boolean = false)
 
   case class Sample(parameters: Map[NatIdentifier, Nat],
@@ -95,7 +96,8 @@ package object autotune {
             tuner.hostCode,
             tuner.timeouts,
             tuner.executionIterations,
-            tuner.speedupFactor
+            tuner.speedupFactor,
+            tuner.execution
           )
           val roundTripTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - roundTripStart).toDouble))
           Sample(

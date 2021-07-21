@@ -9,7 +9,7 @@ import rise.core.primitives._
 import Type._
 import HighLevelConstructs.reorderWithStride
 import rise.autotune
-import rise.autotune.{HostCode, Timeouts, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Timeouts, tuningParam, wrapOclRun}
 import util.{SyntaxChecker, gen}
 import rise.elevate.rules.traversal.default._
 import rise.openCL.DSL.{mapLocal, mapWorkGroup, toLocalFun}
@@ -178,7 +178,8 @@ class asumTuning extends test_util.Tests {
       hostCode = HostCode(init(8192), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100
+      speedupFactor = 100,
+      execution = Median
     )
 
     println("result: " + result)

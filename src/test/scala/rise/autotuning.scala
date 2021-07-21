@@ -455,7 +455,8 @@ class autotuning extends test_util.Tests {
       hostCode = HostCode(init(32), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100)
+      speedupFactor = 100,
+      execution = Median)
 
 //     check if result has valid runtime
     assert(result.runtime.isDefined)
@@ -511,7 +512,8 @@ class autotuning extends test_util.Tests {
       hostCode = HostCode(init(1024), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100)
+      speedupFactor = 100,
+      execution = Minimum)
 
     // check if result has valid runtime
     assert(result.runtime.isDefined)
@@ -674,7 +676,8 @@ class autotuning extends test_util.Tests {
       HostCode(init(1024), compute, finish),
       Timeouts(5000, 5000, 5000),
       10,
-      100
+      100,
+      execution = Median
     )
 
     print("result: " + result)

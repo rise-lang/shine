@@ -2,7 +2,7 @@ package apps.autotuning
 
 import apps.mriQ.{computePhiMagOcl, computeQOcl}
 import rise.autotune
-import rise.autotune.{HostCode, Timeouts, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Timeouts, tuningParam, wrapOclRun}
 import rise.core.Expr
 import rise.core.types.{Nat, TuningParameter}
 import shine.OpenCL.{GlobalSize, LocalSize}
@@ -148,7 +148,8 @@ class mriqTuning extends test_util.Tests {
       hostCode = HostCode(initPhiMag(256), computePhiMag, finishPhiMag),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100
+      speedupFactor = 100,
+        execution = Median
     )
 
     println("result: " + result)
@@ -173,7 +174,8 @@ class mriqTuning extends test_util.Tests {
       hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
-      speedupFactor = 100
+      speedupFactor = 100,
+        execution = Median
     )
 
     println("result: " + result)

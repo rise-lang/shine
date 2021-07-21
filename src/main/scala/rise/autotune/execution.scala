@@ -8,12 +8,17 @@ import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.sys.process._
 
+sealed trait RuntimeStyle
+case object Median extends RuntimeStyle
+case object Minimum extends RuntimeStyle
+
 case class ExecutionResult(runtime: Option[TimeSpan[Time.ms]],
                            error: AutoTuningError,
                            codegenTime: Option[TimeSpan[Time.ms]],
                            compilationTime: Option[TimeSpan[Time.ms]],
                            executionTime: Option[TimeSpan[Time.ms]],
                           )
+
 object execution {
   var best:Option[Double] = None
 
@@ -28,7 +33,8 @@ object execution {
               hostCode: HostCode,
               timeouts: Timeouts,
               executionIterations: Int,
-              speedupFactor: Double)
+              speedupFactor: Double,
+              execution: RuntimeStyle)
   : ExecutionResult = {
 
     val codegenStart = System.currentTimeMillis()
@@ -72,7 +78,8 @@ object execution {
           timeouts.compilationTimeout,
           timeouts.executionTimeout,
           executionIterations,
-          speedupFactor
+          speedupFactor,
+          execution
         )
 
         ExecutionResult(result._1, result._2, Some(codegenTime), result._3, result._4)
@@ -95,7 +102,8 @@ object execution {
                          compilationTimeout: Long,
                          executionTimeout: Long,
                          executionIterations: Int,
-                         speedupFactor: Double)
+                         speedupFactor: Double,
+                         execution: RuntimeStyle)
   : (Option[TimeSpan[Time.ms]],
     AutoTuningError,
     Option[TimeSpan[Time.ms]],
@@ -142,10 +150,13 @@ object execution {
           val result = (s"timeout ${(executionTimeout*executionIterations).toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin $executionIterations" !!(logger))
           val runtimes = getRuntimeFromClap(result)
 
-          // get median
-          executionIterations match {
-            case 1 => runtimes.sorted.apply(0)
-            case _ => runtimes.sorted.apply(executionIterations/2)
+          execution match {
+            case Median =>
+              executionIterations match {
+                case 1 => runtimes.apply(0)
+                case _ => runtimes.sorted.apply(executionIterations/2)
+              }
+            case Minimum => runtimes.min
           }
         }
         case false => runtimes(0)
