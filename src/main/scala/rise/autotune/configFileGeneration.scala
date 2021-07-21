@@ -220,81 +220,32 @@ object configFileGeneration {
     constraints.foreach(constraint => {
       val parametersInConstraint = getParametersFromConstraint(parameters, constraint)
 
-      // check if constraint is type of range
-      constraint match {
-        case RangeConstraint(n, r) => {
-          // order this constraint to n
-          val candidates = parametersInConstraint.filter(param => param.name.equals(n.toString))
+      // iterate over candidates
+      //  true: next candidate
+      //  false: add constraint and other parameters to candidate parameter
+      // we do not stop if candidate is found!
+      parametersInConstraint.foreach(candidate => {
 
-          candidates.size match {
-            case 0 => {
-              // we do not stop if candidate is found!
-              parametersInConstraint.foreach(candidate => {
-
-                // check if pointer occurs in other parameters' dependencies  (avoid cycles)
-                parametersWDC.filter(
-                  paramWDC => !(paramWDC._1.name.equals(candidate.name))
-                ).exists(paramWDC => {
-                  paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
-                }) match {
-                  case false => {
-                    // use this candidate
-                    // add candidate to output map
-                    val elem = parametersWDC(candidate)
-                    parametersWDC(candidate) = (
-                      elem._1 + constraint,
-                      elem._2 ++ parametersInConstraint.filter(
-                        param => !(param.name.equals(candidate.name))
-                      )
-                    )
-                  }
-                  case true => // use next candidate
-                }
-              })
-            }
-            case _ => {
-              val candidate = candidates.last
-
-              val elem = parametersWDC(candidate)
-              parametersWDC(candidate) = (
-                elem._1 + constraint,
-                elem._2 ++ parametersInConstraint.filter(
-                  param => !(param.name.equals(candidate.name))
-                )
+        // check if pointer occurs in other parameters' dependencies  (avoid cycles)
+        parametersWDC.filter(
+          paramWDC => !(paramWDC._1.name.equals(candidate.name)))
+          .exists(paramWDC => {
+            paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
+          }) match {
+          case false => {
+            // use this candidate
+            // add candidate to output map
+            val elem = parametersWDC(candidate)
+            parametersWDC(candidate) = (
+              elem._1 + constraint,
+              elem._2 ++ parametersInConstraint.filter(
+                param => !(param.name.equals(candidate.name))
               )
-              // should go to n
-            }
+            )
           }
+          case true => // use next candidate
         }
-        case _ => {
-          // iterate over candidates
-          //  true: next candidate
-          //  false: add constraint and other parameters to candidate parameter
-          // we do not stop if candidate is found!
-          parametersInConstraint.foreach(candidate => {
-
-            // check if pointer occurs in other parameters' dependencies  (avoid cycles)
-            parametersWDC.filter(
-              paramWDC => !(paramWDC._1.name.equals(candidate.name)))
-              .exists(paramWDC => {
-                paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
-              }) match {
-              case false => {
-                // use this candidate
-                // add candidate to output map
-                val elem = parametersWDC(candidate)
-                parametersWDC(candidate) = (
-                  elem._1 + constraint,
-                  elem._2 ++ parametersInConstraint.filter(
-                    param => !(param.name.equals(candidate.name))
-                  )
-                )
-              }
-              case true => // use next candidate
-            }
-          })
-        }
-      }
+      })
     })
     parametersWDC.toMap
   }

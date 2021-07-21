@@ -123,6 +123,37 @@ class autotuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
+
+  // function to check cycle in parameter dependencies
+  def check_no_cycle(distribution: Map[NatIdentifier,
+    (Set[constraints.Constraint], Set[NatIdentifier])]
+                    ): Boolean = {
+
+    def check_no_cycle_rec(param: NatIdentifier,
+                           dependencies: Set[NatIdentifier],
+                           distribution: Map[NatIdentifier,
+                             (Set[constraints.Constraint], Set[NatIdentifier])]
+                          ): Boolean = {
+      dependencies.size match {
+        case 0 => true
+        case _ => {
+          dependencies.exists(dependency => dependency.name.equals(param.name)) match {
+            case true => false
+            case false => {
+              dependencies.exists(dependency => {
+                check_no_cycle_rec(param, distribution.apply(dependency)._2, distribution)
+              })
+            }
+          }
+        }
+      }
+    }
+
+    distribution.exists(param => {
+      check_no_cycle_rec(param._1, param._2._2, distribution)
+    })
+  }
+
   test("collect parameters") {
     val params = autotune.constraints.collectParameters(convolutionOclGsLsWrap)
     assert(params.find(IsTuningParameter("vec")).get.range == RangeAdd(1, 32, 1))
@@ -419,26 +450,49 @@ class autotuning extends test_util.Tests {
     autotune.saveSamples("autotuning/RISE.csv", tuningResult)
   }
 
-  // only important for automatic json generation for hm constraints support
-  ignore("distribute constraints") {
+  test("distribute constraints") {
     val e: Expr = convolutionOclGsLs(1024)
-    val tuner = Tuner(HostCode(init(1024), compute, finish), samples = 10)
     val params = autotune.constraints.collectParameters(e)
     val constraints = autotune.constraints.collectConstraints(e, params)
 
     val distribution = autotune.configFileGeneration.distributeConstraints(params, constraints)
 
-    println("output: \n")
-    distribution.foreach(elem => {
-      println("elem: " + elem._1)
-      println("dependencies: " + elem._2._2)
-      println("constraints: " + elem._2._1)
-      println()
-    })
+    assert(check_no_cycle(distribution))
+  }
 
-    println("\nnow generate json")
-    val json = autotune.configFileGeneration.generateJSON(params, constraints, tuner)
-    println("json: \n" + json)
+  test("test cycle checker"){
+
+    val emptyConstraints = Set.empty[constraints.Constraint]
+
+    val A = NatIdentifier("A")
+    val B = NatIdentifier("B")
+    val C = NatIdentifier("C")
+
+    // create example with no cycle
+    val distributionNoCycle = scala.collection.mutable.Map[NatIdentifier,
+      (Set[constraints.Constraint], Set[NatIdentifier])]()
+    val dependenciesNoCycleA = Set(B)
+    val dependenciesNoCycleB = Set.empty[NatIdentifier]
+    val dependenciesNoCycleC = Set(C)
+
+    distributionNoCycle(A) = (emptyConstraints, dependenciesNoCycleA)
+    distributionNoCycle(B) = (emptyConstraints, dependenciesNoCycleB)
+    distributionNoCycle(C) = (emptyConstraints, dependenciesNoCycleC)
+
+    assert(check_no_cycle(distributionNoCycle.toMap))
+
+    // create example with cycle
+    val distributionCycle = scala.collection.mutable.Map[NatIdentifier,
+      (Set[constraints.Constraint], Set[NatIdentifier])]()
+    val dependenciesCycleA = Set(B)
+    val dependenciesCycleB = Set(C)
+    val dependenciesCycleC = Set(A)
+
+    distributionCycle(A) = (emptyConstraints, dependenciesCycleA)
+    distributionCycle(B) = (emptyConstraints, dependenciesCycleB)
+    distributionCycle(C) = (emptyConstraints, dependenciesCycleC)
+
+    assert(!check_no_cycle(distributionCycle.toMap))
   }
 
   test("execute convolution") {
