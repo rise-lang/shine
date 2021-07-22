@@ -1,7 +1,7 @@
 package rise
 
 import apps.mm.mmNVIDIAWithParams
-import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, RangeUnknown}
+import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeConst, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
 import rise.core.primitives.{let => _, _}
@@ -207,14 +207,14 @@ class autotuning extends test_util.Tests {
   }
 
   val mmKernel: ToBeTyped[Expr] =
-    tuningParam("v3", (v3: Nat) =>
-      tuningParam("v4", (v4: Nat) =>
-        tuningParam("v5", (v5: Nat) =>
-          tuningParam("v6", (v6: Nat) =>
-            tuningParam("v7", (v7: Nat) =>
-              tuningParam("v8", (v8: Nat) =>
-                mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
-              ))))))
+          tuningParam("v3", RangeAdd(1,1024,1), (v3: Nat) =>
+            tuningParam("v4", RangeAdd(1,1024,1), (v4: Nat) =>
+              tuningParam("v5", RangeAdd(1,1024,1), (v5: Nat) =>
+                tuningParam("v6", RangeAdd(1,1024,1), (v6: Nat) =>
+                  tuningParam("v7", RangeAdd(1,1024,1), (v7: Nat) =>
+                    tuningParam("v8", RangeAdd(1,1024,1), (v8: Nat) =>
+                      mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
+                    ))))))
 
   test("mm kernel constraints") {
     val e: Expr =
@@ -223,9 +223,7 @@ class autotuning extends test_util.Tests {
           wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
         ))))
     val (nIdent, mIdent, oIdent) = e match {
-      case DepLambda(NatKind,
-      n: NatIdentifier,
-      DepLambda(NatKind, m: NatIdentifier, DepLambda(NatKind, o: NatIdentifier, _))) =>
+      case DepLambda(NatKind, n: NatIdentifier, DepLambda(NatKind, m: NatIdentifier, DepLambda(NatKind, o: NatIdentifier, _))) =>
         (n, m, o)
       case _ => ???
     }
@@ -340,6 +338,76 @@ class autotuning extends test_util.Tests {
         }
       }
     }
+  }
+
+  test("generateJSON3"){
+    val e:Expr = mmKernel
+
+    val (nIdent, mIdent, oIdent) = e match {
+      case DepLambda(NatKind, n: NatIdentifier, DepLambda(NatKind, m: NatIdentifier, DepLambda(NatKind, o: NatIdentifier, _))) => (n, m, o)
+      case _ => ???
+    }
+
+    // make this generic?
+
+    println("nIdent: " + nIdent)
+    println("mIdent: " + mIdent)
+    println("oIdent: " + oIdent)
+
+    val m:Nat = 1024
+    val n:Nat = 1024
+    val o:Nat = 1024
+
+    val map = Map(nIdent -> n, mIdent -> m, oIdent -> o)
+
+    val e2 = substitute.natsInExpr(map, e)
+
+    println("e2: " + e2)
+
+//    val e: Expr = mmKernel
+    val parameters = autotune.constraints.collectParameters(mmKernel)
+    val constraints = autotune.constraints.collectConstraints(mmKernel, parameters)
+
+    println("parameters")
+    parameters.foreach(println)
+
+    println("\nconstraints")
+    constraints.foreach(println)
+    println()
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(32), compute, finish),
+      samples = 100,
+      name = "RISE",
+      output = "autotuning",
+      timeouts =Timeouts(5000, 5000, 5000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None,
+      hierarchicalHM = true
+    )
+    val json = autotune.configFileGeneration.generateJSON2(parameters, constraints, tuner)
+
+    println("json: \n" + json)
+  }
+  test("generateJSON2"){
+    val parameters = autotune.constraints.collectParameters(convolutionOcl(32))
+    val constraints = autotune.constraints.collectConstraints(convolution(32), parameters)
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(32), compute, finish),
+      samples = 100,
+      name = "RISE",
+      output = "autotuning",
+      timeouts =Timeouts(5000, 5000, 5000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None,
+      hierarchicalHM = true
+    )
+    val json = autotune.configFileGeneration.generateJSON2(parameters, constraints, tuner)
+
+    println("json: \n" + json)
   }
 
   test("generateJSON") {
