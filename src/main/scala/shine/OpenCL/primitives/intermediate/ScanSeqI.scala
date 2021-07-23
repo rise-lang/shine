@@ -23,9 +23,11 @@ object ScanSeqI {
       `new`(a)(dt2, accumulator =>
         acc(init)(accumulator.wr) `;`
           `for`(n, i =>
-            f(in `@` i)(accumulator.rd)(accumulator.wr) `;`
-              //FIXME remove general assignment
-              ((out `@` i) :=| dt2 | accumulator.rd)
+            ((out `@` i) :=|dt2| accumulator.rd) `;`
+              f(in `@` i)(accumulator.rd)(accumulator.wr)
+//            `f(in `@` i)(accumulator.rd)(accumulator.wr) `;`
+//              //FIXME remove general assignment
+//              ((out `@` i) :=| dt2 | accumulator.rd)`
           )
       )
   }
