@@ -211,41 +211,57 @@ object configFileGeneration {
     // initialize output map and add parameters
     val parametersWDC = scala.collection.mutable.
       Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]()
-    parameters.foreach(param => {
+    parameters.toSeq.sortBy(_.name).foreach(param => {
       parametersWDC(param) = (Set.empty[Constraint], Set.empty[NatIdentifier])
     })
 
     // get parameters from constraint
     // check for given parameters in the given constraint
-    constraints.foreach(constraint => {
+    val test = constraints.toSeq.sortBy(_.toString)
+    constraints.toSeq.sortBy(_.toString).foreach(constraint => {
       val parametersInConstraint = getParametersFromConstraint(parameters, constraint)
 
-      // iterate over candidates
-      //  true: next candidate
-      //  false: add constraint and other parameters to candidate parameter
-      // we do not stop if candidate is found!
-      parametersInConstraint.foreach(candidate => {
-
-        // check if pointer occurs in other parameters' dependencies  (avoid cycles)
-        parametersWDC.filter(
-          paramWDC => !(paramWDC._1.name.equals(candidate.name)))
-          .exists(paramWDC => {
-            paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
-          }) match {
-          case false => {
-            // use this candidate
-            // add candidate to output map
-            val elem = parametersWDC(candidate)
-            parametersWDC(candidate) = (
-              elem._1 + constraint,
-              elem._2 ++ parametersInConstraint.filter(
-                param => !(param.name.equals(candidate.name))
-              )
-            )
-          }
-          case true => // use next candidate
+      parametersInConstraint.size match {
+        case 0 => // skip constraints without parameters
+        case 1 => {
+          // use this candidate (we only have one)
+          val candidate = parametersInConstraint.last
+          val elem = parametersWDC(candidate)
+          parametersWDC(candidate) = (
+            elem._1 + constraint,
+            elem._2 ++ parametersInConstraint.filter(
+              param => !(param.name.equals(candidate.name)))
+          )
         }
-      })
+        case _ => {
+          // iterate over candidates
+          //  true: next candidate
+          //  false: add constraint and other parameters to candidate parameter
+          // we do not stop if candidate is found!
+          var i = 0
+          parametersInConstraint.foreach(candidate => {
+            // check if pointer occurs in other parameters' dependencies  (avoid cycles)
+            parametersWDC.filter(
+              paramWDC => !(paramWDC._1.name.equals(candidate.name)))
+              .exists(paramWDC => {
+                paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
+              }) match {
+              case false => {
+                // use this candidate
+                // add candidate to output map
+                val elem = parametersWDC(candidate)
+                parametersWDC(candidate) = (
+                  elem._1 + constraint,
+                  elem._2 ++ parametersInConstraint.filter(
+                    param => !(param.name.equals(candidate.name))
+                  )
+                )
+              }
+              case true => // use next candidate
+            }
+          })
+        }
+      }
     })
     parametersWDC.toMap
   }
@@ -253,7 +269,7 @@ object configFileGeneration {
   // helper function to collect occurring parameters from a constraint
   def getParametersFromConstraint(parameters: Parameters,
                                   constraint: Constraint)
-  : Set[NatIdentifier] = {
+  : Seq[NatIdentifier] = {
 
     // collect parameters as vars in constraint
     val parametersInConstraint = constraint match {
@@ -281,7 +297,7 @@ object configFileGeneration {
       })
     })
 
-    output
+    output.toSeq.sortBy(_.name)
   }
 
 }
