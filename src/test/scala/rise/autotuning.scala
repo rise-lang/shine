@@ -1,7 +1,7 @@
 package rise
 
 import apps.mm.mmNVIDIAWithParams
-import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeConst, RangeMul, RangeUnknown}
+import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
 import rise.core.primitives.{let => _, _}
@@ -12,6 +12,7 @@ import rise.openCL.DSL._
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
+import rise.autotune.configFileGeneration.distributeConstraints
 
 
 class autotuning extends test_util.Tests {
@@ -341,32 +342,28 @@ class autotuning extends test_util.Tests {
   }
 
   test("generateJSON3"){
-    val e:Expr = mmKernel
+    val e: Expr =
+      tuningParam("ls0", RangeAdd(1, 1024, 1), (ls0: Nat) =>
+        tuningParam("ls1", RangeAdd(1, 1024, 1), (ls1: Nat) =>
+          tuningParam("gs0", RangeAdd(1, 1024, 1), (gs0: Nat) =>
+            tuningParam("gs1", RangeAdd(1, 1024, 1), (gs1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
+            ))))
 
+    // todo find a generic solution?
     val (nIdent, mIdent, oIdent) = e match {
       case DepLambda(NatKind, n: NatIdentifier, DepLambda(NatKind, m: NatIdentifier, DepLambda(NatKind, o: NatIdentifier, _))) => (n, m, o)
       case _ => ???
     }
 
-    // make this generic?
-
-    println("nIdent: " + nIdent)
-    println("mIdent: " + mIdent)
-    println("oIdent: " + oIdent)
-
     val m:Nat = 1024
     val n:Nat = 1024
     val o:Nat = 1024
-
     val map = Map(nIdent -> n, mIdent -> m, oIdent -> o)
 
-    val e2 = substitute.natsInExpr(map, e)
-
-    println("e2: " + e2)
-
-//    val e: Expr = mmKernel
-    val parameters = autotune.constraints.collectParameters(mmKernel)
-    val constraints = autotune.constraints.collectConstraints(mmKernel, parameters)
+    val parameters = autotune.constraints.collectParameters(e)
+    val constraints = autotune.constraints.collectConstraints(e, parameters)
+    val constraintsSubstituted = constraints.map(constraint => constraint.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]))
 
     println("parameters")
     parameters.foreach(println)
@@ -374,6 +371,23 @@ class autotuning extends test_util.Tests {
     println("\nconstraints")
     constraints.foreach(println)
     println()
+
+    println("\nconstraints substituted")
+    constraintsSubstituted.foreach(println)
+    println()
+
+    val dc = distributeConstraints(parameters, constraintsSubstituted)
+
+    println("\nconstraints distributed")
+    var size = 0
+    dc.foreach(elem => {
+      size += elem._2._1.size
+      elem._2._1.foreach(println)
+    })
+    println()
+
+    println("size constraints: " + constraintsSubstituted.size)
+    println("size distributed: " + size)
 
     val tuner = Tuner(
       hostCode = HostCode(init(32), compute, finish),
@@ -386,10 +400,13 @@ class autotuning extends test_util.Tests {
       configFile = None,
       hierarchicalHM = true
     )
-    val json = autotune.configFileGeneration.generateJSON2(parameters, constraints, tuner)
+    val json = autotune.configFileGeneration.generateJSON2(parameters, constraintsSubstituted, tuner)
+
+    // todo check gold
 
     println("json: \n" + json)
   }
+
   test("generateJSON2"){
     val parameters = autotune.constraints.collectParameters(convolutionOcl(32))
     val constraints = autotune.constraints.collectConstraints(convolution(32), parameters)
@@ -406,6 +423,8 @@ class autotuning extends test_util.Tests {
       hierarchicalHM = true
     )
     val json = autotune.configFileGeneration.generateJSON2(parameters, constraints, tuner)
+
+    // todo check gold
 
     println("json: \n" + json)
   }

@@ -8,12 +8,19 @@ import constraints._
 
 object configFileGeneration {
 
+
   def generateJSON2(p: Parameters,
                     c: Set[Constraint],
                     tuner: Tuner)
   :String = {
 
-    val parametersWDC = distributeConstraints(p, c)
+    val parametersWDCImmutable = distributeConstraints(p, c)
+    val parametersWDC = scala.collection.mutable.Map.empty[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]
+
+    // copy elements to mutable map
+    parametersWDCImmutable.foreach(param => {
+      parametersWDC(param._1) = (param._2._1, param._2._2)
+    })
 
     // number of samples for design of experiment phase
     val doe = p.size * 10
@@ -40,24 +47,12 @@ object configFileGeneration {
          | "input_parameters" : {
          |""".stripMargin
 
-
     // create entry foreach parameter
     var parameter = ""
     parametersWDC.foreach(param => {
 
-      println("min: " + param._1.range.min)
-      println("max: " + param._1.range.max)
-      println("numVals: " + param._1.range.numVals)
-      println("digest: " + param._1.range.digest())
-
-      val values = param._1.range match {
+      val (values, constraintsFiltered) = param._1.range match {
         case RangeAdd(start, stop, step) => {
-          println("is RangeAdd")
-          println("start: " + start)
-          println("stop: " + stop)
-          println("step: " + step)
-
-          // create set
 
           // if step is not evaluable use 1 instead
           val stepWidth = step.isEvaluable match {
@@ -77,28 +72,24 @@ object configFileGeneration {
               List.range(start.evalInt, stop.evalInt + 1)
                 .filter(_ % stepWidth == 0)
           }
-          filterList(p, c, values, param._1)
+          filterList(p, param._2._1, values, param._1)
         }
         case RangeMul(start, stop, mul) => {
-          println("is RangeMul")
-          println("start: " + start)
-          println("stop: " + stop)
-          println("mul: " + mul)
 
           // if step is not evaluable use 1 instead
           val values = mul.isEvaluable match {
             case true => {
               val maxVal = scala.math.log(stop.evalInt)/scala.math.log(mul.evalDouble)
 
-                List.range(start.evalInt, maxVal.toInt+1)
-                  .map(power => scala.math.pow(mul.evalInt, power).toInt)
+              List.range(start.evalInt, maxVal.toInt+1)
+                .map(power => scala.math.pow(mul.evalInt, power).toInt)
             }
             case false =>
               List.range(start.evalInt, stop.evalInt)
           }
 
           // filtering
-          filterList(p, c, values, param._1)
+          filterList(p, param._2._1, values, param._1)
         }
 
         case _ => println("not yet implemented")
@@ -106,9 +97,11 @@ object configFileGeneration {
           println("name: " + param._1.name)
           println("range: " + param._1.range)
 
-          List.empty[Int]
+          (List.empty[Int], parametersWDC.apply(param._1)._1)
       }
 
+      // update with filtered constraints
+      parametersWDC(param._1) = (constraintsFiltered, param._2._2)
 
       // now write constraints
 
@@ -195,7 +188,16 @@ object configFileGeneration {
       parameter += parameterEntry
     })
 
-    parameter
+    // remove last comma
+    val parameterSection = parameter.dropRight(2) + "\n"
+
+    val foot =
+      """ }
+        |}
+        |""".stripMargin
+
+    val file = header + parameterSection + foot
+    file
   }
 
   def generateJSON(p: Parameters,
@@ -490,23 +492,49 @@ object configFileGeneration {
     output.toSeq.sortBy(_.name)
   }
 
-  def filterList(p: Parameters, constraints: Set[Constraint], values:List[Int], param: NatIdentifier): List[Int] = {
+  def filterList(p: Parameters, constraints: Set[Constraint], values:List[Int], param: NatIdentifier): (List[Int], Set[Constraint]) = {
+    val constraintsFiltered:scala.collection.mutable.Set[Constraint] = constraints.to(collection.mutable.Set)
 
     // check for each value if all constraints pass or are not evaluable
-    values.filter(value => {
+    val valuesFiltered = values.filter(value => {
       constraints.forall(constraint => {
         val params = getParametersFromConstraint(p, constraint)
         // if occurring parameter in constraint matches given parameter, try to evaluate this constraint
         params.size match {
           case 1 => params.last.name match {
-            case param.name => constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> value)).isSatisfied()
+            case param.name => {
+              // remove constraints from set of constraints
+              constraintsFiltered.remove(constraint)
+
+              // check constraint for this value
+              constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> value)).isSatisfied()
+            }
             case _ => true
           }
           case _ => true
         }
       })
     })
+    (valuesFiltered, constraintsFiltered.toSet)
   }
+//
+//  def filterList2(p: Parameters, constraints: Set[Constraint], values:List[Int], param: NatIdentifier): List[Int] = {
+//
+//    // check for each value if all constraints pass or are not evaluable
+//    values.filter(value => {
+//      constraints.forall(constraint => {
+//        val params = getParametersFromConstraint(p, constraint)
+//        // if occurring parameter in constraint matches given parameter, try to evaluate this constraint
+//        params.size match {
+//          case 1 => params.last.name match {
+//            case param.name => constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> value)).isSatisfied()
+//            case _ => true
+//          }
+//          case _ => true
+//        }
+//      })
+//    })
+//  }
 
 //
 //
