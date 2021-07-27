@@ -81,8 +81,14 @@ object configFileGeneration {
             case true => {
               val maxVal = scala.math.log(stop.evalInt)/scala.math.log(mul.evalDouble)
 
-              List.range(start.evalInt, maxVal.toInt+1)
-                .map(power => scala.math.pow(mul.evalInt, power).toInt)
+              start.evalInt match{
+                case 1 =>
+                  List.range(0, maxVal.toInt+1)
+                    .map(power => scala.math.pow(mul.evalInt, power).toInt)
+                case _ =>
+                  List.range(start.evalInt, maxVal.toInt+1)
+                    .map(power => scala.math.pow(mul.evalInt, power).toInt)
+              }
             }
             case false =>
               List.range(start.evalInt, stop.evalInt)
