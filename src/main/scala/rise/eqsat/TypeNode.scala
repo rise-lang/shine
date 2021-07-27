@@ -118,6 +118,7 @@ object Type {
       case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
       case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
       case rct.DepFunType(_, _, _) => ???
+      case rct.ProductType(_) => ???
       case rct.TypePlaceholder | rct.TypeIdentifier(_) =>
         throw new Exception(s"did not expect $t")
     })

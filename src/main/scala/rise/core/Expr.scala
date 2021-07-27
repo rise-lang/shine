@@ -13,20 +13,15 @@ sealed abstract class Expr {
   def =~~=(b : Expr) : Boolean = exprAlphaEq(typePartialAlphaEq).apply(this)(b)
 }
 
-final case class Identifier(name: String)(
-    override val t: Type
-) extends Expr {
+final case class Identifier(name: String)(override val t: Type) extends Expr {
   override def setType(t: Type): Identifier = this.copy(name)(t)
 }
 
-final case class Lambda(x: Identifier, e: Expr)(
-    override val t: Type
-) extends Expr {
+final case class Lambda(x: Identifier, e: Expr)(override val t: Type) extends Expr {
   override def setType(t: Type): Lambda = this.copy(x, e)(t)
 }
 
-final case class App(f: Expr, e: Expr)(override val t: Type)
-    extends Expr {
+final case class App(f: Expr, e: Expr)(override val t: Type) extends Expr {
   override def setType(t: Type): App = this.copy(f, e)(t)
 }
 
@@ -54,7 +49,8 @@ final case class Opaque(e: Expr, override val t: Type) extends Expr {
   override def setType(t: Type): TypeAnnotation =
     throw TypeException(s"cannot set the type of ${getClass}")
 }
-case class TypeAnnotation(e: Expr, annotation: Type) extends Expr {
+
+final case class TypeAnnotation(e: Expr, annotation: Type) extends Expr {
   override val t : Type = TypePlaceholder
   override def toString: String = s"$e: $annotation"
   override def setType(t: Type): TypeAnnotation =
@@ -64,7 +60,8 @@ case class TypeAnnotation(e: Expr, annotation: Type) extends Expr {
       this
     }
 }
-case class TypeAssertion(e: Expr, assertion: Type) extends Expr {
+
+final case class TypeAssertion(e: Expr, assertion: Type) extends Expr {
   override val t : Type = TypePlaceholder
   override def toString: String = s"$e !: $assertion"
   override def setType(t: Type): TypeAnnotation =

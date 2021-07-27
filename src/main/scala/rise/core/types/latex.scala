@@ -4,6 +4,8 @@ import scala.language.{implicitConversions, postfixOps}
 import rise.core.DSL.Type._
 import rise.core._
 
+import scala.util
+
 object latex {
   import builderDSL._
   // LaTeX printer
@@ -27,8 +29,10 @@ object latex {
     case TypeIdentifier(name) => name
     case FunType(inT, outT) =>
       s"${toLaTeX(inT)} \\rightarrow ${toLaTeX(outT)}"
-    case d@DepFunType(kind, x, t) =>
+    case DepFunType(kind, x, t) =>
       s"(${kindIdentifier(kind, x)}) \\rightarrow ${toLaTeX(t)}"
+    case ProductType(ts) =>
+      s"(${ts.map(toLaTeX).mkString("\\ \\times\\ ")})"
     case dt: DataType => toLaTeX(dt)
   }
 

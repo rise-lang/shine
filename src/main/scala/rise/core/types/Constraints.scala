@@ -105,6 +105,8 @@ object Constraint {
             decomposed(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb)))
           case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
             decomposed(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2)))
+          case (ProductType(dtsa), ProductType(dtsb)) =>
+            decomposed((dtsa zip dtsb).map(TypeConstraint.tupled))
           case (FunType(ina, outa), FunType(inb, outb)) =>
             decomposed(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb)))
           case (DepFunType(NatKind, na: NatIdentifier, ta), DepFunType(NatKind, nb: NatIdentifier, tb)) =>

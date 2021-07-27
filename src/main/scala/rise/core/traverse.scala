@@ -6,6 +6,9 @@ import rise.core.semantics._
 import rise.core.types.Kind.{IAddressSpace, IDataType, IFragmentKind, IMatrixLayout, INat, INatToData, INatToNat, IType}
 import rise.core.types._
 
+import scala.collection.immutable.{AbstractSeq, LinearSeq}
+import scala.xml.NodeSeq
+
 object traverse {
   sealed trait VarType
   case object Binding extends VarType
@@ -135,6 +138,13 @@ object traverse {
       case DepFunType(kind, x, t) =>
         for { n1 <- typeIdentifierDispatch(Binding)(Kind.toIdentifier(kind, x)); t1 <- `type`(t)}
           yield DepFunType(kind, Kind.fromIdentifier(kind, n1), t1)
+      case ProductType(ts) =>
+        def unroll(ts: Seq[DataType], ts1: Seq[DataType]): M[ProductType] =
+          ts match {
+            case t :: Nil => `type`(t).map(t => ProductType(ts1 :+ t))
+            case t :: rest => `type`(t).flatMap(t => unroll(rest, ts1 :+ t))
+          }
+        unroll(ts, Seq())
     }).asInstanceOf[M[T]]
 
     def expr : Expr => M[Expr] = {
@@ -171,6 +181,25 @@ object traverse {
           yield DepApp(NatToDataKind, f1, n2d1)(t1)
       case DepApp(_, _, _) =>
         ???
+//      case m@MakeProduct(es) =>
+//        if (es.size > 1) {
+//          `type`(m.t).flatMap(t => {
+//            def unroll(es: Seq[Expr], es1: Seq[Expr]): M[Expr] =
+//              es match {
+//                case e :: Nil => expr(e).map(e => MakeProduct(es1 :+ e)(t))
+//                case e :: rest => expr(e).flatMap(e => unroll(rest, es1 :+ e))
+//              }
+//
+//            unroll(es, Seq())
+//          })
+//        } else {
+//          `type`(m.t).map(MakeProduct(Seq())(_))
+//        }
+//      case l@Get(i, e) =>
+//        for {
+//          e1 <- expr(e)
+//          t1 <- `type`(l.t)
+//        } yield Get(i, e1)(t1)
       case Literal(d) =>
         for { d1 <- data(d) }
           yield Literal(d1)

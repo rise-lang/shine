@@ -6,6 +6,7 @@ import rise.core.DSL.Type.{->:, ArrayTypeConstructors, TupleTypeConstructors, `(
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
 import rise.Cuda.{primitives => rocup}
+import rise.core.types.ProductType
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
@@ -35,11 +36,11 @@ private class InferAccessAnnotation {
     ptAnnotationMap
   }
 
-  @tailrec
   private def funOutIsWrite(ePt: PhraseType): Boolean = ePt match {
     case DepFunType(_, _, t) => funOutIsWrite(t)
     case FunType(_, t) => funOutIsWrite(t)
     case expT: ExpType => expT `<=` ExpType(expT.dataType, write)
+    case PhrasePairType(t1, t2) => funOutIsWrite(t1) && funOutIsWrite(t2)
     case _ => throw error("This should never happen.")
   }
 
@@ -548,9 +549,29 @@ private class InferAccessAnnotation {
           case rt.FunType(in: rt.DataType, out) =>
             expT(dataType(in), read) ->: buildType(out)
           case n`.`dt => expT(n`.`dt, read)
-          case _ => error(s"did not expect t")
+          case _ => error(s"did not expect $t")
         }
         buildType(p.t)
+
+      case rp.makeProduct(_) =>
+        //noinspection ZeroIndexToHead
+        def buildType(t: rt.Type, ais: Seq[AccessTypeIdentifier]): PhraseType = t match {
+          case rt.FunType(in: rt.DataType, out) =>
+            val ai = accessTypeIdentifier()
+            expT(dataType(in), ai) ->: buildType(out, ais :+ ai)
+          case ProductType(ts) =>
+            assert(ts.size >= 2)
+            (ts zip ais).drop(2).foldLeft(PhrasePairType(
+              ExpType(dataType(ts(0)), ais(0)),
+              ExpType(dataType(ts(1)), ais(1))) : PhrasePairType[PhraseType, PhraseType]
+            ) {
+              case (pt, (dt, ai)) => PhrasePairType(pt, ExpType(dataType(dt), ai))
+            }
+          case _ => error(s"did not expect $t")
+        }
+        val t = buildType(p.t, Seq())
+        println(t)
+        t
 
       case rp.depMapSeq() =>
         def buildType(t: rt.Type): PhraseType = t match {
@@ -670,6 +691,11 @@ private class InferAccessAnnotation {
       case n2d: rt.NatToDataIdentifier =>
         natToDataIdentifier(n2d) ->: `type`(t)
     }
+    case rt.ProductType(dts) =>
+      assert(dts.nonEmpty)
+      dts.drop(1).foldLeft(ExpType(dataType(dts.head), accessTypeIdentifier()): PhraseType) {
+        case (pt, dt) => PhrasePairType(pt, ExpType(dataType(dt), accessTypeIdentifier()))
+      }
     case rt.TypeIdentifier(_) | rt.TypePlaceholder =>
       error()
   }
@@ -682,6 +708,14 @@ private class InferAccessAnnotation {
       if (rt.Kind.idName(kx, x) != Kind.idName(ky, y)) error(s"Identifiers $x and $y differ")
       checkConsistency(t, pt)
     case (dt: rt.DataType, ExpType(dpt: DataType, _)) =>
+    case (ProductType(dts), PhrasePairType(t1, t2)) =>
+      checkConsistency(dts.head, t1)
+      val rest = dts.drop(1)
+      if (rest.size > 1) {
+        checkConsistency(ProductType(rest), t2)
+      } else {
+        checkConsistency(rest.head, t2)
+      }
 
     case _ => error(s"Types $t and $pt not compatible")
   }

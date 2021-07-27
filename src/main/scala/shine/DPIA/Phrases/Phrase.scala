@@ -337,6 +337,8 @@ trait CommandPrimitive extends Primitive[CommType] {
   override val t: CommType = comm
 }
 
+trait ProductPrimitive extends Primitive[PhrasePairType[PhraseType, PhraseType]]
+
 object Operators {
   object Unary extends Enumeration {
     val NEG: Unary.Value = Value("-")

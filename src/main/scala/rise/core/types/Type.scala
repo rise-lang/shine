@@ -3,6 +3,7 @@ package rise.core.types
 import arithexpr.arithmetic.RangeAdd
 import rise.core._
 import rise.core.equality._
+import scala.language.implicitConversions
 
 sealed trait Type {
   def =~=(b: Type): Boolean = typeAlphaEq[Type](this)(b)
@@ -25,6 +26,10 @@ final case class FunType[T <: Type, U <: Type](inT: T, outT: U)
 final case class DepFunType[T, I, KI <: Kind.Identifier, U <: Type] (kind: Kind[T, I, KI],x: I, t: U) extends Type {
   override def toString: String =
     s"(${Kind.idName(kind, x)}: ${kind.name} -> $t)"
+}
+
+final case class ProductType(ts: Seq[DataType]) extends Type {
+  override def toString: String = s"(${ts.mkString(" x ")})"
 }
 
 // == Data types ==============================================================

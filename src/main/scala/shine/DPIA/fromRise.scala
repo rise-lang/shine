@@ -717,6 +717,21 @@ object fromRise {
         }
         buildArrayPrimitive(t, Vector())
 
+      case core.makeProduct(_) =>
+        def buildProductPrimitive(t: PhraseType,
+                                  args: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = t match {
+          case FunType(in: ExpType, out) =>
+            fun[ExpType](in, e => buildProductPrimitive(out, args :+ e))
+          case PhrasePairType(dt: ExpType, t) =>
+            val (dts, ais) = args.map(arg => arg.t match {
+              case ExpType(dt, ai) => (dt, ai)
+              case t => error(s"did not expect $t")
+            }).unzip
+            MakeProduct(args.size)(ais, dts, args)
+          case t => error(s"did not expect $t")
+        }
+        buildProductPrimitive(t, Vector())
+
       case core.iterate() => fromType {
         case nFunT(k,
           nFunT(l, expT(ArrayType(ln, t), `read`) ->:

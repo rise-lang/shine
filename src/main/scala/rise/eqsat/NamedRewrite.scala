@@ -160,6 +160,7 @@ object NamedRewrite {
         case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) =>
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
         case rct.DepFunType(_, _, _) => ???
+        case rct.ProductType(_) => ???
         case i: rct.TypeIdentifier =>
           assert(freeT(IType(i)))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
