@@ -1,5 +1,6 @@
 package shine.DPIA.primitives.intermediate
 
+import rise.core.types.DataType
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL._

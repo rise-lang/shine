@@ -1,6 +1,7 @@
 package shine.DPIA
 
 import arithexpr.arithmetic.RangeAdd
+import rise.core.types.{AccessIdentifier, AccessKind, AddressSpaceIdentifier, AddressSpaceKind, DataKind, DataType, DataTypeIdentifier, NatIdentifier, NatKind, NatToDataLambda}
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.TypeCheck._
 
@@ -50,7 +51,7 @@ package object Types {
   type AccessDependentFunctionType[T <: PhraseType] = `(acc)->:`[T]
 
   object AccessDependentFunctionType {
-    def apply[T <: PhraseType](at: AccessTypeIdentifier, t: T): `(acc)->:`[T] =
+    def apply[T <: PhraseType](at: AccessIdentifier, t: T): `(acc)->:`[T] =
       DepFunType(AccessKind, at, t)
   }
 

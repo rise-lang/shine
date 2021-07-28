@@ -1,11 +1,12 @@
 package shine.OpenCL.primitives.intermediate
 
 import arithexpr.arithmetic.ArithExpr
+import rise.core.types.{AddressSpace, DataType, PairType, read}
+import rise.core.types.DataType._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative.{CycleAcc, DropAcc, PairAcc, UnzipAcc}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Cycle, Drop, Zip}
 

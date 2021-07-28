@@ -3,8 +3,9 @@ package shine.cuda.Compilation.Passes
 import arithexpr.arithmetic.ArithExpr.Math.Min
 import shine.DPIA.DSL.{π1, π2, _}
 import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, VisitAndRebuild}
-import shine.DPIA.Types.DataType._
-import shine.DPIA.Types.{AddressSpace, AddressSpaceIdentifier, CommType, ExpType, PhraseType}
+import rise.core.types._
+import rise.core.types.DataType._
+import shine.DPIA.Types.{CommType, ExpType, PhraseType}
 import shine.DPIA.primitives.imperative.{For, ForNat}
 import shine.DPIA.{Nat, VarType, varT}
 import shine.OpenCL

@@ -3,7 +3,6 @@ package rise.core
 import util.monads._
 import arithexpr.arithmetic.NamedVar
 import rise.core.traverse._
-import rise.core.types.Kind.{IFragmentKind, IMatrixLayout, INat, INatToData}
 import rise.core.types._
 
 object IsClosedForm {
@@ -27,7 +26,8 @@ object IsClosedForm {
   case class Visitor(boundV: Set[Identifier], boundT: Set[Kind.Identifier])
     extends PureAccumulatorTraversal[(OrderedSet[Identifier], OrderedSet[Kind.Identifier])]
   {
-    override val accumulator = PairMonoid(OrderedSetMonoid, OrderedSetMonoid)
+    override val accumulator: Monoid[(OrderedSet[Identifier], OrderedSet[Kind.Identifier])] =
+      PairMonoid(OrderedSetMonoid, OrderedSetMonoid)
 
     override def identifier[I <: Identifier]: VarType => I => Pair[I] = vt => i => {
       for { t2 <- `type`(i.t);
@@ -47,7 +47,7 @@ object IsClosedForm {
 
     override def nat: Nat => Pair[Nat] = n => {
       val free = n.varList.foldLeft(OrderedSet.empty[Kind.Identifier]) {
-        case (free, v: NamedVar) if !boundT(INat(v)) => OrderedSet.add(INat(v) : Kind.Identifier)(free)
+        case (free, v: NamedVar) if !boundT(NatKind.Identifier(v)) => OrderedSet.add(NatKind.Identifier(v) : Kind.Identifier)(free)
         case (free, _) => free
       }
       accumulate((OrderedSet.empty, free))(n)
@@ -68,14 +68,14 @@ object IsClosedForm {
 
     override def natToData: NatToData => Pair[NatToData] = {
       case NatToDataLambda(x, e) =>
-        for { p <- this.copy(boundT = boundT + INat(x)).`type`(e) }
+        for { p <- this.copy(boundT = boundT + NatKind.Identifier(x)).`type`(e)}
           yield (p._1, NatToDataLambda(x, e))
       case t => super.natToData(t)
     }
 
     override def natToNat: NatToNat => Pair[NatToNat] = {
       case NatToNatLambda(x, n) =>
-        for { p <- this.copy(boundT = boundT + INat(x)).nat(n) }
+        for { p <- this.copy(boundT = boundT + NatKind.Identifier(x)).nat(n)}
           yield (p._1, NatToNatLambda(x, n))
       case n => super.natToNat(n)
     }
@@ -103,8 +103,8 @@ object IsClosedForm {
 
   // Exclude matrix layout and fragment kind identifiers, since they cannot currently be bound
   def needsClosing : Seq[Kind.Identifier] => Seq[Kind.Identifier] = _.flatMap {
-    case IMatrixLayout(i) => Seq()
-    case IFragmentKind(i) => Seq()
+    case MatrixLayoutKind.Identifier(i) => Seq()
+    case FragmentKind.Identifier(i) => Seq()
     case e => Seq(e)
   }
 

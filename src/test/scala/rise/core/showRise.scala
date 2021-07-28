@@ -93,7 +93,7 @@ class showRise extends test_util.Tests {
 
         case DepApp(_, f, x) =>
           val fs = f match {
-            case _: DepLambda[_, _, _] => lessBrackets(f, wrapped = true)
+            case _: DepLambda[_, _] => lessBrackets(f, wrapped = true)
             case _                     => lessBrackets(f)
           }
           if (wrapped) s"($fs $x)" else s"$fs $x"

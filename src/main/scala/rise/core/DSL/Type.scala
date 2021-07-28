@@ -1,7 +1,6 @@
 package rise.core.DSL
 
 import arithexpr.arithmetic.{Cst, RangeAdd}
-import rise.core.types.Kind.{IAddressSpace, INat, INatToNat}
 import rise.core.types._
 import rise.core.{Expr, freshName}
 
@@ -74,8 +73,8 @@ object Type {
   implicit def toMatrixLayoutWrapper[A](f: MatrixLayout => A): MatrixLayoutWrapper[A] =
     MatrixLayoutWrapper(f)
 
-  case class FragementTypeWrapper[A](f: FragmentKind => A)
-  implicit def toFragmentTypeWrapper[A](f: FragmentKind => A): FragementTypeWrapper[A] =
+  case class FragementTypeWrapper[A](f: Fragment => A)
+  implicit def toFragmentTypeWrapper[A](f: Fragment => A): FragementTypeWrapper[A] =
     FragementTypeWrapper(f)
 
   case class TypeFunctionWrapper[A](f: TypeIdentifier => A)
@@ -141,7 +140,7 @@ object Type {
     }
 
     def apply[A](w: FragementTypeWrapper[A]): A = {
-      w.f(FragmentKindIdentifier(freshName("ft")))
+      w.f(FragmentIdentifier(freshName("ft")))
     }
 
     def apply[A](w: TypeFunctionWrapper[A]): A = {
@@ -169,12 +168,12 @@ object Type {
   }
 
   object `:Nat **` {
-    def unapply(arg: DepPairType[Nat, NatIdentifier, _]): Option[(NatIdentifier, DataType)] =
+    def unapply(arg: DepPairType[Nat, NatIdentifier]): Option[(NatIdentifier, DataType)] =
       Some(arg.x, arg.t)
   }
 
   object `:NatCollection **` {
-    def unapply(arg: DepPairType[NatCollection, NatCollectionIdentifier, _]): Option[(NatCollectionIdentifier, DataType)] =
+    def unapply(arg: DepPairType[NatCollection, NatCollectionIdentifier]): Option[(NatCollectionIdentifier, DataType)] =
       Some(arg.x, arg.t)
   }
 
@@ -192,7 +191,7 @@ object Type {
   }
 
   object `(Addr)->:` {
-    def unapply[T, I, KI <: Kind.Identifier, U <: Type](funType: DepFunType[T, I, KI, U]): Option[(AddressSpaceIdentifier, U)] = {
+    def unapply[T, I, U <: Type](funType: DepFunType[T, I, U]): Option[(AddressSpaceIdentifier, U)] = {
       funType.x match {
         case a : AddressSpaceIdentifier => Some((a, funType.t))
         case _ => throw new Exception("Expected AddressSpace DepFunType")
@@ -201,7 +200,7 @@ object Type {
   }
 
   object `(Nat)->:` {
-    def unapply[T, I, KI <: Kind.Identifier, U <: Type](funType: DepFunType[T, I, KI, U]): Option[(NatIdentifier, U)] = {
+    def unapply[T, I, U <: Type](funType: DepFunType[T, I, U]): Option[(NatIdentifier, U)] = {
       funType.x match {
         case n : NatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
@@ -210,7 +209,7 @@ object Type {
   }
 
   object `(NatToNat)->:` {
-    def unapply[T, I, KI <: Kind.Identifier, U <: Type](funType: DepFunType[T, I, KI, U]): Option[(NatToNatIdentifier, U)] = {
+    def unapply[T, I, U <: Type](funType: DepFunType[T, I, U]): Option[(NatToNatIdentifier, U)] = {
       funType.x match {
         case n : NatToNatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected NatToNat DepFunType")

@@ -1,5 +1,6 @@
 package shine.OpenCL.primitives.intermediate
 
+import rise.core.types.NatToData
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._

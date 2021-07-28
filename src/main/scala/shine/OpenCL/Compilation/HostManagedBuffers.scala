@@ -1,5 +1,6 @@
 package shine.OpenCL.Compilation
 
+import rise.core.types.{DataType, IndexType, ManagedBufferType, ScalarType}
 import shine.DPIA._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._

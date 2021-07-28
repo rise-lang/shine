@@ -4,7 +4,8 @@ import shine.C
 import shine.DPIA.DSL.λ
 import shine.DPIA.primitives.intermediate.MapVecI
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, VectorType, read}
+import shine.DPIA.Types.{AccType, CommType, ExpType}
+import rise.core.types.{DataType, VectorType, read}
 
 class TranslationContext() extends C.Compilation.TranslationContext {
   override def assign(dt: DataType,

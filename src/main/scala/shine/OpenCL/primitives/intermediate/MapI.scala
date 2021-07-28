@@ -1,5 +1,6 @@
 package shine.OpenCL.primitives.intermediate
 
+import rise.core.types.{DataType, read}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.DataType.idx

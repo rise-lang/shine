@@ -2,13 +2,15 @@ package shine.OpenMP
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
+import rise.core.types.{DataType, NatKind, ScalarType, VectorType}
+import rise.core.substitute.{natInType => substituteNatInType}
 import shine.C.AST.{ArraySubscript, Decl}
 import shine.C.Compilation.CodeGenerator.CIntExpr
 import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, NatKind, PhraseType, ScalarType, VectorType}
+import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType}
 import shine.DPIA.primitives.functional._
 import shine.DPIA.{ArrayData, Compilation, Data, Nat, NatIdentifier, Phrases, VectorData, error, freshName}
 import shine.OpenMP.primitives.imperative.{ParFor, ParForNat}
@@ -134,7 +136,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def typ(dt: DataType): Type = {
     dt match {
-      case v: shine.DPIA.Types.VectorType =>
+      case v: rise.core.types.VectorType =>
         // this sets the representation of vector types in C:
         // struct float4 {
         //    float data[4];
@@ -222,9 +224,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       env.copy(identEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
-          (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+          (Identifier(name, AccType(substituteNatInType(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
         case (Identifier(name, ExpType(dt, w)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt), w)), declRef)
+          (Identifier(name, ExpType(substituteNatInType(NamedVar(cI.name, range), `for` = i, in = dt), w)), declRef)
         case x => x
       }) |> (env =>
 

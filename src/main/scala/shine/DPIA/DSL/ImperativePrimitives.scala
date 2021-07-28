@@ -1,5 +1,6 @@
 package shine.DPIA.DSL
 
+import rise.core.types.{ArrayType, DataType, NatKind, PairType, read}
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
@@ -27,7 +28,7 @@ object newDoubleBuffer {
             dt3: ArrayType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
-            f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]) =
+            f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]): NewDoubleBuffer =
     NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT(dt1) x CommType() x CommType())(ps => {
       val    v: Phrase[VarType]  = ps._1._1
       val swap: Phrase[CommType] = ps._1._2

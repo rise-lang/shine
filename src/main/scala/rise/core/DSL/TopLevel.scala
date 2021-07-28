@@ -3,7 +3,6 @@ package rise.core.DSL
 import Type.impl
 import util.monads._
 import rise.core.traverse._
-import rise.core.types.Kind._
 import rise.core.types._
 import rise.core.{DSL, Expr, IsClosedForm, Primitive}
 
@@ -28,24 +27,25 @@ object TopLevel {
       subs match {
         case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
-            case IType(i) =>
+            case TypeKind.Identifier(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: TypeIdentifier => x }))
-            case IDataType(i) =>
+            case DataKind.Identifier(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: DataType => x }))
-            case INat(i) =>
+            case NatKind.Identifier(i) =>
               s.copy(ns = ns ++ Map(i -> impl{ x: Nat => x }))
-            case IAddressSpace(i) =>
+            case AddressSpaceKind.Identifier(i) =>
               s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
-            case IMatrixLayout(i) =>
+            case MatrixLayoutKind.Identifier(i) =>
               s.copy(ms = ms ++ Map(i -> impl{ x: MatrixLayout => x }))
-            case IFragmentKind(i) =>
-              s.copy(fs = fs ++ Map(i -> impl{ x: FragmentKind => x }))
-            case INatToData(i) =>
+            case FragmentKind.Identifier(i) =>
+              s.copy(fs = fs ++ Map(i -> impl{ x: Fragment => x }))
+            case NatToDataKind.Identifier(i) =>
               s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
-            case INatToNat(i) =>
+            case NatToNatKind.Identifier(i) =>
               s.copy(n2ns = n2ns ++ Map(i -> impl{ x: NatToNat => x }))
-            case INatCollection(i) =>
+            case NatCollectionKind.Identifier(i) =>
               s.copy(natColls = natColls ++ Map(i -> impl{ x: NatCollection => x }))
+            case AccessKind.Identifier(_) => ???
           }
       }
     )

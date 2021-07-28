@@ -9,7 +9,7 @@ object substitute {
 
   // substitute in Expr
 
-  def kindInExpr[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: T, `for`: I, in: Expr): Expr =
+  def kindInExpr[T, I](kind: Kind[T, I], x: T, `for`: I, in: Expr): Expr =
     (kind, x, `for`) match {
       case (DataKind, dt: DataType, forDt: DataTypeIdentifier) =>
         dataTypeInExpr(dt, forDt, in)
@@ -73,7 +73,7 @@ object substitute {
     Visitor.expr(in).unwrap
   }
 
-  def natsInExpr(subs: Map[NatIdentifier, Nat], in: Expr): Expr = {
+  def natsInExpr(subs: Map[Nat, Nat], in: Expr): Expr = {
     object Visitor extends PureTraversal {
       override def expr: Expr => Pure[Expr] = {
         case Identifier(name) if subs.contains(NatIdentifier(name)) =>
@@ -104,7 +104,7 @@ object substitute {
 
   // substitute in Type
 
-  def kindInType[T, I, KI <: Kind.Identifier, U <: Type](kind: Kind[T, I, KI], x: T, `for`: I, in: U): U = {
+  def kindInType[T, I, U <: Type](kind: Kind[T, I], x: T, `for`: I, in: U): U = {
     (kind, x, `for`) match {
       case (DataKind, dt: DataType, forDt: DataTypeIdentifier) => typeInType(dt, forDt, in)
       case (NatKind, n: Nat, forN: NatIdentifier) => natInType(n, forN, in)
@@ -127,7 +127,7 @@ object substitute {
     traverse(in, Visitor)
   }
 
-  def natsInType[T <: Type](subs: Map[NatIdentifier, Nat], in: T): T = {
+  def natsInType[T <: Type](subs: Map[Nat, Nat], in: T): T = {
     object Visitor extends PureTraversal {
       override def nat: Nat => Pure[Nat] = in1 =>
         return_(substitute.natsInNat(subs, in1))
@@ -135,10 +135,10 @@ object substitute {
     traverse(in, Visitor)
   }
 
-  def natInType[T <: Type](n: Nat, `for`: NatIdentifier, in: T): T =
+  def natInType[T <: Type](n: Nat, `for`: Nat, in: T): T =
     natsInType(Map(`for` -> n), in)
 
-  def natInDataType(n: Nat, `for`: NatIdentifier, in: DataType): DataType = {
+  def natInDataType(n: Nat, `for`: Nat, in: DataType): DataType = {
     object Visitor extends PureTraversal {
       override def nat: Nat => Pure[Nat] = in1 =>
         return_(substitute.natInNat(n, `for`, in1))
@@ -172,12 +172,12 @@ object substitute {
 
   // substitute in Nat
 
-  def natsInNat(subs: Map[NatIdentifier, Nat], in: Nat): Nat = {
+  def natsInNat(subs: Map[Nat, Nat], in: Nat): Nat = {
     import arithexpr.arithmetic.ArithExpr
-    ArithExpr.substitute(in, subs.asInstanceOf[Map[ArithExpr, ArithExpr]])
+    ArithExpr.substitute(in, subs)
   }
 
-  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat =
+  def natInNat(ae: Nat, `for`: Nat, in: Nat): Nat =
     natsInNat(Map(`for` -> ae), in)
 
   // substitute in AddressSpace
@@ -239,11 +239,11 @@ object substitute {
   //substitue in FragmentType
 
   def fragmentTypesInFragmentType(
-                                   subs: Map[FragmentKindIdentifier, FragmentKind],
-                                   in: FragmentKind
-  ): FragmentKind = {
+                                   subs: Map[FragmentIdentifier, Fragment],
+                                   in: Fragment
+  ): Fragment = {
     in match {
-      case i: FragmentKindIdentifier =>
+      case i: FragmentIdentifier =>
         subs.get(i) match {
           case Some(a) => a
           case None    => i
@@ -253,10 +253,10 @@ object substitute {
   }
 
   def fragmentTypeInFragmentType(
-                                  a: FragmentKind,
-                                  `for`: FragmentKindIdentifier,
-                                  in: FragmentKind
-  ): FragmentKind = {
+                                  a: Fragment,
+                                  `for`: FragmentIdentifier,
+                                  in: Fragment
+  ): Fragment = {
     if (in == `for`) {
       a
     } else {

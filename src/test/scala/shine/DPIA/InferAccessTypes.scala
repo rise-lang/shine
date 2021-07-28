@@ -4,6 +4,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import Type._
 import rise.core.{types => rt}
+import rise.core.types.{ArrayType, f32, read, write}
 import shine.DPIA.Types._
 
 class InferAccessTypes extends test_util.Tests {
@@ -102,7 +103,7 @@ class InferAccessTypes extends test_util.Tests {
     val splitArray = (depFun((n: Nat) => fun(8`.`rt.f32)(arr =>
       arr |> split(n)))).toExpr
     val infPt = inferAccess(splitArray).get(splitArray).asInstanceOf[
-      DepFunType[NatIdentifier, Kind.INat, FunType[ExpType, ExpType]]
+      DepFunType[NatIdentifier, FunType[ExpType, ExpType]]
     ]
     assertResult(read)(infPt.t.outT.accessType)
   }

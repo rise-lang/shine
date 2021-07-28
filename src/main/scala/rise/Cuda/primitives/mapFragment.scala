@@ -12,7 +12,7 @@ object mapFragment extends Builder {
     override val name: String = "mapFragment"
     override def setType(ty: Type): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (m: Nat) => impl { (n: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (f: FragmentKind) => impl { (l: MatrixLayout) => (s ->: s) ->: FragmentType(n, m, k, s, f, l) ->: FragmentType(n, m, k, s, f, l) } } } } } }
+    override def typeScheme: Type = impl { (m: Nat) => impl { (n: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (f: Fragment) => impl { (l: MatrixLayout) => (s ->: s) ->: FragmentType(n, m, k, s, f, l) ->: FragmentType(n, m, k, s, f, l) } } } } } }
   }
   override def toString: String = "mapFragment"
   override def primitive: rise.core.Primitive = Primitive()()

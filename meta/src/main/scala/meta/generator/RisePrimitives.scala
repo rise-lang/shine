@@ -257,7 +257,7 @@ import arithexpr.arithmetic._
       case AST.Nat2Nat => "NatToNat"
       case AST.Nat2Data => "NatToData"
       case AST.Nat => "Nat"
-      case AST.Fragment => "FragmentKind"
+      case AST.Fragment => "Fragment"
       case AST.MatrixLayout => "MatrixLayout"
     }
   }
@@ -301,11 +301,11 @@ import arithexpr.arithmetic._
       case rise.Type.Fragment.AST.Identifier(name) =>
         Term.Name(name)
       case rise.Type.Fragment.AST.ACC =>
-        q"FragmentKind.Accumulator"
+        q"Fragment.Accumulator"
       case rise.Type.Fragment.AST.A =>
-        q"FragmentKind.AMatrix"
+        q"Fragment.AMatrix"
       case rise.Type.Fragment.AST.B =>
-        q"FragmentKind.BMatrix"
+        q"Fragment.BMatrix"
     }
   }
 

@@ -9,6 +9,7 @@ import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import rise.core.types.{DataType, Fragment, FragmentType, MatrixLayout, MatrixLayoutIdentifier, f16}
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{AsVectorAligned, Cast}
 import shine.DPIA.primitives.imperative.{AsScalarAcc, Assign}
@@ -59,15 +60,17 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
         //Pointer to first element of the matrix
         val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
-        val (layout, ldm) = inferFragment(matrix, env, m, n, k, FragmentKind.Accumulator)
-        if (layoutIdentifier.isInstanceOf[MatrixLayoutIdentifier])
-          layoutIdentifier.asInstanceOf[MatrixLayoutIdentifier].setLayout(layout)
+        val (layout, ldm) = inferFragment(matrix, env, m, n, k, Fragment.Accumulator)
+        layoutIdentifier match {
+          case id: MatrixLayoutIdentifier => id.setLayout(layout)
+          case _ =>
+        }
 
         fragmentAcc |> acc(env, Nil, frag =>
           C.AST.ExprStmt(C.AST.FunCall(
             C.AST.DeclRef("nvcuda::wmma::load_matrix_sync"),
               //only accumulator-fragments must specify their layout
-              if (fragType != FragmentKind.Accumulator)
+              if (fragType != Fragment.Accumulator)
                 immutable.Seq(
                   frag,
                   matrixPtr,
@@ -85,7 +88,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
         matrixAcc |> acc(env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
           val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
-          val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, FragmentKind.Accumulator)
+          val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, Fragment.Accumulator)
 
           C.AST.ExprStmt(C.AST.FunCall(
             C.AST.DeclRef("nvcuda::wmma::store_matrix_sync"),
@@ -169,7 +172,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
     case phrase => phrase |> super.cmd(env)
   }
 
-  def inferFragment[T <: BasePhraseType](matrix: Phrase[T], env: Environment, m: Nat, n: Nat, k: Nat, fragmentType: FragmentKind): (MatrixLayout, ArithExpr) = {
+  def inferFragment[T <: BasePhraseType](matrix: Phrase[T], env: Environment, m: Nat, n: Nat, k: Nat, fragmentType: Fragment): (MatrixLayout, ArithExpr) = {
     val index00 = matrixIndexAsNat(matrix, env, 0, 0)
     val index01 = matrixIndexAsNat(matrix, env, 0, 1)
     val index10 = matrixIndexAsNat(matrix, env, 1, 0)
@@ -289,9 +292,9 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def typ(dt: DataType): Type = dt match {
     case FragmentType(m, n, k, dataType, fragmentKind, layout) =>
       C.AST.FragmentType(m, n, k, typ(dataType), fragmentKind, layout)
-    case shine.DPIA.Types.f16 =>
+    case rise.core.types.f16 =>
       cuda.AST.Type.half
-    case shine.DPIA.Types.OpaqueType("pipeline") =>
+    case rise.core.types.OpaqueType("pipeline") =>
       cuda.AST.Type.pipeline
 
     case _ =>
@@ -301,20 +304,20 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   private def getVectorType(dt: DataType, n: Nat): Type = {
     if (n.eval > 0 && n.eval <= 4)
       dt match {
-        case shine.DPIA.Types.u8 => BasicType(s"uchar$n")
-        case shine.DPIA.Types.i8 => BasicType(s"char$n")
-        case shine.DPIA.Types.u16 => BasicType(s"ushort$n")
-        case shine.DPIA.Types.i16 => BasicType(s"short$n")
-        case shine.DPIA.Types.int | shine.DPIA.Types.i32 => BasicType(s"int$n")
-        case shine.DPIA.Types.u32 => BasicType(s"uint$n")
-        case shine.DPIA.Types.f32 => BasicType(s"float$n")
-        case shine.DPIA.Types.f64 => BasicType(s"double$n")
+        case rise.core.types.u8 => BasicType(s"uchar$n")
+        case rise.core.types.i8 => BasicType(s"char$n")
+        case rise.core.types.u16 => BasicType(s"ushort$n")
+        case rise.core.types.i16 => BasicType(s"short$n")
+        case rise.core.types.int | rise.core.types.i32 => BasicType(s"int$n")
+        case rise.core.types.u32 => BasicType(s"uint$n")
+        case rise.core.types.f32 => BasicType(s"float$n")
+        case rise.core.types.f64 => BasicType(s"double$n")
         case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
       }
     else
       dt match {
-        case shine.DPIA.Types.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
-        case shine.DPIA.Types.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
+        case rise.core.types.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
+        case rise.core.types.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
         case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
       }
   }

@@ -1,5 +1,6 @@
 package rise.core.types
 
+import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import rise.core._
 
 sealed trait NatToData {
@@ -22,4 +23,19 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType)
     substitute.natInDataType(a, `for` = x, in = body)
 
   override def toString: String = s"($x: nat |-> $body)"
+
+  //See hash code of NatNatTypeFunction
+  override def hashCode(): Int = this.apply(NamedVar("ComparisonDummy")).hashCode()
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other:NatToDataLambda => body == other.apply(x)
+    case _ => false
+  }
+}
+
+object NatToDataLambda {
+  def apply(upperBound: Nat, f: NatIdentifier => DataType): NatToDataLambda = {
+    val n = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
+    NatToDataLambda(n, f(n))
+  }
 }

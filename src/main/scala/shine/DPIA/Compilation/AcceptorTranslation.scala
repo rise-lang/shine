@@ -3,8 +3,11 @@ package shine.DPIA.Compilation
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
+import rise.core.types.{ArrayType, DataType, DepPairType, Fragment, FragmentType, MatrixLayout, NatIdentifier, NatKind, read, vec, write}
+import rise.core.types.DataType._
+import rise.core.substitute.{natInType => substituteNatInType}
+import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck, comm}
 import shine.DPIA.Types.DataType._
-import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}
@@ -113,10 +116,10 @@ object AcceptorTranslation {
 
     case DMatch(x, elemT, outT, a, f, input) =>
       // Turn the f imperative by means of forwarding the acceptor translation
-      con(input)(λ(expT(DepPairType(x, elemT), read))(pair =>
+      con(input)(λ(expT(DepPairType(NatKind, x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
           _Λ_(NatKind)((fst: NatIdentifier) =>
-            λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
+            λ(expT(substituteNatInType(fst, x, elemT), read))(snd =>
               acc(f(fst)(snd))(A)
             )), pair)))
 
@@ -243,7 +246,7 @@ object AcceptorTranslation {
 
     case VectorFromScalar(n, dt, arg) =>
       con(arg)(λ(expT(dt, read))(e =>
-        A :=|VectorType(n, dt)| VectorFromScalar(n, dt, e)))
+        A :=|vec(n, dt)| VectorFromScalar(n, dt, e)))
 
     case Zip(n, dt1, dt2, access, e1, e2) =>
       acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;`
@@ -348,9 +351,9 @@ object AcceptorTranslation {
               acc(fun(x))(o))))))
 
     case cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix) =>
-      con(aMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.AMatrix, layoutA), read))(aMatrix =>
-        con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layoutB), read))(bMatrix =>
-          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, FragmentKind.Accumulator, MatrixLayout.None), read))(cMatrix =>
+      con(aMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, Fragment.AMatrix, layoutA), read))(aMatrix =>
+        con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, Fragment.BMatrix, layoutB), read))(bMatrix =>
+          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, Fragment.Accumulator, MatrixLayout.None), read))(cMatrix =>
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
   }
 }

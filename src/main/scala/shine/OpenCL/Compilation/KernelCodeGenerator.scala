@@ -2,6 +2,8 @@ package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
+import rise.core.types.{ArrayType, DataType, NatKind, VectorType}
+import rise.core.substitute.{natInType => substituteNatInType}
 import shine.C.AST.{BasicType, Decl}
 import shine.C.Compilation.CodeGenerator.CIntExpr
 import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
@@ -392,11 +394,11 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
             env.copy(identEnv = env.identEnv.map {
               case (Identifier(name, AccType(dt)), declRef) =>
                 (Identifier(name,
-                  AccType(DataType.substitute(
+                  AccType(substituteNatInType(
                     NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
               case (Identifier(name, ExpType(dt, read)), declRef) =>
                 (Identifier(name,
-                  ExpType(DataType.substitute(
+                  ExpType(substituteNatInType(
                     NamedVar(cI.name, range),
                     `for` = i, in = dt), read)), declRef)
               case x => x

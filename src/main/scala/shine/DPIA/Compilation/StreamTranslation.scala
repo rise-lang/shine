@@ -1,5 +1,6 @@
 package shine.DPIA.Compilation
 
+import rise.core.types.{ArrayType, DataType, NatIdentifier, NatKind, read}
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._

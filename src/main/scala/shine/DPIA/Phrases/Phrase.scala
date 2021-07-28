@@ -1,6 +1,7 @@
 package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
+import rise.core.types.{FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _}
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck._
@@ -38,21 +39,21 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
   override def toString: String = s"($fun $arg)"
 }
 
-final case class DepLambda[T, I, KI <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I, KI], x: I, body: Phrase[U])
-  extends Phrase[DepFunType[I, KI, U]] {
-  override val t: DepFunType[I, KI, U] = DepFunType[I, KI, U](kind, x, body.t)
+final case class DepLambda[T, I, U <: PhraseType](kind: Kind[T, I],
+                                                  x: I, body: Phrase[U]) extends Phrase[DepFunType[I, U]] {
+  override val t: DepFunType[I, U] = DepFunType[I, U](kind, x, body.t)
   override def toString: String = s"Λ(${Kind.idName(kind, x)} : ${kind.name}). $body"
 }
 
 object DepLambda {
-  def apply[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: I): Object {
-    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, KI, U]
+  def apply[T, I](kind: Kind[T, I], x: I): Object {
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
   } = new {
-    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, KI, U] = DepLambda(kind, x, body)
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
   }
 }
 
-final case class DepApply[T, I, KI <: Kind.Identifier, U <: PhraseType](kind: Kind[T, I, KI], fun: Phrase[DepFunType[I, KI, U]], arg: T)
+final case class DepApply[T, I, U <: PhraseType](kind: Kind[T, I], fun: Phrase[DepFunType[I, U]], arg: T)
   extends Phrase[U] {
 
   override val t: U = PhraseType.substitute(kind, arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[U]

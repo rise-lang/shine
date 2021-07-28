@@ -6,7 +6,8 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
-import shine.DPIA.Types.Kind.{ Identifier => _, _ }
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _ }
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class KernelCallCmd(name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, n: Int)(val inTs: Seq[DataType], val dt: DataType, val args: Seq[Phrase[ExpType]], val output: Phrase[AccType]) extends CommandPrimitive {
   assert {

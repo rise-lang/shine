@@ -1,11 +1,12 @@
 package shine.OpenCL.primitives.intermediate
 
 import arithexpr.arithmetic.{Cst, NamedVar, RangeAdd}
+import rise.core.types.{AddressSpace, DataType}
+import rise.core.types.DataType._
 import shine.DPIA.DSL.{newDoubleBuffer => _, _}
 import shine.DPIA.primitives.imperative.TakeAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{NatAsIndex, Take}
 import shine.OpenCL.DSL.newDoubleBuffer

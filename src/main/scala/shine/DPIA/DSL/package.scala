@@ -1,9 +1,10 @@
 package shine.DPIA
 
+import rise.core.types.{ArrayType, DataType, DepArrayType, IndexType, VectorType}
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Operators, _}
-import shine.DPIA.Types._
+import shine.DPIA.Types.{ExpType, AccType, CommType, PhraseType}
 import shine.DPIA.primitives.functional.{DepIdx, Idx, IdxVec, NatAsIndex}
 
 import scala.language.implicitConversions
@@ -43,7 +44,7 @@ package object DSL {
     }
 
     def `@d`(index: Nat):DepIdx = e.t match {
-      case ExpType(depArray:DepArrayType, _) => DepIdx(depArray.size, depArray.elemFType, index, e)
+      case ExpType(depArray:DepArrayType, _) => DepIdx(depArray.size, depArray.fdt, index, e)
       case x => error(x.toString, "exp[n.(i:Nat) -> dt, _]")
     }
   }
@@ -68,7 +69,7 @@ package object DSL {
     }
 
     def `@d`(index: Nat):DepIdxAcc = a.t match {
-      case AccType(depAT:DepArrayType) => DepIdxAcc(depAT.size, depAT.elemFType, index, a)
+      case AccType(depAT:DepArrayType) => DepIdxAcc(depAT.size, depAT.fdt, index, a)
       case x => error(x.toString, "acc[n.(i:Nat) -> dt]")
     }
   }

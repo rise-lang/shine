@@ -12,7 +12,7 @@ object tensorMMA extends Builder {
     override val name: String = "tensorMMA"
     override def setType(ty: Type): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (la: MatrixLayout) => impl { (lb: MatrixLayout) => impl { (m: Nat) => impl { (n: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (t: DataType) => FragmentType(m, k, n, s, FragmentKind.AMatrix, la) ->: FragmentType(k, n, m, s, FragmentKind.BMatrix, lb) ->: FragmentType(m, n, k, t, FragmentKind.Accumulator, MatrixLayout.Row_Major) ->: FragmentType(m, n, k, t, FragmentKind.Accumulator, MatrixLayout.Row_Major) } } } } } } }
+    override def typeScheme: Type = impl { (la: MatrixLayout) => impl { (lb: MatrixLayout) => impl { (m: Nat) => impl { (n: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (t: DataType) => FragmentType(m, k, n, s, Fragment.AMatrix, la) ->: FragmentType(k, n, m, s, Fragment.BMatrix, lb) ->: FragmentType(m, n, k, t, Fragment.Accumulator, MatrixLayout.Row_Major) ->: FragmentType(m, n, k, t, Fragment.Accumulator, MatrixLayout.Row_Major) } } } } } } }
   }
   override def toString: String = "tensorMMA"
   override def primitive: rise.core.Primitive = Primitive()()

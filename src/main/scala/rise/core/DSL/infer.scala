@@ -1,13 +1,11 @@
 package rise.core.DSL
 
-import util.monads._
-import Type.freshTypeIdentifier
+import rise.core.DSL.Type.freshTypeIdentifier
 import rise.core.traverse._
-import rise.core.{traverse => _, _}
 import rise.core.types.InferenceException.error
 import rise.core.types._
-
-import scala.collection.mutable
+import rise.core.{traverse => _, _}
+import util.monads._
 
 object infer {
   def collectFreeEnv(e: Expr): Map[String, Type] = {
@@ -75,7 +73,7 @@ object infer {
     override val accumulator = SetMonoid
 
     override def nat: Nat => Pair[Nat] = n => n match {
-      case p@TuningParameter() => accumulate(Set(Kind.INat(p)))(n)
+      case p@TuningParameter() => accumulate(Set(NatKind.Identifier(p)))(n)
       case n => return_(n)
     }
 

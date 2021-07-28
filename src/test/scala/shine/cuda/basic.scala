@@ -1,7 +1,8 @@
 package shine.cuda
 
+import rise.core.types._
 import shine.DPIA.DSL.{depFun, λ}
-import shine.DPIA.Types.{NatKind, _}
+import shine.DPIA.Types.ExpType
 import shine.OpenCL.{Global, Local}
 import util.gen
 

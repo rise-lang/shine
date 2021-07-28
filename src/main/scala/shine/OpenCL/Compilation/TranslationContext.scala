@@ -1,8 +1,9 @@
 package shine.OpenCL.Compilation
 
+import rise.core.types.{DataType, VectorType}
 import shine.C
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, VectorType}
+import shine.DPIA.Types.{AccType, CommType, ExpType}
 import shine.DPIA.primitives.imperative.Assign
 
 class TranslationContext() extends C.Compilation.TranslationContext {

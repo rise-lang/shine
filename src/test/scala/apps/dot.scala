@@ -7,7 +7,7 @@ import rise.core.types._
 import rise.elevate.rules.traversal.default
 import rise.openCL.primitives.oclIterate
 import shine.DPIA.Types.TypeCheck._
-import shine.DPIA.Types.{ExpType, read, write}
+import shine.DPIA.Types.ExpType
 import util.gen
 import util.gen.c.function
 
@@ -24,7 +24,7 @@ class dot extends test_util.Tests {
   )))
 
   test("Simple dot product type inference works") {
-    val N = simpleDotProduct.t.asInstanceOf[NatDepFunType[_ <: Type, _ <: Kind.Identifier]].x
+    val N = simpleDotProduct.t.asInstanceOf[NatDepFunType[_ <: Type]].x
     assertResult(
       DepFunType(NatKind, N, FunType(xsT(N), FunType(ysT(N), f32)))
     ) {
@@ -33,8 +33,7 @@ class dot extends test_util.Tests {
   }
 
   test("Simple dot product translation to phrase works and preserves types") {
-    import shine.DPIA.Types.DataType._
-    import shine.DPIA.Types.f32
+    import rise.core.types.DataType._
     import shine.DPIA._
     val phrase = shine.DPIA.fromRise(simpleDotProduct)(default.RiseTraversable)
 

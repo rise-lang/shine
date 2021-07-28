@@ -6,9 +6,10 @@ import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
-import shine.DPIA.Types.Kind.{ Identifier => _, _ }
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _ }
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class WmmaLoad(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: FragmentKind, val layout: MatrixLayout, val matrixTile: Phrase[ExpType], val target: Phrase[AccType]) extends CommandPrimitive {
+final case class WmmaLoad(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: Fragment, val layout: MatrixLayout, val matrixTile: Phrase[ExpType], val target: Phrase[AccType]) extends CommandPrimitive {
   assert {
     matrixTile :: expT(ArrayType(rows, ArrayType(columns, dt)), read)
     target :: accT(FragmentType(rows, columns, layers, dt, frag, layout))

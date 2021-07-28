@@ -26,7 +26,7 @@ object Module {
        |//Accelerator functions
        |${accFunctions.mkString("\n\n")}
        |//Host code
-       |${hostCode}
+       |$hostCode
        |""".stripMargin
   }
 
@@ -83,7 +83,7 @@ object Module {
           )
         ),
       paramKinds =
-        Seq(ParamKind(DPIA.Types.OpaqueType("void*"), C.AST.ParamKind.Kind.input))
+        Seq(ParamKind(rise.core.types.OpaqueType("void*"), C.AST.ParamKind.Kind.input))
     )
 
     /**

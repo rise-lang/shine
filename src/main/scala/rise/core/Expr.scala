@@ -1,6 +1,5 @@
 package rise.core
 
-import semantics._
 import rise.core.types._
 import rise.core.ShowRise._
 import rise.core.equality._
@@ -13,40 +12,30 @@ sealed abstract class Expr {
   def =~~=(b : Expr) : Boolean = exprAlphaEq(typePartialAlphaEq).apply(this)(b)
 }
 
-final case class Identifier(name: String)(
-    override val t: Type
-) extends Expr {
+final case class Identifier(name: String)(override val t: Type) extends Expr {
   override def setType(t: Type): Identifier = this.copy(name)(t)
 }
 
-final case class Lambda(x: Identifier, e: Expr)(
-    override val t: Type
-) extends Expr {
+final case class Lambda(x: Identifier, e: Expr)(override val t: Type) extends Expr {
   override def setType(t: Type): Lambda = this.copy(x, e)(t)
 }
 
-final case class App(f: Expr, e: Expr)(override val t: Type)
-    extends Expr {
+final case class App(f: Expr, e: Expr)(override val t: Type) extends Expr {
   override def setType(t: Type): App = this.copy(f, e)(t)
 }
 
-final case class DepLambda[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI],x: I, e: Expr)(override val t: Type) extends Expr {
-  val kindName: String = kind.name
-  override def setType(t: Type): DepLambda[T, I, KI] = this.copy(kind, x, e)(t)
+final case class DepLambda[T, I](kind: Kind[T, I], x: I, e: Expr)(override val t: Type) extends Expr {
+  override def setType(t: Type): DepLambda[T, I] = this.copy(kind, x, e)(t)
 }
 
-final case class DepApp[T, KI <: Kind.Identifier](kind: Kind[T, _, KI], f: Expr, x: T)(override val t: Type) extends Expr {
-  override def setType(t: Type): DepApp[T, KI] = this.copy(kind, f, x)(t)
+final case class DepApp[T](kind: Kind[T, _], f: Expr, x: T)(override val t: Type) extends Expr {
+  override def setType(t: Type): DepApp[T] = this.copy(kind, f, x)(t)
 }
 
 final case class Literal(d: semantics.Data) extends Expr {
   override val t: Type = d.dataType
   override def setType(t: Type): Literal =
-    if (t != this.t) {
-      throw TypeException(s"cannot set the type of ${getClass}")
-    } else {
-      this
-    }
+    if (t != this.t) { throw TypeException(s"cannot set the type of ${getClass}") } else { this }
 }
 
 final case class Opaque(e: Expr, override val t: Type) extends Expr {
@@ -54,21 +43,18 @@ final case class Opaque(e: Expr, override val t: Type) extends Expr {
   override def setType(t: Type): TypeAnnotation =
     throw TypeException(s"cannot set the type of ${getClass}")
 }
-case class TypeAnnotation(e: Expr, annotation: Type) extends Expr {
+
+final case class TypeAnnotation(e: Expr, annotation: Type) extends Expr {
   override val t : Type = TypePlaceholder
   override def toString: String = s"$e: $annotation"
   override def setType(t: Type): TypeAnnotation =
-    if (t != this.t) {
-      throw TypeException(s"cannot set the type of ${getClass}")
-    } else {
-      this
-    }
+    if (t != this.t) { throw TypeException(s"cannot set the type of ${getClass}") } else { this }
 }
-case class TypeAssertion(e: Expr, assertion: Type) extends Expr {
+
+final case class TypeAssertion(e: Expr, assertion: Type) extends Expr {
   override val t : Type = TypePlaceholder
   override def toString: String = s"$e !: $assertion"
-  override def setType(t: Type): TypeAnnotation =
-    throw TypeException(s"cannot set the type of ${getClass}")
+  override def setType(t: Type): TypeAnnotation = throw TypeException(s"cannot set the type of ${getClass}")
 }
 
 abstract class Primitive extends Expr {

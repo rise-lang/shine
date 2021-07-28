@@ -1,8 +1,8 @@
 package shine.OpenCL.AST
 
 import arithexpr.arithmetic.ArithExpr
+import rise.core.types.AddressSpaceIdentifier
 import shine.C.AST._
-import shine.DPIA.Types.AddressSpaceIdentifier
 import shine.OpenCL
 import shine.OpenCL.{AddressSpace, BuiltInFunctionCall, NDRange}
 

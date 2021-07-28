@@ -12,7 +12,7 @@ object asMatrix extends Builder {
     override val name: String = "asMatrix"
     override def setType(ty: Type): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (n: Nat) => impl { (m: Nat) => impl { (k: Nat) => impl { (s: DataType) => FragmentType(n, m, k, s, FragmentKind.Accumulator, MatrixLayout.Row_Major) ->: ArrayType(n, ArrayType(m, s)) } } } }
+    override def typeScheme: Type = impl { (n: Nat) => impl { (m: Nat) => impl { (k: Nat) => impl { (s: DataType) => FragmentType(n, m, k, s, Fragment.Accumulator, MatrixLayout.Row_Major) ->: ArrayType(n, ArrayType(m, s)) } } } }
   }
   override def toString: String = "asMatrix"
   override def primitive: rise.core.Primitive = Primitive()()

@@ -1,6 +1,7 @@
 package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic.NamedVar
+import rise.core.types.{DataKind, DataType, DataTypeIdentifier, NatIdentifier, NatKind}
 import shine.DPIA.Compilation.FunDef
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._

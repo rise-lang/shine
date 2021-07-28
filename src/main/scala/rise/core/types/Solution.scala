@@ -19,7 +19,7 @@ object Solution {
     Solution(Map(), Map(), Map(aa -> ab), Map(), Map(), Map(), Map(), Map())
   def subs(ma: MatrixLayoutIdentifier, mb: MatrixLayout): Solution =
     Solution(Map(), Map(), Map(), Map(ma -> mb), Map(), Map(),  Map(), Map())
-  def subs(fa: FragmentKindIdentifier, fb: FragmentKind): Solution =
+  def subs(fa: FragmentIdentifier, fb: Fragment): Solution =
     Solution(Map(), Map(), Map(), Map(), Map(fa -> fb), Map(),  Map(), Map())
   def subs(na: NatToDataIdentifier, nb: NatToData): Solution =
     Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb), Map(), Map())
@@ -30,10 +30,10 @@ object Solution {
 }
 
 case class Solution(ts: Map[Type, Type],
-                    ns: Map[NatIdentifier, Nat],
+                    ns: Map[Nat, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
                     ms: Map[MatrixLayoutIdentifier, MatrixLayout],
-                    fs: Map[FragmentKindIdentifier, FragmentKind],
+                    fs: Map[FragmentIdentifier, Fragment],
                     n2ds: Map[NatToDataIdentifier, NatToData],
                     n2ns: Map[NatToNatIdentifier, NatToNat],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
@@ -43,7 +43,7 @@ case class Solution(ts: Map[Type, Type],
     override def nat: Nat => Pure[Nat] = ae => return_(sol(ae))
     override def addressSpace: AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
     override def matrixLayout: MatrixLayout => Pure[MatrixLayout] = m => return_(sol(m))
-    override def fragmentKind: FragmentKind => Pure[FragmentKind] = f => return_(sol(f))
+    override def fragmentKind: Fragment => Pure[Fragment] = f => return_(sol(f))
     override def natToData: NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
     override def natToNat: NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
   }
@@ -79,7 +79,7 @@ case class Solution(ts: Map[Type, Type],
   def apply(m: MatrixLayout): MatrixLayout =
     substitute.matrixLayoutsInMatrixLayout(ms, m)
 
-  def apply(f: FragmentKind): FragmentKind =
+  def apply(f: Fragment): Fragment =
     substitute.fragmentTypesInFragmentType(fs, f)
 
   def apply(a: NatCollection): NatCollection =
