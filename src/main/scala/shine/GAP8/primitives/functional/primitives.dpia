@@ -1,3 +1,12 @@
 def kernelCall{name: String, cores: Int, n:Int}(inTs: n*data, outT: data, args: n*exp[*inTs, read]): exp[outT, write]
 
 def run{cores: Nat}(dt: data, input: exp[dt, write]): exp[dt, write]
+
+def conv{fs: shine.GAP8.ConvolutionFilterSize}(
+    w: nat,
+    h: nat,
+    bias: nat,
+    dt: data,
+    in: exp[h.w.dt, read],
+    filter: exp[10.dt, read]
+): exp[(h-2).(w-2).dt, write]
