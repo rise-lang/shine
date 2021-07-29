@@ -1,1 +1,14 @@
 def gap8RunPrimitive: (cores: nat) -> {t: data} -> t -> t
+
+def gap8hwConv: {w: nat} -> {h: nat} ->
+    {bias: nat} -> {s: data} ->
+        h.w.s -> 10.s -> (h-2).(w-2).s
+
+//ConvType here as well, encapsulating sizes for each filter type
+//def gap8hwConv_v2: (type: )
+
+def gap8hwConvv3: {iw: nat} -> {ih: nat} ->
+    {fw: nat} -> {fh: nat} ->
+        {ow: nat} -> {oh: nat} ->
+            {bias: nat} -> {s: data} ->
+                ih.iw.s -> fh.fw.s -> oh.ow.s
