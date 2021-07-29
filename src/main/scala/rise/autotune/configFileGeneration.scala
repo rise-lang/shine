@@ -23,7 +23,8 @@ object configFileGeneration {
     })
 
     // number of samples for design of experiment phase
-    val doe = p.size * 10
+//    val doe = p.size * 10
+    val doe = tuner.samples
 
     // create header for hypermapper configuration file
     val header =

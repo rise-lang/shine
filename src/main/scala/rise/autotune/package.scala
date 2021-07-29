@@ -1,15 +1,16 @@
 package rise
 
-import arithexpr.arithmetic.{RangeUnknown}
+import arithexpr.arithmetic.{ArithExpr, RangeUnknown}
 import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.{Time, TimeSpan, writeToPath}
+
 import java.io.{File, FileOutputStream, PrintWriter}
 import rise.openCL.DSL.oclRun
-import scala.collection.mutable.ListBuffer
 
+import scala.collection.mutable.ListBuffer
 import rise.autotune.constraints._
 import rise.autotune.configFileGeneration._
 import rise.autotune.execution._
@@ -21,6 +22,7 @@ package object autotune {
 
   case class Timeouts(codegenerationTimeout: Long, compilationTimeout: Long, executionTimeout: Long)
   case class Tuner(hostCode: HostCode,
+                   inputSizes: Seq[Nat] = Seq(),
                    samples: Int = 100,
                    name: String = "RISE",
                    output: String = "autotuning",
@@ -61,7 +63,12 @@ package object autotune {
 
     val start = System.currentTimeMillis()
     val parameters = collectParameters(e)
-    val constraints = collectConstraints(e, parameters)
+
+    // inject input sizes into constraints
+    val inputs = getInputs(e)
+    val inputMap = (inputs zip tuner.inputSizes).toMap
+    val constraints = collectConstraints(e, parameters).map(constraint => constraint.substitute(inputMap.asInstanceOf[Map[ArithExpr, ArithExpr]]))
+
     ("mkdir -p " + tuner.output !!)
 
     // generate json if necessary
@@ -122,7 +129,7 @@ package object autotune {
 
     val configFile = tuner.configFile match {
       case Some(filename) => os.Path.apply(filename)
-      case None => os.pwd / tuner.output / (tuner.name + ".json")
+      case None => os.Path.apply(os.pwd.toString() + "/" + tuner.output + "/" + tuner.name + ".json")
     }
 
     println("configFile: " + configFile)
@@ -331,4 +338,16 @@ package object autotune {
       }
     }
   }
+
+  def getInputs(e: Expr): Seq[NatIdentifier] = {
+    getInputsRec(Seq.empty[NatIdentifier], e)
+  }
+
+  def getInputsRec(inputs: Seq[NatIdentifier], e: Expr): Seq[NatIdentifier] = {
+    e match {
+      case DepLambda(NatKind, n: NatIdentifier, subexpr) => getInputsRec(inputs :+ n, subexpr)
+      case _ => inputs
+    }
+  }
+
 }
