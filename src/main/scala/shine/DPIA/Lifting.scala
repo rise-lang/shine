@@ -12,7 +12,7 @@ object Lifting {
   def liftDependentFunction[T, I, U <: PhraseType](p: Phrase[DepFunType[I, U]]): T => Phrase[U] = {
     p match {
       case l: DepLambda[T, I, U]@unchecked =>
-        (arg: T) => PhraseType.substitute[T, I, U](l.kind, arg, `for`=l.x, in=l.body)
+        (arg: T) => shine.DPIA.Types.substitute[T, I, U](l.kind, arg, `for`=l.x, in=l.body)
       case app: Apply[_, DepFunType[I, U]] =>
         val fun = liftFunction(app.fun).reducing
         liftDependentFunction(fun(app.arg))
@@ -100,7 +100,7 @@ object Lifting {
   def liftDependentFunctionType[T](ty: PhraseType): T => PhraseType =
     ty match {
       case DepFunType(kind, x, t) =>
-        (a: T) => PhraseType.substitute(kind, a, x, t)
+        (a: T) => shine.DPIA.Types.substitute(kind, a, x, t)
       case _ => throw new Exception(s"did not expect $ty")
     }
 }

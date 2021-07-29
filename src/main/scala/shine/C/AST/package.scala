@@ -1,5 +1,6 @@
 package shine.C
 
+import rise.core.types.DataTypeOps
 import shine.C
 import shine.C.Compilation.CodeGenerator
 import shine.DPIA.Phrases.Identifier
@@ -18,10 +19,10 @@ package object AST {
   // Turn array types into pointer types
   def makeParamTy(gen: CodeGenerator): rise.core.types.DataType => Type = {
     case rise.core.types.DataType.ArrayType(_, dt) =>
-      val baseDt = DataType.getBaseDataType(dt)
+      val baseDt = DataTypeOps.getBaseDataType(dt)
       C.AST.PointerType(gen.typ(baseDt))
     case rise.core.types.DataType.DepArrayType(_, rise.core.types.NatToDataLambda(_, dt)) =>
-      val baseDt = DataType.getBaseDataType(dt)
+      val baseDt = DataTypeOps.getBaseDataType(dt)
       C.AST.PointerType(gen.typ(baseDt))
     case r: rise.core.types.DataType.PairType => gen.typ(r)
     case dr: rise.core.types.DataType.DepPairType[_, _] => gen.typ(dr)

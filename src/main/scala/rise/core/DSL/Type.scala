@@ -218,14 +218,6 @@ object Type {
     }
   }
 
-//  implicit final class ArrayTypeConstructor(s: Nat) {
-//    @inline def `.`(dt: DataType): ArrayType = ArrayType(s, dt)
-//    @inline def `.d`(ft: NatToData): DepArrayType =
-//      DepArrayType(s, ft)
-//    @inline def `.d`(f: NatIdentifier => DataType): DepArrayType =
-//      DepArrayType(s, NatToDataLambda(s, f))
-//  }
-
   implicit final class TupleTypeConstructors(private val a: DataType)
     extends AnyVal {
     @inline def x(b: DataType): PairType = PairType(a, b)
@@ -288,7 +280,8 @@ object Type {
   object `*.` {
     def unapply(arg: DepArrayType): Option[(Nat, NatToData)] =
       Some(arg.size, arg.fdt)
-
   }
 
+  @inline
+  def idx(n: Nat): IndexType = IndexType(n)
 }

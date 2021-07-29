@@ -4,7 +4,8 @@ import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import rise.core.types._
 import rise.core.types.DataType._
-import rise.core.substitute.{typeInType => substituteTypeInType, natInType => substituteNatInType}
+import rise.core.substitute.{natInType => substituteNatInType, typeInType => substituteTypeInType}
+import rise.core.types
 import shine.C.AST
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
@@ -669,7 +670,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                          phrase: Phrase[CommType],
                                          at: ArithExpr,
                                          env: Environment): Block = {
-    PhraseType.substitute(at, `for`, in = phrase) |> (p => {
+    shine.DPIA.Types.substitute(at, `for`, in = phrase) |> (p => {
       val newIdentEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
           (Identifier(name, AccType(substituteNatInType(at, `for`, in = dt))), declRef)
@@ -959,13 +960,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     //Computes the total number of element in an array at a given offset
     def numberOfElementsUntil(dt:ArrayType, at:Nat): Nat = {
-      DPIA.Types.DataType.getTotalNumberOfElements(dt.elemType)*at
+      types.DataTypeOps.getTotalNumberOfElements(dt.elemType)*at
     }
 
     def numberOfElementsUntil(dt:DepArrayType, at:Nat): Nat = {
       dt.fdt match {
         case NatToDataLambda(x, body) =>
-          BigSum(from=0, upTo = at-1, `for`=x, DPIA.Types.DataType.getTotalNumberOfElements(body))
+          BigSum(from=0, upTo = at-1, `for`=x, types.DataTypeOps.getTotalNumberOfElements(body))
         case _: NatToDataIdentifier => throw new Exception(s"This should not happen")
       }
     }

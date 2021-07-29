@@ -17,14 +17,12 @@ final case class TypeIdentifier(name: String) extends Type {
   override def toString: String = "_" + name
 }
 
-final case class FunType[T <: Type, U <: Type](inT: T, outT: U)
-    extends Type {
+final case class FunType[T <: Type, U <: Type](inT: T, outT: U) extends Type {
   override def toString: String = s"($inT -> $outT)"
 }
 
 final case class DepFunType[T, I, U <: Type] (kind: Kind[T, I],x: I, t: U) extends Type {
-  override def toString: String =
-    s"(${Kind.idName(kind, x)}: ${kind.name} -> $t)"
+  override def toString: String = s"(${Kind.idName(kind, x)}: ${kind.name} -> $t)"
 }
 
 // == Data types ==============================================================
@@ -92,30 +90,21 @@ object DataType {
       else
         s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
 
-    override def equals(o: Any): Boolean = {
-      o match {
-        case f: FragmentType =>
-          f.fragmentKind match {
-            case Fragment.Accumulator =>
-              f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType)
-            case _ =>
-              f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType) &&
-                f.fragmentKind.equals(fragmentKind) && f.layout.equals(layout)
-          }
-        case _ => false
-      }
-    }
-  }
-
-  object FragmentType {
-    def apply(rows: Nat, columns:Nat, d3: Nat, dataType: DataType): FragmentType = {
-      FragmentType(rows, columns, d3, dataType, Fragment.Accumulator, MatrixLayout.None)
+    override def equals(o: Any): Boolean = o match {
+      case f: FragmentType =>
+        f.fragmentKind match {
+          case Fragment.Accumulator =>
+            f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType)
+          case _ =>
+            f.rows.equals(rows) && f.columns.equals(columns) && f.d3.equals(d3) && f.dataType.equals(dataType) &&
+              f.fragmentKind.equals(fragmentKind) && f.layout.equals(layout)
+        }
+      case _ => false
     }
   }
 
   final case class ManagedBufferType(dt: DataType) extends DataType {
     override def toString: String = s"managed[$dt]"
-
   }
 
   final case class DepPairType[T, I](kind: Kind[T, I], x: I, t: DataType) extends DataType {

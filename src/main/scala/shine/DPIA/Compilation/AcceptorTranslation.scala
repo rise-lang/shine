@@ -8,7 +8,7 @@ import rise.core.DSL.Type._
 import rise.core.types.DataType._
 import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck, comm}
-import shine.DPIA.Types.DataType._
+import rise.core.types.DataTypeOps._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}

@@ -52,13 +52,13 @@ package object DPIA {
   implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
     def `[`(e: Nat) = new {
       def `/`(a: NatIdentifier) = new {
-        def `]`: PhraseType = PhraseType.substitute(e, `for`=a, in=t)
+        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
       }
     }
 
     def `[`(e: DataType) = new {
       def `/`(a: DataType) = new {
-        def `]`: PhraseType = PhraseType.substitute(e, `for`=a, in=t)
+        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
       }
     }
   }
@@ -73,13 +73,13 @@ package object DPIA {
 
     def `[`(e: Nat) = new {
       def `/`(`for`: NatIdentifier) = new {
-        def `]`: Phrase[T1] = PhraseType.substitute(e, `for`, in)
+        def `]`: Phrase[T1] = shine.DPIA.Types.substitute(e, `for`, in)
       }
     }
 
     def `[`(dt: DataType) = new {
       def `/`(`for`: DataTypeIdentifier) = new {
-        def `]`: Phrase[T1] = PhraseType.substitute(dt, `for`, in)
+        def `]`: Phrase[T1] = shine.DPIA.Types.substitute(dt, `for`, in)
       }
     }
   }

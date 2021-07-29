@@ -4,7 +4,7 @@
 package shine.DPIA.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
+import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
 import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _ }
 import rise.core.types.DataType._

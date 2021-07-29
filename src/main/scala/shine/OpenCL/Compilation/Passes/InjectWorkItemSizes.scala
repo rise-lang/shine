@@ -5,7 +5,7 @@ import rise.core.types.DataType
 import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.{Phrase, VisitAndRebuild}
-import shine.DPIA.Types.{CommType, DataType}
+import shine.DPIA.Types.CommType
 import shine.OpenCL._
 
 object InjectWorkItemSizes {

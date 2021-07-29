@@ -7,7 +7,7 @@ import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
+import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._

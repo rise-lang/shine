@@ -10,7 +10,7 @@ import rise.elevate.rules._
 import rise.core.{Opaque, TypeAnnotation, TypeAssertion, semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
+import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional._
 

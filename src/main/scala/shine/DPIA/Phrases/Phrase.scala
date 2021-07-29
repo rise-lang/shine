@@ -57,7 +57,7 @@ object DepLambda {
 final case class DepApply[T, I, U <: PhraseType](kind: Kind[T, I], fun: Phrase[DepFunType[I, U]], arg: T)
   extends Phrase[U] {
 
-  override val t: U = PhraseType.substitute(kind, arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[U]
+  override val t: U = shine.DPIA.Types.substitute(kind, arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[U]
   override def toString: String = s"($fun $arg)"
 }
 

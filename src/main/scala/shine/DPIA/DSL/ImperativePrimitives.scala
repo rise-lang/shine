@@ -5,7 +5,7 @@ import rise.core.types.DataType._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Fst, Snd}
 

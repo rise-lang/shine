@@ -11,7 +11,7 @@ import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType}
+import shine.DPIA.Types.{AccType, CommType, ExpType, PhraseType}
 import shine.DPIA.primitives.functional._
 import shine.DPIA.{ArrayData, Compilation, Data, Nat, NatIdentifier, Phrases, VectorData, error, freshName}
 import shine.OpenMP.primitives.imperative.{ParFor, ParForNat}
@@ -221,7 +221,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       //FIRST we must substitute in the indexing of o in the phrase
        Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
       //THEN and only THEN we can change the type to use the new index var
-       PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
+         shine.DPIA.Types.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
 
       env.copy(identEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>

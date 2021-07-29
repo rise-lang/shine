@@ -61,7 +61,7 @@ private class InferAccessAnnotation {
       if (substMap.isEmpty) pt
       else {
         val substPhraseType =
-          PhraseType.substitute(substMap.head._2, substMap.head._1, pt)
+          shine.DPIA.Types.substitute(substMap.head._2, substMap.head._1, pt)
         applySubstMap(substPhraseType, substMap.tail)
       }
     }

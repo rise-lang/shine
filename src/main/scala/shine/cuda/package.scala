@@ -4,7 +4,7 @@ import arithexpr.arithmetic.{ArithExpr, SimplifiedExpr}
 import rise.core.types.{DataType, Fragment, MatrixLayoutIdentifier}
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{DataType, ExpType}
+import shine.DPIA.Types.ExpType
 
 package object cuda {
 

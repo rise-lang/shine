@@ -389,7 +389,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
         // FIRST we must substitute in the indexing of o in the phrase
         Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
           // THEN and only THEN we can change the type to use the new index var
-          PhraseType.substitute(
+          shine.DPIA.Types.substitute(
             NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
 
             env.copy(identEnv = env.identEnv.map {
