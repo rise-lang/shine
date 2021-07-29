@@ -2,7 +2,7 @@ package shine.DPIA.primitives.intermediate
 
 import arithexpr.arithmetic.NamedVar
 import rise.core.types.DataType
-import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative.TakeAcc
 import shine.DPIA.Phrases._

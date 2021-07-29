@@ -3,7 +3,8 @@ package shine.DPIA.Compilation
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import rise.core.types.{ArrayType, DataType, DepPairType, Fragment, FragmentType, MatrixLayout, NatIdentifier, NatKind, read, vec, write}
+import rise.core.types.{DataType, Fragment, MatrixLayout, NatIdentifier, NatKind, read, write}
+import rise.core.DSL.Type._
 import rise.core.types.DataType._
 import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck, comm}

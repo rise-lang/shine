@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _ }
+import rise.core.types.DataType._
 import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class GenerateFragment(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: Fragment, val layout: MatrixLayout, val fill: Phrase[ExpType]) extends ExpPrimitive {

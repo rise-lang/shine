@@ -4,6 +4,7 @@ import scala.language.implicitConversions
 import util.monads._
 import rise.core.semantics._
 import rise.core.types._
+import rise.core.types.DataType._
 
 object traverse {
   sealed trait VarType

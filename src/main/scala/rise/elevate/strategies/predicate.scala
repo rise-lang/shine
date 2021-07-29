@@ -6,10 +6,10 @@ import elevate.core.strategies.{Traversable, basic}
 import rise.core.DSL.ToBeTyped
 import rise.core._
 import rise.core.primitives._
+import rise.core.types.DataType._
 import rise.core.types._
 import rise.elevate._
 import rise.elevate.rules.lowering.isComputation
-
 
 object predicate {
 

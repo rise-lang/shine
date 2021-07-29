@@ -4,6 +4,7 @@ import apps.mm.mmNVIDIAWithParams
 import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
+import rise.core.types.DataType._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL._
 import rise.core.DSL.Type._

@@ -83,7 +83,7 @@ object Module {
           )
         ),
       paramKinds =
-        Seq(ParamKind(rise.core.types.OpaqueType("void*"), C.AST.ParamKind.Kind.input))
+        Seq(ParamKind(rise.core.types.DataType.OpaqueType("void*"), C.AST.ParamKind.Kind.input))
     )
 
     /**

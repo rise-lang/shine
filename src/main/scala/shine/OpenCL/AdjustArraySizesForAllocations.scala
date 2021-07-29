@@ -1,6 +1,7 @@
 package shine.OpenCL
 
-import rise.core.types.{ArrayType, DataType, PairType, read}
+import rise.core.types.{DataType, read}
+import rise.core.types.DataType._
 import shine.DPIA.DSL.identifier
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._

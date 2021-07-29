@@ -3,7 +3,7 @@ package shine.DPIA.Compilation.Passes
 import shine.DPIA.DSL
 import shine.DPIA.Phrases.{Identifier, Phrase, VisitAndRebuild}
 import shine.DPIA.Types.{CommType, ExpType, PhraseType}
-import rise.core.types.{IndexType, NatType}
+import rise.core.types.DataType._
 import shine.DPIA.primitives.functional.NatAsIndex
 
 object SimplifyNats {

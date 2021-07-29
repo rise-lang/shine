@@ -1,6 +1,7 @@
 package shine.DPIA.Types
 
-import rise.core.types.{DataType, FragmentType, IndexType, NatType, PairType, ScalarType, TypeException, VectorType, bool, int, read}
+import rise.core.types.{DataType, TypeException, read}
+import rise.core.types.DataType._
 import shine.DPIA._
 import shine.DPIA.Phrases._
 

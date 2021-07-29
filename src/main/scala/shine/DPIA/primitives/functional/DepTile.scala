@@ -4,7 +4,7 @@ import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
 import arithexpr.arithmetic.BoolExpr.arithPredicate
 import arithexpr.arithmetic.IfThenElse
 import rise.core.types.{DataType, Nat, read, write}
-import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._

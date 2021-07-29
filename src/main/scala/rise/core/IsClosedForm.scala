@@ -4,6 +4,7 @@ import util.monads._
 import arithexpr.arithmetic.NamedVar
 import rise.core.traverse._
 import rise.core.types._
+import rise.core.types.DataType._
 
 object IsClosedForm {
   case class OrderedSet[T](seq : Seq[T], set : Set[T])

@@ -1,7 +1,8 @@
 package shine.DPIA.Compilation
 
-import rise.core.types.{AddressSpace, DataType, DepArrayType, DepPairType, FragmentType, NatKind, OpaqueType, PairType, read, vec, write}
+import rise.core.types.{AddressSpace, DataType, NatKind, read, write}
 import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._

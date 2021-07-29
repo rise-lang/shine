@@ -1,6 +1,7 @@
 package rise.core
 
 import rise.core.types._
+import rise.core.types.DataType._
 
 object showScala {
   private val kindIdent : Kind.Identifier => String = {

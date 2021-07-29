@@ -2,6 +2,7 @@ package rise.core
 
 import rise.core.semantics._
 import rise.core.types._
+import rise.core.types.DataType._
 import util.PatternMatching
 
 object equality {

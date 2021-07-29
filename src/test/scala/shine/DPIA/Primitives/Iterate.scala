@@ -4,6 +4,7 @@ import rise.core.Lambda
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 import util.gen
 import util.gen.c.function
 

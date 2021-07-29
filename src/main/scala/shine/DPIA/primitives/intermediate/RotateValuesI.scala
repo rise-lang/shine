@@ -1,7 +1,7 @@
 package shine.DPIA.primitives.intermediate
 
 import rise.core.types.{DataType, read}
-import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._

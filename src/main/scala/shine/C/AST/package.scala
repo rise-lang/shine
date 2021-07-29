@@ -17,18 +17,18 @@ package object AST {
 
   // Turn array types into pointer types
   def makeParamTy(gen: CodeGenerator): rise.core.types.DataType => Type = {
-    case rise.core.types.ArrayType(_, dt) =>
+    case rise.core.types.DataType.ArrayType(_, dt) =>
       val baseDt = DataType.getBaseDataType(dt)
       C.AST.PointerType(gen.typ(baseDt))
-    case rise.core.types.DepArrayType(_, rise.core.types.NatToDataLambda(_, dt)) =>
+    case rise.core.types.DataType.DepArrayType(_, rise.core.types.NatToDataLambda(_, dt)) =>
       val baseDt = DataType.getBaseDataType(dt)
       C.AST.PointerType(gen.typ(baseDt))
-    case r: rise.core.types.PairType => gen.typ(r)
-    case dr: rise.core.types.DepPairType[_, _] => gen.typ(dr)
-    case t: rise.core.types.ScalarType => gen.typ(t)
-    case rise.core.types.NatType => gen.typ(rise.core.types.NatType)
-    case t: rise.core.types.FragmentType => gen.typ(t)
-    case t: rise.core.types.IndexType =>gen.typ(t)
+    case r: rise.core.types.DataType.PairType => gen.typ(r)
+    case dr: rise.core.types.DataType.DepPairType[_, _] => gen.typ(dr)
+    case t: rise.core.types.DataType.ScalarType => gen.typ(t)
+    case rise.core.types.DataType.NatType => gen.typ(rise.core.types.DataType.NatType)
+    case t: rise.core.types.DataType.FragmentType => gen.typ(t)
+    case t: rise.core.types.DataType.IndexType =>gen.typ(t)
     case dt => throw new Exception(s"did not expect $dt")
   }
 

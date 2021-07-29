@@ -4,6 +4,7 @@ import cameraPipeline._
 import util._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.core.DSL._
 import rise.core.primitives._
 import Type._

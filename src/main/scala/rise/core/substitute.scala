@@ -1,9 +1,10 @@
 package rise.core
 
-import util.monads._
-import rise.core.traverse._
-import rise.core.types._
 import rise.core.semantics.NatData
+import rise.core.traverse._
+import rise.core.types.DataType._
+import rise.core.types._
+import util.monads._
 
 object substitute {
 

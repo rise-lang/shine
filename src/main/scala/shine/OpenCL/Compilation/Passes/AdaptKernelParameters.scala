@@ -5,6 +5,7 @@ import shine.C.AST.ParamDecl
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.{AccType, CommType, ExpType, PhrasePairType, PhraseType}
+import rise.core.types.DataType._
 import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional.NatAsIndex
 import shine.OpenCL.Compilation.KernelCodeGenerator
@@ -122,15 +123,15 @@ object AdaptKernelParameters {
     i.`type` match {
       case _: ExpType =>
         val ie = i.asInstanceOf[Identifier[ExpType]]
-        ie.copy(`type` = ExpType(rise.core.types.ArrayType(1, ie.`type`.dataType), read)).asInstanceOf[Identifier[T]]
+        ie.copy(`type` = ExpType(ArrayType(1, ie.`type`.dataType), read)).asInstanceOf[Identifier[T]]
       case _: AccType =>
         val ia = i.asInstanceOf[Identifier[AccType]]
-        ia.copy(`type` = AccType(rise.core.types.ArrayType(1, ia.`type`.dataType))).asInstanceOf[Identifier[T]]
+        ia.copy(`type` = AccType(ArrayType(1, ia.`type`.dataType))).asInstanceOf[Identifier[T]]
       case PhrasePairType(_: ExpType, _: AccType) =>
         val ip = i.asInstanceOf[Identifier[PhrasePairType[ExpType, AccType]]]
         ip.copy(`type` = PhrasePairType(
-          ExpType(rise.core.types.ArrayType(1, ip.`type`.t1.dataType), read),
-          AccType(rise.core.types.ArrayType(1, ip.`type`.t2.dataType)))).asInstanceOf[Identifier[T]]
+          ExpType(ArrayType(1, ip.`type`.t1.dataType), read),
+          AccType(ArrayType(1, ip.`type`.t2.dataType)))).asInstanceOf[Identifier[T]]
     }
   }
 
@@ -146,15 +147,15 @@ object AdaptKernelParameters {
   // pass arrays via global and scalar + tuple values via private memory
   private def makeInputParam(i: Identifier[_], gen: KernelCodeGenerator): (AddressSpace, ParamDecl) = {
     getDataType(i) match {
-      case _: rise.core.types.ArrayType => makeGlobalParam(i, gen)
-      case _: rise.core.types.DepArrayType => makeGlobalParam(i, gen)
-      case _: rise.core.types.ScalarType | _: rise.core.types.FragmentType |
-           _: rise.core.types.IndexType | rise.core.types.NatType | _: rise.core.types.VectorType =>
+      case _: ArrayType => makeGlobalParam(i, gen)
+      case _: DepArrayType => makeGlobalParam(i, gen)
+      case _: ScalarType | _: FragmentType |
+           _: IndexType | NatType | _: VectorType =>
         makePrivateParam(i, gen)
-      case _: rise.core.types.PairType => makePrivateParam(i, gen)
-      case _: rise.core.types.DepPairType[_, _] => makePrivateParam(i, gen)
-      case _: rise.core.types.DataTypeIdentifier => throw new Exception("This should not happen")
-      case _: rise.core.types.NatToDataApply | _: rise.core.types.ManagedBufferType | _: rise.core.types.OpaqueType =>
+      case _: PairType => makePrivateParam(i, gen)
+      case _: DepPairType[_, _] => makePrivateParam(i, gen)
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
+      case _: NatToDataApply | _: ManagedBufferType | _: OpaqueType =>
         throw new Exception(s"did not expect parameter of type ${getDataType(i)}")
     }
   }

@@ -1,7 +1,7 @@
 package shine.OpenCL.primitives.intermediate
 
 import rise.core.types.{AddressSpace, DataType, read}
-import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.primitives.intermediate.MapSeqI

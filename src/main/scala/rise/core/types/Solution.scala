@@ -1,9 +1,10 @@
 package rise.core.types
 
-import util.monads._
-import arithexpr.arithmetic.{BoolExpr, NamedVar}
+import arithexpr.arithmetic.BoolExpr
 import rise.core.traverse._
+import rise.core.types.DataType._
 import rise.core.{Expr, substitute}
+import util.monads._
 
 object Solution {
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())

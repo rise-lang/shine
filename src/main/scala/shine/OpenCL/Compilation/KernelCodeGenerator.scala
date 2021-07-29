@@ -2,7 +2,8 @@ package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
-import rise.core.types.{ArrayType, DataType, NatKind, VectorType}
+import rise.core.types.{DataType, NatKind}
+import rise.core.types.DataType._
 import rise.core.substitute.{natInType => substituteNatInType}
 import shine.C.AST.{BasicType, Decl}
 import shine.C.Compilation.CodeGenerator.CIntExpr

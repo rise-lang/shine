@@ -1,7 +1,8 @@
 package shine.OpenCL
 
 import arithexpr.arithmetic.RangeAdd
-import rise.core.types.{ArrayType, DataType, NatToData}
+import rise.core.types.{DataType, NatToData}
+import rise.core.types.DataType._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.{DepLambda, Phrase}
 import shine.DPIA.Types._

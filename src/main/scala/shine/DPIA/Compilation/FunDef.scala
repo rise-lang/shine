@@ -1,6 +1,7 @@
 package shine.DPIA.Compilation
 
-import rise.core.types.{Kind, int, read}
+import rise.core.types.{Kind, read}
+import rise.core.types.DataType._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._

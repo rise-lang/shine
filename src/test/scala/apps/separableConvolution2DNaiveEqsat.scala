@@ -6,12 +6,13 @@ import elevate.core.strategies.predicate._
 import rise.core.DSL._
 import rise.core._
 import rise.core.equality._
+import rise.core.types.DataType._
 import rise.elevate.Rise
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._
-import rise.elevate.strategies.algorithmic._
-import rise.elevate.rules.traversal._
 import rise.elevate.rules.movement._
+import rise.elevate.rules.traversal._
+import rise.elevate.strategies.algorithmic._
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}

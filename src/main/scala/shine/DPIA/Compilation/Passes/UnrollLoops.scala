@@ -34,7 +34,7 @@ object UnrollLoops {
             pf.body match {
               case shine.DPIA.Phrases.Lambda(ident, shine.DPIA.Phrases.Lambda(identOut, body)) =>
                 pf.out.t.dataType match {
-                  case rise.core.types.ArrayType(_, elemType) =>
+                  case rise.core.types.DataType.ArrayType(_, elemType) =>
                     Continue(unrollLoop(pf.n, pf.init, pf.step, i =>
                       Phrase.substitute(
                         IdxAcc(pf.n, elemType,

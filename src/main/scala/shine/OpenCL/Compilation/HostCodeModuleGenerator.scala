@@ -1,6 +1,6 @@
 package shine.OpenCL.Compilation
 
-import rise.core.types.{ManagedBufferType, OpaqueType}
+import rise.core.types.DataType.{ManagedBufferType, OpaqueType}
 import shine.{C, DPIA}
 import shine.C.AST.{Decl, IncludeSource, ParamKind, Stmt}
 import shine.C.Compilation.{ModuleGenerator => CModuleGenerator}
@@ -94,9 +94,9 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
 
   private def makeParam(gen: CodeGenerator): Identifier[_] => C.AST.ParamDecl =
     C.AST.makeParam({
-      case _: rise.core.types.ManagedBufferType =>
+      case _: ManagedBufferType =>
         C.AST.OpaqueType("Buffer")
-      case rise.core.types.OpaqueType(name) =>
+      case OpaqueType(name) =>
         C.AST.OpaqueType(name)
       case dt => C.AST.makeParamTy(gen)(dt)
     })

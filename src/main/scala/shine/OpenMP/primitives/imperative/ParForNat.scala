@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _ }
+import rise.core.types.DataType._
 import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class ParForNat(val n: Nat, val ft: NatToData, val out: Phrase[AccType], val body: Phrase[DepFunType[NatIdentifier, FunType[AccType, CommType]]]) extends CommandPrimitive {

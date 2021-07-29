@@ -1,5 +1,6 @@
 package shine.cuda
 
+import rise.core.types.DataType._
 import rise.core.types._
 import shine.DPIA.DSL.{depFun, λ}
 import shine.DPIA.Types.ExpType

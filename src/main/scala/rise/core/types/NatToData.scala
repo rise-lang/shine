@@ -2,6 +2,7 @@ package rise.core.types
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import rise.core._
+import rise.core.types.DataType._
 
 sealed trait NatToData {
   def map(f: DataType => DataType): NatToData = this match {

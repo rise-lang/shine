@@ -3,10 +3,10 @@ package shine.DPIA.Primitives
 import arithexpr.arithmetic.Cst
 import rise.core.DSL.Type._
 import rise.core.DSL._
+import rise.core.Expr
 import rise.core.primitives._
-import rise.core.semantics.NatData
+import rise.core.types.DataType._
 import rise.core.types.{AddressSpace, _}
-import rise.core.{Expr, Literal}
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import shine.OpenCL._

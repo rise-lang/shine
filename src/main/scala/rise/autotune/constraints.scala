@@ -4,6 +4,7 @@ import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{ArithExpr, BoolExpr, RangeAdd, RangeMul}
 import rise.core.{DepApp, DepLambda, Expr, Lambda, traverse}
 import rise.core.types._
+import rise.core.types.DataType._
 import util.monads
 import scala.annotation.tailrec
 

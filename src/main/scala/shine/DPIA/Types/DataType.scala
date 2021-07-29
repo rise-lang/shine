@@ -1,7 +1,8 @@
 package shine.DPIA.Types
 
 //
-import arithexpr.arithmetic.{ArithExpr, BigSum}
+import arithexpr.arithmetic.BigSum
+import rise.core.types.DataType._
 
 import scala.annotation.tailrec
 //import rise.core.types.{Fragment, MatrixLayout}

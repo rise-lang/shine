@@ -7,7 +7,8 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core._
-import rise.core.types.{ArrayType, NatKind, f32, _}
+import rise.core.types.{NatKind, _}
+import rise.core.types.DataType._
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.traversal._

@@ -5,6 +5,7 @@ import harrisCornerDetectionHalide.{
   sobelYWeights2d, sobelYWeightsV, sobelYWeightsH
 }
 import rise.core.types._
+import rise.core.types.DataType._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._

@@ -2,6 +2,7 @@ package rise.core
 
 import scala.collection.immutable.Map
 import rise.core.types._
+import rise.core.types.DataType._
 
 object makeClosed {
   def apply(e: Expr): Expr = withCount(e)._1

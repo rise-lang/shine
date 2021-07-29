@@ -2,7 +2,8 @@ package shine.cuda
 
 import shine.DPIA.Phrases._
 import rise.core.types.MatrixLayout._
-import rise.core.types.{ArrayType, Fragment, FragmentType, MatrixLayout, MatrixLayoutIdentifier, NatIdentifier, NatKind, PairType, f16, f32, read, write}
+import rise.core.types.{Fragment,  MatrixLayout, MatrixLayoutIdentifier, NatIdentifier, NatKind, read, write}
+import rise.core.types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Fst, Join, Snd, Split, Transpose, Zip}

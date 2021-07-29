@@ -2,6 +2,7 @@ package rise.core
 
 import util.monads._
 import rise.core.traverse._
+import rise.core.types.DataType.DataTypeIdentifier
 import rise.core.types._
 
 object uniqueNames {

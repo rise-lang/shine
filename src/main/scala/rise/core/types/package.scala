@@ -1,6 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.{ArithExpr, NamedVar}
+import rise.core.types.DataType.DataTypeIdentifier
 
 package object types {
   type NatIdentifier = NamedVar

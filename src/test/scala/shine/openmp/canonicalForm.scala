@@ -1,6 +1,7 @@
 package shine.openmp
 
 import rise.core.DSL._
+import rise.core.types.DataType._
 import rise.core.types._
 import rise.openMP.primitives._
 import util.gen

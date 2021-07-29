@@ -1,6 +1,7 @@
 package shine.OpenCL.Compilation
 
-import rise.core.types.{DataType, VectorType}
+import rise.core.types.DataType
+import rise.core.types.DataType.VectorType
 import shine.C
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, ExpType}

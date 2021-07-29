@@ -6,6 +6,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object mapStream extends Builder {
   private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {

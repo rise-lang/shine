@@ -1,6 +1,7 @@
 package shine.DPIA
 
-import rise.core.types.{ArrayType, DataType, DepArrayType, IndexType, VectorType}
+import rise.core.types.DataType
+import rise.core.types.DataType._
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Operators, _}

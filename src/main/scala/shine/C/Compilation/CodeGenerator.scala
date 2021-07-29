@@ -3,6 +3,7 @@ package shine.C.Compilation
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.core.substitute.{typeInType => substituteTypeInType, natInType => substituteNatInType}
 import shine.C.AST
 import shine.C.AST.Block
@@ -536,40 +537,40 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
 
     dt match {
-      case b: rise.core.types.ScalarType => b match {
-        case rise.core.types.bool => C.AST.Type.int
-        case rise.core.types.int => C.AST.Type.int
-        case rise.core.types.u8 => C.AST.Type.u8
-        case rise.core.types.u16 => C.AST.Type.u16
-        case rise.core.types.u32 => C.AST.Type.u32
-        case rise.core.types.u64 => C.AST.Type.u64
-        case rise.core.types.i8 => C.AST.Type.i8
-        case rise.core.types.i16 => C.AST.Type.i16
-        case rise.core.types.i32 => C.AST.Type.i32
-        case rise.core.types.i64 => C.AST.Type.i64
-        case rise.core.types.f16 => throw new Exception("f16 not supported")
-        case rise.core.types.f32 => C.AST.Type.float
-        case rise.core.types.f64 => C.AST.Type.double
+      case b: rise.core.types.DataType.ScalarType => b match {
+        case rise.core.types.DataType.bool => C.AST.Type.int
+        case rise.core.types.DataType.int => C.AST.Type.int
+        case rise.core.types.DataType.u8 => C.AST.Type.u8
+        case rise.core.types.DataType.u16 => C.AST.Type.u16
+        case rise.core.types.DataType.u32 => C.AST.Type.u32
+        case rise.core.types.DataType.u64 => C.AST.Type.u64
+        case rise.core.types.DataType.i8 => C.AST.Type.i8
+        case rise.core.types.DataType.i16 => C.AST.Type.i16
+        case rise.core.types.DataType.i32 => C.AST.Type.i32
+        case rise.core.types.DataType.i64 => C.AST.Type.i64
+        case rise.core.types.DataType.f16 => throw new Exception("f16 not supported")
+        case rise.core.types.DataType.f32 => C.AST.Type.float
+        case rise.core.types.DataType.f64 => C.AST.Type.double
       }
-      case rise.core.types.NatType => C.AST.Type.int
-      case _: rise.core.types.IndexType => C.AST.Type.int
-      case _: rise.core.types.VectorType | _: rise.core.types.FragmentType =>
+      case rise.core.types.DataType.NatType => C.AST.Type.int
+      case _: rise.core.types.DataType.IndexType => C.AST.Type.int
+      case _: rise.core.types.DataType.VectorType | _: rise.core.types.DataType.FragmentType =>
         throw new Exception(s"$dt types in C are not supported")
-      case a: rise.core.types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
-      case a: rise.core.types.DepArrayType =>
+      case a: rise.core.types.DataType.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
+      case a: rise.core.types.DataType.DepArrayType =>
         a.fdt match {
           case NatToDataLambda(_, body) =>
             C.AST.ArrayType(typ(body), Some(a.size)) // TODO: be more precise with the size?
           case _: NatToDataIdentifier =>  throw new Exception("This should not happen")
         }
-      case r: rise.core.types.PairType =>
+      case r: rise.core.types.DataType.PairType =>
         C.AST.StructType("Record_" + typeToStructNameComponent(r.dt1) + "_" + typeToStructNameComponent(r.dt2),
           immutable.Seq(
             (typ(r.dt1), "_fst"),
             (typ(r.dt2), "_snd")))
-      case rise.core.types.DepPairType(_, _, _) => C.AST.PointerType(C.AST.Type.u8)
-      case _: rise.core.types.DataTypeIdentifier | _: rise.core.types.NatToDataApply |
-           rise.core.types.ManagedBufferType(_) | rise.core.types.OpaqueType(_) =>
+      case rise.core.types.DataType.DepPairType(_, _, _) => C.AST.PointerType(C.AST.Type.u8)
+      case _: rise.core.types.DataType.DataTypeIdentifier | _: rise.core.types.DataType.NatToDataApply |
+           rise.core.types.DataType.ManagedBufferType(_) | rise.core.types.DataType.OpaqueType(_) =>
         throw new Exception(s"did not expect $dt")
     }
   }

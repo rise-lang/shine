@@ -4,7 +4,7 @@ import arithexpr.arithmetic.ArithExpr.Math.Min
 import shine.DPIA.DSL.{π1, π2, _}
 import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, VisitAndRebuild}
 import rise.core.types._
-import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA.Types.{CommType, ExpType, PhraseType}
 import shine.DPIA.primitives.imperative.{For, ForNat}
 import shine.DPIA.{Nat, VarType, varT}

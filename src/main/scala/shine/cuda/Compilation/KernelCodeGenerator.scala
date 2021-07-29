@@ -9,7 +9,8 @@ import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import rise.core.types.{DataType, Fragment, FragmentType, MatrixLayout, MatrixLayoutIdentifier, f16}
+import rise.core.types.{DataType, Fragment, MatrixLayout, MatrixLayoutIdentifier}
+import rise.core.types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{AsVectorAligned, Cast}
 import shine.DPIA.primitives.imperative.{AsScalarAcc, Assign}
@@ -292,9 +293,9 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def typ(dt: DataType): Type = dt match {
     case FragmentType(m, n, k, dataType, fragmentKind, layout) =>
       C.AST.FragmentType(m, n, k, typ(dataType), fragmentKind, layout)
-    case rise.core.types.f16 =>
+    case DataType.f16 =>
       cuda.AST.Type.half
-    case rise.core.types.OpaqueType("pipeline") =>
+    case DataType.OpaqueType("pipeline") =>
       cuda.AST.Type.pipeline
 
     case _ =>
@@ -304,20 +305,20 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   private def getVectorType(dt: DataType, n: Nat): Type = {
     if (n.eval > 0 && n.eval <= 4)
       dt match {
-        case rise.core.types.u8 => BasicType(s"uchar$n")
-        case rise.core.types.i8 => BasicType(s"char$n")
-        case rise.core.types.u16 => BasicType(s"ushort$n")
-        case rise.core.types.i16 => BasicType(s"short$n")
-        case rise.core.types.int | rise.core.types.i32 => BasicType(s"int$n")
-        case rise.core.types.u32 => BasicType(s"uint$n")
-        case rise.core.types.f32 => BasicType(s"float$n")
-        case rise.core.types.f64 => BasicType(s"double$n")
+        case DataType.u8 => BasicType(s"uchar$n")
+        case DataType.i8 => BasicType(s"char$n")
+        case DataType.u16 => BasicType(s"ushort$n")
+        case DataType.i16 => BasicType(s"short$n")
+        case DataType.int | DataType.i32 => BasicType(s"int$n")
+        case DataType.u32 => BasicType(s"uint$n")
+        case DataType.f32 => BasicType(s"float$n")
+        case DataType.f64 => BasicType(s"double$n")
         case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
       }
     else
       dt match {
-        case rise.core.types.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
-        case rise.core.types.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
+        case DataType.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
+        case DataType.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
         case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
       }
   }

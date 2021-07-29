@@ -1,7 +1,8 @@
 package shine.cuda
 
 import arithexpr.arithmetic._
-import rise.core.types.{AddressSpaceIdentifier, ArrayType, DataType, DataTypeIdentifier, DepArrayType, IndexType, NatIdentifier, NatToDataLambda, PairType, ScalarType, VectorType}
+import rise.core.types.{AddressSpaceIdentifier, DataType, NatIdentifier, NatToDataLambda}
+import rise.core.types.DataType._
 import shine.C.AST.ParamDecl
 import shine.C.AST.ParamKind
 import shine.DPIA.Types._
@@ -300,25 +301,25 @@ object KernelExecutor {
 
     private def createOutputArg(numberOfElements: Int, dataType: DataType): KernelArg = {
       dataType match {
-        case rise.core.types.i8 =>
+        case DataType.i8 =>
           println(s"Allocated global byte-argument with $numberOfElements bytes")
           ByteArg.createOutput(numberOfElements);
-        case rise.core.types.i16 =>
+        case DataType.i16 =>
           println(s"Allocated global short-argument with ${numberOfElements * 2L} bytes")
           ShortArg.createOutput(numberOfElements);
-        case rise.core.types.i32 | rise.core.types.int =>
+        case DataType.i32 | DataType.int =>
           println(s"Allocated global int-argument with ${numberOfElements * 4L} bytes")
           IntArg.createOutput(numberOfElements);
-        case rise.core.types.i64 =>
+        case DataType.i64 =>
           println(s"Allocated global long-argument with ${numberOfElements * 8L} bytes")
           LongArg.createOutput(numberOfElements);
-        case rise.core.types.f16 =>
+        case DataType.f16 =>
           println(s"Allocated global half-argument with ${numberOfElements * 2L} bytes")
           HalfArg.createOutput(numberOfElements);
-        case rise.core.types.f32 =>
+        case DataType.f32 =>
           println(s"Allocated global float-argument with ${numberOfElements * 4L} bytes")
           FloatArg.createOutput(numberOfElements);
-        case rise.core.types.f64 =>
+        case DataType.f64 =>
           println(s"Allocated global double-argument with ${numberOfElements * 8L} bytes")
           DoubleArg.createOutput(numberOfElements);
         case _ => throw new IllegalArgumentException("Argh Return type of the given lambda expression " +
@@ -328,13 +329,13 @@ object KernelExecutor {
 
     private def asArray[R](dt: DataType, output: KernelArg): R = {
       (dt match {
-        case rise.core.types.i8 => output.asInstanceOf[ByteArg].asByteArray()
-        case rise.core.types.i16 => output.asInstanceOf[ShortArg].asShortArray()
-        case rise.core.types.i32 | rise.core.types.int => output.asInstanceOf[IntArg].asIntArray()
-        case rise.core.types.i64 => output.asInstanceOf[LongArg].asLongArray()
-        case rise.core.types.f16 => output.asInstanceOf[HalfArg].asFloatArray()
-        case rise.core.types.f32 => output.asInstanceOf[FloatArg].asFloatArray()
-        case rise.core.types.f64 => output.asInstanceOf[DoubleArg].asDoubleArray()
+        case DataType.i8 => output.asInstanceOf[ByteArg].asByteArray()
+        case DataType.i16 => output.asInstanceOf[ShortArg].asShortArray()
+        case DataType.i32 | DataType.int => output.asInstanceOf[IntArg].asIntArray()
+        case DataType.i64 => output.asInstanceOf[LongArg].asLongArray()
+        case DataType.f16 => output.asInstanceOf[HalfArg].asFloatArray()
+        case DataType.f32 => output.asInstanceOf[FloatArg].asFloatArray()
+        case DataType.f64 => output.asInstanceOf[DoubleArg].asDoubleArray()
         case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
           "not supported: " + dt.toString)
       }).asInstanceOf[R]
@@ -368,14 +369,14 @@ object KernelExecutor {
         case al: Array[Array[Array[Array[Long]]]] => createArrayArg(al.flatten.flatten.flatten)
 
         case f: Float =>
-          if (dt == rise.core.types.f32)
+          if (dt == DataType.f32)
             createValueArg(f)
           else
             createValueArgHalf(f)
 
         case af: Array[Float] =>
           dt match {
-            case arrayType: ArrayType if arrayType.elemType == rise.core.types.f32 => createArrayArg(af)
+            case arrayType: ArrayType if arrayType.elemType == DataType.f32 => createArrayArg(af)
             case _ => createArrayArgHalf(af)
           }
 
@@ -519,7 +520,7 @@ object KernelExecutor {
     private def collectSizeVars(arguments: List[Argument], sizeVariables: Map[Nat, Nat]): Map[Nat, Nat] = {
       def recordSizeVariable(sizeVariables:Map[Nat, Nat], arg:Argument): Map[Nat, Nat] = {
         arg.parameter._2.typ match {
-          case rise.core.types.int =>
+          case DataType.int =>
             arg.argValue match {
               case Some(i:Int) => sizeVariables + ((NatIdentifier(arg.parameter._1.name), Cst(i)))
               case Some(num) =>
@@ -605,7 +606,7 @@ object KernelExecutor {
 
     private def getOutputType(dt: DataType): DataType = dt match {
       case _: ScalarType => dt
-      case _: IndexType => rise.core.types.int
+      case _: IndexType => DataType.int
       case _: DataTypeIdentifier => dt
       case VectorType(_, elem) => elem
       case PairType(fst, snd) =>

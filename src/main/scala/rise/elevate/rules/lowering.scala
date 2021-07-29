@@ -2,22 +2,23 @@ package rise.elevate.rules
 
 import arithexpr.arithmetic.Cst
 import elevate.core.strategies.basic._
-import elevate.core.strategies.{Traversable, predicate}
 import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.{Traversable, predicate}
 import elevate.core.{Failure, Strategy, Success}
 import elevate.macros.RuleMacro.rule
 import elevate.macros.StrategyMacro.strategy
 import rise.core.DSL._
-import rise.core.{primitives => p, _}
 import rise.core.primitives.{not => _, _}
+import rise.core.types.DataType._
 import rise.core.types._
+import rise.core.{primitives => p, _}
 import rise.elevate._
 import rise.elevate.rules.traversal._
 import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate.{isVectorArray, _}
 import rise.elevate.strategies.traversal._
-import rise.openMP.{primitives => omp, _}
+import rise.openMP.{primitives => omp}
 
 object lowering {
 

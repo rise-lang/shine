@@ -4,6 +4,8 @@ import rise.core.DSL.HighLevelConstructs.reorderWithStride
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import rise.elevate.rules.traversal.default
 import rise.openCL.primitives.oclIterate
 import shine.DPIA.Types.TypeCheck._

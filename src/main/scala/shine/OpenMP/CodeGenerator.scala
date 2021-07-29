@@ -2,7 +2,8 @@ package shine.OpenMP
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
-import rise.core.types.{DataType, NatKind, ScalarType, VectorType}
+import rise.core.types.{DataType, NatKind}
+import rise.core.types.DataType._
 import rise.core.substitute.{natInType => substituteNatInType}
 import shine.C.AST.{ArraySubscript, Decl}
 import shine.C.Compilation.CodeGenerator.CIntExpr
@@ -136,7 +137,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def typ(dt: DataType): Type = {
     dt match {
-      case v: rise.core.types.VectorType =>
+      case v: VectorType =>
         // this sets the representation of vector types in C:
         // struct float4 {
         //    float data[4];

@@ -5,6 +5,7 @@ import rise.core.primitives._
 import rise.core.semantics._
 import rise.core.traverse._
 import rise.core.types._
+import rise.core.types.DataType._
 
 import scala.language.implicitConversions
 

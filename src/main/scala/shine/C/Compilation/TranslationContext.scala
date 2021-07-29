@@ -1,6 +1,7 @@
 package shine.C.Compilation
 
 import rise.core.types._
+import rise.core.types.DataType._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, ExpType}

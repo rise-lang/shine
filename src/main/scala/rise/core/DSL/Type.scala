@@ -2,6 +2,7 @@ package rise.core.DSL
 
 import arithexpr.arithmetic.{Cst, RangeAdd}
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.core.{Expr, freshName}
 
 import scala.language.implicitConversions
@@ -217,6 +218,14 @@ object Type {
     }
   }
 
+//  implicit final class ArrayTypeConstructor(s: Nat) {
+//    @inline def `.`(dt: DataType): ArrayType = ArrayType(s, dt)
+//    @inline def `.d`(ft: NatToData): DepArrayType =
+//      DepArrayType(s, ft)
+//    @inline def `.d`(f: NatIdentifier => DataType): DepArrayType =
+//      DepArrayType(s, NatToDataLambda(s, f))
+//  }
+
   implicit final class TupleTypeConstructors(private val a: DataType)
     extends AnyVal {
     @inline def x(b: DataType): PairType = PairType(a, b)
@@ -242,6 +251,11 @@ object Type {
       ArrayTypeConstructorHelper(Seq(n, m))
 
     @inline def `.`(dt: DataType): ArrayType = ArrayType(n, dt)
+
+    @inline def `.d`(ft: NatToData): DepArrayType =
+      DepArrayType(n, ft)
+    @inline def `.d`(f: NatIdentifier => DataType): DepArrayType =
+      DepArrayType(n, NatToDataLambda(n, f))
   }
 
   implicit final class ArrayTypeConstructorsFromInt(private val n: Int)

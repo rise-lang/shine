@@ -2,7 +2,8 @@ package shine.DPIA
 
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
-import rise.core.types.{AddressSpaceKind, ArrayType, DataKind, DataType, DataTypeIdentifier, DepArrayType, DepPairType, FragmentType, IndexType, NatKind, NatToNatKind, NatToNatLambda, PairType, ScalarType, VectorType, bool, read, vec, write, NatType}
+import rise.core.types.{AddressSpaceKind, DataKind, DataType, NatKind, NatToNatKind, NatToNatLambda, read, write}
+import rise.core.DSL.Type._
 import rise.core.types.DataType._
 import rise.elevate.Rise
 import rise.elevate.rules._
@@ -115,34 +116,34 @@ object fromRise {
 
     p match {
       case core.printType(msg) => fromType {
-        case expT(dt: rt.DataType, w) ->: _
+        case expT(dt: DataType, w) ->: _
         =>
         fun[ExpType](expT(dt, w), e => PrintType(msg, dt, w, e))
       }
 
       case core.natAsIndex() => fromType {
-        case nFunT(n, expT(rt.`NatType`, `read`) ->:
-          expT(rt.IndexType(_), `read`))
+        case nFunT(n, expT(`NatType`, `read`) ->:
+          expT(IndexType(_), `read`))
         =>
         depFun(NatKind, n)(
-          fun[ExpType](expT(rt.NatType, read), e =>
+          fun[ExpType](expT(NatType, read), e =>
             NatAsIndex(n, e)))
       }
 
       case core.map() => fromType {
         case ( expT(s, ai) ->: expT(t, _) ) ->:
-          expT(rt.ArrayType(n, _), _) ->:
-          expT(rt.ArrayType(_, _), _)
+          expT(ArrayType(n, _), _) ->:
+          expT(ArrayType(_, _), _)
         =>
         fun[ExpType ->: ExpType](expT(s, ai) ->: expT(t, ai), f =>
-          fun[ExpType](expT(rt.ArrayType(n, s), ai), e =>
+          fun[ExpType](expT(ArrayType(n, s), ai), e =>
             Map(n, s, t, ai, f, e)))
       }
 
       case core.mapSeq() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
-          expT(rt.ArrayType(n, _), `read`) ->:
-          expT(rt.ArrayType(_, _), `write`)
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
@@ -151,8 +152,8 @@ object fromRise {
 
       case core.mapStream() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
-          expT(rt.ArrayType(n, _), `read`) ->:
-          expT(rt.ArrayType(_, _), `read`)
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `read`)
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>
@@ -161,8 +162,8 @@ object fromRise {
 
       case core.iterateStream() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
-          expT(rt.ArrayType(n, _), `read`) ->:
-          expT(rt.ArrayType(_, _), `write`)
+          expT(ArrayType(n, _), `read`) ->:
+          expT(ArrayType(_, _), `write`)
         =>
         fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
           fun[ExpType](expT(n`.`s, read), e =>

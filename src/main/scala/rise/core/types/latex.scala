@@ -1,8 +1,10 @@
 package rise.core.types
 
-import scala.language.{implicitConversions, postfixOps}
 import rise.core.DSL.Type._
 import rise.core._
+import rise.core.types.DataType._
+
+import scala.language.{implicitConversions, postfixOps}
 
 object latex {
   import builderDSL._

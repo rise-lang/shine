@@ -3,6 +3,7 @@ package rise.core.types
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.core.DSL.Type.n2dtFun
 import rise.core.lifting.liftDependentFunctionType
+import rise.core.types.DataType._
 import rise.core.types.InferenceException.error
 import rise.core.{freshName, substitute}
 

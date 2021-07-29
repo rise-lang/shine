@@ -1,7 +1,8 @@
 package shine.DPIA
 
 import arithexpr.arithmetic.RangeAdd
-import rise.core.types.{AccessIdentifier, AccessKind, AddressSpaceIdentifier, AddressSpaceKind, DataKind, DataType, DataTypeIdentifier, NatIdentifier, NatKind, NatToDataLambda}
+import rise.core.types.{AccessIdentifier, AccessKind, AddressSpaceIdentifier, AddressSpaceKind, DataKind, DataType, NatIdentifier, NatKind, NatToDataLambda}
+import rise.core.types.DataType.DataTypeIdentifier
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.TypeCheck._
 

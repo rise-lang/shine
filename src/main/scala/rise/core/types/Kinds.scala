@@ -1,6 +1,7 @@
 package rise.core.types
 
 import rise.core.freshName
+import rise.core.types.DataType.DataTypeIdentifier
 
 sealed trait Kind[+T, +I] {
   def name :String

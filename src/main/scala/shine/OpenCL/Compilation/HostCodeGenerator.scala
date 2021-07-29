@@ -1,7 +1,8 @@
 package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
-import rise.core.types.{DataType, DataTypeIdentifier, DepArrayType, DepPairType, IndexType, ManagedBufferType, NatToDataApply, NatType, OpaqueType, PairType, ScalarType, VectorType}
+import rise.core.types.DataType
+import rise.core.types.DataType._
 import shine.C
 import shine.C.AST.{OpaqueType => _, _}
 import shine.C.Compilation.CodeGenerator
@@ -178,7 +179,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
   }
 
   private def managedTyp(dt: DataType): C.AST.Type = dt match {
-    case rise.core.types.ArrayType(_, elemType) => C.AST.PointerType(typ(elemType))
+    case DataType.ArrayType(_, elemType) => C.AST.PointerType(typ(elemType))
     case _ => throw new Exception(s"did not expect $dt")
   }
 
@@ -202,11 +203,11 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
         C.AST.Literal(s"sizeof(${typ(dt)})")
       case PairType(fst, snd) =>
         C.AST.BinaryExpr(bufferSize(fst), BinaryOperator.+, bufferSize(snd))
-      case a: rise.core.types.ArrayType =>
+      case a: DataType.ArrayType =>
         C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
       case a: DepArrayType => ??? // TODO
       case _: DepPairType[_, _] | _: NatToDataApply | _: DataTypeIdentifier | _: OpaqueType |
-           _: rise.core.types.FragmentType =>
+           _: DataType.FragmentType =>
         throw new Exception(s"did not expect ${dt}")
     }
 

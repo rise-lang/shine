@@ -1,6 +1,7 @@
 package shine.DPIA.DSL
 
-import rise.core.types.{ArrayType, DataType, NatKind, PairType, read}
+import rise.core.types.{DataType, NatKind, read}
+import rise.core.types.DataType._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._

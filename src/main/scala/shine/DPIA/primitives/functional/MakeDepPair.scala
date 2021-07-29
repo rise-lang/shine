@@ -1,6 +1,7 @@
 package shine.DPIA.primitives.functional
 
-import rise.core.types.{Access, DataType, DepPairType, NatKind}
+import rise.core.types.{Access, DataType, NatKind}
+import rise.core.types.DataType._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._

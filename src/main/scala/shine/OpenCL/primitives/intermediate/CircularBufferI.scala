@@ -1,7 +1,8 @@
 package shine.OpenCL.primitives.intermediate
 
 import arithexpr.arithmetic.ArithExpr
-import rise.core.types.{AddressSpace, DataType, PairType, read}
+import rise.core.types.{AddressSpace, DataType, read}
+import rise.core.DSL.Type._
 import rise.core.types.DataType._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative.{CycleAcc, DropAcc, PairAcc, UnzipAcc}

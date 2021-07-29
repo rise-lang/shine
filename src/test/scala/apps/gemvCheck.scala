@@ -6,6 +6,7 @@ import Type._
 import rise.core.types._
 import util.gen
 import util.gen.c.function
+import rise.core.types.DataType._
 
 class gemvCheck extends test_util.Tests {
   private val N = 128
