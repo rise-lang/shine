@@ -9,14 +9,10 @@ import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}
 import shine.DPIA.primitives.intermediate._
-import shine.OpenMP.primitives.{functional => omp}
-import shine.OpenMP.primitives.{intermediate => ompI}
-import shine.OpenCL.primitives.{functional => ocl}
-import shine.OpenCL.primitives.{intermediate => oclI}
-import shine.OpenCL.primitives.{imperative => oclImp}
-import shine.cuda.primitives.{functional => cuda}
-import shine.cuda.primitives.{intermediate => cudaI}
-import shine.cuda.primitives.{imperative => cudaImp}
+import shine.GAP8.primitives.imperative.{Conv3x3, Conv7x4}
+import shine.OpenCL.primitives.{functional => ocl, imperative => oclImp, intermediate => oclI}
+import shine.OpenMP.primitives.{functional => omp, intermediate => ompI}
+import shine.cuda.primitives.{functional => cuda, imperative => cudaImp, intermediate => cudaI}
 
 object AcceptorTranslation {
   def acc(E: Phrase[ExpType])
@@ -354,6 +350,31 @@ object AcceptorTranslation {
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
 
     //GAP8
+    //case shine.GAP8.primitives.functional.Conv(w, h, bias, dt, in, filter) =>
+    case c@shine.GAP8.primitives.functional.Conv(fs) =>
+      con(c.in)(λ(ExpType(c.h`.`(c.w`.`c.dt), read))(inInner => {
+        fs match {
+          case shine.GAP8._3x3 =>
+            con(c.filter)(λ(ExpType(ArrayType(10, c.dt), read))(filterInner =>
+              shine.GAP8.primitives.imperative.Conv3x3(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
+            ))
+          case shine.GAP8._5x5 =>
+            con(c.filter)(λ(ExpType(ArrayType(26, c.dt), read))(filterInner =>
+              shine.GAP8.primitives.imperative.Conv5x5(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
+            ))
+          case shine.GAP8._7x7 =>
+            con(c.filter)(λ(ExpType(ArrayType(56, c.dt), read))(filterInner =>
+              shine.GAP8.primitives.imperative.Conv7x7(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
+            ))
+          case shine.GAP8._7x4 =>
+            con(c.filter)(λ(ExpType(ArrayType(28, c.dt), read))(filterInner =>
+              shine.GAP8.primitives.imperative.Conv7x4(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
+            ))
+          case _=>
+            throw new Exception("Unsupported filter size")
+        }
+      }))
+
     case r@shine.GAP8.primitives.functional.Run(cores) => {
       ???
     }
