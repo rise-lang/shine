@@ -1,78 +1,19 @@
 package apps.autotuning
 
+import arithexpr.arithmetic.{RangeMul}
 import rise.autotune
 import rise.autotune.{HostCode, Median, Timeouts, Tuner, tuningParam, wrapOclRun}
-import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
-import rise.core.primitives._
-import rise.core.types._
-import rise.openCL.DSL._
-import rise.openCL.primitives.oclReduceSeq
+import rise.core.types.{Nat, _}
 import shine.OpenCL.{GlobalSize, LocalSize}
 
 class kmeansTuning extends test_util.Tests {
 
-  private val update = fun(f32 ->: (f32 x f32) ->: f32)((dist, pair) =>
-    dist + (pair._1 - pair._2) * (pair._1 - pair._2)
-  )
-
-  private val testF = foreignFun("test",
-    Seq("dist", "tuple"),
-    """{
-      | float min_dist = tuple._fst;
-      | int i = tuple._snd._fst;
-      | int index = tuple._snd._snd;
-      | if (dist < min_dist) {
-      |   return (struct Record_float__int_int_){ dist, { i + 1 , i } };
-      | } else {
-      |   return (struct Record_float__int_int_){ min_dist, { i + 1, index } };
-      | }
-      }""".stripMargin,
-    f32 ->: (f32 x (int x int)) ->: (f32 x (int x int)))
-
-  private val select = fun(tuple => tuple._2._2)
-
-  val kmeansOcl: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
-    (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
-  )((features, clusters) =>
-    features |> transpose |> mapGlobal(fun(feature =>
-      clusters |> oclReduceSeq(AddressSpace.Private)(
-        fun(tuple => fun(cluster => {
-          val dist = zip(feature)(cluster) |>
-            oclReduceSeq(AddressSpace.Private)(update)(lf32(0.0f))
-          testF(dist)(tuple)
-        }))
-      )(
-        makePair(cast(lf64(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
-      ) |> select
-    ))
-  ))
-
-  val kmeansTuning:Expr = {
-    tuningParam("p", (p: Nat) =>
-      tuningParam("c", (c: Nat) =>
-        tuningParam("f", (f: Nat) =>
-          fun(
-            (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
-          )((features, clusters) =>
-            features |> transpose |> mapGlobal(fun(feature =>
-              clusters |> oclReduceSeq(AddressSpace.Private)(
-                fun(tuple => fun(cluster => {
-                  val dist = zip(feature)(cluster) |>
-                    oclReduceSeq(AddressSpace.Private)(update)(lf32(0.0f))
-                  testF(dist)(tuple)
-                }))
-              )(
-                makePair(cast(lf64(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
-              ) |> select
-            ))
-          ))))
-  }
   val kmeans:Expr =
-    tuningParam("ls0", (ls0: Nat) =>
-      tuningParam("gs0", (gs0: Nat) =>
-        wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(kmeansTuning)))
+    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+      tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+        wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(apps.kmeans.kmeansOcl)))
 
   // scalastyle:off
   val init: (Int, Int, Int) => String = (p, c, f) => {
@@ -101,7 +42,7 @@ class kmeansTuning extends test_util.Tests {
   }
   val compute =
     s"""
-       |    fun_init_run(ctx, output, features, clusters);
+       |    fun_init_run(ctx, output, P, C, F, features, clusters);
        |""".stripMargin
 
   val finish =
@@ -119,11 +60,8 @@ class kmeansTuning extends test_util.Tests {
     println("kmeans: \n" + kmeans)
 
     val params = Map(
-      TuningParameter("p") -> (1024: Nat),
-      TuningParameter("c") -> (5: Nat),
-      TuningParameter("f") -> (34: Nat),
-      TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("gs0") -> (8: Nat)
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("gs0") -> (1 << 16: Nat)
     )
 
     val kmeans_replaced = rise.core.substitute.natsInExpr(params, kmeans)
@@ -132,7 +70,7 @@ class kmeansTuning extends test_util.Tests {
     val result = autotune.execution.execute(
       expression = kmeans_replaced,
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
+      timeouts = Timeouts(10000, 10000, 100000),
       executionIterations = 10,
       speedupFactor = 100,
       execution = Median
@@ -141,18 +79,18 @@ class kmeansTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-
-  test("search kmeans"){
+  test("search kmeans generated config file"){
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
+      inputSizes = Seq(1024, 5, 34),
       samples = 10,
       name = "kmeans",
       output = "autotuning/kmeans",
-      timeouts = Timeouts(10000, 10000, 10000),
+      timeouts = Timeouts(1000, 1000, 1000),
       executionIterations = 10,
       speedupFactor = 100,
-      configFile =Some("/home/jo/development/rise-lang/shine/autotuning/config/kmeans_1024.json"),
+      None,
       hierarchicalHM = true,
       execution = Median
     )
@@ -166,5 +104,4 @@ class kmeansTuning extends test_util.Tests {
     println("bestSample: \n" + bestSample)
     println("runtime: \n" + bestSample.get.runtime)
   }
-
 }
