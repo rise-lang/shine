@@ -1,6 +1,6 @@
 package rise.autotune
 
-import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, Var}
+import arithexpr.arithmetic.{RangeAdd, RangeMul, Var}
 import rise.core.types.{NatIdentifier, TuningParameter}
 
 import scala.collection.mutable.ListBuffer
@@ -73,6 +73,7 @@ object configFileGeneration {
               List.range(start.evalInt, stop.evalInt + 1)
                 .filter(_ % stepWidth == 0)
           }
+
           filterList(p, param._2._1, values, param._1)
         }
         case RangeMul(start, stop, mul) => {
@@ -204,6 +205,9 @@ object configFileGeneration {
         |""".stripMargin
 
     val file = header + parameterSection + foot
+
+    println("file: " + file)
+
     file
   }
 
