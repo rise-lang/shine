@@ -1,0 +1,11 @@
+vectoraddition::N:Nat=>N.4xF32->N.4xF32->N.4xF32
+vectoraddition=N:Nat=>vecA->vecB->
+  mapLocal 0 (
+    a-->addV (fst a) (snd a))
+    (zip vecA vecB)
+addV::4xF32->4xF32->4xF32
+foreign addV(a,b){
+  float4 res;
+  res.xyz = a.xyz + b.xyz;
+  return res;
+}

@@ -39,7 +39,7 @@ class matchesToken extends  AnyFlatSpec {
     val thrown = intercept[Exception] {
         new Span(file, Range(b, e))
     }
-    thrown.getMessage should equal ("requirement failed: they have the same column/line and end.row is before begin.row")
+    thrown.getMessage should equal ("requirement failed: they have the same column/line and end.row is before begin.row: (3,4) ; (3,3)")
   }
 
   "Span" should "not be unlogical2" in {

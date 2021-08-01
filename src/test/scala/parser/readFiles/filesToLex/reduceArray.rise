@@ -1,0 +1,8 @@
+addV::F32->4xF32->F32
+foreign addV(a,b){
+  float res;
+  res = a+b.x;
+  return res;
+}
+reduceArray::N:Nat=>N.4xF32->F32
+reduceArray= N:Nat=>arr->reduceSeq addV 0F32 arr

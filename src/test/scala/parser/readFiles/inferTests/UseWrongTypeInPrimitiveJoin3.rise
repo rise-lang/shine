@@ -1,2 +1,2 @@
 f::N:Nat=>N.F32->F64
-f=\x->join x
+f=x->join x

@@ -1,7 +1,8 @@
 identity:=x->x
-dotElemWeihts:=weights->elem->acc->pair->oclReduceSeqUnroll Private (+ acc (* (fst pair) (snd pair))) 0F32 (zip (join elem) weights)
+dotElemWeihts:=weightsA->elem->oclReduceSeqUnroll Private (acc->pair->+ acc (* (fst pair) (snd pair))) 0F32 (zip (join elem) weightsA)
 unslide2D:=join .(map ((map join) . transpose))
-slide2D:=szOuter:Nat=>stOuter:Nat=>szInner:Nat=>stInner:Nat=> (map transpose).(slide szOuter stOuter).(map (slide szInner stInner))
+slide2D:=SzOuter:Nat=>StOuter:Nat=>SzInner:Nat=>StInner:Nat=> (map transpose).(slide SzOuter StOuter).(map (slide SzInner StInner))
+padClamp2D:=LOuter:Nat=>ROuter:Nat=>LInner:Nat=>RInner:Nat=>map (padClamp LOuter ROuter) . (padClamp LInner RInner)
 
 blurXTiled2D::N:Nat=>N.N.F32->17.F32->N.N.F32
 blurXTiled2D=N:Nat=>matrix->weights->
@@ -9,8 +10,8 @@ blurXTiled2D=N:Nat=>matrix->weights->
   mapWorkGroup 0 (
   tile-> mapLocal 1 (( 
   mapLocal 0 (dotElemWeihts weights)
-  ). (slide2D 1N 1N 17N 1N) 
+  ). (slide2D 1 1 17 1) 
   (toLocal (mapLocal 1 (mapLocal 0 identity) tile))
   )
   )
-  )) . (slide2D 4N 4N 144N 128N) . (padClamp2D 0 0 8 8) matrix
+  )) . (slide2D 4 4 144 128) . (padClamp2D 0 0 8 8) matrix

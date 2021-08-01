@@ -58,6 +58,26 @@ class parseTest extends  test_util.TestsWithExecutor {
     val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
     println(gen.OpenCLKernel(ex))
   }
+  test("parser should be able to parse 'vektoraddition.rise'"){
+    val fileName: String = testFilePath + "vektoraddition.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "vectoraddition"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
+    println(gen.OpenCLKernel(ex))
+  }
+  ignore("parser should be able to parse 'reduceArray.rise'"){
+    val fileName: String = testFilePath + "reduceArray.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    val riseExprByIdent = parse(lexer.tokens)
+
+    val functionName: String = "reduceArray"
+    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
+    println(gen.OpenCLKernel(ex))
+  }
   test("parser should be able to parse 'addMatrixDifferentOrder.rise'"){
     val fileName: String = testFilePath + "addMatrixDifferentOrder.rise"
     val file: FileReader = new FileReader(fileName)
@@ -105,108 +125,6 @@ class parseTest extends  test_util.TestsWithExecutor {
     }
   }
 
-  //Todo: It should be possible to parse "    arrayTypeOnlyTypAnn.rise\" and not only "arrayTypeOnlyTypAnn.rise"
-
-  //Todo: not ignore; change it to an ErrorTest or change this test a little bit
-  ignore("parser should be able to parse 'arrayTypeOnlyTypAnn.rise'"){
-    val fileName: String = testFilePath + "arrayTypeOnlyTypAnn.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName: String = "f"
-    val exT = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
-
-//    exT match {
-//      case rt.FunType(rt.ArrayType(n, rt.i32), rt.FunType(rt.i32, rt.i32)) if n.eval.equals(5) => true
-//      case a => fail("it was a different definition expected, but we see: " + a)
-//    }
-//
-//    val functionName2: String = "h"
-//    val ex: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!"))
-//
-//    ex.t match {
-//      case rt.FunType(rt.f32, rt.f32) => true
-//      case t => fail("The Type '" + t + "' is not the expected type.")
-//    }
-//
-//    ex match {
-//      case r.Lambda(r.Identifier("x"), spAddComp @ r.App(r.App(rp.add(spAdd), idX @ r.Identifier("x")), r.Literal(rS.FloatData(5), sp5))) =>
-//      {
-//        spAdd match {
-//          case None => fail("The Span should not be None")
-//          case Some(Span(file, Range(begin, end))) => {
-//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
-//            begin.row should equal(6)
-//            end.row should equal(7)
-//            begin.column should equal(2)
-//            end.column should equal(2)
-//          }
-//        }
-//        idX.span match {
-//          case None => fail("The Span should not be None")
-//          case Some(Span(file, Range(begin, end))) => {
-//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
-//            begin.row should equal(7)
-//            end.row should equal(8)
-//            begin.column should equal(2)
-//            end.column should equal(2)
-//          }
-//        }
-//        sp5 match {
-//          case None => fail("The Span should not be None")
-//          case Some(Span(file, Range(begin, end))) => {
-//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
-//            begin.row should equal(9)
-//            end.row should equal(13)
-//            begin.column should equal(2)
-//            end.column should equal(2)
-//          }
-//        }
-//        spAddComp.span match {
-//          case None => fail("The Span should not be None")
-//          case Some(Span(file, Range(begin, end))) => {
-//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
-//            begin.row should equal(6)
-//            end.row should equal(13)
-//            begin.column should equal(2)
-//            end.column should equal(2)
-//          }
-//        }
-//      }
-//      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-//      case a => fail("not a lambda: " + a)
-//    }
-//
-//    ex.span match {
-//      case None => fail("The Span should not be None")
-//      case Some(Span(file, Range(begin, end))) => {
-//        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayTypeOnlyTypAnn.rise")
-//        begin.row should equal(2)
-//        end.row should equal(13)
-//        begin.column should equal(2)
-//        end.column should equal(2)
-//      }
-//    }
-//  }
-//
-//
-//  test("parser should be able to parse 'Brace5.rise'"){
-//    val fileName: String = testFilePath + "Brace5.rise"
-//    val file: FileReader = new FileReader(fileName)
-//    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-//    val riseExprByIdent = parse(lexer.tokens)
-//
-//    val functionName: String = "f"
-//    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
-//
-//    ex match {
-//      case r.Lambda(r.Identifier("x"), r.Identifier("x")) => true
-//      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-//      case a => fail("not a lambda: " + a)
-//    }
-  }
-
   test("parser should be able to parse 'braces.rise'"){
     val fileName: String = testFilePath + "braces.rise"
     val file: FileReader = new FileReader(fileName)
@@ -239,13 +157,13 @@ class parseTest extends  test_util.TestsWithExecutor {
     }
   }
 
-  test("parser should be able to parse 'convolution.rise'"){
+  ignore("parser should be able to parse 'convolution.rise'"){
     val fileName: String = testFilePath + "convolution.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     val riseExprByIdent = parse(lexer.tokens)
 
-    val functionName2: String = "nbody"
+    val functionName2: String = "convolution"
     val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!"))
 
     val N = 512
@@ -756,148 +674,6 @@ class parseTest extends  test_util.TestsWithExecutor {
     assert(r.IsClosedForm(ex))
   }
 
-  //Todo: Should be fixed in future work (Error by calling a Function, which is declared but not implemented)
-  //<Variable is only declared but has no definition: g in (2,10-11)>
-  ignore("parser should be able to parse 'DepLambda.rise'"){
-    val fileName: String = testFilePath + "DepLambda.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName: String = "f"
-    val ex_f: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
-
-    val functionName2: String = "g"
-    val ex_g: r.Expr = riseExprByIdent.get(functionName2).getOrElse(fail("The function '" + functionName2 + "' does not exist!!!"))
-
-    ex_f.t match {
-      case dep@rt.DepFunType(n,
-      arr@rt.ArrayType(n1: rt.NatIdentifier, rt.i32))
-        if n.name.equals("N") && n1.name.equals("N") => true
-      case t => fail("The Type '" + t + "' is not the expected type.")
-    }
-
-    ex_g.t match {
-      case rt.DepFunType(n, rt.DepFunType(d,
-      rt.ArrayType(n1: rt.NatIdentifier, d1: rt.DataTypeIdentifier)))
-        if n.name.equals("N1") && n1.name.equals(n.name)
-          && d.name.equals("D") && d1.name.equals(d.name) => true
-      case t => fail("The Type '" + t + "' is not the expected type.")
-    }
-
-    ex_f match {
-      case dep@r.DepLambda(n: rt.NatIdentifier, depapp1@r.DepApp(depapp2@r.DepApp(r.Identifier("g"),
-      n1:rt.NatIdentifier), i:rt.i32.type ))
-        if n.name.equals("N") && n1.name.equals("N")
-      => {
-        depapp2.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-            begin.row should equal(10)
-            end.row should equal(13)
-            begin.column should equal(2)
-            end.column should equal(2)
-          }
-        }
-        depapp1.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-            begin.row should equal(10)
-            end.row should equal(17)
-            begin.column should equal(2)
-            end.column should equal(2)
-          }
-        }
-        dep.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-            begin.row should equal(2)
-            end.row should equal(17)
-            begin.column should equal(2)
-            end.column should equal(2)
-          }
-        }
-      }
-      case r.DepLambda(n, e) => fail("Not correct deplambda: "
-        +n.toString()+ " , " + e.toString())
-      case a => fail("Not a DepLambda: " + a)
-    }
-
-    ex_f.span match {
-      case None => fail("The Span should not be None")
-      case Some(Span(file, Range(begin, end))) => {
-        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-        begin.row should equal(2)
-        end.row should equal(17)
-        begin.column should equal(2)
-        end.column should equal(2)
-      }
-    }
-
-
-    ex_g match {
-      case dep@r.DepLambda(n: rt.NatIdentifier, dep1@r.DepLambda(d:rt.DataTypeIdentifier,
-      r.App(r.DepApp(rp.generate(spanGenerate), n1:rt.NatIdentifier),
-      lam@r.Lambda(r.Identifier("i"), app1@r.App(
-      dep2@r.DepApp(rp.cast(_),d2:rt.DataTypeIdentifier), r.Identifier("i")))
-      )))
-        if n.name.equals("N1")
-          && d.name.equals("D") && n1.name.equals(n.name)&&
-          d2.name.equals(d.name)
-      => {
-        dep.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-            begin.row should equal(3)
-            end.row should equal(47)
-            begin.column should equal(3)
-            end.column should equal(3)
-          }
-        }
-        dep1.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-            begin.row should equal(12)
-            end.row should equal(47)
-            begin.column should equal(3)
-            end.column should equal(3)
-          }
-        }
-        spanGenerate match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-            begin.row should equal(21)
-            end.row should equal(29)
-            begin.column should equal(3)
-            end.column should equal(3)
-          }
-        }
-        lam.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/DepLambda.rise")
-            begin.row should equal(34)
-            end.row should equal(46)
-            begin.column should equal(3)
-            end.column should equal(3)
-          }
-        }
-      }
-      case r.DepLambda(n, e) => fail("Not correct deplambda: "
-        +n.toString()+ " , " + e.toString())
-      case a => fail("Not a DepLambda: " + a)
-    }
-
-    assert(r.IsClosedForm(ex_f))
-    assert(r.IsClosedForm(ex_g))
-  }
-
   //Todo: Should be fixed in future work (Error by Creating a Function which is not covered by the match in Solution yet)
   //<scala.MatchError: (D1: data -> (_t279 -> f32)) ((f32 -> i32)) ~ _t281 (of class rise.core.types.DepConstraint)>
   ignore("parser should be able to parse 'DepLambdaFunctionType.rise'"){
@@ -934,32 +710,6 @@ class parseTest extends  test_util.TestsWithExecutor {
     //      => true
     //      case t => fail("The Type '" + t + "' is not the expected type.")
     //    }
-
-    ex_u.t match {
-      case rt.DepFunType(d:rt.DataTypeIdentifier, rt.FunType(d1:rt.DataTypeIdentifier, rt.f32))
-        if d.name.equals("D1") && d1.name.equals("D1")=> true
-      case t => fail("The Type '" + t + "' is not the expected type.")
-    }
-
-    ex_g.t match {
-      case rt.FunType(rt.f32, rt.f32) => true
-      case t => fail("The Type '" + t + "' is not the expected type.")
-    }
-
-    ex_u match {
-      case r.DepLambda(d:rt.DataTypeIdentifier,
-      r.Lambda(r.Identifier("fkt"), r.Literal(rS.FloatData(1), _)))
-        if d.name.equals("D1")
-      => true
-      case r.DepLambda(n, e) => fail("Not correct deplambda: "
-        +n.toString()+ " , " + e.toString())
-      case a => fail("Not a DepLambda: " + a)
-    }
-
-    ex_g match {
-      case r.Lambda(r.Identifier("x"), r.DepApp(r.Identifier("u"), rt.FunType(rt.f32, rt.f32)))=> true
-      case a => fail("Lambda not correct: " + a)
-    }
 
     assert(r.IsClosedForm(ex_u))
     assert(r.IsClosedForm(ex_g))
@@ -1413,234 +1163,236 @@ class parseTest extends  test_util.TestsWithExecutor {
       case t => fail("The Type '" + t + "' is not the expected type.")
     }
 
-    ex_f match {
-      case dep@r.DepLambda(r1, dep2@r.DepLambda(m, dep3@r.DepLambda(n, lam@r.Lambda(r.Identifier("matrixA"),
-
-      lam2@r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal((0, _)),
-
-      lam3@r.Lambda(r.Identifier("rowA"),
-      r.App(r.App(op.mapLocal(1,_),
-
-      lam4@r.Lambda(r.Identifier("columnB"),
-      r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
-      lam5@r.Lambda(r.Identifier("acc"), lam6@r.Lambda(r.Identifier("arg"),
-      r.App(r.App(rp.add(_), r.Identifier("acc")), r.Identifier("arg"))))),r.Literal(rS.FloatData(0),_)),
-      r.App(r.DepApp(op.oclToMem(_), l1:rt.AddressSpace.Local.type),
-
-      r.App(r.App(rp.mapSeq(_), lam7@r.Lambda(r.Identifier("x"), appMulFstSnd@r.App(appMulFst@r.App(rp.mul(spanMul), appFst@r.App(rp.fst(spanFst), r.Identifier("x"))),
-      r.App(rp.snd(spanSnd), r.Identifier("x"))))),
-
-      r.App(r.App(rp.zip(_), r.Identifier("rowA")), r.Identifier("columnB"))
-
-      )
-
-      )
-
-      )
-      )
-      ), appTransPose@r.App(rp.transpose(spanTranspose), r.Identifier("matrixB"))))
-
-      ),
-      r.Identifier("matrixA")
-      ))
-
-      )))) =>
-      {
-        dep.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(7)
-            end.row should equal(9)
-            begin.column should equal(9)
-            end.column should equal(22)
-          }
-        }
-        dep2.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(14)
-            end.row should equal(9)
-            begin.column should equal(9)
-            end.column should equal(22)
-          }
-        }
-        dep3.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(21)
-            end.row should equal(9)
-            begin.column should equal(9)
-            end.column should equal(22)
-          }
-        }
-        lam.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(2)
-            end.row should equal(9)
-            begin.column should equal(10)
-            end.column should equal(22)
-          }
-        }
-        lam2.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(11)
-            end.row should equal(9)
-            begin.column should equal(10)
-            end.column should equal(22)
-          }
-        }
-        lam3.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(4)
-            end.row should equal(25)
-            begin.column should equal(13)
-            end.column should equal(20)
-          }
-        }
-        lam4.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(8)
-            end.row should equal(10)
-            begin.column should equal(15)
-            end.column should equal(18)
-          }
-        }
-        lam5.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(38)
-            end.row should equal(66)
-            begin.column should equal(15)
-            end.column should equal(15)
-          }
-        }
-        lam6.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(47)
-            end.row should equal(66)
-            begin.column should equal(15)
-            end.column should equal(15)
-          }
-        }
-        lam7.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(17)
-            end.row should equal(47)
-            begin.column should equal(17)
-            end.column should equal(17)
-          }
-        }
-        spanFst match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(33)
-            end.row should equal(36)
-            begin.column should equal(17)
-            end.column should equal(17)
-          }
-        }
-        spanMul match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(30)
-            end.row should equal(31)
-            begin.column should equal(17)
-            end.column should equal(17)
-          }
-        }
-        spanSnd match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(41)
-            end.row should equal(44)
-            begin.column should equal(17)
-            end.column should equal(17)
-          }
-        }
-        spanTranspose match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(7)
-            end.row should equal(16)
-            begin.column should equal(20)
-            end.column should equal(20)
-          }
-        }
-        appMulFst.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(30)
-            end.row should equal(38)
-            begin.column should equal(17)
-            end.column should equal(17)
-          }
-        }
-        appFst.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(33)
-            end.row should equal(38)
-            begin.column should equal(17)
-            end.column should equal(17)
-          }
-        }
-        appMulFstSnd.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(30)
-            end.row should equal(46)
-            begin.column should equal(17)
-            end.column should equal(17)
-          }
-        }
-        appTransPose.span match {
-          case None => fail("The Span should not be None")
-          case Some(Span(file, Range(begin, end))) => {
-            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-            begin.row should equal(7)
-            end.row should equal(24)
-            begin.column should equal(20)
-            end.column should equal(20)
-          }
-        }
-      }
-      case r.DepLambda(n, e) => fail("Not correct deplambda: "
-        +n.toString()+ " , " + e.toString())
-      case a => fail("Not a DepLambda: " + a)
-    }
-    ex_f.span match {
-      case None => fail("The Span should not be None")
-      case Some(Span(file, Range(begin, end))) => {
-        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
-        begin.row should equal(7)
-        end.row should equal(9)
-        begin.column should equal(9)
-        end.column should equal(22)
-      }
-    }
+//    ex_f match {
+//      case dep@r.DepLambda(r1, dep2@r.DepLambda(m, dep3@r.DepLambda(n, lam@r.Lambda(r.Identifier("matrixA"),
+//
+//      lam2@r.Lambda(r.Identifier("matrixB"), r.App(r.App(op.mapGlobal((0, _)),
+//
+//      lam3@r.Lambda(r.Identifier("rowA"),
+//      r.App(r.App(op.mapLocal(1,_),
+//
+//      lam4@r.Lambda(r.Identifier("columnB"),
+//      r.App(r.App(r.App(r.DepApp(op.oclReduceSeq(_), l:rt.AddressSpace.Local.type ),
+//      lam5@r.Lambda(r.Identifier("acc"), lam6@r.Lambda(r.Identifier("arg"),
+//      r.App(r.App(rp.add(_), r.Identifier("acc")), r.Identifier("arg"))))),r.Literal(rS.FloatData(0),_)),
+//      r.App(r.DepApp(op.oclToMem(_), l1:rt.AddressSpace.Local.type),
+//
+//      r.App(r.App(rp.mapSeq(_), lam7@r.Lambda(r.Identifier("x"), appMulFstSnd@r.App(appMulFst@r.App(rp.mul(spanMul), appFst@r.App(rp.fst(spanFst), r.Identifier("x"))),
+//      r.App(rp.snd(spanSnd), r.Identifier("x"))))),
+//
+//      r.App(r.App(rp.zip(_), r.Identifier("rowA")), r.Identifier("columnB"))
+//
+//      )
+//
+//      )
+//
+//      )
+//      )
+//      ), appTransPose@r.App(rp.transpose(spanTranspose), r.Identifier("matrixB"))))
+//
+//      ),
+//      r.Identifier("matrixA")
+//      ))
+//
+//      )))) =>
+//      {
+//        dep.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(7)
+//            end.row should equal(9)
+//            begin.column should equal(9)
+//            end.column should equal(22)
+//          }
+//        }
+//        dep2.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(14)
+//            end.row should equal(9)
+//            begin.column should equal(9)
+//            end.column should equal(22)
+//          }
+//        }
+//        dep3.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(21)
+//            end.row should equal(9)
+//            begin.column should equal(9)
+//            end.column should equal(22)
+//          }
+//        }
+//        lam.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(2)
+//            end.row should equal(9)
+//            begin.column should equal(10)
+//            end.column should equal(22)
+//          }
+//        }
+//        lam2.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(11)
+//            end.row should equal(9)
+//            begin.column should equal(10)
+//            end.column should equal(22)
+//          }
+//        }
+//        lam3.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(4)
+//            end.row should equal(25)
+//            begin.column should equal(13)
+//            end.column should equal(20)
+//          }
+//        }
+//        lam4.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(8)
+//            end.row should equal(10)
+//            begin.column should equal(15)
+//            end.column should equal(18)
+//          }
+//        }
+//        lam5.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(38)
+//            end.row should equal(66)
+//            begin.column should equal(15)
+//            end.column should equal(15)
+//          }
+//        }
+//        lam6.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(47)
+//            end.row should equal(66)
+//            begin.column should equal(15)
+//            end.column should equal(15)
+//          }
+//        }
+//        lam7.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(17)
+//            end.row should equal(47)
+//            begin.column should equal(17)
+//            end.column should equal(17)
+//          }
+//        }
+//        spanFst match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(33)
+//            end.row should equal(36)
+//            begin.column should equal(17)
+//            end.column should equal(17)
+//          }
+//        }
+//        spanMul match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(30)
+//            end.row should equal(31)
+//            begin.column should equal(17)
+//            end.column should equal(17)
+//          }
+//        }
+//        spanSnd match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(41)
+//            end.row should equal(44)
+//            begin.column should equal(17)
+//            end.column should equal(17)
+//          }
+//        }
+//        spanTranspose match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(7)
+//            end.row should equal(16)
+//            begin.column should equal(20)
+//            end.column should equal(20)
+//          }
+//        }
+//        appMulFst.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(30)
+//            end.row should equal(38)
+//            begin.column should equal(17)
+//            end.column should equal(17)
+//          }
+//        }
+//        appFst.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(33)
+//            end.row should equal(38)
+//            begin.column should equal(17)
+//            end.column should equal(17)
+//          }
+//        }
+//        appMulFstSnd.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(30)
+//            end.row should equal(46)
+//            begin.column should equal(17)
+//            end.column should equal(17)
+//          }
+//        }
+//        appTransPose.span match {
+//          case None => fail("The Span should not be None")
+//          case Some(Span(file, Range(begin, end))) => {
+//            file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//            begin.row should equal(7)
+//            end.row should equal(24)
+//            begin.column should equal(20)
+//            end.column should equal(20)
+//          }
+//        }
+//      }
+//      case r.DepLambda(n, e) => fail("Not correct deplambda: "
+//        +n.toString()+ " , " + e.toString())
+//      case a => fail("Not a DepLambda: " + a)
+//    }
+//    ex_f.span match {
+//      case None => fail("The Span should not be None")
+//      case Some(Span(file, Range(begin, end))) => {
+//        file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/matMulOpenCL.rise")
+//        begin.row should equal(7)
+//        end.row should equal(9)
+//        begin.column should equal(9)
+//        end.column should equal(22)
+//      }
+//    }
+    val kernel = gen.OpenCLKernel(ex_f)
+    println(ex_f)
   }
 
   test("parser should be able to parse 'matrixMultWithComments.rise'"){
@@ -1890,7 +1642,7 @@ class parseTest extends  test_util.TestsWithExecutor {
       ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
     ))
   }
-  test("parser should be able to parse 'nbodyNatDeclaredBefore.rise'"){
+  ignore("parser should be able to parse 'nbodyNatDeclaredBefore.rise'"){
     val fileName: String = testFilePath + "nbodyNatDeclaredBefore.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
@@ -1934,7 +1686,7 @@ class parseTest extends  test_util.TestsWithExecutor {
       ("original NVIDIA", runKernel(gen.OpenCLKernel(apps.nbody.nvidia), localSizeAMD, globalSizeAMD, pos, vel))
     ))
   }
-  test("parser should be able to parse 'nbodyNatNotDeclaredBeforeButTheFunctionIDIsSeperated.rise'"){
+  ignore("parser should be able to parse 'nbodyNatNotDeclaredBeforeButTheFunctionIDIsSeperated.rise'"){
     val fileName: String = testFilePath + "nbodyNatNotDeclaredBeforeButTheFunctionIDIsSeperated.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
@@ -2380,24 +2132,6 @@ class parseTest extends  test_util.TestsWithExecutor {
     }
   }
 
-  //Todo: Should be fixed in future work (The Error is, because we have in I32 and an Int Type and it automatically converts
-  //the result into Int instead of i32): <inference exception: could not solve constraints List((i32 -> i32)  ~  (int -> int)) in Some((1,2-10)>
-  ignore("parser should be able to parse 'plus.rise'" ) {
-    val fileName: String = testFilePath + "plus.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName: String = "f"
-    val ex: r.Expr = riseExprByIdent.get(functionName).getOrElse(fail("The function '" + functionName + "' does not exist!!!"))
-
-    ex match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")), r.Literal(rS.IntData(5), _))) => true
-      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      case a => fail("not a lambda: " + a)
-    }
-  }
-
   test("parser should be able to parse 'PrimitiveFstTwoDep.rise'"){
     val fileName: String = testFilePath + "PrimitiveFstTwoDep.rise"
     val file: FileReader = new FileReader(fileName)
@@ -2759,71 +2493,6 @@ class parseTest extends  test_util.TestsWithExecutor {
     }
   }
 
-  //Todo: not ignore; change it to an ErrorTest or change this test a little bit
-  ignore("parser should be able to parse 'twoplus1extraDefintion.rise'"){
-    val fileName: String = testFilePath + "twoplus1extraDefintion.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName_h: String = "h"
-    val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!"))
-    val functionName_f: String = "f"
-    val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!"))
-    val functionName_z: String = "z"
-    val ex_z = riseExprByIdent.get(functionName_z).getOrElse(fail("The function '" + functionName_z + "' does not exist!!!"))
-
-    ex_h match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("fkt"), r.App(r.Identifier("fkt"), r.Identifier("x")))) => true
-      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      case a => fail("not a lambda: " + a)
-    }
-
-    ex_f match {
-      case r.Lambda(r.Identifier("y"), r.App(r.App(rp.add(_), r.Identifier("y")), r.Literal(rS.FloatData(5), _))) => true
-      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      case a => fail("not a lambda: " + a)
-    }
-//    ex_z match {
-//      case rt.FunType(rt.i32, rt.i32) => true
-//      case a => fail("not correct Type: " + a)
-//    }
-
-  }
-  //Todo: not ignore; change it to an ErrorTest or change this test a little bit
-  ignore("parser should not be able to parse 'twoplus1extraDefintionButSameNameInLocalVariable.rise'"){
-    val fileName: String = testFilePath + "twoplus1extraDefintionButSameNameInLocalVariable.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-    val functionName_h: String = "h"
-    val ex_h: r.Expr = riseExprByIdent.get(functionName_h).getOrElse(fail("The function '" + functionName_h + "' does not exist!!!"))
-    val functionName_f: String = "f"
-    val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!"))
-    val functionName_z: String = "z"
-//    val ex_z: r.types.Type = riseExprByIdent.get(functionName_z).getOrElse(fail("The function '" + functionName_z + "' does not exist!!!")) match {
-//      case HMExpr(lambda) => fail("it is no definition expected: " + lambda)
-//      case HMType(t) => t
-//      case HMNat(n) => fail("no nat is expected: "+n)
-//    }
-
-    ex_h match {
-      case r.Lambda(r.Identifier("x"), r.Lambda(r.Identifier("fkt"), r.App(r.Identifier("fkt"), r.Identifier("x")))) => true
-      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      case a => fail("not a lambda: " + a)
-    }
-
-    ex_f match {
-      case r.Lambda(r.Identifier("x"), r.App(r.App(rp.add(_), r.Identifier("x")), r.Literal(rS.FloatData(5), _))) => true
-      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      case a => fail("not a lambda: " + a)
-    }
-//    ex_z match {
-//      case rt.FunType(rt.f32, rt.f32) => true
-//      case a => fail("not correct Type: " + a)
-//    }
-  }
-
   test("parser should be able to parse 'twoSimpleFunctions.rise'"){
     val fileName: String = testFilePath + "twoSimpleFunctions.rise"
     val file: FileReader = new FileReader(fileName)
@@ -2939,51 +2608,6 @@ class parseTest extends  test_util.TestsWithExecutor {
     }
   }
 
-  //Todo: not ignore; change it to an ErrorTest or change this test a little bit
-  ignore("parser should be able to parse 'veryComplicated.rise'"){
-    val fileName: String = testFilePath + "veryComplicated.rise"
-    val file: FileReader = new FileReader(fileName)
-    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-    val riseExprByIdent = parse(lexer.tokens)
-
-    val functionName_f: String = "f"
-    val ex_f: r.Expr = riseExprByIdent.get(functionName_f).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!"))
-    val functionName_2: String = "specialFunctionOfChaos"
-//    val type_2:r.types.Type= riseExprByIdent.get(functionName_2).getOrElse(fail("The function '" + functionName_f + "' does not exist!!!")) match {
-//      case HMExpr(lambda) => fail("no definition is expected: "+ lambda)
-//      case HMType(t) => t
-//      case HMNat(n) => fail("no nat is expected: "+n)
-//    }
-
-//    type_2 match {
-//      case rt.FunType(rt.bool, rt.FunType(rt.bool, rt.FunType(rt.i32,
-//      rt.FunType(rt.f32, rt.f32)
-//      ))) => true
-//      case a => fail("it was a different definition expected, but we see: "+ a)
-//    }
-
-    ex_f match {
-      case r.Lambda(r.Identifier("michael"), r.Lambda(r.Identifier("heinrich"),
-      r.Lambda(r.Identifier("varX"), r.Lambda(r.Identifier("varY"),
-      r.App(rp.not(_), r.App(r.App(rp.equal(_),r.App(
-      r.App(rp.mod(_),
-
-      r.App(r.App(rp.mul(_), r.Identifier("varX")),
-      r.App(r.App(rp.mul(_), r.Identifier("varY"))
-      ,
-
-      r.App(r.App(rp.div(_), r.App(r.App(rp.sub(_),
-      r.Literal(rS.FloatData(25), _)), r.Literal(rS.FloatData(a), _))
-      ), r.Literal(rS.FloatData(b), _))
-
-      ))),r.Literal(rS.FloatData(42), _))),
-      r.Literal(rS.FloatData(0), _)))
-      )))) if a == 10.5000 && b == 2.3000f=> true
-      case r.Lambda(x, e) => fail("not correct Identifier or not correct expression: " + x + " , " + e)
-      case a => fail("not a lambda: " + a)
-    }
-  }
-
   //-----------------------------------------------------------------------------------------------------
   //Error-Tests //Todo: " .. (.. (..).. " as an ErrorTest
 
@@ -3045,14 +2669,49 @@ class parseTest extends  test_util.TestsWithExecutor {
     println(thrown.toString)
   }
 
-  test("parser should not be able to parse 'two_times_square_test.rise'"){
-    val fileName: String = errorFilePath + "two_times_square_test.rise"
+  test("parser should not be able to parse 'VektoradditionParenthesesTooMuch.rise'"){
+    val fileName: String = errorFilePath + "VektoradditionParenthesesTooMuch.rise"
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
-//    val thrown = intercept[InferenceException] {
-      println(parse(lexer.tokens))
-//    }
-//    println(thrown.toString)
+        val thrown = intercept[ErrorMessage.RParenthesesNotExpected] {
+    println(parse(lexer.tokens))
+        }
+        println(thrown.toString)
+  }
+  test("parser should not be able to parse 'VektoradditionTooLongArrow.rise'"){
+    val fileName: String = errorFilePath + "VektoradditionTooLongArrow.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+        val thrown = intercept[ErrorMessage.ParserException] {
+    println(parse(lexer.tokens))
+        }
+        println(thrown.toString)
+  }
+  test("parser should not be able to parse 'VektoradditionSemikolon.rise'"){
+    val fileName: String = errorFilePath + "VektoradditionSemikolon.rise"
+    val file: FileReader = new FileReader(fileName)
+    val thrown = intercept[ErrorMessage.NotExpectedToken] {
+      val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+    }
+        println(thrown.toString)
+  }
+  test("parser should not be able to parse 'VektoradditionNoExpressionInBraces.rise'"){
+    val fileName: String = errorFilePath + "VektoradditionNoExpressionInBraces.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+        val thrown = intercept[ErrorMessage.ParserException] {
+    println(parse(lexer.tokens))
+        }
+        println(thrown.toString)
+  }
+  test("parser should not be able to parse 'VektoradditionTypeError.rise'"){
+    val fileName: String = errorFilePath + "VektoradditionTypeError.rise"
+    val file: FileReader = new FileReader(fileName)
+    val lexer: RecognizeLexeme = new RecognizeLexeme(file)
+        val thrown = intercept[InferenceException] {
+    println(parse(lexer.tokens))
+        }
+        println(thrown.toString)
   }
 
 }

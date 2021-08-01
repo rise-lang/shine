@@ -368,6 +368,14 @@ final case class NotCorrectSynElem(wrongSynElem: parser.parse.SyntaxElement,expe
   override val help: Option[String] = None
 }
 
+final case class RParenthesesNotExpected(override val span:Span, whatToParse: String)
+  extends PreAndErrorSynElems(span, whatToParse){
+  require(begin.column == end.column, "not in one column")
+  override val description_error: String = "Ending Parentheses without corresponding left parentheses"
+  override val what_exp: String = "not expected"
+  override val help: Option[String] = Some("Delete the one parentheses which is too much. (It could be one of the parentheses before)")
+}
+
 final case class NamedExprAlreadyExist(Ident: String, override val span:Span, spanExpr:Span, whatToParse: String)
   extends PreAndErrorSynElems(span, whatToParse){
   require(begin.column == end.column, "not in one column")

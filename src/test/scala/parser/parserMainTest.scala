@@ -42,7 +42,7 @@ class parserMainTest extends  AnyFlatSpec {
       case Some(Span(file, Range(begin, end))) => {
         file.fileName should equal("src/test/scala/parser/readFiles/filesToLex/arrayType.rise")
         begin.row should equal(2)
-        end.row should equal(22)
+        end.row should equal(20)
         begin.column should equal(1)
         end.column should equal(1)
       }

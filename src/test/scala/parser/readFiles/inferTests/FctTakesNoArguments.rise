@@ -2,4 +2,4 @@ fkt::F32
 fkt=5F32
 
 f::F32-> F32
-f=\x->fkt x
+f=x->fkt x

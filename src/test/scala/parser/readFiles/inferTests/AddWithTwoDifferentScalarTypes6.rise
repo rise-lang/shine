@@ -1,2 +1,2 @@
 f::F32->F64->Bool
-f=\x->\y->+ x y
+f=x->y->+ x y

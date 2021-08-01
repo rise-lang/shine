@@ -3,7 +3,7 @@ package parser //old branch 17. Dezember 2020
 import rise.{core => r, openCL => o}
 import r.{DepApp, DepLambda, ForeignFunction, Lambda, Literal, Primitive, primitives => rp, semantics => rS, types => rt}
 import o.{primitives => op}
-import parser.ErrorMessage.{ErrorList, FunctionWithNoDefinition, FunctionWithNoType, NamedExprAlreadyExist, NatAlreadyExist, NoExprInBraces, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, ParserException, PreAndErrorSynElems, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
+import parser.ErrorMessage.{ErrorList, FunctionWithNoDefinition, FunctionWithNoType, NamedExprAlreadyExist, NatAlreadyExist, NoExprInBraces, NoKindWithThisName, NotAcceptedScalarType, NotCorrectKind, NotCorrectSynElem, NotCorrectToken, ParserException, PreAndErrorSynElems, RParenthesesNotExpected, SynListIsEmpty, TokListIsEmpty, TokListTooSmall, TypAnnotationAlreadyExist, UsedOrFailedRule, debug, isFailed, isMatched, isParsing}
 import parser.OpType.BinOpType
 import r.DSL.ToBeTyped
 import rt.{DataType, DepFunType, FunType, TypePlaceholder}
@@ -1349,6 +1349,9 @@ private def subGetSequenceStrings(seq:mutable.Seq[String], parsedSynElems:List[S
         p.tokenStream match {
           case EndNamedExpr(_) :: remainderTokens => {
            (remainderTokens, p.parsedSynElems, p.mapDepL.get)
+          }
+          case RParentheses(sp) :: remainderTokens => {
+            throw RParenthesesNotExpected(sp, "NamedExpr")
           }
           case _ => {
             throw new IllegalStateException("NewExpr ends with an EndNamedExpr, but we have no EndNamedExpr at the end: "+ p.tokenStream)

@@ -1,5 +1,5 @@
 fkt::F32->F32->F32
-fkt=\x->\y->+ x y
+fkt=x->y->+ x y
 
 f::F32-> F32
-f=\x->fkt x
+f=x->fkt x
