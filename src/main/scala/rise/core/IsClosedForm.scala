@@ -81,7 +81,7 @@ object IsClosedForm {
       case n => super.natToNat(n)
     }
 
-    override def `type`[T <: Type]: T => Pair[T] = {
+    override def `type`[T <: ExprType]: T => Pair[T] = {
       case d@DepFunType(k, x, t) =>
         for { p <- this.copy(boundT = boundT + Kind.toIdentifier(k, x)).`type`(t) }
           yield (p._1, d.asInstanceOf[T])
@@ -97,7 +97,7 @@ object IsClosedForm {
     (fV, fT)
   }
 
-  def freeVars(t: Type): OrderedSet[Kind.Identifier] = {
+  def freeVars(t: ExprType): OrderedSet[Kind.Identifier] = {
     val ((_, ftv), _) = traverse(t, Visitor(Set(), Set()))
     ftv
   }
@@ -114,7 +114,7 @@ object IsClosedForm {
     (fV.seq, needsClosing(fT.seq))
   }
 
-  def varsToClose(t : Type): Seq[Kind.Identifier] = needsClosing(freeVars(t).seq)
+  def varsToClose(t : ExprType): Seq[Kind.Identifier] = needsClosing(freeVars(t).seq)
 
   def apply(expr: Expr): Boolean = {
     val (freeV, freeT) = varsToClose(expr)

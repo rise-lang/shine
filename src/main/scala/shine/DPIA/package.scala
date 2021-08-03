@@ -2,7 +2,7 @@ package shine
 
 import arithexpr.arithmetic._
 import rise.core.types.DataType.DataTypeIdentifier
-import rise.core.types.{DepFunType => _, FunType => _, Type => _, TypeIdentifier => _, TypePlaceholder => _, _}
+import rise.core.types.{DepFunType => _, FunType => _, ExprType => _, TypeIdentifier => _, TypePlaceholder => _, _}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import rise.core.{types => rt}

@@ -1,6 +1,6 @@
 package shine.DPIA.Types
 
-import rise.core.types.{DepFunType => _, FunType => _, Type => _, TypeIdentifier => _, TypePlaceholder => _, _}
+import rise.core.types.{DepFunType => _, FunType => _, ExprType => _, TypeIdentifier => _, TypePlaceholder => _, _}
 import rise.core.substitute.{natInType => substituteNatInType, typeInType => substituteTypeInType}
 import rise.core.types.DataType.DataTypeIdentifier
 import shine.DPIA.Phrases._

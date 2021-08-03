@@ -15,10 +15,10 @@ class gemvCheck extends test_util.Tests {
   test("high-level gemv type inference works") {
     val typed = gemvHighLevel.toExpr
 
-    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: ExprType]].x
     val M = typed.t
-      .asInstanceOf[NatDepFunType[_ <: Type]].t
-      .asInstanceOf[NatDepFunType[_ <: Type]].x
+      .asInstanceOf[NatDepFunType[_ <: ExprType]].t
+      .asInstanceOf[NatDepFunType[_ <: ExprType]].x
     assertResult(
       DepFunType(NatKind, N,
         DepFunType(NatKind, M,

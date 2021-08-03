@@ -18,10 +18,10 @@ final case class foreignFunction(funDecl: rise.core.ForeignFunction.Decl, n: Int
   }
 }
 object foreignFunction {
-  private final case class Primitive(funDecl: rise.core.ForeignFunction.Decl, n: Int)(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive(funDecl: rise.core.ForeignFunction.Decl, n: Int)(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "foreignFunction"
-    override def setType(ty: Type): Primitive = Primitive(funDecl, n)(ty)
-    override def typeScheme: Type = {
+    override def setType(ty: ExprType): Primitive = Primitive(funDecl, n)(ty)
+    override def typeScheme: ExprType = {
       val inTs = Seq.fill(n)(DataTypeIdentifier(freshName("dt")))
       inTs.foldRight(expl { (outT: DataType) => inTs.foldRight(outT: Type)({
         case (lhsT, rhsT) =>

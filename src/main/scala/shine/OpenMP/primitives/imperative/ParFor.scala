@@ -4,9 +4,8 @@
 package shine.OpenMP.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
-import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _ }
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
 import rise.core.types.DataType._
 import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._

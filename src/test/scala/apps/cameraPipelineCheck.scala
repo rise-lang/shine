@@ -347,7 +347,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   }
 
   test("type inference") {
-    def assertClosedT(e: ToBeTyped[Expr], t: Type): Unit = {
+    def assertClosedT(e: ToBeTyped[Expr], t: ExprType): Unit = {
       val typed = e.toExpr
       assert(typed.t =~= t)
       assert(IsClosedForm(typed))

@@ -25,7 +25,7 @@ object latex {
   }
   def kindToLaTeX[T, I](kind: Kind[T, I]): String = toLaTeX(kind)
 
-  def toLaTeX(t: Type): String = t match {
+  def toLaTeX(t: ExprType): String = t match {
     case TypePlaceholder => s"?"
     case TypeIdentifier(name) => name
     case FunType(inT, outT) =>
@@ -417,7 +417,7 @@ object latex {
     }
 
     implicit class TypeKindPairBuilder(kind: TypeKind.type) {
-      def `:` (x: Type): TypeKindPair = TypeKindPair(x, kind)
+      def `:` (x: ExprType): TypeKindPair = TypeKindPair(x, kind)
       def `:` (str: String): TypeKindPair = TypeKindPair(str, kind)
     }
 
@@ -451,7 +451,7 @@ object latex {
       def `:` (x: NatToData): TypeKindPair = TypeKindPair(x, kind)
     }
 
-    implicit class ValueTypePairBuilder(ty: Type) {
+    implicit class ValueTypePairBuilder(ty: ExprType) {
       def `:` (x: Expr): ValueTypePair = ValueTypePair(x, ty)
       def `:` (x: String): ValueTypePair = ValueTypePair(x, ty)
     }
@@ -479,7 +479,7 @@ object latex {
           case _ => s"$kind"
         }
         val tyString = ty match {
-          case t: Type => toLaTeX(t)
+          case t: ExprType => toLaTeX(t)
           case n: Nat => toLaTeX(n)
           case a: AddressSpace => toLaTeX(a)
           case ntn: NatToNat => toLaTeX(ntn)
@@ -497,7 +497,7 @@ object latex {
           case _ => s"$value"
         }
         val tyString = ty match {
-          case t: Type => toLaTeX(t)
+          case t: ExprType => toLaTeX(t)
           case n: Nat => toLaTeX(n)
           case a: AddressSpace => toLaTeX(a)
           case ntn: NatToNat => toLaTeX(ntn)

@@ -8,8 +8,8 @@ import rise.core.{traverse => _, _}
 import util.monads._
 
 object infer {
-  def collectFreeEnv(e: Expr): Map[String, Type] = {
-    case class Traversal(bound: Set[String]) extends PureAccumulatorTraversal[Map[String, Type]] {
+  def collectFreeEnv(e: Expr): Map[String, ExprType] = {
+    case class Traversal(bound: Set[String]) extends PureAccumulatorTraversal[Map[String, ExprType]] {
       override val accumulator = MapMonoid
 
       override def expr: Expr => Pair[Expr] = {
@@ -32,7 +32,7 @@ object infer {
     traverse(e, Traversal(Set()))._1
   }
 
-  type ExprEnv = Map[String, Type]
+  type ExprEnv = Map[String, ExprType]
 
   def apply(e: Expr, exprEnv: ExprEnv = Map(), typeEnv : Set[Kind.Identifier] = Set(),
             printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off): Expr = {
@@ -95,9 +95,9 @@ object infer {
     }
   }
 
-  private val genType : Expr => Type =
+  private val genType : Expr => ExprType =
     e => if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
-  private def ifTyped[T] : Type => T => Seq[T] =
+  private def ifTyped[T] : ExprType => T => Seq[T] =
     t => c => if (t == TypePlaceholder) Nil else Seq(c)
 
   def constrainTypes(exprEnv : ExprEnv) : Expr => (Expr, Seq[Constraint]) = {
@@ -156,7 +156,7 @@ object infer {
       case e => super.expr(e)
     }
     override def nat : Nat => Pure[Nat] = n => return_(sol(n))
-    override def `type`[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
+    override def `type`[T <: ExprType] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
     override def addressSpace : AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
     override def natToData : NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
     override def natToNat : NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))

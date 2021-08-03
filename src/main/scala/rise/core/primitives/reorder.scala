@@ -9,11 +9,11 @@ import rise.core.types._
 import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object reorder extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "reorder"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (t: DataType) => expl { (n: Nat) => expl { (idxF: NatToNat) => expl { (idxFinv: NatToNat) => ArrayType(n, t) ->: ArrayType(n, t) } } } }
+    override def typeScheme: ExprType = impl { (t: DataType) => expl { (n: Nat) => expl { (idxF: NatToNat) => expl { (idxFinv: NatToNat) => ArrayType(n, t) ->: ArrayType(n, t) } } } }
   }
   override def toString: String = "reorder"
   override def primitive: rise.core.Primitive = Primitive()()

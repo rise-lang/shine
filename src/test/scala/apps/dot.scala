@@ -26,7 +26,7 @@ class dot extends test_util.Tests {
   )))
 
   test("Simple dot product type inference works") {
-    val N = simpleDotProduct.t.asInstanceOf[NatDepFunType[_ <: Type]].x
+    val N = simpleDotProduct.t.asInstanceOf[NatDepFunType[_ <: ExprType]].x
     assertResult(
       DepFunType(NatKind, N, FunType(xsT(N), FunType(ysT(N), f32)))
     ) {

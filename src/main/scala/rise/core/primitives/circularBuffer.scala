@@ -9,11 +9,11 @@ import rise.core.types._
 import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object circularBuffer extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "circularBuffer"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (n: Nat) => expl { (alloc: Nat) => expl { (sz: Nat) => impl { (s: DataType) => impl { (t: DataType) => (s ->: t) ->: ArrayType(n - 1 + sz, s) ->: ArrayType(n, ArrayType(sz, t)) } } } } }
+    override def typeScheme: ExprType = impl { (n: Nat) => expl { (alloc: Nat) => expl { (sz: Nat) => impl { (s: DataType) => impl { (t: DataType) => (s ->: t) ->: ArrayType(n - 1 + sz, s) ->: ArrayType(n, ArrayType(sz, t)) } } } } }
   }
   override def toString: String = "circularBuffer"
   override def primitive: rise.core.Primitive = Primitive()()

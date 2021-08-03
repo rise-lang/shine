@@ -9,11 +9,11 @@ import rise.core.types._
 import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object mapSnd extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "mapSnd"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (s: DataType) => impl { (t1: DataType) => impl { (t2: DataType) => (t1 ->: t2) ->: PairType(s, t1) ->: PairType(s, t2) } } }
+    override def typeScheme: ExprType = impl { (s: DataType) => impl { (t1: DataType) => impl { (t2: DataType) => (t1 ->: t2) ->: PairType(s, t1) ->: PairType(s, t2) } } }
   }
   override def toString: String = "mapSnd"
   override def primitive: rise.core.Primitive = Primitive()()

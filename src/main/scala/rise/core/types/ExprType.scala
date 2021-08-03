@@ -4,30 +4,30 @@ import arithexpr.arithmetic.RangeAdd
 import rise.core._
 import rise.core.equality._
 
-sealed trait Type {
-  def =~=(b: Type): Boolean = typeAlphaEq[Type](this)(b)
-  def =~~=(b: Type): Boolean = typePartialAlphaEq[Type](this)(b)
+sealed trait ExprType {
+  def =~=(b: ExprType): Boolean = typeAlphaEq[ExprType](this)(b)
+  def =~~=(b: ExprType): Boolean = typePartialAlphaEq[ExprType](this)(b)
 }
 
-object TypePlaceholder extends Type {
+object TypePlaceholder extends ExprType {
   override def toString: String = "?"
 }
 
-final case class TypeIdentifier(name: String) extends Type {
+final case class TypeIdentifier(name: String) extends ExprType {
   override def toString: String = "_" + name
 }
 
-final case class FunType[T <: Type, U <: Type](inT: T, outT: U) extends Type {
+final case class FunType[T <: ExprType, U <: ExprType](inT: T, outT: U) extends ExprType {
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DepFunType[T, I, U <: Type] (kind: Kind[T, I],x: I, t: U) extends Type {
+final case class DepFunType[T, I, U <: ExprType](kind: Kind[T, I], x: I, t: U) extends ExprType {
   override def toString: String = s"(${Kind.idName(kind, x)}: ${kind.name} -> $t)"
 }
 
 // == Data types ==============================================================
 
-sealed trait DataType extends Type
+sealed trait DataType extends ExprType
 
 object DataType {
   final case class DataTypeIdentifier(name: String) extends DataType {

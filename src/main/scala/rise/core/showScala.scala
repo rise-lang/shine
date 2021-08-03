@@ -36,7 +36,7 @@ object showScala {
     }
   }
 
-  def `type`(t: Type): String = { // scalastyle:ignore
+  def `type`(t: ExprType): String = { // scalastyle:ignore
     t match {
       case TypePlaceholder => "TypePlaceholder"
       case TypeIdentifier(n) => s"""TypeIdentifier("$n")"""

@@ -64,7 +64,7 @@ object Kind {
   }
 }
 
-case object TypeKind extends Kind[Type, TypeIdentifier] {
+case object TypeKind extends Kind[ExprType, TypeIdentifier] {
   override def name: String = "type"
   override type KI = Identifier
   final case class Identifier(id : TypeIdentifier) extends Kind.Identifier { def name : String = id.name }

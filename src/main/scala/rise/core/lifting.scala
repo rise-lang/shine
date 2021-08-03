@@ -55,7 +55,7 @@ object lifting {
     }
   }
 
-  def liftDependentFunctionType[T, I](kind: Kind[T, I], ty: Type): T => Type = {
+  def liftDependentFunctionType[T, I](kind: Kind[T, I], ty: ExprType): T => ExprType = {
     ty match {
       case DepFunType(kind, x, t) =>
         (a: T) => substitute.kindInType(kind, a, `for` = x, in = t)

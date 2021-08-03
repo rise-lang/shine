@@ -36,10 +36,10 @@ object equality {
   object typePartialAlphaEq extends TypeEq {
     override def hash[T]: T => Int = _ => 0
     override def equiv[T]: Env[Kind.Identifier] => Eq[T] = env => a => b => (a, b) match {
-      case (a : Type, b : Type) => (a, b) match {
+      case (a : ExprType, b : ExprType) => (a, b) match {
         case (TypePlaceholder, _) => true
         case (_, TypePlaceholder) => true
-        case _ => typeAlphaEq.equiv[Type](env)(a)(b)
+        case _ => typeAlphaEq.equiv[ExprType](env)(a)(b)
       }
       case _ => typeAlphaEq.equiv(env)(a)(b)
     }
@@ -53,7 +53,7 @@ object equality {
       val and = PatternMatching.matchWithDefault(b, false)
       a match {
         case a : Nat => and {case b : Nat => equivNat(env)(a)(b)}
-        case a : Type => and {case b : Type => equivType(env)(a)(b) }
+        case a : ExprType => and {case b : ExprType => equivType(env)(a)(b) }
         case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(ia, ib) }
         case a: AddressSpace => and { case b: AddressSpace => (a : AddressSpace) == (b : AddressSpace) }
         case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(NatKind.Identifier(na), NatKind.Identifier(nb)))(ba)(bb) }
@@ -61,7 +61,7 @@ object equality {
         case NatCollectionFromArray(a) => and { case NatCollectionFromArray(b) => a == b } // FIXME: should use exprEq
       }
     }
-    val equivType: Env[Kind.Identifier] => Type => Type => Boolean = env => a => b => {
+    val equivType: Env[Kind.Identifier] => ExprType => ExprType => Boolean = env => a => b => {
       val and = PatternMatching.matchWithDefault(b, false)
       a match {
         // Base cases
@@ -112,14 +112,14 @@ object equality {
       * All identifiers are considered equal and therefore ignored.
       */
     override def hash[T]: T => Int = {
-      case t: Type => hashType(t)
+      case t: ExprType => hashType(t)
       case _: Kind.Identifier => 7
       case a: AddressSpace => a.hashCode()
       case NatToNatLambda(na, ba) => hash[Nat](ba)
       case NatToDataLambda(na, ba) => hashType(ba)
       case NatCollectionFromArray(a) => 17
     }
-    val hashType: Type => Int = {
+    val hashType: ExprType => Int = {
       case TypePlaceholder => 5
       case TypeIdentifier(_) => 7
       case DataTypeIdentifier(_) => 11
@@ -154,7 +154,7 @@ object equality {
       */
     override val equiv: Env[Kind.Identifier] => Env[String] => Eq = typeEnv => exprEnv => a => b => {
       val and = PatternMatching.matchWithDefault(b, false) // Make the match exhaustive
-      typeEq.equiv[Type](typeEnv)(a.t)(b.t) && (a match {
+      typeEq.equiv[ExprType](typeEnv)(a.t)(b.t) && (a match {
         case Identifier(na) => and { case Identifier(nb) => exprEnv.check(na, nb)}
         case Literal(da) => and { case Literal(db) => equivData(typeEnv)(da)(db) }
         case App(fa, ea) => and { case App(fb, eb) =>
@@ -162,15 +162,15 @@ object equality {
         case DepApp(_, fa, xa) => and { case DepApp(_, fb, xb) =>
           typeEq.equiv(typeEnv)(xa)(xb) && equiv(typeEnv)(exprEnv)(fa)(fb)}
         case Lambda(xa, ta) => and { case Lambda(xb, tb) =>
-          typeEq.equiv[Type](typeEnv)(xa.t)(xb.t) && equiv(typeEnv)(exprEnv.add(xa.name, xb.name))(ta)(tb) }
+          typeEq.equiv[ExprType](typeEnv)(xa.t)(xb.t) && equiv(typeEnv)(exprEnv.add(xa.name, xb.name))(ta)(tb) }
         case DepLambda(ka, xa, ea) => and { case DepLambda(kb, xb, eb) =>
           ka == kb && equiv(typeEnv.add(Kind.toIdentifier(ka, xa), Kind.toIdentifier(kb, xb)))(exprEnv)(ea)(eb) }
         case Opaque(e1, t1) => and { case Opaque(e2, t2) =>
-          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[Type](typeEnv)(t1)(t2) }
+          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[ExprType](typeEnv)(t1)(t2) }
         case TypeAnnotation(e1, t1) => and { case TypeAnnotation(e2, t2) =>
-          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[Type](typeEnv)(t1)(t2) }
+          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[ExprType](typeEnv)(t1)(t2) }
         case TypeAssertion(e1, t1) => and { case TypeAssertion(e2, t2) =>
-          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[Type](typeEnv)(t1)(t2) }
+          equiv(typeEnv)(exprEnv)(e1)(e2) && typeEq.equiv[ExprType](typeEnv)(t1)(t2) }
         // TODO: TopLevel
         case a: Primitive => and { case b: Primitive => a.primEq(b) }
       })
@@ -197,20 +197,20 @@ object equality {
       * All identifiers are considered equal and therefore ignored.
       */
     override val hash: Expr => Int = {
-      case i: Identifier => 5 + typeEq.hash[Type](i.t)
-      case Lambda(x, e) => 7 * hash(e) + typeEq.hash[Type](x.t) + typeEq.hash[Type](e.t)
-      case App(f, e) => 11 * hash(f) + 13 * hash(e) + typeEq.hash[Type](f.t) + typeEq.hash[Type](e.t)
-      case DepLambda(_, _, e) => 17 * hash(e) + typeEq.hash[Type](e.t)
-      case DepApp(_, f, _) => 19 * hash(f) + typeEq.hash[Type](f.t)
+      case i: Identifier => 5 + typeEq.hash[ExprType](i.t)
+      case Lambda(x, e) => 7 * hash(e) + typeEq.hash[ExprType](x.t) + typeEq.hash[ExprType](e.t)
+      case App(f, e) => 11 * hash(f) + 13 * hash(e) + typeEq.hash[ExprType](f.t) + typeEq.hash[ExprType](e.t)
+      case DepLambda(_, _, e) => 17 * hash(e) + typeEq.hash[ExprType](e.t)
+      case DepApp(_, f, _) => 19 * hash(f) + typeEq.hash[ExprType](f.t)
       case l@Literal(_: ScalarData | _: VectorData) => l.d.hashCode()
       case Literal(_: NatData) => 91
       case Literal(_: IndexData) => 93
       case Literal(_: ArrayData) => 95
       case Literal(_: PairData) => 97
-      case Opaque(e, t) => 101*hash(e) + 103*typeEq.hash[Type](t)
-      case TypeAnnotation(e, t) => 107*hash(e) + 109*typeEq.hash[Type](t)
-      case TypeAssertion(e, t) => 113*hash(e) + 127*typeEq.hash[Type](t)
-      case p: Primitive => 131*p.name.hashCode() + 137*typeEq.hash[Type](p.t)
+      case Opaque(e, t) => 101*hash(e) + 103*typeEq.hash[ExprType](t)
+      case TypeAnnotation(e, t) => 107*hash(e) + 109*typeEq.hash[ExprType](t)
+      case TypeAssertion(e, t) => 113*hash(e) + 127*typeEq.hash[ExprType](t)
+      case p: Primitive => 131*p.name.hashCode() + 137*typeEq.hash[ExprType](p.t)
     }
   }
 }

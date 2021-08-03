@@ -7,13 +7,13 @@ import rise.core.types._
 import rise.core.{DSL, Expr, IsClosedForm, Primitive}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
-  override val t: Type = e.t
+  override val t: ExprType = e.t
 ) extends Primitive {
   import DSL.TopLevel._
   // TODO: Ignored by alpha equivalence, remove when taking out of primitives
   override def primEq(obj: Primitive): Boolean = obj.getClass == getClass
-  override def typeScheme: Type = e.t
-  override def setType(t: Type): TopLevel = {
+  override def typeScheme: ExprType = e.t
+  override def setType(t: ExprType): TopLevel = {
     val subs = instantiate(t)
     this.copy(inst = subs)(subs(t))
   }
@@ -21,7 +21,7 @@ final case class TopLevel(e: Expr, inst: Solution = Solution())(
 }
 
 object TopLevel {
-  private def instantiate(t: Type): Solution = {
+  private def instantiate(t: ExprType): Solution = {
     import scala.collection.immutable.Map
     IsClosedForm.varsToClose(t).foldLeft(Solution())((subs, ftv) =>
       subs match {
@@ -53,14 +53,14 @@ object TopLevel {
 
   case class Visitor(ftvSubs: Solution, sol: Solution) extends PureTraversal {
     override def nat : Nat => Pure[Nat] = n => return_(cascadedApply(ftvSubs, sol, n))
-    override def `type`[T <: Type] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
+    override def `type`[T <: ExprType] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
     override def addressSpace : AddressSpace => Pure[AddressSpace] = a => return_(cascadedApply(ftvSubs, sol, a))
     override def natToData : NatToData => Pure[NatToData] = n2d => return_(cascadedApply(ftvSubs, sol, n2d))
   }
 
-  private def cascadedApply(ftvSubs: Solution, sol: Solution, t: Type): Type = {
+  private def cascadedApply(ftvSubs: Solution, sol: Solution, t: ExprType): ExprType = {
     traverse(t, new Visitor(ftvSubs, sol) {
-        override def `type`[T <: Type] : T => Pure[T] = {
+        override def `type`[T <: ExprType] : T => Pure[T] = {
           case i: TypeIdentifier =>
             ftvSubs.ts.get(i) match {
               case None => super.`type`(i.asInstanceOf[T])

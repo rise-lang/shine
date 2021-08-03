@@ -7,17 +7,17 @@ package object types {
   type NatIdentifier = NamedVar
   type Nat = ArithExpr
 
-  type ->[T1 <: Type, T2 <: Type] = FunType[T1, T2]
+  type ->[T1 <: ExprType, T2 <: ExprType] = FunType[T1, T2]
 
-  type `(dt)->`[T <: Type] = DataDepFunType[T]
-  type DataDepFunType[T <: Type] = DepFunType[DataType, DataTypeIdentifier, T]
+  type `(dt)->`[T <: ExprType] = DataDepFunType[T]
+  type DataDepFunType[T <: ExprType] = DepFunType[DataType, DataTypeIdentifier, T]
 
-  type `(nat)->`[T <: Type] = NatDepFunType[T]
-  type NatDepFunType[T <: Type] = DepFunType[Nat, NatIdentifier, T]
+  type `(nat)->`[T <: ExprType] = NatDepFunType[T]
+  type NatDepFunType[T <: ExprType] = DepFunType[Nat, NatIdentifier, T]
 
-  type `(nat->nat)->`[T <: Type] = NatToNatDepFunType[T]
-  type NatToNatDepFunType[T <: Type] = DepFunType[NatToNat, NatToNatIdentifier, T]
+  type `(nat->nat)->`[T <: ExprType] = NatToNatDepFunType[T]
+  type NatToNatDepFunType[T <: ExprType] = DepFunType[NatToNat, NatToNatIdentifier, T]
 
-  type `(nat->data)->`[T <: Type] = NatToDataDepFunType[T]
-  type NatToDataDepFunType[T <: Type] = DepFunType[NatToData, NatToDataIdentifier, T]
+  type `(nat->data)->`[T <: ExprType] = NatToDataDepFunType[T]
+  type NatToDataDepFunType[T <: ExprType] = DepFunType[NatToData, NatToDataIdentifier, T]
 }

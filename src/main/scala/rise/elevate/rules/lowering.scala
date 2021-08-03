@@ -24,7 +24,7 @@ object lowering {
 
   // Straight-forward Lowering
 
-  def typeHasTrivialCopy(t: Type): Boolean = t match {
+  def typeHasTrivialCopy(t: ExprType): Boolean = t match {
     case _: ScalarType => true
     case NatType => true
     case _: IndexType => true
@@ -100,7 +100,7 @@ object lowering {
 
   // requires type information!
   @rule def isComputation()(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
-    def isPairOrBasicType(t: Type): Boolean = t match {
+    def isPairOrBasicType(t: ExprType): Boolean = t match {
       case _ if typeHasTrivialCopy(t) => true
       case PairType(a, b) => isPairOrBasicType(a) && isPairOrBasicType(b)
       case _ => false
@@ -169,7 +169,7 @@ object lowering {
     )
 
   @rule def insertCopyAfter: Strategy[Rise] = e => {
-    def constructCopy(t: Type): ToBeTyped[Rise] = t match {
+    def constructCopy(t: ExprType): ToBeTyped[Rise] = t match {
       case ArrayType(_, dt) => p.mapSeq(fun(x => constructCopy(dt) $ x))
       case _ if typeHasTrivialCopy(t) => fun(x => x)
       case _ => ??? // shouldn't happen?
@@ -205,7 +205,7 @@ object lowering {
 
   // todo currently only works for mapSeq
   @rule def copyAfterReduce: Strategy[Rise] = e => {
-    def constructCopy(t: Type): ToBeTyped[Rise] = t match {
+    def constructCopy(t: ExprType): ToBeTyped[Rise] = t match {
       case _ if typeHasTrivialCopy(t) => letf(fun(x => x))
       case ArrayType(_, b) if typeHasTrivialCopy(b) => p.mapSeq(fun(x => x))
       case ArrayType(_, a: ArrayType) => p.mapSeq(fun(x => constructCopy(a) $ x))
@@ -220,7 +220,7 @@ object lowering {
   }
 
   @rule def copyAfterReduceInit: Strategy[Rise] = e => {
-    def constructCopy(t: Type): ToBeTyped[Rise] = t match {
+    def constructCopy(t: ExprType): ToBeTyped[Rise] = t match {
       case _ if typeHasTrivialCopy(t) => letf(fun(x => x))
       case ArrayType(_, b) if typeHasTrivialCopy(b) => p.mapSeq(fun(x => x))
       case ArrayType(_, a: ArrayType) => p.mapSeq(fun(x => constructCopy(a) $ x))
@@ -236,7 +236,7 @@ object lowering {
 
   // todo currently only works for mapSeq
   @rule def copyAfterGenerate: Strategy[Rise] = e => {
-    def constructCopy(t: Type): ToBeTyped[Rise] = t match {
+    def constructCopy(t: ExprType): ToBeTyped[Rise] = t match {
       case ArrayType(_, dt) => p.mapSeq(fun(x => constructCopy(dt) $ x))
       case _ if typeHasTrivialCopy(t) => fun(x => x)
       case _ => ??? // shouldn't happen?
@@ -275,8 +275,8 @@ object lowering {
     case a@App(App(map(), f), input) if
       isComputation()(ev)(f) && !isVectorArray(a.t) =>
 
-      def vectorizeArrayBasedOnType(t: Type): ToBeTyped[Rise] = {
-        def generateUnZips(dt: Type): ToBeTyped[Rise] = {
+      def vectorizeArrayBasedOnType(t: ExprType): ToBeTyped[Rise] = {
+        def generateUnZips(dt: ExprType): ToBeTyped[Rise] = {
           dt match {
             case _ if typeHasTrivialCopy(dt) => asVectorAligned(n)
             case PairType(aT, bT) => fun(x =>

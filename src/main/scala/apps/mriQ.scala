@@ -15,8 +15,8 @@ object mriQ {
     "{ return phiR * phiR + phiI * phiI; }",
     f32 ->: f32 ->: f32)
 
-  implicit private class MultiInput(o: Type) {
-    def `x3 ->:`(i: Type): FunType[Type, Type] =
+  implicit private class MultiInput(o: ExprType) {
+    def `x3 ->:`(i: ExprType): FunType[ExprType, ExprType] =
       i ->: i ->: i ->: o
   }
 

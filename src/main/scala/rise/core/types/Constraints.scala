@@ -10,7 +10,7 @@ import rise.core.{freshName, substitute}
 import scala.collection.mutable
 
 sealed trait Constraint
-case class TypeConstraint(a: Type, b: Type) extends Constraint {
+case class TypeConstraint(a: ExprType, b: ExprType) extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
 case class NatConstraint(a: Nat, b: Nat) extends Constraint {
@@ -32,7 +32,7 @@ case class NatToDataConstraint(a: NatToData, b: NatToData)
   extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
-case class DepConstraint[T](kind: Kind[T, _], df: Type, arg: T, t: Type)
+case class DepConstraint[T](kind: Kind[T, _], df: ExprType, arg: T, t: ExprType)
   extends Constraint {
   override def toString: String = s"$df ($arg) ~ $t"
 }
@@ -227,7 +227,7 @@ object Constraint {
   }
   // scalastyle:on method.length
 
-  def unifyTypeIdent(i: TypeIdentifier, t: Type, preserve: Set[Kind.Identifier]): Solution = {
+  def unifyTypeIdent(i: TypeIdentifier, t: ExprType, preserve: Set[Kind.Identifier]): Solution = {
     t match {
       case _ if canBeSubstituted(preserve, TypeKind.Identifier(i)) =>
         Solution.subs(i, t)
@@ -481,7 +481,7 @@ object Constraint {
     }
   }
 
-  def occurs(i: DataTypeIdentifier, t: Type): Boolean = t match {
+  def occurs(i: DataTypeIdentifier, t: ExprType): Boolean = t match {
     case FunType(it, ot) => occurs(i, it) || occurs(i, ot)
     case _               => false
   }

@@ -95,7 +95,7 @@ object predicate {
     }
   }
 
-  def isVectorArray(t: Type): Boolean = t match {
+  def isVectorArray(t: ExprType): Boolean = t match {
     case ArrayType(_, VectorType(_,_)) => true
     case _ => false
   }

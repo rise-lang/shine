@@ -77,12 +77,12 @@ package object DSL {
     def `@`(i: ToBeTyped[Expr]): ToBeTyped[App] = idx(i)(e)
   }
 
-  implicit class TypeAssertionHelper(t: Type) {
+  implicit class TypeAssertionHelper(t: ExprType) {
     def !:[T <: Expr](e: ToBeTyped[T]): ToBeTyped[Expr] =
       e >>= (e => toBeTyped(TypeAssertion(e, t)))
   }
 
-  implicit class TypeAnnotationHelper(t: Type) {
+  implicit class TypeAnnotationHelper(t: ExprType) {
     def ::[T <: Expr](e: ToBeTyped[T]): ToBeTyped[Expr] =
       e >>= (e => toBeTyped(TypeAnnotation(e, t)))
   }
@@ -149,7 +149,7 @@ package object DSL {
 
   // function values
   object fun {
-    def apply(t: Type)
+    def apply(t: ExprType)
              (f: ToBeTyped[Identifier] => ToBeTyped[Expr]
              ): ToBeTyped[Lambda] = {
       val x = identifier(freshName("e")) >>= (i => toBeTyped(i.setType(t)))
@@ -266,7 +266,7 @@ package object DSL {
 
     // noinspection TypeAnnotation
     // scalastyle:off structural.type
-    def apply(ft: FunType[Type, Type]): Object {
+    def apply(ft: FunType[ExprType, ExprType]): Object {
       def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
         ToBeTyped[Identifier], ToBeTyped[Identifier],
         ToBeTyped[Identifier], ToBeTyped[Identifier],
@@ -562,20 +562,20 @@ package object DSL {
   def lu8(v: Int): ToBeTyped[Expr] = cast(l(v)) :: u8
 
   object foreignFun {
-    def apply(name: String, t: Type): ToBeTyped[Expr] = {
+    def apply(name: String, t: ExprType): ToBeTyped[Expr] = {
       apply(ForeignFunction.Decl(name, None), t)
     }
 
     def apply(name: String,
               params: Seq[String],
               body: String,
-              t: Type
+              t: ExprType
              ): ToBeTyped[Expr] = {
       apply(ForeignFunction.Decl(name, Some(ForeignFunction.Def(params, body))), t)
     }
 
-    def apply(decl: ForeignFunction.Decl, t: Type): ToBeTyped[Expr] = {
-      def collectTypes(t: Type): (Seq[DataType], DataType) = {
+    def apply(decl: ForeignFunction.Decl, t: ExprType): ToBeTyped[Expr] = {
+      def collectTypes(t: ExprType): (Seq[DataType], DataType) = {
         t match {
           case dt: DataType => (Vector(), dt)
           case FunType(dt: DataType, out) =>

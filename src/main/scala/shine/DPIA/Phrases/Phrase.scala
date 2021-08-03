@@ -1,7 +1,7 @@
 package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
-import rise.core.types.{FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _}
+import rise.core.types.{FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _}
 import rise.core.types.DataType._
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
 import shine.DPIA.Types._

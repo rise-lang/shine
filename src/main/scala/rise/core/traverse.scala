@@ -124,7 +124,7 @@ object traverse {
           yield PairData(l1, r1)
     }
 
-    def `type`[T <: Type ] : T => M[T] = t => (t match {
+    def `type`[T <: ExprType ] : T => M[T] = t => (t match {
       case TypePlaceholder => return_(TypePlaceholder)
       case i: TypeIdentifier =>
         for { i1 <- typeIdentifierDispatch(Reference)(TypeKind.Identifier(i))}
@@ -191,7 +191,7 @@ object traverse {
   }
 
   trait ExprTraversal[M[_]] extends Traversal[M] {
-    override def `type`[T <: Type] : T => M[T] = return_
+    override def `type`[T <: ExprType] : T => M[T] = return_
   }
 
   trait PureTraversal extends Traversal[Pure] {override def monad : PureMonad.type = PureMonad }
@@ -211,9 +211,9 @@ object traverse {
   }
 
   def traverse(e: Expr, f: PureTraversal): Expr = f.expr(e).unwrap
-  def traverse[T <: Type](t: T, f: PureTraversal): T = f.`type`(t).unwrap
+  def traverse[T <: ExprType](t: T, f: PureTraversal): T = f.`type`(t).unwrap
   def traverse[F](e: Expr, f: PureAccumulatorTraversal[F]): (F, Expr) = f.expr(e).unwrap
-  def traverse[F,T <: Type](t: T, f: PureAccumulatorTraversal[F]): (F, T) = f.`type`(t).unwrap
+  def traverse[F,T <: ExprType](t: T, f: PureAccumulatorTraversal[F]): (F, T) = f.`type`(t).unwrap
   def traverse[M[_]](e: Expr, f: Traversal[M]): M[Expr] = f.expr(e)
-  def traverse[T <: Type, M[_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
+  def traverse[T <: ExprType, M[_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
 }

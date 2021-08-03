@@ -2,7 +2,7 @@ package shine.DPIA.Phrases
 
 import shine.DPIA.Types._
 import shine.DPIA._
-import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, Type => _, _ }
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
 import rise.core.types.DataType._
 
 object VisitAndRebuild {

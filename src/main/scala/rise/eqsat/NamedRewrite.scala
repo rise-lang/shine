@@ -151,7 +151,7 @@ object NamedRewrite {
           throw new Exception(s"did not expect $dt")
       }
 
-    def makeTPat(t: rct.Type, bound: Expr.Bound, isRhs: Boolean): TypePattern =
+    def makeTPat(t: rct.ExprType, bound: Expr.Bound, isRhs: Boolean): TypePattern =
       t match {
         case dt: rct.DataType => makeDTPat(dt, bound, isRhs)
         case rct.FunType(a, b) =>
@@ -410,7 +410,7 @@ object NamedRewriteDSL {
   type Pattern = rc.Expr
   type NatPattern = rct.Nat
   type DataTypePattern = rct.DataType
-  type TypePattern = rct.Type
+  type TypePattern = rct.ExprType
 
   import scala.language.implicitConversions
 
@@ -466,11 +466,11 @@ object NamedRewriteDSL {
   }
   implicit final class FunConstructorT(private val r: TypePattern) extends AnyVal {
     @inline def ->:(t: TypePattern): TypePattern =
-      rct.FunType[rct.Type, rct.Type](t, r)
+      rct.FunType[rct.ExprType, rct.ExprType](t, r)
   }
   implicit final class FunConstructorDT(private val r: DataTypePattern) extends AnyVal {
     @inline def ->:(t: TypePattern): TypePattern =
-      rct.FunType[rct.Type, rct.Type](t, r)
+      rct.FunType[rct.ExprType, rct.ExprType](t, r)
   }
   implicit final class ArrayConstructor(private val s: NatPattern) extends AnyVal {
     @inline def `.`(et: DataTypePattern): DataTypePattern =

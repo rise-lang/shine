@@ -32,7 +32,7 @@ class asum extends test_util.TestsWithExecutor {
   test("High level asum type inference works") {
     val typed = high_level.toExpr
 
-    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: ExprType]].x
     assertResult(DepFunType(NatKind, N, FunType(inputT(N), f32))) {
       typed.t
     }

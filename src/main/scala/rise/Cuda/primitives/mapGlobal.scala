@@ -18,10 +18,10 @@ final case class mapGlobal(dim: Int) extends Builder {
   }
 }
 object mapGlobal {
-  private final case class Primitive(dim: Int)(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive(dim: Int)(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "mapGlobal"
-    override def setType(ty: Type): Primitive = Primitive(dim)(ty)
-    override def typeScheme: Type = impl { (n: Nat) => impl { (s: DataType) => impl { (t: DataType) => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t) } } }
+    override def setType(ty: ExprType): Primitive = Primitive(dim)(ty)
+    override def typeScheme: ExprType = impl { (n: Nat) => impl { (s: DataType) => impl { (t: DataType) => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t) } } }
     override def primEq(obj: rise.core.Primitive): Boolean = obj match {
       case p: Primitive =>
         p.dim == dim && true

@@ -9,11 +9,11 @@ import rise.core.types._
 import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object take extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "take"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = expl { (n: Nat) => impl { (m: Nat) => impl { (t: DataType) => ArrayType(n + m, t) ->: ArrayType(n, t) } } }
+    override def typeScheme: ExprType = expl { (n: Nat) => impl { (m: Nat) => impl { (t: DataType) => ArrayType(n + m, t) ->: ArrayType(n, t) } } }
   }
   override def toString: String = "take"
   override def primitive: rise.core.Primitive = Primitive()()

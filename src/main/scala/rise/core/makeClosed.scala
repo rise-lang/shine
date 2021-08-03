@@ -8,7 +8,7 @@ object makeClosed {
   def apply(e: Expr): Expr = withCount(e)._1
   def withCount(e: Expr): (Expr, Int) = {
     val (_, ftvs) = IsClosedForm.varsToClose(e)
-    val (expr, ts) = ftvs.foldLeft((e, Map[Type, Type]()))((acc, ftv) => acc match {
+    val (expr, ts) = ftvs.foldLeft((e, Map[ExprType, ExprType]()))((acc, ftv) => acc match {
       case (expr, ts) => ftv match {
         case TypeKind.Identifier(i) =>
           val dt = DataTypeIdentifier(freshName("dt"))

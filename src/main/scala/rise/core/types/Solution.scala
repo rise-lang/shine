@@ -8,11 +8,11 @@ import util.monads._
 
 object Solution {
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
-  def subs(ta: Type, tb: Type): Solution = {
+  def subs(ta: ExprType, tb: ExprType): Solution = {
     Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map(), Map(), Map())
   }
 
-  def subs(ta: DataTypeIdentifier, tb: Type): Solution =
+  def subs(ta: DataTypeIdentifier, tb: ExprType): Solution =
     Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map(), Map(), Map())
   def subs(na: NatIdentifier, nb: Nat): Solution =
     Solution(Map(), Map(na -> nb), Map(), Map(), Map(), Map(), Map(), Map())
@@ -30,7 +30,7 @@ object Solution {
     Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
 }
 
-case class Solution(ts: Map[Type, Type],
+case class Solution(ts: Map[ExprType, ExprType],
                     ns: Map[Nat, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
                     ms: Map[MatrixLayoutIdentifier, MatrixLayout],
@@ -50,7 +50,7 @@ case class Solution(ts: Map[Type, Type],
   }
 
   case class V(sol: Solution) extends Visitor(sol) {
-    override def `type`[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
+    override def `type`[T <: ExprType] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
   }
   def apply(e: Expr): Expr = V(this).expr(e).unwrap
 
@@ -59,12 +59,12 @@ case class Solution(ts: Map[Type, Type],
       case t: DataTypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[DataType])
       case t => super.datatype(t)
     }
-    override def `type`[T <: Type]: T => Pure[T] = {
+    override def `type`[T <: ExprType]: T => Pure[T] = {
       case t : TypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[T])
       case t => super.`type`(t)
     }
   }
-  def apply(t: Type): Type = T(this).`type`(t).unwrap
+  def apply(t: ExprType): ExprType = T(this).`type`(t).unwrap
 
   def apply(n: Nat): Nat =
     (substitute.natsInNat(ns, _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
@@ -143,7 +143,7 @@ case class Solution(ts: Map[Type, Type],
     case DepConstraint(NatKind, df, arg: Nat, t) => DepConstraint(NatKind, apply(df), apply(arg), apply(t))
     case DepConstraint(DataKind, df, arg: DataType, t) =>
       DepConstraint(DataKind, apply(df), apply(arg).asInstanceOf[DataType], apply(t))
-    case DepConstraint(TypeKind, df, arg: Type, t) =>
+    case DepConstraint(TypeKind, df, arg: ExprType, t) =>
       DepConstraint(TypeKind, apply(df), apply(arg), apply(t))
     case DepConstraint(AddressSpaceKind, df, arg: AddressSpace, t) =>
       DepConstraint(AddressSpaceKind, apply(df), apply(arg), apply(t))

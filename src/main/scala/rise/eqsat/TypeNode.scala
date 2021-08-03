@@ -112,7 +112,7 @@ object Type {
   /** Shift nat and datatype indices */
   type Shift = (Int, Int)
 
-  def fromNamed(t: rct.Type, bound: Expr.Bound = Expr.Bound.empty): Type = {
+  def fromNamed(t: rct.ExprType, bound: Expr.Bound = Expr.Bound.empty): Type = {
     Type(t match {
       case dt: rct.DataType => DataType.fromNamed(dt, bound).node
       case rct.FunType(a, b) => FunType(fromNamed(a, bound), fromNamed(b, bound))
@@ -124,7 +124,7 @@ object Type {
     })
   }
 
-  def toNamed(t: Type, bound: Expr.Bound = Expr.Bound.empty): rct.Type = {
+  def toNamed(t: Type, bound: Expr.Bound = Expr.Bound.empty): rct.ExprType = {
     t.node match {
       case dt: DataTypeNode[Nat, DataType] => DataType.toNamed(DataType(dt), bound)
       case FunType(a, b) => rct.FunType(toNamed(a, bound), toNamed(b, bound))

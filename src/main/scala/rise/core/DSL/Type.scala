@@ -89,27 +89,27 @@ object Type {
     NatCollectionFunctionWrapper(f)
 
   object expl {
-    def apply(w: NatFunctionWrapper[Type]): Type = {
+    def apply(w: NatFunctionWrapper[ExprType]): ExprType = {
       val x = NatIdentifier(freshName("n"))
       DepFunType(NatKind, x, w.f(x))
     }
 
-    def apply(w: DataTypeFunctionWrapper[Type]): Type = {
+    def apply(w: DataTypeFunctionWrapper[ExprType]): ExprType = {
       val x = DataTypeIdentifier(freshName("dt"))
       DepFunType(DataKind, x, w.f(x))
     }
 
-    def apply(w: NatToDataFunctionWrapper[Type]): Type = {
+    def apply(w: NatToDataFunctionWrapper[ExprType]): ExprType = {
       val x = NatToDataIdentifier(freshName("n2d"))
       DepFunType(NatToDataKind, x, w.f(x))
     }
 
-    def apply(w: NatToNatFunctionWrapper[Type]): Type = {
+    def apply(w: NatToNatFunctionWrapper[ExprType]): ExprType = {
       val x = NatToNatIdentifier(freshName("n2n"))
       DepFunType(NatToNatKind, x, w.f(x))
     }
 
-    def apply(w: AddressSpaceFunctionWrapper[Type]): Type = {
+    def apply(w: AddressSpaceFunctionWrapper[ExprType]): ExprType = {
       val x = AddressSpaceIdentifier(freshName("a"))
       DepFunType(AddressSpaceKind, x, w.f(x))
     }
@@ -155,14 +155,14 @@ object Type {
 
   // dependent pairs
   object Nat {
-    def `**`(f: Nat => DataType): Type = {
+    def `**`(f: Nat => DataType): ExprType = {
       val x = NatIdentifier(freshName("n"))
       DepPairType(NatKind, x, f(x))
     }
   }
 
   object NatCollection {
-    def `**`(f: NatCollection => DataType): Type = {
+    def `**`(f: NatCollection => DataType): ExprType = {
       val x = NatCollectionIdentifier(freshName("ns"))
       DepPairType(NatCollectionKind, x, f(x))
     }
@@ -179,20 +179,20 @@ object Type {
   }
 
 
-  def freshTypeIdentifier: Type = impl { x: TypeIdentifier => x }
+  def freshTypeIdentifier: ExprType = impl { x: TypeIdentifier => x }
 
-  implicit final class TypeConstructors(private val r: Type) extends AnyVal {
-    @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
+  implicit final class TypeConstructors(private val r: ExprType) extends AnyVal {
+    @inline def ->:(t: ExprType): FunType[ExprType, ExprType] = FunType(t, r)
   }
 
   object ->: {
-    def unapply[T <: Type, U <: Type](funType: FunType[T, U]): Option[(T, U)] = {
+    def unapply[T <: ExprType, U <: ExprType](funType: FunType[T, U]): Option[(T, U)] = {
       FunType.unapply(funType)
     }
   }
 
   object `(Addr)->:` {
-    def unapply[T, I, U <: Type](funType: DepFunType[T, I, U]): Option[(AddressSpaceIdentifier, U)] = {
+    def unapply[T, I, U <: ExprType](funType: DepFunType[T, I, U]): Option[(AddressSpaceIdentifier, U)] = {
       funType.x match {
         case a : AddressSpaceIdentifier => Some((a, funType.t))
         case _ => throw new Exception("Expected AddressSpace DepFunType")
@@ -201,7 +201,7 @@ object Type {
   }
 
   object `(Nat)->:` {
-    def unapply[T, I, U <: Type](funType: DepFunType[T, I, U]): Option[(NatIdentifier, U)] = {
+    def unapply[T, I, U <: ExprType](funType: DepFunType[T, I, U]): Option[(NatIdentifier, U)] = {
       funType.x match {
         case n : NatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
@@ -210,7 +210,7 @@ object Type {
   }
 
   object `(NatToNat)->:` {
-    def unapply[T, I, U <: Type](funType: DepFunType[T, I, U]): Option[(NatToNatIdentifier, U)] = {
+    def unapply[T, I, U <: ExprType](funType: DepFunType[T, I, U]): Option[(NatToNatIdentifier, U)] = {
       funType.x match {
         case n : NatToNatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected NatToNat DepFunType")

@@ -81,13 +81,13 @@ import arithexpr.arithmetic._
     import scala.meta._
     val generated = q"""{
       object ${Term.Name{name}} extends Builder {
-        private final case class Primitive()(override val t: Type = TypePlaceholder)
+        private final case class Primitive()(override val t: ExprType = TypePlaceholder)
           extends rise.core.Primitive
         {
           override val name: String = ${Lit.String(name)}
-          override def setType(ty: Type): Primitive = Primitive()(ty)
+          override def setType(ty: ExprType): Primitive = Primitive()(ty)
           override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-          override def typeScheme: Type = ${generateTypeScheme(typeSignature)}
+          override def typeScheme: ExprType = ${generateTypeScheme(typeSignature)}
         }
 
         override def toString: String = ${Lit.String(name)}
@@ -124,12 +124,12 @@ import arithexpr.arithmetic._
       }
 
       object ${Term.Name(name)} {
-        private final case class Primitive(..$params)(override val t: Type = TypePlaceholder)
+        private final case class Primitive(..$params)(override val t: ExprType = TypePlaceholder)
           extends rise.core.Primitive
         {
           override val name: String = ${Lit.String(name)}
-          override def setType(ty: Type): Primitive = Primitive(..$args)(ty)
-          override def typeScheme: Type = ${generateTypeScheme(typeSignature)}
+          override def setType(ty: ExprType): Primitive = Primitive(..$args)(ty)
+          override def typeScheme: ExprType = ${generateTypeScheme(typeSignature)}
 
           override def primEq(obj: rise.core.Primitive): Boolean = obj match {
             case p: Primitive => ${generateComparisonChain(args)}
