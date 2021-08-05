@@ -217,7 +217,6 @@ object configFileGeneration {
 
     // get parameters from constraint
     // check for given parameters in the given constraint
-    val test = constraints.toSeq.sortBy(_.toString)
     constraints.toSeq.sortBy(_.toString).foreach(constraint => {
       val parametersInConstraint = getParametersFromConstraint(parameters, constraint)
 
