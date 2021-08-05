@@ -238,7 +238,6 @@ object configFileGeneration {
           //  true: next candidate
           //  false: add constraint and other parameters to candidate parameter
           // we do not stop if candidate is found!
-          var i = 0
           parametersInConstraint.foreach(candidate => {
             // check if pointer occurs in other parameters' dependencies  (avoid cycles)
             parametersWDC.filter(

@@ -435,22 +435,22 @@ class autotuning extends test_util.Tests {
     val constraints = autotune.constraints.collectConstraints(e, params)
 
     val paramsSorted = params.toSeq.sortBy(_.name)
-    val gs0 = paramsSorted.apply(0)
-    val gs1 = paramsSorted.apply(1)
-    val ls0 = paramsSorted.apply(2)
-    val ls1 = paramsSorted.apply(3)
-    val tile = paramsSorted.apply(4)
-    val vec = paramsSorted.apply(5)
+    val gs0 = paramsSorted(0)
+    val gs1 = paramsSorted(1)
+    val ls0 = paramsSorted(2)
+    val ls1 = paramsSorted(3)
+    val tile = paramsSorted(4)
+    val vec = paramsSorted(5)
 
     val constraintsSorted = constraints.toSeq.sortBy(_.toString)
 
     val gold = Map(
-      gs0 -> (Set(constraintsSorted.apply(3), constraintsSorted.apply(4)), Set(ls0)),
-      gs1 -> (Set(constraintsSorted.apply(5), constraintsSorted.apply(6)), Set(ls1)),
-      ls0 -> (Set(constraintsSorted.apply(7)), Set.empty[NatIdentifier]),
-      ls1 -> (Set(constraintsSorted.apply(8)), Set.empty[NatIdentifier]),
-      tile -> (Set(constraintsSorted.apply(0), constraintsSorted.apply(1), constraintsSorted.apply(9)), Set(vec)),
-      vec -> (Set(constraintsSorted.apply(10), constraintsSorted.apply(11)), Set.empty[NatIdentifier])
+      gs0 -> (Set(constraintsSorted(3), constraintsSorted(4)), Set(ls0)),
+      gs1 -> (Set(constraintsSorted(5), constraintsSorted(6)), Set(ls1)),
+      ls0 -> (Set(constraintsSorted(7)), Set.empty[NatIdentifier]),
+      ls1 -> (Set(constraintsSorted(8)), Set.empty[NatIdentifier]),
+      tile -> (Set(constraintsSorted(0), constraintsSorted(1), constraintsSorted(9)), Set(vec)),
+      vec -> (Set(constraintsSorted(10), constraintsSorted(11)), Set.empty[NatIdentifier])
     )
 
     val distribution = autotune.configFileGeneration.distributeConstraints(params, constraints)
