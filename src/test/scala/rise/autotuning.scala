@@ -12,6 +12,7 @@ import rise.openCL.DSL._
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
+import rise.autotune.configFileGeneration.check_no_cycle
 
 
 class autotuning extends test_util.Tests {
@@ -120,32 +121,7 @@ class autotuning extends test_util.Tests {
   // scalastyle:on
 
 
-  // function to check cycle in parameter dependencies
-  def check_no_cycle(distribution: Map[NatIdentifier,
-    (Set[constraints.Constraint], Set[NatIdentifier])]
-                    ): Boolean = {
 
-    def check_no_cycle_rec(param: NatIdentifier,
-                           dependencies: Set[NatIdentifier],
-                           distribution: Map[NatIdentifier,
-                             (Set[constraints.Constraint], Set[NatIdentifier])]
-                          ): Boolean = {
-
-      dependencies.size match {
-        case 0 => true
-        case _ => {
-          dependencies.exists(dependency => dependency.name.equals(param.name)) match {
-            case true => false
-            case false => dependencies.forall(dependency => {
-                check_no_cycle_rec(param, distribution.apply(dependency)._2, distribution)
-              })
-          }
-        }
-      }
-    }
-
-    distribution.forall(param => check_no_cycle_rec(param._1, param._2._2, distribution))
-  }
 
   test("collect parameters") {
     val params = autotune.constraints.collectParameters(convolutionOclGsLsWrap)
