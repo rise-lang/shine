@@ -12,7 +12,7 @@ import rise.openCL.DSL._
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
-import rise.autotune.configFileGeneration.check_no_cycle
+import rise.autotune.configFileGeneration.{check_no_cycle}
 
 
 class autotuning extends test_util.Tests {
@@ -488,14 +488,14 @@ class autotuning extends test_util.Tests {
     val distributionCycle2 = scala.collection.mutable.Map[NatIdentifier,
       (Set[constraints.Constraint], Set[NatIdentifier])]()
     val dependenciesCycle2A = Set(B)
-    val dependenciesCycle2B = Set.empty[NatIdentifier]
+    val dependenciesCycle2B = Set(B)
     val dependenciesCycle2C = Set.empty[NatIdentifier]
 
     distributionCycle2(A) = (emptyConstraints, dependenciesCycle2A)
     distributionCycle2(B) = (emptyConstraints, dependenciesCycle2B)
     distributionCycle2(C) = (emptyConstraints, dependenciesCycle2C)
 
-    assert(check_no_cycle(distributionCycle2.toMap))
+    assert(!check_no_cycle(distributionCycle2.toMap))
 
   }
 

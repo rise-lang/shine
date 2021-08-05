@@ -308,23 +308,27 @@ object configFileGeneration {
     def check_no_cycle_rec(param: NatIdentifier,
                            dependencies: Set[NatIdentifier],
                            distribution: Map[NatIdentifier,
-                             (Set[constraints.Constraint], Set[NatIdentifier])]
+                             (Set[constraints.Constraint], Set[NatIdentifier])],
+                           visited: Set[NatIdentifier]
                           ): Boolean = {
 
       dependencies.size match {
         case 0 => true
-        case _ => {
-          dependencies.exists(dependency => dependency.name.equals(param.name)) match {
-            case true => false
-            case false => dependencies.forall(dependency => {
-              check_no_cycle_rec(param, distribution.apply(dependency)._2, distribution)
-            })
-          }
+        case _ => dependencies.exists(dependency => {
+          dependency.name.equals(param.name) || visited.contains(dependency)
+        }) match {
+          case true => false
+          case false => dependencies.forall(dependency => {
+            check_no_cycle_rec(param,
+              distribution.apply(dependency)._2,
+              distribution,
+              visited + dependency)
+          })
         }
       }
     }
 
-    distribution.forall(param => check_no_cycle_rec(param._1, param._2._2, distribution))
+    distribution.forall(param =>
+      check_no_cycle_rec(param._1, param._2._2, distribution, Set.empty[NatIdentifier]))
   }
-
 }
