@@ -130,24 +130,21 @@ class autotuning extends test_util.Tests {
                            distribution: Map[NatIdentifier,
                              (Set[constraints.Constraint], Set[NatIdentifier])]
                           ): Boolean = {
+
       dependencies.size match {
         case 0 => true
         case _ => {
           dependencies.exists(dependency => dependency.name.equals(param.name)) match {
             case true => false
-            case false => {
-              dependencies.exists(dependency => {
+            case false => dependencies.forall(dependency => {
                 check_no_cycle_rec(param, distribution.apply(dependency)._2, distribution)
               })
-            }
           }
         }
       }
     }
 
-    distribution.exists(param => {
-      check_no_cycle_rec(param._1, param._2._2, distribution)
-    })
+    distribution.forall(param => check_no_cycle_rec(param._1, param._2._2, distribution))
   }
 
   test("collect parameters") {
@@ -490,7 +487,7 @@ class autotuning extends test_util.Tests {
       (Set[constraints.Constraint], Set[NatIdentifier])]()
     val dependenciesNoCycleA = Set(B)
     val dependenciesNoCycleB = Set.empty[NatIdentifier]
-    val dependenciesNoCycleC = Set(C)
+    val dependenciesNoCycleC = Set(A)
 
     distributionNoCycle(A) = (emptyConstraints, dependenciesNoCycleA)
     distributionNoCycle(B) = (emptyConstraints, dependenciesNoCycleB)
@@ -502,14 +499,28 @@ class autotuning extends test_util.Tests {
     val distributionCycle = scala.collection.mutable.Map[NatIdentifier,
       (Set[constraints.Constraint], Set[NatIdentifier])]()
     val dependenciesCycleA = Set(B)
-    val dependenciesCycleB = Set(C)
-    val dependenciesCycleC = Set(A)
+    val dependenciesCycleB = Set(A)
+    val dependenciesCycleC = Set.empty[NatIdentifier]
 
     distributionCycle(A) = (emptyConstraints, dependenciesCycleA)
     distributionCycle(B) = (emptyConstraints, dependenciesCycleB)
     distributionCycle(C) = (emptyConstraints, dependenciesCycleC)
 
     assert(!check_no_cycle(distributionCycle.toMap))
+
+    // create another example with cycle
+    val distributionCycle2 = scala.collection.mutable.Map[NatIdentifier,
+      (Set[constraints.Constraint], Set[NatIdentifier])]()
+    val dependenciesCycle2A = Set(B)
+    val dependenciesCycle2B = Set.empty[NatIdentifier]
+    val dependenciesCycle2C = Set.empty[NatIdentifier]
+
+    distributionCycle2(A) = (emptyConstraints, dependenciesCycle2A)
+    distributionCycle2(B) = (emptyConstraints, dependenciesCycle2B)
+    distributionCycle2(C) = (emptyConstraints, dependenciesCycle2C)
+
+    assert(check_no_cycle(distributionCycle2.toMap))
+
   }
 
   test("execute convolution") {
