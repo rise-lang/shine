@@ -20,6 +20,7 @@ class Tiling extends test_util.Tests {
 
   private val reorderRules = Seq(
     rules.combinatory.mapFusion,
+    // rules.combinatory.mapFusion2,
     rules.combinatory.mapFission,
     rules.combinatory.transposePairAfter,
     rules.combinatory.mapMapFBeforeTranspose,

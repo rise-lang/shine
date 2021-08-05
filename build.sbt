@@ -6,7 +6,6 @@ lazy val commonSettings = Seq(
     "-Wunused:nowarn",
     "-Xfatal-warnings",
     "-Xlint:-unused",
-    "-optimise",
     "-Ymacro-annotations",
     "-unchecked",
     "-deprecation",

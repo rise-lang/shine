@@ -64,6 +64,15 @@ object tvmGemm {
   val blockingPartial: Strategy[Rise] =
     baseline `;`
     (tile(32,32)        `@` outermost(mapNest(2)))
+  val blockingPartial2: Strategy[Rise] =
+    baseline `;`
+      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))
+  val blockingPartial3: Strategy[Rise] =
+    baseline `;`
+      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce))
 
   // -- VECTORIZATION ----------------------------------------------------------
 

@@ -2,7 +2,6 @@ package apps
 
 import apps.separableConvolution2D._
 import rise.core.DSL._
-import rise.core.semantics.FloatData
 import rise.core.types._
 import rise.eqsat.rules
 import rise.eqsat.ProveEquiv.syntax._
@@ -20,7 +19,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
 
     def mulT(xName: String) = lam(xName, app(app(mul, app(fst, xName)), app(snd, xName)))
     def *(p: Pattern) = app(map, p)
-    val sum = app(app(reduce, add), l(FloatData(0)))
+    val sum = app(app(reduce, add), lf32(0))
     def dot(xName: String, a: Pattern, b: Pattern) =
       app(sum, app(*(mulT(xName)), app(app(zip, a), b)))
     val w2d: Pattern = weights2d
@@ -45,7 +44,7 @@ class separableConvolution2DEqsat extends test_util.Tests {
 
     def mulT(xName: String) = lam(xName, app(app(mul, app(fst, xName)), app(snd, xName)))
     def *(p: Pattern) = app(map, p)
-    val sum = app(app(reduce, add), l(FloatData(0)))
+    val sum = app(app(reduce, add), lf32(0))
     def dot(xName: String, a: Pattern) =
       app(zip, a) >> *(mulT(xName)) >> sum
     val w2d: Pattern = weights2d

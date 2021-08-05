@@ -477,21 +477,29 @@ object NamedRewriteDSL {
     rc.DepLambda[rct.NatKind](n, e)(TypePlaceholder)
   }
   def l(d: rc.semantics.Data): Pattern = rc.Literal(d)
+  def lf32(f: Float): Pattern = l(rise.core.semantics.FloatData(f))
 
   def slide: Pattern = rcp.slide.primitive
   def map: Pattern = rcp.map.primitive
   def reduce: Pattern = rcp.reduce.primitive
   def transpose: Pattern = rcp.transpose.primitive
   def zip: Pattern = rcp.zip.primitive
+  def unzip: Pattern = rcp.unzip.primitive
   def split: Pattern = rcp.split.primitive
   def join: Pattern = rcp.join.primitive
   def fst: Pattern = rcp.fst.primitive
   def snd: Pattern = rcp.snd.primitive
+  def mapFst: Pattern = rcp.mapFst.primitive
+  def mapSnd: Pattern = rcp.mapSnd.primitive
+  def makePair: Pattern = rcp.makePair.primitive
   def add: Pattern = rcp.add.primitive
   def mul: Pattern = rcp.mul.primitive
   def div: Pattern = rcp.div.primitive
   def drop: Pattern = rcp.drop.primitive
   def take: Pattern = rcp.take.primitive
+  def asScalar: Pattern = rcp.asScalar.primitive
+  def asVector: Pattern = rcp.asVector.primitive
+  def asVectorAligned: Pattern = rcp.asVectorAligned.primitive
 
   implicit def placeholderAsNatPattern(p: `_`.type): NatPattern =
     rct.NatIdentifier(rc.freshName("n"), isExplicit = false)
