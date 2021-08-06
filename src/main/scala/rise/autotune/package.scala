@@ -78,7 +78,7 @@ package object autotune {
         val file = new PrintWriter(
           new FileOutputStream(
             new File(tuner.output + "/" + tuner.name + ".json"), false))
-        file.write(generateJSON2(parameters, constraints, tuner))
+        file.write(generateJSON(parameters, constraints, tuner))
         file.close()
       }
       case _ => println("use given configuration file")

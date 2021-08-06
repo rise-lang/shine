@@ -9,7 +9,7 @@ import constraints._
 object configFileGeneration {
 
 
-  def generateJSON2(p: Parameters,
+  def generateJSON(p: Parameters,
                     c: Set[Constraint],
                     tuner: Tuner)
   :String = {
@@ -210,186 +210,6 @@ object configFileGeneration {
     file
   }
 
-  def generateJSON(p: Parameters,
-                   c: Set[Constraint],
-                   tuner: Tuner)
-  : String = {
-
-    val parametersWDC = distributeConstraints(p, c)
-
-    // number of samples for design of experiment phase
-    val doe = p.size * 10
-
-    // create header for hypermapper configuration file
-    val header =
-    s"""{
-       | "application_name" : "${tuner.name}",
-       | "optimization_objectives" : ["runtime"],
-       | "hypermapper_mode" : {
-       |   "mode" : "client-server"
-       | },
-       | "feasible_output" : {
-       |   "enable_feasible_predictor" : true,
-       |   "name" : "Valid",
-       |   "true_value" : "True",
-       |   "false_value" : "False"
-       | },
-       | "design_of_experiment" : {
-       |   "doe_type" : "random sampling",
-       |   "number_of_samples" : ${doe}
-       | },
-       | "optimization_iterations" : ${tuner.samples},
-       | "input_parameters" : {
-       |""".stripMargin
-
-    // create entry foreach parameter
-    var parameter = ""
-    p.foreach(elem => {
-
-      val parameterRange = elem.range match {
-        case RangeAdd(start, stop, step) =>  {
-
-          // if step is not evaluable use 1 instead
-          val stepWidth = step.isEvaluable match{
-            case true => step.eval
-            case false => 1
-          }
-
-          // avoid filtering of starting 1
-          start.eval match {
-            case 1 => {
-              stepWidth match {
-                case 1 => valuesListToString(
-                  List.range(start.evalInt, stop.evalInt + 1)
-                    .filter(_ % stepWidth == 0))
-                case _ => valuesListToString(
-                  List(1) ++ List.range(start.evalInt, stop.evalInt + 1)
-                    .filter(_ % stepWidth == 0))
-              }
-            }
-            case _ => valuesListToString(
-              List.range(start.evalInt, stop.evalInt+1)
-                .filter(_ % stepWidth == 0))
-          }
-        }
-
-        case RangeMul(start, stop, mul) => {
-
-          // if step is not evaluable use 1 instead
-          mul.isEvaluable match {
-            case true => {
-              val maxVal = scala.math.log(stop.evalInt)/scala.math.log(mul.evalDouble)
-
-              valuesListToString(
-                List.range(start.evalInt, maxVal.toInt+1)
-                  .map(power => scala.math.pow(mul.evalInt, power).toInt))
-            }
-            case false =>
-              valuesListToString(List.range(start.evalInt, stop.evalInt))
-          }
-        }
-        case _ => {
-          println("Not yet implemented")
-          ""
-        }
-      }
-
-      // check if we have to generate constraints
-      val parameterEntry = tuner.hierarchicalHM match {
-        case true => {
-          // use constraints
-
-          // get dependencies and constraints from map
-          val dependencies = parametersWDC(elem)._2.size match {
-            case 0 => "[]"
-            case _ =>  elementListToString(parametersWDC(elem)._2.toList)
-          }
-
-          val constraints = parametersWDC(elem)._1.size match {
-            case 0 => "[]"
-            case _ => {
-              val constraintsList = new ListBuffer[String]
-              parametersWDC(elem)._1.foreach(constraint => {
-                // check type of constraint
-                val constraintString = constraint match {
-                  case RangeConstraint(n, r) => {
-                    val (start, stop, step) = r match {
-                      case RangeAdd(start, stop, step) => (start, stop, step)
-                      case RangeMul(start, stop, step) => (start, stop, step)
-                      case _ => (0, 0, 0) // todo catch other types of ranges
-                    }
-
-                    // if stop is PosInf, remove constraint
-                    // (already catched by the range of parameter)
-                    stop.toString match {
-                      case "PosInf" =>{
-                        val startConstraint = n.toString + " >= " + start
-                        val stepConstraint = n.toString + " % " + step + " == 0"
-
-                        startConstraint + " and " + stepConstraint
-                      }
-                      case _ => {
-                        val startConstraint = n.toString + " >= " + start
-                        val stopConstraint = n.toString + " <= " + stop
-                        val stepConstraint = n.toString + " % " + step + " == 0"
-
-                        startConstraint + " and " + stopConstraint + " and " + stepConstraint
-                      }
-                    }
-
-                  }
-                  case PredicateConstraint(n) => {
-                    n.toString.contains("/^") match {
-                      case true => constraint.toString.replace("/^", "/")
-                      case false => constraint.toString
-                    }
-                  }
-                }
-                constraintsList += constraintString
-              })
-              elementListToString(constraintsList.filter(elem => elem.size != 0).toList)
-            }
-          }
-
-          val parameterEntry =
-            s"""   "${elem.name}" : {
-               |       "parameter_type" : "ordinal",
-               |       "values" : ${parameterRange},
-               |       "constraints" : ${constraints},
-               |       "dependencies" : ${dependencies}
-               |   },
-               |""".stripMargin
-
-          parameterEntry
-        }
-        case false => {
-          // don't use constraints
-          val parameterEntry =
-            s"""   "${elem.name}" : {
-               |       "parameter_type" : "ordinal",
-               |       "values" : ${parameterRange}
-               |   },
-               |""".stripMargin
-
-          parameterEntry
-        }
-      }
-      parameter += parameterEntry
-    })
-
-    // remove last comma
-    val parameterSection = parameter.dropRight(2) + "\n"
-
-    val foot =
-      """ }
-        |}
-        |""".stripMargin
-
-    val file = header + parameterSection + foot
-    println("file: \n" + file )
-    file
-  }
-
   def valuesListToString(list: List[Any]): String = {
     var valuesString = ""
     list.foreach(value => {
@@ -419,7 +239,6 @@ object configFileGeneration {
 
     // get parameters from constraint
     // check for given parameters in the given constraint
-    val test = constraints.toSeq.sortBy(_.toString)
     constraints.toSeq.sortBy(_.toString).foreach(constraint => {
       val parametersInConstraint = getParametersFromConstraint(parameters, constraint)
 
@@ -440,7 +259,6 @@ object configFileGeneration {
           //  true: next candidate
           //  false: add constraint and other parameters to candidate parameter
           // we do not stop if candidate is found!
-          var i = 0
           parametersInConstraint.foreach(candidate => {
             // check if pointer occurs in other parameters' dependencies  (avoid cycles)
             parametersWDC.filter(
@@ -527,67 +345,36 @@ object configFileGeneration {
     })
     (valuesFiltered, constraintsFiltered.toSet)
   }
-//
-//  def filterList2(p: Parameters, constraints: Set[Constraint], values:List[Int], param: NatIdentifier): List[Int] = {
-//
-//    // check for each value if all constraints pass or are not evaluable
-//    values.filter(value => {
-//      constraints.forall(constraint => {
-//        val params = getParametersFromConstraint(p, constraint)
-//        // if occurring parameter in constraint matches given parameter, try to evaluate this constraint
-//        params.size match {
-//          case 1 => params.last.name match {
-//            case param.name => constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> value)).isSatisfied()
-//            case _ => true
-//          }
-//          case _ => true
-//        }
-//      })
-//    })
-//  }
 
-//
-//
-//    constraints.foreach(constraint => {
-//
-//      val params = getParametersFromConstraint(p, constraint)
-//      // if occurring parameter in constraint matches given parameter, filter out
-//      val filteredList = params.size match {
-//        case 1 => params.last.name match {
-//          case param.name =>
-//            println("param is: " + params.last)
-//            println("constraint is: " + constraint)
-//            constraint match{
-//              case RangeConstraint(n, r) => {
-//                println("n: " + n)
-//                println("r: " + r)
-//                println("r: " + r.max)
-//                println("r is eval: " + r.max.equals(PosInf))
-//              }
-//              case _ =>
-//            }
-//
-//            val test = constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> 4))
-//            println("test: " + test)
-//            println("test: " + test.isSatisfied())
-//
-//            val test2 = constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> 3))
-//            println("test2: " + test2)
-//            println("test2: " + test2.isSatisfied())
-//
-//            println("values: " + values)
-//            val filter = values.filter(value => constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> value)).isSatisfied())
-////            println("filter: " + filter)
-//            filter
-//          case _ => values
-//        }
-//        case _ => values
-//      }
-//      println("filteredList: " + filteredList)
-////      println("finalList: " + finalList)
-//      finalList = filteredList
-//    })
-//
-//    finalList
-//  }
+  // function to check cycle in parameter dependencies
+  def check_no_cycle(distribution: Map[NatIdentifier,
+    (Set[constraints.Constraint], Set[NatIdentifier])]
+                    ): Boolean = {
+
+    def check_no_cycle_rec(param: NatIdentifier,
+                           dependencies: Set[NatIdentifier],
+                           distribution: Map[NatIdentifier,
+                             (Set[constraints.Constraint], Set[NatIdentifier])],
+                           visited: Set[NatIdentifier]
+                          ): Boolean = {
+
+      dependencies.size match {
+        case 0 => true
+        case _ => dependencies.exists(dependency => {
+          dependency.name.equals(param.name) || visited.contains(dependency)
+        }) match {
+          case true => false
+          case false => dependencies.forall(dependency => {
+            check_no_cycle_rec(param,
+              distribution.apply(dependency)._2,
+              distribution,
+              visited + dependency)
+          })
+        }
+      }
+    }
+
+    distribution.forall(param =>
+      check_no_cycle_rec(param._1, param._2._2, distribution, Set.empty[NatIdentifier]))
+  }
 }
