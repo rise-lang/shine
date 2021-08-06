@@ -110,6 +110,11 @@ class autotuning extends test_util.Tests {
        |""".stripMargin
   }
 
+  val computeNoSizes =
+    s"""
+       |fun_run(ctx, &fun, output, input, input);
+       |""".stripMargin
+
   val compute =
     s"""
        |fun_run(ctx, &fun, output, N, input, input);
@@ -527,7 +532,7 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOclGsLs(1024)
 
     val tuner = Tuner(
-      hostCode = HostCode(init(1024), compute, finish),
+      hostCode = HostCode(init(1024), computeNoSizes, finish),
       samples = 100,
       name = "RISE",
       output = "autotuning",
@@ -657,7 +662,7 @@ class autotuning extends test_util.Tests {
 
     val result = autotune.execution.execute(
       expression = e2,
-      hostCode = HostCode(init(32), compute, finish),
+      hostCode = HostCode(init(32), computeNoSizes, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
       speedupFactor = 100,
@@ -878,7 +883,7 @@ class autotuning extends test_util.Tests {
     // WARNING: timeout does not stop the thread, it only returns to the host thread
     val result = autotune.execution.execute(
       eWithParams,
-      HostCode(init(1024), compute, finish),
+      HostCode(init(1024), computeNoSizes, finish),
       Timeouts(5000, 5000, 5000),
       10,
       100,
