@@ -22,19 +22,6 @@ class mmTuning extends test_util.Tests {
                 mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
               ))))))
 
-  val mmTuningInputsAsTP: ToBeTyped[Expr] =
-    tuningParam("n", (n: Nat) =>
-      tuningParam("m", (m: Nat) =>
-        tuningParam("o", (o: Nat) =>
-          tuningParam("v3", (v3: Nat) =>
-            tuningParam("v4", (v4: Nat) =>
-              tuningParam("v5", (v5: Nat) =>
-                tuningParam("v6", (v6: Nat) =>
-                  tuningParam("v7", (v7: Nat) =>
-                    tuningParam("v8", (v8: Nat) =>
-                      mmNVIDIAWithParams(m, n, o, v3, v4, v5, v6, v7, v8)
-                    )))))))))
-
   // scalastyle:off
   val init: (Int, Int, Int) => String = (N, M, O) => {
     s"""
@@ -65,14 +52,9 @@ class mmTuning extends test_util.Tests {
        |""".stripMargin
   }
 
-  val computeInputs =
-    s"""
-       |fun_run(ctx, &fun, outputC, M, N, O, inputA, inputB);
-       |""".stripMargin
-
   val compute =
     s"""
-       |fun_run(ctx, &fun, outputC, inputA, inputB);
+       |fun_run(ctx, &fun, outputC, M, N, O, inputA, inputB);
        |""".stripMargin
 
   val finish =
@@ -89,12 +71,9 @@ class mmTuning extends test_util.Tests {
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
-          wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuningInputsAsTP)))))
+          wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
 
     val params0 = Map(
-      TuningParameter("n") -> (1024: Nat),
-      TuningParameter("m") -> (1024: Nat),
-      TuningParameter("o") -> (1024: Nat),
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (1024: Nat),
@@ -119,9 +98,6 @@ class mmTuning extends test_util.Tests {
     println("result0: " + result0.runtime)
 
     val params1 = Map(
-      TuningParameter("n") -> (1024: Nat),
-      TuningParameter("m") -> (1024: Nat),
-      TuningParameter("o") -> (1024: Nat),
       TuningParameter("ls0") -> (4: Nat),
       TuningParameter("ls1") -> (32: Nat),
       TuningParameter("gs0") -> (128: Nat),
@@ -146,9 +122,6 @@ class mmTuning extends test_util.Tests {
     println("result1: " + result1.runtime)
 
     val params2 = Map(
-      TuningParameter("n") -> (1024: Nat),
-      TuningParameter("m") -> (1024: Nat),
-      TuningParameter("o") -> (1024: Nat),
       TuningParameter("ls0") -> (8: Nat),
       TuningParameter("ls1") -> (128: Nat),
       TuningParameter("gs0") -> (1024: Nat),
@@ -173,20 +146,89 @@ class mmTuning extends test_util.Tests {
     println("result2: " + result2.runtime)
   }
 
+  // standard hypermapper
   test("mm tuning 128") {
-    val mm = tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
-      tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
-        wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuningInputsAsTP)))))
+    val mm:Expr =
+      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
 
     val tuner = Tuner(
       hostCode = HostCode(init(64, 128, 128), compute, finish),
+      inputSizes = Seq(64, 128, 128),
       samples = 100,
       name = "rs_cot_128",
       output = "autotuning/mm_128",
       timeouts = Timeouts(5000, 5000, 1000),
       executionIterations = 10,
       speedupFactor = 100,
-      configFile = Some("/home/jo/development/rise-lang/shine/autotuning/config/rs_cot_128.json"),
+      configFile = None,
+      hierarchicalHM = false
+    )
+
+    val tuningResult = autotune.search(tuner)(mm)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: " + bestSample)
+  }
+
+  test("mm tuning 1024 with generated config file") {
+    val mm: Expr =
+      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
+            ))))
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      inputSizes = Seq(1024, 1024, 1024),
+      samples = 10,
+      name = "rs_cot_1024",
+      output = "autotuning/mm_1024",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None, // we don't inject usage of local memory as constraints - many configs fail
+      hierarchicalHM = false,
+      execution = Minimum
+    )
+
+    val tuningResult = autotune.search(tuner)(mm)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: \n" + bestSample)
+  }
+
+  // hierarchical hypermapper
+  ignore("mm tuning 128 hierarchical") {
+    val mm: Expr =
+      tuningParam("ls0", RangeMul(1, 128, 2), (ls0: Nat) =>
+        tuningParam("ls1", RangeMul(1, 64, 2), (ls1: Nat) =>
+          tuningParam("gs0", RangeMul(1, 128, 2), (gs0: Nat) =>
+            tuningParam("gs1", RangeMul(1, 64, 2), (gs1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
+            ))))
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(64, 128, 128), compute, finish),
+      inputSizes = Seq(64, 128, 128),
+      samples = 100,
+      name = "rs_cot_128",
+      output = "autotuning/mm_128",
+      timeouts = Timeouts(5000, 5000, 1000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some("autotuning/config/mm/rs_cot_128.json"),
       hierarchicalHM = true
     )
 
@@ -200,24 +242,25 @@ class mmTuning extends test_util.Tests {
     println("runtime: " + bestSample.get.runtime)
   }
 
-  test("mm tuning 1024") {
+  ignore("mm tuning 1024 hierarchical") {
     val mm: Expr =
-      tuningParam("ls0", (ls0: Nat) =>
-        tuningParam("ls1", (ls1: Nat) =>
-          tuningParam("gs0", (gs0: Nat) =>
-            tuningParam("gs1", (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuningInputsAsTP)
+      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
             ))))
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      samples = 10,
+      inputSizes = Seq(1024, 1024, 1024),
+      samples = 20,
       name = "rs_cot_1024",
       output = "autotuning/mm_1024",
       timeouts = Timeouts(1000, 1000, 1000),
       executionIterations = 10,
       speedupFactor = 100,
-      configFile = Some("/home/jo/development/rise-lang/shine/autotuning/config/rs_cot_1024.json"),
+      configFile = Some("autotuning/config/mm/rs_cot_1024.json"),
       hierarchicalHM = true,
       execution = Minimum
     )
@@ -232,7 +275,8 @@ class mmTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  ignore("mm tuning 1024 with generated config file") {
+  // we do not support hierarchical hypermapper
+  ignore("mm tuning 1024 with generated config file hierarchical") {
     val mm: Expr =
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
@@ -242,7 +286,7 @@ class mmTuning extends test_util.Tests {
             ))))
 
     val tuner = Tuner(
-      hostCode = HostCode(init(1024, 1024, 1024), computeInputs, finish),
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024, 1024),
       samples = 10,
       name = "rs_cot_1024",
