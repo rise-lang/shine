@@ -56,7 +56,7 @@ object nbody {
        |}
        | """.stripMargin,
     (f32 x (f32 x f32)) ->: (f32 x (f32 x f32)) ->: f32 ->: f32 ->:
-    (f32 x (f32 x f32)))
+      (f32 x (f32 x f32)))
 
   private val addScal = fun(
     (f32 x (f32 x f32)) ->: (f32 x (f32 x f32)) ->: (f32 x (f32 x f32))
@@ -67,8 +67,8 @@ object nbody {
 
   private val updateScal = fun(
     ((f32 x (f32 x f32)) x (f32 x (f32 x f32))) ->:
-    f32 ->: (f32 x (f32 x f32)) ->:
-    ((f32 x (f32 x f32)) x (f32 x (f32 x f32)))
+      f32 ->: (f32 x (f32 x f32)) ->:
+      ((f32 x (f32 x f32)) x (f32 x (f32 x f32)))
   )((xyzvXYZ, deltaT, acceleration) => {
     val xyz = fst(xyzvXYZ)
     val vXYZ = snd(xyzvXYZ)
@@ -85,16 +85,16 @@ object nbody {
   // also, this code was not verified
   val nbodyHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
-    (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
-    (n`.`f32) ->: f32 ->: f32 ->:
-    (n`.`((f32 x (f32 x f32)) x (f32 x (f32 x f32))))
+      (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
+      (n`.`f32) ->: f32 ->: f32 ->:
+      (n`.`((f32 x (f32 x f32)) x (f32 x (f32 x f32))))
   )((x, y, z, velX, velY, velZ, mass, espSqr, deltaT) =>
     map(fun(p1 =>
       fun(acceleration => updateScal(p1, deltaT, acceleration)) o
-      reduce(addScal)(makePair(lf32(0.0f))(makePair(lf32(0.0f))(lf32(0.0f)))) o
-      map(fun(p2m =>
-        calcAccScal(fst(p1), fst(p2m), snd(p2m), espSqr)
-      )) $ zip(zip(x)(zip(y)(z)))(mass)
+        reduce(addScal)(makePair(lf32(0.0f))(makePair(lf32(0.0f))(lf32(0.0f)))) o
+        map(fun(p2m =>
+          calcAccScal(fst(p1), fst(p2m), snd(p2m), espSqr)
+        )) $ zip(zip(x)(zip(y)(z)))(mass)
     )) $ zip(zip(x)(zip(y)(z)))(zip(velX)(zip(velY)(velZ)))
   ))
 
@@ -103,54 +103,46 @@ object nbody {
   )((pos, vel, espSqr, deltaT) =>
     mapGlobal(fun(p1 =>
       update(fst(p1))(snd(p1))(deltaT) o
-      oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
-        calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
-      ))(vectorFromScalar(lf32(0.0f))) $ pos
+        oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
+          calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
+        ))(vectorFromScalar(lf32(0.0f))) $ pos
     )) $ zip(pos)(vel)
   ))
 
   val tileX = 256
   val tileY = 1
 
-  val nbodyNVIDIA = nbodyNVIDIAWithParams(tileX, tileY)
-
-  def nbodyNVIDIAWithParams(tileX: Nat, tileY: Nat): ToBeTyped[Expr] = {
-    depFun((n: Nat) => nbodyNVIDIAWithParams(n, tileX, tileY))
-  }
-
   // TODO: compare generated code to original
-  def nbodyNVIDIAWithParams(n: Nat, tileX: Nat, tileY: Nat): ToBeTyped[Expr] = {
-    fun(
-      (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
-    )((pos, vel, espSqr, deltaT) =>
-      join o join o mapWorkGroup(1)(
-        join o mapWorkGroup(0)(fun((tileX`.`(vec(4, f32) x vec(4, f32))) ->: (tileY`.`tileX`.`(vec(4, f32) x vec(4, f32))))(p1Chunk =>
-          fun(tileX`.`(vec(4, f32) x vec(4, f32)))(newP1Chunk =>
-            mapLocal(1)(fun(tileX`.`vec(4, f32))(bla =>
-              mapLocal(0)(fun((vec(4, f32) x vec(4, f32)) x vec(4, f32))(p1 =>
-                update(p1._1._1)(p1._1._2)(deltaT)(p1._2)
-              ))(zip(newP1Chunk)(bla)))) o
-              // TODO: is this the correct address space?
-              oclReduceSeq(AddressSpace.Local)(
-                fun(tileY`.`tileX`.`vec(4, f32))(acc => fun(tileY`.`tileX`.`vec(4, f32))(p2 =>
-                  let (toLocal(mapLocal(1)(mapLocal(0)(id))(p2)))
-                    be (p2Local =>
-                    mapLocal(1)(fun(((tileX`.`vec(4, f32)) x (tileX`.`vec(4, f32))) ->: (tileX`.`vec(4, f32)))(accDim2 =>
-                      mapLocal(0)(fun(((vec(4, f32) x vec(4, f32)) x vec(4, f32)) ->: vec(4, f32))(p1 =>
-                        oclReduceSeq(AddressSpace.Private)(fun(vec(4, f32) ->: vec(4, f32) ->: vec(4, f32))((acc, p2) =>
-                          calcAcc(p1._1._1)(p2)(deltaT)(espSqr)(acc)
-                        ))(p1._2)(accDim2._1)
-                      )) $ zip(newP1Chunk)(accDim2._2)
-                    )) $ zip(p2Local)(acc)
-                    )
-                )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(lf32(0.0f))))))))
-              o split(tileY) o split(tileX) $ pos
-            // TODO: toPrivate when it works..
-          ) $ zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
-        )) o split(tileX)
-      ) o split(n) $ zip(pos)(vel))
-  }
-
+  val nbodyNVIDIA: ToBeTyped[Expr] = depFun((n: Nat) => fun(
+    (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
+  )((pos, vel, espSqr, deltaT) =>
+    join o join o mapWorkGroup(1)(
+      join o mapWorkGroup(0)(fun((tileX`.`(vec(4, f32) x vec(4, f32))) ->: (tileY`.`tileX`.`(vec(4, f32) x vec(4, f32))))(p1Chunk =>
+        fun(tileX`.`(vec(4, f32) x vec(4, f32)))(newP1Chunk =>
+          mapLocal(1)(fun(tileX`.`vec(4, f32))(bla =>
+            mapLocal(0)(fun((vec(4, f32) x vec(4, f32)) x vec(4, f32))(p1 =>
+              update(p1._1._1)(p1._1._2)(deltaT)(p1._2)
+            ))(zip(newP1Chunk)(bla)))) o
+            // TODO: is this the correct address space?
+            oclReduceSeq(AddressSpace.Local)(
+              fun(tileY`.`tileX`.`vec(4, f32))(acc => fun(tileY`.`tileX`.`vec(4, f32))(p2 =>
+                let (toLocal(mapLocal(1)(mapLocal(0)(id))(p2)))
+                  be (p2Local =>
+                  mapLocal(1)(fun(((tileX`.`vec(4, f32)) x (tileX`.`vec(4, f32))) ->: (tileX`.`vec(4, f32)))(accDim2 =>
+                    mapLocal(0)(fun(((vec(4, f32) x vec(4, f32)) x vec(4, f32)) ->: vec(4, f32))(p1 =>
+                      oclReduceSeq(AddressSpace.Private)(fun(vec(4, f32) ->: vec(4, f32) ->: vec(4, f32))((acc, p2) =>
+                        calcAcc(p1._1._1)(p2)(deltaT)(espSqr)(acc)
+                      ))(p1._2)(accDim2._1)
+                    )) $ zip(newP1Chunk)(accDim2._2)
+                  )) $ zip(p2Local)(acc)
+                  )
+              )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(lf32(0.0f))))))))
+            o split(tileY) o split(tileX) $ pos
+          // TODO: toPrivate when it works..
+        ) $ zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
+      )) o split(tileX)
+    ) o split(n) $ zip(pos)(vel)
+  ))
 
   import shine.OpenCL._
   import util.{Time, TimeSpan}
