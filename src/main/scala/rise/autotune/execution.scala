@@ -72,13 +72,18 @@ object execution {
 
 //        println("program: \n" + program)
 
+        val iterations = executionIterations <= 0 match {
+          case true => 1
+          case false => executionIterations
+        }
+
         // execute program
         val result = executeWithRuntime(
           program,
           "zero_copy",
           timeouts.compilationTimeout,
           timeouts.executionTimeout,
-          executionIterations,
+          iterations,
           speedupFactor,
           execution
         )
