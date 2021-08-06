@@ -214,18 +214,14 @@ package object autotune {
   // wrap ocl run to a function
   def wrapOclRun(localSize: LocalSize, globalSize: GlobalSize)
                 (expr: Expr): Expr = {
-//    println("hallo, hilfe: ")
     expr match {
       // fun(x => e)
       case l@Lambda(x,e) =>
-//        println("fun: " + e)
         Lambda(x, wrapOclRun(localSize, globalSize)(e))(l.t)
       // depFun(x => e)
       case dl@DepLambda(kind, x, e) =>
-//        println("depFun: " + e)
         DepLambda(kind, x, wrapOclRun(localSize, globalSize)(e))(dl.t)
       case e =>
-//        println("case: " + e)
         oclRun(localSize, globalSize)(e)
     }
   }
