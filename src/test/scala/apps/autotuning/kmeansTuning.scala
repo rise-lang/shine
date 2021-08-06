@@ -1,8 +1,8 @@
 package apps.autotuning
 
-import arithexpr.arithmetic.{RangeMul}
+import arithexpr.arithmetic.RangeMul
 import rise.autotune
-import rise.autotune.{HostCode, Median, Timeouts, Tuner, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types.{Nat, _}
@@ -56,16 +56,12 @@ class kmeansTuning extends test_util.Tests {
 
 
   test("execute kmeans"){
-
-    println("kmeans: \n" + kmeans)
-
     val params = Map(
       TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("gs0") -> (1 << 16: Nat)
+      TuningParameter("gs0") -> (1024: Nat)
     )
 
     val kmeans_replaced = rise.core.substitute.natsInExpr(params, kmeans)
-    println("kmeans_replaced: \n" + kmeans_replaced)
 
     val result = autotune.execution.execute(
       expression = kmeans_replaced,
@@ -79,7 +75,7 @@ class kmeansTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("search kmeans generated config file"){
+  test("search kmeans with generated config file"){
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
@@ -87,11 +83,11 @@ class kmeansTuning extends test_util.Tests {
       samples = 10,
       name = "kmeans",
       output = "autotuning/kmeans",
-      timeouts = Timeouts(1000, 1000, 1000),
+      timeouts = Timeouts(10000, 10000, 10000),
       executionIterations = 10,
       speedupFactor = 100,
       None,
-      hierarchicalHM = true,
+      hierarchicalHM = false,
       execution = Median
     )
 
@@ -104,4 +100,31 @@ class kmeansTuning extends test_util.Tests {
     println("bestSample: \n" + bestSample)
     println("runtime: \n" + bestSample.get.runtime)
   }
+
+  ignore("search kmeans with manual config file"){
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024, 5, 34), compute, finish),
+      inputSizes = Seq(1024, 5, 34),
+      samples = 20,
+      name = "kmeans",
+      output = "autotuning/kmeans",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some("autotuning/config/kmeans.json"),
+      hierarchicalHM = true,
+      execution = Minimum
+    )
+
+    val tuningResult = autotune.search(tuner)(kmeans)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: \n" + bestSample)
+    println("runtime: \n" + bestSample.get.runtime)
+  }
+
 }
