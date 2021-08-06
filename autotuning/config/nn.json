@@ -10,17 +10,13 @@
     "true_value" : "True",
     "false_value" : "False"
   },
-  "design_of_experiment" : {
-    "doe_type" : "random sampling",
-    "number_of_samples" : 50
-  },
-  "optimization_iterations" : 10,
+  "optimization_method" : "exhaustive",
   "input_parameters" : {
     "tuned_s0" : {
       "parameter_type" : "ordinal",
       "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
       "constraints" : [],
-      "dependencies" : ["tuned_ls0"]
+      "dependencies" : []
     },
     "tuned_gs0" : {
       "parameter_type" : "ordinal",
