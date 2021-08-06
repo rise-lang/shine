@@ -111,64 +111,63 @@ object configFileGeneration {
       // update with filtered constraints
       parametersWDC(param._1) = (constraintsFiltered, param._2._2)
 
-      // now write constraints
+      // write constraints
+
+      // get dependencies and constraints from map
+      val dependencies = parametersWDC(param._1)._2.size match {
+        case 0 => "[]"
+        case _ =>  elementListToString(parametersWDC(param._1)._2.toList)
+      }
+
+      val constraints = parametersWDC(param._1)._1.size match {
+        case 0 => "[]"
+        case _ => {
+          val constraintsList = new ListBuffer[String]
+          parametersWDC(param._1)._1.foreach(constraint => {
+            // check type of constraint
+            val constraintString = constraint match {
+              case RangeConstraint(n, r) => {
+                val (start, stop, step) = r match {
+                  case RangeAdd(start, stop, step) => (start, stop, step)
+                  case RangeMul(start, stop, step) => (start, stop, step)
+                  case _ => (0, 0, 0) // todo catch other types of ranges
+                }
+
+                // if stop is PosInf, remove constraint
+                // (already catched by the range of parameter)
+                stop.toString match {
+                  case "PosInf" =>{
+                    val startConstraint = n.toString + " >= " + start
+                    val stepConstraint = n.toString + " % " + step + " == 0"
+
+                    startConstraint + " and " + stepConstraint
+                  }
+                  case _ => {
+                    val startConstraint = n.toString + " >= " + start
+                    val stopConstraint = n.toString + " <= " + stop
+                    val stepConstraint = n.toString + " % " + step + " == 0"
+
+                    startConstraint + " and " + stopConstraint + " and " + stepConstraint
+                  }
+                }
+
+              }
+              case PredicateConstraint(n) => {
+                n.toString.contains("/^") match {
+                  case true => constraint.toString.replace("/^", "/")
+                  case false => constraint.toString
+                }
+              }
+            }
+            constraintsList += constraintString
+          })
+          elementListToString(constraintsList.filter(elem => elem.size != 0).toList)
+        }
+      }
 
       // check if we have to generate constraints
       val parameterEntry = tuner.hierarchicalHM match {
         case true => {
-          // use constraints
-
-          // get dependencies and constraints from map
-          val dependencies = parametersWDC(param._1)._2.size match {
-            case 0 => "[]"
-            case _ =>  elementListToString(parametersWDC(param._1)._2.toList)
-          }
-
-          val constraints = parametersWDC(param._1)._1.size match {
-            case 0 => "[]"
-            case _ => {
-              val constraintsList = new ListBuffer[String]
-              parametersWDC(param._1)._1.foreach(constraint => {
-                // check type of constraint
-                val constraintString = constraint match {
-                  case RangeConstraint(n, r) => {
-                    val (start, stop, step) = r match {
-                      case RangeAdd(start, stop, step) => (start, stop, step)
-                      case RangeMul(start, stop, step) => (start, stop, step)
-                      case _ => (0, 0, 0) // todo catch other types of ranges
-                    }
-
-                    // if stop is PosInf, remove constraint
-                    // (already catched by the range of parameter)
-                    stop.toString match {
-                      case "PosInf" =>{
-                        val startConstraint = n.toString + " >= " + start
-                        val stepConstraint = n.toString + " % " + step + " == 0"
-
-                        startConstraint + " and " + stepConstraint
-                      }
-                      case _ => {
-                        val startConstraint = n.toString + " >= " + start
-                        val stopConstraint = n.toString + " <= " + stop
-                        val stepConstraint = n.toString + " % " + step + " == 0"
-
-                        startConstraint + " and " + stopConstraint + " and " + stepConstraint
-                      }
-                    }
-
-                  }
-                  case PredicateConstraint(n) => {
-                    n.toString.contains("/^") match {
-                      case true => constraint.toString.replace("/^", "/")
-                      case false => constraint.toString
-                    }
-                  }
-                }
-                constraintsList += constraintString
-              })
-              elementListToString(constraintsList.filter(elem => elem.size != 0).toList)
-            }
-          }
 
           val parameterEntry =
             s"""   "${param._1.name}" : {
