@@ -110,11 +110,6 @@ class autotuning extends test_util.Tests {
        |""".stripMargin
   }
 
-  val computeNoSize =
-    s"""
-       |fun_run(ctx, &fun, output,input, input);
-       |""".stripMargin
-
   val compute =
     s"""
        |fun_run(ctx, &fun, output, N, input, input);
@@ -719,7 +714,7 @@ class autotuning extends test_util.Tests {
 
     val result = autotune.execution.execute(
       expression = e,
-      hostCode = HostCode(init(1024), computeNoSize, finish),
+      hostCode = HostCode(init(1024), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
       speedupFactor = 100,
