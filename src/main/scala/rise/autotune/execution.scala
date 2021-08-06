@@ -64,6 +64,7 @@ object execution {
              |    waitFinished(ctx);
              |  }
              |  ${hostCode.finish}
+             |  fun_destroy(ctx, &fun);
              |  destroyContext(ctx);
              |  return EXIT_SUCCESS;
              |}
