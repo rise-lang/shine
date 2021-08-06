@@ -10,7 +10,11 @@
     "true_value" : "True",
     "false_value" : "False"
   },
-  "optimization_method" : "exhaustive",
+  "design_of_experiment": {
+    "doe_type": "random sampling",
+    "number_of_samples": 100
+  },
+  "optimization_iterations": 0,
   "input_parameters" : {
     "tuned_s0" : {
       "parameter_type" : "ordinal",
