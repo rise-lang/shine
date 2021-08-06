@@ -128,7 +128,12 @@ package object autotune {
     }
 
     val configFile = tuner.configFile match {
-      case Some(filename) => os.Path.apply(filename)
+      case Some(filename) => {
+        filename.substring(0, 1) match {
+          case "/" => os.Path.apply(filename)
+          case _ => os.Path.apply(os.pwd.toString() + "/" + filename)
+        }
+      }
       case None => os.Path.apply(os.pwd.toString() + "/" + tuner.output + "/" + tuner.name + ".json")
     }
 
@@ -209,14 +214,19 @@ package object autotune {
   // wrap ocl run to a function
   def wrapOclRun(localSize: LocalSize, globalSize: GlobalSize)
                 (expr: Expr): Expr = {
+//    println("hallo, hilfe: ")
     expr match {
       // fun(x => e)
       case l@Lambda(x,e) =>
+//        println("fun: " + e)
         Lambda(x, wrapOclRun(localSize, globalSize)(e))(l.t)
       // depFun(x => e)
       case dl@DepLambda(kind, x, e) =>
+//        println("depFun: " + e)
         DepLambda(kind, x, wrapOclRun(localSize, globalSize)(e))(dl.t)
-      case e => oclRun(localSize, globalSize)(e)
+      case e =>
+//        println("case: " + e)
+        oclRun(localSize, globalSize)(e)
     }
   }
 
