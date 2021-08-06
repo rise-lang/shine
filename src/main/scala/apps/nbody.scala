@@ -56,7 +56,7 @@ object nbody {
        |}
        | """.stripMargin,
     (f32 x (f32 x f32)) ->: (f32 x (f32 x f32)) ->: f32 ->: f32 ->:
-      (f32 x (f32 x f32)))
+    (f32 x (f32 x f32)))
 
   private val addScal = fun(
     (f32 x (f32 x f32)) ->: (f32 x (f32 x f32)) ->: (f32 x (f32 x f32))
@@ -67,8 +67,8 @@ object nbody {
 
   private val updateScal = fun(
     ((f32 x (f32 x f32)) x (f32 x (f32 x f32))) ->:
-      f32 ->: (f32 x (f32 x f32)) ->:
-      ((f32 x (f32 x f32)) x (f32 x (f32 x f32)))
+    f32 ->: (f32 x (f32 x f32)) ->:
+    ((f32 x (f32 x f32)) x (f32 x (f32 x f32)))
   )((xyzvXYZ, deltaT, acceleration) => {
     val xyz = fst(xyzvXYZ)
     val vXYZ = snd(xyzvXYZ)
@@ -85,16 +85,16 @@ object nbody {
   // also, this code was not verified
   val nbodyHighLevel: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
-      (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
-      (n`.`f32) ->: f32 ->: f32 ->:
-      (n`.`((f32 x (f32 x f32)) x (f32 x (f32 x f32))))
+    (n`.`f32) ->: (n`.`f32) ->: (n`.`f32) ->:
+    (n`.`f32) ->: f32 ->: f32 ->:
+    (n`.`((f32 x (f32 x f32)) x (f32 x (f32 x f32))))
   )((x, y, z, velX, velY, velZ, mass, espSqr, deltaT) =>
     map(fun(p1 =>
       fun(acceleration => updateScal(p1, deltaT, acceleration)) o
-        reduce(addScal)(makePair(lf32(0.0f))(makePair(lf32(0.0f))(lf32(0.0f)))) o
-        map(fun(p2m =>
-          calcAccScal(fst(p1), fst(p2m), snd(p2m), espSqr)
-        )) $ zip(zip(x)(zip(y)(z)))(mass)
+      reduce(addScal)(makePair(lf32(0.0f))(makePair(lf32(0.0f))(lf32(0.0f)))) o
+      map(fun(p2m =>
+        calcAccScal(fst(p1), fst(p2m), snd(p2m), espSqr)
+      )) $ zip(zip(x)(zip(y)(z)))(mass)
     )) $ zip(zip(x)(zip(y)(z)))(zip(velX)(zip(velY)(velZ)))
   ))
 
@@ -103,9 +103,9 @@ object nbody {
   )((pos, vel, espSqr, deltaT) =>
     mapGlobal(fun(p1 =>
       update(fst(p1))(snd(p1))(deltaT) o
-        oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
-          calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
-        ))(vectorFromScalar(lf32(0.0f))) $ pos
+      oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
+        calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
+      ))(vectorFromScalar(lf32(0.0f))) $ pos
     )) $ zip(pos)(vel)
   ))
 
