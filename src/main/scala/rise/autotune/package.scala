@@ -67,7 +67,8 @@ package object autotune {
     // inject input sizes into constraints
     val inputs = getInputs(e)
     val inputMap = (inputs zip tuner.inputSizes).toMap
-    val constraints = collectConstraints(e, parameters).map(constraint => constraint.substitute(inputMap.asInstanceOf[Map[ArithExpr, ArithExpr]]))
+    val constraints = collectConstraints(e, parameters)
+      .map(constraint => constraint.substitute(inputMap.asInstanceOf[Map[ArithExpr, ArithExpr]]))
 
     ("mkdir -p " + tuner.output !!)
 
@@ -106,13 +107,17 @@ package object autotune {
             tuner.speedupFactor,
             tuner.execution
           )
-          val roundTripTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - roundTripStart).toDouble))
+          val roundTripTime = Some(TimeSpan.inMilliseconds(
+            (System.currentTimeMillis() - roundTripStart).toDouble)
+          )
           Sample(
             parametersValuesMap,
             result.runtime,
             System.currentTimeMillis() - start,
             result.error,
-            TuningTimes(roundTripTime, result.codegenTime, result.compilationTime, result.executionTime))
+            TuningTimes(
+              roundTripTime, result.codegenTime, result.compilationTime, result.executionTime)
+          )
         }
         case false => {
           val roundTripTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - roundTripStart).toDouble))
@@ -134,7 +139,9 @@ package object autotune {
           case _ => os.Path.apply(os.pwd.toString() + "/" + filename)
         }
       }
-      case None => os.Path.apply(os.pwd.toString() + "/" + tuner.output + "/" + tuner.name + ".json")
+      case None => os.Path.apply(
+        os.pwd.toString() + "/" + tuner.output + "/" + tuner.name + ".json"
+      )
     }
 
     println("configFile: " + configFile)
@@ -203,10 +210,14 @@ package object autotune {
     }
 
     // save samples to file
-    val destination = saveSamples(tuner.output + "/" + tuner.name + ".csv", TuningResult(samples.toSeq))
+    val destination = saveSamples(
+      tuner.output + "/" + tuner.name + ".csv",
+      TuningResult(samples.toSeq)
+    )
 
     // copy hm result
-    ("mv " + tuner.name + "_output_samples.csv " + destination.substring(0, destination.length - 4) + "_hm.csv" !!)
+    ("mv " + tuner.name + "_output_samples.csv " +
+      destination.substring(0, destination.length - 4) + "_hm.csv" !!)
 
     TuningResult(samples.toSeq)
   }

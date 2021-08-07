@@ -41,6 +41,7 @@ object execution {
     val m = autoTuningUtils.runWithTimeout(
       timeouts.codegenerationTimeout)(gen.opencl.hosted("fun").fromExpr(expression)
     )
+
     val codegenTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - codegenStart).toDouble)
     m match {
       case Some(_) => {
@@ -70,7 +71,7 @@ object execution {
              |}
              |""".stripMargin
 
-//        println("program: \n" + program)
+        //        println("program: \n" + program)
 
         val iterations = executionIterations <= 0 match {
           case true => 1
@@ -134,12 +135,16 @@ object execution {
         )
       }
     }
-    val compilationTime = TimeSpan.inMilliseconds(System.currentTimeMillis().toDouble - compilationStart)
+    val compilationTime = TimeSpan.inMilliseconds(
+      System.currentTimeMillis().toDouble - compilationStart
+    )
     val executionStart = System.currentTimeMillis()
     try{
 
       // execute once to check speedup factor
-      val result = (s"timeout ${(executionTimeout*1).toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin 1" !!(logger))
+      val result = (s"timeout " +
+        s"${(executionTimeout*1).toDouble/1000.toDouble}s " +
+        s"runtime/clap_wrapper.sh $bin 1" !!(logger))
       val runtimes = getRuntimeFromClap(result)
 
       // check if speedup condition is met or current best is not initialized
@@ -153,7 +158,9 @@ object execution {
         case true => {
 
           // repeat execution with execution iterations
-          val result = (s"timeout ${(executionTimeout*executionIterations).toDouble/1000.toDouble}s runtime/clap_wrapper.sh $bin $executionIterations" !!(logger))
+          val result = (s"timeout " +
+            s"${(executionTimeout*executionIterations).toDouble/1000.toDouble}s " +
+            s"runtime/clap_wrapper.sh $bin $executionIterations" !!(logger))
           val runtimes = getRuntimeFromClap(result)
 
           execution match {
@@ -177,14 +184,21 @@ object execution {
         case None => Some(runtime.value)
       }
 
-      val executionTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - executionStart).toDouble)
+      val executionTime = TimeSpan.inMilliseconds(
+        (System.currentTimeMillis() - executionStart).toDouble
+      )
 
       (Some(runtime), AutoTuningError(NO_ERROR, None), Some(compilationTime), Some(executionTime))
     } catch {
       // todo check error codes here
       case e: Throwable => {
         val executionTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - executionStart).toDouble)
-        (None, AutoTuningError(EXECUTION_ERROR, Some(e.toString)), Some(compilationTime), Some(executionTime))
+        (None, AutoTuningError(
+          EXECUTION_ERROR,
+          Some(e.toString)),
+          Some(compilationTime),
+          Some(executionTime)
+        )
       }
     }
   }

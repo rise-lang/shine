@@ -148,7 +148,7 @@ class mmTuning extends test_util.Tests {
 
   // standard hypermapper
   test("mm tuning 128") {
-    val mm:Expr =
+    val mm: Expr =
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
           tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>

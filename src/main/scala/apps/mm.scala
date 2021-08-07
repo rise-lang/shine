@@ -77,7 +77,16 @@ object mm {
     )
   }
 
-  def mmNVIDIAWithParams(n: Nat, m: Nat, o: Nat, v3: Nat, v4: Nat, v5: Nat, v6: Nat, v7: Nat, v8: Nat): ToBeTyped[Expr] = {
+  def mmNVIDIAWithParams(n: Nat,
+                         m: Nat,
+                         o: Nat,
+                         v3: Nat,
+                         v4: Nat,
+                         v5: Nat,
+                         v6: Nat,
+                         v7: Nat,
+                         v8: Nat
+                        ): ToBeTyped[Expr] = {
 
     //    A(o,n) x B(o,m)
     //    v3 // divides v7

@@ -10,12 +10,13 @@ object configFileGeneration {
 
 
   def generateJSON(p: Parameters,
-                    c: Set[Constraint],
-                    tuner: Tuner)
-  :String = {
+                   c: Set[Constraint],
+                   tuner: Tuner
+                  ): String = {
 
     val parametersWDCImmutable = distributeConstraints(p, c)
-    val parametersWDC = scala.collection.mutable.Map.empty[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]
+    val parametersWDC = scala.collection.mutable
+      .Map.empty[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]
 
     // copy elements to mutable map
     parametersWDCImmutable.foreach(param => {
@@ -24,7 +25,7 @@ object configFileGeneration {
 
     // number of samples for design of experiment phase
     val doe = p.size * 10
-//    val doe = tuner.samples
+    //    val doe = tuner.samples
 
     // create header for hypermapper configuration file
     val header =
@@ -65,8 +66,10 @@ object configFileGeneration {
           val values = start.eval match {
             case 1 => {
               stepWidth match {
-                case 1 => List.range(start.evalInt, stop.evalInt + 1).filter(_ % stepWidth == 0)
-                case _ => List(1) ++ List.range(start.evalInt, stop.evalInt + 1).filter(_ % stepWidth == 0)
+                case 1 => List.range(start.evalInt, stop.evalInt + 1)
+                  .filter(_ % stepWidth == 0)
+                case _ => List(1) ++ List.range(start.evalInt, stop.evalInt + 1)
+                  .filter(_ % stepWidth == 0)
               }
             }
             case _ =>
@@ -321,13 +324,15 @@ object configFileGeneration {
   }
 
   def filterList(p: Parameters, constraints: Set[Constraint], values:List[Int], param: NatIdentifier): (List[Int], Set[Constraint]) = {
-    val constraintsFiltered:scala.collection.mutable.Set[Constraint] = constraints.to(collection.mutable.Set)
+    val constraintsFiltered:
+      scala.collection.mutable.Set[Constraint] = constraints.to(collection.mutable.Set)
 
     // check for each value if all constraints pass or are not evaluable
     val valuesFiltered = values.filter(value => {
       constraints.forall(constraint => {
         val params = getParametersFromConstraint(p, constraint)
-        // if occurring parameter in constraint matches given parameter, try to evaluate this constraint
+        // if occurring parameter in constraint matches given parameter
+        // try to evaluate this constraint
         params.size match {
           case 1 => params.last.name match {
             case param.name => {
@@ -335,7 +340,8 @@ object configFileGeneration {
               constraintsFiltered.remove(constraint)
 
               // check constraint for this value
-              constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> value)).isSatisfied()
+              constraint.substitute(Map(TuningParameter(param.name.substring(6)) -> value))
+                .isSatisfied()
             }
             case _ => true
           }

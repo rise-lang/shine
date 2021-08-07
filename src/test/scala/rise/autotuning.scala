@@ -399,14 +399,15 @@ class autotuning extends test_util.Tests {
       case _ => ???
     }
 
-    val m:Nat = 1024
-    val n:Nat = 1024
-    val o:Nat = 1024
+    val m: Nat = 1024
+    val n: Nat = 1024
+    val o: Nat = 1024
     val map = Map(nIdent -> n, mIdent -> m, oIdent -> o)
 
     val parameters = autotune.constraints.collectParameters(e)
     val constraints = autotune.constraints.collectConstraints(e, parameters)
-    val constraintsSubstituted = constraints.map(constraint => constraint.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]))
+    val constraintsSubstituted = constraints.
+      map(constraint => constraint.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]))
 
     val dc = distributeConstraints(parameters, constraintsSubstituted)
 
@@ -432,14 +433,14 @@ class autotuning extends test_util.Tests {
   }
 
   test("generateJSON conv") {
-    val e:Expr = convolution
+    val e: Expr = convolution
 
     val nIdent = e match {
       case DepLambda(NatKind, n: NatIdentifier, _) => n
       case _ => ???
     }
 
-    val n:Nat = 32
+    val n: Nat = 32
     val map = Map(nIdent -> n)
 
     val parameters = autotune.constraints.collectParameters(e)
@@ -856,7 +857,19 @@ class autotuning extends test_util.Tests {
 
     // scalastyle:on
 
-    val gold = Seq(4.126528, 4.286464, 3.551232, 3.549504, 3.551104, 4.312768, 3.552096, 4.13136, 4.25408, 4.302944)
+    val gold = Seq(
+      4.126528,
+      4.286464,
+      3.551232,
+      3.549504,
+      3.551104,
+      4.312768,
+      3.552096,
+      4.13136,
+      4.25408,
+      4.302944
+    )
+
     val runtimes = autotune.execution.getRuntimeFromClap(xmlString)
 
     assert(runtimes.map(elem => elem.value) == gold)
