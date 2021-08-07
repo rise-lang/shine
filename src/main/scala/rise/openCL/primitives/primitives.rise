@@ -5,6 +5,7 @@ def oclReduceSeq: (a: address) -> {n: nat} -> {s: data} -> {t: data} -> (t -> s 
 def oclReduceSeqUnroll: (a: address) -> {n: nat} -> {s: data} -> {t: data} -> (t -> s -> t) -> t -> n.s -> t
 
 def oclScanSeq: (a: address) -> {n: nat} -> {s: data} -> {t: data} -> (s -> t -> t) -> t -> n.s -> n.t
+def oclScanSeqUnroll: (a: address) -> {n: nat} -> {s: data} -> {t: data} -> (s -> t -> t) -> t -> n.s -> n.t
 
 def oclScanSeqInclusive: (a: address) -> {n: nat} -> {s: data} -> {t: data} -> (s -> t -> t) -> t -> n.s -> (n+1).t
 

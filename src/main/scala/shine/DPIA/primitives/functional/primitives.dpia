@@ -110,7 +110,7 @@ def rotateValues(n: nat, sz: nat, dt: data,
                  wrt: exp[dt, read] -> exp[dt, write],
                  input: exp[(n-1+sz).dt, read]): exp[n.sz.dt, read]
 
-def scanSeq(n: nat, dt1: data, dt2: data,
+def scanSeq{unroll: Boolean}(n: nat, dt1: data, dt2: data,
             f: exp[dt1, read] -> exp[dt2, read] -> exp[dt2, write],
             init: exp[dt2, write], array: exp[n.dt1, read]): exp[n.dt2, read]
 

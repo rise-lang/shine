@@ -216,10 +216,11 @@ object AcceptorTranslation {
     case Reorder(n, dt, access, idxF, idxFinv, input) =>
       acc(input)(ReorderAcc(n, dt, idxFinv, A))
 
-    case ScanSeq(n, dt1, dt2, f, init, array) =>
+    case scan@ScanSeq(unroll) =>
+      val (n, dt1, dt2, f, init, array) = scan.unwrap
       con(array)(λ(expT(n`.`dt1, read))(x =>
         con(init)(λ(expT(dt2, read))(y =>
-          ScanSeqI(n, dt1, dt2,
+          ScanSeqI(unroll)(n, dt1, dt2,
             λ(expT(dt1, read))(x => λ(expT(dt2, read))(y => λ(accT(dt2))(o =>
               acc(f(x)(y))(o)))),
             y, x, A)))))
@@ -321,10 +322,11 @@ object AcceptorTranslation {
 
       rec(fc.args zip fc.inTs, Seq(), Seq())
 
-    case ocl.ScanSeq(n, a, dt1, dt2, f, init, array) =>
+    case scan@ocl.ScanSeq(unroll) =>
+      val (n, a, dt1, dt2, f, init, array) = scan.unwrap
       con(array)(λ(expT(n`.`dt1, read))(x =>
         con(init)(λ(expT(dt2, read))(y =>
-          oclI.ScanSeqI(n, a, dt1, dt2,
+          oclI.ScanSeqI(unroll)(n, a, dt1, dt2,
             λ(expT(dt1, read))(x => λ(expT(dt2, read))(y => λ(accT(dt2))(o =>
               acc(f(x)(y))(o)))),
             y, x, A)))))

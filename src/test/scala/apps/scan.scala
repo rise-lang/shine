@@ -162,14 +162,14 @@ class scan extends test_util.Tests {
   }
 
   def scanChunkPar(inputSize: Int, depth:Int) : ToBeTyped[Expr] = {
-    def sum = oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
+    def sum = oclReduceSeqUnroll(AddressSpace.Private)(add)(lf32(0.0f))
 
     @tailrec
     def downsweep(base: ToBeTyped[Expr], stack: List[ToBeTyped[Expr]]): ToBeTyped[Expr] = {
       stack match {
         case prev::rest =>
           val next = zip(base)(prev |> split(2)) |>
-            mapLocal(0)(fun(pair => oclScanSeq(AddressSpace.Private)(add)(pair._1)(pair._2)))|>
+            mapLocal(0)(fun(pair => oclScanSeqUnroll(AddressSpace.Private)(add)(pair._1)(pair._2)))|>
             join
           if (rest == Nil)
             next
@@ -199,6 +199,7 @@ class scan extends test_util.Tests {
     )
   }
 
+
   def scanBlockSums(inputSize: Int, depth: Int): ToBeTyped[Expr] = {
     val chunkSize = Math.pow(2, depth).toInt
     if (inputSize % chunkSize != 0) {
@@ -218,6 +219,23 @@ class scan extends test_util.Tests {
     fun(ArrayType(inputSize, f32))(input =>
       fun(ArrayType(numChunks, f32))(partials =>
         zip(input |> split(chunkSize))(partials) |> mapGlobal(0)(fun(pair => pair._1 |> mapSeq(fun(x => x + pair._2))))
+      )
+    )
+  }
+
+
+
+  def scanParChunkSum2D(inputSize: Int, depth: Int): ToBeTyped[Expr] = {
+    val chunkSize = Math.pow(2, depth).toInt
+    if (inputSize % chunkSize != 0) {
+      throw new Exception(s"Input size of $inputSize not divisible by chunk size $chunkSize (depth $depth)")
+    }
+    val numChunks = inputSize / chunkSize
+    fun(ArrayType(inputSize, f32))(input =>
+      fun(ArrayType(numChunks, f32))(partials =>
+        zip(input |> split(chunkSize))(partials) |> mapWorkGroup(0)(fun(pair =>
+          pair._1 |> split(32) |> transpose |> mapLocal(0)(mapSeq(fun(x => x + pair._2))) |> transpose |> join
+        ))
       )
     )
   }
@@ -244,79 +262,130 @@ class scan extends test_util.Tests {
     }
   }
 
-  test("Unrolled scan parallel") {
-    util.withExecutor {
+  case class Timing(
+                     partials: Double,
+                     blockSums: Double,
+                     aggregate: Double,
+                   ) {
+    val total: Double = partials + blockSums + aggregate
 
-      // Unrolled equivalent of the NVidia sample
-      val depth = 5
-      val inputSize = 1024 * 8 * 64
-
-      val input = Array.tabulate(inputSize)(i => (i % 4.0f) + 1.0f)
-
-      val partialsThreads = 16 //Math.pow(2, depth).round.toInt
-      val blockSumThreads = 128
-      val aggregateThreads = 128
-
-      val (partials, partialTime) = {
-        val expr = scanChunkPar(inputSize, depth)
-        val kernel = gen.opencl.kernel.fromExpr(expr)
-
-        val run = kernel.as[ScalaFunction  `(` Array[Float] `)=>` Array[Float]]
-        val localSize = LocalSize(NDRange(partialsThreads, 1, 1))
-        val globalSize = GlobalSize(NDRange(8192, 1, 1))
-        val (partials, r) = run(localSize, globalSize)(HCons(HNil, input))
-
-        println(kernel.code)
-        //println("Partials")
-        //println(partials.map(_.toString).mkString(", "))
-        (partials, r)
-      }
-
-      val (blockSums, blockSumsTime) = {
-        val expr = scanBlockSums(inputSize, depth)
-        val kernel = gen.opencl.kernel.fromExpr(expr)
-
-        val run = kernel.as[ScalaFunction  `(` Array[Float] `)=>` Array[Float]]
-        val localSize = LocalSize(NDRange(blockSumThreads, 1, 1))
-        val globalSize = GlobalSize(NDRange(8192, 1, 1))
-        val (blockSums, r) = run(localSize, globalSize)(HCons(HNil, input))
-
-        //println(kernel.code)
-        (blockSums, r)
-      }
-
-      val localScan = blockSums.scanLeft(0.0f)(_ + _)
-
-      val (oclOutput, aggregateTime) = {
-        val expr = scanParChunkSum(inputSize, depth)
-        val kernel = gen.opencl.kernel.fromExpr(expr)
-
-        val run = kernel.as[ScalaFunction  `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
-        val localSize = LocalSize(NDRange(aggregateThreads, 1, 1))
-        val globalSize = GlobalSize(NDRange(8192, 1, 1))
-        val (output, r) = run(localSize, globalSize)(partials `,` localScan)
-
-        //println(kernel.code)
-        //println("Finals")
-        //println(output.map(_.toString).mkString(", "))
-        (output, r)
-      }
-
+    def printout(): Unit = {
       println("Timing report:")
-      println(s"Partials: ${partialTime.value} ms")
-      println(s"Block Sums: ${blockSumsTime.value} ms")
-      println(s"Aggregate: ${aggregateTime.value} ms")
-      println(s"Total: ${partialTime.value + blockSumsTime.value + aggregateTime.value} ms")
-
-      val gold = input.scanLeft(0.0f)(_ + _)
-
-      val goldCheck = oclOutput.zip(gold).forall { case (x, y) => x == y }
-      println(s"Gold check: ${if(goldCheck) "OK" else "ERROR"}")
-      if (!goldCheck) {
-        val firstError = oclOutput.zip(gold).iterator.zipWithIndex.find((x => x._1._1 != x._1._2)).map(_._2).get
-        println(s"First error at index $firstError")
-      }
-      assert(goldCheck)
+      println(s"Partials: $partials ms")
+      println(s"Block Sums: $blockSums ms")
+      println(s"Aggregate: $aggregate ms")
+      println(s"Total: $total ms")
     }
+
+
+  }
+  object Timing {
+    def average(timings: Vector[Timing]): Timing = {
+      val Timing(p,b,a) = timings.iterator.reduce((a, b) => Timing(
+        partials = a.partials + b.partials,
+        blockSums = a.blockSums + b.blockSums,
+        aggregate = a.aggregate + b.aggregate
+      ))
+
+      Timing(
+        partials = p/timings.size,
+        blockSums = b/timings.size,
+        aggregate = a/timings.size
+      )
+    }
+  }
+
+  def runParallelUnrolled(inputSize: Int): Timing = {
+
+    // Unrolled equivalent of the NVidia sample
+    val depth = 6
+    val blockSize = Math.pow(2, depth).toInt
+
+    val input = Array.tabulate(inputSize)(i => (i % 4.0f) + 1.0f)
+
+    val partialsThreads = blockSize/2
+    val blockSumThreads = 128
+    val aggregateThreads = blockSize/2
+
+    val (partials, partialTime) = {
+      val expr = scanChunkPar(inputSize, depth)
+      val kernel = gen.opencl.kernel.fromExpr(expr)
+
+      val run = kernel.as[ScalaFunction  `(` Array[Float] `)=>` Array[Float]]
+      val localSize = LocalSize(NDRange(partialsThreads, 1, 1))
+      val globalSize = GlobalSize(NDRange(8192, 1, 1))
+      val (partials, r) = run(localSize, globalSize)(HCons(HNil, input))
+
+      println(kernel.code)
+      //println("Partials")
+      //println(partials.map(_.toString).mkString(", "))
+      (partials, r)
+    }
+
+    val (blockSums, blockSumsTime) = {
+      val expr = scanBlockSums(inputSize, depth)
+      val kernel = gen.opencl.kernel.fromExpr(expr)
+
+      val run = kernel.as[ScalaFunction  `(` Array[Float] `)=>` Array[Float]]
+      val localSize = LocalSize(NDRange(blockSumThreads, 1, 1))
+      val globalSize = GlobalSize(NDRange(8192, 1, 1))
+      val (blockSums, r) = run(localSize, globalSize)(HCons(HNil, input))
+
+      //println(kernel.code)
+      (blockSums, r)
+    }
+
+    val localScan = blockSums.scanLeft(0.0f)(_ + _)
+
+    val (oclOutput, aggregateTime) = {
+      val expr = scanParChunkSum2D(inputSize, depth)
+      val kernel = gen.opencl.kernel.fromExpr(expr)
+
+      val run = kernel.as[ScalaFunction  `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
+      val localSize = LocalSize(NDRange(aggregateThreads, 1, 1))
+      val globalSize = GlobalSize(NDRange(8192, 1, 1))
+      val (output, r) = run(localSize, globalSize)(partials `,` localScan)
+
+      //println(kernel.code)
+      //println("Finals")
+      //println(output.map(_.toString).mkString(", "))
+      (output, r)
+    }
+
+    val gold = input.scanLeft(0.0f)(_ + _)
+
+    val goldCheck = oclOutput.zip(gold).forall { case (x, y) => x == y }
+    println(s"Gold check: ${if(goldCheck) "OK" else "ERROR"}")
+    if (!goldCheck) {
+      val firstError = oclOutput.zip(gold).iterator.zipWithIndex.find((x => x._1._1 != x._1._2)).map(_._2).get
+      println(s"First error at index $firstError")
+    }
+    assert(goldCheck)
+
+    Timing(partialTime.value, blockSumsTime.value, aggregateTime.value)
+  }
+
+
+  test("Unrolled scan parallel") {
+    val numSizes = 128
+    val runsPerSize = 4
+    val baseMult = 256
+    val blockSize = 64;
+
+    val csv = new StringBuilder
+
+    util.withExecutor {
+      (0 until numSizes).foreach(size_i => {
+        val inputSize = (size_i + 1) * blockSize * baseMult
+        println(s"Input size:\t${inputSize}\tRun:\t${size_i+1}/$numSizes")
+
+        val timings = (0 until runsPerSize).iterator.map(_ => {
+          runParallelUnrolled(inputSize)
+        }).toVector
+        val average = Timing.average(timings)
+        csv ++= s"dpia,$inputSize,${average.partials},${average.total}\n"
+      })
+    }
+    println(csv)
   }
 }

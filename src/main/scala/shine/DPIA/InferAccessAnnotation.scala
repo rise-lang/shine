@@ -410,7 +410,7 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case roclp.oclScanSeq() => p.t match {
+      case roclp.oclScanSeq() | roclp.oclScanSeqUnroll() => p.t match {
         case a `(Addr)->:` (((s: rt.DataType) ->: (t: rt.DataType) ->: (_: rt.DataType)) ->:
           (_: rt.DataType) ->: (n`.`_) ->: (_`.`_)) =>
 

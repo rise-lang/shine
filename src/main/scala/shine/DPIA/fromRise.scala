@@ -2,6 +2,7 @@ package shine.DPIA
 
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
+import rise.core.DSL.TopLevel
 import rise.elevate.Rise
 import rise.elevate.rules._
 import rise.core.{Opaque, TypeAnnotation, TypeAssertion, semantics => rs, types => rt}
@@ -306,10 +307,16 @@ object fromRise {
           expT(s, read) ->: expT(t, read) ->: expT(t, write), f =>
             fun[ExpType](expT(t, write), i =>
               fun[ExpType](expT(n`.`s, read), e =>
-                ScanSeq(n, s, t, f, i, e))))
+                ScanSeq(unroll = false)(n, s, t, f, i, e))))
       }
 
-      case rocl.oclScanSeq() => fromType {
+      case rocl.oclScanSeq() | rocl.oclScanSeqUnroll() =>
+        val unroll = p match {
+          case rocl.oclScanSeqUnroll() => true
+          case _ => false
+        }
+
+        fromType {
         case aFunT(a,
           (expT(s, `read`) ->: expT(t, `read`) ->: expT(_, `write`)) ->:
           expT(_, `write`) ->:
@@ -319,7 +326,7 @@ object fromRise {
             expT(s, read) ->: expT(t, read) ->: expT(t, write), f =>
               fun[ExpType](expT(t, write), i =>
                 fun[ExpType](expT(n`.`s, read), e =>
-                  ocl.ScanSeq(n, a, s, t, f, i, e))))
+                  ocl.ScanSeq(unroll)(n, a, s, t, f, i, e))))
         )
       }
       case rocl.oclScanSeqInclusive() => fromType {

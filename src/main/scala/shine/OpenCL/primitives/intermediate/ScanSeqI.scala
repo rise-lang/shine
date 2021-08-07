@@ -7,12 +7,13 @@ import shine.DPIA.DSL.{`new` => _, _}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.DPIA.primitives.functional.{Cast, IndexAsNat, NatAsIndex}
 import shine.OpenCL.DSL._
 
 
 
 object ScanSeqI {
-  def apply(n: Nat, a: AddressSpace, dt1: DataType, dt2: DataType,
+  def apply(unroll:Boolean)(n: Nat, a: AddressSpace, dt1: DataType, dt2: DataType,
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
@@ -22,13 +23,12 @@ object ScanSeqI {
     comment("oclScanSeq")`;`
       `new`(a)(dt2, accumulator =>
         acc(init)(accumulator.wr) `;`
-          `for`(n, i =>
-            ((out `@` i) :=|dt2| accumulator.rd) `;`
+          `for`(n-1, idx => {
+            val i = Cast(IndexType(n-1), IndexType(n), idx)
+            ((out `@` i) :=| dt2 | accumulator.rd) `;`
               f(in `@` i)(accumulator.rd)(accumulator.wr)
-//            `f(in `@` i)(accumulator.rd)(accumulator.wr) `;`
-//              //FIXME remove general assignment
-//              ((out `@` i) :=| dt2 | accumulator.rd)`
-          )
+          }, unroll) `;`
+          ((out `@` NatAsIndex(n, Natural(n-1))) :=|dt2| accumulator.rd)
       )
   }
 }

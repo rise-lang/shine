@@ -10,7 +10,7 @@ import shine.DPIA._
 import scala.language.reflectiveCalls
 
 object ScanSeqI {
-  def apply(n: Nat, dt1: DataType, dt2: DataType,
+  def apply(unroll:Boolean=false)(n: Nat, dt1: DataType, dt2: DataType,
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
@@ -23,7 +23,7 @@ object ScanSeqI {
         `for`(n, i =>
           f(in `@` i)(accumulator.rd)(accumulator.wr) `;`
             //FIXME remove general assignment
-            ((out `@` i) :=| dt2 | accumulator.rd)
+            ((out `@` i) :=| dt2 | accumulator.rd), unroll
         )
     )
   }

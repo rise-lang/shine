@@ -32,7 +32,7 @@ def reduceSeq{unroll: Boolean}
               init: exp[dt2, write],
               array: exp[n.dt1, read]): exp[dt2, read]
 
-def scanSeq(n: nat, a: address, dt1: data, dt2: data,
+def scanSeq{unroll: Boolean}(n: nat, a: address, dt1: data, dt2: data,
             f: exp[dt1, read] -> exp[dt2, read] -> exp[dt2, write],
             init: exp[dt2, write], array: exp[n.dt1, read]): exp[n.dt2, write]
 
