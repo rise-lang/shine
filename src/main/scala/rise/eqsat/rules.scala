@@ -49,6 +49,9 @@ object rules {
   val etaAbstraction: Rule = NamedRewrite.init("eta-abstraction",
     ("f" :: (t("a") ->: t("b"))) --> lam("x", app("f", "x"))
   )
+  val mapEtaAbstraction: Rule = NamedRewrite.init("map-eta-abstraction",
+    app(map, "f") --> lam("x", app(app(map, "f"), "x"))
+  )
 
   val eta: Rule = NamedRewrite.init("eta",
     lam("x", app("f", "x")) --> "f",
@@ -89,10 +92,45 @@ object rules {
 
   // TODO: other means of picking n, such as tuning parameters
   def splitJoin(n: Int): Rule = NamedRewrite.init(s"split-join-$n",
-    app(map, "f")
+    /* app(map, "f")
       -->
     lam("x", app(join, app(app(map, app(map, "f")), app(nApp(split, n), "x"))))
+     */
+    app(app(map, "f"), "in")
+      -->
+    app(join, app(app(map, app(map, "f")), app(nApp(split, n), "in")))
   )
+  def splitJoin1M(n: Int): Rule = NamedRewrite.init(s"split-join-1m-$n",
+    app(app(map, app(map, "f")), "in")
+      -->
+    app(app(map, join), app(app(map, app(map, app(map, "f"))), app(app(map, nApp(split, n)), "in")))
+  )
+  def splitJoin2M(n: Int): Rule = NamedRewrite.init(s"split-join-2m-$n",
+    app(app(map, app(map, app(map, "f"))), "in")
+      -->
+    app(app(map, app(map, join)), app(app(map, app(map, app(map, app(map, "f")))), app(app(map, app(map, nApp(split, n))), "in")))
+  )
+  def splitJoin3M(n: Int): Rule = NamedRewrite.init(s"split-join-3m-$n",
+    app(app(map, app(map, app(map, app(map, "f")))), "in")
+      -->
+    app(app(map, app(map, app(map, join))), app(app(map, app(map, app(map, app(map, app(map, "f"))))), app(app(map, app(map, app(map, nApp(split, n)))), "in")))
+  )
+  def splitJoin4M(n: Int): Rule = NamedRewrite.init(s"split-join-4m-$n",
+    app(app(map, app(map, app(map, app(map, app(map, "f"))))), "in")
+      -->
+    app(app(map, app(map, app(map, app(map, join)))), app(app(map, app(map, app(map, app(map, app(map, app(map, "f")))))), app(app(map, app(map, app(map, app(map, nApp(split, n))))), "in")))
+  )
+  def splitJoin5M(n: Int): Rule = NamedRewrite.init(s"split-join-5m-$n",
+    app(app(map, app(map, app(map, app(map, app(map, app(map, "f")))))), "in")
+      -->
+    app(app(map, app(map, app(map, app(map, app(map, join))))), app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))), app(app(map, app(map, app(map, app(map, app(map, nApp(split, n)))))), "in")))
+  )
+  def splitJoin6M(n: Int): Rule = NamedRewrite.init(s"split-join-6m-$n",
+    app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))), "in")
+      -->
+    app(app(map, app(map, app(map, app(map, app(map, app(map, join)))))), app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))), app(app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))), "in")))
+  )
+
   def blockedReduce(n: Int): Rule = NamedRewrite.init(s"blocked-reduce-$n",
     app(app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init"), "arg")
       -->
@@ -284,6 +322,41 @@ object rules {
     app(app(map, app(map, "f")), app(transpose, "y"))
       -->
     app(transpose, app(app(map, app(map, "f")), "y"))
+  )
+
+  val transposeAroundMapMapF: Rule = NamedRewrite.init("transpose-around-map-map-f",
+    app(app(map, app(map, "f")), "in")
+      -->
+    app(transpose, app(app(map, app(map, "f")), app(transpose, "in")))
+  )
+  /*
+  val transposeAroundMapMapFLift: Rule = NamedRewrite.init("transpose-around-map-map-f-lift",
+    app(map, app(transpose))
+  ) */
+  val transposeAroundMapMapF1M: Rule = NamedRewrite.init("transpose-around-map-map-f-1m",
+    app(app(map, app(map, app(map, "f"))), "in")
+      -->
+    app(app(map, transpose), app(app(map, app(map, app(map, "f"))), app(app(map, transpose), "in")))
+  )
+  val transposeAroundMapMapF2M: Rule = NamedRewrite.init("transpose-around-map-map-f-2m",
+    app(app(map, app(map, app(map, app(map, "f")))), "in")
+      -->
+    app(app(map, app(map, transpose)), app(app(map, app(map, app(map, app(map, "f")))), app(app(map, app(map, transpose)), "in")))
+  )
+  val transposeAroundMapMapF3M: Rule = NamedRewrite.init("transpose-around-map-map-f-3m",
+    app(app(map, app(map, app(map, app(map, app(map, "f"))))), "in")
+      -->
+    app(app(map, app(map, app(map, transpose))), app(app(map, app(map, app(map, app(map, app(map, "f"))))), app(app(map, app(map, app(map, transpose))), "in")))
+  )
+  val transposeAroundMapMapF4M: Rule = NamedRewrite.init("transpose-around-map-map-f-4m",
+    app(app(map, app(map, app(map, app(map, app(map, app(map, "f")))))), "in")
+      -->
+    app(app(map, app(map, app(map, app(map, transpose)))), app(app(map, app(map, app(map, app(map, app(map, app(map, "f")))))), app(app(map, app(map, app(map, app(map, transpose)))), "in")))
+  )
+  val transposeAroundMapMapF5M: Rule = NamedRewrite.init("transpose-around-map-map-f-5m",
+    app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))), "in")
+      -->
+    app(app(map, app(map, app(map, app(map, app(map, transpose))))), app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))), app(app(map, app(map, app(map, app(map, app(map, transpose))))), "in")))
   )
 
   val dropBeforeMap: Rule = NamedRewrite.init("drop-before-map",

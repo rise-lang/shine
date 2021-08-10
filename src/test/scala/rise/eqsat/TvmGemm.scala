@@ -96,25 +96,16 @@ class TvmGemm extends test_util.Tests {
     val goal = tvmGemm.blockingPartial(mm).get
 
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(80))
-      .withEndRules(Seq(
-        rules.combinatory.compositionAssoc2,
-        rules.combinatory.mapFusion,
-        rules.combinatory.mapFusion2,
-      ))
-      .runCNF(start, goal, Seq(
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(80))
+      .runBENF(start, goal, Seq(
         rules.eta, rules.betaExtract, rules.betaNatExtract,
-        rules.combinatory.compositionAssoc2,
-        rules.combinatory.compositionIntro,
-        rules.combinatory.compositionLeftId,
-        rules.combinatory.compositionRightId,
-        rules.combinatory.mapFusion,
-        rules.combinatory.mapFusion2,
-        rules.combinatory.mapFission,
-        rules.combinatory.transposePairAfter,
-        rules.combinatory.mapMapFBeforeTranspose,
-        rules.combinatory.mapMapFBeforeTranspose1,
-        rules.combinatory.splitJoin(32),
+        rules.mapFission,
+        // rules.transposeAroundMapMapF,
+        rules.transposeAroundMapMapF1M,
+        // rules.mapEtaAbstraction,
+        rules.splitJoin(32),
+        // rules.splitJoin1M(32),
+        rules.splitJoin2M(32),
     ))
   }
 

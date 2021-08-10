@@ -8,6 +8,24 @@ object Extractor {
     e.computeCosts()
     e
   }
+
+  def randomOf(egraph: EGraph[_, _, _], id: EClassId): ExprWithHashCons = {
+    val random = new scala.util.Random
+
+    def rec(id: EClassId): ExprWithHashCons = {
+      val eclass = egraph.get(id)
+      val node = eclass.nodes(random.nextInt(eclass.nodes.length))
+      ExprWithHashCons(node.mapChildren(rec), eclass.t)
+    }
+
+    rec(id)
+  }
+
+  def printRandom(egraph: EGraph[_, _, _], id: EClassId, n: Int): Unit = {
+    for (_ <- 0 until n) {
+      println(Expr.toNamed(ExprWithHashCons.expr(egraph)(randomOf(egraph, id))))
+    }
+  }
 }
 
 /** Extracts a single expression from an [[EGraph]],

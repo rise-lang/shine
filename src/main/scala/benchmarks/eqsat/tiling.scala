@@ -23,11 +23,6 @@ object tiling {
     // rules.combinatory.compositionIntro,
     // rules.combinatory.compositionLeftId,
     // rules.combinatory.compositionRightId,
-    whenFcontainsF(rules.combinatory.splitJoin(tileSize)),
-    whenFcontainsF(rules.combinatory.splitJoin1M(tileSize)),
-    whenFcontainsF(rules.combinatory.splitJoin2M(tileSize)),
-    whenFcontainsF(rules.combinatory.splitJoin3M(tileSize)),
-    whenFcontainsF(rules.combinatory.splitJoin4M(tileSize)),
     // rules.combinatory.mapFusion,
     // rules.combinatory.mapFission,
     // rules.combinatory.transposePairAfter,
@@ -37,6 +32,27 @@ object tiling {
     whenFcontainsF(rules.combinatory.transposeAroundMapMapF2M),
     whenFcontainsF(rules.combinatory.transposeAroundMapMapF3M),
   )
+
+  private val splitJoinRulesCFNF = Seq(
+    whenFcontainsF(rules.splitJoin(tileSize)),
+    whenFcontainsF(rules.splitJoin1M(tileSize)),
+    whenFcontainsF(rules.splitJoin2M(tileSize)),
+    whenFcontainsF(rules.splitJoin3M(tileSize)),
+    whenFcontainsF(rules.splitJoin4M(tileSize)),
+    whenFcontainsF(rules.splitJoin5M(tileSize)),
+    whenFcontainsF(rules.splitJoin6M(tileSize)),
+  )
+
+  private val reorderRulesCFNF = Seq(
+    whenFcontainsF(rules.transposeAroundMapMapF),
+    whenFcontainsF(rules.transposeAroundMapMapF1M),
+    whenFcontainsF(rules.transposeAroundMapMapF2M),
+    whenFcontainsF(rules.transposeAroundMapMapF3M),
+    whenFcontainsF(rules.transposeAroundMapMapF4M),
+    whenFcontainsF(rules.transposeAroundMapMapF5M),
+  )
+
+  private val tilingRulesCFNF = reorderRulesCFNF ++ splitJoinRulesCFNF
 
   private def T: ToBeTyped[Expr] = rise.core.primitives.transpose
   private def S: ToBeTyped[Expr] = rise.core.primitives.split(tileSize)
@@ -58,7 +74,14 @@ object tiling {
     }
 
     val expr = wrap(f => **(f))
-    val golds = Seq(
+    val golds1 = Seq(
+      // 1 loop
+      wrap(f => J o ***(f) o S),
+      wrap(f => *(J) o ***(f) o *(S)),
+      // 2 loops
+      wrap(f => J o **(J) o ****(f) o **(S) o S)
+    )
+    val golds2 = Seq(
       // 1 loop
       wrap(f => J o ***(f) o S),
       wrap(f => *(J) o ***(f) o *(S)),
@@ -68,7 +91,11 @@ object tiling {
 
     ProveEquiv.init()
       .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(50))
-      .runCNF(expr, golds, tilingRules)
+      .runBENF(expr, golds1, splitJoinRulesCFNF)
+
+    ProveEquiv.init()
+      .withFilter(ASTSizePredicate(50))
+      .runBENF(golds1, golds2, reorderRulesCFNF)
   }
 
   def run3D(): Unit = {
@@ -81,14 +108,28 @@ object tiling {
     }
 
     val expr = wrap(f => ***(f))
-    val golds = Seq(
+    val golds1 = Seq(
       // 1 loop
       wrap(f => J o ****(f) o S),
-      wrap(f => *(J o ***(f) o S)),
-      wrap(f => **(J o **(f) o S)),
+      wrap(f => *(J) o ****(f) o *(S)),
+      wrap(f => **(J) o ****(f) o **(S)),
+      // 2 loops
+      wrap(f => J o **(J) o *****(f) o **(S) o S),
+      wrap(f => *(J) o ***(J) o *****(f) o ***(S) o *(S)),
+      // 3 loops
+      wrap(f =>
+        J o **(J) o ****(J) o
+        ******(f) o
+        ****(S) o **(S) o S),
+    )
+    val golds2 = Seq(
+      // 1 loop
+      wrap(f => J o ****(f) o S),
+      wrap(f => *(J) o ****(f) o *(S)),
+      wrap(f => **(J) o ****(f) o **(S)),
       // 2 loops
       wrap(f => J o **(J) o *(T) o *****(f) o *(T) o **(S) o S),
-      wrap(f => *(J o **(J) o *(T) o ****(f) o *(T) o **(S) o S)),
+      wrap(f => *(J) o ***(J) o **(T) o *****(f) o **(T) o ***(S) o *(S)),
       // 3 loops
       wrap(f =>
         J o **(J) o ****(J) o
@@ -100,7 +141,11 @@ object tiling {
 
     ProveEquiv.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(100))
-      .runCNF(expr, golds, tilingRules)
+      .runBENF(expr, golds1, splitJoinRulesCFNF)
+
+    ProveEquiv.init()
+      .withFilter(ASTSizePredicate(100))
+      .runBENF(golds1, golds2, reorderRulesCFNF)
   }
 
   def run4D(): Unit = {
@@ -113,16 +158,41 @@ object tiling {
     }
 
     val expr = wrap(f => ****(f))
-    val golds = Seq(
+    val golds1 = Seq(
       // 1 loop
       wrap(f => J o *****(f) o S),
-      wrap(f => *(J o ****(f) o S)),
-      wrap(f => **(J o ***(f) o S)),
-      wrap(f => ***(J o **(f) o S)),
+      wrap(f => *(J) o *****(f) o *(S)),
+      wrap(f => **(J) o *****(f) o **(S)),
+      wrap(f => ***(J) o *****(f) o ***(S)),
+      // 2 loops
+      wrap(f => J o **(J) o ******(f) o **(S) o S),
+      wrap(f => *(J) o ***(J) o ******(f) o ***(S) o *(S)),
+      wrap(f => **(J) o ****(J) o ******(f) o ****(S) o **(S)),
+      // 3 loops
+      wrap(f =>
+        J o **(J) o ****(J) o
+        *(******(f)) o
+        ****(S) o **(S) o S),
+      wrap(f =>
+        *(J) o ***(J) o *****(J) o
+        *(******(f)) o
+        *****(S) o ***(S) o *(S)),
+      // 4 loops
+      wrap(f =>
+        J o **(J) o ****(J) o ******(J) o
+        ****(****(f)) o
+        ******(S) o ****(S) o **(S) o S),
+    )
+    val golds2 = Seq(
+      // 1 loop
+      wrap(f => J o *****(f) o S),
+      wrap(f => *(J) o *****(f) o *(S)),
+      wrap(f => **(J) o *****(f) o **(S)),
+      wrap(f => ***(J) o *****(f) o ***(S)),
       // 2 loops
       wrap(f => J o **(J) o *(T) o ******(f) o *(T) o **(S) o S),
-      wrap(f => *(J o **(J) o *(T) o *****(f) o *(T) o **(S) o S)),
-      wrap(f => **(J o **(J) o *(T) o ****(f) o *(T) o **(S) o S)),
+      wrap(f => *(J) o ***(J) o **(T) o ******(f) o **(T) o ***(S) o *(S)),
+      wrap(f => **(J) o ****(J) o ***(T) o ******(f) o ***(T) o ****(S) o **(S)),
       // 3 loops
       wrap(f =>
         J o **(J) o ****(J) o
@@ -130,12 +200,12 @@ object tiling {
         *(******(f)) o
         **(T) o *(T) o ***(T) o
         ****(S) o **(S) o S),
-      wrap(f => *(
-        J o **(J) o ****(J) o
-        ***(T) o *(T) o **(T) o
-        ******(f) o
-        **(T) o *(T) o ***(T) o
-        ****(S) o **(S) o S)),
+      wrap(f =>
+        *(J) o ***(J) o *****(J) o
+        ****(T) o **(T) o ***(T) o
+        *(******(f)) o
+        ***(T) o **(T) o ****(T) o
+        *****(S) o ***(S) o *(S)),
       // 4 loops
       wrap(f =>
         J o **(J) o ****(J) o ******(J) o
@@ -146,16 +216,25 @@ object tiling {
     )
 
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(8) && ASTSizePredicate(160))
-      .runCNF(expr, golds, tilingRules)
+      .withFilter(ArrayDimensionPredicate(8) && ASTSizePredicate(200))
+      .runBENF(expr, golds1, splitJoinRulesCFNF)
+
+    ProveEquiv.init()
+      .withFilter(ASTSizePredicate(300))
+      .runBENF(golds1, golds2, reorderRulesCFNF)
   }
 
   def main(args: Array[String]): Unit = {
     val (time2D, _) = util.time(run2D())
     val (time3D, _) = util.time(run3D())
-    /*val (time4D, _) = util.time(run4D())
-    println(s"total 2D time: ${util.prettyTime(time2D)}") // ~25s search on i7 desktop
+    val (time4D, _) = util.time(run4D())
+    // ~25s search on i7 desktop with CNF
+    // ~1s search on laptop with CFNF
+    println(s"total 2D time: ${util.prettyTime(time2D)}")
+    // ~30s search on laptop with CFNF
+    // ~1s search on laptop with two-step CFNF
     println(s"total 3D time: ${util.prettyTime(time3D)}")
-    println(s"total 4D time: ${util.prettyTime(time4D)}")*/
+    // ~47s search on laptop with two-step CFNF
+    println(s"total 4D time: ${util.prettyTime(time4D)}")
   }
 }
