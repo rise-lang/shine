@@ -98,10 +98,6 @@ object reorder {
 
     ProveEquiv.init()
       .withFilter(ASTSizePredicate(80))
-      /*
-      .withRunnerTransform(r => r.withIterationLimit(5))
-      .withEndRules(Seq(
-        rules.combinatory.compositionAssoc1.directed()))*/
       .runCNF(expr, Seq(
         gold1243, gold1324, gold2134, gold4321
       ), Seq(

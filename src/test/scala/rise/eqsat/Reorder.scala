@@ -52,6 +52,24 @@ class Reorder extends test_util.Tests {
     ProveEquiv.init().runBENF(expr, gold, reorderRulesBENF)
   }
 
+  ignore("reorder 2D cycle") {
+    def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
+      depFun((n: Nat) => depFun((m: Nat) =>
+      depFun((dt1: DataType) => depFun((dt2: DataType) =>
+      fun(i => fun(f =>
+        inner(f)(i :: (n`.`m`.`dt1)) :: (n`.`m`.`dt2)
+      ))))))
+    }
+
+    val expr = wrap(f => **(f))
+    val gold = wrap(f => T o T o **(f) o T o T)
+
+    ProveEquiv.init().runCNF(expr, gold, Seq(
+      // rules.combinatory.compositionAssoc2,
+      rules.combinatory.transposeAroundMapMapF,
+    ))
+  }
+
   test("reorder 3D") {
     def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) =>

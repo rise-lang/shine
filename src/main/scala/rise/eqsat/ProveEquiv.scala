@@ -141,9 +141,9 @@ class ProveEquiv(
                        goalReached: Int => Boolean): Unit = {
     runner.printReport()
 
+    // egraph.dot().toSVG("/home/basta/Documents/reorder-2d-cycle.svg")
     if (!runner.stopReasons.contains(Done)) {
       // runner.iterations.foreach(println)
-      // egraph.dot().toSVG("/home/basta/Documents/saturate-associativity.svg")
       val (found, notFound) = goals.indices.partition(goalReached)
 
       val idsToFind = notFound.map(i => egraph.addExpr(goals(i)))
