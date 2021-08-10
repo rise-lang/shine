@@ -1,10 +1,12 @@
 package shine.DPIA.primitives.intermediate
 
+import rise.core.types.{DataType, read}
+import rise.core.DSL.Type._
+import rise.core.types.DataType._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative.{CycleAcc, DropAcc, PairAcc, UnzipAcc}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Cycle, Drop, Take, Zip}
 

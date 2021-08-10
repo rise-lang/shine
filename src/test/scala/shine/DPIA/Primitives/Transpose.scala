@@ -2,9 +2,10 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.primitives._
+import rise.core.types.DataType._
 import rise.core.types._
+import util.Execute
 import util.gen.c.function
-import util.{Execute, gen}
 
 class Transpose extends test_util.Tests {
   test("Simple transpose should produce the expected result on a test") {

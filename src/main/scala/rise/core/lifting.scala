@@ -42,9 +42,9 @@ object lifting {
     }
   }
 
-  def liftDepFunExpr[T, KI <: Kind.Identifier](kind: Kind[T, _, KI], p: Expr): Result[T => Expr] = {
+  def liftDepFunExpr[T](kind: Kind[T, _], p: Expr): Result[T => Expr] = {
     def chain(r: Result[Expr]): Result[T => Expr] =
-      r.bind(liftDepFunExpr[T, KI](kind, _), f => Expanding((x: T) => depApp(kind, f, x)))
+      r.bind(liftDepFunExpr[T](kind, _), f => Expanding((x: T) => depApp(kind, f, x)))
 
     p match {
       case DepLambda(kind, x, e) =>
@@ -55,7 +55,7 @@ object lifting {
     }
   }
 
-  def liftDependentFunctionType[T, I](kind: Kind[T, I, _], ty: Type): T => Type = {
+  def liftDependentFunctionType[T, I](kind: Kind[T, I], ty: ExprType): T => ExprType = {
     ty match {
       case DepFunType(kind, x, t) =>
         (a: T) => substitute.kindInType(kind, a, `for` = x, in = t)

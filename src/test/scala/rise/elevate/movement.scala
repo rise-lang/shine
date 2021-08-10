@@ -6,7 +6,8 @@ import rise.elevate.util._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core._
-import rise.core.types.{Nat, f32}
+import rise.core.types.Nat
+import rise.core.types.DataType._
 import Type._
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.default._

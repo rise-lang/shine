@@ -1,5 +1,6 @@
 package shine.DPIA.primitives.imperative
 
+import rise.core.types.DataType
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._

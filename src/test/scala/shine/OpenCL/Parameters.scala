@@ -2,6 +2,7 @@ package shine.OpenCL
 
 import rise.core.DSL._
 import rise.core.primitives._
+import rise.core.types.DataType._
 import rise.core.types._
 import util.gen
 

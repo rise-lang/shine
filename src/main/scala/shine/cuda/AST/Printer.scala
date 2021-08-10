@@ -2,7 +2,7 @@ package shine.cuda.AST
 
 import arithexpr.arithmetic.ArithExpr
 import shine.C.AST._
-import shine.DPIA.Types.AddressSpace
+import rise.core.types.AddressSpace
 import shine.OpenCL
 import shine.OpenCL.AST.KernelDecl
 import shine.OpenCL.BuiltInFunctionCall

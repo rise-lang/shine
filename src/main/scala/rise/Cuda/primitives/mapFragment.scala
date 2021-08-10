@@ -6,13 +6,14 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object mapFragment extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "mapFragment"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (m: Nat) => impl { (n: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (f: FragmentKind) => impl { (l: MatrixLayout) => (s ->: s) ->: FragmentType(n, m, k, s, f, l) ->: FragmentType(n, m, k, s, f, l) } } } } } }
+    override def typeScheme: ExprType = impl { (m: Nat) => impl { (n: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (f: Fragment) => impl { (l: MatrixLayout) => (s ->: s) ->: FragmentType(n, m, k, s, f, l) ->: FragmentType(n, m, k, s, f, l) } } } } } }
   }
   override def toString: String = "mapFragment"
   override def primitive: rise.core.Primitive = Primitive()()

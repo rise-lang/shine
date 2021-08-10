@@ -6,13 +6,14 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object oclCircularBuffer extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "oclCircularBuffer"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = expl { (a: AddressSpace) => impl { (n: Nat) => expl { (alloc: Nat) => expl { (sz: Nat) => impl { (s: DataType) => impl { (t: DataType) => (s ->: t) ->: ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t)) } } } } } }
+    override def typeScheme: ExprType = expl { (a: AddressSpace) => impl { (n: Nat) => expl { (alloc: Nat) => expl { (sz: Nat) => impl { (s: DataType) => impl { (t: DataType) => (s ->: t) ->: ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t)) } } } } } }
   }
   override def toString: String = "oclCircularBuffer"
   override def primitive: rise.core.Primitive = Primitive()()

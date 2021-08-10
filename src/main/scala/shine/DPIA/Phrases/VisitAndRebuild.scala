@@ -2,6 +2,8 @@ package shine.DPIA.Phrases
 
 import shine.DPIA.Types._
 import shine.DPIA._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
 
 object VisitAndRebuild {
 
@@ -22,7 +24,7 @@ object VisitAndRebuild {
       case i: NatToDataIdentifier => i
     }).asInstanceOf[N]
 
-    def access(w: AccessType): AccessType = w
+    def access(w: Access): Access = w
 
     def addressSpace(a: AddressSpace): AddressSpace = a
 
@@ -66,9 +68,9 @@ object VisitAndRebuild {
               DepLambda(AddressSpaceKind,
                 v.addressSpace(ad).asInstanceOf[AddressSpaceIdentifier],
                 apply(p, v))
-            case ac: AccessTypeIdentifier =>
+            case ac: AccessIdentifier =>
               DepLambda(AccessKind,
-                v.access(ac).asInstanceOf[AccessTypeIdentifier],
+                v.access(ac).asInstanceOf[AccessIdentifier],
                 apply(p, v))
             case n2n: NatToNatIdentifier =>
               DepLambda(NatToNatKind,
@@ -94,7 +96,7 @@ object VisitAndRebuild {
               DepApply(AddressSpaceKind,
                 apply(p, v).asInstanceOf[Phrase[`(add)->:`[T]]],
                 v.addressSpace(ad))
-            case ac: AccessType =>
+            case ac: Access =>
               DepApply(AccessKind,
                 apply(p, v).asInstanceOf[Phrase[`(acc)->:`[T]]],
                 v.access(ac))
@@ -161,9 +163,9 @@ object VisitAndRebuild {
           DepFunType(AddressSpaceKind,
             v.addressSpace(ad).asInstanceOf[AddressSpaceIdentifier],
             visitPhraseTypeAndRebuild(t, v))
-        case ac: AccessTypeIdentifier =>
+        case ac: AccessIdentifier =>
           DepFunType(AccessKind,
-            v.access(ac).asInstanceOf[AccessTypeIdentifier],
+            v.access(ac).asInstanceOf[AccessIdentifier],
             visitPhraseTypeAndRebuild(t, v))
         case n2n: NatToNatIdentifier =>
           DepFunType(NatToNatKind,
@@ -184,13 +186,14 @@ object VisitAndRebuild {
       case vec: VectorType =>
         VectorType(v.nat(vec.size), v.data(vec.elemType))
       case r: PairType =>
-        PairType(visitDataTypeAndRebuild(r.fst, v),
-          visitDataTypeAndRebuild(r.snd, v))
+        PairType(visitDataTypeAndRebuild(r.dt1, v),
+          visitDataTypeAndRebuild(r.dt2, v))
       case ManagedBufferType(dt) =>
         ManagedBufferType(visitDataTypeAndRebuild(dt, v))
       case d => d match {
-        case _: ComposedType | _: BasicType | _: OpaqueType |
-             _: NatToDataApply | _: DataTypeIdentifier => d
+        case _: ScalarType | _: FragmentType | _: IndexType | NatType | _: VectorType |
+             _: ArrayType | _: DepArrayType | _: DepPairType[_, _] | _: ManagedBufferType |
+             _:PairType | _: OpaqueType | _: NatToDataApply | _: DataTypeIdentifier => d
       }
     }
 }

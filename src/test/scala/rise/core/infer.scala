@@ -1,8 +1,9 @@
 package rise.core
 
 import rise.core.DSL._
-import Type._
+import rise.core.DSL.Type._
 import rise.core.types._
+import rise.core.types.DataType._
 
 class infer extends test_util.Tests {
   test("Infer int addition type") {

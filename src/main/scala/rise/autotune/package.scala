@@ -1,19 +1,19 @@
 package rise
 
-import arithexpr.arithmetic.{RangeUnknown}
+import arithexpr.arithmetic.RangeUnknown
+import rise.autotune.configFileGeneration._
+import rise.autotune.constraints._
+import rise.autotune.execution._
 import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
-import shine.OpenCL.{GlobalSize, LocalSize}
-import util.{Time, TimeSpan, writeToPath}
-import java.io.{File, FileOutputStream, PrintWriter}
 import rise.openCL.DSL.oclRun
+import shine.OpenCL.{GlobalSize, LocalSize}
+import util.Execute.Exception
+import util.{Time, TimeSpan, writeToPath}
+
+import java.io.{File, FileOutputStream, PrintWriter}
 import scala.collection.mutable.ListBuffer
-
-import rise.autotune.constraints._
-import rise.autotune.configFileGeneration._
-import rise.autotune.execution._
-
 import scala.language.postfixOps
 import scala.sys.process._
 
@@ -54,14 +54,13 @@ package object autotune {
 
     // generate json if necessary
     tuner.configFile match {
-      case None => {
+      case None =>
         println("generate configuration file")
         val file = new PrintWriter(
           new FileOutputStream(
             new File(tuner.output + "/" + tuner.name + ".json"), false))
         file.write(generateJSON(parameters, constraints, tuner))
         file.close()
-      }
       case _ => println("use given configuration file")
     }
 
@@ -70,31 +69,28 @@ package object autotune {
 
     // compute function value as result for hypermapper
     val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
-      val parametersValuesMap = header.zip(parametersValues).map { case (h, p) =>
+      val parametersValuesMap: Map[NatIdentifier, Nat] = header.zip(parametersValues).map { case (h, p) =>
         NatIdentifier(h) -> (p.toInt: Nat)
       }.toMap
-      checkConstraints(constraints, parametersValuesMap) match {
-        case true => {
-          println("constraints true")
-          // execute
-          val result = execute(
-            rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main, tuner.timeouts)
-          result._1 match {
-            case Some(_) =>
-              Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
-            case None =>
-              Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
-          }
+      if (checkConstraints(constraints, parametersValuesMap)) {
+        println("constraints true")
+        // execute
+        val result = execute(
+          rise.core.substitute.natsInExpr(parametersValuesMap.toMap[Nat, Nat], e), tuner.main, tuner.timeouts)
+        result._1 match {
+          case Some(_) =>
+            Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
+          case None =>
+            Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
         }
-        case false => {
-          println("constraints false")
-          Sample(
-            parametersValuesMap,
-            None,
-            System.currentTimeMillis() - start,
-            AutoTuningError(CONSTRAINTS_ERROR, None)
-          )
-        }
+      } else {
+        println("constraints false")
+        Sample(
+          parametersValuesMap,
+          None,
+          System.currentTimeMillis() - start,
+          AutoTuningError(CONSTRAINTS_ERROR, None)
+        )
       }
     }
 
@@ -130,7 +126,7 @@ package object autotune {
           val headers = hypermapper.stdout.readLine()
           val values = hypermapper.stdout.readLine()
           hypermapper.stdout.readLine() // consume empty line
-          println(s"Best point found\nHeaders: ${headers}Values: ${values}")
+          println(s"Best point found\nHeaders: ${headers}Values: $values")
         case request if request.contains("warning") =>
           println(s"[Hypermapper] $request")
         case request if request.contains("Request") =>
@@ -190,22 +186,23 @@ package object autotune {
   def applyBest(e: Expr, samples: Seq[Sample]): Expr = {
     val best = getBest(samples)
     best match {
-      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters, e)
+      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters.toMap[Nat, Nat], e)
       case None => e
     }
   }
 
   def applySample(e: Expr, sample: Sample): Expr = {
-    rise.core.substitute.natsInExpr(sample.parameters, e)
+    rise.core.substitute.natsInExpr(sample.parameters.toMap[Nat, Nat], e)
   }
 
   // write tuning results into csv file
   def saveSamples(path: String, tuningResult: TuningResult): Unit = {
     // write header
     var header = ""
-    tuningResult.samples(0).parameters.foreach(param => {
-      header += param._1.name + ","
-    })
+    tuningResult.samples.head.parameters.foreach {
+      case (id: NatIdentifier, _:Nat) =>  header += id.name + ","
+      case _ => throw Exception("This should not happen")
+    }
     header += "runtime" + ","
     header += "error level" + ","
     header += "error message" + ","
@@ -232,7 +229,7 @@ package object autotune {
 
       // write error message
       sample.autoTuningError.message match {
-        case Some(value) => content += value.toString + ","
+        case Some(value) => content += value + ","
         case None => content += "" + ","
       }
 
@@ -248,23 +245,21 @@ package object autotune {
 
   private def min(s1: Sample, s2: Sample): Sample = {
     s1.runtime match {
-      case Some(s1Runtime) => {
+      case Some(s1Runtime) =>
         s2.runtime match {
-          case Some(s2Runtime) => {
-            s1Runtime.value < s2Runtime.value match {
-              case true => s1
-              case false => s2
+          case Some(s2Runtime) =>
+            if (s1Runtime.value < s2Runtime.value) {
+              s1
+            } else {
+              s2
             }
-          }
           case None => s1
         }
-      }
-      case None => {
+      case None =>
         s2.runtime match{
           case Some(_) => s2
           case None => s1
         }
-      }
     }
   }
 }

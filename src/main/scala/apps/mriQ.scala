@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 
@@ -14,8 +15,8 @@ object mriQ {
     "{ return phiR * phiR + phiI * phiI; }",
     f32 ->: f32 ->: f32)
 
-  implicit private class MultiInput(o: Type) {
-    def `x3 ->:`(i: Type): FunType[Type, Type] =
+  implicit private class MultiInput(o: ExprType) {
+    def `x3 ->:`(i: ExprType): FunType[ExprType, ExprType] =
       i ->: i ->: i ->: o
   }
 

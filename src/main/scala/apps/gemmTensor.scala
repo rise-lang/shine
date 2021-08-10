@@ -8,6 +8,7 @@ import rise.core.DSL._
 import rise.core._
 import rise.core.primitives.{let => _, _}
 import rise.core.types.{AddressSpace, _}
+import rise.core.types.DataType._
 import rise.openCL.DSL.toPrivate
 import rise.openCL.primitives.oclReduceSeq
 

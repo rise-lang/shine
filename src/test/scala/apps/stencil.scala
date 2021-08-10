@@ -1,19 +1,20 @@
 package apps
 
+import arithexpr.arithmetic.SteppedCase
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize}
-import util.{Display, TimeSpan, gen}
-import util.Time.ms
+import rise.core.DSL.HighLevelConstructs._
+import rise.core.DSL.Type._
+import rise.core.DSL._
+import rise.core.Expr
+import rise.core.primitives._
+import rise.core.types.DataType._
+import rise.core.types._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
-import arithexpr.arithmetic.SteppedCase
-import rise.core.DSL._
-import rise.core.primitives._
-import Type._
-import rise.core.Expr
-import rise.core.types._
-import HighLevelConstructs._
+import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize}
+import util.Time.ms
 import util.gen.c.function
+import util.{Display, TimeSpan, gen}
 
 import scala.util.Random
 
