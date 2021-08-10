@@ -15,6 +15,8 @@ object configFileGeneration {
 
     val parametersWDC = distributeConstraints(p, c)
 
+    assert(check_no_cycle(parametersWDC))
+
     // number of samples for design of experiment phase
     val doe = p.size * 10
 
@@ -211,60 +213,26 @@ object configFileGeneration {
     // initialize output map and add parameters
     val parametersWDC = scala.collection.mutable.
       Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]()
-    parameters.foreach(param => {
+    parameters.toSeq.sortBy(_.name).foreach(param => {
       parametersWDC(param) = (Set.empty[Constraint], Set.empty[NatIdentifier])
     })
 
     // get parameters from constraint
     // check for given parameters in the given constraint
-    constraints.foreach(constraint => {
+    constraints.toSeq.sortBy(_.toString).foreach(constraint => {
       val parametersInConstraint = getParametersFromConstraint(parameters, constraint)
 
-      // check if constraint is type of range
-      constraint match {
-        case RangeConstraint(n, r) => {
-          // order this constraint to n
-          val candidates = parametersInConstraint.filter(param => param.name.equals(n.toString))
-
-          candidates.size match {
-            case 0 => {
-              // we do not stop if candidate is found!
-              parametersInConstraint.foreach(candidate => {
-
-                // check if pointer occurs in other parameters' dependencies  (avoid cycles)
-                parametersWDC.filter(
-                  paramWDC => !(paramWDC._1.name.equals(candidate.name))
-                ).exists(paramWDC => {
-                  paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
-                }) match {
-                  case false => {
-                    // use this candidate
-                    // add candidate to output map
-                    val elem = parametersWDC(candidate)
-                    parametersWDC(candidate) = (
-                      elem._1 + constraint,
-                      elem._2 ++ parametersInConstraint.filter(
-                        param => !(param.name.equals(candidate.name))
-                      )
-                    )
-                  }
-                  case true => // use next candidate
-                }
-              })
-            }
-            case _ => {
-              val candidate = candidates.last
-
-              val elem = parametersWDC(candidate)
-              parametersWDC(candidate) = (
-                elem._1 + constraint,
-                elem._2 ++ parametersInConstraint.filter(
-                  param => !(param.name.equals(candidate.name))
-                )
-              )
-              // should go to n
-            }
-          }
+      parametersInConstraint.size match {
+        case 0 => // skip constraints without parameters
+        case 1 => {
+          // use this candidate (we only have one)
+          val candidate = parametersInConstraint.last
+          val elem = parametersWDC(candidate)
+          parametersWDC(candidate) = (
+            elem._1 + constraint,
+            elem._2 ++ parametersInConstraint.filter(
+              param => !(param.name.equals(candidate.name)))
+          )
         }
         case _ => {
           // iterate over candidates
@@ -272,7 +240,6 @@ object configFileGeneration {
           //  false: add constraint and other parameters to candidate parameter
           // we do not stop if candidate is found!
           parametersInConstraint.foreach(candidate => {
-
             // check if pointer occurs in other parameters' dependencies  (avoid cycles)
             parametersWDC.filter(
               paramWDC => !(paramWDC._1.name.equals(candidate.name)))
@@ -302,7 +269,7 @@ object configFileGeneration {
   // helper function to collect occurring parameters from a constraint
   def getParametersFromConstraint(parameters: Parameters,
                                   constraint: Constraint)
-  : Set[NatIdentifier] = {
+  : Seq[NatIdentifier] = {
 
     // collect parameters as vars in constraint
     val parametersInConstraint = constraint match {
@@ -330,7 +297,38 @@ object configFileGeneration {
       })
     })
 
-    output
+    output.toSeq.sortBy(_.name)
   }
 
+  // function to check cycle in parameter dependencies
+  def check_no_cycle(distribution: Map[NatIdentifier,
+    (Set[constraints.Constraint], Set[NatIdentifier])]
+                    ): Boolean = {
+
+    def check_no_cycle_rec(param: NatIdentifier,
+                           dependencies: Set[NatIdentifier],
+                           distribution: Map[NatIdentifier,
+                             (Set[constraints.Constraint], Set[NatIdentifier])],
+                           visited: Set[NatIdentifier]
+                          ): Boolean = {
+
+      dependencies.size match {
+        case 0 => true
+        case _ => dependencies.exists(dependency => {
+          dependency.name.equals(param.name) || visited.contains(dependency)
+        }) match {
+          case true => false
+          case false => dependencies.forall(dependency => {
+            check_no_cycle_rec(param,
+              distribution.apply(dependency)._2,
+              distribution,
+              visited + dependency)
+          })
+        }
+      }
+    }
+
+    distribution.forall(param =>
+      check_no_cycle_rec(param._1, param._2._2, distribution, Set.empty[NatIdentifier]))
+  }
 }
