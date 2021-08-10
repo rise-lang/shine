@@ -48,7 +48,7 @@ object IsClosedForm {
 
     override def nat: Nat => Pair[Nat] = n => {
       val free = n.varList.foldLeft(OrderedSet.empty[Kind.Identifier]) {
-        case (free, v: NamedVar) if !boundT(NatKind.Identifier(v)) => OrderedSet.add(NatKind.Identifier(v) : Kind.Identifier)(free)
+        case (free, v: NamedVar) if !boundT(NatKind.IDWrapper(v)) => OrderedSet.add(NatKind.IDWrapper(v) : Kind.Identifier)(free)
         case (free, _) => free
       }
       accumulate((OrderedSet.empty, free))(n)
@@ -69,14 +69,14 @@ object IsClosedForm {
 
     override def natToData: NatToData => Pair[NatToData] = {
       case NatToDataLambda(x, e) =>
-        for { p <- this.copy(boundT = boundT + NatKind.Identifier(x)).`type`(e)}
+        for { p <- this.copy(boundT = boundT + NatKind.IDWrapper(x)).`type`(e)}
           yield (p._1, NatToDataLambda(x, e))
       case t => super.natToData(t)
     }
 
     override def natToNat: NatToNat => Pair[NatToNat] = {
       case NatToNatLambda(x, n) =>
-        for { p <- this.copy(boundT = boundT + NatKind.Identifier(x)).nat(n)}
+        for { p <- this.copy(boundT = boundT + NatKind.IDWrapper(x)).nat(n)}
           yield (p._1, NatToNatLambda(x, n))
       case n => super.natToNat(n)
     }
@@ -104,8 +104,8 @@ object IsClosedForm {
 
   // Exclude matrix layout and fragment kind identifiers, since they cannot currently be bound
   def needsClosing : Seq[Kind.Identifier] => Seq[Kind.Identifier] = _.flatMap {
-    case MatrixLayoutKind.Identifier(i) => Seq()
-    case FragmentKind.Identifier(i) => Seq()
+    case MatrixLayoutKind.IDWrapper(i) => Seq()
+    case FragmentKind.IDWrapper(i) => Seq()
     case e => Seq(e)
   }
 

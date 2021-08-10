@@ -16,7 +16,7 @@ object equality {
 
   val equivNat: Env[Kind.Identifier] => Nat => Nat => Boolean = env => a => b => {
     val natEnv: Map[Nat, NatIdentifier] =
-      env.unwrap.collect { case (NatKind.Identifier(i), NatKind.Identifier(n)) => (i, n) }
+      env.unwrap.collect { case (NatKind.IDWrapper(i), NatKind.IDWrapper(n)) => (i, n) }
     // substitutes elements on the left with elements on the right
     substitute.natsInNat(natEnv, a) == b
   }
@@ -56,8 +56,8 @@ object equality {
         case a : ExprType => and {case b : ExprType => equivType(env)(a)(b) }
         case ia: Kind.Identifier => and { case ib: Kind.Identifier => env.check(ia, ib) }
         case a: AddressSpace => and { case b: AddressSpace => (a : AddressSpace) == (b : AddressSpace) }
-        case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(NatKind.Identifier(na), NatKind.Identifier(nb)))(ba)(bb) }
-        case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataType](env.add(NatKind.Identifier(na), NatKind.Identifier(nb)))(ba)(bb) }
+        case NatToNatLambda(na, ba) => and { case NatToNatLambda(nb, bb) => equivNat(env.add(NatKind.IDWrapper(na), NatKind.IDWrapper(nb)))(ba)(bb) }
+        case NatToDataLambda(na, ba) => and { case NatToDataLambda(nb, bb) => equiv[DataType](env.add(NatKind.IDWrapper(na), NatKind.IDWrapper(nb)))(ba)(bb) }
         case NatCollectionFromArray(a) => and { case NatCollectionFromArray(b) => a == b } // FIXME: should use exprEq
       }
     }
@@ -70,8 +70,8 @@ object equality {
         case sa: ScalarType => and { case sb: ScalarType => sa == sb }
 
         // Base cases -> identifier lookup
-        case na: TypeIdentifier => and { case nb: TypeIdentifier => env.check(TypeKind.Identifier(na), TypeKind.Identifier(nb)) }
-        case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier => env.check(DataKind.Identifier(na), DataKind.Identifier(nb))
+        case na: TypeIdentifier => and { case nb: TypeIdentifier => env.check(TypeKind.IDWrapper(na), TypeKind.IDWrapper(nb)) }
+        case na: DataTypeIdentifier => and { case nb: DataTypeIdentifier => env.check(DataKind.IDWrapper(na), DataKind.IDWrapper(nb))
         }
 
         // Base cases -> identifier lookup in nat expressions
@@ -83,8 +83,8 @@ object equality {
         case NatToDataApply(fa, na) => and { case NatToDataApply(fb, nb) =>
           val and = PatternMatching.matchWithDefault(fb, false)
           equivNat(env)(na)(nb) && (fa match {
-            case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => env.check(NatToDataKind.Identifier(na), NatToDataKind.Identifier(nb)) }
-            case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equivType(env.add(NatKind.Identifier(xa), NatKind.Identifier(xb)))(ba)(bb) }
+            case na: NatToDataIdentifier => and { case nb: NatToDataIdentifier => env.check(NatToDataKind.IDWrapper(na), NatToDataKind.IDWrapper(nb)) }
+            case NatToDataLambda(xa, ba) => and { case NatToDataLambda(xb, bb) => equivType(env.add(NatKind.IDWrapper(xa), NatKind.IDWrapper(xb)))(ba)(bb) }
           })
         }
 

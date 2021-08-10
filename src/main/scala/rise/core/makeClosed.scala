@@ -10,16 +10,16 @@ object makeClosed {
     val (_, ftvs) = IsClosedForm.varsToClose(e)
     val (expr, ts) = ftvs.foldLeft((e, Map[ExprType, ExprType]()))((acc, ftv) => acc match {
       case (expr, ts) => ftv match {
-        case TypeKind.Identifier(i) =>
+        case TypeKind.IDWrapper(i) =>
           val dt = DataTypeIdentifier(freshName("dt"))
           (DepLambda(DataKind, dt, expr)(DepFunType(DataKind, dt, expr.t)), (ts ++ Map(i -> dt)))
-        case DataKind.Identifier(i) =>
+        case DataKind.IDWrapper(i) =>
           (DepLambda(DataKind, i, expr)(DepFunType(DataKind, i, expr.t)), ts)
-        case NatKind.Identifier(i) =>
+        case NatKind.IDWrapper(i) =>
           (DepLambda(NatKind, i, expr)(DepFunType(NatKind, i, expr.t)), ts)
-        case AddressSpaceKind.Identifier(i) =>
+        case AddressSpaceKind.IDWrapper(i) =>
           (DepLambda(AddressSpaceKind, i, expr)(DepFunType(AddressSpaceKind, i, expr.t)), ts)
-        case NatToDataKind.Identifier(i) =>
+        case NatToDataKind.IDWrapper(i) =>
           (DepLambda(NatToDataKind, i, expr)(DepFunType(NatToDataKind, i, expr.t)), ts)
         case i => throw TypeException(s"${i.getClass} is not supported yet")
       }

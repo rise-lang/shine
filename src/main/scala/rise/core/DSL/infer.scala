@@ -73,7 +73,7 @@ object infer {
     override val accumulator = SetMonoid
 
     override def nat: Nat => Pair[Nat] = n => n match {
-      case p@TuningParameter() => accumulate(Set(NatKind.Identifier(p)))(n)
+      case p@TuningParameter() => accumulate(Set(NatKind.IDWrapper(p)))(n)
       case n => return_(n)
     }
 

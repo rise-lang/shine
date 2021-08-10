@@ -110,14 +110,14 @@ object Constraint {
                 NatConstraint(n, na),
                 NatConstraint(n, nb),
                 TypeConstraint(ta, tb),
-              ), preserve + NatKind.Identifier(n) - NatKind.Identifier(na) - NatKind.Identifier(nb))
+              ), preserve + NatKind.IDWrapper(n) - NatKind.IDWrapper(na) - NatKind.IDWrapper(nb))
           case (DepFunType(DataKind, dta: DataTypeIdentifier, ta), DepFunType(DataKind, dtb: DataTypeIdentifier, tb)) =>
             val dt = DataTypeIdentifier(freshName("t"))
             decomposedPreserve(Seq(
               TypeConstraint(dt, dta),
               TypeConstraint(dt, dtb),
               TypeConstraint(ta, tb),
-            ), preserve + DataKind.Identifier(dt) - DataKind.Identifier(dta) - DataKind.Identifier(dtb))
+            ), preserve + DataKind.IDWrapper(dt) - DataKind.IDWrapper(dta) - DataKind.IDWrapper(dtb))
           case (DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _), DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _)) =>
             ???
 
@@ -127,7 +127,7 @@ object Constraint {
               NatConstraint(n, x1),
               NatConstraint(n, x2),
               TypeConstraint(t1, t2),
-            ), preserve + NatKind.Identifier(n) - NatKind.Identifier(x1) - NatKind.Identifier(x2))
+            ), preserve + NatKind.IDWrapper(n) - NatKind.IDWrapper(x1) - NatKind.IDWrapper(x2))
 
           case (DepPairType(NatCollectionKind, x1: NatCollectionIdentifier, t1), DepPairType(NatCollectionKind, x2: NatCollectionIdentifier, t2)) =>
             val n = NatCollectionIdentifier(freshName("n"))
@@ -135,7 +135,7 @@ object Constraint {
               NatCollectionConstraint(n, x1),
               NatCollectionConstraint(n, x2),
               TypeConstraint(t1, t2),
-            ), preserve + NatCollectionKind.Identifier(n) - NatCollectionKind.Identifier(x1) - NatCollectionKind.Identifier(x2))
+            ), preserve + NatCollectionKind.IDWrapper(n) - NatCollectionKind.IDWrapper(x1) - NatCollectionKind.IDWrapper(x2))
 
           case (
             NatToDataApply(f: NatToDataIdentifier, _),
@@ -189,7 +189,7 @@ object Constraint {
               NatConstraint(n, x1),
               NatConstraint(n, x2),
               TypeConstraint(dt1, dt2),
-            ), preserve + NatKind.Identifier(n) - NatKind.Identifier(x1) - NatKind.Identifier(x2))
+            ), preserve + NatKind.IDWrapper(n) - NatKind.IDWrapper(x1) - NatKind.IDWrapper(x2))
 
           case _ => error(s"cannot unify $a and $b")
         }
@@ -206,9 +206,9 @@ object Constraint {
 
       case MatrixLayoutConstraint(a, b) =>
         (a, b) match {
-          case (i: MatrixLayoutIdentifier, _) if canBeSubstituted(preserve, MatrixLayoutKind.Identifier(i)) =>
+          case (i: MatrixLayoutIdentifier, _) if canBeSubstituted(preserve, MatrixLayoutKind.IDWrapper(i)) =>
             Solution.subs(i, b)
-          case (_, i: MatrixLayoutIdentifier) if canBeSubstituted(preserve, MatrixLayoutKind.Identifier(i)) =>
+          case (_, i: MatrixLayoutIdentifier) if canBeSubstituted(preserve, MatrixLayoutKind.IDWrapper(i)) =>
             Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
@@ -216,9 +216,9 @@ object Constraint {
 
       case FragmentTypeConstraint(a, b) =>
         (a, b) match {
-          case (i: FragmentIdentifier, _) if canBeSubstituted(preserve, FragmentKind.Identifier(i)) =>
+          case (i: FragmentIdentifier, _) if canBeSubstituted(preserve, FragmentKind.IDWrapper(i)) =>
             Solution.subs(i, b)
-          case (_, i: FragmentIdentifier) if canBeSubstituted(preserve, FragmentKind.Identifier(i)) =>
+          case (_, i: FragmentIdentifier) if canBeSubstituted(preserve, FragmentKind.IDWrapper(i)) =>
             Solution.subs(i, a)
           case _ if a == b                 => Solution()
           case _                           => error(s"cannot unify $a and $b")
@@ -229,10 +229,10 @@ object Constraint {
 
   def unifyTypeIdent(i: TypeIdentifier, t: ExprType, preserve: Set[Kind.Identifier]): Solution = {
     t match {
-      case _ if canBeSubstituted(preserve, TypeKind.Identifier(i)) =>
+      case _ if canBeSubstituted(preserve, TypeKind.IDWrapper(i)) =>
         Solution.subs(i, t)
       case _ if i == t => Solution()
-      case i2: TypeIdentifier if canBeSubstituted(preserve, TypeKind.Identifier(i2)) =>
+      case i2: TypeIdentifier if canBeSubstituted(preserve, TypeKind.IDWrapper(i2)) =>
         Solution.subs(i2, i)
       case _ =>
         throw new Exception(s"$i cannot be substituted for $t")
@@ -246,16 +246,16 @@ object Constraint {
       case j: DataTypeIdentifier =>
         if (i == j) {
           Solution()
-        } else if (canBeSubstituted(preserve, DataKind.Identifier(i))) {
+        } else if (canBeSubstituted(preserve, DataKind.IDWrapper(i))) {
           Solution.subs(i, j)
-        } else if (canBeSubstituted(preserve, DataKind.Identifier(j))) {
+        } else if (canBeSubstituted(preserve, DataKind.IDWrapper(j))) {
           Solution.subs(j, i)
         } else {
           error(s"cannot unify $i and $j, they are both in $preserve")
         }
       case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
       case _ =>
-        if (canBeSubstituted(preserve, DataKind.Identifier(i))) {
+        if (canBeSubstituted(preserve, DataKind.IDWrapper(i))) {
           Solution.subs(i, t)
         } else {
           error(s"cannot substitute $i, it is $preserve")
@@ -296,12 +296,12 @@ object Constraint {
         case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a, preserve)
         case (arithexpr.arithmetic.Mod(x1, m1),
           arithexpr.arithmetic.Mod(x2: NatIdentifier, m2))
-          if m1 == m2 && canBeSubstituted(preserve, NatKind.Identifier(x2)) =>
+          if m1 == m2 && canBeSubstituted(preserve, NatKind.IDWrapper(x2)) =>
           val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
           Solution.subs(x2, k*m1 + x1%m1)
         case (arithexpr.arithmetic.Mod(x2: NatIdentifier, m2),
           arithexpr.arithmetic.Mod(x1, m1))
-          if m1 == m2 && canBeSubstituted(preserve, NatKind.Identifier(x2)) =>
+          if m1 == m2 && canBeSubstituted(preserve, NatKind.IDWrapper(x2)) =>
           val k = NatIdentifier("k", RangeAdd(0, PosInf, 1))
           Solution.subs(x2, k*m1 + x1%m1)
         case _ => error(s"cannot unify $a and $b")
@@ -313,7 +313,7 @@ object Constraint {
         .Map[NatIdentifier, Integer]()
         .withDefault(_ => 0)
       ArithExpr.visit(n, {
-        case v: NatIdentifier if canBeSubstituted(preserve, NatKind.Identifier(v)) => free_occurrences(v) += 1
+        case v: NatIdentifier if canBeSubstituted(preserve, NatKind.IDWrapper(v)) => free_occurrences(v) += 1
         case _ =>
       })
       free_occurrences.toMap
@@ -392,15 +392,15 @@ object Constraint {
       case j: NatIdentifier =>
         if (i == j) {
           Solution()
-        } else if (canBeSubstituted(preserve, NatKind.Identifier(i))) {
+        } else if (canBeSubstituted(preserve, NatKind.IDWrapper(i))) {
           Solution.subs(i, j)
-        } else if (canBeSubstituted(preserve, NatKind.Identifier(j))) {
+        } else if (canBeSubstituted(preserve, NatKind.IDWrapper(j))) {
           Solution.subs(j, i)
         } else {
           error(s"cannot unify $i and $j")
         }
       case fx: NatToNatApply => unifyApply(fx, i, preserve)
-      case _ if !ArithExpr.contains(n, i) && (canBeSubstituted(preserve, NatKind.Identifier(i))) =>
+      case _ if !ArithExpr.contains(n, i) && (canBeSubstituted(preserve, NatKind.IDWrapper(i))) =>
         Solution.subs(i, n)
       case p: Prod => unifyProd(p, i, preserve)
       case s: Sum  => unifySum(s, i, preserve)
@@ -463,7 +463,7 @@ object Constraint {
           nat.unify(
             substitute.natInNat(n, `for` = x1, body1),
             substitute.natInNat(n, `for`=x2, body2),
-            preserve + NatKind.Identifier(n))
+            preserve + NatKind.IDWrapper(n))
       }
     }
   }

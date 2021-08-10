@@ -5,8 +5,8 @@ import rise.core.types.DataType._
 
 object showScala {
   private val kindIdent : Kind.Identifier => String = {
-    case NatKind.Identifier(n) => s"""NatIdentifier("${n.name}", ${n.range})"""
-    case DataKind.Identifier(n) => s"""DataTypeIdentifier("$n")"""
+    case NatKind.IDWrapper(n) => s"""NatIdentifier("${n.name}", ${n.range})"""
+    case DataKind.IDWrapper(n) => s"""DataTypeIdentifier("$n")"""
     case x => throw new Exception(s"missing rule for $x")
   }
 

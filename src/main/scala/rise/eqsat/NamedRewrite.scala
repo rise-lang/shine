@@ -1,6 +1,6 @@
 package rise.eqsat
 
-import rise.core.types.DataKind.Identifier
+import rise.core.types.DataKind.IDWrapper
 import rise.core.types.{NatKind, TypeKind, TypePlaceholder}
 import rise.{core => rc}
 import rise.core.{types => rct}
@@ -101,7 +101,7 @@ object NamedRewrite {
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
-        case i: rct.NatIdentifier if freeT(NatKind.Identifier(i)) =>
+        case i: rct.NatIdentifier if freeT(NatKind.IDWrapper(i)) =>
           makePatVar(i.name, bound.nat.size, natPatVars,
             NatPatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
@@ -129,7 +129,7 @@ object NamedRewrite {
 
     def makeDTPat(dt: rct.DataType, bound: Expr.Bound, isRhs: Boolean): DataTypePattern =
       dt match {
-        case i: rcdt.DataTypeIdentifier if freeT(Identifier(i)) =>
+        case i: rcdt.DataTypeIdentifier if freeT(IDWrapper(i)) =>
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             dataTypePatVars, DataTypePatternVar, if (isRhs) { Unknown } else { Known })
         case i: rcdt.DataTypeIdentifier =>
@@ -162,7 +162,7 @@ object NamedRewrite {
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
         case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>
-          assert(freeT(TypeKind.Identifier(i)))
+          assert(freeT(TypeKind.IDWrapper(i)))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             typePatVars, TypePatternVar, if (isRhs) { Unknown } else { Known })
         case rct.TypePlaceholder =>

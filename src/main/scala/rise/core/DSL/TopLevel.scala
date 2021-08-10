@@ -27,25 +27,25 @@ object TopLevel {
       subs match {
         case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
-            case TypeKind.Identifier(i) =>
+            case TypeKind.IDWrapper(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: TypeIdentifier => x }))
-            case DataKind.Identifier(i) =>
+            case DataKind.IDWrapper(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: DataType => x }))
-            case NatKind.Identifier(i) =>
+            case NatKind.IDWrapper(i) =>
               s.copy(ns = ns ++ Map(i -> impl{ x: Nat => x }))
-            case AddressSpaceKind.Identifier(i) =>
+            case AddressSpaceKind.IDWrapper(i) =>
               s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
-            case MatrixLayoutKind.Identifier(i) =>
+            case MatrixLayoutKind.IDWrapper(i) =>
               s.copy(ms = ms ++ Map(i -> impl{ x: MatrixLayout => x }))
-            case FragmentKind.Identifier(i) =>
+            case FragmentKind.IDWrapper(i) =>
               s.copy(fs = fs ++ Map(i -> impl{ x: Fragment => x }))
-            case NatToDataKind.Identifier(i) =>
+            case NatToDataKind.IDWrapper(i) =>
               s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
-            case NatToNatKind.Identifier(i) =>
+            case NatToNatKind.IDWrapper(i) =>
               s.copy(n2ns = n2ns ++ Map(i -> impl{ x: NatToNat => x }))
-            case NatCollectionKind.Identifier(i) =>
+            case NatCollectionKind.IDWrapper(i) =>
               s.copy(natColls = natColls ++ Map(i -> impl{ x: NatCollection => x }))
-            case AccessKind.Identifier(_) => ???
+            case AccessKind.IDWrapper(_) => ???
           }
       }
     )
