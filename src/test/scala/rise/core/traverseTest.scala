@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.traverse._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 
 class traverseTest extends test_util.Tests {
   val e: Expr = depFun((h: Nat) =>

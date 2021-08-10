@@ -6,21 +6,21 @@ import scala.util.Try
 
 // Checks if a given Expr is well typed
 object check {
-  def apply(expr: Expr): Try[Type] = Try(TypingContext.empty() `|-` expr)
+  def apply(expr: Expr): Try[ExprType] = Try(TypingContext.empty() `|-` expr)
 
-  case class TypingContext(private val map: Predef.Map[String, Type]) {
-    def apply(x: String): Type = map.apply(x)
+  case class TypingContext(private val map: Predef.Map[String, ExprType]) {
+    def apply(x: String): ExprType = map.apply(x)
 
-    def updated(key: String, value: Type): TypingContext = this.copy(map.updated(key, value))
+    def updated(key: String, value: ExprType): TypingContext = this.copy(map.updated(key, value))
 
-    def `|-`(e: Expr): Type = check(this)(e)
+    def `|-`(e: Expr): ExprType = check(this)(e)
   }
 
   object TypingContext {
-    def empty(): TypingContext = TypingContext(Predef.Map[String, Type]())
+    def empty(): TypingContext = TypingContext(Predef.Map[String, ExprType]())
   }
 
-  private def check(ctx: TypingContext)(expr: Expr): Type = expr match {
+  private def check(ctx: TypingContext)(expr: Expr): ExprType = expr match {
     case Identifier(name) =>
       // ----------- Var
       val t = ctx(name)
@@ -68,8 +68,8 @@ object check {
       expr `:` p.t
   }
 
-  implicit class TypeOp(t1: Type) {
-    def ==?(t2: Type): Type = {
+  implicit class TypeOp(t1: ExprType) {
+    def ==?(t2: ExprType): ExprType = {
       if (t1 != t2) {
         throw TypeException(s"expected $t1 and $t2 to be equal")
       }
@@ -80,7 +80,7 @@ object check {
       }
     }
 
-    def `:`(e: Expr): Type = {
+    def `:`(e: Expr): ExprType = {
       e.t ==? t1
     }
   }

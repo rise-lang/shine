@@ -4,6 +4,7 @@ import cameraPipeline._
 import util._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.core.DSL._
 import rise.core.primitives._
 import Type._
@@ -346,7 +347,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   }
 
   test("type inference") {
-    def assertClosedT(e: ToBeTyped[Expr], t: Type): Unit = {
+    def assertClosedT(e: ToBeTyped[Expr], t: ExprType): Unit = {
       val typed = e.toExpr
       assert(typed.t =~= t)
       assert(IsClosedForm(typed))

@@ -18,13 +18,13 @@ final case class typeHole(msg: String = "") extends Builder {
 
 object typeHole {
   private final case class Primitive(msg: String)
-                                    (override val t: Type = TypePlaceholder)
+                                    (override val t: ExprType = TypePlaceholder)
     extends rise.core.Primitive
   {
     override def name: String = s"printType($msg)"
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def setType(t: Type): Primitive = Primitive(msg)(t)
-    override def typeScheme: Type = impl{ t: TypeIdentifier => t }
+    override def setType(t: ExprType): Primitive = Primitive(msg)(t)
+    override def typeScheme: ExprType = impl{ t: TypeIdentifier => t }
   }
 
   def unapply(arg: Expr): Option[String] = arg match {

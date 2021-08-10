@@ -7,6 +7,7 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeqUnroll
 import shine.DPIA.Nat
@@ -93,7 +94,7 @@ class showRise extends test_util.Tests {
 
         case DepApp(_, f, x) =>
           val fs = f match {
-            case _: DepLambda[_, _, _] => lessBrackets(f, wrapped = true)
+            case _: DepLambda[_, _] => lessBrackets(f, wrapped = true)
             case _                     => lessBrackets(f)
           }
           if (wrapped) s"($fs $x)" else s"$fs $x"

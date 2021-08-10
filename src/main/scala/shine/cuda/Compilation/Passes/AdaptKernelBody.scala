@@ -1,7 +1,7 @@
 package shine.cuda.Compilation.Passes
 
 import shine.C.AST._
-import shine.DPIA.Types.AddressSpace
+import rise.core.types.AddressSpace
 import shine.cuda.AST.ExternArrayType
 import shine.{C, OpenCL}
 

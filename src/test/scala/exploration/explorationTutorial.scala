@@ -2,7 +2,7 @@ package exploration
 
 import rise.core.DSL.{fun, lf32}
 import rise.core.primitives._
-import rise.core.types.{ArrayType, f32}
+import rise.core.types.DataType.{ArrayType, f32}
 
 object explorationTutorial {
   // see: docs/exploration/tutorial.md

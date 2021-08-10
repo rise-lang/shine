@@ -1,6 +1,7 @@
 package shine.DPIA.Phrases
 
 import shine.DPIA.Types._
+import rise.core.types.Kind
 
 object PrettyPhrasePrinter {
 
@@ -8,7 +9,7 @@ object PrettyPhrasePrinter {
     p match {
       case app: Apply[a, T] => s"(${apply(app.fun)})(${apply(app.arg)})"
 
-      case app: DepApply[_, _, _, T] => s"(${apply(app.fun)})(${app.arg})"
+      case app: DepApply[_, _, T] => s"(${apply(app.fun)})(${app.arg})"
 
       case p1: Proj1[a, b] => s"π1(${apply(p1.pair)})"
 

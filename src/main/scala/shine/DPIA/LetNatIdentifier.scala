@@ -1,6 +1,7 @@
 package shine.DPIA
 
 import arithexpr.arithmetic.Cst
+import rise.core.types.NatIdentifier
 
 case class LetNatIdentifier(id:NatIdentifier) {
   def name:String = id.name

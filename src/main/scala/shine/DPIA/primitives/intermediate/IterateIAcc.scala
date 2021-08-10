@@ -1,11 +1,12 @@
 package shine.DPIA.primitives.intermediate
 
 import arithexpr.arithmetic.NamedVar
+import rise.core.types.DataType
+import rise.core.DSL.Type._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative.TakeAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{NatAsIndex, Take}
 

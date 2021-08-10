@@ -1,11 +1,12 @@
 package shine.OpenCL.Compilation.Passes
 
 import arithexpr.arithmetic.ArithExpr.Math.Min
+import rise.core.types.{AddressSpace, AddressSpaceIdentifier}
+import rise.core.DSL.Type._
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{VisitAndRebuild, _}
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.OpenCL.primitives.imperative.{New, ParFor, ParForNat}
 import shine._

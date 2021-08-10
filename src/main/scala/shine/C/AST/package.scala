@@ -1,5 +1,6 @@
 package shine.C
 
+import rise.core.types.DataTypeOps
 import shine.C
 import shine.C.Compilation.CodeGenerator
 import shine.DPIA.Phrases.Identifier
@@ -16,24 +17,27 @@ package object AST {
   }
 
   // Turn array types into pointer types
-  def makeParamTy(gen: CodeGenerator): DataType => Type = {
-    case DPIA.Types.ArrayType(_, dt) =>
-      val baseDt = DataType.getBaseDataType(dt)
+  def makeParamTy(gen: CodeGenerator): rise.core.types.DataType => Type = {
+    case rise.core.types.DataType.ArrayType(_, dt) =>
+      val baseDt = DataTypeOps.getBaseDataType(dt)
       C.AST.PointerType(gen.typ(baseDt))
-    case DepArrayType(_, NatToDataLambda(_, dt)) =>
-      val baseDt = DataType.getBaseDataType(dt)
+    case rise.core.types.DataType.DepArrayType(_, rise.core.types.NatToDataLambda(_, dt)) =>
+      val baseDt = DataTypeOps.getBaseDataType(dt)
       C.AST.PointerType(gen.typ(baseDt))
-    case r: PairType => gen.typ(r)
-    case dr: DepPairType => gen.typ(dr)
-    case t: DPIA.Types.BasicType => gen.typ(t)
+    case r: rise.core.types.DataType.PairType => gen.typ(r)
+    case dr: rise.core.types.DataType.DepPairType[_, _] => gen.typ(dr)
+    case t: rise.core.types.DataType.ScalarType => gen.typ(t)
+    case rise.core.types.DataType.NatType => gen.typ(rise.core.types.DataType.NatType)
+    case t: rise.core.types.DataType.FragmentType => gen.typ(t)
+    case t: rise.core.types.DataType.IndexType =>gen.typ(t)
     case dt => throw new Exception(s"did not expect $dt")
   }
 
-  def makeParam(makeTy: DataType => Type)(i: Identifier[_]): C.AST.ParamDecl = {
+  def makeParam(makeTy: rise.core.types.DataType => Type)(i: Identifier[_]): C.AST.ParamDecl = {
     C.AST.ParamDecl(i.name, makeTy(getDataType(i)))
   }
 
-  def getDataType(i: Identifier[_]): DataType = i.t match {
+  def getDataType(i: Identifier[_]): rise.core.types.DataType = i.t match {
     case ExpType(dataType, _) => dataType
     case AccType(dataType) => dataType
     case PhrasePairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1

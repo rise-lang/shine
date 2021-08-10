@@ -3,11 +3,12 @@ package rise.elevate.rules
 import arithexpr.arithmetic.Cst
 import elevate.core._
 import elevate.macros.RuleMacro.rule
-import rise.elevate._
-import rise.core._
-import rise.core.types._
-import rise.core.primitives._
 import rise.core.DSL._
+import rise.core._
+import rise.core.primitives._
+import rise.core.types.DataType._
+import rise.core.types._
+import rise.elevate._
 
 object vectorize {
   // FIXME: sometimes assuming loads or stores will be aligned
@@ -191,19 +192,19 @@ object vectorize {
     case _ => false
   }
 
-  private def isScalarFun: Type => Boolean = {
+  private def isScalarFun: ExprType => Boolean = {
     case FunType(i, o) => isScalarTuple(i) &&
       (isScalarTuple(o) || isScalarFun(o))
     case _ => false
   }
 
-  private def isScalarTuple: Type => Boolean = {
+  private def isScalarTuple: ExprType => Boolean = {
     case _: ScalarType => true
     case PairType(a, b) => isScalarTuple(a) && isScalarTuple(b)
     case _ => false
   }
 
-  private def makeAsVector(asV: Rise): Type => ToBeTyped[Rise] = {
+  private def makeAsVector(asV: Rise): ExprType => ToBeTyped[Rise] = {
     case ArrayType(_, _: ScalarType) => eraseType(asV)
     case ArrayType(n, PairType(a, b)) =>
       unzip >> fun(p => zip(
@@ -212,7 +213,7 @@ object vectorize {
     case t => throw new Exception(s"did not expect $t")
   }
 
-  private def makeShuffle(s: Rise): Type => ToBeTyped[Rise] = {
+  private def makeShuffle(s: Rise): ExprType => ToBeTyped[Rise] = {
     case ArrayType(_, _: VectorType) => eraseType(s)
     case ArrayType(n, PairType(a, b)) =>
       unzip >> fun(p => zip(

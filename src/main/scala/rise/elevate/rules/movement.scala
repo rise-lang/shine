@@ -10,7 +10,8 @@ import rise.core.types._
 import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.DSL.Type._
-import rise.core.types.{ArrayType, DataType, FunType, IndexType, Nat, PairType}
+import rise.core.types._
+import rise.core.types.DataType._
 
 // Describing possible movements between pairs of rise primitives
 // (potentially nested in maps)

@@ -2,12 +2,15 @@ package shine.DPIA
 
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
+import rise.core.types.{AddressSpaceKind, DataKind, DataType, NatKind, NatToNatKind, NatToNatLambda, read, write}
+import rise.core.DSL.Type._
+import rise.core.types.DataType._
 import rise.elevate.Rise
 import rise.elevate.rules._
 import rise.core.{Opaque, TypeAnnotation, TypeAssertion, semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
+import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional._
 
@@ -40,27 +43,15 @@ object fromRise {
       val ee = expression(e, ptMap).asInstanceOf[Phrase[PhraseType]]
       Apply(ef, ee)
 
-    case r.DepLambda(kind, x, e) => x match {
-      case ni: rt.NatIdentifier =>
-        DepLambda(NatKind, ni)(expression(e, ptMap))
-      case dti: rt.DataTypeIdentifier =>
-        DepLambda(DataKind, dataTypeIdentifier(dti))(expression(e, ptMap))
-      case addri: rt.AddressSpaceIdentifier =>
-        DepLambda(AddressSpaceKind, addressSpaceIdentifier(addri))(expression(e, ptMap))
-    }
+    case r.DepLambda(kind, x, e) => DepLambda(kind, x)(expression(e, ptMap))
 
     case r.DepApp(kind, f, x) =>
-      def depApp[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], f: r.Expr, arg: T): DepApply[T, I, KI, PhraseType] =
-        DepApply[T, I, KI, PhraseType](kind,
-          expression(f, ptMap).asInstanceOf[Phrase[DepFunType[I, KI, PhraseType]]],
+      def depApp[T, I](kind: rt.Kind[T, I], f: r.Expr, arg: T): DepApply[T, I, PhraseType] =
+        DepApply[T, I, PhraseType](kind,
+          expression(f, ptMap).asInstanceOf[Phrase[DepFunType[I, PhraseType]]],
           arg)
 
-      x match {
-        case n: Nat             => depApp(NatKind, f, n)
-        case dt: rt.DataType    => depApp(DataKind, f, dataType(dt))
-        case a: rt.AddressSpace => depApp(AddressSpaceKind, f, addressSpace(a))
-        case n2n: rt.NatToNat   => depApp(NatToNatKind, f, nat2nat(n2n))
-      }
+      depApp(kind, f, x)
 
     case r.Literal(d) => d match {
       case rs.NatData(n) => Natural(n)
@@ -98,10 +89,10 @@ object fromRise {
   }
 
   object depFun {
-    def apply[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: I): Object {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, KI, U]
+    def apply[T, I](kind: rt.Kind[T, I], x: I): Object {
+      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
     } = new {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, KI, U] = DepLambda(kind, x, body)
+      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
     }
   }
 
@@ -657,7 +648,7 @@ object fromRise {
       }
 
       case core.cast() => fromType {
-        case expT(s: BasicType, `read`) ->: expT(t: BasicType, `read`)
+        case expT(s, `read`) ->: expT(t, `read`)
         =>
         fun[ExpType](ExpType(s, read), x => Cast(s, t, x))
       }
@@ -816,10 +807,10 @@ object fromRise {
       }
 
       case core.dmatch() => fromType {
-        case expT(DepPairType(x, elemT), `read`) ->:
+        case expT(DepPairType(NatKind, x: NatIdentifier, elemT), `read`) ->:
           nFunT(i, expT(elem_iT, `read`) ->: expT(outT, a))
           ->: expT(_, _) =>
-          fun[ExpType](ExpType(DepPairType(x, elemT), read), pair =>
+          fun[ExpType](ExpType(DepPairType(NatKind, x, elemT), read), pair =>
             fun[`(nat)->:`[ExpType ->: ExpType]](i ->: (ExpType(elem_iT, read) ->: ExpType(outT, a)),f =>
               DMatch(x, elemT, outT, a, f, pair)
             )
@@ -845,9 +836,9 @@ object fromRise {
       }
 
       case rcuda.asMatrix() => fromType {
-        case expT(FragmentType(rows, columns, layers, dt, FragmentKind.Accumulator, _), `read`) ->:
+        case expT(FragmentType(rows, columns, layers, dt, rt.Fragment.Accumulator, _), `read`) ->:
           expT(ArrayType(_, ArrayType(_, _)), `write`) =>
-          fun[ExpType](expT(FragmentType(rows, columns, layers, dt, FragmentKind.Accumulator, MatrixLayout.None), read), dFrag =>
+          fun[ExpType](expT(FragmentType(rows, columns, layers, dt, rt.Fragment.Accumulator, rt.MatrixLayout.None), read), dFrag =>
             cuda.AsMatrix(rows, columns, layers, dt, dFrag))
       }
 
@@ -858,13 +849,13 @@ object fromRise {
       }
 
       case rcuda.tensorMMA() => fromType {
-        case expT(FragmentType(_, _, _, dt, FragmentKind.AMatrix, layoutA), `read`) ->:
-          expT(FragmentType(_, _, _, _, FragmentKind.BMatrix,layoutB), `read`) ->:
-          expT(FragmentType(m, n, k, dtResult, FragmentKind.Accumulator, _), `read`) ->:
-          expT(FragmentType(_, _, _, _, FragmentKind.Accumulator, _), `write`) =>
-          fun[ExpType](expT(FragmentType(m, k, n, dt, FragmentKind.AMatrix, layoutA), read), a =>
-            fun[ExpType](expT(FragmentType(k, n, m, dt, FragmentKind.BMatrix, layoutB), read), b =>
-              fun[ExpType](expT(FragmentType(m, n, k, dtResult, FragmentKind.Accumulator, MatrixLayout.None), read), c =>
+        case expT(FragmentType(_, _, _, dt, rt.Fragment.AMatrix, layoutA), `read`) ->:
+          expT(FragmentType(_, _, _, _, rt.Fragment.BMatrix,layoutB), `read`) ->:
+          expT(FragmentType(m, n, k, dtResult, rt.Fragment.Accumulator, _), `read`) ->:
+          expT(FragmentType(_, _, _, _, rt.Fragment.Accumulator, _), `write`) =>
+          fun[ExpType](expT(FragmentType(m, k, n, dt, rt.Fragment.AMatrix, layoutA), read), a =>
+            fun[ExpType](expT(FragmentType(k, n, m, dt, rt.Fragment.BMatrix, layoutB), read), b =>
+              fun[ExpType](expT(FragmentType(m, n, k, dtResult, rt.Fragment.Accumulator, rt.MatrixLayout.None), read), c =>
                 cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dt, dtResult, a, b, c))))
       }
 
@@ -873,7 +864,7 @@ object fromRise {
           expT(fragType : FragmentType, `read`) ->: expT(_, _) =>
           fun[ExpType ->: ExpType](ExpType(dt, read) ->: ExpType(dt, write), f =>
             fun[ExpType](ExpType(fragType, read), input =>
-              cuda.MapFragment(fragType.rows, fragType.columns, fragType.layers, fragType.dataType,
+              cuda.MapFragment(fragType.rows, fragType.columns, fragType.d3, fragType.dataType,
                 fragType.fragmentKind, fragType.layout, f, input)))
       }
 
@@ -942,93 +933,84 @@ object fromRise {
     }
   }
 
-  def addressSpace(a: rt.AddressSpace): AddressSpace = a match {
-    case rt.AddressSpace.Global => AddressSpace.Global
-    case rt.AddressSpace.Local => AddressSpace.Local
-    case rt.AddressSpace.Private => AddressSpace.Private
-    case rt.AddressSpace.Constant => AddressSpace.Constant
-    case rt.AddressSpaceIdentifier(name) => AddressSpaceIdentifier(name)
-  }
+//  def addressSpace(a: rt.AddressSpace): AddressSpace = a match {
+//    case rt.AddressSpace.Global => AddressSpace.Global
+//    case rt.AddressSpace.Local => AddressSpace.Local
+//    case rt.AddressSpace.Private => AddressSpace.Private
+//    case rt.AddressSpace.Constant => AddressSpace.Constant
+//    case rt.AddressSpaceIdentifier(name) => AddressSpaceIdentifier(name)
+//  }
 
-  def nat2nat(n2n: rt.NatToNat): NatToNat = n2n match {
-    case rt.NatToNatIdentifier(name) =>
-      NatToNatIdentifier(name)
-    case rt.NatToNatLambda(x, body) =>
-      NatToNatLambda(x.range, NatIdentifier(x.name), body)
-  }
+//  def nat2nat(n2n: rt.NatToNat): NatToNat = n2n match {
+//    case rt.NatToNatIdentifier(name) =>
+//      NatToNatIdentifier(name)
+//    case rt.NatToNatLambda(x, body) =>
+//      NatToNatLambda(x.range, NatIdentifier(x.name), body)
+//  }
 
-  def dataType(t: rt.DataType): DataType = t match {
-    case st: rt.ScalarType => scalarType(st)
-    case rt.NatType => NatType
-    case rt.IndexType(sz) => IndexType(sz)
-    case rt.VectorType(sz, et) => et match {
-      case e : rt.ScalarType => VectorType(sz, scalarType(e))
-      case _ => ???
-    }
-    case i: rt.DataTypeIdentifier => dataTypeIdentifier(i)
-    case rt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
-    case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
-    case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
-    case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
-    case rt.DepPairType(_, x, t) =>
-      x match {
-      case x:rt.NatIdentifier => DepPairType(x, dataType(t))
-      case _ => ???
-    }
-    case f: rt.FragmentType =>
-      f.fragmentKind match {
-        case rt.FragmentKind.AMatrix =>
-          FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), FragmentKind.AMatrix, layout(f.layout))
-        case rt.FragmentKind.BMatrix =>
-          FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), FragmentKind.BMatrix, layout(f.layout))
-        case rt.FragmentKind.Accumulator =>
-          FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), FragmentKind.Accumulator, layout(f.layout))
-        case _ => throw new Exception("this should not happen")
-      }
-    case rt.OpaqueType(name) => OpaqueType(name)
-    case rt.ManagedBufferType(dt) => ManagedBufferType(dataType(dt))
-  }
+//  def dataType(t: rt.DataType): DataType = t match {
+//    case st: rt.ScalarType => scalarType(st)
+//    case rt.NatType => NatType
+//    case rt.IndexType(sz) => IndexType(sz)
+//    case rt.VectorType(sz, et) => et match {
+//      case e : rt.ScalarType => VectorType(sz, scalarType(e))
+//      case _ => ???
+//    }
+//    case i: rt.DataTypeIdentifier => dataTypeIdentifier(i)
+//    case rt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
+//    case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
+//    case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
+//    case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
+//    case rt.DepPairType(_, x, t) =>
+//      x match {
+//      case x:rt.NatIdentifier => DepPairType(x, dataType(t))
+//      case _ => ???
+//    }
+//    case f: rt.FragmentType =>
+//      f.fragmentKind match {
+//        case rt.Fragment.AMatrix =>
+//          FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), Fragment.AMatrix, f.layout)
+//        case rt.Fragment.BMatrix =>
+//          FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), Fragment.BMatrix, f.layout)
+//        case rt.Fragment.Accumulator =>
+//          FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), Fragment.Accumulator, f.layout)
+//        case _ => throw new Exception("this should not happen")
+//      }
+//    case rt.OpaqueType(name) => OpaqueType(name)
+//    case rt.ManagedBufferType(dt) => ManagedBufferType(dataType(dt))
+//  }
 
-  private val layouts: mutable.HashMap[String, MatrixLayoutIdentifier] = mutable.HashMap.empty
+//  def scalarType(t: rt.ScalarType): ScalarType = t match {
+//    case rt.bool => bool
+//    case rt.int => int
+//    case rt.i8 => i8
+//    case rt.i16 => i16
+//    case rt.i32 => i32
+//    case rt.i64 => i64
+//    case rt.u8 => u8
+//    case rt.u16 => u16
+//    case rt.u32 => u32
+//    case rt.u64 => u64
+//    case rt.f16 => f16
+//    case rt.f32 => f32
+//    case rt.f64 => f64
+//  }
 
-  def layout(layout: rt.MatrixLayout): MatrixLayout = layout match {
-    case rt.MatrixLayout.Row_Major => MatrixLayout.Row_Major
-    case rt.MatrixLayout.Col_Major => MatrixLayout.Col_Major
-    case rt.MatrixLayout.None => MatrixLayout.None
-    case rt.MatrixLayoutIdentifier(name) => layouts.getOrElseUpdate(name, MatrixLayoutIdentifier(name))
-    case _ => throw new Exception("this should not happen")
-  }
+//  def ntd(ntd: rt.NatToData): NatToData= ntd match {
+//    case rt.NatToDataLambda(n, body) =>
+//      NatToDataLambda(n, dataType(body))
+//    case rt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
+//  }
+//
+//  def ntn(ntn: rt.NatToNat): NatToNat= ntn match {
+//    case rt.NatToNatLambda(n, body) => NatToNatLambda(n, body)
+//    case rt.NatToNatIdentifier(x) => NatToNatIdentifier(x)
+//  }
 
-  def scalarType(t: rt.ScalarType): ScalarType = t match {
-    case rt.bool => bool
-    case rt.int => int
-    case rt.i8 => i8
-    case rt.i16 => i16
-    case rt.i32 => i32
-    case rt.i64 => i64
-    case rt.u8 => u8
-    case rt.u16 => u16
-    case rt.u32 => u32
-    case rt.u64 => u64
-    case rt.f16 => f16
-    case rt.f32 => f32
-    case rt.f64 => f64
-  }
+//  def dataTypeIdentifier(dt: rt.DataTypeIdentifier): DataTypeIdentifier = DataTypeIdentifier(dt.name)
+//  def addressSpaceIdentifier(a: rt.AddressSpaceIdentifier): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
+//  def natToNatIdentifier(n: rt.NatToNatIdentifier): NatToNatIdentifier = NatToNatIdentifier(n.name)
+//  def natToDataIdentifier(n: rt.NatToDataIdentifier): NatToDataIdentifier = NatToDataIdentifier(n.name)
 
-  def ntd(ntd: rt.NatToData): NatToData= ntd match {
-    case rt.NatToDataLambda(n, body) =>
-      NatToDataLambda(n, dataType(body))
-    case rt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
-  }
-
-  def ntn(ntn: rt.NatToNat): NatToNat= ntn match {
-    case rt.NatToNatLambda(n, body) => NatToNatLambda(n, body)
-    case rt.NatToNatIdentifier(x) => NatToNatIdentifier(x)
-  }
-
-  def dataTypeIdentifier(dt: rt.DataTypeIdentifier): DataTypeIdentifier = DataTypeIdentifier(dt.name)
-  def addressSpaceIdentifier(a: rt.AddressSpaceIdentifier): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
-  def natToNatIdentifier(n: rt.NatToNatIdentifier): NatToNatIdentifier = NatToNatIdentifier(n.name)
-  def natToDataIdentifier(n: rt.NatToDataIdentifier): NatToDataIdentifier = NatToDataIdentifier(n.name)
-  def accessTypeIdentifier(): AccessTypeIdentifier = AccessTypeIdentifier(freshName("access"))
+  def accessTypeIdentifier(): rt.AccessIdentifier = rt.AccessIdentifier(freshName("access"))
 }
