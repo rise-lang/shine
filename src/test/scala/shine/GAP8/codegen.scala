@@ -6,10 +6,10 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.Expr
 import rise.core.primitives._
+import rise.core.types.DataType._
 import rise.core.types._
 import rise.elevate.Rise
 import shine.GAP8
-import util.{ExecuteOpenCL, SyntaxChecker}
 
 class codegen extends test_util.Tests {
 

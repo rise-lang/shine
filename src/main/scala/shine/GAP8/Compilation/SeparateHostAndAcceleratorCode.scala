@@ -2,6 +2,8 @@ package shine.GAP8.Compilation
 
 import arithexpr.arithmetic.ArithExpr.toInt
 import arithexpr.arithmetic.NamedVar
+import rise.core.types.{DataKind, DataType, NatIdentifier, NatKind}
+import rise.core.types.DataType._
 import shine.DPIA.Compilation.FunDef
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._

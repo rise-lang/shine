@@ -1,11 +1,13 @@
 package shine.GAP8.Compilation
 
 import arithexpr.arithmetic
+import rise.core.types.DataType
+import rise.core.types.DataType._
 import shine.C.AST.{BinaryOperator, Decl}
 import shine.C.Compilation.CodeGenerator
 import shine.C.Compilation.CodeGenerator.{Declarations, Ranges}
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.{BasePhraseType, CommType, DataType, DataTypeIdentifier, DepArrayType, DepPairType, ExpType, IndexType, ManagedBufferType, NatToDataApply, OpaqueType, PairType, PhrasePairType, PhraseType, ScalarType, VectorType}
+import shine.DPIA.Types._
 import shine.DPIA.VarType
 import shine.GAP8.primitives.imperative.KernelCallCmd
 import shine.OpenCL.AccessFlags
@@ -169,7 +171,7 @@ case class HostCodeGenerator(
   }
 
   private def managedTyp(dt: DataType): C.AST.Type = dt match {
-    case shine.DPIA.Types.ArrayType(_, elemType) => C.AST.PointerType(typ(elemType))
+    case ArrayType(_, elemType) => C.AST.PointerType(typ(elemType))
     case _ => throw new Exception(s"did not expect $dt")
   }
 
@@ -189,13 +191,13 @@ case class HostCodeGenerator(
   private def bufferSize(dt: DataType): Expr =
     dt match {
       case ManagedBufferType(dt) => bufferSize(dt)
-      case _: ScalarType | _: IndexType | _: VectorType | _: PairType =>
+      case _: ScalarType | _: IndexType | _: VectorType | _: PairType | `NatType` =>
         C.AST.Literal(s"sizeof(${typ(dt)})")
-      case a: shine.DPIA.Types.ArrayType =>
+      case a: ArrayType =>
         C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
       case a: DepArrayType => ??? // TODO
-      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | _: OpaqueType |
-           _: shine.DPIA.Types.FragmentType =>
+      case _: DepPairType[_, _] | _: NatToDataApply | _: DataTypeIdentifier | _: OpaqueType |
+           _: FragmentType =>
         throw new Exception(s"did not expect ${dt}")
     }
 
