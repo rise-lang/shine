@@ -5,6 +5,7 @@ import rise.core.primitives._
 import Type._
 import rise.core.types._
 import util.gen
+import rise.core.types.DataType._
 
 class scal extends test_util.Tests {
 

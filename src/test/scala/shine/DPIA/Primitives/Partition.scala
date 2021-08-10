@@ -12,6 +12,7 @@ import rise.core.primitives._
 import Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import util.gen.c.function
 
 import scala.util.Random

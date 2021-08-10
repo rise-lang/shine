@@ -1,9 +1,11 @@
 package shine.OpenCL.Compilation.Passes
 
 import arithexpr.arithmetic.ArithExpr
+import rise.core.types.DataType
+import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.{Phrase, VisitAndRebuild}
-import shine.DPIA.Types.{CommType, DataType}
+import shine.DPIA.Types.CommType
 import shine.OpenCL._
 
 object InjectWorkItemSizes {
@@ -21,15 +23,15 @@ object InjectWorkItemSizes {
 
         VisitAndRebuild(p, new VisitAndRebuild.Visitor {
           override def data[T <: DataType](dt: T): T =
-            DataType.substitute(numGroups(2), get_num_groups(2),
-              DataType.substitute(numGroups(1), get_num_groups(1),
-                DataType.substitute(numGroups(0), get_num_groups(0),
-                  DataType.substitute(lSizes(2), get_local_size(2),
-                    DataType.substitute(lSizes(1), get_local_size(1),
-                      DataType.substitute(lSizes(0), get_local_size(0),
-                        DataType.substitute(gSizes(2), get_global_size(2),
-                          DataType.substitute(gSizes(1), get_global_size(1),
-                            DataType.substitute(gSizes(0), get_global_size(0),
+            substituteNatInType(numGroups(2), get_num_groups(2),
+              substituteNatInType(numGroups(1), get_num_groups(1),
+                substituteNatInType(numGroups(0), get_num_groups(0),
+                  substituteNatInType(lSizes(2), get_local_size(2),
+                    substituteNatInType(lSizes(1), get_local_size(1),
+                      substituteNatInType(lSizes(0), get_local_size(0),
+                        substituteNatInType(gSizes(2), get_global_size(2),
+                          substituteNatInType(gSizes(1), get_global_size(1),
+                            substituteNatInType(gSizes(0), get_global_size(0),
                               dt)))))))))
 
           override def nat[N <: Nat](n: N): N = {

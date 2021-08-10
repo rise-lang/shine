@@ -3,6 +3,7 @@ package shine.cuda
 import shine.DPIA.Nat
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import rise.core.types.DataType
 import shine.OpenCL._
 import shine.cuda.primitives.imperative.ParFor
 

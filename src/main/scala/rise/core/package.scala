@@ -1,6 +1,7 @@
 package rise
 
 import rise.core.types._
+import rise.core.types.DataType._
 
 import scala.language.implicitConversions
 

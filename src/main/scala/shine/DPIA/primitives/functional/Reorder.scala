@@ -4,11 +4,12 @@
 package shine.DPIA.primitives.functional
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
-import shine.DPIA.Types.Kind.{ Identifier => _, _ }
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class Reorder(val n: Nat, val dt: DataType, val a: AccessType, val idxF: NatToNat, val idxFiv: NatToNat, val input: Phrase[ExpType]) extends ExpPrimitive {
+final case class Reorder(val n: Nat, val dt: DataType, val a: Access, val idxF: NatToNat, val idxFiv: NatToNat, val input: Phrase[ExpType]) extends ExpPrimitive {
   assert {
     input :: expT(ArrayType(n, dt), a)
     true

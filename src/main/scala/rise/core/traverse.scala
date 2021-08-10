@@ -3,8 +3,8 @@ package rise.core
 import scala.language.implicitConversions
 import util.monads._
 import rise.core.semantics._
-import rise.core.types.Kind.{IAddressSpace, IDataType, IFragmentKind, IMatrixLayout, INat, INatToData, INatToNat, IType}
 import rise.core.types._
+import rise.core.types.DataType._
 
 object traverse {
   sealed trait VarType
@@ -18,41 +18,42 @@ object traverse {
 
     // Identifiers are first routed through here before being sent
     // to nat/datatype/addressSpace/natToNat/natToData
-    def nat : Nat => M[Nat] = return_
     def typeIdentifier[I <: Kind.Identifier] : VarType => I => M[I] = _ => return_
     def identifier[I <: Identifier] : VarType => I => M[I] = _ => i =>
       for { t1 <- `type`(i.t)}
         yield i.setType(t1).asInstanceOf[I]
     def typeIdentifierDispatch[I <: Kind.Identifier] : VarType => I => M[I] = vt => i => (i match {
-      case t: IType => typeIdentifier(vt)(t)
-      case n: INat => bind(nat(n.id))(i => typeIdentifier(vt)(INat(i.asInstanceOf[NatIdentifier])))
-      case dt: IDataType => bind(datatype(dt.id))(i => typeIdentifier(vt)(IDataType(i.asInstanceOf[DataTypeIdentifier])))
-      case a: IAddressSpace => bind(addressSpace(a.id))(i => typeIdentifier(vt)(IAddressSpace(i.asInstanceOf[AddressSpaceIdentifier])))
-      case m: IMatrixLayout => bind(matrixLayout(m.id))(i => typeIdentifier(vt)(IMatrixLayout(i.asInstanceOf[MatrixLayoutIdentifier])))
-      case f: IFragmentKind => bind(fragmentKind(f.id))(i => typeIdentifier(vt)(IFragmentKind(i.asInstanceOf[FragmentKindIdentifier])))
-      case n2n: INatToNat => bind(natToNat(n2n.id))(i => typeIdentifier(vt)(INatToNat(i.asInstanceOf[NatToNatIdentifier])))
-      case n2d: INatToData => bind(natToData(n2d.id))(i => typeIdentifier(vt)(INatToData(i.asInstanceOf[NatToDataIdentifier])))
+      case t: TypeKind.IDWrapper => typeIdentifier(vt)(t)
+      case n: NatKind.IDWrapper => bind(nat(n.id))(i => typeIdentifier(vt)(NatKind.IDWrapper(i.asInstanceOf[NatIdentifier])))
+      case dt: DataKind.IDWrapper => bind(datatype(dt.id))(i => typeIdentifier(vt)(DataKind.IDWrapper(i.asInstanceOf[DataTypeIdentifier])))
+      case a: AddressSpaceKind.IDWrapper => bind(addressSpace(a.id))(i => typeIdentifier(vt)(AddressSpaceKind.IDWrapper(i.asInstanceOf[AddressSpaceIdentifier])))
+      case m: MatrixLayoutKind.IDWrapper => bind(matrixLayout(m.id))(i => typeIdentifier(vt)(MatrixLayoutKind.IDWrapper(i.asInstanceOf[MatrixLayoutIdentifier])))
+      case f: FragmentKind.IDWrapper => bind(fragmentKind(f.id))(i => typeIdentifier(vt)(FragmentKind.IDWrapper(i.asInstanceOf[FragmentIdentifier])))
+      case n2n: NatToNatKind.IDWrapper => bind(natToNat(n2n.id))(i => typeIdentifier(vt)(NatToNatKind.IDWrapper(i.asInstanceOf[NatToNatIdentifier])))
+      case n2d: NatToDataKind.IDWrapper => bind(natToData(n2d.id))(i => typeIdentifier(vt)(NatToDataKind.IDWrapper(i.asInstanceOf[NatToDataIdentifier])))
     }).asInstanceOf[M[I]]
     def natDispatch : VarType => Nat => M[Nat] = vt => {
-      case i : NatIdentifier => bind(typeIdentifier(vt)(INat(i)))(i => nat(i.id))
+      case i : NatIdentifier => bind(typeIdentifier(vt)(NatKind.IDWrapper(i)))(i => nat(i.id))
       case n => nat(n)
     }
     def matrixLayoutDispatch : VarType => MatrixLayout => M[MatrixLayout] = vt => {
-      case i : MatrixLayoutIdentifier => bind(typeIdentifier(vt)(IMatrixLayout(i)))(i => matrixLayout(i.id))
+      case i : MatrixLayoutIdentifier => bind(typeIdentifier(vt)(MatrixLayoutKind.IDWrapper(i)))(i => matrixLayout(i.id))
       case m => matrixLayout(m)
     }
-    def fragmentKindDispatch : VarType => FragmentKind => M[FragmentKind] = vt => {
-      case i : FragmentKindIdentifier => bind(typeIdentifier(vt)(IFragmentKind(i)))(i => fragmentKind(i.id))
+    def fragmentKindDispatch : VarType => Fragment => M[Fragment] = vt => {
+      case i : FragmentIdentifier => bind(typeIdentifier(vt)(FragmentKind.IDWrapper(i)))(i => fragmentKind(i.id))
       case m => fragmentKind(m)
     }
     def dataTypeDispatch : VarType => DataType => M[DataType] = vt => {
-      case i : DataTypeIdentifier => bind(typeIdentifier(vt)(IDataType(i)))(i => datatype(i.id))
+      case i : DataTypeIdentifier => bind(typeIdentifier(vt)(DataKind.IDWrapper(i)))(i => datatype(i.id))
       case d => datatype(d)
     }
 
+    def nat : Nat => M[Nat] = return_
     def addressSpace : AddressSpace => M[AddressSpace] = return_
     def matrixLayout : MatrixLayout => M[MatrixLayout] = return_
-    def fragmentKind : FragmentKind => M[FragmentKind] = return_
+    def fragmentKind : Fragment => M[Fragment] = return_
+
     def datatype : DataType => M[DataType] = {
       case i: DataTypeIdentifier => return_(i.asInstanceOf[DataType])
       case NatType               => return_(NatType : DataType)
@@ -95,14 +96,14 @@ object traverse {
     def natToNat : NatToNat => M[NatToNat] = {
       case i : NatToNatIdentifier => return_(i.asInstanceOf[NatToNat])
       case NatToNatLambda(x, e) =>
-        for { x1 <- typeIdentifierDispatch(Binding)(INat(x)); e1 <- natDispatch(Reference)(e) }
+        for {x1 <- typeIdentifierDispatch(Binding)(NatKind.IDWrapper(x)); e1 <- natDispatch(Reference)(e)}
           yield NatToNatLambda(x1.id, e1)
     }
 
     def natToData : NatToData => M[NatToData] = {
       case i : NatToDataIdentifier => return_(i.asInstanceOf[NatToData])
       case NatToDataLambda(x, d) =>
-        for { x1 <- typeIdentifierDispatch(Binding)(INat(x)); d1 <- dataTypeDispatch(Reference)(d) }
+        for {x1 <- typeIdentifierDispatch(Binding)(NatKind.IDWrapper(x)); d1 <- dataTypeDispatch(Reference)(d)}
           yield NatToDataLambda(x1.id, d1)
     }
 
@@ -123,10 +124,10 @@ object traverse {
           yield PairData(l1, r1)
     }
 
-    def `type`[T <: Type ] : T => M[T] = t => (t match {
+    def `type`[T <: ExprType ] : T => M[T] = t => (t match {
       case TypePlaceholder => return_(TypePlaceholder)
       case i: TypeIdentifier =>
-        for { i1 <- typeIdentifierDispatch(Reference)(IType(i)) }
+        for { i1 <- typeIdentifierDispatch(Reference)(TypeKind.IDWrapper(i))}
           yield i1.id
       case dt: DataType => dataTypeDispatch(Reference)(dt)
       case FunType(a, b) =>
@@ -190,7 +191,7 @@ object traverse {
   }
 
   trait ExprTraversal[M[_]] extends Traversal[M] {
-    override def `type`[T <: Type] : T => M[T] = return_
+    override def `type`[T <: ExprType] : T => M[T] = return_
   }
 
   trait PureTraversal extends Traversal[Pure] {override def monad : PureMonad.type = PureMonad }
@@ -210,9 +211,9 @@ object traverse {
   }
 
   def traverse(e: Expr, f: PureTraversal): Expr = f.expr(e).unwrap
-  def traverse[T <: Type](t: T, f: PureTraversal): T = f.`type`(t).unwrap
+  def traverse[T <: ExprType](t: T, f: PureTraversal): T = f.`type`(t).unwrap
   def traverse[F](e: Expr, f: PureAccumulatorTraversal[F]): (F, Expr) = f.expr(e).unwrap
-  def traverse[F,T <: Type](t: T, f: PureAccumulatorTraversal[F]): (F, T) = f.`type`(t).unwrap
+  def traverse[F,T <: ExprType](t: T, f: PureAccumulatorTraversal[F]): (F, T) = f.`type`(t).unwrap
   def traverse[M[_]](e: Expr, f: Traversal[M]): M[Expr] = f.expr(e)
-  def traverse[T <: Type, M[_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
+  def traverse[T <: ExprType, M[_]](e: T, f: Traversal[M]): M[T] = f.`type`(e)
 }

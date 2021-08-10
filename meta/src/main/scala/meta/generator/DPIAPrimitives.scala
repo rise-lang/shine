@@ -40,9 +40,10 @@ package $packageName {
 
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
-import shine.DPIA.Types.Kind.{Identifier => _, _}
+import rise.core.types.{FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _}
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 
 ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), params, returnType)}
@@ -127,10 +128,10 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
         case rise.Kind.AST.Nat2Nat =>       Type.Name("NatToNat")
         case rise.Kind.AST.Nat2Data =>      Type.Name("NatToData")
         case rise.Kind.AST.Nat =>           Type.Name("Nat")
-        case rise.Kind.AST.Fragment =>      Type.Name("FragmentKind")
+        case rise.Kind.AST.Fragment =>      Type.Name("Fragment")
         case rise.Kind.AST.MatrixLayout =>  Type.Name("MatrixLayout")
      }
-    case DPIA.Kind.AST.Access =>            Type.Name("AccessType")
+    case DPIA.Kind.AST.Access =>            Type.Name("Access")
     case DPIA.Kind.AST.VariadicKind(_, kind) => t"Seq[${generateType(kind)}]"
   }
 
@@ -141,7 +142,7 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
     case DPIA.Type.AST.CommType               => t"CommType"
     case DPIA.Type.AST.PairType(lhs, rhs) => t"PhrasePairType[${generatePhraseType(lhs)}, ${generatePhraseType(rhs)}]"
     case DPIA.Type.AST.FunType(inT, outT) => t"FunType[${generatePhraseType(inT)}, ${generatePhraseType(outT)}]"
-    case DPIA.Type.AST.DepFunType(id, kind, t) => t"DepFunType[${generateKindIdentifierType(kind)}, ${generateKindIdentifierConstr(kind)}, ${generatePhraseType(t)}]"
+    case DPIA.Type.AST.DepFunType(id, kind, t) => t"DepFunType[${generateKindIdentifierType(kind)}, ${generatePhraseType(t)}]"
     case DPIA.Type.AST.Identifier(name) => Type.Name(name)
     case DPIA.Type.AST.VariadicType(_, _) => throw new Exception("Can not generate Phrase Type for Variadic Type")
   }
@@ -156,21 +157,7 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
       case rise.Kind.AST.Fragment => throw new Exception("Can not generate Kind for Fragment")
       case rise.Kind.AST.MatrixLayout => throw new Exception("Can not generate Kind for Matrix Layout")
     }
-    case DPIA.Kind.AST.Access =>        Type.Name("AccessTypeIdentifier")
-    case DPIA.Kind.AST.VariadicKind(_, _) => throw new Exception("Can not generate Kind for Variadic Kind")
-  }
-
-  def generateKindIdentifierConstr(kindAST: DPIA.Kind.AST): scala.meta.Type = kindAST match {
-    case DPIA.Kind.AST.RiseKind(riseKind) => riseKind match {
-      case rise.Kind.AST.Data =>      Type.Name("IDataType")
-      case rise.Kind.AST.Address =>   Type.Name("IAddressSpace")
-      case rise.Kind.AST.Nat2Nat =>   Type.Name("INatToNat")
-      case rise.Kind.AST.Nat2Data =>  Type.Name("INatToData")
-      case rise.Kind.AST.Nat =>       Type.Name("INat")
-      case rise.Kind.AST.Fragment => throw new Exception("Can not generate Kind for Fragment")
-      case rise.Kind.AST.MatrixLayout => throw new Exception("Can not generate Kind for Matrix Layout")
-    }
-    case DPIA.Kind.AST.Access =>        Type.Name("IAccessType")
+    case DPIA.Kind.AST.Access =>        Type.Name("AccessIdentifier")
     case DPIA.Kind.AST.VariadicKind(_, _) => throw new Exception("Can not generate Kind for Variadic Kind")
   }
 
@@ -349,7 +336,7 @@ ${generateCaseClass(Type.Name(name), toParamList(definition, scalaParams), param
           q"v.natToNat(${Term.Name(param.name.value)})"
         case TypeIs("NatToData") =>
           q"v.natToData(${Term.Name(param.name.value)})"
-        case TypeIs("AccessType") =>
+        case TypeIs("Access") =>
           q"v.access(${Term.Name(param.name.value)})"
         case TypeIs("AddressSpace") =>
           q"v.addressSpace(${Term.Name(param.name.value)})"

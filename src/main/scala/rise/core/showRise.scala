@@ -245,7 +245,7 @@ class ShowRiseCompact {
       }
 
     case dl @ DepLambda(k, x, e) =>
-      val xs = s"${Kind.idName(k, x)}:${dl.kindName}"
+      val xs = s"${Kind.idName(k, x)}:${dl.kind.name}"
       val (eInline, eSize, er) = drawAST(e)
       val newSize = eSize + 1
       if ((inlineSize > 0) && eInline) {
@@ -259,7 +259,7 @@ class ShowRiseCompact {
 
     case DepApp(kind, f, x) =>
       val (fInline, fSize, fr) = f match {
-        case _: DepLambda[_, _, _] => drawAST(f, wrapped = true)
+        case _: DepLambda[_, _] => drawAST(f, wrapped = true)
         case _                     => drawAST(f)
       }
       val xs = x.toString

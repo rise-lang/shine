@@ -6,13 +6,14 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object tensorMMA extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "tensorMMA"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (la: MatrixLayout) => impl { (lb: MatrixLayout) => impl { (m: Nat) => impl { (n: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (t: DataType) => FragmentType(m, k, n, s, FragmentKind.AMatrix, la) ->: FragmentType(k, n, m, s, FragmentKind.BMatrix, lb) ->: FragmentType(m, n, k, t, FragmentKind.Accumulator, MatrixLayout.Row_Major) ->: FragmentType(m, n, k, t, FragmentKind.Accumulator, MatrixLayout.Row_Major) } } } } } } }
+    override def typeScheme: ExprType = impl { (la: MatrixLayout) => impl { (lb: MatrixLayout) => impl { (m: Nat) => impl { (n: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (t: DataType) => FragmentType(m, k, n, s, Fragment.AMatrix, la) ->: FragmentType(k, n, m, s, Fragment.BMatrix, lb) ->: FragmentType(m, n, k, t, Fragment.Accumulator, MatrixLayout.Row_Major) ->: FragmentType(m, n, k, t, Fragment.Accumulator, MatrixLayout.Row_Major) } } } } } } }
   }
   override def toString: String = "tensorMMA"
   override def primitive: rise.core.Primitive = Primitive()()

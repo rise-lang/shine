@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.core.types.{Kind, Type}
+import rise.core.types.{Kind, ExprType}
 
 // scalastyle:off indentation multiple.string.literals method.length
 case object dotPrinter {
@@ -32,7 +32,7 @@ case object dotPrinter {
       def fillDarkGray: String = fill("\"#9a9a9a\"")
       def fillBlack: String = fill("black")
 
-      def formatType(t: Type): String =
+      def formatType(t: ExprType): String =
         if (printTypes) {
           t.toString.replaceAll(">", "\\\\>")
             .replaceAll("<", "\\\\<")

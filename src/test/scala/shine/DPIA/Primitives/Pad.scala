@@ -4,6 +4,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import HighLevelConstructs.padClamp2D
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
