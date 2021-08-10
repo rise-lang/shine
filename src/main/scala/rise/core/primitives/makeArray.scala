@@ -21,7 +21,7 @@ object makeArray {
   private final case class Primitive(n: Int)(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "makeArray"
     override def setType(ty: ExprType): Primitive = Primitive(n)(ty)
-    override def typeScheme: ExprType = impl { (dt: DataType) => Seq.fill(n)(dt).foldRight(ArrayType(n, dt): Type)({
+    override def typeScheme: ExprType = impl { (dt: DataType) => Seq.fill(n)(dt).foldRight(ArrayType(n, dt): ExprType)({
       case (lhsT, rhsT) =>
         lhsT ->: rhsT
     }) }

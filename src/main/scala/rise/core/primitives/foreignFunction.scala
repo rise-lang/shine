@@ -23,10 +23,10 @@ object foreignFunction {
     override def setType(ty: ExprType): Primitive = Primitive(funDecl, n)(ty)
     override def typeScheme: ExprType = {
       val inTs = Seq.fill(n)(DataTypeIdentifier(freshName("dt")))
-      inTs.foldRight(expl { (outT: DataType) => inTs.foldRight(outT: Type)({
+      inTs.foldRight(expl { (outT: DataType) => inTs.foldRight(outT: ExprType)({
         case (lhsT, rhsT) =>
           lhsT ->: rhsT
-      }) }: Type)({
+      }) }: ExprType)({
         case (id, t) =>
           DepFunType(DataKind, id, t)
       })

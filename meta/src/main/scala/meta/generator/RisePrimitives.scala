@@ -165,14 +165,14 @@ import arithexpr.arithmetic._
         // variadic function type with unrolled identifier, e.g.:  n*(*inTs ->) outT
         // generates:  inTs.foldRight(outT){ case (lhsT, rhsT) => lhs ->: rhs }
         // to represent n-many function types: inT0 ->: inT1 ->: ... ->: outT
-        q"""${Term.Name(inTs)}.foldRight(${generateTypeScheme(outT)}: Type) {
+        q"""${Term.Name(inTs)}.foldRight(${generateTypeScheme(outT)}: ExprType) {
            case (lhsT, rhsT) => lhsT ->: rhsT
         }"""
       case rise.Type.AST.VariadicFunType(rise.Type.AST.Identifier(n), dt, outT) =>
         // variadic function type without an unrolled identifier, e.g:  n*(dt ->) outT
         // generated:  Seq.fill(n)(dt).foldRight(outT){ case (lhsT, rhsT) => lhs ->: rhs }
         // to represent n-many function types: dt -> dt -> ... -> outT
-        q"""Seq.fill(${Term.Name(n)})(${generateDataType(dt)}).foldRight(${generateTypeScheme(outT)}: Type) {
+        q"""Seq.fill(${Term.Name(n)})(${generateDataType(dt)}).foldRight(${generateTypeScheme(outT)}: ExprType) {
            case (lhsT, rhsT) => lhsT ->: rhsT
         }"""
       case rise.Type.AST.VariadicDepFunType(n, ids, kind, t) =>
@@ -197,7 +197,7 @@ import arithexpr.arithmetic._
         }
         q"""{
             val ${Pat.Var(Term.Name(ids.name))} = Seq.fill(${Term.Name(n.name)})($createIds)
-            ${Term.Name(ids.name)}.foldRight(${generateTypeScheme(t)}: Type) {
+            ${Term.Name(ids.name)}.foldRight(${generateTypeScheme(t)}: ExprType) {
               case (id, t) =>   DepFunType($kindName, id, t)
             }
          }"""
