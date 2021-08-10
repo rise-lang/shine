@@ -31,7 +31,7 @@ object Solution {
 }
 
 case class Solution(ts: Map[ExprType, ExprType],
-                    ns: Map[Nat, Nat],
+                    ns: Map[NatIdentifier, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
                     ms: Map[MatrixLayoutIdentifier, MatrixLayout],
                     fs: Map[FragmentIdentifier, Fragment],
@@ -67,7 +67,7 @@ case class Solution(ts: Map[ExprType, ExprType],
   def apply(t: ExprType): ExprType = T(this).`type`(t).unwrap
 
   def apply(n: Nat): Nat =
-    (substitute.natsInNat(ns, _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
+    (substitute.natsInNat(ns.toMap[Nat, Nat], _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
 
   def apply(b: BoolExpr): BoolExpr = {
     import arithexpr.arithmetic.ArithExpr

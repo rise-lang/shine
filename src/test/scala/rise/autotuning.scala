@@ -144,13 +144,13 @@ class autotuning extends test_util.Tests {
       autotune.constraints.collectParameters(e))
     println("constraints: \n" + constraints)
 
-    val badParameters1: Map[Nat, Nat] = Map(
+    val badParameters1 = Map(
       TuningParameter("vec") -> (5: Nat),
       TuningParameter("tile") -> (15: Nat)
     )
     assert(!autotune.constraints.checkConstraints(constraints, badParameters1))
 
-    val badParameters2: Map[Nat, Nat] = Map(
+    val badParameters2 = Map(
       TuningParameter("vec") -> (4: Nat),
       TuningParameter("tile") -> (13: Nat)
     )
@@ -164,12 +164,12 @@ class autotuning extends test_util.Tests {
     assert(!autotune.checkConstraints(constraints, badParameters3))
     */
 
-    val goodParameters: Map[Nat, Nat] = Map(
+    val goodParameters = Map(
       TuningParameter("vec") -> (4: Nat),
       TuningParameter("tile") -> (16: Nat)
     )
     assert(autotune.constraints.checkConstraints(constraints, goodParameters))
-    rise.core.substitute.natsInExpr(goodParameters, e)
+    rise.core.substitute.natsInExpr(goodParameters.toMap[Nat, Nat], e)
   }
 
   val mmKernel: ToBeTyped[Expr] =
@@ -280,7 +280,7 @@ class autotuning extends test_util.Tests {
     )
     for ((params, isGood) <- Seq((badParameters, false), (goodParameters, true))) {
       params.foreach { case cfg@(n, m, o, v3, v4, v5, v6, v7, v8, ls0, ls1, gs0, gs1) =>
-        val map: Map[Nat, Nat] = Map(
+        val map = Map(
           nIdent -> n,
           mIdent -> m,
           oIdent -> o,
@@ -297,7 +297,7 @@ class autotuning extends test_util.Tests {
         )
         if (autotune.constraints.checkConstraints(constraints, map) != isGood) {
           val (sat, notSat) = constraints.partition(c =>
-            c.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]).isSatisfied())
+            c.substitute(map.toMap[ArithExpr, ArithExpr]).isSatisfied())
           println("satisfied:")
           sat.foreach(println)
           println("not satisfied:")

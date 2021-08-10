@@ -139,7 +139,7 @@ object substitute {
   def natInType[T <: ExprType](n: Nat, `for`: Nat, in: T): T =
     natsInType(Map(`for` -> n), in)
 
-  def natInDataType(n: Nat, `for`: Nat, in: DataType): DataType = {
+  def natInDataType(n: Nat, `for`: NatIdentifier, in: DataType): DataType = {
     object Visitor extends PureTraversal {
       override def nat: Nat => Pure[Nat] = in1 =>
         return_(substitute.natInNat(n, `for`, in1))

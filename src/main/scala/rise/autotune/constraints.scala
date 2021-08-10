@@ -41,7 +41,7 @@ object constraints {
     override def toString: String = s"($n) in $r"
   }
 
-  def checkConstraints(constraints: Set[Constraint], values: Map[Nat, Nat]): Boolean = {
+  def checkConstraints(constraints: Set[Constraint], values: Map[NatIdentifier, Nat]): Boolean = {
     val map = values.asInstanceOf[Map[ArithExpr, ArithExpr]]
 //    println("\n")
 //    constraints.foreach(elem => {

@@ -28,7 +28,7 @@ package object autotune {
                    configFile: Option[String] = None,
                    hierarchicalHM: Boolean = false)
 
-  case class Sample(parameters: Map[Nat, Nat],
+  case class Sample(parameters: Map[NatIdentifier, Nat],
                     runtime: Option[TimeSpan[Time.ms]],
                     timestamp: Long,
                     autoTuningError: AutoTuningError)
@@ -69,14 +69,14 @@ package object autotune {
 
     // compute function value as result for hypermapper
     val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
-      val parametersValuesMap: Map[Nat, Nat] = header.zip(parametersValues).map { case (h, p) =>
+      val parametersValuesMap: Map[NatIdentifier, Nat] = header.zip(parametersValues).map { case (h, p) =>
         NatIdentifier(h) -> (p.toInt: Nat)
       }.toMap
       if (checkConstraints(constraints, parametersValuesMap)) {
         println("constraints true")
         // execute
         val result = execute(
-          rise.core.substitute.natsInExpr(parametersValuesMap, e), tuner.main, tuner.timeouts)
+          rise.core.substitute.natsInExpr(parametersValuesMap.toMap[Nat, Nat], e), tuner.main, tuner.timeouts)
         result._1 match {
           case Some(_) =>
             Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
@@ -186,13 +186,13 @@ package object autotune {
   def applyBest(e: Expr, samples: Seq[Sample]): Expr = {
     val best = getBest(samples)
     best match {
-      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters, e)
+      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters.toMap[Nat, Nat], e)
       case None => e
     }
   }
 
   def applySample(e: Expr, sample: Sample): Expr = {
-    rise.core.substitute.natsInExpr(sample.parameters, e)
+    rise.core.substitute.natsInExpr(sample.parameters.toMap[Nat, Nat], e)
   }
 
   // write tuning results into csv file

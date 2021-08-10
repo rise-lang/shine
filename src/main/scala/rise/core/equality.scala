@@ -15,10 +15,9 @@ object equality {
   }
 
   val equivNat: Env[Kind.Identifier] => Nat => Nat => Boolean = env => a => b => {
-    val natEnv: Map[Nat, NatIdentifier] =
-      env.unwrap.collect { case (NatKind.IDWrapper(i), NatKind.IDWrapper(n)) => (i, n) }
+    val natEnv = env.unwrap.collect { case (NatKind.IDWrapper(i), NatKind.IDWrapper(n)) => (i, n) }
     // substitutes elements on the left with elements on the right
-    substitute.natsInNat(natEnv, a) == b
+    substitute.natsInNat(natEnv.toMap[Nat, Nat], a) == b
   }
 
   trait TypeEq {
