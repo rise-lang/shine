@@ -2,6 +2,7 @@ package rise.eqsat
 
 import rise.core
 import rise.core.{semantics, primitives => rcp, types => rct}
+import rise.core.types.{DataType => rcdt}
 
 // TODO: could also be outside of eqsat package
 /** A Rise expression based on DeBruijn indexing */
@@ -104,21 +105,21 @@ object Expr {
 
   case class Bound(expr: Seq[core.Identifier],
                    nat: Seq[rct.NatIdentifier],
-                   data: Seq[rct.DataTypeIdentifier]) {
+                   data: Seq[rcdt.DataTypeIdentifier]) {
     private def assertFound(i: Int, name: => String): Int =
       if (i >= 0) { i } else { throw new Exception(s"identifier $name was not bound") }
     def indexOf(i: core.Identifier): Int =
       assertFound(expr.indexOf(i), i.toString)
     def indexOf(i: rct.NatIdentifier): Int =
       assertFound(nat.indexOf(i), i.toString)
-    def indexOf(i: rct.DataTypeIdentifier): Int =
+    def indexOf(i: rcdt.DataTypeIdentifier): Int =
       assertFound(data.indexOf(i), i.toString)
 
     def +(i: core.Identifier): Bound =
       this.copy(expr = i +: expr)
     def +(i: rct.NatIdentifier): Bound =
       this.copy(nat = i +: nat)
-    def +(i: rct.DataTypeIdentifier): Bound =
+    def +(i: rcdt.DataTypeIdentifier): Bound =
       this.copy(data = i +: data)
   }
 
@@ -133,7 +134,7 @@ object Expr {
         DataApp(fromNamed(f, bound), DataType.fromNamed(dt, bound))
       case core.DepApp(_, _, _) => ???
       case core.DepLambda(rct.NatKind, n: rct.NatIdentifier, e) => NatLambda(fromNamed(e, bound + n))
-      case core.DepLambda(rct.DataKind, dt: rct.DataTypeIdentifier, e) => DataLambda(fromNamed(e, bound + dt))
+      case core.DepLambda(rct.DataKind, dt: rcdt.DataTypeIdentifier, e) => DataLambda(fromNamed(e, bound + dt))
       case core.DepLambda(_, _, _) => ???
       case core.Literal(d) => Literal(d)
       // note: we set the primitive type to a place holder here,
@@ -160,7 +161,7 @@ object Expr {
       case DataApp(f, x) =>
         core.DepApp(rct.DataKind, toNamed(f, bound), DataType.toNamed(x, bound)) _
       case DataLambda(e) =>
-        val i = rct.DataTypeIdentifier(s"dt${bound.data.size}")
+        val i = rcdt.DataTypeIdentifier(s"dt${bound.data.size}")
         core.DepLambda(rct.DataKind, i, toNamed(e, bound + i)) _
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _
@@ -195,8 +196,8 @@ object ExprDSL {
   def cst(value: Long): Nat = Nat(NatCst(value))
 
   def `%dt`(index: Int): DataType = DataType(DataTypeVar(index))
-  val int: DataType = DataType(ScalarType(rct.int))
-  val f32: DataType = DataType(ScalarType(rct.f32))
+  val int: DataType = DataType(ScalarType(rcdt.int))
+  val f32: DataType = DataType(ScalarType(rcdt.f32))
 
   def nFunT(t: Type): Type = Type(NatFunType(t))
   implicit final class FunConstructorT(private val r: Type) extends AnyVal {

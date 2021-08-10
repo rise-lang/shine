@@ -36,11 +36,11 @@ object rules {
         ?(1): Pattern))
   )
 
-  import rise.core.types.{Nat, DataType, Type}
+  import rise.core.types.{Nat, DataType, ExprType}
   import NamedRewriteDSL._
 
   val etaAbstraction: Rule = NamedRewrite.init("eta-abstraction",
-    ("f" :: ("a" ->: ("b": Type))) --> lam("x", app("f", "x"))
+    ("f" :: ("a" ->: ("b": ExprType))) --> lam("x", app("f", "x"))
   )
   /* val eta: Rule = NamedRewrite.init("eta",
     lam("x", app("f", "x")) --> "f"

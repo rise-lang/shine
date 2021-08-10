@@ -6,13 +6,14 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object iterate extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "iterate"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (n: Nat) => impl { (m: Nat) => expl { (k: Nat) => impl { (t: DataType) => expl { (l: Nat) => ArrayType(l * n, t) ->: ArrayType(l, t) } ->: ArrayType(m * n.pow(k), t) ->: ArrayType(m, t) } } } }
+    override def typeScheme: ExprType = impl { (n: Nat) => impl { (m: Nat) => expl { (k: Nat) => impl { (t: DataType) => expl { (l: Nat) => ArrayType(l * n, t) ->: ArrayType(l, t) } ->: ArrayType(m * n.pow(k), t) ->: ArrayType(m, t) } } } }
   }
   override def toString: String = "iterate"
   override def primitive: rise.core.Primitive = Primitive()()

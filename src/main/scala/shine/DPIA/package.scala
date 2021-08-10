@@ -1,6 +1,8 @@
 package shine
 
 import arithexpr.arithmetic._
+import rise.core.types.DataType.DataTypeIdentifier
+import rise.core.types.{DepFunType => _, FunType => _, ExprType => _, TypeIdentifier => _, TypePlaceholder => _, _}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import rise.core.{types => rt}
@@ -23,10 +25,10 @@ package object DPIA {
       ArithExpr.substitute(in, Map(`for` -> ae)).asInstanceOf[N]
   }
 
-  object NatIdentifier {
-    def apply(name: String): NatIdentifier = NamedVar(name)
-    def apply(name: String, range: Range): NatIdentifier = NamedVar(name, range)
-  }
+//  object NatIdentifier {
+//    def apply(name: String): NatIdentifier = NamedVar(name)
+//    def apply(name: String, range: Range): NatIdentifier = NamedVar(name, range)
+//  }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia
   val freshName: rise.core.freshName.type = rise.core.freshName
@@ -34,12 +36,12 @@ package object DPIA {
   type x[T1 <: PhraseType, T2 <: PhraseType] = PhrasePairType[T1, T2]
   type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]
   type `->p:`[T <: PhraseType, R <: PhraseType] = PassiveFunType[T, R]
-  type `(nat)->:`[R <: PhraseType] = DepFunType[NatIdentifier, Kind.INat, R]
-  type `(dt)->:`[R <: PhraseType] = DepFunType[DataTypeIdentifier, Kind.IDataType, R]
-  type `(add)->:`[R <: PhraseType] = DepFunType[AddressSpaceIdentifier, Kind.IAddressSpace, R]
-  type `(acc)->:`[R <: PhraseType] = DepFunType[AccessTypeIdentifier, Kind.IAccessType, R]
-  type `(n2n)->:`[R <: PhraseType] = DepFunType[NatToNatIdentifier, Kind.INatToNat, R]
-  type `(n2d)->:`[R <: PhraseType] = DepFunType[NatToDataIdentifier, Kind.INatToData, R]
+  type `(nat)->:`[R <: PhraseType] = DepFunType[NatIdentifier, R]
+  type `(dt)->:`[R <: PhraseType] = DepFunType[DataTypeIdentifier, R]
+  type `(add)->:`[R <: PhraseType] = DepFunType[AddressSpaceIdentifier, R]
+  type `(acc)->:`[R <: PhraseType] = DepFunType[AccessIdentifier, R]
+  type `(n2n)->:`[R <: PhraseType] = DepFunType[NatToNatIdentifier, R]
+  type `(n2d)->:`[R <: PhraseType] = DepFunType[NatToDataIdentifier, R]
   type VarType = ExpType x AccType
 
   object VarType {
@@ -49,14 +51,14 @@ package object DPIA {
   //noinspection TypeAnnotation
   implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
     def `[`(e: Nat) = new {
-      def `/`(a: Nat) = new {
-        def `]`: PhraseType = PhraseType.substitute(e, `for`=a, in=t)
+      def `/`(a: NatIdentifier) = new {
+        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
       }
     }
 
     def `[`(e: DataType) = new {
       def `/`(a: DataType) = new {
-        def `]`: PhraseType = PhraseType.substitute(e, `for`=a, in=t)
+        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
       }
     }
   }
@@ -71,13 +73,13 @@ package object DPIA {
 
     def `[`(e: Nat) = new {
       def `/`(`for`: NatIdentifier) = new {
-        def `]`: Phrase[T1] = PhraseType.substitute(e, `for`, in)
+        def `]`: Phrase[T1] = shine.DPIA.Types.substitute(e, `for`, in)
       }
     }
 
     def `[`(dt: DataType) = new {
       def `/`(`for`: DataTypeIdentifier) = new {
-        def `]`: Phrase[T1] = PhraseType.substitute(dt, `for`, in)
+        def `]`: Phrase[T1] = shine.DPIA.Types.substitute(dt, `for`, in)
       }
     }
   }
@@ -97,25 +99,22 @@ package object DPIA {
   }
 
   implicit class DepFunTypeConstructor[R <: PhraseType](r: R) {
-    def ->:(i: DataTypeIdentifier): DepFunType[DataTypeIdentifier, Kind.IDataType, R] = DepFunType(DataKind, i, r)
-    def ->:(n: NatIdentifier): DepFunType[NatIdentifier, Kind.INat, R] = DepFunType(NatKind, n, r)
-    def ->:(n: NatToNatIdentifier): DepFunType[NatToNatIdentifier, Kind.INatToNat, R] = DepFunType(NatToNatKind, n, r)
-    def ->:(n: NatToDataIdentifier): DepFunType[NatToDataIdentifier, Kind.INatToData, R] = DepFunType(NatToDataKind, n, r)
+    def ->:(i: DataTypeIdentifier): DepFunType[DataTypeIdentifier, R] = DepFunType(DataKind, i, r)
+    def ->:(n: NatIdentifier): DepFunType[NatIdentifier, R] = DepFunType(NatKind, n, r)
+    def ->:(n: NatToNatIdentifier): DepFunType[NatToNatIdentifier, R] = DepFunType(NatToNatKind, n, r)
+    def ->:(n: NatToDataIdentifier): DepFunType[NatToDataIdentifier, R] = DepFunType(NatToDataKind, n, r)
   }
 
   object expT {
-    def apply(dt: DataType, a: AccessType): ExpType = ExpType(dt, a)
-    def apply(dt: rt.DataType, a: AccessType): ExpType =
-      expT(fromRise.dataType(dt), a)
+    def apply(dt: DataType, a: Access): ExpType = ExpType(dt, a)
 
-    def unapply(et: ExpType): Option[(DataType, AccessType)] = {
+    def unapply(et: ExpType): Option[(DataType, Access)] = {
       ExpType.unapply(et)
     }
   }
 
   object accT {
     def apply(dt: DataType): AccType = AccType(dt)
-    def apply(dt: rt.DataType): AccType = accT(fromRise.dataType(dt))
 
     def unapply(at: AccType): Option[DataType] = {
       AccType.unapply(at)
@@ -124,7 +123,6 @@ package object DPIA {
 
   object varT {
     def apply(dt: DataType): VarType = expT(dt, read) x accT(dt)
-    def apply(dt: rt.DataType): VarType = expT(dt, read) x accT(dt)
   }
 
   object nFunT {
@@ -132,7 +130,7 @@ package object DPIA {
       DepFunType(NatKind, n, t)
     }
 
-    def unapply[KI <: Kind.Identifier, U <: PhraseType](funType: DepFunType[_, KI, U]): Option[(NatIdentifier, U)] = {
+    def unapply[U <: PhraseType](funType: DepFunType[_, U]): Option[(NatIdentifier, U)] = {
       funType.x match {
         case n: NatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")
@@ -141,22 +139,17 @@ package object DPIA {
   }
 
   object dFunT {
-    def apply(d: rt.DataTypeIdentifier, t: PhraseType): PhraseType = {
-      DepFunType(DataKind, fromRise.dataTypeIdentifier(d), t)
+    def apply(d: DataTypeIdentifier, t: PhraseType): PhraseType = {
+      DepFunType(DataKind, d, t)
     }
   }
 
   object aFunT {
-    def apply(a: rt.AddressSpaceIdentifier, t: PhraseType): PhraseType = {
-      DepFunType(AddressSpaceKind, fromRise.addressSpaceIdentifier(a), t)
-    }
-
     def apply(a: AddressSpaceIdentifier, t: PhraseType): PhraseType = {
       DepFunType(AddressSpaceKind, a, t)
     }
 
-    def unapply[KI <: Kind.Identifier, T <: PhraseType](funType: DepFunType[_, KI, T]
-                                                       ): Option[(AddressSpaceIdentifier, T)] = {
+    def unapply[T <: PhraseType](funType: DepFunType[_, T]): Option[(AddressSpaceIdentifier, T)] = {
       funType.x match {
         case a: AddressSpaceIdentifier => Some((a, funType.t))
         case _ => throw new Exception("Expected AddressSpace DepFunType")
@@ -165,16 +158,11 @@ package object DPIA {
   }
 
   object n2nFunT {
-    def apply(n: rt.NatToNatIdentifier, t: PhraseType): PhraseType = {
-      DepFunType(NatToNatKind, fromRise.natToNatIdentifier(n), t)
-    }
-
     def apply(n: NatToNatIdentifier, t: PhraseType): PhraseType = {
       DepFunType(NatToNatKind, n, t)
     }
 
-    def unapply[KI <: Kind.Identifier, T <: PhraseType](funType: DepFunType[_, KI, T]
-                                                       ): Option[(NatToNatIdentifier, T)] = {
+    def unapply[T <: PhraseType](funType: DepFunType[_, T]): Option[(NatToNatIdentifier, T)] = {
       funType.x match {
         case n: NatToNatIdentifier => Some((n, funType.t))
         case _ => throw new Exception("Expected Nat DepFunType")

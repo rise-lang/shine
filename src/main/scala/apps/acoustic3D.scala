@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.DSL.Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import HighLevelConstructs._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclRotateValues

@@ -1,28 +1,31 @@
 package rise.core.types
 
-import scala.language.{implicitConversions, postfixOps}
 import rise.core.DSL.Type._
 import rise.core._
+import rise.core.types.DataType._
+
+import scala.language.{implicitConversions, postfixOps}
 
 object latex {
   import builderDSL._
   // LaTeX printer
-  def toLaTeX[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI]): String = kind match {
+  def toLaTeX[T, I](kind: Kind[T, I]): String = kind match {
     case TypeKind => "\\mathsf{type}"
     case DataKind => "\\mathsf{data}"
     case NatKind => "\\mathsf{nat}"
     case NatCollectionKind => "\\mathsf{nats}"
     case AddressSpaceKind => "\\mathsf{addrSpace}"
-//    case MatrixLayoutKind => "\\mathsf{matrixLayout}"
-//    case FragmentKind => "\\mathsf{fragment}"
+    case MatrixLayoutKind => "\\mathsf{matrixLayout}"
+    case FragmentKind => "\\mathsf{fragment}"
     case NatToNatKind =>
       s"${toLaTeX(natkind)}\\hspace{-.25em}\\rightarrow\\hspace{-.25em}${toLaTeX(natkind)}"
     case NatToDataKind =>
       s"${toLaTeX(natkind)}\\hspace{-.25em}\\rightarrow\\hspace{-.25em}${toLaTeX(datakind)}"
+    case AccessKind => "\\mathsf{access}"
   }
-  def kindToLaTeX[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI]): String = toLaTeX(kind)
+  def kindToLaTeX[T, I](kind: Kind[T, I]): String = toLaTeX(kind)
 
-  def toLaTeX(t: Type): String = t match {
+  def toLaTeX(t: ExprType): String = t match {
     case TypePlaceholder => s"?"
     case TypeIdentifier(name) => name
     case FunType(inT, outT) =>
@@ -81,11 +84,11 @@ object latex {
     case NatToDataLambda(x, body) => s"${toLaTeX(x)} \\mapsto ${toLaTeX(body)}"
   }
 
-  def toLaTeX(kind: FragmentKind): String = kind match {
-    case FragmentKind.AMatrix => "\\mathsf{AMatrix}"
-    case FragmentKind.BMatrix => "\\mathsf{BMatrix}"
-    case FragmentKind.Accumulator => "\\mathsf{Accumulator}"
-    case FragmentKindIdentifier(name) => name
+  def toLaTeX(kind: Fragment): String = kind match {
+    case Fragment.AMatrix => "\\mathsf{AMatrix}"
+    case Fragment.BMatrix => "\\mathsf{BMatrix}"
+    case Fragment.Accumulator => "\\mathsf{Accumulator}"
+    case FragmentIdentifier(name) => name
   }
 
   def toLaTeX(layout: MatrixLayout): String = layout match {
@@ -107,7 +110,7 @@ object latex {
       case ntd: NatToData => toLaTeX(ntd)
       case ntn: NatToNat => toLaTeX(ntn)
       case m: MatrixLayout => toLaTeX(m)
-      case f: FragmentKind => toLaTeX(f)
+      case f: Fragment => toLaTeX(f)
     }}"
     case Literal(d) => d.toString
     case Opaque(e, t) => ???
@@ -116,14 +119,14 @@ object latex {
     case primitive: Primitive => primitive.name
   }
 
-  private def kindIdentifier[T, I, KI <: Kind.Identifier](kind: Kind[T, I, KI], x: I): String =
+  private def kindIdentifier[T, I](kind: Kind[T, I], x: I): String =
     kind.name match {
       case "nat" => s"${Kind.idName(kind, x)}: ${toLaTeX(NatKind)}"
     }
 
   object wellFormedTypes {
     val kinds: String =
-      kappa ::=  Seq[Kind[Any, Any, _ <: Kind.Identifier]](
+      kappa ::=  Seq[Kind[Any, Any]](
         typekind, datakind, natkind, //natskind,
         ntdkind, ntnkind, addrkind,
         // matrixKind, fragmentKind
@@ -396,7 +399,7 @@ object latex {
     val Theta2: TypeIdentifier = tid("\\theta_2")
     val FN: NatToNatIdentifier = ntnid("F_N")
     val FT: NatToDataIdentifier = ntdid("F_T")
-    val Frag: FragmentKindIdentifier = fid("F")
+    val Frag: FragmentIdentifier = fid("F")
     val Mat: MatrixLayoutIdentifier = mid("Mat")
 
     val E: Identifier = Identifier("E")(TypePlaceholder)
@@ -414,7 +417,7 @@ object latex {
     }
 
     implicit class TypeKindPairBuilder(kind: TypeKind.type) {
-      def `:` (x: Type): TypeKindPair = TypeKindPair(x, kind)
+      def `:` (x: ExprType): TypeKindPair = TypeKindPair(x, kind)
       def `:` (str: String): TypeKindPair = TypeKindPair(str, kind)
     }
 
@@ -432,8 +435,8 @@ object latex {
       def `:` (x: AddressSpace): TypeKindPair = TypeKindPair(x, kind)
     }
 
-    implicit class FragmentKindPairBuilder(kind: FragmentKind) {
-      def `:` (x: FragmentKind): TypeKindPair = TypeKindPair(x, kind)
+    implicit class FragmentKindPairBuilder(kind: Fragment) {
+      def `:` (x: Fragment): TypeKindPair = TypeKindPair(x, kind)
     }
 
     implicit class MatrixLayoutKindPairBuilder(kind: MatrixLayout) {
@@ -448,7 +451,7 @@ object latex {
       def `:` (x: NatToData): TypeKindPair = TypeKindPair(x, kind)
     }
 
-    implicit class ValueTypePairBuilder(ty: Type) {
+    implicit class ValueTypePairBuilder(ty: ExprType) {
       def `:` (x: Expr): ValueTypePair = ValueTypePair(x, ty)
       def `:` (x: String): ValueTypePair = ValueTypePair(x, ty)
     }
@@ -472,11 +475,11 @@ object latex {
     case class TypeKindPair(ty: Any/* Type | DataType | ... | String */, kind: Any/* Kind | String */) {
       override def toString: String = {
         val kindString = kind match {
-          case k: Kind[_, _, _] => toLaTeX(k)
+          case k: Kind[_, _] => toLaTeX(k)
           case _ => s"$kind"
         }
         val tyString = ty match {
-          case t: Type => toLaTeX(t)
+          case t: ExprType => toLaTeX(t)
           case n: Nat => toLaTeX(n)
           case a: AddressSpace => toLaTeX(a)
           case ntn: NatToNat => toLaTeX(ntn)
@@ -494,7 +497,7 @@ object latex {
           case _ => s"$value"
         }
         val tyString = ty match {
-          case t: Type => toLaTeX(t)
+          case t: ExprType => toLaTeX(t)
           case n: Nat => toLaTeX(n)
           case a: AddressSpace => toLaTeX(a)
           case ntn: NatToNat => toLaTeX(ntn)
@@ -555,7 +558,7 @@ object latex {
     sealed trait Set
     case class FiniteSet(members: Any*) extends Set {
       override def toString: String = members.map({
-        case kind: Kind[_, _, _] => toLaTeX(kind)
+        case kind: Kind[_, _] => toLaTeX(kind)
         case m => m.toString
       }).mkString("\\{", ", ", "\\}")
     }
@@ -592,7 +595,7 @@ object latex {
     def did(name: String): DataTypeIdentifier = DataTypeIdentifier(name)
     def ntnid(name: String): NatToNatIdentifier = NatToNatIdentifier(name)
     def ntdid(name: String): NatToDataIdentifier = NatToDataIdentifier(name)
-    def fid(name: String): FragmentKindIdentifier = FragmentKindIdentifier(name)
+    def fid(name: String): FragmentIdentifier = FragmentIdentifier(name)
     def mid(name: String): MatrixLayoutIdentifier = MatrixLayoutIdentifier(name)
   }
 }

@@ -2,8 +2,7 @@ package shine.DPIA
 
 import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
-import rise.core.types._
-import util.gen
+import rise.core.types.DataType._
 import util.gen.c.function
 
 class Store extends test_util.Tests {

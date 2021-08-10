@@ -6,13 +6,14 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object dmatch extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "dmatch"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (fdt: NatToData) => impl { (t: DataType) => (Nat ** ((n: Nat) => NatToDataApply(fdt, n))) ->: expl { (m: Nat) => NatToDataApply(fdt, m) ->: t } ->: t } }
+    override def typeScheme: ExprType = impl { (fdt: NatToData) => impl { (t: DataType) => (Nat ** ((n: Nat) => NatToDataApply(fdt, n))) ->: expl { (m: Nat) => NatToDataApply(fdt, m) ->: t } ->: t } }
   }
   override def toString: String = "dmatch"
   override def primitive: rise.core.Primitive = Primitive()()

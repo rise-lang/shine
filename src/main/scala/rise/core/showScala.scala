@@ -1,12 +1,12 @@
 package rise.core
 
-import rise.core.types.Kind.{IDataType, INat}
 import rise.core.types._
+import rise.core.types.DataType._
 
 object showScala {
   private val kindIdent : Kind.Identifier => String = {
-    case INat(n) => s"""NatIdentifier("${n.name}", ${n.range})"""
-    case IDataType(n) => s"""DataTypeIdentifier("$n")"""
+    case NatKind.IDWrapper(n) => s"""NatIdentifier("${n.name}", ${n.range})"""
+    case DataKind.IDWrapper(n) => s"""DataTypeIdentifier("$n")"""
     case x => throw new Exception(s"missing rule for $x")
   }
 
@@ -36,7 +36,7 @@ object showScala {
     }
   }
 
-  def `type`(t: Type): String = { // scalastyle:ignore
+  def `type`(t: ExprType): String = { // scalastyle:ignore
     t match {
       case TypePlaceholder => "TypePlaceholder"
       case TypeIdentifier(n) => s"""TypeIdentifier("$n")"""

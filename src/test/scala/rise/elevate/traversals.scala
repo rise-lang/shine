@@ -6,7 +6,6 @@ import rise.elevate.util._
 import rise.core.DSL._
 import rise.core.makeClosed
 import rise.core.primitives._
-import rise.core.types.Kind.INat
 import rise.core.types.{Nat, NatKind}
 import rise.elevate.meta.fission.bodyFission
 import rise.elevate.meta.traversal.inBody
@@ -70,8 +69,8 @@ class traversals extends test_util.Tests {
   }
 
   test("RNF did not normalize") {
-    val expr2 = lambda(identifier("ee1"), lambda(identifier("ee2"), app(join, app(app(map, lambda(identifier("η125"), app(app(map, lambda(identifier("ee3"), app(join, app(app(map, lambda(identifier("η124"), app(app(map, lambda(identifier("η123"), app(identifier("ee2"), identifier("η123")))), identifier("η124")))), app(depApp[Nat, INat](NatKind, split, 4), identifier("ee3")))))), identifier("η125")))), app(depApp[Nat, INat](NatKind, split, 4), identifier("ee1"))))))
-    val expr5 = lambda(identifier("ee1"), lambda(identifier("ee2"), app(join, app(app(map, lambda(identifier("η141"), app(app(map, lambda(identifier("η140"), app(join, identifier("η140")))), identifier("η141")))), app(app(map, lambda(identifier("η145"), app(app(map, lambda(identifier("η144"), app(app(map, lambda(identifier("η143"), app(app(map, lambda(identifier("η142"), app(identifier("ee2"), identifier("η142")))), identifier("η143")))), identifier("η144")))), identifier("η145")))), app(app(map, lambda(identifier("η147"), app(app(map, lambda(identifier("η146"), app(depApp[Nat, INat](NatKind, split, 4), identifier("η146")))), identifier("η147")))), app(depApp[Nat, INat](NatKind, split, 4), identifier("ee1"))))))))
+    val expr2 = lambda(identifier("ee1"), lambda(identifier("ee2"), app(join, app(app(map, lambda(identifier("η125"), app(app(map, lambda(identifier("ee3"), app(join, app(app(map, lambda(identifier("η124"), app(app(map, lambda(identifier("η123"), app(identifier("ee2"), identifier("η123")))), identifier("η124")))), app(depApp[Nat](NatKind, split, 4), identifier("ee3")))))), identifier("η125")))), app(depApp[Nat](NatKind, split, 4), identifier("ee1"))))))
+    val expr5 = lambda(identifier("ee1"), lambda(identifier("ee2"), app(join, app(app(map, lambda(identifier("η141"), app(app(map, lambda(identifier("η140"), app(join, identifier("η140")))), identifier("η141")))), app(app(map, lambda(identifier("η145"), app(app(map, lambda(identifier("η144"), app(app(map, lambda(identifier("η143"), app(app(map, lambda(identifier("η142"), app(identifier("ee2"), identifier("η142")))), identifier("η143")))), identifier("η144")))), identifier("η145")))), app(app(map, lambda(identifier("η147"), app(app(map, lambda(identifier("η146"), app(depApp[Nat](NatKind, split, 4), identifier("η146")))), identifier("η147")))), app(depApp[Nat](NatKind, split, 4), identifier("ee1"))))))))
 
     assert(makeClosed(RNF(expr2).get) =~= makeClosed(toExpr(expr5)))
   }

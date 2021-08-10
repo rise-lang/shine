@@ -4,6 +4,7 @@ import shine.DPIA.Types.ExpType
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.core.DSL._
 import rise.core.primitives._
 import Type._
@@ -31,7 +32,7 @@ class asum extends test_util.TestsWithExecutor {
   test("High level asum type inference works") {
     val typed = high_level.toExpr
 
-    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type, _ <: Kind.Identifier]].x
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: ExprType]].x
     assertResult(DepFunType(NatKind, N, FunType(inputT(N), f32))) {
       typed.t
     }

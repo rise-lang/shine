@@ -1,5 +1,6 @@
 package shine.OpenCL.Compilation.Passes
 
+import rise.core.types.{AddressSpace, NatKind}
 import shine.DPIA.{->:, NatIdentifier}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._

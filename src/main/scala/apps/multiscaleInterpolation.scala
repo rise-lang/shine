@@ -7,6 +7,7 @@ import rise.core.DSL._
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 
 // in Halide: https://github.com/halide/Halide/blob/e8acdea/apps/interpolate
 // in PolyMage: https://bitbucket.org/udayb/polymage/src/e28327c/sandbox/apps/python/img_proc/interpolate

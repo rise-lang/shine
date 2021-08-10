@@ -1,5 +1,7 @@
 package rise.eqsat
 
+import rise.core.types.DataType._
+
 class ExprCheck extends test_util.Tests {
   test("withArgument") {
     import ExprDSL._

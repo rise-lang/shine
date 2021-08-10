@@ -6,6 +6,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 final case class foreignFunction(funDecl: rise.core.ForeignFunction.Decl, n: Int) extends Builder {
   override def toString: String = "foreignFunction"
@@ -17,15 +18,15 @@ final case class foreignFunction(funDecl: rise.core.ForeignFunction.Decl, n: Int
   }
 }
 object foreignFunction {
-  private final case class Primitive(funDecl: rise.core.ForeignFunction.Decl, n: Int)(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive(funDecl: rise.core.ForeignFunction.Decl, n: Int)(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "foreignFunction"
-    override def setType(ty: Type): Primitive = Primitive(funDecl, n)(ty)
-    override def typeScheme: Type = {
+    override def setType(ty: ExprType): Primitive = Primitive(funDecl, n)(ty)
+    override def typeScheme: ExprType = {
       val inTs = Seq.fill(n)(DataTypeIdentifier(freshName("dt")))
-      inTs.foldRight(expl { (outT: DataType) => inTs.foldRight(outT: Type)({
+      inTs.foldRight(expl { (outT: DataType) => inTs.foldRight(outT: ExprType)({
         case (lhsT, rhsT) =>
           lhsT ->: rhsT
-      }) }: Type)({
+      }) }: ExprType)({
         case (id, t) =>
           DepFunType(DataKind, id, t)
       })

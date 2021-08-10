@@ -30,10 +30,8 @@ object NatIdentifier {
   def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range)
 }
 
-final class NatToNatApply(val f: NatToNat, val n: Nat)
-  extends ArithExprFunctionCall(s"$f($n)") {
-  override def visitAndRebuild(fun: Nat => Nat): Nat =
-    fun(NatToNatApply(this.f, fun(n)))
+final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunctionCall(s"$f($n)") {
+  override def visitAndRebuild(fun: Nat => Nat): Nat = fun(NatToNatApply(this.f, fun(n)))
 
   override def substitute(subs: collection.Map[ArithExpr, ArithExpr]
                          ): Option[ArithExpr] =
@@ -48,9 +46,7 @@ final class NatToNatApply(val f: NatToNat, val n: Nat)
 
   override def exposedArgs: Seq[Nat] = Seq(n)
 
-  override def substituteExposedArgs(
-                                      subMap: Map[Nat, SimplifiedExpr]
-                                    ): ArithExprFunctionCall =
+  override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall =
     new NatToNatApply(f, subMap.getOrElse(n, n))
 }
 

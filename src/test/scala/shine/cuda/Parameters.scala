@@ -1,7 +1,7 @@
 package shine.cuda
 
 import rise.core.DSL.fun
-import rise.core.types.f32
+import rise.core.types.DataType.f32
 import util.gen
 
 class Parameters extends test_util.Tests {

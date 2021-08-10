@@ -3,10 +3,11 @@ package shine.DPIA.Primitives
 import arithexpr.arithmetic.Cst
 import rise.core.DSL.Type._
 import rise.core.DSL._
+import rise.core.Expr
+import rise.core.primitives
 import rise.core.primitives._
-import rise.core.semantics.NatData
+import rise.core.types.DataType._
 import rise.core.types.{AddressSpace, _}
-import rise.core.{Expr, Literal}
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import shine.OpenCL._
@@ -89,7 +90,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val initRecordExp =
       (zip (generate(fun(IndexType(n))(_ => lf32(0.0f))))
            (generate(fun(IndexType(n))(_ => lf32(0.0f))))
-        |> idx(natAsIndex (n) (l(Cst(0)))))
+        |> primitives.idx(natAsIndex (n) (l(Cst(0)))))
 
     def e(init : ToBeTyped[Expr]): ToBeTyped[Expr] = depFun((n: Nat) =>
       fun(n`.`f32)(arr =>

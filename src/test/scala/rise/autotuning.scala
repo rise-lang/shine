@@ -4,6 +4,7 @@ import apps.mm.mmNVIDIAWithParams
 import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
+import rise.core.types.DataType._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL._
 import rise.core.DSL.Type._
@@ -172,7 +173,7 @@ class autotuning extends test_util.Tests {
       TuningParameter("tile") -> (16: Nat)
     )
     assert(autotune.constraints.checkConstraints(constraints, goodParameters))
-    rise.core.substitute.natsInExpr(goodParameters, e)
+    rise.core.substitute.natsInExpr(goodParameters.toMap[Nat, Nat], e)
   }
 
   val mmKernel: ToBeTyped[Expr] =
@@ -300,7 +301,7 @@ class autotuning extends test_util.Tests {
         )
         if (autotune.constraints.checkConstraints(constraints, map) != isGood) {
           val (sat, notSat) = constraints.partition(c =>
-            c.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]).isSatisfied())
+            c.substitute(map.toMap[ArithExpr, ArithExpr]).isSatisfied())
           println("satisfied:")
           sat.foreach(println)
           println("not satisfied:")
@@ -500,7 +501,7 @@ class autotuning extends test_util.Tests {
   }
 
   test("execute convolution") {
-    val goodParameters = Map(
+    val goodParameters: Map[Nat, Nat] = Map(
       TuningParameter("vec") -> (4: Nat),
       TuningParameter("tile") -> (16: Nat)
     )
@@ -616,7 +617,7 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOclGsLs(1024)
 
     // define parameters to break the code-gen
-    val parameters = Map(
+    val parameters: Map[Nat, Nat] = Map(
       TuningParameter("vec") -> (16: Nat),
       TuningParameter("tile") -> (32: Nat),
       TuningParameter("gs0") -> (1: Nat),
