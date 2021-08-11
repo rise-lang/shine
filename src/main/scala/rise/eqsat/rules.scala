@@ -165,6 +165,21 @@ object rules {
       app(unzip, "in")))
   )
 
+  // FIXME: very specific ..
+  val liftReduceSeq3: Rule = NamedRewrite.init("lift-reduce-seq-3",
+    (app(map, lam("x",
+      app(app(app(rcp.reduceSeq.primitive, "op"), "i" :: (("m": Nat)`.`("dt1": DataType))),
+        "e" :: (("o": Nat)`.`(("m": Nat)`.`("dt2": DataType))))))
+      :: ((("n": Nat)`.`(("m": Nat)`.`(("dt1": DataType) x (("o": Nat)`.`("dt2": DataType))))) ->: ("o": Type)))
+      -->
+    lam("in", app(lam("uz",
+      app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
+        app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+          app(app(zip, "acc"), "y"))
+      ))), app(fst, "uz")), app(transpose, app(app(map, transpose), app(snd, "uz"))))),
+      app(unzip, app(app(map, unzip), "in"))))
+  )
+
   val reduceSeqMapFusion: Rule = NamedRewrite.init("reduce-seq-map-fusion",
     app(app(app(rcp.reduceSeq.primitive, "f"), "init"), app(app(map, "g"), "in"))
       -->

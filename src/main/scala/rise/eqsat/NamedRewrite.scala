@@ -532,6 +532,10 @@ object NamedRewriteDSL {
     @inline def `.`(et: DataTypePattern): DataTypePattern =
       rct.ArrayType(s, et)
   }
+  implicit final class PairConstructor(private val a: DataTypePattern) extends AnyVal {
+    @inline def x(b: DataTypePattern): DataTypePattern =
+      rct.PairType(a, b)
+  }
 
   implicit final class NotFreeIn(private val in: String) extends AnyVal {
     @inline def notFree(notFree: String): NamedRewrite.Condition =
