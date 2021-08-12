@@ -8,7 +8,6 @@ object ProveEquiv {
   def init(): ProveEquiv = new ProveEquiv(
     filter = NoPredicate(),
     analysis = DefaultAnalysis,
-    arrayLimit = 10,
     transformRunner = r => r,
     endRules = Seq(),
     bidirectionalSearch = false,
@@ -25,7 +24,6 @@ object ProveEquiv {
 class ProveEquiv(
   var filter: DefaultAnalysis.Predicate,
   var analysis: DefaultAnalysisCustomisable,
-  var arrayLimit: Int,
   var transformRunner: Runner => Runner,
   var endRules: Seq[DefaultAnalysis.Rewrite],
   var bidirectionalSearch: Boolean,

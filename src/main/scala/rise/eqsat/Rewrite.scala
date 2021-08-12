@@ -24,6 +24,7 @@ object Rewrite {
 class Rewrite[ED, ND, DT](val name: String,
                           val searcher: Searcher[ED, ND, DT],
                           val applier: Applier[ED, ND, DT],
+                          // FIXME: directed rewriting is not properly implemented
                           val isDirected: Boolean) {
   override def toString: String = s"$name:\n$searcher\n  -->\n$applier"
 

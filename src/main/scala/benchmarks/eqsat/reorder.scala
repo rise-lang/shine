@@ -26,7 +26,7 @@ object reorder {
   private val reorderRules = Seq(
     // rules.combinatory.compositionAssoc1,
     rules.combinatory.compositionAssoc2,
-    // rules.combinatory.compositionIntro.directed(),
+    // rules.combinatory.compositionIntro,
     // rules.combinatory.compositionLeftId,
     // rules.combinatory.compositionRightId,
     // rules.combinatory.mapFusion,
@@ -40,7 +40,7 @@ object reorder {
     rules.combinatory.transposeAroundMapMapF2M,
   )
 
-  private val reorderRulesCFNF = Seq(
+  private val reorderRulesBENF = Seq(
     rules.transposeAroundMapMapF,
     rules.transposeAroundMapMapF1M,
     rules.transposeAroundMapMapF2M,
@@ -96,11 +96,6 @@ object reorder {
     val (time3D1, _) = util.time(run3D { case (e, g) =>
       ProveEquiv.init()
         .withFilter(ASTSizePredicate(60))
-        //.bidirectional()
-        //.withRunnerTransform(r => r.withIterationLimit(3))
-        //.withEndRules(Seq(
-        //  rules.combinatory.compositionAssoc1,
-        //  /*rules.combinatory.compositionAssoc2*/))
         .runCNF(e, g, Seq(
           rules.combinatory.compositionAssoc2,
           whenMapF(3, rules.combinatory.transposeAroundMapMapF),
@@ -111,7 +106,7 @@ object reorder {
     val (time3D2, _) = util.time(run3D { case (e, g) =>
       ProveEquiv.init()
         .withFilter(ASTSizePredicate(60))
-        .runBENF(e, g, reorderRulesCFNF)
+        .runBENF(e, g, reorderRulesBENF)
     })
 
     val (time4D1, _) = util.time(run4D { case (e, g) =>
@@ -128,17 +123,20 @@ object reorder {
     val (time4D2, _) = util.time(run4D { case (e, g) =>
       ProveEquiv.init()
         .withFilter(ASTSizePredicate(80))
-        .runBENF(e, g, reorderRulesCFNF)
+        .runBENF(e, g, reorderRulesBENF)
     })
 
     // ~1ms search in untyped egg prototype
-    // ~4s search on i7 desktop without ast size filter
+    // ~4s search on i7 desktop
     // ~1s search on i7 desktop with ast size filter
     // ~0.1s search on i7 desktop with specialized rules
     println(s"total 3D time (1): ${util.prettyTime(time3D1)}")
+    // ~0.2s search on laptop
     println(s"total 3D time (2): ${util.prettyTime(time3D2)}")
     // ~25s search on i7 with all above
+    // ~36s search on laptop
     println(s"total 4D time (1): ${util.prettyTime(time4D1)}")
+    // ~0.4s search on laptop
     println(s"total 4D time (2): ${util.prettyTime(time4D2)}")
   }
 }

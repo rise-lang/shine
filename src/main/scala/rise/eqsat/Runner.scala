@@ -108,13 +108,7 @@ class Runner(var iterations: Vec[Iteration],
 
       val iter = runOne(egraph, roots, filter, rules)
       println(iter)
-/*
-      egraph.analysis match {
-        case _: DefaultAnalysisCustomisable if roots.nonEmpty =>
-          Prototype.countLimits(egraph.asInstanceOf[DefaultAnalysis.EGraph], roots)
-        case _ =>
-      }
-*/
+
       if (iter.applied.isEmpty &&
         scheduler.canSaturate(iterations.size)) {
         stopReasons += Saturated

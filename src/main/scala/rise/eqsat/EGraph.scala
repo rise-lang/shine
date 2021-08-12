@@ -192,7 +192,7 @@ class EGraph[ED, ND, TD](
   def rebuild(roots: Seq[EClassId],
               filter: Predicate[ED, ND, TD] = NoPredicate()): Int = {
     val nUnions = processUnions()
-    val _ = util.printTime("filter", this.filter(filter, roots))
+    val _ = this.filter(filter, roots)
     val _ = rebuildClasses()
 
     assert {

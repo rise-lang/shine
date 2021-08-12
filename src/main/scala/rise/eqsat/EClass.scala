@@ -9,9 +9,8 @@ class EClass[D](val id: EClassId,
   def nodeCount(): Int = nodes.size
 }
 
-// TODO: can we prove that infinite loops are not possible, is the procedure even correct?
-// TODO: should the visited map have a more global scope for better memoization?
-// FIXME: broken by hash-consing
+// FIXME
+@deprecated("direct e-class substitution is broken and not maintained")
 object EClass {
   // TODO: generalize eclass transformation traversal?
   def shifted(eclass: EClassId, shift: Expr.Shift, cutoff: Expr.Shift, egraph: DefaultAnalysis.EGraph): EClassId = {

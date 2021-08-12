@@ -19,7 +19,7 @@ object tiling {
 
   private val tilingRules = Seq(
     // rules.combinatory.compositionAssoc1,
-    rules.combinatory.compositionAssoc2,//.directed(),
+    rules.combinatory.compositionAssoc2,
     // rules.combinatory.compositionIntro,
     // rules.combinatory.compositionLeftId,
     // rules.combinatory.compositionRightId,
@@ -33,7 +33,7 @@ object tiling {
     whenFcontainsF(rules.combinatory.transposeAroundMapMapF3M),
   )
 
-  private val splitJoinRulesCFNF = Seq(
+  private val splitJoinRulesBENF = Seq(
     whenFcontainsF(rules.splitJoin(tileSize)),
     whenFcontainsF(rules.splitJoin1M(tileSize)),
     whenFcontainsF(rules.splitJoin2M(tileSize)),
@@ -43,7 +43,7 @@ object tiling {
     whenFcontainsF(rules.splitJoin6M(tileSize)),
   )
 
-  private val reorderRulesCFNF = Seq(
+  private val reorderRulesBENF = Seq(
     whenFcontainsF(rules.transposeAroundMapMapF),
     whenFcontainsF(rules.transposeAroundMapMapF1M),
     whenFcontainsF(rules.transposeAroundMapMapF2M),
@@ -52,7 +52,7 @@ object tiling {
     whenFcontainsF(rules.transposeAroundMapMapF5M),
   )
 
-  private val tilingRulesCFNF = reorderRulesCFNF ++ splitJoinRulesCFNF
+  private val tilingRulesBENF = reorderRulesBENF ++ splitJoinRulesBENF
 
   private def T: ToBeTyped[Expr] = rise.core.primitives.transpose
   private def S: ToBeTyped[Expr] = rise.core.primitives.split(tileSize)
@@ -91,11 +91,11 @@ object tiling {
 
     ProveEquiv.init()
       .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(50))
-      .runBENF(expr, golds1, splitJoinRulesCFNF)
+      .runBENF(expr, golds1, splitJoinRulesBENF)
 
     ProveEquiv.init()
       .withFilter(ASTSizePredicate(50))
-      .runBENF(golds1, golds2, reorderRulesCFNF)
+      .runBENF(golds1, golds2, reorderRulesBENF)
   }
 
   def run3D(): Unit = {
@@ -141,11 +141,11 @@ object tiling {
 
     ProveEquiv.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(100))
-      .runBENF(expr, golds1, splitJoinRulesCFNF)
+      .runBENF(expr, golds1, splitJoinRulesBENF)
 
     ProveEquiv.init()
       .withFilter(ASTSizePredicate(100))
-      .runBENF(golds1, golds2, reorderRulesCFNF)
+      .runBENF(golds1, golds2, reorderRulesBENF)
   }
 
   def run4D(): Unit = {
@@ -217,11 +217,11 @@ object tiling {
 
     ProveEquiv.init()
       .withFilter(ArrayDimensionPredicate(8) && ASTSizePredicate(200))
-      .runBENF(expr, golds1, splitJoinRulesCFNF)
+      .runBENF(expr, golds1, splitJoinRulesBENF)
 
     ProveEquiv.init()
       .withFilter(ASTSizePredicate(300))
-      .runBENF(golds1, golds2, reorderRulesCFNF)
+      .runBENF(golds1, golds2, reorderRulesBENF)
   }
 
   def main(args: Array[String]): Unit = {
@@ -229,12 +229,12 @@ object tiling {
     val (time3D, _) = util.time(run3D())
     val (time4D, _) = util.time(run4D())
     // ~25s search on i7 desktop with CNF
-    // ~1s search on laptop with CFNF
+    // ~1s search on laptop with BENF
     println(s"total 2D time: ${util.prettyTime(time2D)}")
-    // ~30s search on laptop with CFNF
-    // ~1s search on laptop with two-step CFNF
+    // ~30s search on laptop with BENF
+    // ~1s search on laptop with two-step BENF
     println(s"total 3D time: ${util.prettyTime(time3D)}")
-    // ~47s search on laptop with two-step CFNF
+    // ~47s search on laptop with two-step BENF
     println(s"total 4D time: ${util.prettyTime(time4D)}")
   }
 }

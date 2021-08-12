@@ -6,7 +6,7 @@ import ProveEquiv.syntax._
 import rise.eqsat.PredicateDSL._
 
 class TvmGemm extends test_util.Tests {
-  test("TVM GEMM") {
+  ignore("TVM GEMM") {
     val mm: Expr = tvmGemm.mm
     val variants = util.printTime("Elevate rewrite", Seq(
       tvmGemm.baseline(mm).get,

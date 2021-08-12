@@ -164,7 +164,8 @@ class ASTSizePredicate(limit: Int,
   }
 }
 
-object Prototype {
+/* TODO: generic algorithm for top-down + bottom-up predicates?
+object GenericPredicate {
   object Cost {
     val zero: Cost = Cost(0, HashMap.empty)
 
@@ -199,3 +200,4 @@ object Prototype {
     ???
   }
 }
+ */

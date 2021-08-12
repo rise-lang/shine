@@ -68,7 +68,8 @@ class Tiling extends test_util.Tests {
       .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 
-  test("tile 3D") {
+  // NOTE: too hard to reach this way, see tiling benchmark
+  ignore("tile 3D") {
     def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) =>
       depFun((dt1: DataType) => depFun((dt2: DataType) =>
@@ -101,7 +102,8 @@ class Tiling extends test_util.Tests {
       .runCNF(expr, golds, minimalRules ++ reorderRules)
   }
 
-  test("tile 4D") {
+  // NOTE: too hard to reach this way, see tiling benchmark
+  ignore("tile 4D") {
     def wrap(inner: ToBeTyped[Expr] => ToBeTyped[Expr]): Expr = {
       depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) => depFun((p: Nat) =>
       depFun((dt1: DataType) => depFun((dt2: DataType) =>
