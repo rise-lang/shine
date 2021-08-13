@@ -23,8 +23,8 @@ object convolution {
 
   private val dotElemWeightsSeq = fun((weights, elem) =>
     oclReduceSeqUnroll(AddressSpace.Private)(fun((acc, pair) => {
-      val pixel = pair._1
-      val weight = pair._2
+      val pixel = pair.`1`
+      val weight = pair.`2`
       acc + (pixel * weight)
     }))(lf32(0.0f))(zip(join(elem))(weights)))
 
@@ -143,9 +143,7 @@ object convolution {
     matrix: Array[Array[Float]],
     weights: Array[Float]
   ): (Array[Float], TimeSpan[Time.ms]) = {
-    val f = k.as[ScalaFunction `(`
-      Array[Array[Float]] `,` Array[Float]
-      `)=>` Array[Float]]
+    val f = k.as[Args `(` Array[Array[Float]] `,` Array[Float], Array[Float]]
     f(localSize, globalSize)(matrix `,` weights)
   }
 }

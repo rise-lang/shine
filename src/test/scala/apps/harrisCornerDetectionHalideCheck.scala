@@ -100,14 +100,14 @@ class harrisCornerDetectionHalideCheck
     val random = new scala.util.Random()
     val input = Array.fill(3, Hi, Wi)(random.nextFloat() * 10.0f)
 
-    val fg = goldProg.as[ScalaFunction `(`
-      Int `,` Int `,` Array[Array[Array[Float]]]
-      `)=>` Array[Float]]
+    val fg = goldProg.as[Args `(`
+      Int `,` Int `,` Array[Array[Array[Float]]],
+      Array[Float]]
     val (gold, goldTime) = fg(LocalSize(1), GlobalSize(1))(Ho `,` Wo `,` input)
 
-    val f = prog.as[ScalaFunction `(`
-      Int `,` Int `,` Array[Array[Array[Float]]]
-      `)=>` Array[Float]]
+    val f = prog.as[Args `(`
+      Int `,` Int `,` Array[Array[Array[Float]]],
+      Array[Float]]
     val (output, time) = f(ls, gs)(Ho `,` Wo `,` input)
 
     logger.debug(s"gold time: $goldTime")

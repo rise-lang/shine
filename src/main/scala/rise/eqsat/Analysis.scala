@@ -23,9 +23,9 @@ trait Analysis[Data] {
   def preUnion(egraph: EGraph[Data], id1: EClassId, id2: EClassId): Unit = {}
 }
 
-object NoAnalysis extends Analysis[()] {
-  override def make(egraph: EGraph[()], enode: ENode, t: Type): () = ()
-  override def merge(to: (), from: ()): Option[Order] = Some(Equal)
+object NoAnalysis extends Analysis[Unit] {
+  override def make(egraph: EGraph[Unit], enode: ENode, t: Type): Unit = ()
+  override def merge(to: Unit, from: Unit): Option[Order] = Some(Equal)
 }
 
 class DefaultAnalysisData(var free: HashSet[Int],

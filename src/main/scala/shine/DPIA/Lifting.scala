@@ -36,7 +36,7 @@ object Lifting {
 
     p match {
       case l: Lambda[T1, T2] =>
-        Reducing((arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`)
+        Reducing((arg: Phrase[T1]) => Phrase.substitute(arg, `for`=l.param, in=l.body))
       case app: Apply[_, T1 ->: T2] =>
         chain(liftFunction(app.fun).map(lf => lf(app.arg)))
       case DepApply(_, f, arg) =>
@@ -56,7 +56,7 @@ object Lifting {
   def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType ->: T]): Nat => Phrase[T] = {
     p match {
       case l: Lambda[ExpType, T] =>
-        (arg: Nat) => l.body `[` arg  `/` NatIdentifier(l.param.name) `]`
+        (arg: Nat) => Types.substitute(arg, `for`=NatIdentifier(l.param.name), in=l.body)
       case app: Apply[_, ExpType ->: T] =>
         val fun = liftFunction(app.fun).reducing
         liftFunctionToNatLambda(fun(app.arg))

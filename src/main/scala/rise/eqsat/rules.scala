@@ -81,10 +81,10 @@ object rules {
     ("x": Pattern) --> app(lam("y", "y"), "x")
   )
   val transposePairAfter: Rule = NamedRewrite.init("transpose-pair-after",
-    ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`))) --> app(transpose, app(transpose, "x"))
+    ("x" :: ((`__`: Nat)`.`((`__`: Nat)`.``__`))) --> app(transpose, app(transpose, "x"))
   )
   val createTransposePair: Rule = NamedRewrite.init("create-transpose-pair",
-    app(lam("y", "y"), "x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))
+    app(lam("y", "y"), "x" :: ((`__`: Nat)`.`((`__`: Nat)`.``__`)))
       -->
     app(lam("y", app(transpose, app(transpose, "y"))), "x")
   )
@@ -97,7 +97,7 @@ object rules {
     app(app(map, nApp(drop, "l")), app(nApp(nApp(slide, ("n": Nat) + ("l": Nat)), 1), "in"))
   )
   val takeInSlide: Rule = NamedRewrite.init("take-in-slide",
-    app(nApp(take, "r") :: ((("s": Nat)`.``_`) ->: `_`), app(nApp(nApp(slide, "n"), 1), "in"))
+    app(nApp(take, "r") :: ((("s": Nat)`.``__`) ->: `__`), app(nApp(nApp(slide, "n"), 1), "in"))
       -->
     app(app(map, nApp(take, "n")), app(nApp(nApp(slide, ("n": Nat) + ("s": Nat) - ("r": Nat)), 1), "in"))
   )
@@ -165,12 +165,12 @@ object rules {
 
   // TODO: condition typeHasTrivialCopy(t) / or synthesise trivial write function
   val mapSeqUnrollWrite: Rule = NamedRewrite.init("map-seq-unroll-write",
-    ("x" :: ((`_`: Nat)`.`"dt"))
+    ("x" :: ((`__`: Nat)`.`"dt"))
       -->
     app(app(rcp.mapSeqUnroll.primitive, lam("y", "y")), "x")
   )
   val mapSeqUnrollMapSeqWrite: Rule = NamedRewrite.init("map-seq-unroll-map-seq-write",
-    ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.`"dt")))
+    ("x" :: ((`__`: Nat)`.`((`__`: Nat)`.`"dt")))
       -->
       app(app(rcp.mapSeqUnroll.primitive, app(rcp.mapSeq.primitive, lam("y", "y"))), "x")
   )

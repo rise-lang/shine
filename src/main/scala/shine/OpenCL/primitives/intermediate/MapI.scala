@@ -15,6 +15,6 @@ final case class MapI(level: ParallelismLevel, dim: Int) {
             out: Phrase[AccType]): Phrase[CommType] = {
     comment(s"map${level.toString}") `;`
       shine.OpenCL.DSL.parFor(level, dim, unroll = false)(n, dt2, out,
-        λ(expT(idx(n), read))(i => λ(accT(dt2))(a => f(in `@` i)(a))))
+        fun(expT(idx(n), read))(i => fun(accT(dt2))(a => f(in `@` i)(a))))
   }
 }

@@ -67,7 +67,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(arr => arr
         |> oclReduceSeq (AddressSpace.Private)
-          (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t._1 + t._2))))
+          (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t.`1` + t.`2`))))
           (initExp (n))
         |> mapSeq (fun(x => x))))
 
@@ -77,8 +77,7 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val gold = A.reduce((row1, row2) => row1.zip(row2).map(in => in._1 + in._2))
 
-    val runKernel = gen.opencl.kernel.fromExpr(e(m)(n)).as[ScalaFunction `(`
-      Array[Array[Float]] `)=>` Array[Float]]
+    val runKernel = gen.opencl.kernel.fromExpr(e(m)(n)).as[Args `(` Array[Array[Float]], Array[Float]]
     val (out, _)  = runKernel(LocalSize(1), GlobalSize(1))(A`;`)
 
     assertResult(gold)(out)
@@ -97,9 +96,9 @@ class Reduce extends test_util.TestsWithExecutor {
         arr |> reduceSeq (fun(_ + _))  (init)))
 
     logger.debug("Fst:")
-    function.asStringFromExpr(e(initRecordExp._1))
+    function.asStringFromExpr(e(initRecordExp.`1`))
     logger.debug("Snd:")
-    function.asStringFromExpr(e(initRecordExp._2))
+    function.asStringFromExpr(e(initRecordExp.`2`))
   }
 
   test("Record access to specify initial accumulator value" +
@@ -120,13 +119,12 @@ class Reduce extends test_util.TestsWithExecutor {
     val gold = A.sum
 
     def runKernel(initWithRecordAccess: ToBeTyped[Expr]) =
-      gen.opencl.kernel.fromExpr(e(initWithRecordAccess))
-        .as[ScalaFunction `(`Int`,`Array[Float]`)=>`Array[Float]]
+      gen.opencl.kernel.fromExpr(e(initWithRecordAccess)).as[Args `(`Int`,`Array[Float], Array[Float]]
 
     val (out1, _) =
-      runKernel(initRecordExp._1)(LocalSize(1), GlobalSize(1))(n `,` A)
+      runKernel(initRecordExp.`1`)(LocalSize(1), GlobalSize(1))(n `,` A)
     val (out2, _) =
-      runKernel(initRecordExp._2)(LocalSize(1), GlobalSize(1))(n `,` A)
+      runKernel(initRecordExp.`2`)(LocalSize(1), GlobalSize(1))(n `,` A)
 
     assertResult(gold)(out1(0))
     assertResult(gold)(out2(0))

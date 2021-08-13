@@ -100,8 +100,8 @@ class Pad extends test_util.Tests {
     val localSize = LocalSize(1)
     val globalSize = GlobalSize(1)
 
-    val f1 = k1.as[ScalaFunction `(` Int `,` Array[Array[Int]] `)=>`Array[Int]]
-    val f2 = k2.as[ScalaFunction `(` Int `,` Array[Array[Int]] `)=>`Array[Int]]
+    val f1 = k1.as[Args `(` Int `,` Array[Array[Int]], Array[Int]]
+    val f2 = k2.as[Args `(` Int `,` Array[Array[Int]], Array[Int]]
 
     val ((r1, _), (r2, _)) = util.withExecutor {
       (f1(localSize, globalSize)(N `,` input),

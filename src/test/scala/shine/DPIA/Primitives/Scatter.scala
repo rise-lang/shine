@@ -26,7 +26,7 @@ class Scatter extends test_util.Tests {
     val k = gen.opencl.kernel.fromExpr(e)
     val lS = LocalSize(1)
     val gS = GlobalSize(2)
-    val f = k.as[ScalaFunction `(` Array[Int] `)=>` Array[Int]]
+    val f = k.as[Args `(` Array[Int], Array[Int]]
     val input = (1 to N).toArray
     val expected = input.reverse
     val (r, _) = util.withExecutor {
@@ -53,7 +53,7 @@ class Scatter extends test_util.Tests {
     val k = gen.opencl.kernel.fromExpr(e)
     val lS = LocalSize(1)
     val gS = GlobalSize(2)
-    val f = k.as[ScalaFunction `(` Array[Int] `)=>` Array[Int]]
+    val f = k.as[Args `(` Array[Int], Array[Int]]
     val input = Array.fill(2)((1 to N).toArray)
     val expected = input(0).reverse
     val (r, _) = util.withExecutor {

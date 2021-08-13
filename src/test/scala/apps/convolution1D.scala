@@ -89,14 +89,10 @@ class convolution1D extends test_util.Tests {
     val goldKernel = gen.opencl.kernel.fromExpr(wrapExpr(binomialSeq))
     val kernel = gen.opencl.kernel.fromExpr(wrapExpr(e))
 
-    val goldRun = goldKernel.as[ScalaFunction `(`
-      Int `,` Array[Float]
-      `)=>` Array[Float]]
+    val goldRun = goldKernel.as[Args `(` Int `,` Array[Float], Array[Float]]
     val (gold, _) = goldRun(LocalSize(1), GlobalSize(1))(N `,` input)
 
-    val run = kernel.as[ScalaFunction `(`
-      Int `,` Array[Float]
-      `)=>` Array[Float]]
+    val run = kernel.as[Args `(` Int `,` Array[Float], Array[Float]]
     val (output, time) = run(localSize, globalSize)(N `,` input)
     util.assertSame(output, gold, "output is different from gold")
     logger.debug(s"time: $time")
