@@ -12,6 +12,8 @@ import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 import util.gen.c.function
 
+import reflect.Selectable.reflectiveSelectable
+
 object separableConvolution2DCheck {
   def wrapExpr(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
@@ -93,9 +95,9 @@ int main(int argc, char** argv) {
     val gold = computeGold(H, W, input, binomialWeights2d).flatten
 
     val kernel = gen.opencl.kernel.fromExpr(wrapExpr(e))
-    val run = kernel.as[ScalaFunction `(`
-      Int `,` Int `,` Array[Array[Float]]
-      `)=>` Array[Float]]
+    val run = kernel.as[Args `(`
+      Int `,` Int `,` Array[Array[Float]],
+      Array[Float]]
     val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
     util.assertSame(output, gold, "output is different from gold")
     logger.debug(s"time: $time")

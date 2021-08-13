@@ -31,10 +31,10 @@ class algorithmic extends test_util.Tests {
   def tileND = rise.elevate.strategies.tiling.tileND(default.RiseTraversable)
   def tileNDList = rise.elevate.strategies.tiling.tileNDList(default.RiseTraversable)
 
-  def DFNF = rise.elevate.strategies.normalForm.DFNF()(default.RiseTraversable)
-  def RNF = rise.elevate.strategies.normalForm.RNF()(default.RiseTraversable)
-  def CNF = rise.elevate.strategies.normalForm.CNF()(default.RiseTraversable)
-  def BENF = rise.elevate.strategies.normalForm.BENF()(default.RiseTraversable)
+  def DFNF = rise.elevate.strategies.normalForm.DFNF()(using default.RiseTraversable)
+  def RNF = rise.elevate.strategies.normalForm.RNF()(using default.RiseTraversable)
+  def CNF = rise.elevate.strategies.normalForm.CNF()(using default.RiseTraversable)
+  def BENF = rise.elevate.strategies.normalForm.BENF()(using default.RiseTraversable)
 
   // Loop Interchange
 
@@ -55,7 +55,7 @@ class algorithmic extends test_util.Tests {
     ))
 
     assert(betaEtaEquals(
-      body(body(fmap(loopInterchange) `;` DFNF `;` RNF))(input).get,
+      body(body(rise.elevate.strategies.traversal.fmap(loopInterchange) `;` DFNF `;` RNF))(input).get,
       gold
     ))
   }
@@ -100,7 +100,7 @@ class algorithmic extends test_util.Tests {
           a |> map(fun(ak =>
             transpose(b) |> map(fun(bk =>
               zip(ak)(bk) |>
-                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(
+                reduceSeq(fun((acc, y) => acc + (y.`1` * y.`2`)))(
                   lf32(0.0f)))))))))))
 
     def goldMKN(reduceFun: ToBeTyped[Rise]): ToBeTyped[Rise] = {
@@ -278,7 +278,7 @@ class algorithmic extends test_util.Tests {
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(lf32(0.0f))) $
+              (reduceSeq(fun((acc, y) => acc + (y.`1` * y.`2`)))(lf32(0.0f))) $
                 zip(ak)(bk))) $ transpose(b) )) $ a)))))).get
 
     val tile = body(body(body(body(body(tileND(2)(32)))))) `;` DFNF
@@ -286,7 +286,7 @@ class algorithmic extends test_util.Tests {
     val typed = tile.apply(mm).get
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
-    val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
+    val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
     logger.debug(gen.c.function.asStringFromExpr(lower(typed).get))
 
     /// TILE + REORDER
@@ -308,7 +308,7 @@ class algorithmic extends test_util.Tests {
         ((a, b) =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(lf32(0.0f))) $
+              (reduceSeq(fun((acc, y) => acc + (y.`1` * y.`2`)))(lf32(0.0f))) $
                 zip(ak)(bk))) $ transpose(b) )) $ a
         )
       )

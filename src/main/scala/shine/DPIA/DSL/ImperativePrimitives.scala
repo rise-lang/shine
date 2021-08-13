@@ -31,9 +31,9 @@ object newDoubleBuffer {
             out: Phrase[AccType],
             f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]): NewDoubleBuffer =
     NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT(dt1) x CommType() x CommType())(ps => {
-      val    v: Phrase[VarType]  = ps._1._1
-      val swap: Phrase[CommType] = ps._1._2
-      val done: Phrase[CommType] = ps._2
+      val    v: Phrase[VarType]  = ps.`1`.`1`
+      val swap: Phrase[CommType] = ps.`1`.`2`
+      val done: Phrase[CommType] = ps.`2`
       f(v, swap, done)
     }))
 }
@@ -45,8 +45,13 @@ object `if` {
     IfThenElse(cond, thenP, elseP)
 
   //noinspection TypeAnnotation
-  def apply(cond: Phrase[ExpType]) = new {
-    def `then`[T <: PhraseType](thenP: Phrase[T]) = new {
+  def apply(cond: Phrase[ExpType]): IfHelper = IfHelper(cond)
+
+  case class IfHelper(cond: Phrase[ExpType]) {
+    def `then`[T <: PhraseType](thenP: Phrase[T]): IfHelper.ThenHelper[T] = IfHelper.ThenHelper(cond, thenP)
+  }
+  object IfHelper {
+    case class ThenHelper[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T]) {
       def `else`(elseP: Phrase[T]): IfThenElse[T] = {
         IfThenElse(cond, thenP, elseP)
       }

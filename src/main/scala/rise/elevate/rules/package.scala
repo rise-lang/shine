@@ -4,7 +4,7 @@ import elevate.core.strategies.Traversable
 import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal._
 import elevate.core.{Failure, Strategy, Success}
-import elevate.macros.RuleMacro.rule
+import elevate.core.macros.rule
 import rise.core.DSL._
 import rise.core._
 import rise.core.types._
@@ -44,14 +44,14 @@ package object rules {
     case _ => Failure(etaReduction())
   }
 
-  @rule def etaAbstraction: Strategy[Rise] = f => f.t match {
+  def etaAbstraction: Strategy[Rise] = rule("etaAbstraction", f => f.t match {
     case FunType(_, _) =>
       val x = identifier(freshName("η"))
       Success(lambda(x, app(f, x)) !: f.t)
     case _ => Failure(etaAbstraction)
-  }
+  })
 
-  @rule def idxReduction: Strategy[Rise] = e => {
+  def idxReduction: Strategy[Rise] = rule("idxReduction", e => {
     import arithexpr.arithmetic._
     import rise.core.primitives._
     import rise.core.semantics._
@@ -77,13 +77,13 @@ package object rules {
       case _ =>
         Failure(idxReduction)
     }
-  }
+  })
 
-  @rule def checkType(msg: String = ""): Strategy[Rise] = e => {
+  def checkType(msg: String = ""): Strategy[Rise] = rule("checkType", e => {
     types.check(e) match {
       case scala.util.Success(_) => Success(e)
       case scala.util.Failure(exception) =>
         Failure(checkType(exception.getMessage))
     }
-  }
+  })
 }

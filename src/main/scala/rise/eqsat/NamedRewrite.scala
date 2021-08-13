@@ -414,7 +414,7 @@ object NamedRewriteDSL {
 
   import scala.language.implicitConversions
 
-  val `_`: rct.TypePlaceholder.type = rct.TypePlaceholder
+  val `__`: rct.TypePlaceholder.type = rct.TypePlaceholder
 
   implicit final class RewriteArrow(private val lhs: Pattern) extends AnyVal {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = lhs -> rhs
@@ -448,12 +448,12 @@ object NamedRewriteDSL {
   def drop: Pattern = rcp.drop.primitive
   def take: Pattern = rcp.take.primitive
 
-  implicit def placeholderAsNatPattern(p: `_`.type): NatPattern =
+  implicit def placeholderAsNatPattern(p: `__`.type): NatPattern =
     rct.NatIdentifier(rc.freshName("n"))
   implicit def stringAsNatPattern(name: String): NatPattern =
     rct.NatIdentifier(name)
 
-  implicit def placeholderAsDataTypePattern(p: `_`.type): DataTypePattern =
+  implicit def placeholderAsDataTypePattern(p: `__`.type): DataTypePattern =
     rcdt.DataTypeIdentifier(rc.freshName("dt"))
   implicit def stringAsDataTypePattern(name: String): DataTypePattern =
     rcdt.DataTypeIdentifier(name)

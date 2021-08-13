@@ -183,7 +183,7 @@ class circularBuffering extends test_util.Tests {
   }
 
   private val id = fun(x => x)
-  private val norm = normalize(alternative.RiseTraversable).apply(gentleBetaReduction())
+  private val norm = normalize[rise.core.Expr](gentleBetaReduction())(using alternative.RiseTraversable) // TODO: check if swapping of argument order is what we want!!!
 
   private def rewriteSteps(a: Rise, steps: scala.collection.Seq[(Strategy[Rise], Rise)]): Unit = {
     steps.foldLeft[Rise](norm(a).get)({ case (e, (s, expected)) =>
@@ -215,7 +215,7 @@ class circularBuffering extends test_util.Tests {
           x |> slide(4)(1) >> map(sum)
         ))
       ),
-      normalize.apply(mapFusion)
+      normalize(mapFusion)
       -> (
       slide(3)(1) >> map(sum) >> fun(x =>
         makeArray(2)(
@@ -231,7 +231,7 @@ class circularBuffering extends test_util.Tests {
           x |> sum
         ))) >> transpose
       ),
-      (normalize.apply(lowering.reduceSeq) `;`
+      (normalize(lowering.reduceSeq) `;`
         topDown(dropBeforeTake) `;`
         topDown(isApply `;` one(isApply `;` one(isMakeArray)) `;`
           lowering.mapSeqUnrollWrite) `;`

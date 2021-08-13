@@ -114,7 +114,7 @@ object ContinuationTranslation {
       // Turn the f imperative by means of forwarding the continuation translation
       con(input)(λ(expT(DepPairType(NatKind, x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_(NatKind)((fst: NatIdentifier) =>
+          depFun[Nat, NatIdentifier](NatKind)((fst: NatIdentifier) =>
             λ(expT(substituteNatInType(fst, x, elemT), read))(snd =>
               con(f(fst)(snd))(C)
             )), pair)))

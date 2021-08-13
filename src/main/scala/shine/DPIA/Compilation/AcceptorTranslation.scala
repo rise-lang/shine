@@ -1,26 +1,26 @@
 package shine.DPIA.Compilation
 
-import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
-import shine.DPIA.Phrases._
+import shine.DPIA.Compilation.TranslationToImperative.*
+import shine.DPIA.DSL.*
+import shine.DPIA.Phrases.*
 import rise.core.types.{DataType, Fragment, MatrixLayout, NatIdentifier, NatKind, read, write}
-import rise.core.DSL.Type._
-import rise.core.types.DataType._
-import rise.core.substitute.{natInType => substituteNatInType}
-import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck, comm}
-import rise.core.types.DataTypeOps._
-import shine.DPIA._
-import shine.DPIA.primitives.functional._
-import shine.DPIA.primitives.imperative.{Seq => _, _}
-import shine.DPIA.primitives.intermediate._
-import shine.OpenMP.primitives.{functional => omp}
-import shine.OpenMP.primitives.{intermediate => ompI}
-import shine.OpenCL.primitives.{functional => ocl}
-import shine.OpenCL.primitives.{intermediate => oclI}
-import shine.OpenCL.primitives.{imperative => oclImp}
-import shine.cuda.primitives.{functional => cuda}
-import shine.cuda.primitives.{intermediate => cudaI}
-import shine.cuda.primitives.{imperative => cudaImp}
+import rise.core.DSL.Type.*
+import rise.core.types.DataType.*
+import rise.core.substitute.natInType as substituteNatInType
+import shine.DPIA.Types.{AccType, CommType, DepFunType, ExpType, TypeCheck, comm}
+import rise.core.types.DataTypeOps.*
+import shine.DPIA.*
+import shine.DPIA.primitives.functional.*
+import shine.DPIA.primitives.imperative.{Seq as _, *}
+import shine.DPIA.primitives.intermediate.*
+import shine.OpenMP.primitives.functional as omp
+import shine.OpenMP.primitives.intermediate as ompI
+import shine.OpenCL.primitives.functional as ocl
+import shine.OpenCL.primitives.intermediate as oclI
+import shine.OpenCL.primitives.imperative as oclImp
+import shine.cuda.primitives.functional as cuda
+import shine.cuda.primitives.intermediate as cudaI
+import shine.cuda.primitives.imperative as cudaImp
 
 object AcceptorTranslation {
   def acc(E: Phrase[ExpType])
@@ -107,7 +107,7 @@ object AcceptorTranslation {
     case depMapSeq@DepMapSeq(unroll) =>
       val (n, ft1, ft2, f, array) = depMapSeq.unwrap
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        DepMapSeqI(unroll)(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
+        DepMapSeqI(unroll)(n, ft1, ft2, depFun[Nat, NatIdentifier](NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -119,7 +119,7 @@ object AcceptorTranslation {
       // Turn the f imperative by means of forwarding the acceptor translation
       con(input)(λ(expT(DepPairType(NatKind, x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_(NatKind)((fst: NatIdentifier) =>
+          depFun[Nat, NatIdentifier](NatKind)((fst: NatIdentifier) =>
             λ(expT(substituteNatInType(fst, x, elemT), read))(snd =>
               acc(f(fst)(snd))(A)
             )), pair)))
@@ -131,14 +131,14 @@ object AcceptorTranslation {
     case Iterate(n, m, k, dt, f, array) =>
       con(array)(λ(expT((m * n.pow(k))`.`dt, read))(x =>
         IterateIAcc(n, m, k, dt, A,
-          _Λ_(NatKind)(l => λ(accT(l `.` dt))(o =>
+          depFun[Nat, NatIdentifier](NatKind)(l => λ(accT(l `.` dt))(o =>
             λ(expT((l * n)`.`dt, read))(x => acc(f(l)(x))(o)))),
           x)))
 
     case IterateStream(n, dt1, dt2, f, array) =>
       val fI = λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o)))
       val i = NatIdentifier(freshName("i"))
-      str(array)(fun((i: NatIdentifier) ->:
+      str(array)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(next =>
         comment("iterateStream") `;`
@@ -256,7 +256,7 @@ object AcceptorTranslation {
     // OpenMP
     case omp.DepMapPar(n, ft1, ft2, f, array) =>
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        ompI.DepMapParI(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
+        ompI.DepMapParI(n, ft1, ft2, depFun[Nat, NatIdentifier](NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -275,7 +275,7 @@ object AcceptorTranslation {
     case depMap@ocl.DepMap(level, dim) =>
       val (n, ft1, ft2, f, array) = depMap.unwrap
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        oclI.DepMapI(level, dim)(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
+        oclI.DepMapI(level, dim)(n, ft1, ft2, depFun[Nat, NatIdentifier](NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -283,7 +283,7 @@ object AcceptorTranslation {
     case ocl.Iterate(a, n, m, k, dt, f, array) =>
       con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x =>
         oclI.IterateIAcc(a, n, m, k, dt, A,
-          _Λ_(NatKind)(l => λ(accT(l`.`dt))(o =>
+          depFun[Nat, NatIdentifier](NatKind)(l => λ(accT(l`.`dt))(o =>
             λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
           x)))
 

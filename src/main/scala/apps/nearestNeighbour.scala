@@ -7,6 +7,7 @@ import rise.core.types._
 import rise.core.types.DataType._
 import rise.core.primitives._
 import rise.openCL.DSL._
+import reflect.Selectable.reflectiveSelectable
 
 object nearestNeighbour {
   private val distance = foreignFun("distance_",
@@ -82,9 +83,9 @@ object nearestNeighbour {
     val localSize = LocalSize(128)
     val globalSize = GlobalSize(N)
 
-    val f = k.as[ScalaFunction `(`
-      Int `,` Array[Float] `,` Float `,` Float
-      `)=>` Array[Float]]
+    val f = k.as[Args `(`
+      Int `,` Array[Float] `,` Float `,` Float,
+      Array[Float]]
     f(localSize, globalSize)(N `,` locations `,` lat `,` lng)
   }
 

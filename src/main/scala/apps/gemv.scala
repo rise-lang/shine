@@ -7,10 +7,11 @@ import rise.core.primitives.{let => _, _}
 import rise.core.types._
 import rise.core.types.DataType._
 import HighLevelConstructs.reorderWithStride
+import reflect.Selectable.reflectiveSelectable
 
 object gemv {
   // we can use implicit type parameters and type annotations to specify the function type of mult
-  val mult = impl{ dt: DataType => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt) }
+  val mult = impl{ dt: DataType => fun(x => x.`1` * x._2) :: ((dt x dt) ->: dt) }
   val add = fun(x => fun(y => x + y))
   val scal = impl { n: Nat =>
     fun(xs => fun(a =>
@@ -30,7 +31,7 @@ object gemv {
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
     zip(map(fun(row => alpha * dot(row, xs)))(mat))(scal(ys, beta)) |>
-    map(fun(x => x._1 + x._2))
+    map(fun(x => x.`1` + x._2))
   ))
 
   val gemvSequential = depFun((n: Nat, m: Nat) => fun(
@@ -38,7 +39,7 @@ object gemv {
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
     toMem(zip(mapSeq(fun(row => alpha * dotSeq(row, xs)))(mat))(scalSeq(ys, beta))) |>
-    mapSeq(fun(x => x._1 + x._2))
+    mapSeq(fun(x => x.`1` + x._2))
   ))
 
   object ocl {
@@ -81,7 +82,7 @@ object gemv {
     )((mat, xs, ys, alpha, beta) =>
       zip(mat)(ys) |>
         mapWorkGroup(fun(t =>
-          zip(xs)(t._1) |>
+          zip(xs)(t.`1`) |>
             split(n) |>
             toLocalFun(mapLocal(
               reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
@@ -95,7 +96,7 @@ object gemv {
     )((mat, xs, ys, alpha, beta) =>
       zip(mat)(ys) |>
         mapWorkGroup(fun(t =>
-          zip(xs)(t._1) |>
+          zip(xs)(t.`1`) |>
             reorderWithStride(128) |>
             split(n /^ 128) |>
             toLocalFun(mapLocal(
@@ -113,7 +114,7 @@ object gemv {
     )((mat, xs, ys, alpha, beta) =>
       zip(mat)(ys) |>
         mapWorkGroup(fun(t =>
-          zip(xs)(t._1) |>
+          zip(xs)(t.`1`) |>
             reorderWithStride(128) |>
             split(n /^ 128) |>
             toLocalFun(mapLocal(
@@ -134,7 +135,7 @@ object gemv {
     )((mat, xs, ys, alpha, beta) =>
       zip(mat)(ys) |>
         mapPar(fun(t =>
-          zip(xs)(t._1) |>
+          zip(xs)(t.`1`) |>
             split(n) |>
             toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f)))) |>
             mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
@@ -208,10 +209,10 @@ object gemv {
     val localSize = cgo17_localSize
     val globalSize = GlobalSize(M)
 
-    val run = kernel.as[ScalaFunction `(`
+    val run = kernel.as[Args `(`
       Int `,` Int `,` Array[Array[Float]] `,`
-      Array[Float] `,` Array[Float] `,` Float `,` Float
-    `)=>` Array[Float]]
+      Array[Float] `,` Array[Float] `,` Float `,` Float,
+      Array[Float]]
     run(localSize, globalSize)(N `,` M `,` mat `,` xs `,` ys `,` alpha `,` beta)
   }
 }

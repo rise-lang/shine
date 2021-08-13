@@ -1,19 +1,20 @@
 package apps
 
+import rise.core.*
+import rise.core.DSL.*
+import rise.core.DSL.HighLevelConstructs.reorderWithStride
+import rise.core.DSL.Type.*
+import rise.core.primitives.*
+import rise.core.types.*
+import rise.core.types.DataType.*
+import rise.elevate.rules.traversal.default.*
 import shine.DPIA.Types.ExpType
-import shine.OpenCL.{GlobalSize, LocalSize}
-import rise.core._
-import rise.core.types._
-import rise.core.types.DataType._
-import rise.core.DSL._
-import rise.core.primitives._
-import Type._
-import HighLevelConstructs.reorderWithStride
-import util.{SyntaxChecker, gen}
-import rise.elevate.rules.traversal.default._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
+import shine.OpenCL.{GlobalSize, LocalSize}
 import util.gen.c.function
+import util.{SyntaxChecker, gen}
 
+import scala.reflect.Selectable.reflectiveSelectable
 import scala.util.Random
 
 //noinspection TypeAnnotation
@@ -45,7 +46,7 @@ class asum extends test_util.TestsWithExecutor {
 
   // OpenMP code gen
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
-    import rise.openMP.primitives._
+    import rise.openMP.primitives.*
 
     val intelDerivedNoWarp1 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
@@ -69,7 +70,7 @@ class asum extends test_util.TestsWithExecutor {
   test(
     "Second kernel of Intel derived compiles to syntactically correct OpenMP code"
   ) {
-    import rise.openMP.primitives._
+    import rise.openMP.primitives.*
 
     val intelDerived2 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
@@ -87,7 +88,7 @@ class asum extends test_util.TestsWithExecutor {
   test(
     "AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code"
   ) {
-    import rise.openMP.primitives._
+    import rise.openMP.primitives.*
 
     val amdNvidiaDerived2 = depFun((n: Nat) =>
       fun(inputT(n))(input =>
@@ -110,8 +111,8 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   { // OpenCL code gen
-    import rise.openCL.DSL._
-    import rise.openCL.primitives.{oclReduceSeq, oclIterate}
+    import rise.openCL.DSL.*
+    import rise.openCL.primitives.{oclIterate, oclReduceSeq}
     import shine.OpenCL
 
     val random = new Random()
@@ -126,9 +127,9 @@ class asum extends test_util.TestsWithExecutor {
         localSize: LocalSize,
         globalSize: GlobalSize
     )(n: Int, input: Array[Float]): Array[Float] = {
-      import shine.OpenCL._
+      import shine.OpenCL.*
       val k = gen.opencl.kernel.fromExpr(kernel)
-      val runKernel = k.as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]
+      val runKernel = k.as[Args `(` Int `,` Array[Float], Array[Float]]
       val (output, _) = runKernel(localSize, globalSize)(n `,` input)
       output
     }

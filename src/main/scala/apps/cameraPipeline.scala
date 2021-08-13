@@ -281,7 +281,7 @@ object cameraPipeline {
       (lf32(1.0f) / kelvin - lf32(1.0f / 3200)) / lf32(1.0f / 7000 - 1.0f / 3200)
     (
       zipND(2)(matrix_3200, matrix_7000) |>
-        map(map(fun(p => p._1 * alpha + p._2 * (lf32(1.0f) - alpha)))) >>
+        map(map(fun(p => p.`1` * alpha + p.`2` * (lf32(1.0f) - alpha)))) >>
           map(map(fun(v => cast(v * lf32(256.0f)) :: i16))) // Q8.8 fixed point
       ) |> fun(matrix =>
         input |> transpose >>

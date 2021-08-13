@@ -7,6 +7,8 @@ import shine.OpenCL._
 import shine.cuda.KernelExecutor.{KernelNoSizes, KernelWithSizes}
 import util._
 
+import reflect.Selectable.reflectiveSelectable
+
 //Cause some TypeChecking-Bugs the execution of the entire test-class could be fail
 //Running each test individually should be successfull
 class gemmTensorCheck extends test_util.TestWithCUDA {
@@ -58,10 +60,10 @@ class gemmTensorCheck extends test_util.TestWithCUDA {
     logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
-      val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
+      val run = KernelNoSizes(kernel, compilerOptions).as[Args `(`
         Int `,` Int `,` Int `,` Float `,` Float `,`
-        Array[Array[Float]] `,` Array[Array[Float]] `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+        Array[Array[Float]] `,` Array[Array[Float]] `,` Array[Array[Float]],
+        Array[Float]]
 
       val aMatrix = if (matrixATranspose) a.transpose else a
       val bMatrix = if (matrixBTranspose) b.transpose else b
@@ -86,10 +88,10 @@ class gemmTensorCheck extends test_util.TestWithCUDA {
     logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
-      val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[ScalaFunction `(`
+      val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[Args `(`
         Int `,` Int `,` Int `,` Float `,` Float `,`
-        Array[Array[Float]] `,` Array[Array[Float]] `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+        Array[Array[Float]] `,` Array[Array[Float]] `,` Array[Array[Float]],
+        Array[Float]]
 
       val aMatrix = if (matrixATranspose) a.transpose else a
       val bMatrix = if (matrixBTranspose) b.transpose else b

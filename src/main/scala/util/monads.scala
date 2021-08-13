@@ -12,7 +12,10 @@ object monads {
         bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
   }
 
-  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]) = new {
+  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]): MonadicSyntax[M, A] =
+    new MonadicSyntax[M, A](m, tc)
+
+  class MonadicSyntax[M[_], A](m: M[A], tc: Monad[M]) {
     def map[B](f: A => B): M[B] = tc.bind(m)(a => tc.return_(f(a)) )
     def flatMap[B](f: A => M[B]): M[B] = tc.bind(m)(f)
   }
@@ -54,16 +57,15 @@ object monads {
     def append : Map[K,V] => Map[K,V] => Map[K,V] = x => y => x ++ y
   }
 
-  implicit def PairMonoid[F,S](fst : Monoid[F], snd : Monoid[S]) : Monoid[Tuple2[F,S]] = new Monoid[Tuple2[F,S]] {
-    override def empty : Tuple2[F,S] = (fst.empty, snd.empty)
-    override def append : Tuple2[F,S] => Tuple2[F,S] => Tuple2[F,S] = {
+  implicit def PairMonoid[F, S](fst : Monoid[F], snd : Monoid[S]) : Monoid[(F, S)] = new Monoid[(F, S)] {
+    override def empty : (F, S) = (fst.empty, snd.empty)
+    override def append : ((F, S)) => ((F, S)) => (F, S) = {
       case (f1, s1) => { case (f2, s2) => (fst.append(f1)(f2), snd.append(s1)(s2)) }
     }
   }
 
-  trait InMonad[M[_]] { trait SetFst[F] { type Type[S] = M[Tuple2[F, S]] } }
-  trait PairMonoidMonad[F, M[_]] extends Monad[InMonad[M]#SetFst[F]#Type] {
-    type Pair[T] = InMonad[M]#SetFst[F]#Type[T]
+  trait PairMonoidMonad[F, M[_]] extends Monad[[S] =>> M[(F, S)]] {
+    type Pair[T] = M[(F, T)]
     implicit val monoid : Monoid[F]
     implicit val monad : Monad[M]
     override def return_[T]: T => Pair[T] = t => monad.return_((monoid.empty, t))

@@ -17,12 +17,12 @@ import shine.DPIA.primitives.functional._
 import scala.collection.mutable
 
 object fromRise {
-  def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
+  def apply(expr: r.Expr)(using ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
     if (!r.IsClosedForm(expr)) {
       val (fV, fT) = r.IsClosedForm.varsToClose(expr)
       throw new Exception(s"expression is not in closed form: $expr\n\n with type ${expr.t}\n free vars: $fV\n free type vars: $fT\n\n")
     }
-    val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
+    val bnfExpr = normalize(betaReduction)(expr).get
     val rwMap = inferAccess(bnfExpr)
     expression(bnfExpr, rwMap)
   }
@@ -88,12 +88,8 @@ object fromRise {
     Lambda(x, f(x))
   }
 
-  object depFun {
-    def apply[T, I](kind: rt.Kind[T, I], x: I): Object {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
-    } = new {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
-    }
+  case class depFun[T, I](kind: rt.Kind[T, I], x: I) {
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
   }
 
   private def primitive(p: r.Primitive,

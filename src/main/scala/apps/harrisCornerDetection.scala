@@ -9,6 +9,7 @@ import rise.openCL.DSL._
 import rise.openCL.primitives.oclRotateValues
 import util.gen
 import shine.OpenCL.KernelExecutor._
+import reflect.Selectable.reflectiveSelectable
 
 import scala.reflect.ClassTag
 
@@ -252,19 +253,19 @@ object harrisCornerDetection {
       val localSize = LocalSize(1)
       val globalSize = GlobalSize(H)
 
-      val fSx = sobelX.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+      val fSx = sobelX.as[Args `(`
+        Int `,` Int `,` Array[Array[Float]],
+        Array[Float]]
       val (ix, ixt) = as2DW(fSx(localSize, globalSize)(H `,` W `,` input))
 
-      val fSy = sobelY.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+      val fSy = sobelY.as[Args `(`
+        Int `,` Int `,` Array[Array[Float]],
+        Array[Float]]
       val (iy, iyt) = as2DW(fSy(localSize, globalSize)(H `,` W `,` input))
 
-      val fMul = mul.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+      val fMul = mul.as[Args `(`
+        Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]],
+        Array[Float]]
       val (ixx, ixxt) = as2DW(
         fMul(localSize, globalSize)(H `,` W `,` ix `,` ix))
       val (ixy, ixyt) = as2DW(
@@ -272,18 +273,18 @@ object harrisCornerDetection {
       val (iyy, iyyt) = as2DW(
         fMul(localSize, globalSize)(H `,` W `,` iy `,` iy))
 
-      val fG = gaussian.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+      val fG = gaussian.as[Args `(`
+        Int `,` Int `,` Array[Array[Float]],
+        Array[Float]]
       val (sxx, sxxt) = as2DW(fG(localSize, globalSize)(H `,` W `,` ixx))
       val (sxy, sxyt) = as2DW(fG(localSize, globalSize)(H `,` W `,` ixy))
       val (syy, syyt) = as2DW(fG(localSize, globalSize)(H `,` W `,` iyy))
 
-      val fC = coarsity.as[ScalaFunction `(`
+      val fC = coarsity.as[Args `(`
         Int `,` Int `,`
         Array[Array[Float]] `,` Array[Array[Float]] `,` Array[Array[Float]] `,`
-        Float
-        `)=>` Array[Float]]
+        Float,
+        Array[Float]]
       val (k, kt) =
         fC(localSize, globalSize)(H `,` W `,` sxx `,` sxy `,` syy `,` kappa)
 
@@ -325,15 +326,15 @@ object harrisCornerDetection {
       val localSize = LocalSize(1)
       val globalSize = GlobalSize(H)
 
-      val fSxyM = sobelXYMuls.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+      val fSxyM = sobelXYMuls.as[Args `(`
+        Int `,` Int `,` Array[Array[Float]],
+        Array[Float]]
       def asIs[B] = as3D[Float, B](H, W)
       val (is, ist) = asIs(fSxyM(localSize, globalSize)(H `,` W `,` input))
 
-      val fGC = gaussianCoarsity.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Array[Float]]] `,` Float
-        `)=>` Array[Float]]
+      val fGC = gaussianCoarsity.as[Args `(`
+        Int `,` Int `,` Array[Array[Array[Float]]] `,` Float,
+        Array[Float]]
       val (k, kt) = fGC(localSize, globalSize)(H `,` W `,` is `,` kappa)
 
       (k, Seq("Ixx, Ixy, Iyy" -> ist, "K" -> kt))
@@ -362,15 +363,15 @@ object harrisCornerDetection {
       val localSize = LocalSize(1)
       val globalSize = GlobalSize(H)
 
-      val fSxy = sobelXY.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+      val fSxy = sobelXY.as[Args `(`
+        Int `,` Int `,` Array[Array[Float]],
+        Array[Float]]
       def asIs[B] = as3D[Float, B](H, W)
       val (is, ist) = asIs(fSxy(localSize, globalSize)(H `,` W `,` input))
 
-      val fMGC = mulGaussianCoarsity.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Array[Float]]] `,` Float
-        `)=>` Array[Float]]
+      val fMGC = mulGaussianCoarsity.as[Args `(`
+        Int `,` Int `,` Array[Array[Array[Float]]] `,` Float,
+        Array[Float]]
       val (k, kt) = fMGC(localSize, globalSize)(H `,` W `,` is `,` kappa)
 
       (k, Seq("Ix, Iy" -> ist, "K" -> kt))
@@ -396,9 +397,9 @@ object harrisCornerDetection {
       val localSize = LocalSize(1)
       val globalSize = GlobalSize(H)
 
-      val f = sobelXYMulGaussianCoarsity.as[ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Float]] `,` Float
-        `)=>` Array[Float]]
+      val f = sobelXYMulGaussianCoarsity.as[Args `(`
+        Int `,` Int `,` Array[Array[Float]] `,` Float,
+        Array[Float]]
       val (k, kt) = f(localSize, globalSize)(H `,` W `,` input `,` kappa)
 
       (k, Seq("K" -> kt))

@@ -37,7 +37,7 @@ class dot extends test_util.Tests {
   test("Simple dot product translation to phrase works and preserves types") {
     import rise.core.types.DataType._
     import shine.DPIA._
-    val phrase = shine.DPIA.fromRise(simpleDotProduct)(default.RiseTraversable)
+    val phrase = shine.DPIA.fromRise(simpleDotProduct)(using default.RiseTraversable)
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32

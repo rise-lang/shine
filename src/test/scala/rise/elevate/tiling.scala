@@ -22,13 +22,13 @@ import scala.language.implicitConversions
 
 class tiling extends test_util.Tests {
 
-  val BENF = rise.elevate.strategies.normalForm.BENF()(default.RiseTraversable)
-  val DFNF = rise.elevate.strategies.normalForm.DFNF()(default.RiseTraversable)
-  val CNF = rise.elevate.strategies.normalForm.CNF()(default.RiseTraversable)
-  val RNF = rise.elevate.strategies.normalForm.RNF()(default.RiseTraversable)
+  val BENF = rise.elevate.strategies.normalForm.BENF()(using default.RiseTraversable)
+  val DFNF = rise.elevate.strategies.normalForm.DFNF()(using default.RiseTraversable)
+  val CNF = rise.elevate.strategies.normalForm.CNF()(using default.RiseTraversable)
+  val RNF = rise.elevate.strategies.normalForm.RNF()(using default.RiseTraversable)
 
-  def tileND = rise.elevate.strategies.tiling.tileND(default.RiseTraversable)
-  def tileNDList = rise.elevate.strategies.tiling.tileNDList(default.RiseTraversable)
+  def tileND = rise.elevate.strategies.tiling.tileND(using default.RiseTraversable)
+  def tileNDList = rise.elevate.strategies.tiling.tileNDList(using default.RiseTraversable)
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
@@ -79,7 +79,7 @@ class tiling extends test_util.Tests {
 
     // inner
     assert(betaEtaEquals(
-      body(body(fmap(tileND(1)(tileSize))))(input2D),
+      body(body(rise.elevate.strategies.traversal.fmap(tileND(1)(tileSize))))(input2D),
       λ(i => λ(f => *(J o **(f) o S) $ i))
     ))
   }
@@ -95,13 +95,13 @@ class tiling extends test_util.Tests {
 
     // middle
     assert(betaEtaEquals(
-      body(body(fmap(tileND(1)(tileSize))))(input3D),
+      body(body(rise.elevate.strategies.traversal.fmap(tileND(1)(tileSize))))(input3D),
       λ(i => λ(f => *(J o ***(f) o S) $ i))
     ))
 
     // inner
     assert(betaEtaEquals(
-      body(body(fmap(fmap(tileND(1)(tileSize)))))(input3D),
+      body(body(rise.elevate.strategies.traversal.fmap(rise.elevate.strategies.traversal.fmap(tileND(1)(tileSize)))))(input3D),
       λ(i => λ(f => **(J o **(f) o S) $ i))
     ))
   }
@@ -118,19 +118,19 @@ class tiling extends test_util.Tests {
 
     // O
     assert(betaEtaEquals(
-      body(body(fmap(tileND(1)(tileSize))))(input4D),
+      body(body(rise.elevate.strategies.traversal.fmap(tileND(1)(tileSize))))(input4D),
       λ(i => λ(f => *(J o ****(f) o S) $ i))
     ))
 
     // N
     assert(betaEtaEquals(
-      body(body(fmap(fmap(tileND(1)(tileSize)))))(input4D),
+      body(body(rise.elevate.strategies.traversal.fmap(rise.elevate.strategies.traversal.fmap(tileND(1)(tileSize)))))(input4D),
       λ(i => λ(f => **(J o ***(f) o S) $ i))
     ))
 
     // M
     assert(betaEtaEquals(
-      body(body(fmap(fmap(fmap(tileND(1)(tileSize))))))(input4D),
+      body(body(rise.elevate.strategies.traversal.fmap(rise.elevate.strategies.traversal.fmap(rise.elevate.strategies.traversal.fmap(tileND(1)(tileSize))))))(input4D),
       λ(i => λ(f => ***(J o **(f) o S) $ i))
     ))
   }
@@ -155,7 +155,7 @@ class tiling extends test_util.Tests {
 
     // inner two
     assert(betaEtaEquals(
-      body(body(fmap(tileND(2)(tileSize))))(input3D),
+      body(body(rise.elevate.strategies.traversal.fmap(tileND(2)(tileSize))))(input3D),
       DFNF(λ(i => λ(f => *(J o **(J) o *(T) o ****(f) o *(T) o **(S) o S) $ i)))
     ))
   }
@@ -171,13 +171,13 @@ class tiling extends test_util.Tests {
 
     // middle two
     assert(betaEtaEquals(
-      body(body(fmap(tileND(2)(tileSize))))(input4D),
+      body(body(rise.elevate.strategies.traversal.fmap(tileND(2)(tileSize))))(input4D),
       λ(i => λ(f => *(J o **(J) o *(T) o *****(f) o *(T) o **(S) o S) $ i))
     ))
 
     // inner two
     assert(betaEtaEquals(
-      body(body(fmap(fmap(tileND(2)(tileSize)))))(input4D),
+      body(body(rise.elevate.strategies.traversal.fmap(rise.elevate.strategies.traversal.fmap(tileND(2)(tileSize)))))(input4D),
       λ(i => λ(f => **(J o **(J) o *(T) o ****(f) o *(T) o **(S) o S) $ i))
     ))
   }
@@ -212,7 +212,7 @@ class tiling extends test_util.Tests {
 
     // inner three
     assert(betaEtaEquals(
-      body(body(fmap(tileND(3)(tileSize))))(input4D),
+      body(body(rise.elevate.strategies.traversal.fmap(tileND(3)(tileSize))))(input4D),
       λ(i => λ(f => *(
       J o **(J) o ****(J) o
       ***(T) o *(T) o **(T) o
@@ -259,7 +259,7 @@ class tiling extends test_util.Tests {
 
   // todo: this should use mapSeqCompute and CNF instead of RNF
   // ... but mapAcceptorTranslation for split is missing
-  val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
+  val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize(lowering.mapSeq) `;` BENF
 
   val identity = depFun((t: DataType) => foreignFun("identity", immutable.Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(f32)
@@ -293,7 +293,7 @@ class tiling extends test_util.Tests {
   //TODO make this work without implicit array assignments
   ignore("codegen two innermost of three loops") {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(fmap(tileND(2)(tileSize)))))).apply(highLevel).get
+    val tiled = one(one(one(body(rise.elevate.strategies.traversal.fmap(tileND(2)(tileSize)))))).apply(highLevel).get
 
 
     logger.debug(gen.c.function.asStringFromExpr(lower(highLevel)))

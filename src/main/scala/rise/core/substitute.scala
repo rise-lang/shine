@@ -125,7 +125,7 @@ object substitute {
         if (`for` =~= t) { return_(ty.asInstanceOf[T]) } else super.`type`(t)
       }
     }
-    traverse(in, Visitor)
+    rise.core.traverse.traverse(in, Visitor)
   }
 
   def natsInType[T <: ExprType](subs: Map[Nat, Nat], in: T): T = {
@@ -133,7 +133,7 @@ object substitute {
       override def nat: Nat => Pure[Nat] = in1 =>
         return_(substitute.natsInNat(subs, in1))
     }
-    traverse(in, Visitor)
+    rise.core.traverse.traverse(in, Visitor)
   }
 
   def natInType[T <: ExprType](n: Nat, `for`: Nat, in: T): T =
@@ -152,7 +152,7 @@ object substitute {
       override def addressSpace: AddressSpace => Pure[AddressSpace] = b =>
         if (`for` == b) return_(a) else super.addressSpace(b)
     }
-    traverse(in, Visitor)
+    rise.core.traverse.traverse(in, Visitor)
   }
 
   def n2nInType[T <: ExprType](n2n: NatToNat, `for`: NatToNatIdentifier, in: T ): T = {
@@ -160,7 +160,7 @@ object substitute {
       override def natToNat: NatToNat => Pure[NatToNat] = n =>
         if (`for` == n) return_(n2n) else super.natToNat(n)
     }
-    traverse(in, Visitor)
+    rise.core.traverse.traverse(in, Visitor)
   }
 
   def n2dInType[T <: ExprType](n2d: NatToData, `for`: NatToDataIdentifier, in: T): T = {
@@ -168,7 +168,7 @@ object substitute {
       override def natToData: NatToData => Pure[NatToData] = n =>
         if (`for` == n) return_(n2d) else super.natToData(n)
     }
-    traverse(in, Visitor)
+    rise.core.traverse.traverse(in, Visitor)
   }
 
   // substitute in Nat

@@ -28,7 +28,7 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
   private val separateDotT: Strategy[Rise] =
     separateDotVH(weights2d, weightsV, weightsH)
 
-  private val BENF = rise.elevate.strategies.normalForm.BENF()(alternative.RiseTraversable)
+  private val BENF = rise.elevate.strategies.normalForm.BENF()(using alternative.RiseTraversable)
 
   case class ExprWrapper(e: Expr) {
     override def hashCode(): Int = exprAlphaEq(typeErasure).hash(e)

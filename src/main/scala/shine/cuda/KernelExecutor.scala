@@ -8,7 +8,7 @@ import shine.C.AST.ParamKind
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL
-import shine.OpenCL.{FunctionHelper, GlobalSize, HList, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
+import shine.OpenCL.{GlobalSize, HList, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
 import shine.cuda.AST.Kernel
 import util.Time.ms
 import util.{Time, TimeSpan}
@@ -29,8 +29,8 @@ object KernelExecutor {
                                     localSize: LocalSize,
                                     globalSize: GlobalSize,
                                     compilerOptions: List[String] = List.empty) {
-    def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
-      FromKernelModule(ktu, compilerOptions).as[F](localSize, globalSize)
+    def as[T, R](implicit ev: T <:< HList): T => (R, TimeSpan[Time.ms]) = {
+      FromKernelModule(ktu, compilerOptions).as[T, R](localSize, globalSize)
     }
 
     def benchmark(creator: KernelArgCreator, numberOfIterations: Integer, dataSizesBytes: Array[Long]) : BenchmarkResult =
@@ -44,17 +44,17 @@ object KernelExecutor {
   sealed case class KernelNoSizes(ktu: KernelModule,
                                   compilerOptions: List[String] = List.empty) {
     //noinspection TypeAnnotation
-    def as[F <: FunctionHelper](implicit ev: F#T <:< HList): Object {
-      def apply(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[ms])
+    def as[T, R](implicit ev: T <:< HList): Object {
+      def apply(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[ms])
 
-      def withSizes(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[ms])
+      def withSizes(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[ms])
     } = new {
-      def apply(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[Time.ms]) = {
-        FromKernelModule(ktu, compilerOptions).as[F](localSize, globalSize)
+      def apply(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[Time.ms]) = {
+        FromKernelModule(ktu, compilerOptions).as[T, R](localSize, globalSize)
       }
 
-      def withSizes(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[Time.ms]) = {
-        FromKernelModule(ktu, compilerOptions).as[F](localSize, globalSize)
+      def withSizes(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[Time.ms]) = {
+        FromKernelModule(ktu, compilerOptions).as[T, R](localSize, globalSize)
       }
     }
 
@@ -110,9 +110,9 @@ object KernelExecutor {
       * val kernelF = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
       * val (result, time) = kernelF(xs `;`)
       */
-    def as[F <: FunctionHelper](localSize: LocalSize, globalSize: GlobalSize)
-                               (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
-      hArgs: F#T => {
+    def as[T, R](localSize: LocalSize, globalSize: GlobalSize)
+                (implicit ev: T <:< HList): T => (R, TimeSpan[Time.ms]) = {
+      (hArgs: T) => {
         val args: List[Any] = hArgs.toList
         assert(kernel.inputParams.length == args.length)
 
@@ -146,7 +146,7 @@ object KernelExecutor {
 
         val dt = outputParam._2.typ
         assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
-        val output = asArray[F#R](getOutputType(dt), outputArg)
+        val output = asArray[R](getOutputType(dt), outputArg)
 
         dispose(kernelArgs)
 

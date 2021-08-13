@@ -33,19 +33,24 @@ object nFun {
   }
 }
 
-trait depFunDef {
-  def apply[T, I](kind: Kind[T, I]): Object {
-    def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U]
-  } = new {
-    def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U] = {
-      val x = Kind.makeIdentifier(kind)
-      DepLambda(kind, x, f(x))
-    }
+//trait depFunDef {
+//  def apply[T, I <: Kind.Identifier](kind: Kind[T, I]): WithKind[T, I] = WithKind(kind)
+//
+//  case class WithKind[T, I <: Kind.Identifier](kind: Kind[T, I]) {
+//    def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U] = {
+//      val x = Kind.makeIdentifier(kind)
+//      DepLambda(kind, x, f(x))
+//    }
+//  }
+//}
+//
+//object depFun extends depFunDef
+case class depFun[T, I](kind: Kind[T, I]) {
+  def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U] = {
+    val x = Kind.makeIdentifier(kind)
+    DepLambda(kind, x, f(x))
   }
 }
-
-object depFun extends depFunDef
-object _Λ_ extends depFunDef
 
 object π1 {
   def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]) =

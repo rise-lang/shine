@@ -3,7 +3,7 @@
 	url = https://github.com/rise-lang/executor.git
 [submodule "lib/yacx"]
 	path = lib/yacx
-	url = https://github.com/ZerataX/yacx.git
+	url = https://github.com/rise-lang/yacx.git
 [submodule "lib/elevate"]
 	path = lib/elevate
 	url = https://github.com/elevate-lang/elevate.git

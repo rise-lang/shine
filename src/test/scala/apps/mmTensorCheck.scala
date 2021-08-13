@@ -6,6 +6,8 @@ import shine.OpenCL._
 import shine.cuda.KernelExecutor.{KernelNoSizes, KernelWithSizes}
 import util._
 
+import reflect.Selectable.reflectiveSelectable
+
 class mmTensorCheck extends test_util.TestWithCUDA {
   import mmCheckUtils._
 
@@ -21,9 +23,9 @@ class mmTensorCheck extends test_util.TestWithCUDA {
     println(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
-      val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
-        Array[Array[Float]] `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+      val run = KernelNoSizes(kernel, compilerOptions).as[Args `(`
+        Array[Array[Float]] `,` Array[Array[Float]],
+        Array[Float]]
 
       val (output, _) =  run(LocalSize(1), GlobalSize(32))(a `,` b)
 
@@ -154,10 +156,10 @@ class mmTensorCheck extends test_util.TestWithCUDA {
     logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
-        val run = KernelNoSizes(kernel, compilerOptions).as[ScalaFunction `(`
+        val run = KernelNoSizes(kernel, compilerOptions).as[Args `(`
           Int `,` Int `,` Int `,`
-          Array[Array[Float]] `,` Array[Array[Float]]
-          `)=>` Array[Float]]
+          Array[Array[Float]] `,` Array[Array[Float]],
+          Array[Float]]
 
         val aMatrix = if (matrixATranspose) a.transpose else a
         val bMatrix = if (matrixBTranspose) b.transpose else b
@@ -185,10 +187,10 @@ class mmTensorCheck extends test_util.TestWithCUDA {
     logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     if (executeCudaTests) {
-      val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[ScalaFunction `(`
+      val run = KernelWithSizes(kernel, localSize, globalSize, compilerOptions).as[Args `(`
         Int `,` Int `,` Int `,`
-        Array[Array[Float]] `,` Array[Array[Float]]
-        `)=>` Array[Float]]
+        Array[Array[Float]] `,` Array[Array[Float]],
+        Array[Float]]
 
       val aMatrix = if (matrixATranspose) a.transpose else a
       val bMatrix = if (matrixBTranspose) b.transpose else b

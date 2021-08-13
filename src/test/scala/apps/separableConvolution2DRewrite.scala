@@ -29,10 +29,10 @@ class separableConvolution2DRewrite extends test_util.Tests {
   private val P = padClamp2D(1)
   private val Sh = slide(3)(1)
   private val Sv = slide(3)(1)
-  private val Dh = dot(weightsH)
-  private val Dv = dot(weightsV)
+  private val Dh = separableConvolution2D.dot(weightsH)
+  private val Dv = separableConvolution2D.dot(weightsV)
 
-  private val BENF = rise.elevate.strategies.normalForm.BENF()(alternative.RiseTraversable)
+  private val BENF = rise.elevate.strategies.normalForm.BENF()(using alternative.RiseTraversable)
 
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get
@@ -73,7 +73,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
   test("base to scanline") {
     rewrite_steps(base(weights2d), scala.collection.Seq(
       idS
-        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(join(weights2d))(join(nbh)))))),
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => separableConvolution2D.dot(join(weights2d))(join(nbh)))))),
       topDown(separateDotT)
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       topDown(`*f >> S -> S >> **f`)
@@ -113,7 +113,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
   test("base to scanline (mapLastFission)") {
     rewrite_steps(base(weights2d), scala.collection.Seq(
       idS
-        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(join(weights2d))(join(nbh)))))),
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => separableConvolution2D.dot(join(weights2d))(join(nbh)))))),
       topDown(separateDotT)
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       topDown(`*f >> S -> S >> **f`)

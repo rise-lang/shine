@@ -49,4 +49,6 @@ package object core {
   implicit def primitiveBuilderToPrimitive(pb: Builder
                                           ): DSL.ToBeTyped[Primitive] =
     pb.apply
+
+//    given Conversion[Int, Nat] = arithexpr.arithmetic.Cst(_)
 }

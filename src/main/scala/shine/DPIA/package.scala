@@ -50,14 +50,39 @@ package object DPIA {
 
   //noinspection TypeAnnotation
   implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
-    def `[`(e: Nat) = new {
-      def `/`(a: NatIdentifier) = new {
+//    def `[`(e: Nat) = new {
+//      def `/`(a: NatIdentifier) = new {
+//        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
+//      }
+//    }
+//
+//    def `[`(e: DataType) = new {
+//      def `/`(a: DataType) = new {
+//        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
+//      }
+//    }
+    def `[`(e: Nat): PhraseTypeSubstitutionHelper.NatHelper =
+      PhraseTypeSubstitutionHelper.NatHelper(t)(e)
+
+    def `[`(e: DataType): PhraseTypeSubstitutionHelper.DataTypeHelper =
+      PhraseTypeSubstitutionHelper.DataTypeHelper(t)(e)
+  }
+  object PhraseTypeSubstitutionHelper {
+    case class NatHelper(t: PhraseType)(e: Nat) {
+      def `/`(a: NatIdentifier): NatHelper.NatHelperHelpr =
+        NatHelper.NatHelperHelpr(t)(e)(a)
+    }
+    object NatHelper {
+      case class NatHelperHelpr(t: PhraseType)(e: Nat)(a: NatIdentifier) {
         def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
       }
     }
-
-    def `[`(e: DataType) = new {
-      def `/`(a: DataType) = new {
+    case class DataTypeHelper(t: PhraseType)(e: DataType) {
+      def `/`(a: DataType): DataTypeHelper.DataTypeHelperHelper =
+        DataTypeHelper.DataTypeHelperHelper(t)(e)(a)
+    }
+    object DataTypeHelper {
+      case class DataTypeHelperHelper(t: PhraseType)(e: DataType)(a: DataType) {
         def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
       }
     }
@@ -109,7 +134,7 @@ package object DPIA {
     def apply(dt: DataType, a: Access): ExpType = ExpType(dt, a)
 
     def unapply(et: ExpType): Option[(DataType, Access)] = {
-      ExpType.unapply(et)
+      Some((et.dataType, et.accessType))
     }
   }
 
@@ -117,7 +142,7 @@ package object DPIA {
     def apply(dt: DataType): AccType = AccType(dt)
 
     def unapply(at: AccType): Option[DataType] = {
-      AccType.unapply(at)
+      Some(at.dataType)
     }
   }
 

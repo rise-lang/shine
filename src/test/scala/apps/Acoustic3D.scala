@@ -3,6 +3,7 @@ package apps
 import acoustic3D._
 import shine.OpenCL._
 import util.{Time, TimeSpan, gen}
+import reflect.Selectable.reflectiveSelectable
 
 class Acoustic3D extends test_util.TestsWithExecutor {
   private val N = 128
@@ -47,11 +48,11 @@ class Acoustic3D extends test_util.TestsWithExecutor {
   def runKernel(k: KernelExecutor.KernelNoSizes,
                 mat1: Array[Array[Array[Float]]],
                 mat2: Array[Array[Array[Float]]]): (Array[Float], TimeSpan[Time.ms]) = {
-    val f = k.as[ScalaFunction `(`
+    val f = k.as[Args `(`
       Int `,` Int `,` Int `,`
       Array[Array[Array[Float]]] `,`
-      Array[Array[Array[Float]]]
-      `)=>` Array[Float]]
+      Array[Array[Array[Float]]],
+      Array[Float]]
     f(localSize, globalSize)(O `,` N `,` M `,` mat1 `,` mat2)
   }
 
@@ -63,7 +64,7 @@ class Acoustic3D extends test_util.TestsWithExecutor {
     runsWithSameResult(Seq(
       ("original", runOriginalKernel("acoustic3D.cl", mat1, mat2)),
       ("originalMSS", runOriginalKernel("acoustic3DMSS.cl", mat1, mat2)),
-      ("dpia", runKernel(gen.opencl.kernel.fromExpr(stencil), mat1, mat2)),
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(acoustic3D.stencil), mat1, mat2)),
       ("dpiaMSS", runKernel(gen.opencl.kernel.fromExpr(stencilMSS), mat1, mat2))
     ))
   }

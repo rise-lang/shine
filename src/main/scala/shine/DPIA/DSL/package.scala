@@ -77,11 +77,14 @@ package object DSL {
 
   //noinspection TypeAnnotation
   implicit class AssignmentHelper(lhs: Phrase[AccType]) {
-    def :=|(dt: DataType) = new {
+    def :=|(dt: DataType): AssignmentHelper.SyntaxHelper =
+      AssignmentHelper.SyntaxHelper(lhs, dt)
+  }
+  object AssignmentHelper {
+    case class SyntaxHelper(lhs: Phrase[AccType], dt: DataType) {
       def |(rhs: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommType] = {
+           (implicit context: TranslationContext): Phrase[CommType] =
         context.assign(dt, lhs, rhs)
-      }
     }
   }
 
@@ -127,8 +130,8 @@ package object DSL {
   }
 
   implicit class PairExtensions[T1 <: PhraseType, T2 <: PhraseType](v: Phrase[T1 x T2]) {
-    def _1: Proj1[T1, T2] = π1(v)
-    def _2: Proj2[T1, T2] = π2(v)
+    def `1`: Proj1[T1, T2] = π1(v)
+    def `2`: Proj2[T1, T2] = π2(v)
   }
 
   def mapTransientNat(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {

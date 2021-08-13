@@ -14,7 +14,7 @@ class localLaplacianCheck extends test_util.TestsWithExecutor {
   private val beta = 1.0f
 
   test("localLaplacian typechecks") {
-    logger.debug(localLaplacian(2).toExpr.t)
+    logger.debug(localLaplacian.localLaplacian(2).toExpr.t)
   }
 
   def lowerOMP(e: ToBeTyped[Expr]): Expr =

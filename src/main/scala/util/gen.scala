@@ -14,7 +14,7 @@ object gen {
   type Phrase   = DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType]
 
   private def exprToPhrase: Expr => Phrase =
-    shine.DPIA.fromRise(_)(default.RiseTraversable)
+    shine.DPIA.fromRise(_)(using default.RiseTraversable)
 
   type CModule  = C.Module
 

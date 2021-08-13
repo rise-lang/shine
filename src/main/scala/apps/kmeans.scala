@@ -9,10 +9,11 @@ import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.KernelExecutor._
+import reflect.Selectable.reflectiveSelectable
 
 object kmeans {
   private val update = fun(f32 ->: (f32 x f32) ->: f32)((dist, pair) =>
-    dist + (pair._1 - pair._2) * (pair._1 - pair._2)
+    dist + (pair.`1` - pair.`2`) * (pair.`1` - pair.`2`)
   )
 
   private val testF = foreignFun("test",
@@ -29,7 +30,7 @@ object kmeans {
       }""".stripMargin,
     f32 ->: (f32 x (int x int)) ->: (f32 x (int x int)))
 
-  private val select = fun(tuple => tuple._2._2)
+  private val select = fun(tuple => tuple.`2`.`2`)
 
   // FIXME: could not find original Lift expression, this is made up
   val kmeansHighLevel: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
@@ -116,9 +117,9 @@ object kmeans {
     val localSize = LocalSize(256)
     val globalSize = GlobalSize(P)
 
-    val f = k.as[ScalaFunction `(`
-      Int `,` Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]]
-      `)=>` Array[Int]]
+    val f = k.as[Args `(`
+      Int `,` Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]],
+      Array[Int]]
     f(localSize, globalSize)(P `,` C `,` F `,` features `,` clusters)
   }
 }
