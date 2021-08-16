@@ -20,6 +20,9 @@ object EGraph {
 
 /** A data structure to keep track of equalities between expressions.
   * @see [[https://docs.rs/egg/0.6.0/egg/struct.EGraph.html]]
+  * @tparam ED abstracts over expression analysis data
+  * @tparam ND abstracts over nat analysis data
+  * @tparam TD abstracts over type analysis data
   */
 class EGraph[ED, ND, TD](
   val analysis: Analysis[ED, ND, TD],
