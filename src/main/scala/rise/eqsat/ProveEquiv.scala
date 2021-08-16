@@ -139,7 +139,7 @@ class ProveEquiv(
                        goalReached: Int => Boolean): Unit = {
     runner.printReport()
 
-    egraph.dot().toSVG("/tmp/e-graph.svg")
+    // egraph.dot().toSVG("/tmp/e-graph.svg")
     if (!runner.stopReasons.contains(Done)) {
       // runner.iterations.foreach(println)
       val (found, notFound) = goals.indices.partition(goalReached)
