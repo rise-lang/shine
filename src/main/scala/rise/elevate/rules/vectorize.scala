@@ -3,11 +3,12 @@ package rise.elevate.rules
 import arithexpr.arithmetic.Cst
 import elevate.core._
 import elevate.macros.RuleMacro.rule
-import rise.elevate._
-import rise.core._
-import rise.core.types._
-import rise.core.primitives._
 import rise.core.DSL._
+import rise.core._
+import rise.core.primitives._
+import rise.core.types.DataType._
+import rise.core.types._
+import rise.elevate._
 
 object vectorize {
   // FIXME: sometimes assuming loads or stores will be aligned
@@ -90,7 +91,7 @@ object vectorize {
 
   // padEmpty (p*v) (asScalar in) -> asScalar (padEmpty p in)
   @rule def padEmptyBeforeAsScalar: Strategy[Rise] = {
-    case App(DepApp(padEmpty(), pv: Nat), App(asScalar(), in)) =>
+    case App(DepApp(NatKind, padEmpty(), pv: Nat), App(asScalar(), in)) =>
       in.t match {
         case ArrayType(_, VectorType(v, _)) if (pv % v) == (0: Nat) =>
           Success(asScalar(padEmpty(pv / v)(in)))
@@ -100,7 +101,7 @@ object vectorize {
 
   // padEmpty p (asVector v in) -> asVector v (padEmpty (p*v) in)
   @rule def padEmptyBeforeAsVector: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), p: Nat), App(asV @ DepApp(_, v: Nat), in))
+    case e @ App(DepApp(NatKind, padEmpty(), p: Nat), App(asV @ DepApp(NatKind, _, v: Nat), in))
     if isAsVector(asV) =>
       Success(eraseType(asV)(padEmpty(p*v)(in)) !: e.t)
   }
@@ -108,10 +109,10 @@ object vectorize {
   // TODO: express as a combination of smaller rules
   @rule def alignSlide: Strategy[Rise] = {
     case e @ App(transpose(),
-      App(App(map(), DepApp(asVector(), Cst(v))),
+      App(App(map(), DepApp(NatKind, asVector(), Cst(v))),
         App(join(), App(App(map(), transpose()),
-          App(App(map(), DepApp(padEmpty(), Cst(p))),
-            App(App(map(), DepApp(DepApp(slide(), Cst(3)), Cst(1))),
+          App(App(map(), DepApp(NatKind, padEmpty(), Cst(p))),
+            App(App(map(), DepApp(NatKind, DepApp(NatKind, slide(), Cst(3)), Cst(1))),
               in
             )
           )
@@ -135,9 +136,9 @@ object vectorize {
       Success(r !: e.t)
 
     case e @ App(transpose(),
-      App(App(map(), DepApp(asVector(), Cst(v))),
-        App(transpose(), App(DepApp(padEmpty(), Cst(p)),
-          App(DepApp(DepApp(slide(), Cst(3)), Cst(1)), in)
+      App(App(map(), DepApp(NatKind, asVector(), Cst(v))),
+        App(transpose(), App(DepApp(NatKind, padEmpty(), Cst(p)),
+          App(DepApp(NatKind, DepApp(NatKind, slide(), Cst(3)), Cst(1)), in)
         ))
       )
     ) if p <= v =>
@@ -156,9 +157,9 @@ object vectorize {
   // TODO: express as a combination of smaller rules
   // FIXME: function f needs to be element-wise (a hidden mapVec)
   @rule def mapAfterShuffle: Strategy[Rise] = {
-    case e @ App(DepApp(asVector(), v: Nat),
-      App(join(), App(DepApp(DepApp(slide(), v2: Nat), Cst(1)),
-        App(DepApp(take(), t: Nat), App(asScalar(),
+    case e @ App(DepApp(NatKind, asVector(), v: Nat),
+      App(join(), App(DepApp(NatKind, DepApp(NatKind, slide(), v2: Nat), Cst(1)),
+        App(DepApp(NatKind, take(), t: Nat), App(asScalar(),
           App(App(map(), f), in)
         ))
       ))
@@ -172,9 +173,9 @@ object vectorize {
 
   // FIXME: this is very specific
   @rule def padEmptyBeforeZipAsVector: Strategy[Rise] = {
-    case e @ App(DepApp(padEmpty(), p: Nat), App(
+    case e @ App(DepApp(NatKind, padEmpty(), p: Nat), App(
       Lambda(x, App(App(zip(),
-        App(asV @ DepApp(_, v: Nat), App(fst(), x2))),
+        App(asV @ DepApp(NatKind, _, v: Nat), App(fst(), x2))),
         App(asV2, App(snd(), x3)))),
       in
     )) if x =~= x2 && x =~= x3 && isAsVector(asV) && asV =~= asV2 =>
@@ -186,24 +187,24 @@ object vectorize {
   }
 
   def isAsVector: Rise => Boolean = {
-    case DepApp(asVector(), _: Nat) => true
-    case DepApp(asVectorAligned(), _: Nat) => true
+    case DepApp(NatKind, asVector(), _: Nat) => true
+    case DepApp(NatKind, asVectorAligned(), _: Nat) => true
     case _ => false
   }
 
-  private def isScalarFun: Type => Boolean = {
+  private def isScalarFun: ExprType => Boolean = {
     case FunType(i, o) => isScalarTuple(i) &&
       (isScalarTuple(o) || isScalarFun(o))
     case _ => false
   }
 
-  private def isScalarTuple: Type => Boolean = {
+  private def isScalarTuple: ExprType => Boolean = {
     case _: ScalarType => true
     case PairType(a, b) => isScalarTuple(a) && isScalarTuple(b)
     case _ => false
   }
 
-  private def makeAsVector(asV: Rise): Type => ToBeTyped[Rise] = {
+  private def makeAsVector(asV: Rise): ExprType => ToBeTyped[Rise] = {
     case ArrayType(_, _: ScalarType) => eraseType(asV)
     case ArrayType(n, PairType(a, b)) =>
       unzip >> fun(p => zip(
@@ -212,7 +213,7 @@ object vectorize {
     case t => throw new Exception(s"did not expect $t")
   }
 
-  private def makeShuffle(s: Rise): Type => ToBeTyped[Rise] = {
+  private def makeShuffle(s: Rise): ExprType => ToBeTyped[Rise] = {
     case ArrayType(_, _: VectorType) => eraseType(s)
     case ArrayType(n, PairType(a, b)) =>
       unzip >> fun(p => zip(

@@ -4,10 +4,12 @@
 package shine.cuda.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class WmmaFill(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: FragmentKind, val layout: MatrixLayout, val fill: Phrase[ExpType], val target: Phrase[AccType]) extends CommandPrimitive {
+final case class WmmaFill(val rows: Nat, val columns: Nat, val layers: Nat, val dt: DataType, val frag: Fragment, val layout: MatrixLayout, val fill: Phrase[ExpType], val target: Phrase[AccType]) extends CommandPrimitive {
   assert {
     fill :: expT(dt, read)
     target :: accT(FragmentType(rows, columns, layers, dt, frag, layout))

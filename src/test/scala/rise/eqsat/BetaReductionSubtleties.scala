@@ -3,7 +3,7 @@ package rise.eqsat
 import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.primitives._
-import rise.core.types._
+import rise.core.types.DataType._
 import ProveEquiv.syntax._
 
 class BetaReductionSubtleties extends test_util.Tests {
@@ -54,7 +54,7 @@ class BetaReductionSubtleties extends test_util.Tests {
       transpose(transpose(in)))
 
     // extraction works with parallel application
-    ProveEquiv.init().run(start, goal, Seq(rules.beta, rules.removeTransposePair))
+    // ProveEquiv.init().run(start, goal, Seq(rules.beta, rules.removeTransposePair))
     ProveEquiv.init().run(start, goal, Seq(rules.betaExtract, rules.removeTransposePair))
 
     // extraction does not work with sequential application
@@ -74,7 +74,7 @@ class BetaReductionSubtleties extends test_util.Tests {
       Pattern.fromExpr(goal).compile()
         .searchEClass(egraph, shc, startId).isDefined
     }
-    assert(seqCheck(rules.beta))
+    // assert(seqCheck(rules.beta))
     assert(!seqCheck(rules.betaExtract))
   }
 }

@@ -6,6 +6,7 @@ import Type._
 import rise.core.types._
 import util.gen
 import util.gen.c.function
+import rise.core.types.DataType._
 
 class gemvCheck extends test_util.Tests {
   private val N = 128
@@ -14,13 +15,13 @@ class gemvCheck extends test_util.Tests {
   test("high-level gemv type inference works") {
     val typed = gemvHighLevel.toExpr
 
-    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: ExprType]].x
     val M = typed.t
-      .asInstanceOf[NatDepFunType[_ <: Type]].t
-      .asInstanceOf[NatDepFunType[_ <: Type]].x
+      .asInstanceOf[NatDepFunType[_ <: ExprType]].t
+      .asInstanceOf[NatDepFunType[_ <: ExprType]].x
     assertResult(
-      DepFunType(N,
-        DepFunType(M,
+      DepFunType(NatKind, N,
+        DepFunType(NatKind, M,
           ArrayType(M, ArrayType(N, f32)) ->:
             (ArrayType(N, f32) ->: (ArrayType(M, f32) ->:
             (f32 ->: (f32 ->: ArrayType(M, f32)))))

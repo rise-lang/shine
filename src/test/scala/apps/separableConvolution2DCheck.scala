@@ -1,13 +1,13 @@
 package apps
 
-import separableConvolution2D._
+import apps.separableConvolution2D._
+import rise.core.DSL.HighLevelConstructs._
+import rise.core.DSL.Type._
+import rise.core.DSL.{ToBeTyped, _}
 import rise.core._
-import rise.core.types._
-import rise.core.DSL._
 import rise.core.primitives._
-import Type._
-import HighLevelConstructs._
-import rise.core.DSL.ToBeTyped
+import rise.core.types.DataType._
+import rise.core.types._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 import util.gen.c.function

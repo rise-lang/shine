@@ -4,10 +4,12 @@
 package shine.DPIA.primitives.functional
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class Zip(val n: Nat, val dt1: DataType, val dt2: DataType, val a: AccessType, val e1: Phrase[ExpType], val e2: Phrase[ExpType]) extends ExpPrimitive {
+final case class Zip(val n: Nat, val dt1: DataType, val dt2: DataType, val a: Access, val e1: Phrase[ExpType], val e2: Phrase[ExpType]) extends ExpPrimitive {
   assert {
     e1 :: expT(ArrayType(n, dt1), a)
     e2 :: expT(ArrayType(n, dt2), a)

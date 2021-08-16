@@ -6,12 +6,13 @@ import elevate.core.strategies.predicate._
 import rise.core.DSL._
 import rise.core._
 import rise.core.equality._
+import rise.core.types.DataType._
 import rise.elevate.Rise
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._
-import rise.elevate.strategies.algorithmic._
-import rise.elevate.rules.traversal._
 import rise.elevate.rules.movement._
+import rise.elevate.rules.traversal._
+import rise.elevate.strategies.algorithmic._
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
@@ -52,15 +53,15 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
       case App(f, e) => everywhere(s)(f).map(App(_, e)(p.t)) ++ everywhere(s)(e).map(App(f, _)(p.t))
       case Identifier(_) => Nil
       case Lambda(x, e) => everywhere(s)(e).map(Lambda(x, _)(p.t))
-      case DepLambda(x, e) => x match {
+      case DepLambda(_, x, e) => x match {
         case n: NatIdentifier =>
-          everywhere(s)(e).map(DepLambda[NatKind](n, _)(p.t))
+          everywhere(s)(e).map(DepLambda(NatKind, n, _)(p.t))
         case n: DataTypeIdentifier =>
-          everywhere(s)(e).map(DepLambda[DataKind](n, _)(p.t))
+          everywhere(s)(e).map(DepLambda(DataKind, n, _)(p.t))
         case n: AddressSpaceIdentifier =>
-          everywhere(s)(e).map(DepLambda[AddressSpaceKind](n, _)(p.t))
+          everywhere(s)(e).map(DepLambda(AddressSpaceKind, n, _)(p.t))
       }
-      case DepApp(f, x) => everywhere(s)(f).map(DepApp(_, x)(p.t))
+      case DepApp(kind, f, x) => everywhere(s)(f).map(DepApp(kind, _, x)(p.t))
       case Literal(_) => Nil
       case _: TypeAnnotation => throw new Exception("Type annotations should be gone.")
       case _: TypeAssertion => throw new Exception("Type assertions should be gone.")

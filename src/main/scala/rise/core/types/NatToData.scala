@@ -1,6 +1,8 @@
 package rise.core.types
 
+import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import rise.core._
+import rise.core.types.DataType._
 
 sealed trait NatToData {
   def map(f: DataType => DataType): NatToData = this match {
@@ -11,14 +13,8 @@ sealed trait NatToData {
   def apply(n: Nat): DataType = NatToDataApply(this, n)
 }
 
-final case class NatToDataIdentifier(name: String,
-                                     override val isExplicit: Boolean = false
-                                    ) extends NatToData
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: NatToDataIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: NatToDataIdentifier = this.copy(isExplicit = false)
+final case class NatToDataIdentifier(name: String) extends NatToData {
+  override def toString: String = name
 }
 
 case class NatToDataLambda private (x: NatIdentifier, body: DataType)
@@ -28,4 +24,19 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType)
     substitute.natInDataType(a, `for` = x, in = body)
 
   override def toString: String = s"($x: nat |-> $body)"
+
+  //See hash code of NatNatTypeFunction
+  override def hashCode(): Int = this.apply(NamedVar("ComparisonDummy")).hashCode()
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other:NatToDataLambda => body == other.apply(x)
+    case _ => false
+  }
+}
+
+object NatToDataLambda {
+  def apply(upperBound: Nat, f: NatIdentifier => DataType): NatToDataLambda = {
+    val n = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
+    NatToDataLambda(n, f(n))
+  }
 }

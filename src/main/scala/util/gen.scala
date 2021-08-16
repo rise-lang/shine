@@ -86,6 +86,81 @@ object gen {
     }
   }
 
+  object gap8 {
+
+    import shine.OpenMP
+    import shine.GAP8
+
+    object function {
+      def fromExpr: Expr => GAP8.Module =
+        gen.gap8.function().fromExpr
+
+      def asStringFromExpr: Expr => String = {
+        gen.gap8.function().asStringFromExpr
+      }
+
+      def asString: CModule => String =
+        gen.functionAsString
+    }
+
+    case class function(name: String = "foo") {
+      def fromExpr: Expr => GAP8.Module =
+        functionFromExpr(name, OpenMP.CodeGenerator()) andThen
+          GAP8.Module.fromCModule
+
+      def asStringFromExpr: Expr => String =
+        functionAsStringFromExpr(name, OpenMP.CodeGenerator())
+
+      /**
+        * Accelerator function only - Injects unpacking code
+        * */
+      private def functionAsStringFromExpr(name: String = "foo",
+                                           gen: CCodeGenerator = CCodeGenerator()
+                                          ): Expr => String =
+        functionFromExpr(name, gen) andThen
+          GAP8.Module.injectUnpacking andThen
+          C.Module.translateToString andThen
+          run(SyntaxChecker(_))
+    }
+
+    type HostedModule = GAP8.Module
+
+    object hosted {
+      def fromExpr: Expr => HostedModule = gen.gap8.hosted().fromExpr
+      def fromPhrase: Phrase => HostedModule = gen.gap8.hosted().fromPhrase
+      def asString: HostedModule => String = GAP8.Module.translateToString
+    }
+
+    case class hosted(name: String = "foo"){
+
+      def funDefToCModule(): FunDef => C.Module =
+        shine.C.Compilation.ModuleGenerator.funDefToModule(shine.C.Compilation.CodeGenerator())
+
+
+      def fromExpr: Expr => HostedModule = exprToPhrase andThen fromPhrase
+
+      def fromPhrase: Phrase => HostedModule =
+        partialHostCompiler(name) composeWith
+          ((((x: FunDef) => x) x map(funDefToCModule())) andThen hostFunDefToHostPart)
+
+      private val hostFunDefToHostPart: ((FunDef, Seq[C.Module])) => (C.Module, Seq[C.Module]) = {
+        case (hostModule, acceleratorModule) =>
+          val gen = shine.GAP8.Compilation.HostCodeGenerator(acceleratorModule)
+          (shine.GAP8.Compilation.HostCodeModuleGenerator.funDefToModule(gen)(hostModule), acceleratorModule)
+      }
+
+      private def partialHostCompiler(hostFunName: String): PartialCompiler[
+        Phrase,
+        HostedModule,
+        (FunDef, Seq[FunDef]),
+        (C.Module, Seq[C.Module])
+      ] = PartialCompiler.functor(
+        GAP8.Compilation.SeparateHostAndAcceleratorCode.separate(hostFunName),
+        (GAP8.Module.apply _).tupled
+      )
+    }
+  }
+
   object opencl {
     import shine.OpenCL
 

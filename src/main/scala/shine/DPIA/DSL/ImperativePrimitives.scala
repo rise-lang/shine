@@ -1,9 +1,11 @@
 package shine.DPIA.DSL
 
+import rise.core.types.{DataType, NatKind, read}
+import rise.core.types.DataType._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Fst, Snd}
 
@@ -27,7 +29,7 @@ object newDoubleBuffer {
             dt3: ArrayType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
-            f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]) =
+            f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]): NewDoubleBuffer =
     NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT(dt1) x CommType() x CommType())(ps => {
       val    v: Phrase[VarType]  = ps._1._1
       val swap: Phrase[CommType] = ps._1._2
@@ -76,7 +78,7 @@ object streamNext {
     f: Phrase[ExpType ->: CommType]
   ): Phrase[CommType] = {
     Phrases.Apply(
-      Phrases.DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next, i),
+      Phrases.DepApply(NatKind, next, i),
       f
     )
   }

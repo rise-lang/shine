@@ -1,9 +1,13 @@
 package shine.DPIA.Compilation
 
+import rise.core.types.{AddressSpace, DataType, NatKind, read, write}
+import rise.core.types.DataType._
+import rise.core.DSL.Type._
+import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
+import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
@@ -44,13 +48,13 @@ object ContinuationTranslation {
 
       // on the fly beta-reduction
       case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)
-      case DepApply(fun, arg) => arg match {
+      case DepApply(kind, fun, arg) => arg match {
         case a: Nat =>
-          con(Lifting.liftDependentFunction[NatKind, ExpType](
-            fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(C)
+          con(Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a))(C)
         case a: DataType =>
-          con(Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(C)
+          con(Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a))(C)
       }
 
       case IfThenElse(cond, thenP, elseP) =>
@@ -108,10 +112,10 @@ object ContinuationTranslation {
 
     case DMatch(x, elemT, outT, a, f, input) =>
       // Turn the f imperative by means of forwarding the continuation translation
-      con(input)(λ(expT(DepPairType(x, elemT), read))(pair =>
+      con(input)(λ(expT(DepPairType(NatKind, x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_[NatKind]()((fst: NatIdentifier) =>
-            λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
+          _Λ_(NatKind)((fst: NatIdentifier) =>
+            λ(expT(substituteNatInType(fst, x, elemT), read))(snd =>
               con(f(fst)(snd))(C)
             )), pair)))
 

@@ -1,5 +1,7 @@
 package shine.OpenCL
 
+import rise.core.types.{DataType, read}
+import rise.core.types.DataType._
 import shine.DPIA.DSL.identifier
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
@@ -8,7 +10,7 @@ import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.OpenCL.{primitives => ocl}
 import shine.cuda.{primitives => cuda}
-import shine.cuda.primitives.functional.{AsMatrix, GenerateFragment, MapFragment, TensorMatMultAdd, AsFragment}
+import shine.cuda.primitives.functional.{AsFragment, AsMatrix, GenerateFragment, MapFragment, TensorMatMultAdd}
 import shine.cuda.warpDim
 
 object AdjustArraySizesForAllocations {
@@ -57,8 +59,8 @@ object AdjustArraySizesForAllocations {
 
       case Apply(f, _) => visitAndGatherInformation(f, parallInfo)
       case Lambda(_, p) => visitAndGatherInformation(p, parallInfo)
-      case DepApply(f, _) => visitAndGatherInformation(f, parallInfo)
-      case DepLambda(_, p) => visitAndGatherInformation(p, parallInfo)
+      case DepApply(_, f, _) => visitAndGatherInformation(f, parallInfo)
+      case DepLambda(_, _, p) => visitAndGatherInformation(p, parallInfo)
       case Fst(_, _, p) => visitAndGatherInformation(p, parallInfo) match {
         case Nil => Nil
         case RecordInfo(fst, _) :: Nil => fst

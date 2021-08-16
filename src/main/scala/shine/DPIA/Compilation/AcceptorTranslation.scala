@@ -3,8 +3,12 @@ package shine.DPIA.Compilation
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
-import shine.DPIA.Types._
+import rise.core.types.{DataType, Fragment, MatrixLayout, NatIdentifier, NatKind, read, write}
+import rise.core.DSL.Type._
+import rise.core.types.DataType._
+import rise.core.substitute.{natInType => substituteNatInType}
+import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck, comm}
+import rise.core.types.DataTypeOps._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}
@@ -25,13 +29,13 @@ object AcceptorTranslation {
     E match {
       // on the fly beta-reduction
       case Apply(fun, arg) => acc(Lifting.liftFunction(fun).reducing(arg))(A)
-      case DepApply(fun, arg) => arg match {
+      case DepApply(kind, fun, arg) => arg match {
         case a: Nat =>
-          acc(Lifting.liftDependentFunction[NatKind, ExpType](
-            fun.asInstanceOf[ Phrase[NatKind `()->:` ExpType]])(a))(A)
+          acc(Lifting.liftDependentFunction(
+            fun.asInstanceOf[ Phrase[`(nat)->:`[ExpType]]])(a))(A)
         case a: DataType =>
-          acc(Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
+          acc(Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a))(A)
       }
 
       case e
@@ -103,7 +107,7 @@ object AcceptorTranslation {
     case depMapSeq@DepMapSeq(unroll) =>
       val (n, ft1, ft2, f, array) = depMapSeq.unwrap
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        DepMapSeqI(unroll)(n, ft1, ft2, _Λ_[NatKind]()((k: NatIdentifier) =>
+        DepMapSeqI(unroll)(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -113,10 +117,10 @@ object AcceptorTranslation {
 
     case DMatch(x, elemT, outT, a, f, input) =>
       // Turn the f imperative by means of forwarding the acceptor translation
-      con(input)(λ(expT(DepPairType(x, elemT), read))(pair =>
+      con(input)(λ(expT(DepPairType(NatKind, x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_[NatKind]()((fst: NatIdentifier) =>
-            λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
+          _Λ_(NatKind)((fst: NatIdentifier) =>
+            λ(expT(substituteNatInType(fst, x, elemT), read))(snd =>
               acc(f(fst)(snd))(A)
             )), pair)))
 
@@ -127,7 +131,7 @@ object AcceptorTranslation {
     case Iterate(n, m, k, dt, f, array) =>
       con(array)(λ(expT((m * n.pow(k))`.`dt, read))(x =>
         IterateIAcc(n, m, k, dt, A,
-          _Λ_[NatKind]()(l => λ(accT(l `.` dt))(o =>
+          _Λ_(NatKind)(l => λ(accT(l `.` dt))(o =>
             λ(expT((l * n)`.`dt, read))(x => acc(f(l)(x))(o)))),
           x)))
 
@@ -243,7 +247,7 @@ object AcceptorTranslation {
 
     case VectorFromScalar(n, dt, arg) =>
       con(arg)(λ(expT(dt, read))(e =>
-        A :=|VectorType(n, dt)| VectorFromScalar(n, dt, e)))
+        A :=|vec(n, dt)| VectorFromScalar(n, dt, e)))
 
     case Zip(n, dt1, dt2, access, e1, e2) =>
       acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;`
@@ -252,7 +256,7 @@ object AcceptorTranslation {
     // OpenMP
     case omp.DepMapPar(n, ft1, ft2, f, array) =>
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        ompI.DepMapParI(n, ft1, ft2, _Λ_[NatKind]()((k: NatIdentifier) =>
+        ompI.DepMapParI(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -271,7 +275,7 @@ object AcceptorTranslation {
     case depMap@ocl.DepMap(level, dim) =>
       val (n, ft1, ft2, f, array) = depMap.unwrap
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        oclI.DepMapI(level, dim)(n, ft1, ft2, _Λ_[NatKind]()((k: NatIdentifier) =>
+        oclI.DepMapI(level, dim)(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
           λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
             acc(f(k)(x))(o)
           }))), x, A)))
@@ -279,7 +283,7 @@ object AcceptorTranslation {
     case ocl.Iterate(a, n, m, k, dt, f, array) =>
       con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x =>
         oclI.IterateIAcc(a, n, m, k, dt, A,
-          _Λ_[NatKind]()(l => λ(accT(l`.`dt))(o =>
+          _Λ_(NatKind)(l => λ(accT(l`.`dt))(o =>
             λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
           x)))
 
@@ -348,9 +352,25 @@ object AcceptorTranslation {
               acc(fun(x))(o))))))
 
     case cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix) =>
-      con(aMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.AMatrix, layoutA), read))(aMatrix =>
-        con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, FragmentKind.BMatrix, layoutB), read))(bMatrix =>
-          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, FragmentKind.Accumulator, MatrixLayout.None), read))(cMatrix =>
+      con(aMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, Fragment.AMatrix, layoutA), read))(aMatrix =>
+        con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, Fragment.BMatrix, layoutB), read))(bMatrix =>
+          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, Fragment.Accumulator, MatrixLayout.None), read))(cMatrix =>
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
+
+    //GAP8
+    case r@shine.GAP8.primitives.functional.Run(cores) => {
+      ???
+    }
+
+
+    case kc@shine.GAP8.primitives.functional.KernelCall(name, cores, n) =>
+      def rec(ts: Seq[Phrase[ExpType]], es: Seq[Phrase[ExpType]]): Phrase[CommType] = ts match {
+        case Nil =>
+          shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n)(kc.inTs, kc.outT, kc.args, A)
+        case Seq(arg, tail@_*) =>
+          con(arg)(λ(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
+      }
+
+      rec(kc.args, Seq())
   }
 }

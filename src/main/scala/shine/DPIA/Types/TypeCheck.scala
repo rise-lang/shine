@@ -1,9 +1,9 @@
 package shine.DPIA.Types
 
+import rise.core.types.{DataType, TypeException, read}
+import rise.core.types.DataType._
 import shine.DPIA._
 import shine.DPIA.Phrases._
-
-class TypeException(msg: String) extends Exception(msg)
 
 object TypeCheck {
   def apply[T <: PhraseType](phrase: Phrase[T]): Unit = {
@@ -17,9 +17,9 @@ object TypeCheck {
         TypeCheck(q)
         errorIfNotEqOrSubtype(q.t, p.t.inT)
 
-      case DepLambda(_, p) => TypeCheck(p)
+      case DepLambda(_, _, p) => TypeCheck(p)
 
-      case DepApply(p, _) => TypeCheck(p)
+      case DepApply(_, p, _) => TypeCheck(p)
 
       case LetNat(_, defn, body) => TypeCheck(defn); TypeCheck(body)
 
@@ -54,7 +54,7 @@ object TypeCheck {
         TypeCheck(rhs)
         (lhs.t, rhs.t) match {
           case (ExpType(dt1, `read`), ExpType(dt2, `read`))
-            if dt1.isInstanceOf[BasicType] && dt2.isInstanceOf[BasicType] =>
+            if isBasicType(dt1) && isBasicType(dt2) =>
               if (lhs.t != rhs.t) {
                 error(found = s"${lhs.t} and ${rhs.t}",
                   expected = "them to match")
@@ -65,6 +65,11 @@ object TypeCheck {
 
       case _: Primitive[_] =>
     }
+  }
+
+  def isBasicType(dataType: DataType): Boolean = dataType match {
+    case _: ScalarType | _: FragmentType | _: IndexType | _: VectorType | NatType => true
+    case _ => false
   }
 
   def errorIfNotEq(sub: PhraseType, pt: PhraseType): Unit = {
@@ -116,14 +121,14 @@ object TypeCheck {
           accessSub == read && notContainingArrayType(bSub)
       case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
         subtypeCheck(superInT, subInT) && subtypeCheck(subOutT,  superOutT)
-      case (DepFunType(subInT, subOutT), DepFunType(superInT, superOutT)) =>
-        subInT == superInT && subtypeCheck(subOutT, superOutT)
+      case (DepFunType(kind1, subInT, subOutT), DepFunType(kind2, superInT, superOutT)) =>
+        kind1 == kind2 && subInT == superInT && subtypeCheck(subOutT, superOutT)
       case _ => false
     }
   }
 
   def notContainingArrayType(composed: DataType): Boolean = composed match {
-      case _: BasicType => true
+      case _: ScalarType | _: FragmentType | _: IndexType | _: VectorType | NatType => true
       case PairType(first, second) =>
         notContainingArrayType(first) && notContainingArrayType(second)
       case _ => false

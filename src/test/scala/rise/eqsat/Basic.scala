@@ -174,7 +174,7 @@ object Basic {
       if (n <= 0) {
         k(Seq())
       } else {
-        recFuns(n - 1, dts, rest => fun((dts(n) ->: dts(n - 1)): rct.Type)(f => k(f +: rest)))
+        recFuns(n - 1, dts, rest => fun((dts(n) ->: dts(n - 1)): rct.ExprType)(f => k(f +: rest)))
       }
 
     recDataTypes(n + 1, dts => recFuns(n, dts, k(dts)))

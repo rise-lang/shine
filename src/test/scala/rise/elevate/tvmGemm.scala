@@ -8,7 +8,7 @@ import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
 import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.types._
+import rise.core.types.DataType._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal._

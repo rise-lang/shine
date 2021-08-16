@@ -5,7 +5,7 @@ import rise.core.DSL._
 import ProveEquiv.syntax._
 
 class EtaReductionSubtleties extends test_util.Tests {
-  test("missed eta-abstraction") {
+  test("missed eta reduction") {
     val start = Expr.fromNamed(introduceDataFuns(1, _ => f =>
       fun(x => fun(_ => f(0))(x)(x))))
     val goal = Expr.fromNamed(introduceDataFuns(1, _ => f =>
@@ -26,12 +26,15 @@ class EtaReductionSubtleties extends test_util.Tests {
     }
   }
 
-  test("invalid eta-abstraction") {
-    // FIXME: this is not a great example
+  // FIXME:
+  //  1. this is not a great example
+  //  2. does not trigger an invalid reduction anymore,
+  //     due to the extraction-based index shifting
+  ignore("invalid eta reduction") {
     val start = Expr.fromNamed(introduceDataFuns(1, dts => f =>
-      fun(dts(1))(z => fun(x => fun(_ => f(0))(x)(x)))))
+      fun(dts(0))(z => fun(x => fun(_ => f(0))(x)(x)))))
     val goal = Expr.fromNamed(introduceDataFuns(1, dts => f =>
-      fun(dts(1))(z => fun(_ => f(0))(z))))
+      fun(dts(0))(z => fun(_ => f(0))(z))))
 
     // note: breaks advanced Var TypeCheck
     // note: saturates without finding the goal with rules.beta

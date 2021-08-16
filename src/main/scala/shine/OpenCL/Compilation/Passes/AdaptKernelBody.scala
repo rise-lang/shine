@@ -1,7 +1,7 @@
 package shine.OpenCL.Compilation.Passes
 
+import rise.core.types.AddressSpace
 import shine.C.AST._
-import shine.DPIA.Types.AddressSpace
 import shine.{C, OpenCL}
 
 import scala.collection.mutable

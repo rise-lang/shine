@@ -4,7 +4,7 @@ import arithexpr.arithmetic.ArithExpr.isSmaller
 import arithexpr.arithmetic.Cst
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.{Natural, Phrase, VisitAndRebuild}
-import shine.DPIA.Types.{ArrayType, CommType, PhraseType}
+import shine.DPIA.Types.{CommType, PhraseType}
 import shine.DPIA.primitives.functional.NatAsIndex
 import shine.DPIA.primitives.imperative._
 import shine.OpenCL.primitives.imperative.ParFor
@@ -25,16 +25,16 @@ object UnrollLoops {
             }
           case f@ForNat(true) =>
             f.loopBody match {
-              case shine.DPIA.Phrases.DepLambda(x, body) =>
+              case shine.DPIA.Phrases.DepLambda(kind, x, body) =>
                 Continue(unrollLoop(f.n, init = 0, step = 1, i =>
-                  PhraseType.substitute(i, `for` = x, in = body)), this)
+                  shine.DPIA.Types.substitute(i, `for` = x, in = body)), this)
               case _ => throw new Exception("This should not happen")
             }
           case pf@ParFor(_, _, true, _) =>
             pf.body match {
               case shine.DPIA.Phrases.Lambda(ident, shine.DPIA.Phrases.Lambda(identOut, body)) =>
                 pf.out.t.dataType match {
-                  case ArrayType(_, elemType) =>
+                  case rise.core.types.DataType.ArrayType(_, elemType) =>
                     Continue(unrollLoop(pf.n, pf.init, pf.step, i =>
                       Phrase.substitute(
                         IdxAcc(pf.n, elemType,

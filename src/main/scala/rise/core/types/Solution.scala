@@ -1,17 +1,18 @@
 package rise.core.types
 
-import util.monads._
-import arithexpr.arithmetic.{BoolExpr, NamedVar}
+import arithexpr.arithmetic.BoolExpr
 import rise.core.traverse._
+import rise.core.types.DataType._
 import rise.core.{Expr, substitute}
+import util.monads._
 
 object Solution {
   def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
-  def subs(ta: Type, tb: Type): Solution = {
+  def subs(ta: ExprType, tb: ExprType): Solution = {
     Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map(), Map(), Map())
   }
 
-  def subs(ta: DataTypeIdentifier, tb: Type): Solution =
+  def subs(ta: DataTypeIdentifier, tb: ExprType): Solution =
     Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map(), Map(), Map())
   def subs(na: NatIdentifier, nb: Nat): Solution =
     Solution(Map(), Map(na -> nb), Map(), Map(), Map(), Map(), Map(), Map())
@@ -19,7 +20,7 @@ object Solution {
     Solution(Map(), Map(), Map(aa -> ab), Map(), Map(), Map(), Map(), Map())
   def subs(ma: MatrixLayoutIdentifier, mb: MatrixLayout): Solution =
     Solution(Map(), Map(), Map(), Map(ma -> mb), Map(), Map(),  Map(), Map())
-  def subs(fa: FragmentKindIdentifier, fb: FragmentKind): Solution =
+  def subs(fa: FragmentIdentifier, fb: Fragment): Solution =
     Solution(Map(), Map(), Map(), Map(), Map(fa -> fb), Map(),  Map(), Map())
   def subs(na: NatToDataIdentifier, nb: NatToData): Solution =
     Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb), Map(), Map())
@@ -29,11 +30,11 @@ object Solution {
     Solution(Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
 }
 
-case class Solution(ts: Map[Type, Type],
+case class Solution(ts: Map[ExprType, ExprType],
                     ns: Map[NatIdentifier, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
                     ms: Map[MatrixLayoutIdentifier, MatrixLayout],
-                    fs: Map[FragmentKindIdentifier, FragmentKind],
+                    fs: Map[FragmentIdentifier, Fragment],
                     n2ds: Map[NatToDataIdentifier, NatToData],
                     n2ns: Map[NatToNatIdentifier, NatToNat],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
@@ -43,13 +44,13 @@ case class Solution(ts: Map[Type, Type],
     override def nat: Nat => Pure[Nat] = ae => return_(sol(ae))
     override def addressSpace: AddressSpace => Pure[AddressSpace] = a => return_(sol(a))
     override def matrixLayout: MatrixLayout => Pure[MatrixLayout] = m => return_(sol(m))
-    override def fragmentKind: FragmentKind => Pure[FragmentKind] = f => return_(sol(f))
+    override def fragmentKind: Fragment => Pure[Fragment] = f => return_(sol(f))
     override def natToData: NatToData => Pure[NatToData] = n2d => return_(sol(n2d))
     override def natToNat: NatToNat => Pure[NatToNat] = n2n => return_(sol(n2n))
   }
 
   case class V(sol: Solution) extends Visitor(sol) {
-    override def `type`[T <: Type] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
+    override def `type`[T <: ExprType] : T => Pure[T] = t => return_(sol(t).asInstanceOf[T])
   }
   def apply(e: Expr): Expr = V(this).expr(e).unwrap
 
@@ -58,15 +59,15 @@ case class Solution(ts: Map[Type, Type],
       case t: DataTypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[DataType])
       case t => super.datatype(t)
     }
-    override def `type`[T <: Type]: T => Pure[T] = {
+    override def `type`[T <: ExprType]: T => Pure[T] = {
       case t : TypeIdentifier => return_(sol.ts.getOrElse(t, t).asInstanceOf[T])
       case t => super.`type`(t)
     }
   }
-  def apply(t: Type): Type = T(this).`type`(t).unwrap
+  def apply(t: ExprType): ExprType = T(this).`type`(t).unwrap
 
   def apply(n: Nat): Nat =
-    (substitute.natsInNat(ns, _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
+    (substitute.natsInNat(ns.toMap[Nat, Nat], _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
 
   def apply(b: BoolExpr): BoolExpr = {
     import arithexpr.arithmetic.ArithExpr
@@ -79,7 +80,7 @@ case class Solution(ts: Map[Type, Type],
   def apply(m: MatrixLayout): MatrixLayout =
     substitute.matrixLayoutsInMatrixLayout(ms, m)
 
-  def apply(f: FragmentKind): FragmentKind =
+  def apply(f: Fragment): Fragment =
     substitute.fragmentTypesInFragmentType(fs, f)
 
   def apply(a: NatCollection): NatCollection =
@@ -91,7 +92,6 @@ case class Solution(ts: Map[Type, Type],
       case lambda@NatToDataLambda(x, body) =>
         val xSub = apply(x) match {
           case n: NatIdentifier => n
-          case n: arithexpr.arithmetic.NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
           case other => throw NonIdentifierInBinderException(lambda, other)
         }
         NatToDataLambda(xSub, apply(body).asInstanceOf[DataType])
@@ -104,7 +104,6 @@ case class Solution(ts: Map[Type, Type],
       case lambda@NatToNatLambda(x, body) =>
         val xSub = apply(x) match {
           case n: NatIdentifier => n
-          case n: arithexpr.arithmetic.NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
           case other => throw NonIdentifierInBinderException(lambda, other)
         }
         NatToNatLambda(xSub, apply(body))
@@ -132,29 +131,28 @@ case class Solution(ts: Map[Type, Type],
     combine(this, other)
   }
 
-  def apply(constraints: Seq[Constraint]): Seq[Constraint] = {
-    constraints.map {
-      case TypeConstraint(a, b) => TypeConstraint(apply(a), apply(b))
-      case NatConstraint(a, b) => NatConstraint(apply(a), apply(b))
-      case BoolConstraint(a, b) => BoolConstraint(apply(a), apply(b))
-      case MatrixLayoutConstraint(a, b) => MatrixLayoutConstraint(apply(a), apply(b))
-      case FragmentTypeConstraint(a, b) => FragmentTypeConstraint(apply(a), apply(b))
-      case NatToDataConstraint(a, b) => NatToDataConstraint(apply(a), apply(b))
-      case NatCollectionConstraint(a, b) => NatCollectionConstraint(apply(a), apply(b))
-      case DepConstraint(df, arg: Nat, t) => DepConstraint[NatKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: DataType, t) =>
-        DepConstraint[DataKind](apply(df), apply(arg).asInstanceOf[DataType], apply(t))
-      case DepConstraint(df, arg: Type, t) =>
-        DepConstraint[TypeKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: AddressSpace, t) =>
-        DepConstraint[AddressSpaceKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: NatToData, t) =>
-        DepConstraint[NatToDataKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: NatToNat, t) =>
-        DepConstraint[NatToNatKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(df, arg: NatCollection, t) =>
-        DepConstraint[NatCollectionKind](apply(df), apply(arg), apply(t))
-      case DepConstraint(_, _, _) => throw new Exception("Impossible case")
-    }
+  def apply(constraints: Seq[Constraint]): Seq[Constraint] = constraints.map(apply)
+  def apply(constraint: Constraint): Constraint = constraint match {
+    case TypeConstraint(a, b) => TypeConstraint(apply(a), apply(b))
+    case NatConstraint(a, b) => NatConstraint(apply(a), apply(b))
+    case BoolConstraint(a, b) => BoolConstraint(apply(a), apply(b))
+    case MatrixLayoutConstraint(a, b) => MatrixLayoutConstraint(apply(a), apply(b))
+    case FragmentTypeConstraint(a, b) => FragmentTypeConstraint(apply(a), apply(b))
+    case NatToDataConstraint(a, b) => NatToDataConstraint(apply(a), apply(b))
+    case NatCollectionConstraint(a, b) => NatCollectionConstraint(apply(a), apply(b))
+    case DepConstraint(NatKind, df, arg: Nat, t) => DepConstraint(NatKind, apply(df), apply(arg), apply(t))
+    case DepConstraint(DataKind, df, arg: DataType, t) =>
+      DepConstraint(DataKind, apply(df), apply(arg).asInstanceOf[DataType], apply(t))
+    case DepConstraint(TypeKind, df, arg: ExprType, t) =>
+      DepConstraint(TypeKind, apply(df), apply(arg), apply(t))
+    case DepConstraint(AddressSpaceKind, df, arg: AddressSpace, t) =>
+      DepConstraint(AddressSpaceKind, apply(df), apply(arg), apply(t))
+    case DepConstraint(NatToDataKind, df, arg: NatToData, t) =>
+      DepConstraint(NatToDataKind, apply(df), apply(arg), apply(t))
+    case DepConstraint(NatToNatKind, df, arg: NatToNat, t) =>
+      DepConstraint(NatToNatKind, apply(df), apply(arg), apply(t))
+    case DepConstraint(NatCollectionKind, df, arg: NatCollection, t) =>
+      DepConstraint(NatCollectionKind, apply(df), apply(arg), apply(t))
+    case DepConstraint(_, _, _, _) => throw new Exception("Impossible case")
   }
 }

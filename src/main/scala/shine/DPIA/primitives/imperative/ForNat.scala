@@ -4,18 +4,20 @@
 package shine.DPIA.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class ForNat(unroll: Boolean)(val n: Nat, val loopBody: Phrase[DepFunType[NatKind, CommType]]) extends CommandPrimitive {
+final case class ForNat(unroll: Boolean)(val n: Nat, val loopBody: Phrase[DepFunType[NatIdentifier, CommType]]) extends CommandPrimitive {
   assert {
     loopBody :: ({
       val i = loopBody.t.x
-      DepFunType[NatKind, PhraseType](i, comm)
+      DepFunType(NatKind, i, comm)
     })
     true
   }
   override val t: CommType = comm
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): ForNat = new ForNat(unroll)(v.nat(n), VisitAndRebuild(loopBody, v))
-  def unwrap: (Nat, Phrase[DepFunType[NatKind, CommType]]) = (n, loopBody)
+  def unwrap: (Nat, Phrase[DepFunType[NatIdentifier, CommType]]) = (n, loopBody)
 }

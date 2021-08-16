@@ -1,8 +1,10 @@
 package shine.cuda.Compilation
 
+import rise.core.types.DataType.FragmentType
+import rise.core.types.{DataType, read}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, FragmentType, read}
+import shine.DPIA.Types.{AccType, CommType, ExpType}
 import shine.DPIA.primitives.imperative.Assign
 import shine.DPIA.{accT, expT}
 import shine.cuda.primitives.imperative.ForFragment

@@ -5,6 +5,7 @@ import rise.core.primitives._
 import Type._
 import org.junit.Assert.assertFalse
 import rise.core.types._
+import rise.core.types.DataType._
 import shine.DPIA.Nat
 
 class structuralEquality extends test_util.Tests {

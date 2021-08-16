@@ -1,5 +1,6 @@
 package shine.OpenCL.primitives.intermediate
 
+import rise.core.types.{AddressSpace, DataType}
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}
@@ -11,7 +12,7 @@ import shine.OpenCL.DSL._
 
 object ReduceSeqI {
   def apply(n: Nat,
-            initAddrSpace: shine.DPIA.Types.AddressSpace,
+            initAddrSpace: AddressSpace,
             dt1: DataType, dt2: DataType,
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],

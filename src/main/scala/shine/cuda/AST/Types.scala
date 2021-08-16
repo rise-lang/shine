@@ -1,8 +1,7 @@
 package shine.cuda.AST
 
+import rise.core.types.{MatrixLayout, MatrixLayoutIdentifier}
 import shine.C.AST.BasicType
-import shine.DPIA.Nat
-import shine.DPIA.Types.{FragmentKind, MatrixLayout, MatrixLayoutIdentifier}
 
 object Wmma {
   def toString(layout: MatrixLayout): String = {

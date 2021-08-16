@@ -1,6 +1,8 @@
 package shine.DPIA
 
 import arithexpr.arithmetic.RangeAdd
+import rise.core.types.{AccessIdentifier, AccessKind, AddressSpaceIdentifier, AddressSpaceKind, DataKind, DataType, NatIdentifier, NatKind, NatToDataLambda}
+import rise.core.types.DataType.DataTypeIdentifier
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.TypeCheck._
 
@@ -26,42 +28,32 @@ package object Types {
     def `:`[T <: PhraseType](p: Phrase[T]): Unit = typeAssert(p, pt)
   }
 
-  type NatDependentFunctionType[T <: PhraseType] = DepFunType[NatKind, T]
+  type NatDependentFunctionType[T <: PhraseType] = `(nat)->:`[T]
 
   object NatDependentFunctionType {
-    def apply[T <: PhraseType](n: NatIdentifier, t: T): DepFunType[NatKind, T] =
-      DepFunType[NatKind, T](n, t)
+    def apply[T <: PhraseType](n: NatIdentifier, t: T): `(nat)->:`[T] =
+      DepFunType(NatKind, n, t)
   }
 
-  type TypeDependentFunctionType[T <: PhraseType] = DepFunType[DataKind, T]
+  type TypeDependentFunctionType[T <: PhraseType] = `(dt)->:`[T]
 
   object TypeDependentFunctionType {
-    def apply[T <: PhraseType](
-      dt: DataTypeIdentifier,
-      t: T
-    ): DepFunType[DataKind, T] =
-      DepFunType[DataKind, T](dt, t)
+    def apply[T <: PhraseType](dt: DataTypeIdentifier, t: T): `(dt)->:`[T] =
+      DepFunType(DataKind, dt, t)
   }
 
-  type AddrSpaceDependentFunctionType[T <: PhraseType] =
-    DepFunType[AddressSpaceKind, T]
+  type AddrSpaceDependentFunctionType[T <: PhraseType] = `(add)->:`[T]
 
   object AddrSpaceDependentFunctionType {
-    def apply[T <: PhraseType](
-      addr: AddressSpaceIdentifier,
-      t: T
-    ): DepFunType[AddressSpaceKind, T] =
-      DepFunType[AddressSpaceKind, T](addr, t)
+    def apply[T <: PhraseType](addr: AddressSpaceIdentifier, t: T): `(add)->:`[T] =
+      DepFunType(AddressSpaceKind, addr, t)
   }
 
-  type AccessDependentFunctionType[T <: PhraseType] = DepFunType[AccessKind, T]
+  type AccessDependentFunctionType[T <: PhraseType] = `(acc)->:`[T]
 
   object AccessDependentFunctionType {
-    def apply[T <: PhraseType](
-      at: AccessTypeIdentifier,
-      t: T
-    ): DepFunType[AccessKind, T] =
-      DepFunType[AccessKind, T](at, t)
+    def apply[T <: PhraseType](at: AccessIdentifier, t: T): `(acc)->:`[T] =
+      DepFunType(AccessKind, at, t)
   }
 
   object n2dtFun {

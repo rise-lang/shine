@@ -1,9 +1,11 @@
 package shine.DPIA.Compilation
 
+import rise.core.types.{DataType, NatIdentifier, NatKind, read}
+import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
@@ -23,14 +25,14 @@ object StreamTranslation {
 
       // on the fly beta-reduction
       case Apply(fun, arg) => str(Lifting.liftFunction(fun).reducing(arg))(C)
-      case DepApply(fun, arg) => arg match {
+      case DepApply(_, fun, arg) => arg match {
         case a: Nat => str(
-          Lifting.liftDependentFunction[NatKind, ExpType](
-            fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a)
+          Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a)
         )(C)
         case a: DataType => str(
-          Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a)
+          Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a)
         )(C)
       }
 
@@ -82,9 +84,9 @@ object StreamTranslation {
           (expT(dt2, read) ->: (comm: CommType)) ->: (comm: CommType)
         )(next2 =>
           C(nFun(i => fun(expT(dt1 x dt2, read) ->: (comm: CommType))(k =>
-            Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next1, i),
+            Apply(DepApply(NatKind, next1, i),
               fun(expT(dt1, read))(x1 =>
-                Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next2, i),
+                Apply(DepApply(NatKind, next2, i),
                   fun(expT(dt2, read))(x2 =>
                     k(MakePair(dt1, dt2, read, x1, x2))
                   ))))),

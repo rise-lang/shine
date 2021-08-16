@@ -2,7 +2,6 @@ package rise.eqsat
 
 import PatternDSL._
 import rise.core.{primitives => rcp}
-import rise.eqsat.NamedRewriteDSL.`_`
 
 object rules {
   type Rule = DefaultAnalysis.Rewrite
@@ -43,7 +42,7 @@ object rules {
     BetaNatExtractApplier(?(0), `?n`(0))
   )
 
-  import rise.core.types.{Nat, DataType, Type}
+  import rise.core.types.{Nat, DataType, ExprType}
   import NamedRewriteDSL._
 
   val etaAbstraction: Rule = NamedRewrite.init("eta-abstraction",
@@ -132,7 +131,7 @@ object rules {
   )
 
   def blockedReduce(n: Int): Rule = NamedRewrite.init(s"blocked-reduce-$n",
-    app(app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init"), "arg")
+    app(app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init"), "arg")
       -->
     app(app(app(rcp.reduceSeq.primitive,
       lam("acc", lam("y", app(app("op", "acc"),
@@ -170,7 +169,7 @@ object rules {
     (app(map, lam("x",
       app(app(app(rcp.reduceSeq.primitive, "op"), "i" :: (("m": Nat)`.`("dt1": DataType))),
         "e" :: (("o": Nat)`.`(("m": Nat)`.`("dt2": DataType))))))
-      :: ((("n": Nat)`.`(("m": Nat)`.`(("dt1": DataType) x (("o": Nat)`.`("dt2": DataType))))) ->: ("o": Type)))
+      :: ((("n": Nat)`.`(("m": Nat)`.`(("dt1": DataType) x (("o": Nat)`.`("dt2": DataType))))) ->: t("o")))
       -->
     lam("in", app(lam("uz",
       app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
@@ -581,7 +580,7 @@ object rules {
       (app(map, app(map, app(map, app(map, nApp(split, n))))) >> app(map, app(map, app(map, app(map, app(map, app(map, "f")))))) >> app(map, app(map, app(map, app(map, join)))))
     )
     def blockedReduce(n: Int): Rule = NamedRewrite.init(s"blocked-reduce-cnf-$n",
-      app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init")
+      app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init")
         -->
       (nApp(split, n) >> app(app(rcp.reduceSeq.primitive,
         lam("acc", lam("y", app(app("op", "acc"),
@@ -718,12 +717,12 @@ object rules {
       )
 
       val asScalarAsVectorId: Rule = NamedRewrite.init("vec-as-scalar-as-vector-id-cnf",
-        ((asScalar >> nApp(asVector, "n")) :: (("t": Type) ->: ("t": Type)))
+        ((asScalar >> nApp(asVector, "n")) :: (t("t") ->: t("t")))
           -->
         lam("in", "in")
       )
       val asScalarAsVectorId2: Rule = NamedRewrite.init("vec-as-scalar-as-vector-id-cnf-2",
-        ("h" >> (asScalar >> nApp(asVector, "n")) :: (("t": Type) ->: ("t": Type)))
+        ("h" >> (asScalar >> nApp(asVector, "n")) :: (t("t") ->: t("t")))
           -->
         "h"
       )

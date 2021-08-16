@@ -1,6 +1,8 @@
 package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic.NamedVar
+import rise.core.types.{DataKind, DataType, NatIdentifier, NatKind}
+import rise.core.types.DataType.DataTypeIdentifier
 import shine.DPIA.Compilation.FunDef
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -33,14 +35,14 @@ object SeparateHostAndKernelCode {
         // on the fly beta-reduction
         case Apply(fun, arg) =>
           Stop(VisitAndRebuild(Lifting.liftFunction(fun).reducing(arg), this))
-        case DepApply(fun, arg) => arg match {
+        case DepApply(_, fun, arg) => arg match {
           case a: Nat =>
-            Stop(VisitAndRebuild(Lifting.liftDependentFunction[NatKind, ExpType](
-              fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a)
+            Stop(VisitAndRebuild(Lifting.liftDependentFunction(
+              fun.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a)
               .asInstanceOf[Phrase[T]], this))
           case a: DataType =>
-            Stop(VisitAndRebuild(Lifting.liftDependentFunction[DataKind, ExpType](
-              fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a)
+            Stop(VisitAndRebuild(Lifting.liftDependentFunction(
+              fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a)
               .asInstanceOf[Phrase[T]], this))
         }
 
@@ -59,7 +61,7 @@ object SeparateHostAndKernelCode {
                 ): (Phrase[_ <: PhraseType], Seq[Phrase[ExpType]]) = {
       freeNats match {
         case v +: rest => iterNats(
-          DepLambda[NatKind](NatIdentifier(v.name, v.range))(definition),
+          DepLambda(NatKind, NatIdentifier(v.name, v.range))(definition),
           Literal(NatAsIntData(v)) +: args, rest)
         case Nil => (definition, args)
       }
@@ -101,9 +103,9 @@ object SeparateHostAndKernelCode {
           Stop(p)
         case Lambda(x, _) =>
           Continue(p, this.copy(boundV = boundV + x))
-        case DepLambda(x: NatIdentifier, _) =>
+        case DepLambda(NatKind, x: NatIdentifier, _) =>
           Continue(p, this.copy(boundN = boundN + x))
-        case DepLambda(x: DataTypeIdentifier, _) =>
+        case DepLambda(DataKind, x: DataTypeIdentifier, _) =>
           Continue(p, this.copy(boundT = boundT + x))
         case _ => Continue(p, this)
       }

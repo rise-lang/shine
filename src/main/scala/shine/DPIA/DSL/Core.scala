@@ -1,5 +1,6 @@
 package shine.DPIA.DSL
 
+import rise.core.types.{Kind, NatIdentifier, NatKind}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -26,21 +27,19 @@ object λ extends funDef
 
 object nFun {
   def apply[T <: PhraseType](f: NatIdentifier => Phrase[T],
-                             range: arithexpr.arithmetic.Range): DepLambda[NatKind, T] = {
+                             range: arithexpr.arithmetic.Range): DepLambda[Nat, NatIdentifier, T] = {
     val x = NatIdentifier(freshName("n"), range)
-    DepLambda[NatKind, T](x, f(x))
+    DepLambda(NatKind, x, f(x))
   }
 }
 
 trait depFunDef {
-  def apply[K <: Kind](): Object {
-    def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T]
+  def apply[T, I](kind: Kind[T, I]): Object {
+    def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U]
   } = new {
-    def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T] = {
-      val x = w.makeIdentifier()
-      DepLambda(x, f(x))
+    def apply[U <: PhraseType](f: I => Phrase[U]): DepLambda[T, I, U] = {
+      val x = Kind.makeIdentifier(kind)
+      DepLambda(kind, x, f(x))
     }
   }
 }

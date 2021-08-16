@@ -7,7 +7,8 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core._
-import rise.core.types.{ArrayType, NatKind, f32, _}
+import rise.core.types.{NatKind, _}
+import rise.core.types.DataType._
 import rise.elevate.rules._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.traversal._
@@ -249,7 +250,7 @@ class tiling extends test_util.Tests {
   def wrapInLambda[T <: Expr](dim: Int,
                               f: ToBeTyped[Identifier] => ToBeTyped[T],
                               genInputType: List[Nat] => ArrayType,
-                              natIds: List[Nat] = List()): ToBeTyped[DepLambda[NatKind]] = {
+                              natIds: List[Nat] = List()): ToBeTyped[DepLambda[Nat, NatIdentifier]] = {
     dim match {
       case 1 => depFun((n: Nat) => fun(genInputType( natIds :+ n))(f))
       case d => depFun((n: Nat) => wrapInLambda(d - 1, f, genInputType, natIds :+ n))
