@@ -286,7 +286,8 @@ object ContinuationTranslation {
       con(input)(λ(expT(n`.`dt, read))(x =>
         C(Reorder(n, dt, access, idxF, idxFinv, x))))
 
-    case scanSeq@ScanSeq(n, dt1, dt2, f, init, array) =>
+    case scanSeq@ScanSeq(unroll) =>
+      val (n, dt1, dt2, f, init, array) = scanSeq.unwrap
       `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
         acc(scanSeq)(tmp.wr) `;` C(tmp.rd) ))
 

@@ -65,6 +65,13 @@ object predicate {
     }
   }
 
+  case class isDepApp(fp: Strategy[Rise]) extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
+      case a@DepApp(_, f, _) => fp(f).mapSuccess(_ => a)
+      case _          => Failure(isDepApp(fp))
+    }
+  }
+
   def isAppliedBinaryFun(pred: Expr => Boolean,
                          name: String): is =
     is({

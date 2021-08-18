@@ -46,6 +46,7 @@ object AdjustArraySizesForAllocations {
       case mL@cuda.functional.Map(Lane, dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
       case scanSeq:ocl.functional.ScanSeqInclusive => visitAndGatherInformation(scanSeq.f,  BasicInfo(Sequential, -1) :: parallInfo)
+      case scanSeq:ocl.functional.ScanSeq => visitAndGatherInformation(scanSeq.f,  BasicInfo(Sequential, -1) :: parallInfo)
 
       // FIXME: works for scalars
       case _: ocl.functional.ReduceSeq | _: ocl.functional.Iterate => parallInfo
