@@ -622,6 +622,15 @@ private class InferAccessAnnotation {
           nFunT(cores, expT(t, write) ->: expT(t, write))
         case _ => error()
       }
+
+      case rise.GAP8.primitives.gap8hwConv3x3() => p.t match {
+        case bias `(Nat)->:` ((rt.ArrayType(h, rt.ArrayType(w, s: rt.DataType))) ->:
+          (rt.ArrayType(fh, rt.ArrayType(fw, _))) ->: rt.ArrayType(oh, rt.ArrayType(ow, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dataType(s))), read)
+            ->: expT(ArrayType(fh, ArrayType(fw, dataType(s))), read) ->:
+            expT(ArrayType(oh, ArrayType(ow, dataType(s))), write)
+          )
+      }
     }
 
     checkConsistency(p.t, primitiveType)

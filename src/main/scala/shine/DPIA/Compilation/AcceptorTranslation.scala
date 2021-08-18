@@ -351,11 +351,16 @@ object AcceptorTranslation {
 
     //GAP8
     //case shine.GAP8.primitives.functional.Conv(w, h, bias, dt, in, filter) =>
-    case c@shine.GAP8.primitives.functional.Conv(fs) =>
+    case c@shine.GAP8.primitives.functional.FunConv3x3(fs) =>
       con(c.in)(λ(ExpType(c.h`.`(c.w`.`c.dt), read))(inInner => {
         fs match {
           case shine.GAP8._3x3 =>
-            con(c.filter)(λ(ExpType(ArrayType(10, c.dt), read))(filterInner =>
+            //TODO: first join then pad, andThen pass to continuation translation
+            //TODO: get 10.dt array out
+            //TODO: type of array is 10.dt here
+            import shine.DPIA.primitives.functional.{Join, PadClamp}
+            val paddedArray = PadClamp(0, 0, 1, c.dt, Join(c.h, c.w, read, c.dt, c.filter))
+            con(paddedArray)(λ(ExpType(ArrayType(3, ArrayType(3, c.dt)), read))(filterInner =>
               shine.GAP8.primitives.imperative.Conv3x3(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
             ))
           case shine.GAP8._5x5 =>
