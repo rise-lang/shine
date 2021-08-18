@@ -9,7 +9,6 @@ import rise.core.primitives._
 import rise.core.types._
 import rise.elevate.Rise
 import shine.GAP8
-import util.{ExecuteOpenCL, SyntaxChecker}
 
 class codegen extends test_util.Tests {
 
