@@ -2,11 +2,27 @@ def kernelCall{name: String, cores: Int, n:Int}(inTs: n*data, outT: data, args: 
 
 def run{cores: Nat}(dt: data, input: exp[dt, write]): exp[dt, write]
 
-def conv{fs: shine.GAP8.ConvolutionFilterSize}(
+//rethink
+//def conv{fs: shine.GAP8.ConvolutionFilterSize}(
+//    w: nat,
+//    h: nat,
+//    bias: nat,
+//    dt: data,
+//    in: exp[h.w.dt, read],
+//    //check
+//    filter: exp[3.3.dt, read]
+//): exp[(h-2).(w-2).dt, write]
+
+//TODO: rethink
+//TODO: Generate other primitives?
+//TODO: Remember if there was something about how input size and filter
+//TODO: relate to output?
+//TODO: Eliminate ConvolutionFilterSize maybe?
+def funConv3x3{fs: shine.GAP8.ConvolutionFilterSize}(
     w: nat,
     h: nat,
     bias: nat,
     dt: data,
     in: exp[h.w.dt, read],
-    filter: exp[10.dt, read]
+    filter: exp[3.3.dt, read]
 ): exp[(h-2).(w-2).dt, write]
