@@ -1,9 +1,9 @@
 package shine.DPIA.Types
 
+import rise.core.types.{DataType, TypeException, read}
+import rise.core.types.DataType._
 import shine.DPIA._
 import shine.DPIA.Phrases._
-
-class TypeException(msg: String) extends Exception(msg)
 
 object TypeCheck {
   def apply[T <: PhraseType](phrase: Phrase[T]): Unit = {
@@ -54,7 +54,7 @@ object TypeCheck {
         TypeCheck(rhs)
         (lhs.t, rhs.t) match {
           case (ExpType(dt1, `read`), ExpType(dt2, `read`))
-            if dt1.isInstanceOf[BasicType] && dt2.isInstanceOf[BasicType] =>
+            if isBasicType(dt1) && isBasicType(dt2) =>
               if (lhs.t != rhs.t) {
                 error(found = s"${lhs.t} and ${rhs.t}",
                   expected = "them to match")
@@ -65,6 +65,11 @@ object TypeCheck {
 
       case _: Primitive[_] =>
     }
+  }
+
+  def isBasicType(dataType: DataType): Boolean = dataType match {
+    case _: ScalarType | _: FragmentType | _: IndexType | _: VectorType | NatType => true
+    case _ => false
   }
 
   def errorIfNotEq(sub: PhraseType, pt: PhraseType): Unit = {
@@ -123,7 +128,7 @@ object TypeCheck {
   }
 
   def notContainingArrayType(composed: DataType): Boolean = composed match {
-      case _: BasicType => true
+      case _: ScalarType | _: FragmentType | _: IndexType | _: VectorType | NatType => true
       case PairType(first, second) =>
         notContainingArrayType(first) && notContainingArrayType(second)
       case _ => false

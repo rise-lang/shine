@@ -1,7 +1,8 @@
 package shine.DPIA
 
+import rise.core.types._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types._
+import shine.DPIA.Types.PhraseType
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.primitives.functional._
 
@@ -19,26 +20,29 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   def tab : String => String =
     _.linesIterator.map(l => if (l.isEmpty) l else TAB + l).mkString("\n")
 
-  def showKind : Kind[_, _, _] => String = _.name
+  def showKind : Kind[_, _] => String = _.name
   def showUnary : Operators.Unary.Value => String = _.toString
   def showBinary : Operators.Binary.Value => String = _.toString
   def showData : Data => String = _.toString
   def showNat : Nat => String = _.toString
-  def showPhraseType : PhraseType => String = _.toString
+//  def showPhraseType : PhraseType => String = _.toString
   def showDataType : DataType => String = _.toString
   def showAddressSpace : AddressSpace => String = _.toString
-  def showAccess : AccessType => String = _.toString
+  def showAccess : Access => String = _.toString
   def showNatToNat : NatToNat => String = _.toString
   def showNatToData : NatToData => String = _.toString
   def showType : PhraseType => String = _.toString
-  def showType[T](kind : Kind[T, _, _], arg : T) : String = kind match {
-    case PhraseKind => showPhraseType(arg.asInstanceOf[PhraseType])
+  def showType[T](kind : Kind[T, _], arg : T) : String = kind match {
     case DataKind => showDataType(arg.asInstanceOf[DataType])
     case NatKind => showNat(arg.asInstanceOf[Nat])
     case AddressSpaceKind => showAddressSpace(arg.asInstanceOf[AddressSpace])
-    case AccessKind => showAccess(arg.asInstanceOf[AccessType])
+    case AccessKind => showAccess(arg.asInstanceOf[Access])
     case NatToNatKind => showNatToNat(arg.asInstanceOf[NatToNat])
     case NatToDataKind => showNatToData(arg.asInstanceOf[NatToData])
+    case FragmentKind => ???
+    case MatrixLayoutKind => ???
+    case NatCollectionKind => ???
+    case TypeKind => ???
   }
   def showPrim : Primitive[_] => String = {
     case Comment(s) => s"/* ${s} */"
@@ -74,7 +78,7 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case p => p.toString
   }
 
-  def showKindedType[T](kind : Kind[T, _, _], t : T) : String = showTypes match {
+  def showKindedType[T](kind : Kind[T, _], t : T) : String = showTypes match {
     case On => s"(${showType(kind, t)} : ${showKind(kind)})"
     case Off => s"(${showType(kind, t)})"
   }

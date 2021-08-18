@@ -4,6 +4,7 @@ import apps.mm.mmNVIDIAWithParams
 import arithexpr.arithmetic.{ArithExpr, PosInf, RangeAdd, RangeMul, RangeUnknown}
 import rise.core._
 import rise.core.types.{NatIdentifier, _}
+import rise.core.types.DataType._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL._
 import rise.core.DSL.Type._
@@ -12,6 +13,7 @@ import rise.openCL.DSL._
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
+import rise.autotune.configFileGeneration.{check_no_cycle}
 
 
 class autotuning extends test_util.Tests {
@@ -119,6 +121,9 @@ class autotuning extends test_util.Tests {
   }
   // scalastyle:on
 
+
+
+
   test("collect parameters") {
     val params = autotune.constraints.collectParameters(convolutionOclGsLsWrap)
     assert(params.find(IsTuningParameter("vec")).get.range == RangeAdd(1, 32, 1))
@@ -168,7 +173,7 @@ class autotuning extends test_util.Tests {
       TuningParameter("tile") -> (16: Nat)
     )
     assert(autotune.constraints.checkConstraints(constraints, goodParameters))
-    rise.core.substitute.natsInExpr(goodParameters, e)
+    rise.core.substitute.natsInExpr(goodParameters.toMap[Nat, Nat], e)
   }
 
   val mmKernel: ToBeTyped[Expr] =
@@ -296,7 +301,7 @@ class autotuning extends test_util.Tests {
         )
         if (autotune.constraints.checkConstraints(constraints, map) != isGood) {
           val (sat, notSat) = constraints.partition(c =>
-            c.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]).isSatisfied())
+            c.substitute(map.toMap[ArithExpr, ArithExpr]).isSatisfied())
           println("satisfied:")
           sat.foreach(println)
           println("not satisfied:")
@@ -378,13 +383,13 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOclGsLs(1024)
 
     val tuner = Tuner(
-      main(1024),
-      1000,
-      "RISE",
-      "autotuning",
-      Timeouts(5000, 5000, 5000),
-      None,
-      true
+      main = main(1024),
+      iterations = 1000,
+      name = "RISE",
+      output = "autotuning",
+      timeouts = Timeouts(5000, 5000, 5000),
+      configFile = None,
+      hierarchicalHM = true
     )
 
     val tuningResult = autotune.search(tuner)(e)
@@ -398,30 +403,105 @@ class autotuning extends test_util.Tests {
     autotune.saveSamples("autotuning/RISE.csv", tuningResult)
   }
 
-  // only important for automatic json generation for hm constraints support
-  ignore("distribute constraints") {
+  test("distribute constraints") {
     val e: Expr = convolutionOclGsLs(1024)
-    val tuner = Tuner(main(1024), 10)
     val params = autotune.constraints.collectParameters(e)
     val constraints = autotune.constraints.collectConstraints(e, params)
 
+    val paramsSorted = params.toSeq.sortBy(_.name)
+    val gs0 = paramsSorted(0)
+    val gs1 = paramsSorted(1)
+    val ls0 = paramsSorted(2)
+    val ls1 = paramsSorted(3)
+    val tile = paramsSorted(4)
+    val vec = paramsSorted(5)
+
+    val constraintsSorted = constraints.toSeq.sortBy(_.toString)
+
+    val gold = Map(
+      gs0 -> (Set(constraintsSorted(3), constraintsSorted(4)), Set(ls0)),
+      gs1 -> (Set(constraintsSorted(5), constraintsSorted(6)), Set(ls1)),
+      ls0 -> (Set(constraintsSorted(7)), Set.empty[NatIdentifier]),
+      ls1 -> (Set(constraintsSorted(8)), Set.empty[NatIdentifier]),
+      tile -> (Set(constraintsSorted(0), constraintsSorted(1), constraintsSorted(9)), Set(vec)),
+      vec -> (Set(constraintsSorted(10), constraintsSorted(11)), Set.empty[NatIdentifier])
+    )
+
     val distribution = autotune.configFileGeneration.distributeConstraints(params, constraints)
 
-    println("output: \n")
+    // check if distribution contains cycle
+    assert(check_no_cycle(distribution))
+
+    // check distribution against gold (which distribution to expect)
+    println("\ndistribution: " )
+    distribution.foreach(println)
+
+    println("\ngold: " )
+    gold.foreach(println)
+
+    var size = 0
     distribution.foreach(elem => {
-      println("elem: " + elem._1)
-      println("dependencies: " + elem._2._2)
-      println("constraints: " + elem._2._1)
-      println()
+      size += elem._2._1.size
+      assert(gold.apply(elem._1)._1.equals(elem._2._1))
+      assert(gold.apply(elem._1)._2.equals(elem._2._2))
     })
 
-    println("\nnow generate json")
-    val json = autotune.configFileGeneration.generateJSON(params, constraints, tuner)
-    println("json: \n" + json)
+    // we drop one constraint, which is static
+    assert(size.equals(constraintsSorted.size-1))
+
+  }
+
+  test("test cycle checker"){
+
+    val emptyConstraints = Set.empty[constraints.Constraint]
+
+    val A = NatIdentifier("A")
+    val B = NatIdentifier("B")
+    val C = NatIdentifier("C")
+
+    // create example with no cycle
+    val distributionNoCycle = scala.collection.mutable.Map[NatIdentifier,
+      (Set[constraints.Constraint], Set[NatIdentifier])]()
+    val dependenciesNoCycleA = Set(B)
+    val dependenciesNoCycleB = Set.empty[NatIdentifier]
+    val dependenciesNoCycleC = Set(A)
+
+    distributionNoCycle(A) = (emptyConstraints, dependenciesNoCycleA)
+    distributionNoCycle(B) = (emptyConstraints, dependenciesNoCycleB)
+    distributionNoCycle(C) = (emptyConstraints, dependenciesNoCycleC)
+
+    assert(check_no_cycle(distributionNoCycle.toMap))
+
+    // create example with cycle
+    val distributionCycle = scala.collection.mutable.Map[NatIdentifier,
+      (Set[constraints.Constraint], Set[NatIdentifier])]()
+    val dependenciesCycleA = Set(B)
+    val dependenciesCycleB = Set(A)
+    val dependenciesCycleC = Set.empty[NatIdentifier]
+
+    distributionCycle(A) = (emptyConstraints, dependenciesCycleA)
+    distributionCycle(B) = (emptyConstraints, dependenciesCycleB)
+    distributionCycle(C) = (emptyConstraints, dependenciesCycleC)
+
+    assert(!check_no_cycle(distributionCycle.toMap))
+
+    // create another example with cycle
+    val distributionCycle2 = scala.collection.mutable.Map[NatIdentifier,
+      (Set[constraints.Constraint], Set[NatIdentifier])]()
+    val dependenciesCycle2A = Set(B)
+    val dependenciesCycle2B = Set(B)
+    val dependenciesCycle2C = Set.empty[NatIdentifier]
+
+    distributionCycle2(A) = (emptyConstraints, dependenciesCycle2A)
+    distributionCycle2(B) = (emptyConstraints, dependenciesCycle2B)
+    distributionCycle2(C) = (emptyConstraints, dependenciesCycle2C)
+
+    assert(!check_no_cycle(distributionCycle2.toMap))
+
   }
 
   test("execute convolution") {
-    val goodParameters = Map(
+    val goodParameters: Map[Nat, Nat] = Map(
       TuningParameter("vec") -> (4: Nat),
       TuningParameter("tile") -> (16: Nat)
     )
@@ -537,7 +617,7 @@ class autotuning extends test_util.Tests {
     val e: Expr = convolutionOclGsLs(1024)
 
     // define parameters to break the code-gen
-    val parameters = Map(
+    val parameters: Map[Nat, Nat] = Map(
       TuningParameter("vec") -> (16: Nat),
       TuningParameter("tile") -> (32: Nat),
       TuningParameter("gs0") -> (1: Nat),

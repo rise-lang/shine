@@ -4,9 +4,10 @@
 package shine.GAP8.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
-import shine.DPIA.Types.Kind.{ Identifier => _, _ }
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class KernelCallCmd(name: String, cores: Int, n: Int)(val inTs: Seq[DataType], val dt: DataType, val args: Seq[Phrase[ExpType]], val output: Phrase[AccType]) extends CommandPrimitive {
   assert {

@@ -1,12 +1,13 @@
 package shine.GAP8.Compilation
 
-import shine.C.AST.{Decl, IncludeSource, ParamDecl, ParamKind, Stmt}
+import rise.core.types.DataType._
+import shine.C
+import shine.C.AST.{Decl, IncludeSource, ParamKind, Stmt}
 import shine.DPIA.Compilation.{FunDef, ModuleGenerator}
 import shine.DPIA.DSL.identifier
 import shine.DPIA.Phrases.{Identifier, Phrase}
-import shine.DPIA.Types.{AccType, BasePhraseType, CommType, ExpType, ManagedBufferType, OpaqueType}
+import shine.DPIA.Types._
 import shine.OpenCL.Compilation.HostManagedBuffers
-import shine.{C, DPIA}
 
 import scala.collection.immutable
 
@@ -174,9 +175,9 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
 
   private def makeParam(gen: CodeGenerator): Identifier[_] => C.AST.ParamDecl =
     C.AST.makeParam({
-      case _: DPIA.Types.ManagedBufferType =>
+      case _: ManagedBufferType =>
         C.AST.OpaqueType("Buffer")
-      case DPIA.Types.OpaqueType(name) =>
+      case OpaqueType(name) =>
         C.AST.OpaqueType(name)
       case dt => C.AST.makeParamTy(gen)(dt)
     })
@@ -209,7 +210,7 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
         ))
       ),
       paramKinds = Seq(
-        ParamKind(DPIA.Types.OpaqueType("void*"), C.AST.ParamKind.Kind.input)
+        ParamKind(OpaqueType("void*"), C.AST.ParamKind.Kind.input)
       )
     )
   }
@@ -237,8 +238,8 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
         ))
       ),
       paramKinds = Seq(
-        ParamKind(DPIA.Types.int, C.AST.ParamKind.Kind.input),
-        ParamKind(DPIA.Types.OpaqueType("char*"), C.AST.ParamKind.Kind.input)
+        ParamKind(`int`, C.AST.ParamKind.Kind.input),
+        ParamKind(OpaqueType("char*"), C.AST.ParamKind.Kind.input)
       )
     )
   }

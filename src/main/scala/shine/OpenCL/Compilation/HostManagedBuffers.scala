@@ -1,5 +1,7 @@
 package shine.OpenCL.Compilation
 
+import rise.core.types.DataType
+import rise.core.types.DataType._
 import shine.DPIA._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._

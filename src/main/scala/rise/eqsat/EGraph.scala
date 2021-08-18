@@ -1,28 +1,42 @@
 package rise.eqsat
 
 object EGraph {
-  def emptyWithAnalysis[D](analysis: Analysis[D]): EGraph[D] = new EGraph(
-    analysis = analysis,
-    memo = HashMap.empty,
-    classes = HashMap.empty[EClassId, EClass[D]],
-    unionFind = UnionFind.empty,
-    pending = Vec.empty,
-    analysisPending = HashSet.empty,
-    classesByMatch = HashMap.empty
-  )
+  def emptyWithAnalysis[ED, ND, TD](analysis: Analysis[ED, ND, TD])
+  : EGraph[ED, ND, TD] =
+    new EGraph(
+      analysis = analysis,
+      memo = HashMap.empty,
+      classes = HashMap.empty,
+      unionFind = UnionFind.empty,
+      pending = Vec.empty,
+      analysisPending = {
+        import Node.{ordering, natIdOrdering, dataTypeIdOrdering, eclassIdOrdering}
+        collection.mutable.TreeSet.empty[(ENode, EClassId)]
+      },
+      classesByMatch = HashMap.empty,
+      hashConses = HashConses.emptyWithAnalysis(analysis),
+    )
 }
 
 /** A data structure to keep track of equalities between expressions.
   * @see [[https://docs.rs/egg/0.6.0/egg/struct.EGraph.html]]
+  * @tparam ED abstracts over expression analysis data
+  * @tparam ND abstracts over nat analysis data
+  * @tparam TD abstracts over type analysis data
   */
-class EGraph[Data](
-  val analysis: Analysis[Data],
+class EGraph[ED, ND, TD](
+  val analysis: Analysis[ED, ND, TD],
   var pending: Vec[(ENode, EClassId)],
-  var analysisPending: HashSet[(ENode, EClassId)],
-  var memo: HashMap[(ENode, Type), EClassId],
+  // NOTE: TreeSet has faster pop than HashSet,
+  // can also look into something like IndexSet
+  // https://docs.rs/indexmap/1.0.2/indexmap/set/struct.IndexSet.html#method.pop
+  var analysisPending: collection.mutable.TreeSet[(ENode, EClassId)],
+
+  var memo: HashMap[(ENode, TypeId), EClassId],
   var unionFind: UnionFind,
-  var classes: HashMap[EClassId, EClass[Data]],
-  var classesByMatch: HashMap[Int, HashSet[EClassId]]
+  var classes: HashMap[EClassId, EClass[ED]],
+  var classesByMatch: HashMap[Int, HashSet[EClassId]],
+  var hashConses: HashConses[ND, TD],
 ) {
   def nodeCount(): Int =
     classes.map { case (_, c) => c.nodeCount() }.iterator.sum
@@ -34,22 +48,41 @@ class EGraph[Data](
   def findMut(id: EClassId): EClassId =
     unionFind.findMut(id)
 
-  def get(id: EClassId): EClass[Data] =
+  def get(id: EClassId): EClass[ED] =
     classes(find(id))
-  def getMut(id: EClassId): EClass[Data] =
+  def getMut(id: EClassId): EClass[ED] =
     classes(findMut(id))
 
+  def apply(id: NatId): (NatNode[NatId], ND) =
+    hashConses(id)
+  def apply(id: DataTypeId): (DataTypeNode[NatId, DataTypeId], TD) =
+    hashConses(id)
+  def apply(id: NotDataTypeId): (TypeNode[TypeId, NatId, DataTypeId], TD) =
+    hashConses(id)
+  def apply(id: TypeId): (TypeNode[TypeId, NatId, DataTypeId], TD) =
+    hashConses(id)
+
   // returns the canonicalized enode and its eclass if it has one
-  def lookup(enode: ENode, t: Type): (ENode, Option[EClassId]) = {
+  def lookup(enode: ENode, t: TypeId): (ENode, Option[EClassId]) = {
     val enode2 = enode.mapChildren(find)
     val id = memo.get(enode2, t)
     (enode2, id.map(find))
   }
 
-  def add(n: ENode, givenT: Type): EClassId = {
-    // we simplify the contained nats before adding the node to the graph
-    val t = Type.simplifyNats(givenT)
-    val (enode, optec) = lookup(n.map(id => id, Nat.simplify, DataType.simplifyNats), t)
+  def makeEmptyEClass(t: TypeId): EClassId = {
+    val newId = unionFind.makeSet()
+    val newEclass = new EClass(
+      id = newId,
+      t = t,
+      nodes = Vec(),
+      data = analysis.empty(this, t),
+      parents = Vec())
+    classes += newId -> newEclass
+    newId
+  }
+
+  def add(n: ENode, t: TypeId): EClassId = {
+    val (enode, optec) = lookup(n, t)
     optec.getOrElse {
       val id = unionFind.makeSet()
       val eclass = new EClass(
@@ -74,13 +107,37 @@ class EGraph[Data](
   }
 
   def addExpr(expr: Expr): EClassId =
-    add(expr.node.mapChildren(addExpr), expr.t)
+    add(expr.node.map(addExpr, addNat, addDataType), addType(expr.t))
+  def addExpr(expr: ExprWithHashCons): EClassId =
+    add(expr.node.map(addExpr, n => n, dt => dt), expr.t)
+
+  def lookupExpr(expr: Expr): Option[EClassId] =
+    lookup(expr.node.map(
+      e => lookupExpr(e).getOrElse(return None),
+      addNat, addDataType
+    ), addType(expr.t))._2
+
+  def add(n: NatNode[NatId]): NatId =
+    hashConses.add(n)
+  def addNat(n: Nat): NatId =
+    hashConses.addNat(n)
+
+  def add(dt: DataTypeNode[NatId, DataTypeId]): DataTypeId =
+    hashConses.add(dt)
+  def addDataType(dt: DataType): DataTypeId =
+    hashConses.addDataType(dt)
+
+  def add(t: TypeNode[TypeId, NatId, DataTypeId]): TypeId =
+    hashConses.add(t)
+  def addType(t: Type): TypeId =
+    hashConses.addType(t)
 
   // checks whether two expressions are equivalent
   // returns a list of eclasses that represent both expressions
   def equivs(e1: Expr, e2: Expr): Vec[EClassId] = {
-    val matches1 = Pattern.fromExpr(e1).compile().search(this)
-    val matches2 = Pattern.fromExpr(e2).compile().search(this)
+    val shc = SubstHashCons.empty
+    val matches1 = Pattern.fromExpr(e1).compile().search(this, shc)
+    val matches2 = Pattern.fromExpr(e2).compile().search(this, shc)
     val equivClasses = Vec.empty[EClassId]
     for (m1 <- matches1) {
       val ec1 = find(m1.eclass)
@@ -135,18 +192,24 @@ class EGraph[Data](
     (id1, true)
   }
 
-  def rebuild(): Int = {
+  def rebuild(roots: Seq[EClassId],
+              filter: Predicate[ED, ND, TD] = NoPredicate()): Int = {
     val nUnions = processUnions()
+    val _ = this.filter(filter, roots)
     val _ = rebuildClasses()
 
-    assert { checkMemo(); true }
+    assert {
+      TypeCheck(this)
+      checkMemo()
+      true
+    }
 
     nUnions
   }
 
   private def processUnions(): Int = {
     var nUnions = 0
-    while (pending.nonEmpty) {
+    while (pending.nonEmpty || analysisPending.nonEmpty) {
       while (pending.nonEmpty) {
         val (node, eclass) = pending.remove(pending.size - 1)
         val t = get(eclass).t
@@ -163,7 +226,8 @@ class EGraph[Data](
       }
 
       while (analysisPending.nonEmpty) {
-        val (node, id) = analysisPending.last
+        // note: using .last is really slow, traversing all the map
+        val (node, id) = analysisPending.head
         analysisPending.remove((node, id))
 
         val cid = findMut(id)
@@ -185,7 +249,7 @@ class EGraph[Data](
   }
 
   private def rebuildClasses(): Int = {
-    import Node.{ordering, eclassIdOrdering, natOrdering, dataTypeOrdering}
+    import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering}
     classesByMatch.values.foreach(ids => ids.clear())
 
     var trimmed = 0
@@ -211,18 +275,30 @@ class EGraph[Data](
         classesByMatch.getOrElseUpdate(n.matchHash(), HashSet.empty) += eclass.id
 
       // TODO? in egg the nodes are sorted and duplicates where prev.matches(n) are not added
-      // .distinctBy(_.matchHash())
-      eclass.nodes.foreach(add)
+      // eclass.nodes.foreach(add)
+      eclass.nodes.headOption match {
+        case None =>
+        case Some(first) =>
+          add(first)
+
+          var prev = first
+          for (n <- eclass.nodes.view.tail) {
+            if (!prev.matches(n)) {
+              add(n)
+            }
+            prev = n
+          }
+      }
     }
 
     trimmed
   }
 
   private def checkMemo(): Boolean = {
-    val testMemo = HashMap.empty[(ENode, Type), EClassId]
+    val testMemo = HashMap.empty[(ENode, TypeId), EClassId]
 
     for ((id, eclass) <- classes) {
-      assert(eclass.id == id);
+      assert(eclass.id == id)
       for (node <- eclass.nodes) {
         testMemo.get(node, eclass.t) match {
           case None => ()
@@ -238,5 +314,101 @@ class EGraph[Data](
     }
 
     true
+  }
+
+  // returns (eliminatedClasses, eliminatedNodes)
+  private def filter(predicate: Predicate[ED, ND, TD],
+                     roots: Seq[EClassId]): (Int, Int) = {
+    assert(pending.isEmpty)
+    assert(analysisPending.isEmpty)
+
+    val rootsCanonical = roots.map(findMut).toSet
+    def isRoot(id: EClassId): Boolean = rootsCanonical(id)
+
+    val originalClassCount = classCount()
+    val originalNodeCount = nodeCount()
+
+    // 1. collect classes to eliminate
+    val toEliminate = HashSet.empty[EClassId]
+    val (rt1, _) = util.time {
+      predicate match {
+        case NoPredicate() =>
+        case _ =>
+          predicate.start(this, roots)
+          for (eclass <- classes.values) {
+            assert(eclass.id == findMut(eclass.id))
+            if (!predicate(this, eclass)) {
+              assert(!isRoot(eclass.id))
+              toEliminate += eclass.id
+            }
+          }
+          predicate.stop()
+      }
+    }
+
+    /* TODO? and if no directional rewrite was triggered
+    if (toEliminate.isEmpty) {
+      return (0, 0)
+    }
+   */
+
+    def eclassToEliminate(id: EClassId): Boolean =
+      toEliminate(findMut(id))
+    def enodeToEliminate(n: ENode): Boolean =
+      n.children().exists(eclassToEliminate)
+
+    // 2. also eliminate classes that would become
+    // unreachable or dead ends
+    val (rt2, _) = util.time {
+      var spread = true
+      while (spread) {
+        spread = false
+
+        for (eclass <- classes.values) {
+          if (!toEliminate(eclass.id)) {
+            val unreachable = !isRoot(eclass.id) &&
+              eclass.parents.forall { case (pn, pid) => eclassToEliminate(pid) || enodeToEliminate(pn) }
+            val deadEnd = eclass.nodes.forall(enodeToEliminate)
+            if (unreachable || deadEnd) {
+              assert(!isRoot(eclass.id))
+              toEliminate += eclass.id
+              spread = true
+            }
+          }
+        }
+      }
+    }
+
+    if (toEliminate.isEmpty) {
+      return (0, 0)
+    }
+
+    // 3. perform the actual elimination
+    val (rt3, _) = util.time {
+      classes.filterInPlace { case (id, _) =>
+        !toEliminate(id)
+      }
+      classes.foreach { case (_, eclass) =>
+        eclass.parents.filterInPlace { case (pn, pid) =>
+          !(eclassToEliminate(pid) || enodeToEliminate(pn))
+        }
+        eclass.nodes.filterInPlace { c =>
+          !enodeToEliminate(c)
+        }
+      }
+      memo.filterInPlace { case (_, id) =>
+        !eclassToEliminate(id)
+      }
+    }
+
+    // FIXME: we are currently not updating the analysis data
+    //  to account for removals
+
+    val eliminatedClasses = originalClassCount - classCount()
+    val eliminatedNodes = originalNodeCount - nodeCount()
+    println(s"filter eliminated $eliminatedClasses classes" +
+      s" and $eliminatedNodes nodes" +
+      s" in ${Seq(rt1, rt2, rt3).map(util.prettyTime).mkString(" + ")}")
+    (eliminatedClasses, eliminatedNodes)
   }
 }

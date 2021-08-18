@@ -10,6 +10,7 @@ class showScalaTest extends test_util.Tests {
     s"""
        |import rise.core._
        |import rise.core.types._
+       |import rise.core.types.DataType._
        |import rise.core.semantics._
        |import rise.core.primitives._
        |import rise.openCL.TypedDSL._

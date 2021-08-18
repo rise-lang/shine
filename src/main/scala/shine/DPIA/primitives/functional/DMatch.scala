@@ -1,13 +1,14 @@
 package shine.DPIA.primitives.functional
 
+import rise.core.types._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 
-final case class DMatch(x: NatIdentifier,
+final case class DMatch(x: rise.core.types.NatIdentifier,
                         elemT: DataType,
                         outT: DataType,
-                        a: AccessType,
+                        a: Access,
                         f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                         input: Phrase[ExpType]
                        ) extends ExpPrimitive {

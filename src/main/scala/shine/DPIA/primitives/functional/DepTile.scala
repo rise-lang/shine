@@ -2,10 +2,10 @@ package shine.DPIA.primitives.functional
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator
 import arithexpr.arithmetic.BoolExpr.arithPredicate
-import arithexpr.arithmetic.{IfThenElse, SimplifiedExpr}
-import rise.core.types.Nat
+import arithexpr.arithmetic.IfThenElse
+import rise.core.types.{DataType, Nat, read, write}
+import rise.core.DSL.Type._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 
@@ -23,7 +23,7 @@ final case class DepTile(n: Nat, tileSize: Nat, haloSize: Nat,
 
   processTiles :: (
     expT(allTiles `.d` (i => (depSize(i) + haloSize) `.` dt1), read) ->:
-    expT(allTiles `.d` (i => (depSize(i) `.` dt2)), write))
+    expT(allTiles `.d` (i => depSize(i) `.` dt2), write))
   array :: expT((n + haloSize)`.`dt1, read)
   override val t: ExpType = expT(n`.`dt2, write)
 

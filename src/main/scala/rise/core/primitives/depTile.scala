@@ -7,13 +7,13 @@ import rise.core.types._
 
 object depTile extends Builder {
   private final case class Primitive()
-                                    (override val t: Type = TypePlaceholder)
+                                    (override val t: ExprType = TypePlaceholder)
     extends rise.core.Primitive
   {
     override val name: String = "depTile"
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def setType(ty: Type): Primitive = Primitive()(ty)
-    override def typeScheme: Type =
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
+    override def typeScheme: ExprType =
       impl{ n: Nat => expl((tile: Nat) => impl{ halo: Nat =>
         impl{ s: DataType => impl{ t: DataType =>
           import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator

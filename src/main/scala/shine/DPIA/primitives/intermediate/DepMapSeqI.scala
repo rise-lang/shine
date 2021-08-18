@@ -1,6 +1,7 @@
 package shine.DPIA.primitives.intermediate
 
 import arithexpr.arithmetic.RangeAdd
+import rise.core.types.NatToData
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._

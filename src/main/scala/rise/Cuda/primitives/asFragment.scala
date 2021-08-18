@@ -6,13 +6,14 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object asFragment extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "asFragment"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = impl { (n: Nat) => impl { (m: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (f: FragmentKind) => impl { (l: MatrixLayout) => ArrayType(n, ArrayType(m, s)) ->: FragmentType(n, m, k, s, f, l) } } } } } }
+    override def typeScheme: ExprType = impl { (n: Nat) => impl { (m: Nat) => impl { (k: Nat) => impl { (s: DataType) => impl { (f: Fragment) => impl { (l: MatrixLayout) => ArrayType(n, ArrayType(m, s)) ->: FragmentType(n, m, k, s, f, l) } } } } } }
   }
   override def toString: String = "asFragment"
   override def primitive: rise.core.Primitive = Primitive()()

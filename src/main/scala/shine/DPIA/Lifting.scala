@@ -1,5 +1,6 @@
 package shine.DPIA
 
+import rise.core.types.NatIdentifier
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 
@@ -8,20 +9,20 @@ import scala.language.{postfixOps, reflectiveCalls}
 object Lifting {
   import rise.core.lifting.{Expanding, Reducing, Result}
 
-  def liftDependentFunction[T, I, KI <: Kind.Identifier, U <: PhraseType](p: Phrase[DepFunType[I, KI, U]]): T => Phrase[U] = {
+  def liftDependentFunction[T, I, U <: PhraseType](p: Phrase[DepFunType[I, U]]): T => Phrase[U] = {
     p match {
-      case l: DepLambda[T, I, KI, U]@unchecked =>
-        (arg: T) => PhraseType.substitute[T, I, KI, U](l.kind, arg, `for`=l.x, in=l.body)
-      case app: Apply[_, DepFunType[I, KI, U]] =>
+      case l: DepLambda[T, I, U]@unchecked =>
+        (arg: T) => shine.DPIA.Types.substitute[T, I, U](l.kind, arg, `for`=l.x, in=l.body)
+      case app: Apply[_, DepFunType[I, U]] =>
         val fun = liftFunction(app.fun).reducing
         liftDependentFunction(fun(app.arg))
       case DepApply(_, f, arg) =>
         val fun = liftDependentFunction(f)
         liftDependentFunction(fun(arg))
-      case p1: Proj1[DepFunType[I, KI, U], b] =>
+      case p1: Proj1[DepFunType[I, U], b] =>
         val pair = liftPair(p1.pair)
         liftDependentFunction(pair._1)
-      case p2: Proj2[a, DepFunType[I, KI, U]] =>
+      case p2: Proj2[a, DepFunType[I, U]] =>
         val pair = liftPair(p2.pair)
         liftDependentFunction(pair._2)
       case Identifier(_, _) | IfThenElse(_, _, _) | LetNat(_, _, _) =>
@@ -99,7 +100,7 @@ object Lifting {
   def liftDependentFunctionType[T](ty: PhraseType): T => PhraseType =
     ty match {
       case DepFunType(kind, x, t) =>
-        (a: T) => PhraseType.substitute(kind, a, x, t)
+        (a: T) => shine.DPIA.Types.substitute(kind, a, x, t)
       case _ => throw new Exception(s"did not expect $ty")
     }
 }

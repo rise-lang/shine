@@ -1,5 +1,6 @@
 package shine.OpenMP.primitives.intermediate
 
+import rise.core.types.DataType
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
