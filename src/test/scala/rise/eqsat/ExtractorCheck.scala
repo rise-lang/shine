@@ -12,9 +12,10 @@ class ExtractorCheck extends test_util.Tests {
     val simplerExpr = lam(int, %(0, int))
     val simpler = egraph.addExpr(simplerExpr)
     egraph.union(expr, simpler)
-    egraph.rebuild()
+    egraph.rebuild(Seq(expr))
 
     val extractor = Extractor.init(egraph, AstSize)
-    assert(extractor.findBestOf(expr) == (2, simplerExpr))
+    val (bestSize, bestExpr) = extractor.findBestOf(expr)
+    assert((bestSize, ExprWithHashCons.expr(egraph)(bestExpr)) == (2, simplerExpr))
   }
 }
