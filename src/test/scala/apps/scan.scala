@@ -201,48 +201,20 @@ class scan extends test_util.Tests {
     )
   }
 
-
-  test("scan par mechanical rewrite") {
-    def scanPar(blockSize: Int) = {
-      def sum = oclReduceSeqUnroll(AddressSpace.Private)(add)(lf32(0.0f))
-
-      def recurse(blockSize: Int, input:ToBeTyped[Expr]): ToBeTyped[Expr] = {
-        if (blockSize == 1) {
-          larr(Seq(FloatData(0.0f))) |> mapSeq(fun(x => x))
-        } else {
-          let(input |> split(2) |> mapLocal(0)(sum) |> oclToMem(AddressSpace.Local))
-            .be(next => {
-              val upsweep = recurse(blockSize/2, next) |> oclToMem(AddressSpace.Local)
-              zip(upsweep)(input |> split(2)) |>
-                mapLocal(0)(fun(pair => oclScanSeqUnroll(AddressSpace.Private)(add)(pair._1)(pair._2)))|>
-                join
-            }
-            )
-        }
-      }
-
-      fun(ArrayType(blockSize, f32))(input => recurse(blockSize, input))
-    }
-
-    val expr = scanPar(64)
-    val kernel = gen.opencl.kernel.fromExpr(expr)
-    println(kernel.code)
-  }
-
   test("scan par rewrite") {
     val blockSize = 64
     val initExp = {
       fun(ArrayType(blockSize, f32))(input =>
-        input |> oclScanSeq(AddressSpace.Global)(add)(lf32(0.0f))
+        input |> scan(add)(lf32(0.0f))
       )
     }
 
     def innermost = rise.elevate.strategies.traversal.innermost(default.RiseTraversable)
-    def isScan = isApplied(isApplied(isApplied(isDepApp(isPrimitive(oclScanSeq)))))
+    def isScan = isApplied(isApplied(isApplied(isPrimitive(scan))))
 
     def rewriteStep(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
       innermost(isScan)(
-        rise.elevate.rules.scan.blockScanStepRec
+        rise.elevate.rules.workEfficientScan.expandBlockScan
       )(e).get
     }
 
@@ -252,6 +224,8 @@ class scan extends test_util.Tests {
 
     var e1: ToBeTyped[Expr] =  initExp
     (0 until numIterations).foreach(_ => e1 = rewriteStep(e1))
+
+    e1 = innermost(isScan)(rise.elevate.rules.workEfficientScan.lowerToSequential)(e1).get
 
     val kernel = gen.opencl.kernel.fromExpr(e1)
     println(kernel.code)

@@ -91,6 +91,7 @@ def reduceSeq:       {n: nat} -> {s: data} -> {t: data} -> (t -> s -> t) -> t ->
 def reduceSeqUnroll: {n: nat} -> {s: data} -> {t: data} -> (t -> s -> t) -> t -> n.s -> t
 
 // scan
+def scan: {n: nat} -> {s: data} -> {t: data} -> (s -> t -> t) -> t -> n.s -> n.t
 def scanSeq: {n: nat} -> {s: data} -> {t: data} -> (s -> t -> t) -> t -> n.s -> n.t
 
 // iterate
