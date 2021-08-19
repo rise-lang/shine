@@ -1,15 +1,26 @@
 package rise.eqsat
 
-import rise.core.types.Kind.{IDataType, INat, IType}
-import rise.core.types.TypePlaceholder
+import rise.core.types.DataKind.IDWrapper
+import rise.core.types.{NatKind, TypeKind, TypePlaceholder}
 import rise.{core => rc}
 import rise.core.{types => rct}
+import rise.core.types.{DataType => rcdt}
 import rise.core.{primitives => rcp}
 
 object NamedRewrite {
+  sealed trait Condition
+  // TODO: could try to either:
+  //  (1) infer these constraints from the rule
+  //  (2) check that such a constraint is not missing
+  //      for the rule to be well-formed
+  case class NotFreeIn(notFree: String, // bound variable in named pattern
+                       in: String // free variable in named pattern
+                      ) extends Condition
+
   def init(name: String,
-           rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern)
-          ): Rewrite[DefaultAnalysisData] = {
+           rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
+           conditions: Seq[NamedRewrite.Condition] = Seq(),
+          ): DefaultAnalysis.Rewrite = {
     import rise.core.DSL.infer
     import arithexpr.{arithmetic => ae}
 
@@ -38,6 +49,8 @@ object NamedRewrite {
 
     // nats which we need to pivot to avoid matching over certain nat constructs
     val natsToPivot = Vec[(rct.Nat, rct.NatIdentifier, Nat.Shift, NatPatternVar)]()
+
+    val boundVarToShift = HashMap[String, Expr.Shift]()
 
     def makePatVar[S, V](name: String,
                          shift: S,
@@ -73,12 +86,23 @@ object NamedRewrite {
         // note: we do not match for the type of lambda bodies, as we can always infer it:
         //       lam(x : xt, e : et) : xt -> et
         case rc.Lambda(x, e) =>
+          // right now we assume that all bound variables are uniquely named
+          if (!isRhs) {
+            assert(!boundVarToShift.contains(x.name))
+            boundVarToShift += x.name ->
+              (bound.expr.size + 1, bound.nat.size, bound.data.size)
+          }
           PatternNode(Lambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(rct.NatKind, x: rct.NatIdentifier, e) =>
           PatternNode(NatLambda(makePat(e, bound + x, isRhs, matchType = false)))
-        case rc.DepLambda(rct.DataKind, x: rct.DataTypeIdentifier, e) =>
+        case rc.DepLambda(rct.DataKind, x: rcdt.DataTypeIdentifier, e) =>
           PatternNode(DataLambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(_, _, _) => ???
+
+        case rc.App(rc.App(NamedRewriteDSL.Composition(_), f), g) =>
+          PatternNode(Composition(
+            makePat(f, bound, isRhs, matchType = true),
+            makePat(g, bound, isRhs, matchType = false)))
 
         // note: we do not match for the type of applied functions, as we can always infer it:
         //       app(f : et -> at, e : et) : at
@@ -100,7 +124,7 @@ object NamedRewrite {
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
-        case i: rct.NatIdentifier if freeT(INat(i)) =>
+        case i: rct.NatIdentifier if freeT(NatKind.IDWrapper(i)) =>
           makePatVar(i.name, bound.nat.size, natPatVars,
             NatPatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
@@ -115,53 +139,56 @@ object NamedRewrite {
         case ae.Prod(t +: ts) if isRhs => ts.foldRight(makeNPat(t, bound, isRhs)) { case (t, acc) =>
           NatPatternNode(NatMul(makeNPat(t, bound, isRhs), acc))
         }
+        case ae.Pow(b, e) if isRhs =>
+          NatPatternNode(NatPow(makeNPat(b, bound, isRhs), makeNPat(e, bound, isRhs)))
         // do not match over these nat constructs on the left-hand side,
         // as structural matching would not be sufficient,
         // try to pivot the equality around a fresh pattern variable instead
-        case ae.Sum(_) | ae.Prod(_) if !isRhs =>
+        case ae.Sum(_) | ae.Prod(_) | ae.Pow(_, _) if !isRhs =>
           val nv = rct.NatIdentifier(s"_nv${natsToPivot.size}")
           val pv = makePatVar(nv.name, bound.nat.size, natPatVars, NatPatternVar, Known)
           natsToPivot.addOne((n, nv, bound.nat.size, pv))
           pv
-        case _ => throw new Exception(s"did not expect $n")
+        case _ =>
+          throw new Exception(s"did not expect $n")
       }
 
     def makeDTPat(dt: rct.DataType, bound: Expr.Bound, isRhs: Boolean): DataTypePattern =
       dt match {
-        case i: rct.DataTypeIdentifier if freeT(IDataType(i)) =>
+        case i: rcdt.DataTypeIdentifier if freeT(IDWrapper(i)) =>
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             dataTypePatVars, DataTypePatternVar, if (isRhs) { Unknown } else { Known })
-        case i: rct.DataTypeIdentifier =>
+        case i: rcdt.DataTypeIdentifier =>
           DataTypePatternNode(DataTypeVar(bound.indexOf(i)))
-        case s: rct.ScalarType =>
+        case s: rcdt.ScalarType =>
           DataTypePatternNode(ScalarType(s))
-        case rct.NatType =>
+        case rcdt.NatType =>
           DataTypePatternNode(NatType)
-        case rct.VectorType(s, et) =>
+        case rcdt.VectorType(s, et) =>
           DataTypePatternNode(VectorType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
-        case rct.IndexType(s) =>
+        case rcdt.IndexType(s) =>
           DataTypePatternNode(IndexType(makeNPat(s, bound, isRhs)))
-        case rct.PairType(dt1, dt2) =>
+        case rcdt.PairType(dt1, dt2) =>
           DataTypePatternNode(PairType(makeDTPat(dt1, bound, isRhs), makeDTPat(dt2, bound, isRhs)))
-        case rct.ArrayType(s, et) =>
+        case rcdt.ArrayType(s, et) =>
           DataTypePatternNode(ArrayType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
-        case _: rct.DepArrayType | _: rct.DepPairType[_, _, _] |
-             _: rct.NatToDataApply | _: rct.FragmentType =>
+        case _: rcdt.DepArrayType | _: rcdt.DepPairType[_, _] |
+             _: rcdt.NatToDataApply | _: rcdt.FragmentType =>
           throw new Exception(s"did not expect $dt")
       }
 
-    def makeTPat(t: rct.Type, bound: Expr.Bound, isRhs: Boolean): TypePattern =
+    def makeTPat(t: rct.ExprType, bound: Expr.Bound, isRhs: Boolean): TypePattern =
       t match {
         case dt: rct.DataType => makeDTPat(dt, bound, isRhs)
         case rct.FunType(a, b) =>
           TypePatternNode(FunType(makeTPat(a, bound, isRhs), makeTPat(b, bound, isRhs)))
         case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) =>
           TypePatternNode(NatFunType(makeTPat(t, bound + x, isRhs)))
-        case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) =>
+        case rct.DepFunType(rct.DataKind, x: rcdt.DataTypeIdentifier, t) =>
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
         case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>
-          assert(freeT(IType(i)))
+          assert(freeT(TypeKind.IDWrapper(i)))
           makePatVar(i.name, (bound.nat.size, bound.data.size),
             typePatVars, TypePatternVar, if (isRhs) { Unknown } else { Known })
         case rct.TypePlaceholder =>
@@ -171,7 +198,7 @@ object NamedRewrite {
     val lhsPat = makePat(typedLhs, Expr.Bound.empty, isRhs = false)
     val rhsPat = makePat(typedRhs, Expr.Bound.empty, isRhs = true)
 
-    type Applier = rise.eqsat.Applier[DefaultAnalysisData]
+    type Applier = DefaultAnalysis.Applier
     def shiftAppliers[S, V](pvm: PatternVarMap[S, V],
                             mkShift: (S, V) => (S, V) => Applier => Applier,
                             mkShiftCheck: (S, V) => (S, V) => Applier => Applier,
@@ -209,7 +236,8 @@ object NamedRewrite {
       assert(s1 != s2)
       val cutoff = s1
       val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
-      ShiftedApplier(pv1, pv2, shift, cutoff, applier)
+      // TODO: or ShiftedApplier?
+      ShiftedExtractApplier(pv1, pv2, shift, cutoff, applier)
     }
 
     def patMkShiftCheck(s1: Expr.Shift, pv1: PatternVar)
@@ -302,7 +330,7 @@ object NamedRewrite {
           }
         case Pow(b, Cst(-1)) => tryPivot(pivot, b, Cst(1) /^ value)
         case Mod(p, m) if p == pivot =>
-          val k = rct.NatIdentifier("k", RangeAdd(0, PosInf, 1))
+          val k = rct.NatIdentifier(s"_k_${p}_${m}", RangeAdd(0, PosInf, 1))
           Some(k*m + value)
         case _ => None
       }
@@ -385,13 +413,32 @@ object NamedRewrite {
       }
     }
 
-    val searcher: Searcher[DefaultAnalysisData] = lhsPat.compile()
+    val searcher: DefaultAnalysis.Searcher = lhsPat.compile()
+    val cond = conditions.foldRight((a: Applier) => a) { case (c, acc) =>
+      c match {
+        case NotFreeIn(notFree, in) =>
+          val nfShift = boundVarToShift.getOrElse(notFree, (0, 0, 0))._1
+          // all left-hand-side uses of `in` may contain `notFree`
+          assert(patVars(in).forall {
+            case ((shift, _, _), (_, status)) =>
+              shift >= nfShift || status != Known
+          })
+          // pick one of these uses
+          val (iS, iPV) = patVars(in).collectFirst {
+            case ((s, _, _), (pv, Known)) => (s, pv)
+          }.get
+          val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
+          def condF(egraph: DefaultAnalysis.EGraph, eclass: EClassId, shc: SubstHashCons, subst: Subst): Boolean =
+            !egraph.getMut(subst(iPV, shc)).data.free.contains(nfIndex)
+          (a: Applier) => ConditionalApplier(condF, Set(iPV), acc(a))
+      }
+    }
     val shiftPV = shiftAppliers(patVars, patMkShift, patMkShiftCheck)
     val shiftNPV = shiftAppliers(natPatVars, natPatMkShift, natPatMkShiftCheck)
     val shiftDTPV = shiftAppliers(dataTypePatVars, dataTypePatMkShift, dataTypePatMkShiftCheck)
     val shiftTPV = shiftAppliers(typePatVars, typePatMkShift, typePatMkShiftCheck)
     val pivotNats = pivotNatsRec(natsToPivot.toSeq, Seq()) _
-    val applier = shiftPV(shiftNPV(shiftDTPV(shiftTPV(pivotNats(rhsPat)))))
+    val applier = cond(shiftPV(shiftNPV(shiftDTPV(shiftTPV(pivotNats(rhsPat))))))
 
     def allIsShiftCoherent[S, V](pvm: PatternVarMap[S, V]): Boolean =
       pvm.forall { case (_, shiftMap) =>
@@ -409,7 +456,7 @@ object NamedRewriteDSL {
   type Pattern = rc.Expr
   type NatPattern = rct.Nat
   type DataTypePattern = rct.DataType
-  type TypePattern = rct.Type
+  type TypePattern = rct.ExprType
 
   import scala.language.implicitConversions
 
@@ -432,20 +479,29 @@ object NamedRewriteDSL {
     rc.DepLambda(rct.NatKind, n, e)(TypePlaceholder)
   }
   def l(d: rc.semantics.Data): Pattern = rc.Literal(d)
+  def lf32(f: Float): Pattern = l(rise.core.semantics.FloatData(f))
 
   def slide: Pattern = rcp.slide.primitive
   def map: Pattern = rcp.map.primitive
   def reduce: Pattern = rcp.reduce.primitive
   def transpose: Pattern = rcp.transpose.primitive
   def zip: Pattern = rcp.zip.primitive
+  def unzip: Pattern = rcp.unzip.primitive
+  def split: Pattern = rcp.split.primitive
   def join: Pattern = rcp.join.primitive
   def fst: Pattern = rcp.fst.primitive
   def snd: Pattern = rcp.snd.primitive
+  def mapFst: Pattern = rcp.mapFst.primitive
+  def mapSnd: Pattern = rcp.mapSnd.primitive
+  def makePair: Pattern = rcp.makePair.primitive
   def add: Pattern = rcp.add.primitive
   def mul: Pattern = rcp.mul.primitive
   def div: Pattern = rcp.div.primitive
   def drop: Pattern = rcp.drop.primitive
   def take: Pattern = rcp.take.primitive
+  def asScalar: Pattern = rcp.asScalar.primitive
+  def asVector: Pattern = rcp.asVector.primitive
+  def asVectorAligned: Pattern = rcp.asVectorAligned.primitive
 
   implicit def placeholderAsNatPattern(p: `_`.type): NatPattern =
     rct.NatIdentifier(rc.freshName("n"))
@@ -453,26 +509,67 @@ object NamedRewriteDSL {
     rct.NatIdentifier(name)
 
   implicit def placeholderAsDataTypePattern(p: `_`.type): DataTypePattern =
-    rct.DataTypeIdentifier(rc.freshName("dt"))
+    rcdt.DataTypeIdentifier(rc.freshName("dt"))
   implicit def stringAsDataTypePattern(name: String): DataTypePattern =
-    rct.DataTypeIdentifier(name)
+    rcdt.DataTypeIdentifier(name)
 
-  val int: DataTypePattern = rct.int
-  val f32: DataTypePattern = rct.f32
+  def t(name: String): TypePattern =
+    rct.TypeIdentifier(name)
+
+  val int: DataTypePattern = rcdt.int
+  val f32: DataTypePattern = rcdt.f32
 
   implicit final class TypeAnnotation(private val t: TypePattern) extends AnyVal {
     @inline def ::(p: Pattern): Pattern = rc.TypeAnnotation(p, t)
   }
   implicit final class FunConstructorT(private val r: TypePattern) extends AnyVal {
     @inline def ->:(t: TypePattern): TypePattern =
-      rct.FunType[rct.Type, rct.Type](t, r)
+      rct.FunType[rct.ExprType, rct.ExprType](t, r)
   }
   implicit final class FunConstructorDT(private val r: DataTypePattern) extends AnyVal {
     @inline def ->:(t: TypePattern): TypePattern =
-      rct.FunType[rct.Type, rct.Type](t, r)
+      rct.FunType[rct.ExprType, rct.ExprType](t, r)
   }
   implicit final class ArrayConstructor(private val s: NatPattern) extends AnyVal {
     @inline def `.`(et: DataTypePattern): DataTypePattern =
-      rct.ArrayType(s, et)
+      rcdt.ArrayType(s, et)
+  }
+  implicit final class PairConstructor(private val a: DataTypePattern) extends AnyVal {
+    @inline def x(b: DataTypePattern): DataTypePattern =
+      rcdt.PairType(a, b)
+  }
+
+  implicit final class NotFreeIn(private val in: String) extends AnyVal {
+    @inline def notFree(notFree: String): NamedRewrite.Condition =
+      NamedRewrite.NotFreeIn(notFree, in)
+  }
+
+  // combinatory
+
+  implicit final class MakeComposition(private val f: Pattern) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = app(app(Composition(), f), g)
+  }
+  implicit final class MakeCompositionString(private val f: String) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = app(app(Composition(), f), g)
+  }
+  case class Composition(override val t: rct.ExprType = TypePlaceholder) extends rc.Primitive {
+    import rise.core.DSL.Type.{impl, ->:}
+
+    override def name: String = ">>"
+
+    override def typeScheme: rct.ExprType =
+      impl { a: rct.TypeIdentifier =>
+      impl { b: rct.TypeIdentifier =>
+      impl { c: rct.TypeIdentifier =>
+        (a ->: b) ->: (b ->: c) ->: (a ->: c)
+      }}}
+    override def primEq(obj: rc.Primitive): Boolean =
+      obj match {
+        case _: Composition => true
+        case _ => false
+      }
+
+    override def setType(t: rct.ExprType): rc.Primitive =
+      Composition(t)
   }
 }

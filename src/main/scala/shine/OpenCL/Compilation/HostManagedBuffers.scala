@@ -1,5 +1,7 @@
 package shine.OpenCL.Compilation
 
+import rise.core.types.DataType
+import rise.core.types.DataType._
 import shine.DPIA._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -109,6 +111,18 @@ object HostManagedBuffers {
             case (unexpected, _) => throw new Exception(s"did not expect $unexpected")
           }
           Stop(p)
+        case k@shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n) =>
+          k.args.foreach(collectReads(_, allocs, metadata.device_reads))
+          collectWrites(k.output, metadata.device_writes)
+          ((k.output, DEVICE_WRITE) +: k.args.map(_ -> DEVICE_READ)).foreach {
+            case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
+            case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
+            case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
+            case (Natural(_), _) =>
+            case (Literal(NatAsIntData(_)), _) =>
+            case (unexpected, _) => throw new Exception(s"did not expect $unexpected")
+          }
+          Stop(p)
         case dpia.Seq(a, b) =>
           val (a2, am) = analyzeAndInsertHostExecution(a, allocs, managed)
           val (b2, bm) = insertHostExecutions(am, allocs, managed, b)
@@ -162,6 +176,13 @@ object HostManagedBuffers {
           val newArgs = k.args.map(VisitAndRebuild(_, this))
           Stop(ocl.KernelCallCmd(name, ls, gs, n)(
             newArgs.map(_.t.dataType), newOutput.t.dataType, k.args.map(VisitAndRebuild(_, this)), newOutput))
+
+        case k@shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n) =>
+          val newOutput = VisitAndRebuild(k.output, this)
+          val newArgs = k.args.map(VisitAndRebuild(_, this))
+          Stop(shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n)(
+            newArgs.map(_.t.dataType), newOutput.t.dataType, k.args.map(VisitAndRebuild(_, this)), newOutput
+          ))
         case _: HostExecution => Stop(p)
         case unexpected => throw new Exception(s"did not expect $unexpected")
       }

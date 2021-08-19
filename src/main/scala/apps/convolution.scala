@@ -6,6 +6,7 @@ import HighLevelConstructs._
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeqUnroll
 import util.{Time, TimeSpan}

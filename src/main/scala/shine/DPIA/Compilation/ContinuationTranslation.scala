@@ -1,9 +1,13 @@
 package shine.DPIA.Compilation
 
+import rise.core.types.{AddressSpace, DataType, NatKind, read, write}
+import rise.core.types.DataType._
+import rise.core.DSL.Type._
+import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
+import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
@@ -108,10 +112,10 @@ object ContinuationTranslation {
 
     case DMatch(x, elemT, outT, a, f, input) =>
       // Turn the f imperative by means of forwarding the continuation translation
-      con(input)(λ(expT(DepPairType(x, elemT), read))(pair =>
+      con(input)(λ(expT(DepPairType(NatKind, x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
           _Λ_(NatKind)((fst: NatIdentifier) =>
-            λ(expT(DataType.substitute(fst, x, elemT), read))(snd =>
+            λ(expT(substituteNatInType(fst, x, elemT), read))(snd =>
               con(f(fst)(snd))(C)
             )), pair)))
 

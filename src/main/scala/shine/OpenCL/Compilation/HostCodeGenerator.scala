@@ -1,6 +1,8 @@
 package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
+import rise.core.types.DataType
+import rise.core.types.DataType._
 import shine.C
 import shine.C.AST.{OpaqueType => _, _}
 import shine.C.Compilation.CodeGenerator
@@ -41,7 +43,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
                             output: Phrase[AccType],
                             args: Seq[Phrase[ExpType]],
                             env: Environment): Stmt = {
-    import shine.DPIA.Types.AddressSpace
+    import rise.core.types.AddressSpace
 
     val calledKernel = kernelModules.flatMap(km => km.kernels.filter(_.name == name)) match {
       case Seq(k) => k
@@ -177,7 +179,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
   }
 
   private def managedTyp(dt: DataType): C.AST.Type = dt match {
-    case shine.DPIA.Types.ArrayType(_, elemType) => C.AST.PointerType(typ(elemType))
+    case DataType.ArrayType(_, elemType) => C.AST.PointerType(typ(elemType))
     case _ => throw new Exception(s"did not expect $dt")
   }
 
@@ -197,13 +199,15 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
   private def bufferSize(dt: DataType): Expr =
     dt match {
       case ManagedBufferType(dt) => bufferSize(dt)
-      case _: ScalarType | _: IndexType | _: VectorType | _: PairType =>
+      case _: ScalarType | _: IndexType | _: VectorType | NatType =>
         C.AST.Literal(s"sizeof(${typ(dt)})")
-      case a: shine.DPIA.Types.ArrayType =>
+      case PairType(fst, snd) =>
+        C.AST.BinaryExpr(bufferSize(fst), BinaryOperator.+, bufferSize(snd))
+      case a: DataType.ArrayType =>
         C.AST.BinaryExpr(C.AST.ArithmeticExpr(a.size), BinaryOperator.*, bufferSize(a.elemType))
       case a: DepArrayType => ??? // TODO
-      case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier | _: OpaqueType |
-           _: shine.DPIA.Types.FragmentType =>
+      case _: DepPairType[_, _] | _: NatToDataApply | _: DataTypeIdentifier | _: OpaqueType |
+           _: DataType.FragmentType =>
         throw new Exception(s"did not expect ${dt}")
     }
 

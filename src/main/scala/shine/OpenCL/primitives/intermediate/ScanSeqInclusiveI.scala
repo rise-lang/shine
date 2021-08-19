@@ -1,5 +1,6 @@
 package shine.OpenCL.primitives.intermediate
 
+import rise.core.types.{AddressSpace, DataType }
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL.{`new` => _, _}

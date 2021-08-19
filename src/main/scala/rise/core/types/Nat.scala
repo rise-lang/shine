@@ -1,18 +1,37 @@
 package rise.core.types
 
 import arithexpr.arithmetic._
-import rise.core.types
 
+object IsTuningParameter {
+  def apply(name: String)(ni: NatIdentifier): Boolean =
+    ni.name == TuningParameter.prefix + name
+}
+
+object TuningParameter {
+  val prefix = "tuned_"
+  def apply(name: String): NatIdentifier = NatIdentifier(prefix + name)
+  def apply(name: String, range: Range): NatIdentifier = NatIdentifier(prefix + name, range)
+  def unapply(ni: NatIdentifier): Boolean = {
+    if (ni.name.startsWith(prefix)) {
+      true
+    } else {
+      false
+    }
+  }
+}
+
+object TuningParameterName {
+  def apply(ni: NatIdentifier): String =
+    ni.name.drop(TuningParameter.prefix.length)
+}
 
 object NatIdentifier {
   def apply(name: String): NatIdentifier = new NamedVar(name)
   def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range)
 }
 
-final class NatToNatApply(val f: NatToNat, val n: Nat)
-  extends ArithExprFunctionCall(s"$f($n)") {
-  override def visitAndRebuild(fun: Nat => Nat): Nat =
-    fun(NatToNatApply(this.f, fun(n)))
+final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunctionCall(s"$f($n)") {
+  override def visitAndRebuild(fun: Nat => Nat): Nat = fun(NatToNatApply(this.f, fun(n)))
 
   override def substitute(subs: collection.Map[ArithExpr, ArithExpr]
                          ): Option[ArithExpr] =
@@ -27,9 +46,7 @@ final class NatToNatApply(val f: NatToNat, val n: Nat)
 
   override def exposedArgs: Seq[Nat] = Seq(n)
 
-  override def substituteExposedArgs(
-                                      subMap: Map[Nat, SimplifiedExpr]
-                                    ): ArithExprFunctionCall =
+  override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall =
     new NatToNatApply(f, subMap.getOrElse(n, n))
 }
 

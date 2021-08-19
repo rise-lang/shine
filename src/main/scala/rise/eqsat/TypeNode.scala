@@ -1,67 +1,15 @@
 package rise.eqsat
 
 import rise.core.{types => rct}
+import rise.core.types.{DataType => rcdt}
 
 /** A Rise type based on DeBruijn indexing */
 case class Type(node: TypeNode[Type, Nat, DataType]) {
   override def toString: String = node.toString
-
-  /** Shifts DeBruijn indices up or down if they are >= cutoff */
-  def shifted(shift: Type.Shift, cutoff: Type.Shift): Type = {
-    Type(node match {
-      case FunType(inT, outT) =>
-        FunType(inT.shifted(shift, cutoff), outT.shifted(shift, cutoff))
-      case NatFunType(t) =>
-        NatFunType(t.shifted(shift, cutoff.copy(_1 = cutoff._1 + 1)))
-      case DataFunType(t) =>
-        DataFunType(t.shifted(shift, cutoff.copy(_2 = cutoff._2 + 1)))
-      case dt: DataTypeNode[Nat, DataType] =>
-        DataType(dt).shifted(shift, cutoff).node
-    })
-  }
-
-  def replace(index: Int, subs: Nat): Type = Type(node match {
-    case NatFunType(t) =>
-      // TODO: could shift lazily
-      val t2 = t.replace(index + 1, subs.shifted(1, 0))
-      NatFunType(t2)
-    case other =>
-      other.map(_.replace(index, subs), _.replace(index, subs), _.replace(index, subs))
-  })
-
-  def replace(index: Int, subs: DataType): Type = {
-    ???
-  }
 }
 
 case class DataType(node: DataTypeNode[Nat, DataType]) {
   override def toString: String = node.toString
-
-  /** Shifts DeBruijn indices up or down if they are >= cutoff */
-  def shifted(shift: Type.Shift, cutoff: Type.Shift): DataType = {
-    DataType(node match {
-      case DataTypeVar(index) =>
-        val delta = if (index >= cutoff._2) shift._2 else 0
-        DataTypeVar(index + delta)
-      case ScalarType(s) => ScalarType(s)
-      case NatType => NatType
-      case VectorType(size, elemType) =>
-        VectorType(size.shifted(shift._1, cutoff._1), elemType.shifted(shift, cutoff))
-      case IndexType(size) =>
-        IndexType(size.shifted(shift._1, cutoff._1))
-      case PairType(dt1, dt2) =>
-        PairType(dt1.shifted(shift, cutoff), dt2.shifted(shift, cutoff))
-      case ArrayType(size, elemType) =>
-        ArrayType(size.shifted(shift._1, cutoff._1), elemType.shifted(shift, cutoff))
-    })
-  }
-
-  def replace(index: Int, subs: Nat): DataType =
-    DataType(node.map(_.replace(index, subs), _.replace(index, subs)))
-
-  def replace(index: Int, subs: DataType): DataType = {
-    ???
-  }
 }
 
 sealed trait TypePattern {
@@ -111,19 +59,19 @@ object Type {
   /** Shift nat and datatype indices */
   type Shift = (Int, Int)
 
-  def fromNamed(t: rct.Type, bound: Expr.Bound = Expr.Bound.empty): Type = {
+  def fromNamed(t: rct.ExprType, bound: Expr.Bound = Expr.Bound.empty): Type = {
     Type(t match {
       case dt: rct.DataType => DataType.fromNamed(dt, bound).node
       case rct.FunType(a, b) => FunType(fromNamed(a, bound), fromNamed(b, bound))
       case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
-      case rct.DepFunType(rct.DataKind, x: rct.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
+      case rct.DepFunType(rct.DataKind, x: rcdt.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
       case rct.DepFunType(_, _, _) => ???
       case rct.TypePlaceholder | rct.TypeIdentifier(_) =>
         throw new Exception(s"did not expect $t")
     })
   }
 
-  def toNamed(t: Type, bound: Expr.Bound = Expr.Bound.empty): rct.Type = {
+  def toNamed(t: Type, bound: Expr.Bound = Expr.Bound.empty): rct.ExprType = {
     t.node match {
       case dt: DataTypeNode[Nat, DataType] => DataType.toNamed(DataType(dt), bound)
       case FunType(a, b) => rct.FunType(toNamed(a, bound), toNamed(b, bound))
@@ -131,7 +79,7 @@ object Type {
         val i = rct.NatIdentifier(s"n${bound.nat.size}")
         rct.DepFunType(rct.NatKind, i, toNamed(t, bound + i))
       case DataFunType(t) =>
-        val i = rct.DataTypeIdentifier(s"n${bound.data.size}")
+        val i = rcdt.DataTypeIdentifier(s"n${bound.data.size}")
         rct.DepFunType(rct.DataKind, i, toNamed(t, bound + i))
     }
   }
@@ -143,15 +91,15 @@ object Type {
 object DataType {
   def fromNamed(dt: rct.DataType, bound: Expr.Bound = Expr.Bound.empty): DataType = {
     DataType(dt match {
-      case i: rct.DataTypeIdentifier => DataTypeVar(bound.indexOf(i))
-      case s: rct.ScalarType => ScalarType(s)
-      case rct.NatType => NatType
-      case rct.VectorType(s, et) => VectorType(Nat.fromNamed(s, bound), fromNamed(et, bound))
-      case rct.IndexType(s) => IndexType(Nat.fromNamed(s, bound))
-      case rct.PairType(dt1, dt2) => PairType(fromNamed(dt1, bound), fromNamed(dt2, bound))
-      case rct.ArrayType(s, et) => ArrayType(Nat.fromNamed(s, bound), fromNamed(et, bound))
-      case _: rct.DepArrayType | _: rct.DepPairType[_, _, _] |
-           _: rct.NatToDataApply | _: rct.FragmentType | _: rct.ManagedBufferType | _: rct.OpaqueType =>
+      case i: rcdt.DataTypeIdentifier => DataTypeVar(bound.indexOf(i))
+      case s: rcdt.ScalarType => ScalarType(s)
+      case rcdt.NatType => NatType
+      case rcdt.VectorType(s, et) => VectorType(Nat.fromNamed(s, bound), fromNamed(et, bound))
+      case rcdt.IndexType(s) => IndexType(Nat.fromNamed(s, bound))
+      case rcdt.PairType(dt1, dt2) => PairType(fromNamed(dt1, bound), fromNamed(dt2, bound))
+      case rcdt.ArrayType(s, et) => ArrayType(Nat.fromNamed(s, bound), fromNamed(et, bound))
+      case _: rcdt.DepArrayType | _: rcdt.DepPairType[_, _] |
+           _: rcdt.NatToDataApply | _: rcdt.FragmentType | _: rcdt.ManagedBufferType | _: rcdt.OpaqueType =>
         throw new Exception(s"did not expect $dt")
     })
   }
@@ -160,11 +108,11 @@ object DataType {
     dt.node match {
       case DataTypeVar(index) => bound.data(index)
       case ScalarType(s) => s
-      case NatType => rct.NatType
-      case VectorType(s, et) => rct.VectorType(Nat.toNamed(s, bound), toNamed(et, bound))
-      case IndexType(s) => rct.IndexType(Nat.toNamed(s, bound))
-      case PairType(dt1, dt2) => rct.PairType(toNamed(dt1, bound), toNamed(dt2, bound))
-      case ArrayType(s, et) => rct.ArrayType(Nat.toNamed(s, bound), toNamed(et, bound))
+      case NatType => rcdt.NatType
+      case VectorType(s, et) => rcdt.VectorType(Nat.toNamed(s, bound), toNamed(et, bound))
+      case IndexType(s) => rcdt.IndexType(Nat.toNamed(s, bound))
+      case PairType(dt1, dt2) => rcdt.PairType(toNamed(dt1, bound), toNamed(dt2, bound))
+      case ArrayType(s, et) => rcdt.ArrayType(Nat.toNamed(s, bound), toNamed(et, bound))
     }
   }
 
@@ -230,7 +178,7 @@ sealed trait DataTypeNode[+N, +DT] extends TypeNode[Nothing, N, DT] {
 final case class DataTypeVar(index: Int) extends DataTypeNode[Nothing, Nothing] {
   override def toString: String = s"%dt$index"
 }
-final case class ScalarType(s: rct.ScalarType) extends DataTypeNode[Nothing, Nothing] {
+final case class ScalarType(s: rcdt.ScalarType) extends DataTypeNode[Nothing, Nothing] {
   override def toString: String = s.toString
 }
 case object NatType extends DataTypeNode[Nothing, Nothing] {

@@ -1,5 +1,6 @@
 package shine.DPIA.primitives.intermediate
 
+import rise.core.types.DataType
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._

@@ -1,5 +1,7 @@
 package shine.DPIA.Compilation
 
+import rise.core.types.{Kind, read}
+import rise.core.types.DataType._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -30,7 +32,7 @@ class FunDef(val name: String,
         splitBodyAndParams(Lifting.liftDependentFunction(f)(a), ps, defs)
       case l: Lambda[ExpType, _]@unchecked =>
         splitBodyAndParams(l.body, l.param +: ps, defs)
-      case ndl: DepLambda[_, _, _, _] =>
+      case ndl: DepLambda[_, _, _] =>
         splitBodyAndParams(ndl.body,
           Identifier(Kind.idName(ndl.kind, ndl.x), ExpType(int, read)) +: ps, defs)
       case ln:LetNat[ExpType, _]@unchecked =>

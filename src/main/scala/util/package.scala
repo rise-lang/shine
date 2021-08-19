@@ -1,6 +1,8 @@
 import java.io.{File, PrintWriter}
+import java.util.concurrent.{Executors, TimeUnit, TimeoutException}
 
 package object util {
+
   def createTempFile(prefix: String, suffix: String): File = {
     val tmp = File.createTempFile(prefix, suffix)
     tmp.deleteOnExit()
@@ -48,12 +50,15 @@ package object util {
     finally Executor.shutdown()
   }
 
-  def printTime[T](msg: String, block: => T): T = {
+  def time[T](block: => T): (Long, T) = {
     val start = System.nanoTime()
     val result = block
     val end = System.nanoTime()
+    (end - start, result)
+  }
 
-    val elapsed = end - start
+  def printTime[T](msg: String, block: => T): T = {
+    val (elapsed, result) = time(block)
     println(s"${msg}: ${prettyTime(elapsed)}")
     result
   }

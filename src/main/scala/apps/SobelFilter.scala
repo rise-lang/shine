@@ -5,8 +5,10 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.elevate.Rise
 import rise.openMP.primitives.mapPar
+import shine.GAP8.Executor
 import util.writeToPath
 
 import scala.language.postfixOps
@@ -185,7 +187,7 @@ object SobelFilter {
   /**
     * TODO: Integrate with the GAP8 execution management
     * */
-  def execute(code: String, path: String): Unit= {
-    writeToPath(path, code)
+  def execute(code: String, pathToSDK: String): Unit= {
+    Executor(pathToSDK).execute(code)
   }
 }

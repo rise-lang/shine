@@ -6,7 +6,8 @@ import elevate.macros.RuleMacro.rule
 import rise.core.{App, Expr, Lambda}
 import rise.core.DSL._
 import rise.core.primitives.{add, split, zip, let => _, _}
-import rise.core.types.{AddressSpace, ArrayType}
+import rise.core.types.AddressSpace
+import rise.core.types.DataType.ArrayType
 import rise.elevate.Rise
 import rise.elevate.rules.traversal._
 import rise.elevate.strategies.predicate.{isApplied, isPrimitive}
@@ -25,7 +26,7 @@ object workEfficientScan {
   @rule def blockScan: Strategy[Rise] = {
     case e @ App(App(App(scan(), _), _), input)
       if (input.t match {
-        case ArrayType(Cst(x), rise.core.types.f32) if log2(x.toDouble) % 1 == 0 => true
+        case ArrayType(Cst(x), rise.core.types.DataType.f32) if log2(x.toDouble) % 1 == 0 => true
         case _ => false
       })
     =>

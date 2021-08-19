@@ -1,9 +1,10 @@
 package shine
 
-import rise.core.DSL._
 import rise.core.DSL.Type._
-import rise.core.types._
+import rise.core.DSL._
 import rise.core.primitives.{toMem, _}
+import rise.core.types.DataType._
+import rise.core.types._
 import rise.openCL.DSL._
 import shine.OpenCL.{GlobalSize, LocalSize, valToNatTuple}
 import util.gen

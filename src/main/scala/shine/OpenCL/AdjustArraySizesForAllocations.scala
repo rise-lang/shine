@@ -1,5 +1,7 @@
 package shine.OpenCL
 
+import rise.core.types.{DataType, read}
+import rise.core.types.DataType._
 import shine.DPIA.DSL.identifier
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
@@ -8,7 +10,7 @@ import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.OpenCL.{primitives => ocl}
 import shine.cuda.{primitives => cuda}
-import shine.cuda.primitives.functional.{AsMatrix, GenerateFragment, MapFragment, TensorMatMultAdd, AsFragment}
+import shine.cuda.primitives.functional.{AsFragment, AsMatrix, GenerateFragment, MapFragment, TensorMatMultAdd}
 import shine.cuda.warpDim
 
 object AdjustArraySizesForAllocations {

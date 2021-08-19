@@ -3,7 +3,7 @@ package shine.C.AST
 import arithexpr.arithmetic._
 import shine.C
 import shine.DPIA.Nat
-import shine.DPIA.Types.{FragmentKind, MatrixLayout}
+import rise.core.types.{MatrixLayout, Fragment}
 import shine.cuda.AST.Wmma
 
 sealed abstract class Type(val const: Boolean) {
@@ -72,15 +72,15 @@ case class FragmentType(m: Nat,
                         n: Nat,
                         k: Nat,
                         dataType: shine.C.AST.Type,
-                        fragmentKind: FragmentKind,
+                        fragmentKind: Fragment,
                         layout: MatrixLayout) extends shine.C.AST.Type(false) {
   override def print: String = {
     fragmentKind match {
-      case FragmentKind.AMatrix =>
+      case Fragment.AMatrix =>
         s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
-      case FragmentKind.BMatrix =>
+      case Fragment.BMatrix =>
         s"nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, $m, $n, $k, $dataType, ${Wmma.toString(layout)}>"
-      case FragmentKind.Accumulator =>
+      case Fragment.Accumulator =>
         s"nvcuda::wmma::fragment<nvcuda::wmma::accumulator, $m, $n, $k, $dataType>"
       case _ => throw new Exception("this should not happen")
     }

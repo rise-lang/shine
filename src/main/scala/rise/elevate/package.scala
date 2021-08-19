@@ -2,7 +2,7 @@ package rise
 
 import _root_.rise.core._
 import _root_.rise.core.primitives._
-import _root_.rise.core.types.Type
+import _root_.rise.core.types.ExprType
 import rise.elevate.strategies.normalForm.DFNF
 import _root_.elevate.core.Strategy
 import _root_.elevate.core.strategies.Traversable
@@ -12,7 +12,7 @@ package object elevate {
 
   // type-extractor
   object ::: {
-    def unapply(e: Expr): Option[(Expr, Type)] = Some((e, e.t))
+    def unapply(e: Expr): Option[(Expr, ExprType)] = Some((e, e.t))
   }
 
   object ReduceX {

@@ -2,6 +2,9 @@ package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
+import rise.core.types.{DataType, NatKind}
+import rise.core.types.DataType._
+import rise.core.substitute.{natInType => substituteNatInType}
 import shine.C.AST.{BasicType, Decl}
 import shine.C.Compilation.CodeGenerator.CIntExpr
 import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
@@ -386,17 +389,17 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
         // FIRST we must substitute in the indexing of o in the phrase
         Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
           // THEN and only THEN we can change the type to use the new index var
-          PhraseType.substitute(
+          shine.DPIA.Types.substitute(
             NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
 
             env.copy(identEnv = env.identEnv.map {
               case (Identifier(name, AccType(dt)), declRef) =>
                 (Identifier(name,
-                  AccType(DataType.substitute(
+                  AccType(substituteNatInType(
                     NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
               case (Identifier(name, ExpType(dt, read)), declRef) =>
                 (Identifier(name,
-                  ExpType(DataType.substitute(
+                  ExpType(substituteNatInType(
                     NamedVar(cI.name, range),
                     `for` = i, in = dt), read)), declRef)
               case x => x

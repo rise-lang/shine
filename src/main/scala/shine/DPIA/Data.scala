@@ -1,6 +1,7 @@
 package shine.DPIA
 
-import shine.DPIA.Types._
+import rise.core.types._
+import rise.core.types.DataType._
 
 sealed abstract class Data(val dataType: DataType)
 

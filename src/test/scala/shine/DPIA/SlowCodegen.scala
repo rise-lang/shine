@@ -1,11 +1,11 @@
 package shine.DPIA
 
-import rise.core._
-import rise.core.DSL._
-import rise.core.DSL.Type._
 import rise.core.DSL.HighLevelConstructs._
+import rise.core.DSL.Type._
+import rise.core.DSL._
+import rise.core._
 import rise.core.primitives._
-import rise.core.types._
+import rise.core.types.DataType._
 import util.gen
 
 class SlowCodegen extends test_util.Tests {

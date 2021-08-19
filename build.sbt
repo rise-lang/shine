@@ -23,6 +23,7 @@ lazy val riseAndShine = (project in file("."))
     version       := "1.0",
 
     javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build",
+      "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=/tmp/rise-and-shine.hprof",
       "-DexecuteCudaTests=false", "-Xss26m"),
 
     commonSettings,
@@ -40,11 +41,13 @@ lazy val riseAndShine = (project in file("."))
         "org.apache.logging.log4j" % "log4j-core" % "2.14.1",
         "org.apache.logging.log4j" %% "log4j-api-scala" % "12.0",
         // json
-        "com.typesafe.play" %% "play-json" % "2.9.1"
+        "com.typesafe.play" %% "play-json" % "2.9.1",
+        // subprocess communication
+        "com.lihaoyi" %% "os-lib" % "0.7.3"
     ),
 
-    compile := ((compile in Compile) dependsOn generateRISEPrimitives).value,
-    test    := ((test in Test) dependsOn generateRISEPrimitives).value
+    compile := ((compile in Compile) dependsOn (generateRISEPrimitives, clap)).value,
+    test    := ((test in Test) dependsOn (generateRISEPrimitives, clap)).value
   )
 
 lazy val generateRISEPrimitives = taskKey[Unit]("Generate RISE Primitives")
@@ -91,3 +94,15 @@ lazy val docs = (project in file("riseAndShine-docs"))
   )
   .enablePlugins(MdocPlugin)
   .dependsOn(riseAndShine)
+
+lazy val clap = taskKey[Unit]("Builds Clap library")
+
+clap := {
+  import scala.language.postfixOps
+  import scala.sys.process._
+  //noinspection PostfixMethodCall
+  "echo y" #| (baseDirectory.value + "/lib/clap/buildClap.sh") !
+}
+
+
+

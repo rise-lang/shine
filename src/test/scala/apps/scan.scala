@@ -1,18 +1,17 @@
 package apps
 
+import rise.core.DSL._
 import rise.core.Expr
 import rise.core.primitives.{let => _, _}
-import rise.core.types._
+import rise.core.semantics.FloatData
+import rise.core.types.DataType._
+import rise.core.types.Nat
+import rise.openCL.DSL.oclRun
 import rise.openCL.primitives._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
-import shine.OpenCL.{GlobalSize, HCons, HNil, HNilHelper, LocalSize, NDRange, ScalaFunction, `(`, `)=>`, `,`}
+import shine.OpenCL._
 import util.gen
 import util.gen.c.function
-import rise.core.DSL._
-import rise.core.semantics.FloatData
-import rise.elevate.rules.traversal.default
-import rise.elevate.strategies.predicate.{isApplied, isDepApp, isPrimitive}
-import rise.openCL.DSL.oclRun
 
 import scala.annotation.tailrec
 

@@ -4,16 +4,17 @@
 package shine.cuda.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
-import shine.DPIA.Types.Kind.{ Identifier => _, _ }
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class WmmaMMA(val m: Nat, val n: Nat, val k: Nat, val layoutA: MatrixLayout, val layoutB: MatrixLayout, val dt1: DataType, val dt2: DataType, val aMatrix: Phrase[ExpType], val bMatrix: Phrase[ExpType], val cMatrix: Phrase[ExpType], val resultMatrix: Phrase[AccType]) extends CommandPrimitive {
   assert {
-    aMatrix :: expT(FragmentType(m, k, n, dt1, FragmentKind.AMatrix, layoutA), read)
-    bMatrix :: expT(FragmentType(k, n, m, dt1, FragmentKind.BMatrix, layoutB), read)
-    cMatrix :: expT(FragmentType(m, n, k, dt2, FragmentKind.Accumulator, MatrixLayout.None), read)
-    resultMatrix :: accT(FragmentType(m, n, k, dt2, FragmentKind.Accumulator, MatrixLayout.None))
+    aMatrix :: expT(FragmentType(m, k, n, dt1, Fragment.AMatrix, layoutA), read)
+    bMatrix :: expT(FragmentType(k, n, m, dt1, Fragment.BMatrix, layoutB), read)
+    cMatrix :: expT(FragmentType(m, n, k, dt2, Fragment.Accumulator, MatrixLayout.None), read)
+    resultMatrix :: accT(FragmentType(m, n, k, dt2, Fragment.Accumulator, MatrixLayout.None))
     true
   }
   override val t: CommType = comm
