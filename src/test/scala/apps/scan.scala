@@ -202,6 +202,7 @@ class scan extends test_util.Tests {
   }
 
   test("scan par rewrite") {
+
     val blockSize = 64
     val initExp = {
       fun(ArrayType(blockSize, f32))(input =>
@@ -209,25 +210,8 @@ class scan extends test_util.Tests {
       )
     }
 
-    def innermost = rise.elevate.strategies.traversal.innermost(default.RiseTraversable)
-    def isScan = isApplied(isApplied(isApplied(isPrimitive(scan))))
-
-    def rewriteStep(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
-      innermost(isScan)(
-        rise.elevate.rules.workEfficientScan.expandBlockScan
-      )(e).get
-    }
-
-    val log2 = (x: Double) => Math.log10(x)/Math.log10(2.0)
-    val numIterations = log2(blockSize).toInt
-
-
-    var e1: ToBeTyped[Expr] =  initExp
-    (0 until numIterations).foreach(_ => e1 = rewriteStep(e1))
-
-    e1 = innermost(isScan)(rise.elevate.rules.workEfficientScan.lowerToSequential)(e1).get
-
-    val kernel = gen.opencl.kernel.fromExpr(e1)
+    val rewritten = rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan)(initExp).get
+    val kernel = gen.opencl.kernel.fromExpr(rewritten)
     println(kernel.code)
   }
 
