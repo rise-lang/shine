@@ -12,6 +12,7 @@ import rise.core.DSL._
 import rise.core.semantics.FloatData
 import rise.elevate.rules.traversal.default
 import rise.elevate.strategies.predicate.{isApplied, isDepApp, isPrimitive}
+import rise.openCL.DSL.oclRun
 
 import scala.annotation.tailrec
 
@@ -239,8 +240,6 @@ class scan extends test_util.Tests {
     )
   }
 
-
-
   def scanParChunkSum2D(inputSize: Int, depth: Int): ToBeTyped[Expr] = {
     val chunkSize = Math.pow(2, depth).toInt
     if (inputSize % chunkSize != 0) {
@@ -255,7 +254,6 @@ class scan extends test_util.Tests {
       )
     )
   }
-
 
 
   test("Unrolled scan sequential (small)") {
@@ -403,5 +401,56 @@ class scan extends test_util.Tests {
       })
     }
     println(csv)
+  }
+
+
+  test("Host code attempt") {
+
+    // Use the rewrite system to generate the block scan
+    val BLOCK_SIZE = 64
+
+    val blockScan = {
+      val initExp = {
+        fun(ArrayType(BLOCK_SIZE, f32))(input =>
+          input |> scan(add)(lf32(0.0f))
+        )
+      }
+      rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan)(initExp).get
+    }
+
+    val computeBlockSums = depFun((num_blocks:Nat) => fun(ArrayType(BLOCK_SIZE*num_blocks, f32))(input => input |> split(BLOCK_SIZE) |>
+      mapGlobal(0)(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
+    ))
+
+    val aggregateBlockScans = {
+      depFun((num_blocks:Nat) =>
+      fun(ArrayType(num_blocks*BLOCK_SIZE, f32))(input =>
+      fun(ArrayType(num_blocks, f32))(blockScans =>
+        zip(input |> split(BLOCK_SIZE))(blockScans) |> mapGlobal(0)(fun(pair => pair._1 |> mapSeq(fun(x => x + pair._2))))
+      )
+      ))
+    }
+
+    val e =  depFun((num_blocks:Nat) => fun(ArrayType(BLOCK_SIZE*num_blocks, f32))(input =>
+      // Compute the partial scans (via local block scan)
+      oclRun(LocalSize(1), GlobalSize(1))(input |> split(BLOCK_SIZE) |> mapWorkGroup(0)(blockScan) |> join)
+        |> store(partials =>
+          // Compute the block sums (ouch)
+          oclRun(LocalSize(1), GlobalSize(1))(computeBlockSums(num_blocks)(partials)) |>
+            store(bSums =>
+              // Compute the global block scan (on CPU)
+              bSums |> scanSeq(add)(lf32(0.0f)) |> store(bScans =>
+                  oclRun(LocalSize(1), GlobalSize(1))(aggregateBlockScans(num_blocks)(partials)(bScans))
+              )
+            )
+        )
+    ))
+
+    val m = gen.opencl.hosted.fromExpr(e)
+    val hostCode = gen.c.function.asString(m.hostCode)
+
+    // How to get the kernel code?
+    val code = shine.OpenCL.Module.translateToString(m) + gen.c.function.asString(m.hostCode)
+    println(code)
   }
 }

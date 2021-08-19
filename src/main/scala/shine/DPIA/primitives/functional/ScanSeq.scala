@@ -15,7 +15,7 @@ final case class ScanSeq(unroll: Boolean)(val n: Nat, val dt1: DataType, val dt2
     array :: expT(ArrayType(n, dt1), read)
     true
   }
-  override val t: ExpType = expT(ArrayType(n, dt2), read)
+  override val t: ExpType = expT(ArrayType(n, dt2), write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): ScanSeq = new ScanSeq(unroll)(v.nat(n), v.data(dt1), v.data(dt2), VisitAndRebuild(f, v), VisitAndRebuild(init, v), VisitAndRebuild(array, v))
   def unwrap: (Nat, DataType, DataType, Phrase[FunType[ExpType, FunType[ExpType, ExpType]]], Phrase[ExpType], Phrase[ExpType]) = (n, dt1, dt2, f, init, array)
 }
