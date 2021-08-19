@@ -75,6 +75,8 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case Cast(_, dt2, e) => s"cast ${showKindedType(DataKind, dt2)} ${showPhrase(e)}"
     case RotateValues(_,_,_,wrt,in) => s"rotate ${showPhrase(in)}\n${tab(showPhrase(wrt))}"
     case f : ReduceSeq => s"reduce ${showPhrase(f.array)} ${showPhrase(f.init)}\n${tab(showPhrase(f.f))}"
+    case kc: shine.OpenCL.primitives.imperative.KernelCallCmd =>
+      s"${kc.name}<<<${kc.localSize}, ${kc.globalSize}>>>(${kc.args}, ${kc.output})"
     case p => p.toString
   }
 
