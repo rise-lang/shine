@@ -446,7 +446,6 @@ class scan extends test_util.Tests {
     ))
 
     val m = gen.opencl.hosted.fromExpr(e)
-    val hostCode = gen.c.function.asString(m.hostCode)
 
     // How to get the kernel code?
     val code = shine.OpenCL.Module.translateToString(m) + gen.c.function.asString(m.hostCode)
