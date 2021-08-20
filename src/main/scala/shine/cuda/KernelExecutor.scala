@@ -43,12 +43,9 @@ object KernelExecutor {
 
   sealed case class KernelNoSizes(ktu: KernelModule,
                                   compilerOptions: List[String] = List.empty) {
-    //noinspection TypeAnnotation
-    def as[T, R](implicit ev: T <:< HList): Object {
-      def apply(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[ms])
+    def as[T, R](implicit ev: T <:< HList): AS[T, R] = AS()
 
-      def withSizes(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[ms])
-    } = new {
+    case class AS[T, R]()(implicit ev: T <:< HList) {
       def apply(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[Time.ms]) = {
         FromKernelModule(ktu, compilerOptions).as[T, R](localSize, globalSize)
       }
@@ -79,9 +76,7 @@ object KernelExecutor {
     def getBlockDim(dataLength: Int) : LocalSize
   }
 
-  case class FromKernelModule(ktu: KernelModule,
-                              compilerOptions: List[String]) {
-
+  case class FromKernelModule(ktu: KernelModule, compilerOptions: List[String]) {
     assert(ktu.kernels.size == 1)
 
     val kernel: Kernel = ktu.kernels.head

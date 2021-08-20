@@ -26,7 +26,7 @@ class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
       case DepArrayType(n, ft) =>
         DepMapSeqI(unroll = false)(n, ft, ft,
           depFun[Nat, NatIdentifier](NatKind)(k =>
-            λ(ExpType(ft(k), read))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
+            fun(ExpType(ft(k), read))(x => fun(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)
 
       case x => throw new Exception(s"Don't know how to assign value of type $x")

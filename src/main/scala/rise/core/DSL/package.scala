@@ -68,8 +68,8 @@ package object DSL {
     // scalastyle:on disallow.space.before.token
 
     // pair accesses
-    def _1: ToBeTyped[App] = fst(lhs)
-    def _2: ToBeTyped[App] = snd(lhs)
+    def `1`: ToBeTyped[App] = fst(lhs)
+    def `2`: ToBeTyped[App] = snd(lhs)
   }
 
   extension (lhs: ToBeTyped[Expr]) {

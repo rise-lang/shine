@@ -15,7 +15,7 @@ object parFor {
             dt: DataType,
             out: Phrase[AccType],
             f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ParFor =
-    ParFor(n, dt, out, λ(expT(idx(n), read))(i => λ(accT(dt))(o => f(i)(o) )))
+    ParFor(n, dt, out, fun(expT(idx(n), read))(i => fun(accT(dt))(o => f(i)(o) )))
 }
 
 object `parForVec` {
@@ -23,12 +23,12 @@ object `parForVec` {
             st: DataType,
             out: Phrase[AccType],
             f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ForVec =
-    ForVec(n, st, out, λ(expT(idx(n), read))(i => λ(accT(st))(o => f(i)(o) )))
+    ForVec(n, st, out, fun(expT(idx(n), read))(i => fun(accT(st))(o => f(i)(o) )))
 }
 
 object parForNat {
   def apply(n: Nat, ft: NatToData, out: Phrase[AccType],
             f: NatIdentifier => Phrase[AccType] => Phrase[CommType]): ParForNat = {
-    ParForNat(n, ft, out, nFun(idx => λ(accT(ft(idx)))(o => f(idx)(o)), RangeAdd(0, n, 1)))
+    ParForNat(n, ft, out, nFun(idx => fun(accT(ft(idx)))(o => f(idx)(o)), RangeAdd(0, n, 1)))
   }
 }

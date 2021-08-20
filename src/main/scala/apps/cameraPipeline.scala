@@ -380,11 +380,11 @@ object cameraPipeline {
           blur121(u8)(u16)),
           unsharp => {
           letImage(mapImage(zipImage(plane, unsharp), fun(p =>
-            (cast(p._1) :: i16) - (cast(p._2) :: i16)
+            (cast(p.`1`) :: i16) - (cast(p.`2`) :: i16)
           )), mask => {
             mapImage(zipImage(plane, mask), fun(p =>
-              u8_sat(i16)((cast(p._1) :: i16)
-                + (p._2 * (cast(strength_x32) :: i16)) / li16(32))
+              u8_sat(i16)((cast(p.`1`) :: i16)
+                + (p.`2` * (cast(strength_x32) :: i16)) / li16(32))
             )).expr
           })
         }))

@@ -96,9 +96,9 @@ class Reduce extends test_util.TestsWithExecutor {
         arr |> reduceSeq (fun(_ + _))  (init)))
 
     logger.debug("Fst:")
-    function.asStringFromExpr(e(initRecordExp._1))
+    function.asStringFromExpr(e(initRecordExp.`1`))
     logger.debug("Snd:")
-    function.asStringFromExpr(e(initRecordExp._2))
+    function.asStringFromExpr(e(initRecordExp.`2`))
   }
 
   test("Record access to specify initial accumulator value" +
@@ -122,9 +122,9 @@ class Reduce extends test_util.TestsWithExecutor {
       gen.opencl.kernel.fromExpr(e(initWithRecordAccess)).as[Args `(`Int`,`Array[Float], Array[Float]]
 
     val (out1, _) =
-      runKernel(initRecordExp._1)(LocalSize(1), GlobalSize(1))(n `,` A)
+      runKernel(initRecordExp.`1`)(LocalSize(1), GlobalSize(1))(n `,` A)
     val (out2, _) =
-      runKernel(initRecordExp._2)(LocalSize(1), GlobalSize(1))(n `,` A)
+      runKernel(initRecordExp.`2`)(LocalSize(1), GlobalSize(1))(n `,` A)
 
     assertResult(gold)(out1(0))
     assertResult(gold)(out2(0))

@@ -31,12 +31,9 @@ object KernelExecutor {
   }
 
   sealed case class KernelNoSizes(ktu: KernelModule) {
-    //noinspection TypeAnnotation
-    def as[T, R](implicit ev: T <:< HList): Object {
-      def apply(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[ms])
+    def as[T, R](implicit ev: T <:< HList): AS[T, R] = AS()
 
-      def withSizes(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[ms])
-    } = new {
+    case class AS[T, R]()(implicit ev: T <:< HList) {
       def apply(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[Time.ms]) = {
         FromKernelModule(ktu).as[T, R](localSize, globalSize)
       }

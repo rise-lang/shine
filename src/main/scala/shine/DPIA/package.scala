@@ -10,7 +10,7 @@ import rise.core.{types => rt}
 package object DPIA {
 
   def error(found: String, expected: String): Nothing = {
-    throw new TypeException(s"Found $found but expected $expected")
+    throw TypeException(s"Found $found but expected $expected")
   }
 
   def error(msg: String = "This should not happen"): Nothing = {
@@ -46,67 +46,6 @@ package object DPIA {
 
   object VarType {
     def apply(dt: DataType): PhrasePairType[ExpType, AccType] = ExpType(dt, read) x AccType(dt)
-  }
-
-  //noinspection TypeAnnotation
-  implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
-//    def `[`(e: Nat) = new {
-//      def `/`(a: NatIdentifier) = new {
-//        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
-//      }
-//    }
-//
-//    def `[`(e: DataType) = new {
-//      def `/`(a: DataType) = new {
-//        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
-//      }
-//    }
-    def `[`(e: Nat): PhraseTypeSubstitutionHelper.NatHelper =
-      PhraseTypeSubstitutionHelper.NatHelper(t)(e)
-
-    def `[`(e: DataType): PhraseTypeSubstitutionHelper.DataTypeHelper =
-      PhraseTypeSubstitutionHelper.DataTypeHelper(t)(e)
-  }
-  object PhraseTypeSubstitutionHelper {
-    case class NatHelper(t: PhraseType)(e: Nat) {
-      def `/`(a: NatIdentifier): NatHelper.NatHelperHelpr =
-        NatHelper.NatHelperHelpr(t)(e)(a)
-    }
-    object NatHelper {
-      case class NatHelperHelpr(t: PhraseType)(e: Nat)(a: NatIdentifier) {
-        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
-      }
-    }
-    case class DataTypeHelper(t: PhraseType)(e: DataType) {
-      def `/`(a: DataType): DataTypeHelper.DataTypeHelperHelper =
-        DataTypeHelper.DataTypeHelperHelper(t)(e)(a)
-    }
-    object DataTypeHelper {
-      case class DataTypeHelperHelper(t: PhraseType)(e: DataType)(a: DataType) {
-        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
-      }
-    }
-  }
-
-  //noinspection TypeAnnotation
-  implicit class PhraseSubstitutionHelper[T1 <: PhraseType](in: Phrase[T1]) {
-    def `[`[T2 <: PhraseType](p: Phrase[T2]) = new {
-      def `/`(`for`: Phrase[T2]) = new {
-        def `]`: Phrase[T1] = Phrase.substitute(p, `for`, in)
-      }
-    }
-
-    def `[`(e: Nat) = new {
-      def `/`(`for`: NatIdentifier) = new {
-        def `]`: Phrase[T1] = shine.DPIA.Types.substitute(e, `for`, in)
-      }
-    }
-
-    def `[`(dt: DataType) = new {
-      def `/`(`for`: DataTypeIdentifier) = new {
-        def `]`: Phrase[T1] = shine.DPIA.Types.substitute(dt, `for`, in)
-      }
-    }
   }
 
   implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {

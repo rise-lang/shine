@@ -56,8 +56,7 @@ object Lifting {
   def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType ->: T]): Nat => Phrase[T] = {
     p match {
       case l: Lambda[ExpType, T] =>
-        (arg: Nat) =>  shine.DPIA.Types.substitute(arg, `for`=NatIdentifier(l.param.name), in=l.body)
-          //l.body `[` arg  `/` NatIdentifier(l.param.name) `]`
+        (arg: Nat) => Types.substitute(arg, `for`=NatIdentifier(l.param.name), in=l.body)
       case app: Apply[_, ExpType ->: T] =>
         val fun = liftFunction(app.fun).reducing
         liftFunctionToNatLambda(fun(app.arg))

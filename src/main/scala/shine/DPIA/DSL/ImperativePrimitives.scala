@@ -20,7 +20,7 @@ object `new` {
 
   def apply(dt: DataType,
             f: Phrase[VarType] => Phrase[CommType]): New =
-    New(dt, λ(varT(dt))( v => f(v) ))
+    New(dt, fun(varT(dt))( v => f(v) ))
 }
 
 object newDoubleBuffer {
@@ -30,7 +30,7 @@ object newDoubleBuffer {
             in: Phrase[ExpType],
             out: Phrase[AccType],
             f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]): NewDoubleBuffer =
-    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT(dt1) x CommType() x CommType())(ps => {
+    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, fun(varT(dt1) x CommType() x CommType())(ps => {
       val    v: Phrase[VarType]  = ps.`1`.`1`
       val swap: Phrase[CommType] = ps.`1`.`2`
       val done: Phrase[CommType] = ps.`2`
@@ -62,7 +62,7 @@ object `if` {
 object `for` {
   def apply(n: Nat,
             f: Identifier[ExpType] => Phrase[CommType], unroll:Boolean = false): For =
-    For(unroll)(n, λ(expT(idx(n), read))( i => f(i) ))
+    For(unroll)(n, fun(expT(idx(n), read))( i => f(i) ))
 }
 
 object forNat {

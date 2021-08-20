@@ -11,7 +11,7 @@ import reflect.Selectable.reflectiveSelectable
 
 object gemv {
   // we can use implicit type parameters and type annotations to specify the function type of mult
-  val mult = impl{ dt: DataType => fun(x => x.`1` * x._2) :: ((dt x dt) ->: dt) }
+  val mult = impl{ dt: DataType => fun(x => x.`1` * x.`2`) :: ((dt x dt) ->: dt) }
   val add = fun(x => fun(y => x + y))
   val scal = impl { n: Nat =>
     fun(xs => fun(a =>
@@ -31,7 +31,7 @@ object gemv {
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
     zip(map(fun(row => alpha * dot(row, xs)))(mat))(scal(ys, beta)) |>
-    map(fun(x => x.`1` + x._2))
+    map(fun(x => x.`1` + x.`2`))
   ))
 
   val gemvSequential = depFun((n: Nat, m: Nat) => fun(
@@ -39,7 +39,7 @@ object gemv {
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
     toMem(zip(mapSeq(fun(row => alpha * dotSeq(row, xs)))(mat))(scalSeq(ys, beta))) |>
-    mapSeq(fun(x => x.`1` + x._2))
+    mapSeq(fun(x => x.`1` + x.`2`))
   ))
 
   object ocl {
@@ -87,7 +87,7 @@ object gemv {
             toLocalFun(mapLocal(
               reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
-            mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
+            mapLocal(fun(x => (alpha * x) + (t.`2` * beta)))
         )) |> join
     ))
 
@@ -104,7 +104,7 @@ object gemv {
             )) |>
             split(128) |>
             toLocalFun(mapLocal(reduceSeq(add)(lf32(0.0f)))) |>
-            mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
+            mapLocal(fun(x => (alpha * x) + (t.`2` * beta)))
         )) |> join
     ))
 
@@ -121,7 +121,7 @@ object gemv {
               reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
             toLocalFun(reduceSeq(add)(lf32(0.0f))) |>
-            fun(x => (alpha * x) + (t._2 * beta))
+            fun(x => (alpha * x) + (t.`2` * beta))
         ))
     ))
   }
@@ -138,7 +138,7 @@ object gemv {
           zip(xs)(t.`1`) |>
             split(n) |>
             toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f)))) |>
-            mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
+            mapSeq(fun(x => (alpha * x) + (t.`2` * beta)))
         )) |> join
     ))
   }
