@@ -21,6 +21,8 @@ sealed trait Node[+E, +N, +DT] {
     case NatLambda(e) => NatLambda(fe(e))
     case DataApp(f, x) => DataApp(fe(f), fdt(x))
     case DataLambda(e) => DataLambda(fe(e))
+
+    case Composition(f, g) => Composition(fe(f), fe(g))
   }
 
   def mapChildren[OE](fc: E => OE): Node[OE, N, DT] =
@@ -33,6 +35,8 @@ sealed trait Node[+E, +N, +DT] {
     case NatLambda(e) => Iterator(e)
     case DataApp(f, _) => Iterator(f)
     case DataLambda(e) => Iterator(e)
+
+    case Composition(f, g) => Iterator(f, g)
   }
   def childrenCount(): Int =
     children().length
@@ -58,8 +62,9 @@ sealed trait Node[+E, +N, +DT] {
     case DataApp(_, _) => 5
     case DataLambda(_) => 6
     case Literal(d) => 13 * d.hashCode()
-    // note: assumption that p.t == rct.TypePlaceholder
-    case Primitive(p) => 17 * p.hashCode()
+    case Primitive(p) => 17 * p.setType(rct.TypePlaceholder).hashCode()
+
+    case Composition(_, _) => 0
   }
 
   // Returns true if this enode matches another enode.
@@ -76,6 +81,8 @@ sealed trait Node[+E, +N, +DT] {
     case (Primitive(p1), Primitive(p2)) =>
       // TODO: type should not be inside the primitive?
       p1.setType(rct.TypePlaceholder) == p2.setType(rct.TypePlaceholder)
+
+    case (Composition(_, _), Composition(_, _)) => true
     case _ => false
   }
 }
@@ -96,6 +103,10 @@ case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Noth
   override def toString: String = p.toString.trim
 }
 
+case class Composition[E](f: E, g: E) extends Node[E, Nothing, Nothing] {
+  override def toString: String = s"$f >> $g"
+}
+
 object Node {
   import math.Ordering.Implicits.seqOrdering
 
@@ -109,12 +120,19 @@ object Node {
     case DataLambda(e) => Seq(e)
     case Literal(_) => Seq()
     case Primitive(_) => Seq()
+
+    case Composition(f, g) => Seq(f, g)
   }
 
-  implicit val natOrdering: Ordering[Nat] = new Ordering[Nat] {
-    def compare(n1: Nat, n2: Nat): Int = {
+  implicit val natIdOrdering: Ordering[NatId] = new Ordering[NatId] {
+    def compare(id1: NatId, id2: NatId): Int =
+      id1.i compare id2.i
+  }
+/*
+  implicit val natOrdering: Ordering[NatNode[NatId]] = new Ordering[NatNode[NatId]] {
+    def compare(n1: NatNode[NatId], n2: NatNode[NatId]): Int = {
       implicit val ord: Ordering[Nat] = this
-      (n1.node, n2.node) match {
+      (n1, n2) match {
         case (NatCst(c1), NatCst(c2)) => c1 compare c2
         /* case (Sum(ts1), Sum(ts2)) =>
           implicitly[Ordering[Seq[Nat]]].compare(ts1, ts2)
@@ -124,26 +142,18 @@ object Node {
       }
     }
   }
-
-  implicit val dataTypeOrdering: Ordering[DataType] = new Ordering[DataType] {
-    def compare(dt1: DataType, dt2: DataType): Int =
+*/
+  implicit val dataTypeIdOrdering: Ordering[DataTypeId] = new Ordering[DataTypeId] {
+    def compare(id1: DataTypeId, id2: DataTypeId): Int =
+      id1.i compare id2.i
+  }
+/*
+  implicit val dataTypeOrdering: Ordering[DataTypeNode[NatId, DataTypeId]] =
+    new Ordering[DataTypeNode[NatId, DataTypeId]] {
+    def compare(dt1: DataTypeNode[NatId, DataTypeId], dt2: DataTypeNode[NatId, DataTypeId]): Int =
       ???
   }
-
-  /*
-  implicit val depValOrdering: Ordering[Kind#T] = new Ordering[Kind#T] {
-    def compare(v1: Kind#T, v2: Kind#T): Int =
-      (v1, v2) match {
-        case (n1: Nat, n2: Nat) => natOrdering.compare(n1, n2)
-        case (_: Nat, _) => -1
-        case (_, _: Nat) => 1
-        case (dt1: DataType, dt2: DataType) => dataTypeOrdering.compare(dt1, dt2)
-        case (_: DataType, _) => -1
-        case (_, _: DataType) => 1
-        case _ => ???
-      }
-  } */
-
+*/
   implicit val scalarDataOrdering: Ordering[semantics.ScalarData] =
     new Ordering[semantics.ScalarData] {
     import semantics._
@@ -165,6 +175,7 @@ object Node {
       }
   }
 
+  // TODO: hash-cons literals data?
   implicit val dataOrdering: Ordering[semantics.Data] = new Ordering[semantics.Data] {
     import semantics._
 
@@ -234,6 +245,13 @@ object Node {
         case (Literal(d1), Literal(d2)) => dataOrdering.compare(d1, d2)
         case (Literal(_), _) => -1
         case (_, Literal(_)) => 1
+
+        case (Composition(f1, g1), Composition(f2, g2)) =>
+          implicitly[Ordering[(E, E)]].compare((f1, g1), (f2, g2))
+        case (Composition(_, _), _) => -1
+        case (_, Composition(_, _)) => 1
+
+        // FIXME: does not work for mapGlobal(dim)
         case (Primitive(p1), Primitive(p2)) => p1.name compare p2.name
         case _ => ???
       }
