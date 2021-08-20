@@ -10,7 +10,7 @@ import util.gen.c.function
 
 class StructDecl extends test_util.Tests {
   val id = fun(x => x)
-  val addT = fun(t => t._1 + t._2)
+  val addT = fun(t => t.`1` + t.`2`)
 
   test("Program with tuples in output and tuple input, can be generated in C.") {
     val tupleOut = fun(ArrayType(8, PairType(f32, f32)))(xs => xs |> mapSeq(id))

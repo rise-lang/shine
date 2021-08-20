@@ -40,7 +40,7 @@ object DSL {
     def asCompiler: S => T = composeC(pc, identity[T])(_)
   }
 
-  def run[S](f: S => ()): S => S = s => {
+  def run[S](f: S => Unit): S => S = s => {
     f(s)
     s
   }

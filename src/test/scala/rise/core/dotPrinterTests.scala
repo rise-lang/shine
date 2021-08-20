@@ -45,10 +45,10 @@ class dotPrinterTests extends test_util.Tests {
         ((a, b, c, alpha, beta) =>
 
           zip(a)(c) |> map(fun(ac =>
-            zip(transpose(b))(ac._2) |> map(fun(bc =>
-              zip(ac._1)(bc._1) |>
-                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)))(lf32(0.0f)) |>
-                fun(x => (x * alpha) + (beta * bc._2))
+            zip(transpose(b))(ac.`2`) |> map(fun(bc =>
+              zip(ac.`1`)(bc.`1`) |>
+                reduceSeq(fun( (acc, y) => acc + (y.`1` * y.`2`)))(lf32(0.0f)) |>
+                fun(x => (x * alpha) + (beta * bc.`2`))
             ))
           ))
         )

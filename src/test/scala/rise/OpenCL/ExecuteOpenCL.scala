@@ -19,7 +19,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
 
     val kernel = gen.opencl.kernel.fromExpr(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+    val kernelF = kernel.as[Args`(`Int`,`Array[Int], Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(8)(0)
 
     val (result, time) = kernelF(8`,`xs)
@@ -36,7 +36,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
 
     val kernel = gen.opencl.kernel.fromExpr(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+    val kernelF = kernel.as[Args`(`Array[Int], Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(n)(0)
 
     val (result, time) = kernelF(xs`;`)
@@ -53,7 +53,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
 
     val kernel = gen.opencl.kernel.fromExpr(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`,`Int`)=>`Array[Int]]
+    val kernelF = kernel.as[Args `(` Array[Int]`,`Int, Array[Int]]
     val xs = Array.fill(n)(0)
 
     val (result, _) = kernelF(LocalSize(1), GlobalSize(1))(xs`,`n)
@@ -71,7 +71,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
 
     val kernel = gen.opencl.kernel.fromExpr(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Array[Array[Int]]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+    val kernelF = kernel.as[Args`(`Int`,`Int`,`Array[Array[Int]], Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(m)(Array.fill(n)(0))
 
     val (result, time) =  kernelF(m`,`n`,`xs)
@@ -89,7 +89,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
 
     val kernel = gen.opencl.kernel.fromExpr(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]]
+    val kernelF = kernel.as[Args`(`Int`,`Array[Int]`,`Int, Array[Int]]
 
     val xs = Array.fill(n)(2)
     val (result, _) =  kernelF(LocalSize(1), GlobalSize(1))(n`,`xs`,`s)
@@ -105,7 +105,7 @@ class ExecuteOpenCL extends test_util.TestsWithExecutor {
 
     val kernel = gen.opencl.kernel.fromExpr(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+    val kernelF = kernel.as[Args`(`Array[Int], Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(n)(0)
 
     val (result, time) =  kernelF(xs`;`)

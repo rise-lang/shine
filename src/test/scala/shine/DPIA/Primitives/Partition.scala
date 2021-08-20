@@ -62,7 +62,7 @@ class Partition extends test_util.Tests {
                                        input: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
         import shine.OpenCL._
 
-        val kernelFun = k.as[ScalaFunction `(` Int `,` Input `)=>` Array[Float]]
+        val kernelFun = k.as[Args `(` Int `,` Input, Array[Float]]
         kernelFun(inputSize `,` input)
       }
     }

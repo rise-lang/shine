@@ -23,7 +23,7 @@ object mmTensor {
       fun((aRow, bColumn) =>
         zip(aRow)(bColumn) |>
           oclReduceSeq(AddressSpace.Private)(fun((n, abPair) =>
-            abPair._1 * abPair._2 + n))
+            abPair.`1` * abPair.`2` + n))
           (lf32(0.0f)))
 
     depFun((m: Nat, n: Nat, k: Nat) => fun(
@@ -83,8 +83,8 @@ object mmTensor {
             //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
             oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
               tensorMMA(
-                abTiles._1 |> transpose |> asFragment |> toPrivate,
-                abTiles._2 |> asFragment |> toPrivate,
+                abTiles.`1` |> transpose |> asFragment |> toPrivate,
+                abTiles.`2` |> asFragment |> toPrivate,
                 cTile)))
             (generateFragment(lf32(0f))) |>
 
@@ -120,8 +120,8 @@ object mmTensor {
               //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
               oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                 tensorMMA(
-                  abTiles._1 |> transpose |> asFragment |> toPrivate,
-                  abTiles._2 |> asFragment |> toPrivate, // leading dimension is k cause the b matrix is transposed!
+                  abTiles.`1` |> transpose |> asFragment |> toPrivate,
+                  abTiles.`2` |> asFragment |> toPrivate, // leading dimension is k cause the b matrix is transposed!
                   cTile)))
               (generateFragment(lf32(0f))) |>
 
@@ -156,8 +156,8 @@ object mmTensor {
               //Multiply mTileFrag rows of a-matrix with nTileFrag columns of b-matrix
               oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                 tensorMMA(
-                  abTiles._1 |> transpose |> asFragment |> toPrivate,
-                  abTiles._2 |> asFragment |> toPrivate,
+                  abTiles.`1` |> transpose |> asFragment |> toPrivate,
+                  abTiles.`2` |> asFragment |> toPrivate,
                   cTile)))
               (generateFragment(lf32(0f))) |>
 
@@ -212,14 +212,14 @@ object mmTensor {
 
                 //Load tile of a-matrix into multiple fragments
                 let(toPrivate(
-                  abTilesWarp._1 |> transpose |> split(mTileFrag) |>
+                  abTilesWarp.`1` |> transpose |> split(mTileFrag) |>
                     mapSeqUnroll(fun(aFragTile =>
                       aFragTile |> asFragment))))
                 be(aFrags => // mTileWarp/mTileFrag.WmmaAMatrix
 
                   //Load tile of b-matrix into multiple fragments
                   let(toPrivate(
-                    abTilesWarp._2 |> transpose |> split(nTileFrag) |>
+                    abTilesWarp.`2` |> transpose |> split(nTileFrag) |>
                       mapSeqUnroll(fun(bFragTileT =>
                         bFragTileT |> transpose |> asFragment))))
                   be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
@@ -227,9 +227,9 @@ object mmTensor {
                     //Do MMA instructions with tensor cores
                     zip(aFrags)(cFrags) |>
                     mapSeqUnroll(fun(acFrags =>
-                      zip(bFrags)(acFrags._2) |>
+                      zip(bFrags)(acFrags.`2`) |>
                       mapSeqUnroll(fun(bcFrags =>
-                        tensorMMA(acFrags._1, bcFrags._1, bcFrags._2)))))))))
+                        tensorMMA(acFrags.`1`, bcFrags.`1`, bcFrags.`2`)))))))))
 
               (generate2D |>
                 mapSeq(
@@ -299,13 +299,13 @@ object mmTensor {
 
             //Load aTile to shared memory
             let(toLocal(
-              aTbTileBlock._1 |> transpose |>
+              aTbTileBlock.`1` |> transpose |>
               mapThreads(1)(mapThreads(id)))) //mTileBlock.kTileBlock.f16
             be(aTile =>
 
               //Load bTile to shared memory
               let(toLocal(
-                aTbTileBlock._2 |>
+                aTbTileBlock.`2` |>
                 mapThreads(1)(mapThreads(id)))) //kTileBlock.mTileBlock.f16
               be(bTile =>
 
@@ -317,29 +317,29 @@ object mmTensor {
 
                   zip
                     (bTile |> transpose |> split(nTileWarp))
-                    (aTilesWarpC._2 |> transpose |> split(nTileWarp)) |>
+                    (aTilesWarpC.`2` |> transpose |> split(nTileWarp)) |>
                   mapWarp(0)(fun(bTilesWarpTCT => // (nTileWarp.kTileBlock.f16, nTileWarp.mTileWarp.f32)
 
                     //Warp-level
                     //Multiply a mTileWarp.kTileBlock.f16-Tile with a kTileBlock.nTileWarp.f16-Tile and accumulate present result
 
                     zip
-                      (aTilesWarpC._1 |> transpose |> split(kTileFrag))
-                      (bTilesWarpTCT._1 |> transpose |> split(kTileFrag)) |>
+                      (aTilesWarpC.`1` |> transpose |> split(kTileFrag))
+                      (bTilesWarpTCT.`1` |> transpose |> split(kTileFrag)) |>
                       //kTileBlock/kTileFrag.(kTileFrag.mTileWarp.f16, kTileFrag.nTileWarp.f16)
 
                     oclReduceSeqUnroll(AddressSpace.Private)(fun((cTiles, aTbTilesWarp) =>
 
                       //Load tile of a matrix to fragment
                       let(toPrivate(
-                        aTbTilesWarp._1 |> transpose |> split(mTileFrag) |>
+                        aTbTilesWarp.`1` |> transpose |> split(mTileFrag) |>
                           mapSeqUnroll(fun(aFragTileT =>
                             aFragTileT |> asFragment))))
                       be(aFrags => // mTileWarp/mTileFrag.WmmaAMatrix
 
                         //Load tile of b matrix to fragment
                         let(toPrivate(
-                          aTbTilesWarp._2 |> transpose |> split(nTileFrag) |>
+                          aTbTilesWarp.`2` |> transpose |> split(nTileFrag) |>
                             mapSeqUnroll(fun(bFragTileT =>
                               bFragTileT |> transpose |> asFragment))))
                         be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
@@ -347,12 +347,12 @@ object mmTensor {
                           //Do matrix multiplication and accumulate with tensor cores
                           zip(aFrags)(cTiles) |>
                           mapSeqUnroll(fun(acFrags =>
-                            zip(bFrags)(acFrags._2) |>
+                            zip(bFrags)(acFrags.`2`) |>
                             mapSeqUnroll(fun(bcFrags =>
-                              tensorMMA(acFrags._1, bcFrags._1, bcFrags._2)))))))))
+                              tensorMMA(acFrags.`1`, bcFrags.`1`, bcFrags.`2`)))))))))
 
                     //This load from shared memory into fragments is unnecessary when reduce directly over fragments
-                    (bTilesWarpTCT._2 |> transpose |> split(mTileFrag) |>
+                    (bTilesWarpTCT.`2` |> transpose |> split(mTileFrag) |>
                       mapSeqUnroll(fun(cTile =>
                         cTile |> transpose |> split(nTileFrag) |>
                         mapSeqUnroll(fun(cTileFragT =>
@@ -576,7 +576,7 @@ object mmTensor {
 
           //Load tile of a-matrix into multiple fragments
           let(toPrivate(
-            aTbTilesFragments._1 |>
+            aTbTilesFragments.`1` |>
             transpose |>
             split(config.mTileFrag) |>
             mapSeqUnroll(fun(aFragTile =>
@@ -586,7 +586,7 @@ object mmTensor {
 
             //Load tile of b-matrix into multiple fragments
             let(toPrivate(
-              aTbTilesFragments._2 |>
+              aTbTilesFragments.`2` |>
               transpose |>
               split(config.nTileFrag) |>
               mapSeqUnroll(fun(bFragTile =>
@@ -598,10 +598,10 @@ object mmTensor {
               zip(aFrags)(cFrags) |>
 
               mapSeqUnroll(fun(acFrags =>
-                zip(bFrags)(acFrags._2) |>
+                zip(bFrags)(acFrags.`2`) |>
 
                 mapSeqUnroll(fun(bcFrags =>
-                  tensorMMA(acFrags._1, bcFrags._1, bcFrags._2)))))))))
+                  tensorMMA(acFrags.`1`, bcFrags.`1`, bcFrags.`2`)))))))))
 
         (cFragsWarp |> mapSeq(mapSeq(id))))
 
@@ -620,14 +620,14 @@ object mmTensor {
 
         //Load aTile to shared memory
         let(toLocal(
-          aTbTileBlock._1 |> transpose |> join |> asVectorAligned(8) |>
+          aTbTileBlock.`1` |> transpose |> join |> asVectorAligned(8) |>
           mapThreads(id) |> asScalar |>
           split(config.kTileBlock))) //mTileBlock.kTileBlock.f16
         be(aTile =>
 
           //Load bTile transposed (like it is in global memory) to shared memory
           let(toLocal(
-            aTbTileBlock._2 |> transpose |> join |> asVectorAligned(8) |>
+            aTbTileBlock.`2` |> transpose |> join |> asVectorAligned(8) |>
             mapThreads(id) |> asScalar |>
             split(config.kTileBlock))) //kTileBlock.nTileBlock.f16
           be(bTileT =>
@@ -638,9 +638,9 @@ object mmTensor {
 
             mapWarp(fun(abWarpC =>
               warpMMA(
-                abWarpC._1._1,
-                abWarpC._1._2,
-                abWarpC._2 |> split(config.nNumberOfFragsWarp)) |>
+                abWarpC.`1`.`1`,
+                abWarpC.`1`.`2`,
+                abWarpC.`2` |> split(config.nNumberOfFragsWarp)) |>
 
               mapSeq(mapSeq(id)))) |>
             join |>
@@ -667,14 +667,14 @@ object mmTensor {
       oclReduceSeq(AddressSpace.Private)(fun((cFragsBlock, aTbTileBlock) =>
 
         //Load aTile to shared memory
-        let(aTbTileBlock._1 |>
+        let(aTbTileBlock.`1` |>
           transpose |>
           copyMatrix(config.mTileBlock, config.kTileBlock, 8) |>
           toSharedWithPadding(config.kTileBlock, 8))
         be(aTile =>
 
           //Load bTile transposed (like it is in global memory) to shared memory
-          let(aTbTileBlock._2 |>
+          let(aTbTileBlock.`2` |>
             transpose |>
             copyMatrix(config.nTileBlock, config.kTileBlock, 8) |>
             toSharedWithPadding(config.kTileBlock, 8))
@@ -686,9 +686,9 @@ object mmTensor {
 
               mapWarp(fun(abWarpC =>
                 warpMMA(
-                  abWarpC._1._1,
-                  abWarpC._1._2,
-                  abWarpC._2 |> split(config.nNumberOfFragsWarp)) |>
+                  abWarpC.`1`.`1`,
+                  abWarpC.`1`.`2`,
+                  abWarpC.`2` |> split(config.nNumberOfFragsWarp)) |>
 
                   mapSeq(mapSeq(id)))) |>
               join |>
@@ -840,8 +840,8 @@ object mmTensor {
       mapBlock(fun(aRowsBlockBColumnBlock =>
 
         blockMM(
-          aRowsBlockBColumnBlock._1,
-          aRowsBlockBColumnBlock._2) |> //mTileBlock.nTileblock.f32
+          aRowsBlockBColumnBlock.`1`,
+          aRowsBlockBColumnBlock.`2`) |> //mTileBlock.nTileblock.f32
 
         transpose)) |>                  //m/mTileBlock*n/nTileBlock.nTileBlock.mTilcblock.f32
       join |>                           //m/mTileBlock*n.mTilcblock.f32

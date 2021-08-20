@@ -30,15 +30,15 @@ trait Analysis[ED, ND, TD] {
   def preUnion(egraph: EGraph[ED, ND, TD], id1: EClassId, id2: EClassId): Unit = {}
 }
 
-object NoAnalysis extends Analysis[(), (), ()] {
-  override def empty(egraph: EGraph[(), (), ()], t: TypeId): Unit = ()
-  override def make(egraph: EGraph[(), (), ()], enode: ENode, t: TypeId): () = ()
+object NoAnalysis extends Analysis[Unit, Unit, Unit] {
+  override def empty(egraph: EGraph[Unit, Unit, Unit], t: TypeId): Unit = ()
+  override def make(egraph: EGraph[Unit, Unit, Unit], enode: ENode, t: TypeId): Unit = ()
 
-  override def makeNat(hc: HashConses[(), ()], node: NatNode[NatId]): () = ()
-  override def makeType(hc: HashConses[(), ()],
-                        node: TypeNode[TypeId, NatId, DataTypeId]): () = ()
+  override def makeNat(hc: HashConses[Unit, Unit], node: NatNode[NatId]): Unit = ()
+  override def makeType(hc: HashConses[Unit, Unit],
+                        node: TypeNode[TypeId, NatId, DataTypeId]): Unit = ()
 
-  override def merge(to: (), from: ()): Option[Order] = Some(Equal)
+  override def merge(to: Unit, from: Unit): Option[Order] = Some(Equal)
 }
 
 object DefaultAnalysis extends DefaultAnalysisCustomisable() {
