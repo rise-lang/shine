@@ -138,7 +138,7 @@ object AcceptorTranslation {
     case IterateStream(n, dt1, dt2, f, array) =>
       val fI = fun(expT(dt1, read))(x => fun(accT(dt2))(o => acc(f(x))(o)))
       val i = NatIdentifier(freshName("i"))
-      str(array)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
+      str(array)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(next =>
         comment("iterateStream") `;`

@@ -30,13 +30,3 @@ object nFun {
     DepLambda(NatKind, x, f(x))
   }
 }
-
-object π1 {
-  def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]) =
-    Proj1(pair)
-}
-
-object π2 {
-  def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]) =
-    Proj2(pair)
-}

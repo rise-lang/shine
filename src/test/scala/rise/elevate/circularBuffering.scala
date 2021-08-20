@@ -183,7 +183,7 @@ class circularBuffering extends test_util.Tests {
   }
 
   private val id = fun(x => x)
-  private val norm = normalize[rise.core.Expr](gentleBetaReduction())(using alternative.RiseTraversable) // TODO: check if swapping of argument order is what we want!!!
+  private val norm = normalize[rise.core.Expr](gentleBetaReduction())(using alternative.RiseTraversable)
 
   private def rewriteSteps(a: Rise, steps: scala.collection.Seq[(Strategy[Rise], Rise)]): Unit = {
     steps.foldLeft[Rise](norm(a).get)({ case (e, (s, expected)) =>

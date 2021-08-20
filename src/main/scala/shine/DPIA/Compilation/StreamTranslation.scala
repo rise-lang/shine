@@ -45,7 +45,7 @@ object StreamTranslation {
                (implicit context: TranslationContext): Phrase[CommType] = E match {
     case CircularBuffer(n, alloc, sz, dt1, dt2, load, input) =>
       val i = NatIdentifier(freshName("i"))
-      str(input)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
+      str(input)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(nextIn =>
         CircularBufferI(n, sz, 1, dt1, dt2,
@@ -55,7 +55,7 @@ object StreamTranslation {
 
     case MapStream(n, dt1, dt2, f, array) =>
       val i = NatIdentifier(freshName("i"))
-      str(array)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
+      str(array)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(next =>
         C(nFun(i =>
@@ -67,7 +67,7 @@ object StreamTranslation {
 
     case RotateValues(n, sz, dt, write, input) =>
       val i = NatIdentifier(freshName("i"))
-      str(input)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
+      str(input)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
         (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(nextIn =>
         RotateValuesI(n, sz, 1, dt, dt,
@@ -77,10 +77,10 @@ object StreamTranslation {
 
     case Zip(n, dt1, dt2, _, e1, e2) =>
       val i = NatIdentifier("i")
-      str(e1)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
+      str(e1)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(next1 =>
-        str(e2)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
+        str(e2)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
           (expT(dt2, read) ->: (comm: CommType)) ->: (comm: CommType)
         )(next2 =>
           C(nFun(i => fun(expT(dt1 x dt2, read) ->: (comm: CommType))(k =>
@@ -95,7 +95,7 @@ object StreamTranslation {
     // OpenCL
     case ocl.CircularBuffer(a, n, alloc, sz, dt1, dt2, load, input) =>
       val i = NatIdentifier(freshName("i"))
-      str(input)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
+      str(input)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(nextIn =>
         oclI.CircularBufferI(a, n, alloc, sz, dt1, dt2,
@@ -105,7 +105,7 @@ object StreamTranslation {
 
     case ocl.RotateValues(a, n, sz, dt, write, input) =>
       val i = NatIdentifier(freshName("i"))
-      str(input)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType], CommType]((i: NatIdentifier) ->:
+      str(input)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
         (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(nextIn =>
         oclI.RotateValuesI(a, n, sz, dt,

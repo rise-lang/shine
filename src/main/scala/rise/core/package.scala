@@ -50,5 +50,4 @@ package object core {
                                           ): DSL.ToBeTyped[Primitive] =
     pb.apply
 
-//    given Conversion[Int, Nat] = arithexpr.arithmetic.Cst(_)
 }

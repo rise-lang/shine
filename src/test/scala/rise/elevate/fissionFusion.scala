@@ -76,6 +76,6 @@ class fissionFusion extends test_util.Tests {
       fun(f1 => fun(f2 => fun(f3 => map(f1 >> f2 >> f3)))),
       position(3)(mapFullFission),
       fun(f1 => fun(f2 => fun(f3 => map(f1) >> map(f2) >> map(f3)))),
-      normalize(mapFusion)(using RiseTraversable)) // TODO: check if swapping of arguments is what we want
+      normalize(mapFusion)(using RiseTraversable))
   }
 }

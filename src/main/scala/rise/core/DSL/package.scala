@@ -72,12 +72,6 @@ package object DSL {
     def `2`: ToBeTyped[App] = snd(lhs)
   }
 
-  extension (lhs: ToBeTyped[Expr]) {
-    // pair accesses
-    def `1`: ToBeTyped[App] = fst(lhs)
-    def `2`: ToBeTyped[App] = snd(lhs)
-  }
-
   implicit class Indexing(e: ToBeTyped[Expr]) {
     def `@`(i: ToBeTyped[Expr]): ToBeTyped[App] = idx(i)(e)
   }
