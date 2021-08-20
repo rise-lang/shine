@@ -15,6 +15,7 @@ import shine.OpenCL.{GlobalSize, KernelExecutor, LocalSize}
 import util.Time.ms
 import util.gen.c.function
 import util.{Display, TimeSpan, gen}
+import arithexpr.arithmetic.Cst
 
 import scala.util.Random
 
@@ -125,9 +126,9 @@ class stencil extends test_util.Tests {
         input |>
         padCst(padSize)(padSize)(lf32(0.0f)) |>
         slide(stencilSize)(1) |>
-        partition(3)(n2nFun(m =>
+        partition(Cst(3))(n2nFun(m =>
           SteppedCase(m,
-            Seq(padSize, n - 2 * padSize + ((1 + stencilSize) % 2), padSize)
+            Seq[Nat](padSize, n - 2 * padSize + ((1 + stencilSize) % 2), padSize)
           )
         )) |>
         depMapSeq(mapGlobal(fun(nbh =>
@@ -199,8 +200,8 @@ class stencil extends test_util.Tests {
         padCst2D(padSize)(lf32(0.0f)) |>
         slide2D(stencilSize, 1) |>
         // partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
-        partition(3)(n2nFun(m =>
-          SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize))
+        partition(Cst(3))(n2nFun(m =>
+          SteppedCase(m, Seq[Nat](padSize, n - 2 * padSize, padSize))
         )) |>
         depMapSeq(
           // mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))

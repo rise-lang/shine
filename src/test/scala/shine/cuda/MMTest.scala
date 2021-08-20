@@ -1,18 +1,20 @@
 package shine.cuda
 
-import shine.DPIA.Phrases._
-import rise.core.types.MatrixLayout._
-import rise.core.types.{Fragment,  MatrixLayout, MatrixLayoutIdentifier, NatIdentifier, NatKind, read, write}
-import rise.core.types.DataType._
-import shine.DPIA.Types._
-import shine.DPIA._
+import rise.core.types.DataType.*
+import rise.core.types.MatrixLayout.*
+import rise.core.types.{FunType => _, *}
+import shine.DPIA.*
+import shine.DPIA.Phrases.*
+import shine.DPIA.Types.*
 import shine.DPIA.primitives.functional.{Fst, Join, Snd, Split, Transpose, Zip}
-import shine.OpenCL._
-import shine.cuda.primitives.functional._
+import shine.OpenCL.*
 import shine.OpenCL.primitives.functional.{ReduceSeq, ToMem}
 import shine.cuda.KernelExecutor.KernelNoSizes
+import shine.cuda.primitives.functional.*
 import test_util.similar
 import util.gen
+
+import scala.reflect.Selectable.reflectiveSelectable
 
 class MMTest extends test_util.TestWithCUDA {
   val n: NatIdentifier = NatIdentifier(freshName("n"))

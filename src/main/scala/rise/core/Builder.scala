@@ -1,6 +1,7 @@
 package rise.core
 
 import types._
+import rise.core.DSL
 
 trait Builder {
   def apply: DSL.ToBeTyped[Primitive] =

@@ -1,20 +1,20 @@
 package shine.DPIA.Primitives
 
 import arithexpr.arithmetic.Cst
-import rise.core.DSL.Type._
-import rise.core.DSL._
-import rise.core.Expr
-import rise.core.primitives
-import rise.core.primitives._
-import rise.core.types.DataType._
-import rise.core.types.{AddressSpace, _}
+import rise.core.DSL.*
+import rise.core.DSL.Type.*
+import rise.core.primitives.*
+import rise.core.types.DataType.*
+import rise.core.types.{AddressSpace, *}
+import rise.core.{Expr, primitives}
 import rise.openCL.primitives.oclReduceSeq
+import shine.OpenCL.*
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
-import shine.OpenCL._
 import util.gen
 import util.gen.c.function
 
 import scala.language.postfixOps
+import scala.reflect.Selectable.reflectiveSelectable
 
 class Reduce extends test_util.TestsWithExecutor {
   val add = fun(a => fun(b => a + b))
@@ -66,7 +66,7 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val e = depFun((m: Nat, n: Nat) =>
       fun(m`.`n`.`f32)(arr => arr
-        |> oclReduceSeq (AddressSpace.Private)
+        |> oclReduceSeq(AddressSpace.Private)
           (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t.`1` + t.`2`))))
           (initExp (n))
         |> mapSeq (fun(x => x))))

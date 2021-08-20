@@ -2,6 +2,7 @@ package rise.eqsat
 
 import rise.{core => rc}
 import rise.core.{types => rct}
+import scala.language.postfixOps
 
 class Basic extends test_util.Tests {
   import Basic.proveEquiv

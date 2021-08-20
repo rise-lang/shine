@@ -14,7 +14,7 @@ import rise.elevate.strategies.algorithmic.{mapFirstFission, mapFullFission}
 
 class fissionFusion extends test_util.Tests {
 
-  val BENF = rise.elevate.strategies.normalForm.BENF()(RiseTraversable)
+  val BENF = rise.elevate.strategies.normalForm.BENF()(using RiseTraversable)
 
   def eq(a: Expr, b: Expr): Unit = {
     if (! (BENF(a).get =~= BENF(b).get)) {
@@ -76,6 +76,6 @@ class fissionFusion extends test_util.Tests {
       fun(f1 => fun(f2 => fun(f3 => map(f1 >> f2 >> f3)))),
       position(3)(mapFullFission),
       fun(f1 => fun(f2 => fun(f3 => map(f1) >> map(f2) >> map(f3)))),
-      normalize(RiseTraversable)(mapFusion))
+      normalize(mapFusion)(using RiseTraversable))
   }
 }

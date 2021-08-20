@@ -7,6 +7,8 @@ import rise.core._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
+import reflect.Selectable.reflectiveSelectable
+
 class harrisCornerDetectionHalideCheck
   extends test_util.TestsWithExecutor
 {

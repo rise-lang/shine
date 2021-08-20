@@ -196,8 +196,8 @@ object traverse {
 
   trait PureTraversal extends Traversal[Pure] {override def monad : PureMonad.type = PureMonad }
   trait PureExprTraversal extends PureTraversal with ExprTraversal[Pure]
-  trait AccumulatorTraversal[F,M[_]] extends Traversal[InMonad[M]#SetFst[F]#Type] {
-    type Pair[T] = InMonad[M]#SetFst[F]#Type[T]
+  trait AccumulatorTraversal[F,M[_]] extends Traversal[[S] =>> M[(F, S)]] {
+    type Pair[T] = M[(F, T)]
     implicit val accumulator : Monoid[F]
     implicit val wrapperMonad : Monad[M]
     def accumulate[T] : F => T => Pair[T] = f => t => wrapperMonad.return_((f, t))

@@ -8,6 +8,7 @@ import rise.core.types._
 import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
+import reflect.Selectable.reflectiveSelectable
 
 object mm {
   private val id = fun(x => x)

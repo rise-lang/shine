@@ -6,6 +6,8 @@ import shine.OpenCL._
 import shine.cuda.KernelExecutor.{KernelNoSizes, KernelWithSizes}
 import util._
 
+import reflect.Selectable.reflectiveSelectable
+
 class mmTensorCheck extends test_util.TestWithCUDA {
   import mmCheckUtils._
 

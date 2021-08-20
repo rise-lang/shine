@@ -3,6 +3,7 @@ package apps
 import acoustic3D._
 import shine.OpenCL._
 import util.{Time, TimeSpan, gen}
+import reflect.Selectable.reflectiveSelectable
 
 class Acoustic3D extends test_util.TestsWithExecutor {
   private val N = 128
@@ -63,7 +64,7 @@ class Acoustic3D extends test_util.TestsWithExecutor {
     runsWithSameResult(Seq(
       ("original", runOriginalKernel("acoustic3D.cl", mat1, mat2)),
       ("originalMSS", runOriginalKernel("acoustic3DMSS.cl", mat1, mat2)),
-      ("dpia", runKernel(gen.opencl.kernel.fromExpr(stencil), mat1, mat2)),
+      ("dpia", runKernel(gen.opencl.kernel.fromExpr(acoustic3D.stencil), mat1, mat2)),
       ("dpiaMSS", runKernel(gen.opencl.kernel.fromExpr(stencilMSS), mat1, mat2))
     ))
   }

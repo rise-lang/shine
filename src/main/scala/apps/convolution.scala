@@ -11,6 +11,7 @@ import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeqUnroll
 import util.{Time, TimeSpan}
 import shine.OpenCL.KernelExecutor._
+import reflect.Selectable.reflectiveSelectable
 
 object convolution {
   private val id = fun(x => x)

@@ -9,6 +9,7 @@ import rise.openCL.DSL._
 import rise.openCL.primitives.oclRotateValues
 import util.gen
 import shine.OpenCL.KernelExecutor._
+import reflect.Selectable.reflectiveSelectable
 
 import scala.reflect.ClassTag
 

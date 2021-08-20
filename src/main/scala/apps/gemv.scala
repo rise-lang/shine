@@ -7,6 +7,7 @@ import rise.core.primitives.{let => _, _}
 import rise.core.types._
 import rise.core.types.DataType._
 import HighLevelConstructs.reorderWithStride
+import reflect.Selectable.reflectiveSelectable
 
 object gemv {
   // we can use implicit type parameters and type annotations to specify the function type of mult

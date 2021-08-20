@@ -11,7 +11,7 @@ import rise.elevate.strategies.halide._
 
 class halide extends test_util.Tests {
 
-  private val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
+  private val DFNF = rise.elevate.strategies.normalForm.DFNF()(using RiseTraversable)
 
   private def LCNFrewrite(a: Rise, s: Strategy[Rise], b: Rise): Unit = {
     val (closedA, nA) = makeClosed.withCount(a)

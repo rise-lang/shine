@@ -18,9 +18,9 @@ import rise.elevate.rules.traversal.{argument, argumentOf, body, function}
 class traversals extends test_util.Tests {
 
   def tileND = rise.elevate.strategies.tiling.tileND(RiseTraversable)
-  val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
-  val RNF = rise.elevate.strategies.normalForm.RNF()(RiseTraversable)
-  val FNF = rise.elevate.meta.fission.FNF(rise.elevate.meta.traversal.MetaRiseTraversable(RiseTraversable))
+  val DFNF = rise.elevate.strategies.normalForm.DFNF()(using RiseTraversable)
+  val RNF = rise.elevate.strategies.normalForm.RNF()(using RiseTraversable)
+  val FNF = rise.elevate.meta.fission.FNF(using rise.elevate.meta.traversal.MetaRiseTraversable(RiseTraversable))
 
   test("rewrite simple elevate strategy") {
     val expr = fun(f => fun(g => map(f) >> map(g)))

@@ -25,9 +25,9 @@ import _root_.util.gen
 
 object tvmGemm {
   val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
-    traversal.outermost(default.RiseTraversable)
+    traversal.outermost(using default.RiseTraversable)
   val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
-    traversal.innermost(default.RiseTraversable)
+    traversal.innermost(using default.RiseTraversable)
 
   //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
   val N = 1024
@@ -48,7 +48,7 @@ object tvmGemm {
   //// ICFP'20 TVM - STRATEGIES ////////////////////////////////////////////////
   // -- BASELINE ---------------------------------------------------------------
 
-  val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
+  val baseline: Strategy[Rise] = DFNF()(using default.RiseTraversable) `;`
     fuseReduceMap `@` topDown[Rise]
 
   // -- BLOCKING ---------------------------------------------------------------
@@ -83,7 +83,7 @@ object tvmGemm {
   val permuteB: Strategy[Rise] =
       splitJoin2(32) `;` DFNF() `;` argument(idAfter) `;`
       topDown(liftId()) `;` topDown(createTransposePair) `;` RNF() `;`
-      argument(argument(idAfter)) `;` normalize.apply(liftId()) `;`
+      argument(argument(idAfter)) `;` normalize(liftId()) `;`
       topDown(idToCopy)
 
   val packB: Strategy[Rise] =
@@ -171,7 +171,7 @@ class tvmGemm extends test_util.Tests {
 
     val versionUC = version.toUpperCase()
     // reset rewrite step counter
-    Success.rewriteCount = 0
+    elevate.core.SuccessRewriteCounter.rewriteCount = 0
 
     // rewrite the matmul input expresssion
     val time0 = currentTimeSec
@@ -179,7 +179,7 @@ class tvmGemm extends test_util.Tests {
     val time1 = currentTimeSec
     logger.debug(s"[$versionUC] rewrite time: ${time1 - time0}s")
     if (generateFiles) {
-      val steps = Success.rewriteCount
+      val steps = elevate.core.SuccessRewriteCounter.rewriteCount
       logger.debug(s"[$versionUC] required rewrite steps: $steps\n")
       writeToFile(plotsFolder, version, s"$version,$steps", ".csv")
     }

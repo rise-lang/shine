@@ -1,26 +1,26 @@
 package shine.DPIA.Compilation
 
-import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
-import shine.DPIA.Phrases._
+import shine.DPIA.Compilation.TranslationToImperative.*
+import shine.DPIA.DSL.*
+import shine.DPIA.Phrases.*
 import rise.core.types.{DataType, Fragment, MatrixLayout, NatIdentifier, NatKind, read, write}
-import rise.core.DSL.Type._
-import rise.core.types.DataType._
-import rise.core.substitute.{natInType => substituteNatInType}
-import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck, comm}
-import rise.core.types.DataTypeOps._
-import shine.DPIA._
-import shine.DPIA.primitives.functional._
-import shine.DPIA.primitives.imperative.{Seq => _, _}
-import shine.DPIA.primitives.intermediate._
-import shine.OpenMP.primitives.{functional => omp}
-import shine.OpenMP.primitives.{intermediate => ompI}
-import shine.OpenCL.primitives.{functional => ocl}
-import shine.OpenCL.primitives.{intermediate => oclI}
-import shine.OpenCL.primitives.{imperative => oclImp}
-import shine.cuda.primitives.{functional => cuda}
-import shine.cuda.primitives.{intermediate => cudaI}
-import shine.cuda.primitives.{imperative => cudaImp}
+import rise.core.DSL.Type.*
+import rise.core.types.DataType.*
+import rise.core.substitute.natInType as substituteNatInType
+import shine.DPIA.Types.{AccType, CommType, DepFunType, ExpType, TypeCheck, comm}
+import rise.core.types.DataTypeOps.*
+import shine.DPIA.*
+import shine.DPIA.primitives.functional.*
+import shine.DPIA.primitives.imperative.{Seq as _, *}
+import shine.DPIA.primitives.intermediate.*
+import shine.OpenMP.primitives.functional as omp
+import shine.OpenMP.primitives.intermediate as ompI
+import shine.OpenCL.primitives.functional as ocl
+import shine.OpenCL.primitives.intermediate as oclI
+import shine.OpenCL.primitives.imperative as oclImp
+import shine.cuda.primitives.functional as cuda
+import shine.cuda.primitives.intermediate as cudaI
+import shine.cuda.primitives.imperative as cudaImp
 
 object AcceptorTranslation {
   def acc(E: Phrase[ExpType])
@@ -138,7 +138,7 @@ object AcceptorTranslation {
     case IterateStream(n, dt1, dt2, f, array) =>
       val fI = fun(expT(dt1, read))(x => fun(accT(dt2))(o => acc(f(x))(o)))
       val i = NatIdentifier(freshName("i"))
-      str(array)(fun((i: NatIdentifier) ->:
+      str(array)(fun[DepFunType[NatIdentifier, (ExpType ->: CommType) ->: CommType]]((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(next =>
         comment("iterateStream") `;`

@@ -7,6 +7,7 @@ import rise.core.types._
 import rise.core.types.DataType._
 import rise.core.primitives._
 import rise.openCL.DSL._
+import reflect.Selectable.reflectiveSelectable
 
 object nearestNeighbour {
   private val distance = foreignFun("distance_",

@@ -98,8 +98,8 @@ float clamp_f32(float v, float l, float h) {
 #define pow_f32 powf
 """
 
-  val DFNF = rise.elevate.strategies.normalForm.DFNF()(alternative.RiseTraversable)
-  val CNF = rise.elevate.strategies.normalForm.CNF()(alternative.RiseTraversable)
+  val DFNF = rise.elevate.strategies.normalForm.DFNF()(using alternative.RiseTraversable)
+  val CNF = rise.elevate.strategies.normalForm.CNF()(using alternative.RiseTraversable)
 
   def check(
     lowered: Rise, callCFun: String => String,

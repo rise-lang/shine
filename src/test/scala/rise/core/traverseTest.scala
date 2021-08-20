@@ -32,7 +32,7 @@ class traverseTest extends test_util.Tests {
 
   test("traversing an expression should traverse identifiers in order") {
     val equivs = Seq(Seq(0, 3), Seq(1, 2))
-    val result = traverse(e, new ExprTraceVisitor())
+    val result = traverse.traverse(e, new ExprTraceVisitor())
 
     // the expression should not have changed
     assert(result._2 == e)
@@ -43,7 +43,7 @@ class traverseTest extends test_util.Tests {
 
   test("traversing a type should traverse identifiers in order") {
     val equivs = Seq(Seq(0, 2, 4), Seq(1, 3, 5))
-    val result = traverse(e.t, new TypeTraceVisitor())
+    val result = traverse.traverse(e.t, new TypeTraceVisitor())
     // the type should not have changed
     assert(result._2 == e.t)
     // the trace should match expectations
@@ -59,7 +59,7 @@ class traverseTest extends test_util.Tests {
       }
     }
 
-    val result = traverse(e, new Visitor)
+    val result = traverse.traverse(e, new Visitor)
 
     // the expression should have changed
     assert(result =~~=
@@ -86,7 +86,7 @@ class traverseTest extends test_util.Tests {
       }
     }
 
-    val result = traverse(e, new Visitor)
+    val result = traverse.traverse(e, new Visitor)
 
     // the expression should have changed
     val expected = depFun((n: Nat) =>

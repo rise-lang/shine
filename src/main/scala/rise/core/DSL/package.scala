@@ -536,7 +536,7 @@ package object DSL {
     toBeTyped(topLevel(toExpr(d)))
 
   def eraseTypeFromExpr[T <: Expr](e: T): T =
-    traverse(e, new PureExprTraversal {
+    rise.core.traverse.traverse(e, new PureExprTraversal {
       override def identifier[I <: Identifier] : VarType => I => Pure[I] = vt => i =>
         return_(i.setType(TypePlaceholder).asInstanceOf[I])
       override def expr : Expr => Pure[Expr] = {

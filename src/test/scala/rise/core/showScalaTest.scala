@@ -29,26 +29,26 @@ class showScalaTest extends test_util.Tests {
     }))(lf32(0.0f))(zip(join(elem))(weights))
   )
 
-  test("show dotElemWeights as an example") {
-    import scala.reflect.runtime.universe
-    import scala.tools.reflect.ToolBox
-
-    val typedDotElemWeights = dotElemWeights.toExpr
-
-    val untypedScala = prefixImports(showScala.expr(dotElemWeights))
-    val typedScala = prefixImports(showScala.expr(typedDotElemWeights))
-
-    logger.debug(untypedScala)
-    logger.debug(typedScala)
-
-    val toolbox = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
-    val expr = toolbox.eval(toolbox.parse(untypedScala)).asInstanceOf[Expr]
-    val typedExpr = toolbox.eval(toolbox.parse(typedScala)).asInstanceOf[Expr]
-
-    logger.debug(expr)
-    logger.debug(typedExpr)
-
-    assert(expr =~~= dotElemWeights.toUntypedExpr)
-    assert(typedExpr =~~= typedDotElemWeights)
-  }
+//  test("show dotElemWeights as an example") {
+//    import scala.reflect.runtime.universe
+//    import scala.tools.reflect.ToolBox
+//
+//    val typedDotElemWeights = dotElemWeights.toExpr
+//
+//    val untypedScala = prefixImports(showScala.expr(dotElemWeights))
+//    val typedScala = prefixImports(showScala.expr(typedDotElemWeights))
+//
+//    logger.debug(untypedScala)
+//    logger.debug(typedScala)
+//
+//    val toolbox = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
+//    val expr = toolbox.eval(toolbox.parse(untypedScala)).asInstanceOf[Expr]
+//    val typedExpr = toolbox.eval(toolbox.parse(typedScala)).asInstanceOf[Expr]
+//
+//    logger.debug(expr)
+//    logger.debug(typedExpr)
+//
+//    assert(expr =~~= dotElemWeights.toUntypedExpr)
+//    assert(typedExpr =~~= typedDotElemWeights)
+//  }
 }

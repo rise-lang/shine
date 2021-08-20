@@ -19,7 +19,7 @@ object uniqueNames {
   }
 
   def check(e: Expr): Boolean = {
-    val ((vs, ts), _) = traverse(e, collectNames)
+    val ((vs, ts), _) = rise.core.traverse.traverse(e, collectNames)
     vs == vs.distinct && ts == ts.distinct
   }
 

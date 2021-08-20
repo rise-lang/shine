@@ -105,12 +105,12 @@ object IsClosedForm {
   }
 
   def freeVars(expr: Expr): (OrderedSet[Identifier], OrderedSet[Kind.Identifier]) = {
-    val ((fV, fT), _) = traverse(expr, Visitor(Set(), Set()))
+    val ((fV, fT), _) = rise.core.traverse.traverse(expr, Visitor(Set(), Set()))
     (fV, fT)
   }
 
   def freeVars(t: ExprType): OrderedSet[Kind.Identifier] = {
-    val ((_, ftv), _) = traverse(t, Visitor(Set(), Set()))
+    val ((_, ftv), _) = rise.core.traverse.traverse(t, Visitor(Set(), Set()))
     ftv
   }
 

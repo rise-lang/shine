@@ -12,6 +12,8 @@ import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 import util.gen.c.function
 
+import reflect.Selectable.reflectiveSelectable
+
 object separableConvolution2DCheck {
   def wrapExpr(e: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     import arithexpr.arithmetic.{PosInf, RangeAdd}

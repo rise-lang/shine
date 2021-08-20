@@ -1046,8 +1046,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case BoolExpr.False => cont(C.AST.Literal("false"))
       case BoolExpr.ArithPredicate(lhs, rhs, op) =>
         val cOp = op match {
-          case ArithPredicate.Operator.!= => C.AST.BinaryOperator.!=
-          case ArithPredicate.Operator.== => C.AST.BinaryOperator.==
+          case ArithPredicate.Operator.notEqual => C.AST.BinaryOperator.!=
+          case ArithPredicate.Operator.equal => C.AST.BinaryOperator.==
           case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
           case ArithPredicate.Operator.<= => C.AST.BinaryOperator.<=
           case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
@@ -1227,7 +1227,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     // FIXME: we should know that (i - l) is in [0; n[ here
     array |> exp(env, CIntExpr(i - l) :: ps, arrayExpr => {
 
-      def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
+      def cOperator(op:ArithPredicate.Operator):C.AST.BinaryOperator.Value = op match {
         case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
         case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
         case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
@@ -1235,7 +1235,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
 
       def genBranch(lhs:ArithExpr, rhs:ArithExpr,
-                    operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr): Expr = {
+                    operator:ArithPredicate.Operator, taken:Expr, notTaken:Expr): Expr = {
         import BoolExpr._
         arithPredicate(lhs, rhs, operator) match {
           case True => taken

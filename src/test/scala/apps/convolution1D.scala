@@ -1,17 +1,19 @@
 package apps
 
 import apps.separableConvolution2D._
-import rise.core.primitives._
-import rise.core.DSL._
-import rise.core.DSL.HighLevelConstructs._
-import rise.core.DSL.Type._
+import rise.core.primitives.*
+import rise.core.DSL.*
+import rise.core.DSL.HighLevelConstructs.*
+import rise.core.DSL.Type.*
 import rise.openCL.primitives.oclReduceSeqUnroll
-import rise.openCL.DSL._
-import rise.core._
-import rise.core.types._
-import rise.core.types.DataType._
+import rise.openCL.DSL.*
+import rise.core.*
+import rise.core.types.*
+import rise.core.types.DataType.*
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
+
+import reflect.Selectable.reflectiveSelectable
 
 class convolution1D extends test_util.Tests {
   val binomialWeights = binomialWeightsV
@@ -22,7 +24,7 @@ class convolution1D extends test_util.Tests {
   ))
 
   val binomial: ToBeTyped[Expr] =
-    slide(3)(1) >> map(fun(nbh => dot(nbh)(binomialWeights)))
+    slide(3)(1) >> map(fun(nbh => separableConvolution2D.dot(nbh)(binomialWeights)))
 
   val binomialSeq: ToBeTyped[Expr] =
     slide(3)(1) >> mapSeq(fun(nbh => dotSeq(nbh)(binomialWeights)))
@@ -53,7 +55,7 @@ class convolution1D extends test_util.Tests {
   val binomialTileDep: ToBeTyped[Expr] = impl{ n: Nat =>
     // depSlide(34)(32) >>
     depTile(32)(
-      depMapSeq(depFun { i: Nat => // TODO: depMapGlobal(0)
+      depMapSeq(depFun { (i: Nat) => // TODO: depMapGlobal(0)
         import arithexpr.arithmetic.IfThenElse
         import arithexpr.arithmetic.BoolExpr.arithPredicate
         import arithexpr.arithmetic.BoolExpr.ArithPredicate.Operator

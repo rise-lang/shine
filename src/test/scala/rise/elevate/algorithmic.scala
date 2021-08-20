@@ -31,10 +31,10 @@ class algorithmic extends test_util.Tests {
   def tileND = rise.elevate.strategies.tiling.tileND(default.RiseTraversable)
   def tileNDList = rise.elevate.strategies.tiling.tileNDList(default.RiseTraversable)
 
-  def DFNF = rise.elevate.strategies.normalForm.DFNF()(default.RiseTraversable)
-  def RNF = rise.elevate.strategies.normalForm.RNF()(default.RiseTraversable)
-  def CNF = rise.elevate.strategies.normalForm.CNF()(default.RiseTraversable)
-  def BENF = rise.elevate.strategies.normalForm.BENF()(default.RiseTraversable)
+  def DFNF = rise.elevate.strategies.normalForm.DFNF()(using default.RiseTraversable)
+  def RNF = rise.elevate.strategies.normalForm.RNF()(using default.RiseTraversable)
+  def CNF = rise.elevate.strategies.normalForm.CNF()(using default.RiseTraversable)
+  def BENF = rise.elevate.strategies.normalForm.BENF()(using default.RiseTraversable)
 
   // Loop Interchange
 
@@ -55,7 +55,7 @@ class algorithmic extends test_util.Tests {
     ))
 
     assert(betaEtaEquals(
-      body(body(fmap(loopInterchange) `;` DFNF `;` RNF))(input).get,
+      body(body(rise.elevate.strategies.traversal.fmap(loopInterchange) `;` DFNF `;` RNF))(input).get,
       gold
     ))
   }
@@ -286,7 +286,7 @@ class algorithmic extends test_util.Tests {
     val typed = tile.apply(mm).get
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
-    val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
+    val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
     logger.debug(gen.c.function.asStringFromExpr(lower(typed).get))
 
     /// TILE + REORDER

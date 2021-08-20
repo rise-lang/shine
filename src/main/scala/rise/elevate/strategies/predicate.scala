@@ -3,6 +3,7 @@ package rise.elevate.strategies
 import elevate.core._
 import elevate.core.strategies.predicate._
 import elevate.core.strategies.{Traversable, basic}
+import elevate.core.RewriteResult._
 import rise.core.DSL.ToBeTyped
 import rise.core._
 import rise.core.primitives._

@@ -17,12 +17,12 @@ import shine.DPIA.primitives.functional._
 import scala.collection.mutable
 
 object fromRise {
-  def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
+  def apply(expr: r.Expr)(using ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
     if (!r.IsClosedForm(expr)) {
       val (fV, fT) = r.IsClosedForm.varsToClose(expr)
       throw new Exception(s"expression is not in closed form: $expr\n\n with type ${expr.t}\n free vars: $fV\n free type vars: $fT\n\n")
     }
-    val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
+    val bnfExpr = normalize(betaReduction)(expr).get
     val rwMap = inferAccess(bnfExpr)
     expression(bnfExpr, rwMap)
   }

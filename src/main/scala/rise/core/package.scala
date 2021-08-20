@@ -49,4 +49,5 @@ package object core {
   implicit def primitiveBuilderToPrimitive(pb: Builder
                                           ): DSL.ToBeTyped[Primitive] =
     pb.apply
+
 }

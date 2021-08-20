@@ -1,19 +1,20 @@
 package shine.DPIA.Primitives
 
-import rise.core.primitives._
-import rise.core.DSL._
-import rise.core.types._
-import rise.core.types.DataType._
-import rise.core.DSL.Type._
+import rise.core.DSL.*
+import rise.core.DSL.Type.*
+import rise.core.primitives.*
+import rise.core.types.*
+import rise.core.types.DataType.*
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
 import scala.language.postfixOps
+import scala.reflect.Selectable.reflectiveSelectable
 
 class Scatter extends test_util.Tests {
   test("Reversing scatter should generate valid OpenCL") {
-    import rise.openCL.DSL._
-    import shine.OpenCL._
+    import rise.openCL.DSL.*
+    import shine.OpenCL.*
 
     val N = 20
     val n: Nat = N
@@ -36,8 +37,8 @@ class Scatter extends test_util.Tests {
   }
 
   test("Overriding scatter should generate valid OpenCL") {
-    import rise.openCL.DSL._
-    import shine.OpenCL._
+    import rise.openCL.DSL.*
+    import shine.OpenCL.*
 
     val N = 20
     val n: Nat = N
