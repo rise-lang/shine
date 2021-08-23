@@ -45,7 +45,7 @@ class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends Arit
 
   override lazy val toString = s"⌈${this.callAndParameterListString}⌉"
 
-  override val HashSeed = 0x31111112
+  override lazy val HashSeed = 0x31111112
 
   override def equals(that: Any): Boolean = that match {
     case f: NatFunCall => this.name.equals(f.name) && this.args == f.args

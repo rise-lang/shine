@@ -14,7 +14,7 @@ class BuiltInFunctionCall private(name: String, val param: Int, range: Range)
   override lazy val digest: Int =
     HashSeed ^ /*range.digest() ^*/ name.hashCode ^ param
 
-  override val HashSeed = 0x31111111
+  override lazy val HashSeed = 0x31111111
 
   override def equals(that: Any): Boolean = that match {
     case f: BuiltInFunctionCall =>
