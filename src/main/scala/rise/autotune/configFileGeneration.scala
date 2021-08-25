@@ -1,6 +1,6 @@
 package rise.autotune
 
-import arithexpr.arithmetic.{RangeAdd, RangeMul, Var}
+import arithexpr.arithmetic.{PosInf, RangeAdd, RangeMul, Var}
 import rise.core.types.{NatIdentifier, TuningParameter}
 
 import scala.collection.mutable.ListBuffer
@@ -184,8 +184,8 @@ object configFileGeneration {
 
           // if stop is PosInf, remove constraint
           // (already catched by the range of parameter)
-          stop.toString match {
-            case "PosInf" =>{
+          stop match {
+            case PosInf =>{
               val startConstraint = n.toString + " >= " + start
               val stepConstraint = n.toString + " % " + step + " == 0"
 
