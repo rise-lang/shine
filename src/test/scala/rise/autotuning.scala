@@ -670,12 +670,23 @@ class autotuning extends test_util.Tests {
       speedupFactor = 100,
       execution = Median)
 
-//     check if result has valid runtime
+    //     check if result has valid runtime
     assert(result.runtime.isDefined)
-//     check if no error was reported
+    //     check if no error was reported
     assert(result.error.errorLevel.equals(autotune.NO_ERROR))
-//
+    //
     println("result: " + result)
+
+    // try to execute with zero execution iterations
+    assertThrows[java.lang.AssertionError] {
+      autotune.execution.execute(
+        expression = e2,
+        hostCode = HostCode(init(32), computeNoSizes, finish),
+        timeouts = Timeouts(5000, 5000, 5000),
+        executionIterations = 0,
+        speedupFactor = 100,
+        execution = Median)
+    }
   }
 
   test("execute scal") {
