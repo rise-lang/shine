@@ -6,8 +6,6 @@ import rise.core.types.{NatIdentifier, TuningParameter}
 import scala.collection.mutable.ListBuffer
 import constraints._
 
-import scala.collection.mutable
-
 object configFileGeneration {
 
 
