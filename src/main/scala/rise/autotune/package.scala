@@ -38,7 +38,7 @@ package object autotune {
                     autoTuningError: AutoTuningError,
                     tuningTimes: TuningTimes)
 
-  case class TuningTimes(roundTrip: Option[TimeSpan[Time.ms]],
+  case class TuningTimes(total: Option[TimeSpan[Time.ms]],
                          codegen: Option[TimeSpan[Time.ms]],
                          compilation: Option[TimeSpan[Time.ms]],
                          execution: Option[TimeSpan[Time.ms]]
@@ -88,7 +88,7 @@ package object autotune {
 
     // compute function value as result for hypermapper
     val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
-      val roundTripStart = System.currentTimeMillis()
+      val totalStart = System.currentTimeMillis()
 
       val parametersValuesMap: Map[NatIdentifier, Nat] = header.zip(parametersValues).map { case (h, p) =>
         NatIdentifier(h) -> (p.toInt: Nat)
@@ -103,8 +103,8 @@ package object autotune {
           tuner.speedupFactor,
           tuner.execution
         )
-        val roundTripTime = Some(TimeSpan.inMilliseconds(
-          (System.currentTimeMillis() - roundTripStart).toDouble)
+        val totalTime = Some(TimeSpan.inMilliseconds(
+          (System.currentTimeMillis() - totalStart).toDouble)
         )
         Sample(
           parametersValuesMap,
@@ -112,16 +112,16 @@ package object autotune {
           System.currentTimeMillis() - start,
           result.error,
           TuningTimes(
-            roundTripTime, result.codegenTime, result.compilationTime, result.executionTime)
+            totalTime, result.codegenTime, result.compilationTime, result.executionTime)
         )
       } else {
-        val roundTripTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - roundTripStart).toDouble))
+        val totalTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - totalStart).toDouble))
         Sample(
           parametersValuesMap,
           None,
           System.currentTimeMillis() - start,
           AutoTuningError(CONSTRAINTS_ERROR, None),
-            TuningTimes(roundTripTime, None, None, None)
+            TuningTimes(totalTime, None, None, None)
           )
 
       }
@@ -269,7 +269,7 @@ package object autotune {
     }
     header += "runtime" + ","
     header += "timestamp" + ","
-    header += "round trip" + ","
+    header += "total" + ","
     header += "code generation" + ","
     header += "compilation" + ","
     header += "execution" + ","
@@ -295,7 +295,7 @@ package object autotune {
       // write timestamp
       content += sample.timestamp.toString + ","
 
-      sample.tuningTimes.roundTrip match {
+      sample.tuningTimes.total match {
         case Some(value) => content += value.value.toString + ","
         case None => content += "-1" + ","
       }
