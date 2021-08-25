@@ -51,18 +51,15 @@ object execution {
              |${shine.OpenCL.Module.translateToString(m.get)}
              |
              |int main(int argc, char** argv) {
-             |  assertReasonableTimeResolution();
              |  Context ctx = createDefaultContext();
              |  fun_t fun;
              |  fun_init(ctx, &fun);
              |
              |  ${hostCode.init}
-             |  waitFinished(ctx);
              |
              |  int iterations = atoi(argv[1]);
              |  for (int sample = 0; sample < iterations; sample++) {
              |    ${hostCode.compute}
-             |    waitFinished(ctx);
              |  }
              |  ${hostCode.finish}
              |  fun_destroy(ctx, &fun);
