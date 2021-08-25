@@ -29,7 +29,7 @@ package object autotune {
                    executionIterations: Int = 10,
                    speedupFactor: Double = 100,
                    configFile: Option[String] = None,
-                   execution: RuntimeStyle = Median,
+                   runtimeStatistic: RuntimeStatistic = Median,
                    hierarchicalHM: Boolean = false)
 
   case class Sample(parameters: Map[NatIdentifier, Nat],
@@ -101,7 +101,7 @@ package object autotune {
           tuner.timeouts,
           tuner.executionIterations,
           tuner.speedupFactor,
-          tuner.execution
+          tuner.runtimeStatistic
         )
         val totalTime = Some(TimeSpan.inMilliseconds(
           (System.currentTimeMillis() - totalStart).toDouble)

@@ -8,9 +8,9 @@ import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.sys.process._
 
-sealed trait RuntimeStyle
-case object Median extends RuntimeStyle
-case object Minimum extends RuntimeStyle
+sealed trait RuntimeStatistic
+case object Median extends RuntimeStatistic
+case object Minimum extends RuntimeStatistic
 
 case class ExecutionResult(runtime: Option[TimeSpan[Time.ms]],
                            error: AutoTuningError,
@@ -34,7 +34,7 @@ object execution {
               timeouts: Timeouts,
               executionIterations: Int,
               speedupFactor: Double,
-              execution: RuntimeStyle)
+              execution: RuntimeStatistic)
   : ExecutionResult = {
 
     val codegenStart = System.currentTimeMillis()
@@ -102,7 +102,7 @@ object execution {
                          executionTimeout: Long,
                          executionIterations: Int,
                          speedupFactor: Double,
-                         execution: RuntimeStyle)
+                         execution: RuntimeStatistic)
   : (Option[TimeSpan[Time.ms]],
     AutoTuningError,
     Option[TimeSpan[Time.ms]],

@@ -73,7 +73,7 @@ class mmTuning extends test_util.Tests {
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
           wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
 
-    val params0 = Map(
+    val params0:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (1024: Nat),
@@ -97,7 +97,7 @@ class mmTuning extends test_util.Tests {
     )
     println("result0: " + result0.runtime)
 
-    val params1 = Map(
+    val params1:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (4: Nat),
       TuningParameter("ls1") -> (32: Nat),
       TuningParameter("gs0") -> (128: Nat),
@@ -121,7 +121,7 @@ class mmTuning extends test_util.Tests {
     )
     println("result1: " + result1.runtime)
 
-    val params2 = Map(
+    val params2:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (8: Nat),
       TuningParameter("ls1") -> (128: Nat),
       TuningParameter("gs0") -> (1024: Nat),
@@ -197,7 +197,7 @@ class mmTuning extends test_util.Tests {
       speedupFactor = 100,
       configFile = None, // we don't inject usage of local memory as constraints - many configs fail
       hierarchicalHM = false,
-      execution = Minimum
+      runtimeStatistic = Minimum
     )
 
     val tuningResult = autotune.search(tuner)(mm)
@@ -262,7 +262,7 @@ class mmTuning extends test_util.Tests {
       speedupFactor = 100,
       configFile = Some("autotuning/config/mm/rs_cot_1024.json"),
       hierarchicalHM = true,
-      execution = Minimum
+      runtimeStatistic = Minimum
     )
 
     val tuningResult = autotune.search(tuner)(mm)
@@ -296,7 +296,7 @@ class mmTuning extends test_util.Tests {
       speedupFactor = 100,
       configFile = None, // we don't inject usage of local memory as constraints - many configs fail
       hierarchicalHM = true,
-      execution = Minimum
+      runtimeStatistic = Minimum
     )
 
     val tuningResult = autotune.search(tuner)(mm)
