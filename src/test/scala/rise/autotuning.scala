@@ -719,7 +719,7 @@ class autotuning extends test_util.Tests {
     val finish =
       s"""
          |  float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-         |         |  for (int i = 0; i < N; i++) {
+         |  for (int i = 0; i < N; i++) {
          |    if (out[i] != 4) {
          |       exit(EXIT_FAILURE);
          |    }
