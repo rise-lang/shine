@@ -6,51 +6,86 @@ import ProveEquiv.syntax._
 import rise.eqsat.PredicateDSL._
 
 class TvmGemm extends test_util.Tests {
-  ignore("TVM GEMM") {
+  test("baseline") {
     val mm: Expr = tvmGemm.mm
-    val variants = util.printTime("Elevate rewrite", Seq(
-      tvmGemm.baseline(mm).get,
-      tvmGemm.blockingPartial(mm).get,
-      // tvmGemm.vectorization(mm).get,
-      // tvmGemm.loopPerm(mm).get,
-      // tvmGemm.arrayPacking(mm).get,
-      // tvmGemm.cacheBlocks(mm).get,
-      // tvmGemm.par(mm).get
-    ))
-/*
-    proveEquivBENF(mm, variants(0), Seq(
-      rules.eta,
-      rules.betaExtract, rules.betaNatExtract,
-      // rules.beta, rules.betaNat,
-      // rules.mapFusion, rules.mapFission,
-      rules.reduceSeq, rules.reduceSeqMapFusion,
-      // rules.splitJoin(32), rules.blockedReduce(4),
-      // rules.splitBeforeMap, rules.transposePairAfter,
-      // rules.mapMapFBeforeTranspose,
-      // rules.liftReduce
-    ))
-*/
-    ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(80))
-      .runCNF(mm, variants, Seq(
+    val goal = tvmGemm.baseline(mm).get
+
+    ProveEquiv.init().runBENF(mm, goal, Seq(
       rules.eta, rules.betaExtract, rules.betaNatExtract,
-      // rules.combinatory.compositionAssoc1,
-      rules.combinatory.compositionAssoc2,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionLeftId,
-      rules.combinatory.compositionRightId,
-      rules.combinatory.mapFusion,
-      rules.combinatory.mapFusion2,
-      rules.combinatory.mapFission, // TODO: mapFission2, etc?
-      rules.combinatory.transposePairAfter,
-      rules.combinatory.mapMapFBeforeTranspose,
-      rules.combinatory.mapMapFBeforeTranspose1,
-      rules.reduceSeq,
-      rules.combinatory.reduceSeqMapFusion,
-      rules.combinatory.reduceSeqMapFusion2,
-      rules.combinatory.splitJoin(32),
-      // rules.combinatory.blockedReduce(4),
+      rules.reduceSeq, rules.reduceSeqMapFusion
     ))
+  }
+
+  // tvmGemm.vectorization(mm).get,
+  // tvmGemm.loopPerm(mm).get,
+  // tvmGemm.arrayPacking(mm).get,
+  // tvmGemm.cacheBlocks(mm).get,
+  // tvmGemm.par(mm).get
+  test("blocking") {
+    val mm: Expr = tvmGemm.mm
+    val start = tvmGemm.baseline(mm).get
+    val goal = tvmGemm.blocking(mm).get
+
+    val rs = Seq(
+      rules.mapFission,
+      rules.reduceSeq,
+      rules.reduceSeqMapFusion,
+      rules.reduceSeqMapFission,
+      rules.undoReduceSeqForAdd, //?
+      rules.splitBeforeMap,
+      rules.liftReduceSeq,
+      rules.liftReduceSeq2,
+      rules.liftReduceSeq3,
+      // rules.transposeAroundMapMapF,
+      rules.transposeAroundMapMapF1M,
+      // rules.mapEtaAbstraction,
+      rules.splitJoin(32),
+      // rules.splitJoin1M(32),
+      rules.splitJoin2M(32),
+      rules.blockedReduce(4),
+    )
+
+    val rewriteSnapshots = {
+      import ExtendedPatternDSL._
+
+      def containsMap(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+        contains(app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
+      def containsReduce(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+        contains(app(reduceSeq :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
+
+      val m = cst(1024) // `?n`(0)
+      val n = cst(1024) // `?n`(1)
+      val k = cst(1024) // `?n`(2)
+      // TODO: nat pivot matching
+      val div32 = cst(1024 / 32)
+      val div4 = cst(1024 / 4)
+      Seq(
+        containsMap(m,
+          containsMap(n,
+            containsReduce(k, ?))),
+        containsMap(/*m /^ cst(32)*/div32,
+          containsMap(/*n /^ cst(32)*/div32,
+            containsMap(cst(32),
+              containsMap(cst(32),
+                containsReduce(k, ?))))),
+        containsMap(/*m /^ cst(32)*/div32,
+          containsMap(/*n /^ cst(32)*/div32,
+            containsMap(cst(32),
+              containsMap(cst(32),
+                containsReduce(/*k /^ cst(4)*/div4,
+                  containsReduce(cst(4), ?)))))),
+        containsMap(/*m /^ cst(32)*/div32,
+          containsMap(/*n /^ cst(32)*/div32,
+            containsReduce(/*k /^ cst(4)*/div4,
+              containsReduce(cst(4),
+                containsMap(cst(32),
+                  containsMap(cst(32), ?))))))
+      )
+    }
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(120))
+      .runBENF(start, goal, rs, rewriteSnapshots)
   }
 
   test("blocking partial") {
@@ -129,36 +164,6 @@ class TvmGemm extends test_util.Tests {
         rules.combinatory.liftReduceSeq2,
       ))
  */
-  }
-
-  // search is too difficult as-is
-  ignore("blocking") {
-    val mm: Expr = tvmGemm.mm
-    val start = tvmGemm.baseline(mm).get
-    val goal = tvmGemm.blocking(mm).get
-
-    ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(120))
-      .withRunnerTransform(r => r.withTimeLimit(java.time.Duration.ofMinutes(5)))
-      .runBENF(start, goal, Seq(
-        rules.eta, rules.betaExtract, rules.betaNatExtract,
-        rules.mapFission,
-        rules.reduceSeq,
-        rules.reduceSeqMapFusion,
-        rules.reduceSeqMapFission,
-        rules.undoReduceSeqForAdd, //?
-        rules.splitBeforeMap,
-        rules.liftReduceSeq,
-        rules.liftReduceSeq2,
-        rules.liftReduceSeq3,
-        // rules.transposeAroundMapMapF,
-        rules.transposeAroundMapMapF1M,
-        // rules.mapEtaAbstraction,
-        rules.splitJoin(32),
-        // rules.splitJoin1M(32),
-        rules.splitJoin2M(32),
-        rules.blockedReduce(4),
-      ))
   }
 
   ignore("vectorize") {
