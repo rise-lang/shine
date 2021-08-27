@@ -5,14 +5,15 @@ import elevate.core.Strategy
 import elevate.core.strategies.traversal.topDown
 import rise.elevate.rules.algorithmic.fuseReduceMap
 import rise.elevate.rules.traversal.default
+
 import scala.collection.immutable
 import rise.elevate.strategies.normalForm.DFNF
-import exploration.runner.CExecutor
+import exploration.runner.{AutoTuningExecutor, CExecutor}
 import elevate.heuristic_search.Metaheuristic
 import elevate.heuristic_search.util.Solution
 import exploration.explorationUtil.jsonParser
 import exploration.explorationUtil.jsonParser.ParseExploration
-import strategies.defaultStrategies
+import strategies.{convolutionStrategies, defaultStrategies}
 import elevate.core._
 import elevate.core.strategies.basic._
 import rise.elevate.Rise
@@ -70,7 +71,10 @@ object riseExploration {
     // -- todo --  read expression from file
 
     // make this more generic
-    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+//    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
+
+    // use set
 
     // initialize gold expression
     val gold = lowering(solution).get
@@ -110,6 +114,7 @@ object riseExploration {
     val executor = result.executor.name match {
       case "C" => new CExecutor(lowering, gold, result.executor.iterations,
         inputSize, result.executor.threshold, executorOutput)
+      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
       case _ => new Exception("not a supported executor option")
@@ -117,10 +122,13 @@ object riseExploration {
 
     var index = 0
 
+//    val strategies = defaultStrategies.strategies
+    val strategies = convolutionStrategies.strategies
+
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
     val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[CExecutor], defaultStrategies.strategies, nameList.reverse.apply(index))
+      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[AutoTuningExecutor], strategies, nameList.reverse.apply(index))
     index = index + 1
 
     // iterate reverse direction
@@ -128,7 +136,7 @@ object riseExploration {
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
       metaheuristic = new Metaheuristic[Rise](elem.heuristic, jsonParser.getHeuristic(elem.heuristic),
-        elem.depth,elem.iteration, metaheuristic, defaultStrategies.strategies, nameList.reverse.apply(index))
+        elem.depth,elem.iteration, metaheuristic, strategies, nameList.reverse.apply(index))
       index = index + 1
     })
 
