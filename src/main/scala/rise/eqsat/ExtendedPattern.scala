@@ -24,55 +24,80 @@ object ExtendedPattern {
     newEGraph.hashConses = egraph.hashConses
 
     val oldToNew = HashMap.empty[EClassId, EClassId]
+    // we rely on the fact that matches have been memoized during construction,
+    // meaning that redundant matches are reference-equal
+    val memo = new java.util.IdentityHashMap[ExtendedPatternMatch, EClassId]()
 
     val newUnion: (EClassId, EClassId) => EClassId = { case (a, b) =>
       newEGraph.union(a, b)._1
     }
 
-    def addEClass(id: EClassId): EClassId = {
-      oldToNew.get(id) match {
+    def addEClass(oldId: EClassId): EClassId = {
+      oldToNew.get(oldId) match {
         case Some(nid) => nid
         case None =>
-          val eclass = egraph.get(id)
+          val eclass = egraph.get(oldId)
           val newId = newEGraph.makeEmptyEClass(eclass.t)
-          oldToNew(id) = newId
+          oldToNew(oldId) = newId
           eclass.nodes.map { n =>
             newEGraph.add(n.mapChildren(addEClass), eclass.t)
           }.foldLeft(newId)(newUnion)
       }
     }
 
-    def addMatch(m: ExtendedPatternMatch): EClassId = m match {
-      case ExtendedPatternMatch.EClass(id) => addEClass(id)
-      case ExtendedPatternMatch.Product(node, t) =>
-        def rec(remaining: Seq[Vec[ExtendedPatternMatch]], acc: Seq[ExtendedPatternMatch]): EClassId =
-          remaining match {
-            case Nil =>
-              var i = -1
-              newEGraph.add(node.mapChildren {_ =>
-                i += 1
-                addMatch(acc(i))
-              }, t)
-            case matches +: rest =>
-              matches.map(m => rec(rest, acc :+ m))
-                .reduce(newUnion)
-          }
-        rec(node.children().toSeq, Seq())
-      case ExtendedPatternMatch.TraversalProduct(node, traverse, t) =>
-        traverse.indices.flatMap { i =>
-          traverse(i).iterator.map { m =>
-            var j = -1
-            val newNode = node.mapChildren { c =>
-              j += 1
-              if (i == j) {
-                addMatch(m)
-              } else {
-                addEClass(c)
-              }
+    def addNode(n: ENode, oldId: EClassId): EClassId = {
+      val id = newEGraph.add(n, egraph.get(oldId).t)
+      id /* TODO: what if addEClass is required after?
+      oldToNew.get(oldId) match {
+        case Some(existingId) => newUnion(id, existingId)
+        case None =>
+          oldToNew(oldId) = id
+          id
+      } */
+    }
+
+    def addMatch(m: ExtendedPatternMatch): EClassId = {
+      memo.get(m) match {
+        case null =>
+        case value => return value
+      }
+
+      val res = m match {
+        case ExtendedPatternMatch.EClass(id) => addEClass(id)
+        case ExtendedPatternMatch.Product(node, id) =>
+          def rec(remaining: Seq[Vec[ExtendedPatternMatch]], acc: Seq[ExtendedPatternMatch]): EClassId =
+            remaining match {
+              case Nil =>
+                var i = -1
+                addNode(node.mapChildren {_ =>
+                  i += 1
+                  addMatch(acc(i))
+                }, id)
+              case matches +: rest =>
+                matches.map(m => rec(rest, acc :+ m))
+                  .reduce(newUnion)
             }
-            newEGraph.add(newNode, t)
-          }
-        }.reduce(newUnion)
+          rec(node.children().toSeq, Seq())
+        case ExtendedPatternMatch.TraversalProduct(node, traverse, id) =>
+          traverse.indices.flatMap { i =>
+            traverse(i).iterator.map { m =>
+              var j = -1
+              val newNode = node.mapChildren { c =>
+                j += 1
+                if (i == j) {
+                  addMatch(m)
+                } else {
+                  addEClass(c)
+                }
+              }
+              addNode(newNode, id)
+            }
+          }.reduce(newUnion)
+      }
+
+      memo.put(m, res)
+
+      res
     }
 
     (newEGraph, matches.map(addMatch).reduce(newUnion))
@@ -90,7 +115,7 @@ object ExtendedPatternMatch {
     *
     *   P(f({a, b}, {c, d})) = {f(a, c), f(a, d), f(b, c), f(b, d)}
     */
-  case class Product(node: MNode[Vec[ExtendedPatternMatch]], t: TypeId) extends ExtendedPatternMatch
+  case class Product(node: MNode[Vec[ExtendedPatternMatch]], id: EClassId) extends ExtendedPatternMatch
 
   /** Traversing each node child gives multiple matches.
     * For each possible traversal match from `traverse`,
@@ -98,26 +123,55 @@ object ExtendedPatternMatch {
     *
     *   TP(f(x, y), {{a, b}, {c, d}}) = {f(x, c), f(x, d), f(a, y), f(b, y)}
     */
-  case class TraversalProduct(node: ENode, traverse: Vec[Vec[ExtendedPatternMatch]], t: TypeId) extends ExtendedPatternMatch
+  case class TraversalProduct(node: ENode, traverse: Vec[Vec[ExtendedPatternMatch]], id: EClassId) extends ExtendedPatternMatch
 }
 
 /** An extended pattern */
 sealed trait ExtendedPattern {
   def searchEClass(egraph: EGraph[_, _, _], id: EClassId): Vec[ExtendedPatternMatch] = {
-    searchEClass(egraph, egraph.get(id), Set())
+    searchEClass(egraph, egraph.get(id), Set(), HashMap.empty/*, None*/)
   }
 
   // TODO: investigate similarities with e-matching
-  private def searchEClass(egraph: EGraph[_, _, _], eclass: EClass[_], visited: Set[EClassId]): Vec[ExtendedPatternMatch] = {
+  private def searchEClass(egraph: EGraph[_, _, _],
+                           eclass: EClass[_],
+                           visited: Set[EClassId],
+                           memo: HashMap[(EClassId, ExtendedPattern), Vec[ExtendedPatternMatch]],
+                           /*parent: Option[ENode]*/): Vec[ExtendedPatternMatch] = {
+    memo.get((eclass.id, this)) match {
+      case Some(value) => return value
+      case None =>
+    }
     if (visited(eclass.id)) { // avoid cyclic expressions
       return Vec.empty
     }
 
-    this match {
+    /* val isFunctionOfApp: Boolean = parent.contains { p: ENode =>
+      p.matches(App((), ())) && (p.children().next() == eclass.id)
+    } */
+
+    def traverse[A, B](iterator: Iterator[A])(f: A => Option[B]): Option[Vec[B]] = {
+      val acc = Vec.empty[B]
+      while (true) {
+        iterator.nextOption() match {
+          case Some(a) => f(a) match {
+            case Some(b) => acc += b
+            case None => return None
+          }
+
+          case None => return Some(acc)
+        }
+      }
+
+      throw new Exception("unreachable")
+    }
+
+    val res: Vec[ExtendedPatternMatch] = this match {
       case ExtendedPatternAny(t) =>
         if (typeIsMatch(egraph, t, eclass.t)) { Vec(ExtendedPatternMatch.EClass(eclass.id)) } else { Vec.empty }
       case ExtendedPatternVar(index, t) => ??? // TODO
       case ExtendedPatternNode(node, t) =>
+        // if (isFunctionOfApp) { assert(!node.matches(Lambda(()))) } // avoid some non-BENF paths
         // egraph.classesByMatch.get(node.matchHash())
         val res = Vec.empty[ExtendedPatternMatch]
         if (typeIsMatch(egraph, t, eclass.t)) {
@@ -126,31 +180,43 @@ sealed trait ExtendedPattern {
               node.nats().zip(matched.nats()).forall { case (p, n) => natIsMatch(egraph, p, n) } &&
               node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) }
             if (typesMatch) {
-              val childrenMatches = node.children().zip(matched.children()).map { case (p, id) =>
-                p.searchEClass(egraph, egraph.get(id), visited + eclass.id)
-              }.to(Vec)
-              if (childrenMatches.forall(_.nonEmpty)) {
-                var i = -1
-                res += ExtendedPatternMatch.Product(matched.mapChildren { _ =>
-                  i += 1
-                  childrenMatches(i)
-                }, eclass.t)
+              val childrenMatches = traverse(node.children().zip(matched.children())) { case (p, id) =>
+                val ms = p.searchEClass(egraph, egraph.get(id), visited + eclass.id, memo/*, Some(matched)*/)
+                if (ms.isEmpty) { None } else { Some(ms) } // short circuit if no match
+              }
+              childrenMatches match {
+                case None => ()
+                case Some(cm) =>
+                  var i = -1
+                  res += ExtendedPatternMatch.Product(matched.mapChildren { _ =>
+                    i += 1
+                    cm(i)
+                  }, eclass.id)
               }
             }
           })
         }
         res
       case ExtendedPatternContains(contained) =>
-        contained.searchEClass(egraph, eclass, visited) ++ eclass.nodes.iterator.flatMap { n =>
-          val childrenMatches = n.children()
-            .map(c => this.searchEClass(egraph, egraph.get(c), visited + eclass.id)).to(Vec)
-          if (childrenMatches.exists(_.nonEmpty)) {
-            Some(ExtendedPatternMatch.TraversalProduct(n, childrenMatches, eclass.t))
-          } else {
+        contained.searchEClass(egraph, eclass, visited, memo/*, parent*/) ++ eclass.nodes.iterator.flatMap { n =>
+          if (false) {//(isFunctionOfApp && n.matches(Lambda(()))) { // avoid some non-BENF paths
             None
+          } else {
+            val childrenMatches = n.children().map(c =>
+              this.searchEClass(egraph, egraph.get(c), visited + eclass.id, memo/*, Some(n)*/)
+            ).to(Vec)
+            if (childrenMatches.exists(_.nonEmpty)) {
+              Some(ExtendedPatternMatch.TraversalProduct(n, childrenMatches, eclass.id))
+            } else {
+              None
+            }
           }
         }
     }
+
+    memo((eclass.id, this)) = res
+
+    res
   }
 
   private def typeIsMatch(egraph: EGraph[_, _, _], p: TypePattern, t: TypeId): Boolean = {

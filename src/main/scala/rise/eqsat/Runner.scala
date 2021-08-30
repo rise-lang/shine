@@ -86,8 +86,7 @@ class Runner(var iterations: Vec[Iteration],
                       roots: Seq[EClassId]): Runner = {
     egraph.rebuild(roots)
 
-    // iteration 0
-    iterations += new Iteration(
+    val iteration0 = new Iteration(
       egraphNodes = egraph.nodeCount(),
       egraphClasses = egraph.classCount(),
       memoSize = egraph.memo.size,
@@ -98,6 +97,8 @@ class Runner(var iterations: Vec[Iteration],
       totalTime = 0,
       nRebuilds = 0
     )
+    println(iteration0)
+    iterations += iteration0
 
     val startTime = System.nanoTime()
     while (true) {

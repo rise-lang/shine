@@ -27,6 +27,7 @@ class TvmGemm extends test_util.Tests {
     val goal = tvmGemm.blocking(mm).get
 
     val rs = Seq(
+      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.mapFission,
       rules.reduceSeq,
       rules.reduceSeqMapFusion,
@@ -63,6 +64,11 @@ class TvmGemm extends test_util.Tests {
         containsMap(m,
           containsMap(n,
             containsReduce(k, ?))),
+        containsMap(/*m /^ cst(32)*/div32,
+          containsMap(cst(32),
+            containsMap(/*n /^ cst(32)*/div32,
+              containsMap(cst(32),
+                containsReduce(k, ?))))),
         containsMap(/*m /^ cst(32)*/div32,
           containsMap(/*n /^ cst(32)*/div32,
             containsMap(cst(32),

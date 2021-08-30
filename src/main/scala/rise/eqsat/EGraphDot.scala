@@ -60,7 +60,8 @@ case class EGraphDot(egraph: EGraph[_, _, _],
       for ((node, i) <- eclass.nodes.zipWithIndex) {
         writeln(s"""    ${eclass.id.i}.$i[label = "${nodeLabel(node)}"]""")
       }
-      if (printTypes) writeln(s"""    label = "#${eclass.id.i} : ${eclass.t}"""")
+      val t = ExprWithHashCons.`type`(egraph)(eclass.t)
+      if (printTypes) writeln(s"""    label = "#${eclass.id.i} : $t"""")
       writeln("  }")
     }
 

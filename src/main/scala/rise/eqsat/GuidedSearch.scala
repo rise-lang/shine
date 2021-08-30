@@ -1,5 +1,7 @@
 package rise.eqsat
 
+import scala.annotation.tailrec
+
 case class CouldNotReachSnapshot(i: Int, snapshot: ExtendedPattern) extends Exception
 
 object GuidedSearch {
@@ -39,13 +41,19 @@ class GuidedSearch(
     println(s"normalized start: ${Expr.toNamed(normStart)}")
     println(s"normalized goal: ${Expr.toNamed(normGoal)}")
 
+    @tailrec
     def rec(s: Int, egraph: DefaultAnalysis.EGraph, rootId: EClassId): Unit = {
+      // egraph.rebuild(Seq(rootId))
+      // egraph.dot().toSVG(s"/tmp/e-graph-$s.svg")
+
       if (s < snapshots.length) {
         val snapshot = snapshots(s)
         var matches = Vec.empty[ExtendedPatternMatch]
         val runner = transformRunner(Runner.init()).doneWhen { r =>
           util.printTime("goal check", {
+            // if (r.iterationCount() % 3 == 0) {
             matches = snapshot.searchEClass(egraph, rootId)
+            // }
             matches.nonEmpty
           })
         }.run(egraph, filter, rules, Seq(rootId))
@@ -54,8 +62,14 @@ class GuidedSearch(
           throw CouldNotReachSnapshot(s, snapshot)
         }
 
-        val (g, r) = ExtendedPattern.matchesToGraph(matches, egraph, analysis)
+        val (g, r) = util.printTime("matches to graph",
+          ExtendedPattern.matchesToGraph(matches, egraph, analysis))
         rec(s + 1, g, r)
+      } else {
+        println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
+        // FIXME: somehow rebuilding takes forever at the end of MM example
+        // egraph.rebuild(Seq(rootId))
+        // println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
       }
     }
 
