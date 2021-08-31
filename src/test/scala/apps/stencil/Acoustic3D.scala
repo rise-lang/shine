@@ -1,6 +1,6 @@
-package apps
+package apps.stencil
 
-import acoustic3D._
+import apps.stencil.acoustic3D._
 import shine.OpenCL._
 import util.{Time, TimeSpan, gen}
 

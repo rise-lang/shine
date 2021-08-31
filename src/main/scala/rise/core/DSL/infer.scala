@@ -33,7 +33,7 @@ object infer {
   type ExprEnv = Map[String, ExprType]
 
   def apply(e: Expr, exprEnv: ExprEnv = Map(), typeEnv : Set[Kind.Identifier] = Set(),
-            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.Off): Expr = {
+            printFlag: Flags.PrintTypesAndTypeHoles = Flags.PrintTypesAndTypeHoles.On): Expr = {
     // TODO: Get rid of TypeAssertion and deprecate, instead evaluate !: in place and use `preserving` directly
     // Collect FTVs in assertions and opaques; transform assertions into annotations
     val (e_preserve, e_wo_assertions) = traverse(e, collectPreserve)

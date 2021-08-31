@@ -1,9 +1,9 @@
-package apps
+package apps.stencil
 
-import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D}
-import rise.core.DSL.Type._
+import rise.core.Expr
 import rise.core.DSL._
-import rise.core._
+import rise.core.DSL.Type._
+import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D}
 import rise.core.primitives.{let => _, _}
 import rise.core.types.DataType._
 import rise.core.types._
@@ -31,7 +31,7 @@ object srad1 {
     f32 ->: f32 ->: f32 ->: f32 ->: f32 ->: f32 ->: f32)
 
   val srad1HighLevel: ToBeTyped[Expr] = depFun((n: Nat, m: Nat) => fun(
-    (n`.`m`.`f32) ->: (n`.`m`.`f32)
+    (n `.` m `.` f32) ->: (n `.` m `.` f32)
   )(image => image |>
     padClamp2D(1, 1) >> slide2D(3, 1) >> map(map(fun { nbh =>
       val q0sqr = lf32(0.053787220269f) // this value is dependent on data set size !!
@@ -53,24 +53,29 @@ object srad1 {
   ))
 
   val srad1Nvidia: ToBeTyped[Expr] = depFun((n: Nat, m: Nat) => fun(
-    (n`.`m`.`f32) ->: (n`.`m`.`f32)
+    (n `.` m `.` f32) ->: (n `.` m `.` f32)
   )(image => image |>
     padClamp2D(1, 1) >> slide2D(3, 1) >> mapGlobal(mapGlobal(fun { nbh =>
       val q0sqr = lf32(0.053787220269f) // this value is dependent on data set size !!
 
       def m(i: Int, j: Int): ToBeTyped[Expr] = nbh `@` lidx(i, 3) `@` lidx(j, 3)
 
-      let (toPrivate(m(1, 1))) be { Jc =>
-      let (toPrivate(m(1, 0))) be { JW =>
-      let (toPrivate(m(0, 1))) be { JN =>
-      let (toPrivate(m(2, 1))) be { JS =>
-      let (toPrivate(m(1, 2))) be { JE =>
+      let(toPrivate(m(1, 1))) be { Jc =>
+        let(toPrivate(m(1, 0))) be { JW =>
+          let(toPrivate(m(0, 1))) be { JN =>
+            let(toPrivate(m(2, 1))) be { JS =>
+              let(toPrivate(m(1, 2))) be { JE =>
 
-      val DW = JW - Jc
-      val DN = JN - Jc
-      val DS = JS - Jc
-      val DE = JE - Jc
-      calculateScoeff(DN)(DS)(DE)(DW)(Jc)(q0sqr) }}}}}
+                val DW = JW - Jc
+                val DN = JN - Jc
+                val DS = JS - Jc
+                val DE = JE - Jc
+                calculateScoeff(DN)(DS)(DE)(DW)(Jc)(q0sqr)
+              }
+            }
+          }
+        }
+      }
     }))
   ))
 }

@@ -6,7 +6,7 @@ trait Builder {
   def apply: DSL.ToBeTyped[Primitive] =
     throw new Exception("apply method must be overridden")
   def apply(e: DSL.ToBeTyped[Expr]): DSL.ToBeTyped[App] =
-    DSL.app(DSL.toBeTyped(apply), e)
+    DSL.app(apply, e)
   def apply(n: Nat): DSL.ToBeTyped[DepApp[Nat]] =
     DSL.depApp(NatKind, DSL.toBeTyped(apply), n)
   def apply(dt: DataType): DSL.ToBeTyped[DepApp[DataType]] =

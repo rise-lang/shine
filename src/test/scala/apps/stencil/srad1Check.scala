@@ -1,6 +1,6 @@
-package apps
+package apps.stencil
 
-import srad1._
+import apps.stencil.srad1._
 import util.gen
 
 class srad1Check extends test_util.Tests {
