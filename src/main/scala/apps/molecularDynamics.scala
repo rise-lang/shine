@@ -76,7 +76,7 @@ object molecularDynamics {
     val neighbourList = Array.ofDim[Int](position.length, maxNeighbours)
 
     for (i <- position.indices) {
-      var currDist = List[(Int, Float)]()
+      var currDist = scala.collection.mutable.ArrayBuffer[(Int, Float)]()
 
       for (j <- position.indices) {
         if (i != j) {
@@ -88,7 +88,7 @@ object molecularDynamics {
           val delz = ipos._3 - jpos._3
 
           val distIJ = delx * delx + dely * dely + delz * delz
-          currDist = (j, distIJ) :: currDist
+          currDist += ((j, distIJ))
         }
       }
 

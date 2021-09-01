@@ -7,7 +7,7 @@ import shine.DPIA
 import util._
 
 object mm {
-  def withSize(N: Int, M: Int, O: Int, sampleCount: Int): Unit = {
+  def withSize(N: Int, M: Int, O: Int, sampleCount: Int): Seq[(String, TimeStat[Time.ms])] = {
     val rand = new scala.util.Random()
     val At = Array.fill(O, N)(rand.nextFloat() * 10)
     val B = Array.fill(O, M)(rand.nextFloat() * 10)
@@ -45,7 +45,13 @@ object mm {
     )
     println(s"runtime over $sampleCount runs for size ${(N, M, O)}")
     stats.foreach { case (name, stat) => println(s"$name: $stat") }
+    stats
   }
+
+  def bench(): Seq[(String, Seq[(String, TimeStat[Time.ms])])] = Seq(
+    ("small", withSize(1024, 1024, 1024, 10)),
+    ("large", withSize(4096, 4096, 4096, 10))
+  )
 
   def main(args: Array[String]): Unit = withExecutor {
     withSize(1024, 1024, 1024, 8)

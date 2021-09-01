@@ -23,8 +23,8 @@ class NBody extends test_util.TestsWithExecutor {
     val globalSizeNVIDIA = GlobalSize((N, tileY))
 
     runsWithSameResult(Seq(
-      ("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
-      ("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
+      ("original AMD", runOriginalKernel("CGO17_NBodyAMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
+      ("original NVIDIA", runOriginalKernel("CGO17_NBodyNVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
       ("dpia AMD", runKernel(gen.opencl.kernel.fromExpr(nbodyAMD), localSizeAMD, globalSizeAMD, pos, vel)),
       ("dpia NVIDIA", runKernel(gen.opencl.kernel.fromExpr(nbodyNVIDIA), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
     ))
