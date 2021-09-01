@@ -105,12 +105,18 @@ object configFileGeneration {
           filterList(p, param._2._1, values, param._1)
         }
 
+        // todo implement this
+        // hard coded hacky solution
         case _ => println("not yet implemented")
 
           println("name: " + param._1.name)
           println("range: " + param._1.range)
 
-          (List.empty[Int], parametersWDC.apply(param._1)._1)
+          val values = List.range(1, 1024)
+//          filterList(p, param._2._1, values, param._1)
+
+//          (List.empty[Int], parametersWDC.apply(param._1)._1)
+          filterList(p, param._2._1, values, param._1)
       }
 
       // update with filtered constraints

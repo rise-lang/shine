@@ -13,7 +13,7 @@ import elevate.heuristic_search.Metaheuristic
 import elevate.heuristic_search.util.Solution
 import exploration.explorationUtil.jsonParser
 import exploration.explorationUtil.jsonParser.ParseExploration
-import strategies.{convolutionStrategies, defaultStrategies}
+import strategies.{convolutionStrategies, defaultStrategies, scalStrategies}
 import elevate.core._
 import elevate.core.strategies.basic._
 import rise.elevate.Rise
@@ -72,7 +72,9 @@ object riseExploration {
 
     // make this more generic
 //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
-    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
+//    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
+    val lowering = exploration.strategies.scalStrategies.lowering
+    // add lowering for scal
 
     // use set
 
@@ -123,7 +125,8 @@ object riseExploration {
     var index = 0
 
 //    val strategies = defaultStrategies.strategies
-    val strategies = convolutionStrategies.strategies
+//    val strategies = convolutionStrategies.strategies
+    val strategies = scalStrategies.strategies
 
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head

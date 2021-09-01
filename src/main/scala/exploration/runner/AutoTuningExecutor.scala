@@ -23,38 +23,31 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     s"""
        |const int N = ${N};
        |srand(time(NULL));
-       |Buffer matrix = createBuffer(ctx, N * N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-       |Buffer weights = createBuffer(ctx, 17 * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-       |Buffer output = createBuffer(ctx, N * N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+       |Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+       |Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
        |
-       |float* m = hostBufferSync(ctx, matrix, N * N * sizeof(float), HOST_WRITE);
-       |for (int i = 0; i < N * N; i++) {
+       |float* m = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+       |for (int i = 0; i < N; i++) {
        |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
        |}
-       |
-       |float* w = hostBufferSync(ctx, weights, 17 * sizeof(float), HOST_WRITE);
-       |for (int i = 0; i < 17; i++) {
-       |  w[i] = (float)(rand())/(float)(RAND_MAX);
-       |}
+       |float factor = 4;
        |
        |// synchronize before entering timed section
-       |deviceBufferSync(ctx, matrix, N * N * sizeof(float), DEVICE_READ);
-       |deviceBufferSync(ctx, weights, 17 * sizeof(float), DEVICE_READ);
-       |deviceBufferSync(ctx, output, N * N * sizeof(float), DEVICE_WRITE);
-       |       |""".stripMargin
+       |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
+       |deviceBufferSync(ctx, output, N * sizeof(float), DEVICE_WRITE);
+       |""".stripMargin
   }
 
   val compute =
     s"""
-       |fun_run(ctx, &fun, output, N, matrix, weights);
+       |fun_run(ctx, &fun, output, N, input, factor);
        |""".stripMargin
 
   val finish =
     s"""
        |// TODO: could check output here
        |
-       |destroyBuffer(ctx, matrix);
-       |destroyBuffer(ctx, weights);
+       |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
        |""".stripMargin
 
@@ -67,13 +60,14 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val tuner = Tuner(
       hostCode = HostCode(init(1024), compute, finish),
       inputSizes = Seq(1024),
-      samples = 100,
-      name = "convolution",
-      output = "autotuning/convolution",
-      timeouts = Timeouts(1000, 1000, 1000),
+      samples = 1,
+      name = "scal",
+      output = "autotuning/scal",
+      timeouts = Timeouts(100000, 100000, 100000),
       executionIterations = 10,
       speedupFactor = 100,
       None,
+//      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
       hierarchicalHM = true,
       runtimeStatistic = Median
     )
@@ -92,11 +86,9 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         // now wrap ocl
         val eTuning: Expr =
           tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
               tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-                tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-                  wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered)
-                ))))
+                  wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(lowered)
+                ))
 //
 //        // now wrap ocl
 //        val eTuning: Expr =
