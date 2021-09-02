@@ -49,6 +49,15 @@ object molecularDynamics {
       })
   ))
 
+  val shocOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val n = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(128), GlobalSize(n))
+  })
+
   val shocOcl: Expr = depFun((n: Nat, m: Nat) => fun(
     (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
       f32 ->: f32 ->: f32 ->:

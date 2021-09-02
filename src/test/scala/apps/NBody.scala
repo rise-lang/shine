@@ -26,7 +26,7 @@ class NBody extends test_util.TestsWithExecutor {
       ("original AMD", runOriginalKernel("CGO17_NBodyAMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
       ("original NVIDIA", runOriginalKernel("CGO17_NBodyNVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
       ("dpia AMD", runKernel(gen.opencl.kernel.fromExpr(nbodyAMD), localSizeAMD, globalSizeAMD, pos, vel)),
-      ("dpia NVIDIA", runKernel(gen.opencl.kernel.fromExpr(nbodyNVIDIA), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
+      ("dpia NVIDIA", runKernel(gen.opencl.kernel(Some(nbodyNVIDIAKnownSizes), "KERNEL").fromExpr(nbodyNVIDIA), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
     ))
   }
 

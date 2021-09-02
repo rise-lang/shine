@@ -38,6 +38,15 @@ object mriQ {
     map(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
+  val computePhiMagOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val k = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(1), GlobalSize(k))
+  })
+
   val computePhiMagOcl: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
@@ -55,6 +64,15 @@ object mriQ {
           ))(makePair(t._2._2._2._1)(t._2._2._2._2))
       ))
   ))
+
+  val computeQOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[DPIA.Types.ExpType]]]
+    val x = t.t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(1), GlobalSize(x))
+  })
 
   val computeQOcl: Expr = depFun((k: Nat, x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))

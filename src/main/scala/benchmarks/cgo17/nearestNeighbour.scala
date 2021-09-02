@@ -11,7 +11,7 @@ object nearestNeighbour {
     val lat = random.nextFloat()
     val lng = random.nextFloat()
 
-    val kernel = gen.opencl.kernel.fromExpr(nnOcl)
+    val kernel = gen.opencl.kernel(Some(nnOclKnownSizes), "KERNEL").fromExpr(nnOcl)
 
     val stats = Seq(
       ("original", benchmark(sampleCount,

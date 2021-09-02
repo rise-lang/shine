@@ -12,27 +12,11 @@ object mm {
     val At = Array.fill(O, N)(rand.nextFloat() * 10)
     val B = Array.fill(O, M)(rand.nextFloat() * 10)
 
-    val localSize = LocalSize((32, 8))
-    def globalSizeGen(phrase: DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType]) = {
-      val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[
-        DPIA.Types.ExpType
-      ]]]
-      val n = t.x
-      val m = t.t.x
-      GlobalSize((m /^ 4, n /^ 8))
-    }
-    val amdKernel = gen.opencl.kernel(
-      Some(gen.opencl.PhraseDepLocalAndGlobalSize(phrase =>
-        gen.opencl.LocalAndGlobalSize(localSize, globalSizeGen(phrase)))),
-      "KERNEL"
-    ).fromExpr(mmAMD)
-    val nvidiaKernel = gen.opencl.kernel(
-      Some(gen.opencl.PhraseDepLocalAndGlobalSize(phrase =>
-        gen.opencl.LocalAndGlobalSize(localSize, globalSizeGen(phrase)))),
-      "KERNEL"
-    ).fromExpr(mmNVIDIA)
+    val amdKernel = gen.opencl.kernel(Some(mmAMDKnownSizes), "KERNEL").fromExpr(mmAMD)
+    val nvidiaKernel = gen.opencl.kernel(Some(mmNVIDIAKnownSizes), "KERNEL").fromExpr(mmNVIDIA)
 
-    def globalSize = GlobalSize((M/4, N/8))
+    val localSize = LocalSize((32, 8))
+    val globalSize = GlobalSize((M/4, N/8))
     val stats = Seq(
       ("original AMD", benchmark(sampleCount, runOriginal("CGO17_MMAMD.cl",
         localSize, globalSize, At, B)._2)),

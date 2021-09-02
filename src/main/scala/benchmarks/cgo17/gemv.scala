@@ -16,14 +16,8 @@ object gemv {
     val alpha = rand.nextFloat() * 5
     val beta = rand.nextFloat() * 5
 
-    val kernelN = gen.opencl.kernel(
-      Some(cgo17_phraseDepLocalAndGlobalSize),
-      "KERNEL"
-    ).fromExpr(ocl.gemvBlastN)
-    val kernelT = gen.opencl.kernel(
-      Some(cgo17_phraseDepLocalAndGlobalSize),
-      "KERNEL"
-    ).fromExpr(ocl.gemvBlastT)
+    val kernelN = gen.opencl.kernel(Some(gemvBlastKnowSizes), "KERNEL").fromExpr(ocl.gemvBlastN)
+    val kernelT = gen.opencl.kernel(Some(gemvBlastKnowSizes), "KERNEL").fromExpr(ocl.gemvBlastT)
 
     val stats = Seq(
       ("original N", benchmark(sampleCount, runOriginal("CGO17_GEMV_N.cl",
