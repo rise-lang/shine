@@ -44,7 +44,7 @@ object mriQ {
 
     val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
     val k = t.x
-    util.gen.opencl.LocalAndGlobalSize(LocalSize(1), GlobalSize(k))
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(256), GlobalSize(k))
   })
 
   val computePhiMagOcl: Expr = depFun((k: Nat) => fun(
@@ -71,7 +71,7 @@ object mriQ {
 
     val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[DPIA.Types.ExpType]]]
     val x = t.t.x
-    util.gen.opencl.LocalAndGlobalSize(LocalSize(1), GlobalSize(x))
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(256 / 4), GlobalSize(x))
   })
 
   val computeQOcl: Expr = depFun((k: Nat, x: Nat) => fun(

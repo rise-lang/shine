@@ -23,7 +23,7 @@ object all {
     stats.foreach { case (benchName, benchStats) =>
       benchStats.foreach { case (sizeName, sizeStats) =>
         sizeStats.foreach { case (kernelName, runtime) =>
-          println(s"$benchName $sizeName $kernelName ${runtime.median.value} ${runtime.min.value} ${runtime.max.value}")
+          println(s""""$benchName" "$sizeName" "$kernelName" ${runtime.median.value} ${runtime.min.value} ${runtime.max.value}""")
         }
       }
     }
