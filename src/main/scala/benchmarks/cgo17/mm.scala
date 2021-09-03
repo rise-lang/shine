@@ -13,7 +13,12 @@ object mm {
     val B = Array.fill(O, M)(rand.nextFloat() * 10)
 
     val amdKernel = gen.opencl.kernel(Some(mmAMDKnownSizes), "KERNEL").fromExpr(mmAMD)
-    val nvidiaKernel = gen.opencl.kernel(Some(mmNVIDIAKnownSizes), "KERNEL").fromExpr(mmNVIDIA)
+    val tmp = gen.opencl.kernel(Some(mmNVIDIAKnownSizes), "KERNEL").fromExpr(mmNVIDIA)
+    val nvidiaKernel = new shine.OpenCL.KernelModule(tmp.decls, tmp.kernels) {
+      override def codeOverride(): Option[String] = Some(
+        util.readFile(s"src/main/scala/apps/CGO21_MMNVIDIA_fix.cl")
+      )
+    }
 
     val localSize = LocalSize((32, 8))
     val globalSize = GlobalSize((M/4, N/8))
