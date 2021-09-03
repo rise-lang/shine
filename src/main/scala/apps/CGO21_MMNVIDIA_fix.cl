@@ -30,7 +30,7 @@ void KERNEL(global float* restrict output, int n868, int n869, int n870, const g
     /* unrolling loop of 8 */
     /* mapSeq */
     /* unrolling loop of 4 */
-    x1903[32 * get_local_id(0)] = 0.0f;
+    x1903[0] = 0.0f;
     x1903[1] = 0.0f;
     x1903[2] = 0.0f;
     x1903[3] = 0.0f;
@@ -104,7 +104,7 @@ void KERNEL(global float* restrict output, int n868, int n869, int n870, const g
         /* unrolling loop of 8 */
         /* mapSeq */
         /* unrolling loop of 4 */
-        x1837[0] = x1903[32 * get_local_id(0)];
+        x1837[0] = x1903[0];
         x1837[1] = x1903[1];
         x1837[2] = x1903[2];
         x1837[3] = x1903[3];
@@ -1275,7 +1275,7 @@ void KERNEL(global float* restrict output, int n868, int n869, int n870, const g
         /* unrolling loop of 8 */
         /* mapSeq */
         /* unrolling loop of 4 */
-        x1903[32 * get_local_id(0)] = x1837[0];
+        x1903[0] = x1837[0];
         x1903[1] = x1837[1];
         x1903[2] = x1837[2];
         x1903[3] = x1837[3];
@@ -1334,7 +1334,7 @@ void KERNEL(global float* restrict output, int n868, int n869, int n870, const g
     /* unrolling loop of 8 */
     /* mapSeq */
     /* unrolling loop of 1 */
-    vstore4((float4)(x1903[32 * get_local_id(0)], x1903[1], x1903[2], x1903[3]), 0, &output[(((4 * get_local_id(0)) + ((8 * n869) * get_local_id(1))) + ((64 * n869) * wg_id_1970)) + (128 * wg_id_1971)]);
+    vstore4((float4)(x1903[0], x1903[1], x1903[2], x1903[3]), 0, &output[(((4 * get_local_id(0)) + ((8 * n869) * get_local_id(1))) + ((64 * n869) * wg_id_1970)) + (128 * wg_id_1971)]);
     /* mapSeq */
     /* unrolling loop of 1 */
     vstore4((float4)(x1903[4], x1903[5], x1903[6], x1903[7]), 0, &output[(((n869 + (4 * get_local_id(0))) + ((8 * n869) * get_local_id(1))) + ((64 * n869) * wg_id_1970)) + (128 * wg_id_1971)]);
