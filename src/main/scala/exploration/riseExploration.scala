@@ -74,6 +74,7 @@ object riseExploration {
 //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
 //    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
     val lowering = exploration.strategies.scalStrategies.lowering
+    val lowerings = exploration.strategies.scalStrategies.lowerings
     // add lowering for scal
 
     // use set
@@ -116,7 +117,7 @@ object riseExploration {
     val executor = result.executor.name match {
       case "C" => new CExecutor(lowering, gold, result.executor.iterations,
         inputSize, result.executor.threshold, executorOutput)
-      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "AutoTuning" => new AutoTuningExecutor(lowerings, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
       case _ => new Exception("not a supported executor option")

@@ -62,6 +62,16 @@ object lowering {
     case m@map() => Success(rise.openCL.DSL.mapGlobal(dim) !: m.t)
   }
 
+  def `map -> mapLocal`(dim: Int = 0): Strategy[Rise] = mapLocal(dim)
+  @rule def mapLocal(dim: Int = 0): Strategy[Rise] = {
+    case m@map() => Success(rise.openCL.DSL.mapLocal(dim) !: m.t)
+  }
+
+  def `map -> mapWorkGroup`(dim: Int = 0): Strategy[Rise] = mapWorkGroup(dim)
+  @rule def mapWorkGroup(dim: Int = 0): Strategy[Rise] = {
+    case m@map() => Success(rise.openCL.DSL.mapWorkGroup(dim) !: m.t)
+  }
+
   def `reduce -> reduceSeq`: Strategy[Rise] = reduceSeq
   @rule def reduceSeq: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeq !: e.t)
