@@ -20,24 +20,22 @@ object HostManagedBuffers {
   def insert(params: immutable.Seq[Identifier[ExpType]], outParam: Identifier[AccType])
   : Phrase[CommType] => Phrase[CommType] = { p =>
     def outsideParams() = mutable.Set[Identifier[_ <: PhraseType]]() ++ (params :+ outParam)
-    val worstCasePrevious =
-      ReadsAndWrites(outsideParams(), outsideParams(), outsideParams(), outsideParams())
     val managed = mutable.Map[Identifier[_ <: PhraseType], AccessFlags]()
-    insertHostExecutions(worstCasePrevious, outsideParams().toSet, managed, p)._1 |>
-    insertManagedBuffers(managed)
+    val (p2, info) = analyzeAndInsertHostExecution(p, outsideParams().toSet, managed)
+    val host_plain_access = info.host_plain_reads.nonEmpty || info.host_plain_writes.nonEmpty
+    val p3 = if (host_plain_access) { makeHostExecution(p2, info, managed) } else { p2 }
+    insertManagedBuffers(managed)(p3)
   }
 
-
-  // effects to outer scope allocations
-  private case class ReadsAndWrites(
-    host_reads: mutable.Set[Identifier[_ <: PhraseType]],
-    host_writes: mutable.Set[Identifier[_ <: PhraseType]],
-    device_reads: mutable.Set[Identifier[_ <: PhraseType]],
-    device_writes: mutable.Set[Identifier[_ <: PhraseType]])
+  private class Metadata(
+    // is this phrase reading or writing to plain arrays on the host side?
+    val host_plain_reads: mutable.Set[Identifier[_ <: PhraseType]],
+    val host_plain_writes: mutable.Set[Identifier[_ <: PhraseType]],
+    // is this phrase using the device?
+    var device_used: Boolean)
 
   private object ReadsAndWrites {
-    def empty: ReadsAndWrites =
-      ReadsAndWrites(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
+    def empty: Metadata = new Metadata(mutable.Set(), mutable.Set(), false)
   }
 
   private def recordManagedAccess(
@@ -48,42 +46,31 @@ object HostManagedBuffers {
     managed.updateWith(ident)(prev => Some(prev.getOrElse(0) | access))
   }
 
-  private def insertHostExecutions(
-    previous: ReadsAndWrites,
-    allocs: Set[Identifier[_ <: PhraseType]],
+  private def makeHostExecution(
+    p: Phrase[CommType],
+    info: Metadata,
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
-    p: Phrase[CommType]
-  ): (Phrase[CommType], ReadsAndWrites) = {
-    val (p2, current) = analyzeAndInsertHostExecution(p, allocs, managed)
-    val syncAccesses = previous.device_reads.union(previous.device_writes)
-      .intersect(current.host_reads.union(current.host_writes))
-    if (syncAccesses.isEmpty) {
-      current.host_reads ++= previous.host_reads
-      current.host_writes ++= previous.host_writes
-      current.device_reads ++= previous.device_reads
-      current.device_writes ++= previous.device_writes
-      (p2, current)
-    } else {
-      assert(current.device_reads.isEmpty)
-      assert(current.device_writes.isEmpty)
-      val env = (current.host_reads ++ current.host_writes)
-        .filter(optionallyManaged(_).isDefined).map(i => {
-        var access = 0
-        if (current.host_reads.contains(i)) { access |= HOST_READ }
-        if (current.host_writes.contains(i)) { access |= HOST_WRITE }
-        i -> access
-      }).toMap
-      env.foreach { case (i, a) => recordManagedAccess(managed, i, a) }
-      (HostExecution(env)(p2), ReadsAndWrites.empty)
-    }
+  ): Phrase[CommType] = {
+    // host execution sections must not use the device:
+    assert(!info.device_used)
+
+    val env = (info.host_plain_reads ++ info.host_plain_writes)
+      .filter(optionallyManaged(_).isDefined).map(i => {
+      var access = 0
+      if (info.host_plain_reads.contains(i)) { access |= HOST_READ }
+      if (info.host_plain_writes.contains(i)) { access |= HOST_WRITE }
+      i -> access
+    }).toMap
+    env.foreach { case (i, a) => recordManagedAccess(managed, i, a) }
+    HostExecution(env)(p)
   }
 
   private def analyzeAndInsertHostExecution(
     p: Phrase[CommType],
     allocs: Set[Identifier[_ <: PhraseType]],
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags]
-  ): (Phrase[CommType], ReadsAndWrites) = {
-    val meta = ReadsAndWrites(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
+  ): (Phrase[CommType], Metadata) = {
+    val meta = ReadsAndWrites.empty
     val p2 = VisitAndRebuild(p, InsertHostExecutionsVisitor(allocs, managed, meta))
     (p2, meta)
   }
@@ -91,17 +78,16 @@ object HostManagedBuffers {
   private case class InsertHostExecutionsVisitor(
     allocs: Set[Identifier[_ <: PhraseType]],
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
-    metadata: ReadsAndWrites
+    metadata: Metadata
   ) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
       p match {
         case dpia.Assign(_, lhs, rhs) =>
-          collectWrites(lhs, metadata.host_writes)
-          collectReads(rhs, allocs, metadata.host_reads)
+          collectWrites(lhs, metadata.host_plain_writes)
+          collectReads(rhs, allocs, metadata.host_plain_reads)
           Stop(p)
         case k@ocl.KernelCallCmd(_, _, _, _) =>
-          k.args.foreach(collectReads(_, allocs, metadata.device_reads))
-          collectWrites(k.output, metadata.device_writes)
+          metadata.device_used = true
           ((k.output, DEVICE_WRITE) +: k.args.map(_ -> DEVICE_READ)).foreach {
             case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
             case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
@@ -112,8 +98,7 @@ object HostManagedBuffers {
           }
           Stop(p)
         case k@shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n) =>
-          k.args.foreach(collectReads(_, allocs, metadata.device_reads))
-          collectWrites(k.output, metadata.device_writes)
+          metadata.device_used = true
           ((k.output, DEVICE_WRITE) +: k.args.map(_ -> DEVICE_READ)).foreach {
             case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
             case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
@@ -125,12 +110,21 @@ object HostManagedBuffers {
           Stop(p)
         case dpia.Seq(a, b) =>
           val (a2, am) = analyzeAndInsertHostExecution(a, allocs, managed)
-          val (b2, bm) = insertHostExecutions(am, allocs, managed, b)
-          metadata.host_writes ++= bm.host_writes
-          metadata.host_reads ++= bm.host_reads
-          metadata.device_writes ++= bm.device_writes
-          metadata.device_reads ++= bm.device_reads
-          Stop(dpia.Seq(a2, b2))
+          val (b2, bm) = analyzeAndInsertHostExecution(b, allocs, managed)
+          val a_host_plain_access = am.host_plain_reads.nonEmpty || am.host_plain_writes.nonEmpty
+          val b_host_plain_access = bm.host_plain_reads.nonEmpty || bm.host_plain_writes.nonEmpty
+          if (!am.device_used && !bm.device_used) {
+            metadata.host_plain_reads ++= am.host_plain_reads
+            metadata.host_plain_reads ++= bm.host_plain_reads
+            metadata.host_plain_writes ++= am.host_plain_writes
+            metadata.host_plain_writes ++= bm.host_plain_writes
+            Stop(dpia.Seq(a2, b2))
+          } else { // am.device_used || bm.device_used
+            metadata.device_used = true
+            val a3 = if (a_host_plain_access) { makeHostExecution(a2, am, managed) } else { a2 }
+            val b3 = if (b_host_plain_access) { makeHostExecution(b2, bm, managed) } else { b2 }
+            Stop(dpia.Seq(a3, b3))
+          }
         case _ => Continue(p, this)
       }
   }
