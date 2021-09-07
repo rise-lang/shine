@@ -9,10 +9,7 @@ object EGraph {
       classes = HashMap.empty,
       unionFind = UnionFind.empty,
       pending = Vec.empty,
-      analysisPending = {
-        import Node.{ordering, natIdOrdering, dataTypeIdOrdering, eclassIdOrdering}
-        collection.mutable.TreeSet.empty[(ENode, EClassId)]
-      },
+      analysisPending = HashSetQueuePop.empty[(ENode, EClassId)],
       classesByMatch = HashMap.empty,
       hashConses = HashConses.emptyWithAnalysis(analysis),
     )
@@ -24,10 +21,7 @@ object EGraph {
 class EGraph[ED, ND, TD](
   val analysis: Analysis[ED, ND, TD],
   var pending: Vec[(ENode, EClassId)],
-  // NOTE: TreeSet has faster pop than HashSet,
-  // can also look into something like IndexSet
-  // https://docs.rs/indexmap/1.0.2/indexmap/set/struct.IndexSet.html#method.pop
-  var analysisPending: collection.mutable.TreeSet[(ENode, EClassId)],
+  var analysisPending: HashSetQueuePop[(ENode, EClassId)],
 
   var memo: HashMap[(ENode, TypeId), EClassId],
   var unionFind: UnionFind,
@@ -223,9 +217,7 @@ class EGraph[ED, ND, TD](
       }
 
       while (analysisPending.nonEmpty) {
-        // note: using .last is really slow, traversing all the map
-        val (node, id) = analysisPending.head
-        analysisPending.remove((node, id))
+        val (node, id) = analysisPending.pop()
 
         val cid = findMut(id)
         val eclass = classes(cid)
