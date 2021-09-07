@@ -47,7 +47,9 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   def showPrim : Primitive[_] => String = {
     case Comment(s) => s"/* ${s} */"
     case Seq(c1, c2) => s"${showPhrase(c1)};\n${showPhrase(c2)}"
-    case New(dt, f) => s"new (${showType(f.t.inT)}) in \n${tab(showPhrase(f))}"
+    case New(dt, f) => s"new (${showType(f.t.inT)}) in\n${tab(showPhrase(f))}"
+    case shine.OpenCL.primitives.imperative.New(a, _, f) =>
+      s"new $a (${showType(f.t.inT)}) in\n${tab(showPhrase(f))}"
     case Assign(_, lhs, rhs) => s"${showTypedPhrase(lhs)} = ${showPhrase(rhs)}"
     case IdxAcc(_, _, idx, array) => s"${showTypedPhrase(array)}[${showPhrase(idx)}]"
     case Idx(_, _, idx, array) => s"${showTypedPhrase(array)}[${showPhrase(idx)}]"
@@ -58,6 +60,8 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case TakeAcc(n, _, _, e) => s"take ${showNat(n)} ${showTypedPhrase(e)}"
     case f : For => s"for ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
     case f : ForNat => s"forNat ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
+    case pf: shine.OpenCL.primitives.imperative.ParFor =>
+      s"parFor ${pf.level}(${pf.dim}) ${showNat(pf.n)}\n${tab(showPhrase(pf.body))}"
     case IterateStream(_, _, _, f, array) => s"iterate ${showPhrase(array)}\n${tab(showPhrase(f))}"
     case Map(_, _, _, _, f, array) => s"map ${showPhrase(array)} \n ${showPhrase(f)}"
     case f : MapSeq => s"map ${showPhrase(f.array)} \n ${showPhrase(f.f)}"

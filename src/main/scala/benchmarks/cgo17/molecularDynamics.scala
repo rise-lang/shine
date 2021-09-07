@@ -8,14 +8,14 @@ object molecularDynamics {
   private val Ns = Seq(12288, 24576, 36864, 73728)
   private val M = 128 // Max number of nearest neighbors
 
-  def withSize(N: Int, sampleCount: Int): Unit = {
+  def withSize(N: Int, sampleCount: Int): Seq[(String, TimeStat[Time.ms])] = {
     val random = new scala.util.Random()
     val particles = Array.fill(N * 4)(random.nextFloat() * 20.0f)
     val particlesTuple = particles.sliding(4, 4)
       .map { case Array(a, b, c, d) => (a, b, c, d) }.toArray
     val neighbours = buildNeighbourList(particlesTuple, M).transpose
 
-    val kernel = gen.opencl.kernel.fromExpr(shocOcl)
+    val kernel = gen.opencl.kernel(Some(shocOclKnownSizes), "KERNEL").fromExpr(shocOcl)
 
     val stats = Seq(
       ("original", benchmark(sampleCount,
@@ -24,7 +24,13 @@ object molecularDynamics {
     )
     println(s"runtime over $sampleCount runs")
     stats.foreach { case (name, stat) => println(s"$name: $stat") }
+    stats
   }
+
+  def bench(): Seq[(String, Seq[(String, TimeStat[Time.ms])])] = Seq(
+    ("small", withSize(Ns(0), 10)),
+    ("large", withSize(Ns(3), 10))
+  )
 
   def main(args: Array[String]): Unit = {
     withExecutor {

@@ -5,7 +5,7 @@ import benchmarks.core._
 import util._
 
 object mriQ {
-  def withSize(K: Int, X: Int, sampleCount: Int): Unit = {
+  def withSize(K: Int, X: Int, sampleCount: Int): Seq[(String, TimeStat[Time.ms])] = {
     val random = new scala.util.Random()
     val phiR = Array.fill(K)(random.nextFloat())
     val phiI = Array.fill(K)(random.nextFloat())
@@ -17,8 +17,8 @@ object mriQ {
     val Qi = Array.fill(X)(random.nextFloat())
     val kvalues = Array.fill(4 * K)(random.nextFloat())
 
-    val phiMagKernel = gen.opencl.kernel.fromExpr(computePhiMagOcl)
-    val qKernel = gen.opencl.kernel.fromExpr(computeQOcl)
+    val phiMagKernel = gen.opencl.kernel(Some(computePhiMagOclKnownSizes), "KERNEL").fromExpr(computePhiMagOcl)
+    val qKernel = gen.opencl.kernel(Some(computeQOclKnownSizes), "KERNEL").fromExpr(computeQOcl)
 
     val stats = Seq(
       ("original PhiMag", benchmark(sampleCount,
@@ -30,7 +30,13 @@ object mriQ {
     )
     println(s"runtime over $sampleCount runs")
     stats.foreach { case (name, stat) => println(s"$name: $stat") }
+    stats
   }
+
+  def bench(): Seq[(String, Seq[(String, TimeStat[Time.ms])])] = Seq(
+    ("small", withSize(3072, 32768, 10)),
+    ("large", withSize(2048, 262144, 10))
+  )
 
   def main(args: Array[String]): Unit = {
     withExecutor {

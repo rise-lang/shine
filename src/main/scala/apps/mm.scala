@@ -39,6 +39,16 @@ object mm {
     ))
   ))
 
+  val mmAMDKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[DPIA.Types.ExpType]]]
+    val n = t.x
+    val m = t.t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize((32, 8)), GlobalSize((m /^ 4, n /^ 8)))
+  })
+
   val mmAMD: ToBeTyped[Expr] = {
     val v3 = 4
     val v4 = 8
@@ -70,6 +80,7 @@ object mm {
     ))
   }
 
+  val mmNVIDIAKnownSizes = mmAMDKnownSizes
 
   val mmNVIDIA = mmNVIDIAWithParams(4, 8, 64, 128, 128, 16)
 
@@ -95,7 +106,8 @@ object mm {
             map(transpose) |> transpose |> // M'.O'.v8.v7.f
             mapWorkGroup(0)(fun(p3 =>
               zip(p2)(p3) |> // O'.(v8.v5.f x v8.v7.f)
-                oclReduceSeq(AddressSpace.Local)(fun((p13, p14) =>
+                // FIXME: there seems to be a bug in AdjustArraySizesForAllocations
+                oclReduceSeq(AddressSpace.Private)(fun((p13, p14) =>
                   // (v5/^v4).(v7/^v3).v4.v3.f x (v8.v5.f x v8.v7.f)
                   let (toLocal(makePair(
                     p14._1 |> join |> split(v6) |> // ((v8 x v5) /^ v6).v6.f

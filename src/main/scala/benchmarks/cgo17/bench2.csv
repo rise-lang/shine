@@ -1,0 +1,105 @@
+hardware benchmark size kernel medianTime minTime maxTime
+"Titan Xp" "N-Body" "small" "original AMD" 1.957728 1.954656 1.959776
+"Titan Xp" "N-Body" "small" "dpia AMD" 1.808384 1.8082239999999998 1.809408
+"Titan Xp" "N-Body" "small" "original NVIDIA" 1.2747199999999999 1.272672 1.275744
+"Titan Xp" "N-Body" "small" "dpia NVIDIA" 1.789952 1.788768 5.7712639999999995
+"Titan Xp" "N-Body" "large" "original AMD" 90.262368 88.729888 108.48153599999999
+"Titan Xp" "N-Body" "large" "dpia AMD" 102.13158399999999 86.868864 107.64272
+"Titan Xp" "N-Body" "large" "original NVIDIA" 48.277344 46.046079999999996 48.519008
+"Titan Xp" "N-Body" "large" "dpia NVIDIA" 50.12464 49.527648 50.254687999999994
+"Titan Xp" "MD" "small" "original" 0.07152 0.070656 0.07152
+"Titan Xp" "MD" "small" "dpia" 0.06656 0.065536 0.06656
+"Titan Xp" "MD" "large" "original" 1.106784 1.0076159999999998 1.171456
+"Titan Xp" "MD" "large" "dpia" 0.43196799999999996 0.417792 0.46694399999999997
+"Titan Xp" "K-Means" "small" "original" 0.345088 0.343904 0.349024
+"Titan Xp" "K-Means" "small" "dpia" 0.34815999999999997 0.34304 0.35020799999999996
+"Titan Xp" "K-Means" "large" "original" 1.46416 1.447776 1.471328
+"Titan Xp" "K-Means" "large" "dpia" 1.465344 1.4325759999999998 1.473536
+"Titan Xp" "NN" "small" "original" 0.22630399999999998 0.225952 0.22716799999999998
+"Titan Xp" "NN" "small" "dpia" 0.22630399999999998 0.225952 0.22716799999999998
+"Titan Xp" "NN" "large" "original" 0.8989119999999999 0.8989119999999999 0.899936
+"Titan Xp" "NN" "large" "dpia" 0.8989119999999999 0.8978879999999999 0.899072
+"Titan Xp" "MRI-Q" "small" "original PhiMag" 0.00784 0.007168 0.013151999999999999
+"Titan Xp" "MRI-Q" "small" "dpia PhiMag" 0.020319999999999998 0.012544 0.021183999999999998
+"Titan Xp" "MRI-Q" "small" "original Q" 1.39248 1.391456 1.3928319999999998
+"Titan Xp" "MRI-Q" "small" "dpia Q" 1.370112 1.368064 1.392704
+"Titan Xp" "MRI-Q" "large" "original PhiMag" 0.009311999999999999 0.009216 0.015231999999999999
+"Titan Xp" "MRI-Q" "large" "dpia PhiMag" 0.020159999999999997 0.015231999999999999 0.020832
+"Titan Xp" "MRI-Q" "large" "original Q" 7.466848 6.395744 7.574368
+"Titan Xp" "MRI-Q" "large" "dpia Q" 6.398975999999999 6.24848 6.539263999999999
+"Titan Xp" "Convolution" "small" "original X" 0.357216 0.35312 0.359264
+"Titan Xp" "Convolution" "small" "dpia X" 0.384 0.38195199999999996 0.385024
+"Titan Xp" "Convolution" "small" "original Y" 0.384864 0.38383999999999996 0.39100799999999997
+"Titan Xp" "Convolution" "small" "dpia Y" 0.38707199999999997 0.38707199999999997 0.38716799999999996
+"Titan Xp" "Convolution" "large" "original X" 1.478496 1.46624 1.49488
+"Titan Xp" "Convolution" "large" "dpia X" 1.567744 1.564096 1.57184
+"Titan Xp" "Convolution" "large" "original Y" 1.5584 1.5513599999999999 1.559424
+"Titan Xp" "Convolution" "large" "dpia Y" 1.494016 1.4827519999999998 1.57632
+"Titan Xp" "GEMV" "small" "original N" 0.436224 0.431104 0.438272
+"Titan Xp" "GEMV" "small" "dpia N" 0.438272 0.436224 0.44032
+"Titan Xp" "GEMV" "small" "original T" 0.19558399999999998 0.19455999999999998 0.197632
+"Titan Xp" "GEMV" "small" "dpia T" 0.188416 0.187392 0.190464
+"Titan Xp" "GEMV" "large" "original N" 2.6808319999999997 2.669568 2.707456
+"Titan Xp" "GEMV" "large" "dpia N" 3.125248 3.101696 3.1467519999999998
+"Titan Xp" "GEMV" "large" "original T" 0.59392 0.5908479999999999 0.601088
+"Titan Xp" "GEMV" "large" "dpia T" 0.5908479999999999 0.589824 0.591872
+"Titan Xp" "MM" "small" "original AMD" 1.581056 1.5749119999999999 1.5831039999999998
+"Titan Xp" "MM" "small" "dpia AMD" 1.714176 1.563648 1.7704959999999998
+"Titan Xp" "MM" "small" "original NVIDIA" 0.43724799999999997 0.436064 0.438272
+"Titan Xp" "MM" "small" "dpia NVIDIA" 1.676288 1.655808 1.685504
+"Titan Xp" "MM" "large" "original AMD" 66.573184 66.175872 87.43628799999999
+"Titan Xp" "MM" "large" "dpia AMD" 59.784064 58.971008 59.976544
+"Titan Xp" "MM" "large" "original NVIDIA" 17.031008 16.598912 17.051488
+"Titan Xp" "MM" "large" "dpia NVIDIA" 41.047903999999996 39.767936 42.286975999999996
+"Tesla K40c" "N-Body" "small" "original AMD" 7.46352 7.455552 7.47296
+"Tesla K40c" "N-Body" "small" "dpia AMD" 3.348576 3.3424639999999997 3.3567039999999997
+"Tesla K40c" "N-Body" "small" "original NVIDIA" 3.70688 3.6945599999999996 3.71792
+"Tesla K40c" "N-Body" "small" "dpia NVIDIA" 4.12656 4.117952 9.75728
+"Tesla K40c" "N-Body" "large" "original AMD" 452.25283199999996 452.18233599999996 452.30096
+"Tesla K40c" "N-Body" "large" "dpia AMD" 227.80422399999998 223.742976 229.999136
+"Tesla K40c" "N-Body" "large" "original NVIDIA" 204.463392 202.976448 206.98195199999998
+"Tesla K40c" "N-Body" "large" "dpia NVIDIA" 225.174816 224.02179199999998 226.905248
+"Tesla K40c" "MD" "small" "original" 0.18745599999999998 0.18659199999999998 0.190464
+"Tesla K40c" "MD" "small" "dpia" 0.153952 0.152864 0.15567999999999999
+"Tesla K40c" "MD" "large" "original" 1.18352 1.16944 1.208736
+"Tesla K40c" "MD" "large" "dpia" 0.877504 0.873312 0.89152
+"Tesla K40c" "K-Means" "small" "original" 0.799392 0.7941119999999999 0.803968
+"Tesla K40c" "K-Means" "small" "dpia" 0.796032 0.79184 0.7995519999999999
+"Tesla K40c" "K-Means" "large" "original" 3.116576 3.1093439999999997 3.1227519999999998
+"Tesla K40c" "K-Means" "large" "dpia" 3.120192 3.1102719999999997 3.1288
+"Tesla K40c" "NN" "small" "original" 0.553056 0.550368 0.557056
+"Tesla K40c" "NN" "small" "dpia" 0.5532159999999999 0.550592 0.554688
+"Tesla K40c" "NN" "large" "original" 2.1832 2.1724799999999997 2.189632
+"Tesla K40c" "NN" "large" "dpia" 2.184832 2.178784 2.1902079999999997
+"Tesla K40c" "MRI-Q" "small" "original PhiMag" 0.013215999999999999 0.01248 0.018623999999999998
+"Tesla K40c" "MRI-Q" "small" "dpia PhiMag" 0.022144 0.016256 0.024352
+"Tesla K40c" "MRI-Q" "small" "original Q" 8.894976 8.882655999999999 8.897504
+"Tesla K40c" "MRI-Q" "small" "dpia Q" 8.835296 8.83184 8.862207999999999
+"Tesla K40c" "MRI-Q" "large" "original PhiMag" 0.013663999999999999 0.012799999999999999 0.01952
+"Tesla K40c" "MRI-Q" "large" "dpia PhiMag" 0.022944 0.015808 0.024384
+"Tesla K40c" "MRI-Q" "large" "original Q" 35.700672 35.699647999999996 35.705535999999995
+"Tesla K40c" "MRI-Q" "large" "dpia Q" 35.455424 35.45312 35.457856
+"Tesla K40c" "Convolution" "small" "original X" 1.166912 1.165824 1.176992
+"Tesla K40c" "Convolution" "small" "dpia X" 1.164544 1.163424 1.165824
+"Tesla K40c" "Convolution" "small" "original Y" 1.8950719999999999 1.893632 1.89632
+"Tesla K40c" "Convolution" "small" "dpia Y" 1.889344 1.8872639999999998 1.8903999999999999
+"Tesla K40c" "Convolution" "large" "original X" 4.595936 4.594368 4.596512
+"Tesla K40c" "Convolution" "large" "dpia X" 4.628672 4.627776 4.63136
+"Tesla K40c" "Convolution" "large" "original Y" 7.535839999999999 7.534464 7.53776
+"Tesla K40c" "Convolution" "large" "dpia Y" 7.515327999999999 7.512448 7.516736
+"Tesla K40c" "GEMV" "small" "original N" 0.692896 0.6807679999999999 0.718336
+"Tesla K40c" "GEMV" "small" "dpia N" 0.8519359999999999 0.778624 0.887168
+"Tesla K40c" "GEMV" "small" "original T" 0.433824 0.431008 0.441312
+"Tesla K40c" "GEMV" "small" "dpia T" 0.39395199999999997 0.389632 0.39999999999999997
+"Tesla K40c" "GEMV" "large" "original N" 4.511456 4.491776 4.550848
+"Tesla K40c" "GEMV" "large" "dpia N" 4.401024 4.389856 4.41632
+"Tesla K40c" "GEMV" "large" "original T" 1.4363839999999999 1.429664 1.43824
+"Tesla K40c" "GEMV" "large" "dpia T" 1.47872 1.4616639999999999 1.4805119999999998
+"Tesla K40c" "MM" "small" "original AMD" 3.898592 3.73296 3.9126719999999997
+"Tesla K40c" "MM" "small" "dpia AMD" 3.165184 3.107456 3.177888
+"Tesla K40c" "MM" "small" "original NVIDIA" 1.5853439999999999 1.569664 1.60432
+"Tesla K40c" "MM" "small" "dpia NVIDIA" 4.192288 4.153568 4.227904
+"Tesla K40c" "MM" "large" "original AMD" 188.118752 187.239104 188.74128
+"Tesla K40c" "MM" "large" "dpia AMD" 198.90735999999998 198.140288 199.477056
+"Tesla K40c" "MM" "large" "original NVIDIA" 97.552032 97.39126399999999 97.850816
+"Tesla K40c" "MM" "large" "dpia NVIDIA" 154.35715199999999 153.903392 154.98524799999998
