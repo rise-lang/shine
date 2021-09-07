@@ -43,7 +43,13 @@ class GuidedSearch(
 
     @tailrec
     def rec(s: Int, egraph: DefaultAnalysis.EGraph, rootId: EClassId): Unit = {
-      // egraph.rebuild(Seq(rootId))
+      egraph.rebuild(Seq(rootId))
+      println("----")
+      val pcount = Analyser.init(egraph, CountProgramsUpToSize(120))
+      pcount.analysisOf(rootId).foreach { case (size, count) =>
+        println(s"programs of size ${size}: ${count}")
+      }
+      println("----")
       // egraph.dot().toSVG(s"/tmp/e-graph-$s.svg")
 
       if (s < snapshots.length) {
@@ -67,9 +73,8 @@ class GuidedSearch(
         rec(s + 1, g, r)
       } else {
         println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
-        // FIXME: somehow rebuilding takes forever at the end of MM example
-        // egraph.rebuild(Seq(rootId))
-        // println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
+        egraph.rebuild(Seq(rootId))
+        println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
       }
     }
 
