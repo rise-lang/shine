@@ -10,8 +10,13 @@ def gap8RunPrimitive: (cores: nat) -> {t: data} -> t -> t
 //TODO: bias
 //TODO: turn this to 3x3
 //TODO: generate primitives for other sizes
+//def gap8hwConv3x3: (bias: nat) -> {iw: nat} -> {ih: nat} ->
+//    {fw: nat} -> {fh: nat} ->
+//        {ow: nat} -> {oh: nat} ->
+//            {s: data} ->
+//                ih.iw.s -> fh.fw.s -> oh.ow.s
+
 def gap8hwConv3x3: (bias: nat) -> {iw: nat} -> {ih: nat} ->
-    {fw: nat} -> {fh: nat} ->
-        {ow: nat} -> {oh: nat} ->
-            {s: data} ->
-                ih.iw.s -> fh.fw.s -> oh.ow.s
+    {ow: nat} -> {oh: nat} ->
+        {s: data} ->
+            ih.iw.s -> 3.3.s -> oh.ow.s

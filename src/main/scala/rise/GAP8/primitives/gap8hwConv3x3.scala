@@ -6,13 +6,14 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 object gap8hwConv3x3 extends Builder {
-  private final case class Primitive()(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive()(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "gap8hwConv3x3"
-    override def setType(ty: Type): Primitive = Primitive()(ty)
+    override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: Type = expl { (bias: Nat) => impl { (iw: Nat) => impl { (ih: Nat) => impl { (fw: Nat) => impl { (fh: Nat) => impl { (ow: Nat) => impl { (oh: Nat) => impl { (s: DataType) => ArrayType(ih, ArrayType(iw, s)) ->: ArrayType(fh, ArrayType(fw, s)) ->: ArrayType(oh, ArrayType(ow, s)) } } } } } } } }
+    override def typeScheme: ExprType = expl { (bias: Nat) => impl { (iw: Nat) => impl { (ih: Nat) => impl { (ow: Nat) => impl { (oh: Nat) => impl { (s: DataType) => ArrayType(ih, ArrayType(iw, s)) ->: ArrayType(3, ArrayType(3, s)) ->: ArrayType(oh, ArrayType(ow, s)) } } } } } }
   }
   override def toString: String = "gap8hwConv3x3"
   override def primitive: rise.core.Primitive = Primitive()()
