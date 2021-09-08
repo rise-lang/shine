@@ -928,7 +928,7 @@ object fromRise {
           ))
       }
 
-      case rise.GAP8.primitives.gap8hwConv3x3() => fromType {
+      /*case rise.GAP8.primitives.gap8hwConv3x3() => fromType {
         case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
           expT(ArrayType(fh, ArrayType(fw, _)), `read`) ->:
           //TODO: fix mismatch (whatever that means)
@@ -941,6 +941,19 @@ object fromRise {
                   )
               )
         )
+      }*/
+
+      case rise.GAP8.primitives.gap8hwConv3x3() => fromType {
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
+          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
+            depFun(NatKind, bias)(
+              fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
+                fun[ExpType](expT(ArrayType(3, ArrayType(3, s)), read), filter =>
+                  shine.GAP8.primitives.functional.FunConv3x3(w, h, bias, s, input, filter)
+                )
+              )
+            )
       }
 
 

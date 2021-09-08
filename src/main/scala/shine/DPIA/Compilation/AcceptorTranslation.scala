@@ -354,8 +354,18 @@ object AcceptorTranslation {
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
 
     //GAP8
+
+    case shine.GAP8.primitives.functional.FunConv3x3(w, h, bias, dt, in, filter) =>
+      con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
+        import shine.DPIA.primitives.functional.{Join, PadClamp}
+        val paddedArray = PadClamp(3 * 3, 0, 1, dt, Join(3, 3, read, dt, filter))
+        con(paddedArray)(λ(ExpType(ArrayType(10, dt), read))(filterInner =>
+          shine.GAP8.primitives.imperative.Conv3x3(w, h, bias, dt, inInner, filterInner, A)
+        ))
+      }))
+
     //case shine.GAP8.primitives.functional.Conv(w, h, bias, dt, in, filter) =>
-    case c@shine.GAP8.primitives.functional.FunConv3x3(fs) =>
+    /*case c@shine.GAP8.primitives.functional.FunConv3x3(fs) =>
       con(c.in)(λ(ExpType(c.h`.`(c.w`.`c.dt), read))(inInner => {
         fs match {
           case shine.GAP8._3x3 =>
@@ -382,7 +392,7 @@ object AcceptorTranslation {
           case _=>
             throw new Exception("Unsupported filter size")
         }
-      }))
+      }))*/
 
     case r@shine.GAP8.primitives.functional.Run(cores) => {
       ???
