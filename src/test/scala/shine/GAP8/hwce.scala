@@ -7,6 +7,7 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.elevate.Rise
 
 class hwce extends test_util.Tests {
@@ -48,8 +49,6 @@ class hwce extends test_util.Tests {
     val w: Nat = 6
     val h: Nat = 6
 
-    val fW: Nat = 3
-    val fH: Nat = 3
     /**
       * HWCE performs 2D convolution, Input and filter being represented with 1D
       * array though
@@ -57,7 +56,7 @@ class hwce extends test_util.Tests {
       * */
     //TODO: Pad filter with one 0 or do that in data prep step on backend (codegen)
     val expr: ToBeTyped[Rise] = {
-      fun((w`.`h`.`i16) ->: (fW`.`fH`.`i16) ->: ((w - 2)`.`(h - 2)`.`i16))((in, filter) =>
+      fun((w`.`h`.`i16) ->: (3`.`3`.`i16) ->: ((w - 2)`.`(h - 2)`.`i16))((in, filter) =>
           gap8hwConv3x3(0)(in)(filter)
       )
     }
