@@ -18,7 +18,7 @@ class hwce extends test_util.Tests {
 
 
 
-  test("Minimal example") {
+  ignore("Minimal example") {
     val w: Nat = 6
     val h: Nat = 6
 
@@ -45,7 +45,7 @@ class hwce extends test_util.Tests {
     println(util.gen.gap8.function("cluster_core_task").asStringFromExpr(expr))
   }
 
-  test("Minimal example 2") {
+  ignore("Minimal example 2") {
     val w: Nat = 6
     val h: Nat = 6
 
@@ -67,7 +67,7 @@ class hwce extends test_util.Tests {
     println(util.gen.gap8.function("cluster_core_task").asStringFromExpr(expr))
   }
 
-  test("Hwce RISE primitive") {
+  ignore("Hwce RISE primitive") {
     val n: Nat = 6
     val m: Nat = 6
     val fW: Nat = 3
