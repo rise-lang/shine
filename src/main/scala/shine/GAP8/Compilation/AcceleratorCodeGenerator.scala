@@ -2,10 +2,11 @@ package shine.GAP8.Compilation
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic.ArithExpr
-import shine.DPIA.Compilation.TranslationContext
+import rise.core.types.DataType.ArrayType
+import shine.DPIA.Compilation.{CodeGenerator, TranslationContext}
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.CommType
+import shine.DPIA.Types.{CommType, ExpType}
 import shine.DPIA.primitives.functional.{Join, PadClamp}
 import shine.GAP8.ConvolutionFilterSize
 import shine.GAP8.primitives.imperative.{Conv3x3, Conv5x5, Conv7x4, Conv7x7}
@@ -25,10 +26,16 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     //case Conv3x3(w, h, bias, dt, in, PadClamp(n, l, r, _, Join(_, _, _, _, filter)), out) =>
     //  ???
     //TODO: Supoort multicycle output for 3x3
-    case Conv3x3(w, h, bias, dt, in, filter, out) =>
+    case Conv3x3(w, h, bias, dt, in, filter: shine.DPIA.Phrases.Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
+          val oldFilterId = shine.DPIA.Phrases.Identifier(filter.name,
+            ExpType(ArrayType(3, ArrayType(3, dt)), rise.core.types.read))
+          val ref = env.identEnv(oldFilterId)
+          val identEnv = env.identEnv - oldFilterId
+          val env2 = CodeGenerator.Environment(identEnv + ((filter, ref)),
+                                               env.commEnv, env.contEnv, env.letNatEnv)
+          filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._3x3, w, h, bias, inC, filterC, outputC)
           })
         })
