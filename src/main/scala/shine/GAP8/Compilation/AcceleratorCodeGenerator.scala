@@ -6,6 +6,7 @@ import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.CommType
+import shine.DPIA.primitives.functional.{Join, PadClamp}
 import shine.GAP8.ConvolutionFilterSize
 import shine.GAP8.primitives.imperative.{Conv3x3, Conv5x5, Conv7x4, Conv7x7}
 import shine.{C, OpenMP}
@@ -21,6 +22,8 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
   override def translationContext: TranslationContext = super.translationContext
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
+    //case Conv3x3(w, h, bias, dt, in, PadClamp(n, l, r, _, Join(_, _, _, _, filter)), out) =>
+    //  ???
     //TODO: Supoort multicycle output for 3x3
     case Conv3x3(w, h, bias, dt, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {

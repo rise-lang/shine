@@ -3,6 +3,7 @@ package util
 import rise.elevate.rules.traversal.default
 import shine.C.Compilation.{CodeGenerator => CCodeGenerator, ModuleGenerator => CModuleGenerator}
 import shine.DPIA.Compilation.FunDef
+import shine.GAP8.Compilation.AcceleratorCodeGenerator
 import shine.OpenCL.Compilation._
 import shine.OpenCL._
 import shine.{C, DPIA, Pipe}
@@ -105,11 +106,11 @@ object gen {
 
     case class function(name: String = "foo") {
       def fromExpr: Expr => GAP8.Module =
-        functionFromExpr(name, OpenMP.CodeGenerator()) andThen
+        functionFromExpr(name, AcceleratorCodeGenerator()) andThen
           GAP8.Module.fromCModule
 
       def asStringFromExpr: Expr => String =
-        functionAsStringFromExpr(name, OpenMP.CodeGenerator())
+        functionAsStringFromExpr(name, AcceleratorCodeGenerator())
 
       /**
         * Accelerator function only - Injects unpacking code
