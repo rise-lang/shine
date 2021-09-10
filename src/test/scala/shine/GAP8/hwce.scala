@@ -45,7 +45,7 @@ class hwce extends test_util.Tests {
     println(util.gen.gap8.function("cluster_core_task").asStringFromExpr(expr))
   }
 
-  ignore("Minimal example 2") {
+  test("Minimal example 2") {
     val w: Nat = 6
     val h: Nat = 6
 

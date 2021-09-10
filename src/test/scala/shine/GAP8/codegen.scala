@@ -96,8 +96,7 @@ class codegen extends test_util.Tests {
     checkCoreNumber(8, code)
     findParamsStruct("float*", 3, code)
     findParamsStruct("int", 3, code)
-
-    //println(code)
+    println(code)
   }
 
   test("Sobel filter on GAP8") {
