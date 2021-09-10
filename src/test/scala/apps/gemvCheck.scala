@@ -58,11 +58,11 @@ class gemvCheck extends test_util.Tests {
     val beta = rand.nextFloat() * 5
 
     val kernelN = gen.opencl.kernel(
-      Some(cgo17_phraseDepLocalAndGlobalSize),
+      Some(gemvBlastKnowSizes),
       "KERNEL"
     ).fromExpr(ocl.gemvBlastN)
     val kernelT = gen.opencl.kernel(
-      Some(cgo17_phraseDepLocalAndGlobalSize),
+      Some(gemvBlastKnowSizes),
       "KERNEL"
     ).fromExpr(ocl.gemvBlastT)
 

@@ -99,6 +99,15 @@ object nbody {
     )) $ zip(zip(x)(zip(y)(z)))(zip(velX)(zip(velY)(velZ)))
   ))
 
+  val nbodyAMDKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val n = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(128), GlobalSize(n))
+  })
+
   val nbodyAMD: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
@@ -113,6 +122,15 @@ object nbody {
   val tileX = 256
   val tileY = 1
 
+  val nbodyNVIDIAKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val n = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize((tileX, tileY)), GlobalSize((n, tileY)))
+  })
+
   // TODO: compare generated code to original
   val nbodyNVIDIA: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
@@ -124,8 +142,8 @@ object nbody {
             mapLocal(0)(fun((vec(4, f32) x vec(4, f32)) x vec(4, f32))(p1 =>
               update(p1._1._1)(p1._1._2)(deltaT)(p1._2)
             ))(zip(newP1Chunk)(bla)))) o
-            // TODO: is this the correct address space?
-            oclReduceSeq(AddressSpace.Local)(
+            // FIXME: there seems to be a bug in AdjustArraySizesForAllocations
+            oclReduceSeq(AddressSpace.Private)(
               fun(tileY`.`tileX`.`vec(4, f32))(acc => fun(tileY`.`tileX`.`vec(4, f32))(p2 =>
                 let (toLocal(mapLocal(1)(mapLocal(0)(id))(p2)))
                 be (p2Local =>
@@ -139,8 +157,7 @@ object nbody {
                 )
               )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(lf32(0.0f))))))))
             o split(tileY) o split(tileX) $ pos
-          // TODO: toPrivate when it works..
-        ) $ zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
+        ) $ zip(toPrivate(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
       )) o split(tileX)
     ) o split(n) $ zip(pos)(vel)
   ))

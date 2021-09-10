@@ -49,6 +49,15 @@ object molecularDynamics {
       })
   ))
 
+  val shocOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val n = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(128), GlobalSize(n))
+  })
+
   val shocOcl: Expr = depFun((n: Nat, m: Nat) => fun(
     (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
       f32 ->: f32 ->: f32 ->:
@@ -76,7 +85,7 @@ object molecularDynamics {
     val neighbourList = Array.ofDim[Int](position.length, maxNeighbours)
 
     for (i <- position.indices) {
-      var currDist = List[(Int, Float)]()
+      var currDist = scala.collection.mutable.ArrayBuffer[(Int, Float)]()
 
       for (j <- position.indices) {
         if (i != j) {
@@ -88,7 +97,7 @@ object molecularDynamics {
           val delz = ipos._3 - jpos._3
 
           val distIJ = delx * delx + dely * dely + delz * delz
-          currDist = (j, distIJ) :: currDist
+          currDist += ((j, distIJ))
         }
       }
 
