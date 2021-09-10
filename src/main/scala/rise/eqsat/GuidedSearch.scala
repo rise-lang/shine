@@ -41,25 +41,31 @@ class GuidedSearch(
     println(s"normalized start: ${Expr.toNamed(normStart)}")
     println(s"normalized goal: ${Expr.toNamed(normGoal)}")
 
+    val goalSize = {
+      val g = EGraph.emptyWithAnalysis(NoAnalysis)
+      val id = g.addExpr(normGoal)
+      val s = Analyser.init(g, AstSize)
+      s.analysisOf(id)
+    }
+    println(s"goal size: ${goalSize}")
+
     @tailrec
     def rec(s: Int, egraph: DefaultAnalysis.EGraph, rootId: EClassId): Unit = {
-      egraph.rebuild(Seq(rootId))
       println("----")
-      val pcount = Analyser.init(egraph, CountProgramsUpToSize(120))
+      val pcount = Analyser.init(egraph, CountProgramsUpToSize(goalSize + 10))
       pcount.analysisOf(rootId).foreach { case (size, count) =>
         println(s"programs of size ${size}: ${count}")
       }
+      BeamExtract.print(6, AstSize, egraph, rootId)
       println("----")
-      // egraph.dot().toSVG(s"/tmp/e-graph-$s.svg")
 
       if (s < snapshots.length) {
         val snapshot = snapshots(s)
-        var matches = Vec.empty[ExtendedPatternMatch]
+        var matches = Seq[(Int, ExprWithHashCons)]()
+        // TODO: add beam analysis to e-graph for incremental update
         val runner = transformRunner(Runner.init()).doneWhen { r =>
           util.printTime("goal check", {
-            // if (r.iterationCount() % 3 == 0) {
-            matches = snapshot.searchEClass(egraph, rootId)
-            // }
+            matches = ExtendedPattern.beamSearch(snapshot, 6, AstSize, egraph, rootId)
             matches.nonEmpty
           })
         }.run(egraph, filter, rules, Seq(rootId))
@@ -68,12 +74,15 @@ class GuidedSearch(
           throw CouldNotReachSnapshot(s, snapshot)
         }
 
-        val (g, r) = util.printTime("matches to graph",
-          ExtendedPattern.matchesToGraph(matches, egraph, analysis))
+        val g = EGraph.emptyWithAnalysis(analysis)
+        g.hashConses = egraph.hashConses
+        // TODO: should other known unions be restored?
+        val r = matches.map { case (_, e) =>
+          g.addExpr(e)
+        }.reduce[EClassId] { case (a, b) => g.union(a, b)._1 }
+        g.rebuild(Seq(rootId))
         rec(s + 1, g, r)
       } else {
-        println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
-        egraph.rebuild(Seq(rootId))
         println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
       }
     }

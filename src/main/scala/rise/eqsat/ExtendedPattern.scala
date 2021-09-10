@@ -23,7 +23,11 @@ object ExtendedPattern {
     val newEGraph = EGraph.emptyWithAnalysis(analysis)
     newEGraph.hashConses = egraph.hashConses
 
-    val oldToNew = HashMap.empty[EClassId, EClassId]
+    sealed trait EClassStatus
+    case object PartialEClass extends EClassStatus
+    case object CompleteEClass extends EClassStatus
+
+    val oldToNew = HashMap.empty[EClassId, (EClassId, EClassStatus)]
     // we rely on the fact that matches have been memoized during construction,
     // meaning that redundant matches are reference-equal
     val memo = new java.util.IdentityHashMap[ExtendedPatternMatch, EClassId]()
@@ -33,27 +37,37 @@ object ExtendedPattern {
     }
 
     def addEClass(oldId: EClassId): EClassId = {
-      oldToNew.get(oldId) match {
-        case Some(nid) => nid
-        case None =>
+      val status = oldToNew.get(oldId)
+      status match {
+        case Some((nid, CompleteEClass)) => nid
+        case _ =>
           val eclass = egraph.get(oldId)
-          val newId = newEGraph.makeEmptyEClass(eclass.t)
-          oldToNew(oldId) = newId
+          val newId = status match {
+            case Some((_, CompleteEClass)) => throw new Exception("unreachable")
+            case Some((nid, PartialEClass)) =>
+              nid
+            case None =>
+              newEGraph.makeEmptyEClass(eclass.t)
+          }
+          oldToNew(oldId) = (newId, CompleteEClass)
           eclass.nodes.map { n =>
             newEGraph.add(n.mapChildren(addEClass), eclass.t)
           }.foldLeft(newId)(newUnion)
       }
     }
 
+    // NOTE: this restores previously known equalities,
+    // why is that a good idea?
     def addNode(n: ENode, oldId: EClassId): EClassId = {
-      val id = newEGraph.add(n, egraph.get(oldId).t)
-      id /* TODO: what if addEClass is required after?
       oldToNew.get(oldId) match {
-        case Some(existingId) => newUnion(id, existingId)
+        case Some((nid, CompleteEClass)) => nid // nothing to do
+        case Some((nid, PartialEClass)) =>
+          newUnion(newEGraph.add(n, egraph.get(oldId).t), nid)
         case None =>
-          oldToNew(oldId) = id
+          val id = newEGraph.add(n, egraph.get(oldId).t)
+          oldToNew(oldId) = (id, PartialEClass)
           id
-      } */
+      }
     }
 
     def addMatch(m: ExtendedPatternMatch): EClassId = {
@@ -102,6 +116,237 @@ object ExtendedPattern {
 
     (newEGraph, matches.map(addMatch).reduce(newUnion))
   }
+
+  def beamSearch[Cost](pattern: ExtendedPattern,
+                       beamSize: Int,
+                       costFunction: CostFunction[Cost],
+                       egraph: EGraph[_, _, _],
+                       id: EClassId)
+                      (implicit costCmp: math.Ordering[Cost]): Seq[(Cost, ExprWithHashCons)] = {
+    beamSearch(pattern, beamSize, costFunction, egraph).getOrElse(id, Seq())
+  }
+
+  def beamSearch[Cost](pattern: ExtendedPattern,
+                       beamSize: Int,
+                       costFunction: CostFunction[Cost],
+                       egraph: EGraph[_, _, _])
+                      (implicit costCmp: math.Ordering[Cost])
+  : Map[EClassId, Seq[(Cost, ExprWithHashCons)]] =
+  {
+    val beamAnalyser = util.printTime("beam extract",
+      Analyser.init(egraph, BeamExtract(beamSize, costFunction)))
+    val memo = HashMap.empty[ExtendedPattern, Map[EClassId, Seq[(Cost, ExprWithHashCons)]]]
+
+    def searchRec(p: ExtendedPattern): Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = {
+      memo.get(p) match {
+        case Some(value) => return value
+        case None =>
+      }
+
+      val res: Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = p match {
+        case ExtendedPatternAny(t) =>
+          beamAnalyser.data.iterator.filter { case (id, beam) =>
+            beam.nonEmpty && typeIsMatch(egraph, t, egraph.get(id).t)
+          }.toMap
+        case ExtendedPatternVar(index, t) => ???
+        case ExtendedPatternNode(node, t) =>
+          val childrenMatches = node.children().map(searchRec).toSeq
+          val resBeams = HashMap.empty[EClassId, Vec[(Cost, ExprWithHashCons)]]
+
+          egraph.classesByMatch(node.matchHash()).foreach { id =>
+            val eclass = egraph.get(id)
+
+            if (typeIsMatch(egraph, t, eclass.t)) {
+              ematching.forEachMatchingNode(eclass, node.map(_ => (), _ => (), _ => ()), { matched =>
+                val typesMatch =
+                  node.nats().zip(matched.nats()).forall { case (p, n) => natIsMatch(egraph, p, n) } &&
+                  node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) }
+                if (typesMatch) {
+                  traverse(
+                    childrenMatches.iterator.zip(matched.children())
+                  ) { case (matches, id) =>
+                    matches.get(id)
+                  } match {
+                    case None => ()
+                    case Some(childrenBeams) =>
+                      val children = matched.children().toSeq
+
+                      def productRec(i: Int,
+                                     selected: Map[EClassId, (Cost, ExprWithHashCons)]): Unit = {
+                        if (i < childrenBeams.size) {
+                          childrenBeams(i).foreach { x =>
+                            productRec(i + 1, selected + (children(i) -> x))
+                          }
+                        } else {
+                          val beam = resBeams.getOrElseUpdate(id, Vec.empty)
+                          beam += ((
+                            costFunction.cost(matched, c => selected(c)._1),
+                            ExprWithHashCons(matched.mapChildren(c => selected(c)._2), eclass.t)))
+                        }
+                      }
+
+                      productRec(0, Map.empty)
+                  }
+                }
+              })
+            }
+
+            resBeams.get(id).foreach { beam =>
+              assert(beam.nonEmpty)
+              beam.sortInPlaceBy(_._1).take(beamSize)
+            }
+          }
+
+          resBeams.iterator.map { case (k, v) => k -> v.toSeq }.toMap
+        case ExtendedPatternContains(contained) =>
+          val containedMatches = searchRec(contained)
+          // TODO: skip if empty contained?
+
+          val initialData = egraph.classes.values.map { eclass =>
+            eclass.id -> (containedMatches.get(eclass.id) match {
+              case None => Nil
+              case Some(beam) => beam
+            })
+          }.to(HashMap)
+
+          val analyser = Analyser.init(egraph, new Analyser.Analysis[Seq[(Cost, ExprWithHashCons)]] {
+            override def make(enode: ENode, t: TypeId,
+                              analysisOf: EClassId => Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
+              val childrenMatchingBeams = enode.children().map(c => (c, analysisOf(c))).toSeq
+              // TODO: skip if empty matches
+              val childrenAnyBeams = enode.children().map(c => (c, beamAnalyser.analysisOf(c))).toSeq
+
+              val tmp = childrenMatchingBeams.flatMap { case (matchingChild, matchingBeam) =>
+                def productRec(remaining: Seq[(EClassId, Seq[(Cost, ExprWithHashCons)])],
+                               selected: Map[EClassId, (Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
+                  remaining match {
+                    case Nil =>
+                      Seq((
+                        costFunction.cost(enode, c => selected(c)._1),
+                        ExprWithHashCons(enode.mapChildren(c => selected(c)._2), t)))
+                    case (child, childBeam) +: rest =>
+                      childBeam.flatMap { x =>
+                        productRec(rest, selected + (child -> x))
+                      }
+                  }
+                }
+
+                val productTodo = childrenAnyBeams.map { case (child, beam) =>
+                  (child, if (child == matchingChild) {
+                    matchingBeam
+                  } else {
+                    beam
+                  })
+                }
+                productRec(productTodo, Map.empty)
+              }.sortBy(_._1).take(beamSize)
+
+              tmp.distinct // FIXME: why is .distinct necessary here?
+            }
+
+            override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
+              val sorted = (a ++ b).sortBy(_._1)
+              val dedup = sorted.distinct // FIXME: why is .distinct necessary here?
+              dedup.take(beamSize)
+            }
+
+            override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
+              val sorted = (existing ++ computed).sortBy(_._1)
+              // TODO: hash-cons the exprs for faster .distinct?
+              val dedup = sorted.distinct
+                // sorted.headOption ++ sorted.iterator.sliding(2, 1).withPartial(false)
+                // .flatMap { nbh => if (nbh(0) == nbh(1)) { None } else { Some(nbh(1)) } }
+              dedup.take(beamSize)
+            }
+          }, initialData)
+
+          analyser.data.iterator.filter { case (_, beam) => beam.nonEmpty }.toMap
+      }
+
+      assert(res.values.forall(beam => beam == beam.sortBy(_._1).distinct))
+      memo(p) = res
+      res
+    }
+
+    searchRec(pattern)
+  }
+
+  private def typeIsMatch(egraph: EGraph[_, _, _], p: TypePattern, t: TypeId): Boolean = {
+    p match {
+      case TypePatternNode(pn) => typeNodeIsMatch(egraph, pn, t)
+      case TypePatternVar(index) => ??? // TODO
+      case TypePatternAny => true
+      case dtp: DataTypePattern =>
+        t match {
+          case dt: DataTypeId => dataTypeIsMatch(egraph, dtp, dt)
+          case _: NotDataTypeId => false
+        }
+    }
+  }
+  private def dataTypeIsMatch(egraph: EGraph[_, _, _], p: DataTypePattern, t: DataTypeId): Boolean = {
+    p match {
+      case DataTypePatternNode(pn) => typeNodeIsMatch(egraph, pn, t)
+      case DataTypePatternVar(index) => ??? // TODO
+      case DataTypePatternAny => true
+    }
+  }
+  private def typeNodeIsMatch(egraph: EGraph[_, _, _],
+                              pn: TypeNode[TypePattern, NatPattern, DataTypePattern],
+                              t: TypeId): Boolean = {
+    val n = egraph(t)._1
+    (pn.map(_ => (), _ => (), _ => ()) == n.map(_ => (), _ => (), _ => ())) && {
+      val ns = Vec.empty[NatId]
+      val dts = Vec.empty[DataTypeId]
+      val ts = Vec.empty[TypeId]
+      n.map(
+        t => ts += t,
+        n => ns += n,
+        dt => dts += dt,
+      )
+      val pns = Vec.empty[NatPattern]
+      val pdts = Vec.empty[DataTypePattern]
+      val pts = Vec.empty[TypePattern]
+      pn.map(
+        pt => pts += pt,
+        pn => pns += pn,
+        pdt => pdts += pdt,
+      )
+      ns.zip(pns).forall { case (n, pn) => natIsMatch(egraph, pn, n) } &&
+        dts.zip(pdts).forall { case (dt, pdt) => dataTypeIsMatch(egraph, pdt, dt) } &&
+        ts.zip(pts).forall { case (t, pt) => typeIsMatch(egraph, pt, t) }
+    }
+  }
+  private def natIsMatch(egraph: EGraph[_, _, _], p: NatPattern, t: NatId): Boolean = {
+    p match {
+      case NatPatternNode(pn) =>
+        val n = egraph(t)._1
+        (pn.map(_ => ()) == n.map(_ => ())) && {
+          val ns = Vec.empty[NatId]
+          n.map(n => ns += n)
+          val pns = Vec.empty[NatPattern]
+          pn.map(pn => pns += pn)
+          ns.zip(pns).forall { case (n, pn) => natIsMatch(egraph, pn, n) }
+        }
+      case NatPatternVar(index) => ??? // TODO
+      case NatPatternAny => true
+    }
+  }
+
+  def traverse[A, B](iterator: Iterator[A])(f: A => Option[B]): Option[Vec[B]] = {
+    val acc = Vec.empty[B]
+    while (true) {
+      iterator.nextOption() match {
+        case Some(a) => f(a) match {
+          case Some(b) => acc += b
+          case None => return None
+        }
+
+        case None => return Some(acc)
+      }
+    }
+
+    throw new Exception("unreachable")
+  }
 }
 
 sealed trait ExtendedPatternMatch
@@ -128,6 +373,8 @@ object ExtendedPatternMatch {
 
 /** An extended pattern */
 sealed trait ExtendedPattern {
+  import ExtendedPattern.{typeIsMatch, dataTypeIsMatch, natIsMatch, traverse}
+
   def searchEClass(egraph: EGraph[_, _, _], id: EClassId): Vec[ExtendedPatternMatch] = {
     searchEClass(egraph, egraph.get(id), Set(), HashMap.empty/*, None*/)
   }
@@ -149,22 +396,6 @@ sealed trait ExtendedPattern {
     /* val isFunctionOfApp: Boolean = parent.contains { p: ENode =>
       p.matches(App((), ())) && (p.children().next() == eclass.id)
     } */
-
-    def traverse[A, B](iterator: Iterator[A])(f: A => Option[B]): Option[Vec[B]] = {
-      val acc = Vec.empty[B]
-      while (true) {
-        iterator.nextOption() match {
-          case Some(a) => f(a) match {
-            case Some(b) => acc += b
-            case None => return None
-          }
-
-          case None => return Some(acc)
-        }
-      }
-
-      throw new Exception("unreachable")
-    }
 
     val res: Vec[ExtendedPatternMatch] = this match {
       case ExtendedPatternAny(t) =>
@@ -217,67 +448,6 @@ sealed trait ExtendedPattern {
     memo((eclass.id, this)) = res
 
     res
-  }
-
-  private def typeIsMatch(egraph: EGraph[_, _, _], p: TypePattern, t: TypeId): Boolean = {
-    p match {
-      case TypePatternNode(pn) => typeNodeIsMatch(egraph, pn, t)
-      case TypePatternVar(index) => ??? // TODO
-      case TypePatternAny => true
-      case dtp: DataTypePattern =>
-        t match {
-          case dt: DataTypeId => dataTypeIsMatch(egraph, dtp, dt)
-          case _: NotDataTypeId => false
-        }
-    }
-  }
-  private def dataTypeIsMatch(egraph: EGraph[_, _, _], p: DataTypePattern, t: DataTypeId): Boolean = {
-    p match {
-      case DataTypePatternNode(pn) => typeNodeIsMatch(egraph, pn, t)
-      case DataTypePatternVar(index) => ??? // TODO
-      case DataTypePatternAny => true
-    }
-  }
-  private def typeNodeIsMatch(egraph: EGraph[_, _, _],
-                              pn: TypeNode[TypePattern, NatPattern, DataTypePattern],
-                              t: TypeId): Boolean = {
-    val n = egraph(t)._1
-    (pn.map(_ => (), _ => (), _ => ()) == n.map(_ => (), _ => (), _ => ())) && {
-      val ns = Vec.empty[NatId]
-      val dts = Vec.empty[DataTypeId]
-      val ts = Vec.empty[TypeId]
-      n.map(
-        t => ts += t,
-        n => ns += n,
-        dt => dts += dt,
-      )
-      val pns = Vec.empty[NatPattern]
-      val pdts = Vec.empty[DataTypePattern]
-      val pts = Vec.empty[TypePattern]
-      pn.map(
-        pt => pts += pt,
-        pn => pns += pn,
-        pdt => pdts += pdt,
-      )
-      ns.zip(pns).forall { case (n, pn) => natIsMatch(egraph, pn, n) } &&
-      dts.zip(pdts).forall { case (dt, pdt) => dataTypeIsMatch(egraph, pdt, dt) } &&
-      ts.zip(pts).forall { case (t, pt) => typeIsMatch(egraph, pt, t) }
-    }
-  }
-  private def natIsMatch(egraph: EGraph[_, _, _], p: NatPattern, t: NatId): Boolean = {
-    p match {
-      case NatPatternNode(pn) =>
-        val n = egraph(t)._1
-        (pn.map(_ => ()) == n.map(_ => ())) && {
-          val ns = Vec.empty[NatId]
-          n.map(n => ns += n)
-          val pns = Vec.empty[NatPattern]
-          pn.map(pn => pns += pn)
-          ns.zip(pns).forall { case (n, pn) => natIsMatch(egraph, pn, n) }
-        }
-      case NatPatternVar(index) => ??? // TODO
-      case NatPatternAny => true
-    }
   }
 }
 case class ExtendedPatternAny(t: TypePattern) extends ExtendedPattern {
