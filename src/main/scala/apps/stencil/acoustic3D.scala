@@ -1,12 +1,12 @@
-package apps
+package apps.stencil
 
 import rise.core._
 import rise.core.DSL._
-import rise.core.primitives._
 import rise.core.DSL.Type._
+import rise.core.primitives._
 import rise.core.types._
 import rise.core.types.DataType._
-import HighLevelConstructs._
+import rise.core.DSL.HighLevelConstructs.{slide2D, slide3D, zipND}
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclRotateValues
 
