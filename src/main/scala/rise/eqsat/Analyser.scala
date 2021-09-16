@@ -13,7 +13,7 @@ object Analyser {
     def update(existing: Data, computed: Data): Data
   }
 
-  def init[D](egraph: EGraph[_, _, _], costFunction: CostFunction[D])
+  def init[D](egraph: EGraph, costFunction: CostFunction[D])
   (implicit costCmp: math.Ordering[D]): Analyser[D] = {
     init(egraph, new Analysis[D] {
       override def make(enode: ENode, t: TypeId, analysisOf: EClassId => D): D =
@@ -29,7 +29,7 @@ object Analyser {
     })
   }
 
-  def init[D](egraph: EGraph[_, _, _], analysis: Analysis[D],
+  def init[D](egraph: EGraph, analysis: Analysis[D],
               data: HashMap[EClassId, D] = HashMap.empty[EClassId, D]): Analyser[D] = {
     val e = new Analyser(analysis, data, egraph)
     e.run()
@@ -39,7 +39,7 @@ object Analyser {
 
 class Analyser[Data](val analysis: Analyser.Analysis[Data],
                      val data: HashMap[EClassId, Data],
-                     val egraph: EGraph[_, _, _]) {
+                     val egraph: EGraph) {
   def analysisOf(eclass: EClassId): Data =
     data(egraph.find(eclass))
 
@@ -60,7 +60,7 @@ class Analyser[Data](val analysis: Analyser.Analysis[Data],
     }
   }
 
-  private def makePass(eclass: EClass[_]): Boolean = {
+  private def makePass(eclass: EClass): Boolean = {
     val existingData = data.get(eclass.id)
     val computedData = eclass.nodes.flatMap(n => analyseNode(n, eclass.t))
       .reduceOption(analysis.merge)
@@ -172,7 +172,7 @@ case class BeamExtract[Cost](beamSize: Int, cf: CostFunction[Cost])
 }
 
 object BeamExtract {
-  def print[Cost](beamSize: Int, cf: CostFunction[Cost], egraph: EGraph[_, _, _], id: EClassId)
+  def print[Cost](beamSize: Int, cf: CostFunction[Cost], egraph: EGraph, id: EClassId)
                  (implicit costCmp: math.Ordering[Cost]): Unit = {
     val analyser = Analyser.init(egraph, BeamExtract(beamSize, cf))
     analyser.analysisOf(id).foreach { case (cost, expr) =>

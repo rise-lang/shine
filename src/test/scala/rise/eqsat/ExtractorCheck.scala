@@ -4,7 +4,7 @@ import ExprDSL._
 
 class ExtractorCheck extends test_util.Tests {
   test("simple extraction") {
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val egraph = EGraph.empty()
     val expr = egraph.addExpr({
       import rise.core.DSL._
       Expr.fromNamed(fun(x => (x * l(2)) / l(2)))

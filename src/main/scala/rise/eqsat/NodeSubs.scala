@@ -4,8 +4,8 @@ object NodeSubs {
   /** Shifts De-Bruijn indices up or down if they are >= cutoff
     *
     * @todo some traversals could be avoided for 0-shifts? */
-  def shifted[E, ED, ND, DT]
-  (egraph: EGraph[ED, ND, DT], n: Node[E, NatId, DataTypeId],
+  def shifted[E]
+  (egraph: EGraph, n: Node[E, NatId, DataTypeId],
    shift: Expr.Shift, cutoff: Expr.Shift)
   (shiftedE: (E, Expr.Shift, Expr.Shift) => E): Node[E, NatId, DataTypeId] =
     n match {
@@ -64,7 +64,7 @@ object NodeSubs {
         makeE(Composition(replaceE(f, index, subs), replaceE(g, index, subs)))
     }
 
-  def replace[E, ED, ND, TD](egraph: EGraph[ED, ND, TD], n: Node[E, NatId, DataTypeId],
+  def replace[E, ED, ND, TD](egraph: EGraph, n: Node[E, NatId, DataTypeId],
                              index: Int, subs: NatId)
                             (replaceE: (E, Int, NatId) => E): Node[E, NatId, DataTypeId] =
     n match {
@@ -94,9 +94,9 @@ object NodeSubs {
     type Shift = rise.eqsat.Nat.Shift
 
     /** Shifts DeBruijn indices up or down if they are >= cutoff */
-    def shifted[ED, ND, TD](egraph: EGraph[ED, ND, TD],
-                            id: NatId, shift: Shift, cutoff: Shift): NatId = {
-      egraph.add(egraph(id)._1 match {
+    def shifted(egraph: EGraph,
+                id: NatId, shift: Shift, cutoff: Shift): NatId = {
+      egraph.add(egraph(id) match {
         case NatVar(index) =>
           val delta = if (index >= cutoff) shift else 0
           NatVar(index + delta)
@@ -117,9 +117,9 @@ object NodeSubs {
       })
     }
 
-    def replace[ED, ND, TD](egraph: EGraph[ED, ND, TD], id: NatId,
-                            index: Int, subs: NatId): NatId = {
-      egraph(id)._1 match {
+    def replace(egraph: EGraph, id: NatId,
+                index: Int, subs: NatId): NatId = {
+      egraph(id) match {
         case NatVar(i) if index == i => subs
         case nv: NatVar => egraph.add(nv)
         case other => egraph.add(other.map(n => replace(egraph, n, index, subs)))
@@ -131,9 +131,9 @@ object NodeSubs {
     type Shift = rise.eqsat.Type.Shift
 
     /** Shifts DeBruijn indices up or down if they are >= cutoff */
-    def shifted[ED, ND, TD](egraph: EGraph[ED, ND, TD], id: DataTypeId,
-                            shift: Shift, cutoff: Shift): DataTypeId = {
-      egraph.add(egraph(id)._1 match {
+    def shifted(egraph: EGraph, id: DataTypeId,
+                shift: Shift, cutoff: Shift): DataTypeId = {
+      egraph.add(egraph(id) match {
         case DataTypeVar(index) =>
           val delta = if (index >= cutoff._2) shift._2 else 0
           DataTypeVar(index + delta)
@@ -153,9 +153,9 @@ object NodeSubs {
       })
     }
 
-    def replace[ED, ND, TD](egraph: EGraph[ED, ND, TD], id: DataTypeId,
-                            index: Int, subs: NatId): DataTypeId =
-      egraph.add(egraph(id)._1.map(
+    def replace(egraph: EGraph, id: DataTypeId,
+                index: Int, subs: NatId): DataTypeId =
+      egraph.add(egraph(id).map(
         n => Nat.replace(egraph, n, index, subs),
         dt => replace(egraph, dt, index, subs)
       ))
@@ -169,13 +169,13 @@ object NodeSubs {
     type Shift = rise.eqsat.Type.Shift
 
     /** Shifts DeBruijn indices up or down if they are >= cutoff */
-    def shifted[ED, ND, TD](egraph: EGraph[ED, ND, TD], id: TypeId,
-                            shift: Shift, cutoff: Shift): TypeId = {
+    def shifted(egraph: EGraph, id: TypeId,
+                shift: Shift, cutoff: Shift): TypeId = {
       id match {
         case dt: DataTypeId =>
           DataType.shifted(egraph, dt, shift, cutoff)
         case _: NotDataTypeId =>
-          egraph(id)._1 match {
+          egraph(id) match {
             case FunType(inT, outT) => egraph.add(
               FunType(shifted(egraph, inT, shift, cutoff), shifted(egraph, outT, shift, cutoff)))
             case NatFunType(t) => egraph.add(
@@ -188,9 +188,9 @@ object NodeSubs {
       }
     }
 
-    def replace[ED, ND, TD](egraph: EGraph[ED, ND, TD], id: TypeId,
-                            index: Int, subs: NatId): TypeId =
-      egraph.add(egraph(id)._1 match {
+    def replace(egraph: EGraph, id: TypeId,
+                index: Int, subs: NatId): TypeId =
+      egraph.add(egraph(id) match {
         case NatFunType(t) =>
           // TODO: could shift lazily
           val t2 = replace(egraph, t, index + 1, Nat.shifted(egraph, subs, 1, 0))
@@ -201,22 +201,22 @@ object NodeSubs {
           DataType.replace(egraph, _, index, subs))
       })
 
-    def replace[ED, ND, TD](egraph: EGraph[ED, ND, TD], id: TypeId,
-                            index: Int, subs: DataTypeId): TypeId = {
+    def replace(egraph: EGraph, id: TypeId,
+                index: Int, subs: DataTypeId): TypeId = {
       ???
     }
 
     // substitutes %n0 for arg in this
-    def withNatArgument[ED, ND, TD](egraph: EGraph[ED, ND, TD],
-                                    body: TypeId, arg: NatId): TypeId = {
+    def withNatArgument(egraph: EGraph,
+                        body: TypeId, arg: NatId): TypeId = {
       val argS = Nat.shifted(egraph, arg, 1, 0)
       val bodyR = replace(egraph, body, 0, argS)
       shifted(egraph, bodyR, (-1, 0), (0, 0))
     }
 
     // substitutes %dt0 for arg in this
-    def withDataArgument[ED, ND, TD](egraph: EGraph[ED, ND, TD],
-                                     body: TypeId, arg: DataTypeId): TypeId = {
+    def withDataArgument(egraph: EGraph,
+                         body: TypeId, arg: DataTypeId): TypeId = {
       val argS = DataType.shifted(egraph, arg, (0, 1), (0, 0))
       val bodyR = replace(egraph, body, 0, argS)
       shifted(egraph, bodyR, (0, -1), (0, 0))

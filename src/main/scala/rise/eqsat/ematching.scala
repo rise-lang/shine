@@ -22,7 +22,7 @@ object ematching {
     def nReg(r: NatReg): NatId = nRegs(r.n)
     def tReg(r: TypeReg): TypeId = tRegs(r.n)
 
-    def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+    def run[ED, ND, TD](egraph: EGraph,
                         instructions: Seq[Instruction],
                         yieldFn: Option[ENode] => Unit,
                         rootMatch: Option[ENode]): Unit = {
@@ -56,7 +56,7 @@ object ematching {
               return
             }
           case NatBind(node, i) =>
-            val matched = egraph(nReg(i))._1
+            val matched = egraph(nReg(i))
             if (matched.map(_ => ()) == node) {
               matched.map(n => nRegs += n)
             } else {
@@ -67,7 +67,7 @@ object ematching {
               return
             }
           case TypeBind(node, i) =>
-            val matched = egraph(tReg(i))._1
+            val matched = egraph(tReg(i))
             if (matched.map(_ => (), _ => (), _ => ()) == node) {
               matched.map(
                 t => tRegs += t,
@@ -82,7 +82,7 @@ object ematching {
               return
             }
           case DataTypeCheck(i) =>
-            if (!egraph(tReg(i))._1.isInstanceOf[DataTypeNode[_, _]]) {
+            if (!egraph(tReg(i)).isInstanceOf[DataTypeNode[_, _]]) {
               return
             }
         }
@@ -116,7 +116,7 @@ object ematching {
                 var n2r: HashMap[NatPatternVar, NatReg],
                 var t2r: HashMap[TypePatternVar, TypeReg],
                 var dt2r: HashMap[DataTypePatternVar, TypeReg]) {
-    def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
+    def run[ED, ND, TD](egraph: EGraph,
                         eclass: EClassId,
                         hashcons: SubstHashCons): Vec[(Option[ENode], Subst)] = {
       val machine = AbstractMachine.init(eclass)
@@ -155,7 +155,7 @@ object ematching {
   type MNatNode = NatNode[()]
   type MTypeNode = TypeNode[(), (), ()]
 
-  def forEachMatchingNode[D](eclass: EClass[D], node: MNode, f: ENode => Unit): Unit = {
+  def forEachMatchingNode(eclass: EClass, node: MNode, f: ENode => Unit): Unit = {
     import scala.math.Ordering.Implicits._
     import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering}
 

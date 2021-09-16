@@ -5,7 +5,7 @@ object TypeCheck {
     override def toString: String = s"type error: $msg"
   }
 
-  def apply[ED, ND, TD](egraph: EGraph[ED, ND, TD]) = {
+  def apply(egraph: EGraph) = {
     def assertSameType(t1: TypeId, t2: TypeId): Unit =
       if (t1 != t2) {
         // egraph.dot().toSVG("/tmp/typeErrorEgraph.svg")
@@ -19,17 +19,17 @@ object TypeCheck {
         case i: NotDataTypeId => i
       }
     def unwrapFunType(t: TypeId): (TypeId, TypeId) =
-      egraph(unwrapNotDataTypeId(t))._1 match {
+      egraph(unwrapNotDataTypeId(t)) match {
         case FunType(inT, outT) => (inT, outT)
         case node => throw Error(s"expected function type, found $node")
       }
     def unwrapNatFunType(t: TypeId): TypeId =
-      egraph(unwrapNotDataTypeId(t))._1 match {
+      egraph(unwrapNotDataTypeId(t)) match {
         case NatFunType(t) => t
         case node => throw Error(s"expected nat function type, found $node")
       }
     def unwrapDataFunType(t: TypeId): TypeId =
-      egraph(unwrapNotDataTypeId(t))._1 match {
+      egraph(unwrapNotDataTypeId(t)) match {
         case DataFunType(t) => t
         case node => throw Error(s"expected data function type, found $node")
       }
@@ -40,7 +40,7 @@ object TypeCheck {
         node match {
           case Var(index) =>
             val visited = HashSet[(ENode, EClassId, Int)]()
-            def checkVarTy[D](eclass: EClass[D], index: Int, ty: TypeId): Unit = {
+            def checkVarTy[D](eclass: EClass, index: Int, ty: TypeId): Unit = {
               for ((node, pid) <- eclass.parents) {
                 if (!visited.contains((node, pid, index))) {
                   visited += ((node, pid, index))

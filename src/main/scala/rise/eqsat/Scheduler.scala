@@ -9,16 +9,16 @@ package rise.eqsat
   */
 trait Scheduler {
   def canSaturate(iteration: Int): Boolean
-  def searchRewrite[ED, ND, TD](iteration: Int,
-                                egraph: EGraph[ED, ND, TD],
+  def searchRewrite(iteration: Int,
+                                egraph: EGraph,
                                 shc: SubstHashCons,
-                                rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches]
+                                rewrite: Rewrite): Vec[SearchMatches]
 
   // returns the number of applications
-  def applyRewrite[ED, ND, TD](iteration: Int,
-                               egraph: EGraph[ED, ND, TD],
+  def applyRewrite(iteration: Int,
+                               egraph: EGraph,
                                shc: SubstHashCons,
-                               rewrite: Rewrite[ED, ND, TD],
+                               rewrite: Rewrite,
                                matches: Vec[SearchMatches]): Int =
     rewrite.apply(egraph, shc, matches).size
 }
@@ -26,10 +26,10 @@ trait Scheduler {
 object SimpleScheduler extends Scheduler {
   override def canSaturate(iteration: Int): Boolean = true
 
-  override def searchRewrite[ED, ND, TD](iteration: Int,
-                                         egraph: EGraph[ED, ND, TD],
+  override def searchRewrite(iteration: Int,
+                                         egraph: EGraph,
                                          shc: SubstHashCons,
-                                         rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] =
+                                         rewrite: Rewrite): Vec[SearchMatches] =
     rewrite.search(egraph, shc)
 }
 
@@ -53,12 +53,12 @@ class CuttingScheduler(var notApplied: HashSet[Object],
   override def canSaturate(iteration: Int): Boolean =
     notApplied.isEmpty
 
-  override def searchRewrite[ED, ND, TD](iteration: Int,
-                                         egraph: EGraph[ED, ND, TD],
+  override def searchRewrite(iteration: Int,
+                                         egraph: EGraph,
                                          shc: SubstHashCons,
-                                         rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] = {
+                                         rewrite: Rewrite): Vec[SearchMatches] = {
     if (iteration > currentIteration) {
-      println(s"not applied: ${notApplied.map(_.asInstanceOf[Rewrite[ED, ND, TD]].name).mkString(", ")}")
+      println(s"not applied: ${notApplied.map(_.asInstanceOf[Rewrite].name).mkString(", ")}")
       currentIteration = iteration
     }
 
@@ -145,15 +145,15 @@ class BackoffScheduler(var defaultMatchLimit: Int,
     defaultBanLength = length; this
   }
 
-  def doNotBan[ED, ND, TD](rewrite: Rewrite[ED, ND, TD]): BackoffScheduler = {
+  def doNotBan(rewrite: Rewrite): BackoffScheduler = {
     matchLimit(rewrite, Int.MaxValue)
   }
 
-  def matchLimit[ED, ND, TD](rewrite: Rewrite[ED, ND, TD], limit: Int): BackoffScheduler = {
+  def matchLimit(rewrite: Rewrite, limit: Int): BackoffScheduler = {
     ruleStats(rewrite).matchLimit = limit; this
   }
 
-  def banLength[ED, ND, TD](rewrite: Rewrite[ED, ND, TD], length: Int): BackoffScheduler = {
+  def banLength(rewrite: Rewrite, length: Int): BackoffScheduler = {
     ruleStats(rewrite).banLength = length; this
   }
 
@@ -173,10 +173,10 @@ class BackoffScheduler(var defaultMatchLimit: Int,
     banned.isEmpty
   }
 
-  override def searchRewrite[ED, ND, TD](iteration: Int,
-                                         egraph: EGraph[ED, ND, TD],
+  override def searchRewrite(iteration: Int,
+                                         egraph: EGraph,
                                          shc: SubstHashCons,
-                                         rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] = {
+                                         rewrite: Rewrite): Vec[SearchMatches] = {
     val rs = ruleStats(rewrite)
 
     if (iteration < rs.bannedUntil) {

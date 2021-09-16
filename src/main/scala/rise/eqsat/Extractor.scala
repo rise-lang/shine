@@ -1,7 +1,7 @@
 package rise.eqsat
 
 object Extractor {
-  def init[C](egraph: EGraph[_, _, _], costFunction: CostFunction[C])
+  def init[C](egraph: EGraph, costFunction: CostFunction[C])
              (implicit costCmp: math.Ordering[C]): Extractor[C] = {
     val costs = HashMap.empty[EClassId, (C, ENode)]
     val e = new Extractor(costFunction, costs, egraph)
@@ -9,7 +9,7 @@ object Extractor {
     e
   }
 
-  def randomOf(egraph: EGraph[_, _, _], id: EClassId): ExprWithHashCons = {
+  def randomOf(egraph: EGraph, id: EClassId): ExprWithHashCons = {
     val random = new scala.util.Random
 
     def rec(id: EClassId): ExprWithHashCons = {
@@ -21,7 +21,7 @@ object Extractor {
     rec(id)
   }
 
-  def printRandom(egraph: EGraph[_, _, _], id: EClassId, n: Int): Unit = {
+  def printRandom(egraph: EGraph, id: EClassId, n: Int): Unit = {
     for (_ <- 0 until n) {
       println(Expr.toNamed(ExprWithHashCons.expr(egraph)(randomOf(egraph, id))))
     }
@@ -33,7 +33,7 @@ object Extractor {
   */
 class Extractor[Cost](val costFunction: CostFunction[Cost],
                       val costs: HashMap[EClassId, (Cost, ENode)],
-                      val egraph: EGraph[_, _, _])
+                      val egraph: EGraph)
                      (implicit costCmp: math.Ordering[Cost]) {
   def findBestOf(eclass: EClassId): (Cost, ExprWithHashCons) =
     findBestRec(eclass, HashMap.empty)
@@ -91,7 +91,7 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
     }
   }
 
-  private def makePass(eclass: EClass[_]): Option[(Cost, ENode)] = {
+  private def makePass(eclass: EClass): Option[(Cost, ENode)] = {
     val (cost, node) = eclass.nodes
       .map(n => (nodeTotalCost(n), n))
       .minBy(x => x._1)(MaybeCostOrdering)

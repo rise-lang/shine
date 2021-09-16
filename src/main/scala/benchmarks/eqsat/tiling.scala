@@ -4,17 +4,20 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.Expr
 import rise.core.types._
-import rise.eqsat.{ArrayDimensionPredicate, ASTSizePredicate, ProveEquiv, rules, DefaultAnalysis}
+import rise.eqsat.{ArrayDimensionPredicate, ASTSizePredicate, ProveEquiv, rules, Rewrite, FreeAnalysis}
 import ProveEquiv.syntax._
 import rise.eqsat.PredicateDSL._
 
 object tiling {
   private val tileSize = 4
 
-  private def whenFcontainsF(rw: DefaultAnalysis.Rewrite): DefaultAnalysis.Rewrite =
+  private def whenFcontainsF(rw: Rewrite): Rewrite =
     new rise.eqsat.Rewrite(rw.name, rw.searcher, rise.eqsat.ConditionalApplier(
-      { case (egraph, _, shc, subst) => egraph.getMut(subst(rise.eqsat.PatternVar(0), shc)).data.free.contains(0) },
+      { case (egraph, _, shc, subst) =>
+        val freeOf = egraph.getAnalysis(FreeAnalysis)
+        freeOf(subst(rise.eqsat.PatternVar(0), shc)).free.contains(0) },
       Set("f"),
+      (Set(FreeAnalysis), Set()),
       rw.applier), rw.isDirected)
 
   private val tilingRules = Seq(

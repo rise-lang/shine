@@ -2,7 +2,7 @@ package rise.eqsat
 
 class PatternCheck extends test_util.Tests {
   test("simple match") {
-    val commuteAdd1: DefaultAnalysis.Rewrite = {
+    val commuteAdd1 = {
       import PatternDSL._
       Rewrite.init("commute-add-1",
         app(app(add, ?(0) :: `?dt`(0)), ?(1)).compile()
@@ -12,7 +12,7 @@ class PatternCheck extends test_util.Tests {
           ?(0) :: `?dt`(0)) :: `?dt`(0)))
     }
 
-    val commuteAdd2: DefaultAnalysis.Rewrite = {
+    val commuteAdd2 = {
       import NamedRewriteDSL._
       NamedRewrite.init("commute-add-2",
         app(app(add, "x"), "y")
@@ -21,7 +21,7 @@ class PatternCheck extends test_util.Tests {
     }
 
     for (commuteAdd <- Seq(commuteAdd1, commuteAdd2)) {
-      val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
+      val egraph = EGraph.empty()
 
       val (add1, add2) = {
         import ExprDSL._
@@ -67,7 +67,7 @@ class PatternCheck extends test_util.Tests {
     assert(pattern.prog.v2r == HashMap())
     assert(pattern.prog.n2r == HashMap(x -> NatReg(1)))
 
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val egraph = EGraph.empty()
 
     val roots = {
       import ExprDSL._
@@ -109,7 +109,7 @@ class PatternCheck extends test_util.Tests {
     assert(pattern.prog.n2r == HashMap(`?n`(0) -> NatReg(0)))
     assert(pattern.prog.dt2r == HashMap(`?dt`(0) -> TypeReg(5)))
 
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val egraph = EGraph.empty()
 
     val roots = {
       import ExprDSL._

@@ -7,23 +7,16 @@ case class CouldNotReachSnapshot(i: Int, snapshot: ExtendedPattern) extends Exce
 object GuidedSearch {
   def init(): GuidedSearch = new GuidedSearch(
     filter = NoPredicate(),
-    analysis = DefaultAnalysis,
     transformRunner = r => r,
   )
 }
 
 class GuidedSearch(
-  var filter: DefaultAnalysis.Predicate,
-  var analysis: DefaultAnalysisCustomisable,
+  var filter: Predicate,
   var transformRunner: Runner => Runner
 ) {
-  def withFilter(filter: DefaultAnalysis.Predicate): GuidedSearch = {
+  def withFilter(filter: Predicate): GuidedSearch = {
     this.filter = filter
-    this
-  }
-
-  def withAnalysis(analysis: DefaultAnalysisCustomisable): GuidedSearch = {
-    this.analysis = analysis
     this
   }
 
@@ -34,7 +27,7 @@ class GuidedSearch(
 
   def runBENF(start: rise.core.Expr,
               goal: rise.core.Expr,
-              rules: Seq[DefaultAnalysis.Rewrite],
+              rules: Seq[Rewrite],
               snapshots: Seq[ExtendedPattern]): Unit = {
     val normStart = BENF(Expr.fromNamed(start))
     val normGoal = BENF(Expr.fromNamed(goal))
@@ -42,7 +35,7 @@ class GuidedSearch(
     println(s"normalized goal: ${Expr.toNamed(normGoal)}")
 
     val goalSize = {
-      val g = EGraph.emptyWithAnalysis(NoAnalysis)
+      val g = EGraph.empty()
       val id = g.addExpr(normGoal)
       val s = Analyser.init(g, AstSize)
       s.analysisOf(id)
@@ -50,7 +43,8 @@ class GuidedSearch(
     println(s"goal size: ${goalSize}")
 
     @tailrec
-    def rec(s: Int, egraph: DefaultAnalysis.EGraph, rootId: EClassId): Unit = {
+    def rec(s: Int, egraph: EGraph, rootId: EClassId): Unit = {
+      egraph.rebuild(Seq(rootId))
       println("----")
       val pcount = Analyser.init(egraph, CountProgramsUpToSize(goalSize + 10))
       pcount.analysisOf(rootId).foreach { case (size, count) =>
@@ -74,20 +68,19 @@ class GuidedSearch(
           throw CouldNotReachSnapshot(s, snapshot)
         }
 
-        val g = EGraph.emptyWithAnalysis(analysis)
+        val g = EGraph.empty()
         g.hashConses = egraph.hashConses
         // TODO: should other known unions be restored?
         val r = matches.map { case (_, e) =>
           g.addExpr(e)
         }.reduce[EClassId] { case (a, b) => g.union(a, b)._1 }
-        g.rebuild(Seq(rootId))
         rec(s + 1, g, r)
       } else {
         println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
       }
     }
 
-    val g = EGraph.emptyWithAnalysis(analysis)
+    val g = EGraph.empty()
     rec(0, g, g.addExpr(normStart))
   }
 }

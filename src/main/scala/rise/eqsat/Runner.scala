@@ -80,11 +80,12 @@ class Runner(var iterations: Vec[Iteration],
       s"${ratio(rebuildTime.toDouble, totalTime.toDouble)} rebuild)")
   }
 
-  def run[ED, ND, TD](egraph: EGraph[ED, ND, TD],
-                      filter: Predicate[ED, ND, TD],
-                      rules: Seq[Rewrite[ED, ND, TD]],
+  def run(egraph: EGraph,
+                      filter: Predicate,
+                      rules: Seq[Rewrite],
                       roots: Seq[EClassId]): Runner = {
     egraph.rebuild(roots)
+    rules.foreach(r => egraph.requireAnalyses(r.requiredAnalyses()))
 
     val iteration0 = new Iteration(
       egraphNodes = egraph.nodeCount(),
@@ -129,14 +130,15 @@ class Runner(var iterations: Vec[Iteration],
       }
     }
 
+    rules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
     this
   }
 
   // TODO: could check limits in-between searches and matches like in egg
-  private def runOne[ED, ND, TD](egraph: EGraph[ED, ND, TD],
-                                 roots: Seq[EClassId],
-                                 filter: Predicate[ED, ND, TD],
-                                 rules: Seq[Rewrite[ED, ND, TD]]): Iteration = {
+  private def runOne(egraph: EGraph,
+                     roots: Seq[EClassId],
+                     filter: Predicate,
+                     rules: Seq[Rewrite]): Iteration = {
     val time0 = System.nanoTime()
     val i = iterations.size
     val shc = SubstHashCons.empty

@@ -12,12 +12,15 @@ object Pattern {
     Pattern(PatternNode(pnode), TypePattern.fromType(e.t))
   }
 
-  implicit def patternToApplier[ED, ND, TD](pattern: Pattern): Applier[ED, ND, TD] = new Applier[ED, ND, TD] {
+  implicit def patternToApplier(pattern: Pattern): Applier = new Applier {
     override def toString: String = pattern.toString
 
     override def patternVars(): Set[Any] = pattern.patternVars()
 
-    override def applyOne(egraph: EGraph[ED, ND, TD],
+    override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+      (Set(), Set())
+
+    override def applyOne(egraph: EGraph,
                           eclass: EClassId,
                           shc: SubstHashCons,
                           subst: Subst): Vec[EClassId] = {
@@ -94,13 +97,13 @@ case class CompiledPattern(pat: Pattern, prog: ematching.Program) {
 }
 
 object CompiledPattern {
-  implicit def patternToSearcher[ED, ND, TD](cpat: CompiledPattern)
-  : Searcher[ED, ND, TD] = new Searcher[ED, ND, TD] {
+  implicit def patternToSearcher(cpat: CompiledPattern)
+  : Searcher = new Searcher {
     override def toString: String = cpat.toString
 
     override def patternVars(): Set[Any] = cpat.pat.patternVars()
 
-    override def search(egraph: EGraph[ED, ND, TD],
+    override def search(egraph: EGraph,
                         shc: SubstHashCons,
                        ): Vec[SearchMatches] = {
       cpat.pat.p match {
@@ -115,7 +118,7 @@ object CompiledPattern {
       }
     }
 
-    override def searchEClass(egraph: EGraph[ED, ND, TD],
+    override def searchEClass(egraph: EGraph,
                               shc: SubstHashCons,
                               eclass: EClassId,
                              ): Option[SearchMatches] = {
@@ -124,7 +127,7 @@ object CompiledPattern {
     }
   }
 
-  implicit def patternToApplier[ED, ND, TD](cpat: CompiledPattern): Applier[ED, ND, TD] =
+  implicit def patternToApplier(cpat: CompiledPattern): Applier =
     Pattern.patternToApplier(cpat.pat)
 }
 
@@ -135,10 +138,10 @@ object PatternDSL {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = lhs -> rhs
   }
   implicit final class RewriteArrowCPattern(private val lhs: CompiledPattern) extends AnyVal {
-    @inline def -->[ED, ND, TD](rhs: Pattern): (Searcher[ED, ND, TD], Applier[ED, ND, TD]) =
-      (lhs: Searcher[ED, ND, TD]) -> rhs
-    @inline def -->[ED, ND, TD](rhs: Applier[ED, ND, TD]): (Searcher[ED, ND, TD], Applier[ED, ND, TD]) =
-      (lhs: Searcher[ED, ND, TD]) -> rhs
+    @inline def -->(rhs: Pattern): (Searcher, Applier) =
+      (lhs: Searcher) -> rhs
+    @inline def -->(rhs: Applier): (Searcher, Applier) =
+      (lhs: Searcher) -> rhs
   }
   implicit final class RewriteArrowPNode(private val lhs: PNode) extends AnyVal {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = (lhs: Pattern) -> rhs

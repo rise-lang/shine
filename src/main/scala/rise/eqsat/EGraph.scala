@@ -1,34 +1,109 @@
 package rise.eqsat
 
+import scala.collection.mutable.LinkedHashMap
+
 object EGraph {
-  def emptyWithAnalysis[ED, ND, TD](analysis: Analysis[ED, ND, TD])
-  : EGraph[ED, ND, TD] =
+  def empty(): EGraph =
     new EGraph(
-      analysis = analysis,
+      analyses = LinkedHashMap.empty,
+      typeAnalyses = LinkedHashMap.empty,
       memo = HashMap.empty,
       classes = HashMap.empty,
       unionFind = UnionFind.empty,
       pending = Vec.empty,
-      analysisPending = HashSetQueuePop.empty[(ENode, EClassId)],
+      analysisPending = Vec.empty[PendingAnalysis],
       classesByMatch = HashMap.empty,
-      hashConses = HashConses.emptyWithAnalysis(analysis),
+      hashConses = HashConses.empty(),
     )
 }
+
+sealed trait PendingAnalysis
+case class PendingMakeAnalysis(enode: ENode, id: EClassId, t: TypeId) extends PendingAnalysis
+case class PendingMergeAnalysis(a: EClassId, aParents: Seq[(ENode, EClassId)],
+                                b: EClassId, bParents: Seq[(ENode, EClassId)]) extends PendingAnalysis
+
+class AnalysisData(var refCount: Int, val maps: Any)
 
 /** A data structure to keep track of equalities between expressions.
   * @see [[https://docs.rs/egg/0.6.0/egg/struct.EGraph.html]]
   */
-class EGraph[ED, ND, TD](
-  val analysis: Analysis[ED, ND, TD],
+class EGraph(
+  // LinkedHashMap to maintain topological ordering according to dependencies
+  val analyses: LinkedHashMap[Analysis, AnalysisData],
+  val typeAnalyses: LinkedHashMap[TypeAnalysis, AnalysisData],
+
   var pending: Vec[(ENode, EClassId)],
-  var analysisPending: HashSetQueuePop[(ENode, EClassId)],
+  var analysisPending: Vec[PendingAnalysis],
 
   var memo: HashMap[(ENode, TypeId), EClassId],
   var unionFind: UnionFind,
-  var classes: HashMap[EClassId, EClass[ED]],
+  var classes: HashMap[EClassId, EClass],
   var classesByMatch: HashMap[Int, HashSet[EClassId]],
-  var hashConses: HashConses[ND, TD],
+  var hashConses: HashConses,
 ) {
+  // TODO: check for dependency cycles?
+  def requireAnalyses(x: (Set[Analysis], Set[TypeAnalysis])): Unit = {
+    val (as, tas) = x
+    as.foreach(requireAnalysis)
+    tas.foreach(requireTypeAnalysis)
+  }
+
+  def releaseAnalyses(x: (Set[Analysis], Set[TypeAnalysis])): Unit = {
+    val (as, tas) = x
+    as.foreach(releaseAnalysis)
+    tas.foreach(releaseTypeAnalysis)
+  }
+
+  def requireAnalysis(a: Analysis): Unit = {
+    requireAnalyses(a.requiredAnalyses())
+
+    if (!analyses.contains(a)) {
+      analyses(a) = new AnalysisData(0, HashMap.empty[EClassId, a.Data])
+      Analysis.init(this, a)
+    }
+    analyses(a).refCount += 1
+  }
+
+  def releaseAnalysis(a: Analysis): Unit = {
+    releaseAnalyses(a.requiredAnalyses())
+
+    val data = analyses(a)
+    data.refCount -= 1
+    if (data.refCount <= 0) {
+      analyses.remove(a)
+    }
+  }
+
+  def requireTypeAnalysis(a: TypeAnalysis): Unit = {
+    val depTA = a.requiredTypeAnalyses()
+    depTA.foreach(requireTypeAnalysis)
+
+    if (!typeAnalyses.contains(a)) {
+      val dataOfNat = HashMap.empty[NatId, a.NatData].asInstanceOf[HashMap[NatId, Any]]
+      val dataOfType = HashMap.empty[TypeId, a.TypeData].asInstanceOf[HashMap[TypeId, Any]]
+      typeAnalyses(a) = new AnalysisData(0, (dataOfNat, dataOfType))
+      TypeAnalysis.update(this, a)
+    }
+    typeAnalyses(a).refCount += 1
+  }
+
+  def releaseTypeAnalysis(a: TypeAnalysis): Unit = {
+    val depTA = a.requiredTypeAnalyses()
+    depTA.foreach(releaseTypeAnalysis)
+
+    val data = typeAnalyses(a)
+    data.refCount -= 1
+    if (data.refCount <= 0) {
+      typeAnalyses.remove(a)
+    }
+  }
+
+  def getAnalysis(a: Analysis): HashMap[EClassId, a.Data] =
+    analyses(a).maps.asInstanceOf[HashMap[EClassId, a.Data]]
+
+  def getTypeAnalysis(a: TypeAnalysis): (HashMap[NatId, a.NatData], HashMap[TypeId, a.TypeData]) =
+    typeAnalyses(a).maps.asInstanceOf[(HashMap[NatId, a.NatData], HashMap[TypeId, a.TypeData])]
+
   def nodeCount(): Int =
     classes.map { case (_, c) => c.nodeCount() }.iterator.sum
   def classCount(): Int =
@@ -39,18 +114,18 @@ class EGraph[ED, ND, TD](
   def findMut(id: EClassId): EClassId =
     unionFind.findMut(id)
 
-  def get(id: EClassId): EClass[ED] =
+  def get(id: EClassId): EClass =
     classes(find(id))
-  def getMut(id: EClassId): EClass[ED] =
+  def getMut(id: EClassId): EClass =
     classes(findMut(id))
 
-  def apply(id: NatId): (NatNode[NatId], ND) =
+  def apply(id: NatId): NatNode[NatId] =
     hashConses(id)
-  def apply(id: DataTypeId): (DataTypeNode[NatId, DataTypeId], TD) =
+  def apply(id: DataTypeId): DataTypeNode[NatId, DataTypeId] =
     hashConses(id)
-  def apply(id: NotDataTypeId): (TypeNode[TypeId, NatId, DataTypeId], TD) =
+  def apply(id: NotDataTypeId): TypeNode[TypeId, NatId, DataTypeId] =
     hashConses(id)
-  def apply(id: TypeId): (TypeNode[TypeId, NatId, DataTypeId], TD) =
+  def apply(id: TypeId): TypeNode[TypeId, NatId, DataTypeId] =
     hashConses(id)
 
   // returns the canonicalized enode and its eclass if it has one
@@ -66,7 +141,6 @@ class EGraph[ED, ND, TD](
       id = newId,
       t = t,
       nodes = Vec(),
-      data = analysis.empty(this, t),
       parents = Vec())
     classes += newId -> newEclass
     newId
@@ -80,7 +154,6 @@ class EGraph[ED, ND, TD](
         id = id,
         t = t,
         nodes = Vec(enode),
-        data = analysis.make(this, enode, t),
         parents = Vec())
 
       enode.children().foreach { c =>
@@ -88,11 +161,12 @@ class EGraph[ED, ND, TD](
       }
 
       pending += enode -> id // TODO: is this needed?
+      analysisPending += PendingMakeAnalysis(enode, id, t)
       classes += id -> eclass
       assert(!memo.contains(enode, t))
       memo += (enode, t) -> id
 
-      analysis.modify(this, id)
+      // analysis.modify(this, id)
       id
     }
   }
@@ -159,32 +233,27 @@ class EGraph[ED, ND, TD](
     assert(id1 != id2)
 
     // make id1 the new root
-    analysis.preUnion(this, id1, id2)
+    // analysis.preUnion(this, id1, id2)
     unionFind.union(id1, id2)
+    // TODO: inform analyses of removal
     val class2 = classes.remove(id2).get
     val class1 = classes(id1)
     assert(id1 == class1.id)
     assert(class2.t == class1.t)
 
     pending ++= class2.parents
-    analysis.merge(class1.data, class2.data) match {
-      case Some(Equal) => ()
-      case Some(Greater) => analysisPending ++= class2.parents
-      case Some(Less) => analysisPending ++= class1.parents
-      case None =>
-        analysisPending ++= class1.parents
-        analysisPending ++= class2.parents
-    }
+    analysisPending += PendingMergeAnalysis(
+      id1, class1.parents.toSeq, id2, class2.parents.toSeq)
 
     class1.nodes ++= class2.nodes
     class1.parents ++= class2.parents
 
-    analysis.modify(this, id1)
+    // analysis.modify(this, id1)
     (id1, true)
   }
 
   def rebuild(roots: Seq[EClassId],
-              filter: Predicate[ED, ND, TD] = NoPredicate()): Int = {
+              filter: Predicate = NoPredicate()): Int = {
     val nUnions = processUnions()
     val _ = this.filter(filter, roots)
     val _ = rebuildClasses()
@@ -216,19 +285,11 @@ class EGraph[ED, ND, TD](
         }
       }
 
-      while (analysisPending.nonEmpty) {
-        val (node, id) = analysisPending.pop()
-
-        val cid = findMut(id)
-        val eclass = classes(cid)
-        val node_data = analysis.make(this, node, eclass.t)
-        analysis.merge(eclass.data, node_data) match {
-          case Some(Equal) | Some(Greater) => ()
-          case Some(Less) | None =>
-            analysisPending ++= eclass.parents
-            analysis.modify(this, cid)
-        }
-      }
+      // NOTE: analysis dependencies should be respected if topological order is maintained
+      // TODO: update could also be on-demand / lazy
+      typeAnalyses.keysIterator.foreach(ta => TypeAnalysis.update(this, ta))
+      analyses.keysIterator.foreach(t => Analysis.update(this, t))
+      analysisPending.clear()
     }
 
     assert(pending.isEmpty)
@@ -306,7 +367,7 @@ class EGraph[ED, ND, TD](
   }
 
   // returns (eliminatedClasses, eliminatedNodes)
-  private def filter(predicate: Predicate[ED, ND, TD],
+  private def filter(predicate: Predicate,
                      roots: Seq[EClassId]): (Int, Int) = {
     assert(pending.isEmpty)
     assert(analysisPending.isEmpty)

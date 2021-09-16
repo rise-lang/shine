@@ -1,6 +1,6 @@
 package benchmarks.eqsat
 
-import rise.eqsat.{ASTSizePredicate, BackoffScheduler, CuttingScheduler, ProveEquiv, rules, DefaultAnalysis}
+import rise.eqsat.{ASTSizePredicate, BackoffScheduler, CuttingScheduler, ProveEquiv, rules, Rewrite}
 import ProveEquiv.syntax._
 import rise.core.Expr
 import rise.core.DSL._
@@ -8,18 +8,21 @@ import rise.core.DSL.Type._
 import rise.core.types._
 
 object reorder {
-  private def whenMapF(astSize: Int, rw: DefaultAnalysis.Rewrite): DefaultAnalysis.Rewrite = {
+  private def whenMapF(astSize: Int, rw: Rewrite): Rewrite = {
     import rise.eqsat._
     new Rewrite(rw.name, rw.searcher, ConditionalApplier(
       { case (egraph, _, shc, subst) =>
-        val ec = egraph.getMut(subst(PatternVar(0), shc))
-        ec.data.free.contains(0) && ec.data.extractedSize == astSize
+        val id = egraph.findMut(subst(PatternVar(0), shc))
+        val freeOf = egraph.getAnalysis(FreeAnalysis)
+        val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+        freeOf(id).free.contains(0) && smallestOf(id).get._2 == astSize
         /*
         subst(PatternVar(0), shc) ==
         egraph.add(Var(0), egraph.addType(Type(FunType(Type(DataTypeVar(1)), Type(DataTypeVar(0))))))
          */
       },
       Set("f"),
+      (Set(FreeAnalysis, SmallestSizeAnalysis), Set()),
       rw.applier), rw.isDirected)
   }
 

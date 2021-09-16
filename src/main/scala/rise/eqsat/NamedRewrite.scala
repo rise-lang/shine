@@ -18,7 +18,7 @@ object NamedRewrite {
   def init(name: String,
            rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
            conditions: Seq[NamedRewrite.Condition] = Seq(),
-          ): DefaultAnalysis.Rewrite = {
+          ): Rewrite = {
     import rise.core.DSL.infer.{preservingWithEnv, collectFreeEnv}
     import arithexpr.{arithmetic => ae}
 
@@ -196,7 +196,6 @@ object NamedRewrite {
     val lhsPat = makePat(typedLhs, Expr.Bound.empty, isRhs = false)
     val rhsPat = makePat(typedRhs, Expr.Bound.empty, isRhs = true)
 
-    type Applier = DefaultAnalysis.Applier
     def shiftAppliers[S, V](pvm: PatternVarMap[S, V],
                             mkShift: (S, V) => (S, V) => Applier => Applier,
                             mkShiftCheck: (S, V) => (S, V) => Applier => Applier,
@@ -411,7 +410,7 @@ object NamedRewrite {
       }
     }
 
-    val searcher: DefaultAnalysis.Searcher = lhsPat.compile()
+    val searcher: Searcher = lhsPat.compile()
     val cond = conditions.foldRight((a: Applier) => a) { case (c, acc) =>
       c match {
         case NotFreeIn(notFree, in) =>
@@ -426,9 +425,12 @@ object NamedRewrite {
             case ((s, _, _), (pv, Known)) => (s, pv)
           }.get
           val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
-          def condF(egraph: DefaultAnalysis.EGraph, eclass: EClassId, shc: SubstHashCons, subst: Subst): Boolean =
-            !egraph.getMut(subst(iPV, shc)).data.free.contains(nfIndex)
-          (a: Applier) => ConditionalApplier(condF, Set(iPV), acc(a))
+          def condF(egraph: EGraph, eclass: EClassId, shc: SubstHashCons, subst: Subst): Boolean = {
+            // TODO: ensure the analysis is added
+            val freeOf = egraph.getAnalysis(FreeAnalysis)
+            !freeOf(subst(iPV, shc)).free.contains(nfIndex)
+          }
+          (a: Applier) => ConditionalApplier(condF, Set(iPV), (Set(FreeAnalysis), Set()), acc(a))
       }
     }
     val shiftPV = shiftAppliers(patVars, patMkShift, patMkShiftCheck)

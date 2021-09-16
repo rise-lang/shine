@@ -31,7 +31,7 @@ package object eqsat {
 
   // TODO: could keep hash-consed nats/types?
   def BENF(e: Expr): Expr = {
-    val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
+    val egraph = EGraph.empty()
     val id = egraph.addExpr(e)
     Runner.init().run(egraph, NoPredicate(), Seq(
       rules.eta,//.directed(),
@@ -46,7 +46,7 @@ package object eqsat {
 
   // Combinator Normal Form
   def CNF(e: Expr): Expr = {
-    val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
+    val egraph = EGraph.empty()
     val id = egraph.addExpr(BENF(e))
     // FIXME: avoid using .directed()?
     Runner.init().run(egraph, NoPredicate(), Seq(

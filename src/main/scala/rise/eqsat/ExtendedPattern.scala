@@ -17,10 +17,10 @@ object ExtendedPattern {
   }
 
   /* shares type hash-conses between the old and new e-graph */
-  def matchesToGraph[ED, ND, TD](matches: Vec[ExtendedPatternMatch],
-                                 egraph: EGraph[ED, ND, TD],
-                                 analysis: Analysis[ED, ND, TD]): (EGraph[ED, ND, TD], EClassId) = {
-    val newEGraph = EGraph.emptyWithAnalysis(analysis)
+  def matchesToGraph(matches: Vec[ExtendedPatternMatch],
+                     egraph: EGraph,
+                     analysis: Analysis): (EGraph, EClassId) = {
+    val newEGraph = EGraph.empty()
     newEGraph.hashConses = egraph.hashConses
 
     sealed trait EClassStatus
@@ -120,7 +120,7 @@ object ExtendedPattern {
   def beamSearch[Cost](pattern: ExtendedPattern,
                        beamSize: Int,
                        costFunction: CostFunction[Cost],
-                       egraph: EGraph[_, _, _],
+                       egraph: EGraph,
                        id: EClassId)
                       (implicit costCmp: math.Ordering[Cost]): Seq[(Cost, ExprWithHashCons)] = {
     beamSearch(pattern, beamSize, costFunction, egraph).getOrElse(id, Seq())
@@ -129,7 +129,7 @@ object ExtendedPattern {
   def beamSearch[Cost](pattern: ExtendedPattern,
                        beamSize: Int,
                        costFunction: CostFunction[Cost],
-                       egraph: EGraph[_, _, _])
+                       egraph: EGraph)
                       (implicit costCmp: math.Ordering[Cost])
   : Map[EClassId, Seq[(Cost, ExprWithHashCons)]] =
   {
@@ -271,7 +271,7 @@ object ExtendedPattern {
     searchRec(pattern)
   }
 
-  private def typeIsMatch(egraph: EGraph[_, _, _], p: TypePattern, t: TypeId): Boolean = {
+  private def typeIsMatch(egraph: EGraph, p: TypePattern, t: TypeId): Boolean = {
     p match {
       case TypePatternNode(pn) => typeNodeIsMatch(egraph, pn, t)
       case TypePatternVar(index) => ??? // TODO
@@ -283,17 +283,17 @@ object ExtendedPattern {
         }
     }
   }
-  private def dataTypeIsMatch(egraph: EGraph[_, _, _], p: DataTypePattern, t: DataTypeId): Boolean = {
+  private def dataTypeIsMatch(egraph: EGraph, p: DataTypePattern, t: DataTypeId): Boolean = {
     p match {
       case DataTypePatternNode(pn) => typeNodeIsMatch(egraph, pn, t)
       case DataTypePatternVar(index) => ??? // TODO
       case DataTypePatternAny => true
     }
   }
-  private def typeNodeIsMatch(egraph: EGraph[_, _, _],
+  private def typeNodeIsMatch(egraph: EGraph,
                               pn: TypeNode[TypePattern, NatPattern, DataTypePattern],
                               t: TypeId): Boolean = {
-    val n = egraph(t)._1
+    val n = egraph(t)
     (pn.map(_ => (), _ => (), _ => ()) == n.map(_ => (), _ => (), _ => ())) && {
       val ns = Vec.empty[NatId]
       val dts = Vec.empty[DataTypeId]
@@ -316,10 +316,10 @@ object ExtendedPattern {
         ts.zip(pts).forall { case (t, pt) => typeIsMatch(egraph, pt, t) }
     }
   }
-  private def natIsMatch(egraph: EGraph[_, _, _], p: NatPattern, t: NatId): Boolean = {
+  private def natIsMatch(egraph: EGraph, p: NatPattern, t: NatId): Boolean = {
     p match {
       case NatPatternNode(pn) =>
-        val n = egraph(t)._1
+        val n = egraph(t)
         (pn.map(_ => ()) == n.map(_ => ())) && {
           val ns = Vec.empty[NatId]
           n.map(n => ns += n)
@@ -375,13 +375,13 @@ object ExtendedPatternMatch {
 sealed trait ExtendedPattern {
   import ExtendedPattern.{typeIsMatch, dataTypeIsMatch, natIsMatch, traverse}
 
-  def searchEClass(egraph: EGraph[_, _, _], id: EClassId): Vec[ExtendedPatternMatch] = {
+  def searchEClass(egraph: EGraph, id: EClassId): Vec[ExtendedPatternMatch] = {
     searchEClass(egraph, egraph.get(id), Set(), HashMap.empty/*, None*/)
   }
 
   // TODO: investigate similarities with e-matching
-  private def searchEClass(egraph: EGraph[_, _, _],
-                           eclass: EClass[_],
+  private def searchEClass(egraph: EGraph,
+                           eclass: EClass,
                            visited: Set[EClassId],
                            memo: HashMap[(EClassId, ExtendedPattern), Vec[ExtendedPatternMatch]],
                            /*parent: Option[ENode]*/): Vec[ExtendedPatternMatch] = {

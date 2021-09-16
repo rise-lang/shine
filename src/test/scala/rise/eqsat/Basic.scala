@@ -35,7 +35,7 @@ class Basic extends test_util.Tests {
         in |> map(f(0)) |> map(f(1)) |> map(f(2)) |> map(f(3))),
       withArrayAndFuns(4, in => f =>
         in |> map(f(0) >> f(1)) |> map(f(2) >> f(3))),
-      Seq(rules.eta, rules.beta, rules.mapFusion)
+      Seq(rules.eta, rules.betaExtract, rules.mapFusion)
     )
   }
 
