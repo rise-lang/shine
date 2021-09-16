@@ -1,5 +1,5 @@
 {
-  "application_name": "ls_cot_1024",
+  "application_name": "atf_emb_1024",
   "optimization_objectives": ["runtime"],
   "feasible_output" : {
     "enable_feasible_predictor" : true,
@@ -10,9 +10,8 @@
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
-  "optimization_method": "local_search",
-  "local_search_random_points": 25,
-  "local_search_evaluation_limit": 100,
+  "optimization_iterations": 100,
+  "optimization_method": "opentuner",
   "input_parameters" : {
     "tuned_n": {
       "parameter_type" : "ordinal",

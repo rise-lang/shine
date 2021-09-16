@@ -12,7 +12,7 @@
   },
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 10
+    "number_of_samples": 100
   },
   "optimization_iterations": 0,
   "input_parameters" : { 
