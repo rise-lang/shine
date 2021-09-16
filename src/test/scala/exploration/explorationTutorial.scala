@@ -1,8 +1,17 @@
 package exploration
 
+import exploration.strategies.defaultStrategies
 import rise.core.DSL.{fun, lf32}
 import rise.core.primitives._
 import rise.core.types.DataType.{ArrayType, f32}
+import rise.elevate.rules.lowering.lowerToC
+import rise.elevate.strategies.traversal.everywhere
+import rise.elevate.rules.algorithmic.fuseReduceMap
+import strategies.defaultStrategies
+import elevate.core._
+
+import rise.elevate.rules.traversal.default._
+import rise.elevate.strategies.traversal._
 
 object explorationTutorial {
   // see: docs/exploration/tutorial.md
@@ -22,13 +31,15 @@ object explorationTutorial {
   // fuse reduce and map
 //  val mmsFused = (`map >> reduce -> reduce` `@` everywhere)(mm).get
 
+  val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+
   def main(args: Array[String]): Unit = {
 
     // run exploration with iterative improvement
-    riseExploration(mm, "exploration/configuration/mm_example_iterative_improvement.json")
+    riseExploration(mm, lowering, defaultStrategies.strategies, "exploration/configuration/mm_example_iterative_improvement.json")
 
     // run exploration with random
-    riseExploration(mm, "exploration/configuration/mm_example_random.json")
+    riseExploration(mm, lowering, defaultStrategies.strategies, "exploration/configuration/mm_example_random.json")
 
     // find results in exploration/ folder
   }

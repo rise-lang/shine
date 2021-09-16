@@ -1,8 +1,8 @@
 package exploration.strategies
 import elevate.core.Strategy
-import elevate.core.strategies.traversal.{bottomUp, somebu, topDown}
+import elevate.core.strategies.traversal.{allTopdown, bottomUp, somebu, topDown}
 import rise.elevate.{Rise, tunable}
-import rise.elevate.rules.algorithmic.splitJoin
+import rise.elevate.rules.algorithmic.{fuseReduceMap, splitJoin}
 import rise.elevate.rules.lowering.addRequiredCopies
 import rise.elevate.rules.traversal.default.RiseTraversable
 
@@ -37,7 +37,15 @@ object scalStrategies {
     sjtp
   )
 
-  val lowering = lowerGs
+
+  // combine with leftchoice
+  val lowering =
+    allTopdown(fuseReduceMap) `;`  // fuse Reduce and Map
+      lowerWrgWrgLclLcl <+ // try this lowering
+        lowerWrgLcl <+  // else this
+        lowerGsGs <+  // else this
+        lowerGs // else this
+
   val lowerings = Set(
     lowerGs,
     lowerGsGs,

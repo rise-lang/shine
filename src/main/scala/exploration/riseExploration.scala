@@ -28,7 +28,11 @@ object riseExploration {
 
 
   // entry point for exploration
-  def apply(solution:Rise, filePath:String): (Rise, Option[Double]) = {
+  def apply(solution:Rise,
+            lowering:Strategy[Rise],
+            strategies: Set[Strategy[Rise]],
+            filePath:String)
+  : (Rise, Option[Double]) = {
 
     // parse config file
     val parsedConfiguration = jsonParser.parse(filePath)
@@ -36,8 +40,12 @@ object riseExploration {
     // setup gold
     // code here
 
-    val startingPoint = prepareExploration(parsedConfiguration,
-      solution, filePath)
+    val startingPoint = prepareExploration(
+      parsedConfiguration,
+      solution,
+      lowering,
+      strategies,
+      filePath)
 
     // start
     startingPoint.execute(Solution(solution,
@@ -54,6 +62,8 @@ object riseExploration {
 
   def prepareExploration(result: ParseExploration,
                          solution: Rise,
+                         lowering: Strategy[Rise],
+                         strategies: Set[Strategy[Rise]],
                          filePath: String): Metaheuristic[Rise] = {
 
     // -- todo --check elements -> requirements
@@ -74,12 +84,13 @@ object riseExploration {
 //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
 //    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
     val lowering = exploration.strategies.scalStrategies.lowering
-    val lowerings = exploration.strategies.scalStrategies.lowerings
+//    val lowerings = exploration.strategies.scalStrategies.lowerings
     // add lowering for scal
 
     // use set
 
     // initialize gold expression
+    // check, if this will work, if first expression can't be lowered properly
     val gold = lowering(solution).get
 
     // create unique output folder
@@ -117,7 +128,7 @@ object riseExploration {
     val executor = result.executor.name match {
       case "C" => new CExecutor(lowering, gold, result.executor.iterations,
         inputSize, result.executor.threshold, executorOutput)
-      case "AutoTuning" => new AutoTuningExecutor(lowerings, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
       case _ => new Exception("not a supported executor option")
@@ -127,7 +138,7 @@ object riseExploration {
 
 //    val strategies = defaultStrategies.strategies
 //    val strategies = convolutionStrategies.strategies
-    val strategies = scalStrategies.strategies
+//    val strategies = scalStrategies.strategies
 
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head

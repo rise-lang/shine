@@ -4,6 +4,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import Type._
 import elevate.core.strategies.traversal.bottomUp
+import exploration.strategies.scalStrategies
 import rise.core.types._
 import rise.core.types.DataType._
 import rise.elevate.rules.algorithmic.splitJoin
@@ -44,6 +45,6 @@ object scalExploration {
 
   def main(args: Array[String]): Unit = {
     // start exploration here
-    riseExploration(scal, "exploration/configuration/scal.json")
+    riseExploration(scal, scalStrategies.lowering, scalStrategies.lowerings, "exploration/configuration/scal.json")
   }
 }
