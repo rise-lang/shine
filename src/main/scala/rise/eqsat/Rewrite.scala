@@ -247,7 +247,7 @@ case class ShiftedExtractApplier(v: PatternVar, newV: PatternVar,
                         subst: Subst): Vec[EClassId] = {
     // TODO: ensure analysis is added
     val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
-    val extract = smallestOf(subst(v, shc)).get._1
+    val extract = smallestOf(subst(v, shc))._1
     val shifted = extract.shifted(egraph, shift, cutoff)
     val subst2 = shc.substInsert(newV, egraph.addExpr(shifted), subst)
     applier.applyOne(egraph, eclass, shc, subst2)
@@ -263,9 +263,9 @@ object ShiftedCheckApplier {
             applier: Applier): Applier =
     ConditionalApplier({ case (egraph, _, shc, subst) =>
       val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
-      val extract = smallestOf(subst(v, shc)).get._1
+      val extract = smallestOf(subst(v, shc))._1
       val shifted = extract.shifted(egraph, shift, cutoff)
-      val expected = smallestOf(subst(v2, shc)).get._1
+      val expected = smallestOf(subst(v2, shc))._1
       shifted == expected
     }, Set(v, v2), (Set(SmallestSizeAnalysis), Set()), applier)
 }
@@ -391,8 +391,8 @@ case class BetaExtractApplier(body: PatternVar, subs: PatternVar)
                         shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
     val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
-    val bodyEx = smallestOf(subst(body, shc)).get._1
-    val subsEx = smallestOf(subst(subs, shc)).get._1
+    val bodyEx = smallestOf(subst(body, shc))._1
+    val subsEx = smallestOf(subst(subs, shc))._1
     val result = bodyEx.withArgument(egraph, subsEx)
     Vec(egraph.addExpr(result))
   }
@@ -450,7 +450,7 @@ case class BetaNatExtractApplier(body: PatternVar, subs: NatPatternVar)
                         shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
     val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
-    val bodyEx = smallestOf(subst(body, shc)).get._1
+    val bodyEx = smallestOf(subst(body, shc))._1
     val subsNat = subst(subs, shc)
     val result = bodyEx.withNatArgument(egraph, subsNat)
     Vec(egraph.addExpr(result))

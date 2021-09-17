@@ -426,7 +426,6 @@ object NamedRewrite {
           }.get
           val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
           def condF(egraph: EGraph, eclass: EClassId, shc: SubstHashCons, subst: Subst): Boolean = {
-            // TODO: ensure the analysis is added
             val freeOf = egraph.getAnalysis(FreeAnalysis)
             !freeOf(subst(iPV, shc)).free.contains(nfIndex)
           }

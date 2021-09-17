@@ -98,11 +98,19 @@ class EGraph(
     }
   }
 
-  def getAnalysis(a: Analysis): HashMap[EClassId, a.Data] =
+  // reserved for internal use
+  def getAnalysisMap(a: Analysis): HashMap[EClassId, a.Data] =
     analyses(a).maps.asInstanceOf[HashMap[EClassId, a.Data]]
 
-  def getTypeAnalysis(a: TypeAnalysis): (HashMap[NatId, a.NatData], HashMap[TypeId, a.TypeData]) =
-    typeAnalyses(a).maps.asInstanceOf[(HashMap[NatId, a.NatData], HashMap[TypeId, a.TypeData])]
+  // reserved for internal use
+  def getTypeAnalysisMaps(a: TypeAnalysis): (HashMap[NatId, a.NatData], HashMap[TypeId, a.TypeData]) =
+    typeAnalyses(a).maps
+      .asInstanceOf[(HashMap[NatId, a.NatData], HashMap[TypeId, a.TypeData])]
+
+  def getAnalysis(a: Analysis): EClassId => a.Data = getAnalysisMap(a)
+
+  def getTypeAnalysis(a: TypeAnalysis): (NatId => a.NatData, TypeId => a.TypeData) =
+    getTypeAnalysisMaps(a)
 
   def nodeCount(): Int =
     classes.map { case (_, c) => c.nodeCount() }.iterator.sum
@@ -235,7 +243,6 @@ class EGraph(
     // make id1 the new root
     // analysis.preUnion(this, id1, id2)
     unionFind.union(id1, id2)
-    // TODO: inform analyses of removal
     val class2 = classes.remove(id2).get
     val class1 = classes(id1)
     assert(id1 == class1.id)
@@ -255,8 +262,9 @@ class EGraph(
   def rebuild(roots: Seq[EClassId],
               filter: Predicate = NoPredicate()): Int = {
     val nUnions = processUnions()
-    val _ = this.filter(filter, roots)
     val _ = rebuildClasses()
+    val _ = this.filter(filter, roots)
+    rebuildClassesByMatch()
 
     assert {
       TypeCheck(this)
@@ -320,11 +328,19 @@ class EGraph(
       // eclass.nodes = eclass.nodes.map(_.mapChildren(findMut)).distinct
 
       trimmed += oldNodeCount - eclass.nodeCount()
+    }
 
+    trimmed
+  }
+
+  private def rebuildClassesByMatch(): Unit = {
+    classesByMatch.values.foreach(ids => ids.clear())
+
+    for (eclass <- classes.values) {
+      // assumption: sorted nodes for optimized search
       def add(n: ENode): Unit =
         classesByMatch.getOrElseUpdate(n.matchHash(), HashSet.empty) += eclass.id
 
-      // TODO? in egg the nodes are sorted and duplicates where prev.matches(n) are not added
       // eclass.nodes.foreach(add)
       eclass.nodes.headOption match {
         case None =>
@@ -340,8 +356,6 @@ class EGraph(
           }
       }
     }
-
-    trimmed
   }
 
   private def checkMemo(): Boolean = {

@@ -25,8 +25,11 @@ class EtaReductionSubtleties extends test_util.Tests {
     }
   }
 
-  test("invalid eta-abstraction") {
-    // FIXME: this is not a great example
+  // FIXME:
+  //  1. this is not a great example
+  //  2. does not trigger an invalid reduction anymore,
+  //     due to the extraction-based index shifting
+  ignore("invalid eta-abstraction") {
     val start = Expr.fromNamed(introduceDataFuns(1, dts => f =>
       fun(dts(1))(z => fun(x => fun(_ => f(0))(x)(x)))))
     val goal = Expr.fromNamed(introduceDataFuns(1, dts => f =>

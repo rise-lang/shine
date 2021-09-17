@@ -115,7 +115,7 @@ class ASTSizePredicate(limit: Int,
     val smallestSizeOf = egraph.getAnalysis(SmallestSizeAnalysis)
 
     minimumDownstreamSize = { (id: EClassId) =>
-      smallestSizeOf(id).map(_._2.toDouble).getOrElse(Double.PositiveInfinity)
+      smallestSizeOf(id)._2.toDouble
     }
 
     val todo = scala.collection.mutable.TreeSet(rootsCanonical.map(r => (0.0, r)): _*)

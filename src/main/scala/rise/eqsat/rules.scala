@@ -26,7 +26,7 @@ object rules {
       notContainsIdent(?(0), %(0), FreeIntersectionAnalysis),
       Set(?(0)),
       (Set(FreeIntersectionAnalysis), Set()),
-      ?(0) : Pattern)
+      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0), (1, 0, 0), ?(1): Pattern))
   )
 
   val beta = Rewrite.init("beta",

@@ -15,7 +15,7 @@ object reorder {
         val id = egraph.findMut(subst(PatternVar(0), shc))
         val freeOf = egraph.getAnalysis(FreeAnalysis)
         val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
-        freeOf(id).free.contains(0) && smallestOf(id).get._2 == astSize
+        freeOf(id).free.contains(0) && smallestOf(id)._2 == astSize
         /*
         subst(PatternVar(0), shc) ==
         egraph.add(Var(0), egraph.addType(Type(FunType(Type(DataTypeVar(1)), Type(DataTypeVar(0))))))
