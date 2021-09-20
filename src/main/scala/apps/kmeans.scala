@@ -46,6 +46,15 @@ object kmeans {
     ))
   ))
 
+  val kmeansOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val p = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(256), GlobalSize(p))
+  })
+
   val kmeansOcl: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
     (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
   )((features, clusters) =>
