@@ -19,36 +19,47 @@ import scala.sys.process._
 
 package object autotune {
 
-  case class Timeouts(codegenerationTimeout: Long, compilationTimeout: Long, executionTimeout: Long)
-  case class Tuner(hostCode: HostCode,
-                   inputSizes: Seq[Nat] = Seq(),
-                   samples: Int = 100,
-                   name: String = "RISE",
-                   output: String = "autotuning",
-                   timeouts: Timeouts = Timeouts(5000, 5000, 5000),
-                   executionIterations: Int = 10,
-                   speedupFactor: Double = 100,
-                   configFile: Option[String] = None,
-                   runtimeStatistic: RuntimeStatistic = Median,
-                   hierarchicalHM: Boolean = false)
+  case class Tuner(hostCode: HostCode, // defines necessary host-code to execute program
+                   inputSizes: Seq[Nat] = Seq(), // todo think about multi-dimensional inputs
+                   samples: Int = 100, // number of parameter configurations (samples) to evaluate
+                   name: String = "RISE", // todo this has to match name in config file!
+                   output: String = "autotuning", // folder to store output files in
+                   timeouts: Timeouts = Timeouts(5000, 5000, 5000), // timeouts for codegen, compilation and execution
+                   executionIterations: Int = 10, // defines, how many times the program is executed to determine the runtime a sample
+                   runtimeStatistic: RuntimeStatistic = Median, // specifies, how to determine the runtime from multiple iterations (Median/Minimum)
+                   speedupFactor: Double = 100, // defines at which threshold the iterations are dropped, if the execution is slow compared to current best
+                   configFile: Option[String] = None, // specifies the location of a config-file, otherwise, a config file is generated
+                   hmConstraints: Boolean = false // enable constraints feature in HM (experimental)
+                  )
 
-  case class Sample(parameters: Map[NatIdentifier, Nat],
-                    runtime: Option[TimeSpan[Time.ms]],
-                    timestamp: Long,
-                    autoTuningError: AutoTuningError,
-                    tuningTimes: TuningTimes)
+  // necessary host-code parts to execute the program
+  case class HostCode(init: String, // define and initialize input/output (buffers)
+                      compute: String, // call the function with the input and output
+                      finish: String) // check output, destroy input/output buffers
 
-  case class TuningTimes(total: Option[TimeSpan[Time.ms]],
-                         codegen: Option[TimeSpan[Time.ms]],
-                         compilation: Option[TimeSpan[Time.ms]],
-                         execution: Option[TimeSpan[Time.ms]]
+  // timeouts for sub-parts of the evaluation of a parameter configuration (sample)
+  case class Timeouts(codegenerationTimeout: Long, // timeout for code-generation part
+                      compilationTimeout: Long, // timeout for compilation part
+                      executionTimeout: Long // timeout for execution part
+                     )
+
+  // result of a complete tuning run
+  case class TuningResult(samples: Seq[Sample])
+
+  // tuning sample representing result of one specific parameter configuration
+  case class Sample(parameters: Map[NatIdentifier, Nat], // specific parameter configuration
+                    runtime: Either[AutoTuningError, TimeSpan[Time.ms]], // runtime or error
+                    timestamp: Long, // timestamp of sample
+                    tuningTimes: TuningTimes // durations of sub-parts
+                   )
+
+  // durations of sub-parts of a tuning sample
+  case class TuningTimes(total: Option[TimeSpan[Time.ms]], // total time
+                         codegen: Option[TimeSpan[Time.ms]], // duration of code-generation part
+                         compilation: Option[TimeSpan[Time.ms]], // duration of compilation part
+                         execution: Option[TimeSpan[Time.ms]] // duration of execution part
                         )
 
-  case class HostCode(init: String, compute: String, finish: String)
-
-  // todo add meta information (configuration, times, samples, ...)
-  case class TuningResult(samples: Seq[Sample])
-  case class AutoTuningError(errorLevel: AutoTuningErrorLevel, message: Option[String])
   type Parameters = Set[NatIdentifier]
 
   // should we allow tuning params to be substituted during type inference?
@@ -107,23 +118,21 @@ package object autotune {
           (System.currentTimeMillis() - totalStart).toDouble)
         )
         Sample(
-          parametersValuesMap,
-          result.runtime,
-          System.currentTimeMillis() - start,
-          result.error,
-          TuningTimes(
+          parameters = parametersValuesMap,
+          runtime = result.runtime,
+          timestamp = System.currentTimeMillis() - start,
+          tuningTimes = TuningTimes(
             totalTime, result.codegenTime, result.compilationTime, result.executionTime)
         )
       } else {
         val totalTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - totalStart).toDouble))
         Sample(
-          parametersValuesMap,
-          None,
-          System.currentTimeMillis() - start,
-          AutoTuningError(CONSTRAINTS_ERROR, None),
-            TuningTimes(totalTime, None, None, None)
-          )
-
+          parameters = parametersValuesMap,
+//          runtime = None,
+          runtime = Left(AutoTuningError(CONSTRAINTS_ERROR, None)),
+          timestamp = System.currentTimeMillis() - start,
+          tuningTimes = TuningTimes(totalTime, None, None, None)
+        )
       }
     }
 
@@ -181,17 +190,17 @@ package object autotune {
             // compute sample (including function value aka runtime)
             print("[" + i.toString + "/" + tuner.samples + "] : ")
             val sample = computeSample(header, parametersValues)
+//            println(sample.runtime)
             println(sample.runtime)
             println(sample)
-            println(sample.autoTuningError)
             println()
             i += 1
             // append sample to Samples
             samples += sample
             // append response
             sample.runtime match {
-              case None => response += s"${parametersValues.mkString(",")},-1,False\n"
-              case Some(value) =>
+              case Left(value) => response += s"${parametersValues.mkString(",")},-1,False\n"
+              case Right(value) =>
                 response += s"${parametersValues.mkString(",")},${value.value},True\n"
             }
           }
@@ -199,7 +208,7 @@ package object autotune {
           // send response to Hypermapper
           hypermapper.stdin.write(response)
           hypermapper.stdin.flush()
-        case error => println("error: " + error)
+        case message => println("message: " + message)
       }
     }
 
@@ -234,8 +243,8 @@ package object autotune {
   def getBest(samples: Seq[Sample]): Option[Sample] = {
     val best = samples.reduceLeft(min)
     best.runtime match {
-      case Some(_) => Some(best)
-      case None => None
+      case Right(_) => Some(best)
+      case Left(_) => None
     }
   }
 
@@ -267,14 +276,13 @@ package object autotune {
       case (id: NatIdentifier, _:Nat) =>  header += id.name + ","
       case _ => throw Exception("This should not happen")
     }
+
     header += "runtime" + ","
     header += "timestamp" + ","
     header += "total" + ","
     header += "code generation" + ","
     header += "compilation" + ","
     header += "execution" + ","
-    header += "error level" + ","
-    header += "error message"
     header += "\n"
 
     // write content
@@ -287,9 +295,17 @@ package object autotune {
       })
 
       // write runtime
-      sample.runtime match {
-        case Some(value) => content += value.value.toString + ","
-        case None => content += "-1" + ","
+      sample.runtime match{
+        case Right(runtime) => content += runtime.toString + ","
+        case Left(error) =>
+
+          val errorMessage = error.message match {
+            case None => ""
+            case Some(value) => ": " + value
+          }
+
+          content += error.errorLevel.toString + errorMessage + ","
+
       }
 
       // write timestamp
@@ -312,15 +328,6 @@ package object autotune {
         case None => content += "-1" + ","
       }
 
-      // write error level
-      content += sample.autoTuningError.errorLevel.toString + ","
-
-      // write error message
-      sample.autoTuningError.message match {
-        case Some(value) => content += value + ","
-        case None => content += ""
-      }
-
       // finish line
       content += "\n"
     })
@@ -332,20 +339,20 @@ package object autotune {
 
   private def min(s1: Sample, s2: Sample): Sample = {
     s1.runtime match {
-      case Some(s1Runtime) =>
+      case Right(s1Runtime) =>
         s2.runtime match {
-          case Some(s2Runtime) =>
+          case Right(s2Runtime) =>
             if (s1Runtime.value < s2Runtime.value) {
               s1
             } else {
               s2
             }
-          case None => s1
+          case Left(_) => s1
         }
-      case None =>
+      case Left(_) =>
         s2.runtime match{
-          case Some(_) => s2
-          case None => s1
+          case Right(_) => s2
+          case Left(_) => s1
         }
     }
   }

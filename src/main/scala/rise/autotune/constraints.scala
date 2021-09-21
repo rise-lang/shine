@@ -43,14 +43,6 @@ object constraints {
 
   def checkConstraints(constraints: Set[Constraint], values: Map[NatIdentifier, Nat]): Boolean = {
     val map = values.asInstanceOf[Map[ArithExpr, ArithExpr]]
-//    println("\n")
-//    constraints.foreach(elem => {
-//      val const = elem.substitute(map)
-//      val sat = const.isSatisfied()
-//      println("const: " + const)
-//      println("sat: " + sat)
-//    })
-//    println("\n")
     constraints.forall(c => c.substitute(map).isSatisfied())
   }
 

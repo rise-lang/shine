@@ -12,8 +12,7 @@ sealed trait RuntimeStatistic
 case object Median extends RuntimeStatistic
 case object Minimum extends RuntimeStatistic
 
-case class ExecutionResult(runtime: Option[TimeSpan[Time.ms]],
-                           error: AutoTuningError,
+case class ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
                            codegenTime: Option[TimeSpan[Time.ms]],
                            compilationTime: Option[TimeSpan[Time.ms]],
                            executionTime: Option[TimeSpan[Time.ms]],
@@ -81,18 +80,24 @@ object execution {
           execution
         )
 
-        ExecutionResult(result._1, result._2, Some(codegenTime), result._3, result._4)
+        ExecutionResult(
+          runtime = result._1,
+          codegenTime = Some(codegenTime),
+          compilationTime = result._2,
+          executionTime = result._3)
       }
-      case None => ExecutionResult(
-        None,
-        AutoTuningError(
-          CODE_GENERATION_ERROR,
-          Some("timeout after: " + timeouts.codegenerationTimeout),
-        ),
-        Some(codegenTime),
-        None,
-        None
-      )
+      case None =>
+        ExecutionResult(
+          runtime = Left(
+            AutoTuningError(
+              CODE_GENERATION_ERROR,
+              Some("timeout after: " + timeouts.codegenerationTimeout),
+            )
+          ),
+          codegenTime = Some(codegenTime),
+          compilationTime = None,
+          executionTime = None
+        )
     }
   }
 
@@ -103,10 +108,11 @@ object execution {
                          executionIterations: Int,
                          speedupFactor: Double,
                          execution: RuntimeStatistic)
-  : (Option[TimeSpan[Time.ms]],
-    AutoTuningError,
-    Option[TimeSpan[Time.ms]],
-    Option[TimeSpan[Time.ms]]) = {
+  : (
+    Either[AutoTuningError, TimeSpan[Time.ms]], // runtime or error
+    Option[TimeSpan[Time.ms]], // compilation time
+    Option[TimeSpan[Time.ms]]  // execution time
+    ) = {
 
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
@@ -120,8 +126,12 @@ object execution {
       case e: Throwable => {
         val compilationTime = (System.currentTimeMillis() - compilationStart).toDouble
         (
-          None,
-          AutoTuningError(COMPILATION_ERROR, Some(e.toString)),
+          Left(
+            AutoTuningError(
+              COMPILATION_ERROR,
+              Some(e.toString)
+            )
+          ),
           Some(TimeSpan.inMilliseconds(compilationTime)),
           None
         )
@@ -180,14 +190,20 @@ object execution {
         (System.currentTimeMillis() - executionStart).toDouble
       )
 
-      (Some(runtime), AutoTuningError(NO_ERROR, None), Some(compilationTime), Some(executionTime))
+      (
+        Right(runtime),
+        Some(compilationTime),
+        Some(executionTime)
+      )
     } catch {
       // todo check error codes here
       case e: Throwable => {
         val executionTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - executionStart).toDouble)
-        (None, AutoTuningError(
-          EXECUTION_ERROR,
-          Some(e.toString)),
+        (
+          Left(AutoTuningError(
+            EXECUTION_ERROR,
+            Some(e.toString)
+          )),
           Some(compilationTime),
           Some(executionTime)
         )
