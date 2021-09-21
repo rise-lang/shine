@@ -14,7 +14,7 @@ import rise.core.primitives._
 import rise.core.types.DataType._
 import rise.core.types._
 import rise.elevate.rules.algorithmic.{fuseReduceMap, splitJoin}
-import rise.elevate.rules.lowering.addRequiredCopies
+import rise.elevate.rules.lowering.{addRequiredCopies, reduceOCL}
 import rise.elevate.rules.traversal.default.RiseTraversable
 import rise.elevate.tunable
 import rise.openCL.DSL.toGlobal
@@ -51,7 +51,9 @@ object mvExploration {
 
   // lower mv high-level
   def lowerGs = {
-    topDown(fuseReduceMap) `;` topDown(rise.elevate.rules.lowering.mapGlobal(0)) `;` addRequiredCopies() `;` rise.elevate.rules.lowering.specializeSeq()
+    topDown(fuseReduceMap) `;` topDown(rise.elevate.rules.lowering.mapGlobal(0)) `;` addRequiredCopies() `;` rise.elevate.rules.lowering.specializeSeq() `;` reduceOCL()
+
+    //normalize(reduceSeq -> reduceOCLSeq private/local/global )
   }
 
   val lowered = lowerGs.apply(mvHighLevel)

@@ -77,6 +77,11 @@ object lowering {
     case e@reduce() => Success(p.reduceSeq !: e.t)
   }
 
+  def `reduceSeq -> oclReduceSeq`: Strategy[Rise] = oclReduceSeq
+  @rule def oclReduceSeq: Strategy[Rise] = {
+    case e@reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
+  }
+
   def `reduce -> reduceSeqUnroll`: Strategy[Rise] = reduceSeqUnroll
   @rule def reduceSeqUnroll: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeqUnroll !: e.t)
@@ -203,6 +208,10 @@ object lowering {
   // requires expr to be in LCNF
   def specializeSeq()(implicit ev: Traversable[Rise]): Strategy[Rise] =
     normalize(ev)(lowering.mapSeqCompute() <+ lowering.reduceSeq)
+
+  // requires expr to be in LCNF
+  def reduceOCL()(implicit ev: Traversable[Rise]): Strategy[Rise] =
+    normalize(ev)(lowering.oclReduceSeq)
 
   def addRequiredCopies()(implicit ev: Traversable[Rise]): Strategy[Rise] =
     // `try`(oncetd(copyAfterReduce)) `;` LCNF `;` materializeInitOfReduce
