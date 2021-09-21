@@ -9,6 +9,7 @@ import rise.core.primitives._
 import rise.core.types._
 import rise.core.types.DataType._
 import rise.elevate.Rise
+import shine.GAP8.Module.translateToString
 
 class hwce extends test_util.Tests {
 
@@ -45,7 +46,7 @@ class hwce extends test_util.Tests {
     println(util.gen.gap8.function("cluster_core_task").asStringFromExpr(expr))
   }
 
-  test("Minimal example 2") {
+  ignore("Minimal example 2") {
     val w: Nat = 6
     val h: Nat = 6
 
@@ -65,6 +66,7 @@ class hwce extends test_util.Tests {
     println(expr.toExpr.t)
 
     println(util.gen.gap8.function("cluster_core_task").asStringFromExpr(expr))
+    //println(translateToString(util.gen.gap8.hosted.fromExpr(expr)))
   }
 
   ignore("Hwce RISE primitive") {
