@@ -2,31 +2,6 @@ def kernelCall{name: String, cores: Int, n:Int}(inTs: n*data, outT: data, args: 
 
 def run{cores: Nat}(dt: data, input: exp[dt, write]): exp[dt, write]
 
-//rethink
-//def conv{fs: shine.GAP8.ConvolutionFilterSize}(
-//    w: nat,
-//    h: nat,
-//    bias: nat,
-//    dt: data,
-//    in: exp[h.w.dt, read],
-//    //check
-//    filter: exp[3.3.dt, read]
-//): exp[(h-2).(w-2).dt, write]
-
-//TODO: rethink
-//TODO: Generate other primitives?
-//TODO: Remember if there was something about how input size and filter
-//TODO: relate to output?
-//TODO: Eliminate ConvolutionFilterSize maybe?
-//def funConv3x3{fs: shine.GAP8.ConvolutionFilterSize}(
-//    w: nat,
-//    h: nat,
-//    bias: nat,
-//    dt: data,
-//    in: exp[h.w.dt, read],
-//    filter: exp[3.3.dt, read]
-//): exp[(h-2).(w-2).dt, write]
-
 def funConv3x3(
     w: nat,
     h: nat,
@@ -35,3 +10,30 @@ def funConv3x3(
     in: exp[h.w.dt, read],
     filter: exp[3.3.dt, read]
 ): exp[(h-2).(w-2).dt, write]
+
+def funConv5x5(
+    w: nat,
+    h: nat,
+    bias: nat,
+    dt: data,
+    in: exp[h.w.dt, read],
+    filter: exp[5.5.dt, read]
+): exp[(h-4).(w-4).dt, write]
+
+def funConv7x7(
+    w: nat,
+    h: nat,
+    bias: nat,
+    dt: data,
+    in: exp[h.w.dt, read],
+    filter: exp[7.7.dt, read]
+): exp[(h-6).(w-6).dt, write]
+
+def funConv7x4(
+    w: nat,
+    h: nat,
+    bias: nat,
+    dt: data,
+    in: exp[h.w.dt, read],
+    filter: exp[7.4.dt, read]
+): exp[(h-3).(w-6).dt, write]
