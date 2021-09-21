@@ -23,8 +23,6 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
   override def translationContext: TranslationContext = super.translationContext
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
-    //case Conv3x3(w, h, bias, dt, in, PadClamp(n, l, r, _, Join(_, _, _, _, filter)), out) =>
-    //  ???
     //TODO: Supoort multicycle output for 3x3
     case Conv3x3(w, h, bias, dt, in, filter: shine.DPIA.Phrases.Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
