@@ -2,9 +2,9 @@ package rise.eqsat
 
 class PatternCheck extends test_util.Tests {
   test("simple match") {
-    val commuteAdd1: Rewrite[DefaultAnalysisData] = {
+    val commuteAdd1: DefaultAnalysis.Rewrite = {
       import PatternDSL._
-      Rewrite.init[DefaultAnalysisData]("commute-add-1",
+      Rewrite.init("commute-add-1",
         app(app(add, ?(0) :: `?dt`(0)), ?(1)).compile()
           -->
         (app(app(add :: `?dt`(0) ->: `?dt`(0) ->: `?dt`(0),
@@ -12,7 +12,7 @@ class PatternCheck extends test_util.Tests {
           ?(0) :: `?dt`(0)) :: `?dt`(0)))
     }
 
-    val commuteAdd2: Rewrite[DefaultAnalysisData] = {
+    val commuteAdd2: DefaultAnalysis.Rewrite = {
       import NamedRewriteDSL._
       NamedRewrite.init("commute-add-2",
         app(app(add, "x"), "y")
@@ -30,13 +30,14 @@ class PatternCheck extends test_util.Tests {
       }
 
       egraph.union(add1, add2)
-      egraph.rebuild()
-      val matches = commuteAdd.search(egraph)
+      egraph.rebuild(Seq(add1, add2))
+      val shc = SubstHashCons.empty
+      val matches = commuteAdd.search(egraph, shc)
       val nMatches = matches.map(m => m.substs.size).sum
       assert(nMatches == 2)
 
-      val applications = commuteAdd.apply(egraph, matches)
-      egraph.rebuild()
+      val applications = commuteAdd.apply(egraph, shc, matches)
+      egraph.rebuild(Seq(add1, add2))
       assert(applications.size == 2)
 
       egraph.dot().toFile(s"/tmp/simple-${commuteAdd.name}.dot")
@@ -68,17 +69,20 @@ class PatternCheck extends test_util.Tests {
 
     val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
 
-    {
+    val roots = {
       import ExprDSL._
-      egraph.addExpr(nApp(nApp(add(nFunT(nFunT(f32))), `%n`(0), nFunT(f32)), cst(1), f32))
-      egraph.addExpr(nApp(nApp(add(nFunT(nFunT(f32))), `%n`(0), nFunT(f32)), `%n`(1), f32))
-      egraph.addExpr(nApp(nApp(add(nFunT(nFunT(f32))), `%n`(0), nFunT(f32)), `%n`(0), f32))
-      egraph.addExpr(nApp(nApp(mul(nFunT(nFunT(f32))), `%n`(0), nFunT(f32)), `%n`(0), f32))
+      Seq(
+        egraph.addExpr(nApp(nApp(add(nFunT(nFunT(f32))), `%n`(0), nFunT(f32)), cst(1), f32)),
+        egraph.addExpr(nApp(nApp(add(nFunT(nFunT(f32))), `%n`(0), nFunT(f32)), `%n`(1), f32)),
+        egraph.addExpr(nApp(nApp(add(nFunT(nFunT(f32))), `%n`(0), nFunT(f32)), `%n`(0), f32)),
+        egraph.addExpr(nApp(nApp(mul(nFunT(nFunT(f32))), `%n`(0), nFunT(f32)), `%n`(0), f32))
+      )
     }
 
-    egraph.rebuild()
+    egraph.rebuild(roots)
 
-    assert(pattern.search(egraph).length == 1)
+    val shc = SubstHashCons.empty
+    assert(pattern.search(egraph, shc).length == 1)
   }
 
   test("compile program with types") {
@@ -107,18 +111,21 @@ class PatternCheck extends test_util.Tests {
 
     val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
 
-    {
+    val roots = {
       import ExprDSL._
-      egraph.addExpr(map((f32 ->: int) ->: (`%n`(0)`.`f32) ->: (`%n`(0)`.`int)))
-      egraph.addExpr(map((f32 ->: `%dt`(0)) ->: (`%n`(0)`.`f32) ->: (cst(0)`.``%dt`(0))))
-      egraph.addExpr(map((f32 ->: int) ->: (f32 ->: int) ->: (`%n`(0)`.`int)))
-      egraph.addExpr(map((f32 ->: int) ->: (f32 ->: int)))
-      egraph.addExpr(map((f32 ->: int) ->: f32))
-      egraph.addExpr(map(int))
+      Seq(
+        egraph.addExpr(map((f32 ->: int) ->: (`%n`(0)`.`f32) ->: (`%n`(0)`.`int))),
+        egraph.addExpr(map((f32 ->: `%dt`(0)) ->: (`%n`(0)`.`f32) ->: (cst(0)`.``%dt`(0)))),
+        egraph.addExpr(map((f32 ->: int) ->: (f32 ->: int) ->: (`%n`(0)`.`int))),
+        egraph.addExpr(map((f32 ->: int) ->: (f32 ->: int))),
+        egraph.addExpr(map((f32 ->: int) ->: f32)),
+        egraph.addExpr(map(int))
+      )
     }
 
-    egraph.rebuild()
+    egraph.rebuild(roots)
 
-    assert(pattern.search(egraph).length == 2)
+    val shc = SubstHashCons.empty
+    assert(pattern.search(egraph, shc).length == 2)
   }
 }

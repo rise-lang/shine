@@ -18,7 +18,7 @@ import util.{Display, TimeSpan, gen}
 
 import scala.util.Random
 
-class stencil extends test_util.Tests {
+class stencils extends test_util.Tests {
 
   private case class StencilResult(
     inputSize: Int,

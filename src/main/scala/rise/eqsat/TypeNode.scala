@@ -6,63 +6,10 @@ import rise.core.types.{DataType => rcdt}
 /** A Rise type based on DeBruijn indexing */
 case class Type(node: TypeNode[Type, Nat, DataType]) {
   override def toString: String = node.toString
-
-  /** Shifts DeBruijn indices up or down if they are >= cutoff */
-  def shifted(shift: Type.Shift, cutoff: Type.Shift): Type = {
-    Type(node match {
-      case FunType(inT, outT) =>
-        FunType(inT.shifted(shift, cutoff), outT.shifted(shift, cutoff))
-      case NatFunType(t) =>
-        NatFunType(t.shifted(shift, cutoff.copy(_1 = cutoff._1 + 1)))
-      case DataFunType(t) =>
-        DataFunType(t.shifted(shift, cutoff.copy(_2 = cutoff._2 + 1)))
-      case dt: DataTypeNode[Nat, DataType] =>
-        DataType(dt).shifted(shift, cutoff).node
-    })
-  }
-
-  def replace(index: Int, subs: Nat): Type = Type(node match {
-    case NatFunType(t) =>
-      // TODO: could shift lazily
-      val t2 = t.replace(index + 1, subs.shifted(1, 0))
-      NatFunType(t2)
-    case other =>
-      other.map(_.replace(index, subs), _.replace(index, subs), _.replace(index, subs))
-  })
-
-  def replace(index: Int, subs: DataType): Type = {
-    ???
-  }
 }
 
 case class DataType(node: DataTypeNode[Nat, DataType]) {
   override def toString: String = node.toString
-
-  /** Shifts DeBruijn indices up or down if they are >= cutoff */
-  def shifted(shift: Type.Shift, cutoff: Type.Shift): DataType = {
-    DataType(node match {
-      case DataTypeVar(index) =>
-        val delta = if (index >= cutoff._2) shift._2 else 0
-        DataTypeVar(index + delta)
-      case ScalarType(s) => ScalarType(s)
-      case NatType => NatType
-      case VectorType(size, elemType) =>
-        VectorType(size.shifted(shift._1, cutoff._1), elemType.shifted(shift, cutoff))
-      case IndexType(size) =>
-        IndexType(size.shifted(shift._1, cutoff._1))
-      case PairType(dt1, dt2) =>
-        PairType(dt1.shifted(shift, cutoff), dt2.shifted(shift, cutoff))
-      case ArrayType(size, elemType) =>
-        ArrayType(size.shifted(shift._1, cutoff._1), elemType.shifted(shift, cutoff))
-    })
-  }
-
-  def replace(index: Int, subs: Nat): DataType =
-    DataType(node.map(_.replace(index, subs), _.replace(index, subs)))
-
-  def replace(index: Int, subs: DataType): DataType = {
-    ???
-  }
 }
 
 sealed trait TypePattern {

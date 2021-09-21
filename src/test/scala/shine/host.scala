@@ -98,6 +98,22 @@ int main(int argc, char** argv) {
     checkOutput(m)
   }
 
+  test("basic kernel call with variable size and pre-process") {
+    val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
+      mapSeq(add(li32(2)))(in) |> store(x =>
+      oclRun(LocalSize(2), GlobalSize(n/2))(mapGlobal(add(li32(1)))(x)))
+    ))
+    val m = gen.opencl.hosted.fromExpr(e)
+    val hostCode = gen.c.function.asString(m.hostCode)
+    // logger.debug(hostCode)
+    findCount(1, """createBuffer\(.*, HOST_WRITE \| DEVICE_READ\)""".r, hostCode)
+    findDeviceBufferSyncWrite(1, hostCode)
+    findDeviceBufferSyncRead(1, hostCode)
+    findCount(1, """hostBufferSync\(.*, HOST_WRITE\)""".r, hostCode)
+    findCount(1, """hostBufferSync\(.*, HOST_READ\)""".r, hostCode)
+    checkOutput(m)
+  }
+
   test("two kernel calls") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
       oclRun(LocalSize(2), GlobalSize(n/2))(mapGlobal(add(li32(1)))(in)) |> store(x =>
