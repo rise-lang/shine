@@ -17,7 +17,7 @@ import shine.OpenCL.Module.translateToString
 import util.ExecuteOpenCL.{includes, libDirs, libs}
 import util.gen
 
-class harrisCornerDetecionTuning extends test_util.Tests {
+class harrisCornerDetectionTuning extends test_util.Tests {
 
   // hostcode
 

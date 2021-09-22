@@ -231,7 +231,7 @@ object harrisCornerDetectionHalide {
       ))
 
 //    def harrisTileShiftInwardsPar(tileX: Int, tileY: Int, mapPar: Int => ToBeTyped[Expr],
-    def harrisTileShiftInwardsPar(tileX: Nat, tileY: Nat, mapPar: Nat => ToBeTyped[Expr],
+    def harrisTileShiftInwardsPar(tileX: Nat, tileY: Nat, mapPar: Int => ToBeTyped[Expr],
                                   innerHarris: ToBeTyped[Expr]): ToBeTyped[Expr] =
       depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
