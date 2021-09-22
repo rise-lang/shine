@@ -18,7 +18,7 @@ object tiling {
         freeOf(subst(rise.eqsat.PatternVar(0), shc)).free.contains(0) },
       Set("f"),
       (Set(FreeAnalysis), Set()),
-      rw.applier), rw.isDirected)
+      rw.applier))
 
   private val tilingRules = Seq(
     // rules.combinatory.compositionAssoc1,

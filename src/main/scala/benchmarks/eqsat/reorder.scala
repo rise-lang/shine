@@ -23,7 +23,7 @@ object reorder {
       },
       Set("f"),
       (Set(FreeAnalysis, SmallestSizeAnalysis), Set()),
-      rw.applier), rw.isDirected)
+      rw.applier))
   }
 
   private val reorderRules = Seq(

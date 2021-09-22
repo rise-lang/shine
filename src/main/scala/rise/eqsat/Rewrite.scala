@@ -14,7 +14,7 @@ object Rewrite {
       }; true
     }
 
-    new Rewrite(name, searcher, applier, isDirected = false)
+    new Rewrite(name, searcher, applier)
   }
 }
 
@@ -23,9 +23,7 @@ object Rewrite {
   */
 class Rewrite(val name: String,
               val searcher: Searcher,
-              val applier: Applier,
-              // FIXME: directed rewriting is not properly implemented
-              val isDirected: Boolean) {
+              val applier: Applier) {
   override def toString: String = s"$name:\n$searcher\n  -->\n$applier"
 
   def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
@@ -39,9 +37,7 @@ class Rewrite(val name: String,
   def apply(egraph: EGraph,
             shc: SubstHashCons,
             matches: Vec[SearchMatches]): Vec[EClassId] =
-    applier.applyMatches(egraph, shc, matches, isDirected)
-
-  def directed(): Rewrite = new Rewrite(name, searcher, applier, true)
+    applier.applyMatches(egraph, shc, matches)
 }
 
 /** The left-hand side of a [[Rewrite]] rule.
@@ -90,27 +86,17 @@ trait Applier {
   // the substitutions inside `matches` may be modified
   def applyMatches(egraph: EGraph,
                    shc: SubstHashCons,
-                   matches: Vec[SearchMatches],
-                   directed: Boolean = false): Vec[EClassId] = {
+                   matches: Vec[SearchMatches]): Vec[EClassId] = {
     val added = Vec.empty[EClassId]
     for (mat <- matches) {
       val rootsToDelete = HashSet.empty[ENode]
 
-      for ((rootNode, subst) <- mat.substs) {
+      for (subst <- mat.substs) {
         val res = applyOne(egraph, mat.eclass, shc, subst)
-        if (directed && res.nonEmpty && !res.contains(mat.eclass)) {
-          rootsToDelete += rootNode
-            .getOrElse(throw new Exception("directed rewrite without root match"))
-        }
         added ++= res.iterator.flatMap { id =>
             val (to, didSomething) = egraph.union(id, mat.eclass)
             if (didSomething) { Some(to) } else { None }
           }
-      }
-
-      // FIXME: not accounting for analysis data here
-      if (rootsToDelete.nonEmpty) {
-        egraph.getMut(mat.eclass).nodes.filterInPlace(!rootsToDelete(_))
       }
     }
     added
@@ -120,7 +106,7 @@ trait Applier {
 /** The result of searching over one [[EClass]].
   * Note that multiple substitutions can have been found.
   */
-case class SearchMatches(eclass: EClassId, substs: Vec[(Option[ENode], Subst)])
+case class SearchMatches(eclass: EClassId, substs: Vec[Subst])
 
 // TODO? could use a packed Vec[Option[V]] where K is the index
 case class VecMap[K, V](vec: Vec[(K, V)]) {

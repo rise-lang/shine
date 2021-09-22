@@ -24,9 +24,7 @@ class Reorder extends test_util.Tests {
   )
 
   private val reorderRulesBENF = Seq(
-    rules.eta,//.directed(),
-    rules.betaExtract,//.directed(),
-    rules.betaNatExtract,//.directed(),
+    // rules.eta, rules.betaExtract, rules.betaNatExtract,
     rules.mapFusion, rules.mapFission,
     rules.transposePairAfter, rules.mapMapFBeforeTranspose,
     rules.etaAbstraction,

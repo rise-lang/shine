@@ -12,7 +12,7 @@ class HarrisHalide extends test_util.Tests {
     val start = nf(harris(1, 1).toExpr).get
     val goal = elevate.ocl.harrisBufferedShape.reduce(_`;`_)(start).get
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.betaExtract, rules.betaNatExtract, rules.eta,
+      // rules.betaExtract, rules.betaNatExtract, rules.eta,
       /*rules.idxReduction,*/ rules.fstReduction, rules.sndReduction,
       rules.slideOutsideZip, rules.slideInsideZip,
       rules.mapMapFBeforeTranspose,
@@ -27,7 +27,7 @@ class HarrisHalide extends test_util.Tests {
     val start = elevate.ocl.harrisBufferedShape.reduce(_`;`_)(harris(1, 1)).get
     val goal = elevate.ocl.harrisIxWithIy(start).get
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.betaExtract, rules.betaNatExtract, rules.eta,
+      // rules.betaExtract, rules.betaNatExtract, rules.eta,
       rules.fstReduction, rules.sndReduction,
       rules.takeOutsidePair,
       rules.vectorize.asScalarOutsidePair,
@@ -46,7 +46,7 @@ class HarrisHalide extends test_util.Tests {
       elevate.ocl.harrisIxWithIy)(h).get
     val goal = elevate.ocl.harrisBuffered(h).get
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.betaExtract, rules.betaNatExtract, rules.eta,
+      // rules.betaExtract, rules.betaNatExtract, rules.eta,
       rules.fstReduction, rules.sndReduction,
       rules.iterateStream,
       // rules.ocl.circularBuffer,

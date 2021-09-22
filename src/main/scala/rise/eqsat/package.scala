@@ -33,30 +33,34 @@ package object eqsat {
   def BENF(e: Expr): Expr = {
     val egraph = EGraph.empty()
     val id = egraph.addExpr(e)
-    Runner.init().run(egraph, NoPredicate(), Seq(
-      rules.eta,//.directed(),
-      // rules.beta, rules.betaNat
-      rules.betaExtract,//.directed(),
-      rules.betaNatExtract,//.directed()
+    ExprWithHashCons.expr(egraph)(BENF_internal(egraph, id))
+  }
+  def BENF(e: ExprWithHashCons, hc: HashConses): ExprWithHashCons = {
+    val egraph = EGraph.empty()
+    egraph.hashConses = hc
+    val id = egraph.addExpr(e)
+    BENF_internal(egraph, id)
+  }
+
+  private def BENF_internal(egraph: EGraph, id: EClassId): ExprWithHashCons = {
+    Runner.init().run(egraph, NoPredicate(), Seq(), Seq(
+      RewriteDirected.Eta,
+      RewriteDirected.BetaExtract,
+      RewriteDirected.BetaNatExtract
     ), Seq(id))
     val extractor = Extractor.init(egraph, AstSize)
     val (_, normalized) = extractor.findBestOf(id)
-    ExprWithHashCons.expr(egraph)(normalized)
+    normalized
   }
 
   // Combinator Normal Form
   def CNF(e: Expr): Expr = {
     val egraph = EGraph.empty()
     val id = egraph.addExpr(BENF(e))
-    // FIXME: avoid using .directed()?
-    Runner.init().run(egraph, NoPredicate(), Seq(
-      rules.eta.directed(),
-      // rules.beta, rules.betaNat,
-      // rules.betaExtract.directed(),
-      // rules.betaNatExtract.directed(),
-      rules.combinatory.compositionIntro.directed(),
-      // rules.combinatory.compositionAssoc1.directed()
-      rules.combinatory.compositionAssoc2.directed(),
+    Runner.init().run(egraph, NoPredicate(), Seq(), Seq(
+      RewriteDirected.Eta,
+      RewriteDirected.CompositionIntro,
+      RewriteDirected.CompositionAssoc2,
     ), Seq(id))
     val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     val (_, normalized) = extractor.findBestOf(id)

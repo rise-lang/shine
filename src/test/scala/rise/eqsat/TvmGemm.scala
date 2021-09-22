@@ -11,7 +11,6 @@ class TvmGemm extends test_util.Tests {
     val goal = tvmGemm.baseline(mm).get
 
     ProveEquiv.init().runBENF(mm, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.reduceSeq, rules.reduceSeqMapFusion
     ))
   }
@@ -27,7 +26,7 @@ class TvmGemm extends test_util.Tests {
     val goal = tvmGemm.blocking(mm).get
 
     val rs = Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
+      // rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.mapFission,
       rules.reduceSeq,
       rules.reduceSeqMapFusion,
@@ -90,7 +89,7 @@ class TvmGemm extends test_util.Tests {
     }
 
     GuidedSearch.init()
-      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(120))
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
       .runBENF(start, goal, rs, rewriteSnapshots)
   }
 
@@ -104,9 +103,8 @@ class TvmGemm extends test_util.Tests {
     )
 
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(80))
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
       .runBENF(start, goals, Seq(
-        rules.eta, rules.betaExtract, rules.betaNatExtract,
         rules.mapFission,
         // rules.transposeAroundMapMapF,
         rules.transposeAroundMapMapF1M,
@@ -141,7 +139,7 @@ class TvmGemm extends test_util.Tests {
 
     ProveEquiv.init()
       .runBENF(start, goal, Seq(
-        rules.eta, rules.betaExtract, rules.betaNatExtract,
+        // rules.eta,// rules.betaExtract, rules.betaNatExtract,
         rules.mapFission,
         rules.reduceSeq,
         rules.reduceSeqMapFusion,
@@ -178,7 +176,7 @@ class TvmGemm extends test_util.Tests {
     val goal = tvmGemm.vectorization(mm).get
 
     ProveEquiv.init().runCNF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
+      // rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.combinatory.compositionAssoc2,
       rules.combinatory.compositionIntro,
       rules.combinatory.compositionElim,
@@ -211,11 +209,11 @@ class TvmGemm extends test_util.Tests {
     )))(generate(fun(_ => lf32(0))))(transpose(in))) :: t
 
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.liftReduceSeq
     ))
 
     ProveEquiv.init().runCNF(start, goal, Seq(
+      // TODO: CNF implies BENF norm rules?
       rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.combinatory.compositionIntro,
       rules.combinatory.compositionAssoc2,
@@ -250,7 +248,6 @@ class TvmGemm extends test_util.Tests {
     )))(generate(fun(_ => generate(fun(_ => lf32(0))))))(transpose(in))) :: t
 
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.liftReduceSeq
     ))
   }
@@ -275,7 +272,6 @@ class TvmGemm extends test_util.Tests {
     )))(fst(unzip(in)))(transpose(snd(unzip(in))))) :: t
 
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.liftReduceSeq2
     ))
 /*
@@ -310,7 +306,6 @@ class TvmGemm extends test_util.Tests {
     )))(fst(unzip(map(unzip)(in))))(transpose(map(transpose)(snd(unzip(map(unzip)(in))))))) :: t
 
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.liftReduceSeq3
     ))
   }

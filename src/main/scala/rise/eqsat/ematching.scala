@@ -24,8 +24,7 @@ object ematching {
 
     def run[ED, ND, TD](egraph: EGraph,
                         instructions: Seq[Instruction],
-                        yieldFn: Option[ENode] => Unit,
-                        rootMatch: Option[ENode]): Unit = {
+                        yieldFn: () => ()): Unit = {
       var instrs = instructions
       while (instrs.nonEmpty) {
         instrs.head match {
@@ -42,13 +41,7 @@ object ematching {
                 n => nRegs += n,
                 dt => tRegs += dt
               )
-              val rootMatch2 = if (isRoot) {
-                assert(rootMatch.isEmpty)
-                Some(matched)
-              } else {
-                rootMatch
-              }
-              run(egraph, instrs.tail, yieldFn, rootMatch2)
+              run(egraph, instrs.tail, yieldFn)
             })
             return
           case Compare(i, j) =>
@@ -89,7 +82,7 @@ object ematching {
         instrs = instrs.tail
       }
 
-      yieldFn(rootMatch)
+      yieldFn()
     }
   }
 
@@ -118,11 +111,11 @@ object ematching {
                 var dt2r: HashMap[DataTypePatternVar, TypeReg]) {
     def run[ED, ND, TD](egraph: EGraph,
                         eclass: EClassId,
-                        hashcons: SubstHashCons): Vec[(Option[ENode], Subst)] = {
+                        hashcons: SubstHashCons): Vec[Subst] = {
       val machine = AbstractMachine.init(eclass)
 
-      val substs = Vec.empty[(Option[ENode], Subst)]
-      val yieldFn = { rootENode: Option[ENode] =>
+      val substs = Vec.empty[Subst]
+      val yieldFn = { () =>
         assert(v2r.iterator.forall { case (_, reg) => {
           val id = machine.reg(reg)
           egraph.find(id) == id
@@ -135,10 +128,10 @@ object ematching {
         val substDataTypes = hashcons.dataTypeSubst(dt2r.iterator.map { case (v, reg) =>
           (v, machine.tReg(reg).asInstanceOf[DataTypeId])
         })
-        substs += ((rootENode, Subst(substExprs, substNats, substTypes, substDataTypes)))
+        substs += Subst(substExprs, substNats, substTypes, substDataTypes)
         ()
       }
-      machine.run(egraph, instructions.toSeq, yieldFn, None)
+      machine.run(egraph, instructions.toSeq, yieldFn)
 
       substs
     }

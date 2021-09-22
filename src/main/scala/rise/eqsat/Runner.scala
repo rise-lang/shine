@@ -1,6 +1,7 @@
 package rise.eqsat
 
 import java.time.Duration
+import scala.annotation.tailrec
 
 sealed trait StopReason
 case object Saturated extends StopReason
@@ -81,11 +82,13 @@ class Runner(var iterations: Vec[Iteration],
   }
 
   def run(egraph: EGraph,
-                      filter: Predicate,
-                      rules: Seq[Rewrite],
-                      roots: Seq[EClassId]): Runner = {
+          filter: Predicate,
+          rules: Seq[Rewrite],
+          normRules: Seq[RewriteDirected],
+          roots: Seq[EClassId]): Runner = {
     egraph.rebuild(roots)
     rules.foreach(r => egraph.requireAnalyses(r.requiredAnalyses()))
+    normRules.foreach(r => egraph.requireAnalyses(r.requiredAnalyses()))
 
     val iteration0 = new Iteration(
       egraphNodes = egraph.nodeCount(),
@@ -108,7 +111,7 @@ class Runner(var iterations: Vec[Iteration],
       }
       if (stopReasons.nonEmpty) { return this }
 
-      val iter = runOne(egraph, roots, filter, rules)
+      val iter = runOne(egraph, roots, filter, rules, normRules)
       println(iter)
 
       if (iter.applied.isEmpty &&
@@ -131,6 +134,7 @@ class Runner(var iterations: Vec[Iteration],
     }
 
     rules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
+    normRules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
     this
   }
 
@@ -138,7 +142,8 @@ class Runner(var iterations: Vec[Iteration],
   private def runOne(egraph: EGraph,
                      roots: Seq[EClassId],
                      filter: Predicate,
-                     rules: Seq[Rewrite]): Iteration = {
+                     rules: Seq[Rewrite],
+                     normRules: Seq[RewriteDirected]): Iteration = {
     val time0 = System.nanoTime()
     val i = iterations.size
     val shc = SubstHashCons.empty
@@ -167,6 +172,44 @@ class Runner(var iterations: Vec[Iteration],
     val nRebuilds = egraph.rebuild(roots, filter)
 
     val time3 = System.nanoTime()
+
+    // TODO: include in Iteration
+    util.printTime("norm time", {
+      // TODO:
+      // val applied = HashMap.empty[String, Int]
+      var applied = 0
+      var mayRemove = 0
+
+      @tailrec
+      def rec(): Unit = {
+        // avoid deleting overlapping matches
+        val alreadyMatched = HashSet.empty[(EClassId, ENode)]
+        val res = normRules.flatMap { nr => nr.search(egraph) }
+          .filter { case (m, applier) =>
+            if (RewriteDirected.overlapsAlreadyMatched(alreadyMatched, m)) {
+              false
+            } else {
+              val addedSomething = applier()
+              applied += 1
+              if (addedSomething) {
+                mayRemove += 1
+                RewriteDirected.extendAlreadyMatched(alreadyMatched, m)
+              }
+              addedSomething
+            }
+          }
+        val removed = RewriteDirected.greedyRemoval(egraph, res)
+        println(s"removed: $removed")
+        egraph.rebuild(roots, filter)
+        if (removed > 0) {
+          rec()
+        }
+      }
+
+      rec()
+
+      println(s"applied: $applied, may remove: $mayRemove")
+    })
 
     new Iteration(
       egraphNodes = egraph.nodeCount(),

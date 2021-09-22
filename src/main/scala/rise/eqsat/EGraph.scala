@@ -183,6 +183,10 @@ class EGraph(
     add(expr.node.map(addExpr, addNat, addDataType), addType(expr.t))
   def addExpr(expr: ExprWithHashCons): EClassId =
     add(expr.node.map(addExpr, n => n, dt => dt), expr.t)
+  def addExpr2(expr: ExprWithHashCons): (ENode, EClassId) = {
+    val enode = expr.node.map(addExpr, n => n, dt => dt)
+    (enode, add(enode, expr.t))
+  }
 
   def lookupExpr(expr: Expr): Option[EClassId] =
     lookup(expr.node.map(
@@ -312,22 +316,24 @@ class EGraph(
 
     var trimmed = 0
     for (eclass <- classes.values) {
-      val oldNodeCount = eclass.nodeCount()
+      if (eclass.nodes.nonEmpty) {
+        val oldNodeCount = eclass.nodeCount()
 
-      // sort nodes for optimized search
-      val sortedNodes = eclass.nodes.mapInPlace(n => n.mapChildren(findMut))
-        .sorted
-      // remove duplicates
-      eclass.nodes.clear()
-      eclass.nodes += sortedNodes.head
-      for (nn <- sortedNodes.view.tail) {
-        if (nn != eclass.nodes.last) {
-          eclass.nodes += nn
+        // sort nodes for optimized search
+        val sortedNodes = eclass.nodes.mapInPlace(n => n.mapChildren(findMut))
+          .sorted
+        // remove duplicates
+        eclass.nodes.clear()
+        eclass.nodes += sortedNodes.head
+        for (nn <- sortedNodes.view.tail) {
+          if (nn != eclass.nodes.last) {
+            eclass.nodes += nn
+          }
         }
-      }
-      // eclass.nodes = eclass.nodes.map(_.mapChildren(findMut)).distinct
+        // eclass.nodes = eclass.nodes.map(_.mapChildren(findMut)).distinct
 
-      trimmed += oldNodeCount - eclass.nodeCount()
+        trimmed += oldNodeCount - eclass.nodeCount()
+      }
     }
 
     trimmed

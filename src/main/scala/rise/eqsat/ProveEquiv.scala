@@ -50,7 +50,12 @@ class ProveEquiv(
 
   def runBENF(starts: OneOrMore[rise.core.Expr],
               goals: OneOrMore[rise.core.Expr],
-              rules: Seq[Rewrite]): Unit = {
+              rules: Seq[Rewrite],
+              normRules: Seq[RewriteDirected] = Seq(
+                RewriteDirected.Eta,
+                RewriteDirected.BetaExtract,
+                RewriteDirected.BetaNatExtract
+              )): Unit = {
     val normStarts = starts.seq.map(s => BENF(Expr.fromNamed(s)))
     val normGoals = goals.seq.map(g => BENF(Expr.fromNamed(g)))
     for ((start, i) <- normStarts.zipWithIndex) {
@@ -59,12 +64,17 @@ class ProveEquiv(
     for ((goal, i) <- normGoals.zipWithIndex) {
       println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
     }
-    run(OneOrMore(normStarts), OneOrMore(normGoals), rules)
+    run(OneOrMore(normStarts), OneOrMore(normGoals), rules, normRules)
   }
 
   def runCNF(starts: OneOrMore[rise.core.Expr],
              goals: OneOrMore[rise.core.Expr],
-             rules: Seq[Rewrite]): Unit = {
+             rules: Seq[Rewrite],
+             normRules: Seq[RewriteDirected] = Seq(
+               RewriteDirected.Eta,
+               RewriteDirected.CompositionIntro,
+               RewriteDirected.CompositionAssoc2,
+             )): Unit = {
     val normStarts = starts.seq.map(s => CNF(Expr.fromNamed(s)))
     val normGoals = goals.seq.map(g => CNF(Expr.fromNamed(g)))
     for ((start, i) <- normStarts.zipWithIndex) {
@@ -73,12 +83,13 @@ class ProveEquiv(
     for ((goal, i) <- normGoals.zipWithIndex) {
       println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
     }
-    run(OneOrMore(normStarts), OneOrMore(normGoals), rules)
+    run(OneOrMore(normStarts), OneOrMore(normGoals), rules, normRules)
   }
 
   def run(starts: OneOrMore[Expr],
           goals: OneOrMore[Expr],
-          rules: Seq[Rewrite]): Unit = {
+          rules: Seq[Rewrite],
+          normRules: Seq[RewriteDirected]): Unit = {
     val egraph = EGraph.empty()
     egraph.requireAnalyses(filter.requiredAnalyses())
     val startId = starts.seq.tail.foldLeft(egraph.addExpr(starts.seq.head)) { case (id, e) =>
@@ -86,16 +97,17 @@ class ProveEquiv(
     }
 
     if (bidirectionalSearch) {
-      runBidirectional(egraph, startId, goals.seq, rules)
+      runBidirectional(egraph, startId, goals.seq, rules, normRules)
     } else {
-      runUnidirectional(egraph, startId, goals.seq, rules)
+      runUnidirectional(egraph, startId, goals.seq, rules, normRules)
     }
   }
 
   private def runUnidirectional(egraph: EGraph,
                                 startId: EClassId,
                                 goals: Seq[Expr],
-                                rules: Seq[Rewrite]): Unit = {
+                                rules: Seq[Rewrite],
+                                normRules: Seq[RewriteDirected]): Unit = {
     var remainingGoals = goals
 
     def goalReached(g: Expr): Boolean =
@@ -105,18 +117,19 @@ class ProveEquiv(
         remainingGoals = remainingGoals.filterNot(goalReached)
         remainingGoals.isEmpty
       })
-    }.run(egraph, filter, rules, Seq(startId))
+    }.run(egraph, filter, rules, normRules, Seq(startId))
     afterRun(runner, egraph, startId, goals, i => goalReached(goals(i)))
   }
 
   private def runBidirectional(egraph: EGraph,
                                startId: EClassId,
                                goals: Seq[Expr],
-                               rules: Seq[Rewrite]): Unit = {
+                               rules: Seq[Rewrite],
+                               normRules: Seq[RewriteDirected]): Unit = {
     val goalIds = goals.map(egraph.addExpr)
     val runner = transformRunner(Runner.init()).doneWhen { _ =>
       goalIds.forall(g => egraph.findMut(startId) == egraph.findMut(g))
-    }.run(egraph, filter, rules, Seq(startId))
+    }.run(egraph, filter, rules, normRules, Seq(startId))
     afterRun(runner, egraph, startId, goals, {
       i => egraph.findMut(startId) == egraph.findMut(goalIds(i))
     })
@@ -141,7 +154,7 @@ class ProveEquiv(
       val idsToFind = notFound.map(i => egraph.addExpr(goals(i)))
       val endRunner = Runner.init().doneWhen { _ =>
         idsToFind.forall(id => egraph.findMut(startId) == egraph.findMut(id))
-      }.run(egraph, NoPredicate(), endRules.asInstanceOf[Seq[Rewrite]], Seq(startId))
+      }.run(egraph, NoPredicate(), endRules.asInstanceOf[Seq[Rewrite]], Seq(), Seq(startId))
       if (endRunner.stopReasons.contains(Done)) {
         return
       }

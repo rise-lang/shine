@@ -62,7 +62,7 @@ class GuidedSearch(
             matches = ExtendedPattern.beamSearch(snapshot, 6, AstSize, egraph, rootId)
             matches.nonEmpty
           })
-        }.run(egraph, filter, rules, Seq(rootId))
+        }.run(egraph, filter, rules, Seq(), Seq(rootId))
         runner.printReport()
         if (!runner.stopReasons.contains(Done)) {
           throw CouldNotReachSnapshot(s, snapshot)
