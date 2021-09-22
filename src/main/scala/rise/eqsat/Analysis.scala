@@ -4,22 +4,12 @@ package rise.eqsat
   * is maintained across [[EGraph]] operations.
   * @see [[https://docs.rs/egg/0.6.0/egg/trait.Analysis.html]]
   */
-trait Analysis {
+trait AnalysisOps {
   type Data
 
   def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis])
 
   def make(egraph: EGraph, enode: ENode, t: TypeId): Data
-
-  // This should return the merge analysis data, which can be an updated `a`.
-  //
-  // The result is a `MergeResult(result, mayNotBeA, mayNotBeB)` indicating whether
-  // the merged result may be different from `a` and `b` respectively,
-  // where `a` denotes `a` before it might have been mutated.
-  def merge(a: Data, b: Data): MergeResult
-
-  // mayNotBe == !mustBe
-  case class MergeResult(result: Data, mayNotBeA: Boolean, mayNotBeB: Boolean)
 
   // NOTE: removed for now
   // def modify(egraph: EGraph, id: EClassId): Unit = {}
@@ -38,14 +28,30 @@ trait TypeAnalysis {
                node: TypeNode[TypeId, NatId, DataTypeId]): TypeData
 }
 
-object Analysis {
-  def mergeRequired(a: (Set[Analysis], Set[TypeAnalysis]),
-                    b: (Set[Analysis], Set[TypeAnalysis])): (Set[Analysis], Set[TypeAnalysis]) = {
-    (a._1 ++ b._1, a._2 ++ b._2)
-  }
+trait Analysis extends AnalysisOps {
+  def init(egraph: EGraph): ()
+  def update(egraph: EGraph): ()
 
-  def init(egraph: EGraph, analysis: Analysis): Unit = {
-    val dataMap = egraph.getAnalysisMap(analysis)
+  // FIXME: we are currently not updating the analysis data to account for removals
+  def eliminate(egraph: EGraph, toEliminate: HashSet[EClassId]): Unit = {
+    val dataMap = egraph.getAnalysisMap(this)
+    toEliminate.foreach { id => dataMap.remove(id) }
+  }
+}
+
+trait SemiLatticeAnalysis extends Analysis {
+  // This should return the merge analysis data, which can be an updated `a`.
+  //
+  // The result is a `MergeResult(result, mayNotBeA, mayNotBeB)` indicating whether
+  // the merged result may be different from `a` and `b` respectively,
+  // where `a` denotes `a` before it might have been mutated.
+  def merge(a: Data, b: Data): MergeResult
+
+  // mayNotBe == !mustBe
+  case class MergeResult(result: Data, mayNotBeA: Boolean, mayNotBeB: Boolean)
+
+  override def init(egraph: EGraph): Unit = {
+    val dataMap = egraph.getAnalysisMap(this)
 
     val analysisPending = HashSetQueuePop.empty[(ENode, EClassId)]
 
@@ -57,24 +63,24 @@ object Analysis {
       }
     }
 
-    resolvePendingAnalysis(egraph, analysis)(dataMap, analysisPending)
+    resolvePendingAnalysis(egraph, this)(dataMap, analysisPending)
 
     assert {
       egraph.classes.keys.forall(dataMap.contains)
     }
   }
 
-  def update(egraph: EGraph, analysis: Analysis): Unit = {
-    val dataMap0 = egraph.getAnalysisMap(analysis)
-    val dataMap = dataMap0.asInstanceOf[HashMap[EClassId, analysis.Data]] // FIXME: why?
+  override def update(egraph: EGraph): Unit = {
+    val dataMap0 = egraph.getAnalysisMap(this)
+    val dataMap = dataMap0.asInstanceOf[HashMap[EClassId, Data]] // FIXME: why?
 
     val analysisPending = HashSetQueuePop.empty[(ENode, EClassId)]
 
     egraph.analysisPending.foreach {
       case PendingMakeAnalysis(enode, id, t) =>
-        dataMap += id -> analysis.make(egraph, enode, t)
+        dataMap += id -> this.make(egraph, enode, t)
       case PendingMergeAnalysis(a, aParents, b, bParents) =>
-        val result = analysis.merge(dataMap(a), dataMap(b))
+        val result = this.merge(dataMap(a), dataMap(b))
         if (result.mayNotBeA) {
           analysisPending ++= aParents
         }
@@ -85,11 +91,11 @@ object Analysis {
         dataMap.remove(b)
     }
 
-    resolvePendingAnalysis(egraph, analysis)(dataMap0, analysisPending)
+    resolvePendingAnalysis(egraph, this)(dataMap0, analysisPending)
   }
 
   private def resolvePendingAnalysis(egraph: EGraph,
-                                     analysis: Analysis)(
+                                     analysis: SemiLatticeAnalysis)(
                                      dataMap: HashMap[EClassId, analysis.Data],
                                      analysisPending: HashSetQueuePop[(ENode, EClassId)]): Unit = {
     while (analysisPending.nonEmpty) {
@@ -116,6 +122,91 @@ object Analysis {
         analysisPending += (node, id)
       }
     }
+  }
+}
+
+trait CommutativeSemigroupAnalysis extends Analysis {
+  def merge(a: Data, b: Data): Data
+
+  override def init(egraph: EGraph): Unit = {
+    val dataMap = egraph.getAnalysisMap(this)
+
+    val analysisPending = HashSetQueuePop.empty[EClassId]
+
+    egraph.classes.values.foreach { eclass =>
+      eclass.nodes.foreach { enode =>
+        if (enode.childrenCount() == 0) {
+          analysisPending += eclass.id
+        }
+      }
+    }
+
+    resolvePendingAnalysis(egraph, this)(dataMap, analysisPending)
+
+    assert {
+      egraph.classes.keys.forall(dataMap.contains)
+    }
+  }
+
+  override def update(egraph: EGraph): Unit = {
+    val dataMap0 = egraph.getAnalysisMap(this)
+    val dataMap = dataMap0.asInstanceOf[HashMap[EClassId, Data]] // FIXME: why?
+
+    val analysisPending = HashSetQueuePop.empty[EClassId]
+
+    egraph.analysisPending.foreach {
+      case PendingMakeAnalysis(_, id, _) =>
+        analysisPending += egraph.findMut(id)
+      case PendingMergeAnalysis(a, _, b, _) =>
+        analysisPending += egraph.findMut(a)
+        dataMap.remove(b)
+    }
+
+    resolvePendingAnalysis(egraph, this)(dataMap0, analysisPending)
+
+    assert {
+      egraph.classes.keys.forall(dataMap.contains)
+    }
+  }
+
+  private def resolvePendingAnalysis(egraph: EGraph,
+                                     analysis: CommutativeSemigroupAnalysis)(
+                                      dataMap: HashMap[EClassId, analysis.Data],
+                                      analysisPending: HashSetQueuePop[EClassId]): Unit = {
+    while (analysisPending.nonEmpty) {
+      val id = analysisPending.pop()
+      val cid = egraph.findMut(id)
+      assert(cid == id)
+
+      val eclass = egraph.classes(cid)
+      val availableData = eclass.nodes.flatMap { n =>
+        val uNode = n.mapChildren(egraph.findMut)
+        // assert(n == uNode)
+
+        if (uNode.children().forall(dataMap.contains)) {
+          Some(analysis.make(egraph, uNode, eclass.t))
+        } else {
+          None
+        }
+      }
+      if (availableData.isEmpty) {
+        analysisPending += cid
+      } else {
+        val existingData = dataMap.get(eclass.id)
+        val computedData = availableData.reduce[analysis.Data] { case (a, b) => analysis.merge(a, b) }
+        if (!existingData.contains(computedData)) {
+          dataMap += cid -> computedData
+          analysisPending ++= eclass.parents.map(p => egraph.findMut(p._2))
+        }
+      }
+    }
+  }
+}
+
+object Analysis {
+  def mergeRequired(a: (Set[Analysis], Set[TypeAnalysis]),
+                    b: (Set[Analysis], Set[TypeAnalysis])): (Set[Analysis], Set[TypeAnalysis]) = {
+    (a._1 ++ b._1, a._2 ++ b._2)
   }
 }
 
@@ -154,7 +245,7 @@ object TypeAnalysis {
   }
 }
 
-object NoAnalysis extends Analysis with TypeAnalysis {
+object NoAnalysis extends AnalysisOps with SemiLatticeAnalysis with TypeAnalysis {
   type Data = ()
   type NatData = ()
   type TypeData = ()
@@ -172,7 +263,7 @@ object NoAnalysis extends Analysis with TypeAnalysis {
     MergeResult((), mayNotBeA = false, mayNotBeB = false)
 }
 
-object SmallestSizeAnalysis extends Analysis {
+object SmallestSizeAnalysis extends AnalysisOps with SemiLatticeAnalysis {
   type Data = (ExprWithHashCons, Int)
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
@@ -219,7 +310,7 @@ object FreeIntersectionAnalysis extends FreeAnalysisCustomisable() {
     to.filterInPlace(from.contains) // intersection
 }
 
-abstract class FreeAnalysisCustomisable() extends Analysis with TypeAnalysis {
+abstract class FreeAnalysisCustomisable() extends AnalysisOps with SemiLatticeAnalysis with TypeAnalysis {
   type Data = FreeData
   type NatData = FreeNatData
   type TypeData = FreeTypeData
@@ -343,4 +434,54 @@ abstract class FreeAnalysisCustomisable() extends Analysis with TypeAnalysis {
     }
     new TypeData(freeNat, freeDataType)
   }
+}
+
+case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
+                             (implicit costCmp: math.Ordering[Cost])
+  extends Analysis with CommutativeSemigroupAnalysis
+{
+  type Data = Seq[(Cost, ExprWithHashCons)]
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(), Set())
+
+  override def make(egraph: EGraph, enode: ENode, t: TypeId): Seq[(Cost, ExprWithHashCons)] = {
+    val analysisOf = egraph.getAnalysis(this)
+    val childrenBeams = enode.children().map(c => (c, analysisOf(c))).toSeq
+
+    def rec(remaining: Seq[(EClassId, Seq[(Cost, ExprWithHashCons)])],
+            selected: Map[EClassId, (Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
+      remaining match {
+        case Nil =>
+          Seq((
+            cf.cost(enode, c => selected(c)._1),
+            ExprWithHashCons(enode.mapChildren(c => selected(c)._2), t)))
+        case (child, childBeam) +: rest =>
+          childBeam.flatMap { x =>
+            rec(rest, selected + (child -> x))
+          }
+      }
+    }
+
+    val tmp = rec(childrenBeams, Map.empty).sortBy(_._1).take(beamSize)
+    assert(tmp == tmp.distinct)
+    tmp
+  }
+
+  override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
+    val sorted = (a ++ b).sortBy(_._1)
+    assert(sorted.size == sorted.distinct.size)
+    sorted.take(beamSize)
+  }
+/*
+  override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
+    val sorted = (existing ++ computed).sortBy(_._1)
+    // TODO: hash-cons the exprs for faster .distinct?
+    val dedup = sorted.distinct
+    // sorted.headOption ++ sorted.iterator.sliding(2, 1).withPartial(false)
+    // .flatMap(nbh => if (nbh(0) == nbh(1)) { None } else { Some(nbh(1)) })
+    dedup.take(beamSize)
+  }
+
+ */
 }

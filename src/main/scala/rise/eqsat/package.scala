@@ -66,7 +66,8 @@ package object eqsat {
     // val (_, normalized) = extractor.findBestOf(id)
     val analyser = Analyser.init(egraph,
       AvoidCompositionAssoc1Extract(LexicographicCost(AppCount, AstSize)))
-    val normalized = analyser.analysisOf(id).best._3
+    val (avoidCount, _, normalized) = analyser.analysisOf(id).best
+    assert(avoidCount == 0)
     ExprWithHashCons.expr(egraph)(normalized)
   }
 }

@@ -59,7 +59,7 @@ class EGraph(
 
     if (!analyses.contains(a)) {
       analyses(a) = new AnalysisData(0, HashMap.empty[EClassId, a.Data])
-      Analysis.init(this, a)
+      a.init(this)
     }
     analyses(a).refCount += 1
   }
@@ -266,7 +266,7 @@ class EGraph(
   def rebuild(roots: Seq[EClassId],
               filter: Predicate = NoPredicate()): Int = {
     val nUnions = processUnions()
-    val _ = rebuildClasses()
+    // val _ = rebuildClasses()
     val _ = this.filter(filter, roots)
     rebuildClassesByMatch()
 
@@ -297,10 +297,12 @@ class EGraph(
         }
       }
 
+      rebuildClasses() // for semigroup analyses
+
       // NOTE: analysis dependencies should be respected if topological order is maintained
       // TODO: update could also be on-demand / lazy
       typeAnalyses.keysIterator.foreach(ta => TypeAnalysis.update(this, ta))
-      analyses.keysIterator.foreach(t => Analysis.update(this, t))
+      analyses.keysIterator.foreach(t => t.update(this))
       analysisPending.clear()
     }
 
@@ -469,10 +471,9 @@ class EGraph(
       memo.filterInPlace { case (_, id) =>
         !eclassToEliminate(id)
       }
+      // FIXME: we are currently not updating the analysis data to account for removals
+      analyses.keysIterator.foreach(t => t.eliminate(this, toEliminate))
     }
-
-    // FIXME: we are currently not updating the analysis data
-    //  to account for removals
 
     val eliminatedClasses = originalClassCount - classCount()
     val eliminatedNodes = originalNodeCount - nodeCount()

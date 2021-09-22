@@ -47,6 +47,9 @@ class GuidedSearch(
     }
     println(s"goal size: ${goalSize}")
 
+    val beamSize = 6
+    val costFunction = AstSize
+
     @tailrec
     def rec(s: Int, egraph: EGraph, rootId: EClassId): Unit = {
       egraph.rebuild(Seq(rootId))
@@ -55,7 +58,7 @@ class GuidedSearch(
       pcount.analysisOf(rootId).foreach { case (size, count) =>
         println(s"programs of size ${size}: ${count}")
       }
-      BeamExtract.print(6, AstSize, egraph, rootId)
+      BeamExtract.print(beamSize, costFunction, egraph, rootId)
       println("----")
 
       if (s < snapshots.length) {
@@ -64,7 +67,7 @@ class GuidedSearch(
         // TODO: add beam analysis to e-graph for incremental update
         val runner = transformRunner(Runner.init()).doneWhen { r =>
           util.printTime("goal check", {
-            matches = ExtendedPattern.beamSearch(snapshot, 6, AstSize, egraph, rootId)
+            matches = ExtendedPattern.beamSearch(snapshot, beamSize, costFunction, egraph, rootId)
             matches.nonEmpty
           })
         }.run(egraph, filter, rules, normRules, Seq(rootId))
@@ -75,6 +78,7 @@ class GuidedSearch(
 
         val g = EGraph.empty()
         g.hashConses = egraph.hashConses
+        g.requireAnalysis(BeamExtract2(beamSize, costFunction))
         // TODO: should other known unions be restored?
         val r = matches.map { case (_, e) =>
           g.addExpr(e)
@@ -86,6 +90,7 @@ class GuidedSearch(
     }
 
     val g = EGraph.empty()
+    g.requireAnalysis(BeamExtract2(beamSize, costFunction))
     rec(0, g, g.addExpr(normStart))
   }
 }

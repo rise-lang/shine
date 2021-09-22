@@ -133,8 +133,9 @@ object ExtendedPattern {
                       (implicit costCmp: math.Ordering[Cost])
   : Map[EClassId, Seq[(Cost, ExprWithHashCons)]] =
   {
-    val beamAnalyser = util.printTime("beam extract",
-      Analyser.init(egraph, BeamExtract(beamSize, costFunction)))
+    val beamExtractMap = egraph.getAnalysisMap(BeamExtract2(beamSize, costFunction))
+    // val beamAnalyser = util.printTime("beam extract",
+    //  Analyser.init(egraph, BeamExtract(beamSize, costFunction)))
     val memo = HashMap.empty[ExtendedPattern, Map[EClassId, Seq[(Cost, ExprWithHashCons)]]]
 
     def searchRec(p: ExtendedPattern): Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = {
@@ -145,7 +146,7 @@ object ExtendedPattern {
 
       val res: Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = p match {
         case ExtendedPatternAny(t) =>
-          beamAnalyser.data.iterator.filter { case (id, beam) =>
+          beamExtractMap.iterator.filter { case (id, beam) =>
             beam.nonEmpty && typeIsMatch(egraph, t, egraph.get(id).t)
           }.toMap
         case ExtendedPatternVar(index, t) => ???
@@ -214,7 +215,7 @@ object ExtendedPattern {
                               analysisOf: EClassId => Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
               val childrenMatchingBeams = enode.children().map(c => (c, analysisOf(c))).toSeq
               // TODO: skip if empty matches
-              val childrenAnyBeams = enode.children().map(c => (c, beamAnalyser.analysisOf(c))).toSeq
+              val childrenAnyBeams = enode.children().map(c => (c, beamExtractMap(egraph.find(c)))).toSeq
 
               val tmp = childrenMatchingBeams.flatMap { case (matchingChild, matchingBeam) =>
                 def productRec(remaining: Seq[(EClassId, Seq[(Cost, ExprWithHashCons)])],
