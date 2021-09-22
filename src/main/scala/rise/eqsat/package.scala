@@ -62,8 +62,11 @@ package object eqsat {
       RewriteDirected.CompositionIntro,
       RewriteDirected.CompositionAssoc2,
     ), Seq(id))
-    val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
-    val (_, normalized) = extractor.findBestOf(id)
+    // val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
+    // val (_, normalized) = extractor.findBestOf(id)
+    val analyser = Analyser.init(egraph,
+      AvoidCompositionAssoc1Extract(LexicographicCost(AppCount, AstSize)))
+    val normalized = analyser.analysisOf(id).best._3
     ExprWithHashCons.expr(egraph)(normalized)
   }
 }

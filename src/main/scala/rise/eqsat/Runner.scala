@@ -151,65 +151,48 @@ class Runner(var iterations: Vec[Iteration],
     val matches = rules.map { r =>
       scheduler.searchRewrite(i, egraph, shc, r)
     }
+    val normMatches = normRules.map { nr => nr.search(egraph) }
 
     val time1 = System.nanoTime()
 
     val applied = HashMap.empty[String, Int]
-    rules.zip(matches).map { case (r, ms) =>
-      // TODO: extract Substs as proper maps or vecmaps during rewrite application?
-      //  for faster access and local inserts
-      val newlyApplied = scheduler.applyRewrite(i, egraph, shc, r, ms)
+    def updateApplied(name: String, newlyApplied: Int): Unit = {
       if (newlyApplied > 0) {
-        applied.updateWith(r.name) {
+        applied.updateWith(name) {
           case Some(count) => Some(count + newlyApplied)
           case None => Some(newlyApplied)
         }
       }
     }
 
+    rules.zip(matches).foreach { case (r, ms) =>
+      // TODO: extract Substs as proper maps or vecmaps during rewrite application?
+      //  for faster access and local inserts
+      val newlyApplied = scheduler.applyRewrite(i, egraph, shc, r, ms)
+      updateApplied(r.name, newlyApplied)
+    }
+    val withAlternative = Vec.empty[RewriteDirected.Match]
+    normRules.zip(normMatches).foreach { case (nr, ms) =>
+      var newlyApplied = 0
+      ms.foreach { case (m, applier) =>
+        val (createsAlt, unionAlt) = applier()
+        if (unionAlt) { newlyApplied += 1 }
+        if (createsAlt) { withAlternative += m }
+      }
+      updateApplied(nr.name, newlyApplied)
+    }
+
     val time2 = System.nanoTime()
 
+    // TODO: include in Iteration
+    val (removeTime, removed) = util.time {
+      RewriteDirected.greedyRemoval(egraph, withAlternative)
+    }
+    println(s"removed $removed nodes in ${util.prettyTime(removeTime)}")
+    
     val nRebuilds = egraph.rebuild(roots, filter)
 
     val time3 = System.nanoTime()
-
-    // TODO: include in Iteration
-    util.printTime("norm time", {
-      // TODO:
-      // val applied = HashMap.empty[String, Int]
-      var applied = 0
-      var mayRemove = 0
-
-      @tailrec
-      def rec(): Unit = {
-        // avoid deleting overlapping matches
-        val alreadyMatched = HashSet.empty[(EClassId, ENode)]
-        val res = normRules.flatMap { nr => nr.search(egraph) }
-          .filter { case (m, applier) =>
-            if (RewriteDirected.overlapsAlreadyMatched(alreadyMatched, m)) {
-              false
-            } else {
-              val addedSomething = applier()
-              applied += 1
-              if (addedSomething) {
-                mayRemove += 1
-                RewriteDirected.extendAlreadyMatched(alreadyMatched, m)
-              }
-              addedSomething
-            }
-          }
-        val removed = RewriteDirected.greedyRemoval(egraph, res)
-        println(s"removed: $removed")
-        egraph.rebuild(roots, filter)
-        if (removed > 0) {
-          rec()
-        }
-      }
-
-      rec()
-
-      println(s"applied: $applied, may remove: $mayRemove")
-    })
 
     new Iteration(
       egraphNodes = egraph.nodeCount(),

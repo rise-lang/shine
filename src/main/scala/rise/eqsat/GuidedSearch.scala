@@ -33,6 +33,11 @@ class GuidedSearch(
     val normGoal = BENF(Expr.fromNamed(goal))
     println(s"normalized start: ${Expr.toNamed(normStart)}")
     println(s"normalized goal: ${Expr.toNamed(normGoal)}")
+    val normRules = Seq(
+      RewriteDirected.Eta,
+      RewriteDirected.BetaExtract,
+      RewriteDirected.BetaNatExtract
+    )
 
     val goalSize = {
       val g = EGraph.empty()
@@ -62,7 +67,7 @@ class GuidedSearch(
             matches = ExtendedPattern.beamSearch(snapshot, 6, AstSize, egraph, rootId)
             matches.nonEmpty
           })
-        }.run(egraph, filter, rules, Seq(), Seq(rootId))
+        }.run(egraph, filter, rules, normRules, Seq(rootId))
         runner.printReport()
         if (!runner.stopReasons.contains(Done)) {
           throw CouldNotReachSnapshot(s, snapshot)

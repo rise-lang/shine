@@ -13,16 +13,35 @@ object RewriteDirected {
   case class MatchNode(mnode: Node[Match, (), ()], enode: ENode, id: EClassId) extends Match
   case class MatchClass(id: EClassId) extends Match
 
-  // returns whether at least an alternative was added
-  type Applier = () => Boolean
+  // returns whether the right-hand side creates a new alternative,
+  // and whether the graph changed (new union)
+  type Applier = () => (Boolean, Boolean)
 
   // returns amount of nodes removed
   def greedyRemoval(egraph: EGraph,
-                    res: Seq[(RewriteDirected.Match, RewriteDirected.Applier)]): Int = {
-    val remaining = res.map(_._1)
-    var removedBefore = -1
-    var removed = 0
+                    withAlternative: Vec[RewriteDirected.Match]): Int = {
+    // avoid deleting overlapping matches
+    val attemptedDeletion = HashSet.empty[(EClassId, ENode)]
 
+    def overlapsAttemptedDeletion(m: Match): Boolean = {
+      m match {
+        case MatchNode(mnode, enode, id) =>
+          attemptedDeletion(id -> enode) ||
+            mnode.children().exists(overlapsAttemptedDeletion)
+        case MatchClass(_) => false
+      }
+    }
+
+    def extendAttemptedDeletion(m: Match): Unit = {
+      m match {
+        case MatchNode(mnode, enode, id) =>
+          attemptedDeletion += id -> enode
+          mnode.children().foreach(extendAttemptedDeletion)
+        case MatchClass(_) => ()
+      }
+    }
+
+    var removed = 0
     def remove(eclass: EClass, enode: ENode): Unit = {
       val idx = eclass.nodes.indexOf(enode)
       if (idx < 0) { return } // already removed
@@ -41,40 +60,54 @@ object RewriteDirected {
       removed += 1
     }
 
-    while (removed > removedBefore) {
-      removedBefore = removed
-
-      remaining.foreach { m =>
-        // returns whether there exists shared non-matching possibilities
-        def sharesNonMatching(m: Match): Boolean = {
-          m match {
-            case MatchNode(mnode, _, id) =>
-              mnode.children().exists(sharesNonMatching) ||
-              (egraph.get(id).parents.size > 1)
-            case MatchClass(_) => false
-          }
-        }
-
-        def rec(m: Match, atRoot: Boolean): () = {
-          m match {
-            case MatchNode(mnode, enode, id) =>
-              // following code is inefficient, but good enough for small matches
-              val snms = mnode.children().map(sharesNonMatching).toSeq
-              mnode.children().zipWithIndex.foreach { case (c, i) =>
-                val safeToRec = snms.zipWithIndex.forall { case (x, j) => i == j || !x }
-                if (safeToRec) { rec(c, atRoot = false) }
-              }
-
-              val eclass = egraph.get(id)
-              val safeToRemove =
-                (atRoot || (eclass.parents.size == 1)) && snms.forall(x => !x)
-              if (safeToRemove) { remove(eclass, enode) }
-            case MatchClass(_) => ()
-          }
-        }
-
-        rec(m, atRoot = true)
+    // returns whether there exists shared non-matching possibilities
+    def sharesNonMatching(m: Match): Boolean = {
+      m match {
+        case MatchNode(mnode, _, id) =>
+          mnode.children().exists(sharesNonMatching) ||
+            (egraph.get(id).parents.size > 1)
+        case MatchClass(_) => false
       }
+    }
+
+    def tryToRemove(m: Match, atRoot: Boolean): () = {
+      m match {
+        case MatchNode(mnode, enode, id) =>
+          val eclass = egraph.get(id)
+          val safeToProceed = atRoot || (eclass.parents.size == 1)
+          if (safeToProceed) {
+            // following code is inefficient, but good enough for small matches
+            val snms = mnode.children().map(sharesNonMatching).toSeq
+            mnode.children().zipWithIndex.foreach { case (c, i) =>
+              val safeToRec = snms.zipWithIndex.forall { case (x, j) => i == j || !x }
+              if (safeToRec) { tryToRemove(c, atRoot = false) }
+            }
+
+            val safeToRemove = snms.forall(x => !x)
+            if (safeToRemove) { remove(eclass, enode) }
+          }
+        case MatchClass(_) => ()
+      }
+    }
+
+    var removedBefore = 0
+    val attemptDeletions = withAlternative.filter { m =>
+      val removedBackup = removed
+      if (!overlapsAttemptedDeletion(m)) {
+        tryToRemove(m, atRoot = true)
+      }
+      val keep = removed > removedBackup
+      if (keep) {
+        extendAttemptedDeletion(m)
+      }
+      keep
+    }
+
+    while (removed > removedBefore) {
+      // FIXME: never seems to remove more, this is dead code?
+      // println(s"hello: ${removed}")
+      removedBefore = removed
+      attemptDeletions.foreach { m => tryToRemove(m, atRoot = true) }
     }
 
     removed
@@ -86,24 +119,6 @@ object RewriteDirected {
   private def foreachMatchingNode(eclass: EClass, mnode: MNode)
                                  (f: ENode => Unit): Unit =
     ematching.forEachMatchingNode(eclass, mnode, f)
-
-  def overlapsAlreadyMatched(alreadyMatched: HashSet[(EClassId, ENode)], m: Match): Boolean = {
-    m match {
-      case MatchNode(mnode, enode, id) =>
-        alreadyMatched(id -> enode) ||
-          mnode.children().exists(overlapsAlreadyMatched(alreadyMatched, _))
-      case MatchClass(_) => false
-    }
-  }
-
-  def extendAlreadyMatched(alreadyMatched: HashSet[(EClassId, ENode)], m: Match): Unit = {
-    m match {
-      case MatchNode(mnode, enode, id) =>
-        alreadyMatched += id -> enode
-        mnode.children().foreach(extendAlreadyMatched(alreadyMatched, _))
-      case MatchClass(_) => ()
-    }
-  }
 
   // FIXME: redundancy with e-matching and extended pattern search
   // TODO: algorithm could be generalized for any rewrite rule
@@ -144,8 +159,7 @@ object RewriteDirected {
                   val extract = smallestOf(matchingAppFun.id)._1
                   val shifted = extract.shifted(egraph, (-1, 0, 0), (1, 0, 0))
                   val (resultNode, resultId) = egraph.addExpr2(shifted)
-                  egraph.union(lamEClass.id, resultId)
-                  matchingLam != resultNode
+                  (matchingLam != resultNode, egraph.union(lamEClass.id, resultId)._2)
                 }))
               }
             }
@@ -188,12 +202,10 @@ object RewriteDirected {
             res += ((m, () => {
               val bodyEx = smallestOf(body)._1
               val subsEx = smallestOf(subs)._1
-              val expr = BENF( // trick
-                bodyEx.withArgument(egraph, subsEx),
-                egraph.hashConses)
+              val expr = bodyEx.withArgument(egraph, subsEx)
               val (resultNode, resultId) = egraph.addExpr2(expr)
-              egraph.union(appEClass.id, resultId)
-              matchingApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find)
+              (matchingApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find),
+                egraph.union(appEClass.id, resultId)._2)
             }))
           }
         }
@@ -234,8 +246,8 @@ object RewriteDirected {
               val bodyEx = smallestOf(body)._1
               val expr = bodyEx.withNatArgument(egraph, subs)
               val (resultNode, resultId) = egraph.addExpr2(expr)
-              egraph.union(nAppEClass.id, resultId)._2
-              matchingNApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find)
+              (matchingNApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find),
+                egraph.union(nAppEClass.id, resultId)._2)
             }))
           }
         }
@@ -289,8 +301,8 @@ object RewriteDirected {
                       val compGF = egraph.add(Composition(g.id, f.id), egraph.add(FunType(dt1, dt3)))
                       val resultNode = App(compGF, x.id)
                       val resultId = egraph.add(resultNode, dt3)
-                      egraph.union(appEClass.id, resultId)
-                      matchingApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find)
+                      (matchingApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find),
+                        egraph.union(appEClass.id, resultId)._2)
                     }))
                   case _ =>
                 }
@@ -348,8 +360,8 @@ object RewriteDirected {
                           val compFG = egraph.add(Composition(f.id, g.id), egraph.add(FunType(t1, t3)))
                           val resultNode = Composition(compFG, h.id)
                           val resultId = egraph.add(resultNode, egraph.add(FunType(t1, t4)))
-                          egraph.union(compEClass.id, resultId)
-                          matchingComp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find)
+                          (matchingComp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find),
+                            egraph.union(compEClass.id, resultId)._2)
                         })))
                       case _ => ()
                     }

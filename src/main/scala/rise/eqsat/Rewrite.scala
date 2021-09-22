@@ -89,14 +89,12 @@ trait Applier {
                    matches: Vec[SearchMatches]): Vec[EClassId] = {
     val added = Vec.empty[EClassId]
     for (mat <- matches) {
-      val rootsToDelete = HashSet.empty[ENode]
-
       for (subst <- mat.substs) {
         val res = applyOne(egraph, mat.eclass, shc, subst)
         added ++= res.iterator.flatMap { id =>
-            val (to, didSomething) = egraph.union(id, mat.eclass)
-            if (didSomething) { Some(to) } else { None }
-          }
+          val (to, didSomething) = egraph.union(id, mat.eclass)
+          if (didSomething) { Some(to) } else { None }
+        }
       }
     }
     added
@@ -231,7 +229,6 @@ case class ShiftedExtractApplier(v: PatternVar, newV: PatternVar,
                         eclass: EClassId,
                         shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    // TODO: ensure analysis is added
     val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
     val extract = smallestOf(subst(v, shc))._1
     val shifted = extract.shifted(egraph, shift, cutoff)

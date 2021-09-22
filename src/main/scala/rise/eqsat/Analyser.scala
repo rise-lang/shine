@@ -128,6 +128,63 @@ case class CountProgramsUpToSize(limit: Int) extends Analyser.Analysis[HashMap[I
     computed
 }
 
+case class AvoidCompositionAssoc1ExtractData[Cost](
+  best: (Int, Cost, ExprWithHashCons),
+  bestNoComp: Option[(Int, Cost, ExprWithHashCons)])
+
+case class AvoidCompositionAssoc1Extract[Cost](cf: CostFunction[Cost])
+                                              (implicit costCmp: math.Ordering[Cost])
+  extends Analyser.Analysis[AvoidCompositionAssoc1ExtractData[Cost]] {
+
+  override def make(enode: ENode, t: TypeId,
+                    analysisOf: EClassId => AvoidCompositionAssoc1ExtractData[Cost]
+                   ): AvoidCompositionAssoc1ExtractData[Cost] = {
+    val childrenAnalysis = enode.children().map(c => c -> analysisOf(c)).toMap
+    enode match {
+      case Composition(f, g) =>
+        // g may be a Composition
+        var avoidCount = 1 + childrenAnalysis.values.map(v => v.best._1).sum
+        var cost = cf.cost(enode, c => childrenAnalysis(c).best._2)
+        var expr = ExprWithHashCons(enode.mapChildren(c => childrenAnalysis(c).best._3), t)
+        // g may not be a Composition
+        childrenAnalysis(g).bestNoComp.foreach { gbnc =>
+          val childrenAvoidCountNoComp = childrenAnalysis(f).best._1 + gbnc._1
+          if (childrenAvoidCountNoComp < avoidCount) {
+            avoidCount = childrenAvoidCountNoComp
+            cost = cf.cost(enode, Map(
+              f -> childrenAnalysis(f).best._2,
+              g -> gbnc._2
+            ))
+            expr = ExprWithHashCons(enode.mapChildren(Map(
+              f -> childrenAnalysis(f).best._3,
+              g -> gbnc._3
+            )), t)
+          }
+        }
+        val compound = (avoidCount, cost, expr)
+        AvoidCompositionAssoc1ExtractData(compound, None)
+      case _ =>
+        val avoidCount = childrenAnalysis.values.map(v => v.best._1).sum
+        val cost = cf.cost(enode, c => childrenAnalysis(c).best._2)
+        val expr = ExprWithHashCons(enode.mapChildren(c => childrenAnalysis(c).best._3), t)
+        val compound = (avoidCount, cost, expr)
+        AvoidCompositionAssoc1ExtractData(compound, Some(compound))
+    }
+  }
+
+  override def merge(a: AvoidCompositionAssoc1ExtractData[Cost],
+                     b: AvoidCompositionAssoc1ExtractData[Cost]): AvoidCompositionAssoc1ExtractData[Cost] = {
+    AvoidCompositionAssoc1ExtractData(
+      Seq(a.best, b.best).minBy { case (avoidCount, cost, _) => (avoidCount, cost) },
+      (a.bestNoComp ++ b.bestNoComp).minByOption { case (avoidCount, cost, _) => (avoidCount, cost) },
+    )
+  }
+
+  override def update(existing: AvoidCompositionAssoc1ExtractData[Cost],
+                      computed: AvoidCompositionAssoc1ExtractData[Cost]): AvoidCompositionAssoc1ExtractData[Cost] =
+    computed
+}
+
 case class BeamExtract[Cost](beamSize: Int, cf: CostFunction[Cost])
                             (implicit costCmp: math.Ordering[Cost])
   extends Analyser.Analysis[Seq[(Cost, ExprWithHashCons)]]
