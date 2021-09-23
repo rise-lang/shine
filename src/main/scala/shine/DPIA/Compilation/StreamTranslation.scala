@@ -9,9 +9,8 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
-import shine.DPIA.primitives.imperative.{Seq => _}
-import shine.DPIA.primitives.intermediate._
-import shine.OpenCL.primitives.{functional => ocl, intermediate => oclI}
+import shine.DPIA.primitives.imperative.{CycleAcc, DropAcc, PairAcc, TakeAcc, UnzipAcc, Seq => _}
+import shine.OpenCL.primitives.{functional => ocl}
 
 import scala.annotation.tailrec
 
@@ -43,15 +42,43 @@ object StreamTranslation {
   def primitive(E: ExpPrimitive)
                (C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
                (implicit context: TranslationContext): Phrase[CommType] = E match {
-    case CircularBuffer(n, alloc, sz, dt1, dt2, load, input) =>
+    case CircularBuffer(n, _, size, dt1, dt2, load, input) =>
       val i = NatIdentifier(freshName("i"))
       str(input)(fun((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
-      )(nextIn =>
-        CircularBufferI(n, sz, 1, dt1, dt2,
-          fun(expT(dt1, read))(x =>
-            fun(accT(dt2))(o => acc(load(x))(o))),
-          nextIn, C)))
+      )(nextInput => {
+        // TODO: generalize and make explicit? might not always be wanted
+        def allocGen(dt: DataType,
+                     C: (Phrase[AccType], Phrase[ExpType]) => Phrase[CommType]): Phrase[CommType] = dt match {
+          case PairType(a, b) =>
+            allocGen(a, (wa, ra) => allocGen(b, (wb, rb) =>
+              C(UnzipAcc(size, a, b, PairAcc(size `.` a, size `.` b, wa, wb)),
+                Zip(size, a, b, `read`, ra, rb))
+            ))
+          case _ =>
+            `new`(size `.` dt, buffer => C(buffer.wr, buffer.rd))
+        }
+
+        allocGen(dt2, (bufWr: Phrase[AccType], bufRd: Phrase[ExpType]) => {
+          // TODO: unroll flags?
+          // prologue initialisation
+          forNat(n = size - 1, f = i =>
+            streamNext(nextInput, i, fun(expT(dt1, read))(x => acc(load(x))(bufWr `@` i)))) `;`
+          C(nFun(i =>
+            fun(expT(size `.` dt2, read) ->: (comm: CommType))(k =>
+              // load next value
+              streamNext(nextInput, i + size - 1, fun(expT(dt1, read))(x =>
+                acc(load(x))(DropAcc(size - 1, n, dt2,
+                  CycleAcc(size - 1 + n, size, dt2, bufWr)) `@` i)
+              )) `;`
+                // use neighborhood
+                k(Take(size, n - i - size, dt2,
+                  Drop(i, n - i, dt2, Cycle(n, size, dt2, bufRd))))
+            ),
+            arithexpr.arithmetic.RangeAdd(0, n, 1)
+          ))
+        })
+      }))
 
     case MapStream(n, dt1, dt2, f, array) =>
       val i = NatIdentifier(freshName("i"))
@@ -65,15 +92,32 @@ object StreamTranslation {
             ))
           ), arithexpr.arithmetic.RangeAdd(0, n, 1)))))
 
-    case RotateValues(n, sz, dt, write, input) =>
+    case RotateValues(n, size, dt, write, input) =>
       val i = NatIdentifier(freshName("i"))
       str(input)(fun((i: NatIdentifier) ->:
         (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)
-      )(nextIn =>
-        RotateValuesI(n, sz, 1, dt, dt,
-          fun(expT(dt, read))(x =>
-            fun(accT(dt))(o => acc(write(x))(o))),
-          nextIn, C)))
+      )(nextInput => {
+        // TODO: unroll flags?
+        `new`(size `.` dt, fun(varT(size `.` dt))(rs => {
+          // prologue initialisation
+          forNat(unroll = true, size - 1, i =>
+            streamNext(nextInput, i, fun(expT(dt, read))(x => acc(write(x))(rs.wr `@` i) ))) `;`
+          C(nFun(i =>
+            fun(expT(size `.` dt, read) ->: (comm: CommType))(k =>
+              // load next value
+              streamNext(nextInput, i + size - 1, fun(expT(dt, read))(x =>
+                acc(write(x))(rs.wr `@` (size - 1))
+              )) `;`
+                // use neighborhood
+                k(rs.rd) `;`
+                // rotate
+                comment("mapSeq") `;`
+                `for`(unroll = true, size - 1, i =>
+                  acc(write(Drop(1, size - 1, dt, rs.rd) `@` i))(TakeAcc(size - 1, 1, dt, rs.wr) `@` i))
+            ),
+            arithexpr.arithmetic.RangeAdd(0, n, 1)))
+        }))
+      }))
 
     case Zip(n, dt1, dt2, _, e1, e2) =>
       val i = NatIdentifier("i")
@@ -93,25 +137,81 @@ object StreamTranslation {
             arithexpr.arithmetic.RangeAdd(0, n, 1)))))))
 
     // OpenCL
-    case ocl.CircularBuffer(a, n, alloc, sz, dt1, dt2, load, input) =>
+    case ocl.CircularBuffer(a, n, alloc, size, dt1, dt2, load, input) =>
       val i = NatIdentifier(freshName("i"))
       str(input)(fun((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
-      )(nextIn =>
-        oclI.CircularBufferI(a, n, alloc, sz, dt1, dt2,
-          fun(expT(dt1, read))(x =>
-            fun(accT(dt2))(o => acc(load(x))(o))),
-          nextIn, C)))
+      )(nextInput => {
+        if (!arithexpr.arithmetic.ArithExpr.isSmaller(size, alloc + 1).contains(true)) {
+          println(s"WARNING: circular buffer of size $alloc used for"
+            + s" a sliding window of size $size")
+        }
 
-    case ocl.RotateValues(a, n, sz, dt, write, input) =>
+        // TODO: generalize and make explicit? might not always be wanted
+        def allocGen(dt: DataType,
+                     C: (Phrase[AccType], Phrase[ExpType]) => Phrase[CommType]
+                    ): Phrase[CommType] = dt match {
+          case PairType(a, b) =>
+            allocGen(a, (wa, ra) => allocGen(b, (wb, rb) =>
+              C(UnzipAcc(alloc, a, b, PairAcc(alloc`.`a, alloc`.`b, wa, wb)),
+                Zip(alloc, a, b, read, ra, rb))
+            ))
+          case _ =>
+            shine.OpenCL.DSL.`new`(a)(alloc`.`dt, buffer => C(buffer.wr, buffer.rd))
+        }
+
+        allocGen(dt2, (bufWr: Phrase[AccType], bufRd: Phrase[ExpType]) => {
+          // TODO: unroll flags?
+          // prologue initialisation
+          forNat(n = size - 1, f = i => streamNext(nextInput, i, fun(expT(dt1, read))(x =>
+            acc(load(x))(bufWr `@` i)))) `;`
+            C(nFun(i =>
+              fun(expT(size`.`dt2, read) ->: (comm: CommType))(k =>
+                // load next value
+                streamNext(nextInput, i + size - 1, fun(expT(dt1, read))(x =>
+                  acc(load(x))(DropAcc(size - 1, n, dt2,
+                    CycleAcc(size - 1 + n, alloc, dt2, bufWr)) `@` i)
+                )) `;`
+                  // use neighborhood
+                  k(Drop(i, size, dt2,
+                    Cycle(i + size, alloc, dt2, bufRd)))
+              ),
+              arithexpr.arithmetic.RangeAdd(0, n, 1)
+            ))
+        })
+      }
+//        oclI.CircularBufferI(a, n, alloc, sz, dt1, dt2,
+//          fun(expT(dt1, read))(x =>
+//            fun(accT(dt2))(o => acc(load(x))(o))),
+//          nextIn, C)
+      ))
+
+    case ocl.RotateValues(a, n, size, dt, write, input) =>
       val i = NatIdentifier(freshName("i"))
       str(input)(fun((i: NatIdentifier) ->:
         (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)
-      )(nextIn =>
-        oclI.RotateValuesI(a, n, sz, dt,
-          fun(expT(dt, read))(x =>
-            fun(accT(dt))(o => acc(write(x))(o))),
-          nextIn, C)))
+      )(nextInput => {
+        // TODO: unroll flags?
+        shine.OpenCL.DSL.`new`(a)(size`.`dt, rs => {
+          // prologue initialisation
+          forNat(unroll = true, size - 1, i => streamNext(nextInput, i, fun(expT(dt, read))(x =>
+            acc(write(x))(rs.wr `@` i) ))) `;`
+          C(nFun(i =>
+            fun(expT(size`.`dt, read) ->: (comm: CommType))(k =>
+              // load next value
+              streamNext(nextInput, i + size - 1, fun(expT(dt, read))(x =>
+                acc(write(x))(rs.wr `@` (size - 1))
+              )) `;`
+              // use neighborhood
+              k(rs.rd) `;`
+              // rotate
+              comment("mapSeq")`;`
+              `for`(unroll = true, size - 1, i =>
+                acc(write(Drop(1, size - 1, dt, rs.rd) `@` i))(TakeAcc(size - 1, 1, dt, rs.wr) `@` i))
+            ),
+            arithexpr.arithmetic.RangeAdd(0, n, 1)))
+        })
+      }))
 
     case _ => translateArrayToStream(E, C)
   }
