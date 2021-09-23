@@ -2,6 +2,9 @@ package rise.eqsat
 
 import rise.core.Expr
 import rise.elevate.tvmGemm
+import rise.elevate.rules.lowering.lowerToC
+import rise.elevate.rules.traversal.default._
+import elevate.core.Then
 import ProveEquiv.syntax._
 import rise.eqsat.PredicateDSL._
 
@@ -21,12 +24,41 @@ class TvmGemm extends test_util.Tests {
   // tvmGemm.cacheBlocks(mm).get,
   // tvmGemm.par(mm).get
   test("blocking") {
-    val mm: Expr = tvmGemm.mm
-    val start = tvmGemm.baseline(mm).get
-    val goal = tvmGemm.blocking(mm).get
+    val M = 4096
+    val N = 2048
+    val K = 1024
+    val mm: Expr = {
+      import rise.core.DSL._
+      import rise.core.types._
+      import rise.core.primitives._
 
-    val rs = Seq(
-      // rules.eta, rules.betaExtract, rules.betaNatExtract,
+      fun(ArrayType(M, ArrayType(K, f32)))(a =>
+        fun(ArrayType(K, ArrayType(N, f32)))(b =>
+          a |> map(fun(ak =>
+            transpose(b) |> map(fun(bk =>
+              zip(ak)(bk) |>
+                map(fun(x => fst(x) * snd(x))) |>
+                reduce(add)(lf32(0.0f))
+            ))
+          ))
+        ))
+    }
+
+    val start = tvmGemm.baseline(mm).get
+    val goal = (tvmGemm.blocking `;` lowerToC)(mm).get
+    val normGoal = BENF(Expr.fromNamed(goal))
+    val goalSize = {
+      val g = EGraph.empty()
+      val id = g.addExpr(normGoal)
+      val s = Analyser.init(g, AstSize)
+      s.analysisOf(id)
+    }
+    println(s"normalized goal: ${Expr.toNamed(normGoal)}")
+    println(s"goal size: ${goalSize}")
+
+    val noSearch = Seq() -> AstSize
+
+    val algorithmicSearch = Seq(
       rules.mapFission,
       rules.reduceSeq,
       rules.reduceSeqMapFusion,
@@ -43,54 +75,80 @@ class TvmGemm extends test_util.Tests {
       // rules.splitJoin1M(32),
       rules.splitJoin2M(32),
       rules.blockedReduce(4),
-    )
+    ) -> AstSize
 
-    val rewriteSnapshots = {
+    val loweringSearch = Seq(
+      rules.mapFusion,
+      rules.reduceSeq,
+      rules.mapSeq
+    ) -> AstSize
+
+    val sketches = {
       import ExtendedPatternDSL._
 
       def containsMap(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
         contains(app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
-      def containsReduce(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+      def containsMapSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+        contains(app(mapSeq :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
+      def containsReduceSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
         contains(app(reduceSeq :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
-      val m = cst(1024) // `?n`(0)
-      val n = cst(1024) // `?n`(1)
-      val k = cst(1024) // `?n`(2)
+      val m = cst(M) // `?n`(0)
+      val n = cst(N) // `?n`(1)
+      val k = cst(K) // `?n`(2)
       // TODO: nat pivot matching
-      val div32 = cst(1024 / 32)
-      val div4 = cst(1024 / 4)
+      val m_div32 = cst(M / 32)
+      val n_div32 = cst(N / 32)
+      val k_div4 = cst(K / 4)
       Seq(
-        containsMap(m,
-          containsMap(n,
-            containsReduce(k, ?))),
-        containsMap(/*m /^ cst(32)*/div32,
-          containsMap(cst(32),
-            containsMap(/*n /^ cst(32)*/div32,
-              containsMap(cst(32),
-                containsReduce(k, ?))))),
-        containsMap(/*m /^ cst(32)*/div32,
-          containsMap(/*n /^ cst(32)*/div32,
+        noSearch ->
+          containsMap(m,
+            containsMap(n,
+              containsReduceSeq(k, ?))),
+        algorithmicSearch ->
+          containsMap(/*m /^ cst(32)*/m_div32,
             containsMap(cst(32),
-              containsMap(cst(32),
-                containsReduce(k, ?))))),
-        containsMap(/*m /^ cst(32)*/div32,
-          containsMap(/*n /^ cst(32)*/div32,
-            containsMap(cst(32),
-              containsMap(cst(32),
-                containsReduce(/*k /^ cst(4)*/div4,
-                  containsReduce(cst(4), ?)))))),
-        containsMap(/*m /^ cst(32)*/div32,
-          containsMap(/*n /^ cst(32)*/div32,
-            containsReduce(/*k /^ cst(4)*/div4,
-              containsReduce(cst(4),
+              containsMap(/*n /^ cst(32)*/n_div32,
                 containsMap(cst(32),
-                  containsMap(cst(32), ?))))))
+                  containsReduceSeq(k, ?))))),
+        algorithmicSearch ->
+          containsMap(/*m /^ cst(32)*/m_div32,
+            containsMap(/*n /^ cst(32)*/n_div32,
+              containsMap(cst(32),
+                containsMap(cst(32),
+                  containsReduceSeq(k, ?))))),
+        algorithmicSearch ->
+          containsMap(/*m /^ cst(32)*/m_div32,
+            containsMap(/*n /^ cst(32)*/n_div32,
+              containsMap(cst(32),
+                containsMap(cst(32),
+                  containsReduceSeq(/*k /^ cst(4)*/k_div4,
+                    containsReduceSeq(cst(4), ?)))))),
+        algorithmicSearch ->
+          containsMap(/*m /^ cst(32)*/m_div32,
+            containsMap(/*n /^ cst(32)*/n_div32,
+              containsReduceSeq(/*k /^ cst(4)*/k_div4,
+                containsReduceSeq(cst(4),
+                  containsMap(cst(32),
+                    containsMap(cst(32), ?)))))),
+        loweringSearch ->
+          containsMapSeq(/*m /^ cst(32)*/m_div32,
+            containsMapSeq(/*n /^ cst(32)*/n_div32,
+              containsReduceSeq(/*k /^ cst(4)*/k_div4,
+                containsReduceSeq(cst(4),
+                  containsMapSeq(cst(32),
+                    containsMapSeq(cst(32), ?))))))
       )
     }
 
-    GuidedSearch.init()
+    val endResult = GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
-      .runBENF(start, goal, rs, rewriteSnapshots)
+      .runBENF(start, sketches)
+
+    util.writeToPath("/tmp/goal.c",
+      util.gen.c.function.asStringFromExpr(goal))
+    util.writeToPath("/tmp/result.c",
+      util.gen.c.function.asStringFromExpr(Expr.toNamed(endResult)))
   }
 
   test("blocking partial") {

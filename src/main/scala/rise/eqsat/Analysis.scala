@@ -437,7 +437,6 @@ abstract class FreeAnalysisCustomisable() extends AnalysisOps with SemiLatticeAn
 }
 
 case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
-                             (implicit costCmp: math.Ordering[Cost])
   extends Analysis with CommutativeSemigroupAnalysis
 {
   type Data = Seq[(Cost, ExprWithHashCons)]
@@ -463,13 +462,13 @@ case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
       }
     }
 
-    val tmp = rec(childrenBeams, Map.empty).sortBy(_._1).take(beamSize)
+    val tmp = rec(childrenBeams, Map.empty).sortBy(_._1)(cf.ordering).take(beamSize)
     assert(tmp == tmp.distinct)
     tmp
   }
 
   override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-    val sorted = (a ++ b).sortBy(_._1)
+    val sorted = (a ++ b).sortBy(_._1)(cf.ordering)
     assert(sorted.size == sorted.distinct.size)
     sorted.take(beamSize)
   }

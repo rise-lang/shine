@@ -1,8 +1,7 @@
 package rise.eqsat
 
 object Extractor {
-  def init[C](egraph: EGraph, costFunction: CostFunction[C])
-             (implicit costCmp: math.Ordering[C]): Extractor[C] = {
+  def init[C](egraph: EGraph, costFunction: CostFunction[C]): Extractor[C] = {
     val costs = HashMap.empty[EClassId, (C, ENode)]
     val e = new Extractor(costFunction, costs, egraph)
     e.computeCosts()
@@ -33,8 +32,7 @@ object Extractor {
   */
 class Extractor[Cost](val costFunction: CostFunction[Cost],
                       val costs: HashMap[EClassId, (Cost, ENode)],
-                      val egraph: EGraph)
-                     (implicit costCmp: math.Ordering[Cost]) {
+                      val egraph: EGraph) {
   def findBestOf(eclass: EClassId): (Cost, ExprWithHashCons) =
     findBestRec(eclass, HashMap.empty)
 
@@ -78,7 +76,8 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
           case (None, Some(newCost)) =>
             costs += eclass.id -> newCost
             didSomething = true
-          case (Some(oldCost), Some(newCost)) if costCmp.lt(newCost._1, oldCost._1) =>
+          case (Some(oldCost), Some(newCost))
+            if costFunction.ordering.lt(newCost._1, oldCost._1) =>
             costs += eclass.id -> newCost
             didSomething = true
           case _ => ()
@@ -104,7 +103,8 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
         case (None, None) => 0
         case (None, Some(_)) => 1
         case (Some(_), None) => -1
-        case (Some(a), Some(b)) => costCmp.compare(a, b)
+        case (Some(a), Some(b)) =>
+          costFunction.ordering.compare(a, b)
       }
     }
   }
@@ -112,20 +112,24 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
 
 /** A cost function which can be used by an [[Extractor]] */
 trait CostFunction[Cost] {
+  val ordering: math.Ordering[Cost]
   def cost(enode: ENode, costs: EClassId => Cost): Cost
 }
 
 object AstSize extends CostFunction[Int] {
+  val ordering = implicitly
   def cost(enode: ENode, costs: EClassId => Int): Int =
     enode.children().foldLeft(1) { case (acc, eclass) => acc + costs(eclass) }
 }
 
 object AstDepth extends CostFunction[Int] {
+  val ordering = implicitly
   def cost(enode: ENode, costs: EClassId => Int): Int =
     1 + enode.children().foldLeft(0) { case (acc, eclass) => acc.max(costs(eclass)) }
 }
 
 object AppCount extends CostFunction[Int] {
+  val ordering = implicitly
   def cost(enode: ENode, costs: EClassId => Int): Int = {
     val thisCount = enode match {
       case App(_, _) => 1
@@ -137,6 +141,11 @@ object AppCount extends CostFunction[Int] {
 
 case class LexicographicCost[A, B](a: CostFunction[A], b: CostFunction[B])
   extends CostFunction[(A, B)] {
+  val ordering = {
+    implicit val aOrd = a.ordering
+    implicit val bOrd = b.ordering
+    implicitly
+  }
   override def cost(enode: ENode, costs: EClassId => (A, B)): (A, B) =
     (a.cost(enode, id => costs(id)._1), b.cost(enode, id => costs(id)._2))
 }

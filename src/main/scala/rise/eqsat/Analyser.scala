@@ -72,7 +72,7 @@ class Analyser[Data](val analysis: Analyser.Analysis[Data],
         val updated = analysis.update(oldData, newData)
         val changed = oldData != updated
         if (changed) {
-          data += eclass.id -> newData
+          data += eclass.id -> updated
         }
         changed
       case (_, None) =>

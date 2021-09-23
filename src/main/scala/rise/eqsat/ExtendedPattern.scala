@@ -121,8 +121,7 @@ object ExtendedPattern {
                        beamSize: Int,
                        costFunction: CostFunction[Cost],
                        egraph: EGraph,
-                       id: EClassId)
-                      (implicit costCmp: math.Ordering[Cost]): Seq[(Cost, ExprWithHashCons)] = {
+                       id: EClassId): Seq[(Cost, ExprWithHashCons)] = {
     beamSearch(pattern, beamSize, costFunction, egraph).getOrElse(id, Seq())
   }
 
@@ -130,7 +129,6 @@ object ExtendedPattern {
                        beamSize: Int,
                        costFunction: CostFunction[Cost],
                        egraph: EGraph)
-                      (implicit costCmp: math.Ordering[Cost])
   : Map[EClassId, Seq[(Cost, ExprWithHashCons)]] =
   {
     val beamExtractMap = egraph.getAnalysisMap(BeamExtract2(beamSize, costFunction))
@@ -194,7 +192,7 @@ object ExtendedPattern {
 
             resBeams.get(id).foreach { beam =>
               assert(beam.nonEmpty)
-              beam.sortInPlaceBy(_._1).take(beamSize)
+              beam.sortInPlaceBy(_._1)(costFunction.ordering).take(beamSize)
             }
           }
 
@@ -240,19 +238,19 @@ object ExtendedPattern {
                   })
                 }
                 productRec(productTodo, Map.empty)
-              }.sortBy(_._1).take(beamSize)
+              }.sortBy(_._1)(costFunction.ordering).take(beamSize)
 
               tmp.distinct // FIXME: why is .distinct necessary here?
             }
 
             override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-              val sorted = (a ++ b).sortBy(_._1)
+              val sorted = (a ++ b).sortBy(_._1)(costFunction.ordering)
               val dedup = sorted.distinct // FIXME: why is .distinct necessary here?
               dedup.take(beamSize)
             }
 
             override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-              val sorted = (existing ++ computed).sortBy(_._1)
+              val sorted = (existing ++ computed).sortBy(_._1)(costFunction.ordering)
               // TODO: hash-cons the exprs for faster .distinct?
               val dedup = sorted.distinct
                 // sorted.headOption ++ sorted.iterator.sliding(2, 1).withPartial(false)
@@ -264,7 +262,7 @@ object ExtendedPattern {
           analyser.data.iterator.filter { case (_, beam) => beam.nonEmpty }.toMap
       }
 
-      assert(res.values.forall(beam => beam == beam.sortBy(_._1).distinct))
+      assert(res.values.forall(beam => beam == beam.sortBy(_._1)(costFunction.ordering).distinct))
       memo(p) = res
       res
     }
@@ -483,6 +481,7 @@ object ExtendedPatternDSL {
   def prim(p: rise.core.Primitive): ExtendedPattern.PNode = Primitive(p)
   def slide: ExtendedPattern.PNode = prim(rcp.slide.primitive)
   def map: ExtendedPattern.PNode = prim(rcp.map.primitive)
+  def mapSeq: ExtendedPattern.PNode = prim(rcp.mapSeq.primitive)
   def reduce: ExtendedPattern.PNode = prim(rcp.reduce.primitive)
   def reduceSeq: ExtendedPattern.PNode = prim(rcp.reduceSeq.primitive)
   def transpose: ExtendedPattern.PNode = prim(rcp.transpose.primitive)

@@ -1,8 +1,9 @@
 package rise.eqsat
 
 import scala.annotation.tailrec
+import scala.language.existentials
 
-case class CouldNotReachSnapshot(i: Int, snapshot: ExtendedPattern) extends Exception
+case class CouldNotReachSketch(i: Int, snapshot: ExtendedPattern) extends Exception
 
 object GuidedSearch {
   def init(): GuidedSearch = new GuidedSearch(
@@ -26,54 +27,43 @@ class GuidedSearch(
   }
 
   def runBENF(start: rise.core.Expr,
-              goal: rise.core.Expr,
-              rules: Seq[Rewrite],
-              snapshots: Seq[ExtendedPattern]): Unit = {
+              sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)]): Expr = {
     val normStart = BENF(Expr.fromNamed(start))
-    val normGoal = BENF(Expr.fromNamed(goal))
     println(s"normalized start: ${Expr.toNamed(normStart)}")
-    println(s"normalized goal: ${Expr.toNamed(normGoal)}")
     val normRules = Seq(
       RewriteDirected.Eta,
       RewriteDirected.BetaExtract,
       RewriteDirected.BetaNatExtract
     )
 
-    val goalSize = {
-      val g = EGraph.empty()
-      val id = g.addExpr(normGoal)
-      val s = Analyser.init(g, AstSize)
-      s.analysisOf(id)
-    }
-    println(s"goal size: ${goalSize}")
-
     val beamSize = 6
-    val costFunction = AstSize
 
     @tailrec
-    def rec(s: Int, egraph: EGraph, rootId: EClassId): Unit = {
+    def rec(s: Int, egraph: EGraph, rootId: EClassId): Expr = {
       egraph.rebuild(Seq(rootId))
       println("----")
+      /*
       val pcount = Analyser.init(egraph, CountProgramsUpToSize(goalSize + 10))
       pcount.analysisOf(rootId).foreach { case (size, count) =>
         println(s"programs of size ${size}: ${count}")
       }
-      BeamExtract.print(beamSize, costFunction, egraph, rootId)
+       */
+      BeamExtract.print(3, AstSize, egraph, rootId)
       println("----")
 
-      if (s < snapshots.length) {
-        val snapshot = snapshots(s)
-        var matches = Seq[(Int, ExprWithHashCons)]()
+      if (s < sketches.length) {
+        val ((rules, costFunction), sketch) = sketches(s)
+        var matches = Seq[(_, ExprWithHashCons)]()
         // TODO: add beam analysis to e-graph for incremental update
         val runner = transformRunner(Runner.init()).doneWhen { r =>
           util.printTime("goal check", {
-            matches = ExtendedPattern.beamSearch(snapshot, beamSize, costFunction, egraph, rootId)
+            matches = ExtendedPattern.beamSearch(sketch, beamSize, costFunction, egraph, rootId)
             matches.nonEmpty
           })
         }.run(egraph, filter, rules, normRules, Seq(rootId))
         runner.printReport()
         if (!runner.stopReasons.contains(Done)) {
-          throw CouldNotReachSnapshot(s, snapshot)
+          throw CouldNotReachSketch(s, sketch)
         }
 
         val g = EGraph.empty()
@@ -86,10 +76,15 @@ class GuidedSearch(
         rec(s + 1, g, r)
       } else {
         println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
+        val ((_, costFunction), _) = sketches.last
+        val beamAnalysis = egraph.getAnalysis(BeamExtract2(beamSize, costFunction))
+        val best = beamAnalysis(rootId).head._2
+        ExprWithHashCons.expr(egraph)(best)
       }
     }
 
     val g = EGraph.empty()
+    val ((_, costFunction), _) = sketches.head
     g.requireAnalysis(BeamExtract2(beamSize, costFunction))
     rec(0, g, g.addExpr(normStart))
   }
