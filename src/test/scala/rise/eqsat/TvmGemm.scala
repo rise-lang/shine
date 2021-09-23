@@ -45,7 +45,7 @@ class TvmGemm extends test_util.Tests {
     }
 
     val start = tvmGemm.baseline(mm).get
-    val goal = (tvmGemm.blocking `;` lowerToC)(mm).get
+    val goal = (tvmGemm.blocking/* `;` lowerToC*/)(mm).get
     val normGoal = BENF(Expr.fromNamed(goal))
     val goalSize = {
       val g = EGraph.empty()
@@ -58,12 +58,31 @@ class TvmGemm extends test_util.Tests {
 
     val noSearch = Seq() -> AstSize
 
-    val algorithmicSearch = Seq(
+    val splitSearch =  Seq(
       rules.mapFission,
       rules.reduceSeq,
-      rules.reduceSeqMapFusion,
+      // rules.reduceSeqMapFusion, //?
       rules.reduceSeqMapFission,
       rules.undoReduceSeqForAdd, //?
+      // rules.splitBeforeMap,
+      // rules.liftReduceSeq,
+      // rules.liftReduceSeq2,
+      // rules.liftReduceSeq3,
+      // rules.transposeAroundMapMapF,
+      // rules.transposeAroundMapMapF1M, //?
+      // rules.mapEtaAbstraction,
+      rules.splitJoin(32),
+      // rules.splitJoin1M(32),
+      rules.splitJoin2M(32),
+      rules.blockedReduce(4),
+    ) -> AstSize
+
+    val reorderSearch = Seq(
+      rules.mapFission,
+      // rules.reduceSeq,
+      rules.reduceSeqMapFusion,
+      rules.reduceSeqMapFission,
+      // rules.undoReduceSeqForAdd, //?
       rules.splitBeforeMap,
       rules.liftReduceSeq,
       rules.liftReduceSeq2,
@@ -71,10 +90,10 @@ class TvmGemm extends test_util.Tests {
       // rules.transposeAroundMapMapF,
       rules.transposeAroundMapMapF1M,
       // rules.mapEtaAbstraction,
-      rules.splitJoin(32),
+      // rules.splitJoin(32),
       // rules.splitJoin1M(32),
-      rules.splitJoin2M(32),
-      rules.blockedReduce(4),
+      // rules.splitJoin2M(32),
+      // rules.blockedReduce(4),
     ) -> AstSize
 
     val loweringSearch = Seq(
@@ -100,37 +119,40 @@ class TvmGemm extends test_util.Tests {
       val m_div32 = cst(M / 32)
       val n_div32 = cst(N / 32)
       val k_div4 = cst(K / 4)
+
+      val containsAddMul = contains(app(app(add, ?), contains(mul)))
       Seq(
         noSearch ->
           containsMap(m,
             containsMap(n,
-              containsReduceSeq(k, ?))),
-        algorithmicSearch ->
+              containsReduceSeq(k, containsAddMul))),
+        splitSearch ->
           containsMap(/*m /^ cst(32)*/m_div32,
             containsMap(cst(32),
               containsMap(/*n /^ cst(32)*/n_div32,
                 containsMap(cst(32),
-                  containsReduceSeq(k, ?))))),
-        algorithmicSearch ->
+                  containsReduceSeq(k, containsAddMul))))),
+        reorderSearch ->
           containsMap(/*m /^ cst(32)*/m_div32,
             containsMap(/*n /^ cst(32)*/n_div32,
               containsMap(cst(32),
                 containsMap(cst(32),
-                  containsReduceSeq(k, ?))))),
-        algorithmicSearch ->
+                  containsReduceSeq(k, containsAddMul))))),
+        splitSearch ->
           containsMap(/*m /^ cst(32)*/m_div32,
             containsMap(/*n /^ cst(32)*/n_div32,
               containsMap(cst(32),
                 containsMap(cst(32),
                   containsReduceSeq(/*k /^ cst(4)*/k_div4,
-                    containsReduceSeq(cst(4), ?)))))),
-        algorithmicSearch ->
+                    containsReduceSeq(cst(4), contains(mul))))))),
+        reorderSearch ->
           containsMap(/*m /^ cst(32)*/m_div32,
             containsMap(/*n /^ cst(32)*/n_div32,
               containsReduceSeq(/*k /^ cst(4)*/k_div4,
                 containsReduceSeq(cst(4),
                   containsMap(cst(32),
-                    containsMap(cst(32), ?)))))),
+                    containsMap(cst(32), containsAddMul)))))),
+        /* lowerToC
         loweringSearch ->
           containsMapSeq(/*m /^ cst(32)*/m_div32,
             containsMapSeq(/*n /^ cst(32)*/n_div32,
@@ -138,17 +160,24 @@ class TvmGemm extends test_util.Tests {
                 containsReduceSeq(cst(4),
                   containsMapSeq(cst(32),
                     containsMapSeq(cst(32), ?))))))
+
+         */
       )
     }
 
     val endResult = GuidedSearch.init()
-      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
       .runBENF(start, sketches)
+
+    val namedEndResult = Expr.toNamed(endResult)
+    println(namedEndResult)
+    throw new Exception("TODO: lowerToC")
 
     util.writeToPath("/tmp/goal.c",
       util.gen.c.function.asStringFromExpr(goal))
     util.writeToPath("/tmp/result.c",
-      util.gen.c.function.asStringFromExpr(Expr.toNamed(endResult)))
+      util.gen.c.function.asStringFromExpr(namedEndResult))
   }
 
   test("blocking partial") {

@@ -71,7 +71,8 @@ class GuidedSearch(
         g.requireAnalysis(BeamExtract2(beamSize, costFunction))
         // TODO: should other known unions be restored?
         val r = matches.map { case (_, e) =>
-          g.addExpr(e)
+          // FIXME: avoid BENF() trick
+          g.addExpr(BENF(e, egraph.hashConses))
         }.reduce[EClassId] { case (a, b) => g.union(a, b)._1 }
         rec(s + 1, g, r)
       } else {

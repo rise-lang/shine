@@ -1,5 +1,6 @@
 package rise.eqsat
 
+import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.eqsat.ematching.MNode
 
 // TODO: think about what the predicate interface should be
@@ -83,6 +84,40 @@ case class ArrayDimensionPredicate(limit: Int) extends Predicate {
     }
 
     countArrayDims(ec.t) <= limit
+  }
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(), Set())
+}
+
+// TODO: VectorType(n, ) --> RangeConstraint(n, RangeMul(2, 16, 2))
+// TODO: num /^ denum    --> RangeConstraint(num, RangeAdd(0, PosInf, denum)) [denum divides num]
+// TODO: x % _           --> ArithPredicate(x, 0, >=) [x >= 0]
+object StandardConstraintsPredicate extends Predicate {
+  override def apply(egraph: EGraph, ec: EClass): Boolean = {
+    // TODO: e-class analysis?
+    def checkType(t: TypeId): Boolean = {
+      egraph(t) match {
+        case FunType(inT, outT) =>
+          checkType(inT) && checkType(outT)
+        case NatFunType(t) => checkType(t)
+        case DataFunType(t) => checkType(t)
+        case ArrayType(n, et) => checkArraySize(n) && checkType(et)
+        case VectorType(n, _) => checkArraySize(n)
+        case IndexType(n) => checkArraySize(n)
+        case PairType(dt1, dt2) =>
+          checkType(dt1) && checkType(dt2)
+        case DataTypeVar(_) | ScalarType(_) | NatType => true
+      }
+    }
+
+    def checkArraySize(n: NatId): Boolean = {
+      val named = Nat.toNamedGeneric(ExprWithHashCons.nat(egraph)(n),
+        i => rise.core.types.NatIdentifier(s"n$i"))
+      !ArithPredicate(named, 1, ArithPredicate.Operator.>=).evaluate.contains(false)
+    }
+
+    checkType(ec.t)
   }
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
