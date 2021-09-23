@@ -61,6 +61,7 @@ object AdjustArraySizesForAllocations {
       case Lambda(_, p) => visitAndGatherInformation(p, parallInfo)
       case DepApply(_, f, _) => visitAndGatherInformation(f, parallInfo)
       case DepLambda(_, _, p) => visitAndGatherInformation(p, parallInfo)
+      case Idx(_, _, _, p) => visitAndGatherInformation(p, parallInfo)
       case Fst(_, _, p) => visitAndGatherInformation(p, parallInfo) match {
         case Nil => Nil
         case RecordInfo(fst, _) :: Nil => fst

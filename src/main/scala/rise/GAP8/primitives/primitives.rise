@@ -1,0 +1,1 @@
+def gap8RunPrimitive: (cores: nat) -> {t: data} -> t -> t

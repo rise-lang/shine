@@ -41,4 +41,7 @@ final class UnionFind(var parents: Vec[EClassId]) {
     setParent(root2, root1)
     root1
   }
+
+  def clear(): Unit =
+    parents.clear()
 }

@@ -70,7 +70,7 @@ object convolutionHosted {
 }
 
 object convolution {
-  def withSize(N: Int, sampleCount: Int, originalSuffix: String): Unit = {
+  def withSize(N: Int, sampleCount: Int, originalSuffix: String): Seq[(String, TimeStat[Time.ms])] = {
     val random = new scala.util.Random()
     val matrix = Array.fill(N, N)(random.nextFloat() * 10.0f)
     val weights = Array.fill(17)(random.nextFloat())
@@ -90,12 +90,18 @@ object convolution {
     )
     println(s"runtime over $sampleCount runs for $originalSuffix")
     stats.foreach { case (name, stat) => println(s"$name: $stat") }
+    stats
   }
 
-  def main(args: Array[String]): Unit = {
-    val inputSize_small = 4096
-    val inputSize_large = 8192
+  val inputSize_small = 4096
+  val inputSize_large = 8192
 
+  def bench(): Seq[(String, Seq[(String, TimeStat[Time.ms])])] = Seq(
+    ("small", withSize(inputSize_small, 10, "small")),
+    ("large", withSize(inputSize_large, 10, "large"))
+  )
+
+  def main(args: Array[String]): Unit = {
     withExecutor {
       withSize(inputSize_small, 6, "small")
       withSize(inputSize_large, 3, "large")

@@ -22,6 +22,15 @@ object nearestNeighbour {
     locations |> map(fun(loc => distance(loc)(lat)(lng)))
   ))
 
+  val nnOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val n = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(128), GlobalSize(n))
+  })
+
   val nnOcl: ToBeTyped[Expr] = depFun((n: Nat) => fun(
     (n `.` (f32 x f32)) ->: f32 ->: f32 ->: (n `.` f32)
   )((locations, lat, lng) =>

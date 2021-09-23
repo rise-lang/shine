@@ -147,7 +147,7 @@ object gemv {
   import util._
 
   val cgo17_localSize: LocalSize = LocalSize(64)
-  val cgo17_phraseDepLocalAndGlobalSize: gen.opencl.PhraseDepLocalAndGlobalSize =
+  val gemvBlastKnowSizes: gen.opencl.PhraseDepLocalAndGlobalSize =
     gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
       val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[DPIA.Types.ExpType]]]
       val m = t.t.x
