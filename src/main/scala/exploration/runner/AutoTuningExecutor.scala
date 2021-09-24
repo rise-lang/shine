@@ -34,9 +34,6 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
        |}
        |float factor = 4;
        |
-       |// synchronize before entering timed section
-       |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
-       |deviceBufferSync(ctx, output, N * sizeof(float), DEVICE_WRITE);
        |""".stripMargin
   }
 
@@ -69,11 +66,11 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       output = "autotuning/scal",
       timeouts = Timeouts(100000, 100000, 100000),
       executionIterations = 10,
+      runtimeStatistic = Median,
       speedupFactor = threshold,
       None,
 //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
-      hierarchicalHM = true,
-      runtimeStatistic = Median
+      hmConstraints = true,
     )
 
     // lower expression
@@ -99,8 +96,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         println("lowered: " + lowered)
 
         val runtime = best.get.runtime match{
-          case Some(value) => Some(value.value)
-          case None => None
+          case Right(value) => Some(value.value)
+          case Left(value) => None
         }
 
         (solution.expression, runtime)
