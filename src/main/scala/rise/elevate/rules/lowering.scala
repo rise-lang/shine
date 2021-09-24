@@ -79,7 +79,7 @@ object lowering {
 
   def `reduceSeq -> oclReduceSeq`: Strategy[Rise] = oclReduceSeq
   @rule def oclReduceSeq: Strategy[Rise] = {
-    case e@reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
+    case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
   }
 
   def `reduce -> reduceSeqUnroll`: Strategy[Rise] = reduceSeqUnroll
