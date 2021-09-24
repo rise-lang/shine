@@ -25,9 +25,9 @@ class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
 
       //TODO makes a decision. Not allowed!
       case DepArrayType(n, ft) =>
-        ForNat(unroll = false)(n, nFun(i =>
-          assign(ft(i), lhs `@d` i, rhs `@d` i),
-          RangeAdd(0, n, 1)))
+        forNat(unroll = false, n, i =>
+          assign(ft(i), lhs `@d` i, rhs `@d` i)
+        )
 
       case x => throw new Exception(s"Don't know how to assign value of type $x")
     }

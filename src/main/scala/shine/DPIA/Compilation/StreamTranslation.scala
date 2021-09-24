@@ -42,7 +42,8 @@ object StreamTranslation {
   def primitive(E: ExpPrimitive)
                (C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
                (implicit context: TranslationContext): Phrase[CommType] = E match {
-    case CircularBuffer(n, _, size, dt1, dt2, load, input) =>
+    case CircularBuffer(n, alloc, size, dt1, dt2, load, input) =>
+      assert(alloc == size)
       val i = NatIdentifier(freshName("i"))
       str(input)(fun((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
@@ -62,7 +63,7 @@ object StreamTranslation {
         allocGen(dt2, (bufWr: Phrase[AccType], bufRd: Phrase[ExpType]) => {
           // TODO: unroll flags?
           // prologue initialisation
-          forNat(n = size - 1, f = i =>
+          forNat(size - 1, i =>
             streamNext(nextInput, i, fun(expT(dt1, read))(x => acc(load(x))(bufWr `@` i)))) `;`
           C(nFun(i =>
             fun(expT(size `.` dt2, read) ->: (comm: CommType))(k =>
@@ -163,7 +164,7 @@ object StreamTranslation {
         allocGen(dt2, (bufWr: Phrase[AccType], bufRd: Phrase[ExpType]) => {
           // TODO: unroll flags?
           // prologue initialisation
-          forNat(n = size - 1, f = i => streamNext(nextInput, i, fun(expT(dt1, read))(x =>
+          forNat(size - 1, i => streamNext(nextInput, i, fun(expT(dt1, read))(x =>
             acc(load(x))(bufWr `@` i)))) `;`
             C(nFun(i =>
               fun(expT(size`.`dt2, read) ->: (comm: CommType))(k =>
@@ -179,12 +180,7 @@ object StreamTranslation {
               arithexpr.arithmetic.RangeAdd(0, n, 1)
             ))
         })
-      }
-//        oclI.CircularBufferI(a, n, alloc, sz, dt1, dt2,
-//          fun(expT(dt1, read))(x =>
-//            fun(accT(dt2))(o => acc(load(x))(o))),
-//          nextIn, C)
-      ))
+      }))
 
     case ocl.RotateValues(a, n, size, dt, write, input) =>
       val i = NatIdentifier(freshName("i"))

@@ -35,7 +35,6 @@ package object autotune {
 
   // todo add meta information (configuration, times, samples, ...)
   case class TuningResult(samples: Seq[Sample])
-//  case class AutoTuningError(errorLevel: AutoTuningErrorLevel, message: Option[String])
   type Parameters = Set[NatIdentifier]
 
   // should we allow tuning params to be substituted during type inference?

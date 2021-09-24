@@ -104,9 +104,8 @@ object AcceptorTranslation {
     case depMapSeq@DepMapSeq(unroll) =>
       val (n, ft1, ft2, f, array) = depMapSeq.unwrap
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        ForNat(unroll)(n, nFun(i =>
-          acc(f(i)(x `@d` i))(A `@d` i),
-          RangeAdd(0, n, 1)))
+        forNat(unroll, n, i =>
+          acc(f(i)(x `@d` i))(A `@d` i))
       ))
 
     case DepTile(n, tileSize, haloSize, dt1, dt2, processTiles, array) =>
@@ -133,14 +132,14 @@ object AcceptorTranslation {
           (v: Phrase[VarType],
            swap: Phrase[CommType],
            done: Phrase[CommType]) => {
-            `for`(n = k, f = ip => {
-                          val i = NamedVar(ip.name)
+            `for`(k, ip => {
+              val i = NamedVar(ip.name)
 
-                          val isz = n.pow(k - i) * m
-                          val osz = n.pow(k - i - 1) * m
-                          acc(f(osz)(Take(isz, sz - isz, dt, v.rd)))(TakeAcc(osz, sz - osz, dt, v.wr)) `;`
-                            IfThenElse(ip < NatAsIndex(k, Natural(k - 2)), swap, done)
-                        })
+              val isz = n.pow(k - i) * m
+              val osz = n.pow(k - i - 1) * m
+              acc(f(osz)(Take(isz, sz - isz, dt, v.rd)))(TakeAcc(osz, sz - osz, dt, v.wr)) `;`
+                IfThenElse(ip < NatAsIndex(k, Natural(k - 2)), swap, done)
+            })
           })
       }))
 
@@ -151,8 +150,8 @@ object AcceptorTranslation {
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(next =>
         comment("iterateStream") `;`
-          forNat(n = n, f = i =>
-                      streamNext(next, i, fun(expT(dt1, read))(x => fI(x)(A `@` i))))
+          forNat(n, i =>
+            streamNext(next, i, fun(expT(dt1, read))(x => fI(x)(A `@` i))))
       ))
 
     case Join(n, m, w, dt, array) =>
@@ -234,10 +233,10 @@ object AcceptorTranslation {
           comment("scanSeq")`;`
           `new`(dt2, accumulator =>
             acc(y)(accumulator.wr) `;`
-            `for`(n = n, f = i =>
-                          acc(f(x `@` i)(accumulator.rd))(accumulator.wr) `;`
-                          //FIXME remove general assignment
-                        ((A `@` i) :=| dt2 | accumulator.rd)))))))
+            `for`(n, i =>
+              acc(f(x `@` i)(accumulator.rd))(accumulator.wr) `;`
+              //FIXME remove general assignment
+              ((A `@` i) :=| dt2 | accumulator.rd) ))))))
 
     case Scatter(n, m, dt, indices, input) =>
       con(indices)(fun(expT(n`.`idx(m), read))(y =>
@@ -301,7 +300,7 @@ object AcceptorTranslation {
 
         shine.OpenCL.DSL.newDoubleBuffer(a, sz`.`dt, m`.`dt, sz`.`dt, x, A,
           (v, swap, done) => {
-            shine.DPIA.DSL.`for`(n = k, f = ip => {
+            shine.DPIA.DSL.`for`(k, ip => {
               val i = NamedVar(ip.name, RangeAdd(Cst(0), k, Cst(1)))
 
               val isz = n.pow(k - i) * m
