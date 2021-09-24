@@ -105,9 +105,6 @@ class autotuning extends test_util.Tests {
        |  in[i] = 1;
        |}
        |
-       |// synchronize before entering timed section
-       |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
-       |
        |""".stripMargin
   }
 
@@ -426,7 +423,7 @@ class autotuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None,
-      hierarchicalHM = false
+      hmConstraints = false
     )
     val json = autotune.configFileGeneration.generateJSON(parameters, constraintsSubstituted, tuner)
 
@@ -458,7 +455,7 @@ class autotuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None,
-      hierarchicalHM = false
+      hmConstraints = false
     )
 
     val json = autotune.configFileGeneration.generateJSON(parameters, constraintsSubstituted, tuner)
@@ -542,7 +539,7 @@ class autotuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None,
-      hierarchicalHM = true
+      hmConstraints = false
     )
 
     val tuningResult = autotune.search(tuner)(e)
@@ -671,10 +668,7 @@ class autotuning extends test_util.Tests {
       execution = Median)
 
     //     check if result has valid runtime
-    assert(result.runtime.isDefined)
-    //     check if no error was reported
-    assert(result.error.errorLevel.equals(autotune.NO_ERROR))
-    //
+    assert(result.runtime.isRight)
     println("result: " + result)
 
     // try to execute with zero execution iterations
@@ -739,10 +733,7 @@ class autotuning extends test_util.Tests {
       execution = Minimum)
 
     // check if result has valid runtime
-    assert(result.runtime.isDefined)
-    // check if no error was reported
-    assert(result.error.errorLevel == autotune.NO_ERROR)
-
+    assert(result.runtime.isRight)
     println("result: \n" + result)
   }
 
@@ -916,6 +907,11 @@ class autotuning extends test_util.Tests {
     )
 
     print("result: " + result)
-    assert(result.error.errorLevel.equals(autotune.CODE_GENERATION_ERROR))
+
+    result.runtime match {
+      case Right(_) => assert(false)
+      case Left(error) => assert(error.errorLevel.equals(autotune.CODE_GENERATION_ERROR))
+    }
+
   }
 }

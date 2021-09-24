@@ -13,41 +13,44 @@ object Pattern {
     Pattern(PatternNode(pnode), TypePattern.fromType(e.t))
   }
 
-  implicit def patternToApplier[D](pattern: Pattern): Applier[D] = new Applier[D] {
+  implicit def patternToApplier[ED, ND, TD](pattern: Pattern): Applier[ED, ND, TD] = new Applier[ED, ND, TD] {
     override def toString: String = pattern.toString
 
     override def patternVars(): Set[Any] = pattern.patternVars()
 
-    override def applyOne(egraph: EGraph[D], eclass: EClassId, subst: Subst): Vec[EClassId] = {
+    override def applyOne(egraph: EGraph[ED, ND, TD],
+                          eclass: EClassId,
+                          shc: SubstHashCons,
+                          subst: Subst): Vec[EClassId] = {
       def missingRhsTy[T](): T = throw new Exception("unknown type on right-hand side")
       def pat(p: Pattern): EClassId = {
         p.p match {
-          case w: PatternVar => subst(w)
+          case w: PatternVar => subst(w, shc)
           case PatternNode(n) =>
             val enode = n.map(pat, nat, data)
             egraph.add(enode, `type`(p.t))
         }
       }
-      def nat(p: NatPattern): Nat = {
+      def nat(p: NatPattern): NatId = {
         p match {
-          case w: NatPatternVar => subst(w)
-          case NatPatternNode(n) => Nat(n.map(nat))
+          case w: NatPatternVar => subst(w, shc)
+          case NatPatternNode(n) => egraph.add(n.map(nat))
           case NatPatternAny => missingRhsTy()
         }
       }
-      def data(pat: DataTypePattern): DataType = {
+      def data(pat: DataTypePattern): DataTypeId = {
         pat match {
-          case w: DataTypePatternVar => subst(w)
-          case DataTypePatternNode(n) => DataType(n.map(nat, data))
+          case w: DataTypePatternVar => subst(w, shc)
+          case DataTypePatternNode(n) => egraph.add(n.map(nat, data))
           case DataTypePatternAny => missingRhsTy()
         }
       }
-      def `type`(pat: TypePattern): Type = {
+      def `type`(pat: TypePattern): TypeId = {
         pat match {
-          case w: TypePatternVar => subst(w)
-          case TypePatternNode(n) => Type(n.map(`type`, nat, data))
+          case w: TypePatternVar => subst(w, shc)
+          case TypePatternNode(n) => egraph.add(n.map(`type`, nat, data))
           case TypePatternAny => missingRhsTy()
-          case dtp: DataTypePattern => Type(data(dtp).node)
+          case dtp: DataTypePattern => data(dtp)
         }
       }
 
@@ -92,31 +95,37 @@ case class CompiledPattern(pat: Pattern, prog: ematching.Program) {
 }
 
 object CompiledPattern {
-  implicit def patternToSearcher[D](cpat: CompiledPattern): Searcher[D] = new Searcher[D] {
+  implicit def patternToSearcher[ED, ND, TD](cpat: CompiledPattern)
+  : Searcher[ED, ND, TD] = new Searcher[ED, ND, TD] {
     override def toString: String = cpat.toString
 
     override def patternVars(): Set[Any] = cpat.pat.patternVars()
 
-    override def search(egraph: EGraph[D]): Vec[SearchMatches] = {
+    override def search(egraph: EGraph[ED, ND, TD],
+                        shc: SubstHashCons,
+                       ): Vec[SearchMatches] = {
       cpat.pat.p match {
         case PatternNode(node) =>
           egraph.classesByMatch.get(node.matchHash()) match {
             case None => Vec.empty
             case Some(ids) =>
-              ids.iterator.flatMap(id => searchEClass(egraph, id)).to(Vec)
+              ids.iterator.flatMap(id => searchEClass(egraph, shc, id)).to(Vec)
           }
         case PatternVar(_) => egraph.classes.keysIterator
-          .flatMap(id => searchEClass(egraph, id)).to(Vec)
+          .flatMap(id => searchEClass(egraph, shc, id)).to(Vec)
       }
     }
 
-    override def searchEClass(egraph: EGraph[D], eclass: EClassId): Option[SearchMatches] = {
-      val substs = cpat.prog.run(egraph, eclass)
+    override def searchEClass(egraph: EGraph[ED, ND, TD],
+                              shc: SubstHashCons,
+                              eclass: EClassId,
+                             ): Option[SearchMatches] = {
+      val substs = cpat.prog.run(egraph, eclass, shc)
       if (substs.isEmpty) { None } else { Some(SearchMatches(eclass, substs)) }
     }
   }
 
-  implicit def patternToApplier[D](cpat: CompiledPattern): Applier[D] =
+  implicit def patternToApplier[ED, ND, TD](cpat: CompiledPattern): Applier[ED, ND, TD] =
     Pattern.patternToApplier(cpat.pat)
 }
 
@@ -127,8 +136,10 @@ object PatternDSL {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = lhs -> rhs
   }
   implicit final class RewriteArrowCPattern(private val lhs: CompiledPattern) extends AnyVal {
-    @inline def -->[D](rhs: Pattern): (Searcher[D], Applier[D]) = (lhs: Searcher[D]) -> rhs
-    @inline def -->[D](rhs: Applier[D]): (Searcher[D], Applier[D]) = (lhs: Searcher[D]) -> rhs
+    @inline def -->[ED, ND, TD](rhs: Pattern): (Searcher[ED, ND, TD], Applier[ED, ND, TD]) =
+      (lhs: Searcher[ED, ND, TD]) -> rhs
+    @inline def -->[ED, ND, TD](rhs: Applier[ED, ND, TD]): (Searcher[ED, ND, TD], Applier[ED, ND, TD]) =
+      (lhs: Searcher[ED, ND, TD]) -> rhs
   }
   implicit final class RewriteArrowPNode(private val lhs: PNode) extends AnyVal {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = (lhs: Pattern) -> rhs
@@ -167,6 +178,15 @@ object PatternDSL {
   }
   implicit final class PNodeWithType(private val t: TypePattern) extends AnyVal {
     @inline def ::(n: PNode): Pattern = Pattern(PatternNode(n), t)
+  }
+  implicit final class PatternComposition(private val f: Pattern) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = Pattern(PatternNode(Composition(f, g)), TypePatternAny)
+  }
+  implicit final class PVarComposition(private val f: PatternVar) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = (f: Pattern) >> g
+  }
+  implicit final class PNodeComposition(private val f: PNode) extends AnyVal {
+    @inline def >>(g: Pattern): Pattern = (f: Pattern) >> g
   }
 
   def `?n`(index: Int): NatPatternVar = NatPatternVar(index)

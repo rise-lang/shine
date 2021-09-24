@@ -921,6 +921,14 @@ object fromRise {
       case core.reduce() =>
         throw new Exception(s"$p has no implementation")
 
+      case rise.GAP8.primitives.gap8RunPrimitive() => fromType {
+        case nFunT(cores, expT(t, `write`) ->: _) =>
+          depFun(NatKind, cores)(fun[ExpType](expT(t, write), e =>
+            shine.GAP8.primitives.functional.Run(cores)(t, e)
+          ))
+      }
+
+
       case _ => throw new Exception(s"Missing rule for $p")
     }
   }

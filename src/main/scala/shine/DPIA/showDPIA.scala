@@ -47,7 +47,9 @@ case class showDPIA(showTypes : ShowTypes = Off) {
   def showPrim : Primitive[_] => String = {
     case Comment(s) => s"/* ${s} */"
     case Seq(c1, c2) => s"${showPhrase(c1)};\n${showPhrase(c2)}"
-    case New(dt, f) => s"new (exp[${showDataType(dt)}] x acc[${showDataType(dt)}]) in \n${tab(showPhrase(f))}"
+    case New(dt, f) => s"new (${showType(f.t.inT)}) in\n${tab(showPhrase(f))}"
+    case shine.OpenCL.primitives.imperative.New(a, _, f) =>
+      s"new $a (${showType(f.t.inT)}) in\n${tab(showPhrase(f))}"
     case Assign(_, lhs, rhs) => s"${showTypedPhrase(lhs)} = ${showPhrase(rhs)}"
     case IdxAcc(_, _, idx, array) => s"${showTypedPhrase(array)}[${showPhrase(idx)}]"
     case Idx(_, _, idx, array) => s"${showTypedPhrase(array)}[${showPhrase(idx)}]"
@@ -58,6 +60,8 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case TakeAcc(n, _, _, e) => s"take ${showNat(n)} ${showTypedPhrase(e)}"
     case f : For => s"for ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
     case f : ForNat => s"forNat ${showNat(f.n)}\n${tab(showPhrase(f.loopBody))}"
+    case pf: shine.OpenCL.primitives.imperative.ParFor =>
+      s"parFor ${pf.level}(${pf.dim}) ${showNat(pf.n)}\n${tab(showPhrase(pf.body))}"
     case IterateStream(_, _, _, f, array) => s"iterate ${showPhrase(array)}\n${tab(showPhrase(f))}"
     case Map(_, _, _, _, f, array) => s"map ${showPhrase(array)} \n ${showPhrase(f)}"
     case f : MapSeq => s"map ${showPhrase(f.array)} \n ${showPhrase(f.f)}"
@@ -75,7 +79,30 @@ case class showDPIA(showTypes : ShowTypes = Off) {
     case Cast(_, dt2, e) => s"cast ${showKindedType(DataKind, dt2)} ${showPhrase(e)}"
     case RotateValues(_,_,_,wrt,in) => s"rotate ${showPhrase(in)}\n${tab(showPhrase(wrt))}"
     case f : ReduceSeq => s"reduce ${showPhrase(f.array)} ${showPhrase(f.init)}\n${tab(showPhrase(f.f))}"
+    case kc: shine.OpenCL.primitives.imperative.KernelCallCmd =>
+      val args = kc.args.map(showPhrase).mkString("(", ", ", ")")
+      s"${showPhrase(kc.output)} = oclLaunchKernel(${kc.name}, ${kc.localSize}, ${kc.globalSize})${args}"
+    case he: shine.OpenCL.primitives.imperative.HostExecution =>
+      val params = he.params.map(p => s"${showPhrase(p._1)} ${accessToString(p._2)}").mkString(", ")
+      s"oclHostExecution (${params}) in\n${tab(showPhrase(he.body))}"
+    case nmb: shine.OpenCL.primitives.imperative.NewManagedBuffer =>
+      s"newManagedBuffer (${showType(nmb.k.t.inT)} ${accessToString(nmb.access)}) in \n${tab(showPhrase(nmb.k))}"
     case p => p.toString
+  }
+
+  def accessToString(a: shine.OpenCL.AccessFlags): String = {
+    import shine.OpenCL.{HOST_WRITE, HOST_READ, DEVICE_WRITE, DEVICE_READ}
+
+    var res = ""
+    if ((a & HOST_WRITE) != 0) { res += "HOST_WRITE | " }
+    if ((a & HOST_READ) != 0) { res += "HOST_READ | " }
+    if ((a & DEVICE_WRITE) != 0) { res += "DEVICE_WRITE | " }
+    if ((a & DEVICE_READ) != 0) { res += "DEVICE_READ | " }
+    if (res == "") {
+      "0"
+    } else {
+      res.dropRight(3)
+    }
   }
 
   def showKindedType[T](kind : Kind[T, _], t : T) : String = showTypes match {

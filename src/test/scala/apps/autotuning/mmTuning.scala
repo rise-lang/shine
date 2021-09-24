@@ -45,10 +45,6 @@ class mmTuning extends test_util.Tests {
        |  inB[i] = (float)(rand());
        |}
        |
-       |// synchronize before entering timed section
-       |deviceBufferSync(ctx, inputA, N * M * sizeof(float), DEVICE_READ);
-       |deviceBufferSync(ctx, inputB, M * O * sizeof(float), DEVICE_READ);
-       |
        |""".stripMargin
   }
 
@@ -165,7 +161,7 @@ class mmTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None,
-      hierarchicalHM = false
+      hmConstraints = false
     )
 
     val tuningResult = autotune.search(tuner)(mm)
@@ -196,7 +192,7 @@ class mmTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None, // we don't inject usage of local memory as constraints - many configs fail
-      hierarchicalHM = false,
+      hmConstraints = false,
       runtimeStatistic = Minimum
     )
 
@@ -229,7 +225,7 @@ class mmTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = Some("autotuning/config/mm/rs_cot_128.json"),
-      hierarchicalHM = true
+      hmConstraints = true
     )
 
     val tuningResult = autotune.search(tuner)(mm)
@@ -261,7 +257,7 @@ class mmTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = Some("autotuning/config/mm/rs_cot_1024.json"),
-      hierarchicalHM = true,
+      hmConstraints = true,
       runtimeStatistic = Minimum
     )
 
@@ -295,7 +291,7 @@ class mmTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None, // we don't inject usage of local memory as constraints - many configs fail
-      hierarchicalHM = true,
+      hmConstraints = true,
       runtimeStatistic = Minimum
     )
 
