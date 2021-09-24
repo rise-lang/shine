@@ -4,6 +4,7 @@ import rise.core.Expr
 import util.ExecuteOpenCL.{includes, libDirs, libs, platformPath}
 import util.{Time, TimeSpan, createTempFile, gen, writeToTempFile}
 
+import java.util.concurrent.ExecutionException
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.sys.process._
@@ -37,17 +38,35 @@ object execution {
   : ExecutionResult = {
 
     val codegenStart = System.currentTimeMillis()
-    val m = autoTuningUtils.runWithTimeout(
-      timeouts.codegenerationTimeout)(gen.opencl.hosted("fun").fromExpr(expression)
-    )
+
+    val codegenResult = try {
+
+      // run code-generation with timeout
+      val codgenResult = autoTuningUtils.runWithTimeout(
+        timeouts.codegenerationTimeout)(gen.opencl.hosted("fun").fromExpr(expression))
+
+      // check if timeout was triggered
+      codgenResult match {
+        case Some(_) => Right(codgenResult.get)
+        case None => Left(
+          AutoTuningError(
+            CODE_GENERATION_ERROR, Some("timeout after: " + timeouts.codegenerationTimeout)
+          )
+        )
+      }
+    } catch {
+      case e:Throwable =>
+        Left(AutoTuningError(CODE_GENERATION_ERROR, Some(e.getCause.getMessage)))
+    }
 
     val codegenTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - codegenStart).toDouble)
-    m match {
-      case Some(_) => {
+
+    codegenResult match {
+      case Right(generatedModule) => {
 
         val program =
           s"""
-             |${shine.OpenCL.Module.translateToString(m.get)}
+             |${shine.OpenCL.Module.translateToString(generatedModule)}
              |
              |int main(int argc, char** argv) {
              |  Context ctx = createDefaultContext();
@@ -86,14 +105,9 @@ object execution {
           compilationTime = result._2,
           executionTime = result._3)
       }
-      case None =>
+      case Left(error) =>
         ExecutionResult(
-          runtime = Left(
-            AutoTuningError(
-              CODE_GENERATION_ERROR,
-              Some("timeout after: " + timeouts.codegenerationTimeout),
-            )
-          ),
+          runtime = Left(error),
           codegenTime = Some(codegenTime),
           compilationTime = None,
           executionTime = None
@@ -198,7 +212,9 @@ object execution {
     } catch {
       // todo check error codes here
       case e: Throwable => {
-        val executionTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - executionStart).toDouble)
+        val executionTime = TimeSpan.inMilliseconds(
+          (System.currentTimeMillis() - executionStart).toDouble
+        )
         (
           Left(AutoTuningError(
             EXECUTION_ERROR,
