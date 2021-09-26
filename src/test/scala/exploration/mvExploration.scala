@@ -66,8 +66,16 @@ object mvExploration {
   println("mvNoTuning: " + mvNoTuning)
 
   val codeNoTuning = gen.opencl.hosted("fun").fromExpr(mvNoTuning)
+  val codeString = gen.opencl.hosted.asString(codeNoTuning)
   println("codeNoTuning: " + codeNoTuning)
+  println("codeString: " + codeString)
 
+
+  // lowering jey
+  // try to execute MV
+
+  // try to tune mv
+  // automatic lover
 
   def main(args: Array[String]): Unit = {
     // start exploration here
