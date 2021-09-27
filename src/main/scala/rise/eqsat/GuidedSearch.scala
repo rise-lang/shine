@@ -47,9 +47,9 @@ class GuidedSearch(
       pcount.analysisOf(rootId).foreach { case (size, count) =>
         println(s"programs of size ${size}: ${count}")
       }
-       */
       BeamExtract.print(3, AstSize, egraph, rootId)
       println("----")
+       */
 
       if (s < sketches.length) {
         val ((rules, costFunction), sketch) = sketches(s)
@@ -72,7 +72,9 @@ class GuidedSearch(
         // TODO: should other known unions be restored?
         val r = matches.map { case (_, e) =>
           // FIXME: avoid BENF() trick
-          g.addExpr(BENF(e, egraph.hashConses))
+          val added = BENF(e, egraph.hashConses)
+          println(Expr.toNamed(ExprWithHashCons.expr(g)(added)))
+          g.addExpr(added)
         }.reduce[EClassId] { case (a, b) => g.union(a, b)._1 }
         rec(s + 1, g, r)
       } else {

@@ -61,6 +61,7 @@ class TvmGemm extends test_util.Tests {
     val splitSearch =  Seq(
       rules.mapFission,
       rules.reduceSeq,
+      rules.eliminateMapIdentity,
       // rules.reduceSeqMapFusion, //?
       rules.reduceSeqMapFission,
       rules.undoReduceSeqForAdd, //?
@@ -82,6 +83,7 @@ class TvmGemm extends test_util.Tests {
       // rules.reduceSeq,
       rules.reduceSeqMapFusion,
       rules.reduceSeqMapFission,
+      rules.eliminateMapIdentity,
       // rules.undoReduceSeqForAdd, //?
       rules.splitBeforeMap,
       rules.liftReduceSeq,
@@ -144,7 +146,7 @@ class TvmGemm extends test_util.Tests {
               containsMap(cst(32),
                 containsMap(cst(32),
                   containsReduceSeq(/*k /^ cst(4)*/k_div4,
-                    containsReduceSeq(cst(4), contains(mul))))))),
+                    containsReduceSeq(cst(4), contains(add))))))),
         reorderSearch ->
           containsMap(/*m /^ cst(32)*/m_div32,
             containsMap(/*n /^ cst(32)*/n_div32,
@@ -172,26 +174,25 @@ class TvmGemm extends test_util.Tests {
 
     val namedEndResult = Expr.toNamed(endResult)
     println(namedEndResult)
-    throw new Exception("TODO: lowerToC")
+    // FIXME: use search for this
+    val loweredEndResult = lowerToC.apply(namedEndResult).get
+
+    val loweredGoal = lowerToC.apply(goal).get
 
     util.writeToPath("/tmp/goal.c",
-      util.gen.c.function.asStringFromExpr(goal))
+      util.gen.c.function.asStringFromExpr(loweredGoal))
     util.writeToPath("/tmp/result.c",
-      util.gen.c.function.asStringFromExpr(namedEndResult))
+      util.gen.c.function.asStringFromExpr(loweredEndResult))
   }
 
-  test("blocking partial") {
+  test("blocking partial 1") {
     val mm: Expr = tvmGemm.mm
     val start = tvmGemm.baseline(mm).get
-    val goals = Seq(
-      tvmGemm.blockingPartial(mm).get,
-      tvmGemm.blockingPartial2(mm).get,
-      tvmGemm.blockingPartial3(mm).get
-    )
+    val goal = tvmGemm.blockingPartial1(mm).get
 
     ProveEquiv.init()
       .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
-      .runBENF(start, goals, Seq(
+      .runBENF(start, goal, Seq(
         rules.mapFission,
         // rules.transposeAroundMapMapF,
         rules.transposeAroundMapMapF1M,
@@ -200,23 +201,32 @@ class TvmGemm extends test_util.Tests {
         // rules.splitJoin1M(32),
         rules.splitJoin2M(32),
         rules.reduceSeqMapFission,
-        rules.undoReduceSeqForAdd,
-        rules.blockedReduce(4),
+        rules.undoReduceSeqForAdd
     ))
-/*
+  }
+
+  test("blocking partial 2") {
+    val mm: Expr = tvmGemm.mm
+    val start = tvmGemm.blockingPartial1(mm).get
+    val goal = tvmGemm.blockingPartial2(mm).get
+
     ProveEquiv.init()
-      .runCNF(start, goals, Seq(
-        rules.eta, rules.betaExtract, rules.betaNatExtract,
-        rules.combinatory.compositionAssoc2,
-        rules.combinatory.compositionIntro,
-        rules.combinatory.compositionElim,
-        rules.combinatory.compositionLeftId,
-        rules.combinatory.compositionRightId,
-        rules.undoReduceSeqForAdd,
-        rules.combinatory.reduceSeqMapFission,
-        rules.combinatory.blockedReduce(4),
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
+      .runBENF(start, goal, Seq(
+        rules.mapFission,
+        rules.reduceSeqMapFission,
+        rules.undoReduceSeqForAdd
       ))
- */
+  }
+
+  test("blocking partial 3") {
+    val mm: Expr = tvmGemm.mm
+    val start = tvmGemm.blockingPartial2(mm).get
+    val goal = tvmGemm.blockingPartial3(mm).get
+
+    ProveEquiv.init()
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
+      .runBENF(start, goal, Seq(rules.blockedReduce(4)))
   }
 
   test("blocking reorder") {

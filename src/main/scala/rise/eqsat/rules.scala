@@ -293,6 +293,11 @@ object rules {
     app(lam("y", app(transpose, app(transpose, "y"))), "x")
   )
 
+  val eliminateMapIdentity = NamedRewrite.init("eliminate-map-identity",
+    app(map, lam("x", "x"))
+      -->
+    lam("y", "y")
+  )
   val mapIdentityAfter = NamedRewrite.init("map-identity-after",
     ("e" :: ((`_`: Nat)`.``_`))
       -->

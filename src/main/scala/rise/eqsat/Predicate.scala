@@ -90,6 +90,7 @@ case class ArrayDimensionPredicate(limit: Int) extends Predicate {
     (Set(), Set())
 }
 
+// TODO: nats should have no real part (1 divides n)
 // TODO: VectorType(n, ) --> RangeConstraint(n, RangeMul(2, 16, 2))
 // TODO: num /^ denum    --> RangeConstraint(num, RangeAdd(0, PosInf, denum)) [denum divides num]
 // TODO: x % _           --> ArithPredicate(x, 0, >=) [x >= 0]

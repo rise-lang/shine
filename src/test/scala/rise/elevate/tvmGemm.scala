@@ -61,7 +61,7 @@ object tvmGemm {
       (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1,2,5,6,3,4))
 
-  val blockingPartial: Strategy[Rise] =
+  val blockingPartial1: Strategy[Rise] =
     baseline `;`
     (tile(32,32)        `@` outermost(mapNest(2)))
   val blockingPartial2: Strategy[Rise] =
