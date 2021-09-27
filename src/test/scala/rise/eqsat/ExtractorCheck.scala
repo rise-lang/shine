@@ -14,8 +14,7 @@ class ExtractorCheck extends test_util.Tests {
     egraph.union(expr, simpler)
     egraph.rebuild(Seq(expr))
 
-    val extractor = Extractor.init(egraph, AstSize)
-    val (bestSize, bestExpr) = extractor.findBestOf(expr)
+    val (bestExpr, bestSize) = Extractor.findBestOf(egraph, AstSize, expr)
     assert((bestSize, ExprWithHashCons.expr(egraph)(bestExpr)) == (2, simplerExpr))
   }
 }

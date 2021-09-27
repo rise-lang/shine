@@ -48,8 +48,7 @@ package object eqsat {
       RewriteDirected.BetaExtract,
       RewriteDirected.BetaNatExtract
     ), Seq(id))
-    val extractor = Extractor.init(egraph, AstSize)
-    val (_, normalized) = extractor.findBestOf(id)
+    val (normalized, _) = Extractor.findBestOf(egraph, AstSize, id)
     normalized
   }
 

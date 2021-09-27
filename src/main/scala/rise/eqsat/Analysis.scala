@@ -267,6 +267,7 @@ object NoAnalysis extends AnalysisOps with SemiLatticeAnalysis with TypeAnalysis
     MergeResult((), mayNotBeA = false, mayNotBeB = false)
 }
 
+// TODO: use SmallestCost Analysis
 object SmallestSizeAnalysis extends AnalysisOps with SemiLatticeAnalysis {
   type Data = (ExprWithHashCons, Int)
 
@@ -440,6 +441,7 @@ abstract class FreeAnalysisCustomisable() extends AnalysisOps with SemiLatticeAn
   }
 }
 
+// TODO: is this actually a Semi Lattice Analysis?
 case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
   extends Analysis with CommutativeSemigroupAnalysis
 {

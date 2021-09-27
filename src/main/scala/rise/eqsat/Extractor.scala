@@ -1,11 +1,12 @@
 package rise.eqsat
 
 object Extractor {
-  def init[C](egraph: EGraph, costFunction: CostFunction[C]): Extractor[C] = {
-    val costs = HashMap.empty[EClassId, (C, ENode)]
-    val e = new Extractor(costFunction, costs, egraph)
-    e.computeCosts()
-    e
+  def findBestOf[C](egraph: EGraph, costFunction: CostFunction[C], id: EClassId): (ExprWithHashCons, C) = {
+    val analysis = SmallestCostAnalysis(costFunction)
+    egraph.requireAnalysis(analysis)
+    val result = egraph.getAnalysis(analysis)(id)
+    egraph.releaseAnalysis(analysis)
+    result
   }
 
   def randomOf(egraph: EGraph, id: EClassId): ExprWithHashCons = {
@@ -27,6 +28,7 @@ object Extractor {
   }
 }
 
+/*
 /** Extracts a single expression from an [[EGraph]],
   * which minimizes the given [[CostFunction]].
   */
@@ -55,57 +57,32 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
         expr
     })
   }
+}
+*/
 
-  private def nodeTotalCost(node: ENode): Option[Cost] = {
-    val hasCost = node.children().forall(id => costs.contains(egraph.find(id)))
-    if (hasCost) {
-      val costF = (id: EClassId) => costs(egraph.find(id))._1
-      Some(costFunction.cost(node, costF))
-    } else {
-      None
-    }
+case class SmallestCostAnalysis[Cost](costFunction: CostFunction[Cost])
+  extends AnalysisOps with SemiLatticeAnalysis
+{
+  // TODO: would (ENode, Int) be more efficient?
+  type Data = (ExprWithHashCons, Cost)
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(), Set())
+
+  override def make(egraph: EGraph, enode: ENode, t: TypeId): Data = {
+    val smallestOf = egraph.getAnalysis(this)
+    (ExprWithHashCons(enode.mapChildren(c => smallestOf(c)._1), t),
+      costFunction.cost(enode, c => smallestOf(c)._2))
   }
 
-  private def computeCosts(): Unit = {
-    var didSomething = true
-    while (didSomething) {
-      didSomething = false
-
-      for (eclass <- egraph.classes.values) {
-        (costs.get(eclass.id), makePass(eclass)) match {
-          case (None, Some(newCost)) =>
-            costs += eclass.id -> newCost
-            didSomething = true
-          case (Some(oldCost), Some(newCost))
-            if costFunction.ordering.lt(newCost._1, oldCost._1) =>
-            costs += eclass.id -> newCost
-            didSomething = true
-          case _ => ()
+  override def merge(a: Data, b: Data): MergeResult = {
+    (a, b) match {
+      case ((_, aCost), (_, bCost)) =>
+        if (costFunction.ordering.gt(aCost, bCost)) {
+          MergeResult(b, mayNotBeA = true, mayNotBeB = false)
+        } else {
+          MergeResult(a, mayNotBeA = false, mayNotBeB = true)
         }
-      }
-    }
-
-    for (eclass <- egraph.classes.values) {
-      assert(costs.contains(eclass.id))
-    }
-  }
-
-  private def makePass(eclass: EClass): Option[(Cost, ENode)] = {
-    val (cost, node) = eclass.nodes
-      .map(n => (nodeTotalCost(n), n))
-      .minBy(x => x._1)(MaybeCostOrdering)
-    cost.map(c => (c, node))
-  }
-
-  object MaybeCostOrdering extends math.Ordering[Option[Cost]] {
-    override def compare(a: Option[Cost], b: Option[Cost]): Int = {
-      (a, b) match {
-        case (None, None) => 0
-        case (None, Some(_)) => 1
-        case (Some(_), None) => -1
-        case (Some(a), Some(b)) =>
-          costFunction.ordering.compare(a, b)
-      }
     }
   }
 }
