@@ -176,14 +176,14 @@ object RewriteDirected {
     override def name: String = "beta-extract"
 
     override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
-      (Set(SmallestSizeAnalysis), Set())
+      (Set(SmallestSizeBENF), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
 
       val appNode = App((), ())
       val lamNode = Lambda(())
-      val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+      val smallestOf = egraph.getAnalysis(SmallestSizeBENF)
 
       foreachClassByMatch(egraph, appNode){ id =>
         val appEClass = egraph.get(id)
@@ -200,8 +200,8 @@ object RewriteDirected {
               MatchClass(subs)),
               matchingApp, appEClass.id)
             res += ((m, () => {
-              val bodyEx = smallestOf(body)._1
-              val subsEx = smallestOf(subs)._1
+              val bodyEx = smallestOf(body).expr
+              val subsEx = smallestOf(subs).expr
               val expr = bodyEx.withArgument(egraph, subsEx)
               val (resultNode, resultId) = egraph.addExpr2(expr)
               (matchingApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find),

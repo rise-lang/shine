@@ -1,7 +1,12 @@
 package rise.eqsat
 
+import shine.Pipe
+
+import scala.math.Ordered.orderingToOrdered
+
 /** Explains how arbitrary analysis data associated with an [[EClass]]
   * is maintained across [[EGraph]] operations.
+  *
   * @see [[https://docs.rs/egg/0.6.0/egg/trait.Analysis.html]]
   */
 trait AnalysisOps {
@@ -12,7 +17,6 @@ trait AnalysisOps {
   def make(egraph: EGraph, enode: ENode, t: TypeId): Data
 
   // NOTE: removed for now
-  // def modify(egraph: EGraph, id: EClassId): Unit = {}
   // def preUnion(egraph: EGraph, id1: EClassId, id2: EClassId): Unit = {}
 }
 
@@ -30,7 +34,7 @@ trait TypeAnalysis {
 
 trait Analysis extends AnalysisOps {
   def init(egraph: EGraph): ()
-  def update(egraph: EGraph): ()
+  def update(egraph: EGraph, analysisPending: Seq[PendingAnalysis]): ()
 
   // FIXME: we are currently not updating the analysis data to account for removals
   def eliminate(egraph: EGraph, toEliminate: HashSet[EClassId]): Unit = {
@@ -49,6 +53,8 @@ trait SemiLatticeAnalysis extends Analysis {
 
   // mayNotBe == !mustBe
   case class MergeResult(result: Data, mayNotBeA: Boolean, mayNotBeB: Boolean)
+
+  def modify(egraph: EGraph, id: EClassId): Unit = {}
 
   override def init(egraph: EGraph): Unit = {
     val dataMap = egraph.getAnalysisMap(this)
@@ -70,15 +76,16 @@ trait SemiLatticeAnalysis extends Analysis {
     }
   }
 
-  override def update(egraph: EGraph): Unit = {
+  override def update(egraph: EGraph, pending: Seq[PendingAnalysis]): Unit = {
     val dataMap0 = egraph.getAnalysisMap(this)
     val dataMap = dataMap0.asInstanceOf[HashMap[EClassId, Data]] // FIXME: why?
 
     val analysisPending = HashSetQueuePop.empty[(ENode, EClassId)]
 
-    egraph.analysisPending.foreach {
+    pending.foreach {
       case PendingMakeAnalysis(enode, id, t) =>
         dataMap += id -> this.make(egraph, enode, t)
+        this.modify(egraph, id)
       case PendingMergeAnalysis(a, aParents, b, bParents) =>
         val result = this.merge(dataMap(a), dataMap(b))
         if (result.mayNotBeA) {
@@ -89,6 +96,7 @@ trait SemiLatticeAnalysis extends Analysis {
         }
         dataMap += a -> result.result
         dataMap.remove(b)
+        this.modify(egraph, a)
     }
 
     resolvePendingAnalysis(egraph, this)(dataMap0, analysisPending)
@@ -114,6 +122,7 @@ trait SemiLatticeAnalysis extends Analysis {
             val result = analysis.merge(existing, node_data)
             if (result.mayNotBeA) {
               analysisPending ++= eclass.parents
+              analysis.modify(egraph, cid)
             }
             result.result
         }
@@ -148,13 +157,13 @@ trait CommutativeSemigroupAnalysis extends Analysis {
     }
   }
 
-  override def update(egraph: EGraph): Unit = {
+  override def update(egraph: EGraph, pending: Seq[PendingAnalysis]): Unit = {
     val dataMap0 = egraph.getAnalysisMap(this)
     val dataMap = dataMap0.asInstanceOf[HashMap[EClassId, Data]] // FIXME: why?
 
     val analysisPending = HashSetQueuePop.empty[EClassId]
 
-    egraph.analysisPending.foreach {
+    pending.foreach {
       case PendingMakeAnalysis(_, id, _) =>
         analysisPending += egraph.findMut(id)
       case PendingMergeAnalysis(a, _, b, _) =>
@@ -476,7 +485,7 @@ case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
   override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
     val sorted = (a ++ b).sortBy(_._1)(cf.ordering)
     assert(sorted.size == sorted.distinct.size)
-    sorted.take(beamSize)
+    sorted.distinct.take(beamSize)
   }
 /*
   override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
@@ -489,4 +498,127 @@ case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
   }
 
  */
+}
+
+
+// FIXME: similar to AvoidCompositionAssoc1Extract
+// TODO: generalize to beam extraction?
+// TODO: generalize to other cost functions?
+case object SmallestSizeBENF extends Analysis with SemiLatticeAnalysis {
+  case class Data(cost: Int,
+                  expr: ExprWithHashCons,
+                  freeVars: Set[Int],
+                  isEtaApp: Boolean)
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(), Set())
+
+  private def computeFreeVars[T](node: Node[T, _, _])(freeVarsOf: T => Set[Int]): Set[Int] = {
+    node match {
+      case Var(index) =>
+        Set(index)
+      case Lambda(e) =>
+        freeVarsOf(e).filter(idx => idx != 0).map(idx => idx - 1)
+      case _ =>
+        node.children().map(freeVarsOf).foldLeft(Set[Int]())(_++_)
+    }
+  }
+
+  private def computeFreeVarsEWHC(e: ExprWithHashCons): Set[Int] =
+    computeFreeVars(e.node)(computeFreeVarsEWHC)
+
+  private def computeIsEtaApp(e: ExprWithHashCons): Boolean = {
+    e match {
+      case ExprWithHashCons(App(f, ExprWithHashCons(Var(0), _)), _) =>
+        !computeFreeVarsEWHC(f).contains(0)
+      case _ => false
+    }
+  }
+
+  override def make(egraph: EGraph, enode: ENode, t: TypeId): Data = {
+    val extractOf = egraph.getAnalysis(this)
+
+    val freeVars = computeFreeVars(enode)(c => extractOf(c).freeVars)
+
+    enode match {
+      // eta-reduction
+      case Lambda(e) if extractOf(e).isEtaApp =>
+        extractOf(e).expr match {
+          case ExprWithHashCons(App(f, ExprWithHashCons(Var(0), _)), _) =>
+            // val newFreeVars = freeVarsOfF.map { idx => assert(idx > 0); idx - 1 }
+            val shitedF = f.shifted(egraph, (-1, 0, 0), (1, 0, 0))
+            Data(extractOf(e).cost - 2, shitedF, computeFreeVarsEWHC(shitedF), computeIsEtaApp(shitedF))
+          case _ =>
+            throw new Exception("this should not happen")
+        }
+      // beta-reduction
+      case App(f, arg) if extractOf(f).expr.node.matches(Lambda(())) =>
+        extractOf(f).expr.node match {
+          case Lambda(body) =>
+            // TODO: memoize this?
+            val (reduced, size) = BENF(
+              body.withArgument(egraph, extractOf(arg).expr),
+              egraph.hashConses
+            )
+            Data(size, reduced, computeFreeVarsEWHC(reduced), computeIsEtaApp(reduced))
+          case _ =>
+            throw new Exception("this should not happen")
+        }
+      case _ =>
+        val cost = enode.children().map(c => 1 + extractOf(c).cost).sum
+        val expr = ExprWithHashCons(enode.mapChildren(c => extractOf(c).expr), t)
+        Data(cost, expr, freeVars, computeIsEtaApp(expr))
+    }
+  }
+
+  override def merge(a: Data, b: Data): MergeResult = {
+    if (a.cost > b.cost) {
+      MergeResult(b, mayNotBeA = true, mayNotBeB = false)
+    } else {
+      MergeResult(a, mayNotBeA = false, mayNotBeB = true)
+    }
+  }
+/*
+  override def merge(a: Data, b: Data): MergeResult = {
+    MergeResult(a, mayNotBeA = false, mayNotBeB = false) |>
+    mergeOne(a.best, b.best, d => d.copy(best = b.best)) |>
+    mergeOne(a.bestLam, b.bestLam, d => d.copy(bestLam = b.bestLam)) |>
+    mergeOne(a.bestFreshVar0, b.bestFreshVar0, d => d.copy(bestFreshVar0 = b.bestFreshVar0)) |>
+    mergeOne(a.bestVar0, b.bestVar0, d => d.copy(bestVar0 = b.bestVar0)) |>
+    mergeOne(a.bestEtaApp, b.bestEtaApp, d => d.copy(bestEtaApp = b.bestEtaApp))
+  }
+
+  private def mergeOne(a: Option[(Cost, BENFExtractExpr)],
+                       b: Option[(Cost, BENFExtractExpr)],
+                       dataWithB: BENFExtractData[Cost] => BENFExtractData[Cost])(
+                       res: MergeResult): MergeResult = {
+    (a, b) match {
+      case (None, Some(_)) =>
+        res.copy(result = dataWithB(res.result), mayNotBeA = true)
+      case (Some(_), None) =>
+        res.copy(mayNotBeB = true)
+      case (Some(a), Some(b)) =>
+        mergeOne(a, b, dataWithB)(res)
+    }
+  }
+
+  private def mergeOne(a: (Cost, BENFExtractExpr),
+                       b: (Cost, BENFExtractExpr),
+                       dataWithB: BENFExtractData[Cost] => BENFExtractData[Cost])(
+                       res: MergeResult): MergeResult = {
+    implicit val costCmp: Ordering[Cost] = cf.ordering
+
+    val ((aCost, _), (bCost, _)) = (a, b)
+    if (aCost > bCost) {
+      res.copy(result = dataWithB(res.result), mayNotBeA = true)
+    } else {
+      res.copy(mayNotBeB = true)
+    }
+  }
+*/
+  override def modify(egraph: EGraph, id: EClassId): Unit = {
+    val analysisOf = egraph.getAnalysis(this)
+    // TODO: avoid O(n) addExpr
+    egraph.union(id, egraph.addExpr(analysisOf(id).expr))
+  }
 }

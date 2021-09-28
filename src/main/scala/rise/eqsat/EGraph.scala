@@ -174,7 +174,6 @@ class EGraph(
       assert(!memo.contains(enode, t))
       memo += (enode, t) -> id
 
-      // analysis.modify(this, id)
       id
     }
   }
@@ -259,7 +258,6 @@ class EGraph(
     class1.nodes ++= class2.nodes
     class1.parents ++= class2.parents
 
-    // analysis.modify(this, id1)
     (id1, true)
   }
 
@@ -301,9 +299,10 @@ class EGraph(
 
       // NOTE: analysis dependencies should be respected if topological order is maintained
       // TODO: update could also be on-demand / lazy
-      typeAnalyses.keysIterator.foreach(ta => TypeAnalysis.update(this, ta))
-      analyses.keysIterator.foreach(t => t.update(this))
+      val analysisPendingCopy = analysisPending.toSeq
       analysisPending.clear()
+      typeAnalyses.keysIterator.foreach(ta => TypeAnalysis.update(this, ta))
+      analyses.keysIterator.foreach(t => t.update(this, analysisPendingCopy))
     }
 
     assert(pending.isEmpty)

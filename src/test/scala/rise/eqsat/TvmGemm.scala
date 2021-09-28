@@ -58,19 +58,13 @@ class TvmGemm extends test_util.Tests {
 
     val noSearch = Seq() -> AstSize
 
-    val splitSearch =  Seq(
+    val splitSearch = Seq(
       rules.mapFission,
       rules.reduceSeq,
       rules.eliminateMapIdentity,
-      // rules.reduceSeqMapFusion, //?
-      rules.reduceSeqMapFission,
+      rules.reduceSeqMapFission, //?
       rules.undoReduceSeqForAdd, //?
       // rules.splitBeforeMap,
-      // rules.liftReduceSeq,
-      // rules.liftReduceSeq2,
-      // rules.liftReduceSeq3,
-      // rules.transposeAroundMapMapF,
-      // rules.transposeAroundMapMapF1M, //?
       // rules.mapEtaAbstraction,
       rules.splitJoin(32),
       // rules.splitJoin1M(32),
@@ -84,7 +78,6 @@ class TvmGemm extends test_util.Tests {
       rules.reduceSeqMapFusion,
       rules.reduceSeqMapFission,
       rules.eliminateMapIdentity,
-      // rules.undoReduceSeqForAdd, //?
       rules.splitBeforeMap,
       rules.liftReduceSeq,
       rules.liftReduceSeq2,
@@ -92,10 +85,6 @@ class TvmGemm extends test_util.Tests {
       // rules.transposeAroundMapMapF,
       rules.transposeAroundMapMapF1M,
       // rules.mapEtaAbstraction,
-      // rules.splitJoin(32),
-      // rules.splitJoin1M(32),
-      // rules.splitJoin2M(32),
-      // rules.blockedReduce(4),
     ) -> AstSize
 
     val loweringSearch = Seq(
@@ -178,11 +167,10 @@ class TvmGemm extends test_util.Tests {
     val loweredEndResult = lowerToC.apply(namedEndResult).get
 
     val loweredGoal = lowerToC.apply(goal).get
-
-    util.writeToPath("/tmp/goal.c",
-      util.gen.c.function.asStringFromExpr(loweredGoal))
-    util.writeToPath("/tmp/result.c",
-      util.gen.c.function.asStringFromExpr(loweredEndResult))
+    val goalCode = util.gen.c.function.asStringFromExpr(loweredGoal)
+    val resultCode = util.gen.c.function.asStringFromExpr(loweredEndResult)
+    // util.writeToPath("/tmp/goal.c", goalCode)
+    // util.writeToPath("/tmp/result.c", resultCode)
   }
 
   test("blocking partial 1") {
@@ -235,6 +223,8 @@ class TvmGemm extends test_util.Tests {
     val goal = tvmGemm.blocking(mm).get
 
     ProveEquiv.init()
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
       .runBENF(start, goal, Seq(
         // rules.eta,// rules.betaExtract, rules.betaNatExtract,
         rules.mapFission,

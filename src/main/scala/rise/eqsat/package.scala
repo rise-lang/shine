@@ -29,27 +29,27 @@ package object eqsat {
   type HashSet[V] = mutable.HashSet[V]
   val HashSet: mutable.HashSet.type = mutable.HashSet
 
-  // TODO: could keep hash-consed nats/types?
   def BENF(e: Expr): Expr = {
     val egraph = EGraph.empty()
     val id = egraph.addExpr(e)
-    ExprWithHashCons.expr(egraph)(BENF_internal(egraph, id))
+    ExprWithHashCons.expr(egraph)(BENF_internal(egraph, id)._1)
   }
-  def BENF(e: ExprWithHashCons, hc: HashConses): ExprWithHashCons = {
+  def BENF(e: ExprWithHashCons, hc: HashConses): (ExprWithHashCons, Int) = {
     val egraph = EGraph.empty()
     egraph.hashConses = hc
     val id = egraph.addExpr(e)
     BENF_internal(egraph, id)
   }
 
-  private def BENF_internal(egraph: EGraph, id: EClassId): ExprWithHashCons = {
-    Runner.init().run(egraph, NoPredicate(), Seq(), Seq(
+  private def BENF_internal(egraph: EGraph, id: EClassId): (ExprWithHashCons, Int) = {
+    egraph.requireAnalysis(SmallestSizeBENF)
+    egraph.rebuild(Seq(id))
+    /* Runner.init().run(egraph, NoPredicate(), Seq(), Seq(
       RewriteDirected.Eta,
       RewriteDirected.BetaExtract,
       RewriteDirected.BetaNatExtract
-    ), Seq(id))
-    val (normalized, _) = Extractor.findBestOf(egraph, AstSize, id)
-    normalized
+    ), Seq(id)) */
+    Extractor.findBestOf(egraph, AstSize, id)
   }
 
   // Combinator Normal Form

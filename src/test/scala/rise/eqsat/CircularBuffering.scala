@@ -71,6 +71,7 @@ class CircularBuffering extends test_util.Tests {
     val normGoal = normalize.apply(gentleBetaReduction() <+ etaReduction())(goal).get
     println(s"normalized goal: $normGoal")
 
-    ProveEquiv.init().run(Expr.fromNamed(start), Expr.simplifyNats(Expr.fromNamed(normGoal)), rules, Seq())
+    ProveEquiv.init()
+      .run(Expr.fromNamed(start), Expr.simplifyNats(Expr.fromNamed(normGoal)), rules, Seq(), (Set(), Set()))
   }
 }

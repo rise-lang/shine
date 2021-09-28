@@ -68,11 +68,12 @@ class GuidedSearch(
 
         val g = EGraph.empty()
         g.hashConses = egraph.hashConses
+        g.requireAnalysis(SmallestSizeBENF)
         g.requireAnalysis(BeamExtract2(beamSize, costFunction))
         // TODO: should other known unions be restored?
         val r = matches.map { case (_, e) =>
           // FIXME: avoid BENF() trick
-          val added = BENF(e, egraph.hashConses)
+          val added = BENF(e, egraph.hashConses)._1
           println(Expr.toNamed(ExprWithHashCons.expr(g)(added)))
           g.addExpr(added)
         }.reduce[EClassId] { case (a, b) => g.union(a, b)._1 }

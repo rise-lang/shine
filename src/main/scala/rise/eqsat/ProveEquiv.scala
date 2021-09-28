@@ -64,7 +64,8 @@ class ProveEquiv(
     for ((goal, i) <- normGoals.zipWithIndex) {
       println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
     }
-    run(OneOrMore(normStarts), OneOrMore(normGoals), rules, normRules)
+    val analyses = (Set[Analysis](SmallestSizeBENF), Set[TypeAnalysis]())
+    run(OneOrMore(normStarts), OneOrMore(normGoals), rules, normRules, analyses)
   }
 
   def runCNF(starts: OneOrMore[rise.core.Expr],
@@ -83,15 +84,18 @@ class ProveEquiv(
     for ((goal, i) <- normGoals.zipWithIndex) {
       println(s"normalized goal n°$i: ${Expr.toNamed(goal)}")
     }
-    run(OneOrMore(normStarts), OneOrMore(normGoals), rules, normRules)
+    val analyses = (Set[Analysis](), Set[TypeAnalysis]())
+    run(OneOrMore(normStarts), OneOrMore(normGoals), rules, normRules, analyses)
   }
 
   def run(starts: OneOrMore[Expr],
           goals: OneOrMore[Expr],
           rules: Seq[Rewrite],
-          normRules: Seq[RewriteDirected]): Unit = {
+          normRules: Seq[RewriteDirected],
+          analyses: (Set[Analysis], Set[TypeAnalysis]),
+         ): Unit = {
     val egraph = EGraph.empty()
-    egraph.requireAnalyses(filter.requiredAnalyses())
+    egraph.requireAnalyses(Analysis.mergeRequired(filter.requiredAnalyses(), analyses))
     val startId = starts.seq.tail.foldLeft(egraph.addExpr(starts.seq.head)) { case (id, e) =>
       egraph.union(id, egraph.addExpr(e))._1
     }

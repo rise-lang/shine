@@ -4,7 +4,7 @@ object Extractor {
   def findBestOf[C](egraph: EGraph, costFunction: CostFunction[C], id: EClassId): (ExprWithHashCons, C) = {
     val analysis = SmallestCostAnalysis(costFunction)
     egraph.requireAnalysis(analysis)
-    val result = egraph.getAnalysis(analysis)(id)
+    val result = egraph.getAnalysis(analysis)(egraph.find(id))
     egraph.releaseAnalysis(analysis)
     result
   }
@@ -76,13 +76,11 @@ case class SmallestCostAnalysis[Cost](costFunction: CostFunction[Cost])
   }
 
   override def merge(a: Data, b: Data): MergeResult = {
-    (a, b) match {
-      case ((_, aCost), (_, bCost)) =>
-        if (costFunction.ordering.gt(aCost, bCost)) {
-          MergeResult(b, mayNotBeA = true, mayNotBeB = false)
-        } else {
-          MergeResult(a, mayNotBeA = false, mayNotBeB = true)
-        }
+    val ((_, aCost), (_, bCost)) = (a, b)
+    if (costFunction.ordering.gt(aCost, bCost)) {
+      MergeResult(b, mayNotBeA = true, mayNotBeB = false)
+    } else {
+      MergeResult(a, mayNotBeA = false, mayNotBeB = true)
     }
   }
 }
