@@ -51,6 +51,7 @@ trait SemiLatticeAnalysis extends Analysis {
   case class MergeResult(result: Data, mayNotBeA: Boolean, mayNotBeB: Boolean)
 
   override def init(egraph: EGraph): Unit = {
+    assert(egraph.clean)
     val dataMap = egraph.getAnalysisMap(this)
 
     val analysisPending = HashSetQueuePop.empty[(ENode, EClassId)]
@@ -129,6 +130,7 @@ trait CommutativeSemigroupAnalysis extends Analysis {
   def merge(a: Data, b: Data): Data
 
   override def init(egraph: EGraph): Unit = {
+    assert(egraph.clean)
     val dataMap = egraph.getAnalysisMap(this)
 
     val analysisPending = HashSetQueuePop.empty[EClassId]
@@ -190,11 +192,8 @@ trait CommutativeSemigroupAnalysis extends Analysis {
         }
       }
       if (availableData.isEmpty) {
-        if (eclass.nodes.nonEmpty) {
-          // don't analyse empty e-classes
-          // FIXME: that might prevent parents from converging
-          analysisPending += cid
-        }
+        assert(eclass.nodes.nonEmpty)
+        analysisPending += cid
       } else {
         val existingData = dataMap.get(eclass.id)
         val computedData = availableData.reduce[analysis.Data] { case (a, b) => analysis.merge(a, b) }

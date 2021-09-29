@@ -112,6 +112,8 @@ object ematching {
     def run[ED, ND, TD](egraph: EGraph,
                         eclass: EClassId,
                         hashcons: SubstHashCons): Vec[Subst] = {
+      assert(egraph.clean)
+
       val machine = AbstractMachine.init(eclass)
 
       val substs = Vec.empty[Subst]

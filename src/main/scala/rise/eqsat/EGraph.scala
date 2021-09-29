@@ -14,6 +14,7 @@ object EGraph {
       analysisPending = Vec.empty[PendingAnalysis],
       classesByMatch = HashMap.empty,
       hashConses = HashConses.empty(),
+      clean = true,
     )
 }
 
@@ -40,6 +41,12 @@ class EGraph(
   var classes: HashMap[EClassId, EClass],
   var classesByMatch: HashMap[Int, HashSet[EClassId]],
   var hashConses: HashConses,
+
+  // Whether or not reading operation are allowed on this e-graph.
+  // Mutating operations will set this to `false`, and
+  // `rebuild` will set it to `true`.
+  // Reading operations require this to be `true`.
+  var clean: Boolean,
 ) {
   // TODO: check for dependency cycles?
   def requireAnalyses(x: (Set[Analysis], Set[TypeAnalysis])): Unit = {
@@ -175,6 +182,7 @@ class EGraph(
       memo += (enode, t) -> id
 
       // analysis.modify(this, id)
+      this.clean = false
       id
     }
   }
@@ -260,23 +268,31 @@ class EGraph(
     class1.parents ++= class2.parents
 
     // analysis.modify(this, id1)
+    this.clean = false
     (id1, true)
   }
 
   def rebuild(roots: Seq[EClassId],
               filter: Predicate = NoPredicate()): Int = {
-    val nUnions = processUnions()
-    // val _ = rebuildClasses()
-    val _ = this.filter(filter, roots)
-    rebuildClassesByMatch()
+    if (!this.clean) {
+      val nUnions = processUnions()
+      // val _ = rebuildClasses()
+      val _ = this.filter(filter, roots)
+      rebuildClassesByMatch()
 
-    assert {
-      TypeCheck(this)
-      checkMemo()
-      true
+      assert {
+        TypeCheck(this)
+        checkMemo()
+        true
+      }
+
+      this.clean = true
+      nUnions
+    } else {
+      assert(pending.isEmpty)
+      assert(analysisPending.isEmpty)
+      0
     }
-
-    nUnions
   }
 
   private def processUnions(): Int = {
