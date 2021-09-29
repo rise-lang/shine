@@ -31,6 +31,7 @@ object Analyser {
 
   def init[D](egraph: EGraph, analysis: Analysis[D],
               data: HashMap[EClassId, D] = HashMap.empty[EClassId, D]): Analyser[D] = {
+    assert(egraph.clean)
     val e = new Analyser(analysis, data, egraph)
     e.run()
     e
@@ -133,7 +134,6 @@ case class AvoidCompositionAssoc1ExtractData[Cost](
   bestNoComp: Option[(Int, Cost, ExprWithHashCons)])
 
 case class AvoidCompositionAssoc1Extract[Cost](cf: CostFunction[Cost])
-                                              (implicit costCmp: math.Ordering[Cost])
   extends Analyser.Analysis[AvoidCompositionAssoc1ExtractData[Cost]] {
 
   override def make(enode: ENode, t: TypeId,
@@ -174,6 +174,7 @@ case class AvoidCompositionAssoc1Extract[Cost](cf: CostFunction[Cost])
 
   override def merge(a: AvoidCompositionAssoc1ExtractData[Cost],
                      b: AvoidCompositionAssoc1ExtractData[Cost]): AvoidCompositionAssoc1ExtractData[Cost] = {
+    implicit val costCmp: Ordering[Cost] = cf.ordering
     AvoidCompositionAssoc1ExtractData(
       Seq(a.best, b.best).minBy { case (avoidCount, cost, _) => (avoidCount, cost) },
       (a.bestNoComp ++ b.bestNoComp).minByOption { case (avoidCount, cost, _) => (avoidCount, cost) },

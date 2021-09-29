@@ -131,6 +131,7 @@ object ExtendedPattern {
                        egraph: EGraph)
   : Map[EClassId, Seq[(Cost, ExprWithHashCons)]] =
   {
+    assert(egraph.clean)
     val beamExtractMap = egraph.getAnalysisMap(BeamExtract2(beamSize, costFunction))
     // val beamAnalyser = util.printTime("beam extract",
     //  Analyser.init(egraph, BeamExtract(beamSize, costFunction)))
@@ -375,6 +376,7 @@ sealed trait ExtendedPattern {
   import ExtendedPattern.{typeIsMatch, dataTypeIsMatch, natIsMatch, traverse}
 
   def searchEClass(egraph: EGraph, id: EClassId): Vec[ExtendedPatternMatch] = {
+    assert(egraph.clean)
     searchEClass(egraph, egraph.get(id), Set(), HashMap.empty/*, None*/)
   }
 

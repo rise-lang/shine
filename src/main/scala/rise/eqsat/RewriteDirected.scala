@@ -202,6 +202,7 @@ object RewriteDirected {
             res += ((m, () => {
               val bodyEx = smallestOf(body)._1
               val subsEx = smallestOf(subs)._1
+              // FIXME: next two lines are expensive
               val expr = bodyEx.withArgument(egraph, subsEx)
               val (resultNode, resultId) = egraph.addExpr2(expr)
               (matchingApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find),

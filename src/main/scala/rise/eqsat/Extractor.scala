@@ -2,9 +2,10 @@ package rise.eqsat
 
 object Extractor {
   def findBestOf[C](egraph: EGraph, costFunction: CostFunction[C], id: EClassId): (ExprWithHashCons, C) = {
+    assert(egraph.clean)
     val analysis = SmallestCostAnalysis(costFunction)
     egraph.requireAnalysis(analysis)
-    val result = egraph.getAnalysis(analysis)(id)
+    val result = egraph.getAnalysis(analysis)(egraph.find(id))
     egraph.releaseAnalysis(analysis)
     result
   }

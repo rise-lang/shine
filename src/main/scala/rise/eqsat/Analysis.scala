@@ -190,11 +190,8 @@ trait CommutativeSemigroupAnalysis extends Analysis {
         }
       }
       if (availableData.isEmpty) {
-        if (eclass.nodes.nonEmpty) {
-          // don't analyse empty e-classes
-          // FIXME: that might prevent parents from converging
-          analysisPending += cid
-        }
+        assert(eclass.nodes.nonEmpty)
+        analysisPending += cid
       } else {
         val existingData = dataMap.get(eclass.id)
         val computedData = availableData.reduce[analysis.Data] { case (a, b) => analysis.merge(a, b) }
