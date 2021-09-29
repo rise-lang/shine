@@ -157,8 +157,8 @@ object RewriteDirected {
                   lamEClass.id)
                 res += ((m, () => {
                   val extract = smallestOf(matchingAppFun.id)._1
-                  val shifted = extract.shifted(egraph, (-1, 0, 0), (1, 0, 0))
-                  val (resultNode, resultId) = egraph.addExpr2(shifted)
+                  val shifted = NodeSubs.Expr.shifted(egraph.hashConses, extract, (-1, 0, 0), (1, 0, 0))
+                  val (resultNode, resultId) = egraph.memoized.addExpr2(shifted, egraph)
                   (matchingLam != resultNode, egraph.union(lamEClass.id, resultId)._2)
                 }))
               }
@@ -202,9 +202,8 @@ object RewriteDirected {
             res += ((m, () => {
               val bodyEx = smallestOf(body)._1
               val subsEx = smallestOf(subs)._1
-              // FIXME: next two lines are expensive
-              val expr = bodyEx.withArgument(egraph, subsEx)
-              val (resultNode, resultId) = egraph.addExpr2(expr)
+              val expr = egraph.memoized.withArgument(bodyEx, subsEx, egraph.hashConses)
+              val (resultNode, resultId) = egraph.memoized.addExpr2(expr, egraph)
               (matchingApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find),
                 egraph.union(appEClass.id, resultId)._2)
             }))
@@ -245,8 +244,8 @@ object RewriteDirected {
               matchingNApp, nAppEClass.id)
             res += ((m, () => {
               val bodyEx = smallestOf(body)._1
-              val expr = bodyEx.withNatArgument(egraph, subs)
-              val (resultNode, resultId) = egraph.addExpr2(expr)
+              val expr = egraph.memoized.withNatArgument(bodyEx, subs, egraph.hashConses)
+              val (resultNode, resultId) = egraph.memoized.addExpr2(expr, egraph)
               (matchingNApp.mapChildren(egraph.find) != resultNode.mapChildren(egraph.find),
                 egraph.union(nAppEClass.id, resultId)._2)
             }))

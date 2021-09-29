@@ -108,28 +108,83 @@ case class SubstHashCons(
 object HashConses {
   def empty(): HashConses =
     HashConses(
+      exprs = HashCons.empty,
       nats = HashCons.empty,
       dataTypes = HashCons.empty,
       types = HashCons.empty
     )
 }
 
+object Memoized {
+  def empty(): Memoized = Memoized(
+    addExpr = HashMap.empty,
+    withArgument = HashMap.empty,
+    withNatArgument = HashMap.empty,
+    withDataArgument = HashMap.empty,
+  )
+}
+
+case class Memoized(private val addExpr: HashMap[ExprId, EClassId],
+                    private val withArgument: HashMap[(ExprId, ExprId), ExprId],
+                    private val withNatArgument: HashMap[(ExprId, NatId), ExprId],
+                    private val withDataArgument: HashMap[(ExprId, DataTypeId), ExprId]) {
+  // FIXME: is forgetting this inefficient?
+  def eliminate(toEliminate: EClassId => Boolean): () =
+    addExpr.filterInPlace { case (_, id2) => !toEliminate(id2) }
+
+  def addExpr(expr: ExprId, egraph: EGraph): EClassId = {
+    val id = egraph.findMut(addExpr.getOrElseUpdate(expr, {
+      val (n, t) = egraph.hashConses(expr)
+      egraph.add(n.mapChildren(addExpr(_, egraph)), t)
+    }))
+    id
+  }
+
+  def addExpr2(expr: ExprId, egraph: EGraph): (ENode, EClassId) = {
+    val (n, t) = egraph.hashConses(expr)
+    val enode = n.mapChildren(addExpr(_, egraph))
+    (enode, egraph.add(enode, t))
+  }
+
+  def withArgument(body: ExprId, arg: ExprId, hc: HashConses): ExprId = {
+    withArgument.getOrElseUpdate((body, arg), {
+      val argS = NodeSubs.Expr.shifted(hc, arg, (1, 0, 0), (0, 0, 0))
+      val bodyR = NodeSubs.Expr.replace(hc, body, 0, argS)
+      NodeSubs.Expr.shifted(hc, bodyR, (-1, 0, 0), (0, 0, 0))
+    })
+  }
+
+  def withNatArgument(body: ExprId, arg: NatId, hc: HashConses): ExprId = {
+    withNatArgument.getOrElseUpdate((body, arg), {
+      val argS = NodeSubs.Nat.shifted(hc, arg, 1, 0)
+      val bodyR = NodeSubs.Expr.replace(hc, body, 0, argS)
+      NodeSubs.Expr.shifted(hc, bodyR, (0, -1, 0), (0, 0, 0))
+    })
+  }
+}
+
 case class HashConses(
+  exprs: HashCons[(Node[ExprId, NatId, DataTypeId], TypeId), ExprId],
   nats: HashCons[NatNode[NatId], NatId],
   dataTypes: HashCons[DataTypeNode[NatId, DataTypeId], DataTypeId],
   types: HashCons[TypeNode[TypeId, NatId, DataTypeId], NotDataTypeId]
 ) {
+  def apply(id: ExprId): (Node[ExprId, NatId, DataTypeId], TypeId) =
+    exprs.get(id)
   def apply(id: NatId): NatNode[NatId] =
     nats.get(id)
   def apply(id: DataTypeId): DataTypeNode[NatId, DataTypeId] =
     dataTypes.get(id)
-  def apply(id: NotDataTypeId):TypeNode[TypeId, NatId, DataTypeId] =
+  def apply(id: NotDataTypeId): TypeNode[TypeId, NatId, DataTypeId] =
     types.get(id)
   def apply(id: TypeId): TypeNode[TypeId, NatId, DataTypeId] =
     id match {
       case i: DataTypeId => apply(i)
       case i: NotDataTypeId => apply(i)
     }
+
+  def add(e: Node[ExprId, NatId, DataTypeId], t: TypeId): ExprId =
+    exprs.add((e, t), ExprId)
 
   def add(n: NatNode[NatId]): NatId = {
     import rise.core.{types => rct}

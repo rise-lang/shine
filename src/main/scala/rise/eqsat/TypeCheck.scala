@@ -73,10 +73,10 @@ object TypeCheck {
             assertSameType(egraph.get(e).t, outT)
           case NatApp(f, x) =>
             val ft = unwrapNatFunType(egraph.get(f).t)
-            assertSameType(t, NodeSubs.Type.withNatArgument(egraph, ft, x))
+            assertSameType(t, NodeSubs.Type.withNatArgument(egraph.hashConses, ft, x))
           case DataApp(f, x) =>
             val ft = unwrapDataFunType(egraph.get(f).t)
-            assertSameType(t, NodeSubs.Type.withDataArgument(egraph, ft, x))
+            assertSameType(t, NodeSubs.Type.withDataArgument(egraph.hashConses, ft, x))
           case NatLambda(e) =>
             val ft = unwrapNatFunType(t)
             assertSameType(ft, egraph.get(e).t)

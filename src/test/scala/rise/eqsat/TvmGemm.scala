@@ -8,6 +8,27 @@ import elevate.core.Then
 import ProveEquiv.syntax._
 import rise.eqsat.PredicateDSL._
 
+object Bench {
+  def main(args: Array[String]): () = {
+    val mm: Expr = tvmGemm.mm
+    val start = tvmGemm.blockingPartial3(mm).get
+    val goal = tvmGemm.blocking(mm).get
+
+    ProveEquiv.init()
+      .runBENF(start, goal, Seq(
+        // rules.eta,// rules.betaExtract, rules.betaNatExtract,
+        rules.mapFission,
+        rules.reduceSeq,
+        rules.reduceSeqMapFusion,
+        rules.undoReduceSeqForAdd,
+        rules.splitBeforeMap,
+        rules.liftReduceSeq,
+        rules.liftReduceSeq2,
+        rules.liftReduceSeq3
+      ))
+  }
+}
+
 class TvmGemm extends test_util.Tests {
   test("baseline") {
     val mm: Expr = tvmGemm.mm
@@ -50,6 +71,7 @@ class TvmGemm extends test_util.Tests {
     val goalSize = {
       val g = EGraph.empty()
       val id = g.addExpr(normGoal)
+      g.rebuild(Seq(id))
       val s = Analyser.init(g, AstSize)
       s.analysisOf(id)
     }

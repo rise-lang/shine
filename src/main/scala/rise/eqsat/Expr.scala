@@ -22,8 +22,8 @@ case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId], t: 
 
   /** Shifts De-Bruijn indices up or down if they are >= cutoff */
   def shifted[E, ED, ND, DT](egraph: EGraph, shift: Expr.Shift, cutoff: Expr.Shift): ExprWithHashCons = {
-    ExprWithHashCons(NodeSubs.shifted(egraph, node, shift, cutoff){ case (e, s, c) => e.shifted(egraph, s, c) },
-      NodeSubs.Type.shifted(egraph, t, (shift._2, shift._3), (cutoff._2, cutoff._3)))
+    ExprWithHashCons(NodeSubs.shifted(egraph.hashConses, node, shift, cutoff){ case (e, s, c) => e.shifted(egraph, s, c) },
+      NodeSubs.Type.shifted(egraph.hashConses, t, (shift._2, shift._3), (cutoff._2, cutoff._3)))
   }
 
   def replace[E, ED, ND, DT](egraph: EGraph, index: Int, subs: ExprWithHashCons): ExprWithHashCons = {
@@ -34,8 +34,8 @@ case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId], t: 
   }
 
   def replace[E, ED, ND, DT](egraph: EGraph, index: Int, subs: NatId): ExprWithHashCons = {
-    ExprWithHashCons(NodeSubs.replace(egraph, node, index, subs){ case (e, i, s) => e.replace(egraph, i, s) },
-      NodeSubs.Type.replace(egraph, t, index, subs))
+    ExprWithHashCons(NodeSubs.replace(egraph.hashConses, node, index, subs){ case (e, i, s) => e.replace(egraph, i, s) },
+      NodeSubs.Type.replace(egraph.hashConses, t, index, subs))
   }
 
   // substitutes %0 for arg in this
@@ -47,7 +47,7 @@ case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId], t: 
 
   // substitutes %n0 for arg in this
   def withNatArgument[E, ED, ND, DT](egraph: EGraph, arg: NatId): ExprWithHashCons = {
-    val argS = NodeSubs.Nat.shifted(egraph, arg, 1, 0)
+    val argS = NodeSubs.Nat.shifted(egraph.hashConses, arg, 1, 0)
     val bodyR = this.replace(egraph, 0, argS)
     bodyR.shifted(egraph, (0, -1, 0), (0, 0, 0))
   }

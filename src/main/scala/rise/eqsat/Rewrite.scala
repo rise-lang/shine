@@ -231,8 +231,10 @@ case class ShiftedExtractApplier(v: PatternVar, newV: PatternVar,
                         subst: Subst): Vec[EClassId] = {
     val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
     val extract = smallestOf(subst(v, shc))._1
-    val shifted = extract.shifted(egraph, shift, cutoff)
-    val subst2 = shc.substInsert(newV, egraph.addExpr(shifted), subst)
+    // TODO? memoize shifts
+    val shifted = NodeSubs.Expr.shifted(egraph.hashConses,
+      extract, shift, cutoff)
+    val subst2 = shc.substInsert(newV, egraph.memoized.addExpr(shifted, egraph), subst)
     applier.applyOne(egraph, eclass, shc, subst2)
   }
 }
@@ -247,7 +249,7 @@ object ShiftedCheckApplier {
     ConditionalApplier({ case (egraph, _, shc, subst) =>
       val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
       val extract = smallestOf(subst(v, shc))._1
-      val shifted = extract.shifted(egraph, shift, cutoff)
+      val shifted = NodeSubs.Expr.shifted(egraph.hashConses, extract, shift, cutoff)
       val expected = smallestOf(subst(v2, shc))._1
       shifted == expected
     }, Set(v, v2), (Set(SmallestSizeAnalysis), Set()), applier)
@@ -269,7 +271,7 @@ case class ShiftedNatApplier(v: NatPatternVar, newV: NatPatternVar,
                         shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
     val nat = subst(v, shc)
-    val shifted = NodeSubs.Nat.shifted(egraph, nat, shift, cutoff)
+    val shifted = NodeSubs.Nat.shifted(egraph.hashConses, nat, shift, cutoff)
     val subst2 = shc.substInsert(newV, shifted, subst)
     applier.applyOne(egraph, eclass, shc, subst2)
   }
@@ -282,7 +284,7 @@ object ShiftedNatCheckApplier {
             applier: Applier): Applier =
     ConditionalApplier({ case (egraph, _, shc, subst) =>
       val nat = subst(v, shc)
-      val shifted = NodeSubs.Nat.shifted(egraph, nat, shift, cutoff)
+      val shifted = NodeSubs.Nat.shifted(egraph.hashConses, nat, shift, cutoff)
       val expected = subst(v2, shc)
       shifted == expected
     }, Set(v, v2), (Set(), Set()), applier)
@@ -304,7 +306,7 @@ case class ShiftedDataTypeApplier(v: DataTypePatternVar, newV: DataTypePatternVa
                         shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
     val dt = subst(v, shc)
-    val shifted = NodeSubs.DataType.shifted(egraph, dt, shift, cutoff)
+    val shifted = NodeSubs.DataType.shifted(egraph.hashConses, dt, shift, cutoff)
     val subst2 = shc.substInsert(newV, shifted, subst)
     applier.applyOne(egraph, eclass, shc, subst2)
   }
@@ -317,7 +319,7 @@ object ShiftedDataTypeCheckApplier {
             applier: Applier): Applier =
     ConditionalApplier({ case (egraph, _, shc, subst) =>
       val dt = subst(v, shc)
-      val shifted = NodeSubs.DataType.shifted(egraph, dt, shift, cutoff)
+      val shifted = NodeSubs.DataType.shifted(egraph.hashConses, dt, shift, cutoff)
       val expected = subst(v2, shc)
       shifted == expected
     }, Set(v, v2), (Set(), Set()), applier)
@@ -339,7 +341,7 @@ case class ShiftedTypeApplier(v: TypePatternVar, newV: TypePatternVar,
                         shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
     val t = subst(v, shc)
-    val shifted = NodeSubs.Type.shifted(egraph, t, shift, cutoff)
+    val shifted = NodeSubs.Type.shifted(egraph.hashConses, t, shift, cutoff)
     val subst2 = shc.substInsert(newV, shifted, subst)
     applier.applyOne(egraph, eclass, shc, subst2)
   }
@@ -352,7 +354,7 @@ object ShiftedTypeCheckApplier {
             applier: Applier): Applier =
     ConditionalApplier({ case (egraph, _, shc, subst) =>
       val t = subst(v, shc)
-      val shifted = NodeSubs.Type.shifted(egraph, t, shift, cutoff)
+      val shifted = NodeSubs.Type.shifted(egraph.hashConses, t, shift, cutoff)
       val expected = subst(v2, shc)
       shifted == expected
     }, Set(v, v2), (Set(), Set()), applier)
@@ -376,8 +378,8 @@ case class BetaExtractApplier(body: PatternVar, subs: PatternVar)
     val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
     val bodyEx = smallestOf(subst(body, shc))._1
     val subsEx = smallestOf(subst(subs, shc))._1
-    val result = bodyEx.withArgument(egraph, subsEx)
-    Vec(egraph.addExpr(result))
+    val result = egraph.memoized.withArgument(bodyEx, subsEx, egraph.hashConses)
+    Vec(egraph.memoized.addExpr(result, egraph))
   }
 }
 
@@ -435,8 +437,8 @@ case class BetaNatExtractApplier(body: PatternVar, subs: NatPatternVar)
     val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
     val bodyEx = smallestOf(subst(body, shc))._1
     val subsNat = subst(subs, shc)
-    val result = bodyEx.withNatArgument(egraph, subsNat)
-    Vec(egraph.addExpr(result))
+    val result = egraph.memoized.withNatArgument(bodyEx, subsNat, egraph.hashConses)
+    Vec(egraph.memoized.addExpr(result, egraph))
   }
 }
 

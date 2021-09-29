@@ -12,6 +12,9 @@ package object eqsat {
   /** A key to identify [[EClass]]es within an [[EGraph]] */
   case class EClassId(i: Int)
 
+  /** A key to identify interned exprs */
+  case class ExprId(i: Int)
+
   /** A key to identify interned nats */
   case class NatId(i: Int)
 

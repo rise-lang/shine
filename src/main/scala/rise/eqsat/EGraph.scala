@@ -14,6 +14,7 @@ object EGraph {
       analysisPending = Vec.empty[PendingAnalysis],
       classesByMatch = HashMap.empty,
       hashConses = HashConses.empty(),
+      memoized = Memoized.empty(),
       clean = true,
     )
 }
@@ -41,6 +42,7 @@ class EGraph(
   var classes: HashMap[EClassId, EClass],
   var classesByMatch: HashMap[Int, HashSet[EClassId]],
   var hashConses: HashConses,
+  var memoized: Memoized,
 
   // Whether or not reading operation are allowed on this e-graph.
   // Mutating operations will set this to `false`, and
@@ -66,7 +68,6 @@ class EGraph(
 
     if (!analyses.contains(a)) {
       analyses(a) = new AnalysisData(0, HashMap.empty[EClassId, a.Data])
-      assert(clean)
       a.init(this)
     }
     analyses(a).refCount += 1
@@ -192,10 +193,6 @@ class EGraph(
     add(expr.node.map(addExpr, addNat, addDataType), addType(expr.t))
   def addExpr(expr: ExprWithHashCons): EClassId =
     add(expr.node.map(addExpr, n => n, dt => dt), expr.t)
-  def addExpr2(expr: ExprWithHashCons): (ENode, EClassId) = {
-    val enode = expr.node.map(addExpr, n => n, dt => dt)
-    (enode, add(enode, expr.t))
-  }
 
   def lookupExpr(expr: Expr): Option[EClassId] =
     lookup(expr.node.map(
@@ -490,6 +487,7 @@ class EGraph(
       }
       // FIXME: we are currently not updating the analysis data to account for removals
       analyses.keysIterator.foreach(t => t.eliminate(this, toEliminate))
+      memoized.eliminate(eclassToEliminate)
     }
 
     val eliminatedClasses = originalClassCount - classCount()

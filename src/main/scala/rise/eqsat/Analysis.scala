@@ -51,6 +51,7 @@ trait SemiLatticeAnalysis extends Analysis {
   case class MergeResult(result: Data, mayNotBeA: Boolean, mayNotBeB: Boolean)
 
   override def init(egraph: EGraph): Unit = {
+    assert(egraph.clean)
     val dataMap = egraph.getAnalysisMap(this)
 
     val analysisPending = HashSetQueuePop.empty[(ENode, EClassId)]
@@ -129,6 +130,7 @@ trait CommutativeSemigroupAnalysis extends Analysis {
   def merge(a: Data, b: Data): Data
 
   override def init(egraph: EGraph): Unit = {
+    assert(egraph.clean)
     val dataMap = egraph.getAnalysisMap(this)
 
     val analysisPending = HashSetQueuePop.empty[EClassId]
@@ -266,15 +268,15 @@ object NoAnalysis extends AnalysisOps with SemiLatticeAnalysis with TypeAnalysis
 
 // TODO: use SmallestCost Analysis
 object SmallestSizeAnalysis extends AnalysisOps with SemiLatticeAnalysis {
-  type Data = (ExprWithHashCons, Int)
+  type Data = (ExprId, Int)
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
     (Set(), Set())
 
-  override def make(egraph: EGraph, enode: ENode, t: TypeId): (ExprWithHashCons, Int) = {
+  override def make(egraph: EGraph, enode: ENode, t: TypeId): (ExprId, Int) = {
     val smallestOf = egraph.getAnalysis(this)
     var size = 1
-    val expr = ExprWithHashCons(enode.mapChildren { c =>
+    val expr = egraph.hashConses.add(enode.mapChildren { c =>
       val (e, s) = smallestOf(c)
       size += s
       e
