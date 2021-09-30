@@ -14,41 +14,43 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 import scala.collection.mutable.ListBuffer
 
 case class AutoTuningExecutor(lowering: Strategy[Rise],
-                       goldExpression: Rise,
-                       iterations: Int,
-                       inputSize: Int,
-                       threshold: Double,
-                       output: String) extends Runner[Rise] {
+                              goldExpression: Rise,
+                              hostCode: HostCode,
+                              iterations: Int,
+                              inputSize: Int,
+                              threshold: Double,
+                              output: String
+                             ) extends Runner[Rise] {
 
-  // hard coded hostcode for convolution
-  val init: (Int) => String = (N) => {
-    s"""
-       |const int N = ${N};
-       |srand(time(NULL));
-       |Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-       |Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
-       |
-       |float* m = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
-       |for (int i = 0; i < N; i++) {
-       |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
-       |}
-       |float factor = 4;
-       |
-       |""".stripMargin
-  }
-
-  val compute =
-    s"""
-       |fun_run(ctx, &fun, output, N, input, factor);
-       |""".stripMargin
-
-  val finish =
-    s"""
-       |// TODO: could check output here
-       |
-       |destroyBuffer(ctx, input);
-       |destroyBuffer(ctx, output);
-       |""".stripMargin
+//  // hard coded hostcode for convolution
+//  val init: (Int) => String = (N) => {
+//    s"""
+//       |const int N = ${N};
+//       |srand(time(NULL));
+//       |Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+//       |Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+//       |
+//       |float* m = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+//       |for (int i = 0; i < N; i++) {
+//       |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
+//       |}
+//       |float factor = 4;
+//       |
+//       |""".stripMargin
+//  }
+//
+//  val compute =
+//    s"""
+//       |fun_run(ctx, &fun, output, N, input, factor);
+//       |""".stripMargin
+//
+//  val finish =
+//    s"""
+//       |// TODO: could check output here
+//       |
+//       |destroyBuffer(ctx, input);
+//       |destroyBuffer(ctx, output);
+//       |""".stripMargin
 
 
   def execute(solution: Solution[Rise]):(Rise,Option[Double]) = {
@@ -59,11 +61,12 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // create tuner
     val tuner = Tuner(
-      hostCode = HostCode(init(1024), compute, finish),
-      inputSizes = Seq(1024),
+//      hostCode = HostCode(init(1024), compute, finish),
+      hostCode = hostCode,
+      inputSizes = Seq(1024, 1024),
       samples = iterations,
-      name = "scal",
-      output = "autotuning/scal",
+      name = "mv",
+      output = "exploration/",
       timeouts = Timeouts(100000, 100000, 100000),
       executionIterations = 10,
       runtimeStatistic = Median,
@@ -89,15 +92,23 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                 ))))
 
         // run tuning
-        val result = search(tuner)(eTuning)
+        val runtime = try{
+          val result = search(tuner)(eTuning)
 
-        val best = getBest(result.samples)
-        println("best: " + best)
-        println("lowered: " + lowered)
+          val best = getBest(result.samples)
+          println("best: " + best)
+          println("lowered: " + lowered)
 
-        val runtime = best.get.runtime match{
-          case Right(value) => Some(value.value)
-          case Left(value) => None
+          val runtime = best.get.runtime match{
+            case Right(value) => Some(value.value)
+            case Left(value) => None
+          }
+
+          runtime
+        }catch{
+          case e:Throwable => {
+           None
+          }
         }
 
         (solution.expression, runtime)

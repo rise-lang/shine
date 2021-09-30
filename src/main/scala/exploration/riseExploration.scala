@@ -16,6 +16,7 @@ import exploration.explorationUtil.jsonParser.ParseExploration
 import strategies.{convolutionStrategies, defaultStrategies, scalStrategies}
 import elevate.core._
 import elevate.core.strategies.basic._
+import rise.autotune.HostCode
 import rise.elevate.Rise
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
@@ -31,7 +32,9 @@ object riseExploration {
   def apply(solution:Rise,
             lowering:Strategy[Rise],
             strategies: Set[Strategy[Rise]],
-            filePath:String)
+            filePath:String,
+            hostCode: HostCode = null,
+           )
   : (Rise, Option[Double]) = {
 
     // parse config file
@@ -45,16 +48,18 @@ object riseExploration {
       solution,
       lowering,
       strategies,
-      filePath)
+      filePath,
+      hostCode)
 
     // start
-    startingPoint.execute(Solution(solution,
+    val result = startingPoint.execute(Solution(solution,
       immutable.Seq.empty[Strategy[Rise]]))
 
     // collect results
     // code here
-    // -- todo -- visualize dot graphs
 
+
+    result
   }
 
     // todo command line parser (replace apply function by main)
@@ -64,7 +69,9 @@ object riseExploration {
                          solution: Rise,
                          lowering: Strategy[Rise],
                          strategies: Set[Strategy[Rise]],
-                         filePath: String): Metaheuristic[Rise] = {
+                         filePath: String,
+                         hostCode: HostCode
+                        ): Metaheuristic[Rise] = {
 
     // -- todo --check elements -> requirements
 
@@ -83,7 +90,7 @@ object riseExploration {
     // make this more generic
 //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
 //    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
-    val lowering = exploration.strategies.scalStrategies.lowering
+//    val lowering = exploration.strategies.scalStrategies.lowering
 //    val lowerings = exploration.strategies.scalStrategies.lowerings
     // add lowering for scal
 
@@ -128,7 +135,7 @@ object riseExploration {
     val executor = result.executor.name match {
       case "C" => new CExecutor(lowering, gold, result.executor.iterations,
         inputSize, result.executor.threshold, executorOutput)
-      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
       case _ => new Exception("not a supported executor option")

@@ -3,6 +3,7 @@ package rise.elevate.rules
 import arithexpr.arithmetic.{ArithExpr, Cst}
 import elevate.core._
 import elevate.core.strategies.Traversable
+import elevate.core.strategies.basic.normalize
 import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal.tryAll
 import elevate.macros.RuleMacro.rule
@@ -74,6 +75,9 @@ object algorithmic {
       Success(red(fun(acc => fun(x =>
         preserveType(f)(acc)(preserveType(g)(x)))))(init)(in) !: e.t)
   }
+
+  def fuseReduceMap2(implicit ev: Traversable[Rise]): Strategy[Rise] =
+    normalize(ev)(fuseReduceMap)
 
   def fuseReduceMap: Strategy[Rise] = reduceMapFusion
 
