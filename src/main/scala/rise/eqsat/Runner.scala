@@ -65,6 +65,7 @@ class Runner(var iterations: Vec[Iteration],
     val rebuildTime = iterations.iterator.map(_.rebuildTime).sum
     val totalTime = iterations.iterator.map(_.totalTime).sum
     val nRebuilds = iterations.iterator.map(_.nRebuilds.toLong).sum
+    val memStats = iterations.iterator.map(_.memStats).reduce(_ max _)
     println("-- Runner report --")
     println(s"  Stop reasons: ${stopReasons.mkString(", ")}")
     println(s"  Iterations: ${iterationCount()}")
@@ -79,6 +80,7 @@ class Runner(var iterations: Vec[Iteration],
       s"${ratio(searchTime.toDouble, totalTime.toDouble)} search, " +
       s"${ratio(applyTime.toDouble, totalTime.toDouble)} apply, " +
       s"${ratio(rebuildTime.toDouble, totalTime.toDouble)} rebuild)")
+    println(s"  Maximum Memory: ${memStats.pretty()}")
   }
 
   def run(egraph: EGraph,
@@ -99,9 +101,10 @@ class Runner(var iterations: Vec[Iteration],
       applyTime = 0,
       rebuildTime = 0,
       totalTime = 0,
-      nRebuilds = 0
+      nRebuilds = 0,
+      memStats = util.memStats()
     )
-    println(iteration0)
+    // println(iteration0)
     iterations += iteration0
 
     val startTime = System.nanoTime()
@@ -112,7 +115,7 @@ class Runner(var iterations: Vec[Iteration],
       if (stopReasons.nonEmpty) { return this }
 
       val iter = runOne(egraph, roots, filter, rules, normRules)
-      println(iter)
+      // println(iter)
 
       if (iter.applied.isEmpty &&
         scheduler.canSaturate(iterations.size)) {
@@ -153,6 +156,7 @@ class Runner(var iterations: Vec[Iteration],
     }
     val normMatches = normRules.map { nr => nr.search(egraph) }
 
+    val memStats1 = util.memStats()
     val time1 = System.nanoTime()
 
     val applied = HashMap.empty[String, Int]
@@ -192,6 +196,7 @@ class Runner(var iterations: Vec[Iteration],
     
     val nRebuilds = egraph.rebuild(roots, filter)
 
+    val memStats3 = util.memStats()
     val time3 = System.nanoTime()
 
     new Iteration(
@@ -203,7 +208,8 @@ class Runner(var iterations: Vec[Iteration],
       applyTime = time2 - time1,
       rebuildTime = time3 - time2,
       totalTime = time3 - time0,
-      nRebuilds = nRebuilds
+      nRebuilds = nRebuilds,
+      memStats = memStats1 max memStats3
     )
   }
 }
@@ -217,16 +223,19 @@ class Iteration(val egraphNodes: Int,
                 val applyTime: Long,
                 val rebuildTime: Long,
                 val totalTime: Long,
-                val nRebuilds: Int) {
+                val nRebuilds: Int,
+                val memStats: util.MemoryStats) {
   override def toString: String = {
-    s"Iteration(#nodes: $egraphNodes, " +
+    s"Iteration:\n" +
+    s"  #nodes: $egraphNodes, " +
       s"#classes: $egraphClasses, " +
       s"#memo: $memoSize, " +
-      s"applied: $applied, " +
       s"search: ${util.prettyTime(searchTime)}, " +
       s"apply: ${util.prettyTime(applyTime)}, " +
       s"rebuild: ${util.prettyTime(rebuildTime)}, " +
       s"total: ${util.prettyTime(totalTime)}, " +
-      s"#rebuilds: $nRebuilds)"
+      s"#rebuilds: $nRebuilds\n" +
+    s"  applied: $applied\n" +
+    s"  memory ${memStats.pretty()}"
   }
 }

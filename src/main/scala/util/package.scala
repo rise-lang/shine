@@ -77,6 +77,35 @@ package object util {
     s"${mnStr}${sStr}${msStr}${µsStr}"
   }
 
+  case class MemoryStats(used: Long, total: Long) {
+    def pretty(): String =
+      s"used: ${prettyMem(used)}, " +
+      s"total: ${prettyMem(total)}"
+
+    def max(other: MemoryStats): MemoryStats = {
+      MemoryStats(this.used max other.used, this.total max other.total)
+    }
+  }
+
+  def memStats(): MemoryStats = {
+    val runtime = Runtime.getRuntime
+    val used = runtime.totalMemory - runtime.freeMemory
+    MemoryStats(used, runtime.totalMemory)
+  }
+
+  def prettyMem(bytes: Long): String = {
+    val kibibyte = bytes / 1024
+    val kib = kibibyte % 1024
+    val mebibyte = kibibyte / 1024
+    val mib = mebibyte % 1024
+    val gib = mebibyte / 1024
+
+    val kibStr = if (kib > 0) s"${kib}KiB" else ""
+    val mibStr = if (mib > 0) s"${mib}MiB " else ""
+    val gibStr = if (gib > 0) s"${gib}GiB " else ""
+    s"${gibStr}${mibStr}${kibStr}"
+  }
+
   def dotPrintTmp(
     name: String,
     r: elevate.core.RewriteResult[rise.elevate.Rise]

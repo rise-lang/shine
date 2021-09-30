@@ -1,4 +1,7 @@
 package rise.eqsat
+import rise.core
+import rise.core.traverse
+import util.monads
 
 object Extractor {
   def findBestOf[C](egraph: EGraph, costFunction: CostFunction[C], id: EClassId): (ExprWithHashCons, C) = {
@@ -98,6 +101,16 @@ object AstSize extends CostFunction[Int] {
   val ordering = implicitly
   def cost(enode: ENode, costs: EClassId => Int): Int =
     enode.children().foldLeft(1) { case (acc, eclass) => acc + costs(eclass) }
+
+  def ofNamedExpr(e: rise.core.Expr): Int = {
+    rise.core.traverse.traverse(e, new traverse.PureAccumulatorTraversal[Int] {
+      override val accumulator = util.monads.AddMonoid
+      override def expr: core.Expr => Pair[core.Expr] = super.expr
+    })._1
+  }
+
+  def ofExpr(e: Expr): Int =
+    e.node.children().foldLeft(1) { case (acc, c) => acc + ofExpr(c) }
 }
 
 object AstDepth extends CostFunction[Int] {
