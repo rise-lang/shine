@@ -160,6 +160,8 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withTimeLimit(java.time.Duration.ofMinutes(5)))
       .runBENF(start, sketches)
   }
 
@@ -222,6 +224,8 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withTimeLimit(java.time.Duration.ofMinutes(5)))
       .runBENF(start, sketches)
   }
 

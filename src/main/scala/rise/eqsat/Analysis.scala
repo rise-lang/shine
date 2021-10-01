@@ -4,16 +4,19 @@ package rise.eqsat
   * is maintained across [[EGraph]] operations.
   * @see [[https://docs.rs/egg/0.6.0/egg/trait.Analysis.html]]
   */
-trait AnalysisOps {
+trait Analysis {
   type Data
 
   def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis])
 
-  def make(egraph: EGraph, enode: ENode, t: TypeId): Data
+  def init(egraph: EGraph): ()
+  def update(egraph: EGraph): ()
 
-  // NOTE: removed for now
-  // def modify(egraph: EGraph, id: EClassId): Unit = {}
-  // def preUnion(egraph: EGraph, id1: EClassId, id2: EClassId): Unit = {}
+  // FIXME: we are currently not updating the analysis data to account for removals
+  def eliminate(egraph: EGraph, toEliminate: HashSet[EClassId]): Unit = {
+    val dataMap = egraph.getAnalysisMap(this)
+    toEliminate.foreach { id => dataMap.remove(id) }
+  }
 }
 
 trait TypeAnalysis {
@@ -28,18 +31,9 @@ trait TypeAnalysis {
                node: TypeNode[TypeId, NatId, DataTypeId]): TypeData
 }
 
-trait Analysis extends AnalysisOps {
-  def init(egraph: EGraph): ()
-  def update(egraph: EGraph): ()
-
-  // FIXME: we are currently not updating the analysis data to account for removals
-  def eliminate(egraph: EGraph, toEliminate: HashSet[EClassId]): Unit = {
-    val dataMap = egraph.getAnalysisMap(this)
-    toEliminate.foreach { id => dataMap.remove(id) }
-  }
-}
-
 trait SemiLatticeAnalysis extends Analysis {
+  def make(egraph: EGraph, enode: ENode, t: TypeId): Data
+
   // This should return the merge analysis data, which can be an updated `a`.
   //
   // The result is a `MergeResult(result, mayNotBeA, mayNotBeB)` indicating whether
@@ -127,6 +121,8 @@ trait SemiLatticeAnalysis extends Analysis {
 }
 
 trait CommutativeSemigroupAnalysis extends Analysis {
+  def make(egraph: EGraph, enode: ENode, t: TypeId): Data
+
   def merge(a: Data, b: Data): Data
 
   override def init(egraph: EGraph): Unit = {
@@ -248,7 +244,7 @@ object TypeAnalysis {
   }
 }
 
-object NoAnalysis extends AnalysisOps with SemiLatticeAnalysis with TypeAnalysis {
+object NoAnalysis extends SemiLatticeAnalysis with TypeAnalysis {
   type Data = ()
   type NatData = ()
   type TypeData = ()
@@ -267,7 +263,7 @@ object NoAnalysis extends AnalysisOps with SemiLatticeAnalysis with TypeAnalysis
 }
 
 // TODO: use SmallestCost Analysis
-object SmallestSizeAnalysis extends AnalysisOps with SemiLatticeAnalysis {
+object SmallestSizeAnalysis extends SemiLatticeAnalysis {
   type Data = (ExprWithHashCons, Int)
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
@@ -314,7 +310,7 @@ object FreeIntersectionAnalysis extends FreeAnalysisCustomisable() {
     to.filterInPlace(from.contains) // intersection
 }
 
-abstract class FreeAnalysisCustomisable() extends AnalysisOps with SemiLatticeAnalysis with TypeAnalysis {
+abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeAnalysis {
   type Data = FreeData
   type NatData = FreeNatData
   type TypeData = FreeTypeData
@@ -442,7 +438,7 @@ abstract class FreeAnalysisCustomisable() extends AnalysisOps with SemiLatticeAn
 
 // TODO: is this actually a Semi Lattice Analysis?
 case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
-  extends Analysis with CommutativeSemigroupAnalysis
+  extends CommutativeSemigroupAnalysis
 {
   type Data = Seq[(Cost, ExprWithHashCons)]
 

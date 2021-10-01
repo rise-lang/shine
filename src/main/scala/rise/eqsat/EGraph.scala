@@ -62,7 +62,9 @@ class EGraph(
   }
 
   def requireAnalysis(a: Analysis): Unit = {
-    requireAnalyses(a.requiredAnalyses())
+    val ra = a.requiredAnalyses()
+    assert(ra._1.isEmpty) // TODO: propagate analysis pending from dependencies?
+    requireAnalyses(ra)
 
     if (!analyses.contains(a)) {
       analyses(a) = new AnalysisData(0, HashMap.empty[EClassId, a.Data])

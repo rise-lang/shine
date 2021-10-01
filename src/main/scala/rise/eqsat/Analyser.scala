@@ -45,14 +45,21 @@ class Analyser[Data](val analysis: Analyser.Analysis[Data],
     data(egraph.find(eclass))
 
   private def run(): Unit = {
-    var didSomething = true
+    val analysisPending = HashSetQueuePop.empty[EClassId]
 
-    // TODO: keep track of pending analysis for performance
-    while (didSomething) {
-      didSomething = false
+    egraph.classes.values.foreach { eclass =>
+      analysisPending += eclass.id
+    }
 
-      for (eclass <- egraph.classes.values) {
-        didSomething = makePass(eclass) || didSomething
+    while (analysisPending.nonEmpty) {
+      val id = analysisPending.pop()
+      val cid = egraph.findMut(id)
+      assert(cid == id)
+
+      val eclass = egraph.classes(cid)
+      val didSomething = makePass(eclass)
+      if (didSomething) {
+        analysisPending ++= eclass.parents.map(p => egraph.findMut(p._2))
       }
     }
 

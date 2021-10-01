@@ -65,7 +65,7 @@ class Extractor[Cost](val costFunction: CostFunction[Cost],
 */
 
 case class SmallestCostAnalysis[Cost](costFunction: CostFunction[Cost])
-  extends AnalysisOps with SemiLatticeAnalysis
+  extends SemiLatticeAnalysis
 {
   // TODO: would (ENode, Int) be more efficient?
   type Data = (ExprWithHashCons, Cost)
