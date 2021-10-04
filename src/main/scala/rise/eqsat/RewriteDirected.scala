@@ -41,25 +41,6 @@ object RewriteDirected {
       }
     }
 
-    var removed = 0
-    def remove(eclass: EClass, enode: ENode): Unit = {
-      val idx = eclass.nodes.indexOf(enode)
-      if (idx < 0) { return } // already removed
-
-      // FIXME: these eager removals may be expensive, delay them?
-      eclass.nodes.remove(idx)
-      val cano = (enode.mapChildren(egraph.findMut), egraph.findMut(eclass.id))
-      egraph.memo.filterInPlace { case ((n, _), id) =>
-        (n.mapChildren(egraph.findMut), egraph.findMut(id)) != cano
-      }
-      enode.children().foreach { c =>
-        egraph.get(c).parents.filterInPlace { case (n, id) =>
-          (n.mapChildren(egraph.findMut), egraph.findMut(id)) != cano
-        }
-      }
-      removed += 1
-    }
-
     // returns whether there exists shared non-matching possibilities
     def sharesNonMatching(m: Match): Boolean = {
       m match {
@@ -67,6 +48,14 @@ object RewriteDirected {
           mnode.children().exists(sharesNonMatching) ||
             (egraph.get(id).parents.size > 1)
         case MatchClass(_) => false
+      }
+    }
+
+    val toRemove = HashMap.empty[EClassId, HashSet[ENode]]
+    var removed = 0
+    def remove(id: EClassId, enode: ENode): () = {
+      if (toRemove.getOrElseUpdate(id, HashSet.empty).add(enode)) {
+        removed += 1
       }
     }
 
@@ -84,30 +73,46 @@ object RewriteDirected {
             }
 
             val safeToRemove = snms.forall(x => !x)
-            if (safeToRemove) { remove(eclass, enode) }
+            if (safeToRemove) { remove(eclass.id, enode) }
           }
         case MatchClass(_) => ()
       }
     }
 
-    var removedBefore = 0
-    val attemptDeletions = withAlternative.filter { m =>
+    withAlternative.foreach { m =>
       val removedBackup = removed
       if (!overlapsAttemptedDeletion(m)) {
         tryToRemove(m, atRoot = true)
       }
-      val keep = removed > removedBackup
-      if (keep) {
+      if (removed > removedBackup) {
         extendAttemptedDeletion(m)
       }
-      keep
     }
 
-    while (removed > removedBefore) {
-      // FIXME: never seems to remove more, this is dead code?
-      // println(s"hello: ${removed}")
-      removedBefore = removed
-      attemptDeletions.foreach { m => tryToRemove(m, atRoot = true) }
+    val toRemoveCano = HashSet.empty[(EClassId, ENode)]
+    val parentsToRemove = HashMap.empty[EClassId, HashSet[(EClassId, ENode)]]
+    toRemove.foreach { case (id, enodesToRemove) =>
+      val eclass = egraph.getMut(id)
+      val prevSize = eclass.nodes.size
+      eclass.nodes.filterInPlace(!enodesToRemove(_))
+      assert(eclass.nodes.size + enodesToRemove.size == prevSize)
+      enodesToRemove.foreach { enode =>
+        val cano = (eclass.id, enode.mapChildren(egraph.findMut))
+        toRemoveCano += cano
+        enode.children().foreach { c =>
+          parentsToRemove.getOrElseUpdate(c, HashSet.empty) += cano
+        }
+      }
+    }
+
+    egraph.memo.filterInPlace { case ((n, _), id) =>
+      !toRemoveCano((egraph.findMut(id), n.mapChildren(egraph.findMut)))
+    }
+
+    parentsToRemove.foreach { case (id, ps) =>
+      egraph.get(id).parents.filterInPlace { case (n, id) =>
+        !ps.contains((egraph.findMut(id), n.mapChildren(egraph.findMut)))
+      }
     }
 
     removed
