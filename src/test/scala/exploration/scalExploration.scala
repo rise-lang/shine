@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import Type._
 import elevate.core.strategies.traversal.bottomUp
-import exploration.strategies.scalStrategies
+import exploration.strategies.defaultStrategiesGPU
 import rise.core.types._
 import rise.core.types.DataType._
 import rise.elevate.rules.algorithmic.splitJoin
@@ -25,12 +25,12 @@ object scalExploration {
 
   // try differnt lowering options
   // 1D
-  val lowered1 = exploration.strategies.scalStrategies.lowerGs.apply(scal)
-  val lowered2 = exploration.strategies.scalStrategies.lowerWrgLcl.apply(scal2)
+  val lowered1 = exploration.strategies.defaultStrategiesGPU.lowerGs.apply(scal)
+  val lowered2 = exploration.strategies.defaultStrategiesGPU.lowerWrgLcl.apply(scal2)
 
   // 2D
-  val lowered3 = exploration.strategies.scalStrategies.lowerGsGs.apply(scal2)
-  val lowered4 = exploration.strategies.scalStrategies.lowerWrgWrgLclLcl.apply(scal4)
+  val lowered3 = exploration.strategies.defaultStrategiesGPU.lowerGsGs.apply(scal2)
+  val lowered4 = exploration.strategies.defaultStrategiesGPU.lowerWrgWrgLclLcl.apply(scal4)
 
   println("lowered1: " + lowered1)
   println("lowered2: " + lowered2)
@@ -45,6 +45,6 @@ object scalExploration {
 
   def main(args: Array[String]): Unit = {
     // start exploration here
-    riseExploration(scal, scalStrategies.lowering, scalStrategies.lowerings, "exploration/configuration/scal.json")
+    riseExploration(scal, defaultStrategiesGPU.lowering, defaultStrategiesGPU.lowerings, "exploration/configuration/scal.json")
   }
 }

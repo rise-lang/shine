@@ -2,7 +2,6 @@ package exploration.strategies
 import elevate.core.Strategy
 import elevate.core.strategies.debug
 import elevate.core.strategies.traversal.{allTopdown, alltd, bottomUp, one, some, somebu, sometd, topDown, tryAll}
-import exploration.strategies.scalStrategies.sjtd
 import rise.elevate.{Rise, tunable}
 import rise.elevate.rules.algorithmic.{createTransposePair, fuseReduceMap, fuseReduceMap2, idAfter, mapFusion, mapLastFission, reduceMapFission, reduceMapFusion, removeTransposePair, splitJoin, transposePairAfter}
 import rise.elevate.rules.lowering.{addRequiredCopies, reduceOCL}
@@ -13,7 +12,7 @@ import rise.eqsat.Nat
 
 import scala.collection.mutable.ListBuffer
 
-object scalStrategies {
+object defaultStrategiesGPU {
 
   val lowerAll = addRequiredCopies() `;` rise.elevate.rules.lowering.specializeSeq() `;` reduceOCL()
 //  val lowerAll = rise.elevate.rules.lowering.specializeSeq() `;` reduceOCL()
@@ -97,7 +96,6 @@ object scalStrategies {
     sometd,
     somebu
   )
-
 
   @rule def allSplitJoin:Strategy[Rise] = all(tunable(splitJoin))
   @rule def oneSplitJoin:Strategy[Rise] = one(tunable(splitJoin))
@@ -186,25 +184,25 @@ object scalStrategies {
   strategies.foreach(println)
 
 
-  val strategies2 = Set[Strategy[Rise]](
-    //    idTd,
-    //    idSome,
-    //        createTransposePair,
-    //        transposeIdSome,
-    //        transposeIdRevert,
-    //        transposeIdTp,
-    //        transposeIdBu,
-    //        transposeIdRevertBu,
-    //        transposeIdRevertTp
-
-    //    transposePairAfterTd,
-    //      transposePairAfterSome
-
-    sjtd,
-    sjbu,
-    idBu,
-    transposePairAfterBu
-  )
+//  val strategies2 = Set[Strategy[Rise]](
+//    //    idTd,
+//    //    idSome,
+//    //        createTransposePair,
+//    //        transposeIdSome,
+//    //        transposeIdRevert,
+//    //        transposeIdTp,
+//    //        transposeIdBu,
+//    //        transposeIdRevertBu,
+//    //        transposeIdRevertTp
+//
+//    //    transposePairAfterTd,
+//    //      transposePairAfterSome
+//
+//    sjtd,
+//    sjbu,
+//    idBu,
+//    transposePairAfterBu
+//  )
 
 
   // combine with leftchoice

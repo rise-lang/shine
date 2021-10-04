@@ -6,7 +6,7 @@ import apps.separableConvolution2D.mulT
 import arithexpr.arithmetic.RangeMul
 import elevate.core.{Failure, Strategy, Success}
 import elevate.core.strategies.traversal.{allTopdown, bottomUp, topDown, tryAll}
-import exploration.strategies.scalStrategies
+import exploration.strategies.defaultStrategiesGPU
 import rise.autotune.{HostCode, tuningParam, wrapOclRun}
 import rise.core.DSL.Type._
 import rise.core.DSL._
@@ -90,7 +90,7 @@ object mvExploration {
        |""".stripMargin
   // scalastyle:on
 
-  val lowered = scalStrategies.lowering.apply(mvHighLevel)
+  val lowered = defaultStrategiesGPU.lowering.apply(mvHighLevel)
   println("lowered: " + lowered)
 
   val mvNoTuning = wrapOclRun(LocalSize(32), GlobalSize(1024))(lowered.get)
@@ -102,7 +102,7 @@ object mvExploration {
   println("codeNoTuningString: " + codeNoTuningString)
 
 
-  val lowered2 = scalStrategies.lowering.apply(scalStrategies.sjbu.apply(mvHighLevel).get)
+  val lowered2 = defaultStrategiesGPU.lowering.apply(defaultStrategiesGPU.sjbu.apply(mvHighLevel).get)
 
   val mvNoTuning2 = wrapOclRun(LocalSize(32), GlobalSize(1024))(lowered.get)
   println("mvNoTuning2: " + mvNoTuning2)
@@ -146,23 +146,28 @@ object mvExploration {
     }
   }
 
+  val rewriteLayer1 = defaultStrategiesGPU.strategies.map(s => s.apply(mvHighLevel)).filter(e => e.isInstanceOf[Success]).map {
+    case Success(e) => e
+  }
+
+
   // check, if all rewrites are valid
   var i = 0
-  scalStrategies.strategies.foreach(rewrite => {
-    i = testRewrite(rewrite, scalStrategies.lowering) match{
+  rewriteLayer1.foreach(rewrite => {
+    i = testRewrite(rewrite, defaultStrategiesGPU.lowering) match{
       case true => i + 1
       case false => i
     }
   })
 
   println("true: " + i)
-  println("false: " + (scalStrategies.strategies.size  - i))
+  println("false: " + (defaultStrategiesGPU.strategies.size  - i))
 
 
   def main(args: Array[String]): Unit = {
     // start exploration here
 
     // add strategies as arguments
-    riseExploration(mvHighLevel, scalStrategies.lowering, scalStrategies.strategies, "exploration/configuration/mv.json", HostCode(init(1024, 1024), compute, finish))
+//    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", HostCode(init(1024, 1024), compute, finish))
   }
 }
