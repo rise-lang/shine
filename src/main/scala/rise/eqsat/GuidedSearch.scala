@@ -18,8 +18,13 @@ object GuidedSearch {
           s"${ratio(st.rewriteSearchTime, st.totalTime)} rewrite search, " +
           s"${ratio(st.rewriteApplyTime, st.totalTime)} rewrite apply, " +
           s"${ratio(st.egraphRebuildTime, st.totalTime)} e-graph rebuild, " +
-          s"${ratio(st.beamSearchTime, st.totalTime)} beam search)")
+          s"${ratio(st.goalCheckTime, st.totalTime)} goal check, "+
+          s"${ratio(st.extractionTime, st.totalTime)} extraction)")
         println(s"  maximum memory ${st.memoryStats.pretty()}")
+        st.beam.headOption.foreach { e =>
+          println(s"  best expr:")
+          println(Expr.toNamed(e))
+        }
       }
     }
   }
@@ -27,12 +32,14 @@ object GuidedSearch {
   case class Stats(rewriteSearchTime: Long,
                    rewriteApplyTime: Long,
                    egraphRebuildTime: Long,
-                   beamSearchTime: Long,
+                   goalCheckTime: Long,
+                   extractionTime: Long,
                    totalTime: Long,
                    iterations: Int,
                    egraphNodes: Int,
                    egraphClasses: Int,
-                   memoryStats: util.MemoryStats)
+                   memoryStats: util.MemoryStats,
+                   beam: Seq[Expr])
 
   def init(): GuidedSearch = new GuidedSearch(
     filter = NoPredicate(),
@@ -64,72 +71,63 @@ class GuidedSearch(
       RewriteDirected.BetaNatExtract
     )
 
-    val beamSize = 6
+    // TODO: use a cheaper beamSearch returning a Boolean instead of matches?
+    val beamSize = 1 // 6
     val stats = Vec.empty[GuidedSearch.Stats]
 
     @tailrec
-    def rec(s: Int, egraph: EGraph, rootId: EClassId): Seq[Expr] = {
-      egraph.rebuild(Seq(rootId))
-      println("----")
-      /*
-      val pcount = Analyser.init(egraph, CountProgramsUpToSize(goalSize + 10))
-      pcount.analysisOf(rootId).foreach { case (size, count) =>
-        println(s"programs of size ${size}: ${count}")
-      }
-      BeamExtract.print(3, AstSize, egraph, rootId)
-      println("----")
-       */
-
+    def rec(s: Int, normBeam: Seq[Expr]): Seq[Expr] = {
       if (s < sketches.length) {
+        val egraph = EGraph.empty()
+        val rootId = normBeam.map(egraph.addExpr)
+          .reduce[EClassId] { case (a, b) => egraph.union(a, b)._1 }
+        egraph.rebuild(Seq(rootId))
+
+        println(s"---- sketch n°$s")
         val ((rules, costFunction), sketch) = sketches(s)
-        var matches = Seq[(_, ExprWithHashCons)]()
-        // TODO: add beam analysis to e-graph for incremental update
-        val (totalTime, runner) = util.time(transformRunner(Runner.init()).doneWhen { _ =>
-          util.printTime("goal check", {
-            matches = ExtendedPattern.beamSearch(sketch, beamSize, costFunction, egraph, rootId)
-            matches.nonEmpty
-          })
+        // TODO: add goal check to e-graph for incremental update?
+        val (growTime, runner) = util.time(transformRunner(Runner.init()).doneWhen { _ =>
+          ExtendedPattern.exists(sketch, egraph, rootId)
         }.run(egraph, filter, rules, normRules, Seq(rootId)))
+        val found = runner.stopReasons.contains(Done)
+
+        val (extractionTime, matches) = if (found) {
+          util.time(ExtendedPattern.beamSearch(sketch, beamSize, costFunction, egraph, rootId))
+        } else {
+          (0L, Seq())
+        }
+        val newNormBeam = matches.map { case (_, e) =>
+          // FIXME: avoid BENF() trick
+          ExprWithHashCons.expr(egraph)(BENF(e, egraph.hashConses))
+        }
+
         val totalIterationsTime = runner.iterations.iterator.map(_.totalTime).sum
         stats += GuidedSearch.Stats(
           rewriteSearchTime = runner.iterations.iterator.map(_.searchTime).sum,
           rewriteApplyTime = runner.iterations.iterator.map(_.applyTime).sum,
           egraphRebuildTime = runner.iterations.iterator.map(_.rebuildTime).sum,
-          beamSearchTime = totalTime - totalIterationsTime,
-          totalTime = totalTime,
+          goalCheckTime = growTime - totalIterationsTime,
+          extractionTime = extractionTime,
+          totalTime = growTime + extractionTime,
           iterations = runner.iterationCount(),
           egraphNodes = runner.iterations.last.egraphNodes,
           egraphClasses = runner.iterations.last.egraphClasses,
-          memoryStats = runner.iterations.iterator.map(_.memStats).reduce(_ max _)
+          memoryStats = runner.iterations.iterator.map(_.memStats).reduce(_ max _),
+          beam = newNormBeam
         )
-        if (!runner.stopReasons.contains(Done)) {
+        if (found) {
+          assert(matches.nonEmpty)
+        } else {
           runner.printReport()
           return Seq() // could not reach sketch
         }
 
-        val g = EGraph.empty()
-        g.hashConses = egraph.hashConses
-        g.requireAnalysis(BeamExtract2(beamSize, costFunction))
-        // TODO: should other known unions be restored?
-        val r = matches.map { case (_, e) =>
-          // FIXME: avoid BENF() trick
-          val added = BENF(e, egraph.hashConses)
-          println(Expr.toNamed(ExprWithHashCons.expr(g)(added)))
-          g.addExpr(added)
-        }.reduce[EClassId] { case (a, b) => g.union(a, b)._1 }
-        rec(s + 1, g, r)
+        rec(s + 1, newNormBeam)
       } else {
-        println(s"${egraph.nodeCount()} nodes, ${egraph.classCount()} classes")
-        val ((_, costFunction), _) = sketches.last
-        val beamAnalysis = egraph.getAnalysis(BeamExtract2(beamSize, costFunction))
-        val bests = beamAnalysis(rootId).map(_._2)
-        bests.map(ExprWithHashCons.expr(egraph))
+        normBeam
       }
     }
 
-    val g = EGraph.empty()
-    val ((_, costFunction), _) = sketches.head
-    g.requireAnalysis(BeamExtract2(beamSize, costFunction))
-    GuidedSearch.Result(rec(0, g, g.addExpr(normStart)), stats)
+    GuidedSearch.Result(rec(0, Seq(normStart)), stats)
   }
 }

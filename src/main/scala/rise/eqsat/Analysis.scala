@@ -469,19 +469,6 @@ case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
   }
 
   override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-    val sorted = (a ++ b).sortBy(_._1)(cf.ordering)
-    assert(sorted.size == sorted.distinct.size)
-    sorted.take(beamSize)
+    (a ++ b).sortBy(_._1)(cf.ordering).distinct.take(beamSize)
   }
-/*
-  override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-    val sorted = (existing ++ computed).sortBy(_._1)
-    // TODO: hash-cons the exprs for faster .distinct?
-    val dedup = sorted.distinct
-    // sorted.headOption ++ sorted.iterator.sliding(2, 1).withPartial(false)
-    // .flatMap(nbh => if (nbh(0) == nbh(1)) { None } else { Some(nbh(1)) })
-    dedup.take(beamSize)
-  }
-
- */
 }

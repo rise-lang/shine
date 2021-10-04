@@ -117,6 +117,101 @@ object ExtendedPattern {
     (newEGraph, matches.map(addMatch).reduce(newUnion))
   }
 
+  def exists(pattern: ExtendedPattern,
+             egraph: EGraph,
+             id: EClassId): Boolean = {
+    val ex = exists(pattern, egraph)(id)
+    /* assert {
+      ex == util.printTime("search", beamSearch(pattern, 1, AstSize, egraph, id).nonEmpty)
+    } */
+    ex
+  }
+
+  def exists(pattern: ExtendedPattern,
+             egraph: EGraph): Set[EClassId] = {
+    assert(egraph.clean)
+    val memo = HashMap.empty[ExtendedPattern, Set[EClassId]]
+
+    def searchRec(p: ExtendedPattern): Set[EClassId] = {
+      memo.get(p) match {
+        case Some(value) => return value
+        case None =>
+      }
+
+      val res: Set[EClassId] = p match {
+        case ExtendedPatternAny(t) =>
+          egraph.classes.valuesIterator.flatMap { eclass =>
+            assert(eclass.id == egraph.find(eclass.id))
+            if (typeIsMatch(egraph, t, eclass.t)) { Some(eclass.id) } else { None }
+          }.toSet
+        case ExtendedPatternVar(index, t) => ???
+        case ExtendedPatternNode(node, t) =>
+          val childrenMatches = node.children().map(searchRec).toSeq
+          // TODO: skip if any child has empty matches?
+
+          egraph.classesByMatch(node.matchHash()).filter { id =>
+            val eclass = egraph.get(id)
+            assert(id == eclass.id)
+            var isMatch = false
+
+            if (typeIsMatch(egraph, t, eclass.t)) {
+              // TODO: could short-circuit
+              ematching.forEachMatchingNode(eclass, node.map(_ => (), _ => (), _ => ()), { matched =>
+                val typesMatch =
+                  node.nats().zip(matched.nats()).forall { case (p, n) => natIsMatch(egraph, p, n) } &&
+                    node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) }
+                if (typesMatch) {
+                  val childrenMatch = childrenMatches.iterator.zip(matched.children())
+                    .forall { case (matches, id) =>
+                      assert(id == egraph.find(id))
+                      matches(id)
+                    }
+
+                  if (childrenMatch) {
+                    isMatch = true
+                  }
+                }
+              })
+            }
+
+            isMatch
+          }.toSet
+        case ExtendedPatternContains(contained) =>
+          val containedMatches = searchRec(contained)
+          // TODO: skip if empty contained?
+
+          val initialData = egraph.classes.values.map { eclass =>
+            assert(eclass.id == egraph.find(eclass.id))
+            eclass.id -> containedMatches(eclass.id)
+          }.to(HashMap)
+
+          val analyser = Analyser.init(egraph, new Analyser.Analysis[Boolean] {
+            override def make(enode: ENode, t: TypeId,
+                              analysisOf: EClassId => Boolean): Boolean =
+              enode.children().exists { c =>
+                assert(c == egraph.find(c))
+                analysisOf(c)
+              }
+
+            override def merge(a: Boolean, b: Boolean): Boolean =
+              a || b
+
+            override def update(existing: Boolean, computed: Boolean): Boolean =
+              existing || computed
+          }, initialData)
+
+          analyser.data.iterator.flatMap { case (id, isMatch) =>
+            if (isMatch) { Some(id) } else { None }
+          }.toSet
+      }
+
+      memo(p) = res
+      res
+    }
+
+    searchRec(pattern)
+  }
+
   def beamSearch[Cost](pattern: ExtendedPattern,
                        beamSize: Int,
                        costFunction: CostFunction[Cost],
@@ -132,9 +227,7 @@ object ExtendedPattern {
   : Map[EClassId, Seq[(Cost, ExprWithHashCons)]] =
   {
     assert(egraph.clean)
-    val beamExtractMap = egraph.getAnalysisMap(BeamExtract2(beamSize, costFunction))
-    // val beamAnalyser = util.printTime("beam extract",
-    //  Analyser.init(egraph, BeamExtract(beamSize, costFunction)))
+    val beamExtractMap = Analyser.init(egraph, BeamExtract(beamSize, costFunction)).data
     val memo = HashMap.empty[ExtendedPattern, Map[EClassId, Seq[(Cost, ExprWithHashCons)]]]
 
     def searchRec(p: ExtendedPattern): Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = {
@@ -151,6 +244,7 @@ object ExtendedPattern {
         case ExtendedPatternVar(index, t) => ???
         case ExtendedPatternNode(node, t) =>
           val childrenMatches = node.children().map(searchRec).toSeq
+          // TODO: skip if any child has empty matches?
 
           egraph.classesByMatch(node.matchHash()).flatMap { id =>
             val eclass = egraph.get(id)
@@ -166,6 +260,7 @@ object ExtendedPattern {
                     childrenMatches.iterator.zip(matched.children())
                   ) { case (matches, id) =>
                     matches.get(id)
+                    // TODO: skip if any child has empty matches?
                   } match {
                     case None => ()
                     case Some(childrenBeams) =>

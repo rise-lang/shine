@@ -13,17 +13,16 @@ object Analyser {
     def update(existing: Data, computed: Data): Data
   }
 
-  def init[D](egraph: EGraph, costFunction: CostFunction[D])
-  (implicit costCmp: math.Ordering[D]): Analyser[D] = {
+  def init[D](egraph: EGraph, costFunction: CostFunction[D]): Analyser[D] = {
     init(egraph, new Analysis[D] {
       override def make(enode: ENode, t: TypeId, analysisOf: EClassId => D): D =
         costFunction.cost(enode, analysisOf)
 
       override def merge(a: D, b: D): D =
-        costCmp.min(a, b)
+        costFunction.ordering.min(a, b)
 
       override def update(existing: D, computed: D): D = {
-        assert(costCmp.gteq(existing, computed))
+        assert(costFunction.ordering.gteq(existing, computed))
         computed
       }
     })
@@ -194,7 +193,6 @@ case class AvoidCompositionAssoc1Extract[Cost](cf: CostFunction[Cost])
 }
 
 case class BeamExtract[Cost](beamSize: Int, cf: CostFunction[Cost])
-                            (implicit costCmp: math.Ordering[Cost])
   extends Analyser.Analysis[Seq[(Cost, ExprWithHashCons)]]
 {
   override def make(enode: ENode, t: TypeId,
@@ -215,19 +213,19 @@ case class BeamExtract[Cost](beamSize: Int, cf: CostFunction[Cost])
       }
     }
 
-    val tmp = rec(childrenBeams, Map.empty).sortBy(_._1).take(beamSize)
+    val tmp = rec(childrenBeams, Map.empty).sortBy(_._1)(cf.ordering).take(beamSize)
     assert(tmp == tmp.distinct)
     tmp
   }
 
   override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-    val sorted = (a ++ b).sortBy(_._1)
+    val sorted = (a ++ b).sortBy(_._1)(cf.ordering)
     assert(sorted.size == sorted.distinct.size)
     sorted.take(beamSize)
   }
 
   override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-    val sorted = (existing ++ computed).sortBy(_._1)
+    val sorted = (existing ++ computed).sortBy(_._1)(cf.ordering)
     // TODO: hash-cons the exprs for faster .distinct?
     val dedup = sorted.distinct
       // sorted.headOption ++ sorted.iterator.sliding(2, 1).withPartial(false)
@@ -237,8 +235,7 @@ case class BeamExtract[Cost](beamSize: Int, cf: CostFunction[Cost])
 }
 
 object BeamExtract {
-  def print[Cost](beamSize: Int, cf: CostFunction[Cost], egraph: EGraph, id: EClassId)
-                 (implicit costCmp: math.Ordering[Cost]): Unit = {
+  def print[Cost](beamSize: Int, cf: CostFunction[Cost], egraph: EGraph, id: EClassId): Unit = {
     val analyser = Analyser.init(egraph, BeamExtract(beamSize, cf))
     analyser.analysisOf(id).foreach { case (cost, expr) =>
       println(s"Cost of $cost:")
