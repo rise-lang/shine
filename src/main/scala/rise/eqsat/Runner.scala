@@ -10,6 +10,9 @@ case class NodeLimit(nodes: Int) extends StopReason
 case class TimeLimit(duration: Long) extends StopReason {
   override def toString: String = s"TimeLimit(${util.prettyTime(duration)})"
 }
+case class MemoryLimit(bytes: Long) extends StopReason {
+  override def toString: String = s"MemoryLimit(${util.prettyMem(bytes)})"
+}
 case object Done extends StopReason
 
 object Runner {
@@ -21,6 +24,7 @@ object Runner {
     iterLimit = 60,
     nodeLimit = 600_000,
     timeLimit = Duration.ofSeconds(30).toNanos,
+    memoryLimit = 2L * 1024L * 1024L * 1024L, // 2GiB
     scheduler = SimpleScheduler
   )
 }
@@ -35,6 +39,7 @@ class Runner(var iterations: Vec[Iteration],
              var iterLimit: Int,
              var nodeLimit: Int,
              var timeLimit: Long,
+             var memoryLimit: Long,
              var scheduler: Scheduler) {
   def iterationCount(): Int =
     iterations.size - 1
@@ -49,6 +54,10 @@ class Runner(var iterations: Vec[Iteration],
 
   def withTimeLimit(limit: Duration): Runner = {
     timeLimit = limit.toNanos; this
+  }
+
+  def withMemoryLimit(limit: Long): Runner = {
+    memoryLimit = limit; this
   }
 
   def withScheduler(sched: Scheduler): Runner = {
@@ -127,6 +136,9 @@ class Runner(var iterations: Vec[Iteration],
       val elapsed = System.nanoTime() - startTime
       if (elapsed > timeLimit) {
         stopReasons += TimeLimit(elapsed)
+      }
+      if (iter.memStats.used > memoryLimit) {
+        stopReasons += MemoryLimit(iter.memStats.used)
       }
       if (iter.egraphNodes > nodeLimit) {
         stopReasons += NodeLimit(iter.egraphNodes)
