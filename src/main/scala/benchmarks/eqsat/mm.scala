@@ -101,6 +101,51 @@ object mm {
     util.writeToPath(s"/tmp/${name.replace(' ', '_')}.c", code)
   }
 
+  private def blocking_1steps_1configs(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+
+    val m = cst(M) // `?n`(0)
+    val n = cst(N) // `?n`(1)
+    val k = cst(K) // `?n`(2)
+    // TODO: nat pivot matching
+    val m_div32 = cst(M / 32)
+    val n_div32 = cst(N / 32)
+    val k_div4 = cst(K / 4)
+
+    val containsAddMul = contains(app(app(add, ?), contains(mul)))
+
+    val sketches = Seq(
+      noSearch ->
+        containsMap(m,
+          containsMap(n,
+            containsReduceSeq(k, containsAddMul))),
+      tilingSearch ->
+        containsMap(/*m /^ cst(32)*/m_div32,
+          containsMap(/*n /^ cst(32)*/n_div32,
+            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+              containsReduceSeq(cst(4),
+                containsMap(cst(32),
+                  containsMap(cst(32), containsAddMul)))))),
+      /* lowerToC
+      loweringSearch ->
+        containsMapSeq(/*m /^ cst(32)*/m_div32,
+          containsMapSeq(/*n /^ cst(32)*/n_div32,
+            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+              containsReduceSeq(cst(4),
+                containsMapSeq(cst(32),
+                  containsMapSeq(cst(32), ?))))))
+
+       */
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withTimeLimit(java.time.Duration.ofMinutes(10)))
+      .runBENF(start, sketches)
+  }
+
   private def blocking_4steps_1configs(): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
 
@@ -161,7 +206,7 @@ object mm {
       .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5)))
+        r.withTimeLimit(java.time.Duration.ofMinutes(10)))
       .runBENF(start, sketches)
   }
 
@@ -225,7 +270,7 @@ object mm {
       .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5)))
+        r.withTimeLimit(java.time.Duration.ofMinutes(10)))
       .runBENF(start, sketches)
   }
 
@@ -239,14 +284,15 @@ object mm {
   def main(args: Array[String]): () = {
     val fs = Seq(
       "blocking 4steps 2configs" -> blocking_4steps_2configs _,
-      "blocking 4steps 1configs" -> blocking_4steps_1configs _
+      "blocking 4steps 1configs" -> blocking_4steps_1configs _,
+      "blocking 1steps 1configs" -> blocking_1steps_1configs _,
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))
     }
-    rs.foreach { case (n, (_, r)) =>
+    /* rs.foreach { case (n, (_, r)) =>
       r.exprs.headOption.foreach(codegen(n, _))
-    }
+    } */
     blockingGoal()
     rs.foreach { case (n, (t, r)) =>
       println(s"-------- $n")
