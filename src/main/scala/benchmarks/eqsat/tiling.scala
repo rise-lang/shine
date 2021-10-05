@@ -22,7 +22,7 @@ object tiling {
 
   private val tilingRules = Seq(
     // rules.combinatory.compositionAssoc1,
-    rules.combinatory.compositionAssoc2,
+    // rules.combinatory.compositionAssoc2,
     // rules.combinatory.compositionIntro,
     // rules.combinatory.compositionLeftId,
     // rules.combinatory.compositionRightId,

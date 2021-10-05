@@ -62,14 +62,14 @@ class GuidedSearch(
   }
 
   def runBENF(start: rise.core.Expr,
-              sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)]): GuidedSearch.Result = {
-    val normStart = BENF(Expr.fromNamed(start))
+              sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)]): GuidedSearch.Result =
+    run(BENF, start, sketches)
+
+  def run(normalForm: NF,
+          start: rise.core.Expr,
+          sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)]): GuidedSearch.Result = {
+    val normStart = normalForm.normalize(Expr.fromNamed(start))
     println(s"normalized start: ${Expr.toNamed(normStart)}")
-    val normRules = Seq(
-      RewriteDirected.Eta,
-      RewriteDirected.BetaExtract,
-      RewriteDirected.BetaNatExtract
-    )
 
     // TODO: use a cheaper beamSearch returning a Boolean instead of matches?
     val beamSize = 1 // 6
@@ -88,7 +88,7 @@ class GuidedSearch(
         // TODO: add goal check to e-graph for incremental update?
         val (growTime, runner) = util.time(transformRunner(Runner.init()).doneWhen { _ =>
           ExtendedPattern.exists(sketch, egraph, rootId)
-        }.run(egraph, filter, rules, normRules, Seq(rootId)))
+        }.run(egraph, filter, rules, normalForm.rules, Seq(rootId)))
         val found = runner.stopReasons.contains(Done)
 
         val (extractionTime, matches) = if (found) {
@@ -97,8 +97,8 @@ class GuidedSearch(
           (0L, Seq())
         }
         val newNormBeam = matches.map { case (_, e) =>
-          // FIXME: avoid BENF() trick
-          ExprWithHashCons.expr(egraph)(BENF(e, egraph.hashConses))
+          // FIXME: avoid normalize trick
+          normalForm.normalize(ExprWithHashCons.expr(egraph)(e))
         }
 
         val totalIterationsTime = runner.iterations.iterator.map(_.totalTime).sum

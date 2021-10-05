@@ -29,6 +29,31 @@ package object eqsat {
   type HashSet[V] = mutable.HashSet[V]
   val HashSet: mutable.HashSet.type = mutable.HashSet
 
+  trait NF {
+    val normalize: Expr => Expr
+    val rules: Seq[RewriteDirected]
+  }
+
+  object BENF extends NF {
+    override val normalize: Expr => Expr = BENF
+    override val rules: Seq[RewriteDirected] = Seq(
+      RewriteDirected.Eta,
+      RewriteDirected.BetaExtract,
+      RewriteDirected.BetaNatExtract
+    )
+  }
+
+  object CNF extends NF {
+    override val normalize: Expr => Expr = CNF
+    override val rules: Seq[RewriteDirected] = Seq(
+      RewriteDirected.Eta,
+      RewriteDirected.BetaExtract,
+      RewriteDirected.BetaNatExtract,
+      RewriteDirected.CompositionIntro,
+      RewriteDirected.CompositionAssoc2
+    )
+  }
+
   // TODO: could keep hash-consed nats/types?
   def BENF(e: Expr): Expr = {
     val egraph = EGraph.empty()
@@ -43,11 +68,7 @@ package object eqsat {
   }
 
   private def BENF_internal(egraph: EGraph, id: EClassId): ExprWithHashCons = {
-    Runner.init().run(egraph, NoPredicate(), Seq(), Seq(
-      RewriteDirected.Eta,
-      RewriteDirected.BetaExtract,
-      RewriteDirected.BetaNatExtract
-    ), Seq(id))
+    Runner.init().run(egraph, NoPredicate(), Seq(), BENF.rules, Seq(id))
     val (normalized, _) = Extractor.findBestOf(egraph, AstSize, id)
     normalized
   }
@@ -56,11 +77,7 @@ package object eqsat {
   def CNF(e: Expr): Expr = {
     val egraph = EGraph.empty()
     val id = egraph.addExpr(BENF(e))
-    Runner.init().run(egraph, NoPredicate(), Seq(), Seq(
-      RewriteDirected.Eta,
-      RewriteDirected.CompositionIntro,
-      RewriteDirected.CompositionAssoc2,
-    ), Seq(id))
+    Runner.init().run(egraph, NoPredicate(), Seq(), CNF.rules, Seq(id))
     // val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     // val (_, normalized) = extractor.findBestOf(id)
     val analyser = Analyser.init(egraph,

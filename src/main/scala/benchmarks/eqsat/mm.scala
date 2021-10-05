@@ -285,7 +285,8 @@ object mm {
     val fs = Seq(
       "blocking 4steps 2configs" -> blocking_4steps_2configs _,
       "blocking 4steps 1configs" -> blocking_4steps_1configs _,
-      "blocking 1steps 1configs" -> blocking_1steps_1configs _,
+      // not found after 10mn+ and 14GiB+ (1M nodes, 500K classes)
+      // "blocking 1steps 1configs" -> blocking_1steps_1configs _,
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))

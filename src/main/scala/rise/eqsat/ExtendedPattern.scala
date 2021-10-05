@@ -572,6 +572,8 @@ object ExtendedPatternDSL {
   def lam(e: ExtendedPattern): ExtendedPattern.PNode = Lambda(e)
   def nApp(f: ExtendedPattern, x: NatPattern): ExtendedPattern.PNode = NatApp(f, x)
   def nLam(e: ExtendedPattern): ExtendedPattern.PNode = NatLambda(e)
+  def dtApp(f: ExtendedPattern, x: DataTypePattern): ExtendedPattern.PNode = DataApp(f, x)
+  def dtLam(e: ExtendedPattern): ExtendedPattern.PNode = DataLambda(e)
   def l(d: semantics.Data): ExtendedPattern.PNode = Literal(d)
 
   def prim(p: rise.core.Primitive): ExtendedPattern.PNode = Primitive(p)

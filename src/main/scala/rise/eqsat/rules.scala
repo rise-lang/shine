@@ -704,6 +704,11 @@ object rules {
       (transpose >> app(map, app(map, "f")) >> transpose)
     )
 
+    // alternative:
+    // app(map, (transpose >> app(map, app(map, "f")) >> transpose))
+    // -->
+    // app(map, transpose) >> app(map, app(map, app(map, "f"))) >> app(map, transpose))
+
     val transposeAroundMapMapF1M = NamedRewrite.init("transpose-around-map-map-f-1m-cnf",
       app(map, app(map, app(map, "f")))
         -->
