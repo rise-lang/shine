@@ -10,7 +10,7 @@ import arithexpr.arithmetic.ArithExpr.toInt
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.autotune
 import rise.autotune.execution.{getRuntimeFromClap, logger}
-import rise.autotune.{HostCode, Median, Timeouts, Tuner, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.types.Nat
 import shine.OpenCL.{GlobalSize, LocalSize}
 import shine.OpenCL.KernelModule.translationToString
@@ -59,7 +59,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
   def lowerOCL(e: ToBeTyped[Expr]): Expr =
     rewrite.ocl.unrollDots(util.printTime("infer", e.toExpr)).get
 
-  test("execute harris"){
+  ignore("execute harris"){
     // expression
     val tileX = 8
     val tileY = 8
@@ -91,7 +91,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("harris tuning ") {
+  ignore("harris tuning ") {
     // expression
 //    val tileX = 8
 //    val tileY = 8
@@ -136,5 +136,54 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     println("result: \n" + result)
     println("best: \n" + best)
   }
+
+
+  test("harris hierarchical experiments"){
+    runExperiment("harris_rs_cot", 10)
+    runExperiment("harris_rs_emb", 10)
+    runExperiment("harris_ls_cot", 10)
+    runExperiment("harris_atf_emb", 10)
+  }
+
+
+  def runExperiment(version: String, iterations: Int) = {
+
+    val harrisTuning =
+      tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
+        tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
+          tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
+            lowerOCL(
+              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
+                ocl.harrisVecUnaligned2(vec, _ => mapSeq, toPrivate)))
+          )))
+
+    val harrisOCLTuning =
+      tuningParam("gs0", RangeMul(1, 256, 2), (gs0: Nat) =>
+        tuningParam("gs1", RangeMul(1, 256, 2), (gs1: Nat) =>
+          tuningParam("ls0", RangeMul(1, 256, 2), (ls0: Nat) =>
+            tuningParam("ls1", RangeMul(1, 256, 2), (ls1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
+            ))))
+
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(128, 256), compute, finish),
+      inputSizes = Seq(128, 256),
+      samples = 100,
+      name = version,
+      output = "autotuning/harris",
+      timeouts = Timeouts(30000, 30000, 30000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some(s"/home/jo/development/rise-lang/shine/autotuning/config/harris/${version}.json"),
+      //      configFile = None,
+      hmConstraints = true
+    )
+
+    for(i <- 1 to iterations) {
+      autotune.search(tuner)(harrisOCLTuning)
+    }
+  }
+
 
 }
