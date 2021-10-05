@@ -357,10 +357,6 @@ object rules {
       -->
     app(transpose, app(app(map, app(map, "f")), app(transpose, "in")))
   )
-  /*
-  val transposeAroundMapMapFLift = NamedRewrite.init("transpose-around-map-map-f-lift",
-    app(map, app(transpose))
-  ) */
   val transposeAroundMapMapF1M = NamedRewrite.init("transpose-around-map-map-f-1m",
     app(app(map, app(map, app(map, "f"))), "in")
       -->
@@ -593,6 +589,16 @@ object rules {
         -->
       (app(map, app(map, app(map, app(map, nApp(split, n))))) >> app(map, app(map, app(map, app(map, app(map, app(map, "f")))))) >> app(map, app(map, app(map, app(map, join)))))
     )
+    def splitJoin5M(n: Int) = NamedRewrite.init(s"split-join-5m-cnf-$n",
+      app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))
+        -->
+      (app(map, app(map, app(map, app(map, app(map, nApp(split, n)))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))) >> app(map, app(map, app(map, app(map, app(map, join))))))
+    )
+    def splitJoin6M(n: Int) = NamedRewrite.init(s"split-join-6m-cnf-$n",
+      app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))
+        -->
+      (app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, join)))))))
+    )
     def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-cnf-$n",
       app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init")
         -->
@@ -704,11 +710,6 @@ object rules {
       (transpose >> app(map, app(map, "f")) >> transpose)
     )
 
-    // alternative:
-    // app(map, (transpose >> app(map, app(map, "f")) >> transpose))
-    // -->
-    // app(map, transpose) >> app(map, app(map, app(map, "f"))) >> app(map, transpose))
-
     val transposeAroundMapMapF1M = NamedRewrite.init("transpose-around-map-map-f-1m-cnf",
       app(map, app(map, app(map, "f")))
         -->
@@ -725,6 +726,18 @@ object rules {
       app(map, app(map, app(map, app(map, app(map, "f")))))
         -->
       (app(map, app(map, app(map, transpose))) >> app(map, app(map, app(map, app(map, app(map, "f"))))) >> app(map, app(map, app(map, transpose))))
+    )
+
+    val transposeAroundMapMapF4M = NamedRewrite.init("transpose-around-map-map-f-4m-cnf",
+      app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))
+        -->
+      (app(map, app(map, app(map, app(map, transpose)))) >> app(map, app(map, app(map, app(map, app(map, app(map, "f")))))) >> app(map, app(map, app(map, app(map, transpose)))))
+    )
+
+    val transposeAroundMapMapF5M = NamedRewrite.init("transpose-around-map-map-f-5m-cnf",
+      app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))
+        -->
+      (app(map, app(map, app(map, app(map, app(map, transpose))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))) >> app(map, app(map, app(map, app(map, app(map, transpose))))))
     )
 
     object vectorize {

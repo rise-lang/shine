@@ -43,6 +43,11 @@ object reorder {
     rules.combinatory.transposeAroundMapMapF2M,
   )
 
+  private val reorderRulesCNF_2 = Seq(
+    rules.combinatory.transposeAroundMapMapF,
+    rules.combinatory.mapFission,
+  )
+
   private val reorderRulesBENF = Seq(
     rules.transposeAroundMapMapF,
     rules.transposeAroundMapMapF1M,
@@ -197,8 +202,10 @@ object reorder {
     })
 
     val (time3D_GS_CNF, _) = util.time(dim3.guidedSearch(CNF, reorderRulesCNF))
+    // val (time3D_GS_CNF_2, _) = util.time(dim3.guidedSearch(CNF, reorderRulesCNF_2))
     val (time3D_GS_BENF, _) = util.time(dim3.guidedSearch(BENF, reorderRulesBENF))
     val (time4D_GS_CNF, _) = util.time(dim4.guidedSearch(CNF, reorderRulesCNF))
+    // val (time4D_GS_CNF_2, _) = util.time(dim4.guidedSearch(CNF, reorderRulesCNF_2))
     val (time4D_GS_BENF, _) = util.time(dim4.guidedSearch(BENF, reorderRulesBENF))
 
     // ~1ms search in untyped egg prototype
@@ -213,8 +220,10 @@ object reorder {
     println(s"prove equiv 4D (BENF): ${util.prettyTime(time4D_BENF)}")
 
     println(s"guided search 3D (CNF): ${util.prettyTime(time3D_GS_CNF)}")
+    // println(s"guided search 3D (CNF 2): ${util.prettyTime(time3D_GS_CNF_2)}")
     println(s"guided search 3D (BENF): ${util.prettyTime(time3D_GS_BENF)}")
     println(s"guided search 4D (CNF): ${util.prettyTime(time4D_GS_CNF)}")
+    // println(s"guided search 4D (CNF 2): ${util.prettyTime(time4D_GS_CNF_2)}")
     println(s"guided search 4D (BENF): ${util.prettyTime(time4D_GS_BENF)}")
 
     // last run on laptop:

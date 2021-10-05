@@ -25,7 +25,8 @@ object Runner {
     nodeLimit = 600_000,
     timeLimit = Duration.ofSeconds(30).toNanos,
     memoryLimit = 2L * 1024L * 1024L * 1024L, // 2GiB
-    scheduler = SimpleScheduler
+    scheduler = SimpleScheduler,
+    totalRemoved = 0L
   )
 }
 
@@ -40,7 +41,8 @@ class Runner(var iterations: Vec[Iteration],
              var nodeLimit: Int,
              var timeLimit: Long,
              var memoryLimit: Long,
-             var scheduler: Scheduler) {
+             var scheduler: Scheduler,
+             var totalRemoved: Long) {
   def iterationCount(): Int =
     iterations.size - 1
 
@@ -116,12 +118,19 @@ class Runner(var iterations: Vec[Iteration],
     // println(iteration0)
     iterations += iteration0
 
+    def end(): Runner = {
+      println(s"nodes removed by directed rewriting: $totalRemoved")
+      rules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
+      normRules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
+      this
+    }
+
     val startTime = System.nanoTime()
     while (true) {
-      if (done(this)) {
+      if (done(this)) { // TODO: record runtime of 'done' in Iteration
         stopReasons += Done
       }
-      if (stopReasons.nonEmpty) { return this }
+      if (stopReasons.nonEmpty) { return end() }
 
       val iter = runOne(egraph, roots, filter, rules, normRules)
       // println(iter)
@@ -148,9 +157,7 @@ class Runner(var iterations: Vec[Iteration],
       }
     }
 
-    rules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
-    normRules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
-    this
+    end()
   }
 
   // TODO: could check limits in-between searches and matches like in egg
@@ -200,12 +207,12 @@ class Runner(var iterations: Vec[Iteration],
 
     val time2 = System.nanoTime()
 
-    // TODO: include in Iteration
-    val (removeTime, removed) = util.time {
+    // TODO: record removeTime in Iteration
+    // val (removeTime, removed) = util.time {
+    val removed =
       RewriteDirected.greedyRemoval(egraph, withAlternative)
-    }
-    println(s"removed $removed nodes in ${util.prettyTime(removeTime)}")
-    
+    totalRemoved += removed
+
     val nRebuilds = egraph.rebuild(roots, filter)
 
     val memStats3 = util.memStats()

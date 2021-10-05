@@ -616,6 +616,11 @@ object ExtendedPatternDSL {
   def `%n`(index: Int): NatPattern = NatPatternNode(NatVar(index))
 
   def cst(value: Long): NatPattern = NatPatternNode(NatCst(value))
+  implicit final class NatPatternOps(private val n: NatPattern) extends AnyVal {
+    // FIXME: need to pivot or canonicalize nats while matching
+    def /^(m: NatPattern): NatPattern =
+      NatPatternNode(NatMul(NatPatternNode(NatPow(m, NatPatternNode(NatCst(-1)))), n))
+  }
 
   // not supported in all cases, so no DSL for it
   // def `?t`(index: Int): TypePattern = TypePatternVar(index)
