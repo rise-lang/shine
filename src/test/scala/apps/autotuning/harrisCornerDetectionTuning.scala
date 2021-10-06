@@ -139,14 +139,16 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
 
   test("harris hierarchical experiments"){
-    runExperiment("harris_rs_cot", 10)
-    runExperiment("harris_rs_emb", 10)
-    runExperiment("harris_ls_cot", 10)
-    runExperiment("harris_atf_emb", 10)
+    val iterations = 10
+    for(i <- 1 to iterations) {
+      runExperiment("harris_rs_cot")
+      runExperiment("harris_rs_emb")
+      runExperiment("harris_ls_cot")
+      runExperiment("harris_atf_emb")
+    }
   }
 
-
-  def runExperiment(version: String, iterations: Int) = {
+  def runExperiment(version: String) = {
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
@@ -180,10 +182,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       hmConstraints = true
     )
 
-    for(i <- 1 to iterations) {
-      autotune.search(tuner)(harrisOCLTuning)
-    }
+    autotune.search(tuner)(harrisOCLTuning)
   }
-
-
 }
