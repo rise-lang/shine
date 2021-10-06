@@ -29,7 +29,8 @@ package object autotune {
                    runtimeStatistic: RuntimeStatistic = Median, // specifies, how to determine the runtime from multiple iterations (Median/Minimum)
                    speedupFactor: Double = 100, // defines at which threshold the iterations are dropped, if the execution is slow compared to current best
                    configFile: Option[String] = None, // specifies the location of a config-file, otherwise, a config file is generated
-                   hmConstraints: Boolean = false // enable constraints feature in HM (experimental)
+                   hmConstraints: Boolean = false, // enable constraints feature in HM (experimental)
+                   saveToFile: Boolean = false
                   )
 
   // necessary host-code parts to execute the program
@@ -43,8 +44,10 @@ package object autotune {
                       executionTimeout: Long // timeout for execution part
                      )
 
-  // result of a complete tuning run
-  case class TuningResult(samples: Seq[Sample])
+  // result of a complete tuning run and used tuner
+  case class TuningResult(samples: Seq[Sample],
+                          tuner: Tuner
+                         )
 
   // tuning sample representing result of one specific parameter configuration
   case class Sample(parameters: Map[NatIdentifier, Nat], // specific parameter configuration
@@ -59,6 +62,16 @@ package object autotune {
                          compilation: Option[TimeSpan[Time.ms]], // duration of compilation part
                          execution: Option[TimeSpan[Time.ms]] // duration of execution part
                         )
+
+  case class TuningStatistics(
+                             name: String,
+                             totalSamples: Int,
+                             executionIterations: Int,
+                             totalExecutions: Int,
+                             totalDuration: TimeSpan[Time.s],
+                             averageDuration: TimeSpan[Time.s]
+
+                             )
 
   type Parameters = Set[NatIdentifier]
 
@@ -80,15 +93,23 @@ package object autotune {
     val constraints = collectConstraints(e, parameters)
       .map(constraint => constraint.substitute(inputMap.asInstanceOf[Map[ArithExpr, ArithExpr]]))
 
-    ("mkdir -p " + tuner.output !!)
+    if(tuner.saveToFile){
+      ("mkdir -p " + tuner.output !!)
+    }
 
     // generate json if necessary
     tuner.configFile match {
       case None =>
         println("generate configuration file")
+
+        val filePath = tuner.saveToFile match{
+          case true => tuner.output + "/" + tuner.name + ".json"
+          case false => "/tmp/" + tuner.name + ".json"
+        }
+
         val file = new PrintWriter(
           new FileOutputStream(
-            new File(tuner.output + "/" + tuner.name + ".json"), false))
+            new File(filePath), false))
         file.write(generateJSON(parameters, constraints, tuner))
         file.close()
       case _ => println("use given configuration file")
@@ -143,7 +164,10 @@ package object autotune {
           case _ => os.Path.apply(os.pwd.toString() + "/" + filename)
         }
       case None => os.Path.apply(
-        os.pwd.toString() + "/" + tuner.output + "/" + tuner.name + ".json"
+        tuner.saveToFile match {
+          case true => os.pwd.toString() + "/" + tuner.output + "/" + tuner.name + ".json"
+          case false => "/tmp/" + tuner.name + ".json"
+        }
       )
     }
 
@@ -212,17 +236,35 @@ package object autotune {
       }
     }
 
-    // save samples to file
-    val destination = saveSamples(
-      tuner.output + "/" + tuner.name + ".csv",
-      TuningResult(samples.toSeq)
-    )
 
-    // copy hm result
-    ("mv " + tuner.name + "_output_samples.csv " +
-      destination.substring(0, destination.length - 4) + "_hm.csv" !!)
+    if(tuner.saveToFile) {
 
-    TuningResult(samples.toSeq)
+      // save samples to file
+      val destination = saveSamples(
+        tuner.output + "/" + tuner.name + ".csv",
+        TuningResult(samples.toSeq, tuner)
+      )
+
+      // copy hm output file to output folder
+      ("mv " + tuner.name + "_output_samples.csv " +
+        destination.substring(0, destination.length - 4) + "_hm.csv" !!)
+
+      // save meta information to file and store it in the output folder
+      // call method here
+
+      // todo call saveTuningResult(path, tuningResult, tuner) here
+
+      // remove this comment after development
+      // config file is generated in the output folder if we want to save it, no action needed
+      // config file is generated in /tmp/ and removed after tuning
+    } else {
+      // remove tmp config file
+      if(tuner.configFile.isDefined){
+          ("rm " + "/tmp/" + tuner.name + ".json" !!)
+      }
+    }
+
+    TuningResult(samples.toSeq, tuner)
   }
 
   // wrap ocl run to a function
@@ -258,6 +300,26 @@ package object autotune {
 
   def applySample(e: Expr, sample: Sample): Expr = {
     rise.core.substitute.natsInExpr(sample.parameters.toMap[Nat, Nat], e)
+  }
+
+  def getDuration(tuningResult: TuningResult): TimeSpan[Time.ms]= {
+    val duration = tuningResult.samples.apply(tuningResult.samples.size).timestamp -
+      tuningResult.samples.apply(0).timestamp
+
+    TimeSpan.inMilliseconds(duration.toDouble)
+  }
+
+  def getSamples(tuningResult: TuningResult): Int = {
+    tuningResult.samples.size
+  }
+
+  def saveTuningResult(path: String, tuningResult: TuningResult, tuner:Tuner): (String, String) = {
+
+    val samples = saveSamples(path, tuningResult)
+    val meta = saveMeta(path, tuningResult, tuner)
+
+    // return unique filenames
+    (samples, meta)
   }
 
   // write tuning results into csv file
@@ -337,6 +399,27 @@ package object autotune {
     uniqueFilepath
   }
 
+  // todo finish implementation
+  def saveMeta(path: String, tuningResult: TuningResult, tuner: Tuner): String = {
+
+    // todo save tuner information to file
+
+
+
+    // todo collect statistics from tuningResult
+    val duration = (tuningResult.samples.apply(tuningResult.samples.size).timestamp - tuningResult.samples.apply(0).timestamp)
+    val samples = tuningResult.samples.size
+
+    // save statistics to csv file (don't overwrite -> append)
+
+
+
+    // return unique filename
+    ""
+  }
+
+
+  // helper functions
   private def min(s1: Sample, s2: Sample): Sample = {
     s1.runtime match {
       case Right(s1Runtime) =>

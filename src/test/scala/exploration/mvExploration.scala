@@ -146,22 +146,22 @@ object mvExploration {
     }
   }
 
-  val rewriteLayer1 = defaultStrategiesGPU.strategies.map(s => s.apply(mvHighLevel)).filter(e => e.isInstanceOf[Success]).map {
-    case Success(e) => e
-  }
+//  val rewriteLayer1 = defaultStrategiesGPU.strategies.map(s => s.apply(mvHighLevel)).filter(e => e.isInstanceOf[Success]).map {
+//    case Success(e) => e
+//  }
+//
+//
+//  // check, if all rewrites are valid
+//  var i = 0
+//  rewriteLayer1.foreach(rewrite => {
+//    i = testRewrite(rewrite, defaultStrategiesGPU.lowering) match{
+//      case true => i + 1
+//      case false => i
+//    }
+//  })
 
-
-  // check, if all rewrites are valid
-  var i = 0
-  rewriteLayer1.foreach(rewrite => {
-    i = testRewrite(rewrite, defaultStrategiesGPU.lowering) match{
-      case true => i + 1
-      case false => i
-    }
-  })
-
-  println("true: " + i)
-  println("false: " + (defaultStrategiesGPU.strategies.size  - i))
+//  println("true: " + i)
+//  println("false: " + (defaultStrategiesGPU.strategies.size  - i))
 
 
   def main(args: Array[String]): Unit = {

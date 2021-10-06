@@ -13,7 +13,7 @@ import elevate.heuristic_search.Metaheuristic
 import elevate.heuristic_search.util.Solution
 import exploration.explorationUtil.jsonParser
 import exploration.explorationUtil.jsonParser.ParseExploration
-import strategies.{convolutionStrategies, defaultStrategies, scalStrategies}
+import strategies.{convolutionStrategies, defaultStrategies}
 import elevate.core._
 import elevate.core.strategies.basic._
 import rise.autotune.HostCode
