@@ -172,7 +172,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       samples = 100,
       name = version,
       output = "autotuning/harris",
-      timeouts = Timeouts(30000, 30000, 30000),
+      timeouts = Timeouts(10000, 10000, 10000),
       executionIterations = 10,
       speedupFactor = 100,
       configFile = Some(s"/home/jo/development/rise-lang/shine/autotuning/config/harris/${version}.json"),
