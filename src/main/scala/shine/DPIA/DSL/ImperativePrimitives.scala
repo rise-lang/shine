@@ -55,17 +55,14 @@ object `if` {
 }
 
 object `for` {
-  def apply(n: Nat,
-            f: Identifier[ExpType] => Phrase[CommType], unroll:Boolean = false): For =
+  def apply(n: Nat, f: Identifier[ExpType] => Phrase[CommType]): For = apply(false, n, f)
+  def apply(unroll: Boolean, n: Nat, f: Identifier[ExpType] => Phrase[CommType]): For =
     For(unroll)(n, λ(expT(idx(n), read))( i => f(i) ))
 }
 
 object forNat {
-  def apply(
-    n: Nat,
-    f: NatIdentifier => Phrase[CommType],
-    unroll: Boolean = false
-  ): ForNat = {
+  def apply(n: Nat, f: NatIdentifier => Phrase[CommType]): ForNat = apply(false, n, f)
+  def apply(unroll: Boolean, n: Nat, f: NatIdentifier => Phrase[CommType]): ForNat = {
     import arithexpr.arithmetic.RangeAdd
     ForNat(unroll)(n, nFun(i => f(i), RangeAdd(0, n, 1)))
   }
