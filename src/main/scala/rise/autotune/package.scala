@@ -236,6 +236,8 @@ package object autotune {
       }
     }
 
+    println("tuning finished")
+
 
     if(tuner.saveToFile) {
 
@@ -263,6 +265,8 @@ package object autotune {
           ("rm " + "/tmp/" + tuner.name + ".json" !!)
       }
     }
+
+    println("samples: " + samples)
 
     TuningResult(samples.toSeq, tuner)
   }
