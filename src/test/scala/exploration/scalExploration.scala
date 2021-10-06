@@ -5,6 +5,7 @@ import rise.core.primitives._
 import Type._
 import elevate.core.strategies.traversal.bottomUp
 import exploration.strategies.defaultStrategiesGPU
+import rise.autotune.HostCode
 import rise.core.types._
 import rise.core.types.DataType._
 import rise.elevate.rules.algorithmic.splitJoin
@@ -13,6 +14,42 @@ import rise.elevate.tunable
 
 
 object scalExploration {
+
+
+  // scalastyle:off
+  val init: (Int) => String = (N) => {
+    s"""
+       |const int N = ${N};
+       |
+       |srand(time(NULL));
+       |
+       |Buffer inputV = createBuffer(ctx, N * sizeof(float), HOST_WRITE | DEVICE_READ);
+       |Buffer outputV = createBuffer(ctx, N * sizeof(float), HOST_READ | DEVICE_WRITE);
+
+       |float* inV = hostBufferSync(ctx, inputV, N * sizeof(float), HOST_WRITE);
+       |for (int i = 0; i < N; i++) {
+       |  inV[i] = (float)(rand());
+       |}
+       |
+       |int scal = (float)(rand());
+       |
+       |""".stripMargin
+  }
+
+  val compute =
+    s"""
+       |fun_run(ctx, &fun, outputV, N, inputV, scal);
+       |""".stripMargin
+
+  val finish =
+    s"""
+       |// TODO: could check output here
+       |
+       |destroyBuffer(ctx, inputV);
+       |destroyBuffer(ctx, outputV);
+       |""".stripMargin
+  // scalastyle:on
+
 
   val scal = depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
     input |> map(fun(x => alpha * x)))
@@ -45,6 +82,12 @@ object scalExploration {
 
   def main(args: Array[String]): Unit = {
     // start exploration here
-    riseExploration(scal, defaultStrategiesGPU.lowering, defaultStrategiesGPU.lowerings, "exploration/configuration/scal.json")
+    riseExploration(
+      scal,
+      defaultStrategiesGPU.lowering,
+      defaultStrategiesGPU.strategies,
+      "exploration/configuration/scal.json",
+      Some(HostCode(init(1024), compute, finish))
+    )
   }
 }

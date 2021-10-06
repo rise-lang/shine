@@ -168,6 +168,6 @@ object mvExploration {
     // start exploration here
 
     // add strategies as arguments
-//    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", HostCode(init(1024, 1024), compute, finish))
+    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", Some(HostCode(init(1024, 1024), compute, finish)))
   }
 }

@@ -4,13 +4,16 @@ import arithexpr.arithmetic.RangeMul
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.Solution
-import rise.autotune.{HostCode, Median, Timeouts, Tuner, applyBest, getBest, search, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Timeouts, Tuner, applyBest, getBest, getDuration, getSamples, search, tuningParam, wrapOclRun}
 import rise.core.Expr
 import rise.core.types.Nat
 import rise.elevate.Rise
 import rise.eqsat.Rewrite
 import shine.OpenCL.{GlobalSize, LocalSize}
+import util.{Time, TimeSpan}
 
+import java.io.{File, FileOutputStream, PrintWriter}
+import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
 
 case class AutoTuningExecutor(lowering: Strategy[Rise],
@@ -22,7 +25,27 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                               output: String
                              ) extends Runner[Rise] {
 
-//  // hard coded hostcode for convolution
+
+  case class TuningResultStatistic(
+                                  number: Int,
+                                  solution: Int,
+                                  timestamp: Long,
+                                  duration: TimeSpan[Time.ms],
+                                  durationTuning: TimeSpan[Time.ms],
+                                  durationLowering: TimeSpan[Time.ms],
+                                  samples: Int,
+                                  executions: Int,
+                                  runtime: Option[TimeSpan[Time.ms]]
+                                  )
+
+  case class Statistics(
+                       samples: ListBuffer[TuningResultStatistic]
+                       )
+
+  val tuningResults = new ListBuffer[TuningResultStatistic]()
+  var number = 0
+
+  //  // hard coded hostcode for convolution
 //  val init: (Int) => String = (N) => {
 //    s"""
 //       |const int N = ${N};
@@ -53,7 +76,16 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 //       |""".stripMargin
 
 
-  def execute(solution: Solution[Rise]):(Rise,Option[Double]) = {
+  def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
+    val totalDurationStart = System.currentTimeMillis()
+
+    number = number + 1
+
+    // each call of execute save following information
+    // +1 solution
+    // number of samples
+    // number of executions
+    // duration
 
     // todo work with gold expression
 
@@ -74,12 +106,15 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       None,
 //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
       hmConstraints = true,
+      saveToFile = false
     )
 
     // lower expression
+    val loweringDurationStart = System.currentTimeMillis()
     val lowered = lowering.apply(solution.expression)
+    val loweringDuration = System.currentTimeMillis() - loweringDurationStart
 
-    lowered match {
+    val (result, statistic) = lowered match {
       case Success(p) => {
 
         // now wrap ocl
@@ -92,30 +127,143 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                 ))))
 
         // run tuning
-        val runtime = try{
+        val tuningDurationStart = System.currentTimeMillis()
+        val (runtime, tuningStatistic) = try {
           val result = search(tuner)(eTuning)
+
+          // meta information
+//          val duration = getDuration(result)
+          val samples = getSamples(result)
+
+          println("samples: " + samples)
 
           val best = getBest(result.samples)
           println("best: " + best)
           println("lowered: " + lowered)
 
-          val runtime = best.get.runtime match{
-            case Right(value) => Some(value.value)
-            case Left(value) => None
+          val runtime = best match {
+            case Some(_) =>
+              best.get.runtime match{
+                case Right(value) => Some(TimeSpan.inMilliseconds(value.value))
+                case Left(value) => None
+              }
+            case None => None
           }
 
-          runtime
-        }catch{
-          case e:Throwable => {
-           None
-          }
+          val tuningDuration = System.currentTimeMillis() - tuningDurationStart
+          val totalDuration = System.currentTimeMillis() - totalDurationStart
+
+          (
+            runtime,
+            TuningResultStatistic(
+              number = number,
+              solution = solution.hashCode(),
+              timestamp = System.currentTimeMillis(),
+              duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
+              durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
+              durationLowering =  TimeSpan.inMilliseconds(loweringDuration.toDouble),
+              samples = samples,
+              executions = tuner.executionIterations * samples,
+              runtime
+            )
+          )
+        } catch {
+          case e:Throwable =>
+
+            println("tuning is brorken! mey friend")
+            println("e: " + e)
+
+
+            val tuningDuration = System.currentTimeMillis() - tuningDurationStart
+            val totalDuration = System.currentTimeMillis() - totalDurationStart
+
+            (
+              None,
+              TuningResultStatistic(
+                number = number,
+                solution = solution.hashCode(),
+                timestamp = System.currentTimeMillis(),
+                duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
+                durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
+                durationLowering =  TimeSpan.inMilliseconds(loweringDuration.toDouble),
+                samples = 0,
+                executions = 0,
+                None
+              )
+            )
         }
 
-        (solution.expression, runtime)
+        (
+          (solution.expression, runtime),
+          tuningStatistic
+        )
       }
-      case Failure(s) => (solution.expression, None)
+      case Failure(s) =>
+
+        // duration lowering
+        // measure
+
+        // durationTuning = 0
+        val totalDuration = System.currentTimeMillis() - totalDurationStart
+
+        (
+          (solution.expression, None),
+          TuningResultStatistic(
+            number = number,
+            solution = solution.hashCode(),
+            timestamp = System.currentTimeMillis(),
+            duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
+            durationTuning = TimeSpan.inMilliseconds(0.0),
+            durationLowering =  TimeSpan.inMilliseconds(loweringDuration.toDouble),
+            samples = 0,
+            executions = 0,
+            None
+          )
+          )
     }
 
+    saveTuningResults(statistic)
+
+    // convert from Option[TimeSpan] to Double
+    val resultingRuntime = result._2 match {
+      case Some(value) => Some(value.value)
+      case None => None
+    }
+
+    (result._1, resultingRuntime)
   }
 
+  def saveTuningResults(tuningResultStatistic: TuningResultStatistic) = {
+
+    val filePath = output + "/" + "tuningStatistics.csv"
+    val exists = Files.exists(Paths.get(filePath))
+
+    val fWriter = new PrintWriter(new FileOutputStream(new File(filePath), true))
+
+    if(!exists) {
+      val header = "number, solution, timestamp, duration, durationTuning, durationLowering, samples, executions, runtime" + "\n"
+      fWriter.write(header)
+    }
+
+    val runtime = tuningResultStatistic.runtime match {
+      case Some(value) => value.toString
+      case None => "-1"
+    }
+
+    // write line
+    val line =
+      tuningResultStatistic.number.toString + ", " +
+        Integer.toHexString(tuningResultStatistic.solution.hashCode()) + ", " +
+        tuningResultStatistic.timestamp.toString + ", " +
+        tuningResultStatistic.duration.toString + ", " +
+        tuningResultStatistic.durationTuning.toString + ", " +
+        tuningResultStatistic.durationLowering.toString + ", " +
+        tuningResultStatistic.samples.toString + ", " +
+        tuningResultStatistic.executions.toString + ", " +
+        runtime.toString + "\n"
+
+    fWriter.write(line)
+
+    fWriter.close()
+  }
 }
