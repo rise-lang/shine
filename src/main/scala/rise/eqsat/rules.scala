@@ -446,6 +446,12 @@ object rules {
     app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
   )
 
+  val mapSeqArray = NamedRewrite.init("map-seq-array",
+    ("x" :: ((`_`: Nat)`.`(`_`: DataType)))
+      -->
+    app(app(rcp.mapSeq.primitive, lam("y", "y")), "x")
+  )
+
   // TODO: condition typeHasTrivialCopy(t) / or synthesise trivial write function
   val mapSeqUnrollWrite = NamedRewrite.init("map-seq-unroll-write",
     ("x" :: ((`_`: Nat)`.`"dt"))

@@ -54,7 +54,7 @@ package object eqsat {
     )
   }
 
-  // TODO: could keep hash-consed nats/types?
+  // NOTE: this is not quite BENF, since cost is AstSize
   def BENF(e: Expr): Expr = {
     val egraph = EGraph.empty()
     val id = egraph.addExpr(e)

@@ -6,11 +6,46 @@ import scala.language.existentials
 // case class CouldNotReachSketch(i: Int, snapshot: ExtendedPattern) extends Exception
 
 object GuidedSearch {
+  object Step {
+    def init(nf: NF): Step = Step(nf, Seq(), ExtendedPatternAny(TypePatternAny), BeamExtractor(1, AstSize))
+  }
+
+  case class Step(normalForm: NF, rules: Seq[Rewrite], sketch: ExtendedPattern, extractor: Extractor) {
+    def withNormalForm(nf: NF): Step =
+      this.copy(normalForm = nf)
+
+    def withRules(rs: Seq[Rewrite]): Step =
+      this.copy(rules = rs)
+
+    def withSketch(s: ExtendedPattern): Step =
+      this.copy(sketch = s)
+
+    def withExtractor(ex: Extractor): Step =
+      this.copy(extractor = ex)
+
+    def compose(other: Step): Step = {
+      assert(normalForm == other.normalForm)
+      val mergedRules = (rules ++ other.rules).distinctBy(_.name)
+      Step(normalForm, mergedRules, other.sketch, other.extractor)
+    }
+  }
+
+  trait Extractor {
+    def extract(sketch: ExtendedPattern, egraph: EGraph, id: EClassId): Seq[Expr]
+  }
+
+  // TODO: accept normal form
+  case class BeamExtractor(beamSize: Int, costFunction: CostFunction[_]) extends Extractor {
+    override def extract(sketch: ExtendedPattern, egraph: EGraph, id: EClassId): Seq[Expr] =
+      ExtendedPattern.beamSearch(sketch, beamSize, costFunction, egraph, id)
+        .map { case (_, e) => ExprWithHashCons.expr(egraph)(e) }
+  }
+
   // no expr = failure
   case class Result(exprs: Seq[Expr], stats: Vec[Stats]) {
     def printReport(): () = {
       stats.zipWithIndex.foreach { case (st, i) =>
-        println(s"  -- sketch n°$i")
+        println(s"  -- step n°$i")
         def ratio(a: Long, b: Long) = f"${a.toDouble/b.toDouble}%.2f"
         println(s"  iterations: ${st.iterations}")
         println(s"  e-graph size: ${st.egraphNodes} nodes, ${st.egraphClasses} classes")
@@ -21,10 +56,12 @@ object GuidedSearch {
           s"${ratio(st.goalCheckTime, st.totalTime)} goal check, "+
           s"${ratio(st.extractionTime, st.totalTime)} extraction)")
         println(s"  maximum memory ${st.memoryStats.pretty()}")
-        st.beam.headOption.foreach { e =>
-          println(s"  best expr:")
-          println(Expr.toNamed(e))
-        }
+        // if (!stats.lift(i + 1).exists(_.beam.nonEmpty)) {
+          st.beam.headOption.foreach { e =>
+            println(s"  best expr:")
+            println(Expr.toNamed(e))
+          }
+        // }
       }
     }
   }
@@ -61,44 +98,33 @@ class GuidedSearch(
     this
   }
 
-  def runBENF(start: rise.core.Expr,
-              sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)]): GuidedSearch.Result =
-    run(BENF, start, sketches)
+  def run(start: rise.core.Expr, steps: Seq[GuidedSearch.Step]): GuidedSearch.Result =
+    run(Expr.fromNamed(start), steps)
 
-  def run(normalForm: NF,
-          start: rise.core.Expr,
-          sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)]): GuidedSearch.Result = {
-    val normStart = normalForm.normalize(Expr.fromNamed(start))
-    println(s"normalized start: ${Expr.toNamed(normStart)}")
-
-    // TODO: use a cheaper beamSearch returning a Boolean instead of matches?
-    val beamSize = 1 // 6
+  def run(start: Expr, steps: Seq[GuidedSearch.Step]): GuidedSearch.Result = {
     val stats = Vec.empty[GuidedSearch.Stats]
 
     @tailrec
-    def rec(s: Int, normBeam: Seq[Expr]): Seq[Expr] = {
-      if (s < sketches.length) {
+    def rec(s: Int, beam: Seq[Expr]): Seq[Expr] = {
+      if (s < steps.length) {
+        println(s"---- step n°$s")
+        val step = steps(s)
+
         val egraph = EGraph.empty()
-        val rootId = normBeam.map(egraph.addExpr)
+        val rootId = beam.map(step.normalForm.normalize).map(egraph.addExpr)
           .reduce[EClassId] { case (a, b) => egraph.union(a, b)._1 }
         egraph.rebuild(Seq(rootId))
 
-        println(s"---- sketch n°$s")
-        val ((rules, costFunction), sketch) = sketches(s)
         // TODO: add goal check to e-graph for incremental update?
         val (growTime, runner) = util.time(transformRunner(Runner.init()).doneWhen { _ =>
-          ExtendedPattern.exists(sketch, egraph, rootId)
-        }.run(egraph, filter, rules, normalForm.rules, Seq(rootId)))
+          ExtendedPattern.exists(step.sketch, egraph, rootId)
+        }.run(egraph, filter, step.rules, step.normalForm.rules, Seq(rootId)))
         val found = runner.stopReasons.contains(Done)
 
-        val (extractionTime, matches) = if (found) {
-          util.time(ExtendedPattern.beamSearch(sketch, beamSize, costFunction, egraph, rootId))
+        val (extractionTime, newBeam) = if (found) {
+          util.time(step.extractor.extract(step.sketch, egraph, rootId))
         } else {
           (0L, Seq())
-        }
-        val newNormBeam = matches.map { case (_, e) =>
-          // FIXME: avoid normalize trick
-          normalForm.normalize(ExprWithHashCons.expr(egraph)(e))
         }
 
         val totalIterationsTime = runner.iterations.iterator.map(_.totalTime).sum
@@ -113,21 +139,22 @@ class GuidedSearch(
           egraphNodes = runner.iterations.last.egraphNodes,
           egraphClasses = runner.iterations.last.egraphClasses,
           memoryStats = runner.iterations.iterator.map(_.memStats).reduce(_ max _),
-          beam = newNormBeam
+          beam = newBeam
         )
         if (found) {
-          assert(matches.nonEmpty)
+          assert(newBeam.nonEmpty)
         } else {
           runner.printReport()
           return Seq() // could not reach sketch
         }
 
-        rec(s + 1, newNormBeam)
+        rec(s + 1, newBeam)
       } else {
-        normBeam
+        // FIXME: avoid normalizing here, extract normalized terms instead?
+        beam.map(steps.last.normalForm.normalize)
       }
     }
 
-    GuidedSearch.Result(rec(0, Seq(normStart)), stats)
+    GuidedSearch.Result(rec(0, Seq(start)), stats)
   }
 }

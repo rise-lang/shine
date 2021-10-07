@@ -18,7 +18,7 @@ trait Predicate {
 object PredicateDSL {
   import scala.language.implicitConversions
 
-  implicit final class Operators(private val a: Predicate)
+  implicit final class PredicateOperators(private val a: Predicate)
     extends AnyVal
   {
     @inline def &&(b: Predicate): Predicate = new AndPredicate(a, b)

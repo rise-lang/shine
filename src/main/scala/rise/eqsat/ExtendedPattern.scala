@@ -203,6 +203,10 @@ object ExtendedPattern {
           analyser.data.iterator.flatMap { case (id, isMatch) =>
             if (isMatch) { Some(id) } else { None }
           }.toSet
+        case ExtendedPatternOr(a, b) => searchRec(a) union searchRec(b)
+        case ExtendedPatternAnd(a, b) => ???
+          // following would be wrong:
+          // searchRec(a) intersect searchRec(b)
       }
 
       memo(p) = res
@@ -336,23 +340,23 @@ object ExtendedPattern {
               tmp.distinct // FIXME: why is .distinct necessary here?
             }
 
-            override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-              val sorted = (a ++ b).sortBy(_._1)(costFunction.ordering)
-              val dedup = sorted.distinct // FIXME: why is .distinct necessary here?
-              dedup.take(beamSize)
-            }
+            override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] =
+              Beam.merge(beamSize, costFunction, a, b)
 
-            override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-              val sorted = (existing ++ computed).sortBy(_._1)(costFunction.ordering)
-              // TODO: hash-cons the exprs for faster .distinct?
-              val dedup = sorted.distinct
-                // sorted.headOption ++ sorted.iterator.sliding(2, 1).withPartial(false)
-                // .flatMap { nbh => if (nbh(0) == nbh(1)) { None } else { Some(nbh(1)) } }
-              dedup.take(beamSize)
-            }
+            override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] =
+              Beam.merge(beamSize, costFunction, existing, computed)
           }, initialData)
 
           analyser.data.iterator.filter { case (_, beam) => beam.nonEmpty }.toMap
+        case ExtendedPatternOr(a, b) =>
+          val aMatches = searchRec(a)
+          val bMatches = searchRec(b)
+          (aMatches.keySet union bMatches.keySet).map { id =>
+            val aBeam = aMatches.getOrElse(id, Nil)
+            val bBeam = aMatches.getOrElse(id, Nil)
+            id -> Beam.merge(beamSize, costFunction, aBeam, bBeam)
+          }.toMap
+        case ExtendedPatternAnd(a, b) => ???
       }
 
       /* assert(res.values.forall(beam =>
@@ -538,6 +542,8 @@ sealed trait ExtendedPattern {
             }
           }
         }
+      case ExtendedPatternOr(a, b) => ???
+      case ExtendedPatternAnd(a, b) => ???
     }
 
     memo((eclass.id, this)) = res
@@ -557,12 +563,23 @@ case class ExtendedPatternNode(node: ExtendedPattern.PNode, t: TypePattern) exte
 case class ExtendedPatternContains(contained: ExtendedPattern) extends ExtendedPattern {
   override def toString: String = s"contains($contained)"
 }
+case class ExtendedPatternOr(a: ExtendedPattern, b: ExtendedPattern) extends ExtendedPattern {
+  override def toString: String = s"$a ∨ $b"
+}
+case class ExtendedPatternAnd(a: ExtendedPattern, b: ExtendedPattern) extends ExtendedPattern {
+  override def toString: String = s"$a ∧ $b"
+}
 
 object ExtendedPatternDSL {
   import scala.language.implicitConversions
 
   def contains(p: ExtendedPattern): ExtendedPattern =
     ExtendedPatternContains(p)
+
+  implicit final class ExtendedPatternOperators(private val p: ExtendedPattern) extends AnyVal {
+    @inline def and(q: ExtendedPattern): ExtendedPattern = ExtendedPatternAnd(p, q)
+    @inline def or(q: ExtendedPattern): ExtendedPattern = ExtendedPatternOr(p, q)
+  }
 
   case object ?
   case class ?(index: Int)

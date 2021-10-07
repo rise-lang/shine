@@ -115,8 +115,8 @@ object tiling {
       def *(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
         app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f)
 
-      val sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)] = Seq(
-        splitRules -> AstSize ->
+      val steps = Seq(
+        GuidedSearch.Step.init(normalForm) withRules splitRules withSketch
           nLam(nLam(dtLam(dtLam(lam(lam(
             contains(
               *(`%n`(1) /^ cst(tileSize),
@@ -124,7 +124,7 @@ object tiling {
                   *(`%n`(0) /^ cst(tileSize),
                     *(cst(tileSize), %(0))))))
           )))))),
-        reorderRules -> AstSize ->
+        GuidedSearch.Step.init(normalForm) withRules reorderRules withSketch
           nLam(nLam(dtLam(dtLam(lam(lam(
             contains(
               *(`%n`(1) /^ cst(tileSize),
@@ -136,7 +136,7 @@ object tiling {
 
       val res = GuidedSearch.init()
         .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(50) && StandardConstraintsPredicate)
-        .run(normalForm, expr, sketches)
+        .run(expr, steps)
       assert(res.exprs.nonEmpty)
       println(Expr.toNamed(res.exprs.head))
     }
@@ -201,8 +201,8 @@ object tiling {
       def *(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
         app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f)
 
-      val sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)] = Seq(
-        splitRules -> AstSize ->
+      val steps = Seq(
+        GuidedSearch.Step.init(normalForm) withRules splitRules withSketch
           nLam(nLam(nLam(dtLam(dtLam(lam(lam(
             contains(
               *(`%n`(2) /^ cst(tileSize),
@@ -212,7 +212,7 @@ object tiling {
                       *(`%n`(0) /^ cst(tileSize),
                         *(cst(tileSize), %(0))))))))
           ))))))),
-        reorderRules -> AstSize ->
+        GuidedSearch.Step.init(normalForm) withRules reorderRules withSketch
           nLam(nLam(nLam(dtLam(dtLam(lam(lam(
             contains(
               *(`%n`(2) /^ cst(tileSize),
@@ -226,7 +226,7 @@ object tiling {
 
       val res = GuidedSearch.init()
         .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(100) && StandardConstraintsPredicate)
-        .run(normalForm, expr, sketches)
+        .run(expr, steps)
       assert(res.exprs.nonEmpty)
       println(Expr.toNamed(res.exprs.head))
     }
@@ -317,8 +317,8 @@ object tiling {
       def *(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
         app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f)
 
-      val sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)] = Seq(
-        splitRules -> AstSize ->
+      val steps = Seq(
+        GuidedSearch.Step.init(normalForm) withRules splitRules withSketch
           nLam(nLam(nLam(nLam(dtLam(dtLam(lam(lam(
             contains(
               *(`%n`(3) /^ cst(tileSize),
@@ -330,7 +330,7 @@ object tiling {
                           *(`%n`(0) /^ cst(tileSize),
                             *(cst(tileSize), %(0))))))))))
           )))))))),
-        reorderRules -> AstSize ->
+        GuidedSearch.Step.init(normalForm) withRules reorderRules withSketch
           nLam(nLam(nLam(nLam(dtLam(dtLam(lam(lam(
             contains(
               *(`%n`(3) /^ cst(tileSize),
@@ -346,7 +346,7 @@ object tiling {
 
       val res = GuidedSearch.init()
         .withFilter(ArrayDimensionPredicate(8) && ASTSizePredicate(200) && StandardConstraintsPredicate)
-        .run(normalForm, expr, sketches)
+        .run(expr, steps)
       assert(res.exprs.nonEmpty)
       println(Expr.toNamed(res.exprs.head))
     }

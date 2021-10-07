@@ -89,8 +89,8 @@ object reorder {
       def *(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
         app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f)
 
-      val sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)] = Seq(
-        rewriteRules -> AstSize ->
+      val steps = Seq(
+        GuidedSearch.Step.init(normalForm) withRules rewriteRules withSketch
           nLam(nLam(nLam(dtLam(dtLam(lam(lam(
             contains(
               *(`%n`(0),
@@ -101,7 +101,7 @@ object reorder {
 
       val res = GuidedSearch.init()
         .withFilter(ASTSizePredicate(60))
-        .run(normalForm, expr, sketches)
+        .run(expr, steps)
       assert(res.exprs.nonEmpty)
       println(Expr.toNamed(res.exprs.head))
     }
@@ -136,8 +136,8 @@ object reorder {
       def *(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
         app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f)
 
-      val sketches: Seq[((Seq[Rewrite], CostFunction[_]), ExtendedPattern)] = Seq(
-        rewriteRules -> AstSize ->
+      val steps = Seq(
+        GuidedSearch.Step.init(normalForm) withRules rewriteRules withSketch
           nLam(nLam(nLam(nLam(dtLam(dtLam(lam(lam(
             contains(
               *(`%n`(0),
@@ -149,7 +149,7 @@ object reorder {
 
       val res = GuidedSearch.init()
         .withFilter(ASTSizePredicate(80))
-        .run(normalForm, expr, sketches)
+        .run(expr, steps)
       assert(res.exprs.nonEmpty)
       println(Expr.toNamed(res.exprs.head))
     }

@@ -436,6 +436,16 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
   }
 }
 
+object Beam {
+  def merge[C](n: Int, cf: CostFunction[C],
+               a: Seq[(C, ExprWithHashCons)],
+               b: Seq[(C, ExprWithHashCons)]): Seq[(C, ExprWithHashCons)] = {
+    // TODO: merge sort?
+    // TODO: hash-cons the exprs for faster .distinct?
+    (a ++ b).sortBy(_._1)(cf.ordering).distinct.take(n)
+  }
+}
+
 // TODO: is this actually a Semi Lattice Analysis?
 case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
   extends CommutativeSemigroupAnalysis
@@ -468,7 +478,6 @@ case class BeamExtract2[Cost](beamSize: Int, cf: CostFunction[Cost])
     tmp
   }
 
-  override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
-    (a ++ b).sortBy(_._1)(cf.ordering).distinct.take(beamSize)
-  }
+  override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] =
+    Beam.merge(beamSize, cf, a, b)
 }
