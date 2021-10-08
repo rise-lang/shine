@@ -103,15 +103,23 @@ object mm {
 
   private def codegen(name: String, e: Expr): () = {
     val named = Expr.toNamed(e)
-    try {
+    // try {
       // TODO: use search for this
-      val lowered = lowerToC.apply(named).get
+      val loweredWithElevate = lowerToC.apply(named).get
+      val loweredWithEqsat = Expr.toNamed(LoweringSearch.init().run(BENF, AstSize, Seq(e), Seq(
+        rules.mapFusion,
+        rules.reduceSeq,
+        rules.mapSeq,
+        rules.mapSeqArray,
+      )))
+      println(loweredWithElevate)
+      println(loweredWithEqsat)
 
-      val code = util.gen.c.function.asStringFromExpr(lowered)
+      val code = util.gen.c.function.asStringFromExpr(loweredWithEqsat)
       util.writeToPath(s"/tmp/${name.replace(' ', '_')}.c", code)
-    } catch {
+    /* } catch {
       case e: Exception => println(e)
-    }
+    } */
   }
 
   private def blocking_T(): GuidedSearch.Result = {
@@ -355,9 +363,9 @@ object mm {
       // max dim 5: not found after 10mn+ and 14GiB+ (1M nodes, 500K classes)
       // TODO: max dim 6
       // "blocking T" -> blocking_T _,
-      "blocking TTTT" -> blocking_TTTT _,
-      "blocking SRSR" -> blocking_SRSR _,
-      "blocking TT" -> blocking_TT _, // FIXME: why is the program found with useless split/join?
+      // "blocking TTTT" -> blocking_TTTT _,
+      // "blocking SRSR" -> blocking_SRSR _,
+      // "blocking TT" -> blocking_TT _, // FIXME: why is the program found with useless split/join?
       "blocking SR" -> blocking_SR _,
     )
     val rs = fs.map { case (n, f) =>

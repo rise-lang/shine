@@ -437,9 +437,7 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
 }
 
 object Beam {
-  def merge[C](n: Int, cf: CostFunction[C],
-               a: Seq[(C, ExprWithHashCons)],
-               b: Seq[(C, ExprWithHashCons)]): Seq[(C, ExprWithHashCons)] = {
+  def merge[C, E](n: Int, cf: CostFunction[C], a: Seq[(C, E)], b: Seq[(C, E)]): Seq[(C, E)] = {
     // TODO: merge sort?
     // TODO: hash-cons the exprs for faster .distinct?
     (a ++ b).sortBy(_._1)(cf.ordering).distinct.take(n)

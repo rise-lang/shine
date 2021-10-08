@@ -186,7 +186,7 @@ object ExtendedPattern {
           }.to(HashMap)
 
           val analyser = Analyser.init(egraph, new Analyser.Analysis[Boolean] {
-            override def make(enode: ENode, t: TypeId,
+            override def make(enode: ENode, t: TypeId, egraph: EGraph,
                               analysisOf: EClassId => Boolean): Boolean =
               enode.children().exists { c =>
                 assert(c == egraph.find(c))
@@ -307,7 +307,7 @@ object ExtendedPattern {
           }.to(HashMap)
 
           val analyser = Analyser.init(egraph, new Analyser.Analysis[Seq[(Cost, ExprWithHashCons)]] {
-            override def make(enode: ENode, t: TypeId,
+            override def make(enode: ENode, t: TypeId, egraph: EGraph,
                               analysisOf: EClassId => Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
               val childrenMatchingBeams = enode.children().map(c => (c, analysisOf(c))).toSeq
               val childrenAnyBeams = enode.children().map(c => (c, beamExtractMap(egraph.find(c)))).toSeq
@@ -367,6 +367,23 @@ object ExtendedPattern {
     }
 
     searchRec(pattern)
+  }
+
+  def beamSearchRW[Cost](pattern: ExtendedPattern,
+                         beamSize: Int,
+                         costFunction: CostFunction[Cost],
+                         egraph: EGraph,
+                         id: EClassId): Seq[(Cost, ExprWithHashCons)] = {
+    beamSearchRW(pattern, beamSize, costFunction, egraph).getOrElse(id, Seq())
+  }
+
+  def beamSearchRW[Cost](pattern: ExtendedPattern,
+                         beamSize: Int,
+                         costFunction: CostFunction[Cost],
+                         egraph: EGraph)
+  : Map[EClassId, Seq[(Cost, ExprWithHashCons)]] =
+  {
+    ??? // TODO
   }
 
   def typeIsMatch(egraph: EGraph, p: TypePattern, t: TypeId): Boolean = {
