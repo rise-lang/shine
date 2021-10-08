@@ -139,7 +139,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
 
   test("harris hierarchical experiments"){
-    val iterations = 10
+    val iterations = 2
     for(i <- 1 to iterations) {
       runExperiment("harris_rs_cot")
       runExperiment("harris_rs_emb")
@@ -173,7 +173,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       inputSizes = Seq(128, 256),
       samples = 100,
       name = version,
-      output = "autotuning/harris",
+      output = s"autotuning/harris/${version}",
       timeouts = Timeouts(10000, 10000, 10000),
       executionIterations = 10,
       speedupFactor = 100,
