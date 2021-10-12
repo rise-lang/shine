@@ -264,9 +264,15 @@ package object autotune {
       // remove this comment after development
       // config file is generated in the output folder if we want to save it, no action needed
       // config file is generated in /tmp/ and removed after tuning
+
+      // copy output file
+      if(tuner.configFile.isDefined){
+        ("cp " + tuner.configFile.get + " " + tuner.output !!)
+      }
+
     } else {
       // remove tmp config file
-      if(tuner.configFile.isDefined){
+      if(!tuner.configFile.isDefined){
           ("rm " + "/tmp/" + tuner.name + ".json" !!)
       }
     }
