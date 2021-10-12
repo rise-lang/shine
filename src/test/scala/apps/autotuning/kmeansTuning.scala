@@ -148,7 +148,8 @@ class kmeansTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = Some(configFile),
-      hmConstraints = true
+      hmConstraints = true,
+      saveToFile = true
     )
     autotune.search(tuner)(kmeans)
   }
