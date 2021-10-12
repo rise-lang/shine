@@ -479,6 +479,7 @@ object NamedRewriteDSL {
   }
   def l(d: rc.semantics.Data): Pattern = rc.Literal(d)
   def lf32(f: Float): Pattern = l(rise.core.semantics.FloatData(f))
+  def lidx(i: Int, n: Int) = l(rise.core.semantics.IndexData(i, n))
 
   def slide: Pattern = rcp.slide.primitive
   def map: Pattern = rcp.map.primitive

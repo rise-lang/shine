@@ -207,6 +207,8 @@ object ExtendedPattern {
         case ExtendedPatternAnd(a, b) => ???
           // following would be wrong:
           // searchRec(a) intersect searchRec(b)
+        case ExtendedPatternWithType(p, t) =>
+          searchRec(p).filter(id => typeIsMatch(egraph, t, egraph.get(id).t))
       }
 
       memo(p) = res
@@ -357,6 +359,10 @@ object ExtendedPattern {
             id -> Beam.merge(beamSize, costFunction, aBeam, bBeam)
           }.toMap
         case ExtendedPatternAnd(a, b) => ???
+        case ExtendedPatternWithType(p, t) =>
+          searchRec(p).filter { case (id, _) =>
+            typeIsMatch(egraph, t, egraph.get(id).t)
+          }
       }
 
       /* assert(res.values.forall(beam =>
@@ -561,6 +567,7 @@ sealed trait ExtendedPattern {
         }
       case ExtendedPatternOr(a, b) => ???
       case ExtendedPatternAnd(a, b) => ???
+      case ExtendedPatternWithType(p, t) => ???
     }
 
     memo((eclass.id, this)) = res
@@ -586,6 +593,10 @@ case class ExtendedPatternOr(a: ExtendedPattern, b: ExtendedPattern) extends Ext
 case class ExtendedPatternAnd(a: ExtendedPattern, b: ExtendedPattern) extends ExtendedPattern {
   override def toString: String = s"$a ∧ $b"
 }
+// FIXME: redundancy with other nodes above
+case class ExtendedPatternWithType(p: ExtendedPattern, t: TypePattern) extends ExtendedPattern {
+  override def toString: String = s"($p : $t)"
+}
 
 object ExtendedPatternDSL {
   import scala.language.implicitConversions
@@ -596,6 +607,19 @@ object ExtendedPatternDSL {
   implicit final class ExtendedPatternOperators(private val p: ExtendedPattern) extends AnyVal {
     @inline def and(q: ExtendedPattern): ExtendedPattern = ExtendedPatternAnd(p, q)
     @inline def or(q: ExtendedPattern): ExtendedPattern = ExtendedPatternOr(p, q)
+    
+    @inline def |>(f: ExtendedPattern): ExtendedPattern = app(f, p)
+    
+    @inline def +(rhs: ExtendedPattern): ExtendedPattern = app(app(add, p), rhs)
+    @inline def -(rhs: ExtendedPattern): ExtendedPattern = app(app(sub, p), rhs)
+    @inline def *(rhs: ExtendedPattern): ExtendedPattern = app(app(mul, p), rhs)
+    @inline def /(rhs: ExtendedPattern): ExtendedPattern = app(app(div, p), rhs)
+    @inline def %(rhs: ExtendedPattern): ExtendedPattern = app(app(mod, p), rhs)
+    @inline def >(rhs: ExtendedPattern): ExtendedPattern = app(app(gt, p), rhs)
+    @inline def <(rhs: ExtendedPattern): ExtendedPattern = app(app(lt, p), rhs)
+    @inline def =:=(rhs: ExtendedPattern): ExtendedPattern = app(app(equal, p), rhs)
+    @inline def >=(rhs: ExtendedPattern): ExtendedPattern = app(not, p < rhs)
+    @inline def <=(rhs: ExtendedPattern): ExtendedPattern = app(not, p > rhs)
   }
 
   case object ?
@@ -609,6 +633,7 @@ object ExtendedPatternDSL {
   def dtApp(f: ExtendedPattern, x: DataTypePattern): ExtendedPattern.PNode = DataApp(f, x)
   def dtLam(e: ExtendedPattern): ExtendedPattern.PNode = DataLambda(e)
   def l(d: semantics.Data): ExtendedPattern.PNode = Literal(d)
+  def larr(a: Seq[semantics.Data]): ExtendedPattern.PNode = l(semantics.ArrayData(a))
 
   def prim(p: rise.core.Primitive): ExtendedPattern.PNode = Primitive(p)
   def slide: ExtendedPattern.PNode = prim(rcp.slide.primitive)
@@ -622,6 +647,12 @@ object ExtendedPatternDSL {
   def fst: ExtendedPattern.PNode = prim(rcp.fst.primitive)
   def snd: ExtendedPattern.PNode = prim(rcp.snd.primitive)
   def add: ExtendedPattern.PNode = prim(rcp.add.primitive)
+  def sub: ExtendedPattern.PNode = prim(rcp.sub.primitive)
+  def mod: ExtendedPattern.PNode = prim(rcp.mod.primitive)
+  def gt: ExtendedPattern.PNode = prim(rcp.gt.primitive)
+  def lt: ExtendedPattern.PNode = prim(rcp.lt.primitive)
+  def equal: ExtendedPattern.PNode = prim(rcp.equal.primitive)
+  def not: ExtendedPattern.PNode = prim(rcp.not.primitive)
   def mul: ExtendedPattern.PNode = prim(rcp.mul.primitive)
   def div: ExtendedPattern.PNode = prim(rcp.div.primitive)
   def drop: ExtendedPattern.PNode = prim(rcp.drop.primitive)
@@ -633,6 +664,9 @@ object ExtendedPatternDSL {
     ExtendedPatternVar(v.index, TypePatternAny)
   implicit def pnodeWithoutType(n: ExtendedPattern.PNode): ExtendedPattern =
     ExtendedPatternNode(n, TypePatternAny)
+  implicit final class PWithType(private val t: TypePattern) extends AnyVal {
+    @inline def ::(p: ExtendedPattern): ExtendedPattern = ExtendedPatternWithType(p, t)
+  }
   implicit final class PAnyWithType(private val t: TypePattern) extends AnyVal {
     @inline def ::(v: ?.type): ExtendedPattern = ExtendedPatternAny(t)
   }

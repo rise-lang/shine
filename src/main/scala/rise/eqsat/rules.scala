@@ -76,13 +76,43 @@ object rules {
     app(snd, app(app(makePair, "a"), "b")) --> "b"
   )
 
-  /* TODO
-  val idxReduction = NamedRewrite.init("idx-reduction",
-    app(app(rise.core.primitives.idx.primitive, "i"), "mka")
+  // TODO: generalize?
+  val idxReduction_0_1 = NamedRewrite.init("idx-reduction-0-1",
+    app(app(rise.core.primitives.idx.primitive, lidx(0, 1)),
+      app(rise.core.primitives.makeArray(1).primitive, "e0"))
       -->
-    ???
+    "e0"
   )
-  */
+  val idxReduction_0_2 = NamedRewrite.init("idx-reduction-0-2",
+    app(app(rise.core.primitives.idx.primitive, lidx(0, 2)),
+      app(app(rise.core.primitives.makeArray(2).primitive, "e0"), "e1"))
+      -->
+    "e0"
+  )
+  val idxReduction_1_2 = NamedRewrite.init("idx-reduction-1-2",
+    app(app(rise.core.primitives.idx.primitive, lidx(1, 2)),
+      app(app(rise.core.primitives.makeArray(2).primitive, "e0"), "e1"))
+      -->
+    "e1"
+  )
+  val idxReduction_0_3 = NamedRewrite.init("idx-reduction-0-3",
+    app(app(rise.core.primitives.idx.primitive, lidx(1, 3)),
+      app(app(app(rise.core.primitives.makeArray(3).primitive, "e0"), "e1"), "e2"))
+      -->
+    "e0"
+  )
+  val idxReduction_1_3 = NamedRewrite.init("idx-reduction-1-3",
+    app(app(rise.core.primitives.idx.primitive, lidx(1, 3)),
+      app(app(app(rise.core.primitives.makeArray(3).primitive, "e0"), "e1"), "e2"))
+      -->
+    "e1"
+  )
+  val idxReduction_2_3 = NamedRewrite.init("idx-reduction-2-3",
+    app(app(rise.core.primitives.idx.primitive, lidx(1, 3)),
+      app(app(app(rise.core.primitives.makeArray(3).primitive, "e0"), "e1"), "e2"))
+      -->
+    "e2"
+  )
 
   // -- algorithmic --
 
@@ -304,6 +334,13 @@ object rules {
     app(app(map, lam("x", "x")), "e")
   )
 
+  val fstUnzipAsMapFst = NamedRewrite.init("fst-unzip-as-map-fst",
+    app(fst, app(unzip, "e")) --> app(app(map, fst), "e")
+  )
+  val sndUnzipAsMapSnd = NamedRewrite.init("snd-unzip-as-map-snd",
+    app(snd, app(unzip, "e")) --> app(app(map, snd), "e")
+  )
+
   // - slide widening -
 
   val dropInSlide = NamedRewrite.init("drop-in-slide",
@@ -398,6 +435,11 @@ object rules {
     app(nApp(drop, "m"), app(nApp(take, "n+m"), "in"))
       -->
     app(nApp(take, ("n+m": Nat) - ("m": Nat)), app(nApp(drop, "m"), "in"))
+  )
+  val takeBeforeDrop = NamedRewrite.init("take-before-drop",
+    app(nApp(take, "n"), app(nApp(drop, "m"), "in"))
+      -->
+    app(nApp(drop, "m"), app(nApp(take, "n" + "m"), "in"))
   )
 
   val slideInsideZip = NamedRewrite.init("slide-inside-zip",
