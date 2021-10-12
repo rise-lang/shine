@@ -212,7 +212,7 @@ package object autotune {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
             // compute sample (including function value aka runtime)
-            print("[" + i.toString + "/" + tuner.samples + "] : ")
+            print("[" + i.toString + "/" + numberOfEvalRequests + "] : ")
             val sample = computeSample(header, parametersValues)
 //            println(sample.runtime)
             println(sample.runtime)
