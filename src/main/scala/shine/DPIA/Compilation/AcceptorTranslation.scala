@@ -1,7 +1,8 @@
 package shine.DPIA.Compilation
 
+import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
+import shine.DPIA.DSL.{comment, _}
 import shine.DPIA.Phrases._
 import rise.core.types.{DataType, Fragment, MatrixLayout, NatIdentifier, NatKind, read, write}
 import rise.core.DSL.Type._
@@ -12,14 +13,10 @@ import rise.core.types.DataTypeOps._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}
-import shine.DPIA.primitives.intermediate._
 import shine.OpenMP.primitives.{functional => omp}
-import shine.OpenMP.primitives.{intermediate => ompI}
 import shine.OpenCL.primitives.{functional => ocl}
-import shine.OpenCL.primitives.{intermediate => oclI}
 import shine.OpenCL.primitives.{imperative => oclImp}
 import shine.cuda.primitives.{functional => cuda}
-import shine.cuda.primitives.{intermediate => cudaI}
 import shine.cuda.primitives.{imperative => cudaImp}
 
 object AcceptorTranslation {
@@ -107,10 +104,9 @@ object AcceptorTranslation {
     case depMapSeq@DepMapSeq(unroll) =>
       val (n, ft1, ft2, f, array) = depMapSeq.unwrap
       con(array)(λ(expT(n`.d`ft1, read))(x =>
-        DepMapSeqI(unroll)(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
-          λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
-            acc(f(k)(x))(o)
-          }))), x, A)))
+        forNat(unroll, n, i =>
+          acc(f(i)(x `@d` i))(A `@d` i))
+      ))
 
     case DepTile(n, tileSize, haloSize, dt1, dt2, processTiles, array) =>
       ???
@@ -129,11 +125,23 @@ object AcceptorTranslation {
         A :=| st | IdxVec(n, st, index, x)))
 
     case Iterate(n, m, k, dt, f, array) =>
-      con(array)(λ(expT((m * n.pow(k))`.`dt, read))(x =>
-        IterateIAcc(n, m, k, dt, A,
-          _Λ_(NatKind)(l => λ(accT(l `.` dt))(o =>
-            λ(expT((l * n)`.`dt, read))(x => acc(f(l)(x))(o)))),
-          x)))
+      con(array)(λ(expT((m * n.pow(k))`.`dt, read))(x => {
+        val sz = n.pow(k) * m
+
+        newDoubleBuffer(sz`.`dt, m`.`dt, sz`.`dt, x, A,
+          (v: Phrase[VarType],
+           swap: Phrase[CommType],
+           done: Phrase[CommType]) => {
+            `for`(k, ip => {
+              val i = NamedVar(ip.name)
+
+              val isz = n.pow(k - i) * m
+              val osz = n.pow(k - i - 1) * m
+              acc(f(osz)(Take(isz, sz - isz, dt, v.rd)))(TakeAcc(osz, sz - osz, dt, v.wr)) `;`
+                IfThenElse(ip < NatAsIndex(k, Natural(k - 2)), swap, done)
+            })
+          })
+      }))
 
     case IterateStream(n, dt1, dt2, f, array) =>
       val fI = λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o)))
@@ -186,11 +194,9 @@ object AcceptorTranslation {
     case mapSeq@MapSeq(unroll) =>
       val (n, dt1, dt2, f, array) = mapSeq.unwrap
       con(array)(λ(expT(n`.`dt1, read))(x =>
-        MapSeqI(unroll)(n, dt1, dt2,
-          fun(expT(dt1, read))(x =>
-            fun(accT(dt2))(o =>
-              acc(f(x))(o))),
-          x, A)))
+        comment("mapSeq")`;`
+          `for`(unroll, n, i => acc(f(x `@` i))(A `@` i))
+      ))
 
     case MapSnd(w, dt1, dt2, dt3, f, record) =>
       val x = Identifier(freshName("fede_x"), ExpType(dt2, write))
@@ -204,7 +210,8 @@ object AcceptorTranslation {
 
     case MapVec(n, dt1, dt2, f, array) =>
       con(array)(λ(expT(vec(n, dt1), read))(x =>
-        MapVecI(n, dt1, dt2, λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))), x, A)))
+        shine.OpenMP.DSL.parForVec(n, dt2, A, i => a => acc(f(x `@v` i))(a))
+      ))
 
     case PadEmpty(n, r, dt, array) =>
       acc(array)(TakeAcc(n, r, dt, A))
@@ -223,10 +230,13 @@ object AcceptorTranslation {
     case ScanSeq(n, dt1, dt2, f, init, array) =>
       con(array)(λ(expT(n`.`dt1, read))(x =>
         con(init)(λ(expT(dt2, read))(y =>
-          ScanSeqI(n, dt1, dt2,
-            λ(expT(dt1, read))(x => λ(expT(dt2, read))(y => λ(accT(dt2))(o =>
-              acc(f(x)(y))(o)))),
-            y, x, A)))))
+          comment("scanSeq")`;`
+          `new`(dt2, accumulator =>
+            acc(y)(accumulator.wr) `;`
+            `for`(n, i =>
+              acc(f(x `@` i)(accumulator.rd))(accumulator.wr) `;`
+              //FIXME remove general assignment
+              ((A `@` i) :=| dt2 | accumulator.rd) ))))))
 
     case Scatter(n, m, dt, indices, input) =>
       con(indices)(fun(expT(n`.`idx(m), read))(y =>
@@ -255,17 +265,13 @@ object AcceptorTranslation {
 
     // OpenMP
     case omp.DepMapPar(n, ft1, ft2, f, array) =>
-      con(array)(λ(expT(n`.d`ft1, read))(x =>
-        ompI.DepMapParI(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
-          λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
-            acc(f(k)(x))(o)
-          }))), x, A)))
+      con(array)(λ(expT(n`.d`ft1, read))(x => {
+        shine.OpenMP.DSL.parForNat(n, ft2, A, idx => a => acc(f(idx)(x `@d` idx))(a))
+      }))
 
     case omp.MapPar(n, dt1, dt2, f, array) =>
       con(array)(λ(expT(n`.`dt1, read))(x =>
-        ompI.MapParI(n, dt1, dt2,
-          λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
-          x, A)))
+        shine.OpenMP.DSL.parFor(n, dt2, A, i => a => acc(f(x `@` i))(a))))
 
     case reducePar@omp.ReducePar(n, dt1, dt2, f, init, array) =>
       con(reducePar)(λ(expT(dt2, write))(r =>
@@ -274,18 +280,36 @@ object AcceptorTranslation {
     // OpenCL
     case depMap@ocl.DepMap(level, dim) =>
       val (n, ft1, ft2, f, array) = depMap.unwrap
-      con(array)(λ(expT(n`.d`ft1, read))(x =>
-        oclI.DepMapI(level, dim)(n, ft1, ft2, _Λ_(NatKind)((k: NatIdentifier) =>
-          λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
-            acc(f(k)(x))(o)
-          }))), x, A)))
+      con(array)(λ(expT(n`.d`ft1, read))(x => {
+        import shine.OpenCL.DSL._
+        level match {
+          case shine.OpenCL.Global =>
+            parForNatGlobal(dim)(n, ft2, A, idx => a => acc(f(idx)(x `@d` idx))(a))
+          case shine.OpenCL.Local =>
+            parForNatLocal(dim)(n, ft2, A, idx => a => acc(f(idx)(x `@d` idx))(a)) `;` barrier()
+          case shine.OpenCL.WorkGroup =>
+            parForNatWorkGroup(dim)(n, ft2, A, idx => a => acc(f(idx)(x `@d` idx))(a))
+          case shine.OpenCL.Sequential | shine.OpenCL.Warp | shine.OpenCL.Lane =>
+            throw new Exception("This should not happen")
+        }}))
 
     case ocl.Iterate(a, n, m, k, dt, f, array) =>
-      con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x =>
-        oclI.IterateIAcc(a, n, m, k, dt, A,
-          _Λ_(NatKind)(l => λ(accT(l`.`dt))(o =>
-            λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
-          x)))
+      con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x => {
+        import arithexpr.arithmetic.Cst
+        val sz = n.pow(k) * m
+
+        shine.OpenCL.DSL.newDoubleBuffer(a, sz`.`dt, m`.`dt, sz`.`dt, x, A,
+          (v, swap, done) => {
+            shine.DPIA.DSL.`for`(k, ip => {
+              val i = NamedVar(ip.name, RangeAdd(Cst(0), k, Cst(1)))
+
+              val isz = n.pow(k - i) * m
+              val osz = n.pow(k - i - 1) * m
+              acc(f(osz)(Take(isz, sz - isz, dt, v.rd)))(TakeAcc(osz, sz - osz, dt, v.wr)) `;`
+                IfThenElse(ip < NatAsIndex(k, Natural(k - 2)), swap, done)
+            })
+          })
+      }))
 
     case kc@ocl.KernelCall(name, localSize, globalSize, n) =>
       def rec(ts: Seq[Phrase[ExpType]],
@@ -302,10 +326,11 @@ object AcceptorTranslation {
 
     case map@ocl.Map(level, dim) =>
       val (n, dt1, dt2, f, array) = map.unwrap
-      con(array)(λ(expT(n `.` dt1, read))(x =>
-        oclI.MapI(level, dim)(n, dt1, dt2,
-          λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
-          x, A)))
+      con(array)(λ(expT(n `.` dt1, read))(x => {
+        comment(s"map${level.toString}") `;`
+          shine.OpenCL.DSL.parFor(level, dim, unroll = false)(n, dt2, A,
+            λ(expT(idx(n), read))(i => λ(accT(dt2))(a => acc(f(x `@` i))(a))))
+      }))
 
     case fc@ocl.OpenCLFunctionCall(name, n) =>
       def rec(ts: Seq[(Phrase[ExpType], DataType)],
@@ -339,10 +364,19 @@ object AcceptorTranslation {
 
     case map@cuda.Map(level, dim) =>
       val (n, dt1, dt2, f, array) = map.unwrap
-      con(array)(λ(expT(n `.` dt1, read))(x =>
-        cudaI.MapI(level, dim)(n, dt1, dt2,
-          λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
-          x, A)))
+      con(array)(λ(expT(n `.` dt1, read))(x => {
+        val forLoop = comment(s"map${level.toString}") `;`
+          shine.cuda.DSL.parFor(level, dim, unroll = false)(n, dt2, A,
+            λ(expT(idx(n), read))(i => λ(accT(dt2))(a =>
+              acc(f(x `@` i))(a))))
+        //TODO use other InsertMemoryBarrieres-mechanism
+        level match {
+          case shine.OpenCL.Local => forLoop `;` cudaImp.SyncThreads()
+          case shine.OpenCL.Warp => forLoop `;` cudaImp.SyncThreads()
+          case shine.OpenCL.Lane => forLoop `;` cudaImp.SyncWarp()
+          case _ => forLoop
+        }
+      }))
 
     case cuda.MapFragment(rows, columns, layers, dt, frag, layout, fun, input) =>
       con(input)(λ(expT(FragmentType(rows, columns, layers, dt, frag, layout), read))(input =>
