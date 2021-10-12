@@ -132,7 +132,7 @@ object RewriteDirected {
     override def name: String = "eta"
 
     override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
-      (Set(FreeAnalysis, SmallestSizeAnalysis), Set())
+      (Set(FreeAnalysis, BENF.extractAnalysis), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
@@ -140,7 +140,7 @@ object RewriteDirected {
       val appNode = App((), ())
       val lamNode = Lambda(())
       val freeOf = egraph.getAnalysis(FreeAnalysis)
-      val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+      val smallestOf = egraph.getAnalysis(BENF.extractAnalysis)
 
       foreachClassByMatch(egraph, lamNode){ id =>
         val lamEClass = egraph.get(id)
@@ -181,14 +181,14 @@ object RewriteDirected {
     override def name: String = "beta-extract"
 
     override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
-      (Set(SmallestSizeAnalysis), Set())
+      (Set(BENF.extractAnalysis), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
 
       val appNode = App((), ())
       val lamNode = Lambda(())
-      val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+      val smallestOf = egraph.getAnalysis(BENF.extractAnalysis)
 
       foreachClassByMatch(egraph, appNode){ id =>
         val appEClass = egraph.get(id)
@@ -226,14 +226,14 @@ object RewriteDirected {
     override def name: String = "beta-nat-extract"
 
     override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
-      (Set(SmallestSizeAnalysis), Set())
+      (Set(BENF.extractAnalysis), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
 
       val nAppNode = NatApp((), ())
       val nLamNode = NatLambda(())
-      val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+      val smallestOf = egraph.getAnalysis(BENF.extractAnalysis)
 
       foreachClassByMatch(egraph, nAppNode){ id =>
         val nAppEClass = egraph.get(id)

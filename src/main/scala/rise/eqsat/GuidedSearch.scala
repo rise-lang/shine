@@ -111,14 +111,15 @@ class GuidedSearch(
         val step = steps(s)
 
         val egraph = EGraph.empty()
-        val rootId = beam.map(step.normalForm.normalize).map(egraph.addExpr)
+        val normBeam = beam.map(step.normalForm.normalize)
+        val rootId = normBeam.map(egraph.addExpr)
           .reduce[EClassId] { case (a, b) => egraph.union(a, b)._1 }
         egraph.rebuild(Seq(rootId))
 
         // TODO: add goal check to e-graph for incremental update?
         val (growTime, runner) = util.time(transformRunner(Runner.init()).doneWhen { _ =>
           ExtendedPattern.exists(step.sketch, egraph, rootId)
-        }.run(egraph, filter, step.rules, step.normalForm.rules, Seq(rootId)))
+        }.run(egraph, filter, step.rules, step.normalForm.directedRules, Seq(rootId)))
         val found = runner.stopReasons.contains(Done)
 
         val (extractionTime, newBeam) = if (found) {

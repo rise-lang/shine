@@ -7,24 +7,22 @@ import rise.eqsat.PredicateDSL._
 import rise.eqsat.ExtendedPatternDSL._
 
 object mm {
-  val M = 4096
-  val N = 2048
-  val K = 1024
   val mm: rise.core.Expr = {
     import rise.core.DSL._
     import rise.core.types._
     import rise.core.primitives._
 
-    fun(ArrayType(M, ArrayType(K, f32)))(a =>
-      fun(ArrayType(K, ArrayType(N, f32)))(b =>
-        a |> map(fun(ak =>
-          transpose(b) |> map(fun(bk =>
-            zip(ak)(bk) |>
-              map(fun(x => fst(x) * snd(x))) |>
-              reduce(add)(lf32(0.0f))
-          ))
+    depFun((m: Nat, n: Nat, k: Nat) =>
+    fun(ArrayType(m, ArrayType(k, f32)))(a =>
+    fun(ArrayType(k, ArrayType(n, f32)))(b =>
+      a |> map(fun(ak =>
+        transpose(b) |> map(fun(bk =>
+          zip(ak)(bk) |>
+            map(fun(x => fst(x) * snd(x))) |>
+            reduce(add)(lf32(0.0f))
         ))
       ))
+    )))
   }
 
   def containsMap(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
@@ -36,19 +34,16 @@ object mm {
   def containsReduceSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(reduceSeq :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
-  val m = cst(M) // `?n`(0)
-  val n = cst(N) // `?n`(1)
-  val k = cst(K) // `?n`(2)
-  // TODO: nat pivot matching
-  val m_div32 = cst(M / 32)
-  val n_div32 = cst(N / 32)
-  val k_div4 = cst(K / 4)
+  val m = `%n`(2)
+  val n = `%n`(1)
+  val k = `%n`(0)
 
   val containsAddMul = contains(app(app(add, ?), contains(mul)))
 
-  val emptyStep = GuidedSearch.Step.init(BENF)
+  val emptyStep = GuidedSearch.Step.init(BENF) /* withExtractor
+    GuidedSearch.BeamExtractor(1, LexicographicCost(BENFRedexCount(), AstSize)) */
 
-  val splitStep = GuidedSearch.Step.init(BENF) withRules Seq(
+  val splitStep = emptyStep withRules Seq(
     rules.mapFission,
     rules.reduceSeq,
     rules.eliminateMapIdentity,
@@ -64,7 +59,7 @@ object mm {
     rules.splitBeforeMap,
   )
 
-  val reorderStep = GuidedSearch.Step.init(BENF) withRules Seq(
+  val reorderStep = emptyStep withRules Seq(
     rules.mapFission,
     // rules.reduceSeq,
     rules.reduceSeqMapFusion,
@@ -102,24 +97,20 @@ object mm {
   }
 
   private def codegen(name: String, e: Expr): () = {
-    val named = Expr.toNamed(e)
-    // try {
-      // TODO: use search for this
-      val loweredWithElevate = lowerToC.apply(named).get
-      val loweredWithEqsat = Expr.toNamed(LoweringSearch.init().run(BENF, AstSize, Seq(e), Seq(
-        rules.mapFusion,
-        rules.reduceSeq,
-        rules.mapSeq,
-        rules.mapSeqArray,
-      )))
-      println(loweredWithElevate)
-      println(loweredWithEqsat)
-
-      val code = util.gen.c.function.asStringFromExpr(loweredWithEqsat)
-      util.writeToPath(s"/tmp/${name.replace(' ', '_')}.c", code)
-    /* } catch {
-      case e: Exception => println(e)
-    } */
+    // val loweredWithElevate = lowerToC.apply(Expr.toNamed(e)).get
+    LoweringSearch.init().run(BENF, AstSize, Seq(e), Seq(
+      rules.mapFusion,
+      rules.reduceSeq,
+      rules.mapSeq,
+      rules.mapSeqArray,
+    )) match {
+      case Some(loweredWithEqsat) =>
+        val code = util.gen.c.function.asStringFromExpr(Expr.toNamed(loweredWithEqsat))
+        util.writeToPath(s"/tmp/${name.replace(' ', '_')}.c", code)
+      case None => println("could not generate code")
+    }
+    // println(loweredWithElevate)
+    // println(loweredWithEqsat)
   }
 
   private def blocking_T(): GuidedSearch.Result = {
@@ -131,17 +122,17 @@ object mm {
           containsMap(n,
             containsReduceSeq(k, containsAddMul))),
       tilingStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
       /* lowerToC
       loweringSearch ->
-        containsMapSeq(/*m /^ cst(32)*/m_div32,
-          containsMapSeq(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMapSeq(m /^ cst(32),
+          containsMapSeq(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMapSeq(cst(32),
                   containsMapSeq(cst(32), ?))))))
@@ -154,7 +145,7 @@ object mm {
         StandardConstraintsPredicate)
       .withRunnerTransform(r =>
         r.withTimeLimit(java.time.Duration.ofMinutes(10))
-         .withMemoryLimit(2L * 1024L * 1024L * 1024L /* 2GiB */)
+         .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */)
          .withNodeLimit(2_000_000))
       .run(start, steps)
   }
@@ -168,36 +159,36 @@ object mm {
           containsMap(n,
             containsReduceSeq(k, containsAddMul))),
       tilingStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
+        containsMap(m /^ cst(32),
           containsMap(cst(32),
-            containsMap(/*n /^ cst(32)*/n_div32,
+            containsMap(n /^ cst(32),
               containsMap(cst(32),
                 containsReduceSeq(k, containsAddMul))))),
       tilingStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
             containsMap(cst(32),
               containsMap(cst(32),
                 containsReduceSeq(k, containsAddMul))))),
       tilingStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
             containsMap(cst(32),
               containsMap(cst(32),
-                containsReduceSeq(/*k /^ cst(4)*/k_div4,
+                containsReduceSeq(k /^ cst(4),
                   containsReduceSeq(cst(4), containsAddMul)))))),
       tilingStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
       /* lowerToC
       loweringSearch ->
-        containsMapSeq(/*m /^ cst(32)*/m_div32,
-          containsMapSeq(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMapSeq(m /^ cst(32),
+          containsMapSeq(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMapSeq(cst(32),
                   containsMapSeq(cst(32), ?))))))
@@ -209,7 +200,8 @@ object mm {
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5)))
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
       .run(start, steps)
   }
 
@@ -222,36 +214,36 @@ object mm {
           containsMap(n,
             containsReduceSeq(k, containsAddMul))),
       splitStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
+        containsMap(m /^ cst(32),
           containsMap(cst(32),
-            containsMap(/*n /^ cst(32)*/n_div32,
+            containsMap(n /^ cst(32),
               containsMap(cst(32),
                 containsReduceSeq(k, containsAddMul))))),
       reorderStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
             containsMap(cst(32),
               containsMap(cst(32),
                 containsReduceSeq(k, containsAddMul))))),
       splitStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
             containsMap(cst(32),
               containsMap(cst(32),
-                containsReduceSeq(/*k /^ cst(4)*/k_div4,
+                containsReduceSeq(k /^ cst(4),
                   containsReduceSeq(cst(4), containsAddMul)))))),
       reorderStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
       /* lowerToC
       loweringSearch ->
-        containsMapSeq(/*m /^ cst(32)*/m_div32,
-          containsMapSeq(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMapSeq(m /^ cst(32),
+          containsMapSeq(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMapSeq(cst(32),
                   containsMapSeq(cst(32), ?))))))
@@ -263,7 +255,8 @@ object mm {
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5)))
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
       .run(start, steps)
   }
 
@@ -276,24 +269,24 @@ object mm {
           containsMap(n,
             containsReduceSeq(k, containsAddMul))),
       tilingStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
+        containsMap(m /^ cst(32),
           containsMap(cst(32),
-            containsMap(/*n /^ cst(32)*/n_div32,
+            containsMap(n /^ cst(32),
               containsMap(cst(32),
-                containsReduceSeq(/*k /^ cst(4)*/k_div4,
+                containsReduceSeq(k /^ cst(4),
                   containsReduceSeq(cst(4), containsAddMul)))))),
       tilingStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
       /* lowerToC
       loweringSearch ->
-        containsMapSeq(/*m /^ cst(32)*/m_div32,
-          containsMapSeq(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMapSeq(m /^ cst(32),
+          containsMapSeq(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMapSeq(cst(32),
                   containsMapSeq(cst(32), ?))))))
@@ -305,7 +298,8 @@ object mm {
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5)))
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
       .run(start, steps)
   }
 
@@ -318,24 +312,24 @@ object mm {
           containsMap(n,
             containsReduceSeq(k, containsAddMul))),
       splitStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
+        containsMap(m /^ cst(32),
           containsMap(cst(32),
-            containsMap(/*n /^ cst(32)*/n_div32,
+            containsMap(n /^ cst(32),
               containsMap(cst(32),
-                containsReduceSeq(/*k /^ cst(4)*/k_div4,
+                containsReduceSeq(k /^ cst(4),
                   containsReduceSeq(cst(4), containsAddMul)))))),
       reorderStep withSketch
-        containsMap(/*m /^ cst(32)*/m_div32,
-          containsMap(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
       /* lowerToC
       loweringSearch ->
-        containsMapSeq(/*m /^ cst(32)*/m_div32,
-          containsMapSeq(/*n /^ cst(32)*/n_div32,
-            containsReduceSeq(/*k /^ cst(4)*/k_div4,
+        containsMapSeq(m /^ cst(32),
+          containsMapSeq(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
               containsReduceSeq(cst(4),
                 containsMapSeq(cst(32),
                   containsMapSeq(cst(32), ?))))))
@@ -347,7 +341,8 @@ object mm {
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5)))
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
       .run(start, steps)
   }
 
@@ -360,12 +355,12 @@ object mm {
 
   def main(args: Array[String]): () = {
     val fs = Seq(
-      // max dim 5: not found after 10mn+ and 14GiB+ (1M nodes, 500K classes)
-      // TODO: max dim 6
+      // not found after 3mn+ and 2GiB+ (700K nodes, 400K classes)
       // "blocking T" -> blocking_T _,
-      // "blocking TTTT" -> blocking_TTTT _,
-      // "blocking SRSR" -> blocking_SRSR _,
-      // "blocking TT" -> blocking_TT _, // FIXME: why is the program found with useless split/join?
+      "blocking TTTT" -> blocking_TTTT _,
+      "blocking SRSR" -> blocking_SRSR _,
+      // FIXME: the program found has unwanted split/joins
+      // "blocking TT" -> blocking_TT _,
       "blocking SR" -> blocking_SR _,
     )
     val rs = fs.map { case (n, f) =>
@@ -383,12 +378,12 @@ object mm {
     }
 
     // -------- blocking TTTT
-    // found after 1mn 6s 628ms 495µs
+    // found after 1mn 41s (1mn 4s with constant sizes)
     // -------- blocking SRSR
-    // found after 2s 983ms 653µs
+    // found after 5s (3s with constant sizes)
     // -------- blocking TT
-    // found after 53s 165ms 364µs
+    // found after 1mn 49s (53s with constant sizes)
     // -------- blocking SR
-    // found after 7s 636ms 242µs
+    // found after 14s (7s with constant sizes)
   }
 }

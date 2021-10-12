@@ -140,3 +140,68 @@ case class LexicographicCost[A, B](a: CostFunction[A], b: CostFunction[B])
   override def cost(enode: ENode, costs: EClassId => (A, B)): (A, B) =
     (a.cost(enode, id => costs(id)._1), b.cost(enode, id => costs(id)._2))
 }
+
+object BENFRedexCount {
+  case class Data(redexes: Int,
+                  free: Set[Int],
+                  isEtaApp: Boolean,
+                  isLam: Boolean,
+                  isNatLam: Boolean)
+}
+
+case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCount.Data] {
+  import BENFRedexCount._
+
+  override val ordering = new Ordering[Data] {
+    override def compare(x: Data, y: Data): Int =
+      x.redexes compare y.redexes
+  }
+
+  def cost(enode: ENode, costs: EClassId => Data): Data = {
+    // val (freeOfNat, freeOfType) = egraph.getTypeAnalysis(FreeAnalysis)
+
+    enode match {
+      case Var(index) =>
+        Data(0, Set(index), isEtaApp = false, isLam = false, isNatLam = false)
+      case App(f, e) =>
+        val fd = costs(f)
+        val ed = costs(e)
+        val isRedex = if (fd.isLam) { 1 } else { 0 }
+        Data(fd.redexes + ed.redexes + isRedex, fd.free ++ ed.free,
+          isEtaApp = !fd.free.contains(0), isLam = false, isNatLam = false)
+      case Lambda(e) =>
+        val ed = costs(e)
+        val isRedex = if (ed.isEtaApp) { 1 } else { 0 }
+        Data(
+          ed.redexes + isRedex,
+          ed.free.filter(idx => idx != 0).map(idx => idx - 1),
+          isEtaApp = false, isLam = true, isNatLam = false
+        )
+      case NatApp(f, _) =>
+        val fd = costs(f)
+        val isRedex = if (fd.isNatLam) { 1 } else { 0 }
+        Data(fd.redexes + isRedex, fd.free,
+          isEtaApp = false, isLam = false, isNatLam = false)
+      case DataApp(f, _) =>
+        val fd = costs(f)
+        val isRedex = 0 // if (fd.isDataLam) { 1 } else { 0 }
+        Data(fd.redexes + isRedex, fd.free,
+          isEtaApp = false, isLam = false, isNatLam = false)
+      case NatLambda(e) =>
+        val ed = costs(e)
+        Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = true)
+      case DataLambda(e) =>
+        val ed = costs(e)
+        Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = false)
+      case Literal(_) | Primitive(_) =>
+        Data(0, Set(), isEtaApp = false, isLam = false, isNatLam = false)
+      case Composition(f, g) =>
+        val fd = costs(f)
+        val gd = costs(g)
+        Data(fd.redexes + gd.redexes, fd.free ++ gd.free,
+          isEtaApp = false, isLam = false, isNatLam = false)
+    }
+
+    // TODO: freeOfType(t) for free nat/data
+  }
+}

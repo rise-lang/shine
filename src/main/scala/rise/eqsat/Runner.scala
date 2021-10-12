@@ -100,6 +100,7 @@ class Runner(var iterations: Vec[Iteration],
           normRules: Seq[RewriteDirected],
           roots: Seq[EClassId]): Runner = {
     egraph.rebuild(roots)
+    egraph.requireAnalyses(filter.requiredAnalyses())
     rules.foreach(r => egraph.requireAnalyses(r.requiredAnalyses()))
     normRules.foreach(r => egraph.requireAnalyses(r.requiredAnalyses()))
 
@@ -120,6 +121,7 @@ class Runner(var iterations: Vec[Iteration],
 
     def end(): Runner = {
       println(s"nodes removed by directed rewriting: $totalRemoved")
+      egraph.releaseAnalyses(filter.requiredAnalyses())
       rules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
       normRules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
       this

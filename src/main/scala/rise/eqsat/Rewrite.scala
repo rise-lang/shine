@@ -367,13 +367,13 @@ case class BetaExtractApplier(body: PatternVar, subs: PatternVar)
     Set(body, subs)
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
-    (Set(SmallestSizeAnalysis), Set())
+    (Set(BENF.extractAnalysis), Set())
 
   override def applyOne(egraph: EGraph,
                         eclass: EClassId,
                         shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+    val smallestOf = egraph.getAnalysis(BENF.extractAnalysis)
     val bodyEx = smallestOf(subst(body, shc))._1
     val subsEx = smallestOf(subst(subs, shc))._1
     val result = bodyEx.withArgument(egraph, subsEx)
@@ -426,13 +426,13 @@ case class BetaNatExtractApplier(body: PatternVar, subs: NatPatternVar)
     Set(body, subs)
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
-    (Set(SmallestSizeAnalysis), Set())
+    (Set(BENF.extractAnalysis), Set())
 
   override def applyOne(egraph: EGraph,
                         eclass: EClassId,
                         shc: SubstHashCons,
                         subst: Subst): Vec[EClassId] = {
-    val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+    val smallestOf = egraph.getAnalysis(BENF.extractAnalysis)
     val bodyEx = smallestOf(subst(body, shc))._1
     val subsNat = subst(subs, shc)
     val result = bodyEx.withNatArgument(egraph, subsNat)
