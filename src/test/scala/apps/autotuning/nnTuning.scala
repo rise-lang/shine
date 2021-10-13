@@ -1,6 +1,7 @@
 package apps.autotuning
 
-import arithexpr.arithmetic.{RangeMul}
+import apps.autotuning
+import arithexpr.arithmetic.RangeMul
 import rise.autotune
 import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.DSL.Type._
@@ -50,7 +51,7 @@ class nnTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  ignore("execute nn"){
+  test("execute nn"){
 
     val params:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
@@ -71,7 +72,7 @@ class nnTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  ignore("search nn with generated config file"){
+  test("search nn with generated config file"){
     val tuner = Tuner(
       hostCode = HostCode(init(1024), compute, finish),
       inputSizes = Seq(1024),
@@ -82,8 +83,9 @@ class nnTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None,
-      hmConstraints = false,
-      runtimeStatistic = Minimum
+      hmConstraints = true,
+      runtimeStatistic = Minimum,
+      saveToFile = true
     )
 
     val tuningResult = autotune.search(tuner)(nn)
@@ -96,4 +98,42 @@ class nnTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
+
+
+  def runExperiments(configFiles: Seq[String], iterations: Int) = {
+    for(i <- 1 to iterations) {
+      configFiles.foreach(runTuning)
+    }
+  }
+
+  def runTuning(configFile: String) = {
+    val version = autotuning.parseName(configFile)
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024), compute, finish),
+      inputSizes = Seq(1024),
+      samples = 20, // defined by config file
+      name = version,
+      output = s"autotuning/nn/${version}",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some(configFile),
+      hmConstraints = true,
+      saveToFile = true
+    )
+    autotune.search(tuner)(nn)
+  }
+
+  test("run kmeans autotuning"){
+
+    val configs = Seq(
+      "autotuning/config/nn/nn_rs_cot.json",
+      "autotuning/config/nn/nn_rs_emb.json",
+      "autotuning/config/nn/nn_ls_cot.json",
+      "autotuning/config/nn/nn_atf_emb.json"
+    )
+
+    runExperiments(configFiles = configs, iterations = 3)
+  }
 }
