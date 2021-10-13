@@ -1,8 +1,9 @@
 package apps.autotuning
 
 import apps.mriQ.{computePhiMagOcl, computeQOcl}
+import arithexpr.arithmetic.RangeMul
 import rise.autotune
-import rise.autotune.{HostCode, Median, Timeouts, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.Expr
 import rise.core.types.{Nat, TuningParameter}
 import shine.OpenCL.{GlobalSize, LocalSize}
@@ -10,18 +11,18 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 class mriqTuning extends test_util.Tests {
 
   val computePhiMagTuning:Expr =
-    tuningParam("ls0", (ls0: Nat) =>
-      tuningParam("ls1", (ls1: Nat) =>
-        tuningParam("gs0", (gs0: Nat) =>
-          tuningParam("gs1", (gs1: Nat) =>
+    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl)
           ))))
 
   val computeQTuning:Expr =
-    tuningParam("ls0", (ls0: Nat) =>
-      tuningParam("ls1", (ls1: Nat) =>
-        tuningParam("gs0", (gs0: Nat) =>
-          tuningParam("gs1", (gs1: Nat) =>
+    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computeQOcl)
           ))))
 
@@ -129,7 +130,7 @@ class mriqTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  ignore("execute computePhiMag"){
+  test("execute computePhiMag"){
 
     println("nbody: \n" + computePhiMagTuning)
 
@@ -155,12 +156,12 @@ class mriqTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  ignore("execute computeQ"){
+  test("execute computeQ"){
 
     println("nbody: \n" + computeQTuning)
 
     val params:Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (256: Nat),
+      TuningParameter("ls0") -> (64: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (512: Nat),
       TuningParameter("gs1") -> (1: Nat)
@@ -175,11 +176,64 @@ class mriqTuning extends test_util.Tests {
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
       speedupFactor = 100,
-        execution = Median
+      execution = Median
     )
 
     println("result: " + result)
   }
 
+  test("tune computePhiMag"){
+
+    val tuner = Tuner(
+      hostCode = HostCode(initPhiMag(256), computePhiMag, finishPhiMag),
+      inputSizes = Seq(256),
+      samples = 10,
+      name = "computePhiMag",
+      output = "autotuning/mriq/computePhiMag",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None,
+      hmConstraints = true,
+      runtimeStatistic = Minimum,
+      saveToFile = true
+    )
+
+    val tuningResult = autotune.search(tuner)(computePhiMagTuning)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: \n" + bestSample)
+    println("runtime: \n" + bestSample.get.runtime)
+  }
+
+  test("tune computeQ"){
+
+    val tuner = Tuner(
+    hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
+    inputSizes = Seq(256, 512),
+    samples = 10,
+    name = "computeQ",
+    output = "autotuning/mriq/computeQ",
+    timeouts = Timeouts(10000, 10000, 10000),
+    executionIterations = 10,
+    speedupFactor = 100,
+    configFile = None,
+    hmConstraints = true,
+    runtimeStatistic = Minimum,
+    saveToFile = true
+    )
+
+    val tuningResult = autotune.search(tuner)(computeQTuning)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: \n" + bestSample)
+    println("runtime: \n" + bestSample.get.runtime)
+  }
 
 }
