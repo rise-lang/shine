@@ -3,8 +3,8 @@ package apps
 import mriQ._
 import util.gen
 
-//class MRIQ extends test_util.TestsWithExecutor {
-  class MRIQ extends test_util.Tests {
+class MRIQ extends test_util.TestsWithExecutor {
+
   private val K = 256
   private val X = 512
 
@@ -33,12 +33,9 @@ import util.gen
     val Qi = Array.fill(X)(random.nextFloat())
     val kvalues = Array.fill(4 * K)(random.nextFloat())
 
-    val kernel = gen.opencl.kernel.asStringFromExpr(computeQOcl)
-    println("kernel: " + kernel)
-
-//    runsWithSameResult(Seq(
-//      ("original", runOriginalComputeQ("CGO17_ComputeQ.cl", x, y, z, Qr, Qi, kvalues)),
-//      ("dpia", runComputeQ(gen.opencl.kernel.fromExpr(computeQOcl), x, y, z, Qr, Qi, kvalues))
-//    ))
+    runsWithSameResult(Seq(
+      ("original", runOriginalComputeQ("CGO17_ComputeQ.cl", x, y, z, Qr, Qi, kvalues)),
+      ("dpia", runComputeQ(gen.opencl.kernel.fromExpr(computeQOcl), x, y, z, Qr, Qi, kvalues))
+    ))
   }
 }
