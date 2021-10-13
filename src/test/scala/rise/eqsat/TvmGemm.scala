@@ -141,10 +141,6 @@ class TvmGemm extends test_util.Tests {
     ))
 
     ProveEquiv.init().runCNF(start, goal, Seq(
-      // TODO: CNF implies BENF norm rules?
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionAssoc2,
       rules.combinatory.liftReduceSeq
     ))
   }
@@ -178,6 +174,10 @@ class TvmGemm extends test_util.Tests {
     ProveEquiv.init().runBENF(start, goal, Seq(
       rules.liftReduceSeq
     ))
+
+    ProveEquiv.init().runCNF(start, goal, Seq(
+      rules.combinatory.liftReduceSeq
+    ))
   }
 
   test("lift-reduce-seq 3") {
@@ -202,16 +202,10 @@ class TvmGemm extends test_util.Tests {
     ProveEquiv.init().runBENF(start, goal, Seq(
       rules.liftReduceSeq2
     ))
-/*
+
     ProveEquiv.init().runCNF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionElim,
-      rules.combinatory.compositionAssoc1,
-      rules.combinatory.compositionAssoc2,
       rules.combinatory.liftReduceSeq2
     ))
- */
   }
 
   test("lift-reduce-seq 4") {
@@ -235,6 +229,13 @@ class TvmGemm extends test_util.Tests {
 
     ProveEquiv.init().runBENF(start, goal, Seq(
       rules.liftReduceSeq3
+    ))
+
+    ProveEquiv.init().runCNF(start, goal, Seq(
+      rules.combinatory.mapFission,
+      rules.combinatory.mapFusion,
+      rules.combinatory.mapFusion2,
+      rules.combinatory.liftReduceSeq3
     ))
   }
 }

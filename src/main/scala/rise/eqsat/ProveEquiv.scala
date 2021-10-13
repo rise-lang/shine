@@ -51,11 +51,7 @@ class ProveEquiv(
   def runBENF(starts: OneOrMore[rise.core.Expr],
               goals: OneOrMore[rise.core.Expr],
               rules: Seq[Rewrite],
-              normRules: Seq[RewriteDirected] = Seq(
-                RewriteDirected.Eta,
-                RewriteDirected.BetaExtract,
-                RewriteDirected.BetaNatExtract
-              )): Unit = {
+              normRules: Seq[RewriteDirected] = BENF.directedRules): Unit = {
     val normStarts = starts.seq.map(s => BENF(Expr.fromNamed(s)))
     val normGoals = goals.seq.map(g => BENF(Expr.fromNamed(g)))
     for ((start, i) <- normStarts.zipWithIndex) {
@@ -70,11 +66,7 @@ class ProveEquiv(
   def runCNF(starts: OneOrMore[rise.core.Expr],
              goals: OneOrMore[rise.core.Expr],
              rules: Seq[Rewrite],
-             normRules: Seq[RewriteDirected] = Seq(
-               RewriteDirected.Eta,
-               RewriteDirected.CompositionIntro,
-               RewriteDirected.CompositionAssoc2,
-             )): Unit = {
+             normRules: Seq[RewriteDirected] = CNF.directedRules): Unit = {
     val normStarts = starts.seq.map(s => CNF(Expr.fromNamed(s)))
     val normGoals = goals.seq.map(g => CNF(Expr.fromNamed(g)))
     for ((start, i) <- normStarts.zipWithIndex) {

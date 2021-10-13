@@ -112,7 +112,7 @@ class GuidedSearch(
 
         val egraph = EGraph.empty()
         val normBeam = beam.map(step.normalForm.normalize)
-        // println(s"beam head: ${Expr.toNamed(normBeam.head)}")
+        println(s"beam head: ${Expr.toNamed(normBeam.head)}")
         val rootId = normBeam.map(egraph.addExpr)
           .reduce[EClassId] { case (a, b) => egraph.union(a, b)._1 }
         egraph.rebuild(Seq(rootId))
@@ -147,6 +147,7 @@ class GuidedSearch(
           assert(newBeam.nonEmpty)
         } else {
           runner.printReport()
+          runner.iterations.foreach(println)
           return Seq() // could not reach sketch
         }
 

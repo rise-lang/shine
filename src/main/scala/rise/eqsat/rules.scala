@@ -206,16 +206,17 @@ object rules {
   // FIXME: very specific ..
   val liftReduceSeq3 = NamedRewrite.init("lift-reduce-seq-3",
     (app(map, lam("x",
-      app(app(app(rcp.reduceSeq.primitive, "op"), "i" :: (("m": Nat)`.`("dt1": DataType))),
-        "e" :: (("o": Nat)`.`(("m": Nat)`.`("dt2": DataType))))))
-      :: ((("n": Nat)`.`(("m": Nat)`.`(("dt1": DataType) x (("o": Nat)`.`("dt2": DataType))))) ->: ("o": Type)))
+      app(app(app(rcp.reduceSeq.primitive, "op"), app(fst, app(unzip, "x"))),
+        app(transpose, app(snd, app(unzip, "x")))))))
+      // :: ((("n": Nat)`.`(("m": Nat)`.`(("dt1": DataType) x (("o": Nat)`.`("dt2": DataType))))) ->: ("o": Type)))
       -->
-    lam("in", app(lam("uz",
+    lam("in",
       app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
         app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
           app(app(zip, "acc"), "y"))
-      ))), app(fst, "uz")), app(transpose, app(app(map, transpose), app(snd, "uz"))))),
-      app(unzip, app(app(map, unzip), "in"))))
+      ))), app(fst, app(unzip, app(app(map, unzip), "in")))),
+      app(transpose, app(app(map, transpose), app(snd, app(unzip, app(app(map, unzip), "in"))))))),
+    Seq("op" notFree "x")
   )
 
   val reduceSeqMapFusion = NamedRewrite.init("reduce-seq-map-fusion",
@@ -551,6 +552,7 @@ object rules {
      */
   }
 
+  // TODO: check that RHS are locally CNF (or automate that?)
   object combinatory {
     val compositionIntro = NamedRewrite.init("composition-intro",
       // only do this for functions over datatypes
@@ -603,13 +605,14 @@ object rules {
           "init"))
     )
 
+    // TODO: double-check this ..
     val reduceSeqMapFission = NamedRewrite.init("reduce-seq-map-fission-cnf",
       app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
-        app(app("op", "acc"), "gy" :: ("dt": DataType))))), "init")
+        app(("g" :: (("a": DataType) ->: ("b": DataType))) >> app("op", "acc"), "y")))), "init")
         -->
-        lam("in", app(app(app(rcp.reduceSeq.primitive, "op"), "init"),
-          app(app(map, lam("y", "gy")), "in"))),
-      Seq("op" notFree "y")
+      (app(map, lam("y", app("g", "y"))) >>
+       app(app(rcp.reduceSeq.primitive, lam("acc", app("op", "acc"))), "init")),
+      Seq("g" notFree "acc", "op" notFree "y", "op" notFree "acc")
     )
 
     def splitJoin(n: Int) = NamedRewrite.init(s"split-join-cnf-$n",
@@ -647,6 +650,7 @@ object rules {
         -->
       (app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, join)))))))
     )
+    // TODO: seq or no seq, or both?
     def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-cnf-$n",
       app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init")
         -->
@@ -668,15 +672,31 @@ object rules {
 
     // FIXME: very specific ..
     val liftReduceSeq2 = NamedRewrite.init("lift-reduce-seq-cnf-2",
-      app(map, lam("x", app(app(add, app(fst, "x")),
-        app(app(app(rcp.reduceSeq.primitive, "op"), lf32(0)), app(snd, "x")))))
+      app(map, lam("x", app(
+        (snd >> app(app(rcp.reduceSeq.primitive, "op"), lf32(0))) >>
+        app(add, app(fst, "x")), "x")))
         -->
-      (unzip >> lam("uz",
+      lam("uz",
         app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
           app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
             app(app(zip, "acc"), "y"))
           // generalized init: app(transpose, app(snd, "uz")) + app(rcp.generate.primitive, lam("i", "init"))
-        ))), app(fst, "uz")), app(transpose, app(snd, "uz")))))
+        ))), app(fst, app(unzip, "uz"))), app(transpose, app(snd, app(unzip, "uz")))))
+    )
+
+    // FIXME: very specific ..
+    val liftReduceSeq3 = NamedRewrite.init("lift-reduce-seq-cnf-3",
+      app(map, lam("x",
+        app(unzip >> snd >> transpose >>
+            app(app(rcp.reduceSeq.primitive, "op"), app(unzip >> fst, "x")),
+          "x")))
+        -->
+      lam("in",
+        app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
+          app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+            app(app(zip, "acc"), "y"))
+        ))), app(fst, app(unzip, app(app(map, unzip), "in")))),
+        app(transpose, app(app(map, transpose), app(snd, app(unzip, app(app(map, unzip), "in")))))))
     )
 
     val removeTransposePair = NamedRewrite.init("remove-transpose-pair-cnf",

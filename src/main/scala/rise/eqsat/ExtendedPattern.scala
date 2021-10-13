@@ -203,7 +203,10 @@ object ExtendedPattern {
           analyser.data.iterator.flatMap { case (id, isMatch) =>
             if (isMatch) { Some(id) } else { None }
           }.toSet
-        case ExtendedPatternOr(a, b) => searchRec(a) union searchRec(b)
+        case ExtendedPatternOr(a, b) =>
+          val aMatches = searchRec(a)
+          val bMatches = searchRec(b)
+          aMatches union bMatches
         case ExtendedPatternAnd(a, b) => ???
           // following would be wrong:
           // searchRec(a) intersect searchRec(b)
@@ -215,7 +218,8 @@ object ExtendedPattern {
       res
     }
 
-    searchRec(pattern)
+    val r = searchRec(pattern)
+    r
   }
 
   def beamSearch[Cost](pattern: ExtendedPattern,
@@ -355,7 +359,7 @@ object ExtendedPattern {
           val bMatches = searchRec(b)
           (aMatches.keySet union bMatches.keySet).map { id =>
             val aBeam = aMatches.getOrElse(id, Nil)
-            val bBeam = aMatches.getOrElse(id, Nil)
+            val bBeam = bMatches.getOrElse(id, Nil)
             id -> Beam.merge(beamSize, costFunction, aBeam, bBeam)
           }.toMap
         case ExtendedPatternAnd(a, b) => ???
@@ -607,7 +611,8 @@ object ExtendedPatternDSL {
   implicit final class ExtendedPatternOperators(private val p: ExtendedPattern) extends AnyVal {
     @inline def and(q: ExtendedPattern): ExtendedPattern = ExtendedPatternAnd(p, q)
     @inline def or(q: ExtendedPattern): ExtendedPattern = ExtendedPatternOr(p, q)
-    
+
+    @inline def >>(f: ExtendedPattern): ExtendedPattern.PNode = Composition(p, f)
     @inline def |>(f: ExtendedPattern): ExtendedPattern = app(f, p)
     
     @inline def +(rhs: ExtendedPattern): ExtendedPattern = app(app(add, p), rhs)

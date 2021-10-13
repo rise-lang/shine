@@ -31,6 +31,9 @@ object mm {
   def containsMapSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(mapSeq :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
+  def containsReduce(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+    contains(app(reduce :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
+
   def containsReduceSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(reduceSeq :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
@@ -38,19 +41,21 @@ object mm {
   val n = `%n`(1)
   val k = `%n`(0)
 
-  val containsAddMul = contains(app(app(add, ?), contains(mul)))
+  val containsAddMul = contains(
+    (app(app(add, ?), contains(mul)) : ExtendedPattern) or
+    (contains(mul) >> contains(add))
+  )
 
   val emptyStep = GuidedSearch.Step.init(BENF) /* withExtractor
     GuidedSearch.BeamExtractor(1, LexicographicCost(BENFRedexCount(), AstSize)) */
 
-  val splitStep = emptyStep withRules Seq(
+  val splitStepBENF = emptyStep withRules Seq(
     rules.mapFission,
     rules.reduceSeq,
     rules.eliminateMapIdentity,
     rules.reduceSeqMapFusion, //?
     rules.reduceSeqMapFission,
     rules.undoReduceSeqForAdd, //?
-    // rules.splitBeforeMap,
     // rules.mapEtaAbstraction,
     rules.splitJoin(32),
     // rules.splitJoin1M(32),
@@ -59,7 +64,28 @@ object mm {
     rules.splitBeforeMap,
   )
 
-  val reorderStep = emptyStep withRules Seq(
+  val splitStepCNF = GuidedSearch.Step.init(CNF) withRules Seq(
+    // rules.combinatory.mapFusion,
+    // rules.combinatory.mapFusion2,
+    // rules.combinatory.transposePairAfter,
+
+    rules.combinatory.mapFission,
+    rules.reduceSeq,
+    // rules.eliminateMapIdentity, //?
+    rules.combinatory.reduceSeqMapFusion, //?
+    rules.combinatory.reduceSeqMapFusion2,
+    rules.combinatory.reduceSeqMapFission,
+    rules.undoReduceSeqForAdd, //?
+    // rules.mapEtaAbstraction,
+    rules.combinatory.splitJoin(32),
+    // rules.splitJoin1M(32),
+    rules.combinatory.splitJoin2M(32),
+    rules.combinatory.blockedReduce(4),
+    rules.combinatory.splitBeforeMap,
+    rules.combinatory.splitBeforeMap2,
+  )
+
+  val reorderStepBENF = emptyStep withRules Seq(
     rules.mapFission,
     // rules.reduceSeq,
     rules.reduceSeqMapFusion,
@@ -75,7 +101,28 @@ object mm {
     // rules.mapEtaAbstraction,
   )
 
-  val tilingStep = splitStep compose reorderStep
+  val reorderStepCNF = GuidedSearch.Step.init(CNF) withRules Seq(
+    // rules.combinatory.mapFusion,
+    // rules.combinatory.mapFusion2,
+
+    rules.combinatory.mapFission,
+    rules.combinatory.reduceSeqMapFusion,
+    rules.combinatory.reduceSeqMapFusion2,
+    rules.combinatory.reduceSeqMapFission,
+    rules.eliminateMapIdentity, //?
+    // rules.undoReduceSeqForAdd, //?
+    rules.combinatory.splitBeforeMap,
+    rules.combinatory.splitBeforeMap2,
+    rules.combinatory.liftReduceSeq,
+    rules.combinatory.liftReduceSeq2,
+    // FIXME: this rule is not applied
+    rules.combinatory.liftReduceSeq3,
+    // rules.transposeAroundMapMapF,
+    rules.combinatory.transposeAroundMapMapF1M,
+    // rules.mapEtaAbstraction,
+  )
+
+  val tilingStepBENF = splitStepBENF compose reorderStepBENF
 
   val loweringStep = GuidedSearch.Step.init(BENF) withRules Seq(
     rules.mapFusion,
@@ -113,7 +160,7 @@ object mm {
     // println(loweredWithEqsat)
   }
 
-  private def blocking_T(): GuidedSearch.Result = {
+  private def blocking_T(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
@@ -128,16 +175,6 @@ object mm {
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
-      /* lowerToC
-      loweringSearch ->
-        containsMapSeq(m /^ cst(32),
-          containsMapSeq(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMapSeq(cst(32),
-                  containsMapSeq(cst(32), ?))))))
-
-       */
     )
 
     GuidedSearch.init()
@@ -150,7 +187,7 @@ object mm {
       .run(start, steps)
   }
 
-  private def blocking_TTTT(): GuidedSearch.Result = {
+  private def blocking_TTTT(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
@@ -184,16 +221,6 @@ object mm {
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
-      /* lowerToC
-      loweringSearch ->
-        containsMapSeq(m /^ cst(32),
-          containsMapSeq(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMapSeq(cst(32),
-                  containsMapSeq(cst(32), ?))))))
-
-       */
     )
 
     GuidedSearch.init()
@@ -205,7 +232,8 @@ object mm {
       .run(start, steps)
   }
 
-  private def blocking_SRSR(): GuidedSearch.Result = {
+  private def blocking_SRSR(splitStep: GuidedSearch.Step,
+                            reorderStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
@@ -239,16 +267,6 @@ object mm {
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
-      /* lowerToC
-      loweringSearch ->
-        containsMapSeq(m /^ cst(32),
-          containsMapSeq(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMapSeq(cst(32),
-                  containsMapSeq(cst(32), ?))))))
-
-       */
     )
 
     GuidedSearch.init()
@@ -260,7 +278,7 @@ object mm {
       .run(start, steps)
   }
 
-  private def blocking_TT(): GuidedSearch.Result = {
+  private def blocking_TT(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
@@ -282,16 +300,6 @@ object mm {
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
-      /* lowerToC
-      loweringSearch ->
-        containsMapSeq(m /^ cst(32),
-          containsMapSeq(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMapSeq(cst(32),
-                  containsMapSeq(cst(32), ?))))))
-
-       */
     )
 
     GuidedSearch.init()
@@ -303,7 +311,8 @@ object mm {
       .run(start, steps)
   }
 
-  private def blocking_SR(): GuidedSearch.Result = {
+  private def blocking_SR(splitStep: GuidedSearch.Step,
+                          reorderStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
@@ -325,16 +334,6 @@ object mm {
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
-      /* lowerToC
-      loweringSearch ->
-        containsMapSeq(m /^ cst(32),
-          containsMapSeq(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMapSeq(cst(32),
-                  containsMapSeq(cst(32), ?))))))
-
-       */
     )
 
     GuidedSearch.init()
@@ -357,11 +356,12 @@ object mm {
     val fs = Seq(
       // not found after 3mn+ and 2GiB+ (700K nodes, 400K classes)
       // "blocking T" -> blocking_T _,
-      "blocking TTTT" -> blocking_TTTT _,
-      "blocking SRSR" -> blocking_SRSR _,
+      // "blocking TTTT" -> { () => blocking_TTTT(tilingStepBENF) },
+      // "blocking SRSR" -> { () => blocking_SRSR(splitStepBENF, reorderStepBENF) },
       // FIXME: the program found has unwanted split/joins
-      // "blocking TT" -> blocking_TT _,
-      "blocking SR" -> blocking_SR _,
+      // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
+      // "blocking SR BENF" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+      "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))
