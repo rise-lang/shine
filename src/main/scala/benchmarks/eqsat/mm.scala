@@ -31,9 +31,6 @@ object mm {
   def containsMapSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(mapSeq :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
-  def containsReduce(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
-    contains(app(reduce :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
-
   def containsReduceSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(reduceSeq :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
@@ -57,6 +54,8 @@ object mm {
     rules.reduceSeqMapFission,
     rules.undoReduceSeqForAdd, //?
     // rules.mapEtaAbstraction,
+    // TODO: could also restrict left-hand-side match to split
+    //       e.g. only split "n"/"m" dimensions by 32 and "k" dimension by 4
     rules.splitJoin(32),
     // rules.splitJoin1M(32),
     rules.splitJoin2M(32),
@@ -70,6 +69,7 @@ object mm {
     // rules.combinatory.transposePairAfter,
 
     rules.combinatory.mapFission,
+    rules.combinatory.mapFission2,
     rules.reduceSeq,
     // rules.eliminateMapIdentity, //?
     rules.combinatory.reduceSeqMapFusion, //?
@@ -106,6 +106,7 @@ object mm {
     // rules.combinatory.mapFusion2,
 
     rules.combinatory.mapFission,
+    rules.combinatory.mapFission2,
     rules.combinatory.reduceSeqMapFusion,
     rules.combinatory.reduceSeqMapFusion2,
     rules.combinatory.reduceSeqMapFission,
@@ -115,7 +116,6 @@ object mm {
     rules.combinatory.splitBeforeMap2,
     rules.combinatory.liftReduceSeq,
     rules.combinatory.liftReduceSeq2,
-    // FIXME: this rule is not applied
     rules.combinatory.liftReduceSeq3,
     // rules.transposeAroundMapMapF,
     rules.combinatory.transposeAroundMapMapF1M,
@@ -360,8 +360,9 @@ object mm {
       // "blocking SRSR" -> { () => blocking_SRSR(splitStepBENF, reorderStepBENF) },
       // FIXME: the program found has unwanted split/joins
       // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
-      // "blocking SR BENF" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
-      "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
+      "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+      // FIXME: cannot find goal, rewriting is stuck with the given rules
+      // "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))

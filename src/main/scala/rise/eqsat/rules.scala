@@ -584,6 +584,12 @@ object rules {
         -->
       (app(map, "f") >> app(map, "g"))
     )
+    val mapFission2 = NamedRewrite.init("map-fission-cnf-2",
+      app(map, lam("x", app(("f" :: (("a": DataType) ->: ("b": DataType))) >> "g", "x")))
+        -->
+      (app(map, lam("x", app("f", "x"))) >> app(map, "g")),
+      Seq("g" notFree "x")
+    )
 
     val reduceSeqMapFusion = NamedRewrite.init("reduce-seq-map-fusion-cnf",
       (app(map, "g") >> app(app(rcp.reduceSeq.primitive, "f"), "init"))
@@ -650,7 +656,6 @@ object rules {
         -->
       (app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, join)))))))
     )
-    // TODO: seq or no seq, or both?
     def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-cnf-$n",
       app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init")
         -->
@@ -687,7 +692,7 @@ object rules {
     // FIXME: very specific ..
     val liftReduceSeq3 = NamedRewrite.init("lift-reduce-seq-cnf-3",
       app(map, lam("x",
-        app(unzip >> snd >> transpose >>
+        app(((unzip >> snd) >> transpose) >>
             app(app(rcp.reduceSeq.primitive, "op"), app(unzip >> fst, "x")),
           "x")))
         -->

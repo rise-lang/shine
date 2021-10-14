@@ -232,9 +232,6 @@ class TvmGemm extends test_util.Tests {
     ))
 
     ProveEquiv.init().runCNF(start, goal, Seq(
-      rules.combinatory.mapFission,
-      rules.combinatory.mapFusion,
-      rules.combinatory.mapFusion2,
       rules.combinatory.liftReduceSeq3
     ))
   }

@@ -27,7 +27,9 @@ object Extractor {
 
   def printRandom(egraph: EGraph, id: EClassId, n: Int): Unit = {
     for (_ <- 0 until n) {
-      println(Expr.toNamed(ExprWithHashCons.expr(egraph)(randomOf(egraph, id))))
+      println(Expr.toNamed(
+        ExprWithHashCons.expr(egraph)(randomOf(egraph, id)),
+        Expr.Bound.empty.copy(allowFreeIndices = true)))
     }
   }
 }

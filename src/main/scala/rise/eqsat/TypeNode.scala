@@ -105,7 +105,7 @@ object DataType {
 
   def toNamed(dt: DataType, bound: Expr.Bound = Expr.Bound.empty): rct.DataType = {
     dt.node match {
-      case DataTypeVar(index) => bound.data(index)
+      case DataTypeVar(index) => bound.getData(index)
       case ScalarType(s) => s
       case NatType => rct.NatType
       case VectorType(s, et) => rct.VectorType(Nat.toNamed(s, bound), toNamed(et, bound))

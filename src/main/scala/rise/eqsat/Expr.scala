@@ -95,20 +95,40 @@ object Expr {
   type Shift = (Int, Int, Int)
 
   object Bound {
-    def empty: Bound = Bound(Seq(), Seq(), Seq())
+    def empty: Bound =
+      Bound(Seq(), Seq(), Seq(), allowFreeIndices = false)
+  }
+
+  sealed trait NotBoundException extends Exception
+  case class IndexNotBound(i: Int) extends NotBoundException {
+    override def toString: String = s"%$i was not bound"
+  }
+  case class NameNotBound(name: String) extends NotBoundException {
+    override def toString: String = s"identifier $name was not bound"
   }
 
   case class Bound(expr: Seq[core.Identifier],
                    nat: Seq[rct.NatIdentifier],
-                   data: Seq[rct.DataTypeIdentifier]) {
-    private def assertFound(i: Int, name: => String): Int =
-      if (i >= 0) { i } else { throw new Exception(s"identifier $name was not bound") }
-    def indexOf(i: core.Identifier): Int =
-      assertFound(expr.indexOf(i), i.toString)
-    def indexOf(i: rct.NatIdentifier): Int =
-      assertFound(nat.indexOf(i), i.toString)
-    def indexOf(i: rct.DataTypeIdentifier): Int =
-      assertFound(data.indexOf(i), i.toString)
+                   data: Seq[rct.DataTypeIdentifier],
+                   allowFreeIndices: Boolean) {
+    private def get[T](s: Seq[T], i: Int, free: => T): T =
+      s.lift(i).getOrElse {
+        if (allowFreeIndices) { free } else { throw IndexNotBound(i) }
+      }
+    def getExpr(i: Int): core.Identifier =
+      get(expr, i, core.Identifier(s"%$i")(rct.TypePlaceholder))
+    def getNat(i: Int): rct.NatIdentifier =
+      get(nat, i, rct.NatIdentifier(s"%n$i"))
+    def getData(i: Int): rct.DataTypeIdentifier =
+      get(data, i, rct.DataTypeIdentifier(s"%dt$i"))
+
+    private def indexOf[T](s: Seq[T], x: T): Int = {
+      val i = s.indexOf(x)
+      if (i >= 0) { i } else { throw NameNotBound(x.toString) }
+    }
+    def indexOf(i: core.Identifier): Int = indexOf(expr, i)
+    def indexOf(i: rct.NatIdentifier): Int = indexOf(nat, i)
+    def indexOf(i: rct.DataTypeIdentifier): Int = indexOf(data, i)
 
     def +(i: core.Identifier): Bound =
       this.copy(expr = i +: expr)
@@ -144,7 +164,7 @@ object Expr {
 
   def toNamed(expr: Expr, bound: Bound = Bound.empty): core.Expr = {
     (expr.node match {
-      case Var(index) => bound.expr(index).setType _
+      case Var(index) => bound.getExpr(index).setType _
       case App(f, e) => core.App(toNamed(f, bound), toNamed(e, bound)) _
       case Lambda(e) =>
         val funT = expr.t.node.asInstanceOf[FunType[Type]]
