@@ -58,8 +58,9 @@ object GuidedSearch {
         println(s"  maximum memory ${st.memoryStats.pretty()}")
         // if (!stats.lift(i + 1).exists(_.beam.nonEmpty)) {
           st.beam.headOption.foreach { e =>
-            println(s"  best expr:")
-            println(Expr.toNamed(e))
+            // println(s"  best expr:")
+            // println(Expr.toNamed(e))
+            util.dotPrintTmp(s"best_step${i}_", Expr.toNamed(e))
           }
         // }
       }

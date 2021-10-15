@@ -23,6 +23,7 @@ object harris {
     rules.dropBeforeTake, rules.dropBeforeMap, rules.takeBeforeMap,
     rules.takeBeforeDrop, rules.takeInSlide, rules.dropInSlide,
     rules.fstUnzipAsMapFst, rules.sndUnzipAsMapSnd,
+    rules.slideAfter2,
   )
 
   // val nf = apps.harrisCornerDetectionHalideRewrite.reducedFusedForm
@@ -64,6 +65,9 @@ object harris {
   def mul2d(a: ExtendedPattern, b: ExtendedPattern): ExtendedPattern =
     app(contains(mul) :: array2d ->: array2d, contains(app(app(zip, a), b)))
 
+  def mul2dSame(x: ExtendedPattern): ExtendedPattern =
+    app(contains(mul) :: array2d ->: array2d, contains(app(app(map, ?), x)))
+
   def mul1d(a: ExtendedPattern, b: ExtendedPattern): ExtendedPattern =
     app(contains(mul) :: array1d ->: array1d, contains(app(app(zip, a), b)))
 
@@ -93,6 +97,15 @@ object harris {
         val syy = sum3x3(mul2d(iy, iy))
         coarsity2d(sxx, sxy, syy)
       },
+      /* shapeStep withSketch contains {
+        val g = gray2d(?)
+        val ix = sobel2d(g)
+        val iy = sobel2d(g)
+        val sxx = sum3x3(mul2dSame(ix))
+        val sxy = sum3x3(mul2d(ix, iy))
+        val syy = sum3x3(mul2dSame(iy))
+        coarsity2d(sxx, sxy, syy)
+      }, */
       shapeStep withSketch contains(
         (? : ExtendedPattern) |>
         app(map, contains(gray1d(?))) |> slide(3, 1) |>

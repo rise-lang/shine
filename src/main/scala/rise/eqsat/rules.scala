@@ -78,38 +78,38 @@ object rules {
 
   // TODO: generalize?
   val idxReduction_0_1 = NamedRewrite.init("idx-reduction-0-1",
-    app(app(rise.core.primitives.idx.primitive, lidx(0, 1)),
-      app(rise.core.primitives.makeArray(1).primitive, "e0"))
+    app(app(rcp.idx.primitive, lidx(0, 1)),
+      app(rcp.makeArray(1).primitive, "e0"))
       -->
     "e0"
   )
   val idxReduction_0_2 = NamedRewrite.init("idx-reduction-0-2",
-    app(app(rise.core.primitives.idx.primitive, lidx(0, 2)),
-      app(app(rise.core.primitives.makeArray(2).primitive, "e0"), "e1"))
+    app(app(rcp.idx.primitive, lidx(0, 2)),
+      app(app(rcp.makeArray(2).primitive, "e0"), "e1"))
       -->
     "e0"
   )
   val idxReduction_1_2 = NamedRewrite.init("idx-reduction-1-2",
-    app(app(rise.core.primitives.idx.primitive, lidx(1, 2)),
-      app(app(rise.core.primitives.makeArray(2).primitive, "e0"), "e1"))
+    app(app(rcp.idx.primitive, lidx(1, 2)),
+      app(app(rcp.makeArray(2).primitive, "e0"), "e1"))
       -->
     "e1"
   )
   val idxReduction_0_3 = NamedRewrite.init("idx-reduction-0-3",
-    app(app(rise.core.primitives.idx.primitive, lidx(1, 3)),
-      app(app(app(rise.core.primitives.makeArray(3).primitive, "e0"), "e1"), "e2"))
+    app(app(rcp.idx.primitive, lidx(1, 3)),
+      app(app(app(rcp.makeArray(3).primitive, "e0"), "e1"), "e2"))
       -->
     "e0"
   )
   val idxReduction_1_3 = NamedRewrite.init("idx-reduction-1-3",
-    app(app(rise.core.primitives.idx.primitive, lidx(1, 3)),
-      app(app(app(rise.core.primitives.makeArray(3).primitive, "e0"), "e1"), "e2"))
+    app(app(rcp.idx.primitive, lidx(1, 3)),
+      app(app(app(rcp.makeArray(3).primitive, "e0"), "e1"), "e2"))
       -->
     "e1"
   )
   val idxReduction_2_3 = NamedRewrite.init("idx-reduction-2-3",
-    app(app(rise.core.primitives.idx.primitive, lidx(1, 3)),
-      app(app(app(rise.core.primitives.makeArray(3).primitive, "e0"), "e1"), "e2"))
+    app(app(rcp.idx.primitive, lidx(1, 3)),
+      app(app(app(rcp.makeArray(3).primitive, "e0"), "e1"), "e2"))
       -->
     "e2"
   )
@@ -340,6 +340,18 @@ object rules {
   )
   val sndUnzipAsMapSnd = NamedRewrite.init("snd-unzip-as-map-snd",
     app(snd, app(unzip, "e")) --> app(app(map, snd), "e")
+  )
+  
+  val slideAfter = NamedRewrite.init("slide-after",
+    ("e" :: ((`_`: Nat)`.``_`))
+      -->
+    app(join, app(nApp(nApp(slide, 1), 1), "e"))
+  )
+  val slideAfter2 = NamedRewrite.init("slide-after-2",
+    ("e" :: ((`_`: Nat)`.``_`))
+      -->
+    app(app(map, lam("x", app(app(rcp.idx.primitive, lidx(0, 1)), "x"))),
+      app(nApp(nApp(slide, 1), 1), "e"))
   )
 
   // - slide widening -
