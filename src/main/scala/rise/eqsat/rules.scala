@@ -254,6 +254,22 @@ object rules {
         app("fb", app(snd, "p"))))),
       app(app(zip, "a"), "b"))
   )
+  val mapOutsideZip1 = NamedRewrite.init("map-outside-zip-1",
+    app(app(zip, app(app(map, "fa"), "a")), "b")
+      -->
+    app(app(map, lam("p", app(app(makePair,
+        app("fa", app(fst, "p"))),
+        app(snd, "p")))),
+      app(app(zip, "a"), "b"))
+  )
+ val mapOutsideZip2 = NamedRewrite.init("map-outside-zip-2",
+    app(app(zip, "a"), app(app(map, "fb"), "b"))
+      -->
+    app(app(map, lam("p", app(app(makePair,
+        app(fst, "p")),
+        app("fb", app(snd, "p"))))),
+      app(app(zip, "a"), "b"))
+  )
 
   val mapOutsidePair = NamedRewrite.init("map-outside-pair",
     app(app(makePair,
