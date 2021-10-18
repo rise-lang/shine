@@ -1,5 +1,5 @@
 {
-  "application_name" : "harris_rs_cot",
+  "application_name" : "harris_rs_cot_broken_order",
   "optimization_objectives" : ["runtime"],
   "hypermapper_mode" : {
     "mode" : "client-server"
