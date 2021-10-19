@@ -63,6 +63,19 @@ object mriQ {
     mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
+  // can we do 2D stuff?
+  def computePhiMagOcl2(s0: Nat): ToBeTyped[Expr] = {
+    depFun((k: Nat) => fun(
+      (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
+    )((phiR, phiI) =>
+      zip(phiR)(phiI) |>
+        split(s0) |>
+        mapWorkGroup(
+          mapLocal(fun(t => phiMag(t._1)(t._2)))
+        ) |> join
+    ))
+  }
+
   // FIXME: could not find original Lift expression, this is made up
   val computeQHighLevel: Expr = depFun((k: Nat, x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))

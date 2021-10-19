@@ -1,6 +1,6 @@
 package apps.autotuning
 
-import apps.mriQ.{computePhiMagOcl, computeQOcl}
+import apps.mriQ.{computePhiMagOcl, computePhiMagOcl2, computeQOcl}
 import arithexpr.arithmetic.RangeMul
 import rise.autotune
 import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
@@ -10,13 +10,22 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 class mriqTuning extends test_util.Tests {
 
+//  val computePhiMagTuning:Expr =
+//    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+//      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+//        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+//          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+//              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl)
+//            ))))
+//
   val computePhiMagTuning:Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
         tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
           tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl)
-          ))))
+            tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
+            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl2(s0))
+          )))))
 
   val computeQTuning:Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
@@ -138,7 +147,8 @@ class mriqTuning extends test_util.Tests {
       TuningParameter("ls0") -> (256: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (512: Nat),
-      TuningParameter("gs1") -> (1: Nat)
+      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("s0") -> (8: Nat)
     )
 
     val phimag_replaced = rise.core.substitute.natsInExpr(params, computePhiMagTuning)
