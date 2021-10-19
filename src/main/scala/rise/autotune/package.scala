@@ -94,7 +94,8 @@ package object autotune {
       .map(constraint => constraint.substitute(inputMap.asInstanceOf[Map[ArithExpr, ArithExpr]]))
 
     if(tuner.saveToFile){
-      ("mkdir -p " + tuner.output !!)
+      ("mkdir -p " + tuner.output + "/" + tuner.name !!)
+      ("mkdir -p " + tuner.output + "/" + tuner.name + "_hm" !!)
     }
 
     // generate json if necessary
@@ -212,7 +213,7 @@ package object autotune {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
             // compute sample (including function value aka runtime)
-            print("[" + i.toString + "/" + tuner.samples + "] : ")
+            print("[" + i.toString + "/" + numberOfEvalRequests + "] : ")
             val sample = computeSample(header, parametersValues)
 //            println(sample.runtime)
             println(sample.runtime)
@@ -243,13 +244,17 @@ package object autotune {
 
       // save samples to file
       val destination = saveSamples(
-        tuner.output + "/" + tuner.name + ".csv",
+        tuner.output + "/" + tuner.name + "/" + tuner.name + ".csv",
         TuningResult(samples.toSeq, tuner)
       )
 
       // copy hm output file to output folder
-      ("mv " + tuner.name + "_output_samples.csv " +
+      ("mv " + tuner.name + "_output_samples.csv"  + " " +
         destination.substring(0, destination.length - 4) + "_hm.csv" !!)
+
+      // mv hm output file to hm output folder
+      ("mv " + destination.substring(0, destination.length - 4) + "_hm.csv" + " " +
+        tuner.output + "/" + tuner.name + "_hm" !!)
 
       // save meta information to file and store it in the output folder
       // call method here
@@ -259,9 +264,15 @@ package object autotune {
       // remove this comment after development
       // config file is generated in the output folder if we want to save it, no action needed
       // config file is generated in /tmp/ and removed after tuning
+
+      // copy output file
+      if(tuner.configFile.isDefined){
+        ("cp " + tuner.configFile.get + " " + tuner.output !!)
+      }
+
     } else {
       // remove tmp config file
-      if(tuner.configFile.isDefined){
+      if(!tuner.configFile.isDefined){
           ("rm " + "/tmp/" + tuner.name + ".json" !!)
       }
     }

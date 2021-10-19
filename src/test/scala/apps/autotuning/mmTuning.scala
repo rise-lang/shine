@@ -1,5 +1,6 @@
 package apps.autotuning
 
+import apps.autotuning
 import apps.mm.mmNVIDIAWithParams
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.core._
@@ -21,6 +22,14 @@ class mmTuning extends test_util.Tests {
               tuningParam("v8", RangeAdd(1, 1024, 1), (v8: Nat) =>
                 mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
               ))))))
+
+  val mm: Expr =
+    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
+          ))))
 
   // scalastyle:off
   val init: (Int, Int, Int) => String = (N, M, O) => {
@@ -63,7 +72,7 @@ class mmTuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-  test("mm example config") {
+  ignore("mm example config") {
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
@@ -143,7 +152,7 @@ class mmTuning extends test_util.Tests {
   }
 
   // standard hypermapper
-  test("mm tuning 128") {
+  ignore("mm tuning 128") {
     val mm: Expr =
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
@@ -173,7 +182,7 @@ class mmTuning extends test_util.Tests {
     println("bestSample: " + bestSample)
   }
 
-  test("mm tuning 1024 with generated config file") {
+  ignore("mm tuning 1024 with generated config file") {
     val mm: Expr =
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
@@ -238,39 +247,6 @@ class mmTuning extends test_util.Tests {
     println("runtime: " + bestSample.get.runtime)
   }
 
-  ignore("mm tuning 1024 hierarchical") {
-    val mm: Expr =
-      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
-            ))))
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      inputSizes = Seq(1024, 1024, 1024),
-      samples = 20,
-      name = "rs_cot_1024",
-      output = "autotuning/mm_1024",
-      timeouts = Timeouts(1000, 1000, 1000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = Some("autotuning/config/mm/rs_cot_1024.json"),
-      hmConstraints = true,
-      runtimeStatistic = Minimum
-    )
-
-    val tuningResult = autotune.search(tuner)(mm)
-
-    println("tuningResult: \n")
-    tuningResult.samples.foreach(elem => println(elem))
-
-    val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: \n" + bestSample)
-    println("runtime: \n" + bestSample.get.runtime)
-  }
-
   // we do not support hierarchical hypermapper
   ignore("mm tuning 1024 with generated config file hierarchical") {
     val mm: Expr =
@@ -304,4 +280,44 @@ class mmTuning extends test_util.Tests {
     println("bestSample: \n" + bestSample)
     println("runtime: \n" + bestSample.get.runtime)
   }
+
+  def runExperiments(configFiles: Seq[String], iterations: Int) = {
+    for(i <- 1 to iterations) {
+      configFiles.foreach(runTuning)
+    }
+  }
+
+  def runTuning(configFile: String) = {
+    val version = autotuning.parseName(configFile)
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      inputSizes = Seq(1024, 1024, 1024),
+      samples = 20, // defined by config file
+      name = version,
+      output = s"autotuning/mm_1024_test/${version}",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some(configFile),
+      hmConstraints = true,
+      runtimeStatistic = Minimum,
+      saveToFile = true
+    )
+
+    autotune.search(tuner)(mm)
+  }
+
+  test("run mm autotuning"){
+
+    val configs = Seq(
+      "autotuning/config/mm/rs_cot_1024.json",
+      "autotuning/config/mm/rs_emb_1024.json",
+      "autotuning/config/mm/ls_cot_1024.json",
+      "autotuning/config/mm/atf_emb_1024.json"
+    )
+
+    runExperiments(configFiles = configs, iterations = 2)
+  }
+
 }
