@@ -120,8 +120,8 @@ object gen {
                                           ): Expr => String =
         functionFromExpr(name, gen) andThen
           GAP8.Module.injectUnpacking andThen
-          C.Module.translateToString andThen
-          run(SyntaxChecker(_))
+          C.Module.translateToString// andThen
+          //run(SyntaxChecker(_))
     }
 
     type HostedModule = GAP8.Module
@@ -134,15 +134,14 @@ object gen {
 
     case class hosted(name: String = "foo"){
 
-      def funDefToCModule(): FunDef => C.Module =
-        shine.C.Compilation.ModuleGenerator.funDefToModule(shine.C.Compilation.CodeGenerator())
-
+      def funDefToAcceleratorModule(): FunDef => C.Module =
+        shine.C.Compilation.ModuleGenerator.funDefToModule(shine.GAP8.Compilation.AcceleratorCodeGenerator())
 
       def fromExpr: Expr => HostedModule = exprToPhrase andThen fromPhrase
 
       def fromPhrase: Phrase => HostedModule =
         partialHostCompiler(name) composeWith
-          ((((x: FunDef) => x) x map(funDefToCModule())) andThen hostFunDefToHostPart)
+          ((((x: FunDef) => x) x map(funDefToAcceleratorModule())) andThen hostFunDefToHostPart)
 
       private val hostFunDefToHostPart: ((FunDef, Seq[C.Module])) => (C.Module, Seq[C.Module]) = {
         case (hostModule, acceleratorModule) =>
