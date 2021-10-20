@@ -5,19 +5,16 @@ import rise.core.types.DataType._
 import rise.core.DSL.Type._
 import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
+import shine.DPIA.DSL.{comment, _}
 import shine.DPIA.Phrases._
 import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}
-import shine.DPIA.primitives.intermediate._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenMP.primitives.{functional => omp}
-import shine.OpenMP.primitives.{intermediate => ompI}
 import shine.OpenCL.primitives.{functional => ocl}
-import shine.OpenCL.primitives.{intermediate => oclI}
 import shine.cuda.primitives.{functional => cuda}
 import shine.cuda.primitives.{imperative => cudaIm}
 
@@ -62,8 +59,7 @@ object ContinuationTranslation {
           `if`(x) `then` con(thenP)(C) `else` con(elseP)(C)
         })
 
-      case Proj1(_) => throw new Exception("This should never happen")
-      case Proj2(_) => throw new Exception("This should never happen")
+      case Proj1(_) | Proj2(_) => C(E)
 
       case LetNat(_, _, _) => throw new Exception("This should never happen")
     }
@@ -179,6 +175,11 @@ object ContinuationTranslation {
         con(index)(fun(index.t)(i =>
           C(Idx(n, dt, i, e))))))
 
+    case idx@shine.OpenCL.primitives.imperative.IdxDistribute(level) =>
+      val (m, n, stride, dt, array) = idx.unwrap
+      con(array)(λ(expT(m`.`dt, read))(e =>
+        C(shine.OpenCL.primitives.imperative.IdxDistribute(level)(m, n, stride, dt, e))))
+
     case IdxVec(n, st, index, vector) =>
       con(vector)(λ(expT(vec(n, st), read))(e =>
         C(IdxVec(n, st, index, e))))
@@ -279,12 +280,14 @@ object ContinuationTranslation {
 
     case reduceSeq@ReduceSeq(unroll) =>
       val (n, dt1, dt2, f, init, array) = reduceSeq.unwrap
-      con(array)(λ(expT(n`.`dt1, read))(X =>
-        ReduceSeqI(n, dt1, dt2,
-          λ(expT(dt2, read))(x =>
-            λ(expT(dt1, read))(y =>
-              λ(accT(dt2))(o => acc(f(x)(y))(o)))),
-          init, X, C, unroll)(context)))
+      con(array)(λ(expT(n`.`dt1, read))(X => {
+        comment("reduceSeq") `;`
+          `new`(dt2, accum =>
+            acc(init)(accum.wr) `;`
+              `for`(unroll, n, i =>
+                              acc(f(accum.rd)(X `@` i))(accum.wr)) `;`
+              C(accum.rd))
+      }))
 
     case Reorder(n, dt, access, idxF, idxFinv, input) =>
       con(input)(λ(expT(n`.`dt, read))(x =>
@@ -349,10 +352,8 @@ object ContinuationTranslation {
     case omp.ReducePar(n, dt1, dt2, f, init, array) =>
       con(array)(λ(expT(n`.`dt1, read))(X =>
         con(init)(λ(expT(dt2, read))(Y =>
-          ompI.ReduceParI(n, dt1, dt2,
-            λ(expT(dt2, read))(x => λ(expT(dt1, read))(y => λ(accT(dt2))(o =>
-              acc( f(x)(y) )( o ) ))),
-            Y, X, C)))))
+          ???
+        ))))
 
     // OpenCL
     case depMap: ocl.DepMap =>
@@ -386,12 +387,17 @@ object ContinuationTranslation {
     case reduceSeq@ocl.ReduceSeq(unroll) =>
       val (n, a, dt1, dt2, f, init, array) = reduceSeq.unwrap
 
-      con(array)(λ(expT(n`.`dt1, read))(X =>
-        oclI.ReduceSeqI(n, a, dt1, dt2,
-          λ(expT(dt2, read))(x =>
-            λ(expT(dt1, read))(y =>
-              λ(accT(dt2))(o => acc( f(x)(y) )( o )))),
-          init, X, C, unroll)(context)))
+      con(array)(λ(expT(n`.`dt1, read))(X => {
+        val adj = AdjustArraySizesForAllocations(init, dt2, a)
+
+        comment("oclReduceSeq") `;`
+        (shine.OpenCL.DSL.`new` (a) (adj.dt, accumulator =>
+          acc(init)(adj.accF(accumulator.wr)) `;`
+            `for`(unroll, n, i =>
+              acc( f(adj.exprF(accumulator.rd))(X `@` i) )(adj.accF(accumulator.wr)) ) `;`
+            C(adj.exprF(accumulator.rd))
+        ))
+      }))
 
     case ocl.ToMem(addrSpace, dt, input) =>
       val adj = AdjustArraySizesForAllocations(input, dt, addrSpace)
