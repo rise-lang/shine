@@ -354,48 +354,38 @@ object AcceptorTranslation {
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
 
     //GAP8
-
+    // TODO: think about generalizing this. This currently only works if the filter is an identifier
     case shine.GAP8.primitives.functional.FunConv3x3(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
       con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
-//        import shine.DPIA.primitives.functional.{Join, PadClamp}
-//        val paddedArray = PadClamp(3 * 3, 0, 1, dt, Join(3, 3, read, dt, filter))
-        // TODO: think about generalizing this. This currently only works if the filter is an identifier
+        // import shine.DPIA.primitives.functional.{Join, PadClamp}
+        // val paddedArray = PadClamp(3 * 3, 0, 1, dt, Join(3, 3, read, dt, filter))
         val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(10, dt), read))
         con(paddedArray)(λ(ExpType(ArrayType(10, dt), read))(filterInner =>
           shine.GAP8.primitives.imperative.Conv3x3(w, h, bias, dt, inInner, filterInner, A)
         ))
       }))
-
-    //case shine.GAP8.primitives.functional.Conv(w, h, bias, dt, in, filter) =>
-    /*case c@shine.GAP8.primitives.functional.FunConv3x3(fs) =>
-      con(c.in)(λ(ExpType(c.h`.`(c.w`.`c.dt), read))(inInner => {
-        fs match {
-          case shine.GAP8._3x3 =>
-            //TODO: first join then pad, andThen pass to continuation translation
-            //TODO: get 10.dt array out
-            //TODO: type of array is 10.dt here
-            import shine.DPIA.primitives.functional.{Join, PadClamp}
-            val paddedArray = PadClamp(0, 0, 1, c.dt, Join(c.h, c.w, read, c.dt, c.filter))
-            con(paddedArray)(λ(ExpType(ArrayType(3, ArrayType(3, c.dt)), read))(filterInner =>
-              shine.GAP8.primitives.imperative.Conv3x3(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
-            ))
-          case shine.GAP8._5x5 =>
-            con(c.filter)(λ(ExpType(ArrayType(26, c.dt), read))(filterInner =>
-              shine.GAP8.primitives.imperative.Conv5x5(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
-            ))
-          case shine.GAP8._7x7 =>
-            con(c.filter)(λ(ExpType(ArrayType(56, c.dt), read))(filterInner =>
-              shine.GAP8.primitives.imperative.Conv7x7(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
-            ))
-          case shine.GAP8._7x4 =>
-            con(c.filter)(λ(ExpType(ArrayType(28, c.dt), read))(filterInner =>
-              shine.GAP8.primitives.imperative.Conv7x4(c.w, c.h, c.bias, c.dt, inInner, filterInner, A)
-            ))
-          case _=>
-            throw new Exception("Unsupported filter size")
-        }
-      }))*/
-
+    //TODO: Placeholders. Rethink
+    case shine.GAP8.primitives.functional.FunConv5x5(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
+      con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
+        val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(26, dt), read))
+        con(paddedArray)(λ(ExpType(ArrayType(26, dt), read))(filterInner =>
+          shine.GAP8.primitives.imperative.Conv5x5(w, h, bias, dt, inInner, filterInner, A)
+        ))
+      }))
+    case shine.GAP8.primitives.functional.FunConv7x7(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
+      con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
+        val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(56, dt), read))
+        con(paddedArray)(λ(ExpType(ArrayType(56, dt), read))(filterInner =>
+          shine.GAP8.primitives.imperative.Conv7x7(w, h, bias, dt, inInner, filterInner, A)
+        ))
+      }))
+    case shine.GAP8.primitives.functional.FunConv7x4(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
+      con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
+        val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(28, dt), read))
+        con(paddedArray)(λ(ExpType(ArrayType(28, dt), read))(filterInner =>
+          shine.GAP8.primitives.imperative.Conv7x4(w, h, bias, dt, inInner, filterInner, A)
+        ))
+      }))
     case r@shine.GAP8.primitives.functional.Run(cores) => {
       ???
     }
