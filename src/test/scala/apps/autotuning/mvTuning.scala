@@ -1,9 +1,10 @@
 package apps.autotuning
 
 import apps.gemv.ocl._
-import arithexpr.arithmetic.{RangeAdd, RangeMul}
+import arithexpr.arithmetic.{ArithExpr, RangeAdd, RangeMul}
 import rise.autotune
 import rise.autotune._
+import rise.autotune.constraints.{collectConstraints, collectParameters}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
@@ -58,7 +59,7 @@ class mvTuning extends test_util.Tests {
        |Buffer inputM = createBuffer(ctx, N * M * sizeof(float), HOST_WRITE | DEVICE_READ);
        |Buffer inputX = createBuffer(ctx, N * sizeof(float), HOST_READ | DEVICE_WRITE);
        |Buffer inputY = createBuffer(ctx, M * sizeof(float), HOST_READ | DEVICE_WRITE);
-       |Buffer outputZ = createBuffer(ctx, N * sizeof(float), HOST_READ | DEVICE_WRITE);
+       |Buffer outputZ = createBuffer(ctx, M * sizeof(float), HOST_READ | DEVICE_WRITE);
        |
        |float* inM = hostBufferSync(ctx, inputM, N * M * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < N * M; i++) {
@@ -108,14 +109,22 @@ class mvTuning extends test_util.Tests {
   }
 
   def executeGemv(e: Expr, s0: Nat) = {
-
     val params: Nat => Map[Nat, Nat] = s0 => Map(
-      TuningParameter("ls0") -> (64: Nat),
+      TuningParameter("ls0") -> (128: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (128: Nat),
       TuningParameter("gs1") -> (1: Nat),
       TuningParameter("s0") -> (s0: Nat),
     )
+
+    val p = rise.autotune.constraints.collectParameters(e)
+    val constraints = rise.autotune.constraints.collectConstraints(e, p)
+    val inputs = rise.autotune.getInputs(e)
+
+    println("p: " + p)
+    println("inputs: " + inputs) // (m, n) size should be two
+    println("constraint: ")
+    constraints.foreach(println)
 
     val eSub = rise.core.substitute.natsInExpr(params(128), e)
 
@@ -132,15 +141,15 @@ class mvTuning extends test_util.Tests {
   }
 
   test("exeute gemv version") {
-    executeGemv(gemvBlastTTuning, 64)
-    executeGemv(gemvBlastTTuning, 64)
-    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
+//    executeGemv(gemvBlastNTuning, 64)
+//    executeGemv(gemvBlastTTuning, 64)
+//    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
     executeGemv(gemvFusedAMDTuning, 128)
-    executeGemv(gemvKeplerBestTuning, 128)
+//    executeGemv(gemvKeplerBestTuning, 128)
   }
 
   test("tune gemv version"){
-    runTuning(gemvBlastTTuning)
+    runTuning(gemvBlastNTuning)
     runTuning(gemvBlastTTuning)
     //    runTuning(gemvFusedTuning) // ignore s0 in this case
     //    runTuning(gemvFusedAMDTuning)
@@ -153,8 +162,8 @@ class mvTuning extends test_util.Tests {
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 1024), compute, finish),
-      inputSizes = Seq(1024, 1024, 1024),
-      samples = 20,
+      inputSizes = Seq(1024, 1024),
+      samples = 100,
       name = "gemv",
       output = s"autotuning/gemv",
       timeouts = Timeouts(10000, 10000, 10000),
