@@ -77,6 +77,7 @@ object lowering {
     case e@reduce() => Success(p.reduceSeq !: e.t)
   }
 
+  // todo add other address spaces
   def `reduceSeq -> oclReduceSeq`: Strategy[Rise] = oclReduceSeq
   @rule def oclReduceSeq: Strategy[Rise] = {
     case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)

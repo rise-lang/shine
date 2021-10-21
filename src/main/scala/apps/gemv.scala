@@ -89,7 +89,7 @@ object gemv {
       ))
     }
 
-    val gemvFused = depFun((n: Nat, m: Nat) => fun(
+    val gemvFused: ToBeTyped[Expr] = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
         (m`.`f32)
     )((mat, xs, ys, alpha, beta) =>
@@ -98,7 +98,7 @@ object gemv {
           zip(xs)(t._1) |>
             split(n) |>
             toLocalFun(mapLocal(
-              reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
             mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
         )) |> join
@@ -111,13 +111,13 @@ object gemv {
         zip(mat)(ys) |>
           mapWorkGroup(fun(t =>
             zip(xs)(t._1) |>
-              reorderWithStride(s0) |>
+//              reorderWithStride(s0) |>
               split(n /^ s0) |>
               toLocalFun(mapLocal(
-                reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
               )) |>
               split(s0) |>
-              toLocalFun(mapLocal(reduceSeq(add)(lf32(0.0f)))) |>
+              toLocalFun(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))) |>
               mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
           )) |> join
       ))
@@ -133,12 +133,12 @@ object gemv {
         zip(mat)(ys) |>
           mapWorkGroup(fun(t =>
             zip(xs)(t._1) |>
-              reorderWithStride(s0) |>
+//              reorderWithStride(s0) |>
               split(n /^ s0) |>
               toLocalFun(mapLocal(
-                reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
               )) |>
-              toLocalFun(reduceSeq(add)(lf32(0.0f))) |>
+              toLocalFun(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))) |>
               fun(x => (alpha * x) + (t._2 * beta))
           ))
       ))

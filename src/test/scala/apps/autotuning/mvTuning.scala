@@ -117,14 +117,14 @@ class mvTuning extends test_util.Tests {
       TuningParameter("s0") -> (s0: Nat),
     )
 
-    val p = rise.autotune.constraints.collectParameters(e)
-    val constraints = rise.autotune.constraints.collectConstraints(e, p)
-    val inputs = rise.autotune.getInputs(e)
+//    val p = rise.autotune.constraints.collectParameters(e)
+//    val constraints = rise.autotune.constraints.collectConstraints(e, p)
+//    val inputs = rise.autotune.getInputs(e)
 
-    println("p: " + p)
-    println("inputs: " + inputs) // (m, n) size should be two
-    println("constraint: ")
-    constraints.foreach(println)
+//    println("p: " + p)
+//    println("inputs: " + inputs) // (m, n) size should be two
+//    println("constraint: ")
+//    constraints.foreach(println)
 
     val eSub = rise.core.substitute.natsInExpr(params(128), e)
 
@@ -141,19 +141,19 @@ class mvTuning extends test_util.Tests {
   }
 
   test("exeute gemv version") {
-//    executeGemv(gemvBlastNTuning, 64)
-//    executeGemv(gemvBlastTTuning, 64)
-//    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
+    executeGemv(gemvBlastNTuning, 64)
+    executeGemv(gemvBlastTTuning, 64)
+    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
     executeGemv(gemvFusedAMDTuning, 128)
-//    executeGemv(gemvKeplerBestTuning, 128)
+    executeGemv(gemvKeplerBestTuning, 128)
   }
 
   test("tune gemv version"){
     runTuning(gemvBlastNTuning)
     runTuning(gemvBlastTTuning)
-    //    runTuning(gemvFusedTuning) // ignore s0 in this case
-    //    runTuning(gemvFusedAMDTuning)
-    //    runTuning(gemvKeplerBestTuning)
+    runTuning(gemvFusedTuning) // ignore s0 in this case
+    runTuning(gemvFusedAMDTuning)
+    runTuning(gemvKeplerBestTuning)
   }
 
 
