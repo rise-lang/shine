@@ -1,41 +1,42 @@
 package apps.autotuning
 
-import apps.mv.ocl._
-import arithexpr.arithmetic.RangeMul
+import apps.gemv.ocl._
+import arithexpr.arithmetic.{ArithExpr, RangeAdd, RangeMul}
 import rise.autotune
 import rise.autotune._
+import rise.autotune.constraints.{collectConstraints, collectParameters}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.{GlobalSize, LocalSize}
 
-class mvTuning extends test_util.Tests {
+class gemvTuning extends test_util.Tests {
 
   // gemvBlastN
-  val mvBlastNTuning: ToBeTyped[Expr] =
+  val gemvBlastNTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(mvBlastNParam(s0))
+      wrapOclMv(gemvBlastNParam(s0))
     )
   // gemvBlastT
-  val mvBlastTTuning: ToBeTyped[Expr] =
+  val gemvBlastTTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(mvBlastTParam(s0))
+      wrapOclMv(gemvBlastTParam(s0))
     )
   // gemvFused
-  val mvFusedTuning: ToBeTyped[Expr] =
-    wrapOclMv(mvFused)
+  val gemvFusedTuning: ToBeTyped[Expr] =
+    wrapOclMv(gemvFused)
 
   // gemvFusedAMD
-  val mvFusedAMDTuning: ToBeTyped[Expr] =
+  val gemvFusedAMDTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(mvKeplerBestParam(s0))
+      wrapOclMv(gemvKeplerBestParam(s0))
     )
 
   // gemvKeplerBest
-  val mvKeplerBestTuning: ToBeTyped[Expr] =
+  val gemvKeplerBestTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(mvKeplerBestParam(s0))
+      wrapOclMv(gemvKeplerBestParam(s0))
     )
 
   def wrapOclMv(e: Expr): Expr = {
@@ -99,23 +100,21 @@ class mvTuning extends test_util.Tests {
 
   test("print different gemv tuning versions"){
 
-//    println("mvBlastNTuning: " + mvBlastNTuning)
-//    println("mvBlastTTuning: " + mvBlastTTuning)
-    println("mvFused: " + mvFusedTuning)
-//    println("mvFusedAMDTuning: " + mvFusedAMDTuning)
-//    println("mvKeplerBestTuning: " + mvKeplerBestTuning)
+    println("gemvBlastNTuning: " + gemvBlastNTuning)
+    println("gemvBlastTTuning: " + gemvBlastTTuning)
+    println("gemvFused: " + gemvFusedTuning)
+    println("gemvFusedAMDTuning: " + gemvFusedAMDTuning)
+    println("gemvKeplerBestTuning: " + gemvKeplerBestTuning)
 
   }
 
-  def executeMv(e: Expr, s0: Nat) = {
-
-
+  def executeGemv(e: Expr, s0: Nat) = {
     val params: Nat => Map[Nat, Nat] = s0 => Map(
       TuningParameter("ls0") -> (128: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (128: Nat),
       TuningParameter("gs1") -> (1: Nat),
-      TuningParameter("s0") -> (s0),
+      TuningParameter("s0") -> (s0: Nat),
     )
 
 //    val p = rise.autotune.constraints.collectParameters(e)
@@ -141,20 +140,20 @@ class mvTuning extends test_util.Tests {
 
   }
 
-  test("exeute mv version") {
-    executeMv(mvBlastNTuning, 64)
-    executeMv(mvBlastTTuning, 64)
-    executeMv(mvFusedTuning, 64) // ignore s0 in this case
-    executeMv(mvFusedAMDTuning, 128)
-    executeMv(mvKeplerBestTuning, 128)
+  test("exeute gemv version") {
+    executeGemv(gemvBlastNTuning, 64)
+    executeGemv(gemvBlastTTuning, 64)
+    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
+    executeGemv(gemvFusedAMDTuning, 128)
+    executeGemv(gemvKeplerBestTuning, 128)
   }
 
-  test("tune mv version"){
-    runTuning(mvBlastNTuning, "mvBlastN")
-    runTuning(mvBlastTTuning, "mvBlastT")
-    runTuning(mvFusedTuning, "mvFused") // ignore s0 in this case
-    runTuning(mvFusedAMDTuning, "mvFusedAMD")
-    runTuning(mvKeplerBestTuning, "mvKeplerBest")
+  test("tune gemv version"){
+    runTuning(gemvBlastNTuning, "gemvBlastN")
+    runTuning(gemvBlastTTuning, "gemvBlastT")
+    runTuning(gemvFusedTuning, "gemvFused") // ignore s0 in this case
+    runTuning(gemvFusedAMDTuning, "gemvFusedAMD")
+    runTuning(gemvKeplerBestTuning, "gemvKeplerBest")
   }
 
 
@@ -165,8 +164,8 @@ class mvTuning extends test_util.Tests {
       hostCode = HostCode(init(1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024),
       samples = 100,
-      name = "mv_" + version,
-      output = s"autotuning/mv",
+      name = "gemv_" + version,
+      output = s"autotuning/gemv",
       timeouts = Timeouts(10000, 10000, 10000),
       executionIterations = 10,
       speedupFactor = 100,
