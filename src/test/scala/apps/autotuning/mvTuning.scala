@@ -12,19 +12,24 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 class mvTuning extends test_util.Tests {
 
-  // gemvBlastN
+  // mv
+  val mvTuning: ToBeTyped[Expr] =
+    wrapOclMv(mv)
+
+  // mvFused
+  val mvFusedTuning: ToBeTyped[Expr] =
+    wrapOclMv(mvFused)
+
+  // mvBlastN
   val mvBlastNTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       wrapOclMv(mvBlastNParam(s0))
     )
-  // gemvBlastT
+  // mvBlastT
   val mvBlastTTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       wrapOclMv(mvBlastTParam(s0))
     )
-  // gemvFused
-  val mvFusedTuning: ToBeTyped[Expr] =
-    wrapOclMv(mvFused)
 
   // gemvFusedAMD
   val mvFusedAMDTuning: ToBeTyped[Expr] =
@@ -83,8 +88,9 @@ class mvTuning extends test_util.Tests {
 
   val compute =
     s"""
-       |fun_run(ctx, &fun, outputZ, M, N, inputM, inputX, inputY, alpha, beta);
-       |""".stripMargin
+       |// fun_run(ctx, &fun, outputZ, M, N, inputM, inputX, inputY, alpha, beta);
+       |fun_run(ctx, &fun, outputZ, M, N, inputM, inputX);
+       |       |""".stripMargin
 
   val finish =
     s"""
@@ -101,7 +107,7 @@ class mvTuning extends test_util.Tests {
 
 //    println("mvBlastNTuning: " + mvBlastNTuning)
 //    println("mvBlastTTuning: " + mvBlastTTuning)
-    println("mvFused: " + mvFusedTuning)
+//    println("mvFused: " + mvFusedTuning)
 //    println("mvFusedAMDTuning: " + mvFusedAMDTuning)
 //    println("mvKeplerBestTuning: " + mvKeplerBestTuning)
 
@@ -111,9 +117,9 @@ class mvTuning extends test_util.Tests {
 
 
     val params: Nat => Map[Nat, Nat] = s0 => Map(
-      TuningParameter("ls0") -> (128: Nat),
+      TuningParameter("ls0") -> (1: Nat),
       TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (128: Nat),
+      TuningParameter("gs0") -> (32: Nat),
       TuningParameter("gs1") -> (1: Nat),
       TuningParameter("s0") -> (s0),
     )
@@ -127,11 +133,11 @@ class mvTuning extends test_util.Tests {
 //    println("constraint: ")
 //    constraints.foreach(println)
 
-    val eSub = rise.core.substitute.natsInExpr(params(128), e)
+    val eSub = rise.core.substitute.natsInExpr(params(s0), e)
 
     val result = autotune.execution.execute(
       expression = eSub,
-      hostCode = HostCode(init(128, 128), compute, finish),
+      hostCode = HostCode(init(32, 32), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 100,
       speedupFactor = 100,
@@ -142,17 +148,20 @@ class mvTuning extends test_util.Tests {
   }
 
   test("exeute mv version") {
-    executeMv(mvBlastNTuning, 64)
-    executeMv(mvBlastTTuning, 64)
-    executeMv(mvFusedTuning, 64) // ignore s0 in this case
-    executeMv(mvFusedAMDTuning, 128)
-    executeMv(mvKeplerBestTuning, 128)
+
+    executeMv(mvTuning, 16) // ignore s0 in this case
+    executeMv(mvFusedTuning, 16) // ignore s0 in this case
+
+//    executeMv(mvBlastNTuning, 64)
+//    executeMv(mvBlastTTuning, 64)
+//    executeMv(mvFusedAMDTuning, 128)
+//    executeMv(mvKeplerBestTuning, 16)
   }
 
   test("tune mv version"){
     runTuning(mvBlastNTuning, "mvBlastN")
     runTuning(mvBlastTTuning, "mvBlastT")
-    runTuning(mvFusedTuning, "mvFused") // ignore s0 in this case
+//    runTuning(mvFusedTuning, "mvFused") // ignore s0 in this case
     runTuning(mvFusedAMDTuning, "mvFusedAMD")
     runTuning(mvKeplerBestTuning, "mvKeplerBest")
   }

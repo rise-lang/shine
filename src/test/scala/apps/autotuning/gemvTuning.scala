@@ -142,10 +142,10 @@ class gemvTuning extends test_util.Tests {
 
   test("exeute gemv version") {
     executeGemv(gemvBlastNTuning, 64)
-    executeGemv(gemvBlastTTuning, 64)
-    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
-    executeGemv(gemvFusedAMDTuning, 128)
-    executeGemv(gemvKeplerBestTuning, 128)
+//    executeGemv(gemvBlastTTuning, 64)
+//    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
+//    executeGemv(gemvFusedAMDTuning, 128)
+//    executeGemv(gemvKeplerBestTuning, 128)
   }
 
   test("tune gemv version"){

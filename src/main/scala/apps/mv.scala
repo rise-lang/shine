@@ -1,12 +1,14 @@
 package apps
 
 import apps.separableConvolution2D.mulT
+import rise.core.DSL.HighLevelConstructs.reorderWithStride
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
 import rise.core.primitives.{let => _, _}
 import rise.core.types.DataType._
 import rise.core.types._
+import rise.openCL.primitives.oclReduceSeq
 
 object mv {
   // we can use implicit type parameters and type annotations to specify the function type of mult
@@ -52,7 +54,7 @@ object mv {
 
   object ocl {
     import rise.openCL.DSL._
-    import rise.openCL.primitives.{mapLocal => _, mapWorkGroup => _, _}
+    import rise.openCL.primitives.{mapGlobal => _, mapLocal => _, mapWorkGroup => _, _}
 
     def mvBlastNParam(s0: Nat): ToBeTyped[Expr] = {
       depFun((n: Nat, m: Nat) => fun(
@@ -62,7 +64,12 @@ object mv {
         join o mapWorkGroup(fun(matChunk => // matChunk: 64.(n.f32 x f32)
           fun(y => mapLocal(fun(x =>
             fst(x) * alpha + snd(x) * beta
-          )) $ zip(y)(map(snd) $ matChunk)) o
+          )) $ zip(y)(map(snd) $ matChunk)) o //?
+
+
+            //          fun(y => mapLocal(fun(x =>
+            //            fst(x) * alpha + snd(x) * beta
+            //          )) $ zip(y)(map(snd) $ matChunk)) o
             // TODO: check address space
             oclReduceSeq(AddressSpace.Private)(fun((acc, next) => // next: 64.64.f32 x 64.f32
               let (toLocal(mapLocal(fun(x => x))(snd(next))))
@@ -98,20 +105,39 @@ object mv {
       ))
     }
 
-    val mvFused: ToBeTyped[Expr] = depFun((n: Nat, m: Nat) => fun(
-      (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
-        (m`.`f32)
-    )((mat, xs, ys, alpha, beta) =>
-      zip(mat)(ys) |>
-        mapWorkGroup(fun(t =>
-          zip(xs)(t._1) |>
-            split(n) |>
-            toLocalFun(mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
-            ))
-//            |> mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
-        )) |> join
+    val mv = depFun((n: Nat, m: Nat) => fun(
+      (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
+    )((mat, xs) =>
+      mat |> mapGlobal(fun(row =>
+        zip(row)(xs) |>
+          mapSeq(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
+      ))
     ))
+
+    val mvFused = depFun((n: Nat, m: Nat) => fun(
+      (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
+    )((mat, xs) =>
+      mat |> mapGlobal(fun(row =>
+        zip(row)(xs) |>
+          // to local Fun()
+          oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+      ))
+    ))
+
+//    val mvFused: ToBeTyped[Expr] = depFun((n: Nat, m: Nat) => fun(
+//      (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
+//        (m`.`f32)
+//    )((mat, xs, ys, alpha, beta) =>
+//      zip(mat)(ys) |>
+//        mapWorkGroup(fun(t =>
+//          zip(xs)(t._1) |>
+//            split(n) |>
+//            toLocalFun(mapLocal(
+//              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+//            ))
+////            |> mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
+//        )) |> join
+//    ))
 
     def mvFusedAMDParam(s0: Nat): ToBeTyped[Expr] = {
       depFun((n: Nat, m: Nat) => fun(
@@ -134,21 +160,49 @@ object mv {
 
     val mvFusedAMD = mvFusedAMDParam(128)
 
+    def mvKeplerBestHighLevel(s0: Nat): ToBeTyped[Expr] = {
+      depFun((n: Nat, m: Nat) => fun(
+        (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32)
+      )((mat, xs) =>
+        mat |>
+          map(fun(row =>
+            zip(xs)(row) |>
+
+              //              reorderWithStride(s0) |>
+
+              split(n /^ s0) |>
+
+              map(
+                // alternative implementation
+                 map(mulT) |> reduce(add)(lf32(0.0f))
+
+                // copy result somewhere?
+//                reduce(fun(a => fun(x => mult(x) + a)))(lf32(0.0f)) // reduce inside chunk
+              )
+
+              |>
+              // copy result somewhere?
+              reduce(add)(lf32(0.0f)) // reduce chunks
+          ))
+      ))
+    }
+
+    // check
     def mvKeplerBestParam(s0: Nat): ToBeTyped[Expr] = {
       depFun((n: Nat, m: Nat) => fun(
-        (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
-          (m`.`f32)
-      )((mat, xs, ys, alpha, beta) =>
-        zip(mat)(ys) |>
+        (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32)
+      )((mat, xs) =>
+        mat |>
           mapWorkGroup(fun(t =>
-            zip(xs)(t._1) |>
+            zip(xs)(t) |>
 //              reorderWithStride(s0) |>
               split(n /^ s0) |>
               toLocalFun(mapLocal(
+
+                // try implementation with map/reduce (mulT/Reduce(add))
                 oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
               )) |>
-              toLocalFun(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))) |>
-              fun(x => (alpha * x) + (t._2 * beta))
+              toLocalFun(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
           ))
       ))
     }

@@ -27,6 +27,7 @@ import util.gen
 
 
 object mvExploration {
+
   // sub expressions
   val mult = impl { dt: DataType => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt) }
   val add = fun(x => fun(y => x + y))
@@ -291,9 +292,9 @@ object mvExploration {
 
   def main(args: Array[String]): Unit = {
     // check expressions
-//    checkExpression(mvHighLevel, HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish))
+    checkExpression(mvHighLevel, HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish))
 //    checkExpression(gemvHighLevel, HostCode(gemvHostCode.init(1024, 1024), gemvHostCode.compute, gemvHostCode.finish))
-    checkExpression(mvOcl, HostCode(gemvHostCode.init(1024, 1024), gemvHostCode.compute, gemvHostCode.finish))
+//    checkExpression(mvOcl, HostCode(gemvHostCode.init(1024, 1024), gemvHostCode.compute, gemvHostCode.finish))
 
     // start exploration here
 
