@@ -1,8 +1,8 @@
 package shine.GAP8
 
 import elevate.core.Strategy
-import rise.GAP8.DSL.{gap8Run, hwce}
-import rise.GAP8.primitives.{gap8RunPrimitive, gap8hwConv3x3, gap8hwConv5x5, gap8hwConv7x4, gap8hwConv7x7}
+import rise.GAP8.DSL.gap8Run
+import rise.GAP8.primitives.{gap8hwConv3x3, gap8hwConv5x5, gap8hwConv7x4, gap8hwConv7x7}
 import rise.core.DSL.HighLevelConstructs._
 import rise.core.DSL.Type._
 import rise.core.DSL._
@@ -64,7 +64,7 @@ class hwce extends test_util.Tests {
     checkHwceCall(code, "3x3")
   }
 
-  ignore("Optimization strategy 5x5") {
+  test("Optimization strategy 5x5") {
     val w: Nat = 10
     val h: Nat = 10
 
@@ -95,7 +95,7 @@ class hwce extends test_util.Tests {
     checkHwceCall(code, "5x5")
   }
 
-  ignore("Optimization strategy 7x7") {
+  test("Optimization strategy 7x7") {
     val w: Nat = 10
     val h: Nat = 10
 
@@ -148,7 +148,7 @@ class hwce extends test_util.Tests {
     //println(code)
   }
 
-  ignore("Direct use of gap8hwConv5x5") {
+  test("Direct use of gap8hwConv5x5") {
     val w: Nat = 10
     val h: Nat = 10
 
@@ -170,7 +170,7 @@ class hwce extends test_util.Tests {
     //println(code)
   }
 
-  ignore("Direct use of gap8hwConv7x7") {
+  test("Direct use of gap8hwConv7x7") {
     val w: Nat = 10
     val h: Nat = 10
 
@@ -192,7 +192,7 @@ class hwce extends test_util.Tests {
     //println(code)
   }
 
-  ignore("Direct use of gap8hwConv7x4") {
+  test("Direct use of gap8hwConv7x4") {
     val w: Nat = 10
     val h: Nat = 10
 
