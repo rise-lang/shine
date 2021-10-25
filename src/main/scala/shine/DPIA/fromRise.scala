@@ -101,9 +101,11 @@ object fromRise {
     import rise.openCL.{primitives => rocl}
     import rise.openMP.{primitives => romp}
     import rise.Cuda.{primitives => rcuda}
+    import rise.GAP8.{primitives => rgap8}
     import shine.OpenCL.primitives.{functional => ocl}
     import shine.OpenMP.primitives.{functional => omp}
     import shine.cuda.primitives.{functional => cuda}
+    import shine.GAP8.primitives.{functional => gap8}
     import shine.DPIA.Types.MatchingDSL._
     import shine.OpenCL.{Global, Warp, WorkGroup, Lane, Local}
 
@@ -921,7 +923,7 @@ object fromRise {
       case core.reduce() =>
         throw new Exception(s"$p has no implementation")
 
-      case rise.GAP8.primitives.gap8RunPrimitive() => fromType {
+      case rgap8.gap8RunPrimitive() => fromType {
         case nFunT(cores, expT(t, `write`) ->: _) =>
           depFun(NatKind, cores)(fun[ExpType](expT(t, write), e =>
             shine.GAP8.primitives.functional.Run(cores)(t, e)
@@ -943,17 +945,56 @@ object fromRise {
         )
       }*/
 
-      case rise.GAP8.primitives.gap8hwConv3x3() => fromType {
+      case rgap8.gap8hwConv3x3() => fromType {
         case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
           expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
           expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
             depFun(NatKind, bias)(
               fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
                 fun[ExpType](expT(ArrayType(3, ArrayType(3, s)), read), filter =>
-                  shine.GAP8.primitives.functional.FunConv3x3(w, h, bias, s, input, filter)
+                  gap8.FunConv3x3(w, h, bias, s, input, filter)
                 )
               )
             )
+      }
+
+      case rgap8.gap8hwConv5x5() => fromType {
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
+          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
+          depFun(NatKind, bias)(
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
+              fun[ExpType](expT(ArrayType(5, ArrayType(5, s)), read), filter =>
+                gap8.FunConv5x5(w, h, bias, s, input, filter)
+              )
+            )
+          )
+      }
+
+      case rgap8.gap8hwConv7x7() => fromType {
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
+          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
+          depFun(NatKind, bias)(
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
+              fun[ExpType](expT(ArrayType(7, ArrayType(7, s)), read), filter =>
+                gap8.FunConv7x7(w, h, bias, s, input, filter)
+              )
+            )
+          )
+      }
+
+      case rgap8.gap8hwConv7x4() => fromType {
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
+          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
+          depFun(NatKind, bias)(
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
+              fun[ExpType](expT(ArrayType(7, ArrayType(4, s)), read), filter =>
+                gap8.FunConv7x4(w, h, bias, s, input, filter)
+              )
+            )
+          )
       }
 
 
