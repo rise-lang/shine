@@ -2,6 +2,7 @@ package shine.GAP8.Compilation
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic.ArithExpr
+import rise.core.types.DataType
 import rise.core.types.DataType.ArrayType
 import shine.DPIA.Compilation.{CodeGenerator, TranslationContext}
 import shine.DPIA.Nat
@@ -22,42 +23,55 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
 
   override def translationContext: TranslationContext = super.translationContext
 
+  private def swapEnvIdentifier(
+                                 identifier: shine.DPIA.Phrases.Identifier[ExpType],
+                                 dt: DataType,
+                                 env: Environment,
+                                 height: Nat,
+                                 width: Nat
+                               ): Environment = {
+    val oldFilterId = shine.DPIA.Phrases.Identifier(identifier.name,
+      ExpType(ArrayType(height, ArrayType(width, dt)), rise.core.types.read))
+    val ref = env.identEnv(oldFilterId)
+    val identEnv = env.identEnv - oldFilterId
+    CodeGenerator.Environment(identEnv + ((identifier, ref)),
+      env.commEnv, env.contEnv, env.letNatEnv)
+  }
+
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     //TODO: Supoort multicycle output for 3x3
     case Conv3x3(w, h, bias, dt, in, filter: shine.DPIA.Phrases.Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          val oldFilterId = shine.DPIA.Phrases.Identifier(filter.name,
-            ExpType(ArrayType(3, ArrayType(3, dt)), rise.core.types.read))
-          val ref = env.identEnv(oldFilterId)
-          val identEnv = env.identEnv - oldFilterId
-          val env2 = CodeGenerator.Environment(identEnv + ((filter, ref)),
-                                               env.commEnv, env.contEnv, env.letNatEnv)
+          val env2 = swapEnvIdentifier(filter, dt, env, 3, 3)
           filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._3x3, w, h, bias, inC, filterC, outputC)
           })
         })
       })
-    case Conv5x5(w, h, bias, dt, in, filter, out) =>
+    case Conv5x5(w, h, bias, dt, in, filter: shine.DPIA.Phrases.Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
+          val env2 = swapEnvIdentifier(filter, dt, env, 5, 5)
+          filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._5x5, w, h, bias, inC, filterC, outputC)
           })
         })
       })
-    case Conv7x7(w, h, bias, dt, in, filter, out) =>
+    case Conv7x7(w, h, bias, dt, in, filter: shine.DPIA.Phrases.Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
+          val env2 = swapEnvIdentifier(filter, dt, env, 7, 7)
+          filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._7x7, w, h, bias, inC, filterC, outputC)
           })
         })
       })
-    case Conv7x4(w, h, bias, dt, in, filter, out) =>
+    case Conv7x4(w, h, bias, dt, in, filter: shine.DPIA.Phrases.Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
+          val env2 = swapEnvIdentifier(filter, dt, env, 7, 4)
+          filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._7x4, w, h, bias, inC, filterC, outputC)
           })
         })
