@@ -571,6 +571,7 @@ object algorithmic {
     *   3. slide2D has to be deconstructed fully to ensure that the underlying pattern
     *     fully conforms with the slide2D
     *   4. Generalize mapSeq() and reduceSeq()
+    *   5. This should apply only if wrapped somewhere within gap8run (HWCE is in cluster)
     * */
   @rule def gap8hwConvMerge: Strategy[Rise] = {
     case e @
@@ -586,7 +587,7 @@ object algorithmic {
                         App(App(mul(), App(fst(), _)), App(snd(), _))
                         )
                       ),
-                      App(App(zip(), App(join(), _)), App(join(), _))
+                      App(App(zip(), App(join(), _)), App(join(), filter))
                     )
               )
             )
@@ -600,13 +601,13 @@ object algorithmic {
               )
             ), _)
           )
-        ), _)
+        ), in)
       ) =>
       (size, step) match {
         case (Cst(iSize), Cst(iStep)) =>
-          if(1 == iStep && 3 == iSize) Success(gap8hwConv3x3(0))
-          else if(1 == iStep && 5 == iSize) Success(gap8hwConv5x5(0))
-          else if(1 == iStep && 7 == iSize) Success(gap8hwConv7x7(0))
+          if(1 == iStep && 3 == iSize) Success(gap8hwConv3x3(0)(in)(filter) !: e.t)
+          else if(1 == iStep && 5 == iSize) Success(gap8hwConv5x5(0)(in)(filter) !: e.t)
+          else if(1 == iStep && 7 == iSize) Success(gap8hwConv7x7(0)(in)(filter) !: e.t)
           else Failure(gap8hwConvMerge)
         case _ => Failure(gap8hwConvMerge)
       }
