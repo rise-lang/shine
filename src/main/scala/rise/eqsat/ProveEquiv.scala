@@ -140,7 +140,7 @@ class ProveEquiv(
 
     // egraph.dot().toSVG("/tmp/tiling-2d.svg")
     if (!runner.stopReasons.contains(Done)) {
-      // runner.iterations.foreach(println)
+      runner.iterations.foreach(println)
       val (found, notFound) = goals.indices.partition(goalReached)
 
       val idsToFind = notFound.map(i => egraph.addExpr(goals(i)))

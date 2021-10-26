@@ -1,23 +1,43 @@
 package rise.eqsat
 
-import rise.core.types.TypePlaceholder
 import rise.{core => rc}
-import rise.core.{types => rct}
-import rise.core.{primitives => rcp}
+import rise.core.{primitives => rcp, types => rct}
+import rise.core.types.TypePlaceholder
 
 object NamedRewrite {
-  sealed trait Condition
+  sealed trait Parameter
   // TODO: could try to either:
   //  (1) infer these constraints from the rule
   //  (2) check that such a constraint is not missing
   //      for the rule to be well-formed
   case class NotFreeIn(notFree: String, // bound variable in named pattern
                        in: String // free variable in named pattern
-                      ) extends Condition
+                      ) extends Parameter
+  case class VectorizeScalarFun(f: String, // free variable in lhs
+                                n: String, // free nat variable in lhs
+                                fV: String, // free variable in rhs
+                               ) extends Parameter
+
+  private def vectorizeScalarFunType(n: rct.Nat, t: rct.Type): rct.Type = {
+    t match {
+      case rct.TypePlaceholder => ???
+      case rct.TypeIdentifier(_) => ???
+      case rct.FunType(inT, outT) => rct.FunType(vectorizeScalarFunType(n, inT), vectorizeScalarFunType(n, outT))
+      case rct.DepFunType(_, _) => ???
+      case dt: rct.DataType => vectorizeScalarFunDataType(n, dt)
+    }
+  }
+  private def vectorizeScalarFunDataType(n: rct.Nat, t: rct.DataType): rct.DataType = {
+    t match {
+      case _: rct.ScalarType | _: rct.DataTypeIdentifier => rct.VectorType(n, t)
+      case rct.PairType(a, b) => rct.PairType(vectorizeScalarFunDataType(n, a), vectorizeScalarFunDataType(n, b))
+      case _ => throw new Exception(s"did not expect $t")
+    }
+  }
 
   def init(name: String,
            rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
-           conditions: Seq[NamedRewrite.Condition] = Seq(),
+           parameters: Seq[NamedRewrite.Parameter] = Seq(),
           ): Rewrite = {
     import rise.core.DSL.infer.{preservingWithEnv, collectFreeEnv}
     import arithexpr.{arithmetic => ae}
@@ -28,8 +48,16 @@ object NamedRewrite {
       name -> rct.TypeIdentifier("t" + name)
     }
     val typedLhs = preservingWithEnv(lhs, untypedFreeV, Set())
-    val freeV = collectFreeEnv(typedLhs)
+    val freeV1 = collectFreeEnv(typedLhs)
     val (_, freeT) = rise.core.IsClosedForm.freeVars(typedLhs)
+    val freeV2 = parameters.flatMap {
+      case NotFreeIn(_, _) => None
+      case VectorizeScalarFun(f, n, fV) =>
+        assert(!freeV1.contains(fV))
+        val np = NamedRewriteDSL.stringAsNatPattern(n)
+        Some(fV -> vectorizeScalarFunType(np, freeV1(f)))
+    }
+    val freeV = freeV1 ++ freeV2
     val typedRhs = preservingWithEnv(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
 
     trait PatVarStatus
@@ -411,7 +439,7 @@ object NamedRewrite {
     }
 
     val searcher: Searcher = lhsPat.compile()
-    val cond = conditions.foldRight((a: Applier) => a) { case (c, acc) =>
+    val param = parameters.foldRight((a: Applier) => a) { case (c, acc) =>
       c match {
         case NotFreeIn(notFree, in) =>
           val nfShift = boundVarToShift.getOrElse(notFree, (0, 0, 0))._1
@@ -430,6 +458,13 @@ object NamedRewrite {
             !freeOf(subst(iPV, shc)).free.contains(nfIndex)
           }
           (a: Applier) => ConditionalApplier(condF, Set(iPV), (Set(FreeAnalysis), Set()), acc(a))
+        case VectorizeScalarFun(f, n, fV) =>
+          val (nPV, nST) = natPatVars(n)(0)
+          assert(nST == Known)
+          val (fPV, fST) = patVars(f)((0, 0, 0))
+          assert(fST == Known)
+          val fVPV = makePatVar(fV, (0, 0, 0), patVars, PatternVar, Known)
+          (a: Applier) => VectorizeScalarFunExtractApplier(fPV, nPV, fVPV, acc(a))
       }
     }
     val shiftPV = shiftAppliers(patVars, patMkShift, patMkShiftCheck)
@@ -437,7 +472,7 @@ object NamedRewrite {
     val shiftDTPV = shiftAppliers(dataTypePatVars, dataTypePatMkShift, dataTypePatMkShiftCheck)
     val shiftTPV = shiftAppliers(typePatVars, typePatMkShift, typePatMkShiftCheck)
     val pivotNats = pivotNatsRec(natsToPivot.toSeq, Seq()) _
-    val applier = cond(shiftPV(shiftNPV(shiftDTPV(shiftTPV(pivotNats(rhsPat))))))
+    val applier = param(shiftPV(shiftNPV(shiftDTPV(shiftTPV(pivotNats(rhsPat))))))
 
     def allIsShiftCoherent[S, V](pvm: PatternVarMap[S, V]): Boolean =
       pvm.forall { case (_, shiftMap) =>
@@ -502,6 +537,7 @@ object NamedRewriteDSL {
   def asScalar: Pattern = rcp.asScalar.primitive
   def asVector: Pattern = rcp.asVector.primitive
   def asVectorAligned: Pattern = rcp.asVectorAligned.primitive
+  def vectorFromScalar: Pattern = rcp.vectorFromScalar.primitive
 
   implicit def placeholderAsNatPattern(p: `_`.type): NatPattern =
     rct.NatIdentifier(rc.freshName("n"), isExplicit = false)
@@ -540,9 +576,11 @@ object NamedRewriteDSL {
   }
 
   implicit final class NotFreeIn(private val in: String) extends AnyVal {
-    @inline def notFree(notFree: String): NamedRewrite.Condition =
+    @inline def notFree(notFree: String): NamedRewrite.Parameter =
       NamedRewrite.NotFreeIn(notFree, in)
   }
+  def vectorizeScalarFun(f: String, n: String, fV: String): NamedRewrite.Parameter =
+    NamedRewrite.VectorizeScalarFun(f, n, fV)
 
   // combinatory
 

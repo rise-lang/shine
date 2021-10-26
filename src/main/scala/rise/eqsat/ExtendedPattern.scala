@@ -706,6 +706,7 @@ object ExtendedPatternDSL {
   val f32: DataTypePattern = DataTypePatternNode(ScalarType(rct.f32))
 
   def nFunT(t: TypePattern): TypePattern = TypePatternNode(NatFunType(t))
+  def vecT(n: NatPattern, dt: DataTypePattern): DataTypePattern = DataTypePatternNode(VectorType(n, dt))
   implicit final class FunConstructorT(private val r: TypePattern) extends AnyVal {
     @inline def ->:(t: TypePattern): TypePattern = TypePatternNode(FunType(t, r))
   }
@@ -714,5 +715,8 @@ object ExtendedPatternDSL {
   }
   implicit final class ArrayConstructor(private val s: NatPattern) extends AnyVal {
     @inline def `.`(et: DataTypePattern): DataTypePattern = DataTypePatternNode(ArrayType(s, et))
+  }
+  implicit final class PairConstructor(private val s: DataTypePattern) extends AnyVal {
+    @inline def x(et: DataTypePattern): DataTypePattern = DataTypePatternNode(PairType(s, et))
   }
 }

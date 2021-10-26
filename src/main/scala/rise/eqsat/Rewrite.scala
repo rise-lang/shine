@@ -510,3 +510,102 @@ private object ComputeNat {
     }
   }
 }
+
+/** An [[Applier]] that vectorizes a scalar function.
+  * @note It works by extracting an expression from the [[EGraph]] in order to vectorize it.
+  */
+case class VectorizeScalarFunExtractApplier(f: PatternVar, n: NatPatternVar, fV: PatternVar,
+                                            applier: Applier)
+  extends Applier {
+  override def patternVars(): Set[Any] = applier.patternVars() - fV
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(SmallestSizeAnalysis), Set())
+
+  override def applyOne(egraph: EGraph,
+                        eclass: EClassId,
+                        shc: SubstHashCons,
+                        subst: Subst): Vec[EClassId] = {
+    val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+    val fEx = smallestOf(subst(f, shc))._1
+    val actualN = subst(n, shc)
+    vectorizeExpr(fEx, actualN, egraph, Set()) match {
+      case Some(fExV) =>
+        val subst2 = shc.substInsert(fV, egraph.addExpr(fExV), subst)
+        applier.applyOne(egraph, eclass, shc, subst2)
+      case None => Vec()
+    }
+  }
+
+  private def vectorizeExpr(expr: ExprWithHashCons,
+                            n: NatId,
+                            eg: EGraph,
+                            vEnv: Set[Int]): Option[ExprWithHashCons] = {
+    import rise.core.{primitives => rcp}
+    expr.node match {
+      case Var(i) if vEnv(i) =>
+        for { tv <- vecDT(expr.t, n, eg) }
+          yield ExprWithHashCons(Var(i), tv)
+      case Var(_) => None
+      case App(f, e) =>
+        for { fv <- vectorizeExpr(f, n, eg, vEnv); ev <- vectorizeExpr(e, n, eg, vEnv) }
+          yield ExprWithHashCons(App(fv, ev), eg(fv.t).asInstanceOf[FunType[TypeId]].outT)
+      case Lambda(e) =>
+        for { ev <- vectorizeExpr(e, n, eg, vEnv.map(_ + 1) + 0);
+              xtv <- vecDT(eg(expr.t).asInstanceOf[FunType[TypeId]].inT, n, eg) }
+          yield ExprWithHashCons(Lambda(ev),  eg.add(FunType(xtv, ev.t)))
+      case NatApp(_, _) => None
+      case DataApp(_, _) => None
+      case NatLambda(_) => None
+      case DataLambda(_) => None
+      case Literal(_) =>
+        for { tv <- vecDT(expr.t, n, eg) }
+          yield ExprWithHashCons(App(
+            ExprWithHashCons(Primitive(rcp.vectorFromScalar.primitive), eg.add(FunType(expr.t, tv))),
+            expr), tv)
+      case Primitive(rcp.add() | rcp.mul() | rcp.fst() | rcp.snd()) =>
+        for { tv <- vecT(expr.t, n, eg) }
+          yield ExprWithHashCons(expr.node, tv)
+      case Primitive(_) => None
+      case Composition(f, g) =>
+        for { fv <- vectorizeExpr(f, n, eg, vEnv); gv <- vectorizeExpr(g, n, eg, vEnv) }
+          yield ExprWithHashCons(Composition(fv, gv), eg.add(FunType(
+            eg(fv.t).asInstanceOf[FunType[TypeId]].inT,
+            eg(gv.t).asInstanceOf[FunType[TypeId]].outT,
+          )))
+    }
+  }
+
+  private def vecT(t: TypeId, n: NatId, eg: EGraph): Option[TypeId] = {
+    t match {
+      case dt @ DataTypeId(_) => vecDT(dt, n, eg)
+      case ndt @ NotDataTypeId(_) => eg(ndt) match {
+        case FunType(inT, outT) =>
+          for { inTV <- vecT(inT, n, eg); outTV <- vecT(outT, n, eg) }
+            yield eg.add(FunType(inTV, outTV))
+        case NatFunType(t) => ???
+        case DataFunType(t) => ???
+        case _: DataTypeNode[_, _] => throw new Exception("this should not happen")
+      }
+    }
+  }
+  private def vecDT(t: TypeId, n: NatId, eg: EGraph): Option[TypeId] = {
+    t match {
+      case dt @ DataTypeId(_) => vecDT(dt, n, eg)
+      case NotDataTypeId(_) => None
+    }
+  }
+  private def vecDT(t: DataTypeId, n: NatId, eg: EGraph): Option[DataTypeId] = {
+    eg(t) match {
+      case DataTypeVar(_) => None
+      case ScalarType(_) => Some(eg.add(VectorType(n, t)))
+      case NatType => None
+      case VectorType(_, _) => None
+      case IndexType(_) => None
+      case PairType(a, b) =>
+        for { a2 <- vecDT(a, n, eg); b2 <- vecDT(b, n, eg) }
+          yield eg.add(PairType(a2, b2))
+      case ArrayType(_, _) => None
+    }
+  }
+}

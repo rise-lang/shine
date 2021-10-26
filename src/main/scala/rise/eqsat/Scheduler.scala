@@ -1,5 +1,7 @@
 package rise.eqsat
 
+import scala.util.Random
+
 /**
   * A way to customize how a [`Runner`] runs [`Rewrite`]s.
   * This gives you a way to prevent certain [`Rewrite`]s from exploding
@@ -10,16 +12,16 @@ package rise.eqsat
 trait Scheduler {
   def canSaturate(iteration: Int): Boolean
   def searchRewrite(iteration: Int,
-                                egraph: EGraph,
-                                shc: SubstHashCons,
-                                rewrite: Rewrite): Vec[SearchMatches]
+                    egraph: EGraph,
+                    shc: SubstHashCons,
+                    rewrite: Rewrite): Vec[SearchMatches]
 
   // returns the number of applications
   def applyRewrite(iteration: Int,
-                               egraph: EGraph,
-                               shc: SubstHashCons,
-                               rewrite: Rewrite,
-                               matches: Vec[SearchMatches]): Int =
+                   egraph: EGraph,
+                   shc: SubstHashCons,
+                   rewrite: Rewrite,
+                   matches: Vec[SearchMatches]): Int =
     rewrite.apply(egraph, shc, matches).size
 }
 
@@ -109,6 +111,48 @@ class CuttingScheduler(var notApplied: HashSet[Object],
   }
 }
 
+object SamplingScheduler {
+  def init(): SamplingScheduler = new SamplingScheduler(
+    defaultLimit = 1_000,
+    limits = HashMap.empty,
+    lastSampledIteration = -1,
+    random = new Random
+  )
+  
+  def initWithSeed(seed: Int): SamplingScheduler = new SamplingScheduler(
+    defaultLimit = 1_000,
+    limits = HashMap.empty,
+    lastSampledIteration = -1,
+    random = new Random(seed)
+  )
+}
+
+/** A [`Scheduler`] that implements rule sampling.
+  *
+  * For each rewrite, there exists a configurable match limit.
+  * If a rewrite search yield more than this limit,
+  * random match samples will be kept, and the rest discarded.
+  *
+  */
+class SamplingScheduler(var defaultLimit: Int,
+                        var limits: HashMap[Rewrite, Int],
+                        var lastSampledIteration: Int,
+                        var random: Random)
+extends Scheduler {
+  override def canSaturate(iteration: Int): Boolean = iteration > lastSampledIteration
+
+  override def searchRewrite(iteration: Int, egraph: EGraph, shc: SubstHashCons, rewrite: Rewrite): Vec[SearchMatches] = {
+    val limit = limits.getOrElse(rewrite, defaultLimit)
+    val matches = rewrite.search(egraph, shc)
+    if (matches.size > limit) {
+      println(s"sampled $limit from ${matches.size} matches")
+      random.shuffle(matches).take(limit)
+    } else {
+      matches
+    }
+  }
+}
+
 class RuleStats(var timesApplied: Int,
                 var bannedUntil: Int,
                 var timesBanned: Int,
@@ -136,7 +180,7 @@ object BackoffScheduler {
   */
 class BackoffScheduler(var defaultMatchLimit: Int,
                        var defaultBanLength: Int,
-                       val stats: HashMap[Object, RuleStats]) extends Scheduler {
+                       val stats: HashMap[Rewrite, RuleStats]) extends Scheduler {
   def withInitialMatchLimit(limit: Int): BackoffScheduler = {
     defaultMatchLimit = limit; this
   }
@@ -157,7 +201,7 @@ class BackoffScheduler(var defaultMatchLimit: Int,
     ruleStats(rewrite).banLength = length; this
   }
 
-  private def ruleStats(rewrite: Object): RuleStats =
+  private def ruleStats(rewrite: Rewrite): RuleStats =
     stats.getOrElseUpdate(rewrite, {
       new RuleStats(
         timesApplied = 0,
@@ -174,9 +218,9 @@ class BackoffScheduler(var defaultMatchLimit: Int,
   }
 
   override def searchRewrite(iteration: Int,
-                                         egraph: EGraph,
-                                         shc: SubstHashCons,
-                                         rewrite: Rewrite): Vec[SearchMatches] = {
+                             egraph: EGraph,
+                             shc: SubstHashCons,
+                             rewrite: Rewrite): Vec[SearchMatches] = {
     val rs = ruleStats(rewrite)
 
     if (iteration < rs.bannedUntil) {

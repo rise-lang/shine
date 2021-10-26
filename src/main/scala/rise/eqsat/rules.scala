@@ -550,6 +550,57 @@ object rules {
   )
 
   object vectorize {
+    def after(n: Int) = NamedRewrite.init(s"vec-$n-after",
+      // TODO: if m % n == 0 ?
+      ("e" :: (("m": Nat)`.`("dt": DataType)))
+        -->
+      app(asScalar, app(nApp(asVector, n), "e"))
+    )
+    // TODO: remove the need for asVectorAligned primitive
+    val promoteAligned = NamedRewrite.init(s"vec-promote-aligned",
+      asVector --> asVectorAligned
+    )
+
+    val asScalarAsVectorId = NamedRewrite.init("as-scalar-as-vector-id",
+      (app(nApp(asVector, `_`), app(asScalar, "e" :: ("t": Type))) :: ("t": Type))
+        --> "e"
+    )
+
+    // TODO: generalize over data type
+    // should we allow <N>(f32 x (f32 x f32)) types for simplicity?
+    val beforeMapF32 = NamedRewrite.init("vec-before-map-f32",
+      app(nApp(asVector, "n"), app(app(map, "f"), ("in": Pattern) :: ((`_`: Nat)`.`f32)))
+        -->
+      app(app(map, "fV"), app(nApp(asVector, "n"), "in")),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    )
+    val beforeMap_F32xF32 = NamedRewrite.init("vec-before-map-f32xf32",
+      app(nApp(asVector, "n"), app(app(map, "f"), ("in": Pattern) :: ((`_`: Nat)`.` (f32 x f32))))
+        -->
+      app(app(map, "fV"),
+        app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, "in")))),
+                     app(nApp(asVector, "n"), app(snd, app(unzip, "in"))))),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    )
+    val beforeMap_F32x_F32xF32 = NamedRewrite.init("vec-before-map-f32x-f32xf32",
+      app(nApp(asVector, "n"), app(app(map, "f"), ("in": Pattern) :: ((`_`: Nat)`.` (f32 x (f32 x f32)))))
+        -->
+        app(app(map, "fV"),
+          app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, "in")))),
+            app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, app(snd, app(unzip, "in")))))),
+                         app(nApp(asVector, "n"), app(snd, app(unzip, app(snd, app(unzip, "in")))))))),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    )
+
+    // TODO: generalize over data type (this rule will actually not work for e.g. tuples)
+    val beforeMapReduce = NamedRewrite.init("vec-before-map-reduce",
+      app(nApp(asVector, "n"), app(app(map, app(app(reduce, "f"), "init")), "in"))
+        -->
+      app(app(map, app(app(reduce, "fv"), app(vectorFromScalar, "init"))),
+        app(transpose, app(app(map, nApp(asVector, "n")), app(transpose, "in")))),
+      Seq(vectorizeScalarFun("f", "n", "fv"))
+    )
+
     val asScalarOutsidePair = NamedRewrite.init("as-scalar-outside-pair",
       app(app(makePair, app(asScalar, "a")), app(asScalar, "b"))
         -->
