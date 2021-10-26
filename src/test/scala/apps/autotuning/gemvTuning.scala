@@ -4,7 +4,6 @@ import apps.gemv.ocl._
 import arithexpr.arithmetic.{ArithExpr, RangeAdd, RangeMul}
 import rise.autotune
 import rise.autotune._
-import rise.autotune.constraints.{collectConstraints, collectParameters}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
@@ -38,6 +37,9 @@ class gemvTuning extends test_util.Tests {
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       wrapOclMv(gemvKeplerBestParam(s0))
     )
+
+  val gemvAMDNoTuning: ToBeTyped[Expr] =
+    wrapOclMv(gemvFusedAMD)
 
   def wrapOclMv(e: Expr): Expr = {
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
@@ -110,21 +112,21 @@ class gemvTuning extends test_util.Tests {
 
   def executeGemv(e: Expr, s0: Nat) = {
     val params: Nat => Map[Nat, Nat] = s0 => Map(
-      TuningParameter("ls0") -> (128: Nat),
+      TuningParameter("ls0") -> (64: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (128: Nat),
       TuningParameter("gs1") -> (1: Nat),
       TuningParameter("s0") -> (s0: Nat),
     )
 
-//    val p = rise.autotune.constraints.collectParameters(e)
-//    val constraints = rise.autotune.constraints.collectConstraints(e, p)
-//    val inputs = rise.autotune.getInputs(e)
+    //    val p = rise.autotune.constraints.collectParameters(e)
+    //    val constraints = rise.autotune.constraints.collectConstraints(e, p)
+    //    val inputs = rise.autotune.getInputs(e)
 
-//    println("p: " + p)
-//    println("inputs: " + inputs) // (m, n) size should be two
-//    println("constraint: ")
-//    constraints.foreach(println)
+    //    println("p: " + p)
+    //    println("inputs: " + inputs) // (m, n) size should be two
+    //    println("constraint: ")
+    //    constraints.foreach(println)
 
     val eSub = rise.core.substitute.natsInExpr(params(128), e)
 
@@ -142,16 +144,18 @@ class gemvTuning extends test_util.Tests {
 
   test("exeute gemv version") {
     executeGemv(gemvBlastNTuning, 64)
-//    executeGemv(gemvBlastTTuning, 64)
-//    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
-//    executeGemv(gemvFusedAMDTuning, 128)
-//    executeGemv(gemvKeplerBestTuning, 128)
+    executeGemv(gemvBlastTTuning, 64)
+    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
+    executeGemv(gemvAMDNoTuning, 64)
+    executeGemv(gemvFusedAMDTuning, 64)
+    executeGemv(gemvKeplerBestTuning, 64)
   }
 
   test("tune gemv version"){
     runTuning(gemvBlastNTuning, "gemvBlastN")
     runTuning(gemvBlastTTuning, "gemvBlastT")
     runTuning(gemvFusedTuning, "gemvFused") // ignore s0 in this case
+    runTuning(gemvAMDNoTuning, "gemvFusedAMDNoTuning")
     runTuning(gemvFusedAMDTuning, "gemvFusedAMD")
     runTuning(gemvKeplerBestTuning, "gemvKeplerBest")
   }
@@ -167,14 +171,15 @@ class gemvTuning extends test_util.Tests {
       name = "gemv_" + version,
       output = s"autotuning/gemv",
       timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
+      executionIterations = 100,
       speedupFactor = 100,
       configFile = None,
       hmConstraints = true,
       runtimeStatistic = Minimum,
-      saveToFile = true
+      saveToFile = false
     )
 
     autotune.search(tuner)(e)
   }
+
 }

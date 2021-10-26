@@ -37,7 +37,7 @@ class mvTuning extends test_util.Tests {
       wrapOclMv(mvKeplerBestParam(s0))
     )
 
-  // gemvKeplerBest
+  // mvKeplerBest
   val mvKeplerBestTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       wrapOclMv(mvKeplerBestParam(s0))
@@ -105,11 +105,11 @@ class mvTuning extends test_util.Tests {
 
   test("print different gemv tuning versions"){
 
-//    println("mvBlastNTuning: " + mvBlastNTuning)
-//    println("mvBlastTTuning: " + mvBlastTTuning)
-//    println("mvFused: " + mvFusedTuning)
-//    println("mvFusedAMDTuning: " + mvFusedAMDTuning)
-//    println("mvKeplerBestTuning: " + mvKeplerBestTuning)
+    println("mvBlastNTuning: " + mvBlastNTuning)
+    println("mvBlastTTuning: " + mvBlastTTuning)
+    println("mvFused: " + mvFusedTuning)
+    println("mvFusedAMDTuning: " + mvFusedAMDTuning)
+    println("mvKeplerBestTuning: " + mvKeplerBestTuning)
 
   }
 
@@ -117,9 +117,9 @@ class mvTuning extends test_util.Tests {
 
 
     val params: Nat => Map[Nat, Nat] = s0 => Map(
-      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls0") -> (32: Nat),
       TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (32: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1: Nat),
       TuningParameter("s0") -> (s0),
     )
@@ -137,11 +137,11 @@ class mvTuning extends test_util.Tests {
 
     val result = autotune.execution.execute(
       expression = eSub,
-      hostCode = HostCode(init(32, 32), compute, finish),
+      hostCode = HostCode(init(1024, 1024), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 100,
-      speedupFactor = 100,
-      execution = Median
+      executionIterations = 1000,
+      speedupFactor = 1000,
+      execution = Minimum
     )
     println("result: " + result.runtime)
 
@@ -149,23 +149,24 @@ class mvTuning extends test_util.Tests {
 
   test("exeute mv version") {
 
-    executeMv(mvTuning, 16) // ignore s0 in this case
-    executeMv(mvFusedTuning, 16) // ignore s0 in this case
-
-//    executeMv(mvBlastNTuning, 64)
-//    executeMv(mvBlastTTuning, 64)
-//    executeMv(mvFusedAMDTuning, 128)
-//    executeMv(mvKeplerBestTuning, 16)
+    // performance very close
+    executeMv(mvTuning, 16) // ignore s0 in this case // 0.05008 ms
+    executeMv(mvFusedTuning, 16) // ignore s0 in this case // 0.051008 ms
+    executeMv(mvBlastNTuning, 64)
+    executeMv(mvBlastTTuning, 64)
+    executeMv(mvFusedAMDTuning, 128)
+    executeMv(mvKeplerBestTuning, 16)
   }
 
-  test("tune mv version"){
+  test("tune mv version") {
+    runTuning(mvTuning, "mvTuning")
+    runTuning(mvFusedTuning, "mvFusedTuning")
     runTuning(mvBlastNTuning, "mvBlastN")
     runTuning(mvBlastTTuning, "mvBlastT")
-//    runTuning(mvFusedTuning, "mvFused") // ignore s0 in this case
+    runTuning(mvFusedTuning, "mvFused") // ignore s0 in this case
     runTuning(mvFusedAMDTuning, "mvFusedAMD")
     runTuning(mvKeplerBestTuning, "mvKeplerBest")
   }
-
 
   def runTuning(e: Expr, version: String) = {
     //      val version = autotuning.parseName(configFile)
@@ -181,7 +182,7 @@ class mvTuning extends test_util.Tests {
       speedupFactor = 100,
       configFile = None,
       hmConstraints = true,
-      runtimeStatistic = Minimum,
+      runtimeStatistic = Median,
       saveToFile = true
     )
 
