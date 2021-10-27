@@ -112,7 +112,7 @@ class gemvTuning extends test_util.Tests {
 
   def executeGemv(e: Expr, s0: Nat) = {
     val params: Nat => Map[Nat, Nat] = s0 => Map(
-      TuningParameter("ls0") -> (64: Nat),
+      TuningParameter("ls0") -> (s0: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (128: Nat),
       TuningParameter("gs1") -> (1: Nat),
@@ -128,7 +128,7 @@ class gemvTuning extends test_util.Tests {
     //    println("constraint: ")
     //    constraints.foreach(println)
 
-    val eSub = rise.core.substitute.natsInExpr(params(128), e)
+    val eSub = rise.core.substitute.natsInExpr(params(s0), e)
 
     val result = autotune.execution.execute(
       expression = eSub,
@@ -146,9 +146,9 @@ class gemvTuning extends test_util.Tests {
     executeGemv(gemvBlastNTuning, 64)
     executeGemv(gemvBlastTTuning, 64)
     executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
-    executeGemv(gemvAMDNoTuning, 64)
-    executeGemv(gemvFusedAMDTuning, 64)
-    executeGemv(gemvKeplerBestTuning, 64)
+    executeGemv(gemvAMDNoTuning, 128)
+    executeGemv(gemvFusedAMDTuning, 128)
+    executeGemv(gemvKeplerBestTuning, 128)
   }
 
   test("tune gemv version"){
