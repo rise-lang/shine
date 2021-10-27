@@ -111,7 +111,7 @@ object gemv {
         zip(mat)(ys) |>
           mapWorkGroup(fun(t =>
             zip(xs)(t._1) |>
-//              reorderWithStride(s0) |>
+              reorderWithStride(s0) |>
               split(n /^ s0) |>
               toLocalFun(mapLocal(
                 oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
@@ -133,7 +133,7 @@ object gemv {
         zip(mat)(ys) |>
           mapWorkGroup(fun(t =>
             zip(xs)(t._1) |>
-//              reorderWithStride(s0) |>
+              reorderWithStride(s0) |>
               split(n /^ s0) |>
               toLocalFun(mapLocal(
                 oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
@@ -145,6 +145,7 @@ object gemv {
     }
 
     val gemvKeplerBest = gemvKeplerBestParam(128)
+
   }
 
   object omp {
