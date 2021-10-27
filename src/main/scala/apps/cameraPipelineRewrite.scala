@@ -383,17 +383,27 @@ object cameraPipelineRewrite {
 
   def letHoist: Strategy[Rise] = {
     case expr @ App(f, App(App(p.let(), v), Lambda(x, b))) =>
-      Success(letf(lambda(eraseType(x), preserveType(f)(b)))(v) !: expr.t)
+      Success((let(v) be (lambda(eraseType(x), preserveType(f)(b)))) !: expr.t)
     // TODO: normal form / non-map specific?
     case expr @ App(App(p.map(), Lambda(y,
       App(App(p.let(), v), Lambda(x, b))
     )), in) if !contains[Rise](y).apply(v) =>
-      Success(letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v) !: expr.t)
+      Success((let(v) be (lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))) !: expr.t)
     case expr @ App(p.map(), Lambda(y,
       App(App(p.let(), v), Lambda(x, b))
     )) if !contains[Rise](y).apply(v) =>
       Success(fun(in =>
-        letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v)
+        let(v) be (lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))
+      ) !: expr.t)
+    case expr @ App(App(p.mapSeq(), Lambda(y,
+    App(App(p.let(), v), Lambda(x, b))
+    )), in) if !contains[Rise](y).apply(v) =>
+      Success((let(v) be (lambda(eraseType(x), p.mapSeq(lambda(eraseType(y), b))(in)))) !: expr.t)
+    case expr @ App(p.mapSeq(), Lambda(y,
+    App(App(p.let(), v), Lambda(x, b))
+    )) if !contains[Rise](y).apply(v) =>
+      Success(fun(in =>
+        let(v) be (lambda(eraseType(x), p.mapSeq(lambda(eraseType(y), b))(in)))
       ) !: expr.t)
     case _ => Failure(letHoist)
   }

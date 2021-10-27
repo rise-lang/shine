@@ -15,6 +15,10 @@ object ExprWithHashCons {
 
   def expr(egraph: EGraph)(e: ExprWithHashCons): Expr =
     Expr(e.node.map(expr(egraph), nat(egraph), dataType(egraph)), `type`(egraph)(e.t))
+
+  def fromExpr(egraph: EGraph)(e: Expr): ExprWithHashCons =
+    ExprWithHashCons(e.node.map(fromExpr(egraph), egraph.addNat, egraph.addDataType),
+      egraph.addType(e.t))
 }
 
 case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId], t: TypeId) {

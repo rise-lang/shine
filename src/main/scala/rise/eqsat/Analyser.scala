@@ -337,7 +337,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
     // TODO: write more generic code here
     val generatedData: Data[Cost] = enode match {
       case Var(index) =>
-        val cost = cf.cost(enode, Map.empty)
+        val cost = cf.cost(egraph, enode, t, Map.empty)
         val expr = ExprWithHashCons(enode.mapChildren(Map.empty), t)
         Seq(read, write).map { annotation =>
           (annotation, Map(index -> annotation)) -> Seq((cost, expr))
@@ -360,7 +360,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
                  if (subtype(fIn, fInT, eAnnotation, eT, egraph)) {
                     val newBeam = fBeam.flatMap { x => eBeam.flatMap { y =>
                       Seq((
-                        cf.cost(enode, Map(f -> x._1, e -> y._1)),
+                        cf.cost(egraph, enode, t, Map(f -> x._1, e -> y._1)),
                         ExprWithHashCons(enode.mapChildren(Map(f -> x._2, e -> y._2)), t)
                       ))
                     }}
@@ -382,7 +382,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           val newEnv = env.filter(kv => kv._1 != 0).map(kv => (kv._1 - 1, kv._2))
           val newBeam = beam.flatMap { x =>
             Seq((
-              cf.cost(enode, Map(e -> x._1)),
+              cf.cost(egraph, enode, t, Map(e -> x._1)),
               ExprWithHashCons(enode.mapChildren(Map(e -> x._2)), t)
             ))
           }
@@ -400,7 +400,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
         fBeams.map { case ((annotation, env), beam) =>
           val newBeam = beam.flatMap { x =>
             Seq((
-              cf.cost(enode, Map(f -> x._1)),
+              cf.cost(egraph, enode, t, Map(f -> x._1)),
               ExprWithHashCons(enode.mapChildren(Map(f -> x._2)), t)
             ))
           }
@@ -414,7 +414,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
         fBeams.map { case ((annotation, env), beam) =>
           val newBeam = beam.flatMap { x =>
             Seq((
-              cf.cost(enode, Map(f -> x._1)),
+              cf.cost(egraph, enode, t, Map(f -> x._1)),
               ExprWithHashCons(enode.mapChildren(Map(f -> x._2)), t)
             ))
           }
@@ -428,7 +428,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
         eBeams.map { case ((annotation, env), beam) =>
           val newBeam = beam.flatMap { x =>
             Seq((
-              cf.cost(enode, Map(e -> x._1)),
+              cf.cost(egraph, enode, t, Map(e -> x._1)),
               ExprWithHashCons(enode.mapChildren(Map(e -> x._2)), t)
             ))
           }
@@ -440,7 +440,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
         eBeams.map { case ((annotation, env), beam) =>
           val newBeam = beam.flatMap { x =>
             Seq((
-              cf.cost(enode, Map(e -> x._1)),
+              cf.cost(egraph, enode, t, Map(e -> x._1)),
               ExprWithHashCons(enode.mapChildren(Map(e -> x._2)), t)
             ))
           }
@@ -449,7 +449,8 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
         }
       case Literal(_) =>
         val beam = Seq((
-          cf.cost(enode, Map.empty), ExprWithHashCons(enode.mapChildren(Map.empty), t)
+          cf.cost(egraph, enode, t, Map.empty),
+          ExprWithHashCons(enode.mapChildren(Map.empty), t)
         ))
         Map((read, Map.empty[Int, TypeAnnotation]) -> beam)
       case Primitive(p) =>
@@ -465,9 +466,12 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
                | rp.mapSeq() | rp.mapSeqUnroll() | rp.iterateStream() => Seq(
             (read ->: write) ->: read ->: write
           )
-          case rp.map() => Seq(
+          case rp.map() | rp.mapFst() | rp.mapSnd() => Seq(
             (read ->: read) ->: read ->: read,
             (write ->: write) ->: write ->: write,
+          )
+          case rp.mapStream() => Seq(
+            (read ->: write) ->: read ->: read
           )
           case rp.toMem() => Seq(
             write ->: read
@@ -484,9 +488,13 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
             read ->: (read ->: read) ->: read,
             read ->: (read ->: write) ->: write,
           )
-          case rp.split() | rp.asVector() | rp.asVectorAligned() => Seq(
+          case rp.split() | rp.asVector() => Seq(
             nFunT(read ->: read),
             nFunT(write ->: write),
+          )
+          case rp.asVectorAligned() => Seq(
+            nFunT(read ->: read),
+            // FIXME: DPIA accepts write -> write but OpenMP codegen fails
           )
           case rp.zip() | rp.makePair() => Seq(
             read ->: read ->: read,
@@ -495,6 +503,9 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case rp.idx() | rp.add() | rp.sub() | rp.mul() | rp.div() | rp.gt()
                | rp.lt() | rp.equal() | rp.mod() | rp.gather() => Seq(
             read ->: read ->: read
+          )
+          case rp.natAsIndex() | rp.take() | rp.drop() => Seq(
+            nFunT(read ->: read)
           )
           case rp.reduceSeq() | rp.reduceSeqUnroll() => Seq(
             (read ->: read ->: write) ->: write ->: read ->: read
@@ -505,7 +516,8 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case _ => throw new Exception(s"did not expect $p")
         }
         val beam = Seq((
-          cf.cost(enode, Map.empty), ExprWithHashCons(enode.mapChildren(Map.empty), t)
+          cf.cost(egraph, enode, t, Map.empty),
+          ExprWithHashCons(enode.mapChildren(Map.empty), t)
         ))
         annotations.map { a => (a, Map.empty[Int, TypeAnnotation]) -> beam }.toMap
       case Composition(f, g) => ???

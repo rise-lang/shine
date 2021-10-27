@@ -96,12 +96,16 @@ case class SmallestCostAnalysis[Cost](costFunction: CostFunction[Cost])
 /** A cost function which can be used by an [[Extractor]] */
 trait CostFunction[Cost] {
   val ordering: math.Ordering[Cost]
-  def cost(enode: ENode, costs: EClassId => Cost): Cost
+  // TODO: remove this option?
+  def cost(enode: ENode, costs: EClassId => Cost): Cost =
+    ???
+  def cost(egraph: EGraph, enode: ENode, t: TypeId, costs: EClassId => Cost): Cost =
+    cost(enode, costs)
 }
 
 object AstSize extends CostFunction[Int] {
   val ordering = implicitly
-  def cost(enode: ENode, costs: EClassId => Int): Int =
+  override def cost(enode: ENode, costs: EClassId => Int): Int =
     enode.children().foldLeft(1) { case (acc, eclass) => acc + costs(eclass) }
 
   def ofNamedExpr(e: rise.core.Expr): Int = {
@@ -117,13 +121,13 @@ object AstSize extends CostFunction[Int] {
 
 object AstDepth extends CostFunction[Int] {
   val ordering = implicitly
-  def cost(enode: ENode, costs: EClassId => Int): Int =
+  override def cost(enode: ENode, costs: EClassId => Int): Int =
     1 + enode.children().foldLeft(0) { case (acc, eclass) => acc.max(costs(eclass)) }
 }
 
 object AppCount extends CostFunction[Int] {
   val ordering = implicitly
-  def cost(enode: ENode, costs: EClassId => Int): Int = {
+  override def cost(enode: ENode, costs: EClassId => Int): Int = {
     val thisCount = enode match {
       case App(_, _) => 1
       case _ => 0
@@ -159,7 +163,7 @@ case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCoun
       x.redexes compare y.redexes
   }
 
-  def cost(enode: ENode, costs: EClassId => Data): Data = {
+  override def cost(enode: ENode, costs: EClassId => Data): Data = {
     // val (freeOfNat, freeOfType) = egraph.getTypeAnalysis(FreeAnalysis)
 
     enode match {

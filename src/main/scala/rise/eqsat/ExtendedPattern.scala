@@ -644,8 +644,10 @@ object ExtendedPatternDSL {
   def slide: ExtendedPattern.PNode = prim(rcp.slide.primitive)
   def map: ExtendedPattern.PNode = prim(rcp.map.primitive)
   def mapSeq: ExtendedPattern.PNode = prim(rcp.mapSeq.primitive)
+  def mapSeqUnroll: ExtendedPattern.PNode = prim(rcp.mapSeqUnroll.primitive)
   def reduce: ExtendedPattern.PNode = prim(rcp.reduce.primitive)
   def reduceSeq: ExtendedPattern.PNode = prim(rcp.reduceSeq.primitive)
+  def reduceSeqUnroll: ExtendedPattern.PNode = prim(rcp.reduceSeqUnroll.primitive)
   def transpose: ExtendedPattern.PNode = prim(rcp.transpose.primitive)
   def zip: ExtendedPattern.PNode = prim(rcp.zip.primitive)
   def join: ExtendedPattern.PNode = prim(rcp.join.primitive)
@@ -662,6 +664,12 @@ object ExtendedPatternDSL {
   def div: ExtendedPattern.PNode = prim(rcp.div.primitive)
   def drop: ExtendedPattern.PNode = prim(rcp.drop.primitive)
   def take: ExtendedPattern.PNode = prim(rcp.take.primitive)
+  def let: ExtendedPattern.PNode = prim(rcp.let.primitive)
+  def toMem: ExtendedPattern.PNode = prim(rcp.toMem.primitive)
+
+  object omp {
+    def mapPar: ExtendedPattern.PNode = prim(rise.openMP.primitives.mapPar.primitive)
+  }
 
   implicit def panyWithoutType(v: ?.type): ExtendedPatternAny =
     ExtendedPatternAny(TypePatternAny)

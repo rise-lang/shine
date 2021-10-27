@@ -128,6 +128,11 @@ object rules {
     Seq("f" notFree "x")
   )
 
+  def splitJoin2(n: Int) = NamedRewrite.init(s"split-join-2-$n",
+    ("in" :: ((`_`: Nat)`.``_`))
+      -->
+    app(join, app(nApp(split, n), "in"))
+  )
   // TODO: other means of picking n, such as tuning parameters
   def splitJoin(n: Int) = NamedRewrite.init(s"split-join-$n",
     /* app(map, "f")
@@ -503,7 +508,7 @@ object rules {
     reduce --> rcp.reduceSeq.primitive
   )
   val reduceSeqUnroll = NamedRewrite.init("reduce-seq-unroll",
-    reduce --> rcp.reduceSeqUnroll.primitive
+    rcp.reduceSeq.primitive --> rcp.reduceSeqUnroll.primitive
   )
   val mapSeq = NamedRewrite.init("map-seq",
     map --> rcp.mapSeq.primitive
@@ -517,6 +522,30 @@ object rules {
     app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
   )
 
+  val storeToMem = NamedRewrite.init("store-to-mem",
+    ("in" :: ("dt": DataType))
+      -->
+    app(app(rcp.let.primitive, app(rcp.toMem.primitive, "in")), lam("x", "x"))
+  )
+  val hoistLetApp = NamedRewrite.init("hoist-let-app",
+    (app("y", app(app(rcp.let.primitive, "v"), lam("x", "b"))) :: (`_`: DataType))
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", app("y", "b")))
+  )
+  /*
+  val hoistLetLam = NamedRewrite.init("hoist-let-lam",
+    lam("y", app(app(rcp.let.primitive, "v"), lam("x", "b")))
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", lam("y", "b"))),
+    Seq("b" notFree "y")
+  )
+   */
+
+  val mapArray = NamedRewrite.init("map-array",
+    ("x" :: ((`_`: Nat)`.`(`_`: DataType)))
+      -->
+    app(app(map, lam("y", "y")), "x")
+  )
   val mapSeqArray = NamedRewrite.init("map-seq-array",
     ("x" :: ((`_`: Nat)`.`(`_`: DataType)))
       -->
@@ -549,10 +578,17 @@ object rules {
     nApp(nApp(slide, "sz"), 1) --> app(nApp(rcp.rotateValues.primitive, "sz"), lam("x", "x"))
   )
 
+  object omp {
+    val mapPar = NamedRewrite.init("map-par",
+      map --> rise.openMP.primitives.mapPar.primitive
+    )
+  }
+
   object vectorize {
-    def after(n: Int) = NamedRewrite.init(s"vec-$n-after",
+    // TODO: generalize over data type
+    def after(n: Int, dt: DataType) = NamedRewrite.init(s"vec-$n-after-$dt",
       // TODO: if m % n == 0 ?
-      ("e" :: (("m": Nat)`.`("dt": DataType)))
+      ("e" :: (("m": Nat)`.`dt))
         -->
       app(asScalar, app(nApp(asVector, n), "e"))
     )

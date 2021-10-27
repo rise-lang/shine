@@ -1,5 +1,6 @@
 package benchmarks.eqsat
 
+import rise.core.{types => rct}
 import rise.eqsat._
 import rise.elevate.rules.lowering.lowerToC
 import rise.elevate.rules.traversal.default._
@@ -27,12 +28,24 @@ object mm {
 
   def containsMap(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
+  def containsMap(dt: DataTypePattern, f: ExtendedPattern): ExtendedPattern =
+    contains(app(map :: `?t` ->: dt ->: `?t`, f))
+  def containsMap(n: NatPattern, f: ExtendedPattern, in: ExtendedPattern): ExtendedPattern =
+    contains(app(app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f), in))
+  def containsMapPar(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+    contains(app(omp.mapPar :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
+  def containsMapPar(dt: DataTypePattern, f: ExtendedPattern): ExtendedPattern =
+    contains(app(omp.mapPar :: `?t` ->: dt ->: `?t`, f))
+  def containsMapPar(n: NatPattern, f: ExtendedPattern, in: ExtendedPattern): ExtendedPattern =
+    contains(app(app(omp.mapPar :: `?t` ->: (n`.``?dt`) ->: `?t`, f), in))
 
   def containsMapSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(mapSeq :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
   def containsReduceSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(reduceSeq :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
+  def containsReduceSeqUnroll(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+    contains(app(reduceSeqUnroll :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
   val m = `%n`(2)
   val n = `%n`(1)
@@ -127,29 +140,39 @@ object mm {
 
   val tilingStepBENF = splitStepBENF compose reorderStepBENF
 
-  val vectorizationStep = GuidedSearch.Step.init(BENF) withRules Seq(
-    rules.mapFusion,
-    rules.vectorize.after(32),
-    rules.vectorize.beforeMapF32,
-    rules.vectorize.beforeMap_F32xF32,
-    rules.vectorize.beforeMap_F32x_F32xF32
+  val copyStep = GuidedSearch.Step.init(BENF) withRules Seq(
+    rules.storeToMem,
+    rules.splitJoin2(32),
+    rules.mapArray,
+    rules.transposeAroundMapMapF1M,
   )
 
   val loweringStep = GuidedSearch.Step.init(BENF) withRules Seq(
     rules.mapFusion,
-    rules.reduceSeq,
-    rules.mapSeq,
-    rules.mapSeqArray,
-  ) // TODO: withExtractor ???
+    rules.mapEtaAbstraction,
+    rules.vectorize.after(32, rct.f32),
+    rules.vectorize.after(32, rct.PairType(rct.f32, rct.f32)),
+    rules.vectorize.after(32, rct.PairType(rct.f32, rct.PairType(rct.f32, rct.f32))),
+    rules.vectorize.beforeMapF32,
+    rules.vectorize.beforeMap_F32xF32,
+    rules.vectorize.beforeMap_F32x_F32xF32,
+    // rules.mapSeq,
+    // rules.reduceSeq,
+    rules.reduceSeqUnroll,
+    rules.omp.mapPar,
+  )
 
   private def goals(): () = {
-    // goal("baseline", apps.tvmGemm.baseline)
-    // goal("blocking", apps.tvmGemm.blocking)
+    /*
+    goal("baseline", apps.tvmGemm.baseline)
+    goal("blocking", apps.tvmGemm.blocking)
     goal("vectorization", apps.tvmGemm.vectorization)
     goal("loop-perm", apps.tvmGemm.loopPerm)
-    // goal("array-packing", apps.tvmGemm.arrayPacking)
-    // goal("cache-blocks", apps.tvmGemm.cacheBlocks)
-    // goal("parallel", apps.tvmGemm.par)
+    goal("array-packing", apps.tvmGemm.arrayPacking)
+     */
+    // FIXME: Elevate reference seems to be broken here (wrong innermost)
+    goal("cache-blocks", apps.tvmGemm.cacheBlocks)
+    goal("parallel", apps.tvmGemm.par)
   }
 
   private def M = 1024
@@ -176,21 +199,36 @@ object mm {
     // val loweredWithElevate = lowerToC.apply(Expr.toNamed(e)).get
     // println(loweredWithElevate)
 
+    // TODO: prefer hoisted lets
     object Cost extends CostFunction[Int] {
       val ordering = implicitly
 
-      def cost(enode: ENode, costs: EClassId => Int): Int = {
+      override def cost(egraph: EGraph, enode: ENode, t: TypeId, costs: EClassId => Int): Int = {
         import rise.core.primitives._
         val nodeCost = enode match {
           // prefer asVectorAligned, until we can deal with alignement better
           case Primitive(asVector()) => 1_000
-          case _ => 1
+          // prefer vectorized sequential maps, need to generalize this
+          case Primitive(mapSeq()) =>
+            val vectorizedP = {
+              import ExtendedPatternDSL._
+
+              (vecT(`?n`, `?dt`) ->: vecT(`?n`, `?dt`)) ->: `?t` ->: `?t`
+            }
+            if (ExtendedPattern.typeIsMatch(egraph, vectorizedP, t)) {
+              1
+            } else {
+              2
+            }
+          case _ => 2
         }
         enode.children().foldLeft(nodeCost) { case (acc, eclass) => acc + costs(eclass) }
       }
     }
 
     LoweringSearch.init().run(BENF, Cost, Seq(e), Seq(
+      // TODO:
+      // rules.hoistLetApp, rules.hoistLetLam,
       rules.mapFusion,
       rules.reduceSeq,
       rules.mapSeq,
@@ -198,9 +236,32 @@ object mm {
       rules.vectorize.promoteAligned
     )) match {
       case Some(res) =>
-        val loweredWithEqsat = Expr.toNamed(res)
+        val loweredWithEqsat =
+          elevate.core.strategies.basic.repeat(
+            elevate.core.strategies.traversal.topDown(
+              apps.cameraPipelineRewrite.letHoist))(
+                Expr.toNamed(res)).get
         println(loweredWithEqsat)
-        val code = util.gen.openmp.function.asStringFromExpr(loweredWithEqsat)
+
+        val withSizes = {
+          // FIXME: doing this before the lowering search seems to slow it down
+          import rise.eqsat.ExprDSL._
+          val eg = EGraph.empty()
+
+          def betaNat(e: ExprWithHashCons, n: Nat): ExprWithHashCons = {
+            e.node match {
+              case NatLambda(b) => b.withNatArgument(eg, eg.addNat(n))
+              case _ => ???
+            }
+          }
+
+          val e2 = betaNat(betaNat(betaNat(
+            ExprWithHashCons.fromExpr(eg)(Expr.fromNamed(loweredWithEqsat)),
+            cst(M)), cst(N)), cst(K))
+          Expr.toNamed(ExprWithHashCons.expr(eg)(e2))
+        }
+
+        val code = util.gen.openmp.function.asStringFromExpr(withSizes)
         util.writeToPath(s"/tmp/${name.replace(' ', '_')}.c", code)
       case None => println("could not generate code")
     }
@@ -226,10 +287,6 @@ object mm {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
-      emptyStep withSketch
-        containsMap(m,
-          containsMap(n,
-            containsReduceSeq(k, containsAddMul))),
       tilingStep withSketch
         containsMap(m /^ cst(32),
           containsMap(n /^ cst(32),
@@ -253,10 +310,6 @@ object mm {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
-      emptyStep withSketch
-        containsMap(m,
-          containsMap(n,
-            containsReduceSeq(k, containsAddMul))),
       tilingStep withSketch
         containsMap(m /^ cst(32),
           containsMap(cst(32),
@@ -299,10 +352,6 @@ object mm {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
-      emptyStep withSketch
-        containsMap(m,
-          containsMap(n,
-            containsReduceSeq(k, containsAddMul))),
       splitStep withSketch
         containsMap(m /^ cst(32),
           containsMap(cst(32),
@@ -344,10 +393,6 @@ object mm {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
-      emptyStep withSketch
-        containsMap(m,
-          containsMap(n,
-            containsReduceSeq(k, containsAddMul))),
       tilingStep withSketch
         containsMap(m /^ cst(32),
           containsMap(cst(32),
@@ -378,10 +423,6 @@ object mm {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
-      emptyStep withSketch
-        containsMap(m,
-          containsMap(n,
-            containsReduceSeq(k, containsAddMul))),
       splitStep withSketch
         containsMap(m /^ cst(32),
           containsMap(cst(32),
@@ -407,14 +448,11 @@ object mm {
       .run(start, steps)
   }
 
-  private def vectorization_SRV(): GuidedSearch.Result = {
+  private def vectorization_SRL(): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
+    // could start directly from blocking outcome
 
     val steps = Seq(
-      emptyStep withSketch
-        containsMap(m,
-          containsMap(n,
-            containsReduceSeq(k, containsAddMul))),
       splitStepBENF withSketch
         containsMap(m /^ cst(32),
           containsMap(cst(32),
@@ -429,7 +467,7 @@ object mm {
               containsReduceSeq(cst(4),
                 containsMap(cst(32),
                   containsMap(cst(32), containsAddMul)))))),
-      vectorizationStep withSketch
+      loweringStep withSketch
         containsMap(m /^ cst(32),
           containsMap(n /^ cst(32),
             containsReduceSeq(k /^ cst(4),
@@ -447,14 +485,10 @@ object mm {
       .run(start, steps)
   }
 
-  private def loopPerm_SRV(): GuidedSearch.Result = {
+  private def loopPerm_SRL(): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
 
     val steps = Seq(
-      emptyStep withSketch
-        containsMap(m,
-          containsMap(n,
-            containsReduceSeq(k, containsAddMul))),
       splitStepBENF withSketch
         containsMap(m /^ cst(32),
           containsMap(cst(32),
@@ -469,7 +503,7 @@ object mm {
               containsMap(cst(32),
                 containsReduceSeq(cst(4),
                   containsMap(cst(32), containsAddMul)))))),
-      vectorizationStep withSketch
+      loweringStep withSketch
         containsMap(m /^ cst(32),
           containsMap(n /^ cst(32),
             containsReduceSeq(k /^ cst(4),
@@ -487,10 +521,113 @@ object mm {
       .run(start, steps)
   }
 
-  // TODO:
-  // tvmGemm.arrayPacking(mm).get,
-  // tvmGemm.cacheBlocks(mm).get,
-  // tvmGemm.par(mm).get
+  private val arrayPackingSRC = Seq(
+    splitStepBENF withSketch
+      containsMap(m /^ cst(32),
+        containsMap(cst(32),
+          containsMap(n /^ cst(32),
+            containsMap(cst(32),
+              containsReduceSeq(k /^ cst(4),
+                containsReduceSeq(cst(4), containsAddMul)))))),
+    reorderStepBENF withSketch
+      containsMap(m /^ cst(32),
+        containsMap(n /^ cst(32),
+          containsReduceSeq(k /^ cst(4),
+            containsMap(cst(32),
+              containsReduceSeq(cst(4),
+                containsMap(cst(32), containsAddMul)))))),
+    copyStep withSketch
+      containsMap(m /^ cst(32),
+        containsMap(n /^ cst(32),
+          containsReduceSeq(k /^ cst(4),
+            containsMap(cst(32),
+              containsReduceSeq(cst(4),
+                containsMap(cst(32), containsAddMul))))),
+        contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+          containsMap(n /^ cst(32),
+            containsMap(k,
+              containsMap(cst(32)`.`f32, ?))))))),
+  )
+
+  private def arrayPacking_SRCL(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+
+    val steps = arrayPackingSRC ++ Seq(
+      loweringStep withSketch
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsMap(cst(32),
+                containsReduceSeq(cst(4),
+                  containsMap(cst(1), containsAddMulVec))))),
+          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+            containsMapPar(n /^ cst(32),
+              containsMap(k,
+                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .run(start, steps)
+  }
+
+  private def cacheBlocks_SRCL(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+    // val start = apps.tvmGemm.arrayPacking(mm).get
+
+    val steps = arrayPackingSRC ++ Seq(
+      loweringStep withSketch
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsMap(cst(32),
+                containsReduceSeqUnroll(cst(4),
+                  containsMap(cst(1), containsAddMulVec))))),
+          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+            containsMapPar(n /^ cst(32),
+              containsMap(k,
+                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .run(start, steps)
+  }
+
+  private def parallel_SRCL(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+    // val start = apps.tvmGemm.arrayPacking(mm).get
+
+    val steps = arrayPackingSRC ++ Seq(
+      loweringStep withSketch
+        containsMapPar(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsMap(cst(32),
+                containsReduceSeqUnroll(cst(4),
+                  containsMap(cst(1), containsAddMulVec))))),
+          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+            containsMapPar(n /^ cst(32),
+              containsMap(k,
+                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .run(start, steps)
+  }
 
   def main(args: Array[String]): () = {
     val fs = Seq(
@@ -501,11 +638,14 @@ object mm {
       // "blocking SRSR" -> { () => blocking_SRSR(splitStepBENF, reorderStepBENF) },
       // FIXME: the program found has unwanted split/joins
       // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
-      // "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+       // "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
       // FIXME: cannot find goal, rewriting is stuck with the given rules
       // "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
-      "vectorization SRV" -> vectorization_SRV _,
-      "loop-perm SRV" -> loopPerm_SRV _,
+       // "vectorization SRL" -> vectorization_SRL _,
+       // "loop-perm SRL" -> loopPerm_SRL _,
+       // "array-packing SRCL" -> arrayPacking_SRCL _,
+      "cache-blocks SRCL" -> cacheBlocks_SRCL _,
+      "parallel SRCL" -> parallel_SRCL _,
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))
