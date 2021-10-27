@@ -1,7 +1,7 @@
 package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic.NamedVar
-import rise.core.types.{DataKind, DataType, NatIdentifier, NatKind}
+import rise.core.types.{DataKind, DataType, NatIdentifier, NatKind, NatToNat, NatToNatLambda}
 import rise.core.types.DataType.DataTypeIdentifier
 import shine.DPIA.Compilation.FunDef
 import shine.DPIA.Phrases._
@@ -90,8 +90,8 @@ object SeparateHostAndKernelCode {
   // TODO: collect free nat identifiers?
   private def freeVariables(p: Phrase[_ <: PhraseType])
   : (Set[Identifier[ExpType]], Set[NamedVar]) = {
-    var idents = scala.collection.mutable.Set[Identifier[ExpType]]()
-    var natIdents = scala.collection.mutable.Set[NamedVar]()
+    val idents = scala.collection.mutable.Set[Identifier[ExpType]]()
+    val natIdents = scala.collection.mutable.Set[NamedVar]()
 
     case class Visitor(boundV: Set[Identifier[_]],
                        boundT: Set[DataTypeIdentifier],
@@ -108,6 +108,12 @@ object SeparateHostAndKernelCode {
         case DepLambda(DataKind, x: DataTypeIdentifier, _) =>
           Continue(p, this.copy(boundT = boundT + x))
         case _ => Continue(p, this)
+      }
+
+      override def natToNat(ft: NatToNat): NatToNat = ft match {
+        case NatToNatLambda(x, b) =>
+          NatToNatLambda(x, this.copy(boundN = boundN + x).nat(b))
+        case _ => super.natToNat(ft)
       }
 
       override def nat[N <: Nat](n: N): N = {

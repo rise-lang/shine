@@ -79,8 +79,7 @@ class gemvCheck extends test_util.Tests {
     }
   }
 
-  // host code generation fails
-  test("hostcode generation for GEMV expressions fails"){
+  test("hostcode generation for GEMV expressions"){
 
     def run(e: ToBeTyped[Expr]):String = {
       val wrapped = autotune.wrapOclRun(LocalSize(128), GlobalSize(1024))(e)
@@ -91,50 +90,5 @@ class gemvCheck extends test_util.Tests {
     run(ocl.gemvFusedAMD)
     run(ocl.gemvKeplerBest)
 
-  }
-
-  test("generated hostcode fails"){
-    val code =
-      """
-        |#include "ocl/ocl.h"
-        |struct foo_t {
-        |  Kernel k0;
-        |};
-        |
-        |typedef struct foo_t foo_t;
-        |
-        |void foo_init(Context ctx, foo_t* self){
-        |  (*self).k0 = loadKernel(ctx, k0);
-        |}
-        |
-        |void foo_destroy(Context ctx, foo_t* self){
-        |  destroyKernel(ctx, (*self).k0);
-        |}
-        |
-        |void foo_run(Context ctx, foo_t* self, Buffer moutput, int n228, int n229, Buffer me230, Buffer me231, Buffer me232, float e233, float e234){
-        |  {
-        |    DeviceBuffer b0 = deviceBufferSync(ctx, moutput, n229 * sizeof(float), DEVICE_WRITE);
-        |    DeviceBuffer b5 = deviceBufferSync(ctx, me231, n228 * sizeof(float), DEVICE_READ);
-        |    DeviceBuffer b6 = deviceBufferSync(ctx, me230, n229 * (n228 * sizeof(float)), DEVICE_READ);
-        |    DeviceBuffer b8 = deviceBufferSync(ctx, me232, n229 * sizeof(float), DEVICE_READ);
-        |    const size_t global_size[3] = (const size_t[3]){1024, 1, 1};
-        |    const size_t local_size[3] = (const size_t[3]){128, 1, 1};
-        |    const KernelArg args[12] = (const KernelArg[12]){KARG(b0), KARG(n2n70), KARG(n2n69), KARG(n229), KARG(n228), KARG(b5), KARG(b6), KARG(e234), KARG(b8), KARG(e233), LARG(128 * sizeof(float)), LARG(1 * sizeof(float))};
-        |    launchKernel(ctx, (*self).k0, global_size, local_size, 12, args);
-        |  }
-        |
-        |}
-        |
-        |void foo_init_run(Context ctx, Buffer moutput, int n228, int n229, Buffer me230, Buffer me231, Buffer me232, float e233, float e234){
-        |  foo_t foo;
-        |  foo_init(ctx, &foo);
-        |  foo_run(ctx, &foo, moutput, n228, n229, me230, me231, me232, e233, e234);
-        |  foo_destroy(ctx, &foo);
-        |}
-        |
-        |
-        |""".stripMargin
-
-    SyntaxChecker.apply(code)
   }
 }
