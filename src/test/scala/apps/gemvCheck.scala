@@ -6,7 +6,7 @@ import Type._
 import rise.autotune
 import rise.core.Expr
 import rise.core.types._
-import util.{SyntaxChecker, gen}
+import util.{gen}
 import util.gen.c.function
 import rise.core.types.DataType._
 import shine.OpenCL.{GlobalSize, LocalSize}
@@ -43,6 +43,21 @@ class gemvCheck extends test_util.Tests {
     ocl.gemvKeplerBest.toExpr
   }
 
+  test("OpenCL gemv versions host-code generation creates syntactically correct host-code"){
+
+    def run(e: ToBeTyped[Expr], localSize: LocalSize, globalSize: GlobalSize):String = {
+      val wrapped = autotune.wrapOclRun(localSize, globalSize)(e)
+      val codeModule = gen.opencl.hosted.fromExpr(wrapped)
+      shine.OpenCL.Module.translateToString(codeModule) // syntax checker is called here
+    }
+
+    run(ocl.gemvBlastN, LocalSize(64), GlobalSize(1024))
+    run(ocl.gemvBlastT, LocalSize(64), GlobalSize(1024))
+    run(ocl.gemvFused, LocalSize(128), GlobalSize(1024))
+    run(ocl.gemvFusedAMD, LocalSize(128), GlobalSize(1024))
+    run(ocl.gemvKeplerBest, LocalSize(128), GlobalSize(1024))
+  }
+
   test("OpenMP gemv versions type inference works") {
     omp.gemvFused.toExpr
   }
@@ -77,18 +92,5 @@ class gemvCheck extends test_util.Tests {
         ("dpia T", runKernel(kernelT, matT, xs, ys, alpha, beta))
       ))
     }
-  }
-
-  test("hostcode generation for GEMV expressions"){
-
-    def run(e: ToBeTyped[Expr]):String = {
-      val wrapped = autotune.wrapOclRun(LocalSize(128), GlobalSize(1024))(e)
-      val codeModule = gen.opencl.hosted.fromExpr(wrapped)
-      shine.OpenCL.Module.translateToString(codeModule)
-    }
-
-    run(ocl.gemvFusedAMD)
-    run(ocl.gemvKeplerBest)
-
   }
 }

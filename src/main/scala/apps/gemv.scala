@@ -84,7 +84,7 @@ object gemv {
           zip(xs)(t._1) |>
             split(n) |>
             toLocalFun(mapLocal(
-              reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
             mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
         )) |> join
