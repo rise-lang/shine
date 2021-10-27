@@ -1,5 +1,6 @@
 package apps.autotuning
 
+import apps.mv.ocl
 import apps.mv.ocl._
 import arithexpr.arithmetic.RangeMul
 import rise.autotune
@@ -22,22 +23,26 @@ class mvTuning extends test_util.Tests {
 
   // mvBlastN
   val mvBlastNTuning: ToBeTyped[Expr] =
-    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(mvBlastNParam(s0))
-    )
-  // mvBlastT
-  val mvBlastTTuning: ToBeTyped[Expr] =
-    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(mvBlastTParam(s0))
-    )
+    wrapOclMv(mvBlastN)
+
+  // mvBlastN
+//  val mvBlastNTuning: ToBeTyped[Expr] =
+//    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
+//      wrapOclMv(mvBlastNParam(s0))
+//    )
+//  // mvBlastT
+//  val mvBlastTTuning: ToBeTyped[Expr] =
+//    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
+//      wrapOclMv(mvBlastTParam(s0))
+//    )
 
   // gemvFusedAMD
   val mvFusedAMDTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(mvKeplerBestParam(s0))
+      wrapOclMv(mvFusedAMDParam(s0))
     )
 
-  // mvKeplerBest
+   // mvKeplerBest
   val mvKeplerBestTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       wrapOclMv(mvKeplerBestParam(s0))
@@ -105,19 +110,21 @@ class mvTuning extends test_util.Tests {
 
   test("print different gemv tuning versions"){
 
-    println("mvBlastNTuning: " + mvBlastNTuning)
-    println("mvBlastTTuning: " + mvBlastTTuning)
-    println("mvFused: " + mvFusedTuning)
+    println("mvTuning: " + mvTuning)
+    println("mvFusedTuning: " + mvFusedTuning)
+
     println("mvFusedAMDTuning: " + mvFusedAMDTuning)
     println("mvKeplerBestTuning: " + mvKeplerBestTuning)
+
+    println("mvBlastNTuning: " + mvBlastNTuning)
+//    println("mvBlastTTuning: " + mvBlastTTuning)
 
   }
 
   def executeMv(e: Expr, s0: Nat) = {
 
-
     val params: Nat => Map[Nat, Nat] = s0 => Map(
-      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls0") -> (s0: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1: Nat),
@@ -147,25 +154,30 @@ class mvTuning extends test_util.Tests {
 
   }
 
-  test("exeute mv version") {
+  test("execute mv version") {
 
-    // performance very close
-    executeMv(mvTuning, 16) // ignore s0 in this case // 0.05008 ms
-    executeMv(mvFusedTuning, 16) // ignore s0 in this case // 0.051008 ms
-    executeMv(mvBlastNTuning, 64)
-    executeMv(mvBlastTTuning, 64)
-    executeMv(mvFusedAMDTuning, 128)
-    executeMv(mvKeplerBestTuning, 16)
+    // update performance numbers
+    executeMv(mvTuning, 128) // ignore s0 in this case // 0.05008 ms
+    executeMv(mvFusedTuning, 128) // ignore s0 in this case // 0.051008 ms
+
+    executeMv(mvFusedAMDTuning, 128) //
+    executeMv(mvKeplerBestTuning, 128) //
+
+    executeMv(mvBlastNTuning, 64) //
+    //    executeMv(mvBlastTTuning, 64) //
+
   }
 
   test("tune mv version") {
     runTuning(mvTuning, "mvTuning")
     runTuning(mvFusedTuning, "mvFusedTuning")
-    runTuning(mvBlastNTuning, "mvBlastN")
-    runTuning(mvBlastTTuning, "mvBlastT")
-    runTuning(mvFusedTuning, "mvFused") // ignore s0 in this case
+
     runTuning(mvFusedAMDTuning, "mvFusedAMD")
     runTuning(mvKeplerBestTuning, "mvKeplerBest")
+
+    runTuning(mvBlastNTuning, "mvBlastN")
+//    runTuning(mvBlastTTuning, "mvBlastT")
+
   }
 
   def runTuning(e: Expr, version: String) = {
