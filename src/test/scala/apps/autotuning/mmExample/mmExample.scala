@@ -1,6 +1,7 @@
 package apps.autotuning.mmExample
 
 import apps.separableConvolution2D
+import apps.separableConvolution2D.mulT
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.autotune.{tuningParam, wrapOclRun}
 import rise.core.DSL.Type._
@@ -13,13 +14,16 @@ import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.{GlobalSize, LocalSize}
 
-class mmExample {
+class mmExample extends test_util.Tests {
+
   // helper functions
   private val id = fun(x => x)
-  private val mulT = separableConvolution2D.mulT
-  private val dot = separableConvolution2D.dot
+  private val mulT: ToBeTyped[Expr] = fun(x => fst(x) * snd(x))
+  private val dot: ToBeTyped[Expr] = fun(a => fun(b =>
+    zip(a)(b) |> map(mulT) |> reduce(add)(lf32(0.0f))
+  ))
   private val dotSeq = fun(a => fun(b =>
-    zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
+    zip(a)(b) |> map(mulT) |> reduceSeq(add)(lf32(0.0f))
   ))
 
   // the first matrix input is transposed
@@ -125,7 +129,6 @@ class mmExample {
                     )) |> join // N.M.f
                 ))
               ))))))
-
 
   // wrap ocl run pattern for opencl-code-gen
   // add global and local sizes as tuning parameters
