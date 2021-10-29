@@ -14,6 +14,9 @@ import rise.elevate.rules.algorithmic.gap8hwConvMerge
 import rise.elevate.strategies.traversal._
 import shine.GAP8
 
+/**
+  * HWCE constraint: W has to be even
+  * */
 class hwce extends test_util.Tests {
 
   val exprNoPipes: ToBeTyped[Rise] = {

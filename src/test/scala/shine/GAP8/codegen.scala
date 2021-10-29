@@ -181,21 +181,20 @@ class codegen extends test_util.Tests {
   }
 
   test("Convolution 3x3") {
-    val w: Nat = 12
-    val h: Nat = 12
     val expr: ToBeTyped[Rise] = {
-      fun((w`.`h`.`i16) ->: (3`.`3`.`i16) ->: ((w - 2)`.`(h - 2)`.`i16))((in, filter) =>
-        gap8Run(8)(
-          in |>
-            slide2D(3, 1) |>
-            mapPar(mapPar(fun(sub => {
-              zip(sub |> join)(filter |> join) |>
-                map(fun(x => fst(x) * snd(x))) |>
-                reduceSeq(add)(li16(0))
-            })))
+      depFun((w:Nat, h: Nat) =>
+        fun((w`.`h`.`i16) ->: (3`.`3`.`i16) ->: ((w - 2)`.`(h - 2)`.`i16))((in, filter) =>
+          gap8Run(8)(
+            in |>
+              slide2D(3, 1) |>
+              mapPar(mapPar(fun(sub => {
+                zip(sub |> join)(filter |> join) |>
+                  map(fun(x => fst(x) * snd(x))) |>
+                  reduceSeq(add)(li16(0))
+              })))
+          )
         )
       )
-
     }
 
     val module = util.gen.gap8.hosted.fromExpr(expr)
