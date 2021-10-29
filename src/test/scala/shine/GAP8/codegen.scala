@@ -9,6 +9,7 @@ import rise.core.primitives._
 import rise.core.types.DataType._
 import rise.core.types._
 import rise.elevate.Rise
+import rise.openMP.primitives.mapPar
 import shine.GAP8
 
 // scalastyle:off
@@ -77,8 +78,8 @@ class codegen extends test_util.Tests {
     val expr: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) =>
       fun((n`.`o`.`u32) ->: (o`.`m`.`u32) ->: (n`.`m`.`u32))((a, b) =>
         gap8Run(8)(
-          a |> mapSeq(fun(rowa =>
-            b |> transpose |> mapSeq(fun(colb =>
+          a |> mapPar(fun(rowa =>
+            b |> transpose |> mapPar(fun(colb =>
               zip(rowa)(colb) |> map(fun(x => fst(x) * snd(x))) |> reduceSeq(add)(cast(l(0)) :: u32)
             ))
           ))
@@ -103,7 +104,7 @@ class codegen extends test_util.Tests {
           pic |>
             padCst2D(1, 1)(cast(l(0)) :: u8) |>
             slide2D(sz = 3, st = 1) |>
-            mapSeq(mapSeq(fun(submat => {
+            mapPar(mapPar(fun(submat => {
               zip(submat |> join)(h_w |> join) |> map(fun(x => (cast(fst(x)) :: u32) * cast(snd(x)) :: u32)) |> reduceSeqUnroll(add)(cast(l(0)) :: u32) |> letf(h =>
                 zip(submat |> join)(v_w |> join) |> map(fun(x => (cast(fst(x)) :: u32) * cast(snd(x)) :: u32)) |> reduceSeqUnroll(add)(cast(l(0)) :: u32) |> letf(v =>
                   cast(apps.SobelFilter.gapSqrt(h * h + v * v)) :: u8
@@ -155,9 +156,9 @@ class codegen extends test_util.Tests {
     // from lift.highLevel.kmeans clustersType = ArrayType(ArrayType(Float, F), C)
     //    clusters matrix C X F
     val expr: ToBeTyped[Rise] = depFun((p: Nat, c: Nat, f: Nat) =>
-      fun((f`.`p`.`u32) ->: (c`.`f`.`u32) ->: (p`.`u32))((features, clusters) =>
+      fun((p`.`f`.`u32) ->: (c`.`f`.`u32) ->: (p`.`u32))((features, clusters) =>
         gap8Run(8)(
-          features |> transpose |> mapSeq(fun(feature =>
+          features |> mapPar(fun(feature =>
             clusters |> reduceSeq(fun(tuple => fun(cluster => {
               val dist = zip(feature)(cluster) |> reduceSeq(update)(cast(l(0)) :: u32)
               testF(dist)(tuple)
