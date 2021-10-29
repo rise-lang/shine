@@ -92,6 +92,7 @@ class mmTuning extends test_util.Tests {
       execution = Median
     )
     println("result0: " + result0.runtime)
+    assert(result0.runtime.isRight)
 
     val params1:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (4: Nat),
@@ -116,6 +117,7 @@ class mmTuning extends test_util.Tests {
       execution = Median
     )
     println("result1: " + result1.runtime)
+    assert(result1.runtime.isRight)
 
     val params2:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (8: Nat),
@@ -139,11 +141,13 @@ class mmTuning extends test_util.Tests {
       speedupFactor = 100,
       execution = Minimum
     )
+
     println("result2: " + result2.runtime)
+    assert(result2.runtime.isRight)
   }
 
   // standard hypermapper
-  test("mm tuning 128") {
+  ignore("mm tuning 128") {
     val mm: Expr =
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
@@ -173,7 +177,7 @@ class mmTuning extends test_util.Tests {
     println("bestSample: " + bestSample)
   }
 
-  test("mm tuning 1024 with generated config file") {
+  ignore("mm tuning 1024 with generated config file") {
     val mm: Expr =
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
@@ -192,7 +196,7 @@ class mmTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None, // we don't inject usage of local memory as constraints - many configs fail
-      hmConstraints = false,
+      hmConstraints = true,
       runtimeStatistic = Minimum
     )
 
