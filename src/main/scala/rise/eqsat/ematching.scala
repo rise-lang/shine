@@ -9,7 +9,7 @@ import scala.collection.mutable
 object ematching {
   object AbstractMachine {
     def init(eclass: EClassId): AbstractMachine =
-      AbstractMachine(Vec(eclass), Vec(), Vec())
+      AbstractMachine(Vec(eclass), Vec(), Vec(), Vec())
   }
 
   /** An abstract machine on which compiled [[Pattern]]s ([[Program]]s) are executed
@@ -17,10 +17,12 @@ object ematching {
     */
   case class AbstractMachine(regs: Vec[EClassId],
                              nRegs: Vec[NatId],
-                             tRegs: Vec[TypeId]) {
+                             tRegs: Vec[TypeId],
+                             aRegs: Vec[Address]) {
     def reg(r: Reg): EClassId = regs(r.n)
     def nReg(r: NatReg): NatId = nRegs(r.n)
     def tReg(r: TypeReg): TypeId = tRegs(r.n)
+    def aReg(r: AddrReg): Address = aRegs(r.n)
 
     def run[ED, ND, TD](egraph: EGraph,
                         instructions: Seq[Instruction],
@@ -30,16 +32,17 @@ object ematching {
         instrs.head match {
           case PushType(i) =>
             tRegs += egraph.get(reg(i)).t
-          case Bind(node, i, out, nOut, tOut) =>
-            val isRoot = i == Reg(0)
+          case Bind(node, i, out, nOut, tOut, aOut) =>
             forEachMatchingNode(egraph.get(reg(i)), node, { matched =>
               regs.remove(out.n, regs.size - out.n)
               nRegs.remove(nOut.n, nRegs.size - nOut.n)
               tRegs.remove(tOut.n, tRegs.size - tOut.n)
+              aRegs.remove(aOut.n, aRegs.size - aOut.n)
               matched.map(
                 id => regs += id,
                 n => nRegs += n,
-                dt => tRegs += dt
+                dt => tRegs += dt,
+                a => aRegs += a,
               )
               run(egraph, instrs.tail, yieldFn)
             })
@@ -78,6 +81,14 @@ object ematching {
             if (!egraph(tReg(i)).isInstanceOf[DataTypeNode[_, _]]) {
               return
             }
+          case AddrBind(a, i) =>
+            if (aReg(i) != a) {
+              return
+            }
+          case AddrCompare(i, j) =>
+            if (aReg(i) != aReg(j)) {
+              return
+            }
         }
         instrs = instrs.tail
       }
@@ -90,7 +101,7 @@ object ematching {
   case class PushType(i: Reg) extends Instruction
   // try all matches of `node` in `i`
   case class Bind(node: MNode, i: Reg,
-                  out: Reg, nOut: NatReg, tOut: TypeReg) extends Instruction
+                  out: Reg, nOut: NatReg, tOut: TypeReg, aOut: AddrReg) extends Instruction
   // handle repeated variable occurrences
   case class Compare(i: Reg, j: Reg) extends Instruction
   case class NatBind(n: MNatNode, i: NatReg) extends Instruction
@@ -98,17 +109,21 @@ object ematching {
   case class TypeBind(t: MTypeNode, i: TypeReg) extends Instruction
   case class TypeCompare(i: TypeReg, j: TypeReg) extends Instruction
   case class DataTypeCheck(i: TypeReg) extends Instruction
+  case class AddrBind(a: Address, i: AddrReg) extends Instruction
+  case class AddrCompare(i: AddrReg, j: AddrReg) extends Instruction
 
   case class Reg(n: Int)
   case class NatReg(n: Int)
   case class TypeReg(n: Int)
+  case class AddrReg(n: Int)
 
   /** A program compiled from a [[Pattern]] */
   class Program(val instructions: Vec[Instruction],
                 var v2r: HashMap[PatternVar, Reg], // TODO? HashMap[_, _] -> compact Vec[_]
                 var n2r: HashMap[NatPatternVar, NatReg],
                 var t2r: HashMap[TypePatternVar, TypeReg],
-                var dt2r: HashMap[DataTypePatternVar, TypeReg]) {
+                var dt2r: HashMap[DataTypePatternVar, TypeReg],
+                var a2r: HashMap[AddressPatternVar, AddrReg]) {
     def run[ED, ND, TD](egraph: EGraph,
                         eclass: EClassId,
                         hashcons: SubstHashCons): Vec[Subst] = {
@@ -130,7 +145,8 @@ object ematching {
         val substDataTypes = hashcons.dataTypeSubst(dt2r.iterator.map { case (v, reg) =>
           (v, machine.tReg(reg).asInstanceOf[DataTypeId])
         })
-        substs += Subst(substExprs, substNats, substTypes, substDataTypes)
+        val substAddr = hashcons.addrSubst(a2r.iterator.map { case (v, reg) => (v, machine.aReg(reg)) })
+        substs += Subst(substExprs, substNats, substTypes, substDataTypes, substAddr)
         ()
       }
       machine.run(egraph, instructions.toSeq, yieldFn)
@@ -146,20 +162,20 @@ object ematching {
   }
 
   /** A node without children for matching purposes */
-  type MNode = Node[(), (), ()]
+  type MNode = Node[(), (), (), ()]
   type MNatNode = NatNode[()]
   type MTypeNode = TypeNode[(), (), ()]
 
   def forEachMatchingNode(eclass: EClass, node: MNode, f: ENode => Unit): Unit = {
     import scala.math.Ordering.Implicits._
-    import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering}
+    import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering, addressOrdering}
 
     if (eclass.nodes.size < 50) {
       eclass.nodes.filter(n => node.matches(n)).foreach(f)
     } else {
       assert(eclass.nodes.sliding(2).forall(w => w(0) < w(1)))
       // binary search
-      eclass.nodes.view.map(_.map(_ => (), _ => (), _ => ())).search(node) match {
+      eclass.nodes.view.map(_.map(_ => (), _ => (), _ => (), _ => ())).search(node) match {
         case scala.collection.Searching.Found(found) =>
           def findStart(pos: Int): Int =
             if ((pos > 0) && eclass.nodes(pos - 1).matches(node)) {
@@ -187,6 +203,7 @@ object ematching {
   case class TodoExpr(reg: Reg, pat: Pattern) extends Todo
   case class TodoNat(reg: NatReg, pat: NatPattern) extends Todo
   case class TodoType(reg: TypeReg, pat: TypePattern) extends Todo
+  case class TodoAddress(reg: AddrReg, pat: AddressPattern) extends Todo
 
   // TODO: this ordering has not been thought-through for the addition of types yet
   object Todo {
@@ -252,6 +269,20 @@ object ematching {
       }
     }
 
+    implicit val todoAddrOrd: math.Ordering[TodoAddress] = new Ordering[TodoAddress] {
+      override def compare(x: TodoAddress, y: TodoAddress): Int = {
+        (x.pat, y.pat) match {
+          case (AddressPatternNode(_), AddressPatternNode(_)) => 0
+          case (AddressPatternNode(_), _) => -1
+          case (_, AddressPatternNode(_)) => 1
+          case (AddressPatternVar(_), AddressPatternVar(_)) => 0
+          case (AddressPatternVar(_), _) => -1
+          case (_, AddressPatternVar(_)) => 1
+          case (AddressPatternAny, AddressPatternAny) => 0
+        }
+      }
+    }
+
     implicit val todoOrd: math.Ordering[Todo] = new Ordering[Todo] {
       override def compare(x: Todo, y: Todo): Int = {
         (x, y) match {
@@ -262,6 +293,9 @@ object ematching {
           case (_: TodoNat, _) => 1
           case (_, _: TodoNat) => -1
           case (t1: TodoType, t2: TodoType) => todoTypeOrd.compare(t1, t2)
+          case (_: TodoType, _) => 1
+          case (_, _: TodoType) => -1
+          case (t1: TodoAddress, t2: TodoAddress) => todoAddrOrd.compare(t1, t2)
         }
       }
     }
@@ -270,9 +304,9 @@ object ematching {
   object Compiler {
     def compile(pattern: Pattern): Program = {
       val compiler = new Compiler(pattern,
-        HashMap.empty, HashMap.empty, HashMap.empty, HashMap.empty,
+        HashMap.empty, HashMap.empty, HashMap.empty, HashMap.empty, HashMap.empty,
         mutable.PriorityQueue(TodoExpr(Reg(0), pattern)),
-        Reg(1), NatReg(0), TypeReg(0))
+        Reg(1), NatReg(0), TypeReg(0), AddrReg(0))
       compiler.go()
     }
   }
@@ -283,10 +317,12 @@ object ematching {
                  var n2r: HashMap[NatPatternVar, NatReg],
                  var t2r: HashMap[TypePatternVar, TypeReg],
                  var dt2r: HashMap[DataTypePatternVar, TypeReg],
+                 var a2r: HashMap[AddressPatternVar, AddrReg],
                  var todo: mutable.PriorityQueue[Todo],
                  var out: Reg,
                  var nOut: NatReg,
-                 var tOut: TypeReg) {
+                 var tOut: TypeReg,
+                 var aOut: AddrReg) {
     def pushTodo(p: Pattern): Unit = {
       todo.addOne(TodoExpr(out, p))
       out = Reg(out.n + 1)
@@ -298,6 +334,10 @@ object ematching {
     def pushTodo(p: TypePattern): Unit = {
       todo.addOne(TodoType(tOut, p))
       tOut = TypeReg(tOut.n + 1)
+    }
+    def pushTodo(p: AddressPattern): Unit = {
+      todo.addOne(TodoAddress(aOut, p))
+      aOut = AddrReg(aOut.n + 1)
     }
 
     def go(): Program = {
@@ -317,9 +357,10 @@ object ematching {
                 val currentOut = Reg(out.n)
                 val currentNOut = NatReg(nOut.n)
                 val currentTOut = TypeReg(tOut.n)
+                val currentAOut = AddrReg(aOut.n)
 
-                val mNode = node.map(pushTodo, pushTodo, pushTodo)
-                instructions += Bind(mNode, i, currentOut, currentNOut, currentTOut)
+                val mNode = node.map(pushTodo, pushTodo, pushTodo, pushTodo)
+                instructions += Bind(mNode, i, currentOut, currentNOut, currentTOut, currentAOut)
             }
           case TodoNat(i, pat) =>
             pat match {
@@ -331,7 +372,7 @@ object ematching {
               case NatPatternNode(node) =>
                 val mNode = node.map(pushTodo)
                 instructions += NatBind(mNode, i)
-          }
+            }
           case TodoType(i, pat) =>
             pat match {
               case v: TypePatternVar => t2r.get(v) match {
@@ -357,10 +398,20 @@ object ematching {
               val mNode = node.map(pushTodo, pushTodo, pushTodo)
               instructions += TypeBind(mNode, i)
             }
+          case TodoAddress(i, pat) =>
+            pat match {
+              case v: AddressPatternVar => a2r.get(v) match {
+                case Some(j) => instructions += AddrCompare(i, j)
+                case None => a2r += v -> i
+              }
+              case AddressPatternAny =>
+              case AddressPatternNode(node) =>
+                instructions += AddrBind(node, i)
+            }
         }
       }
 
-      new Program(instructions, v2r, n2r, t2r, dt2r)
+      new Program(instructions, v2r, n2r, t2r, dt2r, a2r)
     }
   }
 }

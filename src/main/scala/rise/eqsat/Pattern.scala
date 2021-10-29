@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 
 object Pattern {
   def fromExpr(e: Expr): Pattern = {
-    val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType)
+    val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType, AddressPattern.fromAddress)
     Pattern(PatternNode(pnode), TypePattern.fromType(e.t))
   }
 
@@ -29,7 +29,7 @@ object Pattern {
         p.p match {
           case w: PatternVar => subst(w, shc)
           case PatternNode(n) =>
-            val enode = n.map(pat, nat, data)
+            val enode = n.map(pat, nat, data, addr)
             egraph.add(enode, `type`(p.t))
         }
       }
@@ -53,6 +53,13 @@ object Pattern {
           case TypePatternNode(n) => egraph.add(n.map(`type`, nat, data))
           case TypePatternAny => missingRhsTy()
           case dtp: DataTypePattern => data(dtp)
+        }
+      }
+      def addr(pat: AddressPattern): Address = {
+        pat match {
+          case w: AddressPatternVar => subst(w, shc)
+          case AddressPatternNode(n) => n
+          case AddressPatternAny => missingRhsTy()
         }
       }
 
@@ -82,7 +89,7 @@ case class Pattern(p: PatternVarOrNode, t: TypePattern) {
   def patternVars(): Set[Any] = {
     (this.p match {
       case PatternNode(n) =>
-        Node.collect(n.map(_.patternVars(), _.patternVars(), _.patternVars())).flatten.toSet
+        Node.collect(n.map(_.patternVars(), _.patternVars(), _.patternVars(), _.patternVars())).flatten.toSet
       case pv: PatternVar => Set(pv)
     }) ++ this.t.patternVars()
   }

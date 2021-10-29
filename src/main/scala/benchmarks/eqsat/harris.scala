@@ -1,5 +1,6 @@
 package benchmarks.eqsat
 
+import rise.core.{types => rct}
 import rise.eqsat._
 import rise.elevate.rules.traversal.default._
 import rise.eqsat.PredicateDSL._
@@ -26,6 +27,31 @@ object harris {
     rules.slideAfter2,
   )
 
+  val computeWithStep = GuidedSearch.Step.init(BENF) withRules Seq(
+    rules.fstReduction, rules.sndReduction,
+    rules.takeOutsidePair,
+    rules.vectorize.asScalarOutsidePair,
+    rules.mapOutsidePair,
+    rules.slideOutsideZip,
+    rules.mapOutsideZip,
+    rules.zipSame,
+    rules.mapFusion
+  )
+
+  val loweringStep = GuidedSearch.Step.init(BENF) withRules Seq(
+    rules.fstReduction, rules.sndReduction,
+    rules.removeTransposePair,
+    rules.mapFusion,
+    rules.mapSeq,
+    rules.reduceSeq,
+    rules.iterateStream,
+    rules.ocl.circularBuffer(rct.AddressSpace.Global),
+    rules.ocl.circularBufferLoadFusion,
+    rules.ocl.reduceSeq(rct.AddressSpace.Private),
+    rules.ocl.reduceSeqUnroll,
+    rules.ocl.toMem(rct.AddressSpace.Private),
+  )
+
   // val nf = apps.harrisCornerDetectionHalideRewrite.reducedFusedForm
   val start = apps.harrisCornerDetectionHalide.harris(1, 1).toExpr
 
@@ -42,10 +68,13 @@ object harris {
 
   val containsAddMul = contains(app(app(add, ?), contains(mul)))
   val containsDot = contains(app(reduce, contains(add))) // containsAddMul if fused
+  val containsReduceSeq = contains(app(aApp(ocl.reduceSeqUnroll, `private`), contains(add)))
   val det = (`?`: ExtendedPattern) * `?` - (`?`: ExtendedPattern) * `?`
   val trace = (`?`: ExtendedPattern) + `?`
   val containsCoarsity = contains(det - (`?`: ExtendedPattern) * trace * trace)
 
+  // FIXME: this is array >= 1d
+  // check ?dt != array ?
   val array1d = `?n``.``?dt`
   val array2d = `?n``.`array1d
   val array3d = `?n``.`array2d
@@ -61,6 +90,10 @@ object harris {
 
   def sobel1d(input: ExtendedPattern): ExtendedPattern =
     app(containsDot :: array1d ->: array1d, contains(input))
+
+  def sobel1dPaired(input: ExtendedPattern): ExtendedPattern =
+    app(contains(app(map, contains(app(app(makePair,
+      containsDot), containsDot)))), contains(input))
 
   def mul2d(a: ExtendedPattern, b: ExtendedPattern): ExtendedPattern =
     app(contains(mul) :: array2d ->: array2d, contains(app(app(zip, a), b)))
@@ -86,6 +119,9 @@ object harris {
   def slide(n: Int, m: Int): ExtendedPattern =
     nApp(nApp(ExtendedPatternDSL.slide, cst(n)), cst(m))
 
+  def lineBuffer(n: Int, load: ExtendedPattern): ExtendedPattern =
+    app(nApp(nApp(aApp(ocl.circularBuffer, global), cst(n)), cst(n)), load)
+
   private def shape(): GuidedSearch.Result = {
     val steps = Seq(
       emptyStep withSketch contains {
@@ -106,7 +142,18 @@ object harris {
         val syy = sum3x3(mul2dSame(iy))
         coarsity2d(sxx, sxy, syy)
       }, */
-      shapeStep withSketch contains(
+      /* shapeStep withSketch contains {
+        app(map, contains {
+          val g = gray2d(?)
+          val ix = sobel2d(g)
+          val iy = sobel2d(g)
+          val sxx = sum3(mul1d(ix, ix))
+          val sxy = sum3(mul1d(ix, iy))
+          val syy = sum3(mul1d(iy, iy))
+          coarsity1d(sxx, sxy, syy)
+        })
+      }, */
+      /* shapeStep withSketch contains(
         (? : ExtendedPattern) |>
         app(map, contains(gray1d(?))) |> slide(3, 1) |>
         app(map, contains(sobel1d(?))) |> slide(3, 1) |>
@@ -116,18 +163,76 @@ object harris {
           val syy = sum3(mul1d(?, ?))
           coarsity1d(sxx, sxy, syy)
         })
+      ) */
+    )
+
+    GuidedSearch.init()
+      .withFilter(StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withNodeLimit(1_000_000)
+         // .withIterationLimit(60)
+         // .withScheduler(SamplingScheduler.init().withDefaultLimit(4_000))
+         .withTimeLimit(java.time.Duration.ofMinutes(2)))
+      .run(start, steps)
+  }
+
+  private def buffered(): GuidedSearch.Result = {
+    // TODO: include shape step?
+    val start = apps.harrisCornerDetectionHalideRewrite.ocl.harrisBufferedShape.reduce(_`;`_)(
+      apps.harrisCornerDetectionHalide.harris(1, 1)).get
+
+    val steps = Seq(
+      emptyStep withSketch contains(
+        (? : ExtendedPattern) |>
+        app(map, contains(gray1d(?))) |> slide(3, 1) |>
+        app(map, contains(sobel1d(?))) |> slide(3, 1) |>
+        app(map, contains {
+          val sxx = sum3(mul1d(?, ?))
+          val sxy = sum3(mul1d(?, ?))
+          val syy = sum3(mul1d(?, ?))
+          coarsity1d(sxx, sxy, syy)
+        })
+      ),
+      computeWithStep withSketch contains(
+        (? : ExtendedPattern) |>
+        app(map, contains(gray1d(?))) |> slide(3, 1) |>
+        app(map, contains(sobel1dPaired(?))) |> slide(3, 1) |>
+        app(map, contains {
+          val sxx = sum3(mul1d(?, ?))
+          val sxy = sum3(mul1d(?, ?))
+          val syy = sum3(mul1d(?, ?))
+          coarsity1d(sxx, sxy, syy)
+        })
+      ),
+      // FIXME: many maps become iterateStream, they should not: give higher cost to using that primitive?
+      loweringStep withSketch contains(
+        (? : ExtendedPattern) |>
+        lineBuffer(3, contains(app(mapSeq, containsReduceSeq))) |>
+        lineBuffer(3, contains(app(mapSeq,
+          contains(app(app(makePair, containsReduceSeq), containsReduceSeq))))) |>
+        app(iterateStream, contains {
+          val sxx = contains(app(map, containsReduceSeq))
+          val sxy = sxx
+          val syy = sxx
+          app(app(mapSeq, containsCoarsity), // TODO: coarsity with things toPrivate
+            app(app(zip, sxx), app(app(zip, sxy), syy)))
+        })
       )
     )
 
     GuidedSearch.init()
       .withFilter(StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
       .run(start, steps)
   }
 
   def main(args: Array[String]): () = {
     shapeGoal()
     val fs = Seq(
-      "shape" -> shape _,
+      // "shape" -> shape _,
+      "buffered" -> buffered _,
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))

@@ -27,6 +27,13 @@ object IsClosedForm {
       case _ => return_
     }
 
+    override def addressSpace: AddressSpace => Pair[AddressSpace] = {
+      // FIXME: this should be dispatched to `typeIdentifier` ???
+      case i: AddressSpaceIdentifier =>
+        if (boundT(i)) return_(i: AddressSpace) else accumulate((Set(), Set(i)))(i: AddressSpace)
+      case x => return_(x)
+    }
+
     override def nat: Nat => Pair[Nat] = n => {
       val free = n.varList.foldLeft(Set[Kind.Identifier]()) {
         case (free, v: NamedVar) if !boundT(NatIdentifier(v)) => free + NatIdentifier(v)

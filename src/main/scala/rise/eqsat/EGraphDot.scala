@@ -110,6 +110,8 @@ case class EGraphDot(egraph: EGraph,
       case NatLambda(_) => "Λ : nat"
       case DataApp(_, dt) => s"dtApp $dt"
       case DataLambda(_) => "Λ : data"
+      case AddrApp(_, a) => s"aApp $a"
+      case AddrLambda(_) => "Λ : addr"
       case Literal(d) => s"$d"
       case Primitive(p) => s"${p.toString.trim}"
       case Composition(_, _) => ">>"

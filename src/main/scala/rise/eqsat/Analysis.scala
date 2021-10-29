@@ -295,7 +295,8 @@ object SmallestSizeAnalysis extends SemiLatticeAnalysis {
 
 class FreeData(var free: HashSet[Int],
                var freeNat: HashSet[Int],
-               var freeDataType: HashSet[Int])
+               var freeDataType: HashSet[Int],
+               var freeAddr: HashSet[Int])
 class FreeNatData(var freeNat: HashSet[Int])
 class FreeTypeData(var freeNat: HashSet[Int],
                    var freeDataType: HashSet[Int])
@@ -324,6 +325,7 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
     val free = HashSet.empty[Int]
     val freeNat = HashSet.empty[Int]
     val freeDataType = HashSet.empty[Int]
+    val freeAddr = HashSet.empty[Int]
 
     val freeOf = egraph.getAnalysis(this)
     val (freeOfNat, freeOfType) = egraph.getTypeAnalysis(this)
@@ -336,22 +338,32 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
         free ++= ed.free.filter(idx => idx != 0).map(idx => idx - 1)
         freeNat ++= ed.freeNat
         freeDataType ++= ed.freeDataType
+        freeAddr ++= ed.freeAddr
       case NatLambda(e) =>
         val ed = freeOf(e)
         free ++= ed.free
         freeNat ++= ed.freeNat.filter(idx => idx != 0).map(idx => idx - 1)
         freeDataType ++= ed.freeDataType
+        freeAddr ++= ed.freeAddr
       case DataLambda(e) =>
         val ed = freeOf(e)
         free ++= ed.free
         freeNat ++= ed.freeNat
         freeDataType ++= ed.freeDataType.filter(idx => idx != 0).map(idx => idx - 1)
+        freeAddr ++= ed.freeAddr
+      case AddrLambda(e) =>
+        val ed = freeOf(e)
+        free ++= ed.free
+        freeNat ++= ed.freeNat
+        freeDataType ++= ed.freeDataType
+        freeAddr ++= ed.freeAddr
       case _ => enode.map(
         { c =>
           val d = freeOf(c)
           free ++= d.free
           freeNat ++= d.freeNat
           freeDataType ++= d.freeDataType
+          freeAddr ++= d.freeAddr
         },
         { n =>
           val d = freeOfNat(n)
@@ -361,6 +373,11 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
           val d = freeOfType(dt)
           freeNat ++= d.freeNat
           freeDataType ++= d.freeDataType
+        },
+        {
+          case AddressVar(index) =>
+            freeAddr += index
+          case _ =>
         }
       )
     }
@@ -370,24 +387,28 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
       freeDataType ++= d.freeDataType
     }
 
-    new Data(free, freeNat, freeDataType)
+    new Data(free, freeNat, freeDataType, freeAddr)
   }
 
   override def merge(a: Data, b: Data): MergeResult = {
     val beforeFreeCount = a.free.size
     val beforeFreeNatCount = a.freeNat.size
     val beforeFreeDataTypeCount = a.freeDataType.size
+    val beforeFreeAddrCount = a.freeAddr.size
     freeMerge(a.free, b.free)
     freeMerge(a.freeNat, b.freeNat)
     freeMerge(a.freeDataType, b.freeDataType)
+    freeMerge(a.freeAddr, b.freeAddr)
 
     MergeResult(a,
       mayNotBeA = beforeFreeCount != a.free.size ||
         beforeFreeNatCount != a.freeNat.size ||
-        beforeFreeDataTypeCount != a.freeDataType.size,
+        beforeFreeDataTypeCount != a.freeDataType.size ||
+        beforeFreeAddrCount != a.freeAddr.size,
       mayNotBeB = beforeFreeCount != b.free.size ||
         beforeFreeNatCount != b.freeNat.size ||
-        beforeFreeDataTypeCount != b.freeDataType.size
+        beforeFreeDataTypeCount != b.freeDataType.size ||
+        beforeFreeAddrCount != b.freeAddr.size
     )
   }
 
@@ -424,6 +445,10 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
         val d = freeOfType(t)
         freeNat ++= d.freeNat
         freeDataType ++= d.freeDataType.iterator.filter(idx => idx != 0).map(idx => idx - 1)
+      case AddrFunType(t) =>
+        val d = freeOfType(t)
+        freeNat ++= d.freeNat
+        freeDataType ++= d.freeDataType
       case dt: DataTypeNode[NatId, DataTypeId] =>
         dt match {
           case DataTypeVar(index) => freeDataType += index

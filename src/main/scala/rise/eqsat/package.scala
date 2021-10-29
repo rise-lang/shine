@@ -6,8 +6,9 @@ import scala.collection.mutable
   * based on the [[https://egraphs-good.github.io/ `egg` library]].
   */
 package object eqsat {
-  type ENode = Node[EClassId, NatId, DataTypeId]
-  type PNode = Node[Pattern, NatPattern, DataTypePattern]
+  type ENode = Node[EClassId, NatId, DataTypeId, Address]
+  type PNode = Node[Pattern, NatPattern, DataTypePattern, AddressPattern]
+  type Address = AddressNode
 
   /** A key to identify [[EClass]]es within an [[EGraph]] */
   case class EClassId(i: Int)

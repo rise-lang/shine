@@ -585,6 +585,7 @@ case class VectorizeScalarFunExtractApplier(f: PatternVar, n: NatPatternVar, fV:
             yield eg.add(FunType(inTV, outTV))
         case NatFunType(t) => ???
         case DataFunType(t) => ???
+        case AddrFunType(t) => ???
         case _: DataTypeNode[_, _] => throw new Exception("this should not happen")
       }
     }

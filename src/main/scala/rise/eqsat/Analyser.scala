@@ -423,6 +423,20 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
             case _ => throw new Exception("this should not happen")
           }
         }
+      case AddrApp(f, _) =>
+        val fBeams = analysisOf(f)
+        fBeams.map { case ((annotation, env), beam) =>
+          val newBeam = beam.flatMap { x =>
+            Seq((
+              cf.cost(egraph, enode, t, Map(f -> x._1)),
+              ExprWithHashCons(enode.mapChildren(Map(f -> x._2)), t)
+            ))
+          }
+          annotation match {
+            case NotDataTypeAnnotation(AddrFunType(at)) => (at, env) -> newBeam
+            case _ => throw new Exception("this should not happen")
+          }
+        }
       case NatLambda(e) =>
         val eBeams = analysisOf(e)
         eBeams.map { case ((annotation, env), beam) =>
@@ -446,6 +460,18 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           // note: recording DataFunType() constructor is useless
           (NotDataTypeAnnotation(DataFunType(annotation)), env) -> newBeam
+        }
+      case AddrLambda(e) =>
+        val eBeams = analysisOf(e)
+        eBeams.map { case ((annotation, env), beam) =>
+          val newBeam = beam.flatMap { x =>
+            Seq((
+              cf.cost(egraph, enode, t, Map(e -> x._1)),
+              ExprWithHashCons(enode.mapChildren(Map(e -> x._2)), t)
+            ))
+          }
+          // note: recording DataFunType() constructor is useless
+          (NotDataTypeAnnotation(AddrFunType(annotation)), env) -> newBeam
         }
       case Literal(_) =>
         val beam = Seq((

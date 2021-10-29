@@ -9,10 +9,10 @@ import scala.language.implicitConversions
 import scala.xml.NodeSeq
 
 object ExtendedPattern {
-  type PNode = Node[ExtendedPattern, NatPattern, DataTypePattern]
+  type PNode = Node[ExtendedPattern, NatPattern, DataTypePattern, AddressPattern]
 
   def fromExpr(e: Expr): ExtendedPattern = {
-    val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType)
+    val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType, AddressPattern.fromAddress)
     ExtendedPatternNode(pnode, TypePattern.fromType(e.t))
   }
 
@@ -149,17 +149,18 @@ object ExtendedPattern {
           val childrenMatches = node.children().map(searchRec).toSeq
           // TODO: skip if any child has empty matches?
 
-          egraph.classesByMatch(node.matchHash()).filter { id =>
+          egraph.classesByMatch.getOrElse(node.matchHash(), HashSet.empty).filter { id =>
             val eclass = egraph.get(id)
             assert(id == eclass.id)
             var isMatch = false
 
             if (typeIsMatch(egraph, t, eclass.t)) {
               // TODO: could short-circuit
-              ematching.forEachMatchingNode(eclass, node.map(_ => (), _ => (), _ => ()), { matched =>
+              ematching.forEachMatchingNode(eclass, node.map(_ => (), _ => (), _ => (), _ => ()), { matched =>
                 val typesMatch =
                   node.nats().zip(matched.nats()).forall { case (p, n) => natIsMatch(egraph, p, n) } &&
-                    node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) }
+                  node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) } &&
+                  node.addresses().zip(matched.addresses()).forall { case (p, a) => addressIsMatch(p, a) }
                 if (typesMatch) {
                   val childrenMatch = childrenMatches.iterator.zip(matched.children())
                     .forall { case (matches, id) =>
@@ -256,15 +257,16 @@ object ExtendedPattern {
           val childrenMatches = node.children().map(searchRec).toSeq
           // TODO: skip if any child has empty matches?
 
-          egraph.classesByMatch(node.matchHash()).flatMap { id =>
+          egraph.classesByMatch.getOrElse(node.matchHash(), HashSet.empty).flatMap { id =>
             val eclass = egraph.get(id)
             var beam = Seq.empty[(Cost, ExprWithHashCons)]
 
             if (typeIsMatch(egraph, t, eclass.t)) {
-              ematching.forEachMatchingNode(eclass, node.map(_ => (), _ => (), _ => ()), { matched =>
+              ematching.forEachMatchingNode(eclass, node.map(_ => (), _ => (), _ => (), _ => ()), { matched =>
                 val typesMatch =
                   node.nats().zip(matched.nats()).forall { case (p, n) => natIsMatch(egraph, p, n) } &&
-                  node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) }
+                  node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) } &&
+                  node.addresses().zip(matched.addresses()).forall { case (p, a) => addressIsMatch(p, a) }
                 if (typesMatch) {
                   traverse(
                     childrenMatches.iterator.zip(matched.children())
@@ -456,6 +458,13 @@ object ExtendedPattern {
       case NatPatternAny => true
     }
   }
+  def addressIsMatch(p: AddressPattern, t: Address): Boolean = {
+    p match {
+      case AddressPatternNode(pn) => pn == t
+      case AddressPatternVar(index) => ??? // TODO
+      case AddressPatternAny => true
+    }
+  }
 
   def traverse[A, B](iterator: Iterator[A])(f: A => Option[B]): Option[Vec[B]] = {
     val acc = Vec.empty[B]
@@ -476,7 +485,7 @@ object ExtendedPattern {
 
 sealed trait ExtendedPatternMatch
 object ExtendedPatternMatch {
-  type MNode[T] = Node[T, NatId, DataTypeId]
+  type MNode[T] = Node[T, NatId, DataTypeId, Address]
 
   /** The entire e-class is a match */
   case class EClass(id: EClassId) extends ExtendedPatternMatch
@@ -498,7 +507,7 @@ object ExtendedPatternMatch {
 
 /** An extended pattern */
 sealed trait ExtendedPattern {
-  import ExtendedPattern.{typeIsMatch, dataTypeIsMatch, natIsMatch, traverse}
+  import ExtendedPattern.{typeIsMatch, dataTypeIsMatch, natIsMatch, addressIsMatch, traverse}
 
   def searchEClass(egraph: EGraph, id: EClassId): Vec[ExtendedPatternMatch] = {
     assert(egraph.clean)
@@ -532,10 +541,11 @@ sealed trait ExtendedPattern {
         // egraph.classesByMatch.get(node.matchHash())
         val res = Vec.empty[ExtendedPatternMatch]
         if (typeIsMatch(egraph, t, eclass.t)) {
-          ematching.forEachMatchingNode(eclass, node.map(_ => (), _ => (), _ => ()), matched => {
+          ematching.forEachMatchingNode(eclass, node.map(_ => (), _ => (), _ => (), _ => ()), matched => {
             val typesMatch =
               node.nats().zip(matched.nats()).forall { case (p, n) => natIsMatch(egraph, p, n) } &&
-              node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) }
+              node.dataTypes().zip(matched.dataTypes()).forall { case (p, dt) => dataTypeIsMatch(egraph, p, dt) } &&
+              node.addresses().zip(matched.addresses()).forall { case (p, a) => addressIsMatch(p, a) }
             if (typesMatch) {
               val childrenMatches = traverse(node.children().zip(matched.children())) { case (p, id) =>
                 val ms = p.searchEClass(egraph, egraph.get(id), visited + eclass.id, memo/*, Some(matched)*/)
@@ -637,6 +647,8 @@ object ExtendedPatternDSL {
   def nLam(e: ExtendedPattern): ExtendedPattern.PNode = NatLambda(e)
   def dtApp(f: ExtendedPattern, x: DataTypePattern): ExtendedPattern.PNode = DataApp(f, x)
   def dtLam(e: ExtendedPattern): ExtendedPattern.PNode = DataLambda(e)
+  def aApp(f: ExtendedPattern, x: AddressPattern): ExtendedPattern.PNode = AddrApp(f, x)
+  def aLam(e: ExtendedPattern): ExtendedPattern.PNode = AddrLambda(e)
   def l(d: semantics.Data): ExtendedPattern.PNode = Literal(d)
   def larr(a: Seq[semantics.Data]): ExtendedPattern.PNode = l(semantics.ArrayData(a))
 
@@ -649,6 +661,7 @@ object ExtendedPatternDSL {
   def reduceSeq: ExtendedPattern.PNode = prim(rcp.reduceSeq.primitive)
   def reduceSeqUnroll: ExtendedPattern.PNode = prim(rcp.reduceSeqUnroll.primitive)
   def transpose: ExtendedPattern.PNode = prim(rcp.transpose.primitive)
+  def makePair: ExtendedPattern.PNode = prim(rcp.makePair.primitive)
   def zip: ExtendedPattern.PNode = prim(rcp.zip.primitive)
   def join: ExtendedPattern.PNode = prim(rcp.join.primitive)
   def fst: ExtendedPattern.PNode = prim(rcp.fst.primitive)
@@ -666,6 +679,16 @@ object ExtendedPatternDSL {
   def take: ExtendedPattern.PNode = prim(rcp.take.primitive)
   def let: ExtendedPattern.PNode = prim(rcp.let.primitive)
   def toMem: ExtendedPattern.PNode = prim(rcp.toMem.primitive)
+  def iterateStream: ExtendedPattern.PNode = prim(rcp.iterateStream.primitive)
+
+  def global: AddressPattern = AddressPatternNode(Global)
+  def `private`: AddressPattern = AddressPatternNode(Private)
+
+  object ocl {
+    import rise.openCL.{primitives => p}
+    def circularBuffer: ExtendedPattern.PNode = prim(p.oclCircularBuffer.primitive)
+    def reduceSeqUnroll: ExtendedPattern.PNode = prim(p.oclReduceSeqUnroll.primitive)
+  }
 
   object omp {
     def mapPar: ExtendedPattern.PNode = prim(rise.openMP.primitives.mapPar.primitive)

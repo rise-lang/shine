@@ -10,7 +10,7 @@ trait RewriteDirected {
 
 object RewriteDirected {
   sealed trait Match
-  case class MatchNode(mnode: Node[Match, (), ()], enode: ENode, id: EClassId) extends Match
+  case class MatchNode(mnode: Node[Match, (), (), ()], enode: ENode, id: EClassId) extends Match
   case class MatchClass(id: EClassId) extends Match
 
   // returns whether the right-hand side creates a new alternative,
@@ -162,7 +162,7 @@ object RewriteDirected {
                   lamEClass.id)
                 res += ((m, () => {
                   val extract = smallestOf(matchingAppFun.id)._1
-                  val shifted = extract.shifted(egraph, (-1, 0, 0), (1, 0, 0))
+                  val shifted = extract.shifted(egraph, (-1, 0, 0, 0), (1, 0, 0, 0))
                   val (resultNode, resultId) = egraph.addExpr2(shifted)
                   (matchingLam != resultNode, egraph.union(lamEClass.id, resultId)._2)
                 }))

@@ -3,7 +3,6 @@ package rise.elevate
 import elevate.core._
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
-
 import _root_.util.gen
 
 // scalastyle:off

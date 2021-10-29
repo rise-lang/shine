@@ -44,6 +44,7 @@ class PatternCheck extends test_util.Tests {
     }
   }
 
+  // TODO: test address App
   test("compile program with depApps") {
     import PatternDSL._
 
@@ -54,11 +55,11 @@ class PatternCheck extends test_util.Tests {
     assert(
       pattern.prog.instructions == Vec(
         PushType(Reg(0)),
-        Bind(NatApp((), ()), Reg(0), Reg(1), NatReg(0), TypeReg(1)),
+        Bind(NatApp((), ()), Reg(0), Reg(1), NatReg(0), TypeReg(1), AddrReg(0)),
         PushType(Reg(1)),
-        Bind(NatApp((), ()), Reg(1), Reg(2), NatReg(1), TypeReg(2)),
+        Bind(NatApp((), ()), Reg(1), Reg(2), NatReg(1), TypeReg(2), AddrReg(0)),
         PushType(Reg(2)),
-        Bind(Primitive(rise.core.primitives.add.primitive), Reg(2), Reg(3), NatReg(2), TypeReg(3)),
+        Bind(Primitive(rise.core.primitives.add.primitive), Reg(2), Reg(3), NatReg(2), TypeReg(3), AddrReg(0)),
         // TODO: the bind below will be executed on each match backtracking,
         //  it is probably best to reorder execution in a smarter way
         NatCompare(NatReg(0), NatReg(1))
@@ -94,7 +95,7 @@ class PatternCheck extends test_util.Tests {
     assert(
       pattern.prog.instructions == Vec(
         PushType(Reg(0)),
-        Bind(Primitive(rise.core.primitives.map.primitive), Reg(0), Reg(1), NatReg(0), TypeReg(1)),
+        Bind(Primitive(rise.core.primitives.map.primitive), Reg(0), Reg(1), NatReg(0), TypeReg(1), AddrReg(0)),
         // TODO: the bind below will be executed on each match backtracking,
         //  it is probably best to reorder execution in a smarter way
         TypeBind(FunType((), ()), TypeReg(0)),

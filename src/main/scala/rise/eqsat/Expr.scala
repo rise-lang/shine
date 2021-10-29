@@ -14,14 +14,14 @@ object ExprWithHashCons {
     Type(egraph(t).map(`type`(egraph), nat(egraph), dataType(egraph)))
 
   def expr(egraph: EGraph)(e: ExprWithHashCons): Expr =
-    Expr(e.node.map(expr(egraph), nat(egraph), dataType(egraph)), `type`(egraph)(e.t))
+    Expr(e.node.map(expr(egraph), nat(egraph), dataType(egraph), a => a), `type`(egraph)(e.t))
 
   def fromExpr(egraph: EGraph)(e: Expr): ExprWithHashCons =
-    ExprWithHashCons(e.node.map(fromExpr(egraph), egraph.addNat, egraph.addDataType),
+    ExprWithHashCons(e.node.map(fromExpr(egraph), egraph.addNat, egraph.addDataType, a => a),
       egraph.addType(e.t))
 }
 
-case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId], t: TypeId) {
+case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId, Address], t: TypeId) {
   override def toString: String = s"($node : $t)"
 
   /** Shifts De-Bruijn indices up or down if they are >= cutoff */
@@ -44,22 +44,22 @@ case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId], t: 
 
   // substitutes %0 for arg in this
   def withArgument[E, ED, ND, DT](egraph: EGraph, arg: ExprWithHashCons): ExprWithHashCons = {
-    val argS = arg.shifted(egraph, (1, 0, 0), (0, 0, 0))
+    val argS = arg.shifted(egraph, (1, 0, 0, 0), (0, 0, 0, 0))
     val bodyR = this.replace(egraph, 0, argS)
-    bodyR.shifted(egraph, (-1, 0, 0), (0, 0, 0))
+    bodyR.shifted(egraph, (-1, 0, 0, 0), (0, 0, 0, 0))
   }
 
   // substitutes %n0 for arg in this
   def withNatArgument[E, ED, ND, DT](egraph: EGraph, arg: NatId): ExprWithHashCons = {
     val argS = NodeSubs.Nat.shifted(egraph, arg, 1, 0)
     val bodyR = this.replace(egraph, 0, argS)
-    bodyR.shifted(egraph, (0, -1, 0), (0, 0, 0))
+    bodyR.shifted(egraph, (0, -1, 0, 0), (0, 0, 0, 0))
   }
 }
 
 // TODO: could also be outside of eqsat package
 /** A Rise expression based on DeBruijn indexing */
-case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
+case class Expr(node: Node[Expr, Nat, DataType, Address], t: Type) {
   override def toString: String = s"($node : $t)"
 /*
   /** Shifts De-Bruijn indices up or down if they are >= cutoff */
@@ -95,12 +95,12 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
 }
 
 object Expr {
-  /** Shift expr, nat and datatype indices */
-  type Shift = (Int, Int, Int)
+  /** Shift expr, nat, datatype and address indices */
+  type Shift = (Int, Int, Int, Int)
 
   object Bound {
     def empty: Bound =
-      Bound(Seq(), Seq(), Seq(), allowFreeIndices = false)
+      Bound(Seq(), Seq(), Seq(), Seq(), allowFreeIndices = false)
   }
 
   sealed trait NotBoundException extends Exception
@@ -114,6 +114,7 @@ object Expr {
   case class Bound(expr: Seq[core.Identifier],
                    nat: Seq[rct.NatIdentifier],
                    data: Seq[rct.DataTypeIdentifier],
+                   addr: Seq[rct.AddressSpaceIdentifier],
                    allowFreeIndices: Boolean) {
     private def get[T](s: Seq[T], i: Int, free: => T): T =
       s.lift(i).getOrElse {
@@ -125,6 +126,8 @@ object Expr {
       get(nat, i, rct.NatIdentifier(s"%n$i"))
     def getData(i: Int): rct.DataTypeIdentifier =
       get(data, i, rct.DataTypeIdentifier(s"%dt$i"))
+    def getAddr(i: Int): rct.AddressSpaceIdentifier =
+      get(addr, i, rct.AddressSpaceIdentifier(s"%a$i"))
 
     private def indexOf[T](s: Seq[T], x: T): Int = {
       val i = s.indexOf(x)
@@ -133,6 +136,7 @@ object Expr {
     def indexOf(i: core.Identifier): Int = indexOf(expr, i)
     def indexOf(i: rct.NatIdentifier): Int = indexOf(nat, i)
     def indexOf(i: rct.DataTypeIdentifier): Int = indexOf(data, i)
+    def indexOf(i: rct.AddressSpaceIdentifier): Int = indexOf(addr, i)
 
     def +(i: core.Identifier): Bound =
       this.copy(expr = i +: expr)
@@ -140,6 +144,8 @@ object Expr {
       this.copy(nat = i +: nat)
     def +(i: rct.DataTypeIdentifier): Bound =
       this.copy(data = i +: data)
+    def +(i: rct.AddressSpaceIdentifier): Bound =
+      this.copy(addr = i +: addr)
   }
 
   def fromNamed(expr: core.Expr, bound: Bound = Bound.empty): Expr = {
@@ -151,11 +157,15 @@ object Expr {
         NatApp(fromNamed(f, bound), Nat.fromNamed(n, bound))
       case core.DepApp(f, dt: rct.DataType) =>
         DataApp(fromNamed(f, bound), DataType.fromNamed(dt, bound))
+      case core.DepApp(f, a: rct.AddressSpace) =>
+        AddrApp(fromNamed(f, bound), Address.fromNamed(a, bound))
       case core.DepApp(_, _) => ???
       case core.DepLambda(n: rct.NatIdentifier, e) =>
         NatLambda(fromNamed(e, bound + n))
       case core.DepLambda(dt: rct.DataTypeIdentifier, e) =>
         DataLambda(fromNamed(e, bound + dt))
+      case core.DepLambda(a: rct.AddressSpaceIdentifier, e) =>
+        AddrLambda(fromNamed(e, bound + a))
       case core.DepLambda(_, _) => ???
       case core.Literal(d) => Literal(d)
       // note: we set the primitive type to a place holder here,
@@ -184,6 +194,11 @@ object Expr {
       case DataLambda(e) =>
         val i = rct.DataTypeIdentifier(s"dt${bound.data.size}", isExplicit = true)
         core.DepLambda[rct.DataKind](i, toNamed(e, bound + i)) _
+      case AddrApp(f, x) =>
+        core.DepApp[rct.AddressSpaceKind](toNamed(f, bound), Address.toNamed(x, bound)) _
+      case AddrLambda(e) =>
+        val i = rct.AddressSpaceIdentifier(s"a${bound.data.size}", isExplicit = true)
+        core.DepLambda[rct.AddressSpaceKind](i, toNamed(e, bound + i)) _
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _
 
@@ -207,7 +222,7 @@ object Expr {
   }
 
   def simplifyNats(e: Expr): Expr =
-    Expr(e.node.map(simplifyNats, Nat.simplify, DataType.simplifyNats),
+    Expr(e.node.map(simplifyNats, Nat.simplify, DataType.simplifyNats, a => a),
       Type.simplifyNats(e.t))
 }
 

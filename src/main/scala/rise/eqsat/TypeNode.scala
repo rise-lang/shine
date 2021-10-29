@@ -64,6 +64,7 @@ object Type {
       case rct.FunType(a, b) => FunType(fromNamed(a, bound), fromNamed(b, bound))
       case rct.DepFunType(x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
       case rct.DepFunType(x: rct.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
+      case rct.DepFunType(x: rct.AddressSpaceIdentifier, t) => AddrFunType(fromNamed(t, bound + x))
       case rct.DepFunType(_, _) => ???
       case rct.TypePlaceholder | rct.TypeIdentifier(_) =>
         throw new Exception(s"did not expect $t")
@@ -80,6 +81,9 @@ object Type {
       case DataFunType(t) =>
         val i = rct.DataTypeIdentifier(s"n${bound.data.size}", isExplicit = true)
         rct.DepFunType[rct.DataKind, rct.Type](i, toNamed(t, bound + i))
+      case AddrFunType(t) =>
+        val i = rct.AddressSpaceIdentifier(s"a${bound.data.size}", isExplicit = true)
+        rct.DepFunType[rct.AddressSpaceKind, rct.Type](i, toNamed(t, bound + i))
     }
   }
 
@@ -141,6 +145,7 @@ sealed trait TypeNode[+T, +N, +DT] {
       case FunType(a, b) => FunType(ft(a), ft(b))
       case NatFunType(t) => NatFunType(ft(t))
       case DataFunType(t) => DataFunType(ft(t))
+      case AddrFunType(t) => AddrFunType(ft(t))
       case dt: DataTypeNode[N, DT] => dt.map(fn, fdt)
     }
 
@@ -159,6 +164,9 @@ final case class NatFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
 }
 final case class DataFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
   override def toString: String = s"(data) -> $t"
+}
+final case class AddrFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
+  override def toString: String = s"(addr) -> $t"
 }
 
 sealed trait DataTypeNode[+N, +DT] extends TypeNode[Nothing, N, DT] {
@@ -199,8 +207,9 @@ final case class ArrayType[N, DT](size: N, elemType: DT) extends DataTypeNode[N,
 object TypeNode {
   def collect[T](n: TypeNode[T, T, T]): Seq[T] = n match {
     case FunType(inT, outT) => Seq(inT, outT)
-    case NatFunType(t) =>Seq(t)
-    case DataFunType(t) =>Seq(t)
+    case NatFunType(t) => Seq(t)
+    case DataFunType(t) => Seq(t)
+    case AddrFunType(t) => Seq(t)
     case dt: DataTypeNode[T, T] => DataTypeNode.collect(dt)
   }
 }
@@ -208,7 +217,7 @@ object TypeNode {
 object DataTypeNode {
   def collect[T](n: DataTypeNode[T, T]): Seq[T] = n match {
     case DataTypeVar(_) => Seq()
-    case ScalarType(_) =>Seq()
+    case ScalarType(_) => Seq()
     case NatType => Seq()
     case VectorType(size, elemType) => Seq(size, elemType)
     case IndexType(size) => Seq(size)

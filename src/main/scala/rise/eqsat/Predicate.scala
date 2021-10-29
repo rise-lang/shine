@@ -75,6 +75,7 @@ case class ArrayDimensionPredicate(limit: Int) extends Predicate {
           countArrayDims(inT) max countArrayDims(outT)
         case NatFunType(t) => countArrayDims(t)
         case DataFunType(t) => countArrayDims(t)
+        case AddrFunType(t) => countArrayDims(t)
         case ArrayType(_, et) => 1 + countArrayDims(et)
         case PairType(dt1, dt2) =>
           countArrayDims(dt1) max countArrayDims(dt2)
@@ -103,6 +104,7 @@ object StandardConstraintsPredicate extends Predicate {
           checkType(inT) && checkType(outT)
         case NatFunType(t) => checkType(t)
         case DataFunType(t) => checkType(t)
+        case AddrFunType(t) => checkType(t)
         case ArrayType(n, et) => checkArraySize(n) && checkType(et)
         case VectorType(n, _) => checkArraySize(n)
         case IndexType(n) => checkArraySize(n)

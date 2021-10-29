@@ -33,6 +33,11 @@ object TypeCheck {
         case DataFunType(t) => t
         case node => throw Error(s"expected data function type, found $node")
       }
+    def unwrapAddrFunType(t: TypeId): TypeId =
+      egraph(unwrapNotDataTypeId(t)) match {
+        case AddrFunType(t) => t
+        case node => throw Error(s"expected address function type, found $node")
+      }
 
     for (eclass <- egraph.classes.values) {
       val t = eclass.t
@@ -77,11 +82,17 @@ object TypeCheck {
           case DataApp(f, x) =>
             val ft = unwrapDataFunType(egraph.get(f).t)
             assertSameType(t, NodeSubs.Type.withDataArgument(egraph, ft, x))
+          case AddrApp(f, x) =>
+            val ft = unwrapAddrFunType(egraph.get(f).t)
+            assertSameType(t, ft) // identity: NodeSubs.Address.withAddrArgument(egraph, ft, x)
           case NatLambda(e) =>
             val ft = unwrapNatFunType(t)
             assertSameType(ft, egraph.get(e).t)
           case DataLambda(e) =>
             val ft = unwrapDataFunType(t)
+            assertSameType(ft, egraph.get(e).t)
+          case AddrLambda(e) =>
+            val ft = unwrapAddrFunType(t)
             assertSameType(ft, egraph.get(e).t)
           case Literal(d) =>
             // TODO: more efficient egraph.addTypeFromNamed?

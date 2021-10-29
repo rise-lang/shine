@@ -22,6 +22,10 @@ case class BoolConstraint(a: arithexpr.arithmetic.BoolExpr,
                           b: arithexpr.arithmetic.BoolExpr) extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
+case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace)
+  extends Constraint {
+  override def toString: String = s"$a  ~  $b"
+}
 case class MatrixLayoutConstraint(a: MatrixLayout, b: MatrixLayout)
   extends Constraint {
   override def toString: String = s"$a  ~  $b"
@@ -159,10 +163,17 @@ object Constraint {
               )
             )
           case (
-            DepFunType(_: AddressSpaceIdentifier, _),
-            DepFunType(_: AddressSpaceIdentifier, _)
+            DepFunType(aa: AddressSpaceIdentifier, ta),
+            DepFunType(ab: AddressSpaceIdentifier, tb)
             ) =>
-            ???
+            val a = AddressSpaceIdentifier(freshName("a"), isExplicit = true)
+            decomposed(
+              Seq(
+                AddressSpaceConstraint(a, aa.asImplicit),
+                AddressSpaceConstraint(a, ab.asImplicit),
+                TypeConstraint(ta, tb)
+              )
+            )
 
           case (
             DepPairType(x1: NatIdentifier, t1),
@@ -253,6 +264,16 @@ object Constraint {
           case (NatCollectionFromArray(e1), NatCollectionFromArray(e2)) =>
             // What to do here???
             ???
+        }
+
+      case AddressSpaceConstraint(a, b) =>
+        (a, b) match {
+          case (i: AddressSpaceIdentifier, _) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, b)
+          case (_, i: AddressSpaceIdentifier) if canBeSubstituted(preserve, i) =>
+            Solution.subs(i, a)
+          case _ if a == b                 => Solution()
+          case _                           => error(s"cannot unify $a and $b")
         }
 
       case MatrixLayoutConstraint(a, b) =>

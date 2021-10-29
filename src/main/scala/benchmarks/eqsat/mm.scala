@@ -66,12 +66,10 @@ object mm {
     rules.mapFission,
     rules.reduceSeq,
     rules.eliminateMapIdentity,
-    rules.reduceSeqMapFusion, //?
+    rules.reduceSeqMapFusion,
     rules.reduceSeqMapFission,
     rules.undoReduceSeqForAdd, //?
     // rules.mapEtaAbstraction,
-    // TODO: could also restrict left-hand-side match to split
-    //       e.g. only split "n"/"m" dimensions by 32 and "k" dimension by 4
     rules.splitJoin(32),
     // rules.splitJoin1M(32),
     rules.splitJoin2M(32),
@@ -163,14 +161,13 @@ object mm {
   )
 
   private def goals(): () = {
-    /*
     goal("baseline", apps.tvmGemm.baseline)
+
+    // FIXME: Elevate reference seems to be broken here and there (e.g. wrong innermost traversal)
     goal("blocking", apps.tvmGemm.blocking)
     goal("vectorization", apps.tvmGemm.vectorization)
     goal("loop-perm", apps.tvmGemm.loopPerm)
     goal("array-packing", apps.tvmGemm.arrayPacking)
-     */
-    // FIXME: Elevate reference seems to be broken here (wrong innermost)
     goal("cache-blocks", apps.tvmGemm.cacheBlocks)
     goal("parallel", apps.tvmGemm.par)
   }
@@ -180,7 +177,7 @@ object mm {
   private def K = 1024
 
   private def goal(name: String, strategy: elevate.core.Strategy[rise.core.Expr]): () = {
-    val goal = (rise.elevate.strategies.normalForm.BENF() `;` strategy) {
+    val goal = (rise.elevate.strategies.normalForm.DFNF() `;` strategy) {
       import rise.core.DSL._
       mm(M)(N)(K)
     }.get
@@ -631,19 +628,19 @@ object mm {
 
   def main(args: Array[String]): () = {
     val fs = Seq(
-      // "baseline" -> baseline _,
+      "baseline" -> baseline _,
       // not found after 3mn+ and 2GiB+ (700K nodes, 400K classes)
       // "blocking T" -> blocking_T _,
       // "blocking TTTT" -> { () => blocking_TTTT(tilingStepBENF) },
       // "blocking SRSR" -> { () => blocking_SRSR(splitStepBENF, reorderStepBENF) },
       // FIXME: the program found has unwanted split/joins
       // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
-       // "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+      "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
       // FIXME: cannot find goal, rewriting is stuck with the given rules
       // "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
-       // "vectorization SRL" -> vectorization_SRL _,
-       // "loop-perm SRL" -> loopPerm_SRL _,
-       // "array-packing SRCL" -> arrayPacking_SRCL _,
+      "vectorization SRL" -> vectorization_SRL _,
+      "loop-perm SRL" -> loopPerm_SRL _,
+      "array-packing SRCL" -> arrayPacking_SRCL _,
       "cache-blocks SRCL" -> cacheBlocks_SRCL _,
       "parallel SRCL" -> parallel_SRCL _,
     )
@@ -653,7 +650,7 @@ object mm {
     rs.foreach { case (n, (_, r)) =>
       r.exprs.headOption.foreach(codegen(n, _))
     }
-    goals()
+    // goals()
     rs.foreach { case (n, (t, r)) =>
       println(s"-------- $n")
       val status = if (r.exprs.nonEmpty) { "found" } else { "not found" }

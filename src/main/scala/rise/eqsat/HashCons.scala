@@ -8,7 +8,8 @@ package rise.eqsat
 case class Subst(exprs: SubstId[PatternVar, EClassId],
                  nats: SubstId[NatPatternVar, NatId],
                  types: SubstId[TypePatternVar, TypeId],
-                 dataTypes: SubstId[DataTypePatternVar, DataTypeId]) {
+                 dataTypes: SubstId[DataTypePatternVar, DataTypeId],
+                 addrs: SubstId[AddressPatternVar, Address]) {
   private def orNotFound[PV, ID](pv: PV, opt: Option[ID]): ID =
     opt.getOrElse(throw new Exception(s"could not find $pv"))
 
@@ -20,6 +21,8 @@ case class Subst(exprs: SubstId[PatternVar, EClassId],
     orNotFound(pv, shc.findVar(pv, types, shc.getType))
   def apply(pv: DataTypePatternVar, shc: SubstHashCons): DataTypeId =
     orNotFound(pv, shc.findVar(pv, dataTypes, shc.getDataType))
+  def apply(pv: AddressPatternVar, shc: SubstHashCons): Address =
+    orNotFound(pv, shc.findVar(pv, addrs, shc.getAddr))
 }
 
 sealed trait SubstNode[PV, ID]
@@ -34,6 +37,7 @@ object SubstHashCons {
     nats = HashCons.empty,
     types = HashCons.empty,
     dataTypes = HashCons.empty,
+    addrs = HashCons.empty,
   )
 }
 
@@ -41,7 +45,8 @@ case class SubstHashCons(
   exprs: HashCons[SubstNode[PatternVar, EClassId], SubstId[PatternVar, EClassId]],
   nats: HashCons[SubstNode[NatPatternVar, NatId], SubstId[NatPatternVar, NatId]],
   types: HashCons[SubstNode[TypePatternVar, TypeId], SubstId[TypePatternVar, TypeId]],
-  dataTypes: HashCons[SubstNode[DataTypePatternVar, DataTypeId], SubstId[DataTypePatternVar, DataTypeId]])
+  dataTypes: HashCons[SubstNode[DataTypePatternVar, DataTypeId], SubstId[DataTypePatternVar, DataTypeId]],
+  addrs: HashCons[SubstNode[AddressPatternVar, Address], SubstId[AddressPatternVar, Address]])
 {
   def getExpr(id: SubstId[PatternVar, EClassId]): SubstNode[PatternVar, EClassId] =
     exprs.get(id)
@@ -51,6 +56,8 @@ case class SubstHashCons(
     types.get(id)
   def getDataType(id: SubstId[DataTypePatternVar, DataTypeId]): SubstNode[DataTypePatternVar, DataTypeId] =
     dataTypes.get(id)
+  def getAddr(id: SubstId[AddressPatternVar, Address]): SubstNode[AddressPatternVar, Address] =
+    addrs.get(id)
 
   def findVar[PV, ID](pv: PV, s: SubstId[PV, ID],
                       get: SubstId[PV, ID] => SubstNode[PV, ID]): Option[ID] =
@@ -71,6 +78,8 @@ case class SubstHashCons(
     types.add(n, SubstId[TypePatternVar, TypeId])
   private def addDataType(n: SubstNode[DataTypePatternVar, DataTypeId]): SubstId[DataTypePatternVar, DataTypeId] =
     dataTypes.add(n, SubstId[DataTypePatternVar, DataTypeId])
+  private def addAddr(n: SubstNode[AddressPatternVar, Address]): SubstId[AddressPatternVar, Address] =
+    addrs.add(n, SubstId[AddressPatternVar, Address])
 
   private def makeSubst[PV, ID](it: Iterator[(PV, ID)],
                              addOne: SubstNode[PV, ID] => SubstId[PV, ID]): SubstId[PV, ID] =
@@ -87,6 +96,8 @@ case class SubstHashCons(
     makeSubst(it, addType)
   def dataTypeSubst(it: Iterator[(DataTypePatternVar, DataTypeId)]): SubstId[DataTypePatternVar, DataTypeId] =
     makeSubst(it, addDataType)
+  def addrSubst(it: Iterator[(AddressPatternVar, Address)]): SubstId[AddressPatternVar, Address] =
+    makeSubst(it, addAddr)
 
   private def substInsert[PV, ID](pv: PV, id: ID, s: SubstId[PV, ID],
                                   addOne: SubstNode[PV, ID] => SubstId[PV, ID],
@@ -103,6 +114,8 @@ case class SubstHashCons(
     subst.copy(types = substInsert(pv, id, subst.types, addType, getType))
   def substInsert(pv: DataTypePatternVar, id: DataTypeId, subst: Subst): Subst =
     subst.copy(dataTypes = substInsert(pv, id, subst.dataTypes, addDataType, getDataType))
+  def substInsert(pv: AddressPatternVar, id: Address, subst: Subst): Subst =
+    subst.copy(addrs = substInsert(pv, id, subst.addrs, addAddr, getAddr))
 }
 
 object HashConses {

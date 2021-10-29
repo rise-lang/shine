@@ -2,7 +2,6 @@ package rise.eqsat
 
 import PatternDSL._
 import rise.core.{primitives => rcp}
-import rise.eqsat.NamedRewriteDSL.`_`
 
 object rules {
 
@@ -26,7 +25,7 @@ object rules {
       notContainsIdent(?(0), %(0), FreeIntersectionAnalysis),
       Set(?(0)),
       (Set(FreeIntersectionAnalysis), Set()),
-      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0), (1, 0, 0), ?(1): Pattern))
+      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0, 0), (1, 0, 0, 0), ?(1): Pattern))
   )
 
   val beta = Rewrite.init("beta",
@@ -50,7 +49,7 @@ object rules {
     BetaNatExtractApplier(?(0), `?n`(0))
   )
 
-  import rise.core.types.{Nat, DataType, Type}
+  import rise.core.types.{Nat, DataType, Type, AddressSpace}
   import NamedRewriteDSL._
 
   val etaAbstraction = NamedRewrite.init("eta-abstraction",
@@ -584,6 +583,33 @@ object rules {
     )
   }
 
+  object ocl {
+    import rise.openCL.{primitives => roclp}
+    def circularBuffer(a: AddressSpace) = NamedRewrite.init(s"ocl-circular-buffer-$a",
+      nApp(nApp(slide, "sz"), 1)
+        -->
+      app(nApp(nApp(aApp(roclp.oclCircularBuffer.primitive, a), "sz"), "sz"), lam("x", "x"))
+    )
+    val circularBufferLoadFusion = NamedRewrite.init("ocl-circular-buffer-load-fusion",
+      app(app(nApp(nApp(aApp(roclp.oclCircularBuffer.primitive, "a"), "n1"), "n2"), "load"), app(app(map, "f"), "in"))
+        -->
+      app(app(nApp(nApp(aApp(roclp.oclCircularBuffer.primitive, "a"), "n1"), "n2"), lam("x", app("load", app("f", "x")))), "in")
+    )
+    def toMem(a: AddressSpace) = NamedRewrite.init(s"ocl-to-mem-$a",
+      ("in" :: ("dt": DataType))
+        -->
+      app(aApp(roclp.oclToMem.primitive, a), "in")
+    )
+
+    // TODO: may also have a non-ocl reduceSeq on lhs
+    def reduceSeq(a: AddressSpace) = NamedRewrite.init(s"ocl-reduce-seq-$a",
+      reduce --> aApp(roclp.oclReduceSeq.primitive, a)
+    )
+    val reduceSeqUnroll = NamedRewrite.init("ocl-reduce-seq-unroll",
+      roclp.oclReduceSeq.primitive --> roclp.oclReduceSeqUnroll.primitive
+    )
+  }
+
   object vectorize {
     // TODO: generalize over data type
     def after(n: Int, dt: DataType) = NamedRewrite.init(s"vec-$n-after-$dt",
@@ -643,28 +669,6 @@ object rules {
       app(app(mapSnd, asScalar), app(app(mapFst, asScalar),
         app(app(makePair, "a"), "b")))
     )
-  }
-
-  object ocl {
-    import rise.openCL.{primitives => p}
-
-    /* TODO: aApp
-    val circularBuffer = NamedRewrite.init("ocl-circular-buffer",
-      nApp(nApp(slide, "sz"), 1) --> app(nApp(nApp(p.oclCircularBuffer.primitive, "sz"), "sz"), lam("x", "x"))
-    )
-    val circularBufferLoadFusion = NamedRewrite.init("ocl-circular-buffer-load-fusion",
-      app(app(nApp(nApp(p.oclCircularBuffer.primitive, "n1"), "n2"), "load"), app(app(map, "f"), "in"))
-        -->
-      app(app(nApp(nApp(p.oclCircularBuffer.primitive, "n1"), "n2"), lam("x", app("load", app("f", "x")))), "in")
-    )
-    val reduceSeq = NamedRewrite.init("ocl-reduce-seq",
-      reduce --> p.oclReduceSeq.primitive
-    )
-    val reduceSeqUnroll = NamedRewrite.init("ocl-reduce-seq-unroll",
-      rcp.reduceSeq.primitive --> p.oclReduceSeqUnroll.primitive
-    )
-
-     */
   }
 
   // TODO: check that RHS are locally CNF (or automate that?)

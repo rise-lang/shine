@@ -190,18 +190,18 @@ class EGraph(
   }
 
   def addExpr(expr: Expr): EClassId =
-    add(expr.node.map(addExpr, addNat, addDataType), addType(expr.t))
+    add(expr.node.map(addExpr, addNat, addDataType, a => a), addType(expr.t))
   def addExpr(expr: ExprWithHashCons): EClassId =
-    add(expr.node.map(addExpr, n => n, dt => dt), expr.t)
+    add(expr.node.map(addExpr, n => n, dt => dt, a => a), expr.t)
   def addExpr2(expr: ExprWithHashCons): (ENode, EClassId) = {
-    val enode = expr.node.map(addExpr, n => n, dt => dt)
+    val enode = expr.node.map(addExpr, n => n, dt => dt, a => a)
     (enode, add(enode, expr.t))
   }
 
   def lookupExpr(expr: Expr): Option[EClassId] =
     lookup(expr.node.map(
       e => lookupExpr(e).getOrElse(return None),
-      addNat, addDataType
+      addNat, addDataType, a => a
     ), addType(expr.t))._2
 
   def add(n: NatNode[NatId]): NatId =
@@ -331,7 +331,7 @@ class EGraph(
   }
 
   private def rebuildClasses(): Int = {
-    import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering}
+    import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering, addressOrdering}
     classesByMatch.values.foreach(ids => ids.clear())
 
     var trimmed = 0

@@ -1,7 +1,6 @@
 package rise.eqsat
 import rise.core
 import rise.core.traverse
-import util.monads
 
 object Extractor {
   def findBestOf[C](egraph: EGraph, costFunction: CostFunction[C], id: EClassId): (ExprWithHashCons, C) = {
@@ -190,13 +189,21 @@ case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCoun
           isEtaApp = false, isLam = false, isNatLam = false)
       case DataApp(f, _) =>
         val fd = costs(f)
-        val isRedex = 0 // if (fd.isDataLam) { 1 } else { 0 }
+        val isRedex = 0 // TODO: if (fd.isDataLam) { 1 } else { 0 }
+        Data(fd.redexes + isRedex, fd.free,
+          isEtaApp = false, isLam = false, isNatLam = false)
+      case AddrApp(f, _) =>
+        val fd = costs(f)
+        val isRedex = 0 // TODO: if (fd.isDataLam) { 1 } else { 0 }
         Data(fd.redexes + isRedex, fd.free,
           isEtaApp = false, isLam = false, isNatLam = false)
       case NatLambda(e) =>
         val ed = costs(e)
         Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = true)
       case DataLambda(e) =>
+        val ed = costs(e)
+        Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = false)
+      case AddrLambda(e) =>
         val ed = costs(e)
         Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = false)
       case Literal(_) | Primitive(_) =>
