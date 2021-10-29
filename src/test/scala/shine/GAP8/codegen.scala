@@ -179,4 +179,31 @@ class codegen extends test_util.Tests {
     findParamsStruct("int", 3, code)
     //println(code)
   }
+
+  test("Convolution 3x3") {
+    val w: Nat = 12
+    val h: Nat = 12
+    val expr: ToBeTyped[Rise] = {
+      fun((w`.`h`.`i16) ->: (3`.`3`.`i16) ->: ((w - 2)`.`(h - 2)`.`i16))((in, filter) =>
+        gap8Run(8)(
+          in |>
+            slide2D(3, 1) |>
+            mapPar(mapPar(fun(sub => {
+              zip(sub |> join)(filter |> join) |>
+                map(fun(x => fst(x) * snd(x))) |>
+                reduceSeq(add)(li16(0))
+            })))
+        )
+      )
+
+    }
+
+    val module = util.gen.gap8.hosted.fromExpr(expr)
+    val code = GAP8.Module.translateToString(module)
+
+    findDeviceBufferSync(3, code)
+    checkCoreNumber(8, code)
+    findParamsStruct("int16_t*", 3, code)
+    println(code)
+  }
 }
