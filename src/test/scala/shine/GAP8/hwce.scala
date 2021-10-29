@@ -32,6 +32,42 @@ class hwce extends test_util.Tests {
     )
   }
 
+  ignore("Sobel filter utilizes HWCE") {
+    val expr: ToBeTyped[Rise] = depFun((n: Nat, m: Nat) =>
+      fun((n`.`m`.`i16) ->: (3`.`3`.`i16) ->: (3`.`3`.`i16) ->: (n`.`m`.`i16))((pic, h_w, v_w) =>
+        gap8Run(8)(
+          pic |>
+            padCst2D(1, 1)(cast(l(0)) :: i16) |>
+            slide2D(sz = 3, st = 1) |>
+            mapSeq(mapSeq(fun(submat => {
+              zip(submat |> join)(h_w |> join) |> map(fun(x => fst(x) * snd(x))) |> reduceSeq(add)(li16(0)) |> letf(h =>
+                zip(submat |> join)(v_w |> join) |> map(fun(x => fst(x) * snd(x))) |> reduceSeq(add)(li16(0)) |> letf(v => {
+                  cast(apps.SobelFilter.gapSqrt(cast(h * h + v * v) :: u32)) :: i16
+                })
+              )
+            }
+            )))
+        )
+      )
+    )
+
+    val conv: Strategy[Rise] =
+      (gap8hwConvMerge `@` everywhere)
+
+    val lowExpr = conv(expr).get
+    val module = util.gen.gap8.hosted.fromExpr(lowExpr)
+    val code = GAP8.Module.translateToString(module)
+
+
+    //println(expr.toExpr)
+    //println(exprNoPipes.toExpr)
+    //println(lowExpr)
+
+    //println(code)
+
+    //checkHwceCall(code, "3x3")
+  }
+
   test("Optimization strategy 3x3") {
     val w: Nat = 6
     val h: Nat = 6
