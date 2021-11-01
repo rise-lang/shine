@@ -15,13 +15,6 @@ object configFileGeneration {
                   ): String = {
 
     val parametersWDCImmutable = distributeConstraints(p, c)
-    val parametersWDC = scala.collection.mutable
-      .Map.empty[NatIdentifier, (Set[Constraint], Set[NatIdentifier])]
-
-    // copy elements to mutable map
-    parametersWDCImmutable.foreach(param => {
-      parametersWDC(param._1) = (param._2._1, param._2._2)
-    })
 
     // number of samples for design of experiment phase
     val doe = p.size * 10
@@ -53,9 +46,9 @@ object configFileGeneration {
     // create entry foreach parameter
     var parameter = ""
 
-    parametersWDC.foreach(param => {
+    parametersWDCImmutable.foreach{ case (param, wdc) => {
 
-      val (values, constraintsFiltered) = param._1.range match {
+      val (values, constraintsFiltered) = param.range match {
         case RangeAdd(start, stop, step) => {
 
           // if step is not evaluable use 1 instead
@@ -79,7 +72,7 @@ object configFileGeneration {
                 .filter(_ % stepWidth == 0)
           }
 
-          filterList(p, param._2._1, values, param._1)
+          filterList(p, wdc._1, values, param)
         }
         case RangeMul(start, stop, mul) => {
 
@@ -102,34 +95,36 @@ object configFileGeneration {
           }
 
           // filtering
-          filterList(p, param._2._1, values, param._1)
+          filterList(p, wdc._1, values, param)
         }
 
         case _ => println("not yet implemented")
 
-          println("name: " + param._1.name)
-          println("range: " + param._1.range)
+          println("name: " + param.name)
+          println("range: " + param.range)
 
-          (List.empty[Int], parametersWDC.apply(param._1)._1)
+          (List.empty[Int], wdc._1)
       }
 
-      // update with filtered constraints
-      parametersWDC(param._1) = (constraintsFiltered, param._2._2)
+      // get new element with filtered constraints
+      val newWdc = (constraintsFiltered, wdc._2)
 
       // write constraints
 
       // get dependencies and constraints from map
-      val dependencies = elementListToString(parametersWDC(param._1)._2.toList)
+      val dependencies = elementListToString(newWdc._2.toList)
 
       // get constraints list as string
-      val constraints = constraintsToString(parametersWDC(param._1)._1)
+      val constraints = constraintsToString(newWdc._1)
+
+      // todo think about why order can change
 
       // check if we have to generate constraints
       val parameterEntry = tuner.hmConstraints match {
         case true => {
 
           val parameterEntry =
-            s"""   "${param._1.name}" : {
+            s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
                |       "values" : ${valuesListToString(values)},
                |       "constraints" : ${constraints},
@@ -142,7 +137,7 @@ object configFileGeneration {
         case false => {
           // don't use constraints
           val parameterEntry =
-            s"""   "${param._1.name}" : {
+            s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
                |       "values" : ${valuesListToString(values)}
                |   },
@@ -152,7 +147,8 @@ object configFileGeneration {
         }
       }
       parameter += parameterEntry
-    })
+
+    }}
 
     // remove last comma
     val parameterSection = parameter.dropRight(2) + "\n"

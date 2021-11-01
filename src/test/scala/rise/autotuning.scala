@@ -316,6 +316,7 @@ class autotuning extends test_util.Tests {
     }
   }
 
+  // todo compare independent from ordering of json entries
   test("generateJSON mm"){
 
     // scalastyle:off
@@ -553,6 +554,7 @@ class autotuning extends test_util.Tests {
     autotune.saveSamples("autotuning/RISE.csv", tuningResult)
   }
 
+  // todo add test for other case
   test("distribute constraints") {
     val e: Expr = convolutionOclGsLs(1024)
     val params = autotune.constraints.collectParameters(e)
