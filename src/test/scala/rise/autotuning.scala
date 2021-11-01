@@ -737,6 +737,83 @@ class autotuning extends test_util.Tests {
     println("result: \n" + result)
   }
 
+  test("execute mm"){
+
+    val mm: Expr =
+      tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
+        tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
+          wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
+        ))))
+
+    // scalastyle:off
+    val init: (Int, Int, Int) => String = (N, M, O) => {
+      s"""
+         |const int N = ${N};
+         |const int M = ${M};
+         |const int O = ${O};
+         |
+         |srand(time(NULL));
+         |
+         |Buffer inputA = createBuffer(ctx, N * M * sizeof(float), HOST_WRITE | DEVICE_READ);
+         |Buffer inputB = createBuffer(ctx, M * O * sizeof(float), HOST_WRITE | DEVICE_READ);
+         |Buffer outputC = createBuffer(ctx, N * O *  sizeof(float), HOST_READ | DEVICE_WRITE);
+         |
+         |float* inA = hostBufferSync(ctx, inputA, N * M * sizeof(float), HOST_WRITE);
+         |for (int i = 0; i < N * M ; i++) {
+         |  inA[i] = (float)(rand());
+         |}
+         |
+         |float* inB = hostBufferSync(ctx, inputB, M * O * sizeof(float), HOST_WRITE);
+         |for (int i = 0; i < M * O; i++) {
+         |  inB[i] = (float)(rand());
+         |}
+         |
+         |""".stripMargin
+    }
+
+    val compute =
+      s"""
+         |fun_run(ctx, &fun, outputC, M, N, O, inputA, inputB);
+         |""".stripMargin
+
+    val finish =
+      s"""
+         |// TODO: could check output here
+         |
+         |destroyBuffer(ctx, inputA);
+         |destroyBuffer(ctx, inputB);
+         |destroyBuffer(ctx, outputC);
+         |""".stripMargin
+    // scalastyle:on
+
+    val params:Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (16: Nat),
+      TuningParameter("ls1") -> (16: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (256: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (1: Nat),
+      TuningParameter("v5") -> (4: Nat),
+      TuningParameter("v6") -> (64: Nat),
+      TuningParameter("v7") -> (256: Nat),
+      TuningParameter("v8") -> (32: Nat)
+    )
+
+    val mmReplaced = rise.core.substitute.natsInExpr(params, mm)
+    val result = autotune.execution.execute(
+      expression = mmReplaced,
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 100,
+      speedupFactor = 100,
+      execution = Median
+    )
+
+    println("result: " + result.runtime)
+    assert(result.runtime.isRight)
+
+  }
+
   test("test xml parsing") {
 
     // scalastyle:off
