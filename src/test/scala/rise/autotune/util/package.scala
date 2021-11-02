@@ -3,8 +3,6 @@ package rise.autotune
 import apps.mm.mmNVIDIAWithParams
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import arithexpr.arithmetic._
-import rise.autotune
-import rise.autotune.configFileGeneration.{check_no_cycle, distributeConstraints}
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.core.DSL.Type._
 import rise.core.DSL._
@@ -102,22 +100,6 @@ package object util {
 
     object mm {
 
-      val mmOclGsLsWrap: Expr =
-        tuningParam("ls0", (ls0: Nat) =>
-          tuningParam("ls1", (ls1: Nat) =>
-            tuningParam("gs0", (gs0: Nat) =>
-              tuningParam("gs1", (gs1: Nat) =>
-                wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
-              ))))
-
-      val mmOclGsLsWrapRanges: Expr =
-        tuningParam("ls0", RangeAdd(1, 1024, 1), (ls0: Nat) =>
-          tuningParam("ls1", RangeAdd(1, 1024, 1), (ls1: Nat) =>
-            tuningParam("gs0", RangeAdd(1, 1024, 1), (gs0: Nat) =>
-              tuningParam("gs1", RangeAdd(1, 1024, 1), (gs1: Nat) =>
-                wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
-              ))))
-
       val mmKernel: ToBeTyped[Expr] =
         tuningParam("v3", RangeAdd(1,1024,1), (v3: Nat) =>
           tuningParam("v4", RangeAdd(1,1024,1), (v4: Nat) =>
@@ -127,6 +109,22 @@ package object util {
                   tuningParam("v8", RangeAdd(1,1024,1), (v8: Nat) =>
                     mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
                   ))))))
+
+    val mmOclGsLsWrap: ToBeTyped[Expr] =
+      tuningParam("ls0", (ls0: Nat) =>
+        tuningParam("ls1", (ls1: Nat) =>
+          tuningParam("gs0", (gs0: Nat) =>
+            tuningParam("gs1", (gs1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
+            ))))
+
+    val mmOclGsLsWrapRanges: ToBeTyped[Expr] =
+      tuningParam("ls0", RangeAdd(1, 1024, 1), (ls0: Nat) =>
+        tuningParam("ls1", RangeAdd(1, 1024, 1), (ls1: Nat) =>
+          tuningParam("gs0", RangeAdd(1, 1024, 1), (gs0: Nat) =>
+            tuningParam("gs1", RangeAdd(1, 1024, 1), (gs1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
+            ))))
     }
   }
 

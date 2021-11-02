@@ -1,12 +1,8 @@
 package rise.autotune
 
-import apps.mm.mmNVIDIAWithParams
-import arithexpr.arithmetic.RangeAdd
 import rise.autotune
-import rise.core.DSL.ToBeTyped
 import rise.core.Expr
 import rise.core.types.{Nat, TuningParameter}
-import shine.OpenCL.{GlobalSize, LocalSize}
 
 class TestExecution extends test_util.Tests {
 
@@ -61,27 +57,7 @@ class TestExecution extends test_util.Tests {
 
   test("execute mm"){
 
-    // todo use mm version from util object
-
-    // val mm: Expr = util.expressions.mm.util.expressions.mm.mmOclGsLsWrap
-
-    val mmKernel: ToBeTyped[Expr] =
-      tuningParam("v3", RangeAdd(1,1024,1), (v3: Nat) =>
-        tuningParam("v4", RangeAdd(1,1024,1), (v4: Nat) =>
-          tuningParam("v5", RangeAdd(1,1024,1), (v5: Nat) =>
-            tuningParam("v6", RangeAdd(1,1024,1), (v6: Nat) =>
-              tuningParam("v7", RangeAdd(1,1024,1), (v7: Nat) =>
-                tuningParam("v8", RangeAdd(1,1024,1), (v8: Nat) =>
-                  mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
-                ))))))
-
-    val mm: Expr =
-      tuningParam("ls0", RangeAdd(1, 1024, 1), (ls0: Nat) =>
-        tuningParam("ls1", RangeAdd(1, 1024, 1), (ls1: Nat) =>
-          tuningParam("gs0", RangeAdd(1, 1024, 1), (gs0: Nat) =>
-            tuningParam("gs1", RangeAdd(1, 1024, 1), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
-            ))))
+    val mm: Expr = util.expressions.mm.mmOclGsLsWrap
 
     val params:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),

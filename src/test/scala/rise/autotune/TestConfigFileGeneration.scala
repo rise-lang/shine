@@ -1,26 +1,12 @@
 package rise.autotune
 
-import apps.mm.mmNVIDIAWithParams
-import arithexpr.arithmetic.{ArithExpr, RangeAdd}
+import arithexpr.arithmetic.{ArithExpr}
 import rise.autotune
 import rise.autotune.configFileGeneration.{check_no_cycle, distributeConstraints}
-import rise.core.DSL.ToBeTyped
 import rise.core.{DepLambda, Expr}
 import rise.core.types.{Nat, NatIdentifier, NatKind}
-import shine.OpenCL.{GlobalSize, LocalSize}
 
 class TestConfigFileGeneration extends test_util.Tests {
-
-  // todo use mm version from util object
-  val mmKernel: ToBeTyped[Expr] =
-    tuningParam("v3", RangeAdd(1,1024,1), (v3: Nat) =>
-      tuningParam("v4", RangeAdd(1,1024,1), (v4: Nat) =>
-        tuningParam("v5", RangeAdd(1,1024,1), (v5: Nat) =>
-          tuningParam("v6", RangeAdd(1,1024,1), (v6: Nat) =>
-            tuningParam("v7", RangeAdd(1,1024,1), (v7: Nat) =>
-              tuningParam("v8", RangeAdd(1,1024,1), (v8: Nat) =>
-                mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
-              ))))))
 
   // todo add test for other case
   test("distribute constraints") {
@@ -253,18 +239,7 @@ class TestConfigFileGeneration extends test_util.Tests {
         |""".stripMargin
     // scalastyle:on
 
-    // todo use mm version from util object
-
-    //    val e: Expr = util.expressions.mm.mmOclGsLsWrapRanges
-
-    val e: Expr =
-      tuningParam("ls0", RangeAdd(1, 1024, 1), (ls0: Nat) =>
-        tuningParam("ls1", RangeAdd(1, 1024, 1), (ls1: Nat) =>
-          tuningParam("gs0", RangeAdd(1, 1024, 1), (gs0: Nat) =>
-            tuningParam("gs1", RangeAdd(1, 1024, 1), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmKernel)
-            ))))
-
+    val e: Expr = util.expressions.mm.mmOclGsLsWrapRanges
 
     // todo find a generic solution?
     val (nIdent, mIdent, oIdent) = e match {
