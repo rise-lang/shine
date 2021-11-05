@@ -58,9 +58,9 @@ object GuidedSearch {
         println(s"  maximum memory ${st.memoryStats.pretty()}")
         // if (!stats.lift(i + 1).exists(_.beam.nonEmpty)) {
           st.beam.headOption.foreach { e =>
-            // println(s"  best expr:")
-            // println(Expr.toNamed(e))
-            util.dotPrintTmp(s"best_step${i}_", Expr.toNamed(e))
+            println(s"  best expr:")
+            println(Expr.toNamed(e))
+            // util.dotPrintTmp(s"best_step${i}_", Expr.toNamed(e))
           }
         // }
       }
@@ -119,9 +119,10 @@ class GuidedSearch(
         egraph.rebuild(Seq(rootId))
 
         // TODO: add goal check to e-graph for incremental update?
+        val mergedRules = (step.rules ++ step.normalForm.rules).distinctBy(_.name)
         val (growTime, runner) = util.time(transformRunner(Runner.init()).doneWhen { _ =>
           util.printTime("goal check", ExtendedPattern.exists(step.sketch, egraph, rootId))
-        }.run(egraph, filter, step.rules, step.normalForm.directedRules, Seq(rootId)))
+        }.run(egraph, filter, mergedRules, Seq(), Seq(rootId)))
         val found = runner.stopReasons.contains(Done)
 
         val (extractionTime, newBeam) = if (found) {

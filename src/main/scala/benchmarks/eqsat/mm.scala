@@ -280,6 +280,11 @@ object mm {
       .run(start, steps)
   }
 
+  val runnerTrans: Runner => Runner = r => r
+    .withTimeLimit(java.time.Duration.ofMinutes(45))
+    .withMemoryLimit(32L * 1024L * 1024L * 1024L)
+    .withNodeLimit(50_000_000)
+
   private def blocking_T(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = apps.tvmGemm.baseline(mm).get
 
@@ -296,10 +301,7 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(10))
-         .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */)
-         .withNodeLimit(2_000_000))
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
@@ -338,9 +340,7 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
@@ -380,9 +380,7 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
@@ -409,9 +407,7 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
@@ -439,9 +435,7 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
@@ -476,9 +470,28 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  private def vectorization(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+    // could start directly from blocking outcome
+
+    val steps = Seq(
+      (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsReduceSeq(cst(4),
+                containsMap(cst(32),
+                  containsMap(cst(1), containsAddMulVec)))))),
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
@@ -512,11 +525,30 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
+
+  private def loopPerm(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+
+    val steps = Seq(
+      (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsMap(cst(32),
+                containsReduceSeq(cst(4),
+                  containsMap(cst(1), containsAddMulVec)))))),
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
 
   private val arrayPackingSRC = Seq(
     splitStepBENF withSketch
@@ -566,9 +598,31 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  private def arrayPacking(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+
+    val steps = Seq(
+      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsMap(cst(32),
+                containsReduceSeq(cst(4),
+                  containsMap(cst(1), containsAddMulVec))))),
+          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+            containsMapPar(n /^ cst(32),
+              containsMap(k,
+                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
@@ -593,9 +647,32 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  private def cacheBlocks(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+    // val start = apps.tvmGemm.arrayPacking(mm).get
+
+    val steps = Seq(
+      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch
+        containsMap(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsMap(cst(32),
+                containsReduceSeqUnroll(cst(4),
+                  containsMap(cst(1), containsAddMulVec))))),
+          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+            containsMapPar(n /^ cst(32),
+              containsMap(k,
+                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
@@ -620,29 +697,57 @@ object mm {
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
-      .withRunnerTransform(r =>
-        r.withTimeLimit(java.time.Duration.ofMinutes(5))
-          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  private def parallel(): GuidedSearch.Result = {
+    val start = apps.tvmGemm.baseline(mm).get
+    // val start = apps.tvmGemm.arrayPacking(mm).get
+
+    val steps = Seq(
+      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch
+        containsMapPar(m /^ cst(32),
+          containsMap(n /^ cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsMap(cst(32),
+                containsReduceSeqUnroll(cst(4),
+                  containsMap(cst(1), containsAddMulVec))))),
+          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+            containsMapPar(n /^ cst(32),
+              containsMap(k,
+                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
       .run(start, steps)
   }
 
   def main(args: Array[String]): () = {
     val fs = Seq(
-      "baseline" -> baseline _,
+      // "baseline" -> baseline _,
       // not found after 3mn+ and 2GiB+ (700K nodes, 400K classes)
-      // "blocking T" -> blocking_T _,
+      "blocking T" -> { () => blocking_T(tilingStepBENF) },
       // "blocking TTTT" -> { () => blocking_TTTT(tilingStepBENF) },
       // "blocking SRSR" -> { () => blocking_SRSR(splitStepBENF, reorderStepBENF) },
       // FIXME: the program found has unwanted split/joins
-      // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
-      "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+      "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
+       // "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
       // FIXME: cannot find goal, rewriting is stuck with the given rules
       // "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
-      "vectorization SRL" -> vectorization_SRL _,
-      "loop-perm SRL" -> loopPerm_SRL _,
-      "array-packing SRCL" -> arrayPacking_SRCL _,
-      "cache-blocks SRCL" -> cacheBlocks_SRCL _,
-      "parallel SRCL" -> parallel_SRCL _,
+       // "vectorization SRL" -> vectorization_SRL _,
+       "vectorization" -> vectorization _,
+       // "loop-perm SRL" -> loopPerm_SRL _,
+       "loop-perm" -> loopPerm _,
+       // "array-packing SRCL" -> arrayPacking_SRCL _,
+       "array-packing" -> arrayPacking _,
+       // "cache-blocks SRCL" -> cacheBlocks_SRCL _,
+       "cache-blocks" -> cacheBlocks _,
+       // "parallel SRCL" -> parallel_SRCL _,
+       "parallel" -> parallel _,
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))
