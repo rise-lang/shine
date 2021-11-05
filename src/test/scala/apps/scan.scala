@@ -462,12 +462,69 @@ class scan extends test_util.Tests {
     }
 
     // Explorations
-    val blockSizes = Vector(32, 81, 64, 128, 256, 512)
+    val blockSizes = Vector(32, 64, 128, 256, 512)
     val skipDepths = Vector(0, 1, 2, 3, 4)
     val factors = Vector(2)
 
     val entries = for (
       blockSize <- blockSizes;
+      skip <- skipDepths;
+      factor <- factors
+      if log(factor, blockSize) % 1 == 0;
+      maxDepth = log(factor, blockSize).toInt;
+      depth = maxDepth - skip - 1
+      if depth >= 0
+    ) yield {
+
+      val initExp = {
+        fun(ArrayType(blockSize, f32))(input =>
+          input |> scan(add)(lf32(0.0f))
+        )
+      }
+
+      val rewritten = rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan(
+        factor = factor,
+        skipDepth = skip))(initExp).get
+      util.withExecutor {
+        val makeKenrel = () => fun(ArrayType(inputSize, f32))(input => {
+          input |> split(blockSize) |> mapWorkGroup(0)(rewritten) |> join
+        })
+        val timing = runParallelUnrolled(inputSize, blockSize, factor, depth, makeKenrel, doGoldCheck)
+        timing.printout()
+        Entry(inputSize, blockSize, factor, skip, timing.partials)
+      }
+    }
+    entries.sortBy(_.time).foreach { e => println(e.printout) }
+  }
+
+  test("scan par rewrite explore factors") {
+    val numSizes = 64
+    val baseMult = 256
+
+    val inputSizes = (0 until numSizes).map(numSize =>  (numSize + 1) * 64 * 32 * baseMult)
+
+    val maxBlockSize = 512
+    val numBlocks = 10_000
+    val inputSize = maxBlockSize * numBlocks
+    val doGoldCheck = inputSize <= 512 * 5_000
+
+
+    case class Entry(inputSize: Int, blockSize:Int, factor:Int, skipDepth: Int, time: Double) {
+      def printout: String = s"${inputSize},${blockSize},${factor},${skipDepth},${time}"
+    }
+
+    // Explorations
+    val blockSize = 512
+    val skipDepths = Vector(2)
+    val factors = Vector(2, 4)
+
+    factors.foreach(factor => {
+      val l = log(factor, blockSize)
+      println(s"factor=${factor} -- ${l % 1 == 0} -- $l")
+    }
+    )
+
+    val entries = for (
       skip <- skipDepths;
       factor <- factors
       if log(factor, blockSize) % 1 == 0;
