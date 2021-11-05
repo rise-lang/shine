@@ -17,24 +17,25 @@ import rise.elevate.strategies.traversal._
 import elevate.core.strategies.basic.{`try`, repeatNTimes}
 
 object workEfficientScan {
-  private def log2(x: Double) = Math.log10(x) / Math.log10(2.0)
+  private def log(base: Int, x: Double) = Math.log10(x) / Math.log10(base)
+
   private def innermost = rise.elevate.strategies.traversal.innermost(default.RiseTraversable)
   private def isAbstractScan = isApplied(isApplied(isApplied(isPrimitive(scan))))
 
   // Given a call to scan with an array of (constant) 2^n elements, applies the
   // blockScanGivenSize rule
-  @rule def blockScan: Strategy[Rise] = {
+  @rule def blockScan(factor:Int = 2, skipDepth: Int = 0): Strategy[Rise] = {
     case e @ App(App(App(scan(), _), _), input)
       if (input.t match {
-        case ArrayType(Cst(x), rise.core.types.DataType.f32) if log2(x.toDouble) % 1 == 0 => true
+        case ArrayType(Cst(x), rise.core.types.DataType.f32) if log(factor, x.toDouble) % 1 == 0 => true
         case _ => false
       })
     =>
       val blockSize = input.t.asInstanceOf[ArrayType].size.asInstanceOf[Cst].c.toInt
-      val numIterations = log2(blockSize).toInt
+      val numIterations = log(factor, blockSize).toInt - skipDepth
 
       val rule =
-        repeatNTimes(numIterations)(expandBlockScan `@` innermost(isAbstractScan)) `;`
+        repeatNTimes(numIterations)(expandBlockScan(factor) `@` innermost(isAbstractScan)) `;`
         (lowerScanToSequential `@` innermost(isAbstractScan))
 
 //      val rule =
@@ -45,15 +46,15 @@ object workEfficientScan {
   }
 
   // Performs one iteration of block expansion
-  @rule def expandBlockScan: Strategy[Rise] = {
+  @rule def expandBlockScan(factor:Int): Strategy[Rise] = {
     case e @ App(App(App(scan(), f), init), in) =>
       def sum = oclReduceSeq(AddressSpace.Private)(f)(init)
 
       val input = preserveType(in)
-      val rewritten = let(input |> split(2) |> mapLocal(0)(sum) |> oclToMem(AddressSpace.Local))
+      val rewritten = let(input |> split(factor) |> mapLocal(0)(sum) |> oclToMem(AddressSpace.Local))
         .be(next => {
           val upsweep = scan(f)(init)(next) |> oclToMem(AddressSpace.Local)
-          zip(upsweep)(input |> split(2)) |>
+          zip(upsweep)(input |> split(factor)) |>
             mapLocal(0)(fun(pair => oclScanSeqUnroll(AddressSpace.Private)(f)(pair._1)(pair._2))) |>
             join
         })

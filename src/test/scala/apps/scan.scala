@@ -190,36 +190,21 @@ class scan extends test_util.Tests {
       }
     }
 
-    val chunkSize = Math.pow(2, depth).toInt
+    val chunkSize = Math.pow(2, depth+1).toInt
     if (inputSize % chunkSize != 0) {
       throw new Exception(s"Input size of $inputSize not divisible by chunk size $chunkSize (depth $depth)")
     }
     fun(ArrayType(inputSize, f32))(input =>
       input |> split(chunkSize) |> mapWorkGroup(0)(fun(chunk =>
-        upsweep(chunk, depth, List()))
+        upsweep(chunk, depth+1, List()))
       ) |> join
     )
   }
 
-  test("scan par rewrite") {
 
-    val blockSize = 64
-    val initExp = {
-      fun(ArrayType(blockSize, f32))(input =>
-        input |> scan(add)(lf32(0.0f))
-      )
-    }
-
-    val rewritten = rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan)(initExp).get
-    val kernel = gen.opencl.kernel.fromExpr(rewritten)
-    println(kernel.code)
-  }
-
-
-  def scanBlockSums(inputSize: Int, depth: Int): ToBeTyped[Expr] = {
-    val chunkSize = Math.pow(2, depth).toInt
+  def scanBlockSums(inputSize: Int, chunkSize: Int): ToBeTyped[Expr] = {
     if (inputSize % chunkSize != 0) {
-      throw new Exception(s"Input size of $inputSize not divisible by chunk size $chunkSize (depth $depth)")
+      throw new Exception(s"Input size of $inputSize not divisible by chunk size $chunkSize")
     }
     fun(ArrayType(inputSize, f32))(input => input |> split(chunkSize) |>
       mapGlobal(0)(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
@@ -239,40 +224,18 @@ class scan extends test_util.Tests {
     )
   }
 
-  def scanParChunkSum2D(inputSize: Int, depth: Int): ToBeTyped[Expr] = {
-    val chunkSize = Math.pow(2, depth).toInt
+  def scanParChunkSum2D(inputSize: Int, chunkSize: Int): ToBeTyped[Expr] = {
     if (inputSize % chunkSize != 0) {
-      throw new Exception(s"Input size of $inputSize not divisible by chunk size $chunkSize (depth $depth)")
+      throw new Exception(s"Input size of $inputSize not divisible by chunk size $chunkSize")
     }
     val numChunks = inputSize / chunkSize
     fun(ArrayType(inputSize, f32))(input =>
       fun(ArrayType(numChunks, f32))(partials =>
         zip(input |> split(chunkSize))(partials) |> mapWorkGroup(0)(fun(pair =>
-          pair._1 |> split(32) |> transpose |> mapLocal(0)(mapSeq(fun(x => x + pair._2))) |> transpose |> join
+          pair._1 |> split(1) |> mapLocal(0)(mapSeq(fun(x => x + pair._2))) |> transpose |> join
         ))
       )
     )
-  }
-
-
-  test("Unrolled scan sequential (small)") {
-    util.withExecutor {
-
-      // Unrolled equivalent of the NVidia sample
-      val depth = 3
-      val expr = scanChunkSeq(depth)
-
-
-      val kernel = gen.opencl.kernel.fromExpr(expr)
-      println(kernel.code)
-
-      val run = kernel.as[ScalaFunction  `(` Array[Float] `)=>` Array[Float]]
-      val input = Array.tabulate(Math.pow(2, depth).toInt)(i => i + 1.0f)
-      val localSize = LocalSize(NDRange(1, 1, 1))
-      val globalSize = GlobalSize(NDRange(1, 1, 1))
-      val (output, _) = run(localSize, globalSize)(HCons(HNil, input))
-      println(output.map(_.toString).mkString(", "))
-    }
   }
 
   case class Timing(
@@ -308,35 +271,36 @@ class scan extends test_util.Tests {
     }
   }
 
-  def runParallelUnrolled(inputSize: Int): Timing = {
-
-    // Unrolled equivalent of the NVidia sample
-    val depth = 6
-    val blockSize = Math.pow(2, depth).toInt
+  def runParallelUnrolled(inputSize: Int, blockSize: Int, factor: Int, depth: Int, blockScan: () => ToBeTyped[Expr], doGoldCheck:Boolean  = true): Timing = {
+    val numBlocks = inputSize/blockSize
 
     val input = Array.tabulate(inputSize)(i => (i % 4.0f) + 1.0f)
 
-    val partialsThreads = blockSize/2
+    val partialsThreads = Math.pow(factor, depth).toInt
     val blockSumThreads = 128
-    val aggregateThreads = blockSize/2
+    val aggregateThreads = blockSize/factor
+
+    println(s"Partials parallel threads: ${partialsThreads}")
+    println(s"Num blocks: ${numBlocks}")
 
     val (partials, partialTime) = {
-      val expr = scanChunkPar(inputSize, depth)
-      val kernel = gen.opencl.kernel.fromExpr(expr)
+      val expr = blockScan()//scanChunkPar(inputSize, depth)
+      val localSize = LocalSize(NDRange(partialsThreads, 1, 1))
+      val globalSize = GlobalSize(NDRange(partialsThreads * numBlocks, 1, 1))
+      val kernel = gen.opencl.kernel.apply(localSize, globalSize).fromExpr(expr)
 
       val run = kernel.as[ScalaFunction  `(` Array[Float] `)=>` Array[Float]]
-      val localSize = LocalSize(NDRange(partialsThreads, 1, 1))
-      val globalSize = GlobalSize(NDRange(8192, 1, 1))
+
       val (partials, r) = run(localSize, globalSize)(HCons(HNil, input))
 
-      println(kernel.code)
+      //println(kernel.code)
       //println("Partials")
       //println(partials.map(_.toString).mkString(", "))
       (partials, r)
     }
 
     val (blockSums, blockSumsTime) = {
-      val expr = scanBlockSums(inputSize, depth)
+      val expr = scanBlockSums(inputSize, blockSize)
       val kernel = gen.opencl.kernel.fromExpr(expr)
 
       val run = kernel.as[ScalaFunction  `(` Array[Float] `)=>` Array[Float]]
@@ -351,29 +315,32 @@ class scan extends test_util.Tests {
     val localScan = blockSums.scanLeft(0.0f)(_ + _)
 
     val (oclOutput, aggregateTime) = {
-      val expr = scanParChunkSum2D(inputSize, depth)
-      val kernel = gen.opencl.kernel.fromExpr(expr)
+      val expr = scanParChunkSum2D(inputSize, blockSize)
+
+      val localSize = LocalSize(NDRange(blockSize, 1, 1))
+      val globalSize = GlobalSize(NDRange(blockSize*numBlocks, 1, 1))
+      val kernel = gen.opencl.kernel.apply(localSize, globalSize).fromExpr(expr)
 
       val run = kernel.as[ScalaFunction  `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
-      val localSize = LocalSize(NDRange(aggregateThreads, 1, 1))
-      val globalSize = GlobalSize(NDRange(8192, 1, 1))
       val (output, r) = run(localSize, globalSize)(partials `,` localScan)
 
-      //println(kernel.code)
+      println(kernel.code)
       //println("Finals")
       //println(output.map(_.toString).mkString(", "))
       (output, r)
     }
 
-    val gold = input.scanLeft(0.0f)(_ + _)
+    if (doGoldCheck) {
+      val gold = input.scanLeft(0.0f)(_ + _)
 
-    val goldCheck = oclOutput.zip(gold).forall { case (x, y) => x == y }
-    println(s"Gold check: ${if(goldCheck) "OK" else "ERROR"}")
-    if (!goldCheck) {
-      val firstError = oclOutput.zip(gold).iterator.zipWithIndex.find((x => x._1._1 != x._1._2)).map(_._2).get
-      println(s"First error at index $firstError")
+      val goldCheck = oclOutput.zip(gold).forall { case (x, y) => x == y }
+      println(s"Gold check: ${if (goldCheck) "OK" else "ERROR"}")
+      if (!goldCheck) {
+        val firstError = oclOutput.zip(gold).iterator.zipWithIndex.find((x => x._1._1 != x._1._2)).map(_._2).get
+        println(s"First error at index $firstError")
+      }
+      assert(goldCheck)
     }
-    assert(goldCheck)
 
     Timing(partialTime.value, blockSumsTime.value, aggregateTime.value)
   }
@@ -383,6 +350,8 @@ class scan extends test_util.Tests {
     val numSizes = 128
     val runsPerSize = 4
     val baseMult = 256
+
+    val depth = 5
     val blockSize = 64;
 
     val csv = new StringBuilder
@@ -393,7 +362,7 @@ class scan extends test_util.Tests {
         println(s"Input size:\t${inputSize}\tRun:\t${size_i+1}/$numSizes")
 
         val timings = (0 until runsPerSize).iterator.map(_ => {
-          runParallelUnrolled(inputSize)
+          runParallelUnrolled(inputSize, blockSize, factor = 2, depth, () => scanChunkPar(inputSize, depth))
         }).toVector
         val average = Timing.average(timings)
         csv ++= s"dpia,$inputSize,${average.partials},${average.total}\n"
@@ -414,7 +383,7 @@ class scan extends test_util.Tests {
           input |> scan(add)(lf32(0.0f))
         )
       }
-      rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan)(initExp).get
+      rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan())(initExp).get
     }
 
     val computeBlockSums = depFun((num_blocks:Nat) => fun(ArrayType(BLOCK_SIZE*num_blocks, f32))(input => input |> split(BLOCK_SIZE) |>
@@ -451,4 +420,174 @@ class scan extends test_util.Tests {
     val code = shine.OpenCL.Module.translateToString(m) + gen.c.function.asString(m.hostCode)
     println(code)
   }
+
+
+  private def log(base: Int, x: Double) = Math.log10(x) / Math.log10(base.toInt)
+
+  test("scan par rewrite") {
+    val blockSize = 64
+    val initExp = {
+      fun(ArrayType(blockSize, f32))(input =>
+        input |> scan(add)(lf32(0.0f))
+      )
+    }
+
+    val inputSize = 1024
+    val maxDepth = log(2, blockSize).toInt
+    val skipDepth = 0
+    val depth = maxDepth - skipDepth - 1
+
+
+    val rewritten = rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan(skipDepth))(initExp).get
+    util.withExecutor {
+      runParallelUnrolled(inputSize, blockSize, factor = 2, depth, () => fun(ArrayType(inputSize, f32))(input => {
+        input |> split(blockSize) |> mapWorkGroup(0)(rewritten) |> join
+      })).printout()
+    }
+
+    //val kernel = gen.opencl.kernel.fromExpr(rewritten)
+    //println(kernel.code)
+  }
+
+
+  test("scan par rewrite explore") {
+    val maxBlockSize = 512
+    val numBlocks = 50_000
+    val inputSize = maxBlockSize * numBlocks
+    val doGoldCheck = inputSize <= 512 * 10_000
+
+
+    case class Entry(inputSize: Int, blockSize:Int, factor:Int, skipDepth: Int, time: Double) {
+      def printout: String = s"${inputSize},${blockSize},${factor},${skipDepth},${time}"
+    }
+
+    // Explorations
+    val blockSizes = Vector(32, 81, 64, 128, 256, 512)
+    val skipDepths = Vector(0, 1, 2, 3, 4)
+    val factors = Vector(2)
+
+    val entries = for (
+      blockSize <- blockSizes;
+      skip <- skipDepths;
+      factor <- factors
+      if log(factor, blockSize) % 1 == 0;
+      maxDepth = log(factor, blockSize).toInt;
+      depth = maxDepth - skip - 1
+      if depth >= 0
+    ) yield {
+
+      val initExp = {
+        fun(ArrayType(blockSize, f32))(input =>
+          input |> scan(add)(lf32(0.0f))
+        )
+      }
+
+      val rewritten = rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan(
+        factor = factor,
+        skipDepth = skip))(initExp).get
+      util.withExecutor {
+        val makeKenrel = () => fun(ArrayType(inputSize, f32))(input => {
+          input |> split(blockSize) |> mapWorkGroup(0)(rewritten) |> join
+        })
+        val timing = runParallelUnrolled(inputSize, blockSize, factor, depth, makeKenrel, doGoldCheck)
+        timing.printout()
+        Entry(inputSize, blockSize, factor, skip, timing.partials)
+      }
+    }
+    entries.sortBy(_.time).foreach { e => println(e.printout) }
+  }
+
+  test("Benchmark best") {
+    val numSizes = 64
+    val baseMult = 256
+
+    val inputSizes = (0 until numSizes).map(numSize =>  (numSize + 1) * 64 * 32 * baseMult)
+
+    val maxBlockSize = 512
+    val numBlocks = 10_000
+    val inputSize = maxBlockSize * numBlocks
+    val doGoldCheck = inputSize <= 512 * 5_000
+
+
+    case class Entry(inputSize:Int, blockSize:Int, factor:Int, skipDepth: Int, time: Double, aggregate:Double, total: Double) {
+      def printout: String = s"${inputSize},${blockSize},${factor},${skipDepth},$time,$aggregate,$total"
+    }
+
+    val blockSize = 512
+    val skip = 2
+    val factor = 2
+
+    val entries = for (
+      inputSize <- inputSizes;
+      if log(factor, blockSize) % 1 == 0;
+      maxDepth = log(factor, blockSize).toInt;
+      depth = maxDepth - skip - 1
+      if depth >= 0
+    ) yield {
+
+      val initExp = {
+        fun(ArrayType(blockSize, f32))(input =>
+          input |> scan(add)(lf32(0.0f))
+        )
+      }
+
+      val rewritten = rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan(
+        factor = factor,
+        skipDepth = skip))(initExp).get
+      util.withExecutor {
+        val makeKenrel = () => fun(ArrayType(inputSize, f32))(input => {
+          input |> split(blockSize) |> mapWorkGroup(0)(rewritten) |> join
+        })
+        val timing = runParallelUnrolled(inputSize, blockSize, factor, depth, makeKenrel, doGoldCheck)
+        timing.printout()
+        Entry(inputSize, blockSize, factor, skip, timing.partials, timing.aggregate, timing.partials + timing.aggregate)
+      }
+    }
+    entries.foreach { e => println(e.printout) }
+  }
+
+  test("Benchmark middle version") {
+    val numSizes = 64
+    val baseMult = 256
+
+    val inputSizes = (0 until numSizes).map(numSize =>  (numSize + 1) * 64 * 32 * baseMult)
+
+    case class Entry(inputSize:Int, blockSize:Int, factor:Int, skipDepth: Int, time: Double, aggregate:Double, total: Double) {
+      def printout: String = s"${inputSize},${blockSize},${factor},${skipDepth},$time,$aggregate,$total"
+    }
+
+
+    val blockSize = 256
+    val skip = 0
+    val factor = 2
+
+    val entries = for (
+      inputSize <- inputSizes;
+      if log(factor, blockSize) % 1 == 0;
+      maxDepth = log(factor, blockSize).toInt;
+      depth = maxDepth - skip - 1
+      if depth >= 0
+    ) yield {
+
+      val initExp = {
+        fun(ArrayType(blockSize, f32))(input =>
+          input |> scan(add)(lf32(0.0f))
+        )
+      }
+
+      val rewritten = rise.elevate.rules.traversal.body(rise.elevate.rules.workEfficientScan.blockScan(
+        factor = factor,
+        skipDepth = skip))(initExp).get
+      util.withExecutor {
+        val makeKenrel = () => fun(ArrayType(inputSize, f32))(input => {
+          input |> split(blockSize) |> mapWorkGroup(0)(rewritten) |> join
+        })
+        val timing = runParallelUnrolled(inputSize, blockSize, factor, depth, makeKenrel, doGoldCheck = false)
+        timing.printout()
+        Entry(inputSize, blockSize, factor, skip, timing.partials, timing.aggregate, timing.partials + timing.aggregate)
+      }
+    }
+    entries.foreach { e => println(e.printout) }
+  }
 }
+
