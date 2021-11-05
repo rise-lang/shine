@@ -6,6 +6,22 @@ import ProveEquiv.syntax._
 import PredicateDSL._
 
 class TvmGemm extends test_util.Tests {
+  ignore("blocking") {
+    val mm: Expr = tvmGemm.mm
+    val start = tvmGemm.baseline(mm).get
+    val goal = tvmGemm.blocking(mm).get
+
+    ProveEquiv.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) && StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withScheduler(BackoffScheduler.init())
+         .withIterationLimit(1_000)
+         .withTimeLimit(java.time.Duration.ofMinutes(5))
+         .withNodeLimit(10_000_000)
+         .withMemoryLimit(3L * 1024L * 1024L * 1024L /* 3GiB */))
+      .runBENF(start, goal, benchmarks.eqsat.mm.tilingStepBENF.rules)
+  }
+
   test("baseline") {
     val mm: Expr = tvmGemm.mm
     val goal = tvmGemm.baseline(mm).get
@@ -67,7 +83,7 @@ class TvmGemm extends test_util.Tests {
 
     ProveEquiv.init()
       .runBENF(start, goal, Seq(
-        // rules.eta,// rules.betaExtract, rules.betaNatExtract,
+        // rules.eta, rules.betaExtract, rules.betaNatExtract,
         rules.mapFission,
         rules.reduceSeq,
         rules.reduceSeqMapFusion,

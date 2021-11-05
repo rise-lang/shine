@@ -12,7 +12,7 @@ class Basic extends test_util.Tests {
 
     val m = map((f32 ->: f32) ->: (`%n`(0)`.`f32) ->: (`%n`(0)`.`f32))
     assert(
-      BENF(lam(`%n`(0)`.`f32,
+      BENF.normalize(lam(`%n`(0)`.`f32,
         app(app(lam(f32 ->: f32, app(m, %(0, f32 ->: f32))), %(2, f32 ->: f32)),
           %(0, `%n`(0)`.`f32)))) ==
       app(m, %(1, f32 ->: f32)))

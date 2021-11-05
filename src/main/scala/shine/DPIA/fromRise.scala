@@ -763,7 +763,7 @@ object fromRise {
           expT(ArrayType(m, VectorType(_, t)), _))
         =>
         depFun[NatKind](n)(
-          fun[ExpType](expT(mn`.`t, read), e =>
+          fun[ExpType](expT(mn`.`t, a), e =>
             AsVectorAligned(n, m, t, a, e)))
       }
 

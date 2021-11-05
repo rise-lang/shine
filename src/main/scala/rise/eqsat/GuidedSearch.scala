@@ -47,9 +47,10 @@ object GuidedSearch {
       stats.zipWithIndex.foreach { case (st, i) =>
         println(s"  -- step n°$i")
         def ratio(a: Long, b: Long) = f"${a.toDouble/b.toDouble}%.2f"
-        println(s"  iterations: ${st.iterations}")
-        println(s"  e-graph size: ${st.egraphNodes} nodes, ${st.egraphClasses} classes")
+        println(s"  iterations: ${st.iterations}, rewrites: ${st.rewriteCount}, nf rewrites: ${st.normRewriteCount}")
+        println(s"e-graph size: ${st.egraphNodes} nodes, ${st.egraphClasses} classes")
         println(s"  total time: ${util.prettyTime(st.totalTime)} (" +
+          s"${ratio(st.initializeTime, st.totalTime)} initialize, " +
           s"${ratio(st.rewriteSearchTime, st.totalTime)} rewrite search, " +
           s"${ratio(st.rewriteApplyTime, st.totalTime)} rewrite apply, " +
           s"${ratio(st.egraphRebuildTime, st.totalTime)} e-graph rebuild, " +
@@ -67,13 +68,16 @@ object GuidedSearch {
     }
   }
 
-  case class Stats(rewriteSearchTime: Long,
+  case class Stats(initializeTime: Long,
+                   rewriteSearchTime: Long,
                    rewriteApplyTime: Long,
                    egraphRebuildTime: Long,
                    goalCheckTime: Long,
                    extractionTime: Long,
                    totalTime: Long,
                    iterations: Int,
+                   normRewriteCount: Long,
+                   rewriteCount: Long,
                    egraphNodes: Int,
                    egraphClasses: Int,
                    memoryStats: util.MemoryStats,
@@ -105,24 +109,39 @@ class GuidedSearch(
   def run(start: Expr, steps: Seq[GuidedSearch.Step]): GuidedSearch.Result = {
     val stats = Vec.empty[GuidedSearch.Stats]
 
+    val startTime = System.nanoTime()
+    // note: this is a bit hacky
+    val timeLimit = transformRunner(Runner.init()).timeLimit
+
     @tailrec
     def rec(s: Int, beam: Seq[Expr]): Seq[Expr] = {
       if (s < steps.length) {
         println(s"---- step n°$s")
         val step = steps(s)
 
-        val egraph = EGraph.empty()
-        val normBeam = beam.map(step.normalForm.normalize)
-        println(s"beam head: ${Expr.toNamed(normBeam.head)}")
-        val rootId = normBeam.map(egraph.addExpr)
-          .reduce[EClassId] { case (a, b) => egraph.union(a, b)._1 }
-        egraph.rebuild(Seq(rootId))
+        var normRewriteCount = 0L
+        val (initializeTime, (egraph, rootId)) = util.time{
+          val egraph = EGraph.empty()
+          val normBeam = beam.map { e =>
+            val (n, rc) = step.normalForm.normalizeCountRewrites(e)
+            normRewriteCount += rc
+            n
+          }
+          println(s"beam head: ${Expr.toNamed(normBeam.head)}")
+          val rootId = normBeam.map(egraph.addExpr)
+            .reduce[EClassId] { case (a, b) => egraph.union(a, b)._1 }
+          egraph.rebuild(Seq(rootId))
+          (egraph, rootId)
+        }
 
         // TODO: add goal check to e-graph for incremental update?
         val mergedRules = (step.rules ++ step.normalForm.rules).distinctBy(_.name)
-        val (growTime, runner) = util.time(transformRunner(Runner.init()).doneWhen { _ =>
-          util.printTime("goal check", ExtendedPattern.exists(step.sketch, egraph, rootId))
-        }.run(egraph, filter, mergedRules, Seq(), Seq(rootId)))
+        val (growTime, runner) = util.time(transformRunner(Runner.init())
+          // note: update time limit
+          .withTimeLimit(java.time.Duration.ofNanos(timeLimit - (System.nanoTime() - startTime)))
+          .doneWhen { _ =>
+            util.printTime("goal check", ExtendedPattern.exists(step.sketch, egraph, rootId))
+          }.run(egraph, filter, mergedRules, Seq(), Seq(rootId)))
         val found = runner.stopReasons.contains(Done)
 
         val (extractionTime, newBeam) = if (found) {
@@ -133,13 +152,16 @@ class GuidedSearch(
 
         val totalIterationsTime = runner.iterations.iterator.map(_.totalTime).sum
         stats += GuidedSearch.Stats(
+          initializeTime = initializeTime,
           rewriteSearchTime = runner.iterations.iterator.map(_.searchTime).sum,
           rewriteApplyTime = runner.iterations.iterator.map(_.applyTime).sum,
           egraphRebuildTime = runner.iterations.iterator.map(_.rebuildTime).sum,
           goalCheckTime = growTime - totalIterationsTime,
           extractionTime = extractionTime,
-          totalTime = growTime + extractionTime,
+          totalTime = initializeTime + growTime + extractionTime,
           iterations = runner.iterationCount(),
+          normRewriteCount = normRewriteCount,
+          rewriteCount = runner.iterations.map(_.applied.values.map(_.toLong).sum).sum,
           egraphNodes = runner.iterations.last.egraphNodes,
           egraphClasses = runner.iterations.last.egraphClasses,
           memoryStats = runner.iterations.iterator.map(_.memStats).reduce(_ max _),

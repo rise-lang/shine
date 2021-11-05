@@ -181,7 +181,7 @@ object mm {
       import rise.core.DSL._
       mm(M)(N)(K)
     }.get
-    val normGoal = BENF(Expr.fromNamed(goal))
+    val normGoal = BENF.normalize(Expr.fromNamed(goal))
     val goalSize = AstSize.ofExpr(normGoal)
     util.dotPrintTmp(s"${name}_goal", Expr.toNamed(normGoal))
     println(s"${name} goal size: ${goalSize}")
@@ -281,8 +281,12 @@ object mm {
   }
 
   val runnerTrans: Runner => Runner = r => r
-    .withTimeLimit(java.time.Duration.ofMinutes(45))
+    .withTimeLimit(java.time.Duration.ofMinutes(5))
+    .withMemoryLimit(4L * 1024L * 1024L * 1024L)
+    /*
+    .withTimeLimit(java.time.Duration.ofMinutes(60))
     .withMemoryLimit(32L * 1024L * 1024L * 1024L)
+     */
     .withNodeLimit(50_000_000)
 
   private def blocking_T(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
@@ -489,7 +493,7 @@ object mm {
     )
 
     GuidedSearch.init()
-      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
       .run(start, steps)
@@ -728,28 +732,29 @@ object mm {
 
   def main(args: Array[String]): () = {
     val fs = Seq(
-      // "baseline" -> baseline _,
+       "baseline" -> baseline _,
       // not found after 3mn+ and 2GiB+ (700K nodes, 400K classes)
-      "blocking T" -> { () => blocking_T(tilingStepBENF) },
+       // "blocking T" -> { () => blocking_T(tilingStepBENF) },
       // "blocking TTTT" -> { () => blocking_TTTT(tilingStepBENF) },
       // "blocking SRSR" -> { () => blocking_SRSR(splitStepBENF, reorderStepBENF) },
       // FIXME: the program found has unwanted split/joins
-      "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
-       // "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+      // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
+       "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
       // FIXME: cannot find goal, rewriting is stuck with the given rules
       // "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
-       // "vectorization SRL" -> vectorization_SRL _,
-       "vectorization" -> vectorization _,
-       // "loop-perm SRL" -> loopPerm_SRL _,
-       "loop-perm" -> loopPerm _,
-       // "array-packing SRCL" -> arrayPacking_SRCL _,
-       "array-packing" -> arrayPacking _,
-       // "cache-blocks SRCL" -> cacheBlocks_SRCL _,
-       "cache-blocks" -> cacheBlocks _,
-       // "parallel SRCL" -> parallel_SRCL _,
-       "parallel" -> parallel _,
+       "vectorization SRL" -> vectorization_SRL _,
+       // "vectorization" -> vectorization _,
+       "loop-perm SRL" -> loopPerm_SRL _,
+       // "loop-perm" -> loopPerm _,
+       "array-packing SRCL" -> arrayPacking_SRCL _,
+       // "array-packing" -> arrayPacking _,
+       "cache-blocks SRCL" -> cacheBlocks_SRCL _,
+       // "cache-blocks" -> cacheBlocks _,
+       "parallel SRCL" -> parallel_SRCL _,
+       // "parallel" -> parallel _,
     )
     val rs = fs.map { case (n, f) =>
+      System.gc() // hint garbage collection to get more precise memory usage statistics
       (n, util.time(f()))
     }
     rs.foreach { case (n, (_, r)) =>

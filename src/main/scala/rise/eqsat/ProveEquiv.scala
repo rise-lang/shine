@@ -52,8 +52,8 @@ class ProveEquiv(
               goals: OneOrMore[rise.core.Expr],
               rules: Seq[Rewrite],
               normRules: Seq[RewriteDirected] = BENF.directedRules): Unit = {
-    val normStarts = starts.seq.map(s => BENF(Expr.fromNamed(s)))
-    val normGoals = goals.seq.map(g => BENF(Expr.fromNamed(g)))
+    val normStarts = starts.seq.map(s => BENF.normalize(Expr.fromNamed(s)))
+    val normGoals = goals.seq.map(g => BENF.normalize(Expr.fromNamed(g)))
     for ((start, i) <- normStarts.zipWithIndex) {
       println(s"normalized start n°$i: ${Expr.toNamed(start)}")
     }

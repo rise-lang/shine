@@ -61,7 +61,7 @@ object harris {
     println(s"start size: ${AstSize.ofExpr(Expr.fromNamed(normStart))}")
 
     val goal = apps.harrisCornerDetectionHalideRewrite.ocl.harrisBufferedShape.reduce(_`;`_)(start).get
-    val normGoal = BENF(Expr.fromNamed(goal))
+    val normGoal = BENF.normalize(Expr.fromNamed(goal))
     println(s"normalized goal: ${Expr.toNamed(normGoal)}")
     println(s"goal size: ${AstSize.ofExpr(normGoal)}")
   }

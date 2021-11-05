@@ -210,6 +210,7 @@ class harrisCornerDetectionHalideCheck
   test("harrisBuffered rewrite generates valid OpenCL") {
     val typed = util.printTime("infer", harris(1, 1).toExpr)
     val lowered = rewrite.ocl.harrisBuffered(typed).get
+    println(lowered)
     checkOCL(lowered, LocalSize(1), GlobalSize(1))
   }
 

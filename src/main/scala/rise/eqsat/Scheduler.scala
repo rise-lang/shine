@@ -139,6 +139,10 @@ class SamplingScheduler(var defaultLimit: Int,
                         var lastSampledIteration: Int,
                         var random: Random)
 extends Scheduler {
+  def withDefaultLimit(l: Int): SamplingScheduler = {
+    this.defaultLimit = l; this
+  }
+
   override def canSaturate(iteration: Int): Boolean = iteration > lastSampledIteration
 
   override def searchRewrite(iteration: Int, egraph: EGraph, shc: SubstHashCons, rewrite: Rewrite): Vec[SearchMatches] = {
@@ -161,8 +165,8 @@ class RuleStats(var timesApplied: Int,
 
 object BackoffScheduler {
   def init(): BackoffScheduler = new BackoffScheduler(
-    defaultMatchLimit = 10_000,
-    defaultBanLength = 2,
+    defaultMatchLimit = 1_000,
+    defaultBanLength = 5,
     stats = HashMap.empty,
   )
 }
@@ -213,7 +217,16 @@ class BackoffScheduler(var defaultMatchLimit: Int,
     })
 
   override def canSaturate(iteration: Int): Boolean = {
-    val banned = stats.view.filter { case (_, rs) => rs.bannedUntil >= iteration }.to(Seq)
+    val banned = stats.view.filter { case (_, rs) => rs.bannedUntil > iteration }.to(Seq)
+    if (banned.nonEmpty) {
+      val minBan = banned.map { case (_, s) => s.bannedUntil }.min
+      assert(minBan >= iteration)
+      val delta = minBan - iteration
+
+      for ((_, s) <- banned) {
+        s.bannedUntil -= delta
+      }
+    }
     banned.isEmpty
   }
 
@@ -232,7 +245,7 @@ class BackoffScheduler(var defaultMatchLimit: Int,
     val totalLen = matches.view.map(_.substs.size).sum
     val threshold = rs.matchLimit << rs.timesBanned
     if (totalLen > threshold) {
-      val banLength = rs.banLength + rs.timesBanned
+      val banLength = rs.banLength << rs.timesBanned
       rs.timesBanned += 1
       rs.bannedUntil = iteration + banLength
       return Vec.empty

@@ -32,6 +32,7 @@ package object eqsat {
 
   trait NF {
     val normalize: Expr => Expr
+    val normalizeCountRewrites: Expr => (Expr, Long) = ???
     val rules: Seq[Rewrite]
     val directedRules: Seq[RewriteDirected]
   }
@@ -40,7 +41,8 @@ package object eqsat {
     val extractAnalysis: SmallestCostAnalysis[(BENFRedexCount.Data, Int)] =
       SmallestCostAnalysis(LexicographicCost(BENFRedexCount(), AstSize))
 
-    override val normalize: Expr => Expr = BENF
+    override val normalize: Expr => Expr = e => BENF(e)._1
+    override val normalizeCountRewrites: Expr => (Expr, Long) = BENF
     override val rules: Seq[Rewrite] = {
       import eqsat.rules._
       Seq(eta, betaExtract, betaNatExtract)
@@ -70,28 +72,30 @@ package object eqsat {
     )
   }
 
-  def BENF(e: Expr): Expr = {
+  def BENF(e: Expr): (Expr, Long) = {
     val egraph = EGraph.empty()
     val id = egraph.addExpr(e)
-    ExprWithHashCons.expr(egraph)(BENF_internal(egraph, id))
+    val (n, r) = BENF_internal(egraph, id)
+    (ExprWithHashCons.expr(egraph)(n), r)
   }
-  def BENF(e: ExprWithHashCons, hc: HashConses): ExprWithHashCons = {
+  def BENF(e: ExprWithHashCons, hc: HashConses): (ExprWithHashCons, Long) = {
     val egraph = EGraph.empty()
     egraph.hashConses = hc
     val id = egraph.addExpr(e)
     BENF_internal(egraph, id)
   }
 
-  private def BENF_internal(egraph: EGraph, id: EClassId): ExprWithHashCons = {
-    Runner.init().run(egraph, NoPredicate(), Seq(), BENF.directedRules, Seq(id))
+  private def BENF_internal(egraph: EGraph, id: EClassId): (ExprWithHashCons, Long) = {
+    val rewrites = Runner.init().run(egraph, NoPredicate(), Seq(), BENF.directedRules, Seq(id))
+      .iterations.map(_.applied.values.map(_.toLong).sum).sum
     val (normalized, _) = Extractor.findBestOf(egraph, BENFRedexCount(), id)
-    normalized
+    (normalized, rewrites)
   }
 
   // Combinator Normal Form
   def CNF(e: Expr): Expr = {
     val egraph = EGraph.empty()
-    val id = egraph.addExpr(BENF(e))
+    val id = egraph.addExpr(BENF(e)._1)
     Runner.init().run(egraph, NoPredicate(), Seq(), CNF.directedRules, Seq(id))
     // val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     // val (_, normalized) = extractor.findBestOf(id)
