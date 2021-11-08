@@ -162,8 +162,6 @@ object mm {
 
   private def goals(): () = {
     goal("baseline", apps.tvmGemm.baseline)
-
-    // FIXME: Elevate reference seems to be broken here and there (e.g. wrong innermost traversal)
     goal("blocking", apps.tvmGemm.blocking)
     goal("vectorization", apps.tvmGemm.vectorization)
     goal("loop-perm", apps.tvmGemm.loopPerm)

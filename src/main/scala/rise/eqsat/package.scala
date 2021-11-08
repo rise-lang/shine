@@ -32,7 +32,7 @@ package object eqsat {
 
   trait NF {
     val normalize: Expr => Expr
-    val normalizeCountRewrites: Expr => (Expr, Long) = ???
+    val normalizeCountRewrites: Expr => (Expr, Long)
     val rules: Seq[Rewrite]
     val directedRules: Seq[RewriteDirected]
   }
@@ -56,6 +56,7 @@ package object eqsat {
 
   object CNF extends NF {
     override val normalize: Expr => Expr = CNF
+    override lazy val normalizeCountRewrites: Expr => (Expr, Long) = ???
     override val rules: Seq[Rewrite] = {
       import eqsat.rules._
       Seq(

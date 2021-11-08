@@ -21,9 +21,9 @@ import rise.elevate.strategies.traversal._
 
 object tvmGemm {
   val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
-    traversal.outermost(default.RiseTraversable)
+    traversal.outermost(alternative2.RiseTraversable)
   val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
-    traversal.innermost(default.RiseTraversable)
+    traversal.innermost(alternative2.RiseTraversable)
 
   //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
   val N = 1024
@@ -45,7 +45,7 @@ object tvmGemm {
   // -- BASELINE ---------------------------------------------------------------
 
   val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
-    fuseReduceMap `@` topDown[Rise]
+    (fuseReduceMap `@` topDown[Rise])
 
   // -- BLOCKING ---------------------------------------------------------------
 
@@ -110,7 +110,7 @@ object tvmGemm {
   // -- CACHE BLOCKS -----------------------------------------------------------
 
   val cacheBlocks: Strategy[Rise] = (
-    arrayPacking `;;`// debug[Rise]("after arrayPacking") `;`
+    arrayPacking `;;` // elevate.core.strategies.debug.debug[Rise]("after arrayPacking") `;`
       (unroll `@` innermost(isReduceSeq))
     )
 
@@ -118,8 +118,7 @@ object tvmGemm {
 
   val par = (
     arrayPacking `;;`
-      ((parallel() `@` outermost(isApplied(isMap))) `@`
-        outermost(isApplied(isLet))) `;;`
+      (parallel() `@` outermost(isApplied(isMap))) `;;`
       (unroll `@` innermost(isReduceSeq))
     )
 }

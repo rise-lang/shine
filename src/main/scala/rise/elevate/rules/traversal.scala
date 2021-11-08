@@ -123,6 +123,29 @@ object traversal {
     }
   }
 
+  object alternative2 {
+    implicit object RiseTraversable extends implementation.DefaultTraversal  {
+      override protected def oneHandlingState: Boolean => Strategy[Rise] => Strategy[Rise] =
+        carryOverState => s => {
+          // (option 3) traverse to argument first
+          case a @ App(f, e) => s(e) match {
+            case Success(x: Rise) => Success(App(f, x)(a.t))
+            case Failure(state)   => if (carryOverState)
+              state(f).mapSuccess(App(_, e)(a.t)) else
+              s(f).mapSuccess(App(_, e)(a.t))
+          }
+
+          // Push s further down the AST.
+          // If there are no subexpressions (None),
+          // we failed to apply s once => Failure
+          case x => traverseSingleSubexpression(s)(x) match {
+            case Some(r) => r
+            case None    => Failure(s)
+          }
+        }
+    }
+  }
+
   object implementation {
     // For Rise, the only AST node that contains multiple subexpressions is App!
     abstract class DefaultTraversal
