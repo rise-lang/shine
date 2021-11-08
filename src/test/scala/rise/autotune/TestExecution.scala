@@ -6,6 +6,24 @@ import rise.core.types.{Nat, TuningParameter}
 
 class TestExecution extends test_util.Tests {
 
+  def executeConfig(e: Expr, params: Map[Nat, Nat], hostCode: HostCode): ExecutionResult = {
+
+    val eReplaced = rise.core.substitute.natsInExpr(params, e)
+
+    val result = autotune.execution.execute(
+      expression = eReplaced,
+      hostCode = hostCode,
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 100,
+      speedupFactor = 100,
+      execution = Median
+    )
+
+    result
+  }
+
+
+
   test("execute convolution") {
     val goodParameters: Map[Nat, Nat] = Map(
       TuningParameter("vec") -> (4: Nat),
@@ -56,10 +74,9 @@ class TestExecution extends test_util.Tests {
   }
 
   test("execute mm"){
-
     val mm: Expr = util.expressions.mm.mmOclGsLsWrap
 
-    val params:Map[Nat, Nat] = Map(
+    val params0:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (1024: Nat),
@@ -72,18 +89,28 @@ class TestExecution extends test_util.Tests {
       TuningParameter("v8") -> (32: Nat)
     )
 
-    val mmReplaced = rise.core.substitute.natsInExpr(params, mm)
-    val result = autotune.execution.execute(
-      expression = mmReplaced,
-      hostCode = util.hostcode.mm(1024, 1024, 1024),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 100,
-      speedupFactor = 100,
-      execution = Median
+    val params1:Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (8: Nat),
+      TuningParameter("ls1") -> (4: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (32: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (8: Nat),
+      TuningParameter("v5") -> (32: Nat),
+      TuningParameter("v6") -> (64: Nat),
+      TuningParameter("v7") -> (32: Nat),
+      TuningParameter("v8") -> (128: Nat)
     )
 
-    println("result: " + result.runtime)
-    assert(result.runtime.isRight)
+    val paramSet = Set(params0, params1)
+
+    paramSet.foreach(params => {
+
+      val result = executeConfig(mm, params, util.hostcode.mm(1024, 1024, 1024))
+
+      println("result: " + result.runtime)
+      assert(result.runtime.isRight)
+    })
   }
 
   test("generate huge amount of code") {
