@@ -164,20 +164,24 @@ class mvTuning extends test_util.Tests {
     executeMv(mvKeplerBestTuning, 128) //
 
     executeMv(mvBlastNTuning, 64) //
-    //    executeMv(mvBlastTTuning, 64) //
+//        executeMv(mvBlastTTuning, 64) //
 
   }
 
   test("tune mv version") {
-    runTuning(mvTuning, "mvTuning")
-    runTuning(mvFusedTuning, "mvFusedTuning")
+    val mvBest = runTuning(mvTuning, "mvTuning")
+    val mvFusedBest = runTuning(mvFusedTuning, "mvFusedTuning")
 
-    runTuning(mvFusedAMDTuning, "mvFusedAMD")
-    runTuning(mvKeplerBestTuning, "mvKeplerBest")
+    val mvFusedAMDBest = runTuning(mvFusedAMDTuning, "mvFusedAMD")
+    val mvKeplerBest = runTuning(mvKeplerBestTuning, "mvKeplerBest")
 
-    runTuning(mvBlastNTuning, "mvBlastN")
+//    runTuning(mvBlastNTuning, "mvBlastN")
 //    runTuning(mvBlastTTuning, "mvBlastT")
 
+    println("mvBest: " + mvBest)
+    println("mvFusedBest: " + mvFusedBest)
+    println("mvFusedAMDBest: " + mvFusedAMDBest)
+    println("mvKeplerBest: " + mvKeplerBest)
   }
 
   def runTuning(e: Expr, version: String) = {
@@ -186,7 +190,7 @@ class mvTuning extends test_util.Tests {
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024),
-      samples = 100,
+      samples = 1000,
       name = "mv_" + version,
       output = s"autotuning/mv",
       timeouts = Timeouts(10000, 10000, 10000),
@@ -198,6 +202,11 @@ class mvTuning extends test_util.Tests {
       saveToFile = true
     )
 
-    autotune.search(tuner)(e)
+    val result = autotune.search(tuner)(e)
+
+    val best = autotune.getBest(result.samples)
+//    println("result: " + best.get.runtime)
+
+    best.get.runtime
   }
 }

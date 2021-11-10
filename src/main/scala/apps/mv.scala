@@ -85,6 +85,7 @@ object mv {
         (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
       )((mat, xs) =>
         join o mapWorkGroup(fun(matChunk => // matChunk: 64.(n.f32 x f32)
+          mapLocal(fun( x => x)) o
           // TODO: check address space
           oclReduceSeq(AddressSpace.Private)(fun((acc, next) => // next: 64.64.f32 x 64.f32
             let (toLocal(mapLocal(fun(x => x))(snd(next))))
@@ -152,23 +153,19 @@ object mv {
       depFun((n: Nat, m: Nat) => fun(
         (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
       )((mat, xs) =>
-        mat |>
-          mapWorkGroup(fun(row =>
-            zip(row)(xs) |>
-              reorderWithStride(s0) |>
-              split(n /^ s0) |>
-              // original toLocalFun()
-              mapLocal(
-                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
-              )
-              |> toLocal
-
-//              |> split(128)
-//              |> mapLocal( vs // toLocalFun(mapLocal( ))
-              |>
-              oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
-          ))
-//          |> join)
+        mat
+          |> mapWorkGroup(fun(row =>
+          zip(row)(xs)
+            |> reorderWithStride(s0)
+            |> split(n /^ s0)
+            |> mapLocal(
+            oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+          )
+            |> toLocal
+            |> split(s0)
+            |> mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
+        ))
+          |> join
       ))
     }
 
