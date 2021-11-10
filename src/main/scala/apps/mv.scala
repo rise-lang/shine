@@ -1,6 +1,5 @@
 package apps
 
-import apps.gemv.{add, mult}
 import apps.separableConvolution2D.mulT
 import rise.core.DSL.HighLevelConstructs.reorderWithStride
 import rise.core.DSL.Type._
@@ -9,7 +8,6 @@ import rise.core._
 import rise.core.primitives.{let => _, _}
 import rise.core.types.DataType._
 import rise.core.types._
-import rise.openCL.primitives.oclReduceSeq
 
 object mv {
   // we can use implicit type parameters and type annotations to specify the function type of mult
@@ -27,14 +25,6 @@ object mv {
   }
   val dot = separableConvolution2D.dot
   val dotSeq = separableConvolution2D.dotSeq
-
-//  val gemvHighLevel = depFun((n: Nat, m: Nat) => fun(
-//    (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
-//      (m`.`f32)
-//  )((mat, xs, ys, alpha, beta) =>
-//    zip(map(fun(row => alpha * dot(row, xs)))(mat))(scal(ys, beta)) |>
-//    map(fun(x => x._1 + x._2))
-//  ))
 
   val mvHighLevel = depFun((n: Nat, m: Nat) => fun(
     (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
@@ -73,81 +63,48 @@ object mv {
           split(n) |> // why the split here? is this fast?  is the result even correct?
           // to local Fun()
           mapLocal(
-          oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+            oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
           )
       )) |> join
     ))
 
-//    def mvBlastNParam(s0: Nat): ToBeTyped[Expr] = {
+    val mvBlastN = mvBlastNParam(64)
 
-      val mvBlastN =
+    val mvBlastT = mvBlastTParam(64)
+
+    val mvFusedAMD = mvFusedAMDParam(128)
+
+    val mvKeplerBest = mvKeplerBestParam(128)
+
+    def mvBlastNParam(s0: Nat): ToBeTyped[Expr] = {
       depFun((n: Nat, m: Nat) => fun(
         (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
       )((mat, xs) =>
-        join o mapWorkGroup(fun(matChunk => // matChunk: 64.(n.f32 x f32)
-          mapLocal(fun( x => x)) o
-          // TODO: check address space
-          oclReduceSeq(AddressSpace.Private)(fun((acc, next) => // next: 64.64.f32 x 64.f32
-            let (toLocal(mapLocal(fun(x => x))(snd(next))))
-              be (localX => // localX: 64.f32
-              mapLocal(fun(x => // x: f32 x 64.f32
-                // TODO: check address space
-                oclReduceSeq(AddressSpace.Private)(fun((acc2, next2) => // next2: (f32 x f32)
-                  acc2 + fst(next2) * snd(next2)
-                ))(fst(x)) $ zip(snd(x))(localX)
-              )) $ zip(acc)(fst(next)))
-          ))(mapLocal(fun(x => x))(generate(fun(_ => lf32(0.0f))) :: (64`.`f32))) $
-            zip(transpose o map(split(64)) $ matChunk)(split(64) $ xs)
-        )) o split(64) $ mat
+        join o mapWorkGroup(fun(matChunk => // matChunk: s0.(n.f32 x f32)
+          mapLocal(fun(x => x)) o
+            // TODO: check address space
+            oclReduceSeq(AddressSpace.Private)(fun((acc, next) => // next: s0.s0.f32 x s0.f32
+              let(toLocal(mapLocal(fun(x => x))(snd(next))))
+                be (localX => // localX: s0.f32
+                mapLocal(fun(x => // x: f32 x s0.f32
+                  // TODO: check address space
+                  oclReduceSeq(AddressSpace.Private)(fun((acc2, next2) => // next2: (f32 x f32)
+                    acc2 + fst(next2) * snd(next2)
+                  ))(fst(x)) $ zip(snd(x))(localX)
+                )) $ zip(acc)(fst(next)))
+            ))(mapLocal(fun(x => x))(generate(fun(_ => lf32(0.0f))) :: (s0 `.` f32))) $
+            zip(transpose o map(split(s0)) $ matChunk)(split(s0) $ xs)
+        )) o split(s0) $ mat
       ))
+    }
 
-
-    // something is broken here
-//      val mvBlastN: ToBeTyped[Expr] =
-//      depFun((n: Nat, m: Nat) => fun(
-//        (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
-//          (m`.`f32)
-//      )((mat, xs) =>
-//        join o mapWorkGroup(fun(matChunk => // matChunk: 64.(n.f32 x f32)
-//          // TODO: check address space
-//          oclReduceSeq(AddressSpace.Private)(fun((acc, next) => // next: 64.64.f32 x 64.f32
-//            let (toLocal(mapLocal(fun(x => x))(snd(next))))
-//              be (localX => // localX: 64.f32
-//              mapLocal(fun(x => // x: f32 x 64.f32
-//                // TODO: check address space
-//                oclReduceSeq(AddressSpace.Private)(fun((acc2, next2) => // next2: (f32 x f32)
-//                  acc2 + fst(next2) * snd(next2)
-//                ))(fst(x)) $ zip(snd(x))(localX)
-//              )) $ zip(acc)(fst(next)))
-//          ))(mapLocal(fun(x => x))(generate(fun(_ => lf32(0.0f))) :: (64`.`f32))) $
-//            zip(transpose o map(split(64)) $ matChunk)(split(64) $ xs)
-//        )) o split(64) $ mat
-//      ))
-
-//    println("mvBlastN: \n" + mvBlastN)
-//
-//    println("try to generate code")
-//    val code = util.gen.opencl.kernel.asStringFromExpr(mvBlastN)
-//    println("code: \n" + code)
-
-//    val mvBlastN = mvBlastNParam(64)
-//
-//    val mvBlastT = depFun((n: Nat, m: Nat) => fun(
-//      (n`.`m`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
-//        (m`.`f32)
-//    )((mat, xs, ys, alpha, beta) =>
-//      mvBlastN(n)(m)(transpose(mat))(xs)(ys)(alpha)(beta)
-//    ))
-
-//    def mvBlastTParam(s0: Nat): ToBeTyped[Expr] = {
-//      depFun((n: Nat, m: Nat) => fun(
-//        (n`.`m`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
-//          (m`.`f32)
-//      )((mat, xs, ys, alpha, beta) =>
-//        mvBlastNParam(s0)(n)(m)(transpose(mat))(xs)(ys)(alpha)(beta)
-//      ))
-//    }
-
+    def mvBlastTParam(s0: Nat): ToBeTyped[Expr] = {
+      depFun((n: Nat, m: Nat) => fun(
+        (n `.` m `.` f32) ->: (n `.` f32) ->: (m `.` f32)
+      )((mat, xs) =>
+        mvBlastNParam(s0)(n)(m)(transpose(mat))(xs)
+      ))
+    }
 
     def mvFusedAMDParam(s0: Nat): ToBeTyped[Expr] = {
       depFun((n: Nat, m: Nat) => fun(
@@ -168,10 +125,6 @@ object mv {
           |> join
       ))
     }
-
-    val mvFusedAMD = mvFusedAMDParam(128)
-
-    val mvKeplerBest = mvKeplerBestParam(128)
 
     def mvKeplerBestParam(s0: Nat): ToBeTyped[Expr] = {
       depFun((n: Nat, m: Nat) => fun(

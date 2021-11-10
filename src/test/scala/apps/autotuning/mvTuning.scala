@@ -1,6 +1,5 @@
 package apps.autotuning
 
-import apps.mv.ocl
 import apps.mv.ocl._
 import arithexpr.arithmetic.RangeMul
 import rise.autotune
@@ -23,18 +22,15 @@ class mvTuning extends test_util.Tests {
 
   // mvBlastN
   val mvBlastNTuning: ToBeTyped[Expr] =
-    wrapOclMv(mvBlastN)
+    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
+      wrapOclMv(mvBlastNParam(s0))
+    )
 
-  // mvBlastN
-//  val mvBlastNTuning: ToBeTyped[Expr] =
-//    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-//      wrapOclMv(mvBlastNParam(s0))
-//    )
-//  // mvBlastT
-//  val mvBlastTTuning: ToBeTyped[Expr] =
-//    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-//      wrapOclMv(mvBlastTParam(s0))
-//    )
+  // mvBlastT
+  val mvBlastTTuning: ToBeTyped[Expr] =
+    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
+      wrapOclMv(mvBlastTParam(s0))
+    )
 
   // gemvFusedAMD
   val mvFusedAMDTuning: ToBeTyped[Expr] =
@@ -117,7 +113,7 @@ class mvTuning extends test_util.Tests {
     println("mvKeplerBestTuning: " + mvKeplerBestTuning)
 
     println("mvBlastNTuning: " + mvBlastNTuning)
-//    println("mvBlastTTuning: " + mvBlastTTuning)
+    println("mvBlastTTuning: " + mvBlastTTuning)
 
   }
 
@@ -164,7 +160,7 @@ class mvTuning extends test_util.Tests {
     executeMv(mvKeplerBestTuning, 128) //
 
     executeMv(mvBlastNTuning, 64) //
-//        executeMv(mvBlastTTuning, 64) //
+    executeMv(mvBlastTTuning, 64) //
 
   }
 
@@ -172,16 +168,21 @@ class mvTuning extends test_util.Tests {
     val mvBest = runTuning(mvTuning, "mvTuning")
     val mvFusedBest = runTuning(mvFusedTuning, "mvFusedTuning")
 
+    val mvBlastNBest = runTuning(mvBlastNTuning, "mvBlastN")
+    val mvBlastTBest = runTuning(mvBlastTTuning, "mvBlastT")
+
     val mvFusedAMDBest = runTuning(mvFusedAMDTuning, "mvFusedAMD")
     val mvKeplerBest = runTuning(mvKeplerBestTuning, "mvKeplerBest")
 
-//    runTuning(mvBlastNTuning, "mvBlastN")
-//    runTuning(mvBlastTTuning, "mvBlastT")
-
     println("mvBest: " + mvBest)
     println("mvFusedBest: " + mvFusedBest)
+
+    println("mvBlastNBest: " + mvBlastNBest)
+    println("mvBlastTBest: " + mvBlastTBest)
+
     println("mvFusedAMDBest: " + mvFusedAMDBest)
     println("mvKeplerBest: " + mvKeplerBest)
+
   }
 
   def runTuning(e: Expr, version: String) = {
