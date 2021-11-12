@@ -18,13 +18,37 @@ import rise.core.types.DataType._
 import rise.core.types._
 import rise.elevate.rules.algorithmic.{fuseReduceMap, splitJoin}
 import rise.elevate.rules.lowering.{addRequiredCopies, reduceOCL}
+import rise.elevate.rules.traversal.default
 import rise.elevate.rules.traversal.default.RiseTraversable
+import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.{Rise, tunable}
 import rise.openCL.DSL.{mapGlobal, toGlobal}
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.gen
 
+//import elevate.core._
+//import elevate.core.strategies.basic._
+////import elevate.core.strategies.debug.peek
+////import rise.core.IsClosedForm
+//import elevate.core.strategies.debug.debug
+//import elevate.core.strategies.traversal._
+//import rise.core.DSL._
+//import rise.core.primitives._
+//import rise.core.types.DataType._
+//import rise.elevate.rules.algorithmic._
+//import rise.elevate.rules.lowering._
+//import rise.elevate.rules.traversal._
+//import rise.elevate.rules.traversal.default._
+//import rise.elevate.strategies.algorithmic.reorder
+//import rise.elevate.strategies.lowering._
+//import rise.elevate.strategies.normalForm._
+//import rise.elevate.strategies.predicate._
+//import rise.elevate.strategies.tiling._
+//import rise.elevate.strategies.traversal
+import rise.elevate.strategies.traversal._
+
+import _root_.util.gen
 
 object mvExploration {
 
@@ -272,6 +296,17 @@ object mvExploration {
     }
   }
 
+  def rewrite(expr: Expr, strategy: Strategy[Rise]) = {
+
+    println("expr: \n " + expr)
+
+    val rewritten = strategy.apply(expr)
+
+    println("rewritten: \n" + rewritten.get)
+
+    rewritten.get
+  }
+
 //  val rewriteLayer1 = defaultStrategiesGPU.strategies.map(s => s.apply(mvHighLevel)).filter(e => e.isInstanceOf[Success]).map {
 //    case Success(e) => e
 //  }
@@ -288,11 +323,30 @@ object mvExploration {
 
 //  println("true: " + i)
 //  println("false: " + (defaultStrategiesGPU.strategies.size  - i))
+//  object strategies {
+//  }
 
+
+//  val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
+//    fuseReduceMap `@` topDown[Rise]
+
+  val step0: Strategy[Rise] = fuseReduceMap `@` topDown[Rise]
+//  val step1: Strategy[Rise] = tunable(splitJoin) `@` topDown[Rise]
+  val step1: Strategy[Rise] = splitJoin(1024) `@` bottomUp[Rise]
+
+  // reorderWithStride
+//  val step2: Strategy[Rise] =
+
+  // split join reduce
+  val step2: Strategy[Rise] = tunable(splitJoin) `@` bottomUp[Rise]
+
+  // fused stuff
+
+  // normal forms?
 
   def main(args: Array[String]): Unit = {
     // check expressions
-    checkExpression(mvHighLevel, HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish))
+//    checkExpression(mvHighLevel, HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish))
 //    checkExpression(gemvHighLevel, HostCode(gemvHostCode.init(1024, 1024), gemvHostCode.compute, gemvHostCode.finish))
 //    checkExpression(mvOcl, HostCode(gemvHostCode.init(1024, 1024), gemvHostCode.compute, gemvHostCode.finish))
 
@@ -300,5 +354,13 @@ object mvExploration {
 
     // add strategies as arguments
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", Some(HostCode(init(1024, 1024), compute, finish)))
+
+    val e1 = rewrite(mvHighLevel, step0)
+    val e2 = rewrite(e1, step1)
+//    val e3 = rewrite(e2, step2)
+
+//    println("mvFused: \n" + apps.mv.ocl.mvFused)
+    println("mvFused: \n" + apps.mv.ocl.mvFusedSplit)
+//    println("mvFused: \n" + apps.mv.ocl.mvFusedAMD)
   }
 }

@@ -60,6 +60,20 @@ object mv {
     )((mat, xs) =>
       mat |> mapWorkGroup(fun(row =>
         zip(row)(xs) |>
+//          split(n) |> // why the split here? is this fast?  is the result even correct?
+          // to local Fun()
+//          mapLocal(
+            oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+//          )
+      ))
+//      )) |> join
+    ))
+
+    val mvFusedSplit = depFun((n: Nat, m: Nat) => fun(
+      (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
+    )((mat, xs) =>
+      mat |> mapWorkGroup(fun(row =>
+        zip(row)(xs) |>
           split(n) |> // why the split here? is this fast?  is the result even correct?
           // to local Fun()
           mapLocal(

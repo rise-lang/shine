@@ -20,6 +20,9 @@ class mvTuning extends test_util.Tests {
   val mvFusedTuning: ToBeTyped[Expr] =
     wrapOclMv(mvFused)
 
+  val mvFusedSplitTuning: ToBeTyped[Expr] =
+    wrapOclMv(mvFusedSplit)
+
   // mvBlastN
   val mvBlastNTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
@@ -108,6 +111,7 @@ class mvTuning extends test_util.Tests {
 
     println("mvTuning: " + mvTuning)
     println("mvFusedTuning: " + mvFusedTuning)
+    println("mvFusedSplitTuning: " + mvFusedSplitTuning)
 
     println("mvFusedAMDTuning: " + mvFusedAMDTuning)
     println("mvKeplerBestTuning: " + mvKeplerBestTuning)
@@ -117,7 +121,7 @@ class mvTuning extends test_util.Tests {
 
   }
 
-  def executeMv(e: Expr, s0: Nat) = {
+  def executeMv(e: Expr, inputSize: Int, s0: Nat) = {
 
     val params: Nat => Map[Nat, Nat] = s0 => Map(
       TuningParameter("ls0") -> (s0: Nat),
@@ -140,7 +144,7 @@ class mvTuning extends test_util.Tests {
 
     val result = autotune.execution.execute(
       expression = eSub,
-      hostCode = HostCode(init(1024, 1024), compute, finish),
+      hostCode = HostCode(init(inputSize, inputSize), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 1000,
       speedupFactor = 1000,
@@ -151,16 +155,19 @@ class mvTuning extends test_util.Tests {
   }
 
   test("execute mv version") {
+    val inputSize = 1 << 12
+    println("inputSize: " + inputSize)
 
     // update performance numbers
-    executeMv(mvTuning, 128) // ignore s0 in this case // 0.05008 ms
-    executeMv(mvFusedTuning, 128) // ignore s0 in this case // 0.051008 ms
+    executeMv(mvTuning, inputSize, 128) // ignore s0 in this case // 0.05008 ms
+    executeMv(mvFusedTuning, inputSize, 128) // ignore s0 in this case // 0.051008 ms
+    executeMv(mvFusedSplitTuning, inputSize, 128) // ignore s0 in this case // 0.051008 ms
 
-    executeMv(mvFusedAMDTuning, 128) //
-    executeMv(mvKeplerBestTuning, 128) //
+    executeMv(mvFusedAMDTuning, inputSize, 128) //
+    executeMv(mvKeplerBestTuning, inputSize, 128) //
 
-    executeMv(mvBlastNTuning, 64) //
-    executeMv(mvBlastTTuning, 64) //
+    executeMv(mvBlastNTuning, inputSize, 64) //
+    executeMv(mvBlastTTuning, inputSize, 64) //
 
   }
 
