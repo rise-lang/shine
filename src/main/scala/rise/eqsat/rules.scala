@@ -404,6 +404,20 @@ object rules {
       -->
     app(app(map, app(map, "f")), app(nApp(nApp(slide, "sz"), "sp"), "in"))
   )
+  // TODO: what if step != 1?
+  def slideBeforeSplit = NamedRewrite.init("slide-before-split",
+    app(nApp(split, "k"), app(nApp(nApp(slide, "n"), 1), "y"))
+     -->
+    app(app(map, nApp(nApp(slide, "n"), 1)),
+      app(nApp(nApp(slide, ("k": Nat) + ("n": Nat) - (1: Nat)), "k"), "y"))
+  )
+  // TODO: what if step != 1?
+  val slideBeforeSlide = NamedRewrite.init("slide-before-slide",
+    app(nApp(nApp(slide, "m"), "k"), app(nApp(nApp(slide, "n"), 1), "y"))
+     -->
+    app(app(map, nApp(nApp(slide, "n"), 1)),
+      app(nApp(nApp(slide, ("m": Nat) + ("n": Nat) - ("s": Nat)), "k"), "y"))
+  )
 
   val splitBeforeMap = NamedRewrite.init("split-before-map",
     app(nApp(split, "n"), app(app(map, "f"), "in"))
@@ -611,6 +625,9 @@ object rules {
 
   object ocl {
     import rise.openCL.{primitives => roclp}
+    def mapGlobal(dim: Int) = NamedRewrite.init(s"ocl-map-global-$dim",
+      map --> roclp.mapGlobal(dim).primitive
+    )
     def circularBuffer(a: AddressSpace) = NamedRewrite.init(s"ocl-circular-buffer-$a",
       nApp(nApp(slide, "sz"), 1)
         -->

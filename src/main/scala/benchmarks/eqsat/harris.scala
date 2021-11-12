@@ -38,6 +38,16 @@ object harris {
     rules.mapFusion
   )
 
+  val splitStep = GuidedSearch.Step.init(BENF) withRules Seq(
+    rules.splitJoin(32),
+    rules.fstReduction, rules.sndReduction,
+    rules.removeTransposePair,
+    rules.mapFusion,
+    rules.slideBeforeSplit,
+    rules.slideBeforeMap,
+    rules.slideBeforeSlide,
+  )
+
   object LoweringCost extends CostFunction[Int] {
     val ordering = implicitly
 
@@ -64,6 +74,7 @@ object harris {
     rules.ocl.reduceSeq(rct.AddressSpace.Private),
     rules.ocl.reduceSeqUnroll,
     rules.ocl.toMem(rct.AddressSpace.Private),
+    rules.ocl.mapGlobal(0),
   ) withExtractor GuidedSearch.BeamExtractor(1, LoweringCost)
 
   // val nf = apps.harrisCornerDetectionHalideRewrite.reducedFusedForm
@@ -83,6 +94,10 @@ object harris {
 
     g("shape", apps.harrisCornerDetectionHalideRewrite.ocl.harrisBufferedShape.reduce(_`;`_))
     g("buffered", apps.harrisCornerDetectionHalideRewrite.ocl.harrisBuffered)
+    g("buffered-par", apps.harrisCornerDetectionHalideRewrite.ocl.harrisBufferedSplitPar(32))
+    // TODO: harrisBufferedVecUnalignedSplitPar(4, 32)
+    // TODO: harrisBufferedVecAlignedSplitPar(4, 32)
+    // TODO: harrisBufferedRegRotVecAlignedSplitPar(4, 32)
   }
 
   val containsAddMul = contains(app(app(add, ?), contains(mul)))
@@ -149,6 +164,8 @@ object harris {
 
   def lineBuffer(n: Int, load: ExtendedPattern): ExtendedPattern =
     app(nApp(nApp(aApp(ocl.circularBuffer, global), cst(n)), cst(n)), load)
+
+  def mapPar: ExtendedPattern = ocl.mapGlobal(0)
 
   private def codegen(name: String, e: Expr): () = {
     object Cost extends CostFunction[Int] {
@@ -340,11 +357,80 @@ object harris {
       .run(start, steps)
   }
 
+  private def bufferedPar(): GuidedSearch.Result = {
+    // TODO: include shape step?
+    val start = apps.harrisCornerDetectionHalideRewrite.ocl.harrisBufferedShape.reduce(_`;`_)(
+      apps.harrisCornerDetectionHalide.harris(1, 1)).get
+
+    val steps = Seq(
+      emptyStep withSketch contains(
+        (? : ExtendedPattern) |>
+        app(map, contains(gray1d(?))) |> slide(3, 1) |>
+        app(map, contains(sobel1d(?))) |> slide(3, 1) |>
+        app(map, contains {
+          val sxx = sum3(mul1d(?, ?))
+          val sxy = sum3(mul1d(?, ?))
+          val syy = sum3(mul1d(?, ?))
+          coarsity1d(sxx, sxy, syy)
+        })
+      ),
+      computeWithStep withSketch contains(
+        (? : ExtendedPattern) |>
+        app(map, contains(gray1d(?))) |> slide(3, 1) |>
+        app(map, contains(sobel1dPaired(?))) |> slide(3, 1) |>
+        app(map, contains {
+          val sxx = sum3(mul1d(?, ?))
+          val sxy = sum3(mul1d(?, ?))
+          val syy = sum3(mul1d(?, ?))
+          coarsity1d(sxx, sxy, syy)
+        })
+      ),
+      splitStep withSketch contains(
+        (? : ExtendedPattern) |>
+        slide(36, 32) |> app(map, contains(
+          (? : ExtendedPattern) |>
+          app(map, contains(gray1d(?))) |> slide(3, 1) |>
+          app(map, contains(sobel1dPaired(?))) |> slide(3, 1) |>
+          app(map, contains {
+            val sxx = sum3(mul1d(?, ?))
+            val sxy = sum3(mul1d(?, ?))
+            val syy = sum3(mul1d(?, ?))
+            coarsity1d(sxx, sxy, syy)
+          })
+        ))
+      ),
+      loweringStep withSketch contains(
+        (? : ExtendedPattern) |>
+        slide(36, 32) |> app(mapPar, contains(
+          (? : ExtendedPattern) |>
+          lineBuffer(3, contains(app(mapSeq, containsReduceSeq))) |>
+          lineBuffer(3, contains(app(mapSeq,
+            contains(app(app(makePair, containsReduceSeq), containsReduceSeq))))) |>
+          app(iterateStream, contains {
+            val sxx = contains(app(map, containsReduceSeq))
+            val sxy = sxx
+            val syy = sxx
+            app(app(mapSeq, containsCoarsityToPrivate),
+              app(app(zip, sxx), app(app(zip, sxy), syy)))
+          })
+        ))
+      )
+    )
+
+    GuidedSearch.init()
+      .withFilter(StandardConstraintsPredicate && ArrayDimensionPredicate(4))
+      .withRunnerTransform(r =>
+        r.withTimeLimit(java.time.Duration.ofMinutes(5))
+          .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */))
+      .run(start, steps)
+  }
+
   def main(args: Array[String]): () = {
     goals()
     val fs = Seq(
       // "shape" -> shape _,
       "buffered" -> buffered _,
+      "buffered-par" -> bufferedPar _,
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))
