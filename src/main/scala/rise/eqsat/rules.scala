@@ -526,10 +526,36 @@ object rules {
       -->
     app(app(rcp.let.primitive, app(rcp.toMem.primitive, "in")), lam("x", "x"))
   )
-  val hoistLetApp = NamedRewrite.init("hoist-let-app",
+  val hoistLetApp1 = NamedRewrite.init("hoist-let-app-1",
     (app("y", app(app(rcp.let.primitive, "v"), lam("x", "b"))) :: (`_`: DataType))
       -->
     app(app(rcp.let.primitive, "v"), lam("x", app("y", "b")))
+  )
+  val hoistLetApp2 = NamedRewrite.init("hoist-let-app-2",
+    app(app("f" :: (("dt1": DataType) ->: ("t": Type) ->: ("dt2": DataType)),
+      app(app(rcp.let.primitive, "v"), lam("x", "b"))), "y")
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", app(app("f", "b"), "y")))
+  )
+  val hoistLetApp3 = NamedRewrite.init("hoist-let-app-3",
+    app(app("f" :: (("t": Type) ->: ("dt1": DataType) ->: ("dt2": DataType)), "y"),
+      app(app(rcp.let.primitive, "v"), lam("x", "b")))
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", app(app("f", "y"), "b")))
+  )
+  val letSwap = NamedRewrite.init("let-swap",
+    app(app(rcp.let.primitive, "v"), lam("x",
+      app(app(rcp.let.primitive, "v2"), lam("x2", "b"))))
+      -->
+    app(app(rcp.let.primitive, "v2"), lam("x2",
+      app(app(rcp.let.primitive, "v"), lam("x", "b")))),
+    Seq("v2" notFree "x")
+  )
+  val letSame = NamedRewrite.init("let-same",
+    app(app(rcp.let.primitive, "v"), lam("x",
+      app(app(rcp.let.primitive, "v"), lam("x2", "b"))))
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", app(lam("x2", "b"), "x")))
   )
   /*
   val hoistLetLam = NamedRewrite.init("hoist-let-lam",
@@ -595,10 +621,11 @@ object rules {
         -->
       app(app(nApp(nApp(aApp(roclp.oclCircularBuffer.primitive, "a"), "n1"), "n2"), lam("x", app("load", app("f", "x")))), "in")
     )
+    // TODO: should this introduce the let or not? maybe let and toMem should be a single primitive anyway
     def toMem(a: AddressSpace) = NamedRewrite.init(s"ocl-to-mem-$a",
       ("in" :: ("dt": DataType))
         -->
-      app(aApp(roclp.oclToMem.primitive, a), "in")
+      app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, a), "in")), lam("x", "x"))
     )
 
     // TODO: may also have a non-ocl reduceSeq on lhs

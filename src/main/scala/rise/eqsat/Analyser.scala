@@ -322,6 +322,7 @@ object RWAnnotationDSL {
 
   def nFunT(a: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(NatFunType(a))
   def dtFunT(a: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(DataFunType(a))
+  def aFunT(a: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(AddrFunType(a))
 }
 
 // TODO: this procedure could actually extract DPIA terms directly?
@@ -502,6 +503,12 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case rp.toMem() => Seq(
             write ->: read
           )
+          case roclp.oclRunPrimitive() => Seq(
+            nFunT(nFunT(nFunT(nFunT(nFunT(nFunT(write ->: write))))))
+          )
+          case roclp.oclToMem() => Seq(
+            aFunT(write ->: read)
+          )
           case rp.join() | rp.transpose() | rp.asScalar() | rp.unzip() => Seq(
             read ->: read,
             write ->: write
@@ -536,9 +543,45 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case rp.reduceSeq() | rp.reduceSeqUnroll() => Seq(
             (read ->: read ->: write) ->: write ->: read ->: read
           )
+          case roclp.oclReduceSeq() | roclp.oclReduceSeqUnroll() => Seq(
+            aFunT((read ->: read ->: write) ->: write ->: read ->: read)
+          )
+          case rp.rotateValues() => Seq(
+            nFunT((read ->: write) ->: read ->: read)
+          )
+          case rp.circularBuffer() => Seq(
+            nFunT(nFunT((read ->: write) ->: read ->: read))
+          )
+          case roclp.oclRotateValues() => Seq(
+            aFunT(nFunT((read ->: write) ->: read ->: read))
+          )
+          case roclp.oclCircularBuffer() => Seq(
+            aFunT(nFunT(nFunT((read ->: write) ->: read ->: read)))
+          )
+          case rp.slide() | rp.padClamp() => Seq(
+            nFunT(nFunT(read ->: read))
+          )
+          case rp.select() => Seq(
+            read ->: read ->: read ->: read
+          )
+          case rp.padEmpty() => Seq(
+            nFunT(write ->: write)
+          )
+          case rp.padCst() => Seq(
+            nFunT(nFunT(read ->: read ->: read))
+          )
           case rp.generate() => Seq(
             (read ->: read) ->: read
           )
+          case rp.makeArray(n) =>
+            def rec(n: Int): TypeAnnotation = {
+              if (n > 0) {
+                read ->: rec(n - 1)
+              } else {
+                read
+              }
+            }
+            Seq(rec(n))
           case _ => throw new Exception(s"did not expect $p")
         }
         val beam = Seq((

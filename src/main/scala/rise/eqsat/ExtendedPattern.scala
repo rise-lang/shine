@@ -688,6 +688,7 @@ object ExtendedPatternDSL {
     import rise.openCL.{primitives => p}
     def circularBuffer: ExtendedPattern.PNode = prim(p.oclCircularBuffer.primitive)
     def reduceSeqUnroll: ExtendedPattern.PNode = prim(p.oclReduceSeqUnroll.primitive)
+    def toMem: ExtendedPattern.PNode = prim(p.oclToMem.primitive)
   }
 
   object omp {

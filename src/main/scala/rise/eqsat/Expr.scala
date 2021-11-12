@@ -221,6 +221,57 @@ object Expr {
     })(Type.toNamed(expr.t, bound))
   }
 
+  def toNamedUnique(expr: Expr, bound: Bound = Bound.empty, counter: Int = 0): core.Expr = {
+    var c = counter
+    def rec(expr: Expr, bound: Bound): core.Expr = {
+      (expr.node match {
+        case Var(index) => bound.getExpr(index).setType _
+        case App(f, e) => core.App(rec(f, bound), rec(e, bound)) _
+        case Lambda(e) =>
+          val funT = expr.t.node.asInstanceOf[FunType[Type]]
+          val i = core.Identifier(s"x$c")(Type.toNamed(funT.inT, bound))
+          c += 1
+          core.Lambda(i, rec(e, bound + i)) _
+        case NatApp(f, x) =>
+          core.DepApp[rct.NatKind](rec(f, bound), Nat.toNamed(x, bound)) _
+        case NatLambda(e) =>
+          val i = rct.NatIdentifier(s"n${bound.nat.size}", isExplicit = true)
+          core.DepLambda[rct.NatKind](i, rec(e, bound + i)) _
+        case DataApp(f, x) =>
+          core.DepApp[rct.DataKind](rec(f, bound), DataType.toNamed(x, bound)) _
+        case DataLambda(e) =>
+          val i = rct.DataTypeIdentifier(s"dt${bound.data.size}", isExplicit = true)
+          core.DepLambda[rct.DataKind](i, rec(e, bound + i)) _
+        case AddrApp(f, x) =>
+          core.DepApp[rct.AddressSpaceKind](rec(f, bound), Address.toNamed(x, bound)) _
+        case AddrLambda(e) =>
+          val i = rct.AddressSpaceIdentifier(s"a${bound.data.size}", isExplicit = true)
+          core.DepLambda[rct.AddressSpaceKind](i, rec(e, bound + i)) _
+        case Literal(d) => core.Literal(d).setType _
+        case Primitive(p) => p.setType _
+
+        case Composition(f, g) => /*
+      val f2 = f.shifted((1, 0, 0), (0, 0, 0))
+      val g2 = g.shifted((1, 0, 0), (0, 0, 0))
+      val argT: Type = f2.t.node match {
+        case FunType(inT, _) => inT
+        case _ => throw new Exception("this should not happen")
+      }
+      return toNamed(ExprDSL.lam(argT, ExprDSL.app(g2, ExprDSL.app(f2, Expr(Var(0), argT)))), bound)
+      */
+          val ft = Type.toNamed(f.t, bound)
+          val gt = Type.toNamed(g.t, bound)
+          val t = Type.toNamed(expr.t, bound)
+          core.App(core.App(
+            NamedRewriteDSL.Composition(rct.FunType(ft, rct.FunType(gt, t))),
+            rec(f, bound))(rct.FunType(gt, t)),
+            rec(g, bound)) _
+      }) (Type.toNamed(expr.t, bound))
+    }
+
+    rec(expr, bound)
+  }
+
   def simplifyNats(e: Expr): Expr =
     Expr(e.node.map(simplifyNats, Nat.simplify, DataType.simplifyNats, a => a),
       Type.simplifyNats(e.t))

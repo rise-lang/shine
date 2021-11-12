@@ -38,6 +38,20 @@ object harris {
     rules.mapFusion
   )
 
+  object LoweringCost extends CostFunction[Int] {
+    val ordering = implicitly
+
+    override def cost(enode: ENode, costs: EClassId => Int): Int = {
+      import rise.core.primitives._
+      val nodeCost = enode match {
+        // prefer non-lowered primitives
+        case Primitive(mapSeq() | iterateStream()) => 10
+        case _ => 1
+      }
+      enode.children().foldLeft(nodeCost) { case (acc, eclass) => acc + costs(eclass) }
+    }
+  }
+
   val loweringStep = GuidedSearch.Step.init(BENF) withRules Seq(
     rules.fstReduction, rules.sndReduction,
     rules.removeTransposePair,
@@ -50,20 +64,25 @@ object harris {
     rules.ocl.reduceSeq(rct.AddressSpace.Private),
     rules.ocl.reduceSeqUnroll,
     rules.ocl.toMem(rct.AddressSpace.Private),
-  )
+  ) withExtractor GuidedSearch.BeamExtractor(1, LoweringCost)
 
   // val nf = apps.harrisCornerDetectionHalideRewrite.reducedFusedForm
   val start = apps.harrisCornerDetectionHalide.harris(1, 1).toExpr
 
-  private def shapeGoal(): () = {
+  private def goals(): () = {
     val normStart = apps.harrisCornerDetectionHalideRewrite.reducedFusedForm(start).get
     println(s"normalized start (Elevate): $normStart")
     println(s"start size: ${AstSize.ofExpr(Expr.fromNamed(normStart))}")
 
-    val goal = apps.harrisCornerDetectionHalideRewrite.ocl.harrisBufferedShape.reduce(_`;`_)(start).get
-    val normGoal = BENF.normalize(Expr.fromNamed(goal))
-    println(s"normalized goal: ${Expr.toNamed(normGoal)}")
-    println(s"goal size: ${AstSize.ofExpr(normGoal)}")
+    def g(name: String, s: elevate.core.Strategy[rise.core.Expr]): Unit = {
+      val goal = s(start).get
+      val normGoal = BENF.normalize(Expr.fromNamed(goal))
+      println(s"normalized $name goal: ${Expr.toNamed(normGoal)}")
+      println(s"goal size: ${AstSize.ofExpr(normGoal)}")
+    }
+
+    g("shape", apps.harrisCornerDetectionHalideRewrite.ocl.harrisBufferedShape.reduce(_`;`_))
+    g("buffered", apps.harrisCornerDetectionHalideRewrite.ocl.harrisBuffered)
   }
 
   val containsAddMul = contains(app(app(add, ?), contains(mul)))
@@ -72,6 +91,15 @@ object harris {
   val det = (`?`: ExtendedPattern) * `?` - (`?`: ExtendedPattern) * `?`
   val trace = (`?`: ExtendedPattern) + `?`
   val containsCoarsity = contains(det - (`?`: ExtendedPattern) * trace * trace)
+
+  val containsCoarsityToPrivate = {
+    val sxx: ExtendedPattern = contains(app(aApp(ocl.toMem, `private`), app(fst, ?)))
+    val sxy: ExtendedPattern = contains(app(aApp(ocl.toMem, `private`), app(fst, app(snd, ?))))
+    val syy: ExtendedPattern = contains(app(aApp(ocl.toMem, `private`), app(snd, app(snd, ?))))
+    val det = sxx * syy - sxy * sxy
+    val trace = sxx + syy
+    contains(det - (`?`: ExtendedPattern) * trace * trace)
+  }
 
   // FIXME: this is array >= 1d
   // check ?dt != array ?
@@ -121,6 +149,91 @@ object harris {
 
   def lineBuffer(n: Int, load: ExtendedPattern): ExtendedPattern =
     app(nApp(nApp(aApp(ocl.circularBuffer, global), cst(n)), cst(n)), load)
+
+  private def codegen(name: String, e: Expr): () = {
+    object Cost extends CostFunction[Int] {
+      val ordering = implicitly
+
+      override def cost(egraph: EGraph, enode: ENode, t: TypeId, costs: EClassId => Int): Int = {
+        import rise.core.primitives._
+        val nodeCost = enode match {
+          // prefer asVectorAligned, until we can deal with alignement better
+          case Primitive(asVector()) => 1_000
+          // prefer vectorized sequential maps, need to generalize this
+          case Primitive(mapSeq()) =>
+            val vectorizedP = {
+              import ExtendedPatternDSL._
+
+              (vecT(`?n`, `?dt`) ->: vecT(`?n`, `?dt`)) ->: `?t` ->: `?t`
+            }
+            if (ExtendedPattern.typeIsMatch(egraph, vectorizedP, t)) {
+              1
+            } else {
+              2
+            }
+          case _ => 2
+        }
+        enode.children().foldLeft(nodeCost) { case (acc, eclass) => acc + costs(eclass) }
+      }
+    }
+
+    LoweringSearch.init().run(BENF, Cost, Seq(e), Seq(
+      rules.mapFusion,
+      rules.reduceSeq,
+      rules.mapSeq,
+      rules.mapSeqArray,
+      rules.vectorize.promoteAligned
+    )) match {
+      case Some(res) =>
+        val hoisted = elevate.core.strategies.basic.repeat(
+            elevate.core.strategies.traversal.topDown(
+              apps.cameraPipelineRewrite.letHoist))(
+            Expr.toNamedUnique(res)).get
+        // println(hoisted)
+        val lowered = CSE(hoisted)
+        println(lowered)
+
+        val code = util.gen.opencl.kernel.asStringFromExpr(lowered)
+        util.writeToPath(s"/tmp/${name.replace(' ', '_')}.c", code)
+      case None => println("could not generate code")
+    }
+  }
+
+  private def CSE(expr: rise.core.Expr): rise.core.Expr = {
+    import rise.{core => rc}
+    import rise.core.{primitives => rcp}
+
+    def rec(e: rc.Expr, m: HashMap[rc.Expr, rc.Identifier]): rc.Expr = e match {
+      case rc.App(y @ rc.App(rcp.let(), v), z @ rc.Lambda(x, b)) =>
+        m.get(v) match {
+          case None =>
+            m += (v -> x)
+            rc.App(y, rc.Lambda(x, rec(b, m))(z.t))(expr.t)
+          case Some(ident) =>
+            val r = rc.substitute.exprInExpr(ident, `for` = x, in = b)
+            rec(r, m)
+        }
+      case _ => e
+    }
+
+    expr match {
+      case rc.Identifier(_) => expr
+      case rc.Lambda(x, e) => rc.Lambda(x, CSE(e))(expr.t)
+      case rc.App(y @ rc.App(rcp.let(), v), z @ rc.Lambda(x, b)) =>
+        rc.App(y, rc.Lambda(x, rec(b, HashMap(v -> x)))(z.t))(expr.t)
+      case rc.App(f, e) => rc.App(CSE(f), CSE(e))(expr.t)
+      case rc.DepLambda(x: rct.NatIdentifier, e) => rc.DepLambda[rct.NatKind](x, CSE(e))(e.t)
+      case rc.DepLambda(x: rct.DataTypeIdentifier, e) => rc.DepLambda[rct.DataKind](x, CSE(e))(e.t)
+      case rc.DepLambda(x: rct.AddressSpaceIdentifier, e) => rc.DepLambda[rct.AddressSpaceKind](x, CSE(e))(e.t)
+      case rc.DepLambda(x, e) => ???
+      case rc.DepApp(f, x) => rc.DepApp(CSE(f), x)(expr.t)
+      case rc.Literal(d) => expr
+      case rc.Opaque(e, t) => ???
+      case rc.TypeAnnotation(e, annotation) => ???
+      case rc.TypeAssertion(e, assertion) => ???
+      case primitive: rc.Primitive => primitive
+    }
+  }
 
   private def shape(): GuidedSearch.Result = {
     val steps = Seq(
@@ -204,7 +317,6 @@ object harris {
           coarsity1d(sxx, sxy, syy)
         })
       ),
-      // FIXME: many maps become iterateStream, they should not: give higher cost to using that primitive?
       loweringStep withSketch contains(
         (? : ExtendedPattern) |>
         lineBuffer(3, contains(app(mapSeq, containsReduceSeq))) |>
@@ -214,7 +326,7 @@ object harris {
           val sxx = contains(app(map, containsReduceSeq))
           val sxy = sxx
           val syy = sxx
-          app(app(mapSeq, containsCoarsity), // TODO: coarsity with things toPrivate
+          app(app(mapSeq, containsCoarsityToPrivate),
             app(app(zip, sxx), app(app(zip, sxy), syy)))
         })
       )
@@ -229,13 +341,16 @@ object harris {
   }
 
   def main(args: Array[String]): () = {
-    shapeGoal()
+    goals()
     val fs = Seq(
       // "shape" -> shape _,
       "buffered" -> buffered _,
     )
     val rs = fs.map { case (n, f) =>
       (n, util.time(f()))
+    }
+    rs.foreach { case (n, (_, r)) =>
+      r.exprs.headOption.foreach(codegen(n, _))
     }
     rs.foreach { case (n, (t, r)) =>
       println(s"-------- $n")

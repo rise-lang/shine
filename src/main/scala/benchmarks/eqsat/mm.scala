@@ -235,7 +235,7 @@ object mm {
           elevate.core.strategies.basic.repeat(
             elevate.core.strategies.traversal.topDown(
               apps.cameraPipelineRewrite.letHoist))(
-                Expr.toNamed(res)).get
+                Expr.toNamedUnique(res)).get
         println(loweredWithEqsat)
 
         val withSizes = {
