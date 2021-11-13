@@ -23,8 +23,13 @@ lazy val riseAndShine = (project in file("."))
     version       := "1.0",
 
     javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build",
-      "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=/tmp/rise-and-shine.hprof",
-      "-DexecuteCudaTests=false", "-Xss26m"),
+      //"-Dcom.sun.management.jmxremote",
+      //"-Dcom.sun.management.jmxremote.port=9011",
+      //"-Dcom.sun.management.jmxremote.authenticate=false",
+      //"-Dcom.sun.management.jmxremote.ssl=false",
+      //"-Djava.rmi.server.hostname=130.209.255.1",
+      //"-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=/tmp/rise-and-shine.hprof",
+      "-DexecuteCudaTests=false", "-Xss26m", "-Xms16g", "-Xmx62g"),
 
     commonSettings,
 

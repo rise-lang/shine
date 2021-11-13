@@ -631,13 +631,13 @@ object rules {
     // TODO: generalize over data type
     // should we allow <N>(f32 x (f32 x f32)) types for simplicity?
     val beforeMapF32 = NamedRewrite.init("vec-before-map-f32",
-      app(nApp(asVector, "n"), app(app(map, "f"), ("in": Pattern) :: ((`_`: Nat)`.`f32)))
+      app(nApp(asVector, "n"), app(app(map, "f" :: f32 ->: f32), ("in": Pattern) :: ((`_`: Nat)`.`f32)))
         -->
       app(app(map, "fV"), app(nApp(asVector, "n"), "in")),
       Seq(vectorizeScalarFun("f", "n", "fV"))
     )
     val beforeMap_F32xF32 = NamedRewrite.init("vec-before-map-f32xf32",
-      app(nApp(asVector, "n"), app(app(map, "f"), ("in": Pattern) :: ((`_`: Nat)`.` (f32 x f32))))
+      app(nApp(asVector, "n"), app(app(map, "f" :: (f32 x f32) ->: f32), ("in": Pattern) :: ((`_`: Nat)`.` (f32 x f32))))
         -->
       app(app(map, "fV"),
         app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, "in")))),
@@ -645,7 +645,7 @@ object rules {
       Seq(vectorizeScalarFun("f", "n", "fV"))
     )
     val beforeMap_F32x_F32xF32 = NamedRewrite.init("vec-before-map-f32x-f32xf32",
-      app(nApp(asVector, "n"), app(app(map, "f"), ("in": Pattern) :: ((`_`: Nat)`.` (f32 x (f32 x f32)))))
+      app(nApp(asVector, "n"), app(app(map, "f" :: (f32 x (f32 x f32)) ->: f32), ("in": Pattern) :: ((`_`: Nat)`.` (f32 x (f32 x f32)))))
         -->
         app(app(map, "fV"),
           app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, "in")))),

@@ -67,8 +67,8 @@ object mm {
     rules.reduceSeq,
     rules.eliminateMapIdentity,
     rules.reduceSeqMapFusion,
-    rules.reduceSeqMapFission,
-    rules.undoReduceSeqForAdd, //?
+    // rules.reduceSeqMapFission,
+    // rules.undoReduceSeqForAdd, //?
     // rules.mapEtaAbstraction,
     rules.splitJoin(32),
     // rules.splitJoin1M(32),
@@ -281,16 +281,16 @@ object mm {
   }
 
   val runnerTrans: Runner => Runner = r => r
+    /*
     .withTimeLimit(java.time.Duration.ofMinutes(5))
     .withMemoryLimit(4L * 1024L * 1024L * 1024L)
-    /*
-    .withTimeLimit(java.time.Duration.ofMinutes(60))
-    .withMemoryLimit(32L * 1024L * 1024L * 1024L)
      */
+    .withTimeLimit(java.time.Duration.ofMinutes(60))
+    .withMemoryLimit(60L * 1024L * 1024L * 1024L)
     .withNodeLimit(50_000_000)
 
   private def blocking_T(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = Seq(
       tilingStep withSketch
@@ -310,7 +310,7 @@ object mm {
   }
 
   private def blocking_TTTT(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = Seq(
       tilingStep withSketch
@@ -350,7 +350,7 @@ object mm {
 
   private def blocking_SRSR(splitStep: GuidedSearch.Step,
                             reorderStep: GuidedSearch.Step): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = Seq(
       splitStep withSketch
@@ -389,7 +389,7 @@ object mm {
   }
 
   private def blocking_TT(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = Seq(
       tilingStep withSketch
@@ -417,7 +417,7 @@ object mm {
 
   private def blocking_SR(splitStep: GuidedSearch.Step,
                           reorderStep: GuidedSearch.Step): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = Seq(
       splitStep withSketch
@@ -444,7 +444,7 @@ object mm {
   }
 
   private def vectorization_SRL(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
     // could start directly from blocking outcome
 
     val steps = Seq(
@@ -479,7 +479,7 @@ object mm {
   }
 
   private def vectorization(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
     // could start directly from blocking outcome
 
     val steps = Seq(
@@ -500,7 +500,7 @@ object mm {
   }
 
   private def loopPerm_SRL(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = Seq(
       splitStepBENF withSketch
@@ -534,7 +534,7 @@ object mm {
   }
 
   private def loopPerm(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = Seq(
       (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch
@@ -583,7 +583,7 @@ object mm {
   )
 
   private def arrayPacking_SRCL(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = arrayPackingSRC ++ Seq(
       loweringStep withSketch
@@ -607,7 +607,7 @@ object mm {
   }
 
   private def arrayPacking(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
 
     val steps = Seq(
       (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch
@@ -631,7 +631,7 @@ object mm {
   }
 
   private def cacheBlocks_SRCL(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
     val steps = arrayPackingSRC ++ Seq(
@@ -656,7 +656,7 @@ object mm {
   }
 
   private def cacheBlocks(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
     val steps = Seq(
@@ -681,7 +681,7 @@ object mm {
   }
 
   private def parallel_SRCL(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
     val steps = arrayPackingSRC ++ Seq(
@@ -706,7 +706,7 @@ object mm {
   }
 
   private def parallel(): GuidedSearch.Result = {
-    val start = apps.tvmGemm.baseline(mm).get
+    val start = mm
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
     val steps = Seq(
@@ -731,36 +731,37 @@ object mm {
   }
 
   def main(args: Array[String]): () = {
-    val fs = Seq(
-       "baseline" -> baseline _,
+    val names = Set(args(0))
+
+    val fs = Map(
+      "baseline" -> baseline _,
       // not found after 3mn+ and 2GiB+ (700K nodes, 400K classes)
-       // "blocking T" -> { () => blocking_T(tilingStepBENF) },
+      "blocking" -> { () => blocking_T(tilingStepBENF) },
       // "blocking TTTT" -> { () => blocking_TTTT(tilingStepBENF) },
       // "blocking SRSR" -> { () => blocking_SRSR(splitStepBENF, reorderStepBENF) },
       // FIXME: the program found has unwanted split/joins
       // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
-       "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+      "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
       // FIXME: cannot find goal, rewriting is stuck with the given rules
       // "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
-       "vectorization SRL" -> vectorization_SRL _,
-       // "vectorization" -> vectorization _,
-       "loop-perm SRL" -> loopPerm_SRL _,
-       // "loop-perm" -> loopPerm _,
-       "array-packing SRCL" -> arrayPacking_SRCL _,
-       // "array-packing" -> arrayPacking _,
-       "cache-blocks SRCL" -> cacheBlocks_SRCL _,
-       // "cache-blocks" -> cacheBlocks _,
-       "parallel SRCL" -> parallel_SRCL _,
-       // "parallel" -> parallel _,
-    )
+      "vectorization SRL" -> vectorization_SRL _,
+      "vectorization" -> vectorization _,
+      "loop-perm SRL" -> loopPerm_SRL _,
+      "loop-perm" -> loopPerm _,
+      "array-packing SRCL" -> arrayPacking_SRCL _,
+      "array-packing" -> arrayPacking _,
+      "cache-blocks SRCL" -> cacheBlocks_SRCL _,
+      "cache-blocks" -> cacheBlocks _,
+      "parallel SRCL" -> parallel_SRCL _,
+      "parallel" -> parallel _,
+    ).filter { case (k, _) => names(k) }
+
     val rs = fs.map { case (n, f) =>
-      System.gc() // hint garbage collection to get more precise memory usage statistics
+      // hint garbage collection to get more precise memory usage statistics
+      System.gc() 
       (n, util.time(f()))
     }
-    rs.foreach { case (n, (_, r)) =>
-      r.exprs.headOption.foreach(codegen(n, _))
-    }
-    // goals()
+
     rs.foreach { case (n, (t, r)) =>
       println(s"-------- $n")
       val status = if (r.exprs.nonEmpty) { "found" } else { "not found" }
@@ -768,6 +769,10 @@ object mm {
       r.printReport()
     }
 
+    rs.foreach { case (n, (_, r)) =>
+      r.exprs.headOption.foreach(codegen(n, _))
+    }
+    // goals()
     // -------- blocking TTTT
     // found after 1mn 41s (1mn 4s with constant sizes)
     // -------- blocking SRSR

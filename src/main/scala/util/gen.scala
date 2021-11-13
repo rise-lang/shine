@@ -55,12 +55,12 @@ object gen {
                                        gen: CCodeGenerator = CCodeGenerator()
                                       ): Expr => String =
     functionFromExpr(name, gen) andThen
-      C.Module.translateToString andThen
-      run(SyntaxChecker(_))
+      C.Module.translateToString /* andThen
+      run(SyntaxChecker(_)) */
 
   private def functionAsString: CModule => String =
-    C.Module.translateToString _ andThen
-      run(SyntaxChecker(_))
+    C.Module.translateToString _ /* andThen
+      run(SyntaxChecker(_)) */
 
   object openmp {
     import shine.OpenMP

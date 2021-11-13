@@ -36,7 +36,7 @@ class LoweringSearch(var filter: Predicate) {
 
     val r = Runner.init()
       .withTimeLimit(java.time.Duration.ofMinutes(1))
-      .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */)
+      .withMemoryLimit(60L * 1024L * 1024L * 1024L /* 4GiB */)
       .withNodeLimit(1_000_000)
       .run(egraph, filter, loweringRules, normalForm.directedRules, Seq(rootId))
     r.printReport()
