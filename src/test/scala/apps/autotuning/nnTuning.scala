@@ -125,7 +125,7 @@ class nnTuning extends test_util.Tests {
     autotune.search(tuner)(nn)
   }
 
-  test("run kmeans autotuning"){
+  test("run nn autotuning"){
 
     val configs = Seq(
       "autotuning/config/nn/nn_rs_cot.json",
