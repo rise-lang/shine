@@ -3,7 +3,6 @@ package rise.autotune
 import apps.mm.mmNVIDIAWithParams
 import apps.separableConvolution2D.weightsSeqVecUnroll
 import arithexpr.arithmetic._
-import exploration.explorationUtil.jsonParser.{ParseExecutor, ParseExploration, ParseMetaheuristic, readFile}
 import rise.core.DSL.HighLevelConstructs.{slideVectors, tileShiftInwards}
 import rise.core.DSL.Type._
 import rise.core.DSL._
