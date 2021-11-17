@@ -10,7 +10,7 @@ import rise.core._
 import rise.core.types._
 import shine.OpenCL.{GlobalSize, LocalSize}
 
-class mvTuning extends test_util.Tests {
+class gemvTuning extends test_util.Tests {
 
   // gemvBlastN
   val gemvBlastNTuning: ToBeTyped[Expr] =
@@ -117,7 +117,7 @@ class mvTuning extends test_util.Tests {
       TuningParameter("s0") -> (s0: Nat),
     )
 
-    val eSub = rise.core.substitute.natsInExpr(params(128), e)
+    val eSub = rise.core.substitute.natsInExpr(params(s0), e)
 
     val result = autotune.execution.execute(
       expression = eSub,
@@ -132,7 +132,7 @@ class mvTuning extends test_util.Tests {
   }
 
   test("exeute gemv version") {
-    executeGemv(gemvBlastTTuning, 64)
+    executeGemv(gemvBlastNTuning, 64)
     executeGemv(gemvBlastTTuning, 64)
     executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
     executeGemv(gemvFusedAMDTuning, 128)
@@ -140,16 +140,16 @@ class mvTuning extends test_util.Tests {
   }
 
   test("tune gemv version"){
+    runTuning(gemvBlastNTuning)
     runTuning(gemvBlastTTuning)
-    runTuning(gemvBlastTTuning)
-    //    runTuning(gemvFusedTuning) // ignore s0 in this case
-    //    runTuning(gemvFusedAMDTuning)
-    //    runTuning(gemvKeplerBestTuning)
+    runTuning(gemvFusedTuning) // ignore s0 in this case
+    runTuning(gemvFusedAMDTuning)
+    runTuning(gemvKeplerBestTuning)
   }
 
 
   def runTuning(e: Expr) = {
-    //      val version = autotuning.parseName(configFile)
+//    val version = autotuning.parseName(configFile)
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 1024), compute, finish),
