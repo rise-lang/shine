@@ -113,8 +113,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
                 wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
             ))))
 
-//    println("harrisOCLTuning: \n" + harrisOCLTuning)
-
     // start auto tuning
 
     val tuner = Tuner(
@@ -127,7 +125,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       executionIterations = 10,
       speedupFactor = 100,
       configFile = Some("/home/jo/development/rise-lang/shine/autotuning/harris/harris2.json"),
-//      configFile = None,
       hmConstraints = true
     )
 
