@@ -168,10 +168,9 @@ class TestConfigFileGeneration extends test_util.Tests {
         |""".stripMargin
     // scalastyle:on
 
-    assert(json.equals(gold))
+    assert(util.compareConfigFiles(json, gold))
   }
 
-  // todo compare independent from ordering of json entries
   test("generateJSON mm"){
 
     // scalastyle:off
@@ -277,6 +276,6 @@ class TestConfigFileGeneration extends test_util.Tests {
     )
     val json = autotune.configFileGeneration.generateJSON(parameters, constraintsSubstituted, tuner)
 
-    assert(json.equals(gold))
+    assert(util.compareConfigFiles(json, gold))
   }
 }
