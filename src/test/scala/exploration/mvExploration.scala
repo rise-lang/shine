@@ -344,7 +344,36 @@ object mvExploration {
 
   // normal forms?
 
+
+
+
+
   def main(args: Array[String]): Unit = {
+
+    // mvFused
+    val mvFusedRewrite = step0
+    rewrite(mvHighLevel, mvFusedRewrite)
+    // add lowering
+
+    // mvFusedSplit
+    val mvFusedSplitRewrite = step0 `;` step1
+    rewrite(mvHighLevel, mvFusedSplitRewrite)
+    // add lowering
+
+    // mvBlastN
+//    val mvBlastNRewrite =
+
+    // mvBlastT
+//    val mvBlastTRewrite =
+
+    // mvKeplerBest
+//    val mvKeplerBestRewrite =
+
+    // mvFusedAMD
+//    val mvFusedAMDRewrite =
+
+
+
     // check expressions
 //    checkExpression(mvHighLevel, HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish))
 //    checkExpression(gemvHighLevel, HostCode(gemvHostCode.init(1024, 1024), gemvHostCode.compute, gemvHostCode.finish))
@@ -355,12 +384,13 @@ object mvExploration {
     // add strategies as arguments
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", Some(HostCode(init(1024, 1024), compute, finish)))
 
-    val e1 = rewrite(mvHighLevel, step0)
-    val e2 = rewrite(e1, step1)
+//    val e1 = rewrite(mvHighLevel, step0)
+//    val e2 = rewrite(e1, step1)
 //    val e3 = rewrite(e2, step2)
 
 //    println("mvFused: \n" + apps.mv.ocl.mvFused)
-    println("mvFused: \n" + apps.mv.ocl.mvFusedSplit)
-//    println("mvFused: \n" + apps.mv.ocl.mvFusedAMD)
-  }
+    println("mvFused: \n" + apps.mv.ocl.mvFusedSplit.toExpr)
+    }
+    //    println("mvFused: \n" + apps.mv.ocl.mvFusedAMD)
+
 }
