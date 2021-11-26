@@ -31,12 +31,12 @@ class PatternCheck extends test_util.Tests {
 
       egraph.union(add1, add2)
       egraph.rebuild(Seq(add1, add2))
-      val shc = SubstHashCons.empty
+      val shc = SubstsHC.empty
       val matches = commuteAdd.search(egraph, shc)
       val nMatches = matches.map(m => m.substs.size).sum
       assert(nMatches == 2)
 
-      val applications = commuteAdd.apply(egraph, shc, matches)
+      val applications = commuteAdd.apply(egraph, shc)(matches)
       egraph.rebuild(Seq(add1, add2))
       assert(applications.size == 2)
 
@@ -82,7 +82,7 @@ class PatternCheck extends test_util.Tests {
 
     egraph.rebuild(roots)
 
-    val shc = SubstHashCons.empty
+    val shc = SubstsHC.empty
     assert(pattern.search(egraph, shc).length == 1)
   }
 
@@ -126,7 +126,7 @@ class PatternCheck extends test_util.Tests {
 
     egraph.rebuild(roots)
 
-    val shc = SubstHashCons.empty
+    val shc = SubstsHC.empty
     assert(pattern.search(egraph, shc).length == 2)
   }
 }

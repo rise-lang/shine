@@ -222,7 +222,7 @@ class EGraph(
   // checks whether two expressions are equivalent
   // returns a list of eclasses that represent both expressions
   def equivs(e1: Expr, e2: Expr): Vec[EClassId] = {
-    val shc = SubstHashCons.empty
+    val shc = SubstsHC.empty
     val matches1 = Pattern.fromExpr(e1).compile().search(this, shc)
     val matches2 = Pattern.fromExpr(e2).compile().search(this, shc)
     val equivClasses = Vec.empty[EClassId]

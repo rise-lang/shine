@@ -170,7 +170,7 @@ class Runner(var iterations: Vec[Iteration],
                      normRules: Seq[RewriteDirected]): Iteration = {
     val time0 = System.nanoTime()
     val i = iterations.size
-    val shc = SubstHashCons.empty
+    val shc = SubstsVM
 
     val matches = rules.map { r =>
       scheduler.searchRewrite(i, egraph, shc, r)
@@ -193,7 +193,7 @@ class Runner(var iterations: Vec[Iteration],
     rules.zip(matches).foreach { case (r, ms) =>
       // TODO: extract Substs as proper maps or vecmaps during rewrite application?
       //  for faster access and local inserts
-      val newlyApplied = scheduler.applyRewrite(i, egraph, shc, r, ms)
+      val newlyApplied = scheduler.applyRewrite(i, egraph, shc, r)(ms)
       updateApplied(r.name, newlyApplied)
     }
     val withAlternative = Vec.empty[RewriteDirected.Match]

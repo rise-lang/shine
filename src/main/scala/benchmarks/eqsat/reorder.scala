@@ -10,20 +10,23 @@ import rise.core.types._
 object reorder {
   private def whenMapF(astSize: Int, rw: Rewrite): Rewrite = {
     import rise.eqsat._
-    new Rewrite(rw.name, rw.searcher, ConditionalApplier(
-      { case (egraph, _, shc, subst) =>
-        val id = egraph.findMut(subst(PatternVar(0), shc))
-        val freeOf = egraph.getAnalysis(FreeAnalysis)
-        val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
-        freeOf(id).free.contains(0) && smallestOf(id)._2 == astSize
-        /*
-        subst(PatternVar(0), shc) ==
-        egraph.add(Var(0), egraph.addType(Type(FunType(Type(DataTypeVar(1)), Type(DataTypeVar(0))))))
-         */
-      },
-      Set("f"),
-      (Set(FreeAnalysis, SmallestSizeAnalysis), Set()),
-      rw.applier))
+    new Rewrite(rw.name, rw.searcher,
+        new ConditionalApplier(
+        Set("f"),
+        (Set(FreeAnalysis, SmallestSizeAnalysis), Set()),
+        rw.applier) {
+          override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+            val id = egraph.findMut(substs.get(PatternVar(0), subst))
+            val freeOf = egraph.getAnalysis(FreeAnalysis)
+            val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+            freeOf(id).free.contains(0) && smallestOf(id)._2 == astSize
+            /*
+            subst(PatternVar(0), shc) ==
+            egraph.add(Var(0), egraph.addType(Type(FunType(Type(DataTypeVar(1)), Type(DataTypeVar(0))))))
+             */
+          }
+      }
+    )
   }
 
   private val reorderRulesCNF = Seq(

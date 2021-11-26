@@ -13,28 +13,29 @@ trait Scheduler {
   def canSaturate(iteration: Int): Boolean
   def searchRewrite(iteration: Int,
                     egraph: EGraph,
-                    shc: SubstHashCons,
-                    rewrite: Rewrite): Vec[SearchMatches]
+                    shc: Substs,
+                    rewrite: Rewrite): Vec[SearchMatches[shc.Subst]]
 
   // returns the number of applications
   def applyRewrite(iteration: Int,
                    egraph: EGraph,
-                   shc: SubstHashCons,
-                   rewrite: Rewrite,
-                   matches: Vec[SearchMatches]): Int =
-    rewrite.apply(egraph, shc, matches).size
+                   shc: Substs,
+                   rewrite: Rewrite)(
+                   matches: Vec[SearchMatches[shc.Subst]]): Int =
+    rewrite.apply(egraph, shc)(matches).size
 }
 
 object SimpleScheduler extends Scheduler {
   override def canSaturate(iteration: Int): Boolean = true
 
   override def searchRewrite(iteration: Int,
-                                         egraph: EGraph,
-                                         shc: SubstHashCons,
-                                         rewrite: Rewrite): Vec[SearchMatches] =
+                             egraph: EGraph,
+                             shc: Substs,
+                             rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] =
     rewrite.search(egraph, shc)
 }
 
+/* TODO: only for SubstHC
 object CuttingScheduler {
   def init(): CuttingScheduler = new CuttingScheduler(
     notApplied = HashSet.empty,
@@ -56,9 +57,9 @@ class CuttingScheduler(var notApplied: HashSet[Object],
     notApplied.isEmpty
 
   override def searchRewrite(iteration: Int,
-                                         egraph: EGraph,
-                                         shc: SubstHashCons,
-                                         rewrite: Rewrite): Vec[SearchMatches] = {
+                             egraph: EGraph,
+                             shc: Substs,
+                             rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] = {
     if (iteration > currentIteration) {
       println(s"not applied: ${notApplied.map(_.asInstanceOf[Rewrite].name).mkString(", ")}")
       currentIteration = iteration
@@ -80,7 +81,6 @@ class CuttingScheduler(var notApplied: HashSet[Object],
 
     notApplied -= rewrite
     val matches = rewrite.search(egraph, shc)
-/*
     def check(b: Boolean) =
       if (!b) { throw new Exception("check") }
     var uniqueSubsts = HashSet[Object]()
@@ -105,11 +105,10 @@ class CuttingScheduler(var notApplied: HashSet[Object],
       }
     }
 
- */
-
     matches
   }
 }
+*/
 
 object SamplingScheduler {
   def init(): SamplingScheduler = new SamplingScheduler(
@@ -145,7 +144,7 @@ extends Scheduler {
 
   override def canSaturate(iteration: Int): Boolean = iteration > lastSampledIteration
 
-  override def searchRewrite(iteration: Int, egraph: EGraph, shc: SubstHashCons, rewrite: Rewrite): Vec[SearchMatches] = {
+  override def searchRewrite(iteration: Int, egraph: EGraph, shc: Substs, rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] = {
     val limit = limits.getOrElse(rewrite, defaultLimit)
     val matches = rewrite.search(egraph, shc)
     if (matches.size > limit) {
@@ -232,8 +231,8 @@ class BackoffScheduler(var defaultMatchLimit: Int,
 
   override def searchRewrite(iteration: Int,
                              egraph: EGraph,
-                             shc: SubstHashCons,
-                             rewrite: Rewrite): Vec[SearchMatches] = {
+                             shc: Substs,
+                             rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] = {
     val rs = ruleStats(rewrite)
 
     if (iteration < rs.bannedUntil) {

@@ -493,11 +493,12 @@ object NamedRewrite {
             case ((s, _, _, _), (pv, Known)) => (s, pv)
           }.get
           val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
-          def condF(egraph: EGraph, eclass: EClassId, shc: SubstHashCons, subst: Subst): Boolean = {
-            val freeOf = egraph.getAnalysis(FreeAnalysis)
-            !freeOf(subst(iPV, shc)).free.contains(nfIndex)
-          }
-          (a: Applier) => ConditionalApplier(condF, Set(iPV), (Set(FreeAnalysis), Set()), acc(a))
+          (a: Applier) => (new ConditionalApplier(Set(iPV), (Set(FreeAnalysis), Set()), acc(a)) {
+            def cond(egraph: EGraph, eclass: EClassId, shc: Substs)(subst: shc.Subst): Boolean = {
+              val freeOf = egraph.getAnalysis(FreeAnalysis)
+              !freeOf(shc.get(iPV, subst)).free.contains(nfIndex)
+            }
+          })
         case VectorizeScalarFun(f, n, fV) =>
           val (nPV, nST) = natPatVars(n)(0)
           assert(nST == Known)

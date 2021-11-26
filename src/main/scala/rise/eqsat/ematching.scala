@@ -3,7 +3,8 @@ package rise.eqsat
 import scala.collection.mutable
 
 /** e-matching tries to find a [[Pattern]] in an [[EGraph]],
-  * returning a list of [[Subst]]s representing successful matches.
+  * returning a list of [[SubstHC]]s representing successful matches.
+ *
   * @see [[http://leodemoura.github.io/files/ematching.pdf Efficient e-matching for SMT Solvers]]
   */
 object ematching {
@@ -126,12 +127,12 @@ object ematching {
                 var a2r: HashMap[AddressPatternVar, AddrReg]) {
     def run[ED, ND, TD](egraph: EGraph,
                         eclass: EClassId,
-                        hashcons: SubstHashCons): Vec[Subst] = {
+                        substs: Substs): Vec[substs.Subst] = {
       assert(egraph.clean)
 
       val machine = AbstractMachine.init(eclass)
 
-      val substs = Vec.empty[Subst]
+      val ss = Vec.empty[substs.Subst]
       val yieldFn = { () =>
         assert(v2r.iterator.forall { case (_, reg) => {
           val id = machine.reg(reg)
@@ -139,19 +140,20 @@ object ematching {
         }})
         // TODO: use ordered hashmaps to maximize sharing?
         //  first register to be picked should be the deepest in the list
-        val substExprs = hashcons.exprSubst(v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) })
-        val substNats = hashcons.natSubst(n2r.iterator.map { case (v, reg) => (v, machine.nReg(reg)) })
-        val substTypes = hashcons.typeSubst(t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) })
-        val substDataTypes = hashcons.dataTypeSubst(dt2r.iterator.map { case (v, reg) =>
-          (v, machine.tReg(reg).asInstanceOf[DataTypeId])
-        })
-        val substAddr = hashcons.addrSubst(a2r.iterator.map { case (v, reg) => (v, machine.aReg(reg)) })
-        substs += Subst(substExprs, substNats, substTypes, substDataTypes, substAddr)
+        ss += substs.create(
+          v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) },
+          n2r.iterator.map { case (v, reg) => (v, machine.nReg(reg)) },
+          t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) },
+          dt2r.iterator.map { case (v, reg) =>
+            (v, machine.tReg(reg).asInstanceOf[DataTypeId])
+          },
+          a2r.iterator.map { case (v, reg) => (v, machine.aReg(reg)) }
+        )
         ()
       }
       machine.run(egraph, instructions.toSeq, yieldFn)
 
-      substs
+      ss
     }
   }
 

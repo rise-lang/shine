@@ -22,12 +22,12 @@ object Pattern {
 
     override def applyOne(egraph: EGraph,
                           eclass: EClassId,
-                          shc: SubstHashCons,
-                          subst: Subst): Vec[EClassId] = {
+                          shc: Substs)(
+                          subst: shc.Subst): Vec[EClassId] = {
       def missingRhsTy[T](): T = throw new Exception("unknown type on right-hand side")
       def pat(p: Pattern): EClassId = {
         p.p match {
-          case w: PatternVar => subst(w, shc)
+          case w: PatternVar => shc.get(w, subst)
           case PatternNode(n) =>
             val enode = n.map(pat, nat, data, addr)
             egraph.add(enode, `type`(p.t))
@@ -35,21 +35,21 @@ object Pattern {
       }
       def nat(p: NatPattern): NatId = {
         p match {
-          case w: NatPatternVar => subst(w, shc)
+          case w: NatPatternVar => shc.get(w, subst)
           case NatPatternNode(n) => egraph.add(n.map(nat))
           case NatPatternAny => missingRhsTy()
         }
       }
       def data(pat: DataTypePattern): DataTypeId = {
         pat match {
-          case w: DataTypePatternVar => subst(w, shc)
+          case w: DataTypePatternVar => shc.get(w, subst)
           case DataTypePatternNode(n) => egraph.add(n.map(nat, data))
           case DataTypePatternAny => missingRhsTy()
         }
       }
       def `type`(pat: TypePattern): TypeId = {
         pat match {
-          case w: TypePatternVar => subst(w, shc)
+          case w: TypePatternVar => shc.get(w, subst)
           case TypePatternNode(n) => egraph.add(n.map(`type`, nat, data))
           case TypePatternAny => missingRhsTy()
           case dtp: DataTypePattern => data(dtp)
@@ -57,7 +57,7 @@ object Pattern {
       }
       def addr(pat: AddressPattern): Address = {
         pat match {
-          case w: AddressPatternVar => subst(w, shc)
+          case w: AddressPatternVar => shc.get(w, subst)
           case AddressPatternNode(n) => n
           case AddressPatternAny => missingRhsTy()
         }
@@ -69,7 +69,7 @@ object Pattern {
 }
 
 sealed trait PatternVarOrNode
-/** A variable used in [[Pattern]]s or [[Subst]]s */
+/** A variable used in [[Pattern]]s or [[SubstHC]]s */
 case class PatternVar(index: Int) extends PatternVarOrNode {
   override def toString: String = s"?$index"
 }
@@ -111,8 +111,8 @@ object CompiledPattern {
     override def patternVars(): Set[Any] = cpat.pat.patternVars()
 
     override def search(egraph: EGraph,
-                        shc: SubstHashCons,
-                       ): Vec[SearchMatches] = {
+                        shc: Substs,
+                       ): Vec[SearchMatches[shc.Subst]] = {
       cpat.pat.p match {
         case PatternNode(node) =>
           egraph.classesByMatch.get(node.matchHash()) match {
@@ -126,9 +126,9 @@ object CompiledPattern {
     }
 
     override def searchEClass(egraph: EGraph,
-                              shc: SubstHashCons,
+                              shc: Substs,
                               eclass: EClassId,
-                             ): Option[SearchMatches] = {
+                             ): Option[SearchMatches[shc.Subst]] = {
       val substs = cpat.prog.run(egraph, eclass, shc)
       if (substs.isEmpty) { None } else { Some(SearchMatches(eclass, substs)) }
     }

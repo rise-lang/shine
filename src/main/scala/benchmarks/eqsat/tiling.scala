@@ -4,21 +4,26 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.Expr
 import rise.core.types._
-import rise.eqsat.{ASTSizePredicate, ArrayDimensionPredicate, BENF, CNF, FreeAnalysis, ProveEquiv, Rewrite, StandardConstraintsPredicate, rules}
+import rise.eqsat.{ASTSizePredicate, ArrayDimensionPredicate, BENF, CNF, EGraph, FreeAnalysis, ProveEquiv, Rewrite, StandardConstraintsPredicate, Substs, rules}
 import ProveEquiv.syntax._
+import rise.eqsat
 import rise.eqsat.PredicateDSL._
 
 object tiling {
   private val tileSize = 4
 
   private def whenFcontainsF(rw: Rewrite): Rewrite =
-    new rise.eqsat.Rewrite(rw.name, rw.searcher, rise.eqsat.ConditionalApplier(
-      { case (egraph, _, shc, subst) =>
-        val freeOf = egraph.getAnalysis(FreeAnalysis)
-        freeOf(subst(rise.eqsat.PatternVar(0), shc)).free.contains(0) },
+    new rise.eqsat.Rewrite(rw.name, rw.searcher,
+      new rise.eqsat.ConditionalApplier(
       Set("f"),
       (Set(FreeAnalysis), Set()),
-      rw.applier))
+      rw.applier) {
+        override def cond(egraph: EGraph, id: eqsat.EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+          val freeOf = egraph.getAnalysis(FreeAnalysis)
+          freeOf(substs.get(rise.eqsat.PatternVar(0), subst)).free.contains(0)
+        }
+      }
+    )
 
   private val splitRulesCNF = Seq(
     rules.combinatory.splitJoin(tileSize),

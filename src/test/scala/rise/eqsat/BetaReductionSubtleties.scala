@@ -65,14 +65,14 @@ class BetaReductionSubtleties extends test_util.Tests {
       val startId = egraph.addExpr(start)
       egraph.rebuild(Seq(startId))
       for (_ <- 0 until 4) {
-        val shc = SubstHashCons.empty
-        rules.removeTransposePair.apply(egraph, shc,
+        val shc = SubstsHC.empty
+        rules.removeTransposePair.apply(egraph, shc)(
           rules.removeTransposePair.search(egraph, shc))
         egraph.rebuild(Seq(startId))
-        betaRule.apply(egraph, shc, betaRule.search(egraph, shc))
+        betaRule.apply(egraph, shc)(betaRule.search(egraph, shc))
         egraph.rebuild(Seq(startId))
       }
-      val shc = SubstHashCons.empty
+      val shc = SubstsHC.empty
       Pattern.fromExpr(goal).compile()
         .searchEClass(egraph, shc, startId).isDefined
     }

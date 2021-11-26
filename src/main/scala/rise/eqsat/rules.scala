@@ -4,28 +4,23 @@ import PatternDSL._
 import rise.core.{primitives => rcp}
 
 object rules {
-
-  def notContainsIdent(v: PatternVar, ident: Var, freeAnalysis: FreeAnalysisCustomisable)
-                   (egraph: EGraph,
-                    eclass: EClassId,
-                    shc: SubstHashCons,
-                    subst: Subst): Boolean = {
-    val freeOf = egraph.getAnalysis(freeAnalysis)
-    !freeOf(subst(v, shc)).free.contains(ident.index)
-  }
-
-  // TODO: find a way to combine different analysis requirements?
-
   // -- reduction --
 
   val etaWithFreeIntersection = Rewrite.init("eta-wfi",
     lam(app(?(0), %(0))).compile()
       -->
-    ConditionalApplier(
-      notContainsIdent(?(0), %(0), FreeIntersectionAnalysis),
+    (new ConditionalApplier(
       Set(?(0)),
       (Set(FreeIntersectionAnalysis), Set()),
-      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0, 0), (1, 0, 0, 0), ?(1): Pattern))
+      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0, 0), (1, 0, 0, 0), ?(1): Pattern)) {
+      override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+        def notContainsIdent(v: PatternVar, ident: Var, freeAnalysis: FreeAnalysisCustomisable): Boolean = {
+          val freeOf = egraph.getAnalysis(freeAnalysis)
+          !freeOf(substs.get(v, subst)).free.contains(ident.index)
+        }
+        notContainsIdent(?(0), %(0), FreeIntersectionAnalysis)
+      }
+    })
   )
 
   val beta = Rewrite.init("beta",

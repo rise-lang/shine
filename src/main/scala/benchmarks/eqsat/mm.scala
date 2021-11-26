@@ -551,7 +551,7 @@ object mm {
       .run(start, steps)
   }
 
-
+  // TODO: clean up sketches, factorize
   private val arrayPackingSRC = Seq(
     splitStepBENF withSketch
       containsMap(m /^ cst(32),
@@ -733,26 +733,26 @@ object mm {
     // fs.filter { case (k, _) => names(k) }
 
     val fs = Seq(
-       "baseline" -> baseline _,
+      "baseline" -> baseline _,
       // not found after 3mn+ and 2GiB+ (700K nodes, 400K classes)
-       // "blocking T" -> { () => blocking_T(tilingStepBENF) },
+      // "blocking T" -> { () => blocking_T(tilingStepBENF) },
       // "blocking TTTT" -> { () => blocking_TTTT(tilingStepBENF) },
        // "blocking SRSR" -> { () => blocking_SRSR(splitStepBENF, reorderStepBENF) }, // note: faster than SR
       // FIXME: the program found has unwanted split/joins
       // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
-       // "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+       "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
        // "blocking SSSR" -> blocking_SSSR _, // note: no improvement over SR
       // FIXME: cannot find goal, rewriting is stuck with the given rules
       // "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
-       // "vectorization SRL" -> vectorization_SRL _,
+       "vectorization SRL" -> vectorization_SRL _,
        // "vectorization" -> vectorization _,
-       // "loop-perm SRL" -> loopPerm_SRL _,
+       "loop-perm SRL" -> loopPerm_SRL _,
        // "loop-perm" -> loopPerm _,
-       // "array-packing SRCL" -> arrayPacking_SRCL _,
+       "array-packing SRCL" -> arrayPacking_SRCL _,
        // "array-packing" -> arrayPacking _,
-       // "cache-blocks SRCL" -> cacheBlocks_SRCL _,
+       "cache-blocks SRCL" -> cacheBlocks_SRCL _,
        // "cache-blocks" -> cacheBlocks _,
-       // "parallel SRCL" -> parallel_SRCL _,
+       "parallel SRCL" -> parallel_SRCL _,
        // "parallel" -> parallel _,
     )
     val rs = fs.map { case (n, f) =>
