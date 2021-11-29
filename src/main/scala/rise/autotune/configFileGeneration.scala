@@ -137,7 +137,7 @@ object configFileGeneration {
           val parameterEntry =
             s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
-               |       "values" : ${valuesListToString(values)},
+               |       "values" : ${values.mkString("[", ", ", "]")},
                |       "constraints" : ${constraints},
                |       "dependencies" : ${dependencies}
                |   },
@@ -150,7 +150,7 @@ object configFileGeneration {
           val parameterEntry =
             s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
-               |       "values" : ${valuesListToString(values)}
+               |       "values" : ${values.mkString("[", ", ", "]")}
                |   },
                |""".stripMargin
 
@@ -181,66 +181,68 @@ object configFileGeneration {
     val constraintsList = new ListBuffer[String]
     constraints.foreach(constraint => {
       // check type of constraint
-      val constraintString = constraint match {
+      val constraintsAsString:ListBuffer[String] = constraint match {
         case RangeConstraint(n, r) => {
-          val (start, stop, step) = r match {
-            case RangeAdd(start, stop, step) => (start, stop, step)
-            case RangeMul(start, stop, step) => (start, stop, step)
-            case _ => (0, 0, 0) // todo catch other types of ranges
-          }
+          r match {
+            case RangeAdd(start, stop, step) => {
 
-          // if stop is PosInf, remove constraint
-          // (already catched by the range of parameter)
-          stop match {
-            case PosInf =>{
-              val startConstraint = n.toString + " >= " + start
-              val stepConstraint = n.toString + " % " + step + " == 0"
+              // if stop is PosInf, remove constraint
+              // (already catched by the range of parameter)
+              stop match {
+                case PosInf =>{
+                  val startConstraint = n.toString + " >= " + start
+                  val stepConstraint = n.toString + " % " + step + " == 0"
 
-              startConstraint + " and " + stepConstraint
+                  startConstraint + " and " + stepConstraint
+                  ListBuffer[String](startConstraint, stepConstraint)
+                }
+                case _ => {
+                  val startConstraint = n.toString + " >= " + start
+                  val stopConstraint = n.toString + " <= " + stop
+                  val stepConstraint = n.toString + " % " + step + " == 0"
+
+                  //              startConstraint + " and " + stopConstraint + " and " + stepConstraint
+                  ListBuffer[String](startConstraint, stopConstraint, stepConstraint)
+                }
+              }
             }
-            case _ => {
-              val startConstraint = n.toString + " >= " + start
-              val stopConstraint = n.toString + " <= " + stop
-              val stepConstraint = n.toString + " % " + step + " == 0"
+            case RangeMul(start, stop, step) => {
+              // if stop is PosInf, remove constraint
+              // (already catched by the range of parameter)
+              stop match {
+                case PosInf =>{
+                  val startConstraint = n.toString + " >= " + start
+                  val stepConstraint = n.toString // todo convert range mul constraint into formula
 
-              startConstraint + " and " + stopConstraint + " and " + stepConstraint
+                  startConstraint + " and " + stepConstraint
+                  ListBuffer[String](startConstraint, stepConstraint)
+                }
+                case _ => {
+                  val startConstraint = n.toString + " >= " + start
+                  val stopConstraint = n.toString + " <= " + stop
+                  val stepConstraint = n.toString + " % " + step + " == 0"
+
+                  //              startConstraint + " and " + stopConstraint + " and " + stepConstraint
+                  ListBuffer[String](startConstraint, stopConstraint, stepConstraint)
+                }
+              }
             }
-          }
-
-        }
-        case PredicateConstraint(n) => {
-          n.toString.contains("/^") match {
-            case true => constraint.toString.replace("/^", "/")
-            case false => constraint.toString
+            case _ => (0, 0, 0)  // todo catch other types of ranges
+            ListBuffer[String]()
           }
         }
+        case PredicateConstraint(n) => ListBuffer[String](n.toString.replace("/^", "/"))
       }
-      constraintsList += constraintString
+//      constraintsAsString foreach(elem => constraintsList += elem)
+      constraintsList ++= constraintsAsString
     })
     elementListToString(constraintsList.filter(elem => elem.size != 0).toList)
-  }
-
-  def valuesListToString(list: List[Any]): String = {
-    list.size match {
-      case 0 => "[]"
-      case _ =>
-        var valuesString = ""
-        list.foreach(value => {
-          valuesString += value.toString +  ", "
-        })
-        "["  + valuesString.dropRight(2) + "]"
-    }
   }
 
   def elementListToString(list: List[Any]): String = {
     list.size match {
       case 0 => "[]"
-      case _ =>
-        var valuesString = ""
-        list.foreach(value => {
-          valuesString += "\"" + value.toString + "\"" + ", "
-        })
-        "["  + valuesString.dropRight(2) + "]"
+      case _ => list.mkString("[\"", "\", \"", "\"]")
     }
   }
 
