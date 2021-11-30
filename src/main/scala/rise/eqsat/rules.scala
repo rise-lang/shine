@@ -502,6 +502,13 @@ object rules {
       app(nApp(nApp(slide, "n"), "m"), app(app(zip, "a"), "b")))
   )
 
+  val splitInsideZip = NamedRewrite.init("split-inside-zip",
+    app(nApp(split, "n"), app(app(zip, "a"), "b"))
+     -->
+    app(app(map, lam("x", app(app(zip, app(fst, "x")), app(snd, "x")))),
+      app(app(zip, app(nApp(split, "n"), "a")), app(nApp(split, "n"), "b")))
+  )
+
   val takeOutsidePair = NamedRewrite.init("take-outside-pair",
     app(app(makePair, app(nApp(take, "n"), "a")), app(nApp(take, "m"), "b"))
       -->

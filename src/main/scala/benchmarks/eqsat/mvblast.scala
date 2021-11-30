@@ -74,6 +74,8 @@ object mvblast {
     contains(app(reduce :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
   def containsReduce(n: NatPattern, f: ExtendedPattern, in: ExtendedPattern): ExtendedPattern =
     contains(app(app(app(reduce :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f), `?`), in))
+  def containsReduceSeq(inT: DataTypePattern, f: ExtendedPattern): ExtendedPattern =
+    contains(app(reduceSeq :: `?t` ->: `?t` ->: inT ->: `?t`, f))
   def containsReduceSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
     contains(app(reduceSeq :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
   def containsReduceSeq(n: NatPattern, f: ExtendedPattern, in: ExtendedPattern): ExtendedPattern =
@@ -113,10 +115,19 @@ object mvblast {
     // rules.undoReduceSeqForAdd, //?
     // rules.mapEtaAbstraction,
     rules.splitJoin(s0),
-    // rules.splitJoin1M(32),
+    // rules.splitJoin1M(s0),
     rules.splitJoin2M(s0),
     rules.blockedReduce(s0),
     rules.splitBeforeMap,
+  )
+
+  val trickyStep = emptyStep withRules Seq(
+    rules.mapFusion,
+    rules.mapFission,
+    rules.reduceSeqMapFusion,
+    rules.splitInsideZip,
+    rules.transposeBeforeMapMapF,
+    rules.mapMapFBeforeTranspose
   )
 
   val reorderStep = emptyStep withRules Seq(
@@ -126,10 +137,10 @@ object mvblast {
     rules.reduceSeqMapFission,
     rules.eliminateMapIdentity,
     // rules.undoReduceSeqForAdd, //?
-    rules.splitBeforeMap,
+    // rules.splitBeforeMap,
     rules.liftReduceSeq,
-    rules.liftReduceSeq2,
-    rules.liftReduceSeq3,
+    // rules.liftReduceSeq2,
+    // rules.liftReduceSeq3,
     // rules.transposeAroundMapMapF,
     rules.transposeAroundMapMapF1M,
     // rules.mapEtaAbstraction,
@@ -260,11 +271,22 @@ object mvblast {
           containsMap(cst(s0),
             containsReduceSeq(n /^ cst(s0),
               containsReduceSeq(cst(s0), containsAddMul)))),
+      /* trickyStep withSketch
+        containsMap(m /^ cst(s0),
+          containsMap(cst(s0),
+            containsReduceSeq((n /^ cst(s0))`.`(cst(s0)`.``?dt` x (cst(s0)`.`f32)),
+              containsReduceSeq(cst(s0), containsAddMul)))), */
       reorderStep withSketch
         containsMap(m /^ cst(s0),
           containsReduceSeq(n /^ cst(s0),
             containsMap(cst(s0),
               containsReduceSeq(cst(s0), containsAddMul)))),
+      /* trickyStep withSketch
+        containsMap(m /^ cst(s0),
+          // TODO: (n /^ cst(s0))`.`(cst(s0)`.`((cst(s0)`.`f32) x f32))
+          containsReduceSeq((n /^ cst(s0))`.`(cst(s0)`.`((cst(s0)`.`f32) x (cst(s0)`.`f32))),
+            containsMap(cst(s0),
+              containsReduceSeq(cst(s0), containsAddMul)))), */
       copyStep withSketch
         containsMap(m /^ cst(s0),
           containsMap(`?n`, ?,
@@ -296,7 +318,7 @@ object mvblast {
 
   def main(args: Array[String]): () = {
     val fs = Seq(
-      "baseline" -> baseline _,
+      // "baseline" -> baseline _,
       "blas" -> blas _,
     )
     goals()
