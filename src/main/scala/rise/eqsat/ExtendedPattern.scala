@@ -682,12 +682,16 @@ object ExtendedPatternDSL {
   def iterateStream: ExtendedPattern.PNode = prim(rcp.iterateStream.primitive)
 
   def global: AddressPattern = AddressPatternNode(Global)
+  def local: AddressPattern = AddressPatternNode(Local)
   def `private`: AddressPattern = AddressPatternNode(Private)
 
   object ocl {
     import rise.openCL.{primitives => p}
     def mapGlobal(dim: Int): ExtendedPattern.PNode = prim(p.mapGlobal(dim).primitive)
+    def mapWorkGroup(dim: Int): ExtendedPattern.PNode = prim(p.mapWorkGroup(dim).primitive)
+    def mapLocal(dim: Int): ExtendedPattern.PNode = prim(p.mapLocal(dim).primitive)
     def circularBuffer: ExtendedPattern.PNode = prim(p.oclCircularBuffer.primitive)
+    def reduceSeq: ExtendedPattern.PNode = prim(p.oclReduceSeq.primitive)
     def reduceSeqUnroll: ExtendedPattern.PNode = prim(p.oclReduceSeqUnroll.primitive)
     def toMem: ExtendedPattern.PNode = prim(p.oclToMem.primitive)
   }

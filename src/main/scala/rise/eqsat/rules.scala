@@ -620,9 +620,17 @@ object rules {
 
   object ocl {
     import rise.openCL.{primitives => roclp}
+
     def mapGlobal(dim: Int) = NamedRewrite.init(s"ocl-map-global-$dim",
       map --> roclp.mapGlobal(dim).primitive
     )
+    def mapWorkGroup(dim: Int) = NamedRewrite.init(s"ocl-map-work-group-$dim",
+      map --> roclp.mapWorkGroup(dim).primitive
+    )
+    def mapLocal(dim: Int) = NamedRewrite.init(s"ocl-map-local-$dim",
+      map --> roclp.mapLocal(dim).primitive
+    )
+
     def circularBuffer(a: AddressSpace) = NamedRewrite.init(s"ocl-circular-buffer-$a",
       nApp(nApp(slide, "sz"), 1)
         -->
@@ -640,9 +648,12 @@ object rules {
       app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, a), "in")), lam("x", "x"))
     )
 
-    // TODO: may also have a non-ocl reduceSeq on lhs
+    // TODO: equivalent to core.reduceSeq + ocl.reduceSeq?
     def reduceSeq(a: AddressSpace) = NamedRewrite.init(s"ocl-reduce-seq-$a",
       reduce --> aApp(roclp.oclReduceSeq.primitive, a)
+    )
+    def reduceSeq2(a: AddressSpace) = NamedRewrite.init(s"ocl-reduce-seq-2-$a",
+      rise.core.primitives.reduceSeq.primitive --> aApp(roclp.oclReduceSeq.primitive, a)
     )
     val reduceSeqUnroll = NamedRewrite.init("ocl-reduce-seq-unroll",
       roclp.oclReduceSeq.primitive --> roclp.oclReduceSeqUnroll.primitive
