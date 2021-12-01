@@ -320,7 +320,8 @@ class EGraph(
 
       rebuildClasses() // for semigroup analyses
 
-      // NOTE: analysis dependencies should be respected if topological order is maintained
+      // NOTE: analysis dependencies should be respected if topological order is maintained,
+      //       but pending analyses need to be propagated along the dependency paths
       // TODO: update could also be on-demand / lazy
       typeAnalyses.keysIterator.foreach(ta => TypeAnalysis.update(this, ta))
       analyses.keysIterator.foreach(t => t.update(this))

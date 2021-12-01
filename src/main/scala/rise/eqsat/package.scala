@@ -30,6 +30,7 @@ package object eqsat {
   type HashSet[V] = mutable.HashSet[V]
   val HashSet: mutable.HashSet.type = mutable.HashSet
 
+  /** Normal Form. */
   trait NF {
     val normalize: Expr => Expr
     val normalizeCountRewrites: Expr => (Expr, Long)

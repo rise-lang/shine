@@ -1,6 +1,8 @@
 package rise.eqsat
 
+/** A collection of substitutions. */
 trait Substs {
+  /** A substitution mapping variables to their match in the [[EGraph]]. */
   type Subst
 
   def get(pv: PatternVar, subst: Subst): EClassId
@@ -52,7 +54,8 @@ object VecMap {
   def empty[K, V]: VecMap[K, V] = VecMap(Vec.empty)
 }
 
-/** A substitution mapping variables to their match in the [[EGraph]] */
+/** A substitution mapping variables to their match in the [[EGraph]].
+  * It uses simple vec maps. */
 case class SubstVM(exprs: VecMap[PatternVar, EClassId],
                    nats: VecMap[NatPatternVar, NatId],
                    types: VecMap[TypePatternVar, TypeId],
@@ -128,6 +131,7 @@ object SubstsVM extends Substs {
 
 /** A substitution mapping variables to their match in the [[EGraph]].
   * It uses hash-consing for structural sharing amongst many substitutions.
+  * @fixme sharing depends on insertion order and is not leveraged to reduce runtime (only memory usage)
   */
 case class SubstHC(exprs: SubstId[PatternVar, EClassId],
                    nats: SubstId[NatPatternVar, NatId],

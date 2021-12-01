@@ -146,7 +146,7 @@ class ProveEquiv(
       val idsToFind = notFound.map(i => egraph.addExpr(goals(i)))
       val endRunner = Runner.init().doneWhen { _ =>
         idsToFind.forall(id => egraph.findMut(startId) == egraph.findMut(id))
-      }.run(egraph, NoPredicate(), endRules.asInstanceOf[Seq[Rewrite]], Seq(), Seq(startId))
+      }.run(egraph, NoPredicate(), endRules, Seq(), Seq(startId))
       if (endRunner.stopReasons.contains(Done)) {
         return
       }

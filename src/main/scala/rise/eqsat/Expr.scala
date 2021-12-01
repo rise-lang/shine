@@ -222,6 +222,8 @@ object Expr {
     })(Type.toNamed(expr.t, bound))
   }
 
+  // instead of generating the same names in different scopes, generate globally unique names
+  // useful for Elevate and DPIA assumptions
   def toNamedUnique(expr: Expr, bound: Bound = Bound.empty, counter: Int = 0): core.Expr = {
     var c = counter
     def rec(expr: Expr, bound: Bound): core.Expr = {

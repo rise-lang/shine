@@ -70,7 +70,7 @@ object Pattern {
 }
 
 sealed trait PatternVarOrNode
-/** A variable used in [[Pattern]]s or [[SubstHC]]s */
+/** A variable used in [[Pattern]]s or [[Subst]]s */
 case class PatternVar(index: Int) extends PatternVarOrNode {
   override def toString: String = s"?$index"
 }

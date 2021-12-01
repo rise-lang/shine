@@ -1,12 +1,9 @@
 package rise.core.types
 
-import util.monads._
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.core.DSL.Type.n2dtFun
-import rise.core.traverse._
 import rise.core.{freshName, substitute}
 import rise.core.lifting.liftDependentFunctionType
-import rise.core.types.Flags.ExplicitDependence
 import rise.core.types.InferenceException.error
 import rise.core.types.DataType._
 
@@ -110,9 +107,7 @@ object Constraint {
           case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
             decomposed(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2)))
           case (FunType(ina, outa), FunType(inb, outb)) =>
-            decomposed(
-              Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb))
-            )
+            decomposed(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb)))
           case (
             DepFunType(NatKind, na: NatIdentifier, ta),
             DepFunType(NatKind, nb: NatIdentifier, tb)

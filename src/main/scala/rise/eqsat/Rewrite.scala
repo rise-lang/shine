@@ -60,7 +60,7 @@ trait Searcher {
 }
 
 /** The right-hand side of a [[Rewrite]] rule.
-  * An applier is anything that can use a [[SubstHC]] to modify the [[EGraph]].
+  * An applier is anything that can use a [[Subst]] to modify the [[EGraph]].
   */
 trait Applier {
   // the variables used by this applier

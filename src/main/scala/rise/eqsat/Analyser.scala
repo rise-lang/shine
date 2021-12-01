@@ -2,6 +2,9 @@ package rise.eqsat
 
 import rise.core.{types => rct}
 
+/** Basically a way to perform one-shot analyses without adding it to the on-the-fly e-graph analyses.
+  * @todo reduce code redundancy, maybe remove this concept completely
+  */
 object Analyser {
   // FIXME: this is highly similar to the other Analysis trait and CostFunction trait
   // TODO: think about a proper interface, maybe there are more optimal analyses algorithms
@@ -141,6 +144,7 @@ case class AvoidCompositionAssoc1ExtractData[Cost](
   best: (Int, Cost, ExprWithHashCons),
   bestNoComp: Option[(Int, Cost, ExprWithHashCons)])
 
+/** An analysis to extract programs, minimizing right-associativity as well as a given cost */
 case class AvoidCompositionAssoc1Extract[Cost](cf: CostFunction[Cost])
   extends Analyser.Analysis[AvoidCompositionAssoc1ExtractData[Cost]] {
 
@@ -194,6 +198,9 @@ case class AvoidCompositionAssoc1Extract[Cost](cf: CostFunction[Cost])
     computed
 }
 
+/** An analysis to extract a beam of programs:
+  * a sequence of at most `beamSize` programs minimizing a given cost
+  * @todo figure out a way to increase diversity (e.g. extract modulo a given normal form) */
 case class BeamExtract[Cost](beamSize: Int, cf: CostFunction[Cost])
   extends Analyser.Analysis[Seq[(Cost, ExprWithHashCons)]]
 {
@@ -237,6 +244,8 @@ object BeamExtract {
   }
 }
 
+/** An analysis to extract a beam of programs with valid DPIA read/write annotations.
+  * @todo figure out a way to increase diversity (e.g. extract modulo a given normal form) */
 object BeamExtractRW {
   sealed trait TypeAnnotation
   case class NotDataTypeAnnotation(node: TypeNode[TypeAnnotation, (), rct.Access])
@@ -327,7 +336,7 @@ object RWAnnotationDSL {
   def aFunT(a: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(AddrFunType(a))
 }
 
-// TODO: this procedure could actually extract DPIA terms directly?
+// TODO: this procedure could actually extract DPIA terms directly, by-passing `fromRise`?
 case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
   extends Analyser.Analysis[BeamExtractRW.Data[Cost]]
 {

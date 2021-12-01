@@ -3,7 +3,7 @@ package rise.eqsat
 import scala.collection.mutable
 
 /** e-matching tries to find a [[Pattern]] in an [[EGraph]],
-  * returning a list of [[SubstHC]]s representing successful matches.
+  * returning a list of [[Subst]]s representing successful matches.
  *
   * @see [[http://leodemoura.github.io/files/ematching.pdf Efficient e-matching for SMT Solvers]]
   */
