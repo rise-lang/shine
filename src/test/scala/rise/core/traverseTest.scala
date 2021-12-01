@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.traverse._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 
 class traverseTest extends test_util.Tests {
   val e: Expr = depFun((h: Nat) =>
@@ -22,7 +23,7 @@ class traverseTest extends test_util.Tests {
 
   class TypeTraceVisitor extends PureAccumulatorTraversal[Seq[Any]] {
     override val accumulator = SeqMonoid[Any]
-    override def typeIdentifier[I <: Kind.Identifier] : VarType => I => Pair[I] =
+    override def typeIdentifier[I <: Kind.Identifier]: VarType => I => Pair[I] =
       vt => i => accumulate(Seq(i))(i)
   }
 

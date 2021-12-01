@@ -1,6 +1,7 @@
 package benchmarks.eqsat
 
 import rise.core.{types => rct}
+import rise.core.types.{DataType => rcdt}
 import rise.eqsat._
 import rise.elevate.rules.traversal.default._
 import rise.eqsat.PredicateDSL._
@@ -239,11 +240,11 @@ object harris {
       case rc.App(y @ rc.App(rcp.let(), v), z @ rc.Lambda(x, b)) =>
         rc.App(y, rc.Lambda(x, rec(b, HashMap(v -> x)))(z.t))(expr.t)
       case rc.App(f, e) => rc.App(CSE(f), CSE(e))(expr.t)
-      case rc.DepLambda(x: rct.NatIdentifier, e) => rc.DepLambda[rct.NatKind](x, CSE(e))(e.t)
-      case rc.DepLambda(x: rct.DataTypeIdentifier, e) => rc.DepLambda[rct.DataKind](x, CSE(e))(e.t)
-      case rc.DepLambda(x: rct.AddressSpaceIdentifier, e) => rc.DepLambda[rct.AddressSpaceKind](x, CSE(e))(e.t)
-      case rc.DepLambda(x, e) => ???
-      case rc.DepApp(f, x) => rc.DepApp(CSE(f), x)(expr.t)
+      case rc.DepLambda(rct.NatKind, x: rct.NatIdentifier, e) => rc.DepLambda(rct.NatKind, x, CSE(e))(e.t)
+      case rc.DepLambda(rct.NatKind, x: rcdt.DataTypeIdentifier, e) => rc.DepLambda(rct.DataKind, x, CSE(e))(e.t)
+      case rc.DepLambda(rct.NatKind, x: rct.AddressSpaceIdentifier, e) => rc.DepLambda(rct.AddressSpaceKind, x, CSE(e))(e.t)
+      case rc.DepLambda(_, _, _) => ???
+      case rc.DepApp(k, f, x) => rc.DepApp(k, CSE(f), x)(expr.t)
       case rc.Literal(d) => expr
       case rc.Opaque(e, t) => ???
       case rc.TypeAnnotation(e, annotation) => ???

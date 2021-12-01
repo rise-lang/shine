@@ -4,8 +4,10 @@
 package shine.DPIA.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class MapAcc(val n: Nat, val dt1: DataType, val dt2: DataType, val f: Phrase[FunType[AccType, AccType]], val array: Phrase[AccType]) extends AccPrimitive {
   assert {

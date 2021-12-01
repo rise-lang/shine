@@ -26,17 +26,8 @@ sealed abstract class NatCollection {
   def apply(idxs: Nat*): Nat = new NatCollectionIndexing(this, idxs)
 }
 
-final case class NatCollectionIdentifier(
-    name: String,
-   override val isExplicit: Boolean = false
- ) extends NatCollection
-  with Kind.Identifier
-  with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: NatCollectionIdentifier =
-      this.copy(isExplicit = true)
-  override def asImplicit: NatCollectionIdentifier =
-    this.copy(isExplicit = false)
+final case class NatCollectionIdentifier(name: String) extends NatCollection {
+  override def toString: String = name
 }
 
 /**

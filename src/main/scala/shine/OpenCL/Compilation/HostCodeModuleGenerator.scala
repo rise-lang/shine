@@ -1,5 +1,6 @@
 package shine.OpenCL.Compilation
 
+import rise.core.types.DataType.{ManagedBufferType, OpaqueType}
 import shine.{C, DPIA}
 import shine.C.AST.{Decl, IncludeSource, ParamKind, Stmt}
 import shine.C.Compilation.{ModuleGenerator => CModuleGenerator}
@@ -63,7 +64,7 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
       val params = Seq(C.AST.ParamDecl("ctx", C.AST.OpaqueType("Context")), self) ++
         optionallyManagedParams(funDef.params, outParam).map(makeParam(gen))
       C.Module(
-        includes = immutable.Seq(IncludeSource("runtime.h")),
+        includes = immutable.Seq(IncludeSource("ocl/ocl.h")),
         decls = CModuleGenerator.collectTypeDeclarations(code, params) ++
           declarations ++ selfTypeDeclarations(gen, funDef.name),
         functions = immutable.Seq(
@@ -93,9 +94,9 @@ object HostCodeModuleGenerator extends ModuleGenerator[FunDef] {
 
   private def makeParam(gen: CodeGenerator): Identifier[_] => C.AST.ParamDecl =
     C.AST.makeParam({
-      case _: DPIA.Types.ManagedBufferType =>
+      case _: ManagedBufferType =>
         C.AST.OpaqueType("Buffer")
-      case DPIA.Types.OpaqueType(name) =>
+      case OpaqueType(name) =>
         C.AST.OpaqueType(name)
       case dt => C.AST.makeParamTy(gen)(dt)
     })

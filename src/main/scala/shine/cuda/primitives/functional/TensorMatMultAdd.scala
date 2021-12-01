@@ -4,16 +4,18 @@
 package shine.cuda.primitives.functional
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class TensorMatMultAdd(val m: Nat, val n: Nat, val k: Nat, val layoutA: MatrixLayout, val layoutB: MatrixLayout, val dt1: DataType, val dt2: DataType, val aMatrix: Phrase[ExpType], val bMatrix: Phrase[ExpType], val cMatrix: Phrase[ExpType]) extends ExpPrimitive {
   assert {
-    aMatrix :: expT(FragmentType(m, k, n, dt1, FragmentKind.AMatrix, layoutA), read)
-    bMatrix :: expT(FragmentType(k, n, m, dt1, FragmentKind.BMatrix, layoutB), read)
-    cMatrix :: expT(FragmentType(m, n, k, dt2, FragmentKind.Accumulator, MatrixLayout.None), read)
+    aMatrix :: expT(FragmentType(m, k, n, dt1, Fragment.AMatrix, layoutA), read)
+    bMatrix :: expT(FragmentType(k, n, m, dt1, Fragment.BMatrix, layoutB), read)
+    cMatrix :: expT(FragmentType(m, n, k, dt2, Fragment.Accumulator, MatrixLayout.None), read)
     true
   }
-  override val t: ExpType = expT(FragmentType(m, n, k, dt2, FragmentKind.Accumulator, MatrixLayout.None), write)
+  override val t: ExpType = expT(FragmentType(m, n, k, dt2, Fragment.Accumulator, MatrixLayout.None), write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): TensorMatMultAdd = new TensorMatMultAdd(v.nat(m), v.nat(n), v.nat(k), layoutA, layoutB, v.data(dt1), v.data(dt2), VisitAndRebuild(aMatrix, v), VisitAndRebuild(bMatrix, v), VisitAndRebuild(cMatrix, v))
 }

@@ -3,6 +3,7 @@ package rise.eqsat
 import rise.core.semantics
 import rise.core.{primitives => rcp}
 import rise.core.{types => rct}
+import rise.core.types.{DataType => rcdt}
 
 import scala.language.implicitConversions
 
@@ -211,8 +212,8 @@ object PatternDSL {
   val `?dt`: DataTypePattern = DataTypePatternAny
   def `%dt`(index: Int): DataTypePattern = DataTypePatternNode(DataTypeVar(index))
 
-  val int: DataTypePattern = DataTypePatternNode(ScalarType(rct.int))
-  val f32: DataTypePattern = DataTypePatternNode(ScalarType(rct.f32))
+  val int: DataTypePattern = DataTypePatternNode(ScalarType(rcdt.int))
+  val f32: DataTypePattern = DataTypePatternNode(ScalarType(rcdt.f32))
 
   def nFunT(t: TypePattern): TypePattern = TypePatternNode(NatFunType(t))
   implicit final class FunConstructorT(private val r: TypePattern) extends AnyVal {

@@ -1,51 +1,37 @@
 package rise.core.types
 
 import arithexpr.arithmetic._
-import rise.core.types
 
-class NatIdentifier(
-    override val name: String,
-    override val range: Range = RangeUnknown,
-    override val isExplicit: Boolean = false
-) extends NamedVar(name, range)
-    with types.Kind.Identifier
-    with types.Kind.Explicitness {
+object IsTuningParameter {
+  def apply(name: String)(ni: NatIdentifier): Boolean =
+    ni.name == TuningParameter.prefix + name
+}
 
-  override lazy val toString: String = if (isExplicit) name else "_" + name
+object TuningParameter {
+  val prefix = "tuned_"
+  def apply(name: String): NatIdentifier = NatIdentifier(prefix + name)
+  def apply(name: String, range: Range): NatIdentifier = NatIdentifier(prefix + name, range)
+  def unapply(ni: NatIdentifier): Boolean = {
+    if (ni.name.startsWith(prefix)) {
+      true
+    } else {
+      false
+    }
+  }
+}
 
-  override def copy(r: Range): NatIdentifier =
-    new NatIdentifier(name, r, isExplicit)
-
-  override def asExplicit: NatIdentifier = new NatIdentifier(name, range, true)
-
-  override def asImplicit: NatIdentifier = new NatIdentifier(name, range, false)
-
-  override def cloneSimplified(): NatIdentifier with SimplifiedExpr =
-    new NatIdentifier(name, range, isExplicit) with SimplifiedExpr
+object TuningParameterName {
+  def apply(ni: NatIdentifier): String =
+    ni.name.drop(TuningParameter.prefix.length)
 }
 
 object NatIdentifier {
-  def apply(name: String, isExplicit: Boolean): NatIdentifier =
-    new NatIdentifier(name, isExplicit = isExplicit)
-
-  def apply(name: String): NatIdentifier = apply(name, isExplicit = false)
-
-  def apply(name: String, range: Range, isExplicit: Boolean): NatIdentifier =
-    new NatIdentifier(name, range, isExplicit = isExplicit)
-
-  def apply(name: String, range: Range): NatIdentifier =
-    apply(name, range, isExplicit = false)
-
-  def apply(nv: NamedVar, isExplicit: Boolean): NatIdentifier =
-    new NatIdentifier(nv.name, nv.range, isExplicit = isExplicit)
-
-  def apply(nv: NamedVar): NatIdentifier = apply(nv, isExplicit = false)
+  def apply(name: String): NatIdentifier = new NamedVar(name)
+  def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range)
 }
 
-final class NatToNatApply(val f: NatToNat, val n: Nat)
-  extends ArithExprFunctionCall(s"$f($n)") {
-  override def visitAndRebuild(fun: Nat => Nat): Nat =
-    fun(NatToNatApply(this.f, fun(n)))
+final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunctionCall(s"$f($n)") {
+  override def visitAndRebuild(fun: Nat => Nat): Nat = fun(NatToNatApply(this.f, fun(n)))
 
   override def substitute(subs: collection.Map[ArithExpr, ArithExpr]
                          ): Option[ArithExpr] =
@@ -60,9 +46,7 @@ final class NatToNatApply(val f: NatToNat, val n: Nat)
 
   override def exposedArgs: Seq[Nat] = Seq(n)
 
-  override def substituteExposedArgs(
-                                      subMap: Map[Nat, SimplifiedExpr]
-                                    ): ArithExprFunctionCall =
+  override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall =
     new NatToNatApply(f, subMap.getOrElse(n, n))
 }
 

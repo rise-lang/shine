@@ -1,5 +1,7 @@
 package rise.eqsat
 
+import rise.core.{types => rct}
+
 object Analyser {
   // FIXME: this is highly similar to the other Analysis trait and CostFunction trait
   // TODO: think about a proper interface, maybe there are more optimal analyses algorithms
@@ -237,9 +239,9 @@ object BeamExtract {
 
 object BeamExtractRW {
   sealed trait TypeAnnotation
-  case class NotDataTypeAnnotation(node: TypeNode[TypeAnnotation, (), shine.DPIA.Types.AccessType])
+  case class NotDataTypeAnnotation(node: TypeNode[TypeAnnotation, (), rct.Access])
     extends TypeAnnotation
-  case class DataTypeAnnotation(access: shine.DPIA.Types.AccessType)
+  case class DataTypeAnnotation(access: rct.Access)
     extends TypeAnnotation
 
   type Data[Cost] = Map[(TypeAnnotation, Map[Int, TypeAnnotation]), Seq[(Cost, ExprWithHashCons)]]
@@ -282,7 +284,7 @@ object BeamExtractRW {
     assert(at == bt)
     (a, b) match {
       case (DataTypeAnnotation(x), DataTypeAnnotation(y)) =>
-        (x == y) || (x == shine.DPIA.Types.read || notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
+        (x == y) || (x == rct.read || notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
       case (NotDataTypeAnnotation(x), NotDataTypeAnnotation(y)) =>
         (x, egraph(at), y, egraph(bt)) match {
           case (FunType(aIn, aOut), FunType(aInT, aOutT), FunType(bIn, bOut), FunType(bInT, bOutT)) =>
@@ -313,8 +315,8 @@ object BeamExtractRW {
 
 object RWAnnotationDSL {
   import BeamExtractRW._
-  val read = DataTypeAnnotation(shine.DPIA.Types.read)
-  val write = DataTypeAnnotation(shine.DPIA.Types.write)
+  val read = DataTypeAnnotation(rct.read)
+  val write = DataTypeAnnotation(rct.write)
 
   implicit final class RWAnnotationOps(private val a: TypeAnnotation) extends AnyVal {
     @inline def ->:(b: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(FunType(b, a))

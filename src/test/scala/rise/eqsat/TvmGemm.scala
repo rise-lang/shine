@@ -134,7 +134,7 @@ class TvmGemm extends test_util.Tests {
 
   test("lift-reduce-seq 1") {
     import rise.core.DSL._
-    import rise.core.types._
+    import rise.core.types.DataType._
     import rise.core.primitives._
     import rise.core.DSL.Type._
 
@@ -163,7 +163,7 @@ class TvmGemm extends test_util.Tests {
 
   test("lift-reduce-seq 2") {
     import rise.core.DSL._
-    import rise.core.types._
+    import rise.core.types.DataType._
     import rise.core.primitives._
     import rise.core.DSL.Type._
 
@@ -198,7 +198,7 @@ class TvmGemm extends test_util.Tests {
 
   test("lift-reduce-seq 3") {
     import rise.core.DSL._
-    import rise.core.types._
+    import rise.core.types.DataType._
     import rise.core.primitives._
     import rise.core.DSL.Type._
 
@@ -226,7 +226,7 @@ class TvmGemm extends test_util.Tests {
 
   test("lift-reduce-seq 4") {
     import rise.core.DSL._
-    import rise.core.types._
+    import rise.core.types.DataType._
     import rise.core.primitives._
     import rise.core.DSL.Type._
 

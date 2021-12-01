@@ -1,6 +1,8 @@
 package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
+import rise.core.types.{FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _}
+import rise.core.types.DataType._
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck._
@@ -38,27 +40,24 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
   override def toString: String = s"($fun $arg)"
 }
 
-final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
-                                                      (implicit val kn: KindName[K])
-  extends Phrase[K `()->:` T] {
-  override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
-  override def toString: String = s"Λ(${x.name} : ${kn.get}). $body"
+final case class DepLambda[T, I, U <: PhraseType](kind: Kind[T, I],
+                                                  x: I, body: Phrase[U]) extends Phrase[DepFunType[I, U]] {
+  override val t: DepFunType[I, U] = DepFunType[I, U](kind, x, body.t)
+  override def toString: String = s"Λ(${Kind.idName(kind, x)} : ${kind.name}). $body"
 }
 
 object DepLambda {
-  def apply[K <: Kind](x: K#I): Object {
-    def apply[T <: PhraseType](body: Phrase[T])
-                              (implicit kn: KindName[K]): DepLambda[K, T]
+  def apply[T, I](kind: Kind[T, I], x: I): Object {
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
   } = new {
-    def apply[T <: PhraseType](body: Phrase[T])
-                              (implicit kn: KindName[K]): DepLambda[K, T] = DepLambda(x, body)
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
   }
 }
 
-final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->:` T], arg: K#T)
-  extends Phrase[T] {
+final case class DepApply[T, I, U <: PhraseType](kind: Kind[T, I], fun: Phrase[DepFunType[I, U]], arg: T)
+  extends Phrase[U] {
 
-  override val t: T = PhraseType.substitute(arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[T]
+  override val t: U = shine.DPIA.Types.substitute(kind, arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[U]
   override def toString: String = s"($fun $arg)"
 }
 
@@ -133,43 +132,10 @@ object Phrase {
   def substitute[T1 <: PhraseType, T2 <: PhraseType](ph: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
-    var substCounter = 0
     object Visitor extends VisitAndRebuild.Visitor {
-      def renaming[X <: PhraseType](p: Phrase[X]): Phrase[X] = {
-        case class Renaming(idMap: Map[String, String]) extends VisitAndRebuild.Visitor {
-          override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-            case Identifier(name, t) => Stop(
-              Identifier(idMap.getOrElse(name, name),
-                VisitAndRebuild.visitPhraseTypeAndRebuild(t, this)).asInstanceOf[Phrase[T]])
-            case l @ Lambda(x, _) =>
-              val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
-              Continue(l, Renaming(newMap))
-            case dl @ DepLambda(x, _) =>
-              val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
-              Continue(dl, Renaming(newMap))
-            case _ => Continue(p, this)
-          }
-
-          override def nat[N <: Nat](n: N): N = n.visitAndRebuild({
-            case i: NatIdentifier =>
-              NatIdentifier(idMap.getOrElse(i.name, i.name))
-            case ae => ae
-          }).asInstanceOf[N]
-
-          override def data[T <: DataType](dt: T): T = (dt match {
-            case i: DataTypeIdentifier =>
-              DataTypeIdentifier(idMap.getOrElse(i.name, i.name))
-            case dt => dt
-          }).asInstanceOf[T]
-        }
-        VisitAndRebuild(p, Renaming(Map()))
-      }
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
-          case `for` =>
-            val newPh = if (substCounter == 0) ph else renaming(ph)
-            substCounter += 1
-            Stop(newPh.asInstanceOf[Phrase[T]])
+          case `for` => Stop(ph.asInstanceOf[Phrase[T]])
           case Natural(n) =>
             val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
@@ -249,9 +215,9 @@ object Phrase {
           // NatData is Natural
           // IndexData is AsIndex
         }
-        case DepApply(fun, arg) => (fun, arg) match {
+        case DepApply(_, fun, arg) => (fun, arg) match {
           case (f, a: Nat) =>
-            transientNatFromExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
+            transientNatFromExpr(liftDependentFunction(f.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a))
           case _ => ???
         }
         case Proj1(pair) => transientNatFromExpr(liftPair(pair)._1)

@@ -4,10 +4,12 @@
 package shine.DPIA.primitives.functional
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class Let(val dt1: DataType, val dt2: DataType, val a: AccessType, val value: Phrase[ExpType], val f: Phrase[FunType[ExpType, ExpType]]) extends ExpPrimitive {
+final case class Let(val dt1: DataType, val dt2: DataType, val a: Access, val value: Phrase[ExpType], val f: Phrase[FunType[ExpType, ExpType]]) extends ExpPrimitive {
   assert {
     value :: expT(dt1, read)
     f :: FunType(expT(dt1, read), expT(dt2, a))

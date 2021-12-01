@@ -6,6 +6,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 final case class makeArray(n: Int) extends Builder {
   override def toString: String = "makeArray"
@@ -17,10 +18,10 @@ final case class makeArray(n: Int) extends Builder {
   }
 }
 object makeArray {
-  private final case class Primitive(n: Int)(override val t: Type = TypePlaceholder) extends rise.core.Primitive {
+  private final case class Primitive(n: Int)(override val t: ExprType = TypePlaceholder) extends rise.core.Primitive {
     override val name: String = "makeArray"
-    override def setType(ty: Type): Primitive = Primitive(n)(ty)
-    override def typeScheme: Type = impl { (dt: DataType) => Seq.fill(n)(dt).foldRight(ArrayType(n, dt): Type)({
+    override def setType(ty: ExprType): Primitive = Primitive(n)(ty)
+    override def typeScheme: ExprType = impl { (dt: DataType) => Seq.fill(n)(dt).foldRight(ArrayType(n, dt): ExprType)({
       case (lhsT, rhsT) =>
         lhsT ->: rhsT
     }) }

@@ -13,16 +13,7 @@ object traversal {
   case class body(s: Strategy[Rise]) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
       case Lambda(x, f) => s(f).mapSuccess(Lambda(x, _)(e.t))
-      case DepLambda(x: NatIdentifier, f) =>
-        s(f).mapSuccess(DepLambda[NatKind](x, _)(e.t))
-      case DepLambda(x: DataTypeIdentifier, f) =>
-        s(f).mapSuccess(DepLambda[DataKind](x, _)(e.t))
-      case DepLambda(x: AddressSpaceIdentifier, f) =>
-        s(f).mapSuccess(DepLambda[AddressSpaceKind](x, _)(e.t))
-      case DepLambda(x: NatToNatIdentifier, f) =>
-        s(f).mapSuccess(DepLambda[NatToNatKind](x, _)(e.t))
-      case DepLambda(x: NatToDataIdentifier, f) =>
-        s(f).mapSuccess(DepLambda[NatToDataKind](x, _)(e.t))
+      case DepLambda(kind, x, f) => s(f).mapSuccess(DepLambda(kind, x, _)(e.t))
       case _ => Failure(s)
     }
     override def toString = s"body($s)"
@@ -72,7 +63,7 @@ object traversal {
           // To achieve a traversal that most closely corresponds to the execution order we ...
           case a @ App(f, e) => e.t match {
             // ... traverse arguments with a function type after the called function ...
-            case FunType(_, _) | DepFunType(_, _) =>
+            case FunType(_, _) | DepFunType(_, _, _) =>
               s(f) match {
                 case Success(x: Rise) => Success(App(x, e)(a.t))
                 case Failure(state)   => if (carryOverState)
@@ -192,25 +183,8 @@ object traversal {
           case App(_,_) => throw new Exception("this should not happen")
           case Identifier(_) => None
           case l @ Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)(l.t)))
-          case dl @ DepLambda(x, e) => x match {
-            case n: NatIdentifier =>
-              Some(s(e).mapSuccess(DepLambda[NatKind](n, _)(dl.t)))
-            case dt: DataTypeIdentifier =>
-              Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)(dl.t)))
-            case addr: AddressSpaceIdentifier =>
-              Some(s(e).mapSuccess(DepLambda[AddressSpaceKind](addr, _)(dl.t)))
-          }
-          case da @ DepApp(f, x)=> x match {
-            case n: Nat => Some(s(f).mapSuccess(DepApp[NatKind](_, n)(da.t)))
-            case dt: DataType =>
-              Some(s(f).mapSuccess(DepApp[DataKind](_, dt)(da.t)))
-            case addr: AddressSpace =>
-              Some(s(f).mapSuccess(DepApp[AddressSpaceKind](_, addr)(da.t)))
-            case n2n: NatToNat =>
-              Some(s(f).mapSuccess(DepApp[NatToNatKind](_, n2n)(da.t)))
-            case n2d: NatToData =>
-              Some(s(f).mapSuccess(DepApp[NatToDataKind](_, n2d)(da.t)))
-          }
+          case dl @ DepLambda(kind, x, e) => Some(s(e).mapSuccess(DepLambda(kind, x, _)(dl.t)))
+          case da @ DepApp(kind, f, x) => Some(s(f).mapSuccess(DepApp(kind, _, x)(da.t)))
           case Literal(_) => None
           case _: TypeAnnotation => throw new Exception("Type annotations should be gone.")
           case _: TypeAssertion => throw new Exception("Type assertions should be gone.")

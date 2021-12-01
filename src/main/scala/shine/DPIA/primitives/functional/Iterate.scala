@@ -4,14 +4,16 @@
 package shine.DPIA.primitives.functional
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class Iterate(val n: Nat, val m: Nat, val k: Nat, val dt: DataType, val f: Phrase[DepFunType[NatKind, FunType[ExpType, ExpType]]], val array: Phrase[ExpType]) extends ExpPrimitive {
+final case class Iterate(val n: Nat, val m: Nat, val k: Nat, val dt: DataType, val f: Phrase[DepFunType[NatIdentifier, FunType[ExpType, ExpType]]], val array: Phrase[ExpType]) extends ExpPrimitive {
   assert {
     f :: ({
       val l = f.t.x
-      DepFunType[NatKind, PhraseType](l, FunType(expT(ArrayType(l * n, dt), read), expT(ArrayType(l, dt), write)))
+      DepFunType(NatKind, l, FunType(expT(ArrayType(l * n, dt), read), expT(ArrayType(l, dt), write)))
     })
     array :: expT(ArrayType(m * n.pow(k), dt), read)
     true

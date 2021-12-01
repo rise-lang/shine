@@ -3,7 +3,7 @@ package rise.eqsat
 import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.primitives._
-import rise.core.types._
+import rise.core.types.DataType._
 import ProveEquiv.syntax._
 
 class BetaReductionSubtleties extends test_util.Tests {

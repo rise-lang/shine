@@ -44,7 +44,7 @@ object rules {
     BetaNatExtractApplier(?(0), `?n`(0))
   )
 
-  import rise.core.types.{Nat, DataType, Type, AddressSpace}
+  import rise.core.types.{Nat, DataType, AddressSpace}
   import NamedRewriteDSL._
 
   val etaAbstraction = NamedRewrite.init("eta-abstraction",
@@ -169,7 +169,7 @@ object rules {
   )
 
   def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-$n",
-    app(app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init"), "arg")
+    app(app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init"), "arg")
       -->
     app(app(app(rcp.reduceSeq.primitive,
       lam("acc", lam("y", app(app("op", "acc"),
@@ -356,7 +356,7 @@ object rules {
   val sndUnzipAsMapSnd = NamedRewrite.init("snd-unzip-as-map-snd",
     app(snd, app(unzip, "e")) --> app(app(map, snd), "e")
   )
-  
+
   val slideAfter = NamedRewrite.init("slide-after",
     ("e" :: ((`_`: Nat)`.``_`))
       -->
@@ -541,13 +541,13 @@ object rules {
     app(app(rcp.let.primitive, "v"), lam("x", app("y", "b")))
   )
   val hoistLetApp2 = NamedRewrite.init("hoist-let-app-2",
-    app(app("f" :: (("dt1": DataType) ->: ("t": Type) ->: ("dt2": DataType)),
+    app(app("f" :: (("dt1": DataType) ->: t("t") ->: ("dt2": DataType)),
       app(app(rcp.let.primitive, "v"), lam("x", "b"))), "y")
       -->
     app(app(rcp.let.primitive, "v"), lam("x", app(app("f", "b"), "y")))
   )
   val hoistLetApp3 = NamedRewrite.init("hoist-let-app-3",
-    app(app("f" :: (("t": Type) ->: ("dt1": DataType) ->: ("dt2": DataType)), "y"),
+    app(app("f" :: (t("t") ->: ("dt1": DataType) ->: ("dt2": DataType)), "y"),
       app(app(rcp.let.primitive, "v"), lam("x", "b")))
       -->
     app(app(rcp.let.primitive, "v"), lam("x", app(app("f", "y"), "b")))
@@ -663,7 +663,7 @@ object rules {
     )
 
     val asScalarAsVectorId = NamedRewrite.init("as-scalar-as-vector-id",
-      (app(nApp(asVector, `_`), app(asScalar, "e" :: ("t": Type))) :: ("t": Type))
+      (app(nApp(asVector, `_`), app(asScalar, "e" :: t("t"))) :: t("t"))
         --> "e"
     )
 
@@ -815,7 +815,7 @@ object rules {
       (app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, join)))))))
     )
     def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-cnf-$n",
-      app(app(reduce, "op" :: ("a" ->: "a" ->: ("a": Type))), "init")
+      app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init")
         -->
       (nApp(split, n) >> app(app(rcp.reduceSeq.primitive,
         lam("acc", lam("y", app(app("op", "acc"),
@@ -980,12 +980,12 @@ object rules {
       )
 
       val asScalarAsVectorId = NamedRewrite.init("vec-as-scalar-as-vector-id-cnf",
-        ((asScalar >> nApp(asVector, "n")) :: (("t": Type) ->: ("t": Type)))
+        ((asScalar >> nApp(asVector, "n")) :: (t("t") ->: t("t")))
           -->
         lam("in", "in")
       )
       val asScalarAsVectorId2 = NamedRewrite.init("vec-as-scalar-as-vector-id-cnf-2",
-        ("h" >> (asScalar >> nApp(asVector, "n")) :: (("t": Type) ->: ("t": Type)))
+        ("h" >> (asScalar >> nApp(asVector, "n")) :: (t("t") ->: t("t")))
           -->
         "h"
       )

@@ -1,13 +1,14 @@
 package shine.OpenCL
 
-import util.gen
-import rise.core.DSL._
 import rise.core.DSL.Type._
-import rise.core.types._
-import rise.core.types.AddressSpace._
+import rise.core.DSL._
 import rise.core.primitives._
-import rise.openCL.primitives.oclReduceSeq
+import rise.core.types.AddressSpace._
+import rise.core.types.DataType._
+import rise.core.types._
 import rise.openCL.DSL._
+import rise.openCL.primitives.oclReduceSeq
+import util.gen
 
 // scalastyle:off org.scalastyle.scalariform.MultipleStringLiteralsChecker
 class Barriers extends test_util.Tests {

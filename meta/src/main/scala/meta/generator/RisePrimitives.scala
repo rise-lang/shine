@@ -41,6 +41,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import arithexpr.arithmetic._
 
 ..${generatedDef.stats}
@@ -80,13 +81,13 @@ import arithexpr.arithmetic._
     import scala.meta._
     val generated = q"""{
       object ${Term.Name{name}} extends Builder {
-        private final case class Primitive()(override val t: Type = TypePlaceholder)
+        private final case class Primitive()(override val t: ExprType = TypePlaceholder)
           extends rise.core.Primitive
         {
           override val name: String = ${Lit.String(name)}
-          override def setType(ty: Type): Primitive = Primitive()(ty)
+          override def setType(ty: ExprType): Primitive = Primitive()(ty)
           override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-          override def typeScheme: Type = ${generateTypeScheme(typeSignature)}
+          override def typeScheme: ExprType = ${generateTypeScheme(typeSignature)}
         }
 
         override def toString: String = ${Lit.String(name)}
@@ -123,12 +124,12 @@ import arithexpr.arithmetic._
       }
 
       object ${Term.Name(name)} {
-        private final case class Primitive(..$params)(override val t: Type = TypePlaceholder)
+        private final case class Primitive(..$params)(override val t: ExprType = TypePlaceholder)
           extends rise.core.Primitive
         {
           override val name: String = ${Lit.String(name)}
-          override def setType(ty: Type): Primitive = Primitive(..$args)(ty)
-          override def typeScheme: Type = ${generateTypeScheme(typeSignature)}
+          override def setType(ty: ExprType): Primitive = Primitive(..$args)(ty)
+          override def typeScheme: ExprType = ${generateTypeScheme(typeSignature)}
 
           override def primEq(obj: rise.core.Primitive): Boolean = obj match {
             case p: Primitive => ${generateComparisonChain(args)}
@@ -164,40 +165,40 @@ import arithexpr.arithmetic._
         // variadic function type with unrolled identifier, e.g.:  n*(*inTs ->) outT
         // generates:  inTs.foldRight(outT){ case (lhsT, rhsT) => lhs ->: rhs }
         // to represent n-many function types: inT0 ->: inT1 ->: ... ->: outT
-        q"""${Term.Name(inTs)}.foldRight(${generateTypeScheme(outT)}: Type) {
+        q"""${Term.Name(inTs)}.foldRight(${generateTypeScheme(outT)}: ExprType) {
            case (lhsT, rhsT) => lhsT ->: rhsT
         }"""
       case rise.Type.AST.VariadicFunType(rise.Type.AST.Identifier(n), dt, outT) =>
         // variadic function type without an unrolled identifier, e.g:  n*(dt ->) outT
         // generated:  Seq.fill(n)(dt).foldRight(outT){ case (lhsT, rhsT) => lhs ->: rhs }
         // to represent n-many function types: dt -> dt -> ... -> outT
-        q"""Seq.fill(${Term.Name(n)})(${generateDataType(dt)}).foldRight(${generateTypeScheme(outT)}: Type) {
+        q"""Seq.fill(${Term.Name(n)})(${generateDataType(dt)}).foldRight(${generateTypeScheme(outT)}: ExprType) {
            case (lhsT, rhsT) => lhsT ->: rhsT
         }"""
       case rise.Type.AST.VariadicDepFunType(n, ids, kind, t) =>
         // variadic dependent function type, e.g.:  n*((ids: kind) ->) t
         // generates:
-        //    val ids = Seq.fill(n)(DataTypeIdentifier(freshName("dt"), isExplicit = true))
+        //    val ids = Seq.fill(n)(DataTypeIdentifier(freshName("dt")))
         //    ids.foldRight(t){ case (id, t) => DepFunType[DataKind](id, t) }
         // to represent n-many dependent function types: (id0: kind) -> (id1: kind) -> ... -> t
-        val (createIds, typeName) = kind match {
+        val (createIds, kindName) = kind match {
           case AST.Data =>
-            (q"""DataTypeIdentifier(freshName("dt"), isExplicit = true)""", Type.Name("DataKind"))
+            (q"""DataTypeIdentifier(freshName("dt"))""", Term.Name("DataKind"))
           case AST.Address =>
-            (q"""AddressSpaceIdentifier(freshName("a"), isExplicit = true)""", Type.Name("AddressSpaceKind"))
+            (q"""AddressSpaceIdentifier(freshName("a"))""", Term.Name("AddressSpaceKind"))
           case AST.Nat2Nat =>
-            (q"""NatToNatIdentifier(freshName("n2n"), isExplicit = true)""", Type.Name("NatToNatKind"))
+            (q"""NatToNatIdentifier(freshName("n2n"))""", Term.Name("NatToNatKind"))
           case AST.Nat2Data =>
-            (q"""NatToDataIdentifier(freshName("n2d"), isExplicit = true)""", Type.Name("NatToDataKind"))
+            (q"""NatToDataIdentifier(freshName("n2d"))""", Term.Name("NatToDataKind"))
           case AST.Nat =>
-            (q"""NatIdentifier(freshName("n"), isExplicit = true)""", Type.Name("NatKind"))
+            (q"""NatIdentifier(freshName("n"))""", Term.Name("NatKind"))
           case AST.Fragment => throw new Exception("No support for Fragment Kind yet")
           case AST.MatrixLayout => throw new Exception("No support for Matrix Layout Kind yet")
         }
         q"""{
             val ${Pat.Var(Term.Name(ids.name))} = Seq.fill(${Term.Name(n.name)})($createIds)
-            ${Term.Name(ids.name)}.foldRight(${generateTypeScheme(t)}: Type) {
-              case (id, t) =>   DepFunType[$typeName, Type](id, t)
+            ${Term.Name(ids.name)}.foldRight(${generateTypeScheme(t)}: ExprType) {
+              case (id, t) =>   DepFunType($kindName, id, t)
             }
          }"""
       case _ => generateDataType(typeAST)
@@ -257,7 +258,7 @@ import arithexpr.arithmetic._
       case AST.Nat2Nat => "NatToNat"
       case AST.Nat2Data => "NatToData"
       case AST.Nat => "Nat"
-      case AST.Fragment => "FragmentKind"
+      case AST.Fragment => "Fragment"
       case AST.MatrixLayout => "MatrixLayout"
     }
   }
@@ -301,11 +302,11 @@ import arithexpr.arithmetic._
       case rise.Type.Fragment.AST.Identifier(name) =>
         Term.Name(name)
       case rise.Type.Fragment.AST.ACC =>
-        q"FragmentKind.Accumulator"
+        q"Fragment.Accumulator"
       case rise.Type.Fragment.AST.A =>
-        q"FragmentKind.AMatrix"
+        q"Fragment.AMatrix"
       case rise.Type.Fragment.AST.B =>
-        q"FragmentKind.BMatrix"
+        q"Fragment.BMatrix"
     }
   }
 

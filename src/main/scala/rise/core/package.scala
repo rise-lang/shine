@@ -1,6 +1,7 @@
 package rise
 
 import rise.core.types._
+import rise.core.types.DataType._
 
 import scala.language.implicitConversions
 
@@ -23,7 +24,7 @@ package object core {
         s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
       case App(f, e) =>
         s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
-      case DepLambda(x, e) =>
+      case DepLambda(_, x, e) =>
         x match {
           case n: NatIdentifier =>
             s"""DepLambda[NatKind](NatIdentifier("id$n"),
@@ -31,7 +32,7 @@ package object core {
           case dt: DataTypeIdentifier =>
             s"""DepLambda[DataKind]("id$dt", ${toEvaluableString(e)})"""
         }
-      case DepApp(f, x) =>
+      case DepApp(_, f, x) =>
         x match {
           case n: Nat => s"DepApply[NatKind](${toEvaluableString(f)}, $n)"
           case dt: DataType =>

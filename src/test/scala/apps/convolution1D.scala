@@ -9,6 +9,7 @@ import rise.openCL.primitives.oclReduceSeqUnroll
 import rise.openCL.DSL._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 

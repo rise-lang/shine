@@ -1,6 +1,8 @@
 package shine.OpenCL
 
 import arithexpr.arithmetic.RangeAdd
+import rise.core.types.{DataType, NatToData}
+import rise.core.types.DataType._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.{DepLambda, Phrase}
 import shine.DPIA.Types._
@@ -26,7 +28,7 @@ package object DSL {
   def parForNat(level: ParallelismLevel,
                 dim: Int,
                 unroll: Boolean
-               ): (Nat, NatToData, Phrase[AccType], Phrase[DepFunType[NatKind, FunType[AccType, CommType]]]) => ParForNat =
+               ): (Nat, NatToData, Phrase[AccType], Phrase[DepFunType[NatIdentifier, FunType[AccType, CommType]]]) => ParForNat =
     level match {
       case Global =>    ParForNat(level, dim, unroll, "gl_id_")(
         get_global_id(dim), _, get_global_size(dim), _, _, _)
@@ -39,7 +41,7 @@ package object DSL {
 
   private def parForBodyFunction(n:Nat, ft:NatToData,
                                  f:NatIdentifier => Phrase[AccType] => Phrase[CommType]
-                                ): DepLambda[NatKind, AccType ->: CommType] = {
+                                ): DepLambda[Nat, NatIdentifier, AccType ->: CommType] = {
     nFun(idx => λ(accT(ft(idx)))(o => f(idx)(o)), RangeAdd(0, n, 1))
   }
 
@@ -56,7 +58,7 @@ package object DSL {
     parForNat(Local, dim, unroll = false)(n, ft, out, parForBodyFunction(n, ft, f))
 
   object `new` {
-    def apply(addrSpace: shine.DPIA.Types.AddressSpace)
+    def apply(addrSpace: AddressSpace)
              (dt: DataType, f: Phrase[VarType] => Phrase[CommType]): New =
       New(addrSpace, dt, λ(varT(dt))(v => f(v) ))
   }
@@ -68,7 +70,7 @@ package object DSL {
               dt3: ArrayType,
               in: Phrase[ExpType],
               out: Phrase[AccType],
-              f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]) =
+              f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]): NewDoubleBuffer =
       NewDoubleBuffer(a, dt1, dt2, dt3.elemType, dt3.size, in, out,
         λ(varT(dt1) x CommType() x CommType())(ps => {
           val    v: Phrase[VarType]  = ps._1._1
@@ -79,6 +81,6 @@ package object DSL {
   }
 
   object barrier {
-    def apply(local: Boolean = true, global: Boolean = true) = Barrier(local, global)()
+    def apply(local: Boolean = true, global: Boolean = true): Barrier = Barrier(local, global)()
   }
 }

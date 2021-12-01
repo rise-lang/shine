@@ -1,5 +1,6 @@
 package shine.DPIA.Compilation
 
+import rise.core.types.{DataType, read, write}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -26,13 +27,13 @@ object FedeTranslation {
       // on the fly beta-reduction
       case Apply(fun, arg) => fedAcc(env)(
         Lifting.liftFunction(fun).reducing(arg))(C)
-      case DepApply(fun, arg) => arg match {
+      case DepApply(kind, fun, arg) => arg match {
         case a: Nat => fedAcc(env)(
-          Lifting.liftDependentFunction[NatKind, ExpType](
-            fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(C)
+          Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a))(C)
         case a: DataType => fedAcc(env)(
-          Lifting.liftDependentFunction[DataKind, ExpType](
-            fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(C)
+          Lifting.liftDependentFunction(
+            fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a))(C)
       }
 
       case IfThenElse(cond, thenP, elseP) => ???

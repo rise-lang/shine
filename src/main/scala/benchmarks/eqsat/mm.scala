@@ -1,6 +1,7 @@
 package benchmarks.eqsat
 
 import rise.core.{types => rct}
+import rise.core.types.{DataType => rcdt}
 import rise.eqsat._
 import rise.elevate.rules.lowering.lowerToC
 import rise.elevate.rules.traversal.default._
@@ -11,6 +12,7 @@ object mm {
   val mm: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
     import rise.core.DSL._
     import rise.core.types._
+    import rise.core.types.DataType._
     import rise.core.primitives._
 
     depFun((m: Nat, n: Nat, k: Nat) =>
@@ -148,9 +150,9 @@ object mm {
   val loweringStep = GuidedSearch.Step.init(BENF) withRules Seq(
     rules.mapFusion,
     rules.mapEtaAbstraction,
-    rules.vectorize.after(32, rct.f32),
-    rules.vectorize.after(32, rct.PairType(rct.f32, rct.f32)),
-    rules.vectorize.after(32, rct.PairType(rct.f32, rct.PairType(rct.f32, rct.f32))),
+    rules.vectorize.after(32, rcdt.f32),
+    rules.vectorize.after(32, rcdt.PairType(rcdt.f32, rcdt.f32)),
+    rules.vectorize.after(32, rcdt.PairType(rcdt.f32, rcdt.PairType(rcdt.f32, rcdt.f32))),
     rules.vectorize.beforeMapF32,
     rules.vectorize.beforeMap_F32xF32,
     rules.vectorize.beforeMap_F32x_F32xF32,

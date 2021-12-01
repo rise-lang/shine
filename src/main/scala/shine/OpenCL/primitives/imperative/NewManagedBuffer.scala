@@ -4,8 +4,10 @@
 package shine.OpenCL.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class NewManagedBuffer(access: shine.OpenCL.AccessFlags)(val dt: DataType, val k: Phrase[FunType[PhrasePairType[ExpType, AccType], CommType]]) extends CommandPrimitive {
   assert {

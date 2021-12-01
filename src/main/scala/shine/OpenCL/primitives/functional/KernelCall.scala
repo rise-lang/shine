@@ -4,8 +4,10 @@
 package shine.OpenCL.primitives.functional
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class KernelCall(name: String, localSize: shine.OpenCL.LocalSize, globalSize: shine.OpenCL.GlobalSize, n: Int)(val inTs: Seq[DataType], val outT: DataType, val args: Seq[Phrase[ExpType]]) extends ExpPrimitive {
   assert {

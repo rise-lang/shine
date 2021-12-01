@@ -2,13 +2,16 @@ package shine.OpenMP
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
+import rise.core.types.{DataType, NatKind}
+import rise.core.types.DataType._
+import rise.core.substitute.{natInType => substituteNatInType}
 import shine.C.AST.{ArraySubscript, Decl}
 import shine.C.Compilation.CodeGenerator.CIntExpr
 import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType, ScalarType, VectorType}
+import shine.DPIA.Types.{AccType, CommType, ExpType, PhraseType}
 import shine.DPIA.primitives.functional._
 import shine.DPIA.{ArrayData, Compilation, Data, Nat, NatIdentifier, Phrases, VectorData, error, freshName}
 import shine.OpenMP.primitives.imperative.{ParFor, ParForNat}
@@ -38,7 +41,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       OpenMPCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
     case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) =>
       OpenMPCodeGen.codeGenParForVec(n, dt, a, i, o, p, env)
-    case ParForNat(n, _, a, DepLambda(i, Lambda(o, p))) =>
+    case ParForNat(n, _, a, DepLambda(NatKind, i, Lambda(o, p))) =>
       OpenMPCodeGen.codeGenParForNat(n, a, i, o, p, env)
     case phrase => phrase |> super.cmd(env)
   }
@@ -134,7 +137,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def typ(dt: DataType): Type = {
     dt match {
-      case v: shine.DPIA.Types.VectorType =>
+      case v: VectorType =>
         // this sets the representation of vector types in C:
         // struct float4 {
         //    float data[4];
@@ -218,13 +221,13 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       //FIRST we must substitute in the indexing of o in the phrase
        Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
       //THEN and only THEN we can change the type to use the new index var
-       PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
+         shine.DPIA.Types.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
 
       env.copy(identEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
-          (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+          (Identifier(name, AccType(substituteNatInType(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
         case (Identifier(name, ExpType(dt, w)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt), w)), declRef)
+          (Identifier(name, ExpType(substituteNatInType(NamedVar(cI.name, range), `for` = i, in = dt), w)), declRef)
         case x => x
       }) |> (env =>
 

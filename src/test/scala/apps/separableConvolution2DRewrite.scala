@@ -103,29 +103,16 @@ class separableConvolution2DRewrite extends test_util.Tests {
       r.mapSuccess { case (e2, c2) => (f(e2), c2) }
     protected def traverseSingleSubexpression: TraversalType = {
       import rise.core.types._
+      import rise.core.types.DataType._
+
       s => {
         case (App(_,_), _) => throw new Exception("this should not happen")
         case (Identifier(_), _) => None
         case (l @ Lambda(x, e), c) => Some(mapSuccessWithCount(s((e, c)), Lambda(x, _)(l.t)))
-        case (dl @ DepLambda(x, e), c) => x match {
-          case n: NatIdentifier =>
-            Some(mapSuccessWithCount(s((e, c)), DepLambda[NatKind](n, _)(dl.t)))
-          case dt: DataTypeIdentifier =>
-            Some(mapSuccessWithCount(s((e, c)), DepLambda[DataKind](dt, _)(dl.t)))
-          case addr: AddressSpaceIdentifier =>
-            Some(mapSuccessWithCount(s((e, c)), DepLambda[AddressSpaceKind](addr, _)(dl.t)))
-        }
-        case (da @ DepApp(f, x), c) => x match {
-          case n: Nat => Some(mapSuccessWithCount(s((f, c)), DepApp[NatKind](_, n)(da.t)))
-          case dt: DataType =>
-            Some(mapSuccessWithCount(s((f, c)), DepApp[DataKind](_, dt)(da.t)))
-          case addr: AddressSpace =>
-            Some(mapSuccessWithCount(s((f, c)), DepApp[AddressSpaceKind](_, addr)(da.t)))
-          case n2n: NatToNat =>
-            Some(mapSuccessWithCount(s((f, c)), DepApp[NatToNatKind](_, n2n)(da.t)))
-          case n2d: NatToData =>
-            Some(mapSuccessWithCount(s((f, c)), DepApp[NatToDataKind](_, n2d)(da.t)))
-        }
+        case (dl @ DepLambda(k, x, e), c) =>
+          Some(mapSuccessWithCount(s((e, c)), DepLambda(k, x, _)(dl.t)))
+        case (da @ DepApp(k, f, x), c) =>
+          Some(mapSuccessWithCount(s((f, c)), DepApp(k, _, x)(da.t)))
         case (Literal(_), _) => None
         case (_: TypeAnnotation, _) => throw new Exception("Type annotations should be gone.")
         case (_: TypeAssertion, _) => throw new Exception("Type assertions should be gone.")

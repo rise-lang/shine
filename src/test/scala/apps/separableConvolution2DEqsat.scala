@@ -27,12 +27,12 @@ class separableConvolution2DEqsat extends test_util.Tests {
     val wH: Pattern = weightsH
 
     (NamedRewrite.init("separate-dot-hv",
-      dot("x", app(join, w2d :: ("t": Type)), app(join, ("nbh": Pattern) :: ("t": Type)))
+      dot("x", app(join, w2d :: ("t": ExprType)), app(join, ("nbh": Pattern) :: ("t": ExprType)))
         -->
       dot("x2", wV, app(*(lam("y", dot("x3", wH, "y"))), "nbh"))
     ),
     NamedRewrite.init("separate-dot-vh",
-      dot("x", app(join, w2d :: ("t": Type)), app(join, ("nbh": Pattern) :: ("t": Type)))
+      dot("x", app(join, w2d :: ("t": ExprType)), app(join, ("nbh": Pattern) :: ("t": ExprType)))
         -->
       dot("x2", wH, app(*(lam("y", dot("x3", wV, "y"))), app(transpose, "nbh")))
     ))

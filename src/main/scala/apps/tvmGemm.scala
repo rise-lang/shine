@@ -5,7 +5,7 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.types._
+import rise.core.types.DataType._
 import rise.elevate._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._

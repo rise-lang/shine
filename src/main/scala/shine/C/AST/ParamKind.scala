@@ -1,7 +1,8 @@
 package shine.C.AST
 
 import shine.DPIA.Phrases.Identifier
-import shine.DPIA.Types.{BasePhraseType, DataType}
+import shine.DPIA.Types.BasePhraseType
+import rise.core.types.DataType
 
 object ParamKind {
   object Kind extends Enumeration {

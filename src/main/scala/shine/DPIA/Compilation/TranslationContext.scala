@@ -1,7 +1,8 @@
 package shine.DPIA.Compilation
 
+import rise.core.types.DataType
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
+import shine.DPIA.Types.{AccType, CommType, ExpType}
 
 trait TranslationContext {
 

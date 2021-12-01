@@ -37,50 +37,28 @@ object lifting {
       case Lambda(x, body) =>
         Reducing((e: Expr) => substitute.exprInExpr(e, `for` = x, in = body))
       case App(f, e) => chain(liftFunExpr(f).map(lf => lf(e)))
-      case DepApp(f, x) =>
-        x match {
-          case t: DataType =>
-            chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
-          case n: Nat => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
-          case a: AddressSpace =>
-            chain(liftDepFunExpr[AddressSpaceKind](f).map(lf => lf(a)))
-          case n2n: NatToNat =>
-            chain(liftDepFunExpr[NatToNatKind](f).map(lf => lf(n2n)))
-          case n2d: NatToData =>
-            chain(liftDepFunExpr[NatToDataKind](f).map(lf => lf(n2d)))
-        }
+      case DepApp(kind, f, x) => chain(liftDepFunExpr(kind, f).map(lf => lf(x)))
       case _ => chain(Expanding(p))
     }
   }
 
-  def liftDepFunExpr[K <: Kind](p: Expr): Result[K#T => Expr] = {
-    def chain(r: Result[Expr]): Result[K#T => Expr] =
-      r.bind(liftDepFunExpr[K], f => Expanding((x: K#T) => depApp[K](f, x)))
+  def liftDepFunExpr[T](kind: Kind[T, _], p: Expr): Result[T => Expr] = {
+    def chain(r: Result[Expr]): Result[T => Expr] =
+      r.bind(liftDepFunExpr[T](kind, _), f => Expanding((x: T) => depApp(kind, f, x)))
 
     p match {
-      case DepLambda(x, e) =>
-        Reducing((a: K#T) => substitute.kindInExpr(a, `for` = x, in = e))
+      case DepLambda(kind, x, e) =>
+        Reducing((a: T) => substitute.kindInExpr(kind, a, `for` = x, in = e))
       case App(f, e) => chain(liftFunExpr(f).map(lf => lf(e)))
-      case DepApp(f, x) =>
-        x match {
-          case t: DataType =>
-            chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
-          case n: Nat => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
-          case a: AddressSpace =>
-            chain(liftDepFunExpr[AddressSpaceKind](f).map(lf => lf(a)))
-          case n2n: NatToNat =>
-            chain(liftDepFunExpr[NatToNatKind](f).map(lf => lf(n2n)))
-          case n2d: NatToData =>
-            chain(liftDepFunExpr[NatToDataKind](f).map(lf => lf(n2d)))
-        }
+      case DepApp(kind, f, x) =>  chain(liftDepFunExpr(kind, f).map(lf => lf(x)))
       case _ => chain(Expanding(p))
     }
   }
 
-  def liftDependentFunctionType[K <: Kind](ty: Type): K#T => Type = {
+  def liftDependentFunctionType[T, I](kind: Kind[T, I], ty: ExprType): T => ExprType = {
     ty match {
-      case DepFunType(x, t) =>
-        (a: K#T) => substitute.kindInType(a, `for` = x, in = t)
+      case DepFunType(kind, x, t) =>
+        (a: T) => substitute.kindInType(kind, a, `for` = x, in = t)
       case _ => throw new Exception(s"did not expect $ty")
     }
   }

@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 
@@ -14,8 +15,8 @@ object mriQ {
     "{ return phiR * phiR + phiI * phiI; }",
     f32 ->: f32 ->: f32)
 
-  implicit private class MultiInput(o: Type) {
-    def `x3 ->:`(i: Type): FunType[Type, Type] =
+  implicit private class MultiInput(o: ExprType) {
+    def `x3 ->:`(i: ExprType): FunType[ExprType, ExprType] =
       i ->: i ->: i ->: o
   }
 
@@ -37,6 +38,15 @@ object mriQ {
     map(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
+  val computePhiMagOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val k = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(256), GlobalSize(k))
+  })
+
   val computePhiMagOcl: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
@@ -54,6 +64,15 @@ object mriQ {
           ))(makePair(t._2._2._2._1)(t._2._2._2._2))
       ))
   ))
+
+  val computeQOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[DPIA.Types.ExpType]]]
+    val x = t.t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(256 / 4), GlobalSize(x))
+  })
 
   val computeQOcl: Expr = depFun((k: Nat, x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))

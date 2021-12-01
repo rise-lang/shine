@@ -1,5 +1,6 @@
 package shine.OpenCL.Compilation.Passes
 
+import rise.core.types.{Kind, NatKind}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.{CommType, PhraseType}
 import shine.DPIA.primitives.functional.{Idx, NatAsIndex}
@@ -67,9 +68,11 @@ object FlagPrivateArrayLoops {
           val i = f.loopBody.asInstanceOf[Lambda[_, _]].param
           eliminateVars -= i.name
           Continue(For(unroll = true)(f.n, f.loopBody), this)
-        case f@ForNat(_) if (eliminateVars(f.loopBody.asInstanceOf[DepLambda[_, _]].x.name)) =>
-          val i = f.loopBody.asInstanceOf[DepLambda[_, _]].x
-          eliminateVars -= i.name
+        case f@ForNat(_) if (eliminateVars(Kind.idName(
+          f.loopBody.asInstanceOf[DepLambda[_, _, _]].kind,
+          f.loopBody.asInstanceOf[DepLambda[_, _, _]].x))) =>
+          val b = f.loopBody.asInstanceOf[DepLambda[_, _, _]]
+          eliminateVars -= Kind.idName(b.kind, b.x)
           Continue(ForNat(unroll = true)(f.n, f.loopBody), this)
         case pf@ParFor(level, dim, _, name) if (eliminateVars(pf.body.asInstanceOf[Lambda[_, _]].param.name)) =>
           pf.body match {
@@ -79,9 +82,11 @@ object FlagPrivateArrayLoops {
                 pf.init, pf.n, pf.step, pf.dt, pf.out, pf.body), this)
             case _ => throw new Exception("This should not happen")
           }
-        case pf@ParForNat(level, dim, _, name) if (eliminateVars(pf.body.asInstanceOf[DepLambda[_, _]].x.name)) =>
+        case pf@ParForNat(level, dim, _, name) if (eliminateVars(Kind.idName(
+          pf.body.asInstanceOf[DepLambda[_, _, _]].kind,
+          pf.body.asInstanceOf[DepLambda[_, _, _]].x))) =>
           pf.body match {
-            case DepLambda(i: NatIdentifier, _) =>
+            case DepLambda(NatKind, i: NatIdentifier, _) =>
               eliminateVars -= i.name
               Continue(ParForNat(level, dim, unroll = true, name)(
                 pf.init, pf.n, pf.step, pf.ft, pf.out, pf.body), this)
