@@ -294,6 +294,7 @@ class EGraph(
       this.clean = true
       nUnions
     } else {
+      // TODO: assert more? its bad if clean flag is wrong
       assert(pending.isEmpty)
       assert(analysisPending.isEmpty)
       0

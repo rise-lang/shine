@@ -143,35 +143,35 @@ class separableConvolution2DEqsat extends test_util.Tests {
 
   test("base to baseSeq") {
     proveEquiv.runBENF(wrapExpr(base(weights2d)), wrapExpr(baseSeq(weights2d)), Seq(
-      rules.reduceSeqUnroll, rules.mapSeq
+      rules.reduceSeq, rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
   test("factorised to factorisedSeq") {
     proveEquiv.runBENF(wrapExpr(factorised(weightsV)(weightsH)),
       wrapExpr(factorisedSeq(weightsV)(weightsH)), Seq(
-      rules.reduceSeqUnroll, rules.mapSeq
+      rules.reduceSeq, rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
   test("separated to separatedSeq") {
     proveEquiv.runBENF(wrapExpr(separated(weightsV)(weightsH)),
       wrapExpr(separatedSeq(weightsV)(weightsH)), Seq(
-      rules.reduceSeqUnroll, rules.mapSeq, rules.toMemAfterMapSeq
+      rules.reduceSeq, rules.reduceSeqUnroll, rules.mapSeq, rules.toMemAfterMapSeq
     ))
   }
 
   test("scanline to scanlineSeq") {
     proveEquiv.runBENF(wrapExpr(scanline(weightsV)(weightsH)),
       wrapExpr(scanlineSeq(weightsV)(weightsH)), Seq(
-      rules.reduceSeqUnroll, rules.mapSeq
+      rules.reduceSeq, rules.reduceSeqUnroll, rules.mapSeq
     ))
   }
 
   test("scanline to regRotSeq") {
     proveEquiv.runBENF(wrapExpr(scanline(weightsV)(weightsH)),
       wrapExpr(regRotSeq(weightsV)(weightsH)), Seq(
-      rules.reduceSeqUnroll, rules.mapSeq, rules.rotateValuesScalar, rules.iterateStream
+      rules.reduceSeq, rules.reduceSeqUnroll, rules.mapSeq, rules.rotateValuesScalar, rules.iterateStream
     ))
   }
 }

@@ -115,6 +115,7 @@ object RewriteDirected {
       }
     }
 
+    egraph.clean = false
     removed
   }
 
@@ -135,6 +136,7 @@ object RewriteDirected {
       (Set(FreeAnalysis, BENF.extractAnalysis), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
+      assert(egraph.clean)
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
 
       val appNode = App((), ())
@@ -184,6 +186,7 @@ object RewriteDirected {
       (Set(BENF.extractAnalysis), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
+      assert(egraph.clean)
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
 
       val appNode = App((), ())
@@ -229,6 +232,7 @@ object RewriteDirected {
       (Set(BENF.extractAnalysis), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
+      assert(egraph.clean)
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
 
       val nAppNode = NatApp((), ())
@@ -270,6 +274,7 @@ object RewriteDirected {
       (Set(), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
+      assert(egraph.clean)
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
 
       val appNode = App((), ())
@@ -329,6 +334,7 @@ object RewriteDirected {
       (Set(), Set())
 
     override def search(egraph: EGraph): Vec[(RewriteDirected.Match, RewriteDirected.Applier)] = {
+      assert(egraph.clean)
       val res = Vec.empty[(RewriteDirected.Match, RewriteDirected.Applier)]
 
       val compNode = Composition((), ())
