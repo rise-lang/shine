@@ -87,9 +87,9 @@ object reorder {
 
     def guidedSearch(normalForm: rise.eqsat.NF, rewriteRules: Seq[Rewrite]): () = {
       import rise.eqsat._
-      import rise.eqsat.ExtendedPatternDSL._
+      import rise.eqsat.SketchDSL._
 
-      def *(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+      def *(n: NatPattern, f: Sketch): Sketch =
         app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f)
 
       val steps = Seq(
@@ -134,9 +134,9 @@ object reorder {
 
     def guidedSearch(normalForm: rise.eqsat.NF, rewriteRules: Seq[Rewrite]): () = {
       import rise.eqsat._
-      import rise.eqsat.ExtendedPatternDSL._
+      import rise.eqsat.SketchDSL._
 
-      def *(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+      def *(n: NatPattern, f: Sketch): Sketch =
         app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f)
 
       val steps = Seq(

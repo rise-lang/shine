@@ -121,7 +121,7 @@ class ProveEquiv(
     val goalIds = goals.map(egraph.addExpr)
     val runner = transformRunner(Runner.init()).doneWhen { _ =>
       goalIds.forall(g => egraph.findMut(startId) == egraph.findMut(g))
-    }.run(egraph, filter, rules, normRules, Seq(startId))
+    }.run(egraph, filter, rules, normRules, startId +: goalIds)
     afterRun(runner, egraph, startId, goals, {
       i => egraph.findMut(startId) == egraph.findMut(goalIds(i))
     })

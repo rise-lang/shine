@@ -6,12 +6,12 @@ import rise.core.types.{DataType => rcdt}
 
 import scala.language.implicitConversions
 
-object ExtendedPattern {
-  type PNode = Node[ExtendedPattern, NatPattern, DataTypePattern, AddressPattern]
+object Sketch {
+  type PNode = Node[Sketch, NatPattern, DataTypePattern, AddressPattern]
 
-  def fromExpr(e: Expr): ExtendedPattern = {
+  def fromExpr(e: Expr): Sketch = {
     val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType, AddressPattern.fromAddress)
-    ExtendedPatternNode(pnode, TypePattern.fromType(e.t))
+    SketchNode(pnode, TypePattern.fromType(e.t))
   }
 
   /* shares type hash-conses between the old and new e-graph */
@@ -115,7 +115,7 @@ object ExtendedPattern {
     (newEGraph, matches.map(addMatch).reduce(newUnion))
   }
 
-  def exists(pattern: ExtendedPattern,
+  def exists(pattern: Sketch,
              egraph: EGraph,
              id: EClassId): Boolean = {
     val ex = exists(pattern, egraph)(id)
@@ -125,25 +125,25 @@ object ExtendedPattern {
     ex
   }
 
-  def exists(pattern: ExtendedPattern,
+  def exists(pattern: Sketch,
              egraph: EGraph): Set[EClassId] = {
     assert(egraph.clean)
-    val memo = HashMap.empty[ExtendedPattern, Set[EClassId]]
+    val memo = HashMap.empty[Sketch, Set[EClassId]]
 
-    def searchRec(p: ExtendedPattern): Set[EClassId] = {
+    def searchRec(p: Sketch): Set[EClassId] = {
       memo.get(p) match {
         case Some(value) => return value
         case None =>
       }
 
       val res: Set[EClassId] = p match {
-        case ExtendedPatternAny(t) =>
+        case SketchAny(t) =>
           egraph.classes.valuesIterator.flatMap { eclass =>
             assert(eclass.id == egraph.find(eclass.id))
             if (typeIsMatch(egraph, t, eclass.t)) { Some(eclass.id) } else { None }
           }.toSet
-        case ExtendedPatternVar(index, t) => ???
-        case ExtendedPatternNode(node, t) =>
+        case SketchVar(index, t) => ???
+        case SketchNode(node, t) =>
           val childrenMatches = node.children().map(searchRec).toSeq
           // TODO: skip if any child has empty matches?
 
@@ -175,7 +175,7 @@ object ExtendedPattern {
 
             isMatch
           }.toSet
-        case ExtendedPatternContains(contained) =>
+        case SketchContains(contained) =>
           val containedMatches = searchRec(contained)
           // TODO: skip if empty contained?
 
@@ -202,14 +202,14 @@ object ExtendedPattern {
           analyser.data.iterator.flatMap { case (id, isMatch) =>
             if (isMatch) { Some(id) } else { None }
           }.toSet
-        case ExtendedPatternOr(a, b) =>
+        case SketchOr(a, b) =>
           val aMatches = searchRec(a)
           val bMatches = searchRec(b)
           aMatches union bMatches
-        case ExtendedPatternAnd(a, b) => ???
+        case SketchAnd(a, b) => ???
           // following would be wrong:
           // searchRec(a) intersect searchRec(b)
-        case ExtendedPatternWithType(p, t) =>
+        case SketchWithType(p, t) =>
           searchRec(p).filter(id => typeIsMatch(egraph, t, egraph.get(id).t))
       }
 
@@ -221,7 +221,7 @@ object ExtendedPattern {
     r
   }
 
-  def beamSearch[Cost](pattern: ExtendedPattern,
+  def beamSearch[Cost](pattern: Sketch,
                        beamSize: Int,
                        costFunction: CostFunction[Cost],
                        egraph: EGraph,
@@ -229,7 +229,7 @@ object ExtendedPattern {
     beamSearch(pattern, beamSize, costFunction, egraph).getOrElse(id, Seq())
   }
 
-  def beamSearch[Cost](pattern: ExtendedPattern,
+  def beamSearch[Cost](pattern: Sketch,
                        beamSize: Int,
                        costFunction: CostFunction[Cost],
                        egraph: EGraph)
@@ -237,21 +237,21 @@ object ExtendedPattern {
   {
     assert(egraph.clean)
     val beamExtractMap = Analyser.init(egraph, BeamExtract(beamSize, costFunction)).data
-    val memo = HashMap.empty[ExtendedPattern, Map[EClassId, Seq[(Cost, ExprWithHashCons)]]]
+    val memo = HashMap.empty[Sketch, Map[EClassId, Seq[(Cost, ExprWithHashCons)]]]
 
-    def searchRec(p: ExtendedPattern): Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = {
+    def searchRec(p: Sketch): Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = {
       memo.get(p) match {
         case Some(value) => return value
         case None =>
       }
 
       val res: Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = p match {
-        case ExtendedPatternAny(t) =>
+        case SketchAny(t) =>
           beamExtractMap.iterator.filter { case (id, beam) =>
             beam.nonEmpty && typeIsMatch(egraph, t, egraph.get(id).t)
           }.toMap
-        case ExtendedPatternVar(index, t) => ???
-        case ExtendedPatternNode(node, t) =>
+        case SketchVar(index, t) => ???
+        case SketchNode(node, t) =>
           val childrenMatches = node.children().map(searchRec).toSeq
           // TODO: skip if any child has empty matches?
 
@@ -301,7 +301,7 @@ object ExtendedPattern {
               Some(id -> beam.sortBy(_._1)(costFunction.ordering).take(beamSize))
             }
           }.toMap
-        case ExtendedPatternContains(contained) =>
+        case SketchContains(contained) =>
           val containedMatches = searchRec(contained)
           // TODO: skip if empty contained?
 
@@ -354,7 +354,7 @@ object ExtendedPattern {
           }, initialData)
 
           analyser.data.iterator.filter { case (_, beam) => beam.nonEmpty }.toMap
-        case ExtendedPatternOr(a, b) =>
+        case SketchOr(a, b) =>
           val aMatches = searchRec(a)
           val bMatches = searchRec(b)
           (aMatches.keySet union bMatches.keySet).map { id =>
@@ -362,8 +362,8 @@ object ExtendedPattern {
             val bBeam = bMatches.getOrElse(id, Nil)
             id -> Beam.merge(beamSize, costFunction, aBeam, bBeam)
           }.toMap
-        case ExtendedPatternAnd(a, b) => ???
-        case ExtendedPatternWithType(p, t) =>
+        case SketchAnd(a, b) => ???
+        case SketchWithType(p, t) =>
           searchRec(p).filter { case (id, _) =>
             typeIsMatch(egraph, t, egraph.get(id).t)
           }
@@ -379,7 +379,7 @@ object ExtendedPattern {
     searchRec(pattern)
   }
 
-  def beamSearchRW[Cost](pattern: ExtendedPattern,
+  def beamSearchRW[Cost](pattern: Sketch,
                          beamSize: Int,
                          costFunction: CostFunction[Cost],
                          egraph: EGraph,
@@ -387,7 +387,7 @@ object ExtendedPattern {
     beamSearchRW(pattern, beamSize, costFunction, egraph).getOrElse(id, Seq())
   }
 
-  def beamSearchRW[Cost](pattern: ExtendedPattern,
+  def beamSearchRW[Cost](pattern: Sketch,
                          beamSize: Int,
                          costFunction: CostFunction[Cost],
                          egraph: EGraph)
@@ -503,9 +503,9 @@ object ExtendedPatternMatch {
   case class TraversalProduct(node: ENode, traverse: Vec[Vec[ExtendedPatternMatch]], id: EClassId) extends ExtendedPatternMatch
 }
 
-/** An extended pattern */
-sealed trait ExtendedPattern {
-  import ExtendedPattern.{typeIsMatch, dataTypeIsMatch, natIsMatch, addressIsMatch, traverse}
+/** A sketch is a program pattern that leaves some details unspecified */
+sealed trait Sketch {
+  import Sketch.{typeIsMatch, dataTypeIsMatch, natIsMatch, addressIsMatch, traverse}
 
   def searchEClass(egraph: EGraph, id: EClassId): Vec[ExtendedPatternMatch] = {
     assert(egraph.clean)
@@ -516,7 +516,7 @@ sealed trait ExtendedPattern {
   private def searchEClass(egraph: EGraph,
                            eclass: EClass,
                            visited: Set[EClassId],
-                           memo: HashMap[(EClassId, ExtendedPattern), Vec[ExtendedPatternMatch]],
+                           memo: HashMap[(EClassId, Sketch), Vec[ExtendedPatternMatch]],
                            /*parent: Option[ENode]*/): Vec[ExtendedPatternMatch] = {
     memo.get((eclass.id, this)) match {
       case Some(value) => return value
@@ -531,10 +531,10 @@ sealed trait ExtendedPattern {
     } */
 
     val res: Vec[ExtendedPatternMatch] = this match {
-      case ExtendedPatternAny(t) =>
+      case SketchAny(t) =>
         if (typeIsMatch(egraph, t, eclass.t)) { Vec(ExtendedPatternMatch.EClass(eclass.id)) } else { Vec.empty }
-      case ExtendedPatternVar(index, t) => ??? // TODO
-      case ExtendedPatternNode(node, t) =>
+      case SketchVar(index, t) => ??? // TODO
+      case SketchNode(node, t) =>
         // if (isFunctionOfApp) { assert(!node.matches(Lambda(()))) } // avoid some non-BENF paths
         // egraph.classesByMatch.get(node.matchHash())
         val res = Vec.empty[ExtendedPatternMatch]
@@ -562,7 +562,7 @@ sealed trait ExtendedPattern {
           })
         }
         res
-      case ExtendedPatternContains(contained) =>
+      case SketchContains(contained) =>
         contained.searchEClass(egraph, eclass, visited, memo/*, parent*/) ++ eclass.nodes.iterator.flatMap { n =>
           if (false) {//(isFunctionOfApp && n.matches(Lambda(()))) { // avoid some non-BENF paths
             None
@@ -577,9 +577,9 @@ sealed trait ExtendedPattern {
             }
           }
         }
-      case ExtendedPatternOr(a, b) => ???
-      case ExtendedPatternAnd(a, b) => ???
-      case ExtendedPatternWithType(p, t) => ???
+      case SketchOr(a, b) => ???
+      case SketchAnd(a, b) => ???
+      case SketchWithType(p, t) => ???
     }
 
     memo((eclass.id, this)) = res
@@ -587,130 +587,130 @@ sealed trait ExtendedPattern {
     res
   }
 }
-case class ExtendedPatternAny(t: TypePattern) extends ExtendedPattern {
+case class SketchAny(t: TypePattern) extends Sketch {
   override def toString: String = s"(? : $t)"
 }
-case class ExtendedPatternVar(index: Int, t: TypePattern) extends ExtendedPattern {
+case class SketchVar(index: Int, t: TypePattern) extends Sketch {
   override def toString: String = s"(?$index : $t)"
 }
-case class ExtendedPatternNode(node: ExtendedPattern.PNode, t: TypePattern) extends ExtendedPattern {
+case class SketchNode(node: Sketch.PNode, t: TypePattern) extends Sketch {
   override def toString: String = s"(${node.toString} : $t)"
 }
-case class ExtendedPatternContains(contained: ExtendedPattern) extends ExtendedPattern {
+case class SketchContains(contained: Sketch) extends Sketch {
   override def toString: String = s"contains($contained)"
 }
-case class ExtendedPatternOr(a: ExtendedPattern, b: ExtendedPattern) extends ExtendedPattern {
+case class SketchOr(a: Sketch, b: Sketch) extends Sketch {
   override def toString: String = s"$a ∨ $b"
 }
-case class ExtendedPatternAnd(a: ExtendedPattern, b: ExtendedPattern) extends ExtendedPattern {
+case class SketchAnd(a: Sketch, b: Sketch) extends Sketch {
   override def toString: String = s"$a ∧ $b"
 }
 // FIXME: redundancy with other nodes above
-case class ExtendedPatternWithType(p: ExtendedPattern, t: TypePattern) extends ExtendedPattern {
+case class SketchWithType(p: Sketch, t: TypePattern) extends Sketch {
   override def toString: String = s"($p : $t)"
 }
 
-object ExtendedPatternDSL {
+object SketchDSL {
   import scala.language.implicitConversions
 
-  def contains(p: ExtendedPattern): ExtendedPattern =
-    ExtendedPatternContains(p)
+  def contains(p: Sketch): Sketch =
+    SketchContains(p)
 
-  implicit final class ExtendedPatternOperators(private val p: ExtendedPattern) extends AnyVal {
-    @inline def and(q: ExtendedPattern): ExtendedPattern = ExtendedPatternAnd(p, q)
-    @inline def or(q: ExtendedPattern): ExtendedPattern = ExtendedPatternOr(p, q)
+  implicit final class SketchOperators(private val p: Sketch) extends AnyVal {
+    @inline def and(q: Sketch): Sketch = SketchAnd(p, q)
+    @inline def or(q: Sketch): Sketch = SketchOr(p, q)
 
-    @inline def >>(f: ExtendedPattern): ExtendedPattern.PNode = Composition(p, f)
-    @inline def |>(f: ExtendedPattern): ExtendedPattern = app(f, p)
-    
-    @inline def +(rhs: ExtendedPattern): ExtendedPattern = app(app(add, p), rhs)
-    @inline def -(rhs: ExtendedPattern): ExtendedPattern = app(app(sub, p), rhs)
-    @inline def *(rhs: ExtendedPattern): ExtendedPattern = app(app(mul, p), rhs)
-    @inline def /(rhs: ExtendedPattern): ExtendedPattern = app(app(div, p), rhs)
-    @inline def %(rhs: ExtendedPattern): ExtendedPattern = app(app(mod, p), rhs)
-    @inline def >(rhs: ExtendedPattern): ExtendedPattern = app(app(gt, p), rhs)
-    @inline def <(rhs: ExtendedPattern): ExtendedPattern = app(app(lt, p), rhs)
-    @inline def =:=(rhs: ExtendedPattern): ExtendedPattern = app(app(equal, p), rhs)
-    @inline def >=(rhs: ExtendedPattern): ExtendedPattern = app(not, p < rhs)
-    @inline def <=(rhs: ExtendedPattern): ExtendedPattern = app(not, p > rhs)
+    @inline def >>(f: Sketch): Sketch.PNode = Composition(p, f)
+    @inline def |>(f: Sketch): Sketch = app(f, p)
+
+    @inline def +(rhs: Sketch): Sketch = app(app(add, p), rhs)
+    @inline def -(rhs: Sketch): Sketch = app(app(sub, p), rhs)
+    @inline def *(rhs: Sketch): Sketch = app(app(mul, p), rhs)
+    @inline def /(rhs: Sketch): Sketch = app(app(div, p), rhs)
+    @inline def %(rhs: Sketch): Sketch = app(app(mod, p), rhs)
+    @inline def >(rhs: Sketch): Sketch = app(app(gt, p), rhs)
+    @inline def <(rhs: Sketch): Sketch = app(app(lt, p), rhs)
+    @inline def =:=(rhs: Sketch): Sketch = app(app(equal, p), rhs)
+    @inline def >=(rhs: Sketch): Sketch = app(not, p < rhs)
+    @inline def <=(rhs: Sketch): Sketch = app(not, p > rhs)
   }
 
   case object ?
   case class ?(index: Int)
   def %(index: Int): Var = Var(index)
 
-  def app(a: ExtendedPattern, b: ExtendedPattern): ExtendedPattern.PNode = App(a, b)
-  def lam(e: ExtendedPattern): ExtendedPattern.PNode = Lambda(e)
-  def nApp(f: ExtendedPattern, x: NatPattern): ExtendedPattern.PNode = NatApp(f, x)
-  def nLam(e: ExtendedPattern): ExtendedPattern.PNode = NatLambda(e)
-  def dtApp(f: ExtendedPattern, x: DataTypePattern): ExtendedPattern.PNode = DataApp(f, x)
-  def dtLam(e: ExtendedPattern): ExtendedPattern.PNode = DataLambda(e)
-  def aApp(f: ExtendedPattern, x: AddressPattern): ExtendedPattern.PNode = AddrApp(f, x)
-  def aLam(e: ExtendedPattern): ExtendedPattern.PNode = AddrLambda(e)
-  def l(d: semantics.Data): ExtendedPattern.PNode = Literal(d)
-  def larr(a: Seq[semantics.Data]): ExtendedPattern.PNode = l(semantics.ArrayData(a))
+  def app(a: Sketch, b: Sketch): Sketch.PNode = App(a, b)
+  def lam(e: Sketch): Sketch.PNode = Lambda(e)
+  def nApp(f: Sketch, x: NatPattern): Sketch.PNode = NatApp(f, x)
+  def nLam(e: Sketch): Sketch.PNode = NatLambda(e)
+  def dtApp(f: Sketch, x: DataTypePattern): Sketch.PNode = DataApp(f, x)
+  def dtLam(e: Sketch): Sketch.PNode = DataLambda(e)
+  def aApp(f: Sketch, x: AddressPattern): Sketch.PNode = AddrApp(f, x)
+  def aLam(e: Sketch): Sketch.PNode = AddrLambda(e)
+  def l(d: semantics.Data): Sketch.PNode = Literal(d)
+  def larr(a: Seq[semantics.Data]): Sketch.PNode = l(semantics.ArrayData(a))
 
-  def prim(p: rise.core.Primitive): ExtendedPattern.PNode = Primitive(p)
-  def slide: ExtendedPattern.PNode = prim(rcp.slide.primitive)
-  def map: ExtendedPattern.PNode = prim(rcp.map.primitive)
-  def mapSeq: ExtendedPattern.PNode = prim(rcp.mapSeq.primitive)
-  def mapSeqUnroll: ExtendedPattern.PNode = prim(rcp.mapSeqUnroll.primitive)
-  def reduce: ExtendedPattern.PNode = prim(rcp.reduce.primitive)
-  def reduceSeq: ExtendedPattern.PNode = prim(rcp.reduceSeq.primitive)
-  def reduceSeqUnroll: ExtendedPattern.PNode = prim(rcp.reduceSeqUnroll.primitive)
-  def transpose: ExtendedPattern.PNode = prim(rcp.transpose.primitive)
-  def makePair: ExtendedPattern.PNode = prim(rcp.makePair.primitive)
-  def zip: ExtendedPattern.PNode = prim(rcp.zip.primitive)
-  def join: ExtendedPattern.PNode = prim(rcp.join.primitive)
-  def fst: ExtendedPattern.PNode = prim(rcp.fst.primitive)
-  def snd: ExtendedPattern.PNode = prim(rcp.snd.primitive)
-  def add: ExtendedPattern.PNode = prim(rcp.add.primitive)
-  def sub: ExtendedPattern.PNode = prim(rcp.sub.primitive)
-  def mod: ExtendedPattern.PNode = prim(rcp.mod.primitive)
-  def gt: ExtendedPattern.PNode = prim(rcp.gt.primitive)
-  def lt: ExtendedPattern.PNode = prim(rcp.lt.primitive)
-  def equal: ExtendedPattern.PNode = prim(rcp.equal.primitive)
-  def not: ExtendedPattern.PNode = prim(rcp.not.primitive)
-  def mul: ExtendedPattern.PNode = prim(rcp.mul.primitive)
-  def div: ExtendedPattern.PNode = prim(rcp.div.primitive)
-  def drop: ExtendedPattern.PNode = prim(rcp.drop.primitive)
-  def take: ExtendedPattern.PNode = prim(rcp.take.primitive)
-  def let: ExtendedPattern.PNode = prim(rcp.let.primitive)
-  def toMem: ExtendedPattern.PNode = prim(rcp.toMem.primitive)
-  def iterateStream: ExtendedPattern.PNode = prim(rcp.iterateStream.primitive)
+  def prim(p: rise.core.Primitive): Sketch.PNode = Primitive(p)
+  def slide: Sketch.PNode = prim(rcp.slide.primitive)
+  def map: Sketch.PNode = prim(rcp.map.primitive)
+  def mapSeq: Sketch.PNode = prim(rcp.mapSeq.primitive)
+  def mapSeqUnroll: Sketch.PNode = prim(rcp.mapSeqUnroll.primitive)
+  def reduce: Sketch.PNode = prim(rcp.reduce.primitive)
+  def reduceSeq: Sketch.PNode = prim(rcp.reduceSeq.primitive)
+  def reduceSeqUnroll: Sketch.PNode = prim(rcp.reduceSeqUnroll.primitive)
+  def transpose: Sketch.PNode = prim(rcp.transpose.primitive)
+  def makePair: Sketch.PNode = prim(rcp.makePair.primitive)
+  def zip: Sketch.PNode = prim(rcp.zip.primitive)
+  def join: Sketch.PNode = prim(rcp.join.primitive)
+  def fst: Sketch.PNode = prim(rcp.fst.primitive)
+  def snd: Sketch.PNode = prim(rcp.snd.primitive)
+  def add: Sketch.PNode = prim(rcp.add.primitive)
+  def sub: Sketch.PNode = prim(rcp.sub.primitive)
+  def mod: Sketch.PNode = prim(rcp.mod.primitive)
+  def gt: Sketch.PNode = prim(rcp.gt.primitive)
+  def lt: Sketch.PNode = prim(rcp.lt.primitive)
+  def equal: Sketch.PNode = prim(rcp.equal.primitive)
+  def not: Sketch.PNode = prim(rcp.not.primitive)
+  def mul: Sketch.PNode = prim(rcp.mul.primitive)
+  def div: Sketch.PNode = prim(rcp.div.primitive)
+  def drop: Sketch.PNode = prim(rcp.drop.primitive)
+  def take: Sketch.PNode = prim(rcp.take.primitive)
+  def let: Sketch.PNode = prim(rcp.let.primitive)
+  def toMem: Sketch.PNode = prim(rcp.toMem.primitive)
+  def iterateStream: Sketch.PNode = prim(rcp.iterateStream.primitive)
 
   def global: AddressPattern = AddressPatternNode(Global)
   def `private`: AddressPattern = AddressPatternNode(Private)
 
   object ocl {
     import rise.openCL.{primitives => p}
-    def mapGlobal(dim: Int): ExtendedPattern.PNode = prim(p.mapGlobal(dim).primitive)
-    def circularBuffer: ExtendedPattern.PNode = prim(p.oclCircularBuffer.primitive)
-    def reduceSeqUnroll: ExtendedPattern.PNode = prim(p.oclReduceSeqUnroll.primitive)
-    def toMem: ExtendedPattern.PNode = prim(p.oclToMem.primitive)
+    def mapGlobal(dim: Int): Sketch.PNode = prim(p.mapGlobal(dim).primitive)
+    def circularBuffer: Sketch.PNode = prim(p.oclCircularBuffer.primitive)
+    def reduceSeqUnroll: Sketch.PNode = prim(p.oclReduceSeqUnroll.primitive)
+    def toMem: Sketch.PNode = prim(p.oclToMem.primitive)
   }
 
   object omp {
-    def mapPar: ExtendedPattern.PNode = prim(rise.openMP.primitives.mapPar.primitive)
+    def mapPar: Sketch.PNode = prim(rise.openMP.primitives.mapPar.primitive)
   }
 
-  implicit def panyWithoutType(v: ?.type): ExtendedPatternAny =
-    ExtendedPatternAny(TypePatternAny)
-  implicit def pvarWithoutType(v: ?): ExtendedPatternVar =
-    ExtendedPatternVar(v.index, TypePatternAny)
-  implicit def pnodeWithoutType(n: ExtendedPattern.PNode): ExtendedPattern =
-    ExtendedPatternNode(n, TypePatternAny)
+  implicit def panyWithoutType(v: ?.type): SketchAny =
+    SketchAny(TypePatternAny)
+  implicit def pvarWithoutType(v: ?): SketchVar =
+    SketchVar(v.index, TypePatternAny)
+  implicit def pnodeWithoutType(n: Sketch.PNode): Sketch =
+    SketchNode(n, TypePatternAny)
   implicit final class PWithType(private val t: TypePattern) extends AnyVal {
-    @inline def ::(p: ExtendedPattern): ExtendedPattern = ExtendedPatternWithType(p, t)
+    @inline def ::(p: Sketch): Sketch = SketchWithType(p, t)
   }
   implicit final class PAnyWithType(private val t: TypePattern) extends AnyVal {
-    @inline def ::(v: ?.type): ExtendedPattern = ExtendedPatternAny(t)
+    @inline def ::(v: ?.type): Sketch = SketchAny(t)
   }
   implicit final class PVarWithType(private val t: TypePattern) extends AnyVal {
-    @inline def ::(v: ?): ExtendedPattern = ExtendedPatternVar(v.index, t)
+    @inline def ::(v: ?): Sketch = SketchVar(v.index, t)
   }
   implicit final class PNodeWithType(private val t: TypePattern) extends AnyVal {
-    @inline def ::(n: ExtendedPattern.PNode): ExtendedPattern = ExtendedPatternNode(n, t)
+    @inline def ::(n: Sketch.PNode): Sketch = SketchNode(n, t)
   }
 
   // FIXME: redundancy with the regular PatternDSL

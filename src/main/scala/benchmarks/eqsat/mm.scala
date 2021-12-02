@@ -6,7 +6,7 @@ import rise.eqsat._
 import rise.elevate.rules.lowering.lowerToC
 import rise.elevate.rules.traversal.default._
 import rise.eqsat.PredicateDSL._
-import rise.eqsat.ExtendedPatternDSL._
+import rise.eqsat.SketchDSL._
 
 object mm {
   val mm: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
@@ -28,25 +28,25 @@ object mm {
     )))
   }
 
-  def containsMap(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+  def containsMap(n: NatPattern, f: Sketch): Sketch =
     contains(app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
-  def containsMap(dt: DataTypePattern, f: ExtendedPattern): ExtendedPattern =
+  def containsMap(dt: DataTypePattern, f: Sketch): Sketch =
     contains(app(map :: `?t` ->: dt ->: `?t`, f))
-  def containsMap(n: NatPattern, f: ExtendedPattern, in: ExtendedPattern): ExtendedPattern =
+  def containsMap(n: NatPattern, f: Sketch, in: Sketch): Sketch =
     contains(app(app(map :: `?t` ->: (n`.``?dt`) ->: `?t`, f), in))
-  def containsMapPar(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+  def containsMapPar(n: NatPattern, f: Sketch): Sketch =
     contains(app(omp.mapPar :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
-  def containsMapPar(dt: DataTypePattern, f: ExtendedPattern): ExtendedPattern =
+  def containsMapPar(dt: DataTypePattern, f: Sketch): Sketch =
     contains(app(omp.mapPar :: `?t` ->: dt ->: `?t`, f))
-  def containsMapPar(n: NatPattern, f: ExtendedPattern, in: ExtendedPattern): ExtendedPattern =
+  def containsMapPar(n: NatPattern, f: Sketch, in: Sketch): Sketch =
     contains(app(app(omp.mapPar :: `?t` ->: (n`.``?dt`) ->: `?t`, f), in))
 
-  def containsMapSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+  def containsMapSeq(n: NatPattern, f: Sketch): Sketch =
     contains(app(mapSeq :: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
-  def containsReduceSeq(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+  def containsReduceSeq(n: NatPattern, f: Sketch): Sketch =
     contains(app(reduceSeq :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
-  def containsReduceSeqUnroll(n: NatPattern, f: ExtendedPattern): ExtendedPattern =
+  def containsReduceSeqUnroll(n: NatPattern, f: Sketch): Sketch =
     contains(app(reduceSeqUnroll :: `?t` ->: `?t` ->: (n`.``?dt`) ->: `?t`, f))
 
   val m = `%n`(2)
@@ -54,7 +54,7 @@ object mm {
   val k = `%n`(0)
 
   val containsAddMul = contains(
-    (app(app(add, ?), contains(mul)) : ExtendedPattern)/* or
+    (app(app(add, ?), contains(mul)) : Sketch)/* or
     (contains(mul) >> contains(add))*/
   )
   val containsAddMulVec = contains(
@@ -69,9 +69,6 @@ object mm {
     rules.reduceSeq,
     rules.eliminateMapIdentity,
     rules.reduceSeqMapFusion,
-    // rules.reduceSeqMapFission,
-    // rules.undoReduceSeqForAdd, //?
-    // rules.mapEtaAbstraction,
     rules.splitJoin(32),
     // rules.splitJoin1M(32),
     rules.splitJoin2M(32),
@@ -107,14 +104,12 @@ object mm {
     rules.reduceSeqMapFusion,
     rules.reduceSeqMapFission,
     rules.eliminateMapIdentity,
-    // rules.undoReduceSeqForAdd, //?
     rules.splitBeforeMap,
     rules.liftReduceSeq,
     rules.liftReduceSeq2,
     rules.liftReduceSeq3,
     // rules.transposeAroundMapMapF,
     rules.transposeAroundMapMapF1M,
-    // rules.mapEtaAbstraction,
   )
 
   val reorderStepCNF = GuidedSearch.Step.init(CNF) withRules Seq(
@@ -208,11 +203,11 @@ object mm {
           // prefer vectorized sequential maps, need to generalize this
           case Primitive(mapSeq()) =>
             val vectorizedP = {
-              import ExtendedPatternDSL._
+              import SketchDSL._
 
               (vecT(`?n`, `?dt`) ->: vecT(`?n`, `?dt`)) ->: `?t` ->: `?t`
             }
-            if (ExtendedPattern.typeIsMatch(egraph, vectorizedP, t)) {
+            if (Sketch.typeIsMatch(egraph, vectorizedP, t)) {
               1
             } else {
               2
@@ -289,17 +284,33 @@ object mm {
      */
     .withNodeLimit(50_000_000)
 
+  private val split =
+    containsMap(m /^ cst(32),
+      containsMap(cst(32),
+        containsMap(n /^ cst(32),
+          containsMap(cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsReduceSeq(cst(4), containsAddMul))))))
+  private val reorder_1 =
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsReduceSeq(cst(4),
+            containsMap(cst(32),
+              containsMap(cst(32), containsAddMul))))))
+  private val reorder_2 =
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsMap(cst(32),
+            containsReduceSeq(cst(4),
+              containsMap(cst(32), containsAddMul))))))
+
   private def blocking_T(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = mm
 
     val steps = Seq(
-      tilingStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32),
-                  containsMap(cst(32), containsAddMul)))))),
+      tilingStep withSketch reorder_1,
     )
 
     GuidedSearch.init()
@@ -309,37 +320,30 @@ object mm {
       .run(start, steps)
   }
 
+  private val blocking_4_sketches = Seq(
+    containsMap(m /^ cst(32),
+      containsMap(cst(32),
+        containsMap(n /^ cst(32),
+          containsMap(cst(32),
+            containsReduceSeq(k, containsAddMul))))),
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsMap(cst(32),
+          containsMap(cst(32),
+            containsReduceSeq(k, containsAddMul))))),
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsMap(cst(32),
+          containsMap(cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsReduceSeq(cst(4), containsAddMul)))))),
+    reorder_1
+  )
+
   private def blocking_TTTT(tilingStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = mm
 
-    val steps = Seq(
-      tilingStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(cst(32),
-            containsMap(n /^ cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k, containsAddMul))))),
-      tilingStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsMap(cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k, containsAddMul))))),
-      tilingStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsMap(cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k /^ cst(4),
-                  containsReduceSeq(cst(4), containsAddMul)))))),
-      tilingStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32),
-                  containsMap(cst(32), containsAddMul)))))),
-    )
+    val steps = blocking_4_sketches.map(tilingStep.withSketch)
 
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
@@ -352,34 +356,8 @@ object mm {
                             reorderStep: GuidedSearch.Step): GuidedSearch.Result = {
     val start = mm
 
-    val steps = Seq(
-      splitStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(cst(32),
-            containsMap(n /^ cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k, containsAddMul))))),
-      reorderStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsMap(cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k, containsAddMul))))),
-      splitStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsMap(cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k /^ cst(4),
-                  containsReduceSeq(cst(4), containsAddMul)))))),
-      reorderStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32),
-                  containsMap(cst(32), containsAddMul)))))),
-    )
+    val steps = Seq(splitStep, reorderStep, splitStep, reorderStep)
+      .zip(blocking_4_sketches).map { case (s, p) => s withSketch p }
 
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
@@ -392,20 +370,8 @@ object mm {
     val start = mm
 
     val steps = Seq(
-      tilingStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(cst(32),
-            containsMap(n /^ cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k /^ cst(4),
-                  containsReduceSeq(cst(4), containsAddMul)))))),
-      tilingStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32),
-                  containsMap(cst(32), containsAddMul)))))),
+      tilingStep withSketch split,
+      tilingStep withSketch reorder_1,
     )
 
     GuidedSearch.init()
@@ -420,20 +386,8 @@ object mm {
     val start = mm
 
     val steps = Seq(
-      splitStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(cst(32),
-            containsMap(n /^ cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k /^ cst(4),
-                  containsReduceSeq(cst(4), containsAddMul)))))),
-      reorderStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32),
-                  containsMap(cst(32), containsAddMul)))))),
+      splitStep withSketch split,
+      reorderStep withSketch reorder_1,
     )
 
     GuidedSearch.init()
@@ -443,32 +397,22 @@ object mm {
       .run(start, steps)
   }
 
+  private val lower_1 =
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsReduceSeq(cst(4),
+            containsMap(cst(32),
+              containsMap(cst(1), containsAddMulVec))))))
+
   private def vectorization_SRL(): GuidedSearch.Result = {
     val start = mm
     // could start directly from blocking outcome
 
     val steps = Seq(
-      splitStepBENF withSketch
-        containsMap(m /^ cst(32),
-          containsMap(cst(32),
-            containsMap(n /^ cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k /^ cst(4),
-                  containsReduceSeq(cst(4), containsAddMul)))))),
-      reorderStepBENF withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32),
-                  containsMap(cst(32), containsAddMul)))))),
-      loweringStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32),
-                  containsMap(cst(1), containsAddMulVec)))))),
+      splitStepBENF withSketch split,
+      reorderStepBENF withSketch reorder_1,
+      loweringStep withSketch lower_1,
     )
 
     GuidedSearch.init()
@@ -483,13 +427,7 @@ object mm {
     // could start directly from blocking outcome
 
     val steps = Seq(
-      (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32),
-                  containsMap(cst(1), containsAddMulVec)))))),
+      (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch lower_1,
     )
 
     GuidedSearch.init()
@@ -499,31 +437,21 @@ object mm {
       .run(start, steps)
   }
 
+  private val lower_2 =
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsMap(cst(32),
+            containsReduceSeq(cst(4),
+              containsMap(cst(1), containsAddMulVec))))))
+
   private def loopPerm_SRL(): GuidedSearch.Result = {
     val start = mm
 
     val steps = Seq(
-      splitStepBENF withSketch
-        containsMap(m /^ cst(32),
-          containsMap(cst(32),
-            containsMap(n /^ cst(32),
-              containsMap(cst(32),
-                containsReduceSeq(k /^ cst(4),
-                  containsReduceSeq(cst(4), containsAddMul)))))),
-      reorderStepBENF withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeq(cst(4),
-                  containsMap(cst(32), containsAddMul)))))),
-      loweringStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeq(cst(4),
-                  containsMap(cst(1), containsAddMulVec)))))),
+      splitStepBENF withSketch split,
+      reorderStepBENF withSketch reorder_2,
+      loweringStep withSketch lower_2,
     )
 
     GuidedSearch.init()
@@ -537,13 +465,7 @@ object mm {
     val start = mm
 
     val steps = Seq(
-      (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeq(cst(4),
-                  containsMap(cst(1), containsAddMulVec)))))),
+      (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch lower_2,
     )
 
     GuidedSearch.init()
@@ -553,50 +475,38 @@ object mm {
       .run(start, steps)
   }
 
-  // TODO: clean up sketches, factorize
-  private val arrayPackingSRC = Seq(
-    splitStepBENF withSketch
-      containsMap(m /^ cst(32),
-        containsMap(cst(32),
-          containsMap(n /^ cst(32),
-            containsMap(cst(32),
-              containsReduceSeq(k /^ cst(4),
-                containsReduceSeq(cst(4), containsAddMul)))))),
-    reorderStepBENF withSketch
-      containsMap(m /^ cst(32),
+  val store =
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsMap(cst(32),
+            containsReduceSeq(cst(4),
+              containsMap(cst(32), containsAddMul))))),
+      contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
         containsMap(n /^ cst(32),
-          containsReduceSeq(k /^ cst(4),
-            containsMap(cst(32),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32), containsAddMul)))))),
-    copyStep withSketch
-      containsMap(m /^ cst(32),
-        containsMap(n /^ cst(32),
-          containsReduceSeq(k /^ cst(4),
-            containsMap(cst(32),
-              containsReduceSeq(cst(4),
-                containsMap(cst(32), containsAddMul))))),
-        contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
-          containsMap(n /^ cst(32),
-            containsMap(k,
-              containsMap(cst(32)`.`f32, ?))))))),
-  )
+          containsMap(k,
+            containsMap(cst(32)`.`f32, ?)))))))
+
+  private val lower_3 =
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsMap(cst(32),
+            containsReduceSeq(cst(4),
+              containsMap(cst(1), containsAddMulVec))))),
+      contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+        containsMapPar(n /^ cst(32),
+          containsMap(k,
+            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))))
 
   private def arrayPacking_SRCL(): GuidedSearch.Result = {
     val start = mm
 
-    val steps = arrayPackingSRC ++ Seq(
-      loweringStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeq(cst(4),
-                  containsMap(cst(1), containsAddMulVec))))),
-          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
-            containsMapPar(n /^ cst(32),
-              containsMap(k,
-                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    val steps = Seq(
+      splitStepBENF withSketch split,
+      reorderStepBENF withSketch reorder_2,
+      copyStep withSketch store,
+      loweringStep withSketch lower_3,
     )
 
     GuidedSearch.init()
@@ -610,17 +520,7 @@ object mm {
     val start = mm
 
     val steps = Seq(
-      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeq(cst(4),
-                  containsMap(cst(1), containsAddMulVec))))),
-          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
-            containsMapPar(n /^ cst(32),
-              containsMap(k,
-                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch lower_3
     )
 
     GuidedSearch.init()
@@ -630,22 +530,27 @@ object mm {
       .run(start, steps)
   }
 
+  private val lower_4 =
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsMap(cst(32),
+            containsReduceSeqUnroll(cst(4),
+              containsMap(cst(1), containsAddMulVec))))),
+      contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+        containsMapPar(n /^ cst(32),
+          containsMap(k,
+            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))))
+
   private def cacheBlocks_SRCL(): GuidedSearch.Result = {
     val start = mm
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
-    val steps = arrayPackingSRC ++ Seq(
-      loweringStep withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeqUnroll(cst(4),
-                  containsMap(cst(1), containsAddMulVec))))),
-          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
-            containsMapPar(n /^ cst(32),
-              containsMap(k,
-                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    val steps = Seq(
+      splitStepBENF withSketch split,
+      reorderStepBENF withSketch reorder_2,
+      copyStep withSketch store,
+      loweringStep withSketch lower_4,
     )
 
     GuidedSearch.init()
@@ -660,17 +565,7 @@ object mm {
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
     val steps = Seq(
-      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch
-        containsMap(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeqUnroll(cst(4),
-                  containsMap(cst(1), containsAddMulVec))))),
-          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
-            containsMapPar(n /^ cst(32),
-              containsMap(k,
-                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch lower_4
     )
 
     GuidedSearch.init()
@@ -680,22 +575,27 @@ object mm {
       .run(start, steps)
   }
 
+  val lower_5 =
+    containsMapPar(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsMap(cst(32),
+            containsReduceSeqUnroll(cst(4),
+              containsMap(cst(1), containsAddMulVec))))),
+      contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+        containsMapPar(n /^ cst(32),
+          containsMap(k,
+            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))))
+
   private def parallel_SRCL(): GuidedSearch.Result = {
     val start = mm
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
-    val steps = arrayPackingSRC ++ Seq(
-      loweringStep withSketch
-        containsMapPar(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeqUnroll(cst(4),
-                  containsMap(cst(1), containsAddMulVec))))),
-          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
-            containsMapPar(n /^ cst(32),
-              containsMap(k,
-                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+    val steps = Seq(
+      splitStepBENF withSketch split,
+      reorderStepBENF withSketch reorder_2,
+      copyStep withSketch store,
+      loweringStep withSketch lower_5,
     )
 
     GuidedSearch.init()
@@ -710,17 +610,7 @@ object mm {
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
     val steps = Seq(
-      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch
-        containsMapPar(m /^ cst(32),
-          containsMap(n /^ cst(32),
-            containsReduceSeq(k /^ cst(4),
-              containsMap(cst(32),
-                containsReduceSeqUnroll(cst(4),
-                  containsMap(cst(1), containsAddMulVec))))),
-          contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
-            containsMapPar(n /^ cst(32),
-              containsMap(k,
-                containsMap(cst(1)`.`vecT(cst(32), f32), ?))))))),
+      (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch lower_5
     )
 
     GuidedSearch.init()

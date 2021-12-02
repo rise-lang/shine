@@ -5,7 +5,7 @@ import rise.core.types.{DataType => rcdt}
 import rise.eqsat._
 import rise.elevate.rules.traversal.default._
 import rise.eqsat.PredicateDSL._
-import rise.eqsat.ExtendedPatternDSL._
+import rise.eqsat.SketchDSL._
 
 object harris {
   val emptyStep = GuidedSearch.Step.init(BENF)
@@ -104,17 +104,17 @@ object harris {
   val containsAddMul = contains(app(app(add, ?), contains(mul)))
   val containsDot = contains(app(reduce, contains(add))) // containsAddMul if fused
   val containsReduceSeq = contains(app(aApp(ocl.reduceSeqUnroll, `private`), contains(add)))
-  val det = (`?`: ExtendedPattern) * `?` - (`?`: ExtendedPattern) * `?`
-  val trace = (`?`: ExtendedPattern) + `?`
-  val containsCoarsity = contains(det - (`?`: ExtendedPattern) * trace * trace)
+  val det = (`?`: Sketch) * `?` - (`?`: Sketch) * `?`
+  val trace = (`?`: Sketch) + `?`
+  val containsCoarsity = contains(det - (`?`: Sketch) * trace * trace)
 
   val containsCoarsityToPrivate = {
-    val sxx: ExtendedPattern = contains(app(aApp(ocl.toMem, `private`), app(fst, ?)))
-    val sxy: ExtendedPattern = contains(app(aApp(ocl.toMem, `private`), app(fst, app(snd, ?))))
-    val syy: ExtendedPattern = contains(app(aApp(ocl.toMem, `private`), app(snd, app(snd, ?))))
+    val sxx: Sketch = contains(app(aApp(ocl.toMem, `private`), app(fst, ?)))
+    val sxy: Sketch = contains(app(aApp(ocl.toMem, `private`), app(fst, app(snd, ?))))
+    val syy: Sketch = contains(app(aApp(ocl.toMem, `private`), app(snd, app(snd, ?))))
     val det = sxx * syy - sxy * sxy
     val trace = sxx + syy
-    contains(det - (`?`: ExtendedPattern) * trace * trace)
+    contains(det - (`?`: Sketch) * trace * trace)
   }
 
   // FIXME: this is array >= 1d
@@ -123,50 +123,50 @@ object harris {
   val array2d = `?n``.`array1d
   val array3d = `?n``.`array2d
 
-  def gray2d(input: ExtendedPattern): ExtendedPattern =
+  def gray2d(input: Sketch): Sketch =
     app(containsDot :: array3d ->: array2d, contains(input))
 
-  def gray1d(input: ExtendedPattern): ExtendedPattern =
+  def gray1d(input: Sketch): Sketch =
     app(containsDot :: array2d ->: array1d, contains(input))
 
-  def sobel2d(input: ExtendedPattern): ExtendedPattern =
+  def sobel2d(input: Sketch): Sketch =
     app(containsDot :: array2d ->: array2d, contains(input))
 
-  def sobel1d(input: ExtendedPattern): ExtendedPattern =
+  def sobel1d(input: Sketch): Sketch =
     app(containsDot :: array1d ->: array1d, contains(input))
 
-  def sobel1dPaired(input: ExtendedPattern): ExtendedPattern =
+  def sobel1dPaired(input: Sketch): Sketch =
     app(contains(app(map, contains(app(app(makePair,
       containsDot), containsDot)))), contains(input))
 
-  def mul2d(a: ExtendedPattern, b: ExtendedPattern): ExtendedPattern =
+  def mul2d(a: Sketch, b: Sketch): Sketch =
     app(contains(mul) :: array2d ->: array2d, contains(app(app(zip, a), b)))
 
-  def mul2dSame(x: ExtendedPattern): ExtendedPattern =
+  def mul2dSame(x: Sketch): Sketch =
     app(contains(mul) :: array2d ->: array2d, contains(app(app(map, ?), x)))
 
-  def mul1d(a: ExtendedPattern, b: ExtendedPattern): ExtendedPattern =
+  def mul1d(a: Sketch, b: Sketch): Sketch =
     app(contains(mul) :: array1d ->: array1d, contains(app(app(zip, a), b)))
 
-  def sum3x3(input: ExtendedPattern): ExtendedPattern =
+  def sum3x3(input: Sketch): Sketch =
     app(contains(add) :: array2d ->: array2d, contains(input))
 
-  def sum3(input: ExtendedPattern): ExtendedPattern =
+  def sum3(input: Sketch): Sketch =
     app(contains(add) :: array1d ->: array1d, contains(input))
 
-  def coarsity2d(sxx: ExtendedPattern, sxy: ExtendedPattern, syy: ExtendedPattern): ExtendedPattern =
+  def coarsity2d(sxx: Sketch, sxy: Sketch, syy: Sketch): Sketch =
     app(containsCoarsity :: array2d ->: array2d, contains(app(app(zip, sxx), contains(app(app(zip, sxy), syy)))))
 
-  def coarsity1d(sxx: ExtendedPattern, sxy: ExtendedPattern, syy: ExtendedPattern): ExtendedPattern =
+  def coarsity1d(sxx: Sketch, sxy: Sketch, syy: Sketch): Sketch =
     app(containsCoarsity :: array1d ->: array1d, contains(app(app(zip, sxx), contains(app(app(zip, sxy), syy)))))
 
-  def slide(n: Int, m: Int): ExtendedPattern =
-    nApp(nApp(ExtendedPatternDSL.slide, cst(n)), cst(m))
+  def slide(n: Int, m: Int): Sketch =
+    nApp(nApp(SketchDSL.slide, cst(n)), cst(m))
 
-  def lineBuffer(n: Int, load: ExtendedPattern): ExtendedPattern =
+  def lineBuffer(n: Int, load: Sketch): Sketch =
     app(nApp(nApp(aApp(ocl.circularBuffer, global), cst(n)), cst(n)), load)
 
-  def mapPar: ExtendedPattern = ocl.mapGlobal(0)
+  def mapPar: Sketch = ocl.mapGlobal(0)
 
   private def codegen(name: String, e: Expr): () = {
     object Cost extends CostFunction[Int] {
@@ -180,11 +180,11 @@ object harris {
           // prefer vectorized sequential maps, need to generalize this
           case Primitive(mapSeq()) =>
             val vectorizedP = {
-              import ExtendedPatternDSL._
+              import SketchDSL._
 
               (vecT(`?n`, `?dt`) ->: vecT(`?n`, `?dt`)) ->: `?t` ->: `?t`
             }
-            if (ExtendedPattern.typeIsMatch(egraph, vectorizedP, t)) {
+            if (Sketch.typeIsMatch(egraph, vectorizedP, t)) {
               1
             } else {
               2
@@ -285,7 +285,7 @@ object harris {
         })
       }, */
       /* shapeStep withSketch contains(
-        (? : ExtendedPattern) |>
+        (? : Sketch) |>
         app(map, contains(gray1d(?))) |> slide(3, 1) |>
         app(map, contains(sobel1d(?))) |> slide(3, 1) |>
         app(map, contains {
@@ -314,7 +314,7 @@ object harris {
 
     val steps = Seq(
       emptyStep withSketch contains(
-        (? : ExtendedPattern) |>
+        (? : Sketch) |>
         app(map, contains(gray1d(?))) |> slide(3, 1) |>
         app(map, contains(sobel1d(?))) |> slide(3, 1) |>
         app(map, contains {
@@ -325,7 +325,7 @@ object harris {
         })
       ),
       computeWithStep withSketch contains(
-        (? : ExtendedPattern) |>
+        (? : Sketch) |>
         app(map, contains(gray1d(?))) |> slide(3, 1) |>
         app(map, contains(sobel1dPaired(?))) |> slide(3, 1) |>
         app(map, contains {
@@ -336,7 +336,7 @@ object harris {
         })
       ),
       loweringStep withSketch contains(
-        (? : ExtendedPattern) |>
+        (? : Sketch) |>
         lineBuffer(3, contains(app(mapSeq, containsReduceSeq))) |>
         lineBuffer(3, contains(app(mapSeq,
           contains(app(app(makePair, containsReduceSeq), containsReduceSeq))))) |>
@@ -365,7 +365,7 @@ object harris {
 
     val steps = Seq(
       emptyStep withSketch contains(
-        (? : ExtendedPattern) |>
+        (? : Sketch) |>
         app(map, contains(gray1d(?))) |> slide(3, 1) |>
         app(map, contains(sobel1d(?))) |> slide(3, 1) |>
         app(map, contains {
@@ -376,7 +376,7 @@ object harris {
         })
       ),
       computeWithStep withSketch contains(
-        (? : ExtendedPattern) |>
+        (? : Sketch) |>
         app(map, contains(gray1d(?))) |> slide(3, 1) |>
         app(map, contains(sobel1dPaired(?))) |> slide(3, 1) |>
         app(map, contains {
@@ -387,9 +387,9 @@ object harris {
         })
       ),
       splitStep withSketch contains(
-        (? : ExtendedPattern) |>
+        (? : Sketch) |>
         slide(36, 32) |> app(map, contains(
-          (? : ExtendedPattern) |>
+          (? : Sketch) |>
           app(map, contains(gray1d(?))) |> slide(3, 1) |>
           app(map, contains(sobel1dPaired(?))) |> slide(3, 1) |>
           app(map, contains {
@@ -401,9 +401,9 @@ object harris {
         ))
       ),
       loweringStep withSketch contains(
-        (? : ExtendedPattern) |>
+        (? : Sketch) |>
         slide(36, 32) |> app(mapPar, contains(
-          (? : ExtendedPattern) |>
+          (? : Sketch) |>
           lineBuffer(3, contains(app(mapSeq, containsReduceSeq))) |>
           lineBuffer(3, contains(app(mapSeq,
             contains(app(app(makePair, containsReduceSeq), containsReduceSeq))))) |>

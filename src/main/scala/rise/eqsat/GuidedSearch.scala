@@ -3,21 +3,19 @@ package rise.eqsat
 import scala.annotation.tailrec
 import scala.language.existentials
 
-// case class CouldNotReachSketch(i: Int, snapshot: ExtendedPattern) extends Exception
-
 object GuidedSearch {
   object Step {
-    def init(nf: NF): Step = Step(nf, Seq(), ExtendedPatternAny(TypePatternAny), BeamExtractor(1, AstSize))
+    def init(nf: NF): Step = Step(nf, Seq(), SketchAny(TypePatternAny), BeamExtractor(1, AstSize))
   }
 
-  case class Step(normalForm: NF, rules: Seq[Rewrite], sketch: ExtendedPattern, extractor: Extractor) {
+  case class Step(normalForm: NF, rules: Seq[Rewrite], sketch: Sketch, extractor: Extractor) {
     def withNormalForm(nf: NF): Step =
       this.copy(normalForm = nf)
 
     def withRules(rs: Seq[Rewrite]): Step =
       this.copy(rules = rs)
 
-    def withSketch(s: ExtendedPattern): Step =
+    def withSketch(s: Sketch): Step =
       this.copy(sketch = s)
 
     def withExtractor(ex: Extractor): Step =
@@ -31,13 +29,13 @@ object GuidedSearch {
   }
 
   trait Extractor {
-    def extract(sketch: ExtendedPattern, egraph: EGraph, id: EClassId): Seq[Expr]
+    def extract(sketch: Sketch, egraph: EGraph, id: EClassId): Seq[Expr]
   }
 
   // TODO: accept normal form
   case class BeamExtractor(beamSize: Int, costFunction: CostFunction[_]) extends Extractor {
-    override def extract(sketch: ExtendedPattern, egraph: EGraph, id: EClassId): Seq[Expr] =
-      ExtendedPattern.beamSearch(sketch, beamSize, costFunction, egraph, id)
+    override def extract(sketch: Sketch, egraph: EGraph, id: EClassId): Seq[Expr] =
+      Sketch.beamSearch(sketch, beamSize, costFunction, egraph, id)
         .map { case (_, e) => ExprWithHashCons.expr(egraph)(e) }
   }
 
@@ -140,7 +138,7 @@ class GuidedSearch(
           // note: update time limit
           .withTimeLimit(java.time.Duration.ofNanos(timeLimit - (System.nanoTime() - startTime)))
           .doneWhen { _ =>
-            util.printTime("goal check", ExtendedPattern.exists(step.sketch, egraph, rootId))
+            util.printTime("goal check", Sketch.exists(step.sketch, egraph, rootId))
           }.run(egraph, filter, mergedRules, Seq(), Seq(rootId)))
         val found = runner.stopReasons.contains(Done)
 
