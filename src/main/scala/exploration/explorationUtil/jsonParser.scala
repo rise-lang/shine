@@ -1,7 +1,7 @@
 package exploration.explorationUtil
 
 import elevate.heuristic_search.Heuristic
-import elevate.heuristic_search.heuristics.{Exhaustive, Random}
+import elevate.heuristic_search.heuristics.{AutotunerSearch, Exhaustive, Random}
 import elevate.heuristic_search.heuristic.IterativeImprovement
 import rise.elevate.Rise
 
@@ -59,6 +59,7 @@ object jsonParser {
       case "IterativeImprovement" => new IterativeImprovement[Rise]
       case "Random" => new Random[Rise]
       case "exhaustive" => new Exhaustive[Rise]
+      case "autotuner" => new AutotunerSearch[Rise]
       case _ => new Exception("not a supported heuristic option")
     }
     heuristic.asInstanceOf[Heuristic[Rise]]

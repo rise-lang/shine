@@ -16,7 +16,7 @@ import rise.core.Expr
 import rise.core.primitives._
 import rise.core.types.DataType._
 import rise.core.types._
-import rise.elevate.rules.algorithmic.{fuseReduceMap, splitJoin}
+import rise.elevate.rules.algorithmic.{fuseReduceMap, fuseReduceMap2, splitJoin}
 import rise.elevate.rules.lowering.{addRequiredCopies, reduceOCL}
 import rise.elevate.rules.traversal.default
 import rise.elevate.rules.traversal.default.RiseTraversable
@@ -231,6 +231,8 @@ object mvExploration {
   def checkExpression(e: Expr, hostCode: HostCode) = {
     println("expression: \n" + e)
 
+    println("fused: \n" + fuseReduceMap2.apply(e))
+
     val lowered = defaultStrategiesGPU.lowering.apply(e)
     println("lowered: \n" + lowered)
 
@@ -350,14 +352,23 @@ object mvExploration {
 
   def main(args: Array[String]): Unit = {
 
-    // mvFused
-    val mvFusedRewrite = step0
-    rewrite(mvHighLevel, mvFusedRewrite)
-    // add lowering
+    // test hash
 
-    // mvFusedSplit
-    val mvFusedSplitRewrite = step0 `;` step1
-    rewrite(mvHighLevel, mvFusedSplitRewrite)
+
+//    val hash = elevate.heuristic_search.util.hashProgram(mvHighLevel)
+//    println("hash: " + hash)
+//    val hash2 = elevate.heuristic_search.util.hashProgram(mvHighLevel)
+//    println("hash2: " + hash2)
+
+
+//    // mvFused
+//    val mvFusedRewrite = step0
+//    rewrite(mvHighLevel, mvFusedRewrite)
+//    // add lowering
+//
+//    // mvFusedSplit
+//    val mvFusedSplitRewrite = step0 `;` step1
+//    rewrite(mvHighLevel, mvFusedSplitRewrite)
     // add lowering
 
     // mvBlastN
@@ -383,13 +394,16 @@ object mvExploration {
 
     // add strategies as arguments
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", Some(HostCode(init(1024, 1024), compute, finish)))
+//        riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies2, "exploration/configuration/mv.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+//    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies2, "exploration/configuration/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 
-//    val e1 = rewrite(mvHighLevel, step0)
+    //    val e1 = rewrite(mvHighLevel, step0)
 //    val e2 = rewrite(e1, step1)
 //    val e3 = rewrite(e2, step2)
 
 //    println("mvFused: \n" + apps.mv.ocl.mvFused)
-    println("mvFused: \n" + apps.mv.ocl.mvFusedSplit.toExpr)
+//    println("mvFused: \n" + apps.mv.ocl.mvFusedSplit.toExpr)
     }
     //    println("mvFused: \n" + apps.mv.ocl.mvFusedAMD)
 
