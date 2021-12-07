@@ -207,8 +207,15 @@ object lowering {
   }
 
   // requires expr to be in LCNF
-  def specializeSeq()(implicit ev: Traversable[Rise]): Strategy[Rise] =
+  def specializeSeq()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     normalize(ev)(lowering.mapSeqCompute() <+ lowering.reduceSeq)
+    // todo avoid map -> mapSeq inside of a reduce
+  }
+
+  // requires expr to be in LCNF
+  def specializeSeqReduce()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
+    normalize(ev)(lowering.reduceSeq)
+  }
 
   // requires expr to be in LCNF
   def reduceOCL()(implicit ev: Traversable[Rise]): Strategy[Rise] =

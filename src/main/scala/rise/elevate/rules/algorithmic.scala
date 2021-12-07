@@ -5,7 +5,7 @@ import elevate.core._
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
 import elevate.core.strategies.predicate._
-import elevate.core.strategies.traversal.tryAll
+import elevate.core.strategies.traversal.{topDown, tryAll}
 import elevate.macros.RuleMacro.rule
 import rise.core.DSL._
 import rise.core._
@@ -80,6 +80,11 @@ object algorithmic {
     normalize(ev)(fuseReduceMap)
 
   def fuseReduceMap: Strategy[Rise] = reduceMapFusion
+
+//  def fissionReduceMap: Strategy[Rise] = reduceMapFission2()
+//
+  def reduceMapFission2(implicit ev: Traversable[Rise]): Strategy[Rise] =
+  normalize(ev)(reduceMapFission())
 
   @rule def reduceMapFission()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case e @ App(App(ReduceX(), Lambda(acc, Lambda(y,
