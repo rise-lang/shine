@@ -143,6 +143,7 @@ class TestConfigFileGeneration extends test_util.Tests {
         | "hypermapper_mode" : {
         |   "mode" : "client-server"
         | },
+        | "log_file": "RISE.log",
         | "feasible_output" : {
         |   "enable_feasible_predictor" : true,
         |   "name" : "Valid",
@@ -181,6 +182,7 @@ class TestConfigFileGeneration extends test_util.Tests {
         | "hypermapper_mode" : {
         |   "mode" : "client-server"
         | },
+        | "log_file": "RISE.log",
         | "feasible_output" : {
         |   "enable_feasible_predictor" : true,
         |   "name" : "Valid",
