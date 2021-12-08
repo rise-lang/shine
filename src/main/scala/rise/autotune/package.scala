@@ -222,6 +222,9 @@ package object autotune {
     ("mv " + tuner.name + "_output_samples.csv " +
       destination.substring(0, destination.length - 4) + "_hm.csv" !!)
 
+    // save log file
+    ("mv " + tuner.name + ".log " + destination.substring(0, destination.length - 4) + ".log" !!)
+
     TuningResult(samples.toSeq)
   }
 

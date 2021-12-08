@@ -28,6 +28,7 @@ object configFileGeneration {
          | "hypermapper_mode" : {
          |   "mode" : "client-server"
          | },
+         | "log_file": "${tuner.name}.log",
          | "feasible_output" : {
          |   "enable_feasible_predictor" : true,
          |   "name" : "Valid",
