@@ -12,8 +12,13 @@ import rise.core.types.DataType._
 import rise.core.types.{NatIdentifier, _}
 import rise.openCL.DSL._
 import shine.OpenCL.{GlobalSize, LocalSize}
+import play.api.libs.json.Json
 
 package object util {
+
+  def compareConfigFiles(file: String, gold: String): Boolean = {
+    Json.parse(file).equals(Json.parse(gold))
+  }
 
   object expressions {
 
