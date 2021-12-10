@@ -179,27 +179,30 @@ object Sketch {
           val containedMatches = searchRec(contained)
           // TODO: skip if empty contained?
 
-          val initialData = egraph.classes.values.map { eclass =>
+          val dataMap = egraph.classes.values.map { eclass =>
             assert(eclass.id == egraph.find(eclass.id))
             eclass.id -> containedMatches(eclass.id)
           }.to(HashMap)
 
-          val analyser = Analyser.init(egraph, new Analyser.Analysis[Boolean] {
-            override def make(enode: ENode, t: TypeId, egraph: EGraph,
+          SemiLatticeAnalysis.oneShot(new SemiLatticeAnalysis {
+            type Data = Boolean
+
+            override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
+
+            override def make(egraph: EGraph, enode: ENode, t: TypeId,
                               analysisOf: EClassId => Boolean): Boolean =
               enode.children().exists { c =>
                 assert(c == egraph.find(c))
                 analysisOf(c)
               }
 
-            override def merge(a: Boolean, b: Boolean): Boolean =
-              a || b
+            override def merge(a: Boolean, b: Boolean): MergeResult = {
+              val r = a || b
+              MergeResult(r, r != a, r != b)
+            }
+          }, egraph)(dataMap)
 
-            override def update(existing: Boolean, computed: Boolean): Boolean =
-              existing || computed
-          }, initialData)
-
-          analyser.data.iterator.flatMap { case (id, isMatch) =>
+          dataMap.iterator.flatMap { case (id, isMatch) =>
             if (isMatch) { Some(id) } else { None }
           }.toSet
         case SketchOr(a, b) =>
@@ -236,7 +239,7 @@ object Sketch {
   : Map[EClassId, Seq[(Cost, ExprWithHashCons)]] =
   {
     assert(egraph.clean)
-    val beamExtractMap = Analyser.init(egraph, BeamExtract(beamSize, costFunction)).data
+    val beamExtractMap = Analysis.oneShot(BeamExtract(beamSize, costFunction), egraph)
     val memo = HashMap.empty[Sketch, Map[EClassId, Seq[(Cost, ExprWithHashCons)]]]
 
     def searchRec(p: Sketch): Map[EClassId, Seq[(Cost, ExprWithHashCons)]] = {
@@ -305,15 +308,19 @@ object Sketch {
           val containedMatches = searchRec(contained)
           // TODO: skip if empty contained?
 
-          val initialData = egraph.classes.values.map { eclass =>
+          val dataMap = egraph.classes.values.map { eclass =>
             eclass.id -> (containedMatches.get(eclass.id) match {
               case None => Nil
               case Some(beam) => beam
             })
           }.to(HashMap)
 
-          val analyser = Analyser.init(egraph, new Analyser.Analysis[Seq[(Cost, ExprWithHashCons)]] {
-            override def make(enode: ENode, t: TypeId, egraph: EGraph,
+          val analyser = SemiLatticeAnalysis.oneShot(new SemiLatticeAnalysis {
+            type Data = Seq[(Cost, ExprWithHashCons)]
+
+            override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
+
+            override def make(egraph: EGraph, enode: ENode, t: TypeId,
                               analysisOf: EClassId => Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] = {
               val childrenMatchingBeams = enode.children().map(c => (c, analysisOf(c))).toSeq
               val childrenAnyBeams = enode.children().map(c => (c, beamExtractMap(egraph.find(c)))).toSeq
@@ -346,14 +353,13 @@ object Sketch {
               tmp.distinct // FIXME: why is .distinct necessary here?
             }
 
-            override def merge(a: Seq[(Cost, ExprWithHashCons)], b: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] =
-              Beam.merge(beamSize, costFunction, a, b)
+            override def merge(a: Data, b: Data): MergeResult = {
+              val (r, mayNotBeA, mayNotBeB) = Beam.merge2(beamSize, costFunction, a, b)
+              MergeResult(r, mayNotBeA, mayNotBeB)
+            }
+          }, egraph)(dataMap)
 
-            override def update(existing: Seq[(Cost, ExprWithHashCons)], computed: Seq[(Cost, ExprWithHashCons)]): Seq[(Cost, ExprWithHashCons)] =
-              Beam.merge(beamSize, costFunction, existing, computed)
-          }, initialData)
-
-          analyser.data.iterator.filter { case (_, beam) => beam.nonEmpty }.toMap
+          dataMap.iterator.filter { case (_, beam) => beam.nonEmpty }.toMap
         case SketchOr(a, b) =>
           val aMatches = searchRec(a)
           val bMatches = searchRec(b)

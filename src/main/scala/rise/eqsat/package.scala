@@ -101,9 +101,10 @@ package object eqsat {
     Runner.init().run(egraph, NoPredicate(), Seq(), CNF.directedRules, Seq(id))
     // val extractor = Extractor.init(egraph, LexicographicCost(AppCount, AstSize))
     // val (_, normalized) = extractor.findBestOf(id)
-    val analyser = Analyser.init(egraph,
-      AvoidCompositionAssoc1Extract(LexicographicCost(AppCount, AstSize)))
-    val (avoidCount, _, normalized) = analyser.analysisOf(id).best
+    val analysis = Analysis.oneShot(
+      AvoidCompositionAssoc1Extract(LexicographicCost(AppCount, AstSize)),
+      egraph)
+    val (avoidCount, _, normalized) = analysis(egraph.find(id)).best
     assert(avoidCount == 0)
     ExprWithHashCons.expr(egraph)(normalized)
   }

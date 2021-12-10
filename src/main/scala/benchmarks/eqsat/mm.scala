@@ -178,7 +178,7 @@ object mm {
     }.get
     val normGoal = BENF.normalize(Expr.fromNamed(goal))
     val goalSize = AstSize.ofExpr(normGoal)
-    util.dotPrintTmp(s"${name}_goal", Expr.toNamed(normGoal))
+    // util.dotPrintTmp(s"${name}_goal", Expr.toNamed(normGoal))
     println(s"${name} goal size: ${goalSize}")
 
     val loweredGoal = lowerToC.apply(goal).get
@@ -654,7 +654,7 @@ object mm {
     rs.foreach { case (n, (_, r)) =>
       r.exprs.headOption.foreach(codegen(n, _))
     }
-    // goals()
+    goals()
     rs.foreach { case (n, (t, r)) =>
       println(s"-------- $n")
       val status = if (r.exprs.nonEmpty) { "found" } else { "not found" }

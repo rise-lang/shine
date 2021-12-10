@@ -4,12 +4,9 @@ import rise.core.traverse
 
 object Extractor {
   def findBestOf[C](egraph: EGraph, costFunction: CostFunction[C], id: EClassId): (ExprWithHashCons, C) = {
-    assert(egraph.clean)
-    val analysis = SmallestCostAnalysis(costFunction)
-    egraph.requireAnalysis(analysis)
-    val result = egraph.getAnalysis(analysis)(egraph.find(id))
-    egraph.releaseAnalysis(analysis)
-    result
+    Analysis.oneShot(
+      SmallestCostAnalysis(costFunction),
+      egraph)(egraph.find(id))
   }
 
   def randomOf(egraph: EGraph, id: EClassId): ExprWithHashCons = {
@@ -74,11 +71,10 @@ case class SmallestCostAnalysis[Cost](costFunction: CostFunction[Cost])
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
     (Set(), Set())
 
-  override def make(egraph: EGraph, enode: ENode, t: TypeId): Data = {
-    val smallestOf = egraph.getAnalysis(this)
+  override def make(egraph: EGraph, enode: ENode, t: TypeId,
+                    smallestOf: EClassId => Data): Data =
     (ExprWithHashCons(enode.mapChildren(c => smallestOf(c)._1), t),
       costFunction.cost(enode, c => smallestOf(c)._2))
-  }
 
   override def merge(a: Data, b: Data): MergeResult = {
     (a, b) match {

@@ -25,7 +25,7 @@ package object rules {
 
   // TODO: express as a combination of strategies
   // TODO @rule
-  def gentleBetaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
+  def gentleBetaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = elevate.core.countApplications {
     case App(Lambda(x, b), v: Identifier) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
     case App(Lambda(x, b), v @ App(App(primitives.makePair(), _), _)) =>

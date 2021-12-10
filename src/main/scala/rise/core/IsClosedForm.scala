@@ -47,7 +47,7 @@ object IsClosedForm {
     }
 
     override def addressSpace: AddressSpace => Pair[AddressSpace] = {
-      // FIXME: this should be dispatched to `typeIdentifier` ???
+      // FIXME: unclear whether this is needed or not
       case i: AddressSpaceIdentifier =>
         val iw: Kind.Identifier = AddressSpaceKind.IDWrapper(i)
         if (boundT(iw)) return_(i: AddressSpace) else accumulate((OrderedSet.empty, OrderedSet.one(iw)))(i: AddressSpace)

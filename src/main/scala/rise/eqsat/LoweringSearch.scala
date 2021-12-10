@@ -42,7 +42,7 @@ class LoweringSearch(var filter: Predicate) {
     r.printReport()
 
     util.printTime("lowered extraction time", {
-      val tmp = Analyser.init(egraph, BeamExtractRW(1, costFunction)).data(rootId)
+      val tmp = Analysis.oneShot(BeamExtractRW(1, costFunction), egraph)(egraph.find(rootId))
       tmp.get((expectedAnnotation, Map.empty))
         .map { beam => ExprWithHashCons.expr(egraph)(beam.head._2) }
     })
