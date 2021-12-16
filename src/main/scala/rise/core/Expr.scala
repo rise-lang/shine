@@ -1,99 +1,69 @@
 package rise.core
 
 import rise.core.types._
-import rise.core.DSL.Type.TypeEqual
 import rise.core.ShowRise._
+import rise.core.equality._
 
 sealed abstract class Expr {
-  val t: Type
-  def setType(t: Type): Expr
+  val t: ExprType
+  def setType(t: ExprType): Expr
   override def toString: String = showRise(this)
+  def =~=(b : Expr) : Boolean = exprAlphaEq(typeAlphaEq).apply(this)(b)
+  def =~~=(b : Expr) : Boolean = exprAlphaEq(typePartialAlphaEq).apply(this)(b)
 }
 
-final case class Identifier(name: String)(
-    override val t: Type
-) extends Expr {
-  override def setType(t: Type): Identifier = this.copy(name)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: Identifier => (other.name == name) && (other.t =~= t)
-    case _                 => false
-  }
+final case class Identifier(name: String)(override val t: ExprType) extends Expr {
+  override def setType(t: ExprType): Identifier = this.copy(name)(t)
 }
 
-final case class Lambda(x: Identifier, e: Expr)(
-    override val t: Type
-) extends Expr {
-  override def setType(t: Type): Lambda = this.copy(x, e)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: Lambda =>
-      (other.x.t =~= x.t) && (other.t =~= t) &&
-        (e == typedLifting
-          .liftFunExpr(other)
-          .value(x))
-    case _ => false
-  }
+final case class Lambda(x: Identifier, e: Expr)(override val t: ExprType) extends Expr {
+  override def setType(t: ExprType): Lambda = this.copy(x, e)(t)
 }
 
-final case class App(f: Expr, e: Expr)(override val t: Type)
-    extends Expr {
-  override def setType(t: Type): App = this.copy(f, e)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: App => (other.f == f) && (other.e == e) && (other.t =~= t)
-    case _          => false
-  }
+final case class App(f: Expr, e: Expr)(override val t: ExprType) extends Expr {
+  override def setType(t: ExprType): App = this.copy(f, e)(t)
 }
 
-final case class DepLambda[K <: Kind: KindName](
-    x: K#I with Kind.Explicitness,
-    e: Expr
-)(override val t: Type)
-    extends Expr {
-  val kindName: String = implicitly[KindName[K]].get
-  override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: DepLambda[_] =>
-      val otherWithX = (x, other.x) match {
-        case (n: NatIdentifier, _: NatIdentifier) =>
-          typedLifting.liftDepFunExpr[NatKind](other).value(n)
-        case (dt: DataTypeIdentifier, _: DataTypeIdentifier) =>
-          typedLifting.liftDepFunExpr[DataKind](other).value(dt)
-        case (addr: AddressSpaceIdentifier, _: AddressSpaceIdentifier) =>
-          typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr)
-        case (n2n: NatToNatIdentifier, _: NatToNatIdentifier) =>
-          typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n)
-        case (n2d: NatToDataIdentifier, _: NatToDataIdentifier) =>
-          typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d)
-        case _ => false
-      }
-      e == otherWithX && (other.t =~= t)
-    case _ => false
-  }
+final case class DepLambda[T, I](kind: Kind[T, I], x: I, e: Expr)(override val t: ExprType) extends Expr {
+  override def setType(t: ExprType): DepLambda[T, I] = this.copy(kind, x, e)(t)
 }
 
-final case class DepApp[K <: Kind](f: Expr, x: K#T)(
-    override val t: Type
-) extends Expr {
-  override def setType(t: Type): DepApp[K] = this.copy(f, x)(t)
-  override def equals(obj: Any): Boolean = obj match {
-    case other: DepApp[K] => (other.f == f) && (other.x == x) && (other.t =~= t)
-    case _                => false
-  }
+final case class DepApp[T](kind: Kind[T, _], f: Expr, x: T)(override val t: ExprType) extends Expr {
+  override def setType(t: ExprType): DepApp[T] = this.copy(kind, f, x)(t)
 }
 
 final case class Literal(d: semantics.Data) extends Expr {
-  override val t: Type = d.dataType
-  override def setType(t: Type): Literal =
-    throw TypeException(
-      "tried to set the type of a Literal, whose type should never be changed"
-    )
+  override val t: ExprType = d.dataType
+  override def setType(t: ExprType): Literal =
+    if (t != this.t) { throw TypeException(s"cannot set the type of ${getClass}") } else { this }
+}
+
+final case class Opaque(e: Expr, override val t: ExprType) extends Expr {
+  override def toString: String = s"{Opaque Expr: $t}"
+  override def setType(t: ExprType): TypeAnnotation =
+    throw TypeException(s"cannot set the type of ${getClass}")
+}
+
+final case class TypeAnnotation(e: Expr, annotation: ExprType) extends Expr {
+  override val t : ExprType = TypePlaceholder
+  override def toString: String = s"$e: $annotation"
+  override def setType(t: ExprType): TypeAnnotation =
+    if (t != this.t) { throw TypeException(s"cannot set the type of ${getClass}") } else { this }
+}
+
+final case class TypeAssertion(e: Expr, assertion: ExprType) extends Expr {
+  override val t : ExprType = TypePlaceholder
+  override def toString: String = s"$e !: $assertion"
+  override def setType(t: ExprType): TypeAnnotation = throw TypeException(s"cannot set the type of ${getClass}")
 }
 
 abstract class Primitive extends Expr {
-  override val t: Type = TypePlaceholder
-  def typeScheme: Type =
-    throw TypeException("typeScheme method must be overridden")
+  override val t: ExprType = TypePlaceholder
+  def primEq(obj : Primitive) : Boolean
+  def typeScheme: ExprType =
+    throw TypeException(s"typeScheme method must be overridden by ${getClass}")
   def name: String =
-    throw RenderException("the name of Primitive must be set")
-  override def setType(t: Type): Primitive =
-    throw TypeException("setType method must be overridden")
+    throw RenderException(s"the name of Primitive must be set by ${getClass}")
+  override def setType(t: ExprType): Primitive =
+    throw TypeException(s"setType method must be overridden by ${getClass}")
 }

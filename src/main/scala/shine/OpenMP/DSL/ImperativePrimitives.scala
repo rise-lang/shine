@@ -1,11 +1,12 @@
 package shine.OpenMP.DSL
 
 import arithexpr.arithmetic.RangeAdd
+import rise.core.types.{DataType, NatToData, read}
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative.ForVec
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA._
 import shine.OpenMP.primitives.imperative._
 
@@ -19,7 +20,7 @@ object parFor {
 
 object `parForVec` {
   def apply(n: Nat,
-            st: ScalarType,
+            st: DataType,
             out: Phrase[AccType],
             f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ForVec =
     ForVec(n, st, out, λ(expT(idx(n), read))(i => λ(accT(st))(o => f(i)(o) )))

@@ -4,6 +4,7 @@ import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 import util.gen
 import util.gen.c.function
 
@@ -13,7 +14,7 @@ class DepMap extends test_util.Tests {
       depFun((n: Nat) => fun(DepArrayType(n, n2dtFun(i => (i+1)`.`f32)) ->: DepArrayType(n, n2dtFun(i => (i+1)`.`f32)))(xs =>
         xs |> depMapSeq(depFun((_: Nat) => mapSeq(fun(x => x))))))
 
-    println(e)
+    logger.debug(e)
 
     val code = function.asStringFromExpr(e)
 

@@ -9,6 +9,8 @@ import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import rise.core.types.{DataType, Fragment, MatrixLayout, MatrixLayoutIdentifier}
+import rise.core.types.DataType._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{AsVectorAligned, Cast}
 import shine.DPIA.primitives.imperative.{AsScalarAcc, Assign}
@@ -48,23 +50,28 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case f: ParFor =>
-      val (i, o, p) = f.unwrapBody
-      codeGenCudaParFor(f, f.n, f.dt, f.out, i, o, p, env)
+      f.body match {
+        case Lambda(i, Lambda(o, p)) =>
+          codeGenCudaParFor(f, f.n, f.dt, f.out, i, o, p, env)
+        case _ => throw new Exception("This should not happen")
+      }
 
     case WmmaLoad(m, n, k, _, fragType, layoutIdentifier, matrix, fragmentAcc) =>
       matrix |> exp(env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
         //Pointer to first element of the matrix
         val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
-        val (layout, ldm) = inferFragment(matrix, env, m, n, k, FragmentKind.Accumulator)
-        if (layoutIdentifier.isInstanceOf[MatrixLayoutIdentifier])
-          layoutIdentifier.asInstanceOf[MatrixLayoutIdentifier].setLayout(layout)
+        val (layout, ldm) = inferFragment(matrix, env, m, n, k, Fragment.Accumulator)
+        layoutIdentifier match {
+          case id: MatrixLayoutIdentifier => id.setLayout(layout)
+          case _ =>
+        }
 
         fragmentAcc |> acc(env, Nil, frag =>
           C.AST.ExprStmt(C.AST.FunCall(
             C.AST.DeclRef("nvcuda::wmma::load_matrix_sync"),
               //only accumulator-fragments must specify their layout
-              if (fragType != FragmentKind.Accumulator)
+              if (fragType != Fragment.Accumulator)
                 immutable.Seq(
                   frag,
                   matrixPtr,
@@ -82,7 +89,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
         matrixAcc |> acc(env, List(CIntExpr(0), CIntExpr(0)), matrixTile => {
           val matrixPtr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, matrixTile)
 
-          val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, FragmentKind.Accumulator)
+          val (layout, ldm) = inferFragment(matrixAcc, env, m, n, k, Fragment.Accumulator)
 
           C.AST.ExprStmt(C.AST.FunCall(
             C.AST.DeclRef("nvcuda::wmma::store_matrix_sync"),
@@ -92,7 +99,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
               C.AST.ArithmeticExpr(ldm),
               C.AST.DeclRef(toString(layout)))))}))
 
-    case WmmaFill(_, _, _, _, fill, _, _, fragmentAcc) =>
+    case WmmaFill(_, _, _, _, _, _, fill, fragmentAcc) =>
       fill |> exp(env, Nil, fill =>
         fragmentAcc |> acc(env, Nil, fragment =>
           C.AST.ExprStmt(C.AST.FunCall(
@@ -114,7 +121,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
                   bMatrix,
                   cMatrix)))))))
 
-    case ForFragmentElements(fragType, inFragment, outFragmemt, Lambda(in, Lambda(out, p))) =>
+    case ForFragment(_, _, _, dt, _, _, inFragment, outFragmemt, Lambda(in, Lambda(out, p))) =>
       inFragment |> exp(env, Nil, fragmentIn =>
         outFragmemt |> acc(env, Nil, fragmentOut => {
           val n = C.AST.StructMemberAccess(fragmentOut, C.AST.DeclRef("num_elements"))
@@ -142,8 +149,8 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
               C.AST.Block(
                 immutable.Seq(
-                  C.AST.DeclStmt(C.AST.VarDecl(xIInPointer.name, PointerType(typ(fragType.dataType)), init = Some(xIInDecl))),
-                  C.AST.DeclStmt(C.AST.VarDecl(xIOutPointer.name, PointerType(typ(fragType.dataType)), init = Some(xIOutDecl))),
+                  C.AST.DeclStmt(C.AST.VarDecl(xIInPointer.name, PointerType(typ(dt)), init = Some(xIInDecl))),
+                  C.AST.DeclStmt(C.AST.VarDecl(xIOutPointer.name, PointerType(typ(dt)), init = Some(xIOutDecl))),
                   p |> updatedGen.cmd(env updatedIdentEnv (in -> xIIn) updatedIdentEnv (out -> xIOut))))))}))
 
     case Assign(_, lhsAcc, rhs) =>
@@ -166,7 +173,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
     case phrase => phrase |> super.cmd(env)
   }
 
-  def inferFragment[T <: BasePhraseType](matrix: Phrase[T], env: Environment, m: Nat, n: Nat, k: Nat, fragmentType: FragmentKind): (MatrixLayout, ArithExpr) = {
+  def inferFragment[T <: BasePhraseType](matrix: Phrase[T], env: Environment, m: Nat, n: Nat, k: Nat, fragmentType: Fragment): (MatrixLayout, ArithExpr) = {
     val index00 = matrixIndexAsNat(matrix, env, 0, 0)
     val index01 = matrixIndexAsNat(matrix, env, 0, 1)
     val index10 = matrixIndexAsNat(matrix, env, 1, 0)
@@ -230,18 +237,18 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case AsScalarAcc(_, m, dt, a) => path match {
+    case AsScalarAcc(n, _, dt, a) => path match {
       case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr((i * m) + j) :: ps, cont)
+        a |> acc(env, CIntExpr((i * n) + j) :: ps, cont)
 
       case (i : CIntExpr) :: Nil =>
-        a |> acc(env,CIntExpr(i * m) :: Nil, array => {
+        a |> acc(env,CIntExpr(i * n) :: Nil, array => {
           cont(
             //acces first (vector-)element pointed by the pointer
             C.AST.ArraySubscript(
               //cast pointer to array to pointer of vectorType
               C.AST.Cast(
-                C.AST.PointerType(getVectorType(dt, m)),
+                C.AST.PointerType(getVectorType(dt, n)),
                 C.AST.UnaryExpr(C.AST.UnaryOperator.&, array)),
               C.AST.ArithmeticExpr(0)))})
 
@@ -254,7 +261,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def exp(env: Environment,
                    path: Path,
                    cont: Expr => Stmt): Phrase[ExpType] => Stmt = {
-    case phrase@AsVectorAligned(n, _, _, dt, e) => path match {
+    case phrase@AsVectorAligned(n, _, dt, _, e) => path match {
       case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
         e |> exp(env, CIntExpr((i * n) + j) :: ps, cont)
 
@@ -286,33 +293,33 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def typ(dt: DataType): Type = dt match {
     case FragmentType(m, n, k, dataType, fragmentKind, layout) =>
       C.AST.FragmentType(m, n, k, typ(dataType), fragmentKind, layout)
-    case shine.DPIA.Types.f16 =>
+    case DataType.f16 =>
       cuda.AST.Type.half
-    case shine.DPIA.Types.pipeline =>
+    case DataType.OpaqueType("pipeline") =>
       cuda.AST.Type.pipeline
 
     case _ =>
       super.typ(dt)
   }
 
-  private def getVectorType(dt: ScalarType, n: Nat): Type = {
+  private def getVectorType(dt: DataType, n: Nat): Type = {
     if (n.eval > 0 && n.eval <= 4)
       dt match {
-        case shine.DPIA.Types.u8 => BasicType(s"uchar$n")
-        case shine.DPIA.Types.i8 => BasicType(s"char$n")
-        case shine.DPIA.Types.u16 => BasicType(s"ushort$n")
-        case shine.DPIA.Types.i16 => BasicType(s"short$n")
-        case shine.DPIA.Types.int | shine.DPIA.Types.i32 => BasicType(s"int$n")
-        case shine.DPIA.Types.u32 => BasicType(s"uint$n")
-        case shine.DPIA.Types.f32 => BasicType(s"float$n")
-        case shine.DPIA.Types.f64 => BasicType(s"double$n")
-        case _ => ???
+        case DataType.u8 => BasicType(s"uchar$n")
+        case DataType.i8 => BasicType(s"char$n")
+        case DataType.u16 => BasicType(s"ushort$n")
+        case DataType.i16 => BasicType(s"short$n")
+        case DataType.int | DataType.i32 => BasicType(s"int$n")
+        case DataType.u32 => BasicType(s"uint$n")
+        case DataType.f32 => BasicType(s"float$n")
+        case DataType.f64 => BasicType(s"double$n")
+        case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
       }
     else
       dt match {
-        case shine.DPIA.Types.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
-        case shine.DPIA.Types.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
-        case _ => ???
+        case DataType.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
+        case DataType.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
+        case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
       }
   }
 
@@ -331,7 +338,7 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
                         p: Phrase[CommType],
                         env: Environment): Stmt = {
     assert(!f.unroll)
-    val cI = C.AST.DeclRef(f.name)
+    val cI = C.AST.DeclRef(freshName(f.prefix))
     val range = RangeAdd(f.init, n, f.step)
     val updatedGen = updatedRanges(cI.name, range)
 

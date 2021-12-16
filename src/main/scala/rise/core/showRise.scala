@@ -1,5 +1,6 @@
 package rise.core
 
+import rise.core.types.Kind
 import rise.core.DrawTree.UnicodeConfig
 
 case class RenderException(msg: String) extends Exception {
@@ -243,8 +244,8 @@ class ShowRiseCompact {
         (false, newSize, fr >@> (fd => er >@> (ed => fd :+> ed)))
       }
 
-    case dl @ DepLambda(x, e) =>
-      val xs = s"${x.name}:${dl.kindName}"
+    case dl @ DepLambda(k, x, e) =>
+      val xs = s"${Kind.idName(k, x)}:${dl.kind.name}"
       val (eInline, eSize, er) = drawAST(e)
       val newSize = eSize + 1
       if ((inlineSize > 0) && eInline) {
@@ -256,10 +257,10 @@ class ShowRiseCompact {
         (false, newSize, er >@> (ed => block(s"Λ$xs", ed)))
       }
 
-    case DepApp(f, x) =>
+    case DepApp(kind, f, x) =>
       val (fInline, fSize, fr) = f match {
-        case _: DepLambda[_] => drawAST(f, wrapped = true)
-        case _               => drawAST(f)
+        case _: DepLambda[_, _] => drawAST(f, wrapped = true)
+        case _                     => drawAST(f)
       }
       val xs = x.toString
       val newSize = fSize + 1
@@ -275,6 +276,8 @@ class ShowRiseCompact {
     case Literal(d) => (true, dataSize(d), line(d.toString))
 
     case TypeAnnotation(e, _) => drawAST(e, wrapped)
+    case TypeAssertion(e, _) => drawAST(e, wrapped)
+    case Opaque(e, _) => drawAST(e, wrapped)
 
     case p: Primitive => (true, 1, line(p.name))
   }

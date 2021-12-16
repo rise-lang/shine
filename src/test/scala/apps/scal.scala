@@ -5,6 +5,7 @@ import rise.core.primitives._
 import Type._
 import rise.core.types._
 import util.gen
+import rise.core.types.DataType._
 
 class scal extends test_util.Tests {
 
@@ -15,7 +16,7 @@ class scal extends test_util.Tests {
   test("Simple scal type inference works") {
     assert(
       expl((n: Nat) => ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
-        ==
+        =~=
         simpleScal.t
     )
   }

@@ -8,7 +8,7 @@ class NBody extends test_util.TestsWithExecutor {
   private val N = 512
 
   test("high level nbody typechecks") {
-    println(nbodyHighLevel.t)
+    logger.debug(nbodyHighLevel.t)
   }
 
   test("nbody versions produce same results") {
@@ -22,11 +22,11 @@ class NBody extends test_util.TestsWithExecutor {
     val localSizeNVIDIA = LocalSize((tileX, tileY))
     val globalSizeNVIDIA = GlobalSize((N, tileY))
 
-    test_util.runsWithSameResult(Seq(
-      ("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
-      ("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
+    runsWithSameResult(Seq(
+      ("original AMD", runOriginalKernel("CGO17_NBodyAMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
+      ("original NVIDIA", runOriginalKernel("CGO17_NBodyNVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
       ("dpia AMD", runKernel(gen.opencl.kernel.fromExpr(nbodyAMD), localSizeAMD, globalSizeAMD, pos, vel)),
-      ("dpia NVIDIA", runKernel(gen.opencl.kernel.fromExpr(nbodyNVIDIA), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
+      ("dpia NVIDIA", runKernel(gen.opencl.kernel(Some(nbodyNVIDIAKnownSizes), "KERNEL").fromExpr(nbodyNVIDIA), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
     ))
   }
 

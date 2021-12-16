@@ -2,17 +2,17 @@ package shine.OpenCL
 
 import arithexpr.arithmetic._
 import opencl.executor.{Kernel => _, _}
+import rise.core.types.DataType._
+import rise.core.types.{Nat => _, _}
 import shine.C.AST.{ParamDecl, ParamKind}
-import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL
 import shine.OpenCL.AST.Kernel
 import util.Time.ms
-import util.{Time, TimeSpan}
-import util.gen
+import util.{Time, TimeSpan, gen}
 
-import scala.collection.immutable.List
 import scala.collection.Seq
+import scala.collection.immutable.List
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
@@ -207,7 +207,7 @@ object KernelExecutor {
   private def collectSizeVars(arguments: List[Argument], sizeVariables: Map[Nat, Nat]): Map[Nat, Nat] = {
     def recordSizeVariable(sizeVariables:Map[Nat, Nat], arg:Argument): Map[Nat, Nat] = {
       arg.parameter._2.typ match {
-        case shine.DPIA.Types.int =>
+        case rise.core.types.DataType.int =>
           arg.argValue match {
             case Some(i:Int) => sizeVariables + ((NatIdentifier(arg.parameter._1.name), Cst(i)))
             case Some(num) =>
@@ -353,9 +353,9 @@ object KernelExecutor {
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     (getOutputType(dt) match {
-      case shine.DPIA.Types.int => output.asIntArray()
-      case shine.DPIA.Types.f32 => output.asFloatArray()
-      case shine.DPIA.Types.f64 => output.asDoubleArray()
+      case rise.core.types.DataType.int => output.asIntArray()
+      case rise.core.types.DataType.f32 => output.asFloatArray()
+      case rise.core.types.DataType.f64 => output.asDoubleArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
@@ -363,7 +363,8 @@ object KernelExecutor {
 
   private def getOutputType(dt: DataType): DataType = dt match {
     case _: ScalarType => dt
-    case _: IndexType => int
+    case _: IndexType => rise.core.types.DataType.int
+    case NatType => rise.core.types.DataType.int
     case _: DataTypeIdentifier => dt
     case VectorType(_, elem) => elem
     case PairType(fst, snd) =>
@@ -378,37 +379,37 @@ object KernelExecutor {
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getOutputType(elemType)
     case DepArrayType(_, _) | _: NatToDataApply => throw new Exception("This should not happen")
-    case _: DepPairType | _: ManagedBufferType | _: FragmentType
-         | _: pipeline.type | ContextType =>
+    case _: DepPairType[_, _] | _: ManagedBufferType | _: OpaqueType | _: FragmentType =>
       throw new Exception(s"${dt} not supported as output type")
   }
 
   private def sizeInByte(dt: DataType): SizeInByte = dt match {
     case s: ScalarType => s match {
-      case shine.DPIA.Types.bool => SizeInByte(1)
-      case shine.DPIA.Types.int | shine.DPIA.Types.NatType => SizeInByte(4)
-      case shine.DPIA.Types.u8 | shine.DPIA.Types.i8 =>
+      case rise.core.types.DataType.bool => SizeInByte(1)
+      case rise.core.types.DataType.int => SizeInByte(4)
+      case rise.core.types.DataType.u8 | rise.core.types.DataType.i8 =>
         SizeInByte(1)
-      case shine.DPIA.Types.u16 | shine.DPIA.Types.i16 | shine.DPIA.Types.f16 =>
+      case rise.core.types.DataType.u16 | rise.core.types.DataType.i16 | rise.core.types.DataType.f16 =>
         SizeInByte(2)
-      case shine.DPIA.Types.u32 | shine.DPIA.Types.i32 | shine.DPIA.Types.f32 =>
+      case rise.core.types.DataType.u32 | rise.core.types.DataType.i32 | rise.core.types.DataType.f32 =>
         SizeInByte(4)
-      case shine.DPIA.Types.u64 | shine.DPIA.Types.i64 | shine.DPIA.Types.f64 =>
+      case rise.core.types.DataType.u64 | rise.core.types.DataType.i64 | rise.core.types.DataType.f64 =>
         SizeInByte(8)
     }
+    case rise.core.types.DataType.NatType => SizeInByte(4)
     case _: IndexType => SizeInByte(4) // == sizeof(int)
     case v: VectorType => sizeInByte(v.elemType) * v.size
-    case r: PairType => sizeInByte(r.fst) + sizeInByte(r.snd)
+    case r: PairType => sizeInByte(r.dt1) + sizeInByte(r.dt2)
     case a: ArrayType => sizeInByte(a.elemType) * a.size
     case a: DepArrayType =>
-      a.elemFType match {
+      a.fdt match {
         case NatToDataLambda(x, body) =>
           SizeInByte(BigSum(Cst(0), a.size - 1, `for`=x, in=sizeInByte(body).value))
         case _: NatToDataIdentifier =>
           throw new Exception("This should not happen")
       }
-    case _: DepPairType | _: NatToDataApply | _: DataTypeIdentifier |
-         _: ManagedBufferType | _: FragmentType | _: pipeline.type | ContextType =>
+    case _: DepPairType[_, _] | _: NatToDataApply | _: DataTypeIdentifier |
+         _: ManagedBufferType | _: OpaqueType | _: FragmentType =>
       throw new Exception(s"the byte size of ${dt} should not be requested")
   }
 

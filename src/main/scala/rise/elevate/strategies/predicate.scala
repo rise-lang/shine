@@ -6,10 +6,10 @@ import elevate.core.strategies.{Traversable, basic}
 import rise.core.DSL.ToBeTyped
 import rise.core._
 import rise.core.primitives._
+import rise.core.types.DataType._
 import rise.core.types._
 import rise.elevate._
 import rise.elevate.rules.lowering.isComputation
-
 
 object predicate {
 
@@ -26,7 +26,7 @@ object predicate {
   }
 
   def isLambda: is = is(_.isInstanceOf[Lambda], "Lambda")
-  def isDepLambda: is = is(_.isInstanceOf[DepLambda[_]], "DepLambda")
+  def isDepLambda: is = is(_.isInstanceOf[DepLambda[_, _]], "DepLambda")
   def isIdentifier: is = is(_.isInstanceOf[Identifier], "Identifier")
   def isApply: is = is(_.isInstanceOf[App], "Apply")
 
@@ -95,7 +95,7 @@ object predicate {
     }
   }
 
-  def isVectorArray(t: Type): Boolean = t match {
+  def isVectorArray(t: ExprType): Boolean = t match {
     case ArrayType(_, VectorType(_,_)) => true
     case _ => false
   }
@@ -103,7 +103,7 @@ object predicate {
   case class isEqualToUntyped(x: ToBeTyped[Expr]) extends Strategy[Rise] {
     override def apply(e: Rise): RewriteResult[Rise] = {
       val p = x.toUntypedExpr
-      if (p == e) Success(e) else Failure(isEqualToUntyped(x))
+      if (p =~~= e) Success(e) else Failure(isEqualToUntyped(x))
     }
   }
 }

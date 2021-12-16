@@ -2,17 +2,18 @@ package shine.OpenMP
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
+import rise.core.types.{DataType, NatKind}
+import rise.core.types.DataType._
+import rise.core.substitute.{natInType => substituteNatInType}
 import shine.C.AST.{ArraySubscript, Decl}
 import shine.C.Compilation.CodeGenerator.CIntExpr
 import shine.C.Compilation.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
-import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType, ScalarType, VectorType}
+import shine.DPIA.Types.{AccType, CommType, ExpType, PhraseType}
 import shine.DPIA.primitives.functional._
-import shine.DPIA.{Compilation, Nat, NatIdentifier, Phrases, error, freshName}
+import shine.DPIA.{ArrayData, Compilation, Data, Nat, NatIdentifier, Phrases, VectorData, error, freshName}
 import shine.OpenMP.primitives.imperative.{ParFor, ParForNat}
 import shine.{C, _}
 
@@ -40,7 +41,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       OpenMPCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
     case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) =>
       OpenMPCodeGen.codeGenParForVec(n, dt, a, i, o, p, env)
-    case ParForNat(n, _, a, DepLambda(i, Lambda(o, p))) =>
+    case ParForNat(n, _, a, DepLambda(NatKind, i, Lambda(o, p))) =>
       OpenMPCodeGen.codeGenParForNat(n, a, i, o, p, env)
     case phrase => phrase |> super.cmd(env)
   }
@@ -48,19 +49,19 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def acc(env: Environment,
                    path: Path,
                    cont: Expr => Stmt): Phrase[AccType] => Stmt = {
-    case AsVectorAcc(n, _, _, a) => path match {
-      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i / n) :: ps, cont)
+    case AsVectorAcc(_, m, _, a) => path match {
+      case (i: CIntExpr) :: ps => a |> acc(env, CIntExpr(i / m) :: ps, cont)
       case _ => error(s"Expected path to be not empty")
     }
-    case AsScalarAcc(_, m, dt, a) => path match {
+    case AsScalarAcc(n, _, dt, a) => path match {
       case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr((i * m) + j) :: ps, cont)
+        a |> acc(env, CIntExpr((i * n) + j) :: ps, cont)
 
       case (i: CIntExpr) :: Nil =>
-        a |> acc(env, CIntExpr(i * m) :: Nil, {
+        a |> acc(env, CIntExpr(i * n) :: Nil, {
           case ArraySubscript(v, idx) =>
             // emit something like: ((struct float4 *)v)[idx]
-            val ptrType = C.AST.PointerType(typ(VectorType(m, dt)))
+            val ptrType = C.AST.PointerType(typ(VectorType(n, dt)))
             cont(C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx))
         })
       case _ => error(s"Expected path to be not empty")
@@ -95,9 +96,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
       case _ => phrase |> super.exp(env, path, cont)
     }
-    case ForeignFunctionCall(f, inTs, outT, args) =>
-      OpenMPCodeGen.codeGenForeignFunctionCall(f, inTs, outT, args, env, path, cont)
-    case AsVectorAligned(n, _, _, dt, e) => path match {
+    case ffc@ForeignFunctionCall(f, _) =>
+      OpenMPCodeGen.codeGenForeignFunctionCall(f, ffc.inTs, ffc.outT, ffc.args, env, path, cont)
+    case AsVectorAligned(n, _, dt, _, e) => path match {
       case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
         e |> exp(env, CIntExpr((i * n) + j) :: ps, cont)
 
@@ -136,7 +137,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def typ(dt: DataType): Type = {
     dt match {
-      case v: shine.DPIA.Types.VectorType =>
+      case v: VectorType =>
         // this sets the representation of vector types in C:
         // struct float4 {
         //    float data[4];
@@ -220,13 +221,13 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       //FIRST we must substitute in the indexing of o in the phrase
        Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
       //THEN and only THEN we can change the type to use the new index var
-       PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
+         shine.DPIA.Types.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
 
       env.copy(identEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
-          (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+          (Identifier(name, AccType(substituteNatInType(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
         case (Identifier(name, ExpType(dt, w)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt), w)), declRef)
+          (Identifier(name, ExpType(substituteNatInType(NamedVar(cI.name, range), `for` = i, in = dt), w)), declRef)
         case x => x
       }) |> (env =>
 
@@ -272,14 +273,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           C.AST.Block(immutable.Seq(p |> updatedGen.cmd(env)))))))
     }
 
-    def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
+    def codeGenLiteral(d: Data): Expr = {
       d match {
         case VectorData(vector) => CCodeGen.codeGenLiteral(ArrayData(vector))
         case _ => CCodeGen.codeGenLiteral(d)
       }
     }
 
-    def codeGenForeignFunctionCall(funDecl: ForeignFunction.Declaration,
+    def codeGenForeignFunctionCall(funDecl: rise.core.ForeignFunction.Decl,
                                    inTs: collection.Seq[DataType],
                                    outT: DataType,
                                    args: collection.Seq[Phrase[ExpType]],

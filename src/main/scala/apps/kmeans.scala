@@ -5,6 +5,7 @@ import rise.core.DSL.Type._
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.KernelExecutor._
@@ -44,6 +45,15 @@ object kmeans {
       ) |> select
     ))
   ))
+
+  val kmeansOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val p = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(256), GlobalSize(p))
+  })
 
   val kmeansOcl: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
     (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)

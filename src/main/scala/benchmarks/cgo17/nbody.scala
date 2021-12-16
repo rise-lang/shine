@@ -6,7 +6,7 @@ import shine.OpenCL._
 import util._
 
 object nbody {
-  def withSize(N: Int, sampleCount: Int): Unit = {
+  def withSize(N: Int, sampleCount: Int): Seq[(String, TimeStat[Time.ms])] = {
     val random = new scala.util.Random()
     val pos = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
     val vel = Array.fill(N * 4)(random.nextFloat() * random.nextInt(10))
@@ -15,18 +15,29 @@ object nbody {
     val globalSizeAMD = GlobalSize(N)
     val localSizeNVIDIA = LocalSize((tileX, tileY))
     val globalSizeNVIDIA = GlobalSize((N, tileY))
-    val kernelAMD = gen.opencl.kernel.fromExpr(nbodyAMD)
-    val kernelNVIDIA = gen.opencl.kernel.fromExpr(nbodyNVIDIA)
+    val kernelAMD = gen.opencl.kernel(Some(nbodyAMDKnownSizes), "KERNEL").fromExpr(nbodyAMD)
+    val tmp = gen.opencl.kernel(Some(nbodyNVIDIAKnownSizes), "KERNEL").fromExpr(nbodyNVIDIA)
+    val kernelNVIDIA = new shine.OpenCL.KernelModule(tmp.decls, tmp.kernels) {
+      override def codeOverride(): Option[String] = Some(
+        util.readFile(s"src/main/scala/apps/CGO21_NBodyNVIDIA_fix.cl")
+      )
+    }
 
     val stats = Seq(
-      ("original AMD", benchmark(sampleCount, runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)._2)),
+      ("original AMD", benchmark(sampleCount, runOriginalKernel("CGO17_NBodyAMD_novload_novstore.cl", localSizeAMD, globalSizeAMD, pos, vel)._2)),
       ("dpia AMD", benchmark(sampleCount, runKernel(kernelAMD, localSizeAMD, globalSizeAMD, pos, vel)._2)),
-      ("original NVIDIA", benchmark(sampleCount, runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)._2)),
+      ("original NVIDIA", benchmark(sampleCount, runOriginalKernel("CGO17_NBodyNVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)._2)),
       ("dpia NVIDIA", benchmark(sampleCount, runKernel(kernelNVIDIA, localSizeNVIDIA, globalSizeNVIDIA, pos, vel)._2))
     )
     println(s"runtime over $sampleCount runs")
     stats.foreach { case (name, stat) => println(s"$name: $stat") }
+    stats
   }
+
+  def bench(): Seq[(String, Seq[(String, TimeStat[Time.ms])])] = Seq(
+    ("small", withSize(16384, 10)),
+    ("large", withSize(131072, 10))
+  )
 
   def main(args: Array[String]): Unit = {
     withExecutor {

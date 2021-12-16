@@ -1,21 +1,21 @@
 package rise.elevate
 
+import _root_.util.gen
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import rise.core.DSL.Type._
-import rise.core.primitives._
 import rise.core.DSL._
-import rise.core._
+import rise.core.primitives._
+import rise.core.types.DataType._
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
+import rise.elevate.rules.lowering
 import rise.elevate.rules.movement.liftReduce
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
-import rise.elevate.rules.{checkType, lowering}
 import rise.elevate.strategies.traversal._
 import rise.elevate.util._
-import _root_.util.gen
 
 class algorithmic extends test_util.Tests {
 
@@ -63,17 +63,17 @@ class algorithmic extends test_util.Tests {
   // Swap Nesting of map and reduce
 
   test("lift reduce") {
-    val M = NatIdentifier("M", isExplicit = true)
-    val N = NatIdentifier("N", isExplicit = true)
+    val M = NatIdentifier("M")
+    val N = NatIdentifier("N")
 
     val addTuple = fun(x => fst(x) + snd(x))
 
-    val mapReduce = depLambda[NatKind](M, depLambda[NatKind](N,
+    val mapReduce = depLambda(NatKind, M, depLambda(NatKind, N,
       fun(ArrayType(M, ArrayType(N, f32)))(i =>
         map(reduce(fun(x => fun(a => x + a)))(lf32(0.0f))) $ i)))
 
     val reduceMap: Rise =
-      depLambda[NatKind](M, depLambda[NatKind](N,
+      depLambda(NatKind, M, depLambda(NatKind, N,
         fun(ArrayType(M, ArrayType(N, f32)))(i =>
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc)(y)))(generate(fun(IndexType(M) ->: f32)(_ => lf32(0.0f)))) $ transpose(i))))
@@ -83,18 +83,18 @@ class algorithmic extends test_util.Tests {
     val typedGold = DFNF(reduceMap)
     val typedRewrite = DFNF(rewrite)
 
-    assert(typedRewrite == typedGold)
+    assert(typedRewrite.get =~= typedGold.get)
   }
 
 
   // Tests and Expressions related to loop reordering in Matrix Multiplication
 
   test("MM to MM-LoopMKN") {
-    val M = NatIdentifier("M", isExplicit = true)
-    val N = NatIdentifier("N", isExplicit = true)
-    val K = NatIdentifier("K", isExplicit = true)
+    val M = NatIdentifier("M")
+    val N = NatIdentifier("N")
+    val K = NatIdentifier("K")
 
-    val mm = depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+    val mm = depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
           a |> map(fun(ak =>
@@ -104,7 +104,7 @@ class algorithmic extends test_util.Tests {
                   lf32(0.0f)))))))))))
 
     def goldMKN(reduceFun: ToBeTyped[Rise]): ToBeTyped[Rise] = {
-      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
             a |> map(fun(ak =>
@@ -135,17 +135,17 @@ class algorithmic extends test_util.Tests {
     val typedGold = goldMKNAlternative.toExpr
     val loopMKN = (topDown(liftReduce) `;` DFNF `;` topDown(removeTransposePair)).apply(mm).get
 
-    assert(loopMKN == typedGold)
+    assert(loopMKN =~= typedGold)
   }
 
   // This one just serves as documentation for different mm-rise-expressions
   ignore("MM-LoopMKN to MM-LoopKMN") {
-    val M = NatIdentifier("M", isExplicit = true)
-    val N = NatIdentifier("N", isExplicit = true)
-    val K = NatIdentifier("K", isExplicit = true)
+    val M = NatIdentifier("M")
+    val N = NatIdentifier("N")
+    val K = NatIdentifier("K")
 
     val mmMKN = {
-      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
             map(fun(ak =>
@@ -197,7 +197,7 @@ class algorithmic extends test_util.Tests {
 
     // this one is constructed more similar to what the rewrite rules will create
     val goldKMNAlternative =
-      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
             reduceSeq(
@@ -216,7 +216,7 @@ class algorithmic extends test_util.Tests {
 
     // unfortunately, the order of zip arguments is important
     val goldKMNAlternative2 =
-      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
         fun(ArrayType(M, ArrayType(K, f32)))(a =>
           fun(ArrayType(K, ArrayType(N, f32)))(b =>
             reduceSeq(
@@ -238,7 +238,7 @@ class algorithmic extends test_util.Tests {
 
     val loopKMN = topDown(liftReduce).apply(mmMKN.toExpr).get
 
-    assert(goldKMNAlternative2.toExpr == loopKMN)
+    assert(goldKMNAlternative2.toExpr =~= loopKMN)
 
     /*
     val goldKMNAlternative2LowLevel =
@@ -268,12 +268,12 @@ class algorithmic extends test_util.Tests {
 
   // todo remove once PLDI-TVM tests are in
   ignore("mm tile + reorder") {
-    val M = NatIdentifier("M", isExplicit = true)
-    val N = NatIdentifier("N", isExplicit = true)
-    val K = NatIdentifier("K", isExplicit = true)
+    val M = NatIdentifier("M")
+    val N = NatIdentifier("N")
+    val K = NatIdentifier("K")
 
     val mm =
-      DFNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+      DFNF(depLambda(NatKind, M, depLambda(NatKind, N, depLambda(NatKind, K,
       fun(ArrayType(M, ArrayType(K, f32)))(a =>
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
           map(fun(ak =>
@@ -287,7 +287,7 @@ class algorithmic extends test_util.Tests {
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
     val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
-    println(gen.c.function.asStringFromExpr(lower(typed).get))
+    logger.debug(gen.c.function.asStringFromExpr(lower(typed).get))
 
     /// TILE + REORDER
 
@@ -296,7 +296,7 @@ class algorithmic extends test_util.Tests {
 
     val reorder = tileReorder(mm).get
 
-    println(gen.c.function.asStringFromExpr(lower(reorder).get))
+    logger.debug(gen.c.function.asStringFromExpr(lower(reorder).get))
   }
 
   test("tile mm") {

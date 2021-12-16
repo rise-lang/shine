@@ -1,6 +1,7 @@
 package shine.DPIA.Phrases
 
 import shine.DPIA.Types._
+import rise.core.types.Kind
 
 object PrettyPhrasePrinter {
 
@@ -8,7 +9,7 @@ object PrettyPhrasePrinter {
     p match {
       case app: Apply[a, T] => s"(${apply(app.fun)})(${apply(app.arg)})"
 
-      case app: DepApply[_, T] => s"(${apply(app.fun)})(${app.arg})"
+      case app: DepApply[_, _, T] => s"(${apply(app.fun)})(${app.arg})"
 
       case p1: Proj1[a, b] => s"π1(${apply(p1.pair)})"
 
@@ -25,7 +26,7 @@ object PrettyPhrasePrinter {
 
       case Lambda(param, body) => s"λ ${apply(param)}: ${param.t} -> ${apply(body)}"
 
-      case dl @ DepLambda(param, body) => s"Λ (${param.name}: ${dl.kn.get}) -> ${apply(body)}"
+      case DepLambda(kind, param, body) => s"Λ (${Kind.idName(kind, param)}: ${kind.name}) -> ${apply(body)}"
 
       case LetNat(binder, defn, body) => s"nLet ${binder.name} = ${apply(defn)} in ${apply(body)}"
 
@@ -34,6 +35,18 @@ object PrettyPhrasePrinter {
       case Natural(n) => n.toString
 
       case PhrasePair(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
+
+      case shine.DPIA.primitives.imperative.Comment(comment) => s"\n//$comment\n"
+
+      case shine.OpenCL.primitives.imperative.Barrier(local, global) =>
+        s"""barrier( ${if(local) "CLK_LOCAL_MEM_FENCE" else ""} ${if(global && local) "|" else ""}
+          ${if(global) "CLK_GLOBAL_MEM_FENCE" else ""})"""
+
+      case shine.cuda.primitives.imperative.SyncThreads() => "__syncthreads()"
+
+      case shine.cuda.primitives.imperative.SyncWarp() => "__syncwarp()"
+
+      case shine.cuda.primitives.imperative.SyncPipeline(pipe) => s"$pipe.commit_and_wait()"
 
       case c: Primitive[_] => c.prettyPrint
     }

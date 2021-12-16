@@ -74,25 +74,37 @@ object HighLevelConstructs {
 
   val reorderWithStride: ToBeTyped[Expr] = {
     depFun((s: Nat) => {
-      val f =
-        impl { n: Nat =>
-          fun(IndexType(n))(i =>
-            natAsIndex(n)(
-              (indexAsNat(i) / (n /^ s)) +
-                (l(s) * (indexAsNat(i) % (n /^ s)))
-            )
-          )
-        }
-      reorder(f)(f)
+      impl { n: Nat =>
+        def f = n2nFun(n)(i => (i / (n /^ s)) + (s * (i % (n /^ s))))
+        reorder(n)(f)(f)
+      }
     })
   }
+
+  // NOTE: this looks wrong to me, but comes from original Lift
+  def scatterShift: ToBeTyped[Expr] = depFun((s: Nat) =>
+    impl { n: Nat => impl { dt: DataType =>
+      scatter(generate(fun(i =>
+        natAsIndex(n)((indexAsNat(i) + l(s)) - l(n)*(indexAsNat(i) / l(n-1)))
+      ))) :: (n`.`dt) ->: (n`.`dt)
+    }}
+  )
 
   def padClamp2D(b: Nat): ToBeTyped[Expr] = padClamp2D(b, b, b, b)
 
   def padClamp2D(l: Nat, r: Nat): ToBeTyped[Expr] = padClamp2D(l, r, l, r)
 
   def padClamp2D(lOuter: Nat, rOuter: Nat, lInner: Nat, rInner: Nat): ToBeTyped[Expr] =
-    map(padClamp(lInner)(rInner)) >> padClamp(lOuter)(rOuter)
+    padClampND(Seq((lOuter, rOuter), (lInner, rInner)))
+
+  def padClamp3D(b: Nat): ToBeTyped[Expr] = padClampND(Seq((b, b), (b, b), (b, b)))
+
+  def padClampND(lrs: Seq[(Nat, Nat)]): ToBeTyped[Expr] =
+    lrs match {
+      case Nil => fun(x => x)
+      case (l, r) +: Nil => padClamp(l)(r)
+      case (l, r) +: inner => map(padClampND(inner)) >> padClamp(l)(r)
+    }
 
   def padCst2D(n: Nat): ToBeTyped[Expr] = padCst2D(n, n)
 

@@ -12,6 +12,7 @@ import rise.core.primitives._
 import Type._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import util.gen.c.function
 
 import scala.util.Random
@@ -25,7 +26,7 @@ class Partition extends test_util.Tests {
       depFun((n: Nat) =>
         fun(ArrayType(n, f32))(xs => xs |> partition.apply(3)(lenF) |> depMapSeq(mapSeq(fun(x => x)))))
 
-    println("\n" + slideExample + "\n")
+    logger.debug("\n" + slideExample + "\n")
 
     val code = function.asStringFromExpr(slideExample)
     SyntaxChecker(code)

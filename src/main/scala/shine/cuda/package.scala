@@ -1,13 +1,16 @@
 package shine
 
-import arithexpr.arithmetic.{ArithExpr, ContinuousRange, PosInf, Range, SimplifiedExpr}
-import shine.OpenCL.BuiltInFunctionCall
+import arithexpr.arithmetic.{ArithExpr, SimplifiedExpr}
+import rise.core.types.{DataType, Fragment, MatrixLayoutIdentifier}
+import shine.DPIA.Nat
+import shine.DPIA.Phrases.Phrase
+import shine.DPIA.Types.ExpType
 
 package object cuda {
 
-  val AddressSpace: shine.DPIA.Types.AddressSpace.type =
-    shine.DPIA.Types.AddressSpace
-  type AddressSpace = shine.DPIA.Types.AddressSpace
+  val AddressSpace: rise.core.types.AddressSpace.type =
+    rise.core.types.AddressSpace
+  type AddressSpace = rise.core.types.AddressSpace
   val warpSize = 32
 
   def gridDim: OpenCL.get_num_groups.type = shine.OpenCL.get_num_groups
@@ -38,5 +41,12 @@ package object cuda {
   object globalDim {
     def apply(param: Int): ArithExpr with SimplifiedExpr =
       blockDim(param) * gridDim(param)
+  }
+
+  object AsFragment{
+    def apply(rows: Nat, columns: Nat, layers: Nat, dataType: DataType,
+              frag: Fragment, matrix: Phrase[ExpType]): shine.cuda.primitives.functional.AsFragment =
+      shine.cuda.primitives.functional.AsFragment(rows, columns, layers, dataType,
+        frag, MatrixLayoutIdentifier("ml"), matrix)
   }
 }

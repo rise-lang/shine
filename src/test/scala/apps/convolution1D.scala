@@ -9,6 +9,7 @@ import rise.openCL.primitives.oclReduceSeqUnroll
 import rise.openCL.DSL._
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen
 
@@ -98,7 +99,7 @@ class convolution1D extends test_util.Tests {
       `)=>` Array[Float]]
     val (output, time) = run(localSize, globalSize)(N `,` input)
     util.assertSame(output, gold, "output is different from gold")
-    println(s"time: $time")
+    logger.debug(s"time: $time")
   }
 
   test("binomialTile compiles to valid OpenCL that passes checks") {
@@ -145,7 +146,7 @@ class convolution1D extends test_util.Tests {
 
   // TODO: nat unification
   ignore("depSlide inference") {
-    println(
+    logger.debug(
       depFun((n: Nat) => fun(((n+2)`.`f32) ->: (n`.`f32))(a =>
         a |>
         depSlide(n+2)(34)(32) >>

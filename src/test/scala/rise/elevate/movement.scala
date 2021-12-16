@@ -6,7 +6,8 @@ import rise.elevate.util._
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core._
-import rise.core.types.{Nat, f32}
+import rise.core.types.Nat
+import rise.core.types.DataType._
 import Type._
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.default._
@@ -24,9 +25,7 @@ class movement extends test_util.Tests {
     // TODO: investigate why type erasure is required here
     // https://github.com/rise-lang/shine/issues/86
     val uab: Rise = eraseType(na) :: nb.t
-    val ca = makeClosed(uab)
-    val cb = makeClosed(nb)
-    ca == cb
+    makeClosed(uab) =~= makeClosed(nb)
   }
 
   test("**f >> T -> T >> **f") {

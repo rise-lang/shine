@@ -1,17 +1,18 @@
 package shine.DPIA.Primitives
 
-import rise.core.{ForeignFunction, Lambda}
+import rise.core.{Expr, Lambda}
 import rise.core.DSL._
 import rise.core.primitives._
-import Type._
+import rise.core.DSL.Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import util.gen
 import util.gen.c.function
 
 class Generate extends test_util.Tests {
   val id: ToBeTyped[Lambda] = fun(x => x)
   val addT: ToBeTyped[Lambda] = fun(x => fst(x) + snd(x))
-  val cos: ToBeTyped[ForeignFunction] = foreignFun("callCos", Seq("x"), "{ return cos(x); }", f64 ->: f64)
+  val cos: ToBeTyped[Expr] = foreignFun("callCos", Seq("x"), "{ return cos(x); }", f64 ->: f64)
 
   test("Very simple one-dimensional generate generates syntactically correct code in C.") {
     val e = depFun((n: Nat) => generate(fun(IndexType(n))(i => cast(i) + lf64(1.0))) |> mapSeq(id))

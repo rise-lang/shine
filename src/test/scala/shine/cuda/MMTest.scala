@@ -1,8 +1,9 @@
 package shine.cuda
 
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics.FloatData
-import shine.DPIA.Types.MatrixLayout._
+import rise.core.types.MatrixLayout._
+import rise.core.types.{Fragment,  MatrixLayout, MatrixLayoutIdentifier, NatIdentifier, NatKind, read, write}
+import rise.core.types.DataType._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Fst, Join, Snd, Split, Transpose, Zip}
@@ -14,9 +15,9 @@ import test_util.similar
 import util.gen
 
 class MMTest extends test_util.TestWithCUDA {
-  val n = NatIdentifier(freshName("n"))
-  val m = NatIdentifier(freshName("m"))
-  val k = NatIdentifier(freshName("k"))
+  val n: NatIdentifier = NatIdentifier(freshName("n"))
+  val m: NatIdentifier = NatIdentifier(freshName("m"))
+  val k: NatIdentifier = NatIdentifier(freshName("k"))
 
   val compilerOptions = List("--gpu-architecture=compute_70")
 
@@ -38,28 +39,26 @@ class MMTest extends test_util.TestWithCUDA {
           AsMatrix(mTile, nTile, kTile, f32,
 
             //do matrix multiplication
-            ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, nTile, kTile, f16),
-              TensorMatMultAdd(mTile, nTile, kTile, Row_Major, Row_Major, f16, f32,
+            ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, nTile, kTile, f32, Fragment.Accumulator, MatrixLayout.None),
+              TensorMatMultAdd(mTile, nTile, kTile, MatrixLayoutIdentifier("ml"), MatrixLayoutIdentifier("ml"), f16, f32,
 
                 //load aMatrix into a fragment
-                ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, kTile, nTile, f16, FragmentKind.AMatrix, Row_Major),
-                  AsFragment(mTile, kTile, nTile, f16, FragmentKind.AMatrix,
-                    matrixATile)),
+                ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, kTile, nTile, f16, Fragment.AMatrix, MatrixLayoutIdentifier("ml")),
+                  shine.cuda.AsFragment(mTile, kTile, nTile, f16, Fragment.AMatrix, matrixATile)),
 
                 //load bMatrix into a fragment
-                ToMem(shine.cuda.AddressSpace.Private, FragmentType(kTile, nTile, mTile, f16, FragmentKind.BMatrix, Row_Major),
-                  AsFragment(kTile, nTile, mTile, f16, FragmentKind.BMatrix,
-                    matrixBTile)),
+                ToMem(shine.cuda.AddressSpace.Private, FragmentType(kTile, nTile, mTile, f16, Fragment.BMatrix, MatrixLayoutIdentifier("ml")),
+                  shine.cuda.AsFragment(kTile, nTile, mTile, f16, Fragment.BMatrix, matrixBTile)),
 
                 //add fragment with zeros
-                ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, nTile, kTile, f16),
-                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Accumulator, Row_Major))))))
+                ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, nTile, kTile, f32, Fragment.Accumulator, MatrixLayout.None),
+                  GenerateFragment(mTile, nTile, kTile, f32, Fragment.Accumulator, MatrixLayout.None, Literal(FloatData(0.0f))))))))
       )
 
     val kernel = gen.cuda.kernel("matrixMult").fromPhrase(simpleMatMulTile)
 
-    println("KernelCode:")
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug("KernelCode:")
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
     //Check kernel-result
     val matrixATest = generateMatrix(mTile, kTile)
@@ -77,12 +76,10 @@ class MMTest extends test_util.TestWithCUDA {
 
       //Check result
       if (!similar(resultTest, resultMatrix)) {
-        println("Expected:")
-        print(resultTest.map(_.mkString(" ")).mkString("\n"))
-        println()
-        println("\nFound:")
-        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-        println()
+        logger.debug("Expected:")
+        logger.debug(resultTest.map(_.mkString(" ")).mkString("\n"))
+        logger.debug("\nFound:")
+        logger.debug(resultMatrix.map(_.mkString(" ")).mkString("\n"))
         throw new Exception("False Result")
       }
     }
@@ -96,36 +93,36 @@ class MMTest extends test_util.TestWithCUDA {
 
     val matrixATile = Identifier(freshName("MatrixATile"), ExpType(ArrayType(mTile, ArrayType(k, f16)), read))
     val matrixBTile = Identifier(freshName("MatrixBTile"), ExpType(ArrayType(k, ArrayType(nTile, f16)), read))
-    val matrixCFrag = Identifier(freshName("MatrixCFrag"), ExpType(FragmentType(mTile, nTile, kTile, f32), read))
+    val matrixCFrag = Identifier(freshName("MatrixCFrag"), ExpType(FragmentType(mTile, nTile, kTile, f32, Fragment.Accumulator, MatrixLayout.None), read))
     val matrixABTiles = Identifier(freshName("MatrixABTiles"), ExpType(PairType(
       ArrayType(mTile, ArrayType(kTile, f16)),
       ArrayType(kTile, ArrayType(nTile, f16))), read))
 
     //Kernel
     val simpleMatMulTile =
-      DepLambda[NatKind](k)(
+      DepLambda(NatKind, k)(
         Lambda[ExpType, FunType[ExpType, ExpType]](matrixATile,
           Lambda[ExpType, ExpType](matrixBTile,
             AsMatrix(mTile, nTile, kTile, f32,
-              ReduceSeq(false)(k /^ kTile, shine.cuda.AddressSpace.Private,
+              ReduceSeq(unroll = false)(k /^ kTile, shine.cuda.AddressSpace.Private,
                 PairType(
                   ArrayType(mTile, ArrayType(kTile, f16)),
                   ArrayType(kTile, ArrayType(nTile, f16))),
-                FragmentType(mTile, nTile, kTile, f32),
+                FragmentType(mTile, nTile, kTile, f32, Fragment.Accumulator, MatrixLayout.None),
 
                 Lambda[ExpType, FunType[ExpType, ExpType]](matrixCFrag,
                   Lambda[ExpType, ExpType](matrixABTiles,
-                    TensorMatMultAdd(mTile, nTile, kTile, Row_Major, Row_Major, f16, f32,
-                      ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, kTile, nTile, f16, FragmentKind.AMatrix, Row_Major),
-                        AsFragment(mTile, kTile, nTile, f16, FragmentKind.AMatrix,
+                    TensorMatMultAdd(mTile, nTile, kTile, MatrixLayoutIdentifier("ml"), MatrixLayoutIdentifier("ml"), f16, f32,
+                      ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, kTile, nTile, f16, Fragment.AMatrix, MatrixLayoutIdentifier("ml")),
+                        shine.cuda.AsFragment(mTile, kTile, nTile, f16, Fragment.AMatrix,
                           Transpose(kTile, mTile, f16, read,
                             Fst(
                               ArrayType(kTile, ArrayType(mTile, f16)),
                               ArrayType(kTile, ArrayType(nTile, f16)),
                               matrixABTiles)))),
 
-                      ToMem(shine.cuda.AddressSpace.Private, FragmentType(kTile, nTile, mTile, f16, FragmentKind.BMatrix, Row_Major),
-                        AsFragment(kTile, nTile, mTile, f16, FragmentKind.BMatrix,
+                      ToMem(shine.cuda.AddressSpace.Private, FragmentType(kTile, nTile, mTile, f16, Fragment.BMatrix, MatrixLayoutIdentifier("ml")),
+                        shine.cuda.AsFragment(kTile, nTile, mTile, f16, Fragment.BMatrix,
                           Snd(
                             ArrayType(mTile, ArrayType(kTile, f16)),
                             ArrayType(kTile, ArrayType(nTile, f16)),
@@ -133,7 +130,7 @@ class MMTest extends test_util.TestWithCUDA {
 
                       matrixCFrag))),
 
-                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Accumulator, Row_Major),
+                  GenerateFragment(mTile, nTile, kTile, f32, Fragment.Accumulator, Row_Major, Literal(FloatData(0.0f))),
 
                 Zip(k /^ kTile,
                   ArrayType(mTile, ArrayType(kTile, f16)),
@@ -149,8 +146,8 @@ class MMTest extends test_util.TestWithCUDA {
 
     val kernel = gen.cuda.kernel("matrixMult").fromPhrase(simpleMatMulTile)
 
-    println("KernelCode:")
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug("KernelCode:")
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
 
     //Check kernel-result
@@ -171,12 +168,10 @@ class MMTest extends test_util.TestWithCUDA {
 
       //Check result
       if (!similar(resultTest, resultMatrix)) {
-        println("Expected:")
-        print(resultTest.map(_.mkString(" ")).mkString("\n"))
-        println()
-        println("\nFound:")
-        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-        println()
+        logger.debug("Expected:")
+        logger.debug(resultTest.map(_.mkString(" ")).mkString("\n"))
+        logger.debug("\nFound:")
+        logger.debug(resultMatrix.map(_.mkString(" ")).mkString("\n"))
         throw new Exception("False Result")
       }
     }
@@ -195,7 +190,7 @@ class MMTest extends test_util.TestWithCUDA {
     val matrixARow = Identifier(freshName("MatrixARow"), ExpType(ArrayType(mTile, ArrayType(k, f16)), read))
     val matrixBColumnT = Identifier(freshName("MatrixBColumn"), ExpType(ArrayType(nTile, ArrayType(k, f16)), read))
 
-    val matrixCFrag = Identifier(freshName("MatrixCFrag"), ExpType(FragmentType(mTile, nTile, kTile, f32), read))
+    val matrixCFrag = Identifier(freshName("MatrixCFrag"), ExpType(FragmentType(mTile, nTile, kTile, f32, Fragment.Accumulator, MatrixLayout.None), read))
 
     val matrixABTiles = Identifier(freshName("MatrixABTiles"), ExpType(PairType(
       ArrayType(kTile, ArrayType(mTile, f16)),
@@ -203,15 +198,15 @@ class MMTest extends test_util.TestWithCUDA {
 
     //Kernel
     val simpleMatMul =
-      DepLambda[NatKind](m)(
-        DepLambda[NatKind](n)(
-          DepLambda[NatKind](k)(
+      DepLambda(NatKind, m)(
+        DepLambda(NatKind, n)(
+          DepLambda(NatKind, k)(
             //Input: matrixA
             Lambda[ExpType, FunType[ExpType, ExpType]](matrixA,
               //And matrixB
               Lambda[ExpType, ExpType](matrixB,
-                Transpose(n, m, f32, read,
-                  Join(n /^ nTile, nTile, read, ArrayType(m, f32),
+                Transpose(n, m, f32, write,
+                  Join(n /^ nTile, nTile, write, ArrayType(m, f32),
                   //Map over nTile-column-block of matrixB
                   Map(Local, 1)(n /^ nTile,
                     //A transposed column of matrixB
@@ -235,24 +230,24 @@ class MMTest extends test_util.TestWithCUDA {
                             Lambda[ExpType, ExpType](matrixARow,
                               AsMatrix(mTile, nTile, kTile, f32,
                                 //Multiply mTile rows of matrixA with kTest columns of matrixB
-                                ReduceSeq(false)(k /^ kTile, shine.cuda.AddressSpace.Private,
+                                ReduceSeq(unroll = false)(k /^ kTile, shine.cuda.AddressSpace.Private,
                                   //Input: Pair of transposed matrixATile and matrixBTile
                                   PairType(
                                     ArrayType(mTile, ArrayType(kTile, f16)),
                                     ArrayType(kTile, ArrayType(nTile, f16))),
 
                                   //Result: tile of cMatrix as fragment
-                                  FragmentType(mTile, nTile, kTile, f32),
+                                  FragmentType(mTile, nTile, kTile, f32, Fragment.Accumulator, MatrixLayout.None),
 
                                   //Multiply matrixATile and matrixBTile
                                   Lambda[ExpType, FunType[ExpType, ExpType]](matrixCFrag,
                                     Lambda[ExpType, ExpType](matrixABTiles,
                                       //matrix multiply and accumulate
-                                      TensorMatMultAdd(mTile, nTile, kTile, Row_Major, Row_Major, f16, f32,
+                                      TensorMatMultAdd(mTile, nTile, kTile, MatrixLayoutIdentifier("ml"), MatrixLayoutIdentifier("ml"), f16, f32,
 
                                         //matrixATile as fragment
-                                        ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, kTile, nTile, f16, FragmentKind.AMatrix, Row_Major),
-                                          AsFragment(mTile, kTile, nTile, f16, FragmentKind.AMatrix,
+                                        ToMem(shine.cuda.AddressSpace.Private, FragmentType(mTile, kTile, nTile, f16, Fragment.AMatrix, MatrixLayoutIdentifier("ml")),
+                                          shine.cuda.AsFragment(mTile, kTile, nTile, f16, Fragment.AMatrix,
                                             Transpose(kTile, mTile, f16, read,
                                               Fst(
                                                 ArrayType(mTile, ArrayType(kTile, f16)),
@@ -260,8 +255,8 @@ class MMTest extends test_util.TestWithCUDA {
                                                 matrixABTiles)))),
 
                                         //matrixBTile as fragment
-                                        ToMem(shine.cuda.AddressSpace.Private, FragmentType(kTile, nTile, mTile, f16, FragmentKind.BMatrix, Row_Major),
-                                          AsFragment(kTile, nTile, mTile, f16, FragmentKind.BMatrix,
+                                        ToMem(shine.cuda.AddressSpace.Private, FragmentType(kTile, nTile, mTile, f16, Fragment.BMatrix, MatrixLayoutIdentifier("ml")),
+                                          shine.cuda.AsFragment(kTile, nTile, mTile, f16, Fragment.BMatrix,
                                             Snd(
                                               ArrayType(mTile, ArrayType(kTile, f16)),
                                               ArrayType(kTile, ArrayType(nTile, f16)),
@@ -270,7 +265,7 @@ class MMTest extends test_util.TestWithCUDA {
                                         matrixCFrag))),
 
                                   //Neutral Element for Reduce: fragment initialized with zeros
-                                  GenerateFragment(mTile, nTile, kTile, f32, Literal(FloatData(0.0f)), FragmentKind.Accumulator, Row_Major),
+                                  GenerateFragment(mTile, nTile, kTile, f32, Fragment.Accumulator, Row_Major, Literal(FloatData(0.0f))),
 
                                   //Zip transposed, splited row of matrixA and splited column of matrixB
                                   Zip(k /^ kTile,
@@ -299,8 +294,8 @@ class MMTest extends test_util.TestWithCUDA {
 
     val kernel = gen.cuda.kernel("matrixMult").fromPhrase(simpleMatMul)
 
-    println("KernelCode:")
-    println(shine.cuda.KernelModule.translationToString(kernel))
+    logger.debug("KernelCode:")
+    logger.debug(shine.cuda.KernelModule.translationToString(kernel))
 
 
     //Check kernel-result
@@ -324,12 +319,10 @@ class MMTest extends test_util.TestWithCUDA {
 
       //Check result
       if (!similar(resultTest, resultMatrix)) {
-        println("Expected:")
-        print(resultTest.map(_.mkString(" ")).mkString("\n"))
-        println()
-        println("\nFound:")
-        print(resultMatrix.map(_.mkString(" ")).mkString("\n"))
-        println()
+        logger.debug("Expected:")
+        logger.debug(resultTest.map(_.mkString(" ")).mkString("\n"))
+        logger.debug("\nFound:")
+        logger.debug(resultMatrix.map(_.mkString(" ")).mkString("\n"))
         throw new Exception("False Result")
       }
     }
@@ -341,7 +334,7 @@ class MMTest extends test_util.TestWithCUDA {
     for (i <- 0 until n) {
       array(i) = new scala.Array[Float](m)
       for (j <- 0 until m) {
-        array(i)(j) = (i * j).asInstanceOf[Float];
+        array(i)(j) = (i * j).asInstanceOf[Float]
       }
     }
 

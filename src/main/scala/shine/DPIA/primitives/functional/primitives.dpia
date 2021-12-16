@@ -1,0 +1,137 @@
+def asScalar(n: nat, m: nat, dt: data, a: access, array: exp[m.vec[dt, n], a]): exp[(m*n).dt, a]
+def asVector(n: nat, m: nat, dt: data, a: access, array: exp[(m*n).dt, a]): exp[m.vec[dt, n], a]
+def asVectorAligned(n: nat, m: nat, dt: data, a: access, array: exp[(m*n).dt, a]): exp[m.vec[dt, n], a]
+
+def cast(dt1: data, dt2: data, e: exp[dt1, read]): exp[dt2, read]
+
+def circularBuffer(n: nat, alloc: nat, sz: nat, dt1: data, dt2: data,
+                   load: exp[dt1, read] -> exp[dt2, write],
+                   input: exp[(n-1+sz).dt1, read]): exp[n.sz.dt2, read]
+
+def cycle(n: nat, m: nat, dt: data, input: exp[m.dt, read]): exp[n.dt, read]
+
+def depIdx(n: nat, ft: nat2data, index: nat, array: exp[n..ft, read]): exp[ft(index), read]
+
+def depJoin(n: nat, lenF: nat2nat, dt: data,
+            array: exp[n..(i: nat |-> lenF(i).dt), read]): exp[(sum_(i=0)^(n-1) lenF(i)).dt, read]
+
+def depMapSeq{unroll: Boolean}
+             (n: nat, ft1: nat2data, ft2: nat2data,
+              f: (k: nat) -> exp[ft1(k), read] -> exp[ft2(k), write],
+              array: exp[n..ft1, read]): exp[n..ft2, write]
+
+// def depTile(...)
+
+def depZip(n: nat, ft1: nat2data, ft2: nat2data,
+           e1: exp[n..ft1, read], e2: exp[n..ft2, read]): exp[n..(i: nat |-> (ft1(i), ft2(i)) ), read]
+
+// def dmatch(...)
+
+def drop(n: nat, m: nat, dt: data, array: exp[n+m.dt, read]): exp[m.dt, read]
+
+def foreignFunctionCall{funDecl: rise.core.ForeignFunction.Decl, n: Int}
+                        (inTs: n*data,
+                         outT: data,
+                         args: n*exp[*inTs, read]): exp[outT, read]
+
+def fst(dt1: data, dt2: data, pair: exp[(dt1, dt2), read]): exp[dt1, read]
+
+def gather(n: nat, m: nat, dt: data, indices: exp[m.idx[n], read], input: exp[n.dt, read]): exp[m.dt, read]
+
+def generate(n: nat, dt: data, f: exp[idx[n], read] -> exp[dt, read]): exp[n.dt, read]
+
+def idx(n: nat, dt: data, index: exp[idx[n], read], array: exp[n.dt, read]): exp[dt, read]
+
+def idxVec(n: nat, dt: data, index: exp[idx[n], read], vector: exp[vec[dt, n], read]): exp[dt, read]
+
+def indexAsNat(n: nat, e: exp[idx[n], read]): exp[natType, read]
+
+def iterate(n: nat, m: nat, k: nat, dt: data,
+            f: (l: nat) -> exp[(l*n).dt, read] -> exp[l.dt, write],
+            array: exp[(m*(n^k)).dt, read]): exp[m.dt, write]
+
+def iterateStream(n: nat, dt1: data, dt2: data,
+                  f: exp[dt1, read] -> exp[dt2, write],
+                  array: exp[n.dt1, read]): exp[n.dt2, write]
+
+def join(n: nat, m: nat, a: access, dt: data, array: exp[n.m.dt, a]): exp[(n*m).dt, a]
+
+def let(dt1: data, dt2: data, a: access, value: exp[dt1, read],
+        f: exp[dt1, read] -> exp[dt2, a]): exp[dt2, a]
+
+def makeArray{n: Int}(dt: data, elements: n*exp[dt, read]): exp[n.dt, read]
+
+// def makeDepPair(...)
+
+def makePair(dt1: data, dt2: data, a: access, fst: exp[dt1, a], snd: exp[dt2, a]): exp[(dt1, dt2), a]
+
+def map(n: nat, dt1: data, dt2: data, a: access,
+        f: exp[dt1, a] -> exp[dt2, a], array: exp[n.dt1, a]): exp[n.dt2, a]
+
+def mapFst(a: access, dt1: data, dt2: data, dt3: data,
+           f: exp[dt1, a] -> exp[dt3, a],
+           pair: exp[(dt1, dt2), a]): exp[(dt3, dt2), a]
+
+def mapSeq{unroll: Boolean}
+          (n: nat, dt1: data, dt2: data,
+           f: exp[dt1, read] -> exp[dt2, write], array: exp[n.dt1, read]): exp[n.dt2, write]
+
+def mapSnd(a: access, dt1: data, dt2: data, dt3: data,
+           f: exp[dt2, a] -> exp[dt3, a],
+           pair: exp[(dt1, dt2), a]): exp[(dt1, dt3), a]
+
+def mapStream(n: nat, dt1: data, dt2: data,
+              f: exp[dt1, read] -> exp[dt2, write], array: exp[n.dt1, read]): exp[n.dt2, write]
+
+def mapVec(n: nat, dt1: data, dt2: data,
+           f: exp[dt1, read] -> exp[dt2, write], array: exp[vec[dt1, n], read]): exp[vec[dt2, n], write]
+
+def natAsIndex(n: nat, e: exp[natType, read]): exp[idx[n], read]
+
+def padClamp(n: nat, l: nat, r: nat, dt: data, array: exp[n.dt, read]): exp[(l+n+r).dt, read]
+
+def padCst(n: nat, l: nat, r: nat, dt: data, padExp: exp[dt, read], array: exp[n.dt, read]): exp[(l+n+r).dt, read]
+
+def padEmpty(n: nat, r: nat, dt: data, array: exp[n.dt, write]): exp[(n+r).dt, write]
+
+def partition(n: nat, m: nat, lenF: nat2nat, dt: data, array: exp[n.dt, read]): exp[m..(i: nat |-> lenF(i).dt), read]
+
+// def printType{msg: String}(dt: data, a: access, input: exp[dt, a]): exp[dt, a]
+
+def reduceSeq{unroll: Boolean}
+             (n: nat, dt1: data, dt2: data,
+              f: exp[dt2, read] -> exp[dt1, read] -> exp[dt2, write],
+              init: exp[dt2, write],
+              array: exp[n.dt1, read]): exp[dt2, read]
+
+def reorder(n: nat, dt: data, a: access, idxF: nat2nat, idxFiv: nat2nat, input: exp[n.dt, a]): exp[n.dt, a]
+
+def rotateValues(n: nat, sz: nat, dt: data,
+                 wrt: exp[dt, read] -> exp[dt, write],
+                 input: exp[(n-1+sz).dt, read]): exp[n.sz.dt, read]
+
+def scanSeq(n: nat, dt1: data, dt2: data,
+            f: exp[dt1, read] -> exp[dt2, read] -> exp[dt2, write],
+            init: exp[dt2, write], array: exp[n.dt1, read]): exp[n.dt2, read]
+
+def scatter(n: nat, m: nat, dt: data, indices: exp[n.idx[m], read], input: exp[n.dt, write]): exp[m.dt, write]
+
+def slide(n: nat, sz: nat, sp: nat, dt: data, input: exp[(sp*n+sz).dt, read]): exp[(1+n).sz.dt, read]
+
+def snd(dt1: data, dt2: data, pair: exp[(dt1, dt2), read]): exp[dt2, read]
+
+def split(n: nat, m: nat, a: access, dt: data, array: exp[(m*n).dt, a]): exp[m.n.dt, a]
+
+def take(n: nat, m: nat, dt: data, array: exp[(n+m).dt, read]): exp[n.dt, read]
+
+def toMem(dt: data, input: exp[dt, write]): exp[dt, read]
+
+def transpose(n: nat, m: nat, dt: data, a: access, array: exp[n.m.dt, a]): exp[m.n.dt, a]
+
+def transposeDepArray(n: nat, m: nat, ft: nat2data, array: exp[n.m..ft, read]): exp[n..(i: nat |-> n.ft(i)), read]
+
+def unzip(n: nat, dt1: data, dt2: data, a: access, e: exp[n.(dt1, dt2), a]): exp[(n.dt1, n.dt2), a]
+
+def vectorFromScalar(n: nat, dt: data, arg: exp[dt, read]): exp[vec[dt, n], read]
+
+def zip(n: nat, dt1: data, dt2: data, a: access, e1: exp[n.dt1, a], e2: exp[n.dt2, a]): exp[n.(dt1, dt2), a]

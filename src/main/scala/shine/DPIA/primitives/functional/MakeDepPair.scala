@@ -1,43 +1,18 @@
 package shine.DPIA.primitives.functional
 
-import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.Compilation.TranslationToImperative._
-import shine.DPIA.DSL._
+import rise.core.types.{Access, DataType, NatKind}
+import rise.core.types.DataType._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.DPIA.primitives.imperative.{MkDPairFstI, MkDPairSndAcc}
-import shine.macros.Primitive.expPrimitive
 
-@expPrimitive
-final case class MakeDepPair(a: AccessType,
+final case class MakeDepPair(a: Access,
                              fst: NatIdentifier,
                              sndT: DataType,
                              snd: Phrase[ExpType]
-                        ) extends ExpPrimitive with ConT with AccT {
-  override val t: ExpType = expT(DepPairType(fst, sndT), a)
+                        ) extends ExpPrimitive {
+  override val t: ExpType = expT(DepPairType(NatKind, fst, sndT), a)
 
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] = {
-    // Allocate for the resulting dependent pair,
-    // then imperatively write the first element,
-    // acc-translate and write the second element
-    // and call the continuation on the result
-    // TODO(federico) - This is allocating eagerly. Make it allocate lazily by adding a suitable primitive:
-    //  ideally Dmatch(..,..., MkDPair(x, y))
-    // should not allocate
-    `new`(t.dataType, outVar => {
-      MkDPairFstI(fst, outVar.wr) `;`
-        acc(snd)(MkDPairSndAcc(fst, sndT, outVar.wr)) `;`
-        C(outVar.rd)
-    })
-  }
-
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] = {
-    // We have the acceptor already, so simply write the first element and then
-    // the second element in sequentially
-    MkDPairFstI(fst, A) `;`
-      acc(snd)(MkDPairSndAcc(fst, sndT, A))
-  }
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
+    MakeDepPair(v.access(a), v.nat(fst), v.data(sndT), VisitAndRebuild(snd, v))
 }

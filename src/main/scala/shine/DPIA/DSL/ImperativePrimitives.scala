@@ -1,11 +1,17 @@
 package shine.DPIA.DSL
 
+import rise.core.types.{DataType, NatKind, read}
+import rise.core.types.DataType._
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
+import rise.core.DSL.Type._
 import shine.DPIA._
 import shine.DPIA.primitives.functional.{Fst, Snd}
+
+object ImperativePrimitives {
+  def skip: Skip = Skip()
+}
 
 object `new` {
   def apply(dt: DataType,
@@ -23,7 +29,7 @@ object newDoubleBuffer {
             dt3: ArrayType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
-            f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]) =
+            f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]): NewDoubleBuffer =
     NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT(dt1) x CommType() x CommType())(ps => {
       val    v: Phrase[VarType]  = ps._1._1
       val swap: Phrase[CommType] = ps._1._2
@@ -49,17 +55,14 @@ object `if` {
 }
 
 object `for` {
-  def apply(n: Nat,
-            f: Identifier[ExpType] => Phrase[CommType], unroll:Boolean = false): For =
+  def apply(n: Nat, f: Identifier[ExpType] => Phrase[CommType]): For = apply(false, n, f)
+  def apply(unroll: Boolean, n: Nat, f: Identifier[ExpType] => Phrase[CommType]): For =
     For(unroll)(n, λ(expT(idx(n), read))( i => f(i) ))
 }
 
 object forNat {
-  def apply(
-    n: Nat,
-    f: NatIdentifier => Phrase[CommType],
-    unroll: Boolean = false
-  ): ForNat = {
+  def apply(n: Nat, f: NatIdentifier => Phrase[CommType]): ForNat = apply(false, n, f)
+  def apply(unroll: Boolean, n: Nat, f: NatIdentifier => Phrase[CommType]): ForNat = {
     import arithexpr.arithmetic.RangeAdd
     ForNat(unroll)(n, nFun(i => f(i), RangeAdd(0, n, 1)))
   }
@@ -72,14 +75,14 @@ object streamNext {
     f: Phrase[ExpType ->: CommType]
   ): Phrase[CommType] = {
     Phrases.Apply(
-      Phrases.DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next, i),
+      Phrases.DepApply(NatKind, next, i),
       f
     )
   }
 }
 
 object comment {
-  def apply(comment: String): Comment = Comment(comment)
+  def apply(comment: String): Comment = Comment(comment)()
 }
 
 object fst {
@@ -109,5 +112,3 @@ object pairAcc2 {
   def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): PairAcc2 =
     PairAcc2(fstT, sndT, record)
 }
-
-object skip extends Skip

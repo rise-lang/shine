@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.primitives.{let => _, _}
 import rise.core.DSL.Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 
@@ -14,16 +15,26 @@ object mriQ {
     "{ return phiR * phiR + phiI * phiI; }",
     f32 ->: f32 ->: f32)
 
-  implicit private class MultiInput(o: Type) {
-    def `x3 ->:`(i: Type): FunType[Type, Type] =
+  implicit private class MultiInput(o: ExprType) {
+    def `x3 ->:`(i: ExprType): FunType[ExprType, ExprType] =
       i ->: i ->: i ->: o
   }
+
+//  private val qFun = foreignFun("computeQ",
+//    Seq("sX", "sY", "sZ", "Kx", "Ky", "Kz", "PhiMag", "acc"),
+//    """{
+//      |  #define PIx2 6.2831853071795864769252867665590058f
+//      |  float expArg = PIx2 * (Kx * sX + Ky * sY + Kz * sZ);
+//      |  acc._fst = acc._fst + PhiMag * cos(expArg);
+//      |  acc._snd = acc._snd + PhiMag * sin(expArg);
+//      |  return acc;
+//      |}""".stripMargin,
+//    f32 `x3 ->:` f32 `x3 ->:` f32 ->: (f32 x f32) ->: (f32 x f32))
 
   private val qFun = foreignFun("computeQ",
     Seq("sX", "sY", "sZ", "Kx", "Ky", "Kz", "PhiMag", "acc"),
     """{
-      |  #define PIx2 6.2831853071795864769252867665590058f
-      |  float expArg = PIx2 * (Kx * sX + Ky * sY + Kz * sZ);
+      |  float expArg = 6.2831853071795864769252867665590058f * (Kx * sX + Ky * sY + Kz * sZ);
       |  acc._fst = acc._fst + PhiMag * cos(expArg);
       |  acc._snd = acc._snd + PhiMag * sin(expArg);
       |  return acc;
@@ -37,11 +48,33 @@ object mriQ {
     map(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
+  val computePhiMagOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.Types.ExpType]]
+    val k = t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(256), GlobalSize(k))
+  })
+
   val computePhiMagOcl: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
     mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
+
+  // can we do 2D stuff?
+  def computePhiMagOcl2(s0: Nat): ToBeTyped[Expr] = {
+    depFun((k: Nat) => fun(
+      (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
+    )((phiR, phiI) =>
+      zip(phiR)(phiI) |>
+        split(s0) |>
+        mapWorkGroup(
+          mapLocal(fun(t => phiMag(t._1)(t._2)))
+        ) |> join
+    ))
+  }
 
   // FIXME: could not find original Lift expression, this is made up
   val computeQHighLevel: Expr = depFun((k: Nat, x: Nat) => fun(
@@ -54,6 +87,15 @@ object mriQ {
           ))(makePair(t._2._2._2._1)(t._2._2._2._2))
       ))
   ))
+
+  val computeQOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
+    import shine.DPIA
+    import shine.OpenCL.{LocalSize, GlobalSize}
+
+    val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[DPIA.Types.ExpType]]]
+    val x = t.t.x
+    util.gen.opencl.LocalAndGlobalSize(LocalSize(256 / 4), GlobalSize(x))
+  })
 
   val computeQOcl: Expr = depFun((k: Nat, x: Nat) => fun(
     (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))

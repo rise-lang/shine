@@ -1,8 +1,7 @@
 package shine.cuda.AST
 
+import rise.core.types.{MatrixLayout, MatrixLayoutIdentifier}
 import shine.C.AST.BasicType
-import shine.DPIA.Nat
-import shine.DPIA.Types.{FragmentKind, MatrixLayout, MatrixLayoutIdentifier}
 
 object Wmma {
   def toString(layout: MatrixLayout): String = {
@@ -10,8 +9,8 @@ object Wmma {
       case MatrixLayout.Row_Major => "nvcuda::wmma::row_major"
       case MatrixLayout.Col_Major => "nvcuda::wmma::col_major"
       case i: MatrixLayoutIdentifier =>
-        if (i.layout.isDefined)
-          toString(i.layout.get)
+        if (i.layout != MatrixLayout.None)
+          toString(i.layout)
         else
           throw new Exception(s"layout $i not infered!")
       case _ => throw new Exception("this should not happen")

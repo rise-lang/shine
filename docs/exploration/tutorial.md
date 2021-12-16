@@ -5,7 +5,7 @@ sidebar_label: Tutorial of Heurisitc Search based Exploration
 ```scala mdoc:invisible
 import rise.core.DSL.{fun, lf32}
 import rise.core.primitives._
-import rise.core.types.{ArrayType, f32}
+import rise.core.types.DataType.{ArrayType, f32}
 import rise.elevate.rules.algorithmic._
 import rise.elevate.strategies.traversal._
 import exploration.explorationUtil.jsonParser

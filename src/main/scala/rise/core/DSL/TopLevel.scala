@@ -1,16 +1,19 @@
 package rise.core.DSL
 
 import Type.impl
+import util.monads._
 import rise.core.traverse._
 import rise.core.types._
-import rise.core.{DSL, Expr, Primitive, traverse}
+import rise.core.{DSL, Expr, IsClosedForm, Primitive}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
-  override val t: Type = e.t
+  override val t: ExprType = e.t
 ) extends Primitive {
   import DSL.TopLevel._
-  override def typeScheme: Type = e.t
-  override def setType(t: Type): TopLevel = {
+  // TODO: Ignored by alpha equivalence, remove when taking out of primitives
+  override def primEq(obj: Primitive): Boolean = obj.getClass == getClass
+  override def typeScheme: ExprType = e.t
+  override def setType(t: ExprType): TopLevel = {
     val subs = instantiate(t)
     this.copy(inst = subs)(subs(t))
   }
@@ -18,32 +21,31 @@ final case class TopLevel(e: Expr, inst: Solution = Solution())(
 }
 
 object TopLevel {
-  private def instantiate(t: Type): Solution = {
+  private def instantiate(t: ExprType): Solution = {
     import scala.collection.immutable.Map
-    infer.getFTVs(t).foldLeft(Solution())((subs, ftv) =>
+    IsClosedForm.varsToClose(t).foldLeft(Solution())((subs, ftv) =>
       subs match {
         case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
-            case i: TypeIdentifier =>
+            case TypeKind.IDWrapper(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: TypeIdentifier => x }))
-            case i: DataTypeIdentifier =>
+            case DataKind.IDWrapper(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: DataType => x }))
-            case i: NatIdentifier =>
+            case NatKind.IDWrapper(i) =>
               s.copy(ns = ns ++ Map(i -> impl{ x: Nat => x }))
-            case i: AddressSpaceIdentifier =>
+            case AddressSpaceKind.IDWrapper(i) =>
               s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
-            case i: MatrixLayoutIdentifier =>
+            case MatrixLayoutKind.IDWrapper(i) =>
               s.copy(ms = ms ++ Map(i -> impl{ x: MatrixLayout => x }))
-            case i: FragmentKindIdentifier =>
-              s.copy(fs = fs ++ Map(i -> impl{ x: FragmentKind => x }))
-            case i: NatToDataIdentifier =>
+            case FragmentKind.IDWrapper(i) =>
+              s.copy(fs = fs ++ Map(i -> impl{ x: Fragment => x }))
+            case NatToDataKind.IDWrapper(i) =>
               s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
-            case i: NatToNatIdentifier =>
+            case NatToNatKind.IDWrapper(i) =>
               s.copy(n2ns = n2ns ++ Map(i -> impl{ x: NatToNat => x }))
-            case i: NatCollectionIdentifier =>
+            case NatCollectionKind.IDWrapper(i) =>
               s.copy(natColls = natColls ++ Map(i -> impl{ x: NatCollection => x }))
-            case i =>
-              throw TypeException(s"${i.getClass} is not supported yet")
+            case AccessKind.IDWrapper(_) => ???
           }
       }
     )
@@ -51,14 +53,14 @@ object TopLevel {
 
   case class Visitor(ftvSubs: Solution, sol: Solution) extends PureTraversal {
     override def nat : Nat => Pure[Nat] = n => return_(cascadedApply(ftvSubs, sol, n))
-    override def `type`[T <: Type] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
+    override def `type`[T <: ExprType] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
     override def addressSpace : AddressSpace => Pure[AddressSpace] = a => return_(cascadedApply(ftvSubs, sol, a))
     override def natToData : NatToData => Pure[NatToData] = n2d => return_(cascadedApply(ftvSubs, sol, n2d))
   }
 
-  private def cascadedApply(ftvSubs: Solution, sol: Solution, t: Type): Type = {
+  private def cascadedApply(ftvSubs: Solution, sol: Solution, t: ExprType): ExprType = {
     traverse(t, new Visitor(ftvSubs, sol) {
-        override def `type`[T <: Type] : T => Pure[T] = {
+        override def `type`[T <: ExprType] : T => Pure[T] = {
           case i: TypeIdentifier =>
             ftvSubs.ts.get(i) match {
               case None => super.`type`(i.asInstanceOf[T])

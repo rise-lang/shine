@@ -17,13 +17,14 @@ lazy val commonSettings = Seq(
 
 lazy val riseAndShine = (project in file("."))
   .aggregate(executor, CUexecutor)
-  .dependsOn(riseAndShineMacros, arithExpr, executor, CUexecutor, elevate)
+  .dependsOn(meta, arithExpr, executor, CUexecutor, elevate)
   .settings(
     name          := "riseAndShine",
     version       := "1.0",
 
     javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build",
-      "-DexecuteCudaTests=false", "-Xss26m"),
+      "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=/tmp/rise-and-shine.hprof",
+      "-DexecuteCudaTests=false", "-Xss26m", "-Xmx2048m"),
 
     commonSettings,
 
@@ -37,28 +38,54 @@ lazy val riseAndShine = (project in file("."))
         // testing
         "junit" % "junit" % "4.11",
         "org.scalatest" %% "scalatest" % "3.1.0" % "test",
+        "org.apache.logging.log4j" % "log4j-core" % "2.14.1",
+        "org.apache.logging.log4j" %% "log4j-api-scala" % "12.0",
         // json
         "com.typesafe.play" %% "play-json" % "2.9.1",
         // subprocess communication
         "com.lihaoyi" %% "os-lib" % "0.7.3"
-    )
+    ),
+
+    compile := ((compile in Compile) dependsOn (generateRISEPrimitives, clap)).value,
+    test    := ((test in Test) dependsOn (generateRISEPrimitives, clap)).value
   )
 
-lazy val riseAndShineMacros = (project in file("macros"))
+lazy val generateRISEPrimitives = taskKey[Unit]("Generate RISE Primitives")
+
+generateRISEPrimitives := {
+  runner.value.run("meta.generator.RisePrimitives",
+    (dependencyClasspath in Compile).value.files,
+    Seq((scalaSource in Compile).value.getAbsolutePath),
+    streams.value.log).failed foreach (sys error _.getMessage)
+}
+
+lazy val generateDPIAPrimitives = taskKey[Unit]("Generate DPIA Primitives")
+
+generateDPIAPrimitives := {
+  runner.value.run("meta.generator.DPIAPrimitives",
+    (dependencyClasspath in Compile).value.files,
+    Seq((scalaSource in Compile).value.getAbsolutePath),
+    streams.value.log).failed foreach (sys error _.getMessage)
+}
+
+lazy val meta = (project in file("meta"))
   .settings(
-    name := "riseAndShineMacros",
+    name := "meta",
     version := "1.0",
     commonSettings,
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies += "com.lihaoyi" %% "fastparse" % "2.2.2",
+    libraryDependencies += "com.lihaoyi" %% "scalaparse" % "2.2.2",
+    libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.7.3",
+    libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.10",
   )
 
-lazy val arithExpr = (project in file("lib/arithexpr"))
+lazy val arithExpr  = project in file("lib/arithexpr")
 
-lazy val executor   = (project in file("lib/executor"))
+lazy val executor   = project in file("lib/executor")
 
-lazy val CUexecutor = (project in file("lib/yacx"))
+lazy val CUexecutor = project in file("lib/yacx")
 
-lazy val elevate    = (project in file("lib/elevate"))
+lazy val elevate    = project in file("lib/elevate")
 
 lazy val docs = (project in file("riseAndShine-docs"))
   .settings(
@@ -67,3 +94,15 @@ lazy val docs = (project in file("riseAndShine-docs"))
   )
   .enablePlugins(MdocPlugin)
   .dependsOn(riseAndShine)
+
+lazy val clap = taskKey[Unit]("Builds Clap library")
+
+clap := {
+  import scala.language.postfixOps
+  import scala.sys.process._
+  //noinspection PostfixMethodCall
+  "echo y" #| (baseDirectory.value + "/lib/clap/buildClap.sh") !
+}
+
+
+

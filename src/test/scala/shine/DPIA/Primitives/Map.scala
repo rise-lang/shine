@@ -3,6 +3,7 @@ package shine.DPIA.Primitives
 import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.types._
+import rise.core.types.DataType._
 import util.gen.c.function
 
 class Map extends test_util.Tests {

@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.DSL.Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.core.semantics._
 import rise.openCL.DSL._
 import rise.openCL.primitives.{oclRotateValues, oclReduceSeqUnroll}
@@ -100,6 +101,11 @@ object separableConvolution2D {
   val factorisedSeq: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     padClamp2D(1) >> slide2D(3, 1) >>
     mapSeq(mapSeq(map(dotSeqUnroll(weightsH)) >> dotSeqUnroll(weightsV)))
+  ))
+
+  val factorisedVH: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
+    padClamp2D(1) >> slide2D(3, 1) >>
+    map(map(transpose >> map(dot(weightsV)) >> dot(weightsH)))
   ))
 
   val separated: ToBeTyped[Expr] = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {

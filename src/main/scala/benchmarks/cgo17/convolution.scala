@@ -4,8 +4,73 @@ import apps.convolution._
 import benchmarks.core._
 import util._
 
+object convolutionHosted {
+  def withSize(N: Int, sampleCount: Int): Unit = {
+    val hostedX = util.gen.opencl.hosted("fun").fromExpr(hosted.blurXTiled2D(N))
+    val hostedY = util.gen.opencl.hosted("fun").fromExpr(hosted.blurYTiled2DTiledLoadingTransposed(N))
+
+    val init =
+      s"""
+         |srand(time(NULL));
+         |Context ctx = createDefaultContext();
+         |fun_t fun;
+         |fun_init(ctx, &fun);
+         |Buffer matrix = createBuffer(ctx, $N * $N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+         |Buffer weights = createBuffer(ctx, 17 * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+         |Buffer output = createBuffer(ctx, $N * $N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+         |
+         |float* m = hostBufferSync(ctx, matrix, $N * $N * sizeof(float), HOST_WRITE);
+         |for (int i = 0; i < $N * $N; i++) {
+         |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
+         |}
+         |
+         |float* w = hostBufferSync(ctx, weights, 17 * sizeof(float), HOST_WRITE);
+         |for (int i = 0; i < 17; i++) {
+         |  w[i] = (float)(rand())/(float)(RAND_MAX);
+         |}
+         |
+         |// synchronize before entering timed section
+         |deviceBufferSync(ctx, matrix, $N * $N * sizeof(float), DEVICE_READ);
+         |deviceBufferSync(ctx, weights, 17 * sizeof(float), DEVICE_READ);
+         |waitFinished(ctx);
+         |""".stripMargin
+
+    val compute =
+      s"""
+         |fun_run(ctx, &fun, output, matrix, weights);
+         |waitFinished(ctx);
+         |""".stripMargin
+
+    val finish =
+      s"""
+         |// TODO: could check output here
+         |
+         |destroyBuffer(ctx, matrix);
+         |destroyBuffer(ctx, weights);
+         |destroyBuffer(ctx, output);
+         |fun_destroy(ctx, &fun);
+         |destroyContext(ctx);
+         |""".stripMargin
+
+    val stats = Seq(
+      ("dpia X", hostedBenchmark(sampleCount, "one_copy", init, compute, finish, hostedX)),
+      ("dpia Y", hostedBenchmark(sampleCount, "one_copy", init, compute, finish, hostedY)),
+    )
+    println(s"runtime over $sampleCount runs for N=$N")
+    stats.foreach { case (name, stat) => println(s"$name: $stat") }
+  }
+
+  def main(args: Array[String]): Unit = {
+    val inputSize_small = 4096
+    val inputSize_large = 8192
+
+    withSize(inputSize_small, 6)
+    withSize(inputSize_large, 3)
+  }
+}
+
 object convolution {
-  def withSize(N: Int, sampleCount: Int, originalSuffix: String): Unit = {
+  def withSize(N: Int, sampleCount: Int, originalSuffix: String): Seq[(String, TimeStat[Time.ms])] = {
     val random = new scala.util.Random()
     val matrix = Array.fill(N, N)(random.nextFloat() * 10.0f)
     val weights = Array.fill(17)(random.nextFloat())
@@ -25,12 +90,18 @@ object convolution {
     )
     println(s"runtime over $sampleCount runs for $originalSuffix")
     stats.foreach { case (name, stat) => println(s"$name: $stat") }
+    stats
   }
 
-  def main(args: Array[String]): Unit = {
-    val inputSize_small = 4096
-    val inputSize_large = 8192
+  val inputSize_small = 4096
+  val inputSize_large = 8192
 
+  def bench(): Seq[(String, Seq[(String, TimeStat[Time.ms])])] = Seq(
+    ("small", withSize(inputSize_small, 10, "small")),
+    ("large", withSize(inputSize_large, 10, "large"))
+  )
+
+  def main(args: Array[String]): Unit = {
     withExecutor {
       withSize(inputSize_small, 6, "small")
       withSize(inputSize_large, 3, "large")

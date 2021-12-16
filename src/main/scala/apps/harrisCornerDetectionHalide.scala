@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.primitives._
 import rise.core.DSL.Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import HighLevelConstructs._
 
 // in Halide: https://github.com/halide/Halide/blob/e8acdea/apps/harris
@@ -229,7 +230,8 @@ object harrisCornerDetectionHalide {
         )) >> unslide2D >> map(padEmpty(4))
       ))
 
-    def harrisTileShiftInwardsPar(tileX: Int, tileY: Int, mapPar: Int => ToBeTyped[Expr],
+//    def harrisTileShiftInwardsPar(tileX: Int, tileY: Int, mapPar: Int => ToBeTyped[Expr],
+    def harrisTileShiftInwardsPar(tileX: Nat, tileY: Nat, mapPar: Int => ToBeTyped[Expr],
                                   innerHarris: ToBeTyped[Expr]): ToBeTyped[Expr] =
       depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
@@ -291,7 +293,8 @@ object harrisCornerDetectionHalide {
     // limitations:
     // - v <= 4
     // - if toMem = toPrivate, loop unrolling can fail due to blowup
-    def harrisVecUnaligned2(v: Int,
+//    def harrisVecUnaligned2(v: Int,
+    def harrisVecUnaligned2(v: Nat,
                             mapPar: Int => ToBeTyped[Expr],
                             toMem: ToBeTyped[Expr]): ToBeTyped[Expr] =
       depFun((h: Nat) => nModFun(v, w => fun(

@@ -1,6 +1,8 @@
 package shine.OpenCL.Compilation
 
 import arithexpr.arithmetic.NamedVar
+import rise.core.types.{DataKind, DataType, NatIdentifier, NatKind, NatToNat, NatToNatLambda}
+import rise.core.types.DataType.DataTypeIdentifier
 import shine.DPIA.Compilation.FunDef
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -19,13 +21,13 @@ object SeparateHostAndKernelCode {
     var kernelDefinitions = mutable.ArrayBuffer[KernelDef]()
     val hostDefinition = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case Run(localSize, globalSize, _, value) =>
+        case r@Run(localSize, globalSize) =>
           val name = s"k$kernelNum"
           kernelNum += 1
-          val (closedDef, args) = closeDefinition(value)
+          val (closedDef, args) = closeDefinition(r.input)
           val kernelDef = KernelDef(name, closedDef, localSize, globalSize)
           kernelDefinitions += kernelDef
-          Stop(KernelCall(name, localSize, globalSize,
+          Stop(KernelCall(name, localSize, globalSize, args.length)(
             kernelDef.paramTypes.map(_.dataType),
             kernelDef.returnType.dataType,
             args).asInstanceOf[Phrase[T]])
@@ -33,14 +35,14 @@ object SeparateHostAndKernelCode {
         // on the fly beta-reduction
         case Apply(fun, arg) =>
           Stop(VisitAndRebuild(Lifting.liftFunction(fun).reducing(arg), this))
-        case DepApply(fun, arg) => arg match {
+        case DepApply(_, fun, arg) => arg match {
           case a: Nat =>
-            Stop(VisitAndRebuild(Lifting.liftDependentFunction[NatKind, ExpType](
-              fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a)
+            Stop(VisitAndRebuild(Lifting.liftDependentFunction(
+              fun.asInstanceOf[Phrase[`(nat)->:`[ExpType]]])(a)
               .asInstanceOf[Phrase[T]], this))
           case a: DataType =>
-            Stop(VisitAndRebuild(Lifting.liftDependentFunction[DataKind, ExpType](
-              fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a)
+            Stop(VisitAndRebuild(Lifting.liftDependentFunction(
+              fun.asInstanceOf[Phrase[`(dt)->:`[ExpType]]])(a)
               .asInstanceOf[Phrase[T]], this))
         }
 
@@ -59,8 +61,8 @@ object SeparateHostAndKernelCode {
                 ): (Phrase[_ <: PhraseType], Seq[Phrase[ExpType]]) = {
       freeNats match {
         case v +: rest => iterNats(
-          DepLambda[NatKind](NatIdentifier(v.name, v.range))(definition),
-          Natural(v) +: args, rest)
+          DepLambda(NatKind, NatIdentifier(v.name, v.range))(definition),
+          Literal(NatAsIntData(v)) +: args, rest)
         case Nil => (definition, args)
       }
     }
@@ -88,8 +90,8 @@ object SeparateHostAndKernelCode {
   // TODO: collect free nat identifiers?
   private def freeVariables(p: Phrase[_ <: PhraseType])
   : (Set[Identifier[ExpType]], Set[NamedVar]) = {
-    var idents = scala.collection.mutable.Set[Identifier[ExpType]]()
-    var natIdents = scala.collection.mutable.Set[NamedVar]()
+    val idents = scala.collection.mutable.Set[Identifier[ExpType]]()
+    val natIdents = scala.collection.mutable.Set[NamedVar]()
 
     case class Visitor(boundV: Set[Identifier[_]],
                        boundT: Set[DataTypeIdentifier],
@@ -101,11 +103,17 @@ object SeparateHostAndKernelCode {
           Stop(p)
         case Lambda(x, _) =>
           Continue(p, this.copy(boundV = boundV + x))
-        case DepLambda(x: NatIdentifier, _) =>
+        case DepLambda(NatKind, x: NatIdentifier, _) =>
           Continue(p, this.copy(boundN = boundN + x))
-        case DepLambda(x: DataTypeIdentifier, _) =>
+        case DepLambda(DataKind, x: DataTypeIdentifier, _) =>
           Continue(p, this.copy(boundT = boundT + x))
         case _ => Continue(p, this)
+      }
+
+      override def natToNat(ft: NatToNat): NatToNat = ft match {
+        case NatToNatLambda(x, b) =>
+          NatToNatLambda(x, this.copy(boundN = boundN + x).nat(b))
+        case _ => super.natToNat(ft)
       }
 
       override def nat[N <: Nat](n: N): N = {

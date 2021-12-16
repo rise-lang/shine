@@ -10,6 +10,7 @@ class showScalaTest extends test_util.Tests {
     s"""
        |import rise.core._
        |import rise.core.types._
+       |import rise.core.types.DataType._
        |import rise.core.semantics._
        |import rise.core.primitives._
        |import rise.openCL.TypedDSL._
@@ -37,17 +38,17 @@ class showScalaTest extends test_util.Tests {
     val untypedScala = prefixImports(showScala.expr(dotElemWeights))
     val typedScala = prefixImports(showScala.expr(typedDotElemWeights))
 
-    println(untypedScala)
-    println(typedScala)
+    logger.debug(untypedScala)
+    logger.debug(typedScala)
 
     val toolbox = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
     val expr = toolbox.eval(toolbox.parse(untypedScala)).asInstanceOf[Expr]
     val typedExpr = toolbox.eval(toolbox.parse(typedScala)).asInstanceOf[Expr]
 
-    println(expr)
-    println(typedExpr)
+    logger.debug(expr)
+    logger.debug(typedExpr)
 
-    assert(expr == dotElemWeights.toUntypedExpr)
-    assert(typedExpr == typedDotElemWeights)
+    assert(expr =~~= dotElemWeights.toUntypedExpr)
+    assert(typedExpr =~~= typedDotElemWeights)
   }
 }

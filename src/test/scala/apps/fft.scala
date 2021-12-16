@@ -4,7 +4,8 @@ import rise.core._
 import rise.core.types._
 import rise.core.DSL._
 import rise.core.primitives._
-import Type._
+import rise.core.types.DataType._
+import rise.core.DSL.Type._
 import rise.openCL.DSL._
 
 class fft extends test_util.Tests {
@@ -88,7 +89,7 @@ class fft extends test_util.Tests {
     val fftiter = createStockhamIterationLambda(p, LPrevIter, N)
     val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(fftiter, Map()))
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(kernel.code)
+    logger.debug(kernel.code)
 
     SyntaxChecker(kernel.code)
   }

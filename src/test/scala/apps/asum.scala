@@ -4,6 +4,7 @@ import shine.DPIA.Types.ExpType
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.core.DSL._
 import rise.core.primitives._
 import Type._
@@ -31,8 +32,8 @@ class asum extends test_util.TestsWithExecutor {
   test("High level asum type inference works") {
     val typed = high_level.toExpr
 
-    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
-    assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N), f32))) {
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: ExprType]].x
+    assertResult(DepFunType(NatKind, N, FunType(inputT(N), f32))) {
       typed.t
     }
   }
@@ -152,7 +153,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(intelDerivedNoWarp1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 
@@ -183,7 +184,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(intelDerived2)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 
@@ -218,7 +219,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(nvidiaDerived1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 
@@ -260,7 +261,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(amdNvidiaDerived2)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 
@@ -297,7 +298,7 @@ class asum extends test_util.TestsWithExecutor {
       val phrase = shine.DPIA.fromRise(amdDerived1)
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
       val code = util.gen.opencl.kernel(LocalSize(128), GlobalSize(N)).asStringFromPhrase(phrase)
-      println(code)
+      logger.debug(code)
       SyntaxChecker.checkOpenCL(code)
     }
 

@@ -1,9 +1,10 @@
 package shine
 
-import rise.core.DSL._
 import rise.core.DSL.Type._
-import rise.core.types._
+import rise.core.DSL._
 import rise.core.primitives.{toMem, _}
+import rise.core.types.DataType._
+import rise.core.types._
 import rise.openCL.DSL._
 import shine.OpenCL.{GlobalSize, LocalSize, valToNatTuple}
 import util.gen
@@ -23,7 +24,7 @@ int main(int argc, char** argv) {
     in[i] = 0;
   }
 
-  foo(ctx, output, N, input);
+  foo_init_run(ctx, output, N, input);
 
   int32_t* out = hostBufferSync(ctx, output, N * sizeof(int32_t), HOST_READ);
 
@@ -62,7 +63,7 @@ int main(int argc, char** argv) {
     ))
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.hostCode)
-    // println(hostCode)
+    // logger.debug(hostCode)
     findCount(1, """hostBufferSync\(.*, HOST_WRITE\)""".r, hostCode)
     findCount(1, """hostBufferSync\(.*, HOST_READ\)""".r, hostCode)
     checkOutput(m)
@@ -75,10 +76,10 @@ int main(int argc, char** argv) {
     )
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.hostCode)
-    // println(hostCode)
+    // logger.debug(hostCode)
     findDeviceBufferSyncWrite(1, hostCode)
     findDeviceBufferSyncRead(1, hostCode)
-    // m.kernels.foreach(km => println(gen.opencl.kernel.asString(km)))
+    // m.kernels.foreach(km => logger.debug(gen.opencl.kernel.asString(km)))
   }
 
   test("basic kernel call with variable size and post-process") {
@@ -88,8 +89,24 @@ int main(int argc, char** argv) {
     ))
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.hostCode)
-    // println(hostCode)
+    // logger.debug(hostCode)
     findCount(1, """createBuffer\(.*, HOST_READ \| DEVICE_WRITE\)""".r, hostCode)
+    findDeviceBufferSyncWrite(1, hostCode)
+    findDeviceBufferSyncRead(1, hostCode)
+    findCount(1, """hostBufferSync\(.*, HOST_WRITE\)""".r, hostCode)
+    findCount(1, """hostBufferSync\(.*, HOST_READ\)""".r, hostCode)
+    checkOutput(m)
+  }
+
+  test("basic kernel call with variable size and pre-process") {
+    val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
+      mapSeq(add(li32(2)))(in) |> store(x =>
+      oclRun(LocalSize(2), GlobalSize(n/2))(mapGlobal(add(li32(1)))(x)))
+    ))
+    val m = gen.opencl.hosted.fromExpr(e)
+    val hostCode = gen.c.function.asString(m.hostCode)
+    // logger.debug(hostCode)
+    findCount(1, """createBuffer\(.*, HOST_WRITE \| DEVICE_READ\)""".r, hostCode)
     findDeviceBufferSyncWrite(1, hostCode)
     findDeviceBufferSyncRead(1, hostCode)
     findCount(1, """hostBufferSync\(.*, HOST_WRITE\)""".r, hostCode)
@@ -104,15 +121,14 @@ int main(int argc, char** argv) {
     ))
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.hostCode)
-    // println(hostCode)
+    // logger.debug(hostCode)
     findCount(1, """createBuffer\(.*, DEVICE_WRITE \| DEVICE_READ\)""".r, hostCode)
     findDeviceBufferSyncWrite(2, hostCode)
     findDeviceBufferSyncRead(2, hostCode)
     checkOutput(m)
   }
 
-  ignore("local memory") {
-    // TODO: clSetKernelArg(k, i, localMemSize, NULL);
+  test("local memory") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
       oclRun(LocalSize(16), GlobalSize(n))(
         in |> split(16) |> mapWorkGroup(0)(
@@ -124,7 +140,7 @@ int main(int argc, char** argv) {
     ))
     val m = gen.opencl.hosted.fromExpr(e)
     val hostCode = gen.c.function.asString(m.hostCode)
-    // println(hostCode)
+    // logger.debug(hostCode)
     findDeviceBufferSyncWrite(1, hostCode)
     findDeviceBufferSyncRead(1, hostCode)
     checkOutput(m)

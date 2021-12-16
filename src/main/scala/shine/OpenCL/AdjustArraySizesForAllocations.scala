@@ -1,5 +1,7 @@
 package shine.OpenCL
 
+import rise.core.types.{DataType, read}
+import rise.core.types.DataType._
 import shine.DPIA.DSL.identifier
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases._
@@ -8,7 +10,7 @@ import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.OpenCL.{primitives => ocl}
 import shine.cuda.{primitives => cuda}
-import shine.cuda.primitives.functional.{AsMatrix, GenerateFragment, MapFragmentElements, TensorMatMultAdd, AsFragment}
+import shine.cuda.primitives.functional.{AsFragment, AsMatrix, GenerateFragment, MapFragment, TensorMatMultAdd}
 import shine.cuda.warpDim
 
 object AdjustArraySizesForAllocations {
@@ -57,8 +59,9 @@ object AdjustArraySizesForAllocations {
 
       case Apply(f, _) => visitAndGatherInformation(f, parallInfo)
       case Lambda(_, p) => visitAndGatherInformation(p, parallInfo)
-      case DepApply(f, _) => visitAndGatherInformation(f, parallInfo)
-      case DepLambda(_, p) => visitAndGatherInformation(p, parallInfo)
+      case DepApply(_, f, _) => visitAndGatherInformation(f, parallInfo)
+      case DepLambda(_, _, p) => visitAndGatherInformation(p, parallInfo)
+      case Idx(_, _, _, p) => visitAndGatherInformation(p, parallInfo)
       case Fst(_, _, p) => visitAndGatherInformation(p, parallInfo) match {
         case Nil => Nil
         case RecordInfo(fst, _) :: Nil => fst
@@ -85,7 +88,7 @@ object AdjustArraySizesForAllocations {
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunctionCall |
            _: BinOp | _: UnaryOp | _: GenerateFragment |
-           _: AsMatrix | _: AsFragment | _: MapFragmentElements |
+           _: AsMatrix | _: AsFragment | _: MapFragment |
            _: TensorMatMultAdd => parallInfo
 
       //TODO visit value first?
@@ -113,7 +116,7 @@ object AdjustArraySizesForAllocations {
           }
           val stride = determineStride(parallLevel, dim, addrSpace)
 
-          val outerDimension = ocl.imperative.IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
+          val outerDimension = ocl.imperative.IdxDistributeAcc(parallLevel)(adjSize, oldSize, stride, adjElemT, A)
 
           val arr = identifier(freshName("x"), accT(adjElemT))
           val mapFunBody = adjustedAcceptor(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
@@ -149,7 +152,7 @@ object AdjustArraySizesForAllocations {
           }
           val stride = determineStride(parallLevel, dim, addrSpace)
 
-          val outerDimension = ocl.imperative.IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E)
+          val outerDimension = ocl.imperative.IdxDistribute(parallLevel)(adjSize, oldSize, stride, adjElemT, E)
 
           val arr = identifier(freshName("arr"), expT(adjElemT, read))
           val mapFunBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)

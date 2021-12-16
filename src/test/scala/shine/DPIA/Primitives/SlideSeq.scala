@@ -2,9 +2,10 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.primitives._
+import rise.core.types.DataType._
 import rise.core.types._
+import util.Execute
 import util.gen.c.function
-import util.{Execute, gen}
 
 class SlideSeq extends test_util.Tests {
   val add = fun(a => fun(b => a + b))

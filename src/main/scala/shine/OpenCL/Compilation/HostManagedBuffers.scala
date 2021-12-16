@@ -1,5 +1,7 @@
 package shine.OpenCL.Compilation
 
+import rise.core.types.DataType
+import rise.core.types.DataType._
 import shine.DPIA._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -18,24 +20,22 @@ object HostManagedBuffers {
   def insert(params: immutable.Seq[Identifier[ExpType]], outParam: Identifier[AccType])
   : Phrase[CommType] => Phrase[CommType] = { p =>
     def outsideParams() = mutable.Set[Identifier[_ <: PhraseType]]() ++ (params :+ outParam)
-    val worstCasePrevious =
-      ReadsAndWrites(outsideParams(), outsideParams(), outsideParams(), outsideParams())
     val managed = mutable.Map[Identifier[_ <: PhraseType], AccessFlags]()
-    insertHostExecutions(worstCasePrevious, outsideParams().toSet, managed, p)._1 |>
-    insertManagedBuffers(managed)
+    val (p2, info) = analyzeAndInsertHostExecution(p, outsideParams().toSet, managed)
+    val host_plain_access = info.host_plain_reads.nonEmpty || info.host_plain_writes.nonEmpty
+    val p3 = if (host_plain_access) { makeHostExecution(p2, info, managed) } else { p2 }
+    insertManagedBuffers(managed)(p3)
   }
 
-
-  // effects to outer scope allocations
-  private case class ReadsAndWrites(
-    host_reads: mutable.Set[Identifier[_ <: PhraseType]],
-    host_writes: mutable.Set[Identifier[_ <: PhraseType]],
-    device_reads: mutable.Set[Identifier[_ <: PhraseType]],
-    device_writes: mutable.Set[Identifier[_ <: PhraseType]])
+  private class Metadata(
+    // is this phrase reading or writing to plain arrays on the host side?
+    val host_plain_reads: mutable.Set[Identifier[_ <: PhraseType]],
+    val host_plain_writes: mutable.Set[Identifier[_ <: PhraseType]],
+    // is this phrase using the device?
+    var device_used: Boolean)
 
   private object ReadsAndWrites {
-    def empty: ReadsAndWrites =
-      ReadsAndWrites(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
+    def empty: Metadata = new Metadata(mutable.Set(), mutable.Set(), false)
   }
 
   private def recordManagedAccess(
@@ -46,42 +46,31 @@ object HostManagedBuffers {
     managed.updateWith(ident)(prev => Some(prev.getOrElse(0) | access))
   }
 
-  private def insertHostExecutions(
-    previous: ReadsAndWrites,
-    allocs: Set[Identifier[_ <: PhraseType]],
+  private def makeHostExecution(
+    p: Phrase[CommType],
+    info: Metadata,
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
-    p: Phrase[CommType]
-  ): (Phrase[CommType], ReadsAndWrites) = {
-    val (p2, current) = analyzeAndInsertHostExecution(p, allocs, managed)
-    val syncAccesses = previous.device_reads.union(previous.device_writes)
-      .intersect(current.host_reads.union(current.host_writes))
-    if (syncAccesses.isEmpty) {
-      current.host_reads ++= previous.host_reads
-      current.host_writes ++= previous.host_writes
-      current.device_reads ++= previous.device_reads
-      current.device_writes ++= previous.device_writes
-      (p2, current)
-    } else {
-      assert(current.device_reads.isEmpty)
-      assert(current.device_writes.isEmpty)
-      val env = (current.host_reads ++ current.host_writes)
-        .filter(optionallyManaged(_).isDefined).map(i => {
-        var access = 0
-        if (current.host_reads.contains(i)) { access |= HOST_READ }
-        if (current.host_writes.contains(i)) { access |= HOST_WRITE }
-        i -> access
-      }).toMap
-      env.foreach { case (i, a) => recordManagedAccess(managed, i, a) }
-      (HostExecution(env, p2), ReadsAndWrites.empty)
-    }
+  ): Phrase[CommType] = {
+    // host execution sections must not use the device:
+    assert(!info.device_used)
+
+    val env = (info.host_plain_reads ++ info.host_plain_writes)
+      .filter(optionallyManaged(_).isDefined).map(i => {
+      var access = 0
+      if (info.host_plain_reads.contains(i)) { access |= HOST_READ }
+      if (info.host_plain_writes.contains(i)) { access |= HOST_WRITE }
+      i -> access
+    }).toMap
+    env.foreach { case (i, a) => recordManagedAccess(managed, i, a) }
+    HostExecution(env)(p)
   }
 
   private def analyzeAndInsertHostExecution(
     p: Phrase[CommType],
     allocs: Set[Identifier[_ <: PhraseType]],
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags]
-  ): (Phrase[CommType], ReadsAndWrites) = {
-    val meta = ReadsAndWrites(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
+  ): (Phrase[CommType], Metadata) = {
+    val meta = ReadsAndWrites.empty
     val p2 = VisitAndRebuild(p, InsertHostExecutionsVisitor(allocs, managed, meta))
     (p2, meta)
   }
@@ -89,33 +78,53 @@ object HostManagedBuffers {
   private case class InsertHostExecutionsVisitor(
     allocs: Set[Identifier[_ <: PhraseType]],
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags],
-    metadata: ReadsAndWrites
+    metadata: Metadata
   ) extends VisitAndRebuild.Visitor {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] =
       p match {
         case dpia.Assign(_, lhs, rhs) =>
-          collectWrites(lhs, metadata.host_writes)
-          collectReads(rhs, allocs, metadata.host_reads)
+          collectWrites(lhs, metadata.host_plain_writes)
+          collectReads(rhs, allocs, metadata.host_plain_reads)
           Stop(p)
-        case ocl.KernelCallCmd(_, _, _, out, in) =>
-          in.foreach(collectReads(_, allocs, metadata.device_reads))
-          collectWrites(out, metadata.device_writes)
-          ((out, DEVICE_WRITE) +: in.map(_ -> DEVICE_READ)).foreach {
+        case k@ocl.KernelCallCmd(_, _, _, _) =>
+          metadata.device_used = true
+          ((k.output, DEVICE_WRITE) +: k.args.map(_ -> DEVICE_READ)).foreach {
             case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
             case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
             case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
             case (Natural(_), _) =>
+            case (Literal(NatAsIntData(_)), _) =>
+            case (unexpected, _) => throw new Exception(s"did not expect $unexpected")
+          }
+          Stop(p)
+        case k@shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n) =>
+          metadata.device_used = true
+          ((k.output, DEVICE_WRITE) +: k.args.map(_ -> DEVICE_READ)).foreach {
+            case (i: Identifier[_], a) => recordManagedAccess(managed, i, a)
+            case (Proj1(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
+            case (Proj2(i: Identifier[_]), a) => recordManagedAccess(managed, i, a)
+            case (Natural(_), _) =>
+            case (Literal(NatAsIntData(_)), _) =>
             case (unexpected, _) => throw new Exception(s"did not expect $unexpected")
           }
           Stop(p)
         case dpia.Seq(a, b) =>
           val (a2, am) = analyzeAndInsertHostExecution(a, allocs, managed)
-          val (b2, bm) = insertHostExecutions(am, allocs, managed, b)
-          metadata.host_writes ++= bm.host_writes
-          metadata.host_reads ++= bm.host_reads
-          metadata.device_writes ++= bm.device_writes
-          metadata.device_reads ++= bm.device_reads
-          Stop(dpia.Seq(a2, b2))
+          val (b2, bm) = analyzeAndInsertHostExecution(b, allocs, managed)
+          val a_host_plain_access = am.host_plain_reads.nonEmpty || am.host_plain_writes.nonEmpty
+          val b_host_plain_access = bm.host_plain_reads.nonEmpty || bm.host_plain_writes.nonEmpty
+          if (!am.device_used && !bm.device_used) {
+            metadata.host_plain_reads ++= am.host_plain_reads
+            metadata.host_plain_reads ++= bm.host_plain_reads
+            metadata.host_plain_writes ++= am.host_plain_writes
+            metadata.host_plain_writes ++= bm.host_plain_writes
+            Stop(dpia.Seq(a2, b2))
+          } else { // am.device_used || bm.device_used
+            metadata.device_used = true
+            val a3 = if (a_host_plain_access) { makeHostExecution(a2, am, managed) } else { a2 }
+            val b3 = if (b_host_plain_access) { makeHostExecution(b2, bm, managed) } else { b2 }
+            Stop(dpia.Seq(a3, b3))
+          }
         case _ => Continue(p, this)
       }
   }
@@ -152,11 +161,22 @@ object HostManagedBuffers {
         case dpia.New(dt, Lambda(x, body)) if managed.contains(x) =>
           val access = managed(x)._1
           val x2 = managed(x)._2.asInstanceOf[Identifier[VarType]]
-          Continue(ocl.NewManagedBuffer(dt, access, Lambda(x2, body)), this)
+          Continue(ocl.NewManagedBuffer(access)(dt, Lambda(x2, body)), this)
         case _: dpia.New | _: Lambda[_, _] | _: dpia.Seq |
-             _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) =>
+             _: Proj2[_, _] | _: Proj1[_, _] | Natural(_) | Literal(NatAsIntData(_)) =>
           Continue(p, this)
-        case _: ocl.KernelCallCmd => Continue(p, this)
+        case k@ocl.KernelCallCmd(name, ls, gs, n) =>
+          val newOutput = VisitAndRebuild(k.output, this)
+          val newArgs = k.args.map(VisitAndRebuild(_, this))
+          Stop(ocl.KernelCallCmd(name, ls, gs, n)(
+            newArgs.map(_.t.dataType), newOutput.t.dataType, k.args.map(VisitAndRebuild(_, this)), newOutput))
+
+        case k@shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n) =>
+          val newOutput = VisitAndRebuild(k.output, this)
+          val newArgs = k.args.map(VisitAndRebuild(_, this))
+          Stop(shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n)(
+            newArgs.map(_.t.dataType), newOutput.t.dataType, k.args.map(VisitAndRebuild(_, this)), newOutput
+          ))
         case _: HostExecution => Stop(p)
         case unexpected => throw new Exception(s"did not expect $unexpected")
       }
@@ -180,7 +200,7 @@ object HostManagedBuffers {
       case JoinAcc(_, _, _, a) => collectWrites(a, writes)
       case SplitAcc(_, _, _, a) => collectWrites(a, writes)
       case AsScalarAcc(_, _, _, a) => collectWrites(a, writes)
-      case ocl.IdxDistributeAcc(_, _, _, _, _, a) => collectWrites(a, writes)
+      case idx:ocl.IdxDistributeAcc => collectWrites(idx.array, writes)
       case PairAcc1(_, _, a) => collectWrites(a, writes)
       case PairAcc2(_, _, a) => collectWrites(a, writes)
       case TakeAcc(_, _, _, a) => collectWrites(a, writes)
@@ -212,7 +232,7 @@ object HostManagedBuffers {
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Slide(_, _, _, _, e) => collectReads(e, allocs, reads)
       case Map(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case ocl.IdxDistribute(_, _, _, _, _, e) => collectReads(e, allocs, reads)
+      case idx: ocl.IdxDistribute => collectReads(idx.array, allocs, reads)
       case dpia.MapRead(_, _, _, _, e) => collectReads(e, allocs, reads)
       case dpia.GenerateCont(_, _, _) => giveUp()
       case AsScalar(_, _, _, _, e) => collectReads(e, allocs, reads)
@@ -226,13 +246,13 @@ object HostManagedBuffers {
       case Split(_, _, _, _, e) => collectReads(e, allocs, reads)
       case Zip(_, _, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
-      case Pad(_, _, _, _, e1, e2) =>
+      case PadCst(_, _, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case PadClamp(_, _, _, _, e) =>
         collectReads(e, allocs, reads)
       case Cast(_, _, e) => collectReads(e, allocs, reads)
-      case ForeignFunctionCall(_, _, _, es) =>
-        es.foreach {
+      case ffc@ForeignFunctionCall(_, _) =>
+        ffc.args.foreach {
           collectReads(_, allocs, reads)
         }
       case NatAsIndex(_, e) => collectReads(e, allocs, reads)
@@ -242,8 +262,8 @@ object HostManagedBuffers {
       case MakePair(_, _, _, e1, e2) =>
         collectReads(e1, allocs, reads); collectReads(e2, allocs, reads)
       case Reorder(_, _, _, _, _, e) => collectReads(e, allocs, reads)
-      case MakeArray(_, es) =>
-        es.foreach {
+      case m@MakeArray(_) =>
+        m.elements.foreach {
           collectReads(_, allocs, reads)
         }
       case Gather(_, _, _, e1, e2) =>

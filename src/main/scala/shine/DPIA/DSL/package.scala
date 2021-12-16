@@ -1,10 +1,11 @@
 package shine.DPIA
 
+import rise.core.types.DataType
+import rise.core.types.DataType._
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{Operators, _}
-import shine.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
-import shine.DPIA.Types._
+import shine.DPIA.Types.{ExpType, AccType, CommType, PhraseType}
 import shine.DPIA.primitives.functional.{DepIdx, Idx, IdxVec, NatAsIndex}
 
 import scala.language.implicitConversions
@@ -12,15 +13,15 @@ import scala.language.implicitConversions
 package object DSL {
 
   implicit class BinOps(lhs: Phrase[ExpType]) {
-    def +(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.ADD, lhs, rhs)
-    def -(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.SUB, lhs, rhs)
-    def *(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.MUL, lhs, rhs)
-    def /(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.DIV, lhs, rhs)
-    def %(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.MOD, lhs, rhs)
-    def >(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.GT, lhs, rhs)
-    def <(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.LT, lhs, rhs)
-    def =:=(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.EQ, lhs, rhs)
-    def unary_- = UnaryOp(Operators.Unary.NEG, lhs)
+    def +(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.ADD, lhs, rhs)
+    def -(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.SUB, lhs, rhs)
+    def *(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.MUL, lhs, rhs)
+    def /(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.DIV, lhs, rhs)
+    def %(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.MOD, lhs, rhs)
+    def >(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.GT, lhs, rhs)
+    def <(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.LT, lhs, rhs)
+    def =:=(rhs: Phrase[ExpType]): BinOp = BinOp(Operators.Binary.EQ, lhs, rhs)
+    def unary_- : UnaryOp = UnaryOp(Operators.Unary.NEG, lhs)
   }
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
@@ -44,7 +45,7 @@ package object DSL {
     }
 
     def `@d`(index: Nat):DepIdx = e.t match {
-      case ExpType(depArray:DepArrayType, _) => DepIdx(depArray.size, depArray.elemFType, index, e)
+      case ExpType(depArray:DepArrayType, _) => DepIdx(depArray.size, depArray.fdt, index, e)
       case x => error(x.toString, "exp[n.(i:Nat) -> dt, _]")
     }
   }
@@ -69,7 +70,7 @@ package object DSL {
     }
 
     def `@d`(index: Nat):DepIdxAcc = a.t match {
-      case AccType(depAT:DepArrayType) => DepIdxAcc(depAT.size, depAT.elemFType, index, a)
+      case AccType(depAT:DepArrayType) => DepIdxAcc(depAT.size, depAT.fdt, index, a)
       case x => error(x.toString, "acc[n.(i:Nat) -> dt]")
     }
   }
@@ -98,14 +99,14 @@ package object DSL {
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->:`[T]]) {
     def apply(arg: Nat): Phrase[T] =
-      Lifting.liftDependentFunction[NatKind, T](fun)(arg)
+      Lifting.liftDependentFunction(fun)(arg)
 
     def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->:`[T]]) {
     def apply(arg: DataType): Phrase[T] =
-      Lifting.liftDependentFunction[DataKind, T](fun)(arg)
+      Lifting.liftDependentFunction(fun)(arg)
 
     def $(arg: DataType): Phrase[T] = apply(arg)
   }

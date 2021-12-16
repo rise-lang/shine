@@ -2,14 +2,16 @@ package shine.C.Compilation
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import arithexpr.arithmetic.{NamedVar, _}
+import rise.core.types._
+import rise.core.types.DataType._
+import rise.core.substitute.{natInType => substituteNatInType, typeInType => substituteTypeInType}
+import rise.core.types
 import shine.C.AST
 import shine.C.AST.Block
 import shine.C.AST.Type.getBaseType
 import shine.DPIA.Compilation.Passes.SimplifyNats
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional
 import shine.DPIA.primitives.functional._
@@ -114,12 +116,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         CCodeGen.codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
       case f@For(unroll) =>
-        val (i, p) = f.unwrapBody
-        CCodeGen.codeGenFor(f.n, i, p, unroll, env)
+        f.loopBody match {
+          case Lambda(i, p) =>
+            CCodeGen.codeGenFor(f.n, i, p, unroll, env)
+          case _ => throw new Exception("This should not happen")
+        }
 
       case f@ForNat(unroll) =>
-        val (i, p) = f.unwrapBody
-        CCodeGen.codeGenForNat(f.n, i, p, unroll, env)
+        f.loopBody match {
+          case shine.DPIA.Phrases.DepLambda(NatKind, i, p) =>
+            CCodeGen.codeGenForNat(f.n, i, p, unroll, env)
+          case _ => throw new Exception("This should not happen")
+        }
 
       case Proj1(pair) => Lifting.liftPair(pair)._1 |> cmd(env)
       case Proj2(pair) => Lifting.liftPair(pair)._2 |> cmd(env)
@@ -130,18 +138,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       // on the fly beta-reduction
       case Apply(fun, arg) => Lifting.liftFunction(fun).reducing(arg) |> cmd(env)
-      case DepApply(fun, arg) => arg match {
+      case DepApply(kind, fun, arg) => arg match {
         case a: Nat =>
-          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[NatKind `()->:` CommType]])(a) |> cmd(env)
+          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[`(nat)->:`[CommType]]])(a) |> cmd(env)
         case a: DataType =>
-          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[DataKind `()->:` CommType]])(a) |> cmd(env)
+          Lifting.liftDependentFunction(fun.asInstanceOf[Phrase[`(nat)->:`[CommType]]])(a) |> cmd(env)
       }
 
       case DMatchI(x, inT, _, f, dPair) =>
         dPair |> exp(env, List(), input => {
           // Create a fresh nat identifier, this will be bound to the "actual nat value"
           val fstId = NatIdentifier(freshName("fstId"))
-          val sndT = DataType.substitute(fstId, x, inT)
+          val sndT = substituteNatInType(fstId, x, inT)
           val sndId = Identifier[ExpType](freshName("sndId"),  ExpType(sndT, `read`))
           val (sndCType, initT) = typ(sndT) match {
               case array:C.AST.ArrayType => (C.AST.PointerType(getBaseType(array)), (x:C.AST.Expr) => x)
@@ -167,7 +175,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), expr), C.AST.Literal("0")
             ) , fst)))
         })
-      case Apply(_, _) | DepApply(_, _) |
+      case Apply(_, _) | DepApply(_, _, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }, env)
@@ -242,7 +250,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case ReorderAcc(n, _, idxF, a) => path match {
       case (i: CIntExpr) :: ps =>
-        a |> acc(env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(NatAsIndex(n, Natural(i))))) :: ps, cont)
+        a |> acc(env, CIntExpr(idxF(i)) :: ps, cont)
       case _ => error(s"Expected a C-Integer-Expression on the path.")
     }
 
@@ -285,7 +293,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case MkDPairSndAcc(_, _, a) => a |> acc(env, DPairSnd :: path, cont)
 
-    case phrase@(Apply(_, _) | DepApply(_, _) |
+    case phrase@(Apply(_, _) | DepApply(_, _, _) |
                  Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: AccPrimitive) =>
       error(s"Don't know how to generate code for $phrase")
   }
@@ -332,7 +340,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
 
     case bop@BinOp(op, e1, e2) => bop.t.dataType match {
-      case _: ScalarType => path match {
+      case _: ScalarType | NatType => path match {
         case Nil =>
           e1 |> exp(env, Nil, e1 =>
             e2 |> exp(env, Nil, e2 =>
@@ -421,7 +429,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case Reorder(n, _, _, idxF, _, a) => path match {
       case (i: CIntExpr) :: ps =>
-        a |> exp(env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(functional.NatAsIndex(n, Natural(i))))) :: ps, cont)
+        a |> exp(env, CIntExpr(idxF(i)) :: ps, cont)
       case _ => error(s"Expected a C-Integer-Expression on the path.")
     }
 
@@ -440,7 +448,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case Pad(n, l, r, _, pad, array) => path match {
+    case PadCst(n, l, r, _, pad, array) => path match {
       case (i: CIntExpr) :: ps =>
         pad |> exp(env, ps, padExpr =>
           genPad(n, l, r, padExpr, padExpr, i, ps, array, env, cont))
@@ -492,9 +500,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error(s"Expected path to be not empty")
     }
 
-    case MakeArray(_, elems) => path match {
+    case m@MakeArray(_) => path match {
       case (i: CIntExpr) :: ps => try {
-        elems(i.eval) |> exp(env, ps, cont)
+        m.elements(i.eval) |> exp(env, ps, cont)
       } catch {
         case NotEvaluableException() => error(s"could not evaluate $i")
       }
@@ -505,15 +513,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case DepIdx(_, _, i, e) => e |> exp(env, CIntExpr(i) :: path, cont)
 
-    case ForeignFunctionCall(f, inTs, outT, args) =>
-      CCodeGen.codeGenForeignFunctionCall(f, inTs, outT, args, env, fe =>
-        generateAccess(outT, fe, path, env, cont)
+    case ffc@ForeignFunctionCall(f, _) =>
+      CCodeGen.codeGenForeignFunctionCall(f, ffc.inTs, ffc.outT, ffc.args, env, fe =>
+        generateAccess(ffc.outT, fe, path, env, cont)
       )
 
     case Proj1(pair) => SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1) |> exp(env, path, cont)
     case Proj2(pair) => SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2) |> exp(env, path, cont)
 
-    case phrase@(Apply(_, _) | DepApply(_, _) |
+    case phrase@(Apply(_, _) | DepApply(_, _, _) |
                  Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive) =>
       error(s"Don't know how to generate code for $phrase")
   }
@@ -524,45 +532,46 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case IndexType(n) => s"idx$n"
         case ArrayType(n, t) => s"${n}_${typeToStructNameComponent(t)}"
         case PairType(a, b) => s"_${typeToStructNameComponent(a)}_${typeToStructNameComponent(b)}_"
-        case _: BasicType => typ(t).toString
+        case _: ScalarType | _: FragmentType | _: IndexType | `NatType` | _: VectorType => typ(t).toString
         case _ => throw new Exception(s"Can't convert data type $t to struct name component")
       }
     }
 
     dt match {
-      case b: shine.DPIA.Types.BasicType => b match {
-        case shine.DPIA.Types.bool => C.AST.Type.int
-        case shine.DPIA.Types.int | shine.DPIA.Types.NatType => C.AST.Type.int
-        case shine.DPIA.Types.u8 => C.AST.Type.u8
-        case shine.DPIA.Types.u16 => C.AST.Type.u16
-        case shine.DPIA.Types.u32 => C.AST.Type.u32
-        case shine.DPIA.Types.u64 => C.AST.Type.u64
-        case shine.DPIA.Types.i8 => C.AST.Type.i8
-        case shine.DPIA.Types.i16 => C.AST.Type.i16
-        case shine.DPIA.Types.i32 => C.AST.Type.i32
-        case shine.DPIA.Types.i64 => C.AST.Type.i64
-        case shine.DPIA.Types.f16 => throw new Exception("f16 not supported")
-        case shine.DPIA.Types.f32 => C.AST.Type.float
-        case shine.DPIA.Types.f64 => C.AST.Type.double
-        case _: shine.DPIA.Types.IndexType => C.AST.Type.int
-        case _: shine.DPIA.Types.VectorType | _: FragmentType | _: pipeline.type =>
-          throw new Exception(s"$b types in C are not supported")
+      case b: rise.core.types.DataType.ScalarType => b match {
+        case rise.core.types.DataType.bool => C.AST.Type.int
+        case rise.core.types.DataType.int => C.AST.Type.int
+        case rise.core.types.DataType.u8 => C.AST.Type.u8
+        case rise.core.types.DataType.u16 => C.AST.Type.u16
+        case rise.core.types.DataType.u32 => C.AST.Type.u32
+        case rise.core.types.DataType.u64 => C.AST.Type.u64
+        case rise.core.types.DataType.i8 => C.AST.Type.i8
+        case rise.core.types.DataType.i16 => C.AST.Type.i16
+        case rise.core.types.DataType.i32 => C.AST.Type.i32
+        case rise.core.types.DataType.i64 => C.AST.Type.i64
+        case rise.core.types.DataType.f16 => throw new Exception("f16 not supported")
+        case rise.core.types.DataType.f32 => C.AST.Type.float
+        case rise.core.types.DataType.f64 => C.AST.Type.double
       }
-      case a: shine.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
-      case a: shine.DPIA.Types.DepArrayType =>
-        a.elemFType match {
+      case rise.core.types.DataType.NatType => C.AST.Type.int
+      case _: rise.core.types.DataType.IndexType => C.AST.Type.int
+      case _: rise.core.types.DataType.VectorType | _: rise.core.types.DataType.FragmentType =>
+        throw new Exception(s"$dt types in C are not supported")
+      case a: rise.core.types.DataType.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
+      case a: rise.core.types.DataType.DepArrayType =>
+        a.fdt match {
           case NatToDataLambda(_, body) =>
             C.AST.ArrayType(typ(body), Some(a.size)) // TODO: be more precise with the size?
           case _: NatToDataIdentifier =>  throw new Exception("This should not happen")
         }
-      case r: shine.DPIA.Types.PairType =>
-        C.AST.StructType("Record_" + typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd),
+      case r: rise.core.types.DataType.PairType =>
+        C.AST.StructType("Record_" + typeToStructNameComponent(r.dt1) + "_" + typeToStructNameComponent(r.dt2),
           immutable.Seq(
-            (typ(r.fst), "_fst"),
-            (typ(r.snd), "_snd")))
-      case shine.DPIA.Types.DepPairType(_, _) => C.AST.PointerType(C.AST.Type.u8)
-      case _: shine.DPIA.Types.DataTypeIdentifier | _: shine.DPIA.Types.NatToDataApply |
-           DPIA.Types.ManagedBufferType(_) | DPIA.Types.ContextType =>
+            (typ(r.dt1), "_fst"),
+            (typ(r.dt2), "_snd")))
+      case rise.core.types.DataType.DepPairType(_, _, _) => C.AST.PointerType(C.AST.Type.u8)
+      case _: rise.core.types.DataType.DataTypeIdentifier | _: rise.core.types.DataType.NatToDataApply |
+           rise.core.types.DataType.ManagedBufferType(_) | rise.core.types.DataType.OpaqueType(_) =>
         throw new Exception(s"did not expect $dt")
     }
   }
@@ -577,8 +586,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case (xj: PairAccess) :: ps => dt match {
         case rt: PairType =>
           val (structMember, dt2) = xj match {
-            case FstMember => ("_fst", rt.fst)
-            case SndMember => ("_snd", rt.snd)
+            case FstMember => ("_fst", rt.dt1)
+            case SndMember => ("_snd", rt.dt2)
           }
           generateAccess(dt2, C.AST.StructMemberAccess(expr, C.AST.DeclRef(structMember)), ps, env, cont)
         case _ => throw new Exception("expected tuple type")
@@ -597,7 +606,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case DPairSnd :: ps =>
         dt match {
-          case DepPairType(_, sndT) =>
+          case DepPairType(_, _, sndT) =>
             generateAccess(sndT,
               C.AST.Cast(C.AST.PointerType(C.AST.Type.getBaseType(typ(sndT))),
                 C.AST.BinaryExpr(expr, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)"))
@@ -634,7 +643,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case None => error("Parameter missing")
         case Some(Left(param)) => generateInlinedCall(l(param), env, args.tail, cont)
       }
-      case ndl: DepLambda[NatKind, _]@unchecked => args.headOption match {
+      case ndl: DepLambda[Nat, NatIdentifier, _]@unchecked => args.headOption match {
         case Some(Right(nat)) => generateInlinedCall(ndl(nat), env, args.tail, cont)
         case None => error("Parameter missing")
         case Some(Left(_)) => error("Expression phrase argument passed but nat expected")
@@ -661,12 +670,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                          phrase: Phrase[CommType],
                                          at: ArithExpr,
                                          env: Environment): Block = {
-    PhraseType.substitute(at, `for`, in = phrase) |> (p => {
+    shine.DPIA.Types.substitute(at, `for`, in = phrase) |> (p => {
       val newIdentEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
-          (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
+          (Identifier(name, AccType(substituteNatInType(at, `for`, in = dt))), declRef)
         case (Identifier(name, ExpType(dt, a)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt), a)), declRef)
+          (Identifier(name, ExpType(substituteNatInType(at, `for`, in = dt), a)), declRef)
         case x => x
       }
       C.AST.Block(immutable.Seq(p |> this.cmd(env.copy(identEnv = newIdentEnv))))
@@ -820,12 +829,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       })
     }
 
-    def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
+    def codeGenLiteral(d: Data): Expr = {
       d match {
         case NatData(n)       => C.AST.ArithmeticExpr(n)
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
+        case NatAsIntData(n) =>
+          C.AST.Literal(n.toString)
         case ArrayData(a) => d.dataType match {
           case ArrayType(_, ArrayType(_, _)) =>
             codeGenLiteral(ArrayData(a.flatten(d => d.asInstanceOf[ArrayData].a)))
@@ -858,7 +869,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       })
     }
 
-    def codeGenForeignFunctionCall(funDecl: ForeignFunction.Declaration,
+    def codeGenForeignFunctionCall(funDecl: rise.core.ForeignFunction.Decl,
                                    inTs: collection.Seq[DataType],
                                    outT: DataType,
                                    args: collection.Seq[Phrase[ExpType]],
@@ -937,7 +948,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (array:ArrayType, index::rest) =>
           numberOfElementsUntil(array, index) + flattenIndices(array.elemType, rest)
         case (array:DepArrayType, index::rest) =>
-          array.elemFType match {
+          array.fdt match {
             case NatToDataLambda(_, body) =>
               numberOfElementsUntil(array, index) + flattenIndices(body, rest)
             case _: NatToDataIdentifier => throw new Exception(s"This should not happen")
@@ -949,13 +960,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     //Computes the total number of element in an array at a given offset
     def numberOfElementsUntil(dt:ArrayType, at:Nat): Nat = {
-      DataType.getTotalNumberOfElements(dt.elemType)*at
+      types.DataTypeOps.getTotalNumberOfElements(dt.elemType)*at
     }
 
     def numberOfElementsUntil(dt:DepArrayType, at:Nat): Nat = {
-      dt.elemFType match {
+      dt.fdt match {
         case NatToDataLambda(x, body) =>
-          BigSum(from=0, upTo = at-1, `for`=x, DataType.getTotalNumberOfElements(body))
+          BigSum(from=0, upTo = at-1, `for`=x, types.DataTypeOps.getTotalNumberOfElements(body))
         case _: NatToDataIdentifier => throw new Exception(s"This should not happen")
       }
     }

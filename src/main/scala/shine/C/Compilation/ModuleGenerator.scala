@@ -7,7 +7,8 @@ import shine.DPIA.Compilation.Passes._
 import shine.DPIA.Compilation.{FunDef, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types._
+import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck}
+import rise.core.types.DataType._
 import shine.DPIA.primitives.functional
 import shine.{C, DPIA}
 import util.compiler.DSL.run
@@ -20,16 +21,16 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
 
   override def createOutputParam(outT: ExpType): Identifier[AccType] =
     outT.dataType match {
-      case _: BasicType =>
+      case _: ScalarType | _: FragmentType | _: IndexType | `NatType` | _: VectorType =>
         identifier("output", AccType(ArrayType(Cst(1), outT.dataType)))
       case _: ArrayType | _: DepArrayType =>
         identifier("output", AccType(outT.dataType))
       case _: PairType =>
         throw new Exception("Pairs as output parameters currently not supported")
-      case _: DepPairType =>
+      case _: DepPairType[_, _] =>
         identifier("output", AccType(outT.dataType))
       case _: DataTypeIdentifier | _: NatToDataApply |
-           ContextType | _: ManagedBufferType =>
+           _: OpaqueType | _: ManagedBufferType =>
         throw new Exception(s"unexpected output data type: ${outT.dataType}")
     }
 
@@ -42,7 +43,7 @@ object ModuleGenerator extends DPIA.Compilation.ModuleGenerator[FunDef] {
 
     val output = (outParam.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => outParam
-      case (DPIA.Types.ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
+      case (rise.core.types.DataType.ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
         outParam `@` functional.NatAsIndex(1, Natural(0))
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
