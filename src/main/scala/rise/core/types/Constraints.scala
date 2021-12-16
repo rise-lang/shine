@@ -368,6 +368,7 @@ object Constraint {
 
     def tryPivots(n: Nat, value: Nat, preserve : Set[Kind.Identifier])
                  (implicit trace: Seq[Constraint]): Solution = {
+      if (n == value) { return Solution() }
       potentialPivots(n, preserve).foreach(pivotSolution(_, n, value) match {
         case Some(s) => return s
         case None    =>

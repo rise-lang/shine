@@ -30,7 +30,7 @@ object ruleAnnotationBug {
 
 
   @rule def topDownSplitJoinAsRule: Strategy[Rise] = topDown(tunable(splitJoin))
-  val topDownSplitJoin: Strategy[Rise] = topDown(tunable(splitJoin))
+  def topDownSplitJoin: Strategy[Rise] = topDown(tunable(splitJoin))
 
   def main(args: Array[String]): Unit = {
 
