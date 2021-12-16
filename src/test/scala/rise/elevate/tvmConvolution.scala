@@ -1,38 +1,32 @@
 package rise.elevate
 
-import java.io.{File, FileInputStream, FileOutputStream}
+import _root_.util.gen.c.function
+import _root_.util.{gen, writeToTempFile}
 import elevate.core._
-import elevate.core.strategies.basic.normalize
-import rise.elevate.rules.lowering.{lowerToC, parallel, vectorize}
-import _root_.util.gen
 import elevate.core.strategies.traversal._
-import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D, zipND}
-import rise.core.DSL.{fun, l, lf32, lf64, lu8}
-import rise.core.primitives._
+import rise.core.DSL.HighLevelConstructs.{padClamp2D, padCst2D, slide2D}
+import rise.core.DSL.Type.ArrayTypeConstructorsFromInt
+import rise.core.DSL.{ToBeTyped, fun, l, lf32}
+import rise.core.Lambda
+import rise.core.primitives.{reduce, _}
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
-import rise.elevate.rules.lowering
+import rise.elevate.rules.lowering.lowerToC
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.halide.reorder
 import rise.elevate.strategies.normalForm._
-import rise.elevate.strategies.predicate.{isApplied, isMap, isReduce, isReduceSeq}
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
-import _root_.util.gen.c.function
-import _root_.util.writeToTempFile
-import rise.core.DSL.Type.ArrayTypeConstructorsFromInt
-import rise.elevate.strategies.tiling.tile
-import rise.elevate.util.{**!, makeClosed, λ}
-import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
-import shine.OpenCL.{ScalaFunction, `(`, `,`, `)=>`}
+import rise.elevate.util.makeClosed
 
+import java.io.{File, FileInputStream, FileOutputStream}
 import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.Random
 
 // scalastyle:off
-class gauss extends test_util.Tests {
+class tvmConvolution extends test_util.Tests {
   //private val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
   def LCNFrewrite(a: Rise, s: Strategy[Rise]): Rise = {
     val (closedA, nA) = makeClosed(a)
@@ -58,30 +52,19 @@ class gauss extends test_util.Tests {
     Seq(1, 4, 6, 4,1)
   )
 
-  val N = 1024
-  val M = 1024
 
-  val mulPair = fun(pair => fst(pair) * snd(pair))
+  val batch = 256
+  val in_channel = 256
+  val out_channel = 512
+  val in_size = 14
+  val kernel = 3
+  val pad = 1
 
-  val gauss: Rise = {
-    fun(N `.` M `.` int)(in =>
-      fun( 5 `.` 5 `.` int)(weights =>
-        in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
-          |> slide2D(5, 1) // -> MxN of 5x5 slides
-          |> map(map(fun(sector => // sector:5x5
-            zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0)) |> fun(x => x/l(256))
-        )))
-      )
-    )
-  }
+  val mulPair: ToBeTyped[Lambda] = fun(pair => fst(pair) * snd(pair))
 
 
-  val sMulM: Rise = fun(int)(a =>
-      fun(ArrayType(N, ArrayType(M, int)))(A => A |> map(map(fun(Aij=>a*Aij))))
-  )
-
-  val mAddM: Rise = fun(ArrayType(N, ArrayType(M, int)))(a =>
-    fun(ArrayType(N, ArrayType(M, int)))(b =>
+  val mAddM: Rise = fun(a =>
+    fun(b =>
       zip(a)(b) |> map(fun(rowPair =>
         zip(fst(rowPair))(snd(rowPair)) |> map(fun(valPair =>
           rise.core.DSL.Ops(fst(valPair)) + snd(valPair) // explicitly use rise.core.DSL.Ops, otherwise Scala will confuse rise.core.DSL.Ops + with String concatenation...
@@ -91,59 +74,57 @@ class gauss extends test_util.Tests {
   )
 
 
+  val convolution: Rise = {
+    fun(in_size `.` in_size `.` in_channel `.` batch `.` f32)(A =>
+      fun(kernel `.` kernel `.` in_channel `.` out_channel `.` f32)(W =>
+        A //|> padCst2D(pad)(ArrayType(in_channel,ArrayType(batch,f32)))
+
+          //|> padClamp2D(pad) //placeholder for something like padClamp2D(1,in_channel x batch array of f32 0)
+          |> slide2D(kernel,1)
+          |> map(map(fun(
+            sector => zip(sector |> join |> join)(W |> join |> join) |> map(fun(
+                pair => snd(pair) |> map(fun(
+                  ff => fst(pair) |> map(fun(
+                    nn => nn * ff
+                  ))
+                ))
+              ))
+              //|> reduce(mAddM)(vectorFromScalar(vectorFromScalar(lf32(0.0f))))
+
+              //Aaaaand finally, reorder so the reduction axis is innermost, then reduce.
+              |> transpose |> map(fun(
+                outer => outer |> transpose |> map(fun(x => x)) |> map(
+                  reduce(add)(lf32(0))
+                ) //|> map(fun(x => x))
+            )) //map(map(fun( x => x)))
+          )))
+      )
+    )
+  }
+  /*
+  val gauss: Rise = {
+    fun(ArrayType(N, ArrayType(M, int)))(in =>
+      fun(ArrayType(5, ArrayType(5, int)))(weights =>
+        in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
+          |> slide2D(5, 1) // -> MxN of 5x5 slides
+          |> map(map(fun(sector => // sector:5x5
+            zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0)) |> fun(x => x/l(256))
+        )))
+      )
+    )
+  }
+   */
+
+
   val lowering = DFNF() `;` lowerToC
 
   // -- CPU ---------------------------------------------------------------
 
-  val cpu: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
+  val cpu: Strategy[Rise] = DFNF()(default.RiseTraversable) //`;`
     fuseReduceMap `@` topDown[Rise]
 
-  test("gauss") {
-    run("cpu", gauss, cpu)
-  }
-
-  test("gaussGPU") {
-    val kernel = gen.opencl.kernel.fromExpr(gauss)
-
-    val kernelFn = kernel.as[ScalaFunction`(`
-      Array[Array[Int]]`,`
-      Array[Array[Int]]
-    `)=>` Array[Array[Int]]]
-  }
-
-
-  test("sMulM"){
-    val tiling = DFNF()(default.RiseTraversable)
-
-    val lowered = lowerToC.apply(sMulM).get
-    println("lowered: " + lowered)
-
-    val c = gen.openmp.function("gaussian").asStringFromExpr(lowered)
-    println("code: " + c)
-  }
-
-
-  test("sMulM reorder"){
-    val reordered = LCNFrewrite(
-      sMulM,
-      body(body(reorder(Seq(2, 1) )))
-      //reorder(Seq(2, 1)) `@` innermost(isApplied(isApplied(isMap)))
-    )
-
-    val lowered = lowerToC.apply(reordered).get
-    println("lowered: " + lowered)
-
-    val c = gen.openmp.function("gaussian").asStringFromExpr(lowered)
-    println("code: " + c)
-    //run("test", test, cpu)
-  }
-
-  test("mAddM"){
-    val lowered = lowerToC.apply(mAddM).get
-    println("lowered: " + lowered)
-
-    val c = gen.openmp.function("gaussian").asStringFromExpr(lowered)
-    println("code: " + c)
+  test("convolution") {
+    run("cpu", convolution, cpu)
   }
 
 
@@ -163,12 +144,14 @@ class gauss extends test_util.Tests {
       */
   */
   test("CPU reorder") {
+    /*
     LCNFrewrite(
       gauss,
       body(body(reorder(Seq(2,1)))) //`@` innermost(isApplied(isApplied(isApplied(isMap))))
     )
     //println(LCNFrewrite(gauss, body(body(reorder(Seq(1,3,2))))))
     //run("CPU par", gauss, cpuPar)
+     */
   }
 
   /*
@@ -254,8 +237,9 @@ class gauss extends test_util.Tests {
     }
 
 
+    /*
     def genCode(strategy: Strategy[Rise], pgm: Rise): String = {
-      val lowered = (strategy`;` lowerToC).apply(gauss)
+      val lowered = (strategy`;` lowerToC).apply(convolution)
       val p = gen.openmp.function("gaussian").fromExpr(lowered.get)
 
 
@@ -291,7 +275,7 @@ int main(void){
   return 0;
 }"""
     }
-
+     */
 /*
     def compile(code: java.io.File, bin: java.io.File): Unit =  {
       s"gcc -Wall -o ${bin.getAbsolutePath} ${code.getAbsolutePath}" !!
@@ -338,7 +322,8 @@ int main(void){
   }
     println(version + ":")
 
-    val code = genCode(strategy, gauss)
+    /*
+    val code = genCode(strategy, convolution)
     writeToFile("./exploration/gaussian", version, code)
     compile("./exploration/gaussian", version)
     run(
@@ -347,6 +332,7 @@ int main(void){
       10,
       Seq(Left((()=>Random.nextInt(256), N, M)), Right(gaussWeights))
     )
+     */
   }
 //  def run(version: String,
 //          strategy: Strategy[Rise],
