@@ -20,7 +20,7 @@ object configFileGeneration {
 //    val doe = p.size * 10
 //    val optimization_iterations = tuner.samples
 
-    val doe = 100
+    val doe = 10
     val optimization_iterations = 0
 
     // create header for hypermapper configuration file
@@ -108,13 +108,13 @@ object configFileGeneration {
           println("name: " + param.name)
           println("range: " + param.range)
 
-//          val values = List.range(1, 1024)
+          val values = List.range(1, 1024)
 //          filterList(p, param._2._1, values, param._1)
 
 //          (List.empty[Int], parametersWDC.apply(param._1)._1)
-//          filterList(p, wdc._1, values, param)
+          filterList(p, wdc._1, values, param)
 
-          (List.empty[Int], wdc._1)
+//          (List.empty[Int], wdc._1)
       }
 
       // get new element with filtered constraints

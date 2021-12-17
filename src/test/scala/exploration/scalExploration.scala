@@ -62,7 +62,7 @@ object scalExploration {
 
   // try differnt lowering options
   // 1D
-  val lowered1 = exploration.strategies.defaultStrategiesGPU.lowerGs.apply(scal)
+  val lowered1 = exploration.strategies.defaultStrategiesGPU.lowerGs0.apply(scal)
   val lowered2 = exploration.strategies.defaultStrategiesGPU.lowerWrgLcl.apply(scal2)
 
   // 2D

@@ -1,16 +1,51 @@
 package exploration.strategies
-import apps.multiscaleInterpolation.normalize
+//import apps.multiscaleInterpolation.normalize
 import elevate.core.Strategy
-import elevate.core.strategies.debug
-import elevate.core.strategies.traversal.{allTopdown, alltd, bottomUp, one, some, somebu, sometd, topDown, tryAll}
+//import elevate.core.strategies.debug
+//import exploration.strategies.defaultStrategiesGPU.lowerLcl0
+//import elevate.core.strategies.traversal.{allTopdown, alltd, bottomUp, one, some, somebu, sometd, topDown, tryAll}
 import rise.elevate.{Rise, tunable}
 import rise.elevate.rules.algorithmic.{createTransposePair, fuseReduceMap, fuseReduceMap2, idAfter, mapFusion, mapLastFission, reduceMapFission, reduceMapFission2, reduceMapFusion, removeTransposePair, splitJoin, transposePairAfter}
 import rise.elevate.rules.lowering.{addRequiredCopies, reduceOCL}
 import rise.elevate.rules.traversal.default.RiseTraversable
-import elevate.core.strategies.traversal._
+//import elevate.core.strategies.traversal._
 import elevate.macros.RuleMacro.rule
-import rise.elevate.strategies.normalForm.DFNF
-import rise.eqsat.Nat
+//import rise.elevate.strategies.normalForm.DFNF
+//import rise.eqsat.Nat
+//
+//import elevate._
+//
+//
+//import apps.gemv.ocl.gemvKeplerBest
+//import apps.gemv.{dot, scal}
+//import apps.separableConvolution2D
+//import apps.separableConvolution2D.mulT
+//import arithexpr.arithmetic.RangeMul
+//import elevate.core.{Failure, Strategy, Success}
+//import elevate.core.strategies.traversal.{allTopdown, bottomUp, topDown, tryAll}
+import elevate.core.strategies.traversal._
+//import rise.autotune
+//import rise.autotune.{HostCode, Median, Timeouts, Tuner, tuningParam, wrapOclRun}
+//import rise.core.DSL.Type._
+//import rise.core.DSL._
+//import rise.core.Expr
+//import rise.core.primitives._
+//import rise.core.types.DataType._
+//import rise.core.types._
+//import rise.elevate.rules.algorithmic.{fuseReduceMap, fuseReduceMap2, splitJoin}
+//import rise.elevate.rules.lowering.{addRequiredCopies, reduceOCL}
+//import rise.elevate.rules.traversal.default
+//import rise.elevate.rules.traversal.default.RiseTraversable
+//import rise.elevate.strategies.normalForm.DFNF
+//import rise.elevate.{Rise, tunable}
+//import rise.openCL.DSL.{mapGlobal, toGlobal}
+//import rise.openCL.primitives.oclReduceSeq
+//import shine.OpenCL.{GlobalSize, LocalSize}
+//import util.gen
+//
+//import rise.elevate.strategies.traversal._
+//
+//import _root_.util.gen
 
 import scala.collection.mutable.ListBuffer
 
@@ -97,6 +132,7 @@ object defaultStrategiesGPU {
   @rule def someSplitJoin: Strategy[Rise] = some(tunable(splitJoin))
   @rule def oneUsingStateSplitJoin: Strategy[Rise] = oneUsingState(tunable(splitJoin))
   @rule def topDownSplitJoin: Strategy[Rise] = topDown(tunable(splitJoin))
+//  @rule def topDownSplitJoin: Strategy[Rise] = tunable(splitJoin) `@` topDown[Rise]
   @rule def allTopdownSplitJoin: Strategy[Rise] = allTopdown(tunable(splitJoin))
   @rule def tryAllSplitJoin: Strategy[Rise] = tryAll(tunable(splitJoin))
   @rule def allBottomupSplitJoin: Strategy[Rise] = allBottomup(tunable(splitJoin))
@@ -121,8 +157,23 @@ object defaultStrategiesGPU {
   @rule def somebuIdAfter: Strategy[Rise] = somebu(idAfter)
 
   // lowerings
-  @rule def lowerGs: Strategy[Rise] =
+  @rule def lowerGs0: Strategy[Rise] =
     topDown(rise.elevate.rules.lowering.mapGlobal(0))
+
+  @rule def lowerGs1: Strategy[Rise] =
+    topDown(rise.elevate.rules.lowering.mapGlobal(1))
+
+  @rule def lowerWrg0: Strategy[Rise] =
+    topDown(rise.elevate.rules.lowering.mapWorkGroup(0))
+
+  @rule def lowerWrg1: Strategy[Rise] =
+    topDown(rise.elevate.rules.lowering.mapWorkGroup(1))
+
+  @rule def lowerLcl0: Strategy[Rise]=
+    topDown(rise.elevate.rules.lowering.mapLocal(0))
+
+  @rule def lowerLcl1: Strategy[Rise]=
+    topDown(rise.elevate.rules.lowering.mapLocal(1))
 
   @rule def lowerGsGs: Strategy[Rise] =
     topDown(rise.elevate.rules.lowering.mapGlobal(0)) `;`
@@ -140,10 +191,16 @@ object defaultStrategiesGPU {
 
 
   val strategies = Set[Strategy[Rise]](
-    lowerGs,
-    lowerGsGs,
-    lowerWrgLcl,
-    lowerWrgWrgLclLcl,
+    lowerGs0,
+    lowerGs1,
+    lowerWrg0,
+    lowerWrg1,
+    lowerLcl0,
+    lowerLcl1,
+//    lowerGs0,
+//    lowerGsGs,
+//    lowerWrgLcl,
+//    lowerWrgWrgLclLcl,
     allIdAfter,
     oneIdAfter,
     someIdAfter,
@@ -173,12 +230,20 @@ object defaultStrategiesGPU {
   )
 
   val strategies2 = Set[Strategy[Rise]](
-    lowerGs,
-    lowerGsGs,
-    lowerWrgLcl,
-    lowerWrgWrgLclLcl,
-    topDownSplitJoin,
-//    bottomUpSplitJoin,
+    lowerGs0,
+    lowerGs1,
+    lowerWrg0,
+    lowerWrg1,
+    lowerLcl0,
+    lowerLcl1,
+    //    lowerWrgLcl,
+    //    lowerWrgWrgLclLcl,
+    topDownSplitJoin
+
+    //    topDown(tunable(splitJoin))
+    //    bottomUpSplitJoin,
+    //    someSplitJoin
+    //    allSplitJoin
   )
 
   def combine(rules: Set[Strategy[Rise]]): Set[Strategy[Rise]] = {
@@ -204,32 +269,12 @@ object defaultStrategiesGPU {
     strategies.toSet
   }
 
-  val strategies3 = combine(rules)
+  val strategies3 = combine(rules) ++ strategies2
 
 
   println("strategies: ")
   strategies.foreach(println)
 
-
-//  val strategies2 = Set[Strategy[Rise]](
-//    //    idTd,
-//    //    idSome,
-//    //        createTransposePair,
-//    //        transposeIdSome,
-//    //        transposeIdRevert,
-//    //        transposeIdTp,
-//    //        transposeIdBu,
-//    //        transposeIdRevertBu,
-//    //        transposeIdRevertTp
-//
-//    //    transposePairAfterTd,
-//    //      transposePairAfterSome
-//
-//    sjtd,
-//    sjbu,
-//    idBu,
-//    transposePairAfterBu
-//  )
 
   val lowering2 = fuseReduceMap2
 

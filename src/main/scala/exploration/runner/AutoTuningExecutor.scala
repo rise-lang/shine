@@ -3,7 +3,7 @@ package exploration.runner
 import arithexpr.arithmetic.RangeMul
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.heuristic_search.Runner
-import elevate.heuristic_search.util.Solution
+import elevate.heuristic_search.util.{Solution, hashProgram}
 import rise.autotune.{HostCode, Median, Timeouts, Tuner, applyBest, getBest, getDuration, getSamples, search, tuningParam, wrapOclRun}
 import rise.core.Expr
 import rise.core.types.Nat
@@ -28,7 +28,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   case class TuningResultStatistic(
                                   number: Int,
-                                  solution: Int,
+                                  solution: String,
                                   timestamp: Long,
                                   duration: TimeSpan[Time.ms],
                                   durationTuning: TimeSpan[Time.ms],
@@ -44,37 +44,6 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   val tuningResults = new ListBuffer[TuningResultStatistic]()
   var number = 0
-
-  //  // hard coded hostcode for convolution
-//  val init: (Int) => String = (N) => {
-//    s"""
-//       |const int N = ${N};
-//       |srand(time(NULL));
-//       |Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-//       |Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
-//       |
-//       |float* m = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
-//       |for (int i = 0; i < N; i++) {
-//       |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
-//       |}
-//       |float factor = 4;
-//       |
-//       |""".stripMargin
-//  }
-//
-//  val compute =
-//    s"""
-//       |fun_run(ctx, &fun, output, N, input, factor);
-//       |""".stripMargin
-//
-//  val finish =
-//    s"""
-//       |// TODO: could check output here
-//       |
-//       |destroyBuffer(ctx, input);
-//       |destroyBuffer(ctx, output);
-//       |""".stripMargin
-
 
   def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
     val totalDurationStart = System.currentTimeMillis()
@@ -157,7 +126,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
             runtime,
             TuningResultStatistic(
               number = number,
-              solution = solution.hashCode(),
+              solution = hashProgram(solution.expression),
               timestamp = System.currentTimeMillis(),
               duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
               durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
@@ -181,7 +150,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
               None,
               TuningResultStatistic(
                 number = number,
-                solution = solution.hashCode(),
+                solution = hashProgram(solution.expression),
                 timestamp = System.currentTimeMillis(),
                 duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
                 durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
@@ -210,7 +179,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           (solution.expression, None),
           TuningResultStatistic(
             number = number,
-            solution = solution.hashCode(),
+            solution = hashProgram(solution.expression),
             timestamp = System.currentTimeMillis(),
             duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
             durationTuning = TimeSpan.inMilliseconds(0.0),
@@ -253,7 +222,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // write line
     val line =
       tuningResultStatistic.number.toString + ", " +
-        Integer.toHexString(tuningResultStatistic.solution.hashCode()) + ", " +
+        tuningResultStatistic.solution + ", " +
         tuningResultStatistic.timestamp.toString + ", " +
         tuningResultStatistic.duration.toString + ", " +
         tuningResultStatistic.durationTuning.toString + ", " +

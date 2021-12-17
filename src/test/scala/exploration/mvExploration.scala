@@ -9,7 +9,7 @@ import elevate.core.{Failure, Strategy, Success}
 import elevate.core.strategies.traversal.{allTopdown, bottomUp, topDown, tryAll}
 import exploration.strategies.defaultStrategiesGPU
 import rise.autotune
-import rise.autotune.{HostCode, Median, Timeouts, tuningParam, wrapOclRun}
+import rise.autotune.{HostCode, Median, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.Expr
@@ -229,39 +229,74 @@ object mvExploration {
 //  println("codeNoTuningString2: " + codeNoTuningString2)
 
   def checkExpression(e: Expr, hostCode: HostCode) = {
-    println("expression: \n" + e)
+//    println("expression: \n" + e)
 
-    println("fused: \n" + fuseReduceMap2.apply(e))
+//    println("fused: \n" + fuseReduceMap2.apply(e))
 
     val lowered = defaultStrategiesGPU.lowering.apply(e)
-    println("lowered: \n" + lowered)
+//    println("lowered: \n" + lowered)
 
     val ocl = lowered match {
       case Success(p) =>
-        val ocl = wrapOclRun(LocalSize(32), GlobalSize(1024))(lowered.get)
-        println("lowered ocl: " + ocl)
+        println("Success")
+
+        val ocl =
+          tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+              tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+                tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+                  wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered.get)
+                ))))
+
+//        val ocl = wrapOclRun(LocalSize(32), GlobalSize(1024))(lowered.get)
+//        println("lowered ocl: " + ocl)
         ocl
       case Failure(s) =>
+        println("Failure")
         val ocl = wrapOclRun(LocalSize(32), GlobalSize(1024))(e)
-        println("lowered ocl: " + ocl)
+//        println("lowered ocl: " + ocl)
         ocl
     }
 
-    val code = gen.opencl.hosted("fun").fromExpr(ocl)
-    println("code: " + code)
+//    val code = gen.opencl.hosted("fun").fromExpr(ocl)
+//    println("code: " + code)
 
-    val codeString = gen.opencl.hosted.asString(code)
-    println("code as string: " + codeString)
+//    val codeString = gen.opencl.hosted.asString(code)
+//    println("code as string: " + codeString)
 
-    val result = autotune.execution.execute(
-      expression = ocl,
+    val iterations = 10
+
+    //    val tuner = Tuner()
+    val tuner = Tuner(
+      //      hostCode = HostCode(init(1024), compute, finish),
       hostCode = hostCode,
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 100,
-      speedupFactor = 100,
-      execution = Median
+      inputSizes = Seq(1024, 1024),
+      samples = iterations,
+      name = "mv",
+      output = "exploration/",
+      timeouts = Timeouts(100000, 100000, 100000),
+      executionIterations = 10,
+      runtimeStatistic = Median,
+      speedupFactor = 1.0,
+      None,
+      //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
+      hmConstraints = true,
+      saveToFile = false
     )
-    println("result: " + result.runtime)
+
+    val result = autotune.search(tuner)(ocl)
+
+//    val result = autotune.execution.execute(
+//      expression = ocl,
+//      hostCode = hostCode,
+//      timeouts = Timeouts(5000, 5000, 5000),
+//      executionIterations = 100,
+//      speedupFactor = 100,
+//      execution = Median
+//    )
+    val best = autotune.getBest(result.samples)
+//    println("result: " + result.runtime)
+    println("best: " + best)
     println("\n")
   }
 
@@ -346,11 +381,66 @@ object mvExploration {
 
   // normal forms?
 
+    val strategy: Strategy[Rise] = tunable(splitJoin) `@` topDown[Rise]
+//  val strategy: Strategy[Rise] = splitJoin(8) `@` topDown[Rise]
+
+
 
 
 
 
   def main(args: Array[String]): Unit = {
+
+//    mvHighLevel
+
+    println("highLevel: " + mvHighLevel)
+
+    val sj = strategy.apply(mvHighLevel).get
+//    val l1 = defaultStrategiesGPU.lowering.apply(sj).get
+//    val l1OCL = wrapOclRun(LocalSize(32), GlobalSize(1024))(l1)
+//
+    println("sj: \n" + sj)
+//    println("l1: " + l1)
+
+
+    val sj2 = strategy.apply(sj).get
+//    val l2 = defaultStrategiesGPU.lowering.apply(sj2)
+    println("sj2: \n" + sj2)
+//    println("l2: " + l2)
+
+    val sj3 = strategy.apply(sj2).get
+//    val l3 = defaultStrategiesGPU.lowering.apply(sj3)
+//    println("sj3: " + sj3)
+//    println("l3: " + l3)
+    val sj4 = strategy.apply(sj3).get
+    val sj5 = strategy.apply(sj4).get
+    val sj6 = strategy.apply(sj5).get
+
+    val hostcode = HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)
+
+//    checkExpression(sj, hostcode)
+//    checkExpression(sj2, hostcode)
+//    checkExpression(sj3, hostcode)
+//    checkExpression(sj4, hostcode)
+//    checkExpression(sj5, hostcode)
+//    checkExpression(sj6, hostcode)
+
+//
+//    val string =
+//      "hello\n" +
+//        "my name is \n" +
+//        "johanns \n"
+//
+//        println("string: \n" + string)
+//
+//    val reverse = string.split("\n")
+//      .toSeq
+//      .map(_.trim)
+//      .filter(_ != "").reverse.mkString("\n")
+//
+//    println("reverse: \n" + reverse)
+
+
 
     // test hash
 
@@ -395,8 +485,10 @@ object mvExploration {
     // add strategies as arguments
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", Some(HostCode(init(1024, 1024), compute, finish)))
 //        riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies2, "exploration/configuration/mv.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
-//    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies2, "exploration/configuration/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
     riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+//    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+
+//    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies2, "exploration/configuration/mv.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 
     //    val e1 = rewrite(mvHighLevel, step0)
 //    val e2 = rewrite(e1, step1)

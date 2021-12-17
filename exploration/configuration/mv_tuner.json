@@ -4,7 +4,7 @@
       "inputSize" : 1024,
       "metaheuristic" : [{
         "heuristic" : "autotuner",
-        "depth" : 30,
+        "depth" : 5,
         "iterations" : 1
       }],
       "executor" : {
