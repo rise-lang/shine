@@ -62,7 +62,7 @@ object Constraint {
     case (c +: cs, _) =>
       val s = try { solveOne(c, preserve, trace) }
               catch { case e: InferenceException =>
-                println(e.msg)
+//                println(e.msg)
                 return solveRec(cs, rs :+ c, preserve, trace) }
       s ++ solve(s.apply(rs ++ cs), preserve, trace)
   }
