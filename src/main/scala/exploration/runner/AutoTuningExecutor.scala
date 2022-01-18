@@ -44,9 +44,49 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   val tuningResults = new ListBuffer[TuningResultStatistic]()
   var number = 0
+  val random = new scala.util.Random
 
   def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
+    number = number + 1
+
+    // throw the dices
+
+    // save statistics
+    val loweringDuration = 0
+    val tuningDuration = 0
+    val totalDuration = 1
+
+    val samples = 1
+    val executions = 1
+
+    val index = random.nextInt(100)
+
+    val runtime = index < 50 match{
+      case true => Some(index.toDouble)
+      case false => None
+    }
+
+    saveTuningResults(
+      TuningResultStatistic(
+        number = number,
+        solution = hashProgram(solution.expression),
+        timestamp = System.currentTimeMillis(),
+        duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
+        durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
+        durationLowering =  TimeSpan.inMilliseconds(loweringDuration.toDouble),
+        samples = samples,
+        executions = executions,
+        runtime = Some(TimeSpan.inMilliseconds(index.toDouble))
+      )
+    )
+
+      (solution.expression, runtime)
+  }
+
+  def execute2(solution: Solution[Rise]):(Rise, Option[Double]) = {
     val totalDurationStart = System.currentTimeMillis()
+
+
 
     number = number + 1
 
