@@ -299,24 +299,19 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   private def getVectorType(dt: DataType, n: Nat): Type = {
-    if (n.eval > 0 && n.eval <= 4)
-      dt match {
-        case shine.DPIA.Types.u8 => BasicType(s"uchar$n")
-        case shine.DPIA.Types.i8 => BasicType(s"char$n")
-        case shine.DPIA.Types.u16 => BasicType(s"ushort$n")
-        case shine.DPIA.Types.i16 => BasicType(s"short$n")
-        case shine.DPIA.Types.int | shine.DPIA.Types.i32 => BasicType(s"int$n")
-        case shine.DPIA.Types.u32 => BasicType(s"uint$n")
-        case shine.DPIA.Types.f32 => BasicType(s"float$n")
-        case shine.DPIA.Types.f64 => BasicType(s"double$n")
-        case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
-      }
-    else
-      dt match {
-        case shine.DPIA.Types.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
-        case shine.DPIA.Types.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
-        case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
-      }
+    dt match {
+      case shine.DPIA.Types.u8 => BasicType(s"uchar$n")
+      case shine.DPIA.Types.i8 => BasicType(s"char$n")
+      case shine.DPIA.Types.u16 => BasicType(s"ushort$n")
+      case shine.DPIA.Types.i16 => BasicType(s"short$n")
+      case shine.DPIA.Types.int | shine.DPIA.Types.i32 => BasicType(s"int$n")
+      case shine.DPIA.Types.u32 => BasicType(s"uint$n")
+      case shine.DPIA.Types.f32 => BasicType(s"float$n")
+      case shine.DPIA.Types.f64 => BasicType(s"double$n")
+      case shine.DPIA.Types.f16 if (n.eval <= 8) => BasicType(s"int${n/2}")
+      case shine.DPIA.Types.f16 if (n.eval <= 16) => BasicType(s"double${n/4}")
+      case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
+    }
   }
 
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt =
