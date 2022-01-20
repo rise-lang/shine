@@ -295,7 +295,7 @@ object KernelExecutor {
         }
       }
 
-      Executor.benchmark(code, this.kernel.name, options(compilerOptions.toArray), device, numberOfIterations, creatorYacx, dataSizes.toSeq:_*)
+      Executor.benchmark(code, this.kernel.name, Options.createOptions(compilerOptions:_*), device, numberOfIterations, creatorYacx, dataSizes.toSeq:_*)
     }
 
     private def createOutputArg(numberOfElements: Int, dataType: DataType): KernelArg = {

@@ -35,23 +35,19 @@ class gemmTensorCheck extends test_util.TestWithCUDA {
     executeGEMMWithSizes(gemmSharedMemory(config7),16)
   }
 
-  test("gemm with tensor cores and shared memory produces expected result 4") {
+  ignore("gemm with tensor cores and shared memory produces expected result 4") {
     executeGEMMWithSizes(gemmSharedMemoryV2(config1),4)
     executeGEMMWithSizes(gemmSharedMemoryV2(config2),4)
   }
 
-  test("gemm with tensor cores and shared memory produces expected result 5") {
+  ignore("gemm with tensor cores and shared memory produces expected result 5") {
     executeGEMMWithSizes(gemmSharedMemoryV2(config3),8)
     executeGEMMWithSizes(gemmSharedMemoryV2(config4),8)
   }
 
-  test("gemm with tensor cores and shared memory produces expected result 6") {
+  ignore("gemm with tensor cores and shared memory produces expected result 6") {
     executeGEMMWithSizes(gemmSharedMemoryV2(config6),16)
     executeGEMMWithSizes(gemmSharedMemoryV2(config7),16)
-  }
-
-  test("test") {
-    executeGEMMWithSizes(gemmSharedMemoryV2(mmConfig(256, 128, 64, 64, 32)),16)
   }
 
 
