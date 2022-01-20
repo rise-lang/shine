@@ -23,7 +23,8 @@ lazy val riseAndShine = (project in file("."))
     version       := "1.0",
 
     javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build",
-      "-DexecuteCudaTests=false", "-Xss26m"),
+      "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=/tmp/rise-and-shine.hprof",
+      "-DexecuteCudaTests=false", "-Xss26m", "-Xmx2048m"),
 
     commonSettings,
 

@@ -8,7 +8,7 @@ import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
 import rise.core.DSL._
 import rise.core.primitives._
-import rise.core.types._
+import rise.core.types.DataType._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal._
@@ -60,6 +60,19 @@ object tvmGemm {
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
       (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1,2,5,6,3,4))
+
+  val blockingPartial: Strategy[Rise] =
+    baseline `;`
+    (tile(32,32)        `@` outermost(mapNest(2)))
+  val blockingPartial2: Strategy[Rise] =
+    baseline `;`
+    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))
+  val blockingPartial3: Strategy[Rise] =
+    baseline `;`
+    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+    (splitStrategy(4)   `@` innermost(isFullyAppliedReduce))
 
   // -- VECTORIZATION ----------------------------------------------------------
 

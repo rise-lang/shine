@@ -5,6 +5,7 @@ import harrisCornerDetectionHalide.{
   sobelYWeights2d, sobelYWeightsV, sobelYWeightsH
 }
 import rise.core.types._
+import rise.core.types.DataType._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
@@ -74,7 +75,7 @@ object harrisCornerDetectionHalideRewrite {
         case _ => ???
       } `;` reducedFusedForm
 
-    def writeUnrolled(t: Type): ToBeTyped[Rise] = t match {
+    def writeUnrolled(t: ExprType): ToBeTyped[Rise] = t match {
       case _ if typeHasTrivialCopy(t) => fun(p => p)
       case PairType(a, b) if typeHasTrivialCopy(a) && typeHasTrivialCopy(b) =>
         fun(p => p)
@@ -429,7 +430,7 @@ object harrisCornerDetectionHalideRewrite {
           repeatNTimes(2)(topDown({
             import rise.core.primitives._
             import rise.core.DSL._
-            var t: Type = null
+            var t: ExprType = null
             function(isEqualToUntyped(slide(2)(1))) `;`
             argument { e: Rise => t = e.t; Success(e) } `;`
             { p: Rise => topDown(lowering.ocl.rotateValues(AddressSpace.Private,

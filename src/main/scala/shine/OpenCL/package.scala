@@ -12,8 +12,8 @@ package object OpenCL {
   val DEVICE_READ = 1 << 2
   val DEVICE_WRITE = 1 << 3
 
-  val AddressSpace: shine.DPIA.Types.AddressSpace.type = shine.DPIA.Types.AddressSpace
-  type AddressSpace = shine.DPIA.Types.AddressSpace
+  val AddressSpace: rise.core.types.AddressSpace.type = rise.core.types.AddressSpace
+  type AddressSpace = rise.core.types.AddressSpace
 
   implicit def valToNatTuple[V](v: V)(implicit vToN: V => Nat): NDRange = NDRange(v, 1, 1)
   implicit def pairToNatTuple[A,B](t: (A, B))(implicit aToN: A => Nat, bToN: B => Nat): NDRange =

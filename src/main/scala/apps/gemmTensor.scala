@@ -9,6 +9,7 @@ import rise.core._
 import rise.core.primitives.{let => _, _}
 import rise.core.types.{AddressSpace, _}
 import rise.openCL.DSL.{toLocal, toPrivate}
+import rise.core.types.DataType._
 import rise.openCL.primitives.oclReduceSeq
 
 //General Matrix Multiply (gemm) with tensor cores

@@ -2,83 +2,79 @@ package rise.eqsat
 
 import rise.core
 import rise.core.{semantics, primitives => rcp, types => rct}
+import rise.core.types.{DataType => rcdt}
+
+object ExprWithHashCons {
+  def nat[ED, ND, DT](egraph: EGraph[ED, ND, DT])(dt: NatId): Nat =
+    Nat(egraph(dt)._1.map(nat(egraph)))
+
+  def dataType[ED, ND, DT](egraph: EGraph[ED, ND, DT])(dt: DataTypeId): DataType =
+    DataType(egraph(dt)._1.map(nat(egraph), dataType(egraph)))
+
+  def `type`[ED, ND, DT](egraph: EGraph[ED, ND, DT])(t: TypeId): Type =
+    Type(egraph(t)._1.map(`type`(egraph), nat(egraph), dataType(egraph)))
+
+  def expr[ED, ND, DT](egraph: EGraph[ED, ND, DT])(e: ExprWithHashCons): Expr =
+    Expr(e.node.map(expr(egraph), nat(egraph), dataType(egraph)), `type`(egraph)(e.t))
+}
+
+case class ExprWithHashCons(node: Node[ExprWithHashCons, NatId, DataTypeId], t: TypeId) {
+  override def toString: String = s"($node : $t)"
+
+  /** Shifts De-Bruijn indices up or down if they are >= cutoff */
+  def shifted[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], shift: Expr.Shift, cutoff: Expr.Shift): ExprWithHashCons = {
+    ExprWithHashCons(NodeSubs.shifted(egraph, node, shift, cutoff){ case (e, s, c) => e.shifted(egraph, s, c) },
+      NodeSubs.Type.shifted(egraph, t, (shift._2, shift._3), (cutoff._2, cutoff._3)))
+  }
+
+  def replace[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], index: Int, subs: ExprWithHashCons): ExprWithHashCons = {
+    NodeSubs.replace(node, index, subs)
+    { n => ExprWithHashCons(n, t) }
+    { case (e, i, s) => e.replace(egraph, i, s) }
+    { case (e, s, c) => e.shifted(egraph, s, c) }
+  }
+
+  def replace[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], index: Int, subs: NatId): ExprWithHashCons = {
+    ExprWithHashCons(NodeSubs.replace(egraph, node, index, subs){ case (e, i, s) => e.replace(egraph, i, s) },
+      NodeSubs.Type.replace(egraph, t, index, subs))
+  }
+
+  // substitutes %0 for arg in this
+  def withArgument[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], arg: ExprWithHashCons): ExprWithHashCons = {
+    val argS = arg.shifted(egraph, (1, 0, 0), (0, 0, 0))
+    val bodyR = this.replace(egraph, 0, argS)
+    bodyR.shifted(egraph, (-1, 0, 0), (0, 0, 0))
+  }
+
+  // substitutes %n0 for arg in this
+  def withNatArgument[E, ED, ND, DT](egraph: EGraph[ED, ND, DT], arg: NatId): ExprWithHashCons = {
+    val argS = NodeSubs.Nat.shifted(egraph, arg, 1, 0)
+    val bodyR = this.replace(egraph, 0, argS)
+    bodyR.shifted(egraph, (0, -1, 0), (0, 0, 0))
+  }
+}
 
 // TODO: could also be outside of eqsat package
 /** A Rise expression based on DeBruijn indexing */
 case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
   override def toString: String = s"($node : $t)"
-
-  /** Shifts De-Bruijn indices up or down if they are >= cutoff
-    * @todo some traversals could be avoided for 0-shifts? */
+/*
+  /** Shifts De-Bruijn indices up or down if they are >= cutoff */
   def shifted(shift: Expr.Shift, cutoff: Expr.Shift): Expr = {
-    Expr(node match {
-      case Var(index) =>
-        val delta = if (index >= cutoff._1) shift._1 else 0
-        Var(index + delta)
-      case Lambda(e) =>
-        Lambda(e.shifted(shift, cutoff.copy(_1 = cutoff._1 + 1)))
-      case App(f, e) =>
-        App(f.shifted(shift, cutoff), e.shifted(shift, cutoff))
-      case NatLambda(e) =>
-        NatLambda(e.shifted(shift, cutoff.copy(_2 = cutoff._2 + 1)))
-      case NatApp(f, x) =>
-        NatApp(f.shifted(shift, cutoff), x.shifted(shift._2, cutoff._2))
-      case DataLambda(e) =>
-        DataLambda(e.shifted(shift, cutoff.copy(_3 = cutoff._3 + 1)))
-      case DataApp(f, x) =>
-        DataApp(f.shifted(shift, cutoff), x.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
-      case Literal(_) | Primitive(_) => node
-    }, t.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
+    Expr(NodeSubs.shifted(node, shift, cutoff){ case (e, s, c) => e.shifted(s, c) },
+      t.shifted((shift._2, shift._3), (cutoff._2, cutoff._3)))
   }
 
   def replace(index: Int, subs: Expr): Expr = {
-    node match {
-      case Var(idx) if idx == index => subs
-      case Var(_) => this
-      case Lambda(e) =>
-        // TODO: could shift lazily
-        val e2 = e.replace(index + 1, subs.shifted((1, 0, 0), (0, 0, 0)))
-        Expr(Lambda(e2), t)
-      case App(f, e) =>
-        val f2 = f.replace(index, subs)
-        val e2 = e.replace(index, subs)
-        Expr(App(f2, e2), t)
-      case NatLambda(e) =>
-        // TODO: could shift lazily
-        val subs2 = subs.shifted((0, 1, 0), (0, 0, 0))
-        Expr(NatLambda(e.replace(index, subs2)), t)
-      case NatApp(f, x) =>
-        Expr(NatApp(f.replace(index, subs), x), t)
-      case DataLambda(e) =>
-        // TODO: could shift lazily
-        val subs2 = subs.shifted((0, 0, 1), (0, 0, 0))
-        Expr(DataLambda(e.replace(index, subs2)), t)
-      case DataApp(f, x) =>
-        Expr(DataApp(f.replace(index, subs), x), t)
-      case Literal(_) | Primitive(_) => this
-    }
+    NodeSubs.replace(node, index, subs)
+    { n => Expr(n, t) }
+    { case (e, i, s) => e.replace(i, s) }
+    { case (e, s, c) => e.shifted(s, c) }
   }
 
   def replace(index: Int, subs: Nat): Expr = {
-    Expr(node match {
-      case _: Var | _: Literal | _: Primitive => node
-      case Lambda(e) =>
-        Lambda(e.replace(index, subs))
-      case App(f, e) =>
-        val f2 = f.replace(index, subs)
-        val e2 = e.replace(index, subs)
-        App(f2, e2)
-      case NatLambda(e) =>
-        // TODO: could shift lazily
-        val e2 = e.replace(index + 1, subs.shifted(1, 0))
-        NatLambda(e2)
-      case NatApp(f, x) =>
-        NatApp(f.replace(index, subs), x.replace(index, subs))
-      case DataLambda(e) =>
-        DataLambda(e.replace(index, subs))
-      case DataApp(f, x) =>
-        DataApp(f.replace(index, subs), x.replace(index, subs))
-    }, t.replace(index, subs))
+    Expr(NodeSubs.replace(node, index, subs){ case (e, i, s) => e.replace(i, s) },
+      t.replace(index, subs))
   }
 
   // substitutes %0 for arg in this
@@ -92,6 +88,7 @@ case class Expr(node: Node[Expr, Nat, DataType], t: Type) {
     replace(0, arg.shifted(1, 0))
       .shifted((0, -1, 0), (0, 0, 0))
   }
+ */
 }
 
 object Expr {
@@ -104,21 +101,21 @@ object Expr {
 
   case class Bound(expr: Seq[core.Identifier],
                    nat: Seq[rct.NatIdentifier],
-                   data: Seq[rct.DataTypeIdentifier]) {
+                   data: Seq[rcdt.DataTypeIdentifier]) {
     private def assertFound(i: Int, name: => String): Int =
       if (i >= 0) { i } else { throw new Exception(s"identifier $name was not bound") }
     def indexOf(i: core.Identifier): Int =
       assertFound(expr.indexOf(i), i.toString)
     def indexOf(i: rct.NatIdentifier): Int =
       assertFound(nat.indexOf(i), i.toString)
-    def indexOf(i: rct.DataTypeIdentifier): Int =
+    def indexOf(i: rcdt.DataTypeIdentifier): Int =
       assertFound(data.indexOf(i), i.toString)
 
     def +(i: core.Identifier): Bound =
       this.copy(expr = i +: expr)
     def +(i: rct.NatIdentifier): Bound =
       this.copy(nat = i +: nat)
-    def +(i: rct.DataTypeIdentifier): Bound =
+    def +(i: rcdt.DataTypeIdentifier): Bound =
       this.copy(data = i +: data)
   }
 
@@ -133,7 +130,7 @@ object Expr {
         DataApp(fromNamed(f, bound), DataType.fromNamed(dt, bound))
       case core.DepApp(_, _, _) => ???
       case core.DepLambda(rct.NatKind, n: rct.NatIdentifier, e) => NatLambda(fromNamed(e, bound + n))
-      case core.DepLambda(rct.DataKind, dt: rct.DataTypeIdentifier, e) => DataLambda(fromNamed(e, bound + dt))
+      case core.DepLambda(rct.DataKind, dt: rcdt.DataTypeIdentifier, e) => DataLambda(fromNamed(e, bound + dt))
       case core.DepLambda(_, _, _) => ???
       case core.Literal(d) => Literal(d)
       // note: we set the primitive type to a place holder here,
@@ -160,10 +157,27 @@ object Expr {
       case DataApp(f, x) =>
         core.DepApp(rct.DataKind, toNamed(f, bound), DataType.toNamed(x, bound)) _
       case DataLambda(e) =>
-        val i = rct.DataTypeIdentifier(s"dt${bound.data.size}")
+        val i = rcdt.DataTypeIdentifier(s"dt${bound.data.size}")
         core.DepLambda(rct.DataKind, i, toNamed(e, bound + i)) _
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _
+
+      case Composition(f, g) => /*
+        val f2 = f.shifted((1, 0, 0), (0, 0, 0))
+        val g2 = g.shifted((1, 0, 0), (0, 0, 0))
+        val argT: Type = f2.t.node match {
+          case FunType(inT, _) => inT
+          case _ => throw new Exception("this should not happen")
+        }
+        return toNamed(ExprDSL.lam(argT, ExprDSL.app(g2, ExprDSL.app(f2, Expr(Var(0), argT)))), bound)
+        */
+        val ft = Type.toNamed(f.t, bound)
+        val gt = Type.toNamed(g.t, bound)
+        val t = Type.toNamed(expr.t, bound)
+        core.App(core.App(
+          NamedRewriteDSL.Composition(rct.FunType(ft, rct.FunType(gt, t))),
+          toNamed(f, bound))(rct.FunType(gt, t)),
+          toNamed(g, bound)) _
     })(Type.toNamed(expr.t, bound))
   }
 
@@ -195,8 +209,8 @@ object ExprDSL {
   def cst(value: Long): Nat = Nat(NatCst(value))
 
   def `%dt`(index: Int): DataType = DataType(DataTypeVar(index))
-  val int: DataType = DataType(ScalarType(rct.int))
-  val f32: DataType = DataType(ScalarType(rct.f32))
+  val int: DataType = DataType(ScalarType(rcdt.int))
+  val f32: DataType = DataType(ScalarType(rcdt.f32))
 
   def nFunT(t: Type): Type = Type(NatFunType(t))
   implicit final class FunConstructorT(private val r: Type) extends AnyVal {

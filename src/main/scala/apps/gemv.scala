@@ -5,6 +5,7 @@ import rise.core.DSL._
 import rise.core.DSL.Type._
 import rise.core.primitives.{let => _, _}
 import rise.core.types._
+import rise.core.types.DataType._
 import HighLevelConstructs.reorderWithStride
 
 object gemv {
@@ -83,7 +84,7 @@ object gemv {
           zip(xs)(t._1) |>
             split(n) |>
             toLocalFun(mapLocal(
-              reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
             mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
         )) |> join
@@ -98,10 +99,10 @@ object gemv {
             reorderWithStride(128) |>
             split(n /^ 128) |>
             toLocalFun(mapLocal(
-              reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
             split(128) |>
-            toLocalFun(mapLocal(reduceSeq(add)(lf32(0.0f)))) |>
+            toLocalFun(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))) |>
             mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
         )) |> join
     ))
@@ -116,9 +117,9 @@ object gemv {
             reorderWithStride(128) |>
             split(n /^ 128) |>
             toLocalFun(mapLocal(
-              reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
             )) |>
-            toLocalFun(reduceSeq(add)(lf32(0.0f))) |>
+            toLocalFun(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))) |>
             fun(x => (alpha * x) + (t._2 * beta))
         ))
     ))
@@ -146,7 +147,7 @@ object gemv {
   import util._
 
   val cgo17_localSize: LocalSize = LocalSize(64)
-  val cgo17_phraseDepLocalAndGlobalSize: gen.opencl.PhraseDepLocalAndGlobalSize =
+  val gemvBlastKnowSizes: gen.opencl.PhraseDepLocalAndGlobalSize =
     gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
       val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[DPIA.Types.ExpType]]]
       val m = t.t.x

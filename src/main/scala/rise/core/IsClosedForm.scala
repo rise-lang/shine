@@ -3,8 +3,8 @@ package rise.core
 import util.monads._
 import arithexpr.arithmetic.NamedVar
 import rise.core.traverse._
-import rise.core.types.Kind.{IFragmentKind, IMatrixLayout, INat, INatToData}
 import rise.core.types._
+import rise.core.types.DataType._
 
 object IsClosedForm {
   case class OrderedSet[T](seq : Seq[T], set : Set[T])
@@ -27,7 +27,8 @@ object IsClosedForm {
   case class Visitor(boundV: Set[Identifier], boundT: Set[Kind.Identifier])
     extends PureAccumulatorTraversal[(OrderedSet[Identifier], OrderedSet[Kind.Identifier])]
   {
-    override val accumulator = PairMonoid(OrderedSetMonoid, OrderedSetMonoid)
+    override val accumulator: Monoid[(OrderedSet[Identifier], OrderedSet[Kind.Identifier])] =
+      PairMonoid(OrderedSetMonoid, OrderedSetMonoid)
 
     override def identifier[I <: Identifier]: VarType => I => Pair[I] = vt => i => {
       for { t2 <- `type`(i.t);
@@ -47,7 +48,7 @@ object IsClosedForm {
 
     override def nat: Nat => Pair[Nat] = n => {
       val free = n.varList.foldLeft(OrderedSet.empty[Kind.Identifier]) {
-        case (free, v: NamedVar) if !boundT(INat(v)) => OrderedSet.add(INat(v) : Kind.Identifier)(free)
+        case (free, v: NamedVar) if !boundT(NatKind.IDWrapper(v)) => OrderedSet.add(NatKind.IDWrapper(v) : Kind.Identifier)(free)
         case (free, _) => free
       }
       accumulate((OrderedSet.empty, free))(n)
@@ -68,19 +69,19 @@ object IsClosedForm {
 
     override def natToData: NatToData => Pair[NatToData] = {
       case NatToDataLambda(x, e) =>
-        for { p <- this.copy(boundT = boundT + INat(x)).`type`(e) }
+        for { p <- this.copy(boundT = boundT + NatKind.IDWrapper(x)).`type`(e)}
           yield (p._1, NatToDataLambda(x, e))
       case t => super.natToData(t)
     }
 
     override def natToNat: NatToNat => Pair[NatToNat] = {
       case NatToNatLambda(x, n) =>
-        for { p <- this.copy(boundT = boundT + INat(x)).nat(n) }
+        for { p <- this.copy(boundT = boundT + NatKind.IDWrapper(x)).nat(n)}
           yield (p._1, NatToNatLambda(x, n))
       case n => super.natToNat(n)
     }
 
-    override def `type`[T <: Type]: T => Pair[T] = {
+    override def `type`[T <: ExprType]: T => Pair[T] = {
       case d@DepFunType(k, x, t) =>
         for { p <- this.copy(boundT = boundT + Kind.toIdentifier(k, x)).`type`(t) }
           yield (p._1, d.asInstanceOf[T])
@@ -96,15 +97,15 @@ object IsClosedForm {
     (fV, fT)
   }
 
-  def freeVars(t: Type): OrderedSet[Kind.Identifier] = {
+  def freeVars(t: ExprType): OrderedSet[Kind.Identifier] = {
     val ((_, ftv), _) = traverse(t, Visitor(Set(), Set()))
     ftv
   }
 
   // Exclude matrix layout and fragment kind identifiers, since they cannot currently be bound
   def needsClosing : Seq[Kind.Identifier] => Seq[Kind.Identifier] = _.flatMap {
-    case IMatrixLayout(i) => Seq()
-    case IFragmentKind(i) => Seq()
+    case MatrixLayoutKind.IDWrapper(i) => Seq()
+    case FragmentKind.IDWrapper(i) => Seq()
     case e => Seq(e)
   }
 
@@ -113,7 +114,7 @@ object IsClosedForm {
     (fV.seq, needsClosing(fT.seq))
   }
 
-  def varsToClose(t : Type): Seq[Kind.Identifier] = needsClosing(freeVars(t).seq)
+  def varsToClose(t : ExprType): Seq[Kind.Identifier] = needsClosing(freeVars(t).seq)
 
   def apply(expr: Expr): Boolean = {
     val (freeV, freeT) = varsToClose(expr)

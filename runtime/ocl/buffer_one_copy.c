@@ -62,7 +62,7 @@ void* hostBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access
 
 DeviceBuffer deviceBufferSync(Context ctx, Buffer b, size_t byte_size, AccessFlags access) {
   if ((access & DEVICE_READ) && b->host_dirty) {
-    oclFatalError(clEnqueueWriteBuffer(ctx->queue, b->device_mem, CL_FALSE, 0, byte_size,
+    oclFatalError(clEnqueueWriteBuffer(ctx->queue, b->device_mem, CL_TRUE, 0, byte_size,
       b->host_mem, 0, NULL, NULL),
       "could not upload buffer data to host"
     );

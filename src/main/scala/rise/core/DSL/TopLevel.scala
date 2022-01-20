@@ -3,18 +3,17 @@ package rise.core.DSL
 import Type.impl
 import util.monads._
 import rise.core.traverse._
-import rise.core.types.Kind._
 import rise.core.types._
 import rise.core.{DSL, Expr, IsClosedForm, Primitive}
 
 final case class TopLevel(e: Expr, inst: Solution = Solution())(
-  override val t: Type = e.t
+  override val t: ExprType = e.t
 ) extends Primitive {
   import DSL.TopLevel._
   // TODO: Ignored by alpha equivalence, remove when taking out of primitives
   override def primEq(obj: Primitive): Boolean = obj.getClass == getClass
-  override def typeScheme: Type = e.t
-  override def setType(t: Type): TopLevel = {
+  override def typeScheme: ExprType = e.t
+  override def setType(t: ExprType): TopLevel = {
     val subs = instantiate(t)
     this.copy(inst = subs)(subs(t))
   }
@@ -22,30 +21,31 @@ final case class TopLevel(e: Expr, inst: Solution = Solution())(
 }
 
 object TopLevel {
-  private def instantiate(t: Type): Solution = {
+  private def instantiate(t: ExprType): Solution = {
     import scala.collection.immutable.Map
     IsClosedForm.varsToClose(t).foldLeft(Solution())((subs, ftv) =>
       subs match {
         case s@Solution(ts, ns, as, ms, fs, n2ds, n2ns, natColls) =>
           ftv match {
-            case IType(i) =>
+            case TypeKind.IDWrapper(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: TypeIdentifier => x }))
-            case IDataType(i) =>
+            case DataKind.IDWrapper(i) =>
               s.copy(ts = ts ++ Map(i -> impl{ x: DataType => x }))
-            case INat(i) =>
+            case NatKind.IDWrapper(i) =>
               s.copy(ns = ns ++ Map(i -> impl{ x: Nat => x }))
-            case IAddressSpace(i) =>
+            case AddressSpaceKind.IDWrapper(i) =>
               s.copy(as = as ++ Map(i -> impl{ x: AddressSpace => x }))
-            case IMatrixLayout(i) =>
+            case MatrixLayoutKind.IDWrapper(i) =>
               s.copy(ms = ms ++ Map(i -> impl{ x: MatrixLayout => x }))
-            case IFragmentKind(i) =>
-              s.copy(fs = fs ++ Map(i -> impl{ x: FragmentKind => x }))
-            case INatToData(i) =>
+            case FragmentKind.IDWrapper(i) =>
+              s.copy(fs = fs ++ Map(i -> impl{ x: Fragment => x }))
+            case NatToDataKind.IDWrapper(i) =>
               s.copy(n2ds = n2ds ++ Map(i -> impl{ x: NatToData => x }))
-            case INatToNat(i) =>
+            case NatToNatKind.IDWrapper(i) =>
               s.copy(n2ns = n2ns ++ Map(i -> impl{ x: NatToNat => x }))
-            case INatCollection(i) =>
+            case NatCollectionKind.IDWrapper(i) =>
               s.copy(natColls = natColls ++ Map(i -> impl{ x: NatCollection => x }))
+            case AccessKind.IDWrapper(_) => ???
           }
       }
     )
@@ -53,14 +53,14 @@ object TopLevel {
 
   case class Visitor(ftvSubs: Solution, sol: Solution) extends PureTraversal {
     override def nat : Nat => Pure[Nat] = n => return_(cascadedApply(ftvSubs, sol, n))
-    override def `type`[T <: Type] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
+    override def `type`[T <: ExprType] : T => Pure[T] = t => return_(cascadedApply(ftvSubs, sol, t).asInstanceOf[T])
     override def addressSpace : AddressSpace => Pure[AddressSpace] = a => return_(cascadedApply(ftvSubs, sol, a))
     override def natToData : NatToData => Pure[NatToData] = n2d => return_(cascadedApply(ftvSubs, sol, n2d))
   }
 
-  private def cascadedApply(ftvSubs: Solution, sol: Solution, t: Type): Type = {
+  private def cascadedApply(ftvSubs: Solution, sol: Solution, t: ExprType): ExprType = {
     traverse(t, new Visitor(ftvSubs, sol) {
-        override def `type`[T <: Type] : T => Pure[T] = {
+        override def `type`[T <: ExprType] : T => Pure[T] = {
           case i: TypeIdentifier =>
             ftvSubs.ts.get(i) match {
               case None => super.`type`(i.asInstanceOf[T])

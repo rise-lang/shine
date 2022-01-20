@@ -3,9 +3,13 @@ package apps
 import gemv._
 import rise.core.DSL._
 import Type._
+import rise.autotune
+import rise.core.Expr
 import rise.core.types._
-import util.gen
+import util.{gen}
 import util.gen.c.function
+import rise.core.types.DataType._
+import shine.OpenCL.{GlobalSize, LocalSize}
 
 class gemvCheck extends test_util.Tests {
   private val N = 128
@@ -14,10 +18,10 @@ class gemvCheck extends test_util.Tests {
   test("high-level gemv type inference works") {
     val typed = gemvHighLevel.toExpr
 
-    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type, _ <: Kind.Identifier]].x
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: ExprType]].x
     val M = typed.t
-      .asInstanceOf[NatDepFunType[_ <: Type, _ <: Kind.Identifier]].t
-      .asInstanceOf[NatDepFunType[_ <: Type, _ <: Kind.Identifier]].x
+      .asInstanceOf[NatDepFunType[_ <: ExprType]].t
+      .asInstanceOf[NatDepFunType[_ <: ExprType]].x
     assertResult(
       DepFunType(NatKind, N,
         DepFunType(NatKind, M,
@@ -39,6 +43,21 @@ class gemvCheck extends test_util.Tests {
     ocl.gemvKeplerBest.toExpr
   }
 
+  test("OpenCL gemv versions host-code generation creates syntactically correct host-code"){
+
+    def run(e: ToBeTyped[Expr], localSize: LocalSize, globalSize: GlobalSize):String = {
+      val wrapped = autotune.wrapOclRun(localSize, globalSize)(e)
+      val codeModule = gen.opencl.hosted.fromExpr(wrapped)
+      shine.OpenCL.Module.translateToString(codeModule) // syntax checker is called here
+    }
+
+    run(ocl.gemvBlastN, LocalSize(64), GlobalSize(1024))
+    run(ocl.gemvBlastT, LocalSize(64), GlobalSize(1024))
+    run(ocl.gemvFused, LocalSize(128), GlobalSize(1024))
+    run(ocl.gemvFusedAMD, LocalSize(128), GlobalSize(1024))
+    run(ocl.gemvKeplerBest, LocalSize(128), GlobalSize(1024))
+  }
+
   test("OpenMP gemv versions type inference works") {
     omp.gemvFused.toExpr
   }
@@ -57,11 +76,11 @@ class gemvCheck extends test_util.Tests {
     val beta = rand.nextFloat() * 5
 
     val kernelN = gen.opencl.kernel(
-      Some(cgo17_phraseDepLocalAndGlobalSize),
+      Some(gemvBlastKnowSizes),
       "KERNEL"
     ).fromExpr(ocl.gemvBlastN)
     val kernelT = gen.opencl.kernel(
-      Some(cgo17_phraseDepLocalAndGlobalSize),
+      Some(gemvBlastKnowSizes),
       "KERNEL"
     ).fromExpr(ocl.gemvBlastT)
 

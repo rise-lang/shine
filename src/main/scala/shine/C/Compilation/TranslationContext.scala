@@ -1,19 +1,20 @@
 package shine.C.Compilation
 
+import arithexpr.arithmetic.RangeAdd
+import rise.core.types._
+import rise.core.types.DataType._
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
-import shine.DPIA.Types._
+import shine.DPIA.Types.{AccType, CommType, ExpType}
 import shine.DPIA.primitives.imperative.Assign
-import shine.DPIA.primitives.intermediate.DepMapSeqI
+import shine.DPIA.primitives.imperative.ForNat
 
 class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
   override def assign(dt: DataType,
                       lhs: Phrase[AccType],
                       rhs: Phrase[ExpType]): Phrase[CommType] = {
     dt match {
-      case _: ScalarType => Assign(dt, lhs, rhs)
-
-      case _: IndexType => Assign(dt, lhs, rhs)
+      case _: ScalarType | NatType | _: IndexType => Assign(dt, lhs, rhs)
 
       // FIXME: both solutions currently create issues
       // TODO: think about this more thoroughly
@@ -24,10 +25,9 @@ class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
 
       //TODO makes a decision. Not allowed!
       case DepArrayType(n, ft) =>
-        DepMapSeqI(unroll = false)(n, ft, ft,
-          depFun(NatKind)(k =>
-            λ(ExpType(ft(k), read))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
-          rhs, lhs)
+        forNat(unroll = false, n, i =>
+          assign(ft(i), lhs `@d` i, rhs `@d` i)
+        )
 
       case x => throw new Exception(s"Don't know how to assign value of type $x")
     }

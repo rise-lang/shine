@@ -4,9 +4,10 @@
 package shine.DPIA.primitives.imperative
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.DataType._
 import shine.DPIA.Types._
-import shine.DPIA.Types.Kind.{ Identifier => _, _ }
+import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, TypeIdentifier => _, ExprType => _, _ }
+import rise.core.types.DataType._
+import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class ForVec(val n: Nat, val dt: DataType, val out: Phrase[AccType], val loopBody: Phrase[FunType[ExpType, FunType[AccType, CommType]]]) extends CommandPrimitive {
   assert {

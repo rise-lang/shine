@@ -3,6 +3,7 @@ package rise.core
 import rise.core.DSL._
 import Type._
 import rise.core.types._
+import rise.core.types.DataType._
 import rise.core.primitives._
 import util.Execute
 import util.gen.c.function
