@@ -16,18 +16,26 @@ import rise.openCL.primitives.oclReduceSeq
 //Multiply a m.k a-matrix with a k.n b-matrix and accumulate a m.n c-matrix
 object gemmTensor {
 
-  val naiveGemmNoTensorCores: ToBeTyped[Expr] = {
+  val seqGEMMNoTensorCores: ToBeTyped[Expr] = {
     depFun((m: Nat, n: Nat, k: Nat) => fun(
-      f32 ->: f32 ->: (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32) ->: (m `.` n `.` f32)
-    )((alpha, beta, a, b, c) =>
-      zip(a)(c) |>
-      mapBlock(fun(rowAC =>
-        zip(b)(rowAC._2) |>
-        mapThreads(0)(fun(colBC =>
-          zip(rowAC._1)(colBC._1) |>
-          oclReduceSeq(AddressSpace.Private)(fun((acc, rc) =>
-              acc + rc._1 * rc._2))(lf32(0f)) |>
-           fun(r => (alpha * r) + (beta * colBC._2))))))))
+      f32 ->: f32 ->: (m `.` k `.` f32) ->: (k `.` n `.` f32) ->: (m `.` n `.` f32) ->: (m `.` n `.` f32)
+    )((alpha, beta, A, B, C) =>
+    zip(A)(C) |> mapSeq(fun(rowAC =>
+      zip(B |> transpose)(snd(rowAC)) |> mapSeq(fun(colBC =>
+        zip(fst(rowAC))(fst(colBC)) |>
+          oclReduceSeq(AddressSpace.Private)(fun((acc,ab) => acc + fst(ab) * snd(ab)))(lf32(0f)) |>
+          fun(r => (alpha * r) + (beta * snd(colBC))) ))))))
+  }
+
+  val naiveGEMMNoTensorCores: ToBeTyped[Expr] = {
+    depFun((m: Nat, n: Nat, k: Nat) => fun(
+      f32 ->: f32 ->: (m `.` k `.` f32) ->: (k `.` n `.` f32) ->: (m `.` n `.` f32) ->: (m `.` n `.` f32)
+    )((alpha, beta, A, B, C) =>
+      zip(A)(C) |> mapBlock(fun(rowAC =>
+        zip(B |> transpose)(snd(rowAC)) |> mapThreads(fun(colBC =>
+          zip(fst(rowAC))(fst(colBC)) |>
+            oclReduceSeq(AddressSpace.Private)(fun((acc,ab) => acc + fst(ab) * snd(ab)))(lf32(0f)) |>
+            fun(r => (alpha * r) + (beta * snd(colBC))) ))))))
   }
 
   // Tiles m.n.dt matrix into a (m/mTile)*(n/nTile).mTile.nTile.dt

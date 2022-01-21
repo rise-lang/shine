@@ -12,6 +12,14 @@ import util._
 //Running each test individually should be successfull
 class gemmTensorCheck extends test_util.TestWithCUDA {
 
+  test("sequential gemm produces expected result") {
+    executeGEMM(seqGEMMNoTensorCores, false, false)
+  }
+
+  test("naive gemm produces expected result") {
+    executeGEMM(naiveGEMMNoTensorCores, false, false)
+  }
+
   test("gemm with tensor cores produces expected result") {
     executeGEMM(simpleGemm)
   }
